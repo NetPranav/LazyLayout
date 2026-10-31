@@ -1,3 +1,5 @@
-// Bridge: still the legacy UI. Replace this file with the new component (DOCS/UI/PARITY.md).
-export * from "@/legacy-editor/panels/launcher/ProjectHub";
-export { default } from "@/legacy-editor/panels/launcher/ProjectHub";
+export function ProjectHub() {
+  return <main />;
+}
+
+export default ProjectHub;

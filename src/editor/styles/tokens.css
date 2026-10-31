@@ -1,10 +1,81 @@
 /* Lazy Layout design tokens. Colors come only from DOCS/UI/PALETTE.md. */
 :root {
-  --ll-neutral-0: #ffffff;
-  --ll-neutral-50: #f1f1f1;
-  --ll-neutral-100: #dfdfdf;
-  --ll-neutral-200: #c8c8c8;
-  --ll-neutral-400: #929292;
+  /* 4px spacing grid base */
+  --ll-spacing: 4px;
+  --ll-spacing-1: 4px;
+  --ll-spacing-2: 8px;
+  --ll-spacing-3: 12px;
+  --ll-spacing-4: 16px;
+  --ll-spacing-5: 20px;
+  --ll-spacing-6: 24px;
+  --ll-spacing-8: 32px;
+  --ll-spacing-12: 48px;
+  --ll-spacing-16: 64px;
+
+  /* Colors - exactly the eight approved colors from DOCS/UI/PALETTE.md */
+  --ll-neutral-0: #FFFFFF;
+  --ll-neutral-50: #F1F1F1;
+  --ll-neutral-100: #DFDFDF;
+  --ll-neutral-200: #C4C4C4;
+  --ll-neutral-400: #8F8F8F;
   --ll-neutral-800: #464646;
   --ll-neutral-1000: #000000;
+  --ll-border-color: rgba(143, 143, 143, 0.5);
+
+  /* Typography - Geist and Geist Mono families */
+  --ll-font-sans-family: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ll-font-mono-family: var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --ll-font-sans: var(--ll-font-sans-family);
+  --ll-font-mono: var(--ll-font-mono-family);
+
+  /* Type scale */
+  --ll-text-display-size: 28px;
+  --ll-text-display-line-height: 34px;
+  --ll-text-display-letter-spacing: -0.025em;
+  --ll-text-display-weight: 700;
+
+  --ll-text-title-size: 18px;
+  --ll-text-title-line-height: 24px;
+  --ll-text-title-letter-spacing: -0.015em;
+  --ll-text-title-weight: 600;
+
+  --ll-text-body-size: 14px;
+  --ll-text-body-line-height: 20px;
+  --ll-text-body-letter-spacing: -0.005em;
+  --ll-text-body-weight: 400;
+
+  --ll-text-small-size: 12px;
+  --ll-text-small-line-height: 16px;
+  --ll-text-small-letter-spacing: 0em;
+  --ll-text-small-weight: 400;
+
+  --ll-text-micro-size: 10px;
+  --ll-text-micro-line-height: 14px;
+  --ll-text-micro-letter-spacing: 0.06em;
+  --ll-text-micro-weight: 600;
+
+  /* Modest radius scale (Apple-level layout, no pills/capsules) */
+  --ll-radius-sm-value: 4px;
+  --ll-radius-md-value: 6px;
+  --ll-radius-lg-value: 8px;
+  --ll-radius-sm: var(--ll-radius-sm-value);
+  --ll-radius-md: var(--ll-radius-md-value);
+  --ll-radius-lg: var(--ll-radius-lg-value);
+
+  /* Hairline border */
+  --ll-border-hairline: 1px;
+
+  /* Soft shadow tokens (black at low alpha) */
+  --ll-shadow-color: rgba(0, 0, 0, 0.08);
+  --ll-shadow-color-subtle: rgba(0, 0, 0, 0.04);
+  --ll-shadow-soft-value: 0 4px 20px -2px var(--ll-shadow-color), 0 2px 6px -1px var(--ll-shadow-color-subtle);
+  --ll-shadow-soft: var(--ll-shadow-soft-value);
+
+  /* Motion - only opacity and transform animate */
+  --ll-duration-swap-value: 120ms;
+  --ll-duration-swap: var(--ll-duration-swap-value);
+
+  /* Max width for canvas content to stay centered */
+  --ll-canvas-max-width-value: 820px;
+  --ll-canvas-max-width: var(--ll-canvas-max-width-value);
 }

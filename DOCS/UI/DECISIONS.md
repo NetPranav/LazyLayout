@@ -13,9 +13,29 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Global | A design system page shows every component, and components change there first | user | approved |
 | 2026-10-31 | Global | Claude is the senior designer and instructs the workers, who do all the work | user | approved |
 | 2026-10-31 | Canvas | The canvas is fixed in the from-scratch rebuild, not by editing `src/core` | user | approved |
-| 2026-10-31 | Global | Light theme first | Claude | pending |
-| 2026-10-31 | Global | Tailwind classes use an `ll:` prefix, no Preflight, while the legacy UI is loaded | Claude | pending |
-| 2026-10-31 | Design system | `/design-system` is hidden in production unless labs are enabled | Claude | pending |
-| 2026-10-31 | Global | Black with white text for primary and active controls, no accent color | Claude | pending |
-| 2026-10-31 | Global | `motion` for interface motion, GSAP for timelines and scroll | Claude | pending |
-| 2026-10-31 | Global | Only license-allowed third-party code, no new dependencies, logged per component | Claude | pending |
+| 2026-10-31 | Global | Backdrop `#8F8F8F`, panels `#C4C4C4`, canvas `#DFDFDF`, sampled by Claude from the user's reference | user | approved |
+| 2026-10-31 | Foundations | Use `#000000` for all text until text colors are approved in the palette | worker (Antigravity) | pending |
+| 2026-10-31 | Foundations | Non-color token scale: modest radii (`--ll-radius-sm: 4px`, `--ll-radius-md: 6px`, `--ll-radius-lg: 8px`), hairline border (1px), soft shadow (`--ll-shadow-soft`) | worker (Antigravity) | pending |
+| 2026-10-31 | Global | Reset on the user's request: pending Claude rows removed, shell, launcher and animation bridges blanked so no legacy UI shows | user | approved |
+| 2026-10-31 | Typography | Geist for the interface and Geist Mono for code and numbers | user | approved |
+| 2026-10-31 | Design system | The page is laid out as a canvas with a right panel listing foundations and components with titles | user | approved |
+| 2026-10-31 | Foundations | Add `--ll-shadow-color: rgba(0, 0, 0, 0.08)` token for soft shadow (`--ll-shadow-soft`) | worker (Antigravity) | pending |
+| 2026-10-31 | Foundations | Type scale tokens: display (28px/700/-0.025em), title (18px/600/-0.015em), body (14px/400), small (12px/400), micro (10px/600/0.06em) | worker (Antigravity) | pending |
+| 2026-10-31 | Design system | Selected nav item styled with black background and white text, unselected hover on neutral-400 | user | approved |
+| 2026-10-31 | Foundations | 4px grid spacing tokens (`--ll-spacing-1` through `--ll-spacing-12`) | worker (Antigravity) | pending |
+| 2026-10-31 | Global | Palette complete: white raised surfaces, `#F1F1F1` toolbar, `#464646` secondary text, black text and primary controls, hairline border, no state colors, no accent, light only | user | approved |
+| 2026-10-31 | Foundations | Implement all eight palette colors as `--ll-neutral-*` and `--ll-border-color`; `--ll-neutral-1000` replaces earlier `--ll-text` | Claude | approved |
+| 2026-10-31 | Foundations | 4px base spacing grid (`--ll-spacing: 4px`) for geometric Tailwind utility scaling | worker (Antigravity) | pending |
+| 2026-10-31 | Design system | Canvas content centered within canvas using `--ll-canvas-max-width: 820px` and flex alignment | worker (Antigravity) | pending |
+| 2026-10-31 | Foundations | Flat, hairline-divided lists replace nested cards across all foundation pages | Claude | approved |
+| 2026-10-31 | Design system | "No components yet" styled with `neutral-800` (`#464646`) to pass 4.5:1 contrast requirement | worker (Antigravity) | pending |
+| 2026-10-31 | Typography | Headings in new UI inherit `--ll-font-sans` rather than legacy Inter rules | worker (Antigravity) | pending |
+| 2026-10-31 | Styling | All values in `tailwind.css` reference `var(--ll-...)` without repeating hex or rgba values; non-circular mappings used for tokens under `prefix(ll)` | worker (Antigravity) | pending |
+| 2026-10-31 | Typography | Explicit Geist Mono typography rule in `globals.css` ensuring code/hex tokens compute to Geist Mono without legacy fallback override | worker (Antigravity) | pending |
+| 2026-10-31 | Design system | Headings inside design system reset margin, border, background, and padding to prevent legacy heading leaks; group headers styled as micro labels with hairline above | Claude | approved |
+| 2026-10-31 | Workspace preview | WorkspaceFrame preview raised card made fluid (`max-w-xs`) on mobile 390px, eliminating clipping and overflow | worker (Antigravity) | pending |
+| 2026-10-31 | Workspace preview | Real labelled controls ("Export", "Preview") replace placeholder empty rectangles in preview toolbar | Claude | approved |
+| 2026-10-31 | Design system | Spacing scale visual bars rendered using Tailwind `ll:w-*` classes matching exact pixel values, removing inline style calculations | worker (Antigravity) | pending |
+| 2026-10-31 | Motion | Removed `transition-colors` on navigation rows; hover states change instantly, animating only opacity and transform | Claude | approved |
+| 2026-10-31 | Design system | Focus ring on navigation buttons uses `neutral-1000` for 3:1+ contrast compliance on `neutral-200` panels | Claude | approved |
+| 2026-10-31 | Design system | Swatch and WorkspaceFrame components added to the right navigation panel with live canvas views | Claude | approved |

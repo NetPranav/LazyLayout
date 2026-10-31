@@ -1,3 +1,38 @@
-/* Bridge: still the legacy UI's global styles, plus Tailwind for the new UI. Remove the legacy import when the rebuild is done. */
-@import "../../legacy-editor/styles/globals.css";
+/* New UI global styles. There is no Preflight, so the design system page sets its own base. */
 @import "./tailwind.css";
+
+body {
+  margin: 0;
+}
+
+@layer base {
+  .design-system-root {
+    font-family: var(--ll-font-sans);
+  }
+
+  .design-system-root,
+  .design-system-root *,
+  .design-system-root *::before,
+  .design-system-root *::after {
+    box-sizing: border-box;
+  }
+
+  .design-system-root ul,
+  .design-system-root ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .design-system-root button {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+}

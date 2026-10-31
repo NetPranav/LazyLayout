@@ -1,26 +1,21 @@
 # Palette
 
-The only colors workers may use. Taken from the user's reference image `DOCS/UI/palette-refs/ref-01-work-os.png` (sampled, so approximate). Light theme only. In Tailwind these are `ll:bg-neutral-100`, `ll:text-neutral-800` and so on.
+The only colors workers may use. Light theme only. Values were sampled from the user's reference `DOCS/UI/palette-refs/ref-01-work-os.png`, so they are approximate. The user approved this whole table.
 
-| Role | Hex | Token | Status |
-|---|---|---|---|
-| Raised surface (cards, lists) | `#FFFFFF` | `--ll-neutral-0` | approved by the user |
-| Floating bar, toolbar | `#F1F1F1` | `--ll-neutral-50` | approved by the user |
-| Canvas | `#DFDFDF` | `--ll-neutral-100` | approved by the user |
-| Panels, side rails | `#C8C8C8` | `--ll-neutral-200` | approved by the user |
-| Backdrop | `#929292` | `--ll-neutral-400` | approved by the user |
-| Strong dark, secondary text | `#464646` | `--ll-neutral-800` | approved by the user |
-| Black, primary text | `#000000` | `--ll-neutral-1000` | approved by the user |
+| Role | Hex | Token |
+|---|---|---|
+| Backdrop (outside the app) | `#8F8F8F` | `--ll-neutral-400` |
+| Panels and side rails | `#C4C4C4` | `--ll-neutral-200` |
+| Canvas | `#DFDFDF` | `--ll-neutral-100` |
+| Toolbar and floating bars | `#F1F1F1` | `--ll-neutral-50` |
+| Raised surfaces (cards, menus, popovers, inputs) | `#FFFFFF` | `--ll-neutral-0` |
+| Secondary text | `#464646` | `--ll-neutral-800` |
+| Primary text, and primary and active controls (white text on black) | `#000000` | `--ll-neutral-1000` |
+| Border (hairline) | `#8F8F8F` at 50% | `--ll-border-color` (derived from `--ll-neutral-400`) |
 
-## Working defaults (not confirmed by the user)
-
-- Primary and active controls: black with white text. Use it sparingly, because many black controls together look heavy.
-- Secondary text: `#464646`.
-- Error, warning and success: no colors exist yet. Show state with an icon and text.
-- No accent color. Orange `#FF811B` from the image is not approved.
-
-## Contrast
-
-- `#000000` on `#DFDFDF` 15.8:1, `#464646` on `#DFDFDF` 7.1:1, `#464646` on `#C8C8C8` 5.6:1: pass.
-- `#929292` is not a text color.
-- `#C8C8C8` against `#DFDFDF` is 1.3:1, so separate layers with a hairline border or soft shadow.
+## Rules
+- Primary and active controls are black with white text. Use sparingly, because many black controls look heavy.
+- No error, warning or success colors. Show state with an icon and text. No accent color. The orange in the reference is not approved.
+- No dark theme until the user decides.
+- Separate layers with the hairline border or a soft shadow. `#C4C4C4` on `#DFDFDF` is only about 1.3:1.
+- `#8F8F8F` is not a text color. `#464646` on `#C4C4C4` is 5.6:1 and passes.

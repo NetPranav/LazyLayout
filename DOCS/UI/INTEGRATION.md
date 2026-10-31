@@ -38,10 +38,10 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 4. New shared UI pieces
 
-### Design system page
+### Design system page and extracted components
 - **Area:** design system
-- **Files:** `src/editor/components/`, `src/editor/design-system/`, `src/app/design-system/`
-- **What changed:** Every new UI component lives in `src/editor/components/` and is shown on `/design-system`.
+- **Files:** `src/editor/components/Swatch.tsx`, `src/editor/components/WorkspaceFrame.tsx`, `src/editor/design-system/DesignSystemPage.tsx`, `src/app/design-system/page.tsx`
+- **What changed:** Every new UI component lives in `src/editor/components/` and is shown on `/design-system`. Extracted `Swatch` (supporting surfaces, text samples on target surfaces, and hairline lines) and `WorkspaceFrame` (showing real layers: `neutral-50` toolbar with labelled controls, `neutral-200` rail & panel, `neutral-100` canvas, fluid `neutral-0` raised card, and `neutral-1000` active control; verified fluid and unclipped at 390px mobile). The design system page provides a centered canvas workspace on the left and a fixed 320px right navigation panel (stacked on tablet/mobile) with hash-linked routes. Both foundations (Colors, Type, Spacing, Radii, Shadows) and components (`Swatch`, `WorkspaceFrame`) are accessible via keyboard and listed in the navigation hierarchy.
 - **What A/B must do:** Reuse these components, and add or change them on the design system page first.
 - **Status:** open
 
@@ -49,14 +49,21 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.
 
-### Tailwind added
+### Tailwind, tokens, and typography
 - **Area:** foundations
-- **Files:** `package.json`, `package-lock.json`, `postcss.config.mjs`, `src/editor/styles/tailwind.css`, `src/editor/styles/tokens.css`, `src/editor/styles/globals.css`
-- **What changed:** `tailwindcss` and `@tailwindcss/postcss` 4.3.3. Classes carry the `ll:` prefix, there is no Preflight reset, only `src/editor` is scanned, and the default colors are removed.
+- **Files:** `src/editor/styles/tailwind.css`, `src/editor/styles/tokens.css`, `src/editor/styles/globals.css`, `src/app/layout.tsx`
+- **What changed:** Full 8-color approved palette from `PALETTE.md` implemented: `--ll-neutral-0` (#FFFFFF), `--ll-neutral-50` (#F1F1F1), `--ll-neutral-100` (#DFDFDF), `--ll-neutral-200` (#C4C4C4), `--ll-neutral-400` (#8F8F8F), `--ll-neutral-800` (#464646), `--ll-neutral-1000` (#000000), and `--ll-border-color` (rgba(143, 143, 143, 0.5)). All `@theme inline` properties reference `var(--ll-...)` without repeating raw hex or rgba values. Non-circular mappings ensure tokens under `prefix(ll)` compile correctly. Typography explicitly bound to Geist and Geist Mono across `.ll:font-sans` and `.ll:font-mono` (scoped in `globals.css` with legacy reset). Focus ring updated to `neutral-1000` (exceeds 3:1 contrast on panels). Transitions restricted to `transform` and `opacity` only (instant hover).
 - **What A/B must do:** Use `ll:` classes in new UI. The prefix and scoping can be dropped when `src/legacy-editor` is removed.
 - **Status:** open
 
 ## 6. Routes and layout
+
+### Design system route (`/design-system`)
+- **Area:** design system / routes
+- **Files:** `src/app/design-system/page.tsx`, `src/editor/design-system/DesignSystemPage.tsx`
+- **What changed:** Added `/design-system` route gated with `labsEnabled` (answers 404 in production unless `NEXT_PUBLIC_ENABLE_LABS=1`), rendering the foundations canvas and navigation panel.
+- **What A/B must do:** Keep developer routes guarded by `labsEnabled`.
+- **Status:** done
 
 ## 7. Tests
 

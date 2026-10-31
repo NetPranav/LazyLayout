@@ -1,7 +1,7 @@
 /*
  * Tailwind for the new UI only. Classes carry the `ll:` prefix (`ll:flex`, `ll:bg-neutral-100`) so they cannot collide
  * with legacy class names or tokens, there is no Preflight reset, and only src/editor is scanned. The default color
- * palette is removed, so only the approved colors exist as utilities.
+ * palette is removed, so only the approved colors exist as utilities. All values reference tokens from tokens.css.
  */
 @import "./tokens.css";
 @import "tailwindcss/theme.css" prefix(ll);
@@ -19,4 +19,47 @@
   --color-neutral-400: var(--ll-neutral-400);
   --color-neutral-800: var(--ll-neutral-800);
   --color-neutral-1000: var(--ll-neutral-1000);
+  --color-border: var(--ll-border-color);
+  --color-border-color: var(--ll-border-color);
+  --color-black: var(--ll-neutral-1000);
+  --color-white: var(--ll-neutral-0);
+
+  --font-*: initial;
+  --font-sans: var(--ll-font-sans-family);
+  --font-mono: var(--ll-font-mono-family);
+
+  --text-*: initial;
+  --text-display: var(--ll-text-display-size);
+  --text-display--line-height: var(--ll-text-display-line-height);
+  --text-display--letter-spacing: var(--ll-text-display-letter-spacing);
+  --text-title: var(--ll-text-title-size);
+  --text-title--line-height: var(--ll-text-title-line-height);
+  --text-title--letter-spacing: var(--ll-text-title-letter-spacing);
+  --text-body: var(--ll-text-body-size);
+  --text-body--line-height: var(--ll-text-body-line-height);
+  --text-body--letter-spacing: var(--ll-text-body-letter-spacing);
+  --text-small: var(--ll-text-small-size);
+  --text-small--line-height: var(--ll-text-small-line-height);
+  --text-small--letter-spacing: var(--ll-text-small-letter-spacing);
+  --text-micro: var(--ll-text-micro-size);
+  --text-micro--line-height: var(--ll-text-micro-line-height);
+  --text-micro--letter-spacing: var(--ll-text-micro-letter-spacing);
+
+  --border-width-hairline: var(--ll-border-hairline);
+
+  --radius-sm: var(--ll-radius-sm-value);
+  --radius-md: var(--ll-radius-md-value);
+  --radius-lg: var(--ll-radius-lg-value);
+
+  --shadow-soft: var(--ll-shadow-soft-value);
+
+  --container-canvas: var(--ll-canvas-max-width-value);
+  --max-width-canvas: var(--ll-canvas-max-width-value);
+
+  --duration-swap: var(--ll-duration-swap-value);
+}
+
+/* Default border color for new UI hairline boundaries */
+[class*="ll:"] {
+  border-color: var(--ll-border-color);
 }
