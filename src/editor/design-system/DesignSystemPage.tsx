@@ -388,59 +388,125 @@ const SELECT_FRAMEWORKS = [
 function SelectDemo() {
   const [val, setVal] = useState("react");
   return (
-    <div className="w-64">
-      <ImportedSelect
-        options={SELECT_FRAMEWORKS}
+    <div className="ll:w-64">
+      <ImportedSelect.Root
+        items={SELECT_FRAMEWORKS}
         value={val}
-        onValueChange={setVal}
-        placeholder="Select framework..."
-      />
+        onValueChange={(next) => {
+          if (next) setVal(next);
+        }}
+      >
+        <ImportedSelect.Trigger aria-label="Framework">
+          <ImportedSelect.Value placeholder="Select framework..." />
+          <ImportedSelect.Icon />
+        </ImportedSelect.Trigger>
+        <ImportedSelect.Portal>
+          <ImportedSelect.Positioner alignItemWithTrigger={false} sideOffset={4}>
+            <ImportedSelect.Popup>
+              <ImportedSelect.List>
+                {SELECT_FRAMEWORKS.map((framework) => (
+                  <ImportedSelect.Item key={framework.value} value={framework.value}>
+                    <ImportedSelect.ItemText>{framework.label}</ImportedSelect.ItemText>
+                    <ImportedSelect.ItemIndicator>✓</ImportedSelect.ItemIndicator>
+                  </ImportedSelect.Item>
+                ))}
+              </ImportedSelect.List>
+            </ImportedSelect.Popup>
+          </ImportedSelect.Positioner>
+        </ImportedSelect.Portal>
+      </ImportedSelect.Root>
     </div>
   );
 }
 
 function MenubarDemo() {
   return (
-    <ImportedMenubar className="w-full max-w-md border border-border rounded-md px-2 py-1 flex items-center gap-4">
-      <ImportedMenubarMenu>
-        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">File</button>
-      </ImportedMenubarMenu>
-      <ImportedMenubarMenu>
-        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">Edit</button>
-      </ImportedMenubarMenu>
-      <ImportedMenubarMenu>
-        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">View</button>
-      </ImportedMenubarMenu>
+    <ImportedMenubar className="ll:w-full ll:max-w-md ll:border ll:border-border ll:rounded-md ll:px-2 ll:py-1 ll:flex ll:items-center ll:gap-4">
+      <ImportedMenubarMenu.Root>
+        <ImportedMenubarMenu.Trigger>File</ImportedMenubarMenu.Trigger>
+        <ImportedMenubarMenu.Portal>
+          <ImportedMenubarMenu.Positioner sideOffset={8}>
+            <ImportedMenubarMenu.Popup>
+              <ImportedMenubarMenu.Item>New file</ImportedMenubarMenu.Item>
+              <ImportedMenubarMenu.Item>Save</ImportedMenubarMenu.Item>
+            </ImportedMenubarMenu.Popup>
+          </ImportedMenubarMenu.Positioner>
+        </ImportedMenubarMenu.Portal>
+      </ImportedMenubarMenu.Root>
+      <ImportedMenubarMenu.Root>
+        <ImportedMenubarMenu.Trigger>Edit</ImportedMenubarMenu.Trigger>
+        <ImportedMenubarMenu.Portal>
+          <ImportedMenubarMenu.Positioner sideOffset={8}>
+            <ImportedMenubarMenu.Popup>
+              <ImportedMenubarMenu.Item>Undo</ImportedMenubarMenu.Item>
+              <ImportedMenubarMenu.Item>Redo</ImportedMenubarMenu.Item>
+            </ImportedMenubarMenu.Popup>
+          </ImportedMenubarMenu.Positioner>
+        </ImportedMenubarMenu.Portal>
+      </ImportedMenubarMenu.Root>
+      <ImportedMenubarMenu.Root>
+        <ImportedMenubarMenu.Trigger>View</ImportedMenubarMenu.Trigger>
+        <ImportedMenubarMenu.Portal>
+          <ImportedMenubarMenu.Positioner sideOffset={8}>
+            <ImportedMenubarMenu.Popup>
+              <ImportedMenubarMenu.Item>Zoom In</ImportedMenubarMenu.Item>
+              <ImportedMenubarMenu.Item>Zoom Out</ImportedMenubarMenu.Item>
+            </ImportedMenubarMenu.Popup>
+          </ImportedMenubarMenu.Positioner>
+        </ImportedMenubarMenu.Portal>
+      </ImportedMenubarMenu.Root>
     </ImportedMenubar>
   );
 }
 
 function DropdownMenuDemo() {
   return (
-    <ImportedDropdownMenu>
-      <button type="button" className="px-3 py-1.5 border border-border rounded text-small">
-        Open Menu
-      </button>
-    </ImportedDropdownMenu>
+    <div className="ll:flex ll:items-center ll:justify-center">
+      <ImportedDropdownMenu.Root>
+        <ImportedDropdownMenu.Trigger>
+          Open Menu
+        </ImportedDropdownMenu.Trigger>
+        <ImportedDropdownMenu.Portal>
+          <ImportedDropdownMenu.Positioner sideOffset={4}>
+            <ImportedDropdownMenu.Popup>
+              <ImportedDropdownMenu.Item>Profile</ImportedDropdownMenu.Item>
+              <ImportedDropdownMenu.Item>Billing</ImportedDropdownMenu.Item>
+              <ImportedDropdownMenu.Separator />
+              <ImportedDropdownMenu.Item>Log out</ImportedDropdownMenu.Item>
+            </ImportedDropdownMenu.Popup>
+          </ImportedDropdownMenu.Positioner>
+        </ImportedDropdownMenu.Portal>
+      </ImportedDropdownMenu.Root>
+    </div>
   );
 }
 
 function ContextMenuDemo() {
   return (
-    <ImportedContextMenu>
-      <div className="h-40 w-full max-w-md border border-dashed border-border rounded-md flex items-center justify-center text-small text-secondary">
+    <ImportedContextMenu.Root>
+      <ImportedContextMenu.Trigger className="ll:h-40 ll:w-full ll:max-w-md ll:border ll:border-dashed ll:border-border ll:rounded-md ll:flex ll:items-center ll:justify-center ll:text-small ll:text-secondary">
         Right-click in this box
-      </div>
-    </ImportedContextMenu>
+      </ImportedContextMenu.Trigger>
+      <ImportedContextMenu.Portal>
+        <ImportedContextMenu.Positioner>
+          <ImportedContextMenu.Popup>
+            <ImportedContextMenu.Item>Undo</ImportedContextMenu.Item>
+            <ImportedContextMenu.Item>Duplicate</ImportedContextMenu.Item>
+            <ImportedContextMenu.Separator />
+            <ImportedContextMenu.Item>Delete</ImportedContextMenu.Item>
+          </ImportedContextMenu.Popup>
+        </ImportedContextMenu.Positioner>
+      </ImportedContextMenu.Portal>
+    </ImportedContextMenu.Root>
   );
 }
 
 function ScrollFadeDemo() {
   return (
-    <div className="h-48 w-full max-w-sm border border-border rounded-md overflow-hidden relative">
-      <ImportedScrollFade className="h-full p-4 overflow-y-auto flex flex-col gap-3">
+    <div className="ll:h-48 ll:w-full ll:max-w-sm ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:relative">
+      <ImportedScrollFade className="ll:h-full ll:p-4 ll:overflow-y-auto ll:flex ll:flex-col ll:gap-3">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="p-2 border border-border rounded text-small">
+          <div key={i} className="ll:p-2 ll:border ll:border-border ll:rounded ll:text-small">
             Scrollable timeline track {i + 1}
           </div>
         ))}
@@ -453,27 +519,29 @@ const FILE_TREE_DATA: FileTreeElement[] = [
   {
     id: "1",
     name: "src",
-    isSelectable: true,
+    type: "folder",
+    defaultOpen: true,
     children: [
       {
         id: "2",
         name: "components",
-        isSelectable: true,
+        type: "folder",
+        defaultOpen: true,
         children: [
-          { id: "3", name: "Button.tsx", isSelectable: true },
-          { id: "4", name: "TopBar.tsx", isSelectable: true },
-          { id: "5", name: "ThemeToggle.tsx", isSelectable: true },
+          { id: "3", name: "Button.tsx", type: "file" },
+          { id: "4", name: "TopBar.tsx", type: "file" },
+          { id: "5", name: "ThemeToggle.tsx", type: "file" },
         ],
       },
-      { id: "6", name: "index.ts", isSelectable: true },
+      { id: "6", name: "index.ts", type: "file" },
     ],
   },
 ];
 
 function FileTreeDemo() {
   return (
-    <div className="w-full max-w-xs border border-border rounded-md p-2">
-      <ImportedFileTree elements={FILE_TREE_DATA} />
+    <div className="ll:w-full ll:max-w-xs ll:border ll:border-border ll:rounded-md ll:p-2">
+      <ImportedFileTree elements={FILE_TREE_DATA} defaultOpenIds={["1", "2"]} />
     </div>
   );
 }
