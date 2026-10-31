@@ -53,174 +53,32 @@ Anything unresolved that must be settled before the redesign can be connected to
 
 ## Entries
 
+<!-- Add entries below, under the matching section heading. Newest at the bottom of each section. -->
+<!-- History: entries from the first experiments (old top bar, token and color sweeps on the legacy editor) are archived in DOCS/UI/archive/2026-10-30-legacy-experiments/INTEGRATION-entries.md. -->
+
 ### 2. Replaced or removed UI
 
-#### Redesigned StudioHeader with unified logo menu and contextual center
-- **Page / phase:** Top bar (`StudioHeader`) / Phase 1
-- **Files:** `src/editor/shell/StudioHeader.tsx`, `src/editor/menus/UnifiedLogoMenu.tsx`, `src/editor/shell/StudioCenterToolbar.tsx`, `src/editor/styles/top-bar.css`
-- **What changed:**
-  - Replaced traditional horizontal 5-menu strip (`File`, `Edit`, `View`, `Window`, `Help`) with a single unified logo menu button (`LazyLayoutLogo` + chevron) opening `UnifiedLogoMenu.tsx`.
-  - Moved `Showcase Demo` toggle button (`#header-toggle-demo-btn`) out of outer header strip into top slot of `UnifiedLogoMenu.tsx`.
-  - Replaced static center device switcher with adaptive contextual center toolbar (`StudioCenterToolbar.tsx`) showing Undo/Redo + Device Switcher when nothing is selected, and Align/Spacing/Tidy/Arrange actions when a layer is selected.
-  - Added Command Palette search trigger button (`Ctrl+K`) and live collaborator avatar stack to right fixed cluster.
-- **What A/B must do:**
-  - If any outside code mounted individual menu triggers or expected demo button directly in header DOM outside the menu, point to the new unified logo menu.
-- **Status:** done
+#### Old editor moved to `src/legacy-editor`; new UI rebuilt in `src/editor`
+- **Page / phase:** Rebuild setup (before the first page)
+- **Files:** `src/editor/**` (old) renamed to `src/legacy-editor/**`; imports inside it changed from `@/editor/...` to `@/legacy-editor/...`; new `src/editor/**` bridge files; `eslint.config.mjs` (editor-scoped rules now also cover `src/legacy-editor`); `tests/e2e/stage-engine.spec.ts` (comment path only)
+- **What changed:** Routes, `src/app/layout.tsx`, `src/compiler/export/CrossFrameworkExporter.ts` and the `src/core` tests still import `@/editor/...` and `../../../editor/...` unchanged. Those paths now resolve to bridge files that re-export the legacy implementation. As each area is rebuilt, the bridge is replaced by the new component. What is left is tracked in `DOCS/UI/PARITY.md`.
+- **What A/B must do:** For new code, import from `@/editor/...` as before. Do not import from `@/legacy-editor` in new code outside `src/editor` bridges. Any change A or B make to old UI files must be made in `src/legacy-editor`, then ported to the new component when that area is rebuilt.
+- **Status:** open (stays open until `grep -rl "legacy-editor" src/editor` is empty and `src/legacy-editor` is deleted)
 
 ### 3. Engine contracts the new UI relies on
 
-#### Contextual selection and command bus contracts in StudioHeader
-- **Page / phase:** Top bar (`StudioHeader`) / Phase 1
-- **Files:** `src/editor/shell/StudioHeader.tsx`, `src/editor/shell/StudioCenterToolbar.tsx`, `src/editor/menus/UnifiedLogoMenu.tsx`
-- **What changed:**
-  - UI reads `useSelectionStore((s) => s.selectedIds)` to switch adaptive toolbar state dynamically between nothing-selected and layer-selected.
-  - UI calls `invokeCommand` for alignment (`align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`), distribution (`distribute.horizontal`, `distribute.vertical`), tidy (`layer.tidy`), arrange (`layer.bringForward`, `layer.sendBackward`), grouping (`edit.group`), history (`edit.undo`, `edit.redo`), search (`view.commandPalette`), and menu actions from `MENU_MODEL`.
-  - UI calls `useProjectStore((s) => s.mountDemoProject)` and `clearToBlankCanvas()` from `#header-toggle-demo-btn`.
-- **What A/B must do:**
-  - Ensure `selection.set` / `selection.none` updates `useSelectionStore` reactively (verified working).
-- **Status:** done
+#### Selection, command bus and project store (from the first top-bar experiment)
+- **Source:** archived experiment; the engine side is real and still valid. Paths below are in the legacy tree.
+- UI reads `useSelectionStore((s) => s.selectedIds)` to switch between nothing-selected and layer-selected states.
+- UI calls `invokeCommand` for alignment (`align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`), distribution (`distribute.horizontal`, `distribute.vertical`), tidy (`layer.tidy`), arrange (`layer.bringForward`, `layer.sendBackward`), grouping (`edit.group`), history (`edit.undo`, `edit.redo`), search (`view.commandPalette`), and menu actions from `MENU_MODEL`.
+- UI calls `useProjectStore((s) => s.mountDemoProject)` and `clearToBlankCanvas()` for the showcase demo.
+- **Status:** open (the new top bar must use the same contracts)
 
-### 5. New shared UI pieces
+### 4. Engine changes requested
 
-#### StudioCenterToolbar and UnifiedLogoMenu components
-- **Page / phase:** Top bar (`StudioHeader`) / Phase 1
-- **Files:**
-  - `src/editor/shell/StudioCenterToolbar.tsx`
-  - `src/editor/menus/UnifiedLogoMenu.tsx`
-  - `src/editor/styles/top-bar.css`
-- **What changed:**
-  - `StudioCenterToolbar`: Reusable adaptive contextual toolbar supporting history, device preview selection, layer alignment, distribution, and z-ordering.
-  - `UnifiedLogoMenu`: Reusable unified dropdown application menu embedding `MENU_MODEL` and `WindowMenu`, supporting desktop flyout subpanels and mobile drill-down navigation with back affordance.
-  - `top-bar.css`: CSS module adhering to Apple-level restraint, rectangular modesty (no pills/capsules), solid neutral ramp surfaces, hairline borders, and responsive breakpoints (1440, 1024, 390).
-- **What A/B must do:**
-  - Components are exported and ready for reuse in shell or future toolbars.
-- **Status:** done
+#### Engine edits made by Claude (not requested of A/B, but A/B must know)
+- **Files:** `src/core/types/environment.ts`, `src/core/store/__tests__/WorldEnvironment.test.ts`
+- **What changed:** The `clean_light` palette canvas color is now `#DFDFDF` (was `#FCFDFD`) and its grid dot color `#C8C8C8`. `DEFAULT_ENVIRONMENT_SETTINGS.viewport.grid.style` is now `"none"` (was `"dots"`), so new projects have no dot grid. The test that asserted `"dots"` now asserts `"none"`. Existing saved projects keep whatever grid style they stored.
+- **What A/B must do:** Take this change when merging. If A/B code relies on a dotted default grid, set it explicitly.
+- **Status:** open (tests not run yet, they run at the end of the first phase)
 
-### 6. Tokens and styles
-
-#### Neutral ramp primitive tokens and semantic token repointing
-- **Page / phase:** Global / Tokens setup (pre-Phase 1)
-- **Files:** `src/editor/styles/tokens.css`, `DOCS/UI/PALETTE.md`
-- **What changed:**
-  - Added approved primitive neutral ramp tokens from `PALETTE.md` (`ref-01-work-os.png`):
-    - `--neutral-0`: `#FFFFFF` (Raised surfaces, cards, lists)
-    - `--neutral-50`: `#F1F1F1` (Floating bars, toolbar, statusbar, dock-bar)
-    - `--neutral-100`: `#DFDFDF` (Canvas background)
-    - `--neutral-200`: `#C8C8C8` (Panels, side rails, subtle borders)
-    - `--neutral-400`: `#929292` (Backdrop, default hairline borders, canvas dots)
-    - `--neutral-800`: `#464646` (Strong dark, secondary text, strong borders)
-    - `--neutral-1000`: `#000000` (Black, primary text, pills, tooltips, code editor background)
-  - Repointed existing semantic tokens to primitive ramp tokens:
-    - `--canvas-bg`: `#FCFDFD` -> `var(--neutral-100)`
-    - `--canvas-dot-color`: `#E2E8F0` -> `var(--neutral-400)`
-    - `--surface-panel`: `rgba(255, 255, 255, 0.92)` -> `var(--neutral-200)` (solid ramp value, translucency removed)
-    - `--surface-panel-solid`: `#FFFFFF` -> `var(--neutral-0)`
-    - `--surface-panel-hover`: `#F8FAFC` -> `var(--neutral-50)`
-    - `--surface-panel-active`: `#F1F5F9` -> `var(--neutral-100)`
-    - `--surface-panel-selected`: `#EBF5F3` -> `var(--accent-primary-light)`
-    - `--surface-dock-bar`: `rgba(255, 255, 255, 0.85)` -> `var(--neutral-50)` (solid ramp value, translucency removed)
-    - `--surface-toolbar`: `rgba(255, 255, 255, 0.95)` -> `var(--neutral-50)` (solid ramp value, translucency removed)
-    - `--surface-statusbar`: `#FFFFFF` -> `var(--neutral-50)`
-    - `--surface-overlay`: `rgba(15, 23, 42, 0.4)` -> `rgba(0, 0, 0, 0.4)` (neutral overlay)
-    - `--surface-tooltip`: `#0F172A` -> `var(--neutral-1000)`
-    - `--surface-disabled`: `#F1F5F9` -> `var(--neutral-50)`
-    - `--text-disabled`: `#94A3B8` -> `var(--neutral-800)` (mapped to `--neutral-800` per instruction 3; question in handoff)
-    - `--border-disabled`: `rgba(15, 23, 42, 0.04)` -> `var(--neutral-200)`
-    - `--surface-code`: `#0F172A` -> `var(--neutral-1000)`
-    - `--surface-code-toolbar`: `rgba(30, 41, 59, 0.85)` -> `var(--neutral-800)` (solid ramp value, translucency removed)
-    - `--surface-code-statusbar`: `#0B1120` -> `var(--neutral-1000)`
-    - `--surface-code-hover`: `rgba(255, 255, 255, 0.06)` -> `rgba(255, 255, 255, 0.08)`
-    - `--text-code`: `#E2E8F0` -> `var(--neutral-0)`
-    - `--text-code-muted`: `#94A3B8` -> `var(--neutral-400)`
-    - `--border-code`: `rgba(255, 255, 255, 0.08)`
-    - `--border-subtle`: `rgba(15, 23, 42, 0.06)` -> `var(--neutral-200)`
-    - `--border-default`: `rgba(15, 23, 42, 0.08)` -> `var(--neutral-400)`
-    - `--border-strong`: `rgba(15, 23, 42, 0.14)` -> `var(--neutral-800)`
-    - `--text-primary`: `#0F172A` -> `var(--neutral-1000)` (contrast 15.8:1 on canvas)
-    - `--text-secondary`: `#475569` -> `var(--neutral-800)` (contrast 7.1:1 on canvas)
-    - `--text-muted`: `#64748B` -> `var(--neutral-800)` (mapped to `--neutral-800` per instruction 3; question in handoff)
-    - `--text-tertiary`: `#94A3B8` -> `var(--neutral-800)` (mapped to `--neutral-800` per instruction 3; question in handoff)
-    - `--text-inverse`: `#FFFFFF` -> `var(--neutral-0)`
-    - `--wire-exec`: `#0F172A` -> `var(--neutral-1000)`
-    - `--shadow-*`: re-pointed from slate tinted `rgba(15, 23, 42, ...)` to neutral `rgba(0, 0, 0, ...)`.
-  - Accent tokens (`--accent-*`, `--text-accent`, `--border-focus`, `--border-active`) and wire data-type colors were left unchanged per instructions (undecided by user).
-  - No existing tokens were renamed or deleted. Backward compatibility for all existing token references is 100% preserved.
-- **What A/B must do:**
-  - No token renaming migration is necessary since all existing token names remain valid.
-  - When creating new UI, note that panels are solid `#C8C8C8` (`--neutral-200`) on `#DFDFDF` (`--neutral-100`) canvas. Use `--border-default` (`--neutral-400`) hairline borders and `--surface-panel-solid` (`--neutral-0`) cards for layer contrast.
-- **Status:** done
-
-
-#### Complete color sweep (match reference image & remove hardcoded colors)
-- **Page / phase:** Global / Color sweep (pre-Phase 1)
-- **Files:**
-  - `src/editor/styles/tokens.css`
-  - `src/editor/styles/*.css` (all 22 stylesheets)
-  - `src/editor/shell/CommandPalette.tsx`
-  - `src/editor/shell/PersistenceUi.tsx`
-  - `src/editor/panels/details/AlignBar.tsx`
-  - `src/editor/panels/details/TextProperties.tsx`
-  - `src/editor/panels/launcher/ProjectHub.tsx`
-  - `src/editor/panels/content-browser/ContentBrowser.tsx`
-  - `src/editor/panels/sequencer/AnimationExportPreview.tsx`
-  - `src/editor/shell/AiDockOverlays.tsx`
-- **What changed:**
-  - **Accent tokens repointed to neutral black ramp:**
-    - `--accent-primary`: repointed from `#206859` to `var(--neutral-1000)` (solid black for primary & active controls).
-    - `--accent-primary-hover`: repointed to `var(--neutral-800)`.
-    - `--accent-primary-light`: repointed from `#EBF5F3` to `var(--neutral-50)`.
-    - `--text-accent`: repointed from `#206859` to `var(--neutral-1000)`.
-    - `--border-focus`: `var(--neutral-1000)`.
-    - `--border-active`: `var(--neutral-1000)`.
-    - `--shadow-focus`: `0 0 0 2px var(--neutral-1000)` (black, 2px focus ring for canvas contrast).
-  - **Canvas backdrops updated (`whiteboard.css`):**
-    - Light: theme background (`var(--neutral-100)` / canvas gray `#DFDFDF`).
-    - Dark: ramp token `var(--neutral-1000)` (replaces hardcoded legacy `#1b1c22`).
-    - Checker: `var(--neutral-0)` and `var(--neutral-100)`.
-  - **Added tokens for overlays, shadows, blueprint headers, and canvas tools:**
-    - `--surface-scrim-dark`: `rgba(0, 0, 0, 0.75)`
-    - `--canvas-snapline`: `#f43f5e`
-    - `--canvas-guide`: `#06b6d4`
-    - `--canvas-spacing-equal`: `#a855f7`
-    - `--spectrum-hue-gradient`: Hue slider gradient stops
-    - `--bp-header-event`, `--bp-header-database`, `--bp-header-api`, `--bp-header-math`
-    - `--shadow-dialog`, `--shadow-popup`, `--shadow-modal`, `--shadow-focus`
-    - Pulse animation keyframes: `--pulse-accent-start/end`, `--pulse-success-start/end`, `--pulse-danger-start/end`
-  - **Eliminated 100% of hardcoded colors in CSS:**
-    - Grep for hex/rgba/hsla across all 21 CSS files outside `tokens.css` yields 0 occurrences.
-    - `panels.css` (830+ legacy hardcoded matches), `database-studio.css`, `code-inspector.css`, `forms.css`, `menus.css`, `dock.css`, `whiteboard.css`, etc. are fully cleaned.
-  - **TSX plain UI chrome cleanup:**
-    - `CommandPalette.tsx`: Replaced dark/indigo styles with tokens (`--surface-scrim`, `--surface-panel-solid`, `--border-default`, `--shadow-modal`, `--text-primary`, `--text-secondary`, `--neutral-1000`, `--neutral-100`).
-    - `PersistenceUi.tsx`: Removed all legacy hex fallbacks from `var(--token, #hex)` statements.
-    - `AlignBar.tsx` & `TextProperties.tsx`: Removed inline rgba fallbacks from `var(--border-subtle)`.
-    - `ProjectHub.tsx`, `ContentBrowser.tsx`, `AnimationExportPreview.tsx`, `AiDockOverlays.tsx`: Repointed inline UI chrome accents to tokens.
-- **What A/B must do:**
-  - Consume tokens rather than specifying hardcoded hex/rgba values.
-  - Active buttons, primary CTA states, and toggles should use `var(--accent-primary)` (black) with `var(--text-inverse)` (white text).
-  - Selected rows and chips should use `var(--accent-primary-light)` (`--neutral-50`) with hairline border `var(--border-default)`.
-- **Status:** done
-
-### 8. Tests
-
-#### E2E selector updates for top bar & file menu
-- **Page / phase:** Top bar (`StudioHeader`) / Phase 1
-- **Files:** `tests/e2e/support/editor.ts`, `src/editor/shell/StudioHeader.tsx`
-- **What changed:**
-  - In `tests/e2e/support/editor.ts`, `openFileMenu(page)` previously clicked `page.getByRole("button", { name: "File", exact: true })` directly on the root header strip. In the redesigned top bar, the File menu lives inside the unified logo menu.
-  - To open the File menu in E2E tests, either:
-    1. Click `.studio-header__brand-btn` (or `[aria-label="Application Menu"]`) first, then click "File" / `page.getByRole("menuitem", { name: "File" })`.
-    2. Or directly invoke `file.exportProjectFile` via command bus (`run(page, "file.exportProjectFile")`).
-  - `#header-toggle-demo-btn`: Preserved with identical id and aria-labels inside `UnifiedLogoMenu`.
-  - `#studio-header-settings-btn` and `#studio-header-close-settings-btn`: Preserved with identical IDs and behavior on right fixed cluster.
-  - `.studio-header`: Preserved on root header element.
-  - `.menu-bar`: Preserved on the unified menu for selector compatibility.
-- **What A/B must do:**
-  - Update `openFileMenu(page)` in `tests/e2e/support/editor.ts` to click `.studio-header__brand-btn` prior to selecting "File", or use `run(page, "file.exportProjectFile")`.
-- **Status:** open
-
-### Old editor moved to `src/legacy-editor`; new UI rebuilt in `src/editor`
-- **Page / phase:** Rebuild setup (before the first page)
-- **Files:** `src/editor/**` (old) renamed to `src/legacy-editor/**`; imports inside it changed from `@/editor/...` to `@/legacy-editor/...`; new `src/editor/**` bridge files; `eslint.config.mjs` (editor-scoped rules now also cover `src/legacy-editor`); `tests/e2e/stage-engine.spec.ts` (comment path only)
-- **What changed:** Routes, `src/app/layout.tsx`, `src/compiler/export/CrossFrameworkExporter.ts` and the `src/core` tests still import `@/editor/...` and `../../../editor/...` unchanged. Those paths now resolve to bridge files that re-export the legacy implementation. As each area is rebuilt, the bridge is replaced by the new component.
-- **What A/B must do:** For new code, import from `@/editor/...` as before. Do not import from `@/legacy-editor` in new code outside `src/editor` bridges. Any change A or B make to old UI files must be made in `src/legacy-editor`, then ported to the new component when that area is rebuilt.
-- **Status:** open

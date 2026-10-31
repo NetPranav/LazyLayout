@@ -18,6 +18,9 @@ Report any of these, with file and line:
 7. A missing or incomplete handoff for the session.
 8. Missing integration notes: replaced or deleted components, engine stores/hooks/commands the UI relies on, token or route changes, or needed engine changes that are not logged in `DOCS/UI/INTEGRATION.md`.
 9. Accessibility gaps: no focus style, poor contrast, missing labels.
+10. Any edit to `src/legacy-editor/**` (read-only reference).
+11. Capsule or pill shapes, glass, blur or translucent surfaces, and layouts that break the Apple-level bar in `CLAUDE.md`.
+12. A rebuilt area whose bridge file in `src/editor` still re-exports `@/legacy-editor`, or `DOCS/UI/PARITY.md` not updated.
 
 Do not open a browser. Do not run typecheck, lint or build unless asked: checks run once per phase.
 

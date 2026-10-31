@@ -16,19 +16,27 @@ Colors are defined **from reference images supplied by the user**.
 - Light theme first. No second theme until the user decides.
 - The accent and the state colors are **not decided**. They need their own reference image or a choice from options.
 
+## Decisions log
+
+- 2026-10-30: neutrals are the base of the whole UI (user). Light theme first.
+- 2026-10-30: Apple-level **layout**, no glass or blur, no capsule or pill shapes (user).
+- 2026-10-31: the UI is rebuilt from scratch in `src/editor`; the old one is `src/legacy-editor` (user).
+- Proposed, **not confirmed by the user**: black (`--neutral-1000`) with white text for primary and active controls instead of teal, as in image 1. Orange `#FF811B` from image 1 is unused until the user picks an accent.
+- Proposed, **not confirmed**: a lighter secondary-text step (`#5A5A5A`, 5.2:1 on the canvas) between `#464646` and the panel grays.
+
 ## Neutral ramp (from image 1)
 
-| Role | Hex | Token name | Status |
+| Role | Hex | Planned token | Status |
 |---|---|---|---|
-| Raised surface (cards, lists) | `#FFFFFF` | `--neutral-0` | active in `tokens.css` (approved 2026-10-30) |
-| Floating bar (toolbar) | `#F1F1F1` | `--neutral-50` | active in `tokens.css` (approved 2026-10-30) |
-| Canvas | `#DFDFDF` | `--neutral-100` | active in `tokens.css` (approved 2026-10-30) |
-| Panels, side rails | `#C8C8C8` | `--neutral-200` | active in `tokens.css` (approved 2026-10-30) |
-| Backdrop | `#929292` | `--neutral-400` | active in `tokens.css` (approved 2026-10-30) |
-| Strong dark (primary buttons text on light, secondary button) | `#464646` | `--neutral-800` | active in `tokens.css` (approved 2026-10-30) |
-| Black (pills, primary action) | `#000000` | `--neutral-1000` | active in `tokens.css` (approved 2026-10-30) |
+| Raised surface (cards, lists) | `#FFFFFF` | `--neutral-0` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Floating bar (toolbar) | `#F1F1F1` | `--neutral-50` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Canvas | `#DFDFDF` | `--neutral-100` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Panels, side rails | `#C8C8C8` | `--neutral-200` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Backdrop | `#929292` | `--neutral-400` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Strong dark (primary buttons text on light, secondary button) | `#464646` | `--neutral-800` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
+| Black (pills, primary action) | `#000000` | `--neutral-1000` | approved 2026-10-30; not yet in the new `src/editor/styles/tokens.css` |
 
-Token names follow the existing `tokens.css` style (no prefix). Recorded and implemented in `src/editor/styles/tokens.css`.
+Token names are planned and follow the `tokens.css` style (no prefix). The new `src/editor/styles/tokens.css` is created fresh when the first new page starts, with only this ramp. The old `src/legacy-editor/styles/tokens.css` is not the source of truth.
 
 ## Contrast checks (WCAG, computed)
 

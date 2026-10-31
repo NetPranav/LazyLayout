@@ -6,11 +6,14 @@ Branch: `ui/redesign`. Product name: **Lazy Layout**.
 
 Awwwards-level UI and UX. Bold, polished, intentional. Craft and motion matter, but never at the cost of usability or speed.
 
+**Layout bar: Apple-level.** This is about layout and structure, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials** and **no capsule or pill shapes**: use rectangular shapes with modest corner radii, solid neutrals, hairline borders and soft shadows.
+
 ## 2. Working method
 
 - **One page at a time.** Work only on the page the user named. Finish it, get approval, then move on.
 - **The user directs.** Do exactly what they ask. Do not add extra sections, effects or restyling "while you're there".
 - **Ask before designing.** Colors, fonts, layout, copy and motion style are the user's calls. Propose 2-3 options and wait for an answer.
+- **Rebuild, area by area.** The new UI is built from scratch in `src/editor`, replacing the bridge files one at a time (see §3 and `DOCS/UI/PARITY.md`). Do not restyle `src/legacy-editor`.
 - **Small steps.** Make a change, take a Playwright screenshot, show it. No giant unreviewed diffs.
 
 ## 3. Scope: what may be touched
