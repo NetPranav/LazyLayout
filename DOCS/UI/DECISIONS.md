@@ -51,3 +51,10 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Shell | Top bar wires the project name, undo, redo, device preset and search through the engine stores and commands in `@/core` (the same ones the legacy UI uses), not through `@/legacy-editor`, because they live in core | Claude | pending |
 | 2026-10-31 | Components | Size `sm` controls (28px) stay as a compact size for dense panels. Segmented control options are 32px and the group is 40px | Claude | pending |
 | 2026-10-31 | Shell | Share and Settings have no handler yet, they are wired in a later step | Claude | pending |
+| 2026-10-31 | Global | The earlier palette is the light theme only. Dark is built first and is the default. The whole UI is designed for dark first | user | approved |
+| 2026-10-31 | Global | Dark colors are Figma's, taken from the user's screenshot and sampled by Claude: canvas `#1E1E1E`, panels `#2C2C2C`, bars and raised `#383838`, border `#444444`, text `#FFFFFF` and `#BFBFBF` | user | approved |
+| 2026-10-31 | Global | No accent color in dark either, so Figma's blue is not used | user | approved |
+| 2026-10-31 | Global | Dark backdrop `#141414` and primary controls inverting to white with near-black text in dark | Claude | pending |
+| 2026-10-31 | Global | Components use semantic tokens (`--ll-surface-*`, `--ll-text-*`, `--ll-control-primary-*`) instead of numbered neutrals so both themes work | Claude | pending |
+| 2026-10-31 | Components | imported as-is, no restyling | user | approved |
+| 2026-10-31 | Setup | packages installed with legacy-peer-deps | user | approved |

@@ -1,21 +1,27 @@
 # Palette
 
-The only colors workers may use. Light theme only. Values were sampled from the user's reference `DOCS/UI/palette-refs/ref-01-work-os.png`, so they are approximate. The user approved this whole table.
+The only colors workers may use. **Dark is the primary theme, designed first.** Light is the second theme and keeps the colors the user approved earlier. Components use the semantic tokens below, never a raw color or a numbered neutral, so both themes work.
 
-| Role | Hex | Token |
-|---|---|---|
-| Backdrop (outside the app) | `#8F8F8F` | `--ll-neutral-400` |
-| Panels and side rails | `#C4C4C4` | `--ll-neutral-200` |
-| Canvas | `#DFDFDF` | `--ll-neutral-100` |
-| Toolbar and floating bars | `#F1F1F1` | `--ll-neutral-50` |
-| Raised surfaces (cards, menus, popovers, inputs) | `#FFFFFF` | `--ll-neutral-0` |
-| Secondary text | `#464646` | `--ll-neutral-800` |
-| Primary text, and primary and active controls (white text on black) | `#000000` | `--ll-neutral-1000` |
-| Border (hairline) | `#8F8F8F` at 50% | `--ll-border-color` (derived from `--ll-neutral-400`) |
+Dark values are sampled from the user's Figma screenshot `DOCS/UI/palette-refs/ref-02-figma-dark.png`. Light values are sampled from `ref-01-work-os.png`. Both are approximate. No accent color in either theme (the blue in the Figma screenshot is not used). No error, warning or success colors: show state with an icon and text.
+
+| Role | Semantic token | Dark | Light |
+|---|---|---|---|
+| Backdrop (outside the app) | `--ll-surface-backdrop` | `#141414` | `#8F8F8F` |
+| Canvas | `--ll-surface-canvas` | `#1E1E1E` | `#DFDFDF` |
+| Panels and side rails | `--ll-surface-panel` | `#2C2C2C` | `#C4C4C4` |
+| Top bar, toolbar, hover and selected rows | `--ll-surface-bar` | `#383838` | `#F1F1F1` |
+| Raised surfaces (cards, menus, popovers, inputs) | `--ll-surface-raised` | `#383838` | `#FFFFFF` |
+| Border (hairline) | `--ll-border-color` | `#444444` | `#8F8F8F` at 50% |
+| Primary text | `--ll-text-primary` | `#FFFFFF` | `#000000` |
+| Secondary text | `--ll-text-secondary` | `#BFBFBF` | `#464646` |
+| Muted icons | `--ll-text-muted` | `#A1A1A1` | `#464646` |
+| Primary and active control background | `--ll-control-primary-bg` | `#FFFFFF` | `#000000` |
+| Primary and active control text | `--ll-control-primary-fg` | `#1E1E1E` | `#FFFFFF` |
+
+`--ll-surface-backdrop` in dark (`#141414`) was not in the screenshot. It is a darker step chosen by Claude, pending the user's review.
 
 ## Rules
-- Primary and active controls are black with white text. Use sparingly, because many black controls look heavy.
-- No error, warning or success colors. Show state with an icon and text. No accent color. The orange in the reference is not approved.
-- No dark theme until the user decides.
-- Separate layers with the hairline border or a soft shadow. `#C4C4C4` on `#DFDFDF` is only about 1.3:1.
-- `#8F8F8F` is not a text color. `#464646` on `#C4C4C4` is 5.6:1 and passes.
+- Primary controls invert with the theme: black with white text in light, white with near-black text in dark. Use sparingly.
+- Separate layers with the hairline border or a soft shadow.
+- Contrast of at least 4.5:1 for text in both themes (`#BFBFBF` on `#2C2C2C` is about 7:1).
+- Dark is the default. The theme is set by `data-theme="dark"` or `"light"` on `<html>`, with the dark values as the default when the attribute is missing.

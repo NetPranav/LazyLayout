@@ -64,6 +64,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Reuse these components, and add or change them on the design system page first.
 - **Status:** open
 
+### Imported candidate packages and components (as-is)
+- **Area:** imported components / design system
+- **Files:** `package.json`, `src/editor/components/imported/**`, `src/editor/design-system/DesignSystemPage.tsx`
+- **What changed:** Installed user-approved candidate packages with `--legacy-peer-deps` (`@animate-ui/react`, `@base-ui/react`, `@floating-ui/react`, `@hugeicons/react`, `@hugeicons/core-free-icons`, `radix-ui`). Added 12 candidate components as-is without restyling under `src/editor/components/imported/` and registered demos on `/design-system` under right-panel group "Imported (as-is)".
+- **What A/B must do:** Review candidate components on `/design-system` for eventual restyling, token adaptation, and prefix conversion.
+- **Status:** open
+
 ## 5. Tokens and styles
 
 New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.

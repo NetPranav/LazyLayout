@@ -7,6 +7,41 @@ import { Button } from "../components/Button";
 import { SegmentedControl, type SegmentedControlOption } from "../components/SegmentedControl";
 import { Tooltip } from "../components/Tooltip";
 import { TopBar, type DeviceMode } from "../components/TopBar";
+
+// Imported (as-is) components
+import SquishSwitch from "../components/imported/squish-switch/SquishSwitch";
+import ScrubField from "../components/imported/scrub-field/ScrubField";
+import ElasticSlider from "../components/imported/elastic-slider/ElasticSlider";
+import {
+  Cursor,
+  CursorContainer,
+  CursorFollow,
+  CursorProvider,
+} from "../components/imported/cursor";
+import {
+  AvatarGroup,
+  AvatarGroupTooltip,
+  AvatarGroupTooltipArrow,
+} from "../components/imported/avatar-group";
+import {
+  Tooltip as ImportedTooltip,
+  TooltipArrow as ImportedTooltipArrow,
+  TooltipContent as ImportedTooltipContent,
+  TooltipProvider as ImportedTooltipProvider,
+  TooltipTrigger as ImportedTooltipTrigger,
+} from "../components/imported/tooltip";
+import { Select as ImportedSelect } from "../components/imported/select";
+import {
+  Menubar as ImportedMenubar,
+  Menu as ImportedMenubarMenu,
+} from "../components/imported/menubar";
+import { Menu as ImportedDropdownMenu } from "../components/imported/dropdown-menu";
+import { ContextMenu as ImportedContextMenu } from "../components/imported/context-menu";
+import { ScrollFade as ImportedScrollFade } from "../components/imported/scroll-fade";
+import {
+  FileTree as ImportedFileTree,
+  type FileTreeElement,
+} from "../components/imported/unlumen-ui/file-tree";
 import {
   Monitor,
   Tablet,
@@ -31,7 +66,19 @@ type NavSectionId =
   | "tooltip"
   | "top-bar"
   | "swatch"
-  | "workspace-frame";
+  | "workspace-frame"
+  | "imported-squish-switch"
+  | "imported-scrub-field"
+  | "imported-elastic-slider"
+  | "imported-cursor"
+  | "imported-avatar-group"
+  | "imported-tooltip"
+  | "imported-select"
+  | "imported-menubar"
+  | "imported-dropdown-menu"
+  | "imported-context-menu"
+  | "imported-scroll-fade"
+  | "imported-file-tree";
 
 interface NavItem {
   id: NavSectionId;
@@ -55,7 +102,22 @@ const COMPONENTS_NAV: readonly NavItem[] = [
   { id: "workspace-frame", label: "WorkspaceFrame" },
 ];
 
-const ALL_NAV = [...FOUNDATIONS_NAV, ...COMPONENTS_NAV];
+const IMPORTED_NAV: readonly NavItem[] = [
+  { id: "imported-squish-switch", label: "SquishSwitch" },
+  { id: "imported-scrub-field", label: "ScrubField" },
+  { id: "imported-elastic-slider", label: "ElasticSlider" },
+  { id: "imported-cursor", label: "Cursor" },
+  { id: "imported-avatar-group", label: "Avatar Group" },
+  { id: "imported-tooltip", label: "Tooltip (imported)" },
+  { id: "imported-select", label: "Select" },
+  { id: "imported-menubar", label: "Menubar" },
+  { id: "imported-dropdown-menu", label: "Dropdown Menu" },
+  { id: "imported-context-menu", label: "Context Menu" },
+  { id: "imported-scroll-fade", label: "Scroll Fade" },
+  { id: "imported-file-tree", label: "File Tree" },
+];
+
+const ALL_NAV = [...FOUNDATIONS_NAV, ...COMPONENTS_NAV, ...IMPORTED_NAV];
 
 const SURFACE_SWATCHES: readonly SwatchProps[] = [
   {
@@ -106,6 +168,304 @@ const SPACING_STEPS = [
   { token: "--ll-spacing-12", px: 48, widthClass: "ll:w-12" },
   { token: "--ll-spacing-16", px: 64, widthClass: "ll:w-16" },
 ];
+
+
+// Demo components for Imported (as-is)
+function SquishSwitchDemo() {
+  const [airplane, setAirplane] = useState(false);
+  return (
+    <SquishSwitch
+      checked={airplane}
+      onChange={setAirplane}
+      label="Airplane mode"
+      trackColor="#27272a"
+      trackOnColor="#f5f5f5"
+      width={76}
+      height={38}
+      radius={19}
+      speed={50}
+      stretch={36}
+      hoverScale={1.035}
+      colorDuration={320}
+    />
+  );
+}
+
+function ScrubFieldDemo() {
+  const [radius, setRadius] = useState(24);
+  return (
+    <ScrubField
+      label="Radius"
+      suffix="px"
+      defaultValue={24}
+      min={0}
+      max={100}
+      step={1}
+      size="md"
+      sensitivity={2}
+      rubberReach={8}
+      returnDuration={300}
+      coarseMultiplier={10}
+      fineMultiplier={0.1}
+      showDelta
+      showDirty={false}
+      showFill
+      accent="#f5f5f5"
+      chipColor="#27272a"
+      onChange={(value) => setRadius(value)}
+      onCommit={(value) => setRadius(value)}
+    />
+  );
+}
+
+function ElasticSliderDemo() {
+  return (
+    <ElasticSlider
+      defaultValue={50}
+      startingValue={0}
+      maxValue={100}
+      isStepped
+      stepSize={1}
+    />
+  );
+}
+
+function CursorDemo() {
+  return (
+    <div className="relative h-72 w-full border border-dashed border-border flex items-center justify-center">
+      <CursorProvider>
+        <CursorContainer>
+          <Cursor>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M0 0 L16 6 L9 9 L6 16 Z" />
+            </svg>
+          </Cursor>
+          <CursorFollow side="bottom" align="end">
+            <span className="text-xs bg-neutral-1000 text-neutral-0 px-2 py-0.5 rounded">Designer</span>
+          </CursorFollow>
+          <span className="text-small text-neutral-800">Move cursor within this area</span>
+        </CursorContainer>
+      </CursorProvider>
+    </div>
+  );
+}
+
+const AVATAR_PEOPLE = [
+  { name: "Skyleen", src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" },
+  { name: "Alex", src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { name: "Elena", src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+];
+
+function AvatarGroupDemo() {
+  return (
+    <div className="flex flex-col gap-6">
+      <AvatarGroup className="h-12 -space-x-3 flex items-center" invertOverlap>
+        {AVATAR_PEOPLE.map((person) => (
+          <img
+            key={person.name}
+            src={person.src}
+            alt={person.name}
+            className="size-12 rounded-full border-2 border-background object-cover"
+          />
+        ))}
+      </AvatarGroup>
+      <div className="flex items-center gap-2">
+        <div className="relative size-12 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-semibold">
+          SK
+          <AvatarGroupTooltip className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
+            <AvatarGroupTooltipArrow className="size-2.5 fill-foreground" />
+            <p>Skyleen</p>
+          </AvatarGroupTooltip>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImportedTooltipDemo() {
+  return (
+    <ImportedTooltipProvider>
+      <div className="flex items-center gap-4">
+        <ImportedTooltip>
+          <ImportedTooltipTrigger asChild>
+            <button type="button" aria-label="Bold" className="px-3 py-1.5 border border-border rounded font-bold">B</button>
+          </ImportedTooltipTrigger>
+          <ImportedTooltipContent className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
+            <ImportedTooltipArrow className="size-2.5 fill-foreground" />
+            <p>Bold</p>
+          </ImportedTooltipContent>
+        </ImportedTooltip>
+
+        <ImportedTooltip side="bottom">
+          <ImportedTooltipTrigger asChild>
+            <button type="button" aria-label="Italic" className="px-3 py-1.5 border border-border rounded italic">I</button>
+          </ImportedTooltipTrigger>
+          <ImportedTooltipContent className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
+            <ImportedTooltipArrow className="size-2.5 fill-foreground" />
+            <p>Italic</p>
+          </ImportedTooltipContent>
+        </ImportedTooltip>
+      </div>
+    </ImportedTooltipProvider>
+  );
+}
+
+const SELECT_FONTS = [
+  { label: 'Inter', value: 'inter' },
+  { label: 'Geist', value: 'geist' },
+];
+
+function SelectDemo() {
+  return (
+    <ImportedSelect.Root items={SELECT_FONTS} defaultValue="geist">
+      <ImportedSelect.Trigger aria-label="Font" className="inline-flex items-center justify-between gap-3 px-3 py-1.5 border border-border rounded bg-neutral-0 min-w-32">
+        <ImportedSelect.Value />
+        <ImportedSelect.Icon />
+      </ImportedSelect.Trigger>
+      <ImportedSelect.Portal>
+        <ImportedSelect.Positioner alignItemWithTrigger={false} sideOffset={4}>
+          <ImportedSelect.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft">
+            <ImportedSelect.List>
+              {SELECT_FONTS.map((font) => (
+                <ImportedSelect.Item key={font.value} value={font.value} className="flex items-center justify-between gap-4 px-2 py-1 rounded cursor-pointer hover:bg-neutral-100">
+                  <ImportedSelect.ItemText>{font.label}</ImportedSelect.ItemText>
+                  <ImportedSelect.ItemIndicator>✓</ImportedSelect.ItemIndicator>
+                </ImportedSelect.Item>
+              ))}
+            </ImportedSelect.List>
+          </ImportedSelect.Popup>
+        </ImportedSelect.Positioner>
+      </ImportedSelect.Portal>
+    </ImportedSelect.Root>
+  );
+}
+
+function MenubarDemo() {
+  return (
+    <ImportedMenubar className="inline-flex items-center gap-1 p-1 border border-border rounded bg-neutral-50">
+      <ImportedMenubarMenu.Root>
+        <ImportedMenubarMenu.Trigger className="px-3 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">File</ImportedMenubarMenu.Trigger>
+        <ImportedMenubarMenu.Portal>
+          <ImportedMenubarMenu.Positioner sideOffset={8}>
+            <ImportedMenubarMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-32">
+              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">New file</ImportedMenubarMenu.Item>
+              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Save</ImportedMenubarMenu.Item>
+            </ImportedMenubarMenu.Popup>
+          </ImportedMenubarMenu.Positioner>
+        </ImportedMenubarMenu.Portal>
+      </ImportedMenubarMenu.Root>
+      <ImportedMenubarMenu.Root>
+        <ImportedMenubarMenu.Trigger className="px-3 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Edit</ImportedMenubarMenu.Trigger>
+        <ImportedMenubarMenu.Portal>
+          <ImportedMenubarMenu.Positioner sideOffset={8}>
+            <ImportedMenubarMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-32">
+              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Undo</ImportedMenubarMenu.Item>
+              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Redo</ImportedMenubarMenu.Item>
+            </ImportedMenubarMenu.Popup>
+          </ImportedMenubarMenu.Positioner>
+        </ImportedMenubarMenu.Portal>
+      </ImportedMenubarMenu.Root>
+    </ImportedMenubar>
+  );
+}
+
+function DropdownMenuDemo() {
+  return (
+    <ImportedDropdownMenu.Root>
+      <ImportedDropdownMenu.Trigger className="px-3 py-1.5 text-sm border border-border rounded bg-neutral-0 cursor-pointer">
+        Account
+      </ImportedDropdownMenu.Trigger>
+      <ImportedDropdownMenu.Portal>
+        <ImportedDropdownMenu.Positioner sideOffset={4}>
+          <ImportedDropdownMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-36">
+            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Profile
+            </ImportedDropdownMenu.Item>
+            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Billing
+            </ImportedDropdownMenu.Item>
+            <ImportedDropdownMenu.Separator className="h-px bg-border my-1" />
+            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Log out
+            </ImportedDropdownMenu.Item>
+          </ImportedDropdownMenu.Popup>
+        </ImportedDropdownMenu.Positioner>
+      </ImportedDropdownMenu.Portal>
+    </ImportedDropdownMenu.Root>
+  );
+}
+
+function ContextMenuDemo() {
+  return (
+    <ImportedContextMenu.Root>
+      <ImportedContextMenu.Trigger className="w-full h-40 border border-dashed border-border rounded flex items-center justify-center text-sm text-neutral-800 select-none">
+        Right click here
+      </ImportedContextMenu.Trigger>
+      <ImportedContextMenu.Portal>
+        <ImportedContextMenu.Positioner>
+          <ImportedContextMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-36">
+            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Undo
+            </ImportedContextMenu.Item>
+            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Duplicate
+            </ImportedContextMenu.Item>
+            <ImportedContextMenu.Separator className="h-px bg-border my-1" />
+            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
+              Delete
+            </ImportedContextMenu.Item>
+          </ImportedContextMenu.Popup>
+        </ImportedContextMenu.Positioner>
+      </ImportedContextMenu.Portal>
+    </ImportedContextMenu.Root>
+  );
+}
+
+function ScrollFadeDemo() {
+  return (
+    <ImportedScrollFade className="h-64 border border-border rounded p-4 overflow-y-auto">
+      <ul className="flex flex-col gap-2 text-sm">
+        <li className="p-2 border-b border-border">Version 2.4.0 — Spring curves updated</li>
+        <li className="p-2 border-b border-border">Version 2.3.1 — Fix scroll clipping in modal</li>
+        <li className="p-2 border-b border-border">Version 2.3.0 — Added ContextMenu primitive</li>
+        <li className="p-2 border-b border-border">Version 2.2.0 — Menubar keyboard traversal</li>
+        <li className="p-2 border-b border-border">Version 2.1.0 — Performance optimizations</li>
+        <li className="p-2 border-b border-border">Version 2.0.0 — Next.js 16 support</li>
+        <li className="p-2 border-b border-border">Version 1.9.0 — Floating UI integration</li>
+        <li className="p-2 border-b border-border">Version 1.8.0 — Reduced motion preferences</li>
+        <li className="p-2 border-b border-border">Version 1.7.0 — Initial preview release</li>
+        <li className="p-2 border-b border-border">Version 1.6.0 — Added Tooltip primitive</li>
+        <li className="p-2 border-b border-border">Version 1.5.0 — Core animation loop tuning</li>
+        <li className="p-2 border-b border-border">Version 1.4.0 — Tailwind prefix support</li>
+      </ul>
+    </ImportedScrollFade>
+  );
+}
+
+const FILE_TREE_ELEMENTS: FileTreeElement[] = [
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "button", name: "button.tsx", highlight: true },
+          { id: "card", name: "card.tsx", highlight: true },
+        ],
+      },
+      { id: "page", name: "page.tsx" },
+    ],
+  },
+  { id: "package-json", name: "package.json" },
+];
+
+function FileTreeDemo() {
+  return <ImportedFileTree elements={FILE_TREE_ELEMENTS} defaultOpenIds={["src"]} />;
+}
 
 export function DesignSystemPage() {
   const [activeSection, setActiveSection] = useState<NavSectionId>("colors");
@@ -211,6 +571,42 @@ export function DesignSystemPage() {
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
                 {COMPONENTS_NAV.map((item, index) => {
                   const globalIndex = FOUNDATIONS_NAV.length + index;
+                  const isSelected = activeSection === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        ref={(el) => {
+                          navButtonRefs.current[globalIndex] = el;
+                        }}
+                        type="button"
+                        aria-current={isSelected ? "page" : undefined}
+                        onClick={() => handleSelect(item.id)}
+                        onKeyDown={(e) => handleKeyDown(e, globalIndex)}
+                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ${
+                          isSelected
+                            ? "ll:bg-neutral-1000 ll:text-neutral-0"
+                            : "ll:text-neutral-1000 ll:bg-transparent ll:hover:bg-neutral-400"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Hairline divider */}
+            <div className="ll:h-px ll:w-full ll:bg-border" />
+
+            {/* Imported (as-is) group */}
+            <div className="ll:flex ll:flex-col ll:gap-1">
+              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                Imported (as-is)
+              </div>
+              <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
+                {IMPORTED_NAV.map((item, index) => {
+                  const globalIndex = FOUNDATIONS_NAV.length + COMPONENTS_NAV.length + index;
                   const isSelected = activeSection === item.id;
                   return (
                     <li key={item.id}>
@@ -1073,6 +1469,319 @@ export function DesignSystemPage() {
                         </div>
                       }
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {activeSection === "imported-squish-switch" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    SquishSwitch
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from React Bits
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <SquishSwitchDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-scrub-field" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    ScrubField
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from React Bits
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <ScrubFieldDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-elastic-slider" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    ElasticSlider
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from React Bits
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <ElasticSliderDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-cursor" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Cursor
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <CursorDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-avatar-group" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Avatar Group
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <AvatarGroupDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-tooltip" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Tooltip (Imported)
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <ImportedTooltipDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-select" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Select
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Base UI / Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <SelectDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-menubar" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Menubar
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Base UI / Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <MenubarDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-dropdown-menu" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Dropdown Menu
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Base UI / Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <DropdownMenuDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-context-menu" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Context Menu
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Base UI / Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <ContextMenuDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-scroll-fade" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    Scroll Fade
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Animate UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <ScrollFadeDemo />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === "imported-file-tree" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                    File Tree
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    Imported as-is from Unlumen UI
+                  </span>
+                </div>
+
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                  >
+                    Usage Example
+                  </div>
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                    <FileTreeDemo />
                   </div>
                 </div>
               </div>
