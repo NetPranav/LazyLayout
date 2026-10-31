@@ -6,25 +6,33 @@ body {
 }
 
 @layer base {
-  .design-system-root {
+  .design-system-root,
+  .editor-root {
     font-family: var(--ll-font-sans);
   }
 
   .design-system-root,
   .design-system-root *,
   .design-system-root *::before,
-  .design-system-root *::after {
+  .design-system-root *::after,
+  .editor-root,
+  .editor-root *,
+  .editor-root *::before,
+  .editor-root *::after {
     box-sizing: border-box;
   }
 
   .design-system-root ul,
-  .design-system-root ol {
+  .design-system-root ol,
+  .editor-root ul,
+  .editor-root ol {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .design-system-root button {
+  .design-system-root button,
+  .editor-root button {
     margin: 0;
     padding: 0;
     border: 0;
@@ -34,5 +42,24 @@ body {
     font: inherit;
     text-align: inherit;
     cursor: pointer;
+  }
+}
+
+@keyframes ll-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ll-spinner-spin {
+  animation: ll-spin var(--ll-duration-spin) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-spinner-spin {
+    animation: none;
   }
 }

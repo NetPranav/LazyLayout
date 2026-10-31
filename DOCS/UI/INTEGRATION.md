@@ -13,6 +13,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 1. Replaced or removed UI
 
+### Replaced EditorShell bridge with real TopBar shell
+- **Area:** shell
+- **Files:** `src/editor/shell/EditorShell.tsx`
+- **What changed:** Replaced the empty `<main />` bridge with a full-viewport layout containing the fixed 48px `TopBar` and an empty `neutral-100` canvas area.
+- **What A/B must do:** Keep `EditorShell` exported from `src/editor/shell/EditorShell.tsx`.
+- **Status:** open
+
 ### Old editor moved to `src/legacy-editor`
 - **Area:** rebuild setup
 - **Files:** `src/legacy-editor/**`, bridge files in `src/editor/**`, `eslint.config.mjs`
@@ -29,6 +36,11 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 2. Engine contracts the new UI relies on
 
+### Top bar engine bindings
+- **Area:** shell / top bar
+- **What the UI uses:** `useProjectMetaStore((s) => s.projectName)` for dynamic project name; `useHistoryStore((s) => s.past.length > 0)` and `future.length > 0` for `canUndo` and `canRedo`; `invokeCommand("frame.focusPreset", { preset })` for viewport switching; `invokeCommand("edit.undo")` and `invokeCommand("edit.redo")` for undo/redo actions; `invokeCommand("view.commandPalette")` and `antigravity:open_command_palette` custom event for global search/command palette opening.
+- **Status:** open
+
 ### Selection, commands and project store
 - **Area:** top bar
 - **What the UI uses:** `useSelectionStore((s) => s.selectedIds)`; `invokeCommand` with `align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`, `distribute.horizontal`, `distribute.vertical`, `layer.tidy`, `layer.bringForward`, `layer.sendBackward`, `edit.group`, `edit.undo`, `edit.redo`, `view.commandPalette`; `MENU_MODEL` actions; `useProjectStore` `mountDemoProject` and `clearToBlankCanvas`.
@@ -37,6 +49,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 ## 3. Engine changes requested
 
 ## 4. New shared UI pieces
+
+### Button, SegmentedControl, Tooltip, and TopBar
+- **Area:** components
+- **Files:** `src/editor/components/Button.tsx`, `src/editor/components/SegmentedControl.tsx`, `src/editor/components/Tooltip.tsx`, `src/editor/components/TopBar.tsx`, `src/editor/components/index.ts`, `src/editor/design-system/DesignSystemPage.tsx`
+- **What changed:** Added `Button` (variants `primary`, `secondary`, `ghost`; sizes `sm`, `md`; icon-only square with 6px radius; loading spinner animating only transform; focus-visible ring `neutral-1000` with 2px offset; instant hover on `neutral-100`), `SegmentedControl` (concentric radii with 6px outer container and 4px inner options; active option black with white text; arrow-key radiogroup navigation), `Tooltip` (solid black rectangle with 4px radius, white micro text, 300ms hover/focus delay, opacity only, positioned above target), and `TopBar` (48px fixed bar, neutral-50 surface, hairline border, truly centered device switcher, responsive hiding of labels/secondary actions below 640px/390px with zero overflow). All added to design system page with full state matrices and 1440/1024/390 static previews.
+- **What A/B must do:** Reuse these components across future editor panels.
+- **Status:** open
 
 ### Design system page and extracted components
 - **Area:** design system
@@ -48,6 +67,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 ## 5. Tokens and styles
 
 New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.
+
+### Control and top bar size tokens
+- **Area:** tokens
+- **Files:** `src/editor/styles/tokens.css`, `src/editor/styles/globals.css`
+- **What changed:** Added `--ll-size-control-sm: 28px`, `--ll-size-control-md: 32px`, and `--ll-size-topbar: 48px`. Extended base resets to `.editor-root` in `globals.css` with 0 margin/border/padding button baseline and box-sizing. Added `.ll-spinner-spin` keyframe rotation animation with `prefers-reduced-motion` override.
+- **What A/B must do:** Use control size tokens in new panels.
+- **Status:** open
 
 ### Tailwind, tokens, and typography
 - **Area:** foundations

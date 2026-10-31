@@ -78,4 +78,7 @@
   /* Max width for canvas content to stay centered */
   --ll-canvas-max-width-value: 820px;
   --ll-canvas-max-width: var(--ll-canvas-max-width-value);
+
+  /* Control and bar sizes */
+  --ll-duration-spin: 800ms;
 }

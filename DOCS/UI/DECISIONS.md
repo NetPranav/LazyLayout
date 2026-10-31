@@ -39,3 +39,15 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Motion | Removed `transition-colors` on navigation rows; hover states change instantly, animating only opacity and transform | Claude | approved |
 | 2026-10-31 | Design system | Focus ring on navigation buttons uses `neutral-1000` for 3:1+ contrast compliance on `neutral-200` panels | Claude | approved |
 | 2026-10-31 | Design system | Swatch and WorkspaceFrame components added to the right navigation panel with live canvas views | Claude | approved |
+| 2026-10-31 | Shell | `/editor` is full-viewport with no app frame, no inset and no outer radius. The backdrop color is kept for other places | user | approved |
+| 2026-10-31 | Shell | Step 1 is the top bar only, then rail and left panel, canvas, right panel, timeline | Claude | approved |
+| 2026-10-31 | Foundations | Control sizes token scale: `--ll-size-control-sm: 28px`, `--ll-size-control-md: 32px`, `--ll-size-topbar: 48px` | worker (Antigravity) | pending |
+| 2026-10-31 | Shell | Editor root resets button styles and box-sizing via `.editor-root` in `globals.css` matching design system baseline | worker (Antigravity) | pending |
+| 2026-10-31 | Components | SegmentedControl enforces concentric radii with 6px container radius (`--ll-radius-md`), 2px padding, and 4px option radius (`--ll-radius-sm`) | worker (Antigravity) | pending |
+| 2026-10-31 | TopBar | TopBar center group is anchored with `absolute left-1/2 -translate-x-1/2` for exact viewport centering | worker (Antigravity) | pending |
+| 2026-10-31 | TopBar | Below 640px/390px, brand text, project name, and Undo/Redo/Search buttons hide to prevent overflow, keeping logo, segmented control, Share, and Settings buttons | worker (Antigravity) | pending |
+| 2026-10-31 | TopBar | Share and Settings rendered without onClick handlers (disable-free) pending subsequent integration | worker (Antigravity) | pending |
+| 2026-10-31 | Motion | Button loading spinner animates purely via CSS `transform` rotation keyframes with `prefers-reduced-motion: reduce` override | worker (Antigravity) | pending |
+| 2026-10-31 | Shell | Top bar wires the project name, undo, redo, device preset and search through the engine stores and commands in `@/core` (the same ones the legacy UI uses), not through `@/legacy-editor`, because they live in core | Claude | pending |
+| 2026-10-31 | Components | Size `sm` controls (28px) stay as a compact size for dense panels. Segmented control options are 32px and the group is 40px | Claude | pending |
+| 2026-10-31 | Shell | Share and Settings have no handler yet, they are wired in a later step | Claude | pending |
