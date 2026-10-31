@@ -29,6 +29,8 @@ import { join, dirname, resolve } from "node:path";
 
 const ROOT = process.cwd();
 const DOCS_INITIAL = join(ROOT, "DOCS", "INITIAL");
+// Old UI specs, deleted for the UI rebuild. History in other docs still names them.
+const REMOVED_DOCS = new Set(["UI.md", "PANELS.md"]);
 
 function listMarkdownFiles(dir: string): string[] {
   const out: string[] = [];
@@ -75,6 +77,7 @@ for (const file of files) {
 
     for (const m of line.matchAll(/`([A-Za-z0-9_./-]+\.md)`/g)) {
       const target = m[1].trim();
+      if (REMOVED_DOCS.has(target)) continue;
       checked++;
       const candidates = [
         resolve(dir, target),

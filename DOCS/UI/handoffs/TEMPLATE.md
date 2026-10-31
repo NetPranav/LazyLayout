@@ -4,14 +4,22 @@
 - **Worker:** (Antigravity session or agent name)
 - **Branch:** ui/redesign
 - **Page / phase:**
-- **Task given by:** (user direction or Claude task, quoted briefly)
+- **Task given by:** (task file)
 
 ## What changed
 <!-- One line per file or group of files, with the reason. -->
 -
 
-## Design decisions made (by the user)
-<!-- Only decisions the user actually approved. Write "none" if none. -->
+## Decisions made
+<!-- Choices you made, also logged in DOCS/UI/DECISIONS.md. Never credit the user unless they said it. "none" if none. -->
+-
+
+## Components from other sites
+<!-- Also logged in DOCS/UI/COMPONENT_SOURCES.md. "none" if none. -->
+-
+
+## Legacy behaviour dropped
+<!-- Also logged in DOCS/UI/DECISIONS.md. "none" if none. -->
 -
 
 ## Tokens / palette touched
@@ -25,9 +33,6 @@
 ## Not done / blocked
 -
 
-## Questions for the user
--
-
 ## Phase checks
 <!-- Mark each: passed / failed / not run. Checks run at phase end, so "not run" is normal mid-phase. -->
 - typecheck:
@@ -39,6 +44,6 @@
 <!-- Paths to Playwright screenshots. -->
 -
 
-## Orchestrator sign-off
+## Watcher verdict
 <!-- Claude fills this in. -->
-- [ ] Signed off   - [ ] Sent back (reason):
+- [ ] Pass   - [ ] Fail (reason):

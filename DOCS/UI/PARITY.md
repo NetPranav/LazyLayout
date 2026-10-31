@@ -1,19 +1,17 @@
-# UI parity: what is left to build
+# UI parity: the build queue
 
-The old UI lives in `src/legacy-editor` (read-only reference, still compiling). The new UI is built in `src/editor`, from scratch, one area at a time.
+Everything the old UI has, so nothing is missed. The orchestrator works from the top of the table down. Files in `src/legacy-editor` are the reference. The new UI goes in `src/editor`.
 
-**How it works**
+- **Status:** `todo`, `wip`, `done` or `blocked`. This column is the record of what is left. Do not use a grep for it, because rebuilt components may still import non-visual logic from legacy.
+- **Order:** foundations and the shell come first, because the new `EditorShell` hosts everything else. It mounts legacy panels until each is rebuilt, so one area can be swapped at a time.
+- **Reference caveat:** `src/legacy-editor` includes the first top-bar and color experiments. The original UI, before them, is at commit `dcd7695`.
+- **Not listed:** 22 legacy test files in `__tests__` folders (move or rewrite them with their area, and keep the logic ones) and 7 empty `.gitkeep` placeholders.
 
-- `src/editor` exposes the same import paths the app, compiler and tests already use. Each of those files starts as a *bridge*: one line re-exporting the legacy version, so nothing needs reconnecting.
-- To rebuild an area, replace its bridge file (and add the new files beside it) with the real new component. Keep the exported names and props the callers use.
-- **Left to build** = any file in `src/editor` that still contains `@/legacy-editor`, plus every area below with no new files yet.
-- Check at any time: `grep -rl "legacy-editor" src/editor` lists the bridges still in place.
-- Reuse non-visual logic (snapping, hit-testing, transform math, stores, hooks) instead of rewriting it. Import it from `src/legacy-editor` until it is worth moving.
-
-Status: `todo` / `wip` / `done`. Update the row when the user approves the area.
+**Phase 1:** foundations, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 
 | Area | Status | Legacy files | Bridged entry points now in `src/editor` |
 |---|---|---|---|
+| `foundations` (tokens, type and spacing scales, base components) | todo | new | - |
 | `shell` | todo | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
 | `menus` | todo | 4 | - |
 | `canvas` | todo | 20 | - |
@@ -54,19 +52,19 @@ Status: `todo` / `wip` / `done`. Update the row when the user approves the area.
 ## Files per area
 
 ### `shell` (38)
-`shell\AiDockColumn.tsx`, `shell\AiDockOverlays.tsx`, `shell\CanvasChrome.tsx`, `shell\CollaboratorAvatarStack.tsx`, `shell\CommandPalette.tsx`, `shell\DetachedPanelShell.tsx`, `shell\DockCornerSplitter.tsx`, `shell\DockSplitter.tsx`, `shell\DockTabBar.tsx`, `shell\DockTree.tsx`, `shell\DockZone.tsx`, `shell\EditorShell.tsx`, `shell\FullPageDock.tsx`, `shell\LayoutsMenu.tsx`, `shell\MainToolbar.tsx`, `shell\OutputLogDrawer.tsx`, `shell\ParityBadge.tsx`, `shell\PersistenceUi.tsx`, `shell\ReadOnlyBanner.tsx`, `shell\StatusBar.tsx`, `shell\StudioCenterToolbar.tsx`, `shell\StudioHeader.tsx`, `shell\TearOffDragOverlay.tsx`, `shell\TransportBar.tsx`, `shell\WorkspaceTabStrip.tsx`, `shell\afterTrackPanels.tsx`, `shell\dockTabs.ts`, `shell\hooks\useAiDock.ts`, `shell\hooks\useDockLayers.ts`, `shell\hooks\useFullPageDock.ts`, `shell\hooks\useProjectFiles.ts`, `shell\hooks\useProjectLock.ts`, `shell\hooks\useShellCommands.ts`, `shell\hooks\useWorkspace.ts`, `shell\panels\PanelHost.tsx`, `shell\panels\builtins.tsx`, `shell\panels\context.ts`, `shell\panels\registry.ts`
+`shell/AiDockColumn.tsx`, `shell/AiDockOverlays.tsx`, `shell/CanvasChrome.tsx`, `shell/CollaboratorAvatarStack.tsx`, `shell/CommandPalette.tsx`, `shell/DetachedPanelShell.tsx`, `shell/DockCornerSplitter.tsx`, `shell/DockSplitter.tsx`, `shell/DockTabBar.tsx`, `shell/DockTree.tsx`, `shell/DockZone.tsx`, `shell/EditorShell.tsx`, `shell/FullPageDock.tsx`, `shell/LayoutsMenu.tsx`, `shell/MainToolbar.tsx`, `shell/OutputLogDrawer.tsx`, `shell/ParityBadge.tsx`, `shell/PersistenceUi.tsx`, `shell/ReadOnlyBanner.tsx`, `shell/StatusBar.tsx`, `shell/StudioCenterToolbar.tsx`, `shell/StudioHeader.tsx`, `shell/TearOffDragOverlay.tsx`, `shell/TransportBar.tsx`, `shell/WorkspaceTabStrip.tsx`, `shell/afterTrackPanels.tsx`, `shell/dockTabs.ts`, `shell/hooks/useAiDock.ts`, `shell/hooks/useDockLayers.ts`, `shell/hooks/useFullPageDock.ts`, `shell/hooks/useProjectFiles.ts`, `shell/hooks/useProjectLock.ts`, `shell/hooks/useShellCommands.ts`, `shell/hooks/useWorkspace.ts`, `shell/panels/PanelHost.tsx`, `shell/panels/builtins.tsx`, `shell/panels/context.ts`, `shell/panels/registry.ts`
 
 ### `menus` (4)
-`menus\MenuDropdown.tsx`, `menus\UnifiedLogoMenu.tsx`, `menus\WindowMenu.tsx`, `menus\menuModel.tsx`
+`menus/MenuDropdown.tsx`, `menus/UnifiedLogoMenu.tsx`, `menus/WindowMenu.tsx`, `menus/menuModel.tsx`
 
 ### `canvas` (20)
-`canvas\AssetNotice.tsx`, `canvas\CanvasContextMenu.tsx`, `canvas\CanvasFrames.tsx`, `canvas\CanvasRulers.tsx`, `canvas\CollabCursorOverlay.tsx`, `canvas\FloatingDock.tsx`, `canvas\Scene3DViewport.tsx`, `canvas\WasmCableCanvas.tsx`, `canvas\WhiteboardCanvas.tsx`, `canvas\ZoomControls.tsx`, `canvas\guides.ts`, `canvas\overlay\OverlayController.ts`, `canvas\overlay\OverlayLayer.tsx`, `canvas\snapEnv.ts`, `canvas\text\TextEditor.tsx`, `canvas\text\domText.ts`, `canvas\tools\toolRuntime.ts`, `canvas\tools\useToolKeys.ts`, `canvas\transformModel.ts`, `canvas\useFrames.ts`
+`canvas/AssetNotice.tsx`, `canvas/CanvasContextMenu.tsx`, `canvas/CanvasFrames.tsx`, `canvas/CanvasRulers.tsx`, `canvas/CollabCursorOverlay.tsx`, `canvas/FloatingDock.tsx`, `canvas/Scene3DViewport.tsx`, `canvas/WasmCableCanvas.tsx`, `canvas/WhiteboardCanvas.tsx`, `canvas/ZoomControls.tsx`, `canvas/guides.ts`, `canvas/overlay/OverlayController.ts`, `canvas/overlay/OverlayLayer.tsx`, `canvas/snapEnv.ts`, `canvas/text/TextEditor.tsx`, `canvas/text/domText.ts`, `canvas/tools/toolRuntime.ts`, `canvas/tools/useToolKeys.ts`, `canvas/transformModel.ts`, `canvas/useFrames.ts`
 
 ### `stage` (2)
-`stage\StageFrame.tsx`, `stage\StageHost.tsx`
+`stage/StageFrame.tsx`, `stage/StageHost.tsx`
 
 ### `runtime` (3)
-`runtime\SandboxHost.tsx`, `runtime\escapeHtml.ts`, `runtime\frameBridge.ts`
+`runtime/SandboxHost.tsx`, `runtime/escapeHtml.ts`, `runtime/frameBridge.ts`
 
 ### `panels/ai` (3)
 `DiffPreview.tsx`, `MotionAICoPilot.tsx`, `index.ts`
@@ -108,7 +106,7 @@ Status: `todo` / `wip` / `done`. Update the row when the user approves the area.
 `DeploymentDashboard.tsx`, `DeploymentHistory.tsx`, `DomainManager.tsx`, `ProviderSelector.tsx`, `index.ts`
 
 ### `panels/details` (46)
-`AddComponentPalette.tsx`, `AlignBar.tsx`, `AssetDetailsInspector.tsx`, `DetailsInspector.tsx`, `EnvironmentInspector.tsx`, `FontPicker.tsx`, `SectionRail.tsx`, `TextProperties.tsx`, `controls\AssetReferencePicker.tsx`, `controls\BezierCurveModal.tsx`, `controls\BoxModelDiagram.tsx`, `controls\ColorField.tsx`, `controls\EasingCurveSelector.tsx`, `controls\GradientEditor.tsx`, `controls\JsonObjectEditor.tsx`, `controls\KeyframeTimeline.tsx`, `controls\NumberField.tsx`, `controls\ScrubNumber.tsx`, `controls\ScrubNumberInput.tsx`, `controls\ShadowEditor.tsx`, `controls\StateVariablePicker.tsx`, `controls\TextAlignToggle.tsx`, `controls\TransformOriginPicker.tsx`, `paint\ColorPicker.tsx`, `paint\EffectsEditor.tsx`, `paint\ImageFillControls.tsx`, `paint\ImageSourcePicker.tsx`, `paint\PaintEditor.tsx`, `paint\SwatchPopover.tsx`, `pro\ProFace.tsx`, `sections\AnimationEditor.tsx`, `sections\AppearanceEditor.tsx`, `sections\BackgroundSection.tsx`, `sections\ButtonStateEditor.tsx`, `sections\ContainerLayoutEditor.tsx`, `sections\DataBindingEditor.tsx`, `sections\DividerSection.tsx`, `sections\ImagePropertiesEditor.tsx`, `sections\InputValidationEditor.tsx`, `sections\LayoutSpacingEditor.tsx`, `sections\MaterialInspectorSection.tsx`, `sections\MediaSection.tsx`, `sections\SvgVectorSection.tsx`, `sections\TextContentEditor.tsx`, `sections\TypographyEditor.tsx`, `simple\SimpleFace.tsx`
+`AddComponentPalette.tsx`, `AlignBar.tsx`, `AssetDetailsInspector.tsx`, `DetailsInspector.tsx`, `EnvironmentInspector.tsx`, `FontPicker.tsx`, `SectionRail.tsx`, `TextProperties.tsx`, `controls/AssetReferencePicker.tsx`, `controls/BezierCurveModal.tsx`, `controls/BoxModelDiagram.tsx`, `controls/ColorField.tsx`, `controls/EasingCurveSelector.tsx`, `controls/GradientEditor.tsx`, `controls/JsonObjectEditor.tsx`, `controls/KeyframeTimeline.tsx`, `controls/NumberField.tsx`, `controls/ScrubNumber.tsx`, `controls/ScrubNumberInput.tsx`, `controls/ShadowEditor.tsx`, `controls/StateVariablePicker.tsx`, `controls/TextAlignToggle.tsx`, `controls/TransformOriginPicker.tsx`, `paint/ColorPicker.tsx`, `paint/EffectsEditor.tsx`, `paint/ImageFillControls.tsx`, `paint/ImageSourcePicker.tsx`, `paint/PaintEditor.tsx`, `paint/SwatchPopover.tsx`, `pro/ProFace.tsx`, `sections/AnimationEditor.tsx`, `sections/AppearanceEditor.tsx`, `sections/BackgroundSection.tsx`, `sections/ButtonStateEditor.tsx`, `sections/ContainerLayoutEditor.tsx`, `sections/DataBindingEditor.tsx`, `sections/DividerSection.tsx`, `sections/ImagePropertiesEditor.tsx`, `sections/InputValidationEditor.tsx`, `sections/LayoutSpacingEditor.tsx`, `sections/MaterialInspectorSection.tsx`, `sections/MediaSection.tsx`, `sections/SvgVectorSection.tsx`, `sections/TextContentEditor.tsx`, `sections/TypographyEditor.tsx`, `simple/SimpleFace.tsx`
 
 ### `panels/execution-trace` (1)
 `ExecutionTracePanel.tsx`
@@ -150,13 +148,13 @@ Status: `todo` / `wip` / `done`. Update the row when the user approves the area.
 `VersionControlPanel.tsx`, `index.ts`
 
 ### `stage-lab` (2)
-`stage-lab\CanvasLab.tsx`, `stage-lab\StageLab.tsx`
+`stage-lab/CanvasLab.tsx`, `stage-lab/StageLab.tsx`
 
 ### `render-gallery` (1)
-`render-gallery\RenderGallery.tsx`
+`render-gallery/RenderGallery.tsx`
 
 ### `fonts` (2)
-`fonts\FontSync.tsx`, `fonts\useFontSync.ts`
+`fonts/FontSync.tsx`, `fonts/useFontSync.ts`
 
 ### `styles` (23)
-`styles\ai-copilot.css`, `styles\animations.css`, `styles\assets.css`, `styles\code-inspector.css`, `styles\database-studio.css`, `styles\detached.css`, `styles\dock.css`, `styles\forms.css`, `styles\fullpage-dock.css`, `styles\globals.css`, `styles\launcher.css`, `styles\layers.css`, `styles\menus.css`, `styles\paint.css`, `styles\panels.css`, `styles\pro-face.css`, `styles\sequencer.css`, `styles\showcase.css`, `styles\simple-face.css`, `styles\timeline.css`, `styles\tokens.css`, `styles\top-bar.css`, `styles\whiteboard.css`
+`styles/ai-copilot.css`, `styles/animations.css`, `styles/assets.css`, `styles/code-inspector.css`, `styles/database-studio.css`, `styles/detached.css`, `styles/dock.css`, `styles/forms.css`, `styles/fullpage-dock.css`, `styles/globals.css`, `styles/launcher.css`, `styles/layers.css`, `styles/menus.css`, `styles/paint.css`, `styles/panels.css`, `styles/pro-face.css`, `styles/sequencer.css`, `styles/showcase.css`, `styles/simple-face.css`, `styles/timeline.css`, `styles/tokens.css`, `styles/top-bar.css`, `styles/whiteboard.css`

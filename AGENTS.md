@@ -8,21 +8,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Lazy Layout UI redesign: worker rules (Antigravity)
+# Lazy Layout UI rebuild: worker rules (Antigravity)
 
-You are a **worker** on branch `ui/redesign`. Claude is the orchestrator and watcher. The user directs every design decision.
+You are a **worker** on branch `ui/redesign`. You are building the whole UI from scratch in `src/editor`. Read `DOCS/UI/UI_RULES.md` and your task file before doing anything. The essentials:
 
-Read `DOCS/UI/UI_RULES.md` before doing anything. The essentials:
-
-- **Layout bar: Apple-level.** This is about **layout and structure**, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials**: separate layers with solid neutrals, hairline borders and soft shadows. **No capsule or pill-shaped designs**: no floating capsules, no fully rounded buttons or containers. Use rectangular shapes with modest corner radii. Awwwards-level craft and motion sit on top of that layout.
-- Work on **one page at a time**, only the page you were assigned, only the direction the user approved.
-- **Never decide colors, fonts, layout or copy yourself.** Ask. Colors come from the user's reference images (`DOCS/UI/PALETTE.md`).
-- Use **tokens only** (`src/editor/styles/tokens.css`). No hardcoded values.
+- **Do not stop to ask.** Choose what best fits the rules, finish the task, and log the choice in `DOCS/UI/DECISIONS.md`. If one thing is blocked, log it in your handoff and finish the rest.
+- **Layout bar: Apple-level.** This means layout and structure, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials. No capsule or pill shapes** (no floating capsules, no fully rounded buttons or containers). Use rectangular shapes with modest radii, solid neutrals, hairline borders and soft shadows. Awwwards-level craft and motion sit on top of that layout.
+- **`src/legacy-editor` is the old UI: read it, never edit it.** Match its behaviour and reuse its non-visual logic. Do not copy its look.
+- **Use components from other sites** when they raise the quality, only where the license allows it. Log each in `DOCS/UI/COMPONENT_SOURCES.md`, copy it into `src/editor/components/` and restyle it to our rules. **Add no new dependencies.**
+- **Colors only from `DOCS/UI/PALETTE.md`.** Tokens only (`src/editor/styles/tokens.css`), with the `--ll-` prefix. No hardcoded values.
 - Animate only `transform` and `opacity`. Respect `prefers-reduced-motion`. Lazy-load heavy effects.
-- The new UI is built from scratch in `src/editor`. **`src/legacy-editor` is the old UI: read it for reference, never edit it.** A file in `src/editor` that only re-exports `@/legacy-editor` is a bridge: replace it with the real new component, keep its export names and props. Update `DOCS/UI/PARITY.md` when an area is done.
-- Touch only UI paths (`src/app`, `src/editor`, `public`). **Do not edit** `src/core`, `src/compiler`, `src/runtime`, `src/ai` or config files: ask Claude.
+- **Do not edit** `src/core`, `src/compiler`, `src/runtime`, `src/ai`, `src/legacy-editor` or config files, and do not revert changes in them. Request engine changes in `DOCS/UI/INTEGRATION.md`.
 - **Never open a browser by hand.** Use Playwright, headless, for screenshots.
-- **Do not run checks after each step.** Checks run once at the end of a phase.
-- Work only on `ui/redesign`. Do not push. No `Co-Authored-By` lines.
-- **Add to `DOCS/UI/INTEGRATION.md` during your work** whenever you replace UI, rely on an engine store/hook/command, need an engine change, add a shared piece, or change tokens, routes or test selectors. Lanes A and B use that file to connect the redesign to the existing project.
-- **At the end of every session, write a handoff** in `DOCS/UI/handoffs/` from `TEMPLATE.md`. No handoff, no sign-off.
+- **Do not run the full checks.** They run once per phase.
+- **Do not commit or push.** Claude commits after review. No `Co-Authored-By` lines.
+- **At the end, write a handoff** in `DOCS/UI/handoffs/` from `TEMPLATE.md`. Update `INTEGRATION.md` and your row in `DOCS/UI/PARITY.md` as you go.

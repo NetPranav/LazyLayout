@@ -4,78 +4,77 @@ Branch: `ui/redesign`. Product name: **Lazy Layout**.
 
 ## 1. Goal
 
-Awwwards-level UI and UX. Bold, polished, intentional. Craft and motion matter, but never at the cost of usability or speed.
+Build the whole UI from scratch, to Awwwards level. The old UI is not patched or restyled.
 
-**Layout bar: Apple-level.** This is about layout and structure, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials** and **no capsule or pill shapes**: use rectangular shapes with modest corner radii, solid neutrals, hairline borders and soft shadows.
+**Layout bar: Apple-level.** This means layout and structure, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials. No capsule or pill shapes** (no floating capsules, no fully rounded buttons or containers). Use rectangular shapes with modest radii, solid neutrals, hairline borders and soft shadows. Awwwards-level craft and motion sit on top of that layout.
 
-## 2. Working method
+## 2. Working method: workers do not stop
 
-- **One page at a time.** Work only on the page the user named. Finish it, get approval, then move on.
-- **The user directs.** Do exactly what they ask. Do not add extra sections, effects or restyling "while you're there".
-- **Ask before designing.** Colors, fonts, layout, copy and motion style are the user's calls. Propose 2-3 options and wait for an answer.
-- **Rebuild, area by area.** The new UI is built from scratch in `src/editor`, replacing the bridge files one at a time (see §3 and `DOCS/UI/PARITY.md`). Do not restyle `src/legacy-editor`.
-- **Small steps.** Make a change, take a Playwright screenshot, show it. No giant unreviewed diffs.
+- Work runs from the queue in `DOCS/UI/PARITY.md`, in order, one area per task, until the queue is empty.
+- **Never stop to ask a design question.** Choose what best fits §1 and these rules, finish the task, and log the choice in `DOCS/UI/DECISIONS.md`. The user reviews in batches and may overrule anything.
+- **Fixed by the user, never overridden by a worker's choice:** §1, the palette in `DOCS/UI/PALETTE.md`, and anything marked approved in `DECISIONS.md`.
+- **Blocked on one thing?** Log it in the handoff under "Not done / blocked", do the rest of the task and finish. Do not wait.
+- **Never do these, even to keep going:** delete anything outside the task's files, use anything needing credentials or payment, or push. Log it and leave it undone.
 
-## 3. Scope: what may be touched
+## 3. Structure and scope
 
-| Allowed | Off limits (ask Claude first) |
+- `src/editor` is the new UI. `src/legacy-editor` is the old UI: **read it, never edit it.**
+- **Shell first.** The new `src/editor/shell/EditorShell.tsx` replaces the bridge first and mounts legacy panels until each one is rebuilt. Each later task swaps in one rebuilt area, so routes, the compiler and the tests never need reconnecting.
+- A *bridge* is a file in `src/editor` that only re-exports `@/legacy-editor`. Replace it with the real component and keep its export names and the props callers use.
+- **Reuse non-visual logic** (snapping, hit-testing, transform math, stores, hooks). New components may import it from `@/legacy-editor`. `PARITY.md` status, not a grep, says what is done.
+- Keep behaviour: compare against the legacy area and list anything intentionally dropped in `DECISIONS.md`.
+
+| Allowed | Off limits |
 |---|---|
-| `src/app/**`, `src/editor/**` (the new UI), `public/**` | `src/core/**` (engine, stores, commands, document) |
-| `src/editor/styles/**` (CSS, tokens) | `src/compiler/**`, `src/runtime/**`, `src/ai/**` |
-| New UI components and assets | `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs` |
+| `src/app/**`, `src/editor/**`, `public/**` | `src/legacy-editor/**`, `src/core/**`, `src/compiler/**`, `src/runtime/**`, `src/ai/**` |
+| `DOCS/UI/**` entries your task requires | `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs` |
 
-UI code may **call** the engine. It must not change it.
+Need an off-limits change? List it under "Engine changes requested" in `INTEGRATION.md`, work around it and carry on.
 
-**Rebuild structure.** The new UI is built from scratch in `src/editor`. The old UI is in `src/legacy-editor`: **read-only reference, never edit it** (it is also off limits to workers). `src/editor` keeps the same import paths the app, compiler and tests use; files there that still re-export from `@/legacy-editor` are *bridges* and mean "not rebuilt yet". Track progress in `DOCS/UI/PARITY.md`. Reuse non-visual logic (snapping, hit-testing, stores, hooks) instead of rewriting it.
+## 4. Components from other sites
 
-## 4. Design system
+- Take components from other sites freely, to reach the bar faster. Candidates to check: shadcn/ui, Radix, React Bits, Magic UI, Aceternity UI (free tier), Origin UI, 21st.dev.
+- **Only use code whose license allows it**, and check it per component. No paid or template code, and nothing copied from a live site's own source. License unclear? Pick another component.
+- **Log every one** in `DOCS/UI/COMPONENT_SOURCES.md` before finishing the task: name, URL, license, where it went, what changed.
+- **Make it ours.** Copy it into `src/editor/components/`, then restyle it to these rules: our tokens, no glass, no pills, plus accessibility and reduced motion. Do not ship a site's default look.
+- **No new dependencies.** Use what is installed (`motion`, `gsap`, `three`, `lucide-react`). If a component needs another package, rewrite it without that package or pick another, and note the wish in the handoff. There is no Tailwind in this repo's dependencies, so convert its classes to CSS.
 
-- **Tokens only.** Every color, font, size, radius, shadow, spacing and duration comes from `src/editor/styles/tokens.css`. No hardcoded values in components or CSS.
-- **Colors come from reference images.** The user supplies the images. Record each image and the colors taken from it in `DOCS/UI/PALETTE.md` before using them. Do not invent a palette.
-- **Type and spacing scales** are decided once with the user, then reused.
-- **Light/dark support** is decided by the user. Until then, do not add a second theme.
+## 5. Design system
 
-## 5. Motion and performance
+- **Tokens only**, from `src/editor/styles/tokens.css`. No hardcoded colors, sizes, fonts, radii, shadows or durations elsewhere.
+- **New tokens use the `--ll-` prefix and new CSS classes use an `ll-` prefix or CSS modules**, so nothing collides with legacy styles while both are loaded.
+- **Colors come only from `PALETTE.md`.** Never add a color. Light theme only, until the user decides otherwise.
+- Workers may add non-color tokens (spacing, type, radius, motion) and log the scale in `DECISIONS.md`. Reuse them afterwards.
 
-- Use modern motion libraries already in the repo (`motion`, GSAP). Each has one job, so we do not ship both for the same thing. The user decides which does what.
-- Animate **only `transform` and `opacity`**. Never animate layout properties (`width`, `height`, `top`, `left`, `margin`).
-- Respect `prefers-reduced-motion`.
-- **Lazy-load** heavy effects (three.js, large animations). Keep them out of the initial bundle.
-- Prefer CSS for simple transitions. Reach for a library only when CSS cannot do it.
-- Performance is a feature: smooth 60fps, no layout shift, no long main-thread tasks.
+## 6. Motion and performance
 
-## 6. Quality bar
+- `motion` for interface motion, GSAP for timelines and scroll sequences, CSS for simple transitions. Do not use two libraries for one job.
+- Animate **only `transform` and `opacity`**. Respect `prefers-reduced-motion`.
+- **Lazy-load** heavy effects (three.js, large animations).
+- Smooth 60fps, no layout shift, no long main-thread tasks.
 
-- Accessible: keyboard focus, visible focus ring, contrast, labels, semantic HTML.
+## 7. Quality bar
+
+- Accessible: keyboard focus, visible focus ring, contrast of at least 4.5:1 for text, labels, semantic HTML.
 - Responsive: desktop, tablet and mobile.
-- No dead code, no unused files left behind, no TODO comments as a substitute for finishing.
-- Match the surrounding code's naming and structure.
+- No dead code, unused files or TODO comments.
 
-## 7. Checks and phases
+## 8. Checks and phases
 
-- **Browser:** never open a browser by hand. Use **Playwright, headless**, for screenshots and quick checks.
-- **No checks after each step.** Checks run **once at the end of each phase.**
-- A **phase** = a group of pages the user names. At its end, run: `npm run typecheck`, `npm run lint`, `npm run build`, and the Playwright suite (`npm run test:e2e`).
-- A phase is done only when all four pass and the user approves.
+- **Browser:** Playwright, headless, only. Take screenshots at 1440, 1024 and 390 wide for each task.
+- **No full checks per task.** A phase is a group of areas in `PARITY.md`. At its end run `npm run typecheck`, `npm run lint`, `npm run build` and `npm run test:e2e`.
+- A phase closes when all four pass. The user reviews it in a batch.
 
-## 8. Handoff (mandatory)
+## 9. Handoff (mandatory)
 
-At the end of **every worker session**, write `DOCS/UI/handoffs/YYYY-MM-DD-HHMM-<short-name>.md` from `DOCS/UI/handoffs/TEMPLATE.md`. No handoff, no sign-off. Claude reads it and signs it off or sends the work back.
+End every worker session with `DOCS/UI/handoffs/YYYY-MM-DD-HHMM-<short-name>.md` from `TEMPLATE.md`. No handoff, no pass.
 
-## 9. Integration notes (A and B)
+## 10. Integration notes (A and B)
 
-When the redesign is done, Lane A and Lane B connect the new UI to the existing project using `DOCS/UI/INTEGRATION.md`. **Add to it during work, as things happen**, whenever you:
-- replace or delete a UI component, panel or route
-- rely on an engine store, hook, command or event (record the name and what the UI assumes)
-- need an engine change you are not allowed to make (list it under "Engine changes requested")
-- add a shared component, hook, token or motion utility
-- rename or remove a token, change a route, the shell layout, or a test selector
+Add to `DOCS/UI/INTEGRATION.md` as you go, when you replace a component or route, rely on an engine store, hook, command or event, need an engine change, or change a test selector.
 
-Also mention in your handoff which integration entries you added.
+## 11. Git
 
-## 10. Git
-
-- Work only on `ui/redesign`. Never commit to or push `main`.
-- Commit per page, with a conventional message, e.g. `feat(ui): redesign launcher page`.
-- Do not push until the user says so.
+- Work only on `ui/redesign`. Never commit to or push `main`. **Never push until the user says so.** Never force-push.
+- Workers do not commit. Claude commits each area after the watcher passes it, e.g. `feat(ui): rebuild top bar`.
 - No `Co-Authored-By` lines.

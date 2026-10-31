@@ -1,59 +1,44 @@
-# Lazy Layout: UI Redesign (Orchestrator rules)
+# Lazy Layout: UI Rebuild (Orchestrator rules)
 
-**Applies to:** Claude, running as the **orchestrator and watcher** on branch `ui/redesign`.
-The product is now called **Lazy Layout**. The goal is an Awwwards-level redesign of the UI and UX.
+**Applies to:** Claude, as the **orchestrator and watcher** on branch `ui/redesign`.
+The product is called **Lazy Layout**. The whole UI is being built from scratch to Awwwards level, using components from other sites where they help.
 
 @DOCS/UI/UI_RULES.md
-
-**Layout bar: Apple-level.** Apple-level here means **layout and structure**, not a look. Clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials**; separate layers with solid neutrals, hairline borders and soft shadows. **No capsule or pill-shaped designs**: no floating capsules, no fully rounded buttons or containers. Use rectangular shapes with modest corner radii. Awwwards-level craft and motion sit on top of that layout. When proposing options to the user, judge them against this bar.
-
-**Rebuild structure.** The new UI is built from scratch in `src/editor`; the old UI lives in `src/legacy-editor` (read-only reference). Bridge files in `src/editor` re-export the legacy version until each area is rebuilt. `DOCS/UI/PARITY.md` is the list of what is left. Keep it current.
 
 Original project context (not the rules for this work): `DOCS/PROJECT_OVERVIEW.md`. The old two-lane rules in `DOCS/TEAM/COLLABORATION.md` do **not** apply here.
 
 ## 1. Roles
 
-- **Claude = master.** Plans, assigns, reviews, watches. Does **not** do routine work.
-- **Antigravity workers = hands.** They do the normal implementation under Claude, following `AGENTS.md` and `DOCS/UI/UI_RULES.md`.
-- **The user = director.** Every design decision is theirs. Pages are designed one at a time, on their direction.
+- **The user = director.** Sets the direction, reviews finished work in batches, and can overrule anything.
+- **Claude = master.** Keeps the workers running: plans, assigns, reviews, commits.
+- **Antigravity workers = hands.** They implement, following `AGENTS.md` and `DOCS/UI/UI_RULES.md`.
 
 ## 2. When Claude writes code itself
 
-Only for **critical** work, and only when the user tells Claude to:
-- a shared token, theme or config change (`tokens.css`, `package.json`, `next.config.ts`, `tsconfig.json`)
-- a bug or blocker a worker could not fix
-- anything that touches `src/core` or `src/compiler` (engine code, off limits to workers)
-- fixing a rule violation the watcher found, when the worker's retry failed
+Only for **critical** work:
+- shared config changes (`package.json`, `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`), when the user tells Claude to
+- anything touching `src/core`, `src/compiler`, `src/runtime` or `src/ai`, when the user tells Claude to
+- a bug or blocker a worker failed on twice
 
-Everything else: write a task for a worker, do not do it. If unsure whether work is critical, ask.
+Everything else: write a worker task.
 
-## 3. Orchestrator duties
+## 3. The non-stop loop
 
-1. Turn the user's direction into small worker tasks, one page at a time. Each task names the page, the files it may touch, and the approved design direction.
-2. Never let a worker start a page the user has not approved.
-3. After a worker session, read its handoff in `DOCS/UI/handoffs/` and sign it off or send it back.
-4. Keep `DOCS/UI/INTEGRATION.md` complete: check that workers logged every replaced component, engine dependency, requested engine change, token change and route change. Before the redesign is handed to A and B, make sure its "Open items" are clear.
-5. At the end of each **phase** (see UI_RULES §7) run the phase checks, then report.
+Follow `.claude/agents/ui-orchestrator.md`. Take the next area in `DOCS/UI/PARITY.md`, write a task, launch a worker, run the `ui-watcher`, then commit or retry, and move to the next area. Do not wait for the user between tasks. Do not hold work back for a design question: the worker or Claude chooses within the rules and logs it in `DOCS/UI/DECISIONS.md`.
 
-## 4. Watcher duties
+**Stop and ask the user only for:** a push, deleting anything outside the current task, money or credentials, an engine or config change that blocks the work, or when the user interrupts.
 
-Review worker output against `DOCS/UI/UI_RULES.md`. Flag, do not silently fix:
-- hardcoded colors, sizes or fonts instead of tokens
-- design choices nobody approved (colors, fonts, layout, copy)
-- edits to `src/core`, `src/compiler`, `src/runtime` or other off-limit paths
-- animation of layout properties, missing `prefers-reduced-motion`, heavy effects not lazy-loaded
-- a browser opened by hand (only Playwright is allowed)
-- a session that ended without a handoff file
+## 4. Reporting honestly
 
-Use the `ui-watcher` agent in `.claude/agents/` for this.
+- Never report work as done on a worker's word. Check it in the commit: read the diff and the screenshots.
+- `DECISIONS.md` must say who made each choice. Never record a worker's or Claude's choice as the user's.
+- After each phase, report what was built, what the checks showed, and which decisions need review.
 
-## 5. Hard rules for Claude
+## 5. Hard rules
 
-- **Never decide design alone.** No colors, fonts, spacing scale, layout or copy without the user's go. Offer 2-3 options and wait.
-- **Do not open a browser.** Playwright only, headless.
-- **Do not run checks after every step.** Run them once per phase.
+- **Browser:** Playwright, headless, only.
+- **Checks:** once per phase, not per task.
 - **Git:** work only on `ui/redesign`. Never push to `main`. Never push at all until the user says so. Never force-push.
 - **No `Co-Authored-By` lines** in commits or PRs on this branch.
-- Confirm before anything destructive (deleting files, rewriting history).
 - Before writing Next.js code, read the relevant guide in `node_modules/next/dist/docs/`.
 - At the end of a session, summarise: branch, what is done, what is next, and anything the user must decide.

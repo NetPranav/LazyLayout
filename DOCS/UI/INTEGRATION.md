@@ -1,84 +1,60 @@
 # Integration Notes (for A and B)
 
-A living file. The redesign changes the UI only. When it is done, Lane A (NetPranav) and Lane B (OVERxPOWERED) use this file to connect the new UI to the existing project properly.
-
-**Workers: add an entry here during your work, whenever something below applies. Do not wait for the end of the session.** Keep entries short and factual. One entry per item. Newest at the bottom of each section.
-
-## 1. How to add an entry
-
-Use this shape:
+When the rebuild is done, Lane A and Lane B use this file to connect the new UI to the project. **Workers: add entries as you work.** Keep them short. Use this shape under the matching section:
 
 ```
 ### <short title>
-- **Page / phase:**
+- **Area:**
 - **Files:**
 - **What changed:**
 - **What A/B must do:**
 - **Status:** open | done
 ```
 
-## 2. Replaced or removed UI
+## 1. Replaced or removed UI
 
-Old components, panels or routes that the redesign replaced or deleted, and what took their place. A/B must update anything that imported them.
+### Old editor moved to `src/legacy-editor`
+- **Area:** rebuild setup
+- **Files:** `src/legacy-editor/**`, bridge files in `src/editor/**`, `eslint.config.mjs`
+- **What changed:** The old editor moved, with its internal imports changed to `@/legacy-editor/...`. Routes, `src/app/layout.tsx`, `src/compiler/export/CrossFrameworkExporter.ts` and the `src/core` tests still import `@/editor/...`, which now resolve to bridges and later to new components.
+- **What A/B must do:** Make any old-UI fix in `src/legacy-editor`, and port it if that area is already rebuilt.
+- **Status:** open until `src/legacy-editor` is removed
 
-## 3. Engine contracts the new UI relies on
+### Old UI spec docs removed
+- **Area:** docs
+- **Files:** `DOCS/INITIAL/UI.md`, `DOCS/INITIAL/PANELS.md`
+- **What changed:** Deleted on the user's instruction, because they describe the old UI. They remain in git history. Other docs and `src/ai/copilot/DiagnosticSuggester.ts` still mention them by name.
+- **What A/B must do:** Do not restore them on merge.
+- **Status:** open
 
-Stores, hooks, commands and events from `src/core` that the new UI calls. Record the exact name, what it is used for, and anything the UI assumes about it (shape, timing, side effects). If the UI needs a change in the engine that does not exist yet, list it under **Engine changes requested** below and tell Claude. Workers do not edit `src/core`.
+## 2. Engine contracts the new UI relies on
 
-## 4. Engine changes requested
+### Selection, commands and project store
+- **Area:** top bar
+- **What the UI uses:** `useSelectionStore((s) => s.selectedIds)`; `invokeCommand` with `align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`, `distribute.horizontal`, `distribute.vertical`, `layer.tidy`, `layer.bringForward`, `layer.sendBackward`, `edit.group`, `edit.undo`, `edit.redo`, `view.commandPalette`; `MENU_MODEL` actions; `useProjectStore` `mountDemoProject` and `clearToBlankCanvas`.
+- **Status:** open
 
-Changes the UI needs from `src/core`, `src/compiler`, `src/runtime` or `src/ai`. Claude passes these to A or B.
+## 3. Engine changes requested
 
-## 5. New shared UI pieces
-
-New components, hooks, tokens and motion utilities that other code can reuse, with file paths and how to use them.
-
-## 6. Tokens and styles
-
-Renamed, removed or added tokens in `src/editor/styles/tokens.css`. Old tokens that A/B code may still reference.
-
-## 7. Routes and layout
-
-Changed routes, shell structure, panel docking or layout behaviour that affects how features mount into the editor.
-
-## 8. Tests
-
-E2E selectors, test ids or flows that changed and need updating in `tests/e2e`.
-
-## 9. Open items before merge
-
-Anything unresolved that must be settled before the redesign can be connected to `main`.
-
----
-
-## Entries
-
-<!-- Add entries below, under the matching section heading. Newest at the bottom of each section. -->
-<!-- History: entries from the first experiments (old top bar, token and color sweeps on the legacy editor) are archived in DOCS/UI/archive/2026-10-30-legacy-experiments/INTEGRATION-entries.md. -->
-
-### 2. Replaced or removed UI
-
-#### Old editor moved to `src/legacy-editor`; new UI rebuilt in `src/editor`
-- **Page / phase:** Rebuild setup (before the first page)
-- **Files:** `src/editor/**` (old) renamed to `src/legacy-editor/**`; imports inside it changed from `@/editor/...` to `@/legacy-editor/...`; new `src/editor/**` bridge files; `eslint.config.mjs` (editor-scoped rules now also cover `src/legacy-editor`); `tests/e2e/stage-engine.spec.ts` (comment path only)
-- **What changed:** Routes, `src/app/layout.tsx`, `src/compiler/export/CrossFrameworkExporter.ts` and the `src/core` tests still import `@/editor/...` and `../../../editor/...` unchanged. Those paths now resolve to bridge files that re-export the legacy implementation. As each area is rebuilt, the bridge is replaced by the new component. What is left is tracked in `DOCS/UI/PARITY.md`.
-- **What A/B must do:** For new code, import from `@/editor/...` as before. Do not import from `@/legacy-editor` in new code outside `src/editor` bridges. Any change A or B make to old UI files must be made in `src/legacy-editor`, then ported to the new component when that area is rebuilt.
-- **Status:** open (stays open until `grep -rl "legacy-editor" src/editor` is empty and `src/legacy-editor` is deleted)
-
-### 3. Engine contracts the new UI relies on
-
-#### Selection, command bus and project store (from the first top-bar experiment)
-- **Source:** archived experiment; the engine side is real and still valid. Paths below are in the legacy tree.
-- UI reads `useSelectionStore((s) => s.selectedIds)` to switch between nothing-selected and layer-selected states.
-- UI calls `invokeCommand` for alignment (`align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`), distribution (`distribute.horizontal`, `distribute.vertical`), tidy (`layer.tidy`), arrange (`layer.bringForward`, `layer.sendBackward`), grouping (`edit.group`), history (`edit.undo`, `edit.redo`), search (`view.commandPalette`), and menu actions from `MENU_MODEL`.
-- UI calls `useProjectStore((s) => s.mountDemoProject)` and `clearToBlankCanvas()` for the showcase demo.
-- **Status:** open (the new top bar must use the same contracts)
-
-### 4. Engine changes requested
-
-#### Engine edits made by Claude (not requested of A/B, but A/B must know)
+### Canvas defaults
+- **Area:** canvas
 - **Files:** `src/core/types/environment.ts`, `src/core/store/__tests__/WorldEnvironment.test.ts`
-- **What changed:** The `clean_light` palette canvas color is now `#DFDFDF` (was `#FCFDFD`) and its grid dot color `#C8C8C8`. `DEFAULT_ENVIRONMENT_SETTINGS.viewport.grid.style` is now `"none"` (was `"dots"`), so new projects have no dot grid. The test that asserted `"dots"` now asserts `"none"`. Existing saved projects keep whatever grid style they stored.
-- **What A/B must do:** Take this change when merging. If A/B code relies on a dotted default grid, set it explicitly.
-- **Status:** open (tests not run yet, they run at the end of the first phase)
+- **What is needed:** The `clean_light` canvas should be `#DFDFDF` with grid style `"none"`, as the user asked. **Not applied:** an earlier edit was lost, and the file still has `#FCFDFD` and `"dots"`.
+- **Status:** open, waiting on the user's go for Claude to edit `src/core`
 
+## 4. New shared UI pieces
+
+## 5. Tokens and styles
+
+New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.
+
+## 6. Routes and layout
+
+## 7. Tests
+
+### E2E File menu helper
+- **Files:** `tests/e2e/support/editor.ts` (`openFileMenu`)
+- **What changed:** The helper clicks a top-level "File" button. The experimental top bar now in `src/legacy-editor` has no such button, so tests using this helper are expected to fail until the new top bar is in. Keep a reachable File button or update the helper. Claude owns this.
+- **Status:** open
+
+## 8. Open items before merge

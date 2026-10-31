@@ -66,10 +66,10 @@ function listSourceFiles(dir: string): string[] {
   return out;
 }
 
-const files = listSourceFiles("src/editor");
+const files = [...listSourceFiles("src/editor"), ...listSourceFiles("src/legacy-editor")];
 const allViolations = files.flatMap((f: string) => checkFile(f));
 
-console.log(`[check-no-adhoc-compat] ${files.length} file(s) checked under src/editor/.`);
+console.log(`[check-no-adhoc-compat] ${files.length} file(s) checked under src/editor/ and src/legacy-editor/.`);
 
 if (allViolations.length > 0) {
   console.error(`[check-no-adhoc-compat] ${allViolations.length} violation(s):\n`);
