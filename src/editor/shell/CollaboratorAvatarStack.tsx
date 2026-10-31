@@ -29,7 +29,7 @@ export const CollaboratorAvatarStack: React.FC = () => {
     <div className="flex items-center gap-2">
       {/* Network / Ping Status Indicator */}
       <div
-        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono bg-slate-900/60 border border-slate-700/60 text-slate-300 select-none cursor-pointer hover:bg-slate-800/80 transition-colors"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-mono select-none cursor-pointer transition-colors" style={{ background: "var(--neutral-100)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" }}
         onClick={handleOpenCollabModal}
         title={
           isConnected
@@ -43,7 +43,7 @@ export const CollaboratorAvatarStack: React.FC = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[11px] text-slate-300 font-semibold">{latencyMs}ms</span>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>{latencyMs}ms</span>
           </>
         ) : (
           <>
@@ -93,9 +93,9 @@ export const CollaboratorAvatarStack: React.FC = () => {
       {/* Share / Collab Trigger Button */}
       <button
         onClick={handleOpenCollabModal}
-        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-indigo-200 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 rounded-md transition-all shadow-sm active:scale-95"
+        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all shadow-sm active:scale-95" style={{ background: "var(--accent-primary)", color: "var(--text-inverse)", border: "1px solid var(--accent-primary)", cursor: "pointer" }}
       >
-        <Share2 className="w-3.5 h-3.5 text-indigo-400" />
+        <Share2 className="w-3.5 h-3.5" style={{ color: "var(--text-inverse)" }} />
         <span>Share</span>
       </button>
     </div>

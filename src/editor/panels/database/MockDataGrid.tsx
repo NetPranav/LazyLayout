@@ -219,7 +219,7 @@ export const MockDataGrid: React.FC<MockDataGridProps> = ({
             <tr
               style={{
                 backgroundColor: "#F8FAFC",
-                borderBottom: "1px solid var(--border-default, rgba(15, 23, 42, 0.08))",
+                borderBottom: "1px solid var(--border-default)",
                 position: "sticky",
                 top: 0,
                 zIndex: 10,
@@ -233,9 +233,9 @@ export const MockDataGrid: React.FC<MockDataGridProps> = ({
                   key={f.name}
                   style={{
                     padding: "8px 12px",
-                    color: "var(--text-secondary, #475569)",
+                    color: "var(--text-secondary)",
                     fontWeight: 700,
-                    borderRight: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.06))",
+                    borderRight: "1px solid var(--border-subtle)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -245,7 +245,7 @@ export const MockDataGrid: React.FC<MockDataGridProps> = ({
                       style={{
                         fontSize: 8.5,
                         fontWeight: 600,
-                        color: "var(--text-muted, #64748B)",
+                        color: "var(--text-muted)",
                         textTransform: "uppercase",
                       }}
                     >
@@ -280,7 +280,7 @@ export const MockDataGrid: React.FC<MockDataGridProps> = ({
                 <tr
                   key={rowIdx}
                   style={{
-                    borderBottom: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.06))",
+                    borderBottom: "1px solid var(--border-subtle)",
                     backgroundColor: rowIdx % 2 === 0 ? "#FFFFFF" : "#F8FAFC",
                     transition: "background-color 0.1s ease",
                   }}

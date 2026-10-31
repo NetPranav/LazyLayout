@@ -292,11 +292,11 @@
   height: 36px;
   border-bottom: 1px solid var(--border-subtle);
   position: relative;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--surface-panel-solid);
 }
 
 .sequencer-lane-row--active {
-  background: rgba(32, 104, 89, 0.04);
+  background: var(--surface-panel-active);
 }
 
 /* Diamond Keyframe Markers */
@@ -308,7 +308,7 @@
   transform: translate(-50%, -50%) rotate(45deg);
   background: var(--accent-primary);
   border: 1.5px solid var(--text-inverse);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-sm);
   cursor: grab;
   z-index: 5;
   transition: transform 0.1s ease, background 0.12s ease;
@@ -322,8 +322,8 @@
 
 .sequencer-kf-diamond--selected {
   background: var(--accent-warning) !important;
-  border-color: #FFFFFF;
-  box-shadow: 0 0 0 2px var(--accent-warning), 0 2px 6px rgba(0, 0, 0, 0.3);
+  border-color: var(--neutral-0);
+  box-shadow: 0 0 0 2px var(--accent-warning), var(--shadow-md);
   transform: translate(-50%, -50%) rotate(45deg) scale(1.3);
   z-index: 10;
 }
@@ -337,7 +337,7 @@
   background: var(--accent-danger);
   pointer-events: none;
   z-index: 20;
-  box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+  box-shadow: var(--shadow-xs);
 }
 
 .sequencer-playhead-head {
@@ -351,7 +351,7 @@
   clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
   cursor: col-resize;
   pointer-events: auto;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ScrollTrigger Visualizer Bar */
@@ -476,7 +476,7 @@
 
 .curve-handle-p2:hover {
   r: 8px;
-  fill: #0891b2;
+  fill: var(--accent-info);
 }
 
 .curve-tangent-line {

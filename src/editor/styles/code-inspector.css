@@ -62,7 +62,7 @@
 
 .code-inspector__tab--active {
   background: var(--accent-primary);
-  color: #FFFFFF;
+  color: var(--text-code);
   box-shadow: var(--shadow-sm);
 }
 
@@ -107,7 +107,7 @@
 }
 
 .code-inspector__btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-code-hover);
 }
 
 .code-inspector__btn:active {
@@ -116,7 +116,7 @@
 
 .code-inspector__btn--primary {
   background: var(--accent-primary);
-  color: #FFFFFF;
+  color: var(--text-code);
   box-shadow: var(--shadow-sm);
 }
 

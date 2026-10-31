@@ -628,7 +628,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
       case "loop":
         return <Sparkles size={20} style={{ color: "#EC4899" }} />;
       default:
-        return <Film size={20} style={{ color: "#206859" }} />;
+        return <Film size={20} style={{ color: "var(--accent-primary)" }} />;
     }
   };
 
@@ -1048,8 +1048,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         fontWeight: 600,
                         padding: "1px 5px",
                         borderRadius: 3,
-                        background: "rgba(32, 104, 89, 0.1)",
-                        color: "var(--accent-primary, #206859)",
+                        background: "var(--accent-primary-light)",
+                        color: "var(--accent-primary)",
                       }}
                     >
                       {offer.trigger}
@@ -1132,7 +1132,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         {!hasSlot ? "Full" : "Blocked"}
                       </span>
                     )}
-                    <span style={{ fontSize: 8.5, fontWeight: 600, padding: "1px 4px", borderRadius: 3, background: "rgba(32, 104, 89, 0.1)", color: "var(--accent-primary, #206859)" }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, padding: "1px 4px", borderRadius: 3, background: "var(--accent-primary-light)", color: "var(--accent-primary)" }}>
                       {preset.badge}
                     </span>
                   </div>
@@ -1286,7 +1286,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                           padding: "1px 5px",
                           borderRadius: 8,
                           background: isChecked ? "rgba(32, 104, 89, 0.12)" : "var(--surface-panel-hover)",
-                          color: isChecked ? "var(--accent-primary, #206859)" : "var(--text-tertiary)",
+                          color: isChecked ? "var(--accent-primary)" : "var(--text-tertiary)",
                           fontFamily: "var(--font-mono)",
                         }}
                       >
@@ -1413,7 +1413,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                           padding: "1px 4px",
                           borderRadius: 3,
                           background: "rgba(32, 104, 89, 0.12)",
-                          color: "var(--accent-primary, #206859)",
+                          color: "var(--accent-primary)",
                           marginLeft: 3,
                         }}
                         title={`Authoritative Element Contract: ${activeElementType} (${activeContract?.category || "Element"})`}
@@ -1496,7 +1496,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                       style={{ padding: 12, gap: 10, width: "min(360px, 92vw)" }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#0F172A" }}>
-                        <Save size={13} style={{ color: "var(--accent-primary, #206859)" }} />
+                        <Save size={13} style={{ color: "var(--accent-primary)" }} />
                         <span>Save as Reusable Preset</span>
                       </div>
                       <div style={{ fontSize: 10, color: "#64748B", lineHeight: 1.4 }}>
@@ -1538,7 +1538,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                             padding: "4px 10px",
                             borderRadius: 4,
                             border: "none",
-                            background: "var(--accent-primary, #206859)",
+                            background: "var(--accent-primary)",
                             color: "#FFFFFF",
                             fontSize: 10,
                             fontWeight: 600,
@@ -1565,7 +1565,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                       padding: "24px 12px",
                       textAlign: "center",
                       gap: 8,
-                      border: "1px dashed var(--border-default, #E2E8F0)",
+                      border: "1px dashed var(--border-default)",
                       borderRadius: "var(--radius-md, 8px)",
                       background: "rgba(248, 250, 252, 0.7)",
                     }}
@@ -1575,11 +1575,11 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         width: 36,
                         height: 36,
                         borderRadius: "50%",
-                        background: "rgba(32, 104, 89, 0.1)",
+                        background: "var(--accent-primary-light)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "var(--accent-primary, #206859)",
+                        color: "var(--accent-primary)",
                       }}
                     >
                       <Film size={18} />
@@ -1678,8 +1678,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                                       gap: 5,
                                       padding: "4px 6px",
                                       border: "none",
-                                      background: track.trigger === trig ? "rgba(32, 104, 89, 0.1)" : "transparent",
-                                      color: track.trigger === trig ? "var(--accent-primary, #206859)" : "#0F172A",
+                                      background: track.trigger === trig ? "var(--accent-primary-light)" : "transparent",
+                                      color: track.trigger === trig ? "var(--accent-primary)" : "var(--text-primary)",
                                       fontSize: 10,
                                       fontWeight: track.trigger === trig ? 700 : 500,
                                       cursor: "pointer",
@@ -1911,7 +1911,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                 marginBottom: 12,
               }}
             >
-              <Film size={20} style={{ color: "var(--accent-primary, #206859)" }} />
+              <Film size={20} style={{ color: "var(--accent-primary)" }} />
             </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
               Animation Library Empty

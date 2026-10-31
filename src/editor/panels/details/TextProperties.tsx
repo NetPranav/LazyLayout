@@ -80,7 +80,7 @@ export const TextProperties: React.FC = () => {
   const current = parseVariations(variations ?? "");
 
   return (
-    <div className="text-props" role="group" aria-label="Text" style={{ display: "grid", gap: 6, padding: "8px" , borderBottom: "1px solid var(--border-subtle, rgba(128,128,128,0.2))" }}>
+    <div className="text-props" role="group" aria-label="Text" style={{ display: "grid", gap: 6, padding: "8px" , borderBottom: "1px solid var(--border-subtle)" }}>
       <div className="text-props__field">
         <span>Font</span>
         <FontPicker value={family as string | null} onChoose={(css) => set({ "typography.fontFamily": css, "typography.fontVariations": null })} />

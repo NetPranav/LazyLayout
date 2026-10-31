@@ -2,42 +2,47 @@
 
 /**
  * ============================================================================
- * STUDIO HEADER COMPONENT
+ * REDESIGNED STUDIO HEADER (CONTEXTUAL TOP BAR)
  * ============================================================================
- * UI Element: Master Top Navigation & Application Menu Bar
  * Screen / Scope: Screen 01: Master IDE Studio Shell (`/editor`)
- * Role: Hosts:
- *       - Brand Logo & Title ("LazyLayout Studio")
- *       - Project filename tag ("MyProject.uweb") with dirty state
- *       - Desktop Menu Bar (File, Edit, View, Window, Help)
- *       - Device preview switcher, Showcase demo toggle, Help & Settings
- * Styling Source: `@/editor/styles/menus.css` (`.studio-header`, `.menu-bar`)
+ * Direction: Contextual Toolbar
+ * Layout Architecture:
+ *   - Left (fixed): Logo button opening unified menu (File, Edit, View, Window, Help)
+ *                   + project filename tag with save dot & copyable project ID.
+ *   - Center (adaptive): Changes with context.
+ *                        - Nothing selected: Undo/Redo + Desktop/Tablet/Mobile switcher.
+ *                        - Layer selected: Align, Spacing, Tidy, and Arrange actions.
+ *   - Right (fixed): Command palette search entry + collaborators avatar stack +
+ *                    help button + settings button.
+ *   - Showcase Demo: Moved from outer bar into the unified logo menu.
+ * Styling:
+ *   - `@/editor/styles/menus.css`
+ *   - `@/editor/styles/top-bar.css`
  * ============================================================================
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import "@/editor/styles/menus.css";
+import "@/editor/styles/top-bar.css";
 import {
   Settings,
   HelpCircle,
-  Monitor,
-  Tablet,
-  Smartphone,
-  Sparkles,
+  Search,
   Hash,
   Copy,
   Check,
   X,
+  ChevronDown,
 } from "lucide-react";
-import { MenuDropdown } from "@/editor/menus/MenuDropdown";
-import { WindowMenu } from "@/editor/menus/WindowMenu";
 import { LazyLayoutLogo } from "@/editor/panels/launcher/LazyLayoutLogo";
+import { CollaboratorAvatarStack } from "@/editor/shell/CollaboratorAvatarStack";
+import { StudioCenterToolbar } from "@/editor/shell/StudioCenterToolbar";
+import { UnifiedLogoMenu } from "@/editor/menus/UnifiedLogoMenu";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useLayers } from "@/core/store/useDocumentStore";
+import { invokeCommand } from "@/core/commands";
 
-type OpenMenuId = "file" | "edit" | "view" | "window" | "help" | null;
-
-interface StudioHeaderProps {
+export interface StudioHeaderProps {
   projectId?: string;
   projectName?: string;
   isDirty?: boolean;
@@ -52,8 +57,6 @@ interface StudioHeaderProps {
   onToggleBottom?: () => void;
   onSelectWorkspace?: (preset: string) => void;
   activeWorkspace?: string;
-  /** Downloads the project as a `.lazy.json` file. */
-  /** Opens a `.lazy.json` file as a new project. */
   canUndo?: boolean;
   canRedo?: boolean;
   onResetLayout?: () => void;
@@ -65,6 +68,7 @@ interface StudioHeaderProps {
   onStartDragAI?: () => void;
   onToggleAI?: () => void;
   isAIOpen?: boolean;
+  onOpenCommandPalette?: () => void;
 }
 
 export const StudioHeader: React.FC<StudioHeaderProps> = ({
@@ -92,8 +96,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onStartDragAI,
   onToggleAI,
   isAIOpen = false,
+  onOpenCommandPalette,
 }) => {
-  const [openMenu, setOpenMenu] = useState<OpenMenuId>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -113,49 +118,62 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     }
   };
 
-  // Close menu when clicking outside or pressing Escape
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
-        setOpenMenu(null);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpenMenu(null);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  const handleMenuTriggerClick = (menuId: OpenMenuId) => {
-    setOpenMenu((current) => (current === menuId ? null : menuId));
+  const handleOpenSearch = () => {
+    if (onOpenCommandPalette) {
+      onOpenCommandPalette();
+    } else {
+      window.dispatchEvent(new CustomEvent("antigravity:open_command_palette"));
+    }
   };
 
-  const handleMenuTriggerMouseEnter = (menuId: OpenMenuId) => {
-    // If a menu is already open, hovering over another menu trigger opens it immediately
-    if (openMenu !== null && openMenu !== menuId) {
-      setOpenMenu(menuId);
-    }
+  const handleOpenHelp = () => {
+    invokeCommand("view.commandPalette");
   };
 
   return (
     <header className="studio-header" ref={headerRef} role="banner">
-      {/* Left: Brand Logo + Project File Tag + Menu Bar */}
+      {/* Left: Brand Logo Menu + Project Tag */}
       <div className="studio-header__left">
-        <div className="studio-header__brand" title="LazyLayout Studio">
+        {/* Brand Logo Button */}
+        <button
+          type="button"
+          className={`studio-header__brand studio-header__brand-btn ${isMenuOpen ? "studio-header__brand-btn--open" : ""}`}
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          title="LazyLayout Studio Menu (File, Edit, View, Window, Help)"
+          aria-label="Application Menu"
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+        >
           <LazyLayoutLogo size={18} />
           <span className="studio-header__title">LazyLayout</span>
-        </div>
+          <ChevronDown size={11} strokeWidth={1.75} className="studio-header__brand-chevron" />
+        </button>
 
-        {/* Project pill: file name + save state, with the copyable project ID as a suffix */}
+        {/* Unified Application Menu Dropdown */}
+        <UnifiedLogoMenu
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          isDemoMounted={isDemoMounted}
+          onMountDemo={mountDemoProject}
+          onClearDemo={clearToBlankCanvas}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          leftOpen={leftOpen}
+          rightOpen={rightOpen}
+          bottomOpen={bottomOpen}
+          onToggleLeft={onToggleLeft}
+          onToggleRight={onToggleRight}
+          onToggleBottom={onToggleBottom}
+          onStartDragAI={onStartDragAI}
+          onToggleAI={onToggleAI}
+          isAIOpen={isAIOpen}
+          onOpenPanel={onOpenPanel}
+          onSelectWorkspace={onSelectWorkspace}
+          activeWorkspace={activeWorkspace}
+          onResetLayout={onResetLayout}
+        />
+
+        {/* Project Tag: Name, Save Dot, Copyable ID */}
         <div className="studio-header__project" title="Active Project File">
           <span
             className={`studio-header__project-dot ${isDirty ? "studio-header__project-dot--dirty" : ""}`}
@@ -170,195 +188,77 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               title={`Project ID: ${projectId} (Click to copy project link)`}
               aria-label="Copy project link"
             >
-              <Hash size={10} />
+              <Hash size={10} strokeWidth={1.75} />
               <span>{projectId}</span>
-              {copiedId ? <Check size={10} /> : <Copy size={10} />}
+              {copiedId ? <Check size={10} strokeWidth={1.75} /> : <Copy size={10} strokeWidth={1.75} />}
             </button>
           )}
         </div>
-
-        <span className="studio-header__divider" aria-hidden="true" />
-
-        {/* Desktop Menu Bar */}
-        <nav className="menu-bar" aria-label="Engine Menus">
-          {/* File Menu */}
-          <div className="menu-bar__item-wrapper">
-            <button
-              type="button"
-              className={`menu-bar__trigger ${openMenu === "file" ? "menu-bar__trigger--open" : ""}`}
-              onClick={() => handleMenuTriggerClick("file")}
-              onMouseEnter={() => handleMenuTriggerMouseEnter("file")}
-              aria-expanded={openMenu === "file"}
-            >
-              File
-            </button>
-            <MenuDropdown menu="file" isOpen={openMenu === "file"} onClose={() => setOpenMenu(null)} />
-          </div>
-
-          {/* Edit Menu */}
-          <div className="menu-bar__item-wrapper">
-            <button
-              type="button"
-              className={`menu-bar__trigger ${openMenu === "edit" ? "menu-bar__trigger--open" : ""}`}
-              onClick={() => handleMenuTriggerClick("edit")}
-              onMouseEnter={() => handleMenuTriggerMouseEnter("edit")}
-              aria-expanded={openMenu === "edit"}
-            >
-              Edit
-            </button>
-            <MenuDropdown
-              menu="edit"
-              isOpen={openMenu === "edit"}
-              onClose={() => setOpenMenu(null)}
-              disabledCommands={[...(canUndo ? [] : ["edit.undo"]), ...(canRedo ? [] : ["edit.redo"])]}
-            />
-          </div>
-
-          {/* View Menu */}
-          <div className="menu-bar__item-wrapper">
-            <button
-              type="button"
-              className={`menu-bar__trigger ${openMenu === "view" ? "menu-bar__trigger--open" : ""}`}
-              onClick={() => handleMenuTriggerClick("view")}
-              onMouseEnter={() => handleMenuTriggerMouseEnter("view")}
-              aria-expanded={openMenu === "view"}
-            >
-              View
-            </button>
-            <MenuDropdown menu="view" isOpen={openMenu === "view"} onClose={() => setOpenMenu(null)} />
-          </div>
-
-          {/* Window Menu */}
-          <div className="menu-bar__item-wrapper">
-            <button
-              type="button"
-              className={`menu-bar__trigger ${openMenu === "window" ? "menu-bar__trigger--open" : ""}`}
-              onClick={() => handleMenuTriggerClick("window")}
-              onMouseEnter={() => handleMenuTriggerMouseEnter("window")}
-              aria-expanded={openMenu === "window"}
-            >
-              Window
-            </button>
-            <WindowMenu
-              isOpen={openMenu === "window"}
-              onClose={() => setOpenMenu(null)}
-              leftOpen={leftOpen}
-              rightOpen={rightOpen}
-              bottomOpen={bottomOpen}
-              onToggleLeft={onToggleLeft}
-              onToggleRight={onToggleRight}
-              onToggleBottom={onToggleBottom}
-              onStartDragAI={onStartDragAI}
-              onToggleAI={onToggleAI}
-              isAIOpen={isAIOpen}
-              onSelectWorkspace={onSelectWorkspace}
-              activeWorkspace={activeWorkspace}
-              onResetLayout={onResetLayout}
-              onOpenPanel={onOpenPanel}
-            />
-          </div>
-
-          {/* Help Menu */}
-          <div className="menu-bar__item-wrapper">
-            <button
-              type="button"
-              className={`menu-bar__trigger ${openMenu === "help" ? "menu-bar__trigger--open" : ""}`}
-              onClick={() => handleMenuTriggerClick("help")}
-              onMouseEnter={() => handleMenuTriggerMouseEnter("help")}
-              aria-expanded={openMenu === "help"}
-            >
-              Help
-            </button>
-            <MenuDropdown menu="help" isOpen={openMenu === "help"} onClose={() => setOpenMenu(null)} />
-          </div>
-        </nav>
       </div>
 
-      {/* Center: Device Mode Segmented Control shifted from second top bar */}
+      {/* Center: Adaptive Contextual Toolbar */}
       <div className="studio-header__center">
-        <div className="toolbar-segmented" role="radiogroup" aria-label="Device Preview Target">
-          <button
-            type="button"
-            className={`toolbar-segmented__btn ${deviceMode === "desktop" ? "toolbar-segmented__btn--active" : ""}`}
-            onClick={() => onSelectDeviceMode && onSelectDeviceMode("desktop")}
-            title="Desktop Canvas (1440px)"
-          >
-            <Monitor size={12} />
-            <span className="toolbar-segmented__label">Desktop</span>
-          </button>
-          <button
-            type="button"
-            className={`toolbar-segmented__btn ${deviceMode === "tablet" ? "toolbar-segmented__btn--active" : ""}`}
-            onClick={() => onSelectDeviceMode && onSelectDeviceMode("tablet")}
-            title="Tablet Canvas (768px)"
-          >
-            <Tablet size={12} />
-            <span className="toolbar-segmented__label">Tablet</span>
-          </button>
-          <button
-            type="button"
-            className={`toolbar-segmented__btn ${deviceMode === "mobile" ? "toolbar-segmented__btn--active" : ""}`}
-            onClick={() => onSelectDeviceMode && onSelectDeviceMode("mobile")}
-            title="Mobile Canvas (375px)"
-          >
-            <Smartphone size={12} />
-            <span className="toolbar-segmented__label">Mobile</span>
-          </button>
-        </div>
+        <StudioCenterToolbar
+          deviceMode={deviceMode}
+          onSelectDeviceMode={onSelectDeviceMode}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
       </div>
 
-      {/* Right: Git Branch, Engine Badge, Settings */}
-      {/* Right: Showcase demo toggle, then help/settings (branch + engine stats live in the status bar) */}
+      {/* Right: Search, Collaborators, Help, Settings */}
       <div className="studio-header__right">
-        {/* Demo Stash / Canvas State Switcher */}
+        {/* Search / Command Palette Entry */}
         <button
           type="button"
-          className={`studio-header__demo-btn ${isDemoMounted ? "studio-header__demo-btn--active" : ""}`}
-          id="header-toggle-demo-btn"
-          aria-label={isDemoMounted ? "Clear showcase demo" : "Mount Showcase Demo"}
-          title={isDemoMounted ? "Clear the showcase demo and return to a blank canvas" : "Load the showcase demo project"}
-          onClick={() => {
-            if (isDemoMounted) {
-              clearToBlankCanvas();
-            } else {
-              mountDemoProject();
-            }
-          }}
+          className="studio-header__search-btn"
+          onClick={handleOpenSearch}
+          title="Search actions and commands (Ctrl+K / Ctrl+P)"
+          aria-label="Search actions and commands"
         >
-          <Sparkles size={12} />
-          <span className="studio-header__demo-label">{isDemoMounted ? "Clear Showcase" : "Showcase Demo"}</span>
+          <Search size={13} strokeWidth={1.75} />
+          <span className="studio-header__search-label">Search commands...</span>
+          <kbd className="studio-header__kbd">Ctrl+K</kbd>
         </button>
 
-        <span className="studio-header__divider" aria-hidden="true" />
+        {/* Live Collaborators Avatar Stack */}
+        <div className="studio-header__collab-wrap">
+          <CollaboratorAvatarStack />
+        </div>
 
+        {/* Help Documentation Button */}
         <button
           type="button"
           className="studio-header__icon-btn studio-header__icon-btn--help"
-          title="Engine Documentation (F1)"
-          onClick={() => handleMenuTriggerClick("help")}
+          title="Help & Keyboard Shortcuts (F1)"
+          aria-label="Help & Keyboard Shortcuts"
+          onClick={handleOpenHelp}
         >
-          <HelpCircle size={14} />
+          <HelpCircle size={15} strokeWidth={1.75} />
         </button>
 
+        {/* Settings Toggle Button */}
         {isSettingsOpen ? (
           <button
             type="button"
             className="studio-header__icon-btn studio-header__icon-btn--close-settings"
             title="Close Settings & Return to Viewport (Esc)"
+            aria-label="Close Settings"
             onClick={onCloseSettings || onToggleSettings || onOpenSettings}
             id="studio-header-close-settings-btn"
           >
-            <X size={14} />
+            <X size={15} strokeWidth={1.75} />
           </button>
         ) : (
           <button
             type="button"
             className="studio-header__icon-btn"
             title="Project Settings & Preferences (Ctrl+,)"
+            aria-label="Settings"
             onClick={onToggleSettings || onOpenSettings}
             id="studio-header-settings-btn"
           >
-            <Settings size={14} />
+            <Settings size={15} strokeWidth={1.75} />
           </button>
         )}
       </div>

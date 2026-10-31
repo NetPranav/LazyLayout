@@ -1499,7 +1499,7 @@ export const DatabaseCenterStage: React.FC<DatabaseCenterStageProps> = ({
           )}
 
           {viewMode === "ddl" && (
-            <div style={{ flex: 1, padding: "24px", overflow: "auto", backgroundColor: "var(--canvas-bg, #FCFDFD)" }}>
+            <div style={{ flex: 1, padding: "24px", overflow: "auto", backgroundColor: "var(--neutral-canvas)" }}>
               <div
                 style={{
                   backgroundColor: "#FFFFFF",

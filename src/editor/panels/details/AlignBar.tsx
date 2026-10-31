@@ -31,7 +31,7 @@ export const AlignBar: React.FC = () => {
     </button>
   );
   return (
-    <div className="align-bar" role="toolbar" aria-label="Align and distribute" style={{ display: "flex", gap: 2, padding: "6px 8px", flexWrap: "wrap", borderBottom: "1px solid var(--border-subtle, rgba(128,128,128,0.2))" }}>
+    <div className="align-bar" role="toolbar" aria-label="Align and distribute" style={{ display: "flex", gap: 2, padding: "6px 8px", flexWrap: "wrap", borderBottom: "1px solid var(--border-subtle)" }}>
       {ALIGN.map((a) => button(a.command, a.label, a.Icon, true))}
       <span style={{ width: 8 }} aria-hidden />
       {button("distribute.horizontal", "Distribute horizontal spacing", AlignHorizontalSpaceAround, count >= 3)}

@@ -5,6 +5,8 @@ The product is now called **Lazy Layout**. The goal is an Awwwards-level redesig
 
 @DOCS/UI/UI_RULES.md
 
+**Layout bar: Apple-level.** Apple-level here means **layout and structure**, not a look. Clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials**; separate layers with solid neutrals, hairline borders and soft shadows. **No capsule or pill-shaped designs**: no floating capsules, no fully rounded buttons or containers. Use rectangular shapes with modest corner radii. Awwwards-level craft and motion sit on top of that layout. When proposing options to the user, judge them against this bar.
+
 Original project context (not the rules for this work): `DOCS/PROJECT_OVERVIEW.md`. The old two-lane rules in `DOCS/TEAM/COLLABORATION.md` do **not** apply here.
 
 ## 1. Roles

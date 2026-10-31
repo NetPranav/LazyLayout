@@ -90,37 +90,37 @@
  * ---------------------------------------------------------------------------- */
 @keyframes pulseGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(32, 104, 89, 0.4);
+    box-shadow: 0 0 0 0 var(--pulse-accent-start);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(32, 104, 89, 0);
+    box-shadow: 0 0 0 8px var(--pulse-accent-end);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(32, 104, 89, 0);
+    box-shadow: 0 0 0 0 var(--pulse-accent-end);
   }
 }
 
 @keyframes pulseGlowSuccess {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 0 0 var(--pulse-success-start);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 8px var(--pulse-success-end);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 var(--pulse-success-end);
   }
 }
 
 @keyframes pulseGlowDanger {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 0 var(--pulse-danger-start);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 8px var(--pulse-danger-end);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 0 var(--pulse-danger-end);
   }
 }
 

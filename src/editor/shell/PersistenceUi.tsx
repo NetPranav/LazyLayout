@@ -20,11 +20,11 @@ const cardStyle: React.CSSProperties = {
   zIndex: 10000,
   maxWidth: 520,
   width: "calc(100% - 32px)",
-  background: "var(--surface-panel-solid, #fff)",
-  color: "var(--text-primary, #0f172a)",
-  border: "1px solid var(--border-default, #e2e8f0)",
-  borderRadius: "var(--radius-lg, 10px)",
-  boxShadow: "var(--shadow-xl, 0 12px 32px rgba(15,23,42,.18))",
+  background: "var(--surface-panel-solid)",
+  color: "var(--text-primary)",
+  border: "1px solid var(--border-default)",
+  borderRadius: "var(--radius-lg)",
+  boxShadow: "var(--shadow-xl)",
   padding: "14px 16px",
   fontSize: 13,
   lineHeight: 1.45,
@@ -34,10 +34,10 @@ const cardStyle: React.CSSProperties = {
 };
 
 const buttonStyle: React.CSSProperties = {
-  border: "1px solid var(--border-default, #e2e8f0)",
+  border: "1px solid var(--border-default)",
   background: "transparent",
   color: "inherit",
-  borderRadius: "var(--radius-md, 6px)",
+  borderRadius: "var(--radius-md)",
   padding: "5px 12px",
   fontSize: 12,
   fontWeight: 600,
@@ -46,9 +46,9 @@ const buttonStyle: React.CSSProperties = {
 
 const primaryButtonStyle: React.CSSProperties = {
   ...buttonStyle,
-  background: "var(--accent-primary, #206859)",
-  borderColor: "var(--accent-primary, #206859)",
-  color: "var(--text-inverse, #fff)",
+  background: "var(--accent-primary)",
+  borderColor: "var(--accent-primary)",
+  color: "var(--text-inverse)",
 };
 
 /** Offered when the last session closed before its latest changes were saved. */
@@ -61,12 +61,12 @@ export const RecoveryPrompt: React.FC<{
   const count = recovery.changeCount;
   return (
     <div role="alertdialog" aria-labelledby="recovery-title" aria-describedby="recovery-body" style={{ ...cardStyle, top: 64 }}>
-      <History size={18} style={{ flexShrink: 0, marginTop: 2, color: "var(--accent-warning, #d97706)" }} />
+      <History size={18} style={{ flexShrink: 0, marginTop: 2, color: "var(--accent-warning)" }} />
       <div style={{ flex: 1 }}>
         <div id="recovery-title" style={{ fontWeight: 700, marginBottom: 2 }}>
           Restore unsaved changes?
         </div>
-        <div id="recovery-body" style={{ color: "var(--text-secondary, #475569)" }}>
+        <div id="recovery-body" style={{ color: "var(--text-secondary)" }}>
           LazyLayout closed before saving {count === 1 ? "1 change" : `${count} changes`} to this project (last one at {when}).
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -96,7 +96,7 @@ export const SaveErrorBanner: React.FC<{ fileError: string | null; onDismissFile
   if (!message) return null;
   return (
     <div role="alert" style={{ ...cardStyle, bottom: 40 }}>
-      <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2, color: "var(--accent-danger, #dc2626)" }} />
+      <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2, color: "var(--accent-danger)" }} />
       <div style={{ flex: 1 }}>{message}</div>
       {fileError && (
         <button type="button" aria-label="Dismiss" style={{ ...buttonStyle, border: "none", padding: 2 }} onClick={onDismissFileError}>
@@ -121,8 +121,8 @@ export const FileDropOverlay: React.FC<{ visible: boolean }> = ({ visible }) => 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "color-mix(in srgb, var(--accent-primary, #206859) 12%, transparent)",
-        border: "2px dashed var(--accent-primary, #206859)",
+        background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+        border: "2px dashed var(--accent-primary)",
       }}
     >
       <div style={{ ...cardStyle, position: "static", transform: "none", alignItems: "center", width: "auto" }}>

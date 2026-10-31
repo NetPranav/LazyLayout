@@ -15,50 +15,66 @@
 
 :root {
   /* --------------------------------------------------------------------------
-   * Canvas & Surfaces (Confluence Whiteboard Aesthetic)
+   * Primitive Neutral Ramp (from PALETTE.md / ref-01-work-os.png)
+   * Approved by user (2026-10-30)
    * -------------------------------------------------------------------------- */
-  --canvas-bg: #FCFDFD;
-  --canvas-dot-color: #E2E8F0;
+  --neutral-0: #FFFFFF;
+  --neutral-50: #F1F1F1;
+  --neutral-100: #DFDFDF;
+  --neutral-200: #C8C8C8;
+  --neutral-400: #929292;
+  --neutral-800: #464646;
+  --neutral-1000: #000000;
+
+  /* --------------------------------------------------------------------------
+   * Canvas & Surfaces (Soft Gray Work OS Aesthetic)
+   * -------------------------------------------------------------------------- */
+  --canvas-bg: var(--neutral-100);
+  --canvas-dot-color: var(--neutral-400);
   --canvas-dot-size: 1.5px;
   --canvas-dot-spacing: 24px;
 
-  --surface-panel: rgba(255, 255, 255, 0.92);
-  --surface-panel-solid: #FFFFFF;
-  --surface-panel-hover: #F8FAFC;
-  --surface-panel-active: #F1F5F9;
-  --surface-panel-selected: #EBF5F3;
+  --surface-panel: var(--neutral-200);
+  --surface-panel-solid: var(--neutral-0);
+  --surface-panel-hover: var(--neutral-50);
+  --surface-panel-active: var(--neutral-100);
+  --surface-panel-selected: var(--accent-primary-light);
 
-  --surface-dock-bar: rgba(255, 255, 255, 0.85);
-  --surface-toolbar: rgba(255, 255, 255, 0.95);
-  --surface-statusbar: #FFFFFF;
+  --surface-dock-bar: var(--neutral-50);
+  --surface-toolbar: var(--neutral-50);
+  --surface-statusbar: var(--neutral-50);
 
-  --surface-overlay: rgba(15, 23, 42, 0.4);
-  --surface-tooltip: #0F172A;
-  --surface-disabled: #F1F5F9;
-  --text-disabled: #94A3B8;
-  --border-disabled: rgba(15, 23, 42, 0.04);
+  --surface-overlay: rgba(0, 0, 0, 0.4);
+  --surface-scrim: rgba(0, 0, 0, 0.5);
+  --surface-scrim-dark: rgba(0, 0, 0, 0.75);
+  --surface-subtle-hover: rgba(0, 0, 0, 0.03);
+  --surface-subtle-active: rgba(0, 0, 0, 0.06);
+  --surface-tooltip: var(--neutral-1000);
+  --surface-disabled: var(--neutral-50);
+  --text-disabled: var(--neutral-800);
+  --border-disabled: var(--neutral-200);
 
   /* --------------------------------------------------------------------------
    * Code Surfaces (Live Code Inspector, Export Preview) — the one deliberately
    * dark theme in the app, same rationale as --surface-tooltip. Single source
    * so the two code-viewing panels don't drift into different near-black hexes.
    * -------------------------------------------------------------------------- */
-  --surface-code: #0F172A;
-  --surface-code-toolbar: rgba(30, 41, 59, 0.85);
-  --surface-code-statusbar: #0B1120;
-  --surface-code-hover: rgba(255, 255, 255, 0.06);
-  --text-code: #E2E8F0;
-  --text-code-muted: #94A3B8;
+  --surface-code: var(--neutral-1000);
+  --surface-code-toolbar: var(--neutral-800);
+  --surface-code-statusbar: var(--neutral-1000);
+  --surface-code-hover: rgba(255, 255, 255, 0.08);
+  --text-code: var(--neutral-0);
+  --text-code-muted: var(--neutral-400);
   --border-code: rgba(255, 255, 255, 0.08);
 
   /* --------------------------------------------------------------------------
    * Borders & Separators (Ultra-refined Micro-borders)
    * -------------------------------------------------------------------------- */
-  --border-subtle: rgba(15, 23, 42, 0.06);
-  --border-default: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
-  --border-focus: #206859;
-  --border-active: rgba(32, 104, 89, 0.5);
+  --border-subtle: var(--neutral-200);
+  --border-default: var(--neutral-400);
+  --border-strong: var(--neutral-800);
+  --border-focus: var(--neutral-1000);
+  --border-active: var(--neutral-1000);
 
   /* --------------------------------------------------------------------------
    * Typography & Text Colors
@@ -66,12 +82,12 @@
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "Fira Code", monospace;
 
-  --text-primary: #0F172A;     /* Slate 900 */
-  --text-secondary: #475569;   /* Slate 600 */
-  --text-muted: #64748B;       /* Slate 500 */
-  --text-tertiary: #94A3B8;    /* Slate 400 */
-  --text-inverse: #FFFFFF;
-  --text-accent: #206859;
+  --text-primary: var(--neutral-1000);     /* Primary text: contrast 15.8:1 on canvas */
+  --text-secondary: var(--neutral-800);   /* Secondary text: contrast 7.1:1 on canvas */
+  --text-muted: var(--neutral-800);       /* Mapped to neutral-800 per instruction 3 (question in handoff) */
+  --text-tertiary: var(--neutral-800);    /* Mapped to neutral-800 per instruction 3 (question in handoff) */
+  --text-inverse: var(--neutral-0);
+  --text-accent: var(--neutral-1000);
 
   /* Font Sizes */
   --text-xs: 11px;
@@ -108,11 +124,11 @@
   --space-4xl: 64px;
 
   /* --------------------------------------------------------------------------
-   * Semantic Accent Colors (#206859 Primary Theme)
+   * Semantic Accent Colors (Work OS Solid Neutral Controls)
    * -------------------------------------------------------------------------- */
-  --accent-primary: #206859;       /* Deep Pine Green / Teal */
-  --accent-primary-hover: #174f43;
-  --accent-primary-light: #EBF5F3;
+  --accent-primary: var(--neutral-1000);       /* Solid black for primary and active controls */
+  --accent-primary-hover: var(--neutral-800);  /* Dark neutral hover */
+  --accent-primary-light: var(--neutral-50);   /* Light neutral selected fill */
 
   --accent-success: #10B981;       /* Emerald */
   --accent-success-light: #ECFDF5;
@@ -127,9 +143,25 @@
   --accent-info-light: #ECFEFF;
 
   /* --------------------------------------------------------------------------
+   * Canvas Overlay & Visual Utility Colors
+   * -------------------------------------------------------------------------- */
+  --canvas-snapline: #f43f5e;
+  --canvas-guide: #06b6d4;
+  --canvas-spacing-equal: #a855f7;
+  --spectrum-hue-gradient: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+
+  /* Pulse Animations */
+  --pulse-accent-start: rgba(0, 0, 0, 0.4);
+  --pulse-accent-end: rgba(0, 0, 0, 0);
+  --pulse-success-start: rgba(16, 185, 129, 0.4);
+  --pulse-success-end: rgba(16, 185, 129, 0);
+  --pulse-danger-start: rgba(239, 68, 68, 0.4);
+  --pulse-danger-end: rgba(239, 68, 68, 0);
+
+  /* --------------------------------------------------------------------------
    * Wire & Pin Data-Type Taxonomy (Strictly follows UI.md §2.2)
    * -------------------------------------------------------------------------- */
-  --wire-exec: #0F172A;
+  --wire-exec: var(--neutral-1000);
   --wire-string: #E11D48;
   --wire-number: #06B6D4;
   --wire-boolean: #EA580C;
@@ -138,6 +170,17 @@
   --wire-database: #10B981;
   --wire-motion: #8B5CF6;
   --wire-event: #206859;
+
+  /* Blueprint Node Header Badges */
+  --bp-header-event: #4338CA;
+  --bp-header-func: var(--accent-primary);
+  --bp-header-flow: var(--accent-warning);
+  --bp-header-action: var(--accent-success);
+  --bp-header-database: #1E3A8A;
+  --bp-header-api: #7C3AED;
+  --bp-header-nav: var(--accent-info);
+  --bp-header-math: #047857;
+  --bp-header-var: var(--neutral-800);
 
   /* --------------------------------------------------------------------------
    * Curvature & Border Radii (Refined Unreal Curvature)
@@ -153,13 +196,17 @@
   /* --------------------------------------------------------------------------
    * Elevation & Box Shadows
    * -------------------------------------------------------------------------- */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
-  --shadow-floating-dock: 0 12px 36px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-  --shadow-divider: 0 0 0 1px rgba(15, 23, 42, 0.06);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  --shadow-floating-dock: 0 12px 36px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --shadow-divider: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --shadow-dialog: 0 16px 42px -4px rgba(0, 0, 0, 0.12), 0 4px 14px -2px rgba(0, 0, 0, 0.06);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.22);
+  --shadow-modal: 0 25px 60px -15px rgba(0, 0, 0, 0.18);
+  --shadow-focus: 0 0 0 2px var(--neutral-1000);
 
   /* --------------------------------------------------------------------------
    * Dock Zone Sizing & Dimensions

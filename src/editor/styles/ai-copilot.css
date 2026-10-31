@@ -6,7 +6,7 @@
  * Screen / Scope: Screen 16: LayoutAI Assistant Studio / Panel 18 (PANELS.md)
  * Role: Styles conversational prompt interface, context badges, diff modal,
  *       and dual-docking (Replace Details vs Split Beside Details) in LazyLayout.
- * Styling Source: DOCS/UI.md §2 (Luminous Confluence Aesthetic & #206859 Theme)
+ * Styling Source: DOCS/UI.md §2 (Luminous Confluence Aesthetic & Clean Theme)
  * ============================================================================
  */
 
@@ -15,11 +15,11 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background-color: #FFFFFF;
-  border-left: 1px solid var(--border-default, rgba(15, 23, 42, 0.08));
+  background-color: var(--surface-panel-solid);
+  border-left: 1px solid var(--border-default);
   overflow: hidden;
   font-family: var(--font-sans, Inter, sans-serif);
-  color: var(--text-primary, #0F172A);
+  color: var(--text-primary);
   position: relative;
   container-type: inline-size;
   container-name: ai-panel;
@@ -27,7 +27,7 @@
 
 .ai-copilot-container--floating {
   border-radius: var(--radius-xl, 16px);
-  box-shadow: 0 16px 40px -6px rgba(15, 23, 42, 0.15), 0 4px 16px -2px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-xl);
 }
 
 /* --------------------------------------------------------------------------
@@ -39,8 +39,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px 8px 6px;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background-color: var(--surface-panel-solid);
+  border-bottom: 1px solid var(--border-default);
   user-select: none;
   flex-shrink: 0;
   gap: 8px;
@@ -73,7 +73,7 @@
   height: 28px;
   border: none;
   background: none;
-  color: #94A3B8;
+  color: var(--neutral-800);
   cursor: grab;
   border-radius: 4px;
   padding: 0;
@@ -82,14 +82,14 @@
 }
 
 .ai-copilot-drag-handle:hover {
-  color: #206859;
-  background-color: rgba(32, 104, 89, 0.08);
+  color: var(--accent-primary);
+  background-color: var(--surface-panel-hover);
 }
 
 .ai-copilot-drag-handle:active {
   cursor: grabbing;
-  color: #174f43;
-  background-color: rgba(32, 104, 89, 0.14);
+  color: var(--accent-primary-hover);
+  background-color: var(--surface-panel-active);
 }
 
 .ai-copilot-logo {
@@ -99,22 +99,22 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm, 7px);
-  background: linear-gradient(135deg, #206859 0%, #2DD4BF 100%);
-  box-shadow: 0 2px 8px rgba(32, 104, 89, 0.28);
+  background: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
 .ai-copilot-title {
   font-size: 13px;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
 .ai-copilot-subtitle {
   font-size: 10px;
-  color: #64748B;
+  color: var(--text-secondary);
   line-height: 1.2;
 }
 
@@ -134,9 +134,9 @@
   height: 26px;
   padding: 0 6px;
   border-radius: 5px;
-  background-color: #F8FAFC;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  color: #475569;
+  background-color: var(--surface-panel-hover);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -144,15 +144,15 @@
 }
 
 .ai-copilot-mode-btn:hover {
-  background-color: #F1F5F9;
-  color: #0F172A;
-  border-color: rgba(15, 23, 42, 0.15);
+  background-color: var(--surface-panel-active);
+  color: var(--text-primary);
+  border-color: var(--border-default);
 }
 
 .ai-copilot-mode-btn--active {
-  background-color: #EBF5F3;
-  border-color: #206859;
-  color: #206859;
+  background-color: var(--accent-primary-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
   font-weight: 600;
 }
 
@@ -165,10 +165,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 6px 14px;
-  background-color: #F8FAFC;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background-color: var(--surface-panel-hover);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 11px;
-  color: #64748B;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -198,15 +198,15 @@
 }
 
 .ai-copilot-health-badge--healthy {
-  background-color: #ECFDF5;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #047857;
+  background-color: var(--accent-success-light);
+  border: 1px solid var(--accent-success);
+  color: var(--accent-success);
 }
 
 .ai-copilot-health-badge--error {
-  background-color: #FEF2F2;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #B91C1C;
+  background-color: var(--accent-danger-light);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
 }
 
 /* --------------------------------------------------------------------------
@@ -220,7 +220,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background-color: #FCFDFD;
+  background-color: var(--canvas-bg);
 }
 
 .ai-copilot-feed::-webkit-scrollbar {
@@ -228,7 +228,7 @@
 }
 
 .ai-copilot-feed::-webkit-scrollbar-thumb {
-  background-color: rgba(15, 23, 42, 0.12);
+  background-color: var(--border-default);
   border-radius: 4px;
 }
 
@@ -250,29 +250,29 @@
   padding: 11px 15px;
   font-size: 12px;
   line-height: 1.55;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--shadow-xs);
   word-break: break-word;
 }
 
 .ai-copilot-bubble--user {
   border-radius: 14px 14px 2px 14px;
-  background: linear-gradient(135deg, #206859 0%, #174f43 100%);
+  background: var(--accent-primary);
   border: none;
-  color: #FFFFFF;
-  box-shadow: 0 3px 10px rgba(32, 104, 89, 0.22);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-sm);
 }
 
 .ai-copilot-bubble--assistant {
   border-radius: 14px 14px 14px 2px;
-  background-color: #FFFFFF;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  color: #0F172A;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  background-color: var(--surface-panel-solid);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .ai-copilot-timestamp {
   font-size: 10px;
-  color: #94A3B8;
+  color: var(--neutral-800);
   margin-top: 3px;
   margin-inline: 4px;
 }
@@ -285,8 +285,8 @@
   margin-top: 10px;
   padding: 11px;
   border-radius: 8px;
-  background-color: #F8FAFC;
-  border: 1px solid rgba(15, 23, 42, 0.09);
+  background-color: var(--surface-panel-hover);
+  border: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -304,7 +304,7 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: #206859;
+  color: var(--accent-primary);
 }
 
 .ai-copilot-risk-badge {
@@ -316,26 +316,26 @@
 }
 
 .ai-copilot-risk-badge--low {
-  background-color: #ECFDF5;
-  color: #047857;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background-color: var(--accent-success-light);
+  color: var(--accent-success);
+  border: 1px solid var(--accent-success);
 }
 
 .ai-copilot-risk-badge--medium {
-  background-color: #FFFBEB;
-  color: #B45309;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background-color: var(--accent-warning-light);
+  color: var(--accent-warning);
+  border: 1px solid var(--accent-warning);
 }
 
 .ai-copilot-risk-badge--high {
-  background-color: #FEF2F2;
-  color: #B91C1C;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background-color: var(--accent-danger-light);
+  color: var(--accent-danger);
+  border: 1px solid var(--accent-danger);
 }
 
 .ai-copilot-patch-desc {
   font-size: 11px;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .ai-copilot-review-btn {
@@ -346,18 +346,18 @@
   gap: 6px;
   padding: 7px 14px;
   border-radius: 6px;
-  background-color: #206859;
+  background-color: var(--accent-primary);
   border: none;
-  color: #FFFFFF;
+  color: var(--text-inverse);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease;
-  box-shadow: 0 2px 6px rgba(32, 104, 89, 0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 .ai-copilot-review-btn:hover {
-  background-color: #174f43;
+  background-color: var(--accent-primary-hover);
 }
 
 .ai-copilot-status-applied {
@@ -366,7 +366,7 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: #059669;
+  color: var(--accent-success);
   padding-top: 4px;
 }
 
@@ -376,7 +376,7 @@
   gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: #64748B;
+  color: var(--text-secondary);
   padding-top: 4px;
 }
 
@@ -386,8 +386,8 @@
 
 .ai-copilot-chips-row {
   padding: 8px 12px;
-  background-color: #FFFFFF;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  background-color: var(--surface-panel-solid);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -403,9 +403,9 @@
 .ai-copilot-chip {
   padding: 5px 10px;
   border-radius: 5px;
-  background-color: #F8FAFC;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  color: #334155;
+  background-color: var(--surface-panel-hover);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -414,9 +414,9 @@
 }
 
 .ai-copilot-chip:hover:not(:disabled) {
-  border-color: #206859;
-  color: #206859;
-  background-color: #EBF5F3;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background-color: var(--accent-primary-light);
 }
 
 /* --------------------------------------------------------------------------
@@ -425,8 +425,8 @@
 
 .ai-copilot-input-bar {
   padding: 10px 14px;
-  background-color: #FFFFFF;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background-color: var(--surface-panel-solid);
+  border-top: 1px solid var(--border-default);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -437,22 +437,22 @@
   flex: 1;
   padding: 9px 13px;
   border-radius: 7px;
-  background-color: #F8FAFC;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  color: #0F172A;
+  background-color: var(--surface-panel-hover);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
   font-size: 12px;
   outline: none;
   transition: all 0.15s ease;
 }
 
 .ai-copilot-input::placeholder {
-  color: #94A3B8;
+  color: var(--neutral-800);
 }
 
 .ai-copilot-input:focus {
-  background-color: #FFFFFF;
-  border-color: #206859;
-  box-shadow: 0 0 0 3px rgba(32, 104, 89, 0.12);
+  background-color: var(--surface-panel-solid);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-focus);
 }
 
 .ai-copilot-send-btn {
@@ -462,24 +462,24 @@
   width: 34px;
   height: 34px;
   border-radius: 7px;
-  background-color: #206859;
+  background-color: var(--accent-primary);
   border: none;
-  color: #FFFFFF;
+  color: var(--text-inverse);
   cursor: pointer;
   transition: background-color 0.15s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(32, 104, 89, 0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 .ai-copilot-send-btn:disabled {
-  background-color: #E2E8F0;
-  color: #94A3B8;
+  background-color: var(--surface-panel-active);
+  color: var(--neutral-800);
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .ai-copilot-send-btn:hover:not(:disabled) {
-  background-color: #174f43;
+  background-color: var(--accent-primary-hover);
 }
 
 /* --------------------------------------------------------------------------
@@ -489,7 +489,7 @@
 .ai-copilot-diff-overlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.45);
+  background-color: var(--surface-scrim);
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
@@ -501,11 +501,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #FFFFFF;
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  background-color: var(--surface-panel-solid);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--shadow-xl);
 }
 
 .ai-copilot-diff-card-header {
@@ -513,8 +513,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: #F8FAFC;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background-color: var(--surface-panel-hover);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .ai-copilot-diff-card-body {
@@ -524,14 +524,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background-color: #FFFFFF;
+  background-color: var(--surface-panel-solid);
 }
 
 .ai-copilot-diff-summary-box {
   padding: 12px;
   border-radius: 7px;
-  background-color: #F8FAFC;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background-color: var(--surface-panel-hover);
+  border: 1px solid var(--border-default);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -545,16 +545,16 @@
   justify-content: flex-end;
   gap: 9px;
   padding: 12px 16px;
-  background-color: #F8FAFC;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background-color: var(--surface-panel-hover);
+  border-top: 1px solid var(--border-default);
 }
 
 .ai-copilot-btn-reject {
   padding: 7px 14px;
   border-radius: 6px;
   background-color: transparent;
-  border: 1px solid rgba(15, 23, 42, 0.15);
-  color: #475569;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -562,8 +562,8 @@
 }
 
 .ai-copilot-btn-reject:hover {
-  background-color: #F1F5F9;
-  color: #0F172A;
+  background-color: var(--surface-panel-active);
+  color: var(--text-primary);
 }
 
 .ai-copilot-btn-accept {
@@ -572,18 +572,18 @@
   gap: 6px;
   padding: 7px 16px;
   border-radius: 6px;
-  background-color: #206859;
+  background-color: var(--accent-primary);
   border: none;
-  color: #FFFFFF;
+  color: var(--text-inverse);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(32, 104, 89, 0.28);
+  box-shadow: var(--shadow-sm);
   transition: background-color 0.15s ease;
 }
 
 .ai-copilot-btn-accept:hover {
-  background-color: #174f43;
+  background-color: var(--accent-primary-hover);
 }
 
 /* --------------------------------------------------------------------------
@@ -598,10 +598,10 @@
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  background-color: #FFFFFF;
-  border: 1.5px solid #206859;
+  background-color: var(--surface-panel-solid);
+  border: 1.5px solid var(--accent-primary);
   border-radius: 8px;
-  box-shadow: 0 14px 32px rgba(32, 104, 89, 0.25), 0 4px 12px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-lg);
   transform: translate(-50%, -50%);
   animation: layoutai-drag-pulse 2s ease-in-out infinite;
   user-select: none;
@@ -610,12 +610,12 @@
 
 @keyframes layoutai-drag-pulse {
   0%, 100% {
-    box-shadow: 0 14px 32px rgba(32, 104, 89, 0.25), 0 4px 12px rgba(15, 23, 42, 0.12);
-    border-color: #206859;
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
   }
   50% {
-    box-shadow: 0 18px 40px rgba(32, 104, 89, 0.4), 0 6px 16px rgba(15, 23, 42, 0.16);
-    border-color: #28806E;
+    box-shadow: var(--shadow-xl);
+    border-color: var(--accent-primary);
   }
 }
 
@@ -623,12 +623,12 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #206859 0%, #2DD4BF 100%);
+  background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(32, 104, 89, 0.35);
+  box-shadow: var(--shadow-sm);
 }
 
 .layoutai-drag-preview__body {
@@ -639,14 +639,14 @@
 .layoutai-drag-preview__title {
   font-size: 12px;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .layoutai-drag-preview__hint {
   font-size: 10px;
   font-weight: 500;
-  color: #206859;
+  color: var(--accent-primary);
   line-height: 1.2;
 }
 
@@ -656,8 +656,8 @@
   z-index: 9000;
   pointer-events: auto;
   /* 30% brand tint — a preview of where the panel will land. */
-  border: 2px solid var(--accent-primary, #206859);
-  background-color: rgba(32, 104, 89, 0.3);
+  border: 2px solid var(--accent-primary);
+  background-color: var(--surface-panel-active);
   border-radius: 0;
   display: flex;
   flex-direction: column;
@@ -666,7 +666,7 @@
   padding-top: 20px;
   gap: 12px;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  box-shadow: var(--shadow-xs);
   animation: layoutai-slot-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
@@ -683,10 +683,10 @@
   gap: 6px;
   padding: 12px 16px;
   margin: 0 12px;
-  background-color: #FFFFFF;
-  border: 1px solid rgba(32, 104, 89, 0.25);
+  background-color: var(--surface-panel-solid);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(32, 104, 89, 0.18);
+  box-shadow: var(--shadow-md);
   text-align: center;
   max-width: 280px;
   pointer-events: none;
@@ -697,27 +697,27 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #206859 0%, #174f43 100%);
-  color: #FFFFFF;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
   font-size: 12px;
   font-weight: 700;
   border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(32, 104, 89, 0.35);
+  box-shadow: var(--shadow-md);
   transform: scale(1.02);
 }
 
 .layoutai-drop-slot-subtext {
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .layoutai-drop-slot-target-tag {
   font-size: 10px;
   font-weight: 600;
-  color: #206859;
-  background-color: #EBF5F3;
+  color: var(--accent-primary);
+  background-color: var(--accent-primary-light);
   padding: 2px 8px;
   border-radius: 10px;
 }

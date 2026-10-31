@@ -14,6 +14,7 @@ You are a **worker** on branch `ui/redesign`. Claude is the orchestrator and wat
 
 Read `DOCS/UI/UI_RULES.md` before doing anything. The essentials:
 
+- **Layout bar: Apple-level.** This is about **layout and structure**, not a look: clear hierarchy, restraint (few elements, each with one job), generous and consistent spacing on one grid, strict alignment, familiar conventions, large click targets, concentric radii, one icon stroke weight. **No glass, blur or translucent materials**: separate layers with solid neutrals, hairline borders and soft shadows. **No capsule or pill-shaped designs**: no floating capsules, no fully rounded buttons or containers. Use rectangular shapes with modest corner radii. Awwwards-level craft and motion sit on top of that layout.
 - Work on **one page at a time**, only the page you were assigned, only the direction the user approved.
 - **Never decide colors, fonts, layout or copy yourself.** Ask. Colors come from the user's reference images (`DOCS/UI/PALETTE.md`).
 - Use **tokens only** (`src/editor/styles/tokens.css`). No hardcoded values.

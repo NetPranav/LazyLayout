@@ -308,6 +308,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({ headerSlot, rightPanel
             onStartDragAI={ai.handleStartDragAI}
             onToggleAI={ai.toggleAiCoPilot}
             isAIOpen={ai.isAiCoPilotOpen}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           />
         )}
         <WorkspaceTabStrip

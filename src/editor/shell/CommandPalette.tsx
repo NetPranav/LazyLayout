@@ -138,8 +138,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 0, 0.65)",
-        backdropFilter: "blur(6px)",
+        background: "var(--surface-scrim)",
+
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
@@ -155,14 +155,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         style={{
           width: "640px",
           maxHeight: "500px",
-          background: "#12131A",
-          border: "1px solid #282A38",
-          borderRadius: 12,
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(99, 102, 241, 0.2)",
+          background: "var(--surface-panel-solid)",
+          border: "1px solid var(--border-default)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-modal)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          color: "#FFFFFF",
+          color: "var(--text-primary)",
           fontFamily: "var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
         }}
       >
@@ -173,11 +173,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             alignItems: "center",
             gap: 12,
             padding: "16px 18px",
-            borderBottom: "1px solid #232430",
-            background: "#161722",
+            borderBottom: "1px solid var(--border-subtle)",
+            background: "var(--surface-panel-solid)",
           }}
         >
-          <span style={{ fontSize: 16, color: "#6366F1", fontWeight: 800 }}>&gt;</span>
+          <span style={{ fontSize: 16, color: "var(--text-primary)", fontWeight: 800 }}>&gt;</span>
           <input
             ref={inputRef}
             type="text"
@@ -192,7 +192,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               background: "transparent",
               border: "none",
               outline: "none",
-              color: "#FFFFFF",
+              color: "var(--text-primary)",
               fontSize: 14.5,
               fontWeight: 500,
             }}
@@ -204,7 +204,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               style={{
                 background: "transparent",
                 border: "none",
-                color: "#9CA3AF",
+                color: "var(--text-secondary)",
                 cursor: "pointer",
                 padding: 4,
               }}
@@ -218,13 +218,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             style={{
               background: "transparent",
               border: "none",
-              color: "#6B7280",
+              color: "var(--text-secondary)",
               cursor: "pointer",
               padding: 2,
             }}
             title="Close (Esc)"
           >
-            <kbd style={{ background: "#232430", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>
+            <kbd style={{ background: "var(--neutral-100)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>
               ESC
             </kbd>
           </button>
@@ -237,8 +237,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             alignItems: "center",
             gap: 6,
             padding: "8px 18px",
-            borderBottom: "1px solid #1E202B",
-            background: "#13141C",
+            borderBottom: "1px solid var(--border-subtle)",
+            background: "var(--surface-panel)",
             overflowX: "auto",
           }}
         >
@@ -250,9 +250,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 onClick={() => setActiveCategory(cat)}
                 style={{
                   padding: "3px 9px",
-                  background: isActive ? "#6366F1" : "#1E202B",
-                  color: isActive ? "#FFFFFF" : "#9CA3AF",
-                  border: "none",
+                  background: isActive ? "var(--neutral-1000)" : "var(--neutral-100)",
+                  color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
+                  border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-subtle)",
                   borderRadius: 4,
                   fontSize: 11,
                   fontWeight: isActive ? 700 : 500,
@@ -294,8 +294,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     justifyContent: "space-between",
                     padding: "9px 12px",
                     borderRadius: 6,
-                    background: isSelected ? "rgba(99, 102, 241, 0.18)" : "transparent",
-                    border: isSelected ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid transparent",
+                    background: isSelected ? "var(--accent-primary-light)" : "transparent",
+                    border: isSelected ? "1px solid var(--border-default)" : "1px solid transparent",
                     cursor: "pointer",
                     gap: 12,
                     transition: "all 0.1s ease",
@@ -308,8 +308,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         fontWeight: 700,
                         padding: "2px 6px",
                         borderRadius: 4,
-                        background: "#1E202B",
-                        color: "#818CF8",
+                        background: "var(--neutral-100)",
+                        color: "var(--text-secondary)",
                         textTransform: "uppercase",
                         flexShrink: 0,
                       }}
@@ -318,14 +318,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     </span>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                         {cmd.title}
                       </span>
                       {cmd.description && (
                         <span
                           style={{
                             fontSize: 11,
-                            color: "#9CA3AF",
+                            color: "var(--text-secondary)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -342,11 +342,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       style={{
                         fontSize: 11,
                         fontFamily: "monospace",
-                        background: isSelected ? "#2E3048" : "#1E202B",
-                        border: "1px solid #2F3142",
+                        background: isSelected ? "var(--neutral-200)" : "var(--neutral-100)",
+                        border: "1px solid var(--border-subtle)",
                         padding: "3px 7px",
                         borderRadius: 4,
-                        color: "#E0E7FF",
+                        color: "var(--text-primary)",
                         flexShrink: 0,
                       }}
                     >
@@ -364,7 +364,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "40px 20px",
-                color: "#6B7280",
+                color: "var(--text-secondary)",
                 gap: 8,
               }}
             >
@@ -381,18 +381,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "8px 16px",
-            background: "#161722",
-            borderTop: "1px solid #232430",
+            background: "var(--surface-panel-solid)",
+            borderTop: "1px solid var(--border-subtle)",
             fontSize: 11,
-            color: "#9CA3AF",
+            color: "var(--text-secondary)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span>
-              <kbd style={{ background: "#232430", padding: "1px 5px", borderRadius: 3 }}>↑↓</kbd> Select
+              <kbd style={{ background: "var(--neutral-100)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "1px 5px", borderRadius: 3 }}>↑↓</kbd> Select
             </span>
             <span>
-              <kbd style={{ background: "#232430", padding: "1px 5px", borderRadius: 3 }}>↵</kbd> Run Command
+              <kbd style={{ background: "var(--neutral-100)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", padding: "1px 5px", borderRadius: 3 }}>↵</kbd> Run Command
             </span>
           </div>
           <div>{filteredCommands.length} Commands Available</div>

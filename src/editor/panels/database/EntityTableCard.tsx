@@ -231,7 +231,7 @@ export const EntityTableCard: React.FC<EntityTableCardProps> = ({
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "5px 10px",
-                borderBottom: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.06))",
+                borderBottom: "1px solid var(--border-subtle)",
                 backgroundColor: isFieldSelected ? "#EBF5F3" : "transparent",
                 borderLeft: isFieldSelected ? "3px solid #206859" : "3px solid transparent",
                 fontSize: 11,

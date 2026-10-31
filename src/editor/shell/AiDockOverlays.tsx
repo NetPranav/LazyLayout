@@ -70,7 +70,7 @@ export const AiDockOverlays: React.FC<{ ai: AiDock }> = ({ ai }) => (
           }}
         >
           <div className="layoutai-drag-preview__logo">
-            <Sparkles size={14} color="#FFFFFF" />
+            <Sparkles size={14} color="var(--text-inverse)" />
           </div>
           <div className="layoutai-drag-preview__body">
             <span className="layoutai-drag-preview__title">LazyLayout AI</span>

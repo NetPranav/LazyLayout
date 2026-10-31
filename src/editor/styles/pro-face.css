@@ -12,7 +12,7 @@
 .pro-face__filter {
   margin: 4px 0 6px;
   padding: 5px 8px;
-  border: 1px solid var(--border-default, rgba(128, 128, 128, 0.3));
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   background: var(--surface-input, transparent);
   color: inherit;
@@ -83,7 +83,7 @@
   flex: 1;
   min-width: 0;
   padding: 0 6px;
-  border: 1px solid var(--border-default, rgba(128, 128, 128, 0.3));
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   background: var(--surface-input, transparent);
 }
@@ -124,7 +124,7 @@
   flex: 1;
   min-width: 0;
   padding: 4px 6px;
-  border: 1px solid var(--border-default, rgba(128, 128, 128, 0.3));
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   background: var(--surface-input, transparent);
   color: inherit;
@@ -138,7 +138,7 @@
   font-size: 11px;
 }
 .pro-text[aria-invalid="true"] {
-  border-color: #dc2626;
+  border-color: var(--accent-danger);
 }
 .pro-toggle {
   margin: 0;

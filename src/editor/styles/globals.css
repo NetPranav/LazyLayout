@@ -19,7 +19,7 @@
   margin: 0;
   padding: 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.12) transparent;
+  scrollbar-color: var(--border-default) transparent;
 }
 
 html, body {
@@ -101,13 +101,13 @@ kbd {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
+  background: var(--border-default);
   border-radius: var(--radius-full);
   transition: background var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.24);
+  background: var(--border-strong);
 }
 
 /* ----------------------------------------------------------------------------

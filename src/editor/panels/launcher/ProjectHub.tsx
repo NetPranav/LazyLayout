@@ -321,7 +321,7 @@ export const ProjectHub: React.FC<ProjectHubProps> = ({
         {/* Left Sidebar */}
         <aside className={`hub-sidebar ${mobileSidebarOpen ? "hub-sidebar--mobile-open" : ""}`}>
           <div className="hub-sidebar__header">
-            <FolderKanban size={15} style={{ color: "#206859" }} />
+            <FolderKanban size={15} style={{ color: "var(--accent-primary)" }} />
             <span>Project Setup</span>
           </div>
 

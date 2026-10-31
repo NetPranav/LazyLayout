@@ -421,9 +421,9 @@
 }
 
 .menu-bar__trigger--database.menu-bar__trigger--active {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.4);
+  background: var(--accent-warning-light);
+  color: var(--accent-warning);
+  border-color: var(--accent-warning);
 }
 
 /* ----------------------------------------------------------------------------
@@ -625,22 +625,22 @@
   color: var(--text-inverse);
   font-weight: var(--font-semibold);
   padding: 0 var(--space-md);
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-btn--play:hover:not(:disabled) {
-  background: #059669;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+  background: var(--accent-success);
+  box-shadow: var(--shadow-md);
 }
 
 .toolbar-btn--play--active {
   background: var(--accent-danger);
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-btn--play--active:hover:not(:disabled) {
-  background: #DC2626;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+  background: var(--accent-danger);
+  box-shadow: var(--shadow-md);
 }
 
 /* Deploy Button (Electric Blue) */
@@ -650,27 +650,27 @@
   color: var(--text-inverse);
   font-weight: var(--font-semibold);
   padding: 0 var(--space-md);
-  box-shadow: 0 1px 3px rgba(32, 104, 89, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-btn--deploy:hover:not(:disabled) {
   background: var(--accent-primary-hover);
-  box-shadow: 0 2px 6px rgba(32, 104, 89, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 /* AI Studio Button (Purple Accent Gradient) */
 .toolbar-btn--ai {
-  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  background: var(--wire-motion);
   border-color: transparent;
   color: var(--text-inverse);
   font-weight: var(--font-semibold);
   padding: 0 var(--space-md);
-  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-btn--ai:hover:not(:disabled) {
   filter: brightness(1.08);
-  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 /* Device Mode Segmented Control */

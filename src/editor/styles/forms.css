@@ -154,23 +154,23 @@
 }
 
 .form-number-scrub__badge--x {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: #DC2626;
+  background-color: var(--accent-danger-light);
+  color: var(--accent-danger);
 }
 
 .form-number-scrub__badge--y {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  background-color: var(--accent-success-light);
+  color: var(--accent-success);
 }
 
 .form-number-scrub__badge--w {
-  background-color: rgba(32, 104, 89, 0.12);
-  color: #206859;
+  background-color: var(--accent-primary-light);
+  color: var(--accent-primary);
 }
 
 .form-number-scrub__badge--h {
-  background-color: rgba(245, 158, 11, 0.12);
-  color: #D97706;
+  background-color: var(--accent-warning-light);
+  color: var(--accent-warning);
 }
 
 .form-number-scrub__badge--neutral {
@@ -257,7 +257,7 @@
 
 .form-segmented__btn:hover:not(.form-segmented__btn--active) {
   color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--surface-panel-hover);
 }
 
 .form-segmented__btn--active {
@@ -301,7 +301,7 @@
   left: 1px;
   width: 14px;
   height: 14px;
-  background-color: #FFFFFF;
+  background-color: var(--neutral-0);
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-xs);
   transition: transform var(--transition-normal);
@@ -344,7 +344,7 @@
 
 .form-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 0 1px var(--accent-primary), 0 0 6px rgba(32, 104, 89, 0.3);
+  box-shadow: 0 0 0 1px var(--accent-primary), var(--shadow-sm);
 }
 
 .form-slider-val {
@@ -382,9 +382,9 @@
   width: 20px;
   height: 20px;
   border-radius: var(--radius-xs);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-default);
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-xs);
 }
 
 .form-color-picker__label {

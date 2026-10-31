@@ -12,7 +12,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  border-bottom: 1px solid var(--border-subtle, rgba(128, 128, 128, 0.2));
+  border-bottom: 1px solid var(--border-subtle);
 }
 .layers-panel__search input {
   flex: 1;
@@ -39,11 +39,11 @@
   min-height: 0;
   padding: 0 8px;
   font-size: 11px;
-  color: #dc2626;
+  color: var(--accent-danger);
 }
 .layers-panel__status:not(:empty) {
   padding: 6px 8px;
-  border-top: 1px solid var(--border-subtle, rgba(128, 128, 128, 0.2));
+  border-top: 1px solid var(--border-subtle);
 }
 .layers-row {
   position: absolute;
@@ -61,11 +61,11 @@
   white-space: nowrap;
 }
 .layers-row:hover {
-  background: var(--surface-hover, rgba(128, 128, 128, 0.12));
+  background: var(--surface-panel-hover);
 }
 .layers-row--selected,
 .layers-row--selected:hover {
-  background: var(--accent-soft, rgba(99, 102, 241, 0.22));
+  background: var(--surface-panel-selected);
 }
 .layers-row--hidden .layers-row__name,
 .layers-row--hidden .layers-row__icon {
@@ -103,7 +103,7 @@
   text-overflow: ellipsis;
 }
 .layers-row__name mark {
-  background: rgba(250, 204, 21, 0.5);
+  background: var(--accent-warning-light);
   color: inherit;
 }
 .layers-row__rename {
@@ -111,8 +111,8 @@
   min-width: 0;
   font: inherit;
   color: inherit;
-  background: var(--surface-input, rgba(0, 0, 0, 0.25));
-  border: 1px solid var(--accent-primary, #6366f1);
+  background: var(--surface-panel-solid);
+  border: 1px solid var(--accent-primary);
   border-radius: 3px;
   padding: 1px 4px;
 }
@@ -144,24 +144,24 @@
 }
 /* drop feedback: a line above or below, a frame around the row for "inside", red when refused */
 .layers-row--drop-inside {
-  outline: 2px solid var(--accent-primary, #6366f1);
+  outline: 2px solid var(--accent-primary);
   outline-offset: -2px;
 }
 .layers-row--drop-before {
-  box-shadow: inset 0 2px 0 var(--accent-primary, #6366f1);
+  box-shadow: inset 0 2px 0 var(--accent-primary);
 }
 .layers-row--drop-after {
-  box-shadow: inset 0 -2px 0 var(--accent-primary, #6366f1);
+  box-shadow: inset 0 -2px 0 var(--accent-primary);
 }
 .layers-row--drop-refused {
-  outline: 2px solid #dc2626;
+  outline: 2px solid var(--accent-danger);
   outline-offset: -2px;
 }
 .layers-row--drop-refused-before {
-  box-shadow: inset 0 2px 0 #dc2626;
+  box-shadow: inset 0 2px 0 var(--accent-danger);
 }
 .layers-row--drop-refused-after {
-  box-shadow: inset 0 -2px 0 #dc2626;
+  box-shadow: inset 0 -2px 0 var(--accent-danger);
 }
 
 /* Motion badge on a layer row (Phase 61): how many animations (and states) the layer has; click opens it in the timeline. */
@@ -175,11 +175,11 @@
   font-size: 10px;
   line-height: 16px;
   border-radius: 9px;
-  border: 1px solid rgba(129, 140, 248, 0.7);
-  background: rgba(99, 102, 241, 0.25);
+  border: 1px solid var(--border-default);
+  background: var(--surface-panel-active);
   color: inherit;
   cursor: pointer;
 }
 .layers-row__motion:hover {
-  background: rgba(99, 102, 241, 0.5);
+  background: var(--surface-panel-hover);
 }

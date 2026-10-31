@@ -134,20 +134,19 @@ export const EnvironmentInspector: React.FC = () => {
       className="panel-shell environment-inspector"
       role="region"
       aria-label="World Environment Inspector"
-      style={{ background: "#FFFFFF", color: "#0F172A" }}
+      style={{ background: "var(--surface-panel-solid)", color: "var(--text-primary)" }}
     >
       {/* Top Header Bar */}
       <div
         className="panel-header"
         style={{
-          background: "#FFFFFF",
-          borderBottom: "1px solid rgba(15, 23, 42, 0.08)",
+          background: "var(--surface-panel-solid)", borderBottom: "1px solid var(--border-subtle)",
           height: "38px",
           padding: "0 12px",
         }}
       >
-        <div className="panel-header__title" style={{ color: "#206859", fontWeight: 700 }}>
-          <Globe size={14} style={{ color: "#206859" }} />
+        <div className="panel-header__title" style={{ color: "var(--text-primary)", fontWeight: 700 }}>
+          <Globe size={14} style={{ color: "var(--text-primary)" }} />
           <span>World Environment</span>
         </div>
 
@@ -156,9 +155,7 @@ export const EnvironmentInspector: React.FC = () => {
             className="panel-header__badge"
             title="Active Theme Palette"
             style={{
-              backgroundColor: "#EBF5F3",
-              color: "#206859",
-              border: "1px solid rgba(32, 104, 89, 0.22)",
+              backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               fontWeight: 600,
             }}
           >
@@ -169,7 +166,7 @@ export const EnvironmentInspector: React.FC = () => {
             className="panel-icon-btn"
             title="Reset Environment to Default (Top 20)"
             onClick={resetEnvironment}
-            style={{ color: "#64748B" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             <RotateCcw size={12} />
           </button>
@@ -179,7 +176,7 @@ export const EnvironmentInspector: React.FC = () => {
       {/* Section Rail + Scrollable Content */}
       <div className="panel-body">
         <SectionRail items={railItems} onSelect={jumpToSection} />
-        <div className="panel-content" style={{ padding: "12px", background: "#FFFFFF" }}>
+        <div className="panel-content" style={{ padding: "12px", background: "var(--surface-panel-solid)" }}>
         {/* ====================================================================
          * SECTION 7 / HERO: INSPECT MODE (PROP 20 - CHROME DEVTOOLS STYLE)
          * ==================================================================== */}
@@ -190,14 +187,14 @@ export const EnvironmentInspector: React.FC = () => {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 14px",
-              background: diagnostics.inspectMode ? "#EBF5F3" : "#F8FAFC",
+              background: diagnostics.inspectMode ? "var(--neutral-50)" : "var(--neutral-0)",
               border: diagnostics.inspectMode
-                ? "1px solid rgba(32, 104, 89, 0.35)"
-                : "1px solid rgba(15, 23, 42, 0.08)",
+                ? "1px solid var(--border-strong)"
+                : "1px solid var(--border-subtle)",
               borderRadius: "10px",
               boxShadow: diagnostics.inspectMode
-                ? "0 2px 8px rgba(32, 104, 89, 0.08)"
-                : "0 1px 3px rgba(15, 23, 42, 0.04)",
+                ? "var(--shadow-sm)"
+                : "var(--shadow-xs)",
               transition: "all 0.2s ease",
             }}
           >
@@ -208,8 +205,8 @@ export const EnvironmentInspector: React.FC = () => {
                   height: "32px",
                   flexShrink: 0,
                   borderRadius: "8px",
-                  background: diagnostics.inspectMode ? "#206859" : "#EBF5F3",
-                  color: diagnostics.inspectMode ? "#FFFFFF" : "#206859",
+                  background: diagnostics.inspectMode ? "var(--neutral-1000)" : "var(--neutral-100)",
+                  color: diagnostics.inspectMode ? "var(--neutral-0)" : "var(--text-secondary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -219,10 +216,10 @@ export const EnvironmentInspector: React.FC = () => {
                 <Eye size={16} />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#206859", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   Inspect Mode (DevTools)
                 </div>
-                <div style={{ fontSize: "11px", color: "#475569" }}>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
                   Box models, padding, dimensions & touch targets
                 </div>
               </div>
@@ -241,19 +238,17 @@ export const EnvironmentInspector: React.FC = () => {
         {/* ====================================================================
          * SECTION 1: VIEWPORT & GRID (PROPS 1-4)
          * ==================================================================== */}
-        <div id="env-section-viewport" className={`panel-section ${sectionsOpen.viewport ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid rgba(15, 23, 42, 0.08)" }}>
+        <div id="env-section-viewport" className={`panel-section ${sectionsOpen.viewport ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <button type="button" className="panel-section__header" onClick={() => toggleSection("viewport")}>
             <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.viewport ? "#206859" : "#94A3B8" }} />
-              <Grid size={13} style={{ color: "#206859" }} />
-              <span style={{ color: "#206859", fontWeight: 600 }}>Viewport & Grid</span>
+              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.viewport ? "var(--text-primary)" : "var(--text-muted)" }} />
+              <Grid size={13} style={{ color: "var(--text-primary)" }} />
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Viewport & Grid</span>
             </div>
             <span
               className="panel-header__badge"
               style={{
-                backgroundColor: "#EBF5F3",
-                color: "#206859",
-                border: "1px solid rgba(32, 104, 89, 0.22)",
+                backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               }}
             >
               {viewport.grid.style}
@@ -289,9 +284,9 @@ export const EnvironmentInspector: React.FC = () => {
                             padding: "5px 6px",
                             fontSize: "10px",
                             borderRadius: "6px",
-                            border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                            background: isActive ? "#EBF5F3" : "#FFFFFF",
-                            color: isActive ? "#206859" : "#475569",
+                            border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                            background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                            color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                             fontWeight: isActive ? 600 : 500,
                             cursor: "pointer",
                             transition: "all 120ms ease",
@@ -338,9 +333,9 @@ export const EnvironmentInspector: React.FC = () => {
                             padding: "5px 8px",
                             fontSize: "10.5px",
                             borderRadius: "6px",
-                            border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                            background: isActive ? "#EBF5F3" : "#FFFFFF",
-                            color: isActive ? "#206859" : "#475569",
+                            border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                            background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                            color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                             fontWeight: isActive ? 600 : 500,
                             cursor: "pointer",
                             transition: "all 120ms ease",
@@ -363,7 +358,7 @@ export const EnvironmentInspector: React.FC = () => {
               <div className="form-group">
                 <div className="form-label">
                   <span>Grid Matrix Style</span>
-                  <span className="form-label__hint" style={{ color: "#206859", fontWeight: 600 }}>{viewport.grid.size}px</span>
+                  <span className="form-label__hint" style={{ color: "var(--text-primary)", fontWeight: 600 }}>{viewport.grid.size}px</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px", marginBottom: "6px" }}>
                   {(["dots", "lines", "none"] as GridStylePreset[]).map((style) => {
@@ -378,9 +373,9 @@ export const EnvironmentInspector: React.FC = () => {
                           fontSize: "10.5px",
                           fontWeight: isActive ? 600 : 500,
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           cursor: "pointer",
                           textTransform: "capitalize",
                           transition: "all 120ms ease",
@@ -399,21 +394,21 @@ export const EnvironmentInspector: React.FC = () => {
 
                 {viewport.grid.style !== "none" && (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                    <span style={{ fontSize: "10.5px", color: "#64748B", width: "40px" }}>Size</span>
+                    <span style={{ fontSize: "10.5px", color: "var(--text-secondary)", width: "40px" }}>Size</span>
                     <input
                       type="range"
                       min={8}
                       max={32}
                       step={8}
                       value={viewport.grid.size}
-                      style={{ flex: 1, accentColor: "#206859" }}
+                      style={{ flex: 1, accentColor: "var(--neutral-1000)" }}
                       onChange={(e) =>
                         updateEnvironment({
                           viewport: { ...viewport, grid: { ...viewport.grid, size: Number(e.target.value) } },
                         })
                       }
                     />
-                    <span style={{ fontSize: "10px", fontFamily: "var(--font-mono)", color: "#206859", fontWeight: 600 }}>
+                    <span style={{ fontSize: "10px", fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontWeight: 600 }}>
                       {viewport.grid.size}px
                     </span>
                   </div>
@@ -424,7 +419,7 @@ export const EnvironmentInspector: React.FC = () => {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <div className="form-label">
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Crosshair size={12} style={{ color: "#206859" }} />
+                    <Crosshair size={12} style={{ color: "var(--text-primary)" }} />
                     <span>World Axes & (0, 0) Origin</span>
                   </div>
                   <ToggleSwitch
@@ -446,19 +441,17 @@ export const EnvironmentInspector: React.FC = () => {
         {/* ====================================================================
          * SECTION 2: ELEMENT TRANSFORM & CANVAS FLOW (PROPS 5-8)
          * ==================================================================== */}
-        <div id="env-section-elements" className={`panel-section ${sectionsOpen.elements ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid rgba(15, 23, 42, 0.08)" }}>
+        <div id="env-section-elements" className={`panel-section ${sectionsOpen.elements ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <button type="button" className="panel-section__header" onClick={() => toggleSection("elements")}>
             <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.elements ? "#206859" : "#94A3B8" }} />
-              <Move size={13} style={{ color: "#206859" }} />
-              <span style={{ color: "#206859", fontWeight: 600 }}>Element Interaction</span>
+              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.elements ? "var(--text-primary)" : "var(--text-muted)" }} />
+              <Move size={13} style={{ color: "var(--text-primary)" }} />
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Element Interaction</span>
             </div>
             <span
               className="panel-header__badge"
               style={{
-                backgroundColor: "#EBF5F3",
-                color: "#206859",
-                border: "1px solid rgba(32, 104, 89, 0.22)",
+                backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               }}
             >
               {elements.dragEnabled ? "Free Drag" : "Locked"}
@@ -482,7 +475,7 @@ export const EnvironmentInspector: React.FC = () => {
                     size="sm"
                   />
                 </div>
-                <span className="form-label__hint" style={{ color: "#64748B" }}>
+                <span className="form-label__hint" style={{ color: "var(--text-secondary)" }}>
                   {elements.dragEnabled ? "Elements can be freely moved on canvas" : "Elements are locked against displacement"}
                 </span>
               </div>
@@ -502,7 +495,7 @@ export const EnvironmentInspector: React.FC = () => {
                     size="sm"
                   />
                 </div>
-                <span className="form-label__hint" style={{ color: "#64748B" }}>
+                <span className="form-label__hint" style={{ color: "var(--text-secondary)" }}>
                   Dragging into container re-assigns parent
                 </span>
               </div>
@@ -523,9 +516,9 @@ export const EnvironmentInspector: React.FC = () => {
                           padding: "5px 8px",
                           fontSize: "10.5px",
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           fontWeight: isActive ? 600 : 500,
                           cursor: "pointer",
                           transition: "all 120ms ease",
@@ -559,9 +552,9 @@ export const EnvironmentInspector: React.FC = () => {
                           padding: "5px 8px",
                           fontSize: "10.5px",
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           fontWeight: isActive ? 600 : 500,
                           cursor: "pointer",
                           transition: "all 120ms ease",
@@ -585,19 +578,17 @@ export const EnvironmentInspector: React.FC = () => {
         {/* ====================================================================
          * SECTION 3: SNAPPING & ALIGNMENT (PROPS 9-11)
          * ==================================================================== */}
-        <div id="env-section-snapping" className={`panel-section ${sectionsOpen.snapping ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid rgba(15, 23, 42, 0.08)" }}>
+        <div id="env-section-snapping" className={`panel-section ${sectionsOpen.snapping ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <button type="button" className="panel-section__header" onClick={() => toggleSection("snapping")}>
             <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.snapping ? "#206859" : "#94A3B8" }} />
-              <Magnet size={13} style={{ color: "#206859" }} />
-              <span style={{ color: "#206859", fontWeight: 600 }}>Snapping & Alignment</span>
+              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.snapping ? "var(--text-primary)" : "var(--text-muted)" }} />
+              <Magnet size={13} style={{ color: "var(--text-primary)" }} />
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Snapping & Alignment</span>
             </div>
             <span
               className="panel-header__badge"
               style={{
-                backgroundColor: "#EBF5F3",
-                color: "#206859",
-                border: "1px solid rgba(32, 104, 89, 0.22)",
+                backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               }}
             >
               {snapping.snapToGrid && snapping.snapToElements ? "Grid + Smart" : snapping.snapToGrid ? "Grid" : "Off"}
@@ -641,7 +632,7 @@ export const EnvironmentInspector: React.FC = () => {
               </div>
 
               {/* Prop 11: Expandable Snapping Details Group */}
-              <div style={{ marginTop: "8px", borderTop: "1px dashed rgba(15, 23, 42, 0.1)", paddingTop: "8px" }}>
+              <div style={{ marginTop: "8px", borderTop: "1px dashed var(--border-subtle)", paddingTop: "8px" }}>
                 <button
                   type="button"
                   onClick={() => setSnappingDetailsOpen(!snappingDetailsOpen)}
@@ -652,7 +643,7 @@ export const EnvironmentInspector: React.FC = () => {
                     width: "100%",
                     background: "none",
                     border: "none",
-                    color: "#206859",
+                    color: "var(--text-primary)",
                     fontSize: "11px",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -665,7 +656,7 @@ export const EnvironmentInspector: React.FC = () => {
                     style={{
                       transform: snappingDetailsOpen ? "rotate(90deg)" : "none",
                       transition: "transform 0.2s ease",
-                      color: "#206859",
+                      color: "var(--text-primary)",
                     }}
                   />
                 </button>
@@ -761,19 +752,17 @@ export const EnvironmentInspector: React.FC = () => {
         {/* ====================================================================
          * SECTION 4: THEME & DESIGN SYSTEM DNA (PROPS 12-16)
          * ==================================================================== */}
-        <div id="env-section-theme" className={`panel-section ${sectionsOpen.theme ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid rgba(15, 23, 42, 0.08)" }}>
+        <div id="env-section-theme" className={`panel-section ${sectionsOpen.theme ? "panel-section--open" : ""}`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
           <button type="button" className="panel-section__header" onClick={() => toggleSection("theme")}>
             <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.theme ? "#206859" : "#94A3B8" }} />
-              <Palette size={13} style={{ color: "#206859" }} />
-              <span style={{ color: "#206859", fontWeight: 600 }}>Theme & Design Tokens</span>
+              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.theme ? "var(--text-primary)" : "var(--text-muted)" }} />
+              <Palette size={13} style={{ color: "var(--text-primary)" }} />
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Theme & Design Tokens</span>
             </div>
             <span
               className="panel-header__badge"
               style={{
-                backgroundColor: "#EBF5F3",
-                color: "#206859",
-                border: "1px solid rgba(32, 104, 89, 0.22)",
+                backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               }}
             >
               {theme.defaultRadius === 9999 ? "Pill" : `${theme.defaultRadius}px`}
@@ -801,9 +790,9 @@ export const EnvironmentInspector: React.FC = () => {
                           gap: "8px",
                           padding: "7px 10px",
                           borderRadius: "8px",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          border: isActive ? "2px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          boxShadow: isActive ? "0 2px 6px rgba(32, 104, 89, 0.12)" : "none",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          border: isActive ? "2px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          boxShadow: isActive ? "var(--shadow-sm)" : "none",
                           cursor: "pointer",
                           textAlign: "left",
                           transition: "all 140ms ease",
@@ -824,7 +813,7 @@ export const EnvironmentInspector: React.FC = () => {
                             border: "1px solid rgba(0,0,0,0.1)",
                           }}
                         />
-                        <span style={{ fontSize: "11px", color: isActive ? "#206859" : "#0F172A", fontWeight: isActive ? 700 : 500 }}>
+                        <span style={{ fontSize: "11px", color: isActive ? "var(--neutral-1000)" : "var(--text-primary)", fontWeight: isActive ? 700 : 500 }}>
                           {pal.name}
                         </span>
                       </button>
@@ -837,7 +826,7 @@ export const EnvironmentInspector: React.FC = () => {
               <div className="form-group">
                 <div className="form-label">
                   <span>Corner Radius Default</span>
-                  <span className="form-label__hint" style={{ color: "#206859", fontWeight: 600 }}>
+                  <span className="form-label__hint" style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                     {theme.defaultRadius === 9999 ? "Pill" : `${theme.defaultRadius}px`}
                   </span>
                 </div>
@@ -853,9 +842,9 @@ export const EnvironmentInspector: React.FC = () => {
                           fontSize: "10.5px",
                           fontWeight: isActive ? 600 : 500,
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           cursor: "pointer",
                           textAlign: "center",
                           transition: "all 120ms ease",
@@ -974,16 +963,14 @@ export const EnvironmentInspector: React.FC = () => {
         <div id="env-section-motion" className={`panel-section ${sectionsOpen.motion ? "panel-section--open" : ""}`}>
           <button type="button" className="panel-section__header" onClick={() => toggleSection("motion")}>
             <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.motion ? "#206859" : "#94A3B8" }} />
-              <Gauge size={13} style={{ color: "#206859" }} />
-              <span style={{ color: "#206859", fontWeight: 600 }}>Motion & Spring Physics</span>
+              <ChevronRight size={13} className="panel-section__chevron" style={{ color: sectionsOpen.motion ? "var(--text-primary)" : "var(--text-muted)" }} />
+              <Gauge size={13} style={{ color: "var(--text-primary)" }} />
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Motion & Spring Physics</span>
             </div>
             <span
               className="panel-header__badge"
               style={{
-                backgroundColor: "#EBF5F3",
-                color: "#206859",
-                border: "1px solid rgba(32, 104, 89, 0.22)",
+                backgroundColor: "var(--neutral-50)", color: "var(--text-primary)", border: "1px solid var(--border-default)",
               }}
             >
               {motion.timeScale}x
@@ -996,7 +983,7 @@ export const EnvironmentInspector: React.FC = () => {
               <div className="form-group">
                 <div className="form-label">
                   <span>Global Motion Speed (Slow-Mo Dial)</span>
-                  <span className="form-label__hint" style={{ color: "#206859", fontWeight: 600 }}>
+                  <span className="form-label__hint" style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                     {motion.timeScale === 0.25 ? "Slow Motion" : `${motion.timeScale}x`}
                   </span>
                 </div>
@@ -1012,9 +999,9 @@ export const EnvironmentInspector: React.FC = () => {
                           fontSize: "10.5px",
                           fontWeight: isActive ? 600 : 500,
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           cursor: "pointer",
                           textAlign: "center",
                           transition: "all 120ms ease",
@@ -1036,7 +1023,7 @@ export const EnvironmentInspector: React.FC = () => {
               <div className="form-group">
                 <div className="form-label">
                   <span>Spring Physics Preset</span>
-                  <span className="form-label__hint" style={{ color: "#206859", fontWeight: 600 }}>
+                  <span className="form-label__hint" style={{ color: "var(--text-primary)", fontWeight: 600 }}>
                     k:{motion.spring.stiffness} c:{motion.spring.damping}
                   </span>
                 </div>
@@ -1052,9 +1039,9 @@ export const EnvironmentInspector: React.FC = () => {
                           fontSize: "11px",
                           fontWeight: isActive ? 600 : 500,
                           borderRadius: "6px",
-                          border: isActive ? "1px solid #206859" : "1px solid rgba(15, 23, 42, 0.12)",
-                          background: isActive ? "#EBF5F3" : "#FFFFFF",
-                          color: isActive ? "#206859" : "#475569",
+                          border: isActive ? "1px solid var(--neutral-1000)" : "1px solid var(--border-default)",
+                          background: isActive ? "var(--neutral-1000)" : "var(--neutral-0)",
+                          color: isActive ? "var(--neutral-0)" : "var(--text-secondary)",
                           cursor: "pointer",
                           textTransform: "capitalize",
                           transition: "all 120ms ease",
@@ -1068,7 +1055,7 @@ export const EnvironmentInspector: React.FC = () => {
                 </div>
 
                 {/* Advanced Disclosure for k, c, m */}
-                <div style={{ borderTop: "1px dashed rgba(15, 23, 42, 0.1)", paddingTop: "6px", marginTop: "6px" }}>
+                <div style={{ borderTop: "1px dashed var(--border-subtle)", paddingTop: "6px", marginTop: "6px" }}>
                   <button
                     type="button"
                     onClick={() => setAdvancedSpringOpen(!advancedSpringOpen)}
@@ -1079,7 +1066,7 @@ export const EnvironmentInspector: React.FC = () => {
                       width: "100%",
                       background: "none",
                       border: "none",
-                      color: "#206859",
+                      color: "var(--text-primary)",
                       fontSize: "11px",
                       fontWeight: 600,
                       cursor: "pointer",
@@ -1092,21 +1079,21 @@ export const EnvironmentInspector: React.FC = () => {
                       style={{
                         transform: advancedSpringOpen ? "rotate(90deg)" : "none",
                         transition: "transform 0.2s ease",
-                        color: "#206859",
+                        color: "var(--text-primary)",
                       }}
                     />
                   </button>
 
                   {advancedSpringOpen && (
-                    <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px", background: "#F8FAFC", padding: "8px", borderRadius: "6px" }}>
+                    <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px", background: "var(--neutral-50)", padding: "8px", borderRadius: "6px" }}>
                       <div className="form-label">
-                        <span style={{ fontSize: "10.5px" }}>Stiffness (k): <strong style={{ color: "#206859" }}>{motion.spring.stiffness}</strong></span>
+                        <span style={{ fontSize: "10.5px" }}>Stiffness (k): <strong style={{ color: "var(--text-primary)" }}>{motion.spring.stiffness}</strong></span>
                         <input
                           type="range"
                           min={50}
                           max={400}
                           value={motion.spring.stiffness}
-                          style={{ width: "120px", accentColor: "#206859" }}
+                          style={{ width: "120px", accentColor: "var(--neutral-1000)" }}
                           onChange={(e) =>
                             updateEnvironment({
                               motion: {
@@ -1120,13 +1107,13 @@ export const EnvironmentInspector: React.FC = () => {
                       </div>
 
                       <div className="form-label">
-                        <span style={{ fontSize: "10.5px" }}>Damping (c): <strong style={{ color: "#206859" }}>{motion.spring.damping}</strong></span>
+                        <span style={{ fontSize: "10.5px" }}>Damping (c): <strong style={{ color: "var(--text-primary)" }}>{motion.spring.damping}</strong></span>
                         <input
                           type="range"
                           min={5}
                           max={60}
                           value={motion.spring.damping}
-                          style={{ width: "120px", accentColor: "#206859" }}
+                          style={{ width: "120px", accentColor: "var(--neutral-1000)" }}
                           onChange={(e) =>
                             updateEnvironment({
                               motion: {
@@ -1158,7 +1145,7 @@ export const EnvironmentInspector: React.FC = () => {
                     size="sm"
                   />
                 </div>
-                <span className="form-label__hint" style={{ color: "#64748B" }}>Simulates prefers-reduced-motion for accessibility</span>
+                <span className="form-label__hint" style={{ color: "var(--text-secondary)" }}>Simulates prefers-reduced-motion for accessibility</span>
               </div>
             </div>
           )}

@@ -447,7 +447,7 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
         flexDirection: "column",
         height: "100%",
         width: "100%",
-        backgroundColor: "var(--surface-panel-solid, #FFFFFF)",
+        backgroundColor: "var(--surface-panel-solid)",
         overflow: "hidden",
       }}
     >
@@ -458,15 +458,15 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
           alignItems: "center",
           justifyContent: "space-between",
           padding: "8px 14px",
-          borderBottom: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.08))",
-          backgroundColor: "#FFFFFF",
+          borderBottom: "1px solid var(--border-subtle)",
+          backgroundColor: "var(--surface-panel-solid)",
           flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Code size={14} style={{ color: "var(--accent-primary, #206859)" }} />
+          <Code size={14} style={{ color: "var(--accent-primary)" }} />
           <div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent-primary, #206859)" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent-primary)" }}>
               Export Preview
             </span>
             <span
@@ -486,7 +486,7 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
           style={{
             display: "flex",
             alignItems: "center",
-            background: "var(--surface-panel-hover, #F1F5F9)",
+            background: "var(--surface-panel-hover)",
             borderRadius: "var(--radius-sm, 6px)",
             padding: 2,
             gap: 2,
@@ -537,9 +537,9 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
               gap: 5,
               padding: "4px 10px",
               height: 26,
-              background: copied ? "rgba(16, 185, 129, 0.15)" : undefined,
-              borderColor: copied ? "#10B981" : undefined,
-              color: copied ? "#10B981" : undefined,
+              background: copied ? "var(--accent-success-light)" : undefined,
+              borderColor: copied ? "var(--accent-success)" : undefined,
+              color: copied ? "var(--accent-success)" : undefined,
             }}
             onClick={handleCopy}
             title="Copy compiled code to clipboard"
@@ -567,15 +567,15 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
           alignItems: "center",
           justifyContent: "space-between",
           padding: "6px 14px",
-          background: dependencyCount === 0 ? "rgba(32, 104, 89, 0.05)" : "#F8FAFC",
-          borderBottom: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.08))",
+          background: dependencyCount === 0 ? "var(--neutral-50)" : "var(--neutral-100)",
+          borderBottom: "1px solid var(--border-subtle)",
           fontSize: 10.5,
           fontWeight: 600,
-          color: dependencyCount === 0 ? "var(--accent-primary, #206859)" : "#475569",
+          color: dependencyCount === 0 ? "var(--accent-primary)" : "var(--text-secondary)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Sparkles size={12} style={{ color: dependencyCount === 0 ? "var(--accent-primary, #206859)" : "#64748B" }} />
+          <Sparkles size={12} style={{ color: dependencyCount === 0 ? "var(--accent-primary)" : "var(--text-secondary)" }} />
           <span>{targetLabel}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10 }}>
@@ -583,14 +583,14 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
             style={{
               padding: "1px 6px",
               borderRadius: 4,
-              background: dependencyCount === 0 ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)",
-              color: dependencyCount === 0 ? "#059669" : "#D97706",
+              background: dependencyCount === 0 ? "var(--accent-success-light)" : "var(--accent-warning-light)",
+              color: dependencyCount === 0 ? "var(--state-success)" : "var(--state-warning)",
               fontWeight: 700,
             }}
           >
             {dependencyCount === 0 ? "0 External Packages • Universal Drop-in" : `${dependencyCount} npm Dependencies`}
           </span>
-          <span style={{ color: "#64748B" }}>♿ Reduced Motion Guard Included</span>
+          <span style={{ color: "var(--text-secondary)" }}>♿ Reduced Motion Guard Included</span>
         </div>
       </div>
 
@@ -619,8 +619,8 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
           alignItems: "center",
           justifyContent: "space-between",
           padding: "4px 14px",
-          backgroundColor: "var(--surface-panel-solid, #FFFFFF)",
-          borderTop: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.08))",
+          backgroundColor: "var(--surface-panel-solid)",
+          borderTop: "1px solid var(--border-subtle)",
           fontSize: 10,
           color: "var(--text-tertiary)",
           flexShrink: 0,
@@ -633,8 +633,8 @@ export function init${targetName.replace(/[^a-zA-Z0-9]/g, "")}Animation(targetEl
           <span>
             Size: <strong>{sizeBytes} B</strong>
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#10B981" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981" }} />
+          <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--accent-success)" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-success)" }} />
             Deterministic AST Sync
           </span>
         </div>
