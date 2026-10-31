@@ -217,3 +217,10 @@ Anything unresolved that must be settled before the redesign can be connected to
 - **What A/B must do:**
   - Update `openFileMenu(page)` in `tests/e2e/support/editor.ts` to click `.studio-header__brand-btn` prior to selecting "File", or use `run(page, "file.exportProjectFile")`.
 - **Status:** open
+
+### Old editor moved to `src/legacy-editor`; new UI rebuilt in `src/editor`
+- **Page / phase:** Rebuild setup (before the first page)
+- **Files:** `src/editor/**` (old) renamed to `src/legacy-editor/**`; imports inside it changed from `@/editor/...` to `@/legacy-editor/...`; new `src/editor/**` bridge files; `eslint.config.mjs` (editor-scoped rules now also cover `src/legacy-editor`); `tests/e2e/stage-engine.spec.ts` (comment path only)
+- **What changed:** Routes, `src/app/layout.tsx`, `src/compiler/export/CrossFrameworkExporter.ts` and the `src/core` tests still import `@/editor/...` and `../../../editor/...` unchanged. Those paths now resolve to bridge files that re-export the legacy implementation. As each area is rebuilt, the bridge is replaced by the new component.
+- **What A/B must do:** For new code, import from `@/editor/...` as before. Do not import from `@/legacy-editor` in new code outside `src/editor` bridges. Any change A or B make to old UI files must be made in `src/legacy-editor`, then ported to the new component when that area is rebuilt.
+- **Status:** open

@@ -16,7 +16,7 @@ const eslintConfig = defineConfig([
   },
   // Stale closures in editor/timeline code are a correctness risk (ROADMAP Phase 1.2).
   {
-    files: ["src/editor/**/*.{ts,tsx}"],
+    files: ["src/editor/**/*.{ts,tsx}", "src/legacy-editor/**/*.{ts,tsx}"],
     rules: {
       "react-hooks/exhaustive-deps": "error",
     },
@@ -41,11 +41,11 @@ const eslintConfig = defineConfig([
   // The short allowlist: pointer-drag batching and a canvas loop that are not on the timeline's clock. The Sequencer left it in Phase 56.
   {
     files: [
-      "src/editor/shell/DockSplitter.tsx",
-      "src/editor/shell/DockCornerSplitter.tsx",
+      "src/legacy-editor/shell/DockSplitter.tsx",
+      "src/legacy-editor/shell/DockCornerSplitter.tsx",
       "src/core/events/useTearOff.ts",
-      "src/editor/canvas/WasmCableCanvas.tsx",
-      "src/editor/panels/details/controls/KeyframeTimeline.tsx",
+      "src/legacy-editor/canvas/WasmCableCanvas.tsx",
+      "src/legacy-editor/panels/details/controls/KeyframeTimeline.tsx",
     ],
     rules: { "no-restricted-globals": "off", "no-restricted-properties": "off" },
   },

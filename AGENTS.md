@@ -19,6 +19,7 @@ Read `DOCS/UI/UI_RULES.md` before doing anything. The essentials:
 - **Never decide colors, fonts, layout or copy yourself.** Ask. Colors come from the user's reference images (`DOCS/UI/PALETTE.md`).
 - Use **tokens only** (`src/editor/styles/tokens.css`). No hardcoded values.
 - Animate only `transform` and `opacity`. Respect `prefers-reduced-motion`. Lazy-load heavy effects.
+- The new UI is built from scratch in `src/editor`. **`src/legacy-editor` is the old UI: read it for reference, never edit it.** A file in `src/editor` that only re-exports `@/legacy-editor` is a bridge: replace it with the real new component, keep its export names and props. Update `DOCS/UI/PARITY.md` when an area is done.
 - Touch only UI paths (`src/app`, `src/editor`, `public`). **Do not edit** `src/core`, `src/compiler`, `src/runtime`, `src/ai` or config files: ask Claude.
 - **Never open a browser by hand.** Use Playwright, headless, for screenshots.
 - **Do not run checks after each step.** Checks run once at the end of a phase.

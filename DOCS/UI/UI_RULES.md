@@ -17,11 +17,13 @@ Awwwards-level UI and UX. Bold, polished, intentional. Craft and motion matter, 
 
 | Allowed | Off limits (ask Claude first) |
 |---|---|
-| `src/app/**`, `src/editor/**`, `public/**` | `src/core/**` (engine, stores, commands, document) |
+| `src/app/**`, `src/editor/**` (the new UI), `public/**` | `src/core/**` (engine, stores, commands, document) |
 | `src/editor/styles/**` (CSS, tokens) | `src/compiler/**`, `src/runtime/**`, `src/ai/**` |
 | New UI components and assets | `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs` |
 
 UI code may **call** the engine. It must not change it.
+
+**Rebuild structure.** The new UI is built from scratch in `src/editor`. The old UI is in `src/legacy-editor`: **read-only reference, never edit it** (it is also off limits to workers). `src/editor` keeps the same import paths the app, compiler and tests use; files there that still re-export from `@/legacy-editor` are *bridges* and mean "not rebuilt yet". Track progress in `DOCS/UI/PARITY.md`. Reuse non-visual logic (snapping, hit-testing, stores, hooks) instead of rewriting it.
 
 ## 4. Design system
 
