@@ -9,7 +9,13 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Global | Whole UI built from scratch, old UI kept in `src/legacy-editor` | user | approved |
 | 2026-10-31 | Global | Use components from other sites | user | approved |
 | 2026-10-31 | Global | Workers do not stop for design questions | user | approved |
+| 2026-10-31 | Global | Use Tailwind | user | approved |
+| 2026-10-31 | Global | A design system page shows every component, and components change there first | user | approved |
+| 2026-10-31 | Global | Claude is the senior designer and instructs the workers, who do all the work | user | approved |
+| 2026-10-31 | Canvas | The canvas is fixed in the from-scratch rebuild, not by editing `src/core` | user | approved |
 | 2026-10-31 | Global | Light theme first | Claude | pending |
+| 2026-10-31 | Global | Tailwind classes use an `ll:` prefix, no Preflight, while the legacy UI is loaded | Claude | pending |
+| 2026-10-31 | Design system | `/design-system` is hidden in production unless labs are enabled | Claude | pending |
 | 2026-10-31 | Global | Black with white text for primary and active controls, no accent color | Claude | pending |
 | 2026-10-31 | Global | `motion` for interface motion, GSAP for timelines and scroll | Claude | pending |
 | 2026-10-31 | Global | Only license-allowed third-party code, no new dependencies, logged per component | Claude | pending |

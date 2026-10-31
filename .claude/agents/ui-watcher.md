@@ -16,7 +16,9 @@ You are the watcher for the Lazy Layout UI rebuild on branch `ui/redesign`. You 
 7. Accessibility gaps: no focus style, contrast under 4.5:1, missing labels.
 8. Missing or incomplete handoff, screenshots, `INTEGRATION.md` entries or `PARITY.md` update.
 9. A worker's or Claude's choice recorded as the user's.
-10. A bridge left in place for an area reported as finished, or work outside the task's listed files.
+10. A UI component not in `src/editor/components/` or not shown with its states on the design system page, or a screen using one-off UI instead of a design system component.
+11. A Tailwind class without the `ll:` prefix, or an arbitrary value (`ll:w-[37px]`).
+12. A bridge left in place for an area reported as finished, or work outside the task's listed files.
 
 **Warn** without failing for anything that is taste rather than a rule, and for decisions the user should look at in the next review.
 

@@ -36,17 +36,25 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 3. Engine changes requested
 
-### Canvas defaults
-- **Area:** canvas
-- **Files:** `src/core/types/environment.ts`, `src/core/store/__tests__/WorldEnvironment.test.ts`
-- **What is needed:** The `clean_light` canvas should be `#DFDFDF` with grid style `"none"`, as the user asked. **Not applied:** an earlier edit was lost, and the file still has `#FCFDFD` and `"dots"`.
-- **Status:** open, waiting on the user's go for Claude to edit `src/core`
-
 ## 4. New shared UI pieces
+
+### Design system page
+- **Area:** design system
+- **Files:** `src/editor/components/`, `src/editor/design-system/`, `src/app/design-system/`
+- **What changed:** Every new UI component lives in `src/editor/components/` and is shown on `/design-system`.
+- **What A/B must do:** Reuse these components, and add or change them on the design system page first.
+- **Status:** open
 
 ## 5. Tokens and styles
 
 New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.
+
+### Tailwind added
+- **Area:** foundations
+- **Files:** `package.json`, `package-lock.json`, `postcss.config.mjs`, `src/editor/styles/tailwind.css`, `src/editor/styles/tokens.css`, `src/editor/styles/globals.css`
+- **What changed:** `tailwindcss` and `@tailwindcss/postcss` 4.3.3. Classes carry the `ll:` prefix, there is no Preflight reset, only `src/editor` is scanned, and the default colors are removed.
+- **What A/B must do:** Use `ll:` classes in new UI. The prefix and scoping can be dropped when `src/legacy-editor` is removed.
+- **Status:** open
 
 ## 6. Routes and layout
 

@@ -1,0 +1,10 @@
+/* Lazy Layout design tokens. Colors come only from DOCS/UI/PALETTE.md. */
+:root {
+  --ll-neutral-0: #ffffff;
+  --ll-neutral-50: #f1f1f1;
+  --ll-neutral-100: #dfdfdf;
+  --ll-neutral-200: #c8c8c8;
+  --ll-neutral-400: #929292;
+  --ll-neutral-800: #464646;
+  --ll-neutral-1000: #000000;
+}

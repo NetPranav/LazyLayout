@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
     "@types/pngjs": "^6.0.5",
     "@types/react": "^19",
@@ -52,6 +53,7 @@
     "fast-check": "^4.10.2",
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
     "typescript": "^5"
   }

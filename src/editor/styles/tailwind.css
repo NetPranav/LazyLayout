@@ -1,0 +1,22 @@
+/*
+ * Tailwind for the new UI only. Classes carry the `ll:` prefix (`ll:flex`, `ll:bg-neutral-100`) so they cannot collide
+ * with legacy class names or tokens, there is no Preflight reset, and only src/editor is scanned. The default color
+ * palette is removed, so only the approved colors exist as utilities.
+ */
+@import "./tokens.css";
+@import "tailwindcss/theme.css" prefix(ll);
+@import "tailwindcss/utilities.css" source(none);
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-neutral-0: var(--ll-neutral-0);
+  --color-neutral-50: var(--ll-neutral-50);
+  --color-neutral-100: var(--ll-neutral-100);
+  --color-neutral-200: var(--ll-neutral-200);
+  --color-neutral-400: var(--ll-neutral-400);
+  --color-neutral-800: var(--ll-neutral-800);
+  --color-neutral-1000: var(--ll-neutral-1000);
+}

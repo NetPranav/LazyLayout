@@ -1,6 +1,6 @@
 # Palette
 
-The only colors workers may use. Taken from the user's reference image `DOCS/UI/palette-refs/ref-01-work-os.png` (sampled, so approximate). Light theme only.
+The only colors workers may use. Taken from the user's reference image `DOCS/UI/palette-refs/ref-01-work-os.png` (sampled, so approximate). Light theme only. In Tailwind these are `ll:bg-neutral-100`, `ll:text-neutral-800` and so on.
 
 | Role | Hex | Token | Status |
 |---|---|---|---|

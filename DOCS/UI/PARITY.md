@@ -7,11 +7,12 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 - **Reference caveat:** `src/legacy-editor` includes the first top-bar and color experiments. The original UI, before them, is at commit `dcd7695`.
 - **Not listed:** 22 legacy test files in `__tests__` folders (move or rewrite them with their area, and keep the logic ones) and 7 empty `.gitkeep` placeholders.
 
-**Phase 1:** foundations, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
+**Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 
 | Area | Status | Legacy files | Bridged entry points now in `src/editor` |
 |---|---|---|---|
-| `foundations` (tokens, type and spacing scales, base components) | todo | new | - |
+| `foundations` (tokens, type and spacing scales, base components) | wip | new | - |
+| `design-system` (the `/design-system` page, shows every component and its states) | wip | new | - |
 | `shell` | todo | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
 | `menus` | todo | 4 | - |
 | `canvas` | todo | 20 | - |

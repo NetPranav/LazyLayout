@@ -1,2 +1,3 @@
-/* Bridge: still the legacy UI. Replace with the new global styles (DOCS/UI/PARITY.md). */
+/* Bridge: still the legacy UI's global styles, plus Tailwind for the new UI. Remove the legacy import when the rebuild is done. */
 @import "../../legacy-editor/styles/globals.css";
+@import "./tailwind.css";

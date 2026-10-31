@@ -5,10 +5,10 @@ One file per task: `YYYY-MM-DD-<short-name>.md`. Claude writes them and workers 
 ## A task names
 
 - the area (a row in `DOCS/UI/PARITY.md`) and the bridge files it replaces
-- the direction: the user's words where they exist, and otherwise Claude's choice, logged in `DECISIONS.md`
+- the design direction from Claude as senior designer, concrete enough to build from: layout, hierarchy, spacing, components to reuse or source, states and motion. The user's words where they exist, and Claude's choices logged in `DECISIONS.md`
 - the legacy files to read for behaviour
 - the files the worker may touch, and the off-limits list
-- what "done" means: screenshots at 1440, 1024 and 390 in `DOCS/UI/handoffs/screenshots/<short-name>/`, a handoff, `INTEGRATION.md`, `DECISIONS.md`, `COMPONENT_SOURCES.md` and `PARITY.md` updated, no commit
+- what "done" means: screenshots at 1440, 1024 and 390 in `DOCS/UI/handoffs/screenshots/<short-name>/`, a handoff, `INTEGRATION.md`, `DECISIONS.md`, `COMPONENT_SOURCES.md` and `PARITY.md` updated, every new component on the design system page, no commit
 
 ## How Claude launches a worker (Antigravity CLI `agy`)
 
