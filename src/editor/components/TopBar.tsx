@@ -11,6 +11,7 @@ import {
 import { Button } from "./Button";
 import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { Tooltip } from "./Tooltip";
+import { ThemeToggle } from "./ThemeToggle";
 
 export type DeviceMode = "desktop" | "tablet" | "mobile";
 
@@ -78,23 +79,23 @@ export function TopBar({
   return (
     <header
       role="banner"
-      className={`ll:relative ll:h-12 ll:w-full ll:bg-neutral-50 ll:border-b ll:border-border ll:px-3 ll:flex ll:items-center ll:justify-between ll:gap-2 ll:shrink-0 ll:box-border ll:font-sans ll:select-none ${className}`}
+      className={`ll:relative ll:h-12 ll:w-full ll:bg-surface-bar ll:border-b ll:border-border ll:px-3 ll:flex ll:items-center ll:justify-between ll:gap-2 ll:shrink-0 ll:box-border ll:font-sans ll:select-none ${className}`}
     >
       {/* Left group */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:shrink-0 ll:z-10">
-        {/* Small square logo mark (black rounded-rectangle 24px, radius 6px, white "L" in Geist bold) */}
+        {/* Small square logo mark (rounded-rectangle 24px, radius 6px, Geist bold) */}
         <div
           aria-label="Lazy Layout Logo"
-          className="ll:w-6 ll:h-6 ll:rounded-md ll:bg-neutral-1000 ll:flex ll:items-center ll:justify-center ll:shrink-0"
+          className="ll:w-6 ll:h-6 ll:rounded-md ll:bg-control-primary ll:flex ll:items-center ll:justify-center ll:shrink-0"
         >
-          <span className="ll:font-sans ll:font-bold ll:text-body ll:leading-none ll:text-neutral-0 ll:select-none">
+          <span className="ll:font-sans ll:font-bold ll:text-body ll:leading-none ll:text-control-primary-fg ll:select-none">
             L
           </span>
         </div>
 
         {/* Brand title */}
         <span
-          className={`ll:text-title ll:font-semibold ll:text-neutral-1000 ll:leading-none ${
+          className={`ll:text-title ll:font-semibold ll:text-primary ll:leading-none ${
             compact ? "ll:hidden" : "ll:hidden ll:sm:inline"
           }`}
         >
@@ -112,7 +113,7 @@ export function TopBar({
         <button
           type="button"
           title={`Project: ${projectName}`}
-          className={`ll:text-small ll:font-medium ll:text-neutral-800 ll:hover:text-neutral-1000 ll:hover:bg-neutral-100 ll:px-2 ll:py-1 ll:rounded-sm ll:transition-none ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ll:truncate ll:max-w-48 ${
+          className={`ll:text-small ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-panel ll:px-2 ll:py-1 ll:rounded-sm ll:transition-none ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ll:truncate ll:max-w-48 ${
             compact ? "ll:hidden" : "ll:hidden ll:sm:inline-flex"
           }`}
         >
@@ -195,6 +196,9 @@ export function TopBar({
         >
           Share
         </Button>
+
+        {/* Theme toggle button */}
+        <ThemeToggle size="md" />
 
         {/* Settings icon button */}
         <Tooltip content="Project settings">

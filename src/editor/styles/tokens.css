@@ -1,5 +1,7 @@
 /* Lazy Layout design tokens. Colors come only from DOCS/UI/PALETTE.md. */
-:root {
+:root,
+:root[data-theme="dark"],
+[data-theme="dark"] {
   /* 4px spacing grid base */
   --ll-spacing: 4px;
   --ll-spacing-1: 4px;
@@ -12,15 +14,18 @@
   --ll-spacing-12: 48px;
   --ll-spacing-16: 64px;
 
-  /* Colors - exactly the eight approved colors from DOCS/UI/PALETTE.md */
-  --ll-neutral-0: #FFFFFF;
-  --ll-neutral-50: #F1F1F1;
-  --ll-neutral-100: #DFDFDF;
-  --ll-neutral-200: #C4C4C4;
-  --ll-neutral-400: #8F8F8F;
-  --ll-neutral-800: #464646;
-  --ll-neutral-1000: #000000;
-  --ll-border-color: rgba(143, 143, 143, 0.5);
+  /* Semantic Color Tokens - Dark Theme (Primary & Default) */
+  --ll-surface-backdrop: #141414;
+  --ll-surface-canvas: #1E1E1E;
+  --ll-surface-panel: #2C2C2C;
+  --ll-surface-bar: #383838;
+  --ll-surface-raised: #383838;
+  --ll-border-color: #444444;
+  --ll-text-primary: #FFFFFF;
+  --ll-text-secondary: #BFBFBF;
+  --ll-text-muted: #A1A1A1;
+  --ll-control-primary-bg: #FFFFFF;
+  --ll-control-primary-fg: #1E1E1E;
 
   /* Typography - Geist and Geist Mono families */
   --ll-font-sans-family: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -65,9 +70,9 @@
   /* Hairline border */
   --ll-border-hairline: 1px;
 
-  /* Soft shadow tokens (black at low alpha) */
-  --ll-shadow-color: rgba(0, 0, 0, 0.08);
-  --ll-shadow-color-subtle: rgba(0, 0, 0, 0.04);
+  /* Soft shadow tokens - Stronger black alpha in dark */
+  --ll-shadow-color: rgba(0, 0, 0, 0.5);
+  --ll-shadow-color-subtle: rgba(0, 0, 0, 0.3);
   --ll-shadow-soft-value: 0 4px 20px -2px var(--ll-shadow-color), 0 2px 6px -1px var(--ll-shadow-color-subtle);
   --ll-shadow-soft: var(--ll-shadow-soft-value);
 
@@ -79,6 +84,25 @@
   --ll-canvas-max-width-value: 820px;
   --ll-canvas-max-width: var(--ll-canvas-max-width-value);
 
-  /* Control and bar sizes */
   --ll-duration-spin: 800ms;
+}
+
+:root[data-theme="light"],
+[data-theme="light"] {
+  /* Semantic Color Tokens - Light Theme */
+  --ll-surface-backdrop: #8F8F8F;
+  --ll-surface-canvas: #DFDFDF;
+  --ll-surface-panel: #C4C4C4;
+  --ll-surface-bar: #F1F1F1;
+  --ll-surface-raised: #FFFFFF;
+  --ll-border-color: rgba(143, 143, 143, 0.5);
+  --ll-text-primary: #000000;
+  --ll-text-secondary: #464646;
+  --ll-text-muted: #464646;
+  --ll-control-primary-bg: #000000;
+  --ll-control-primary-fg: #FFFFFF;
+
+  /* Soft shadow tokens - Subtle black alpha in light */
+  --ll-shadow-color: rgba(0, 0, 0, 0.08);
+  --ll-shadow-color-subtle: rgba(0, 0, 0, 0.04);
 }

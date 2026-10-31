@@ -13,7 +13,7 @@ export function Swatch({
   role,
   token,
   hex,
-  bgClass = "ll:bg-neutral-100",
+  bgClass = "ll:bg-surface-canvas",
   borderClass = "ll:border-border",
   sample,
 }: SwatchProps) {
@@ -31,13 +31,13 @@ export function Swatch({
         />
       )}
       <div className="ll:flex ll:flex-col ll:gap-1 ll:min-w-0">
-        <span className="ll:text-body ll:font-medium ll:text-neutral-1000 ll:truncate">
+        <span className="ll:text-body ll:font-medium ll:text-primary ll:truncate">
           {role}
         </span>
-        <span className="ll:font-mono ll:text-small ll:text-neutral-800 ll:truncate">
+        <span className="ll:font-mono ll:text-small ll:text-secondary ll:truncate">
           {token}
         </span>
-        <span className="ll:font-mono ll:text-small ll:text-neutral-800 ll:truncate">
+        <span className="ll:font-mono ll:text-small ll:text-secondary ll:truncate">
           {hex}
         </span>
       </div>

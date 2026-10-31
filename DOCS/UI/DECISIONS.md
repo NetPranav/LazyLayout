@@ -58,3 +58,9 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Global | Components use semantic tokens (`--ll-surface-*`, `--ll-text-*`, `--ll-control-primary-*`) instead of numbered neutrals so both themes work | Claude | pending |
 | 2026-10-31 | Components | imported as-is, no restyling | user | approved |
 | 2026-10-31 | Setup | packages installed with legacy-peer-deps | user | approved |
+| 2026-10-31 | Global | Semantic color tokens (--ll-surface-*, --ll-text-*, --ll-control-primary-*) replace numbered neutrals; dark theme is default on :root and [data-theme="dark"], light on [data-theme="light"] | worker (Antigravity) | pending |
+| 2026-10-31 | Foundations | Soft shadow token (--ll-shadow-soft) adopts stronger black alpha in dark (rgba(0,0,0,0.5)/0.3) and subtle alpha in light (rgba(0,0,0,0.08)/0.04) | worker (Antigravity) | pending |
+| 2026-10-31 | Global | Theme stored in localStorage under 'lazy-layout-theme' and set via inline script in layout.tsx to prevent render flash; default dark | worker (Antigravity) | pending |
+| 2026-10-31 | Components | Added ThemeToggle component (ghost icon button with Lucide Sun/Moon and "Switch theme" tooltip) in TopBar and DesignSystemPage | worker (Antigravity) | pending |
+| 2026-10-31 | Styling | Hover and active states map to surface-panel on raised surfaces and surface-bar on panel surfaces for cross-theme contrast | worker (Antigravity) | pending |
+| 2026-10-31 | Design system | Colors page shows dual-theme comparison columns (Dark vs Light) for all 11 semantic roles, real workspace frame preview in active theme, and WCAG AAA/AA surface text contrast ratios | worker (Antigravity) | pending |

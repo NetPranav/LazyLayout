@@ -1,5 +1,5 @@
 /*
- * Tailwind for the new UI only. Classes carry the `ll:` prefix (`ll:flex`, `ll:bg-neutral-100`) so they cannot collide
+ * Tailwind for the new UI only. Classes carry the `ll:` prefix (`ll:flex`, `ll:bg-surface-canvas`) so they cannot collide
  * with legacy class names or tokens, there is no Preflight reset, and only src/editor is scanned. The default color
  * palette is removed, so only the approved colors exist as utilities. All values reference tokens from tokens.css.
  */
@@ -12,17 +12,30 @@
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;
-  --color-neutral-0: var(--ll-neutral-0);
-  --color-neutral-50: var(--ll-neutral-50);
-  --color-neutral-100: var(--ll-neutral-100);
-  --color-neutral-200: var(--ll-neutral-200);
-  --color-neutral-400: var(--ll-neutral-400);
-  --color-neutral-800: var(--ll-neutral-800);
-  --color-neutral-1000: var(--ll-neutral-1000);
+
+  /* Semantic surface colors */
+  --color-surface-backdrop: var(--ll-surface-backdrop);
+  --color-surface-canvas: var(--ll-surface-canvas);
+  --color-surface-panel: var(--ll-surface-panel);
+  --color-surface-bar: var(--ll-surface-bar);
+  --color-surface-raised: var(--ll-surface-raised);
+
+  /* Semantic text & icon colors */
+  --color-primary: var(--ll-text-primary);
+  --color-text-primary: var(--ll-text-primary);
+  --color-secondary: var(--ll-text-secondary);
+  --color-text-secondary: var(--ll-text-secondary);
+  --color-muted: var(--ll-text-muted);
+  --color-text-muted: var(--ll-text-muted);
+
+  /* Semantic control colors */
+  --color-control-primary: var(--ll-control-primary-bg);
+  --color-control-primary-bg: var(--ll-control-primary-bg);
+  --color-control-primary-fg: var(--ll-control-primary-fg);
+
+  /* Semantic hairline border */
   --color-border: var(--ll-border-color);
   --color-border-color: var(--ll-border-color);
-  --color-black: var(--ll-neutral-1000);
-  --color-white: var(--ll-neutral-0);
 
   --font-*: initial;
   --font-sans: var(--ll-font-sans-family);

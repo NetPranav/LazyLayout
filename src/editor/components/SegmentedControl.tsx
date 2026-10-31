@@ -79,7 +79,7 @@ export function SegmentedControl<T extends string = string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-disabled={disabled ? "true" : undefined}
-      className={`ll:inline-flex ll:items-center ll:box-border ll:bg-neutral-50 ll:border ll:border-border ll:rounded-md ll:p-0.5 ll:gap-0.5 ll:select-none ll:shrink-0 ${containerSizeStyles} ${
+      className={`ll:inline-flex ll:items-center ll:box-border ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:p-0.5 ll:gap-0.5 ll:select-none ll:shrink-0 ${containerSizeStyles} ${
         disabled ? "ll:opacity-40 ll:pointer-events-none" : ""
       } ${className}`}
     >
@@ -106,10 +106,10 @@ export function SegmentedControl<T extends string = string>({
               }
             }}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`ll:inline-flex ll:items-center ll:justify-center ll:gap-1.5 ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-none ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ll:focus-visible:ring-offset-1 ${itemHeightStyles} ${
+            className={`ll:inline-flex ll:items-center ll:justify-center ll:gap-1.5 ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-none ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ll:focus-visible:ring-offset-1 ${itemHeightStyles} ${
               isSelected
-                ? "ll:bg-neutral-1000 ll:text-neutral-0 ll:cursor-default"
-                : "ll:bg-transparent ll:text-neutral-800 ll:hover:bg-neutral-100 ll:hover:text-neutral-1000 ll:cursor-pointer"
+                ? "ll:bg-control-primary ll:text-control-primary-fg ll:cursor-default"
+                : "ll:bg-transparent ll:text-secondary ll:hover:bg-surface-panel ll:hover:text-primary ll:cursor-pointer"
             } ${isItemDisabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""}`}
           >
             {option.icon}

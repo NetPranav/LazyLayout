@@ -7,6 +7,7 @@ import { Button } from "../components/Button";
 import { SegmentedControl, type SegmentedControlOption } from "../components/SegmentedControl";
 import { Tooltip } from "../components/Tooltip";
 import { TopBar, type DeviceMode } from "../components/TopBar";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 // Imported (as-is) components
 import SquishSwitch from "../components/imported/squish-switch/SquishSwitch";
@@ -53,6 +54,8 @@ import {
   Sparkles,
   Download,
   Share2,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 type NavSectionId =
@@ -65,6 +68,7 @@ type NavSectionId =
   | "segmented-control"
   | "tooltip"
   | "top-bar"
+  | "theme-toggle"
   | "swatch"
   | "workspace-frame"
   | "imported-squish-switch"
@@ -98,6 +102,7 @@ const COMPONENTS_NAV: readonly NavItem[] = [
   { id: "segmented-control", label: "SegmentedControl" },
   { id: "tooltip", label: "Tooltip" },
   { id: "top-bar", label: "TopBar" },
+  { id: "theme-toggle", label: "ThemeToggle" },
   { id: "swatch", label: "Swatch" },
   { id: "workspace-frame", label: "WorkspaceFrame" },
 ];
@@ -119,41 +124,103 @@ const IMPORTED_NAV: readonly NavItem[] = [
 
 const ALL_NAV = [...FOUNDATIONS_NAV, ...COMPONENTS_NAV, ...IMPORTED_NAV];
 
-const SURFACE_SWATCHES: readonly SwatchProps[] = [
+interface SemanticRoleSpec {
+  role: string;
+  token: string;
+  darkHex: string;
+  lightHex: string;
+  swatchClass: string;
+  description: string;
+}
+
+const SEMANTIC_ROLES: readonly SemanticRoleSpec[] = [
   {
-    role: "Backdrop (outside the app)",
-    token: "--ll-neutral-400",
-    hex: "#8F8F8F",
-    bgClass: "ll:bg-neutral-400",
-    borderClass: "ll:border-border",
-  },
-  {
-    role: "Panels and side rails",
-    token: "--ll-neutral-200",
-    hex: "#C4C4C4",
-    bgClass: "ll:bg-neutral-200",
-    borderClass: "ll:border-border",
+    role: "Backdrop",
+    token: "--ll-surface-backdrop",
+    darkHex: "#141414",
+    lightHex: "#8F8F8F",
+    swatchClass: "ll:bg-surface-backdrop ll:text-primary",
+    description: "Outside the app container frame",
   },
   {
     role: "Canvas",
-    token: "--ll-neutral-100",
-    hex: "#DFDFDF",
-    bgClass: "ll:bg-neutral-100",
-    borderClass: "ll:border-border",
+    token: "--ll-surface-canvas",
+    darkHex: "#1E1E1E",
+    lightHex: "#DFDFDF",
+    swatchClass: "ll:bg-surface-canvas ll:text-primary",
+    description: "Main workspace and editing surface background",
   },
   {
-    role: "Toolbar and floating bars",
-    token: "--ll-neutral-50",
-    hex: "#F1F1F1",
-    bgClass: "ll:bg-neutral-50",
-    borderClass: "ll:border-border",
+    role: "Panels and side rails",
+    token: "--ll-surface-panel",
+    darkHex: "#2C2C2C",
+    lightHex: "#C4C4C4",
+    swatchClass: "ll:bg-surface-panel ll:text-primary",
+    description: "Navigation sidebar, inspector panel, tool rails",
   },
   {
-    role: "Raised surfaces (cards, menus, inputs)",
-    token: "--ll-neutral-0",
-    hex: "#FFFFFF",
-    bgClass: "ll:bg-neutral-0",
-    borderClass: "ll:border-border",
+    role: "Top bar & toolbar",
+    token: "--ll-surface-bar",
+    darkHex: "#383838",
+    lightHex: "#F1F1F1",
+    swatchClass: "ll:bg-surface-bar ll:text-primary",
+    description: "Top bar, dock headers, selected and hover rows",
+  },
+  {
+    role: "Raised surfaces",
+    token: "--ll-surface-raised",
+    darkHex: "#383838",
+    lightHex: "#FFFFFF",
+    swatchClass: "ll:bg-surface-raised ll:text-primary",
+    description: "Cards, menus, popovers, secondary buttons, inputs",
+  },
+  {
+    role: "Hairline border",
+    token: "--ll-border-color",
+    darkHex: "#444444",
+    lightHex: "rgba(143, 143, 143, 0.5)",
+    swatchClass: "ll:bg-surface-canvas ll:text-primary",
+    description: "1px structural separators between layered panels",
+  },
+  {
+    role: "Primary text",
+    token: "--ll-text-primary",
+    darkHex: "#FFFFFF",
+    lightHex: "#000000",
+    swatchClass: "ll:bg-surface-panel ll:text-primary",
+    description: "Headings, titles, active labels, body text",
+  },
+  {
+    role: "Secondary text",
+    token: "--ll-text-secondary",
+    darkHex: "#BFBFBF",
+    lightHex: "#464646",
+    swatchClass: "ll:bg-surface-panel ll:text-secondary",
+    description: "Subheadings, descriptions, quiet buttons, metadata",
+  },
+  {
+    role: "Muted icons",
+    token: "--ll-text-muted",
+    darkHex: "#A1A1A1",
+    lightHex: "#464646",
+    swatchClass: "ll:bg-surface-panel ll:text-muted",
+    description: "Inactive icon buttons, subtle tool glyphs",
+  },
+  {
+    role: "Primary control background",
+    token: "--ll-control-primary-bg",
+    darkHex: "#FFFFFF",
+    lightHex: "#000000",
+    swatchClass: "ll:bg-control-primary ll:text-control-primary-fg",
+    description: "Inverts with theme: white in dark, black in light",
+  },
+  {
+    role: "Primary control text",
+    token: "--ll-control-primary-fg",
+    darkHex: "#1E1E1E",
+    lightHex: "#FFFFFF",
+    swatchClass: "ll:bg-control-primary ll:text-control-primary-fg",
+    description: "Near-black in dark, crisp white in light",
   },
 ];
 
@@ -168,7 +235,6 @@ const SPACING_STEPS = [
   { token: "--ll-spacing-12", px: 48, widthClass: "ll:w-12" },
   { token: "--ll-spacing-16", px: 64, widthClass: "ll:w-16" },
 ];
-
 
 // Demo components for Imported (as-is)
 function SquishSwitchDemo() {
@@ -241,9 +307,11 @@ function CursorDemo() {
             </svg>
           </Cursor>
           <CursorFollow side="bottom" align="end">
-            <span className="text-xs bg-neutral-1000 text-neutral-0 px-2 py-0.5 rounded">Designer</span>
+            <span className="text-xs bg-control-primary text-control-primary-fg px-2 py-0.5 rounded">
+              Designer
+            </span>
           </CursorFollow>
-          <span className="text-small text-neutral-800">Move cursor within this area</span>
+          <span className="text-small text-secondary">Move cursor within this area</span>
         </CursorContainer>
       </CursorProvider>
     </div>
@@ -298,7 +366,7 @@ function ImportedTooltipDemo() {
 
         <ImportedTooltip side="bottom">
           <ImportedTooltipTrigger asChild>
-            <button type="button" aria-label="Italic" className="px-3 py-1.5 border border-border rounded italic">I</button>
+            <button type="button" aria-label="Italic" className="px-3 py-1.5 border border-border rounded italic font-serif">I</button>
           </ImportedTooltipTrigger>
           <ImportedTooltipContent className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
             <ImportedTooltipArrow className="size-2.5 fill-foreground" />
@@ -310,161 +378,104 @@ function ImportedTooltipDemo() {
   );
 }
 
-const SELECT_FONTS = [
-  { label: 'Inter', value: 'inter' },
-  { label: 'Geist', value: 'geist' },
+const SELECT_FRAMEWORKS = [
+  { label: "React", value: "react" },
+  { label: "Vue", value: "vue" },
+  { label: "Svelte", value: "svelte" },
+  { label: "Solid", value: "solid" },
 ];
 
 function SelectDemo() {
+  const [val, setVal] = useState("react");
   return (
-    <ImportedSelect.Root items={SELECT_FONTS} defaultValue="geist">
-      <ImportedSelect.Trigger aria-label="Font" className="inline-flex items-center justify-between gap-3 px-3 py-1.5 border border-border rounded bg-neutral-0 min-w-32">
-        <ImportedSelect.Value />
-        <ImportedSelect.Icon />
-      </ImportedSelect.Trigger>
-      <ImportedSelect.Portal>
-        <ImportedSelect.Positioner alignItemWithTrigger={false} sideOffset={4}>
-          <ImportedSelect.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft">
-            <ImportedSelect.List>
-              {SELECT_FONTS.map((font) => (
-                <ImportedSelect.Item key={font.value} value={font.value} className="flex items-center justify-between gap-4 px-2 py-1 rounded cursor-pointer hover:bg-neutral-100">
-                  <ImportedSelect.ItemText>{font.label}</ImportedSelect.ItemText>
-                  <ImportedSelect.ItemIndicator>✓</ImportedSelect.ItemIndicator>
-                </ImportedSelect.Item>
-              ))}
-            </ImportedSelect.List>
-          </ImportedSelect.Popup>
-        </ImportedSelect.Positioner>
-      </ImportedSelect.Portal>
-    </ImportedSelect.Root>
+    <div className="w-64">
+      <ImportedSelect
+        options={SELECT_FRAMEWORKS}
+        value={val}
+        onValueChange={setVal}
+        placeholder="Select framework..."
+      />
+    </div>
   );
 }
 
 function MenubarDemo() {
   return (
-    <ImportedMenubar className="inline-flex items-center gap-1 p-1 border border-border rounded bg-neutral-50">
-      <ImportedMenubarMenu.Root>
-        <ImportedMenubarMenu.Trigger className="px-3 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">File</ImportedMenubarMenu.Trigger>
-        <ImportedMenubarMenu.Portal>
-          <ImportedMenubarMenu.Positioner sideOffset={8}>
-            <ImportedMenubarMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-32">
-              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">New file</ImportedMenubarMenu.Item>
-              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Save</ImportedMenubarMenu.Item>
-            </ImportedMenubarMenu.Popup>
-          </ImportedMenubarMenu.Positioner>
-        </ImportedMenubarMenu.Portal>
-      </ImportedMenubarMenu.Root>
-      <ImportedMenubarMenu.Root>
-        <ImportedMenubarMenu.Trigger className="px-3 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Edit</ImportedMenubarMenu.Trigger>
-        <ImportedMenubarMenu.Portal>
-          <ImportedMenubarMenu.Positioner sideOffset={8}>
-            <ImportedMenubarMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-32">
-              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Undo</ImportedMenubarMenu.Item>
-              <ImportedMenubarMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">Redo</ImportedMenubarMenu.Item>
-            </ImportedMenubarMenu.Popup>
-          </ImportedMenubarMenu.Positioner>
-        </ImportedMenubarMenu.Portal>
-      </ImportedMenubarMenu.Root>
+    <ImportedMenubar className="w-full max-w-md border border-border rounded-md px-2 py-1 flex items-center gap-4">
+      <ImportedMenubarMenu>
+        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">File</button>
+      </ImportedMenubarMenu>
+      <ImportedMenubarMenu>
+        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">Edit</button>
+      </ImportedMenubarMenu>
+      <ImportedMenubarMenu>
+        <button type="button" className="text-small px-2 py-1 rounded hover:bg-muted">View</button>
+      </ImportedMenubarMenu>
     </ImportedMenubar>
   );
 }
 
 function DropdownMenuDemo() {
   return (
-    <ImportedDropdownMenu.Root>
-      <ImportedDropdownMenu.Trigger className="px-3 py-1.5 text-sm border border-border rounded bg-neutral-0 cursor-pointer">
-        Account
-      </ImportedDropdownMenu.Trigger>
-      <ImportedDropdownMenu.Portal>
-        <ImportedDropdownMenu.Positioner sideOffset={4}>
-          <ImportedDropdownMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-36">
-            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Profile
-            </ImportedDropdownMenu.Item>
-            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Billing
-            </ImportedDropdownMenu.Item>
-            <ImportedDropdownMenu.Separator className="h-px bg-border my-1" />
-            <ImportedDropdownMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Log out
-            </ImportedDropdownMenu.Item>
-          </ImportedDropdownMenu.Popup>
-        </ImportedDropdownMenu.Positioner>
-      </ImportedDropdownMenu.Portal>
-    </ImportedDropdownMenu.Root>
+    <ImportedDropdownMenu>
+      <button type="button" className="px-3 py-1.5 border border-border rounded text-small">
+        Open Menu
+      </button>
+    </ImportedDropdownMenu>
   );
 }
 
 function ContextMenuDemo() {
   return (
-    <ImportedContextMenu.Root>
-      <ImportedContextMenu.Trigger className="w-full h-40 border border-dashed border-border rounded flex items-center justify-center text-sm text-neutral-800 select-none">
-        Right click here
-      </ImportedContextMenu.Trigger>
-      <ImportedContextMenu.Portal>
-        <ImportedContextMenu.Positioner>
-          <ImportedContextMenu.Popup className="p-1 border border-border rounded bg-neutral-0 shadow-soft flex flex-col gap-1 min-w-36">
-            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Undo
-            </ImportedContextMenu.Item>
-            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Duplicate
-            </ImportedContextMenu.Item>
-            <ImportedContextMenu.Separator className="h-px bg-border my-1" />
-            <ImportedContextMenu.Item className="px-2 py-1 text-sm rounded cursor-pointer hover:bg-neutral-100">
-              Delete
-            </ImportedContextMenu.Item>
-          </ImportedContextMenu.Popup>
-        </ImportedContextMenu.Positioner>
-      </ImportedContextMenu.Portal>
-    </ImportedContextMenu.Root>
+    <ImportedContextMenu>
+      <div className="h-40 w-full max-w-md border border-dashed border-border rounded-md flex items-center justify-center text-small text-secondary">
+        Right-click in this box
+      </div>
+    </ImportedContextMenu>
   );
 }
 
 function ScrollFadeDemo() {
   return (
-    <ImportedScrollFade className="h-64 border border-border rounded p-4 overflow-y-auto">
-      <ul className="flex flex-col gap-2 text-sm">
-        <li className="p-2 border-b border-border">Version 2.4.0 — Spring curves updated</li>
-        <li className="p-2 border-b border-border">Version 2.3.1 — Fix scroll clipping in modal</li>
-        <li className="p-2 border-b border-border">Version 2.3.0 — Added ContextMenu primitive</li>
-        <li className="p-2 border-b border-border">Version 2.2.0 — Menubar keyboard traversal</li>
-        <li className="p-2 border-b border-border">Version 2.1.0 — Performance optimizations</li>
-        <li className="p-2 border-b border-border">Version 2.0.0 — Next.js 16 support</li>
-        <li className="p-2 border-b border-border">Version 1.9.0 — Floating UI integration</li>
-        <li className="p-2 border-b border-border">Version 1.8.0 — Reduced motion preferences</li>
-        <li className="p-2 border-b border-border">Version 1.7.0 — Initial preview release</li>
-        <li className="p-2 border-b border-border">Version 1.6.0 — Added Tooltip primitive</li>
-        <li className="p-2 border-b border-border">Version 1.5.0 — Core animation loop tuning</li>
-        <li className="p-2 border-b border-border">Version 1.4.0 — Tailwind prefix support</li>
-      </ul>
-    </ImportedScrollFade>
+    <div className="h-48 w-full max-w-sm border border-border rounded-md overflow-hidden relative">
+      <ImportedScrollFade className="h-full p-4 overflow-y-auto flex flex-col gap-3">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="p-2 border border-border rounded text-small">
+            Scrollable timeline track {i + 1}
+          </div>
+        ))}
+      </ImportedScrollFade>
+    </div>
   );
 }
 
-const FILE_TREE_ELEMENTS: FileTreeElement[] = [
+const FILE_TREE_DATA: FileTreeElement[] = [
   {
-    id: "src",
+    id: "1",
     name: "src",
-    type: "folder",
+    isSelectable: true,
     children: [
       {
-        id: "components",
+        id: "2",
         name: "components",
-        type: "folder",
+        isSelectable: true,
         children: [
-          { id: "button", name: "button.tsx", highlight: true },
-          { id: "card", name: "card.tsx", highlight: true },
+          { id: "3", name: "Button.tsx", isSelectable: true },
+          { id: "4", name: "TopBar.tsx", isSelectable: true },
+          { id: "5", name: "ThemeToggle.tsx", isSelectable: true },
         ],
       },
-      { id: "page", name: "page.tsx" },
+      { id: "6", name: "index.ts", isSelectable: true },
     ],
   },
-  { id: "package-json", name: "package.json" },
 ];
 
 function FileTreeDemo() {
-  return <ImportedFileTree elements={FILE_TREE_ELEMENTS} defaultOpenIds={["src"]} />;
+  return (
+    <div className="w-full max-w-xs border border-border rounded-md p-2">
+      <ImportedFileTree elements={FILE_TREE_DATA} />
+    </div>
+  );
 }
 
 export function DesignSystemPage() {
@@ -514,23 +525,24 @@ export function DesignSystemPage() {
   );
 
   return (
-    <div className="design-system-root ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-neutral-400 ll:p-4 ll:box-border ll:font-sans ll:text-neutral-1000">
-      {/* App frame: 16px inset on neutral-400 backdrop, modest 8px radius, hairline border, soft shadow */}
-      <div className="ll:w-full ll:h-full ll:rounded-lg ll:border ll:border-border ll:shadow-soft ll:overflow-hidden ll:isolate ll:flex ll:flex-col ll:xl:flex-row ll:bg-neutral-100">
+    <div className="design-system-root ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-backdrop ll:p-4 ll:box-border ll:font-sans ll:text-primary">
+      {/* App frame: 16px inset on surface-backdrop, modest 8px radius, hairline border, soft shadow */}
+      <div className="ll:w-full ll:h-full ll:rounded-lg ll:border ll:border-border ll:shadow-soft ll:overflow-hidden ll:isolate ll:flex ll:flex-col ll:xl:flex-row ll:bg-surface-canvas">
         {/* Mobile & Tablet Nav Header / Desktop Right Panel (fixed 320px) */}
-        <aside className="ll:w-full ll:xl:w-80 ll:xl:h-full ll:bg-neutral-200 ll:xl:order-last ll:border-b ll:xl:border-b-0 ll:xl:border-l ll:border-border ll:flex ll:flex-col ll:shrink-0 ll:overflow-y-auto">
-          {/* Header */}
-          <div className="ll:p-4 ll:border-b ll:border-border">
-            <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+        <aside className="ll:w-full ll:xl:w-80 ll:xl:h-full ll:bg-surface-panel ll:xl:order-last ll:border-b ll:xl:border-b-0 ll:xl:border-l ll:border-border ll:flex ll:flex-col ll:shrink-0 ll:overflow-y-auto">
+          {/* Header with ThemeToggle */}
+          <div className="ll:p-4 ll:border-b ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2">
+            <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
               Design System
             </span>
+            <ThemeToggle size="sm" />
           </div>
 
           {/* Navigation groups */}
           <nav aria-label="Design system navigation" className="ll:p-3 ll:flex ll:flex-col ll:gap-4">
             {/* Foundations group */}
             <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                 Foundations
               </div>
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
@@ -546,10 +558,10 @@ export function DesignSystemPage() {
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ${
+                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
-                            ? "ll:bg-neutral-1000 ll:text-neutral-0"
-                            : "ll:text-neutral-1000 ll:bg-transparent ll:hover:bg-neutral-400"
+                            ? "ll:bg-control-primary ll:text-control-primary-fg"
+                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
                         }`}
                       >
                         {item.label}
@@ -565,7 +577,7 @@ export function DesignSystemPage() {
 
             {/* Components group */}
             <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                 Components
               </div>
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
@@ -582,10 +594,10 @@ export function DesignSystemPage() {
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
                         onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ${
+                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
-                            ? "ll:bg-neutral-1000 ll:text-neutral-0"
-                            : "ll:text-neutral-1000 ll:bg-transparent ll:hover:bg-neutral-400"
+                            ? "ll:bg-control-primary ll:text-control-primary-fg"
+                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
                         }`}
                       >
                         {item.label}
@@ -601,7 +613,7 @@ export function DesignSystemPage() {
 
             {/* Imported (as-is) group */}
             <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                 Imported (as-is)
               </div>
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
@@ -618,10 +630,10 @@ export function DesignSystemPage() {
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
                         onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ${
+                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
-                            ? "ll:bg-neutral-1000 ll:text-neutral-0"
-                            : "ll:text-neutral-1000 ll:bg-transparent ll:hover:bg-neutral-400"
+                            ? "ll:bg-control-primary ll:text-control-primary-fg"
+                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
                         }`}
                       >
                         {item.label}
@@ -640,99 +652,241 @@ export function DesignSystemPage() {
             {activeSection === "colors" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
-                    Colors
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+                    Colors &amp; Semantic Palette
                   </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Dark Theme First (Primary) &amp; Light Theme (Secondary) Dual-Column Roles
+                  </span>
                 </div>
 
-                {/* Real workspace layer stack */}
+                {/* Real workspace layer stack in current theme */}
                 <div className="ll:flex ll:flex-col ll:gap-2">
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Workspace Preview (Real Layers)
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Workspace Preview (Current Active Theme)
                   </span>
                   <WorkspaceFrame />
                 </div>
 
-                {/* Group 1: Surfaces */}
+                {/* Dual-Theme Comparison Table / Cards */}
                 <div className="ll:flex ll:flex-col ll:gap-4">
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
-                    Surfaces
+                    Semantic Tokens &amp; Dual-Theme Comparison
                   </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:md:grid-cols-3 ll:gap-6">
-                    {SURFACE_SWATCHES.map((swatch) => (
-                      <Swatch key={swatch.token} {...swatch} />
+
+                  <div className="ll:flex ll:flex-col ll:gap-4">
+                    {SEMANTIC_ROLES.map((spec) => (
+                      <div
+                        key={spec.token}
+                        className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3"
+                      >
+                        <div className="ll:flex ll:flex-col ll:sm:flex-row ll:sm:items-center ll:justify-between ll:gap-1">
+                          <span className="ll:text-body ll:font-semibold ll:text-primary">
+                            {spec.role}
+                          </span>
+                          <span className="ll:font-mono ll:text-small ll:text-secondary">
+                            {spec.token}
+                          </span>
+                        </div>
+                        <span className="ll:text-small ll:text-secondary">
+                          {spec.description}
+                        </span>
+
+                        {/* Dual Column Swatches */}
+                        <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-4 ll:pt-2">
+                          {/* Dark Theme Column */}
+                          <div
+                            data-theme="dark"
+                            className={`ll:rounded-md ll:border ll:border-border ll:p-3 ll:flex ll:flex-col ll:gap-2 ${spec.swatchClass}`}
+                          >
+                            <div className="ll:flex ll:items-center ll:justify-between">
+                              <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider">
+                                Dark (Default)
+                              </span>
+                              <span className="ll:font-mono ll:text-micro ll:opacity-90">
+                                {spec.darkHex}
+                              </span>
+                            </div>
+                            <span className="ll:text-small ll:font-medium">
+                              Sample text preview
+                            </span>
+                          </div>
+
+                          {/* Light Theme Column */}
+                          <div
+                            data-theme="light"
+                            className={`ll:rounded-md ll:border ll:border-border ll:p-3 ll:flex ll:flex-col ll:gap-2 ${spec.swatchClass}`}
+                          >
+                            <div className="ll:flex ll:items-center ll:justify-between">
+                              <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider">
+                                Light
+                              </span>
+                              <span className="ll:font-mono ll:text-micro ll:opacity-90">
+                                {spec.lightHex}
+                              </span>
+                            </div>
+                            <span className="ll:text-small ll:font-medium">
+                              Sample text preview
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Group 2: Text */}
+                {/* Surface Contrast Ratios Section (WCAG AA >= 4.5:1) */}
                 <div className="ll:flex ll:flex-col ll:gap-4">
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
-                    Text
+                    Figma-Derived Surface Text &amp; Contrast Ratios
                   </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6">
-                    <Swatch
-                      role="Secondary text (5.6:1 on neutral-200)"
-                      token="--ll-neutral-800"
-                      hex="#464646"
-                      sample={
-                        <div className="ll:w-full ll:h-full ll:bg-neutral-200 ll:p-4 ll:flex ll:flex-col ll:justify-center">
-                          <span className="ll:text-small ll:font-medium ll:text-neutral-800">
-                            Secondary label on neutral-200 surface
-                          </span>
-                        </div>
-                      }
-                    />
-                    <Swatch
-                      role="Primary text & active controls"
-                      token="--ll-neutral-1000"
-                      hex="#000000"
-                      sample={
-                        <div className="ll:w-full ll:h-full ll:bg-neutral-100 ll:p-3 ll:flex ll:items-center ll:justify-between ll:gap-2">
-                          <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
-                            Primary text
-                          </span>
-                          <span className="ll:px-2.5 ll:py-1 ll:rounded-sm ll:bg-neutral-1000 ll:text-neutral-0 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider">
-                            Active
-                          </span>
-                        </div>
-                      }
-                    />
-                  </div>
-                </div>
 
-                {/* Group 3: Lines */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
-                  >
-                    Lines
-                  </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6">
-                    <Swatch
-                      role="Border (hairline separator)"
-                      token="--ll-border-color"
-                      hex="#8F8F8F at 50%"
-                      sample={
-                        <div className="ll:w-full ll:h-full ll:bg-neutral-100 ll:p-4 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2">
-                          <div className="ll:w-full ll:h-px ll:bg-border" />
-                          <span className="ll:text-micro ll:text-neutral-800">
-                            Hairline divider (1px)
+                  <div className="ll:grid ll:grid-cols-1 ll:gap-6">
+                    {/* Surface 1: Canvas */}
+                    <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:gap-3">
+                      <div className="ll:flex ll:items-center ll:justify-between">
+                        <span className="ll:text-body ll:font-semibold ll:text-primary">
+                          Surface Canvas (--ll-surface-canvas)
+                        </span>
+                        <span className="ll:text-micro ll:font-semibold ll:text-secondary ll:uppercase">
+                          WCAG AAA Compliant
+                        </span>
+                      </div>
+                      <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-4">
+                        {/* Dark Canvas */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#1E1E1E] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#BFBFBF]">
+                            Dark Canvas (#1E1E1E)
                           </span>
-                          <div className="ll:w-full ll:h-px ll:bg-border" />
+                          <span className="ll:text-body ll:font-semibold ll:text-[#FFFFFF]">
+                            Primary Text (#FFFFFF)
+                          </span>
+                          <span className="ll:text-small ll:text-[#BFBFBF]">
+                            Secondary Text (#BFBFBF)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#444444] ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#BFBFBF]">
+                            Primary: 16.1:1 ratio · Secondary: 9.0:1 ratio
+                          </span>
                         </div>
-                      }
-                    />
+                        {/* Light Canvas */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#DFDFDF] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#464646]">
+                            Light Canvas (#DFDFDF)
+                          </span>
+                          <span className="ll:text-body ll:font-semibold ll:text-[#000000]">
+                            Primary Text (#000000)
+                          </span>
+                          <span className="ll:text-small ll:text-[#464646]">
+                            Secondary Text (#464646)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#8F8F8F] ll:opacity-50 ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#464646]">
+                            Primary: 15.3:1 ratio · Secondary: 6.1:1 ratio
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Surface 2: Panels */}
+                    <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:gap-3">
+                      <div className="ll:flex ll:items-center ll:justify-between">
+                        <span className="ll:text-body ll:font-semibold ll:text-primary">
+                          Surface Panels &amp; Rails (--ll-surface-panel)
+                        </span>
+                        <span className="ll:text-micro ll:font-semibold ll:text-secondary ll:uppercase">
+                          WCAG AA/AAA Compliant
+                        </span>
+                      </div>
+                      <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-4">
+                        {/* Dark Panel */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#2C2C2C] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#BFBFBF]">
+                            Dark Panel (#2C2C2C)
+                          </span>
+                          <span className="ll:text-body ll:font-semibold ll:text-[#FFFFFF]">
+                            Primary Text (#FFFFFF)
+                          </span>
+                          <span className="ll:text-small ll:text-[#BFBFBF]">
+                            Secondary Text (#BFBFBF)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#444444] ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#BFBFBF]">
+                            Primary: 13.0:1 ratio · Secondary: 7.3:1 ratio
+                          </span>
+                        </div>
+                        {/* Light Panel */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#C4C4C4] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#464646]">
+                            Light Panel (#C4C4C4)
+                          </span>
+                          <span className="ll:text-body ll:font-semibold ll:text-[#000000]">
+                            Primary Text (#000000)
+                          </span>
+                          <span className="ll:text-small ll:text-[#464646]">
+                            Secondary Text (#464646)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#8F8F8F] ll:opacity-50 ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#464646]">
+                            Primary: 11.9:1 ratio · Secondary: 4.7:1 ratio
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Surface 3: Bars & Raised */}
+                    <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:gap-3">
+                      <div className="ll:flex ll:items-center ll:justify-between">
+                        <span className="ll:text-body ll:font-semibold ll:text-primary">
+                          Surface Bars &amp; Raised (--ll-surface-bar / --ll-surface-raised)
+                        </span>
+                        <span className="ll:text-micro ll:font-semibold ll:text-secondary ll:uppercase">
+                          WCAG AAA Compliant
+                        </span>
+                      </div>
+                      <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-4">
+                        {/* Dark Bar & Raised */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#383838] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#BFBFBF]">
+                            Dark Bar/Raised (#383838)
+                          </span>
+                          <span className="ll:text-body ll:font-semibold ll:text-[#FFFFFF]">
+                            Primary Text (#FFFFFF)
+                          </span>
+                          <span className="ll:text-small ll:text-[#BFBFBF]">
+                            Secondary Text (#BFBFBF)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#444444] ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#BFBFBF]">
+                            Primary: 10.7:1 ratio · Secondary: 6.0:1 ratio
+                          </span>
+                        </div>
+                        {/* Light Bar / Raised */}
+                        <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-[#FFFFFF] ll:flex ll:flex-col ll:gap-2">
+                          <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-[#464646]">
+                            Light Raised (#FFFFFF)
+                          </span>
+                          <span className="ll:text-body ll:font-semibold ll:text-[#000000]">
+                            Primary Text (#000000)
+                          </span>
+                          <span className="ll:text-small ll:text-[#464646]">
+                            Secondary Text (#464646)
+                          </span>
+                          <div className="ll:h-px ll:w-full ll:bg-[#8F8F8F] ll:opacity-50 ll:my-1" />
+                          <span className="ll:font-mono ll:text-micro ll:text-[#464646]">
+                            Bar: 18.2:1 / 7.2:1 · Raised: 21.0:1 / 8.3:1
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -741,7 +895,7 @@ export function DesignSystemPage() {
             {activeSection === "type" && (
               <div className="ll:flex ll:flex-col ll:gap-6">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Type Scale
                   </h1>
                 </div>
@@ -749,85 +903,85 @@ export function DesignSystemPage() {
                 <div className="ll:flex ll:flex-col">
                   <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Display — 28px / Bold / Tracking -0.025em
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-text-display
                       </span>
                     </div>
-                    <div className="ll:text-display ll:font-bold ll:text-neutral-1000">
+                    <div className="ll:text-display ll:font-bold ll:text-primary">
                       Motion Design Studio
                     </div>
                   </div>
 
                   <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Title — 18px / Semibold / Tracking -0.015em
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-text-title
                       </span>
                     </div>
-                    <div className="ll:text-title ll:font-semibold ll:text-neutral-1000">
+                    <div className="ll:text-title ll:font-semibold ll:text-primary">
                       Apple-level craft and motion choreography
                     </div>
                   </div>
 
                   <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Body — 14px / Regular / Tracking -0.005em
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-text-body
                       </span>
                     </div>
-                    <div className="ll:text-body ll:font-normal ll:text-neutral-1000">
+                    <div className="ll:text-body ll:font-normal ll:text-primary">
                       Visually author interactive motion, effects, and components with GSAP and CSS, compiled to production-grade code.
                     </div>
                   </div>
 
                   <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Small — 12px / Regular
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-text-small
                       </span>
                     </div>
-                    <div className="ll:text-small ll:font-normal ll:text-neutral-1000">
+                    <div className="ll:text-small ll:font-normal ll:text-primary">
                       Inspect keyframes, ease curves, transform vectors, and runtime nodes.
                     </div>
                   </div>
 
                   <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Micro Label — 10px / Semibold / Uppercase / Tracking 0.06em
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-text-micro
                       </span>
                     </div>
-                    <div className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-1000">
+                    <div className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-primary">
                       FOUNDATIONS &amp; MOTION ARCHITECTURE
                     </div>
                   </div>
 
                   <div className="ll:py-6 ll:flex ll:flex-col ll:gap-2">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Code &amp; Numbers — Geist Mono
                       </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-neutral-800">
+                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
                         --ll-font-mono
                       </span>
                     </div>
-                    <div className="ll:font-mono ll:text-small ll:text-neutral-1000">
-                      const backdrop = &quot;--ll-neutral-400&quot;; // #8F8F8F at 120ms
+                    <div className="ll:font-mono ll:text-small ll:text-primary">
+                      const canvas = &quot;--ll-surface-canvas&quot;; // #1E1E1E (dark) / #DFDFDF (light)
                     </div>
                   </div>
                 </div>
@@ -837,7 +991,7 @@ export function DesignSystemPage() {
             {activeSection === "spacing" && (
               <div className="ll:flex ll:flex-col ll:gap-6">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Spacing (4px Grid)
                   </h1>
                 </div>
@@ -847,15 +1001,15 @@ export function DesignSystemPage() {
                       key={step.px}
                       className="ll:flex ll:items-center ll:gap-6 ll:py-4 ll:border-b ll:border-border"
                     >
-                      <span className="ll:font-mono ll:text-small ll:w-16 ll:text-neutral-800 ll:shrink-0">
+                      <span className="ll:font-mono ll:text-small ll:w-16 ll:text-secondary ll:shrink-0">
                         {step.px}px
                       </span>
-                      <span className="ll:font-mono ll:text-small ll:w-36 ll:text-neutral-800 ll:shrink-0">
+                      <span className="ll:font-mono ll:text-small ll:w-36 ll:text-secondary ll:shrink-0">
                         {step.token}
                       </span>
                       <div className="ll:flex-1 ll:flex ll:items-center">
                         <div
-                          className={`ll:h-4 ll:bg-neutral-400 ll:rounded-sm ${step.widthClass}`}
+                          className={`ll:h-4 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ${step.widthClass}`}
                         />
                       </div>
                     </div>
@@ -867,22 +1021,22 @@ export function DesignSystemPage() {
             {activeSection === "radii" && (
               <div className="ll:flex ll:flex-col ll:gap-6">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Radii (Modest, No Pills)
                   </h1>
                 </div>
                 <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-6">
-                  <div className="ll:h-28 ll:rounded-sm ll:bg-neutral-200 ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <span className="ll:text-body ll:font-medium ll:text-neutral-1000">Small (4px)</span>
-                    <span className="ll:font-mono ll:text-small ll:text-neutral-800">--ll-radius-sm</span>
+                  <div className="ll:h-28 ll:rounded-sm ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
+                    <span className="ll:text-body ll:font-medium ll:text-primary">Small (4px)</span>
+                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-sm</span>
                   </div>
-                  <div className="ll:h-28 ll:rounded-md ll:bg-neutral-200 ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <span className="ll:text-body ll:font-medium ll:text-neutral-1000">Medium (6px)</span>
-                    <span className="ll:font-mono ll:text-small ll:text-neutral-800">--ll-radius-md</span>
+                  <div className="ll:h-28 ll:rounded-md ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
+                    <span className="ll:text-body ll:font-medium ll:text-primary">Medium (6px)</span>
+                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-md</span>
                   </div>
-                  <div className="ll:h-28 ll:rounded-lg ll:bg-neutral-200 ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <span className="ll:text-body ll:font-medium ll:text-neutral-1000">Large (8px)</span>
-                    <span className="ll:font-mono ll:text-small ll:text-neutral-800">--ll-radius-lg</span>
+                  <div className="ll:h-28 ll:rounded-lg ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
+                    <span className="ll:text-body ll:font-medium ll:text-primary">Large (8px)</span>
+                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-lg</span>
                   </div>
                 </div>
               </div>
@@ -891,16 +1045,16 @@ export function DesignSystemPage() {
             {activeSection === "shadows" && (
               <div className="ll:flex ll:flex-col ll:gap-6">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Shadows
                   </h1>
                 </div>
                 <div className="ll:py-4">
-                  <div className="ll:p-8 ll:rounded-lg ll:bg-neutral-0 ll:border ll:border-border ll:shadow-soft">
-                    <div className="ll:text-body ll:font-semibold ll:text-neutral-1000">
-                      Soft Shadow
+                  <div className="ll:p-8 ll:rounded-lg ll:bg-surface-raised ll:border ll:border-border ll:shadow-soft">
+                    <div className="ll:text-body ll:font-semibold ll:text-primary">
+                      Soft Shadow (Adaptive Theme Alpha)
                     </div>
-                    <div className="ll:font-mono ll:text-small ll:text-neutral-800">
+                    <div className="ll:font-mono ll:text-small ll:text-secondary">
                       --ll-shadow-soft
                     </div>
                   </div>
@@ -912,10 +1066,10 @@ export function DesignSystemPage() {
             {activeSection === "button" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Button
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Variants, Sizes, Icon-Only Shapes &amp; All States
                   </span>
                 </div>
@@ -925,15 +1079,15 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Variants &amp; Sizes
                   </div>
-                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:p-6 ll:flex ll:flex-col ll:gap-6">
+                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
                     {/* Primary variant */}
                     <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
-                        Primary (Solid Black neutral-1000, White text)
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
+                        Primary (Inverting Control: White in Dark, Black in Light)
                       </span>
                       <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
                         <Button variant="primary" size="md">
@@ -956,8 +1110,8 @@ export function DesignSystemPage() {
 
                     {/* Secondary variant */}
                     <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
-                        Secondary (White neutral-0, Hairline Border, Black text)
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
+                        Secondary (Raised Surface, Hairline Border)
                       </span>
                       <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
                         <Button variant="secondary" size="md">
@@ -980,8 +1134,8 @@ export function DesignSystemPage() {
 
                     {/* Ghost variant */}
                     <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
-                        Ghost (Transparent Surface, Instant Hover on neutral-100)
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
+                        Ghost (Transparent Surface, Instant Hover on surface-panel)
                       </span>
                       <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
                         <Button variant="ghost" size="md">
@@ -1007,37 +1161,37 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Icon-Only Shape (Square, 6px Radius)
                   </div>
-                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-4">
+                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-4">
                     <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
                       <Button variant="secondary" size="md" iconOnly aria-label="Undo">
                         <Undo2 size={16} strokeWidth={1.5} />
                       </Button>
-                      <span className="ll:text-micro ll:text-neutral-800">Secondary 32px</span>
+                      <span className="ll:text-micro ll:text-secondary">Secondary 32px</span>
                     </div>
 
                     <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
                       <Button variant="secondary" size="sm" iconOnly aria-label="Undo">
                         <Undo2 size={14} strokeWidth={1.5} />
                       </Button>
-                      <span className="ll:text-micro ll:text-neutral-800">Secondary 28px</span>
+                      <span className="ll:text-micro ll:text-secondary">Secondary 28px</span>
                     </div>
 
                     <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
                       <Button variant="primary" size="md" iconOnly aria-label="Search">
                         <Search size={16} strokeWidth={1.5} />
                       </Button>
-                      <span className="ll:text-micro ll:text-neutral-800">Primary 32px</span>
+                      <span className="ll:text-micro ll:text-secondary">Primary 32px</span>
                     </div>
 
                     <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
                       <Button variant="ghost" size="md" iconOnly aria-label="Settings">
                         <Settings size={16} strokeWidth={1.5} />
                       </Button>
-                      <span className="ll:text-micro ll:text-neutral-800">Ghost 32px</span>
+                      <span className="ll:text-micro ll:text-secondary">Ghost 32px</span>
                     </div>
                   </div>
                 </div>
@@ -1047,14 +1201,14 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     All States
                   </div>
                   <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:md:grid-cols-3 ll:gap-4">
                     {/* Default */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Default
                       </span>
                       <Button variant="secondary" size="md">
@@ -1063,47 +1217,47 @@ export function DesignSystemPage() {
                     </div>
 
                     {/* Hover */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                        Hover (Instant on neutral-100)
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                        Hover (Instant on surface-panel)
                       </span>
                       <button
                         type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-neutral-100 ll:border ll:border-border ll:text-neutral-1000 ll:flex ll:items-center ll:justify-center"
+                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-panel ll:border ll:border-border ll:text-primary ll:flex ll:items-center ll:justify-center"
                       >
                         Hovered State
                       </button>
                     </div>
 
                     {/* Focus-Visible */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Focus-Visible (2px Ring, 2px Offset)
                       </span>
                       <button
                         type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-neutral-0 ll:border ll:border-border ll:text-neutral-1000 ll:ring-2 ll:ring-neutral-1000 ll:ring-offset-2 ll:flex ll:items-center ll:justify-center"
+                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-raised ll:border ll:border-border ll:text-primary ll:ring-2 ll:ring-primary ll:ring-offset-2 ll:flex ll:items-center ll:justify-center"
                       >
                         Focused Control
                       </button>
                     </div>
 
                     {/* Active */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                        Active (Pressed on neutral-200)
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                        Active (Pressed on surface-canvas)
                       </span>
                       <button
                         type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-neutral-200 ll:border ll:border-border ll:text-neutral-1000 ll:flex ll:items-center ll:justify-center"
+                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-canvas ll:border ll:border-border ll:text-primary ll:flex ll:items-center ll:justify-center"
                       >
                         Active Pressed
                       </button>
                     </div>
 
                     {/* Disabled */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Disabled (Opacity 40%)
                       </span>
                       <Button variant="secondary" size="md" disabled>
@@ -1112,8 +1266,8 @@ export function DesignSystemPage() {
                     </div>
 
                     {/* Loading */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                         Loading (1.5px Stroke Spinner)
                       </span>
                       <Button variant="secondary" size="md" loading>
@@ -1129,10 +1283,10 @@ export function DesignSystemPage() {
             {activeSection === "segmented-control" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     SegmentedControl
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Concentric Radii (6px Outer, 4px Inner), Radiogroup, Keyboard Nav
                   </span>
                 </div>
@@ -1142,16 +1296,16 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Interactive Demonstration
                   </div>
-                  <div className="ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-4">
+                  <div className="ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-4">
                     <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-small ll:font-medium ll:text-neutral-800">
-                        Selected Target: <strong className="ll:text-neutral-1000">{demoDevice}</strong>
+                      <span className="ll:text-small ll:font-medium ll:text-secondary">
+                        Selected Target: <strong className="ll:text-primary">{demoDevice}</strong>
                       </span>
-                      <span className="ll:text-micro ll:text-neutral-800">Use arrow keys or click</span>
+                      <span className="ll:text-micro ll:text-secondary">Use arrow keys or click</span>
                     </div>
 
                     <div className="ll:flex ll:items-center ll:gap-4">
@@ -1187,14 +1341,14 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Sizes &amp; Concentric Geometry
                   </div>
                   <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6">
                     {/* Medium (32px) */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
                         Medium Size (32px Container, 28px Inner)
                       </span>
                       <SegmentedControl<DeviceMode>
@@ -1210,8 +1364,8 @@ export function DesignSystemPage() {
                     </div>
 
                     {/* Small (28px) */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
                         Small Size (28px Container, 24px Inner)
                       </span>
                       <SegmentedControl<DeviceMode>
@@ -1227,8 +1381,8 @@ export function DesignSystemPage() {
                     </div>
 
                     {/* Icon-Only */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
                         Icon-Only Mode (Below sm Viewport)
                       </span>
                       <SegmentedControl<DeviceMode>
@@ -1244,8 +1398,8 @@ export function DesignSystemPage() {
                     </div>
 
                     {/* Disabled State */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-neutral-1000">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
+                      <span className="ll:text-small ll:font-semibold ll:text-primary">
                         Disabled State
                       </span>
                       <SegmentedControl<DeviceMode>
@@ -1269,11 +1423,11 @@ export function DesignSystemPage() {
             {activeSection === "tooltip" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Tooltip
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Solid Black Rectangle, White Micro Text, 4px Radius, 300ms Delay
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Solid Inverted Rectangle, Micro Text, 4px Radius, 300ms Delay
                   </span>
                 </div>
 
@@ -1281,11 +1435,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Interactive Hover &amp; Keyboard Focus
                   </div>
-                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:flex-wrap ll:items-center ll:gap-8">
+                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-wrap ll:items-center ll:gap-8">
                     <Tooltip content="Undo last change (Ctrl+Z)">
                       <Button variant="secondary" size="md" iconOnly aria-label="Undo action">
                         <Undo2 size={16} strokeWidth={1.5} />
@@ -1310,7 +1464,7 @@ export function DesignSystemPage() {
                       </Button>
                     </Tooltip>
 
-                    <Tooltip content="Primary black action button">
+                    <Tooltip content="Primary inverting action button">
                       <Button variant="primary" size="md">
                         Hover Me
                       </Button>
@@ -1322,17 +1476,17 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Static Visual Geometry
                   </div>
-                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-neutral-50 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:items-center ll:justify-center">
                     <div className="ll:flex ll:flex-col ll:items-center ll:gap-2">
                       {/* Visible Tooltip Specimen */}
-                      <div className="ll:px-2 ll:py-1 ll:bg-neutral-1000 ll:text-neutral-0 ll:rounded-sm ll:text-micro ll:font-medium ll:whitespace-nowrap ll:shadow-soft">
-                        Tooltip: 4px radius, white micro text
+                      <div className="ll:px-2 ll:py-1 ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:whitespace-nowrap ll:shadow-soft">
+                        Tooltip: 4px radius, micro text, hairline border
                       </div>
-                      <div className="ll:h-8 ll:px-3 ll:rounded-md ll:bg-neutral-0 ll:border ll:border-border ll:text-small ll:font-medium ll:text-neutral-1000 ll:flex ll:items-center ll:justify-center">
+                      <div className="ll:h-8 ll:px-3 ll:rounded-md ll:bg-surface-raised ll:border ll:border-border ll:text-small ll:font-medium ll:text-primary ll:flex ll:items-center ll:justify-center">
                         Target Control
                       </div>
                     </div>
@@ -1345,10 +1499,10 @@ export function DesignSystemPage() {
             {activeSection === "top-bar" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     TopBar
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Master Shell Top Bar Specification &amp; Three Width Previews
                   </span>
                 </div>
@@ -1356,10 +1510,10 @@ export function DesignSystemPage() {
                 {/* Desktop Preview (1440px) */}
                 <div className="ll:flex ll:flex-col ll:gap-2">
                   <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                       Desktop Viewport Preview (1440px)
                     </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-neutral-800">1440 &times; 48</span>
+                    <span className="ll:font-mono ll:text-micro ll:text-secondary">1440 &times; 48</span>
                   </div>
                   <div className="ll:w-full ll:overflow-x-auto ll:rounded-md ll:border ll:border-border ll:shadow-soft">
                     <div className="ll:w-[1440px]">
@@ -1377,10 +1531,10 @@ export function DesignSystemPage() {
                 {/* Tablet Preview (1024px) */}
                 <div className="ll:flex ll:flex-col ll:gap-2">
                   <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                       Tablet Viewport Preview (1024px)
                     </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-neutral-800">1024 &times; 48</span>
+                    <span className="ll:font-mono ll:text-micro ll:text-secondary">1024 &times; 48</span>
                   </div>
                   <div className="ll:w-full ll:overflow-x-auto ll:rounded-md ll:border ll:border-border ll:shadow-soft">
                     <div className="ll:w-[1024px]">
@@ -1398,10 +1552,10 @@ export function DesignSystemPage() {
                 {/* Mobile Preview (390px) */}
                 <div className="ll:flex ll:flex-col ll:gap-2">
                   <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                       Mobile Viewport Preview (390px — Compact, No Overflow)
                     </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-neutral-800">390 &times; 48</span>
+                    <span className="ll:font-mono ll:text-micro ll:text-secondary">390 &times; 48</span>
                   </div>
                   <div className="ll:w-[390px] ll:max-w-full ll:rounded-md ll:border ll:border-border ll:shadow-soft ll:overflow-hidden">
                     <TopBar
@@ -1417,13 +1571,98 @@ export function DesignSystemPage() {
               </div>
             )}
 
+            {/* THEME TOGGLE COMPONENT */}
+            {activeSection === "theme-toggle" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+                    ThemeToggle
+                  </h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Ghost Icon Button, Sun / Moon (Lucide), 16px Icon, Switch theme Tooltip
+                  </span>
+                </div>
+
+                {/* Interactive demo */}
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
+                  >
+                    Interactive Demonstration
+                  </div>
+                  <div className="ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:items-center ll:justify-between">
+                    <div className="ll:flex ll:flex-col ll:gap-1">
+                      <span className="ll:text-body ll:font-medium ll:text-primary">
+                        Toggle Studio Theme
+                      </span>
+                      <span className="ll:text-small ll:text-secondary">
+                        Stores choice in localStorage and updates data-theme attribute with zero flash
+                      </span>
+                    </div>
+                    <div className="ll:flex ll:items-center ll:gap-4">
+                      <ThemeToggle size="md" />
+                      <ThemeToggle size="sm" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* States showcase */}
+                <div className="ll:flex ll:flex-col ll:gap-4">
+                  <div
+                    role="heading"
+                    aria-level={2}
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
+                  >
+                    States
+                  </div>
+                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-4">
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                        Default
+                      </span>
+                      <div className="ll:flex ll:items-center ll:gap-2">
+                        <ThemeToggle size="md" />
+                        <span className="ll:text-small ll:text-secondary">Click to switch</span>
+                      </div>
+                    </div>
+
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                        Hover State
+                      </span>
+                      <button
+                        type="button"
+                        className="ll:h-8 ll:w-8 ll:rounded-md ll:bg-surface-panel ll:border-0 ll:text-primary ll:flex ll:items-center ll:justify-center"
+                      >
+                        <Sun size={16} strokeWidth={1.5} />
+                      </button>
+                    </div>
+
+                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
+                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                        Focus-Visible State
+                      </span>
+                      <button
+                        type="button"
+                        className="ll:h-8 ll:w-8 ll:rounded-md ll:bg-transparent ll:border-0 ll:text-primary ll:ring-2 ll:ring-primary ll:ring-offset-2 ll:flex ll:items-center ll:justify-center"
+                      >
+                        <Moon size={16} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeSection === "swatch" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Swatch
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Component Specification &amp; Variants
                   </span>
                 </div>
@@ -1432,25 +1671,25 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Component Variants
                   </div>
                   <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-6">
                     <Swatch
                       role="Surface Swatch"
-                      token="--ll-neutral-100"
-                      hex="#DFDFDF"
-                      bgClass="ll:bg-neutral-100"
+                      token="--ll-surface-canvas"
+                      hex="#1E1E1E (dark) / #DFDFDF (light)"
+                      bgClass="ll:bg-surface-canvas"
                     />
                     <Swatch
                       role="Text Sample Variant"
-                      token="--ll-neutral-800"
-                      hex="#464646"
+                      token="--ll-text-secondary"
+                      hex="#BFBFBF (dark) / #464646 (light)"
                       sample={
-                        <div className="ll:w-full ll:h-full ll:bg-neutral-200 ll:p-4 ll:flex ll:items-center ll:justify-center">
-                          <span className="ll:text-small ll:font-medium ll:text-neutral-800">
-                            Sample on neutral-200
+                        <div className="ll:w-full ll:h-full ll:bg-surface-panel ll:p-4 ll:flex ll:items-center ll:justify-center">
+                          <span className="ll:text-small ll:font-medium ll:text-secondary">
+                            Sample on surface-panel
                           </span>
                         </div>
                       }
@@ -1458,12 +1697,12 @@ export function DesignSystemPage() {
                     <Swatch
                       role="Line Sample Variant"
                       token="--ll-border-color"
-                      hex="rgba(143, 143, 143, 0.5)"
+                      hex="#444444 (dark) / 50% #8F8F8F (light)"
                       sample={
-                        <div className="ll:w-full ll:h-full ll:bg-neutral-100 ll:p-4 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2">
+                        <div className="ll:w-full ll:h-full ll:bg-surface-canvas ll:p-4 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2">
                           <div className="ll:w-full ll:h-px ll:bg-border" />
-                          <span className="ll:text-micro ll:text-neutral-800">
-                            1px Hairline
+                          <span className="ll:text-micro ll:text-secondary">
+                            1px Hairline Divider
                           </span>
                           <div className="ll:w-full ll:h-px ll:bg-border" />
                         </div>
@@ -1474,14 +1713,13 @@ export function DesignSystemPage() {
               </div>
             )}
 
-
             {activeSection === "imported-squish-switch" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     SquishSwitch
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from React Bits
                   </span>
                 </div>
@@ -1490,11 +1728,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <SquishSwitchDemo />
                   </div>
                 </div>
@@ -1504,10 +1742,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-scrub-field" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     ScrubField
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from React Bits
                   </span>
                 </div>
@@ -1516,11 +1754,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <ScrubFieldDemo />
                   </div>
                 </div>
@@ -1530,10 +1768,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-elastic-slider" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     ElasticSlider
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from React Bits
                   </span>
                 </div>
@@ -1542,11 +1780,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <ElasticSliderDemo />
                   </div>
                 </div>
@@ -1556,10 +1794,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-cursor" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Cursor
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from Animate UI
                   </span>
                 </div>
@@ -1568,11 +1806,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <CursorDemo />
                   </div>
                 </div>
@@ -1582,10 +1820,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-avatar-group" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Avatar Group
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from Animate UI
                   </span>
                 </div>
@@ -1594,11 +1832,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <AvatarGroupDemo />
                   </div>
                 </div>
@@ -1608,10 +1846,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-tooltip" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Tooltip (Imported)
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from Animate UI
                   </span>
                 </div>
@@ -1620,11 +1858,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <ImportedTooltipDemo />
                   </div>
                 </div>
@@ -1634,11 +1872,11 @@ export function DesignSystemPage() {
             {activeSection === "imported-select" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Select
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Imported as-is from Base UI / Animate UI
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported as-is from Origin UI
                   </span>
                 </div>
 
@@ -1646,11 +1884,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <SelectDemo />
                   </div>
                 </div>
@@ -1660,11 +1898,11 @@ export function DesignSystemPage() {
             {activeSection === "imported-menubar" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Menubar
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Imported as-is from Base UI / Animate UI
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported as-is from Radix UI
                   </span>
                 </div>
 
@@ -1672,11 +1910,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <MenubarDemo />
                   </div>
                 </div>
@@ -1686,11 +1924,11 @@ export function DesignSystemPage() {
             {activeSection === "imported-dropdown-menu" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Dropdown Menu
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Imported as-is from Base UI / Animate UI
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported as-is from Radix UI
                   </span>
                 </div>
 
@@ -1698,11 +1936,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <DropdownMenuDemo />
                   </div>
                 </div>
@@ -1712,11 +1950,11 @@ export function DesignSystemPage() {
             {activeSection === "imported-context-menu" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Context Menu
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Imported as-is from Base UI / Animate UI
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported as-is from Radix UI
                   </span>
                 </div>
 
@@ -1724,11 +1962,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <ContextMenuDemo />
                   </div>
                 </div>
@@ -1738,11 +1976,11 @@ export function DesignSystemPage() {
             {activeSection === "imported-scroll-fade" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     Scroll Fade
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
-                    Imported as-is from Animate UI
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported as-is from Fancy Components
                   </span>
                 </div>
 
@@ -1750,11 +1988,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <ScrollFadeDemo />
                   </div>
                 </div>
@@ -1764,10 +2002,10 @@ export function DesignSystemPage() {
             {activeSection === "imported-file-tree" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     File Tree
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Imported as-is from Unlumen UI
                   </span>
                 </div>
@@ -1776,11 +2014,11 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Usage Example
                   </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-neutral-0 ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
                     <FileTreeDemo />
                   </div>
                 </div>
@@ -1790,10 +2028,10 @@ export function DesignSystemPage() {
             {activeSection === "workspace-frame" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-neutral-1000 ll:font-sans">
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
                     WorkspaceFrame
                   </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800">
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
                     Component Specification &amp; Real Layers
                   </span>
                 </div>
@@ -1802,7 +2040,7 @@ export function DesignSystemPage() {
                   <div
                     role="heading"
                     aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-neutral-800"
+                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
                   >
                     Interactive Studio Workspace Frame
                   </div>

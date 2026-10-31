@@ -32,7 +32,7 @@ export function EditorShell() {
   }, []);
 
   return (
-    <div className="editor-root ll:h-screen ll:w-screen ll:overflow-hidden ll:flex ll:flex-col ll:bg-neutral-100 ll:font-sans ll:text-neutral-1000 ll:select-none">
+    <div className="editor-root ll:h-screen ll:w-screen ll:overflow-hidden ll:flex ll:flex-col ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none">
       <TopBar
         projectName={projectName}
         deviceMode={deviceMode}
@@ -45,7 +45,7 @@ export function EditorShell() {
         /* Share and Settings do nothing yet (no onClick handler) */
       />
       <main
-        className="ll:flex-1 ll:w-full ll:bg-neutral-100 ll:relative ll:overflow-hidden"
+        className="ll:flex-1 ll:w-full ll:bg-surface-canvas ll:relative ll:overflow-hidden"
         aria-label="Editor Canvas"
       />
     </div>

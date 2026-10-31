@@ -50,6 +50,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 4. New shared UI pieces
 
+### ThemeToggle component
+- **Area:** components
+- **Files:** `src/editor/components/ThemeToggle.tsx`, `src/editor/components/TopBar.tsx`, `src/editor/design-system/DesignSystemPage.tsx`
+- **What changed:** Added `ThemeToggle` component (ghost icon button, Lucide Sun/Moon icons, "Switch theme" tooltip). Placed in TopBar right group before Settings and in Design System right panel header. Persists `dark` / `light` state in `localStorage` under key `lazy-layout-theme` and coordinates state across mounts via custom event `ll-theme-change`.
+- **What A/B must do:** Reuse `ThemeToggle` in new modal headers or settings surfaces where theme control is needed.
+- **Status:** open
+
 ### Button, SegmentedControl, Tooltip, and TopBar
 - **Area:** components
 - **Files:** `src/editor/components/Button.tsx`, `src/editor/components/SegmentedControl.tsx`, `src/editor/components/Tooltip.tsx`, `src/editor/components/TopBar.tsx`, `src/editor/components/index.ts`, `src/editor/design-system/DesignSystemPage.tsx`
@@ -74,6 +81,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 ## 5. Tokens and styles
 
 New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy tokens stay with the legacy UI.
+
+### Semantic tokens, dark theme first, and shadow alpha
+- **Area:** foundations / tokens
+- **Files:** `src/editor/styles/tokens.css`, `src/editor/styles/tailwind.css`, `src/app/layout.tsx`
+- **What changed:** Replaced numbered neutral tokens (`--ll-neutral-*`) with 11 semantic tokens from `PALETTE.md`: `--ll-surface-backdrop`, `--ll-surface-canvas`, `--ll-surface-panel`, `--ll-surface-bar`, `--ll-surface-raised`, `--ll-border-color`, `--ll-text-primary`, `--ll-text-secondary`, `--ll-text-muted`, `--ll-control-primary-bg`, `--ll-control-primary-fg`. Dark theme is default on `:root` and `[data-theme="dark"]`; light theme applies under `[data-theme="light"]`. Shadows use stronger black alpha in dark (`rgba(0,0,0,0.5)` / `0.3`) and subtle alpha in light (`0.08` / `0.04`). Tailwind exposes `ll:bg-surface-canvas`, `ll:bg-surface-panel`, `ll:bg-surface-bar`, `ll:bg-surface-raised`, `ll:bg-surface-backdrop`, `ll:text-primary`, `ll:text-secondary`, `ll:text-muted`, `ll:bg-control-primary`, `ll:text-control-primary-fg`, `ll:border-border`. Inline script in `layout.tsx` reads `localStorage` before paint to prevent theme flash.
+- **What A/B must do:** Use semantic `ll:` classes instead of numbered neutrals across all new UI components.
+- **Status:** open
 
 ### Control and top bar size tokens
 - **Area:** tokens

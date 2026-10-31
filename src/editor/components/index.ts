@@ -4,3 +4,4 @@ export * from "./Button";
 export * from "./SegmentedControl";
 export * from "./Tooltip";
 export * from "./TopBar";
+export * from "./ThemeToggle";

@@ -80,7 +80,7 @@ export function Tooltip({
         id={tooltipId}
         role="tooltip"
         aria-hidden={!isVisible}
-        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-nowrap ll:box-border ll:px-2 ll:py-1 ll:bg-neutral-1000 ll:text-neutral-0 ll:rounded-sm ll:text-micro ll:font-medium ll:transition-opacity ll:duration-swap ${positionStyles} ${
+        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-nowrap ll:box-border ll:px-2 ll:py-1 ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:border ll:border-border ll:shadow-soft ll:text-micro ll:font-medium ll:transition-opacity ll:duration-swap ${positionStyles} ${
           isVisible ? "ll:opacity-100" : "ll:opacity-0"
         }`}
       >

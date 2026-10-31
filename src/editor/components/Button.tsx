@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const isDisabled = disabled || loading;
 
   const baseStyles =
-    "ll:inline-flex ll:items-center ll:justify-center ll:box-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ll:rounded-md ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-neutral-1000 ll:focus-visible:ring-offset-2";
+    "ll:inline-flex ll:items-center ll:justify-center ll:box-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ll:rounded-md ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ll:focus-visible:ring-offset-2";
 
   // Sizes: sm is 28px, md is 32px
   let sizeStyles = "";
@@ -45,18 +45,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       : "ll:h-8 ll:px-3 ll:gap-2 ll:text-small";
   }
 
-  // Variants & states (instant hover on neutral-100, no color transitions)
+  // Variants & states (instant hover on surface-panel, no color transitions)
   let variantStyles = "";
   if (variant === "primary") {
     variantStyles =
-      "ll:bg-neutral-1000 ll:text-neutral-0 ll:border-0 ll:hover:opacity-90 ll:active:opacity-80 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed";
+      "ll:bg-control-primary ll:text-control-primary-fg ll:border-0 ll:hover:opacity-90 ll:active:opacity-80 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed";
   } else if (variant === "secondary") {
     variantStyles =
-      "ll:bg-neutral-0 ll:text-neutral-1000 ll:border ll:border-border ll:hover:bg-neutral-100 ll:active:bg-neutral-200 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-neutral-0";
+      "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:hover:bg-surface-panel ll:active:bg-surface-canvas ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-surface-raised";
   } else {
     // ghost
     variantStyles =
-      "ll:bg-transparent ll:text-neutral-1000 ll:border-0 ll:hover:bg-neutral-100 ll:active:bg-neutral-200 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent";
+      "ll:bg-transparent ll:text-primary ll:border-0 ll:hover:bg-surface-panel ll:active:bg-surface-canvas ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent";
   }
 
   const spinnerSize = size === "sm" ? 14 : 16;
