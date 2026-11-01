@@ -9,7 +9,9 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 
 **Status as of 2026-10-31 (pushed to origin):** done so far: Tailwind base (`ll:` prefix), Geist fonts, dark-first semantic palette, the `/design-system` page, the shell top bar at `/editor`, and 12 imported components (as-is, restyle later). Next: shell step 2 (left rail and panel), then canvas toolbar, right panel, timeline, `menus`, project hub. Phase 1 checks (lint, build, e2e) have not been run yet. Imported component licenses are unverified (see `COMPONENT_SOURCES.md`).
 
-**Design prototype, 2026-11-01:** the editor's Design, Motion and Code modes are prototyped in `DOCS/UI/design/editor-design-mode-blocks-dark.html`, not built in the app yet. `src/editor` still has only the earlier top bar. Ideas parked for later are in `DOCS/UI/design/LATER.md`.
+**Design prototype, 2026-11-01:** the editor's Design, Motion and Code modes are prototyped in `DOCS/UI/design/editor-design-mode-blocks-dark.html`, live at https://lazy-layout-prototype.vercel.app. Logos and loaders are in `logo-options.html` (live at `/logo`), and five right panel ideas are in `right-panel-concepts.html`. None of this is built in the app: `src/editor` still has only the earlier top bar, and `tokens.css` still has the earlier colors. The shell step 2 task in `tasks/` is out of date.
+
+**Next:** pick the right panel concept and the logo. Add what the prototype lost or lacks: Theme & Design Tokens, Logic and Data entry points, Debug tools, Version history, command palette, color and font pickers, empty state. Then have workers build the prototype in `src/editor`.
 
 **Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 

@@ -70,6 +70,11 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-11-01 | Editor | Right panel edits directly like Figma, all main fields visible. Width 304px | user | approved |
 | 2026-11-01 | Editor | Page switch moves to the left panel header. Right-click and logo open Canva-style menus with submenus. Toolbar is detached, not full width. Panel handles removed | user | approved |
 | 2026-11-01 | Editor | Top bar holds logo, project, boxed mode switch, theme switch, user avatars and Ship. Ship is quiet until ready | user | approved |
-| 2026-11-01 | Themes | Prototype has five themes in a switcher, with Paper as the default. Not yet applied to `PALETTE.md`, which still holds the earlier palette | user | pending |
+| 2026-11-01 | Themes | Five official themes, Paper as the default, replacing dark as the primary theme. In `PALETTE.md`, not yet in `tokens.css` | user | approved |
 | 2026-11-01 | Editor | Ship checklist, Insert box layout, floating selection toolbar removal, hiding empty items, and exact field layout | Claude | pending |
 | 2026-11-01 | Engine | GSAP's license restricts use in visual, no-code animation builders that compete with Webflow, and `src/core` and `src/compiler` use GSAP. Needs an answer from Webflow or a lawyer, or a replacement | Claude | open, user to decide |
+| 2026-11-01 | Editor | AI opens from a toolbar button as a prompt box above the toolbar, and expands to a chat that temporarily replaces the right panel | user | approved |
+| 2026-11-01 | Editor | People avatars float at the top right of the canvas. Theme switch stays in the top bar | user | approved |
+| 2026-11-01 | Editor | AI suggestions, people stack style, theme icon and previews | Claude | pending |
+| 2026-11-01 | Logo | Option A placed in the prototype by Claude as a placeholder. The user has not chosen a logo, and the SVG's source and license are unconfirmed | Claude | pending |
+| 2026-11-01 | Motion | No custom Lazy Motion engine for the UI. Dropping GSAP from the new UI is still undecided | user | engine rejected, GSAP open |

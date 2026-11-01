@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Right panel concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--page:#E7E6E1;--panel:#F4F3EF;--field:#EEEDE8;--line:#CECDC8;--ink:#22231E;--ink2:#55554F;--muted:#66665F;--white:#FFFFFF}
+*{box-sizing:border-box}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+body{margin:0;padding:32px;background:var(--page);color:var(--ink);font:400 13px/1.4 Geist,system-ui,sans-serif}
+h1{font:600 18px/1.2 Geist,sans-serif;margin:0 0 24px}
+button,input,select{font-family:inherit}
+svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;gap:16px;overflow-x:auto;padding-bottom:4px}
+.col{flex:0 0 304px;width:304px}
+.lbl{font:500 13px/1.3 Geist,sans-serif;margin:0}
+.desc{font:400 11px/1.4 Geist,sans-serif;color:var(--muted);margin:4px 0 10px;width:304px}
+.panel{width:304px;height:820px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;overflow:hidden;position:relative}
+.hdr{display:flex;align-items:center;gap:8px;height:32px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.hdr .ttl{flex:1;font:600 18px/1.2 Geist,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr .ic{display:flex;color:var(--ink2)}
+.hdr .dots{font:500 13px Geist,sans-serif;color:var(--ink2);letter-spacing:1px}
+.sec{display:flex;align-items:center;justify-content:space-between;font:500 13px Geist,sans-serif;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.sec .r{display:flex;align-items:center;gap:8px}
+.tok{font:400 11px/1 'Geist Mono',monospace;color:var(--muted)}
+.txt{background:none;border:0;padding:4px 0;font:500 13px Geist,sans-serif;color:var(--ink);cursor:pointer}
+.chip{height:28px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--field);font:500 13px Geist,sans-serif;color:var(--ink);cursor:pointer}
+.chip.on,.tile.on,.sw.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.n{font:400 11px/1 'Geist Mono',monospace;color:var(--ink);background:transparent;border:0;border-radius:6px;width:40px;height:22px;text-align:center;padding:0;outline:none}
+.n:hover{background:var(--field)}
+.n:focus-visible{background:var(--field);box-shadow:0 0 0 1px var(--ink)}
+.box .n,.in .n{position:absolute}
+.nf{font:400 13px 'Geist Mono',monospace;height:28px;width:88px;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:0 8px;color:var(--ink);outline:none}
+.nf:focus-visible{box-shadow:0 0 0 1px var(--ink)}
+.sel{height:28px;background:var(--field);border:1px solid var(--line);border-radius:6px;font:400 13px Geist,sans-serif;color:var(--ink);padding:0 6px}
+.kv{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin-bottom:10px}
+.kv label{display:flex;align-items:center;gap:8px;font:400 11px Geist,sans-serif;color:var(--muted)}
+.swatch{width:16px;height:16px;background:#FFFFFF;border:1px solid var(--line);border-radius:4px}
+/* A */
+.box{position:relative;width:272px;height:180px;border:1px solid var(--line);border-radius:6px;margin-top:4px;margin-bottom:12px}
+.cap{position:absolute;font:400 11px Geist,sans-serif;color:var(--muted)}
+.c1{left:8px;top:8px}
+.c2{left:6px;top:6px}
+.ot{top:8px;left:50%;transform:translateX(-50%)}
+.ob{bottom:8px;left:50%;transform:translateX(-50%)}
+.ol{left:6px;top:50%;transform:translateY(-50%)}
+.or{right:6px;top:50%;transform:translateY(-50%)}
+.in{position:absolute;left:56px;right:56px;top:40px;bottom:40px;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.in .ctr{font:500 13px Geist,sans-serif;white-space:nowrap}
+.it{top:6px;left:50%;transform:translateX(-50%)}
+.ib{bottom:6px;left:50%;transform:translateX(-50%)}
+.il{left:6px;top:50%;transform:translateY(-50%)}
+.ir{right:6px;top:50%;transform:translateY(-50%)}
+.in .c2{left:6px;top:6px}
+/* B */
+.grp{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.gt{font:500 13px Geist,sans-serif;margin-bottom:8px}
+.sl{position:relative;height:28px;background:var(--field);border-radius:6px;margin-bottom:6px;overflow:hidden;cursor:ew-resize;user-select:none;touch-action:none}
+.sl .f{position:absolute;left:0;top:0;bottom:0;background:var(--line);width:0}
+.sl .l{position:absolute;left:10px;top:0;line-height:28px;font:500 13px Geist,sans-serif;z-index:1}
+.sl .v{position:absolute;right:8px;top:0;height:28px;display:flex;align-items:center;font:400 11px 'Geist Mono',monospace;z-index:1;cursor:text;padding:0 4px}
+/* C */
+.sent{font:400 13px/1.9 Geist,sans-serif;margin:0 0 12px}
+.wrap{position:relative;display:inline-block}
+.ed{background:none;border:0;padding:0;color:var(--ink);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.menu{position:absolute;top:100%;left:0;z-index:5;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px;display:flex;flex-direction:column;margin-top:4px}
+.opt{text-align:left;background:none;border:0;border-radius:4px;padding:6px 10px;font:400 13px Geist,sans-serif;color:var(--ink);cursor:pointer;white-space:nowrap}
+.opt:hover{background:var(--field)}
+.opt.on{background:var(--page)}
+.add{margin-top:8px}
+/* D */
+.tabs{display:flex;gap:4px;margin:12px 0}
+.tab{flex:1;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--field);font:500 13px Geist,sans-serif;color:var(--ink);cursor:pointer}
+.tab.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.prev{width:272px;height:120px;background:#FFFFFF;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-top:12px}
+.frame{background:var(--field);padding:10px 16px;transition:transform 150ms,opacity 150ms,border-radius 150ms}
+.ptxt{display:block;line-height:1.1;white-space:nowrap;transition:font-size 150ms}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px;margin-top:12px}
+.f2{display:flex;flex-direction:column;gap:4px;font:400 11px Geist,sans-serif;color:var(--muted)}
+.fr{display:flex;align-items:center;gap:6px}
+.fr .nf{width:100%;min-width:0;flex:1}
+.dot{display:block;width:6px;height:6px;background:var(--ink);flex:none;cursor:pointer;visibility:hidden}
+/* E */
+.tiles{display:flex;gap:4px}
+.tile{flex:1 1 0;min-width:0;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding:6px 0;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);font:400 11px Geist,sans-serif;cursor:pointer}
+.sqw{height:32px;display:flex;align-items:center;justify-content:center}
+.sq{display:block;background:var(--ink)}
+.tile.on .sq{background:var(--panel)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sw{display:flex;flex-direction:column;gap:4px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--field);font:400 11px Geist,sans-serif;color:var(--ink);cursor:pointer;text-align:left}
+.sw i{display:block;height:24px;border-radius:4px;border:1px solid var(--line)}
+.sw.on i{border-color:var(--panel)}
+.trade{margin-top:20px;font:400 11px/1.6 Geist,sans-serif;color:var(--muted)}
+.trade p{margin:0}
+</style>
+</head>
+<body>
+<h1>Right panel concepts</h1>
+
+<div class="row">
+
+  <section class="col">
+    <p class="lbl">A &nbsp; Spatial box</p>
+    <p class="desc">Box model with margin, padding and position in one diagram.</p>
+    <div class="panel" id="P-A"></div>
+  </section>
+
+  <section class="col">
+    <p class="lbl">B &nbsp; Instrument</p>
+    <p class="desc">Every value as a slider on a mixing-desk row.</p>
+    <div class="panel" id="P-B"></div>
+  </section>
+
+  <section class="col">
+    <p class="lbl">C &nbsp; Sentence</p>
+    <p class="desc">Properties read as plain sentences you edit in place.</p>
+    <div class="panel" id="P-C"></div>
+  </section>
+
+  <section class="col">
+    <p class="lbl">D &nbsp; State first</p>
+    <p class="desc">Preview each state and change only what differs from default.</p>
+    <div class="panel" id="P-D"></div>
+  </section>
+
+  <section class="col">
+    <p class="lbl">E &nbsp; Tokens first</p>
+    <p class="desc">Pick from the design system instead of typing numbers.</p>
+    <div class="panel" id="P-E"></div>
+  </section>
+
+</div>
+
+<div class="trade">
+  <p>A takes 180px of height, and is the best for layout work.</p>
+  <p>B reads at a glance, and is less precise for typed values.</p>
+  <p>C is friendly for beginners, and is slower for experts.</p>
+  <p>D is the best for interactive states, and has a smaller space for fields.</p>
+  <p>E keeps designs consistent, and needs a design system set up.</p>
+</div>
+
+<script>
+const ICON_T='<svg viewBox="0 0 16 16"><path d="M3 3.5h10M8 3.5v9.5"/></svg>';
+const ICON_EYE='<svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const HDR=`<div class="hdr">${ICON_T}<span class="ttl">Headline</span><span class="ic">${ICON_EYE}</span><span class="dots">...</span></div>`;
+
+/* ---------- A: Spatial box ---------- */
+document.getElementById('P-A').innerHTML=`${HDR}
+<div class="box">
+  <span class="cap c1">margin</span>
+  <input class="n ot" value="0"><input class="n ob" value="0"><input class="n ol" value="0"><input class="n or" value="0">
+  <div class="in">
+    <span class="cap c2">padding</span>
+    <input class="n it" value="12"><input class="n ib" value="12"><input class="n il" value="16"><input class="n ir" value="16">
+    <div class="ctr">340 × 82</div>
+  </div>
+</div>
+<div class="kv">
+  <label>X<input class="nf" value="36"></label>
+  <label>Y<input class="nf" value="70"></label>
+  <label>R<input class="nf" value="0">°</label>
+</div>
+<div class="kv">
+  <label>W<select class="sel"><option>Fixed</option><option>Fill</option><option>Hug</option></select></label>
+  <label>H<select class="sel"><option>Hug</option><option>Fixed</option><option>Fill</option></select></label>
+</div>
+<div class="sec"><span>Text</span></div>
+<div class="kv">
+  <label>Font<select class="sel"><option>Geist</option><option>Geist Mono</option></select></label>
+  <label>Weight<input class="nf" value="600" style="width:64px"></label>
+  <label>Size<input class="nf" value="30" style="width:64px"></label>
+</div>
+<div class="sec"><span>Fill</span></div>
+<div class="kv"><span class="swatch"></span><input class="nf" value="FFFFFF" style="width:104px"><input class="nf" value="100%" style="width:64px"></div>`;
+
+/* ---------- B: Instrument ---------- */
+const G=[
+  ['Appearance',[['Opacity',100,0,100,1,0],['Corners',0,0,6,1,0],['Shadow',0,0,100,1,0]]],
+  ['Type',[['Size',30,8,120,1,0],['Weight',600,100,900,100,0],['Line',1.05,0.8,2,0.05,2],['Tracking',-0.03,-0.1,0.3,0.01,2]]],
+  ['Transform',[['Rotation',0,-180,180,1,0]]]
+];
+const M={};
+let bh='';
+G.forEach(([t,items])=>{
+  bh+=`<div class="grp"><div class="gt">${t}</div>`;
+  items.forEach(([n,v,mn,mx,st,dc])=>{
+    M[n]={v,mn,mx,st,dc};
+    bh+=`<div class="sl" data-k="${n}"><div class="f"></div><span class="l">${n}</span><span class="v"></span></div>`;
+  });
+  bh+='</div>';
+});
+document.getElementById('P-B').innerHTML=HDR+bh;
+const paintB=k=>{
+  const m=M[k],el=document.querySelector(`.sl[data-k="${k}"]`);
+  el.querySelector('.f').style.width=((m.v-m.mn)/(m.mx-m.mn)*100)+'%';
+  el.querySelector('.v').textContent=m.v.toFixed(m.dc);
+};
+const setB=(k,x)=>{
+  const m=M[k];
+  if(isNaN(x))return;
+  x=Math.min(m.mx,Math.max(m.mn,Math.round(x/m.st)*m.st));
+  m.v=Number(x.toFixed(m.dc));
+  paintB(k);
+};
+Object.keys(M).forEach(paintB);
+document.querySelectorAll('.sl').forEach(el=>{
+  const k=el.dataset.k,m=M[k],val=el.querySelector('.v');
+  let drag=false;
+  const at=e=>{
+    const r=el.getBoundingClientRect();
+    const f=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
+    setB(k,m.mn+f*(m.mx-m.mn));
+  };
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.v'))return;
+    drag=true;el.setPointerCapture(e.pointerId);at(e);
+  });
+  el.addEventListener('pointermove',e=>{if(drag)at(e)});
+  el.addEventListener('pointerup',()=>{drag=false});
+  el.addEventListener('pointercancel',()=>{drag=false});
+  val.addEventListener('pointerdown',e=>e.stopPropagation());
+  val.addEventListener('click',()=>{
+    const inp=document.createElement('input');
+    inp.className='n';inp.style.width='56px';inp.value=m.v;
+    val.textContent='';val.appendChild(inp);
+    inp.focus();inp.select();
+    let done=false;
+    const end=ok=>{
+      if(done)return;done=true;
+      if(ok)setB(k,parseFloat(inp.value));else paintB(k);
+    };
+    inp.addEventListener('keydown',ev=>{
+      if(ev.key==='Enter')end(true);
+      if(ev.key==='Escape')end(false);
+    });
+    inp.addEventListener('blur',()=>end(true));
+  });
+});
+
+/* ---------- C: Sentence ---------- */
+const T=(k,v,o)=>({k,v,o});
+const SENT=[
+  ['This text is set in ',T('font','Geist',['Geist','Geist Mono']),' ',T('wt','600',['400','500','600','700']),' at ',T('size','30px',['18px','24px','30px','40px']),', with ',T('lh','1.05',['1.0','1.05','1.2','1.5']),' line height.'],
+  ['It is ',T('w','340',['240','340','480']),' wide and ',T('h','82',['48','82','120']),' tall, placed ',T('x','36',['0','36','72']),' from the left and ',T('y','70',['0','70','140']),' from the top.'],
+  ['Its color is ',T('col','■ FFFFFF',['■ FFFFFF','■ 22231E','■ 55554F']),' at ',T('op','100%',['100%','80%','50%']),', with ',T('rad','no',['no','2px','4px','6px']),' corners.'],
+  ['It has ',T('sh','no',['no','soft']),' shadow and ',T('an','no',['no','fade','rise']),' animation.']
+];
+const TOK=[];
+let openId=null;
+function renderC(){
+  TOK.length=0;
+  let h='';
+  SENT.forEach(s=>{
+    h+='<p class="sent">';
+    s.forEach(p=>{
+      if(typeof p==='string'){h+=p;return}
+      const id=TOK.push(p)-1;
+      h+=`<span class="wrap"><button class="ed" data-id="${id}">${p.v}</button>${openId===id?`<div class="menu">${p.o.map(o=>`<button class="opt${o===p.v?' on':''}" data-id="${id}" data-v="${o}">${o}</button>`).join('')}</div>`:''}</span>`;
+    });
+    h+='</p>';
+  });
+  h+='<button class="txt add">+ Add a rule</button>';
+  document.getElementById('P-C').innerHTML=HDR+'<div style="margin-top:16px">'+h+'</div>';
+}
+document.getElementById('P-C').addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  if(b.classList.contains('add')){
+    SENT.push(['It is ',T('vis','100%',['100%','80%','50%']),' visible at rest.']);
+    openId=null;renderC();return;
+  }
+  if(b.classList.contains('opt')){
+    TOK[+b.dataset.id].v=b.dataset.v;
+    openId=null;renderC();return;
+  }
+  if(b.classList.contains('ed')){
+    const id=+b.dataset.id;
+    openId=openId===id?null:id;
+    renderC();
+  }
+});
+document.addEventListener('click',e=>{
+  if(!e.target.isConnected)return;
+  if(openId!==null&&!e.target.closest('.wrap')){openId=null;renderC()}
+});
+renderC();
+
+/* ---------- D: State first ---------- */
+const BASE={fill:'#22231E',op:100,sc:1,size:30,wt:600,cr:0};
+const ST={
+  default:{...BASE},
+  hover:{...BASE,op:80,sc:1.02},
+  pressed:{...BASE,fill:'#55554F',sc:0.98},
+  focus:{...BASE,cr:6}
+};
+const DTABS=['default','hover','pressed','focus'];
+const FIELDS=[
+  ['fill','Fill','text'],
+  ['op','Opacity','number',0,100,1],
+  ['sc','Scale','number',0.5,1.5,0.01],
+  ['size','Size','number',8,120,1],
+  ['wt','Weight','number',100,900,100],
+  ['cr','Corners','number',0,6,1]
+];
+let tab='default';
+function paintD(){
+  const s=ST[tab];
+  document.getElementById('D-prev').innerHTML=`<div class="frame" style="border-radius:${s.cr}px;transform:scale(${s.sc});opacity:${s.op/100}"><span class="ptxt" style="color:${s.fill};font-size:${s.size}px;font-weight:${s.wt}">Headline</span></div>`;
+  document.querySelectorAll('#D-fields .dot').forEach(d=>{
+    const k=d.dataset.k;
+    d.style.visibility=ST[tab][k]!==ST.default[k]?'visible':'hidden';
+  });
+}
+function renderD(){
+  document.getElementById('D-tabs').innerHTML=DTABS.map(t=>`<button class="tab${t===tab?' on':''}" data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
+  document.getElementById('D-fields').innerHTML=FIELDS.map(([k,l,ty,mn,mx,st])=>{
+    const num=ty==='number'?`type="number" step="${st}" min="${mn}" max="${mx}"`:'';
+    return `<label class="f2">${l}<span class="fr"><input class="nf" data-k="${k}" ${num} value="${ST[tab][k]}"><i class="dot" data-k="${k}"></i></span></label>`;
+  }).join('');
+  paintD();
+}
+document.getElementById('P-D').innerHTML=`${HDR}<div id="D-prev" class="prev"></div><div id="D-tabs" class="tabs"></div><div id="D-fields" class="grid2"></div>`;
+document.getElementById('P-D').addEventListener('click',e=>{
+  const t=e.target.closest('.tab');
+  if(t){tab=t.dataset.t;renderD();return}
+  const d=e.target.closest('.dot');
+  if(d){ST[tab][d.dataset.k]=ST.default[d.dataset.k];renderD()}
+});
+document.getElementById('P-D').addEventListener('input',e=>{
+  const k=e.target.dataset.k;
+  if(!k)return;
+  const v=e.target.type==='number'?parseFloat(e.target.value):e.target.value;
+  if(typeof v==='number'&&isNaN(v))return;
+  ST[tab][k]=v;
+  paintD();
+});
+renderD();
+
+/* ---------- E: Tokens first ---------- */
+const SEC={
+  text:{t:'Text style',p:'text/',o:[['Display','30'],['Title','18'],['Body','13'],['Small','11']],l:'Title',v:'18',cu:false},
+  weight:{t:'Weight',p:'weight/',o:[['Regular','400'],['Medium','500'],['Bold','600']],l:'Bold',v:'600',cu:false},
+  space:{t:'Space',p:'space/',o:[['0','0'],['4','4'],['8','8'],['16','16'],['24','24'],['48','48']],l:'16',v:'16',cu:false},
+  corners:{t:'Corners',p:'radius/',o:[['None','0'],['Small','2'],['Medium','4'],['Large','6']],l:'Medium',v:'4',cu:false},
+  color:{t:'Color',p:'color/',o:[['Primary','#22231E'],['Secondary','#55554F'],['Muted','#66665F'],['Panel','#F4F3EF'],['Field','#EEEDE8'],['Page','#E7E6E1'],['Hairline','#CECDC8'],['White','#FFFFFF']],l:'Primary',v:'#22231E',cu:false}
+};
+function secHTML(k){
+  const s=SEC[k];
+  const tokName=s.cu?'custom':s.p+s.l;
+  let body;
+  if(s.cu){
+    body=`<div class="kv" style="margin:0"><input class="nf" data-k="${k}" ${k==='color'?'':'type="number"'} value="${s.v}" style="width:120px"><button class="txt" data-a="tok" data-k="${k}">Tokens</button></div>`;
+  }else if(k==='space'||k==='corners'){
+    body=`<div class="tiles">${s.o.map(([l,v])=>`<button class="tile${s.v===v?' on':''}" data-k="${k}" data-v="${v}" data-l="${l}"><span class="sqw"><i class="sq" style="width:${k==='space'?v*0.6:28}px;height:${k==='space'?v*0.6:28}px;border-radius:${k==='corners'?v:0}px"></i></span><span>${l}</span></button>`).join('')}</div>`;
+  }else if(k==='color'){
+    body=`<div class="grid4">${s.o.map(([l,v])=>`<button class="sw${s.v===v?' on':''}" data-k="${k}" data-v="${v}" data-l="${l}"><i style="background:${v}"></i>${l}</button>`).join('')}</div>`;
+  }else{
+    body=`<div class="chips">${s.o.map(([l,v])=>`<button class="chip${s.v===v?' on':''}" data-k="${k}" data-v="${v}" data-l="${l}">${l}</button>`).join('')}</div>`;
+  }
+  return `<div class="sec"><span>${s.t}</span><span class="r"><span class="tok">${tokName}</span>${s.cu?'':`<button class="txt" data-a="custom" data-k="${k}">Custom</button>`}</span></div>${body}`;
+}
+function redrawE(k){
+  document.getElementById('E-'+k).innerHTML=secHTML(k);
+}
+document.getElementById('P-E').innerHTML=`${HDR}${Object.keys(SEC).map(k=>`<div id="E-${k}"></div>`).join('')}`;
+Object.keys(SEC).forEach(redrawE);
+document.getElementById('P-E').addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  const k=b.dataset.k,s=SEC[k];
+  if(b.dataset.a==='custom'){s.cu=true;s.l='custom'}
+  else if(b.dataset.a==='tok'){s.cu=false;const m=s.o.find(([,v])=>v===s.v);s.l=m?m[0]:s.l}
+  else if(b.dataset.v!==undefined){s.v=b.dataset.v;s.l=b.dataset.l}
+  else return;
+  redrawE(k);
+});
+document.getElementById('P-E').addEventListener('change',e=>{
+  const k=e.target.dataset.k;
+  if(!k)return;
+  SEC[k].v=e.target.value;
+  SEC[k].l='custom';
+  redrawE(k);
+});
+</script>
+</body>
+</html>

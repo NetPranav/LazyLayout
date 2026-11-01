@@ -1,27 +1,67 @@
 # Palette
 
-The only colors workers may use. **Dark is the primary theme, designed first.** Light is the second theme and keeps the colors the user approved earlier. Components use the semantic tokens below, never a raw color or a numbered neutral, so both themes work.
+The only colors workers may use. There are five official themes, approved by the user on 2026-11-01. **Paper is the default.** Components use the semantic tokens below, never a raw color or a numbered neutral, so every theme works.
 
-Dark values are sampled from the user's Figma screenshot `DOCS/UI/palette-refs/ref-02-figma-dark.png`. Light values are sampled from `ref-01-work-os.png`. Both are approximate. No accent color in either theme (the blue in the Figma screenshot is not used). No error, warning or success colors: show state with an icon and text.
+The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them all. `src/editor/styles/tokens.css` still holds the earlier dark and light colors until a worker task updates it.
 
-| Role | Semantic token | Dark | Light |
-|---|---|---|---|
-| Backdrop (outside the app) | `--ll-surface-backdrop` | `#141414` | `#8F8F8F` |
-| Canvas | `--ll-surface-canvas` | `#1E1E1E` | `#DFDFDF` |
-| Panels and side rails | `--ll-surface-panel` | `#2C2C2C` | `#C4C4C4` |
-| Top bar, toolbar, hover and selected rows | `--ll-surface-bar` | `#383838` | `#F1F1F1` |
-| Raised surfaces (cards, menus, popovers, inputs) | `--ll-surface-raised` | `#383838` | `#FFFFFF` |
-| Border (hairline) | `--ll-border-color` | `#444444` | `#8F8F8F` at 50% |
-| Primary text | `--ll-text-primary` | `#FFFFFF` | `#000000` |
-| Secondary text | `--ll-text-secondary` | `#BFBFBF` | `#464646` |
-| Muted icons | `--ll-text-muted` | `#A1A1A1` | `#464646` |
-| Primary and active control background | `--ll-control-primary-bg` | `#FFFFFF` | `#000000` |
-| Primary and active control text | `--ll-control-primary-fg` | `#1E1E1E` | `#FFFFFF` |
+**Sources:** Dark is sampled from the user's Figma screenshot, `palette-refs/ref-02-figma-dark.png`. Warm uses the user's Off white, Ivory, Nude and Obsidian reference. Lilac and Paper are sampled from the user's Paper, Graphite and Lilac reference. White was proposed by Claude and chosen by the user. Mid-tone text colors and the dark backdrop were added by Claude.
 
-`--ll-surface-backdrop` in dark (`#141414`) was not in the screenshot. It is a darker step chosen by Claude, pending the user's review.
+**Accent:** only Lilac has an accent, `#CEB4F5`. No other theme has one. No theme has error, warning or success colors: show state with an icon and text.
+
+## Surfaces and text
+
+| Role | Semantic token | Paper | Dark | White | Warm | Lilac |
+|---|---|---|---|---|---|---|
+| Backdrop (outside the app) | `--ll-surface-backdrop` | `#E7E6E1` | `#141414` | `#F5F5F5` | `#F3F0E9` | `#E7E6E1` |
+| Canvas | `--ll-surface-canvas` | `#E7E6E1` | `#1E1E1E` | `#F5F5F5` | `#F3F0E9` | `#E7E6E1` |
+| Panels and top bar | `--ll-surface-panel` | `#F4F3EF` | `#2C2C2C` | `#FFFFFF` | `#FDFCF8` | `#F4F3EF` |
+| Input fields | `--ll-surface-bar` | `#EEEDE8` | `#383838` | `#F0F0F0` | `#F3F0E9` | `#EEEDE8` |
+| Floating surfaces (toolbar, menus, popovers) | `--ll-surface-raised` | `#F4F3EF` | `#383838` | `#FFFFFF` | `#FDFCF8` | `#F4F3EF` |
+| Hover on rows and menus | `--ll-surface-hover` | `#E7E6E1` | `#2C2C2C` | `#F0F0F0` | `#E3DBCC` | `#E7E6E1` |
+| Border (hairline) | `--ll-border-color` | `#CECDC8` | `#444444` | `#E3E3E3` | `#E3DBCC` | `#CECDC8` |
+| Primary text | `--ll-text-primary` | `#22231E` | `#FFFFFF` | `#000000` | `#101010` | `#22231E` |
+| Secondary text | `--ll-text-secondary` | `#55554F` | `#BFBFBF` | `#5C5C5C` | `#5A5549` | `#55554F` |
+| Muted text and icons | `--ll-text-muted` | `#66665F` | `#A1A1A1` | `#6B6B6B` | `#6E6859` | `#66665F` |
+
+## Controls
+
+| Role | Semantic token | Paper | Dark | White | Warm | Lilac |
+|---|---|---|---|---|---|---|
+| Primary control background | `--ll-control-primary-bg` | `#22231E` | `#FFFFFF` | `#000000` | `#101010` | `#22231E` |
+| Primary control text | `--ll-control-primary-fg` | `#F4F3EF` | `#1E1E1E` | `#FFFFFF` | `#FDFCF8` | `#F4F3EF` |
+| Active option in switches, icon button hover | `--ll-control-active` | `#E7E6E1` | `#444444` | `#F0F0F0` | `#E3DBCC` | `#E7E6E1` |
+| Selected row and active tool | `--ll-select-bg` | `#E7E6E1` | `#383838` | `#F0F0F0` | `#E3DBCC` | `#CEB4F5` |
+| Text on selected | `--ll-select-fg` | `#22231E` | `#FFFFFF` | `#000000` | `#101010` | `#22231E` |
+| Ship, not ready | `--ll-ship-bg` | `#E7E6E1` | `#383838` | `#F0F0F0` | `#F3F0E9` | `#CEB4F5` |
+| Text on Ship | `--ll-ship-fg` | `#22231E` | `#FFFFFF` | `#000000` | `#101010` | `#22231E` |
+| Avatar background | `--ll-avatar-bg` | `#E7E6E1` | `#444444` | `#F0F0F0` | `#E3DBCC` | `#E7E6E1` |
+| Avatar text | `--ll-avatar-fg` | `#22231E` | `#FFFFFF` | `#000000` | `#101010` | `#22231E` |
+
+## Canvas content
+
+| Role | Semantic token | Paper | Dark | White | Warm | Lilac |
+|---|---|---|---|---|---|---|
+| Artboard | `--ll-board-bg` | `#FFFFFF` | `#383838` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` |
+| Artboard border | `--ll-board-line` | `#CECDC8` | `#444444` | `#E3E3E3` | `#E3DBCC` | `#CECDC8` |
+| Image placeholder | `--ll-placeholder` | `#E7E6E1` | `#2C2C2C` | `#F0F0F0` | `#E3DBCC` | `#E7E6E1` |
+| Color swatch border | `--ll-swatch-line` | `#CECDC8` | `#444444` | `#C8C8C8` | `#E3DBCC` | `#CECDC8` |
+| Insert card thumbnail | `--ll-thumb-bg` | `#EEEDE8` | `#1E1E1E` | `#F5F5F5` | `#F3F0E9` | `#EEEDE8` |
+| Insert card wireframe | `--ll-thumb-line` | `#CECDC8` | `#444444` | `#E3E3E3` | `#E3DBCC` | `#CECDC8` |
+
+## Shadow
+
+| Theme | `--ll-shadow-soft` |
+|---|---|
+| Paper | `0 4px 16px rgba(34,35,30,.1)` |
+| Dark | `0 4px 16px rgba(0,0,0,.5)` |
+| White | `0 4px 16px rgba(0,0,0,.12)` |
+| Warm | `0 4px 16px rgba(16,16,16,.08)` |
+| Lilac | `0 4px 16px rgba(34,35,30,.1)` |
 
 ## Rules
-- Primary controls invert with the theme: black with white text in light, white with near-black text in dark. Use sparingly.
+
+- The primary control is the strongest color in a theme. Use it sparingly.
+- Ship uses `--ll-ship-bg` until it is ready, then the primary control colors.
 - Separate layers with the hairline border or a soft shadow.
-- Contrast of at least 4.5:1 for text in both themes (`#BFBFBF` on `#2C2C2C` is about 7:1).
-- Dark is the default. The theme is set by `data-theme="dark"` or `"light"` on `<html>`, with the dark values as the default when the attribute is missing.
+- Text needs a contrast of at least 4.5:1 in every theme. These values have not all been measured, so a worker must check them when building.
+- The theme is set by `data-theme` on `<html>`, one of `paper`, `dark`, `white`, `warm` or `lilac`. Paper applies when the attribute is missing.

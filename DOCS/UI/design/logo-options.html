@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lazy Layout logo options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Geist", system-ui, sans-serif; background: #F4F3EF; }
+  .band { padding: 48px; }
+  .band.paper { background: #F4F3EF; color: #22231E; }
+  .band.dark { background: #2C2C2C; color: #FFFFFF; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; }
+  .opt { display: flex; flex-direction: column; gap: 24px; }
+  .label { font-size: 13px; font-weight: 500; }
+  .label span { font-weight: 400; opacity: .6; margin-left: 6px; }
+  .row { display: flex; align-items: flex-end; gap: 16px; }
+  .bar { width: 260px; height: 52px; border: 1px solid currentColor; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+  .bar-name { font-size: 14px; font-weight: 500; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } .band { padding: 24px 16px; } }
+  .head { margin-bottom: 32px; }
+  .use { font-size: 13px; opacity: .6; margin-top: 4px; }
+  .ls .t, .ls .b, .br .t, .br .b, .st .t, .st .b, .tr .o, .tr .f { transform-box: fill-box; }
+  .ls { overflow: hidden; }
+  .ls .t { animation: ls 1.6s cubic-bezier(.65,0,.35,1) infinite; }
+  .ls .b { animation: ls 1.6s cubic-bezier(.65,0,.35,1) .2s infinite; }
+  .br .t { animation: br 1.4s cubic-bezier(.65,0,.35,1) infinite; }
+  .br .b { animation: br 1.4s cubic-bezier(.65,0,.35,1) .35s infinite; }
+  .st .t { animation: sp 1.8s cubic-bezier(.65,0,.35,1) infinite; }
+  .st .b { animation: sb 1.8s cubic-bezier(.65,0,.35,1) infinite; }
+  .tr .o { stroke-dasharray: 100; animation: tro 2.4s cubic-bezier(.65,0,.35,1) infinite; }
+  .tr .f { animation: trf 2.4s cubic-bezier(.65,0,.35,1) infinite; }
+  @keyframes ls { 0%, 15% { transform: translate(0,0); opacity: 1; } 45% { transform: translate(50%,50%); opacity: 0; } 46% { transform: translate(-50%,-50%); opacity: 0; } 75%, 100% { transform: translate(0,0); opacity: 1; } }
+  @keyframes br { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+  @keyframes sb { 0% { transform: translate(0,-40px); opacity: 0; } 16% { transform: translate(0,4px); opacity: 1; } 20%, 85% { transform: translate(0,0); opacity: 1; } 100% { transform: translate(0,0); opacity: 0; } }
+  @keyframes sp { 0%, 25% { transform: translate(0,-40px); opacity: 0; } 40% { transform: translate(0,4px); opacity: 1; } 45%, 85% { transform: translate(0,0); opacity: 1; } 100% { transform: translate(0,0); opacity: 0; } }
+  @keyframes tro { 0% { stroke-dashoffset: 100; opacity: 1; } 55%, 90% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+  @keyframes trf { 0%, 55% { opacity: 0; } 75%, 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes ldfade { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  @media (prefers-reduced-motion: reduce) {
+    .ld { animation: ldfade 2s ease-in-out infinite; }
+    .ld * { animation: none !important; }
+    .tr .o { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="m-a" viewBox="0 0 256 256"><path d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/></symbol>
+  <symbol id="m-b" viewBox="0 0 256 256"><path opacity=".45" d="M256 128H128L0 0H128Z"/><path d="M256 256H128L0 128H128Z"/></symbol>
+  <symbol id="m-c" viewBox="0 0 256 256"><path d="M0 0H120L240 120H120Z"/><path d="M16 136H136L256 256H136Z"/></symbol>
+  <symbol id="m-d" viewBox="0 0 256 256"><path d="M0 0H96V160H256V256H96L0 160Z"/></symbol>
+</svg>
+
+<section class="band paper">
+  <div class="grid">
+    <div class="opt">
+      <div class="label">A <span>Original</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">B <span>Depth</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">C <span>Split</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">D <span>Letter L</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band paper">
+  <div class="label head">Loaders</div>
+  <div class="grid">
+    <div class="opt">
+      <div><div class="label">Lazy slide</div><div class="use">App start, opening a project</div></div>
+      <svg class="ls ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="ls ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="ls ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Breathe</div><div class="use">Panels, buttons</div></div>
+      <svg class="br ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="br ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="br ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Stack</div><div class="use">Building a layout</div></div>
+      <svg class="st ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="st ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="st ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Trace</div><div class="use">First load</div></div>
+      <svg class="tr ld" width="64" height="64" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+      <div class="row">
+        <svg class="tr ld" width="24" height="24" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+        <svg class="tr ld" width="16" height="16" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band dark">
+  <div class="grid">
+    <div class="opt">
+      <div class="label">A <span>Original</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-a" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">B <span>Depth</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-b" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">C <span>Split</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-c" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+    <div class="opt">
+      <div class="label">D <span>Letter L</span></div>
+      <svg width="96" height="96" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+      <div class="row">
+        <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg>
+      </div>
+      <div class="bar"><svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><use href="#m-d" width="256" height="256"/></svg><span class="bar-name">LazyLayout</span></div>
+    </div>
+  </div>
+</section>
+<section class="band dark">
+  <div class="label head">Loaders</div>
+  <div class="grid">
+    <div class="opt">
+      <div><div class="label">Lazy slide</div><div class="use">App start, opening a project</div></div>
+      <svg class="ls ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="ls ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="ls ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Breathe</div><div class="use">Panels, buttons</div></div>
+      <svg class="br ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="br ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="br ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Stack</div><div class="use">Building a layout</div></div>
+      <svg class="st ld" width="64" height="64" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      <div class="row">
+        <svg class="st ld" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+        <svg class="st ld" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" overflow="visible"><path class="t" d="M256 128H128L0 0H128Z"/><path class="b" d="M256 256H128L0 128H128Z"/></svg>
+      </div>
+    </div>
+    <div class="opt">
+      <div><div class="label">Trace</div><div class="use">First load</div></div>
+      <svg class="tr ld" width="64" height="64" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+      <div class="row">
+        <svg class="tr ld" width="24" height="24" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+        <svg class="tr ld" width="16" height="16" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="6" overflow="visible"><path class="o" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="f" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z" fill="currentColor" stroke="none"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

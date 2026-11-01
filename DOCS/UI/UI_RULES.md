@@ -52,7 +52,7 @@ Need an off-limits change? List it under "Engine changes requested" in `INTEGRAT
 - **Tailwind is the styling tool**, set up in `src/editor/styles/tailwind.css`. **Every class needs the `ll:` prefix** (`ll:flex`, `ll:hover:bg-neutral-50`), so convert classes from other sites. There is no Preflight reset, so components set their own base styles.
 - **Tokens only**, from `src/editor/styles/tokens.css` and the `@theme` block in `tailwind.css`. No arbitrary values (`ll:w-[37px]`, `ll:bg-[#123456]`) and no hardcoded colors, sizes, fonts, radii, shadows or durations. The default Tailwind colors do not exist here, on purpose.
 - **New tokens use the `--ll-` prefix**, so nothing collides with legacy styles while both are loaded.
-- **Colors come only from `PALETTE.md`.** Never add a color. Dark is the primary theme, designed first. Light is the second theme. Use the semantic tokens, never a raw color.
+- **Colors come only from `PALETTE.md`.** Never add a color. There are five themes, and Paper is the default. Use the semantic tokens, never a raw color.
 - Workers may add non-color tokens (spacing, type, radius, motion) and log the scale in `DECISIONS.md`. Reuse them afterwards.
 
 ## 7. Motion and performance
