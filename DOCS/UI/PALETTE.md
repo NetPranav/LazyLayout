@@ -4,6 +4,8 @@ The only colors workers may use. There are five official themes, approved by the
 
 The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them all. `src/editor/styles/tokens.css` still holds the earlier dark and light colors until a worker task updates it.
 
+**Candidates, not official:** the prototype also has Graphite, Darkroom, Plum and Noir, because the user wants a dark theme that does not match Figma's colors. Noir is in the prototype's top bar toggle. Workers must not use these until the user picks and this file is updated.
+
 **Sources:** Dark is sampled from the user's Figma screenshot, `palette-refs/ref-02-figma-dark.png`. Warm uses the user's Off white, Ivory, Nude and Obsidian reference. Lilac and Paper are sampled from the user's Paper, Graphite and Lilac reference. White was proposed by Claude and chosen by the user. Mid-tone text colors and the dark backdrop were added by Claude.
 
 **Accent:** only Lilac has an accent, `#CEB4F5`. No other theme has one. No theme has error, warning or success colors: show state with an icon and text.

@@ -11,7 +11,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 
 **Design prototype, 2026-11-01:** the editor's Design, Motion and Code modes are prototyped in `DOCS/UI/design/editor-design-mode-blocks-dark.html`, live at https://lazy-layout-prototype.vercel.app. Logos and loaders are in `logo-options.html` (live at `/logo`), and five right panel ideas are in `right-panel-concepts.html`. None of this is built in the app: `src/editor` still has only the earlier top bar, and `tokens.css` still has the earlier colors. The shell step 2 task in `tasks/` is out of date.
 
-**Next:** pick the right panel concept and the logo. Add what the prototype lost or lacks: Theme & Design Tokens, Logic and Data entry points, Debug tools, Version history, command palette, color and font pickers, empty state. Then have workers build the prototype in `src/editor`.
+**Next:** micro-interactions and animations in the prototype. Start from `handoffs/2026-11-01-2305-design-tab-prototype.md`, which also lists what is still missing from the original and what the user must decide: the build plan, which themes stay (Graphite, Darkroom, Plum and Noir are candidates) and the logo. The Design tab prototype now has the original's right panel options in Figma style, plus the menu, left panel and canvas items, Theme & Tokens, Window tools, command palette and empty state. Motion and Code modes have not had the same comparison. Then have workers build the prototype in `src/editor`.
 
 **Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 
