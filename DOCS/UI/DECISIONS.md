@@ -65,3 +65,11 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-10-31 | Styling | Hover and active states map to surface-panel on raised surfaces and surface-bar on panel surfaces for cross-theme contrast | worker (Antigravity) | pending |
 | 2026-10-31 | Design system | Colors page shows dual-theme comparison columns (Dark vs Light) for all 11 semantic roles, real workspace frame preview in active theme, and WCAG AAA/AA surface text contrast ratios | worker (Antigravity) | pending |
 | 2026-10-31 | Design system | Adapted imported compound demos (Select, Menubar, DropdownMenu, ContextMenu, FileTree) to compound primitive APIs without restyling primitives | worker (Antigravity) | pending |
+| 2026-11-01 | Process | Design each page first as a plain HTML prototype in `DOCS/UI/design/`, then a worker builds it in the app. Prototypes get no heavy checks | user | approved |
+| 2026-11-01 | Editor | Three modes: Design, Motion, Code. Blocked layout: regions touch, split by hairlines | user | approved |
+| 2026-11-01 | Editor | Right panel edits directly like Figma, all main fields visible. Width 304px | user | approved |
+| 2026-11-01 | Editor | Page switch moves to the left panel header. Right-click and logo open Canva-style menus with submenus. Toolbar is detached, not full width. Panel handles removed | user | approved |
+| 2026-11-01 | Editor | Top bar holds logo, project, boxed mode switch, theme switch, user avatars and Ship. Ship is quiet until ready | user | approved |
+| 2026-11-01 | Themes | Prototype has five themes in a switcher, with Paper as the default. Not yet applied to `PALETTE.md`, which still holds the earlier palette | user | pending |
+| 2026-11-01 | Editor | Ship checklist, Insert box layout, floating selection toolbar removal, hiding empty items, and exact field layout | Claude | pending |
+| 2026-11-01 | Engine | GSAP's license restricts use in visual, no-code animation builders that compete with Webflow, and `src/core` and `src/compiler` use GSAP. Needs an answer from Webflow or a lawyer, or a replacement | Claude | open, user to decide |

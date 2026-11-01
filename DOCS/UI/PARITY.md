@@ -9,6 +9,8 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 
 **Status as of 2026-10-31 (pushed to origin):** done so far: Tailwind base (`ll:` prefix), Geist fonts, dark-first semantic palette, the `/design-system` page, the shell top bar at `/editor`, and 12 imported components (as-is, restyle later). Next: shell step 2 (left rail and panel), then canvas toolbar, right panel, timeline, `menus`, project hub. Phase 1 checks (lint, build, e2e) have not been run yet. Imported component licenses are unverified (see `COMPONENT_SOURCES.md`).
 
+**Design prototype, 2026-11-01:** the editor's Design, Motion and Code modes are prototyped in `DOCS/UI/design/editor-design-mode-blocks-dark.html`, not built in the app yet. `src/editor` still has only the earlier top bar. Ideas parked for later are in `DOCS/UI/design/LATER.md`.
+
 **Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 
 | Area | Status | Legacy files | Bridged entry points now in `src/editor` |
