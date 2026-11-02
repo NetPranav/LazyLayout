@@ -241,8 +241,6 @@ test.describe("Phase 42: grids", () => {
     for (const n of ["a", "b", "c", "d"]) await setProps(page, ids[n], { "layout.gridColumnStart": undefined, "layout.gridColumnSpan": undefined, "layout.gridRowStart": undefined, "layout.gridRowSpan": undefined, "frame.height": 40 });
     await setProps(page, grid, { "layout.gridTemplateColumns": "repeat(2, minmax(0, 1fr))", "layout.gridTemplateRows": "" });
     await select(page, [grid]);
-    await run(page, "canvas.zoomToSelection");
-    await page.waitForTimeout(600);
     const screen = (id: string) =>
       page.evaluate((id) => {
         const iframe = Array.from(document.querySelectorAll("iframe")).find((i) => i.contentDocument?.querySelector(`[data-element-id="${id}"]`))!;
@@ -251,14 +249,23 @@ test.describe("Phase 42: grids", () => {
         const b = iframe.contentDocument!.querySelector<HTMLElement>(`[data-element-id="${id}"]`)!.getBoundingClientRect();
         return { x: f.left + b.left * s, y: f.top + b.top * s, w: b.width * s, h: b.height * s };
       }, id);
+    // fit the grid to the canvas until the layers are big enough to aim at: on a slow runner the first fit can run before the canvas has its size (cells a few pixels high)
+    await expect(async () => {
+      await run(page, "canvas.zoomToSelection");
+      await page.waitForTimeout(300);
+      expect((await screen(ids.a)).w).toBeGreaterThan(120);
+    }).toPass({ timeout: 15_000 });
     expect(await children(page, grid)).toEqual([ids.a, ids.b, ids.c, ids.d]);
-    const a = await screen(ids.a);
-    const d = await screen(ids.d);
+    let a = await screen(ids.a);
     // press on the layer that is to move: click until the one selected is the one meant (screen positions are whole pixels)
     await expect(async () => {
       await page.mouse.click(a.x + a.w / 2, a.y + a.h / 2);
       expect(await page.evaluate(() => (window as unknown as { __LL_SELECTION__: () => string[] }).__LL_SELECTION__())).toEqual([ids.a]);
     }).toPass({ timeout: 10_000 });
+    // selecting can move things on a slow runner: measure again, once the selection has settled
+    await page.waitForTimeout(300);
+    a = await screen(ids.a);
+    const d = await screen(ids.d);
     await page.mouse.move(a.x + a.w / 2, a.y + a.h / 2);
     await page.mouse.down();
     await page.mouse.move(d.x + d.w / 2, d.y + d.h / 2, { steps: 6 });
