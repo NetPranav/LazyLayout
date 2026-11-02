@@ -3,7 +3,7 @@
 ## Project Name: LazyLayout — AI-Native Motion Design Studio
 **Document Version:** 4.0.0
 **Date:** 2026-10-18
-**Status:** Active. Stage 0 (Phases 1–12) ✅. Phases 13–19 ✅ (CI green on `main`, 2026-10-19). **Next: Phase 20** (Lane A); Lane B continues from Phase 57.
+**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–38 are merged to `main` but their rows still say 🚧 until someone marks them ✅; 39–43 are in open PR #53. **Lane B:** Phases 53–63 ✅; 64–68 are built on the branch `b/phase-64-68-timeline-keyframes-graph` (🚧 until its CI is green on `main`; Phase 68 is only partly done, see its entry). **Next: Phase 69** (Lane B, needs Phase 40 from Lane A as well as 68).
 **File Location:** `DOCS/INITIAL/ROADMAP.md`
 **Supersedes:** v3.3 (91 phases, run through a separate order file). v3.3 is kept unchanged as `ROADMAP_v3_ARCHIVE.md` for its progress logs, amendments and evidence. `order.md` is retired: in v4, **the phase number is the order**.
 **Inputs:** `PRD.md` v2.4, `AUDIT.md`, the grammar (`lazylayout_element_grammer.md` v0.3), `ANIMATION_PROPERTIES_AND_ENGINE_SPECIFICATION.md`, `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md`, and the World Environment properties in `action working.md`.
@@ -235,16 +235,16 @@ One row per phase, in execution order. Update the Status column together with th
 | 56 | Move playback onto the clock; retire the old Sequencer clock | 55 | v3 45.4 | 2 | ✅ |
 | 57 | Engine adapters & the kernel on the stage | 19, 56 | v3 10.1 (interface, kernel adapter) | 2 | ✅ |
 | 58 | CSS / Web Animations adapter | 57 | v3 10.1 (WAAPI) | 2 | ✅ |
-| 59 | Scrub vs play | 58 | v3 10.2 | 2 | 🚧 |
-| 60 | Parity overlay | 59 | v3 10.3 | 2 | 🚧 |
-| 61 | Timeline workspace: layout | 15, 54, 60 | v3 52.1, 23.1, 21.2 | 2 | 🚧 |
-| 62 | Twirl-downs & stopwatches | 61 | v3 52.2 | 2 | 🚧 |
-| 63 | Timeline navigation | 62 | v3 52.3 | 2 | 🚧 |
-| 64 | Timeline at scale | 63 | v3 52.4 | 2 | 📋 |
-| 65 | Nested & interaction composition tabs | 64 | v3 52.5 | 2 | 📋 |
-| 66 | Keyframing | 65 | v3 23.2 | 2 | 📋 |
-| 67 | Graph editor & easing | 66 | v3 23.3 | 2 | 📋 |
-| 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 📋 |
+| 59 | Scrub vs play | 58 | v3 10.2 | 2 | ✅ |
+| 60 | Parity overlay | 59 | v3 10.3 | 2 | ✅ |
+| 61 | Timeline workspace: layout | 15, 54, 60 | v3 52.1, 23.1, 21.2 | 2 | ✅ |
+| 62 | Twirl-downs & stopwatches | 61 | v3 52.2 | 2 | ✅ |
+| 63 | Timeline navigation | 62 | v3 52.3 | 2 | ✅ |
+| 64 | Timeline at scale | 63 | v3 52.4 | 2 | 🚧 |
+| 65 | Nested & interaction composition tabs | 64 | v3 52.5 | 2 | 🚧 |
+| 66 | Keyframing | 65 | v3 23.2 | 2 | 🚧 |
+| 67 | Graph editor & easing | 66 | v3 23.3 | 2 | 🚧 |
+| 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 🚧 |
 | 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 📋 |
 | 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 📋 |
 | 71 | Onion skin | 70 | v3 53.3 | 2 | 📋 |
@@ -919,21 +919,21 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** WAAPI-routed reference animations match the kernel at 5 times (≤ 0.5% pixels).
 
 ### Phase 59 · Scrub vs play
-**Needs:** 58 · **Was:** v3 10.2 · **Status:** 🚧
+**Needs:** 58 · **Was:** v3 10.2 · **Status:**  ✅
 - [x] While scrubbing, every layer is driven by the kernel. On play, each layer hands over to its routed adapter at the current time with matching velocity. `StageAdapters` keeps a `playing` flag: not playing, the kernel draws every layer (the Web Animations are cancelled); playing, a routed layer becomes a Web Animation baked at the transport's time and rate (the kernel gives its inline styles back), and a speed change keeps the same animation; pausing hands the layer back to the kernel. `StageEngine` shows the time again on every play/pause change.
 
 **You'll see:** scrubbing and playing look the same at every frame.
 **Done when:** 10 reference animations show identical screenshots paused at 5 times from the kernel and from the running engine (≤ 0.5%).
 
 ### Phase 60 · Parity overlay
-**Needs:** 59 · **Was:** v3 10.3 · **Status:** 🚧
+**Needs:** 59 · **Was:** v3 10.3 · **Status:**  ✅
 - [x] A dev overlay samples running engines against `evaluate()` every N frames and raises `[PARITY_DRIFT]` beyond tolerance. `ParityMonitor` (`src/core/engine/stage/parity.ts`) runs in the scheduler's `stats` phase every 30 frames while an engine of its own is playing: it compares each running layer's computed lengths, numbers and transform matrix with `evaluate()` at the engine's own clock (0.5 px, 0.01 opacity, 0.005 matrix), and the engine's clock with the transport's (6 frames, two samples in a row). Drift is `console.warn`ed once per layer and property, kept in `parityStore`, and shown by the status-bar `ParityBadge` (grey idle, green OK, red drift with the details in its tooltip). Dev builds, tests and `?parity=1` only. Colours and `%` lengths aren't compared yet.
 
 **You'll see:** a parity badge in the status bar (dev builds) that turns red on drift.
 **Done when:** an injected wrong easing raises `[PARITY_DRIFT]`; correct playback stays green.
 
 ### Phase 61 · Timeline workspace: layout
-**Needs:** 15, 54, 60 · **Was:** v3 52.1, 23.1, 21.2 · **Status:** 🚧
+**Needs:** 15, 54, 60 · **Was:** v3 52.1, 23.1, 21.2 · **Status:**  ✅
 - [x] Left: the layer stack (same order, open groups and selection as the Layers panel) with switches: visible, solo, lock, shy, motion blur (these three new switches are optional layer fields, `solo`, `shy`, `motionBlur`, with no schema version bump), blend mode (`appearance.blendMode`) and a parent picker (the pick-whip is a menu for now; it re-parents the layer through `layer.move`). With any layer soloed the stage draws only soloed layers and what contains them. Motion blur is recorded only; the renderer draws it later.
 - [x] Right: a time ruler (timecode or frames), layer bars with in/out trimming (drag an end) and sliding (drag the middle), the work area (drag its ends, or set from the playhead), composition markers (layer markers come later), the current-time indicator (painted by the scheduler). Bars are the existing `compositions[id].layers[layerId]` time bars (sparse, frame-snapped).
 - [x] Motion badges in the Layers panel (clip count, states, engine); clicking one opens it in the timeline. The Animate preset opens the new **Layer Timeline** tab; the Motion Sequencer stays beside it until Phase 68.
@@ -942,50 +942,50 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a 10-step journey (trim, set work area, add marker, solo, lock) asserts the document after each step.
 
 ### Phase 62 · Twirl-downs & stopwatches
-**Needs:** 61 · **Was:** v3 52.2 · **Status:** 🚧
+**Needs:** 61 · **Was:** v3 52.2 · **Status:**  ✅
 - [x] Layer → groups (Transform, Appearance, Effects, States, Behaviours, Links) → properties, each with a stopwatch that starts keyframing. `U` reveals animated properties, `UU` modified ones. In the Layer Timeline a layer's **P** twirl opens its six groups; Transform (position, scale, rotation, skew) and Appearance (opacity, corner radius, fill and border colour, border width) list their properties in plain words, each with a stopwatch; Effects, States, Behaviours and Links list what the layer has. A stopwatch turned on puts one keyframe at the playhead, holding the property's current value, in the layer's first clip in the composition (or a new clip called "Keyframes"); turned off it removes that property's tracks (and an empty "Keyframes" clip). Keyframes show as diamonds on the layer's time bar (click one to seek there) and an animated property shows its value at the playhead. `U` (timeline focus) toggles the animated-only view of the selected layers and a quick second press shows the modified ones. Editing keyframes (move, copy, easing) is Phases 66–67.
 
 **You'll see:** twirl down a layer and click a stopwatch to animate any property.
 **Done when:** stopwatch on/off round-trips through undo and save.
 
 ### Phase 63 · Timeline navigation
-**Needs:** 62 · **Was:** v3 52.3 · **Status:** 🚧
+**Needs:** 62 · **Was:** v3 52.3 · **Status:**  ✅
 - [x] Ruler scrubbing, zoom to work area, J/K/L shuttle, I/O to jump to in/out points, B/N to set the work area, Page Up/Down to step frames (Shift for 10). All are commands with timeline focus. Ruler scrubbing (61) and J/K/L (54) were already there. New: Page Down / Page Up (one frame; Shift: ten), `I` / `O` (the selected layers' earliest in and latest out; with nothing selected, the work area's start and end), `B` / `N` (work area start and end at the playhead), `=` / `-` (zoom ×1.25, 20 to 2,400 px/s), `\` (zoom to the work area, scrolled into view), Ctrl + wheel (zoom around the pointer), and `End` (to the end of the composition). The timeline's zoom is a store value (`pixelsPerSecond`); the panel reports its view width so the fit knows what to fill.
 
 **You'll see:** After Effects shortcuts work in the timeline.
 **Done when:** a keyboard-only navigation journey lands on exact times.
 
 ### Phase 64 · Timeline at scale
-**Needs:** 63 · **Was:** v3 52.4 · **Status:** 📋
-- [ ] Keyframe lanes drawn on a canvas (not one DOM node per keyframe) and virtualised; the scheduler draws the time indicator.
+**Needs:** 63 · **Was:** v3 52.4 · **Status:** 🚧
+- [x] Keyframe lanes drawn on a canvas (not one DOM node per keyframe) and virtualised; the scheduler draws the time indicator. One canvas the size of the lanes' view (sticky, so scrolling never moves it) is repainted for what is in it: property rows paint a diamond per keyframe, a closed layer paints one summary dot per distinct time, selected keyframes are drawn in the selection colour, and diamonds outside the view are skipped (`src/core/timeline/lanes.ts`, `drawLanes`, batched by colour). The list builds DOM rows only for the rows in view plus 8 either side (`visibleWindow`; spacers stand in for the rest). Keyframes are found for a press with `hitKey` (nothing in the DOM), and each property lane carries `data-key-count`, `data-key-times` and `data-key-ids` for tests and screen readers. `animatedIndex` reads every layer's keyframes in one pass over the composition's clips instead of one pass per layer, and the rows' motion badges use the one-pass `motionIndex`. The time indicator was already painted by the scheduler (Phase 61). **Measured:** 200 layers × 20 tracks (3,001 rows, 12,000 keyframes): building the list takes about 35–55 ms once per document change, a repaint 0.1 ms; a scrub moves only the indicator (no React render), so 60 fps holds. The old per-keyframe DOM buttons are gone.
 
 **You'll see:** big compositions stay smooth.
 **Done when:** 200 layers × 20 properties scrub at 60 fps.
 
 ### Phase 65 · Nested & interaction composition tabs
-**Needs:** 64 · **Was:** v3 52.5 · **Status:** 📋
-- [ ] Double-click a precomp bar to open it in a new tab with breadcrumbs. Interaction compositions (hover, press, scroll) appear as their own tabs with the trigger in the tab header.
+**Needs:** 64 · **Was:** v3 52.5 · **Status:** 🚧
+- [x] Double-click a precomp bar to open it in a new tab with breadcrumbs. Interaction compositions (hover, press, scroll) appear as their own tabs with the trigger in the tab header. A tab strip sits above the timeline: **Main**, one tab per interaction composition (named for its clip, with the trigger beside it, such as "Hover on Buy Button"), and a tab for each precomp that has been opened (with a × to close it). A precomp placed in the composition showing has its own row at the bottom of the list: a bar labelled with the precomp's name, small diamonds for every keyframe inside it (mapped through the placement's start and stretch, so the parent shows what changed in the child), and **Open** and **×** buttons; double-clicking the bar opens it. Opening from a bar grows the breadcrumb trail (`Main › Outer › Inner`); a crumb, **Go up** or closing the tab you are on goes back. New: **+ Precomp** (an empty precomp, 2 s or the parent's length, placed in the composition showing), `documentCommands.addPrecomp` and `removeNested`, `addClip(..., { compositionId })` so a keyframe made while a precomp or an interaction composition is open lands in that composition instead of Main. Commands: `timeline.openComposition`, `openBreadcrumb`, `goToParent`, `closeComposition`, `addPrecomp`, `removeNested`. The kernel doesn't play nested placements yet (Phase 9's maths exists; the stage doesn't draw them), so the parent shows the child's keyframes on its bar, not its effect on the stage.
 
 **You'll see:** hover and press animations are timelines you can open and edit.
 **Done when:** a journey opens a precomp, edits it and returns via breadcrumbs; the parent shows the change.
 
 ### Phase 66 · Keyframing
-**Needs:** 65 · **Was:** v3 23.2 · **Status:** 📋
-- [ ] Auto-key record mode (change any property at the playhead → keyframe). Multi-select, box select, align, distribute, scale time, copy and paste across layers.
+**Needs:** 65 · **Was:** v3 23.2 · **Status:** 🚧
+- [x] Auto-key record mode (change any property at the playhead → keyframe). Multi-select, box select, align, distribute, scale time, copy and paste across layers. **● Auto-key** in the timeline toolbar: while it is on, any animatable property a command changes on an existing layer (inspector, canvas drag, nudge, agent) also gets a keyframe at the playhead holding the new value, in the same undo step; a second change at the same moment replaces it. It is a hook inside the document store's commit (`setCommitHook`, `applyAutoKey`), so it covers every way of editing. Keyframes: click one to select it (and put the playhead on it), Shift- or Ctrl-click to add, drag to move the selection together (frame-snapped, stopped at the composition's edges, one undo step), Shift-drag on empty lane to box-select, **Add keyframe** (◆) on a property row, **Copy keys** / **Paste keys** (Ctrl+C / Ctrl+V with timeline focus; one copied layer pastes onto every selected layer, several map in order), **Align to playhead**, **Distribute**, **Slower** / **Faster** (×1.25 / ×0.8 around the first key), **Delete keys** (Delete or Backspace with timeline focus). Commands: `timeline.addKeyframe`, `selectKeyframes`, `selectAllKeyframes`, `moveKeyframes`, `alignKeyframes`, `distributeKeyframes`, `scaleKeyframeTime`, `deleteKeyframes`, `copyKeyframes`, `pasteKeyframes`, `setRecord`.
 
 **You'll see:** turn on record, move things on the canvas or in the inspector, and keyframes appear.
 **Done when:** 3 recorded changes create 3 keyframes, playback matches `evaluate()`, and undo removes them.
 
 ### Phase 67 · Graph editor & easing
-**Needs:** 66 · **Was:** v3 23.3 · **Status:** 📋
-- [ ] Value and speed graphs with bezier handles and spring previews (reusing `CurveEditor.tsx` and `SpringEditor.tsx`), per-keyframe easing, an easing preset strip, and springs edited as Bounce and Time (Law 17).
+**Needs:** 66 · **Was:** v3 23.3 · **Status:** 🚧
+- [x] Value and speed graphs with bezier handles and spring previews (reusing `CurveEditor.tsx` and `SpringEditor.tsx`), per-keyframe easing, an easing preset strip, and springs edited as Bounce and Time (Law 17). A new **Graph Editor** (the bottom tab `curves`, Ctrl+Shift+K, replaces the old Curve Editor tab) draws the curves of the selected keyframes' tracks, or of the selected layers' numeric tracks, as a **Value graph** or a **Speed graph** with the playhead. A keyframe's `ease` is the easing of the segment that ends at it, so selecting a keyframe edits "the easing into" it. The preset strip: **Snappy, Smooth, Bouncy, Lazy** (springs written as Bounce and Time), then Linear, Ease in, Ease out, Ease in and out, Overshoot, and **Hold**. A bezier segment shows two handles that can be dragged (x kept in 0 to 1, y may go past); a spring shows **Bounce** and **Time** sliders; the Pro face adds Stiffness, Damping and Mass as read-only numbers, the Simple face never does. F9 in the timeline is Easy Ease. The new graph editor does not reuse the old `CurveEditor.tsx` / `SpringEditor.tsx` (they are tied to the legacy project store and go with the Sequencer in 68). **A kernel fix came with it:** numeric interpolation clamped the eased progress to 0–1, so springs, `back` curves and handles pulled past 1 could never overshoot; numbers and 3D vectors now overshoot (colours, paths and clip paths still clamp). Commands: `timeline.setKeyframeEase`, `setKeyframeSpring`, `setGraphMode`, `easyEase`.
 
 **You'll see:** a graph editor like After Effects', with named feels (Snappy, Smooth, Bouncy, Lazy).
 **Done when:** curve edits match the kernel's golden values; the Simple face shows no stiffness or damping (label check).
 
 ### Phase 68 · Retire the legacy animation panels
-**Needs:** 67 · **Was:** v3 57.1 (part) · **Closes:** AUD-39 · **Status:** 📋
-- [ ] The Content Browser's Animation panel (tracks in local state) and the legacy Sequencer are deleted or rebuilt on the document. `AnimationSample` is folded into the document model.
+**Needs:** 67 · **Was:** v3 57.1 (part) · **Closes:** AUD-39 · **Status:** 🚧
+- [ ] The Content Browser's Animation panel (tracks in local state) and the legacy Sequencer are deleted or rebuilt on the document. `AnimationSample` is folded into the document model. **Done:** the Content Browser's Animation panel is rebuilt on the document (`src/core/animation/stackAdapter.ts`): it shows the selected layer's clips, every edit (add a preset, trigger, from and to, duration, delay, easing, rename, delete) is a command and one undo step, and it is saved with the project. `INITIAL_ELEMENT_TRACKS` and the panel's local state are deleted, and a unit test greps `src` for the constant. **Not done, so the phase stays 🚧:** the legacy Motion Sequencer panel is still there beside the Layer Timeline (six e2e specs drive it); `AnimationSample` and `useProjectStore.animationSamples` are still the export pipeline's input (the GSAP, Vue and Git exporters, the engine runtime and validator, the Details inspector's old animation editor) and need those paths moved onto document clips first, which belongs with Lane A's static export (49).
 
 **You'll see:** one timeline; every animation edit survives reload and undo.
 **Done when:** a grep gate finds no `INITIAL_ELEMENT_TRACKS` or `AnimationSample` usage; the Phase 3 persistence suite passes.
