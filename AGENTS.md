@@ -20,7 +20,7 @@ You are a **worker** on branch `ui/redesign`. You are building the whole UI from
 - **Use components from other sites** when they raise the quality, only where the license allows it. Log each in `DOCS/UI/COMPONENT_SOURCES.md`, copy it into `src/editor/components/`, add it to the design system page and restyle it to our rules. **Add no new dependencies.**
 - **Style with Tailwind, and every class needs the `ll:` prefix** (`ll:flex`). Convert classes from other sites. No arbitrary values.
 - **Colors only from `DOCS/UI/PALETTE.md`.** Tokens only (`src/editor/styles/tokens.css`), with the `--ll-` prefix. No hardcoded values.
-- Animate only `transform` and `opacity`. Respect `prefers-reduced-motion`. Lazy-load heavy effects.
+- **Motion:** any property may animate (no layout shift for neighbouring content, 60fps). Use real springs from the shared motion engine (ported from Nook: `response` and damping ratio, Smooth/Lively/Bouncy presets). Respect `prefers-reduced-motion`. Lazy-load heavy effects.
 - **Do not edit** `src/core`, `src/compiler`, `src/runtime`, `src/ai`, `src/legacy-editor` or config files, and do not revert changes in them. Request engine changes in `DOCS/UI/INTEGRATION.md`.
 - **Never open a browser by hand.** Use Playwright, headless, for screenshots.
 - **Do not run the full checks.** They run once per phase.

@@ -12,6 +12,8 @@
   --sans:"Geist",system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,monospace;
   --r-sm:4px;--r-md:6px;--r-lg:8px;
   --ruler:18px;
+  /* Motion tokens. The spring engine (ported from Nook) writes the pop curve for the active feel (Smooth, Lively or Bouncy). These defaults hold until it runs. */
+  --ll-ease-pop:ease-out;--ll-dur-pop:200ms;--ll-dur-fade:120ms;
 }
 *{box-sizing:border-box;margin:0;scrollbar-width:none;-ms-overflow-style:none}
 *::-webkit-scrollbar{display:none}
@@ -93,8 +95,7 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .av.more{color:var(--muted)}
 
 /* Menus and dropdowns (shared), appended to body so the header never clips them */
-.menu{position:absolute;z-index:20;background:var(--float);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow);min-width:200px;padding:4px 0;display:none;max-height:70vh;overflow:auto}
-.menu.open{display:block}
+.menu{position:absolute;z-index:20;background:var(--float);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow);min-width:200px;padding:4px 0;display:block;max-height:70vh;overflow:auto;overscroll-behavior:contain;transform-origin:left top}
 .menu.wide{width:320px;min-width:0;padding:0}
 .menu.users{width:240px;min-width:0;padding:4px 0}
 .menu .ico:has(.tpv){width:28px}
@@ -115,7 +116,7 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .uname b{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .uname small{font-size:11px;color:var(--muted)}
 .menu [role=menuitem]{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 12px;color:var(--text2);text-align:left;white-space:nowrap}
-.menu [role=menuitem]:hover,.menu [role=menuitem].on{background:var(--hover);color:var(--text)}
+.menu [role=menuitem]:hover,.menu [role=menuitem].on{color:var(--text)}
 .menu [role=menuitem]:disabled,.menu [role=menuitem]:disabled:hover{background:none;color:var(--muted);cursor:default;opacity:.45}
 .menu.ctx{width:248px;min-width:0;padding:4px;border-radius:var(--r-lg)}
 .menu.ctx [role=menuitem]{padding:0 12px;border-radius:var(--r-sm)}
@@ -135,6 +136,30 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .mini:hover{background:var(--panel)}
 .pubrow{padding:8px 12px 12px}
 .pubrow .btn{height:32px}
+
+/* Shared motion. Open, close, the scroll bump and layout changes are driven by the spring engine (JS), the way Nook drives its island: each overlay is one surface whose size is physics. CSS holds rest states, the highlight and the parent push. Reduced motion: a short opacity fade only. */
+:is(.menu,.vpop,.ppop,.ins){visibility:hidden;pointer-events:none}
+:is(.menu,.vpop,.ppop,.ins).open{visibility:visible;pointer-events:auto}
+:is(.menu,.vpop,.ppop,.ins)[data-lv]{visibility:visible}
+:is(.menu,.vpop,.ppop,.ins)[data-mv]{overflow:hidden!important;max-height:none!important;min-width:0!important}
+.ll-lay{position:relative;isolation:isolate;display:flow-root}
+.vpop>.ll-lay,.ppop>.ll-lay{display:flex;flex-direction:column;flex:none}
+.ins>.ll-lay{display:flex;flex-direction:column;flex:1;min-height:0}
+.ll-hl{position:absolute;left:0;top:0;z-index:-1;width:100%;height:32px;border-radius:var(--r-sm);background:var(--hover);transform-origin:50% 50%;opacity:0;pointer-events:none;will-change:transform;transition:opacity var(--ll-dur-fade) ease-out}
+.ll-hl.show{opacity:1}
+.menu:not(.ctx) .ll-hl,#vpop .ll-hl{border-radius:0}
+.menu.kb .ll-hl{outline:2px solid var(--text);outline-offset:-2px}
+.menu .chv{transition:rotate var(--ll-dur-pop) var(--ll-ease-pop)}
+.menu [role=menuitem].subopen .chv{rotate:90deg}
+.menu.open{transition:scale var(--ll-dur-pop) var(--ll-ease-pop)}
+.menu.open.pushed{scale:.985}
+.menu .ll-lay>:not(.ll-hl){transition:opacity var(--ll-dur-pop) var(--ll-ease-pop)}
+.menu.pushed .ll-lay>:not(.subopen):not(.on):not(.ll-hl){opacity:.6}
+@media (prefers-reduced-motion:reduce){
+  .menu.open,.menu .ll-lay>:not(.ll-hl),.menu .chv{transition:none}
+  .menu.open.pushed{scale:none}
+  .menu.pushed .ll-lay>:not(.subopen):not(.on):not(.ll-hl){opacity:1}
+}
 
 /* ===== PANELS ===== */
 .left{grid-area:left;position:relative;border-right:1px solid var(--border);overflow:visible}
@@ -263,8 +288,7 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .seg.fill{width:100%}.seg.fill button{flex:1;justify-content:center}
 
 /* Insert box: 520x400 above the toolbar (8px gap), no backdrop */
-.ins{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);z-index:4;width:520px;height:400px;display:none;flex-direction:column;background:var(--float);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
-.ins.open{display:flex}
+.ins{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);transform-origin:50% 100%;z-index:4;width:520px;height:400px;display:flex;flex-direction:column;background:var(--float);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
 
 /* AI prompt box: same spot as .ins, above the toolbar */
 .aibox{position:absolute;left:0;bottom:74px;z-index:4;width:480px;display:none;flex-direction:column;gap:8px;padding:12px;background:var(--float);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow)}
@@ -355,14 +379,13 @@ label.dtrow{cursor:pointer}
 .dmg>.dsub.dgn{font-weight:500;color:var(--text2)}
 
 /* View popover (upward) */
-.vpop{position:absolute;z-index:8;display:none;flex-direction:column;width:280px;max-height:calc(100% - 120px);overflow:auto;background:var(--float);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow);padding:4px 0}
-.vpop.open{display:flex}
+.vpop{position:absolute;z-index:8;display:flex;flex-direction:column;width:280px;max-height:calc(100% - 120px);overflow:auto;overscroll-behavior:contain;background:var(--float);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow);padding:4px 0;transform-origin:left top}
 .vact{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;color:var(--text2);text-align:left}
-.vact:hover{background:var(--hover);color:var(--text)}
+.vact:hover{color:var(--text)}
 .vact svg{width:16px;height:16px}
 .vgrp{padding:12px 12px 4px}
 .vi{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 12px;color:var(--text2);text-align:left}
-.vi:hover{background:var(--hover);color:var(--text)}
+.vi:hover{color:var(--text)}
 .vi span{flex:1;min-width:0}
 .vi i{position:relative;width:28px;height:16px;flex:none;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--canvas)}
 .vi i::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;background:var(--muted);border-radius:1px}
@@ -528,8 +551,7 @@ label.dtrow{cursor:pointer}
 .rr.drag{opacity:.5}
 .rr.dbef{box-shadow:0 -2px 0 var(--ctl)}
 .rr.daft{box-shadow:0 2px 0 var(--ctl)}
-.ppop{position:fixed;z-index:60;width:248px;display:none;flex-direction:column;background:var(--float);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:auto;color:var(--text)}
-.ppop.open{display:flex}
+.ppop{position:fixed;z-index:60;width:248px;display:flex;flex-direction:column;background:var(--float);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:auto;color:var(--text);transform-origin:100% 0}
 .phead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 8px 4px 16px}
 .phead .pt{font-size:13px;font-weight:500}
 .phead .ib{width:24px;height:24px}.phead .ib svg{width:14px;height:14px}
@@ -931,6 +953,7 @@ label.dtrow{cursor:pointer}
     <button class="vi" aria-pressed="false" data-opt="checker"><span>Checkerboard</span><i></i></button>
     <div class="vgrp micro">Appearance</div>
     <div class="thgrp" id="themeseg"><div class="vgrp micro">Light</div><div class="seg fill" role="group" aria-label="Light themes" id="themeseg-l"><button data-th="paper" aria-pressed="false">Paper</button><button data-th="white" aria-pressed="false">White</button><button data-th="warm" aria-pressed="false">Warm</button><button data-th="lilac" aria-pressed="false">Lilac</button></div><div class="vgrp micro">Dark</div><div class="seg fill" role="group" aria-label="Dark themes" id="themeseg-d"><button data-th="noir" aria-pressed="false">Noir</button><button data-th="dark" aria-pressed="false">Dark</button><button data-th="graphite" aria-pressed="false">Graphite</button><button data-th="darkroom" aria-pressed="false">Darkroom</button><button data-th="plum" aria-pressed="false">Plum</button></div></div>
+    <div class="vgrp micro">Motion feel</div><div class="vsub"><div class="seg fill" id="feelseg" role="group" aria-label="Motion feel"><button data-feel="smooth" aria-pressed="true">Smooth</button><button data-feel="lively" aria-pressed="false">Lively</button><button data-feel="bouncy" aria-pressed="false">Bouncy</button></div></div>
     <div class="vgrp micro">Canvas</div>
     <button class="vi" aria-pressed="false" data-opt="inspect"><span>Inspect mode</span><i></i></button>
     <button class="vi" aria-pressed="true" data-opt="pan"><span>Canvas pan</span><i></i></button>
@@ -947,7 +970,7 @@ label.dtrow{cursor:pointer}
     <div class="vgrp micro">Snapping</div>
     <button class="vi" aria-pressed="true" data-opt="snapgrid"><span>Snap to grid</span><i></i></button>
     <button class="vi" aria-pressed="true" data-opt="smart"><span>Smart guides</span><i></i></button>
-    <div class="vsub"><div class="field"><label>PX</label><input class="mono" value="6" aria-label="Snap threshold"></div></div>
+    <div class="vsub"><div class="field"><label>PX</label><input class="mono" value="6" aria-label="Snap threshold"></div></div><i class="ll-hl" aria-hidden="true"></i>
   </div>
 </div>
 <div class="menu" id="menu" role="menu"></div>
@@ -1108,8 +1131,10 @@ label.dtrow{cursor:pointer}
   function popTitle(row){return row.closest('.dsec').querySelector('h3').textContent}
   function rebuildPop(focusF){
     if(!openRow)return;
-    POP.querySelector('.pbody').innerHTML=popBody(openRow.dataset.k,rs(openRow));
-    refresh(openRow);
+    POP.sf.relayout(function(){
+      POP.querySelector('.pbody').innerHTML=popBody(openRow.dataset.k,rs(openRow));
+      refresh(openRow);
+    });
     if(focusF){var f=POP.querySelector('[data-f="'+focusF+'"]');if(f)f.focus()}
   }
   function setOpen(row,on){row.classList.toggle('open',on);var l=row.querySelector('[data-lead]');if(l)l.setAttribute('aria-expanded',String(on))}
@@ -1124,14 +1149,16 @@ label.dtrow{cursor:pointer}
   function openPop(row){
     if(app.classList.contains('rc'))return;
     if(openRow&&openRow!==row)setOpen(openRow,false);
-    POP.innerHTML='<div class="phead"><span class="pt">'+popTitle(row)+'</span><button class="ib" data-pclose aria-label="Close" title="Close"><svg><use href="#x"/></svg></button></div><div class="pbody">'+popBody(row.dataset.k,rs(row))+'</div>';
+    POP.sf.reset();
+    POP.lay.innerHTML='<div class="phead"><span class="pt">'+popTitle(row)+'</span><button class="ib" data-pclose aria-label="Close" title="Close"><svg><use href="#x"/></svg></button></div><div class="pbody">'+popBody(row.dataset.k,rs(row))+'</div>';
     POP.setAttribute('aria-label',popTitle(row)+' settings');
-    openRow=row;setOpen(row,true);POP.classList.add('open');refresh(row);placePop();
+    openRow=row;setOpen(row,true);refresh(row);placePop();
+    surfOpen(POP,{right:true,from:seedOf(row.querySelector('[data-lead]')||row)});
   }
   function closePop(focus){
     if(!openRow)return;
     var row=openRow,l=row.querySelector('[data-lead]');
-    setOpen(row,false);POP.classList.remove('open');openRow=null;
+    setOpen(row,false);POP.sf.leave();openRow=null;
     if(focus&&l&&document.contains(l))l.focus();
   }
   function refresh(row,src){
@@ -1239,7 +1266,7 @@ label.dtrow{cursor:pointer}
     var on=ins.classList.contains('open');
     closeAll();
     if(on)return;
-    insRender();ins.classList.add('open');plusbtn.setAttribute('aria-expanded','true');insin.focus();
+    ins.sf.reset();insRender();surfOpen(ins,{up:true,from:seedOf(plusbtn)});plusbtn.setAttribute('aria-expanded','true');insin.focus();
   }
   insin.addEventListener('input',insRender);
   /* AI prompt box (/ or #aibtn) and expanded chat view in the right panel. No real AI: replies are fixed. */
@@ -1301,27 +1328,383 @@ label.dtrow{cursor:pointer}
   insr.addEventListener('dragstart',function(){setTimeout(closeAll,0)});
   function pageHTML(){return ['Home','Pricing','About'].map(function(p){return '<button role="menuitem" data-page="'+p+'">'+p+'</button>'}).join('')+'<button role="menuitem" data-page="Blank">Blank</button><div class="hl"></div><button role="menuitem" data-newpage>+ New page</button><div class="hl"></div><button role="menuitem" data-pact="rename">Rename</button><button role="menuitem" data-pact="dup">Duplicate</button><button role="menuitem" data-pact="del">Delete</button><div class="hl"></div><button role="menuitem" data-pact="routes">Pages &amp; routes</button>'}
   function shipHTML(){
-    var rows=issues.length?issues.map(function(i){return '<div class="srow"><span>'+i.t+'</span><button class="mini" data-act="fix" data-id="'+i.id+'" aria-label="Fix: '+i.t+'">Fix</button></div>'}).join(''):'<div class="srow muted">No issues left</div>';
-    return rows+'<div class="hl"></div><button role="menuitem" data-act="preview">Preview link</button><button role="menuitem" data-act="share">Share</button><div class="pubrow"><button class="btn strong wfull" data-act="publish"'+(issues.length?' disabled':'')+'>Publish</button></div>';
+    var rows=issues.length?issues.map(function(i){return '<div class="srow" data-flip="i'+i.id+'"><span>'+i.t+'</span><button class="mini" data-act="fix" data-id="'+i.id+'" aria-label="Fix: '+i.t+'">Fix</button></div>'}).join(''):'<div class="srow muted" data-flip="none">No issues left</div>';
+    return rows+'<div class="hl"></div><button role="menuitem" data-flip="preview" data-act="preview">Preview link</button><button role="menuitem" data-flip="share" data-act="share">Share</button><div class="pubrow" data-flip="pub"><button class="btn strong wfull" data-act="publish"'+(issues.length?' disabled':'')+'>Publish</button></div>';
   }
 
+  /* Spring engine ported from Nook (the owner's own product). Spring, springEase and springAnim are Nook's (spring.ts, motion.ts). The preset table is src/lib/motionPresets.ts and SP, MOT and EXIT are the island block of src/lib/tokens.ts, value for value. Surf is IslandEngine (engine.ts): every overlay (menus, submenus, View options, Insert, Settings popover) is one surface whose width, height, radius and press scale are springs, stepped by one frame loop (loop.ts) that sleeps at rest and written straight to the element. Items follow layerMotion.ts and the card rows of Card.tsx. Wheel past an end follows useIslandDeck.ts. Layout changes follow flipCard. */
+  var MOTION_PRESETS={
+    smooth:{rows:[.5,.72],stagger:45,travel:[16,6],exit:170,glideW:[.44,.78],glideH:[.46,.8],flip:[.46,.76],lock:380,squash:0,endBump:60,rowScale:'0.96',flipKick:0,pop:[.42,.6],popStagger:30,bW:[.36,.55],bH:[.42,.56],wind:10,enterKick:150,exitSquash:70,side:[[.5,.84],[.46,.82],560]},
+    lively:{rows:[.34,.55],stagger:30,travel:[22,8],exit:120,glideW:[.34,.58],glideH:[.36,.55],flip:[.34,.58],lock:280,squash:150,endBump:140,rowScale:'0.96',flipKick:0,pop:[.32,.5],popStagger:22,bW:[.3,.48],bH:[.34,.46],wind:12,enterKick:220,exitSquash:110,side:[[.4,.66],[.36,.62],480]},
+    bouncy:{rows:[.28,.4],stagger:22,travel:[26,10],exit:90,glideW:[.28,.42],glideH:[.3,.38],flip:[.28,.42],lock:220,squash:260,endBump:230,rowScale:'0.92 1.14',flipKick:140,pop:[.26,.38],popStagger:16,bW:[.26,.38],bH:[.28,.34],wind:16,enterKick:300,exitSquash:160,side:[[.32,.5],[.3,.45],420]}
+  };
+  var SP={width:[.32,.7],height:[.36,.8],press:[.28,.6]};
+  var MOT={windUpMs:70,windUpH:2,entryBouncyMs:1000,exitBouncyMs:600,pressScale:.96,maxStep:.032,substeps:4};
+  var EXIT={ms:120,blur:8,scale:.85,easing:'cubic-bezier(.4,0,1,1)'};
+  var feelKey='smooth',REDUCE=matchMedia('(prefers-reduced-motion: reduce)');
+  function mo(){return MOTION_PRESETS[feelKey]}
+  function reduced(){return REDUCE.matches}
+  /* Spring: mass 1, response (seconds) and damping ratio. k=(2pi/response)^2, c=4pi*zeta/response. Retargeting keeps position and velocity. */
+  function Spring(x,spec){this.x=x;this.v=0;this.to=x;this.tune(spec)}
+  Spring.prototype.tune=function(sp){this.k=Math.pow(2*Math.PI/sp[0],2);this.c=4*Math.PI*sp[1]/sp[0]};
+  Spring.prototype.step=function(dt){var a=-this.k*(this.x-this.to)-this.c*this.v;this.v+=a*dt;this.x+=this.v*dt};
+  Spring.prototype.atRest=function(){return Math.abs(this.x-this.to)<.01&&Math.abs(this.v)<.05};
+  Spring.prototype.snap=function(){this.x=this.to;this.v=0};
+  Spring.prototype.jump=function(to){this.to=to;this.snap()};
+  function stepAll(list,dt,n){var h=dt/n,i,j;for(i=0;i<n;i++)for(j=0;j<list.length;j++)list[j].step(h)}
+  function settleAll(list){var i;for(i=0;i<list.length;i++)if(!list[i].atRest())return false;for(i=0;i<list.length;i++)list[i].snap();return true}
+  /* The one frame loop: runs only while a sim has a spring that is not at rest. A sim is {sp:[springs],apply(),rest()}. Each frame: step, settle, paint. */
+  var SIMS=[],loopRaf=0,loopT=0;
+  function simAdd(sim){if(SIMS.indexOf(sim)<0)SIMS.push(sim);if(!loopRaf){loopT=performance.now();loopRaf=requestAnimationFrame(loop)}}
+  function loop(now){
+    var dt=Math.min(MOT.maxStep,Math.max(0,(now-loopT)/1000)),cur=SIMS;
+    loopT=now;SIMS=[];
+    cur.forEach(function(s){
+      var done;
+      stepAll(s.sp,dt,MOT.substeps);
+      done=settleAll(s.sp);
+      if(!done&&SIMS.indexOf(s)<0)SIMS.push(s);
+      s.apply();
+      if(done&&s.rest)s.rest();
+    });
+    loopRaf=SIMS.length?requestAnimationFrame(loop):0;
+  }
+  /* A mass-1 spring from 0 to 1 sampled at 60 Hz into a CSS linear() easing, cached per pair */
+  var EASES={};
+  function springEase(response,ratio){
+    var key=response+'/'+ratio;if(EASES[key])return EASES[key];
+    var k=Math.pow(2*Math.PI/response,2),c=4*Math.PI*ratio/response,x=0,v=0,pts=[0],dt=1/600,t=0,next=1/60;
+    while(t<2){
+      v+=(-k*(x-1)-c*v)*dt;x+=v*dt;t+=dt;
+      if(t>=next){pts.push(+x.toFixed(4));next+=1/60;if(Math.abs(x-1)<.01&&Math.abs(v)<.05)break}
+    }
+    pts[pts.length-1]=1;
+    return EASES[key]={easing:'linear('+pts.join(', ')+')',duration:Math.round((pts.length-1)/60*1000)};
+  }
+  /* Animates with a spring curve. Reduced motion: a 120 ms opacity fade. */
+  function springAnim(el,kf,response,ratio,extra){
+    var k,o,e;
+    extra=extra||{};
+    if(typeof el.animate!=='function')return null;
+    if(reduced()){o={duration:120,easing:'ease-out',fill:'backwards'};for(k in extra)o[k]=extra[k];return el.animate([{opacity:0},{opacity:1}],o)}
+    e=springEase(response,ratio);o={duration:e.duration,easing:e.easing};
+    for(k in extra)o[k]=extra[k];
+    return el.animate(kf,o);
+  }
+  function cancelAll(el){el.getAnimations().forEach(function(a){a.cancel()})}
+
+  /* Items of a surface (layerMotion.ts, the card rows of Card.tsx). A row is a block: the run of items between two separators, or one ship or people row. Rows arrive from below with the preset's travel, scale and stagger on a real spring, plus a 240 ms opacity and blur fade. */
+  var BLOCK='.hl,.mh,.vgrp,.grp,.srow,.pubrow,.urow';
+  function enterRows(layer,dir){
+    var p=mo(),g=0;
+    [].slice.call(layer.children).forEach(function(c,i){
+      var d;
+      if(c.classList.contains('ll-hl')||c.offsetParent===null)return;
+      if(i&&c.matches(BLOCK))g++;
+      cancelAll(c);
+      d=40+g*p.stagger;
+      springAnim(c,[{translate:'0 '+dir*(p.travel[0]+g*p.travel[1])+'px',scale:p.rowScale},{translate:'0 0',scale:'1'}],p.rows[0],p.rows[1],{delay:d,fill:'backwards'});
+      c.animate([{opacity:0,filter:'blur(6px)'},{opacity:1,filter:'blur(0px)'}],{duration:240,easing:'cubic-bezier(.2,.8,.3,1)',delay:d,fill:'backwards'});
+    });
+  }
+  /* The old items blur out in place */
+  function exitItems(layer){
+    [].slice.call(layer.children).forEach(function(c){
+      cancelAll(c);
+      c.animate([{opacity:1,filter:'blur(0px)'},{opacity:0,filter:'blur('+EXIT.blur+'px)',scale:EXIT.scale}],{duration:EXIT.ms,easing:EXIT.easing,fill:'forwards'});
+    });
+  }
+
+  /* Surf is IslandEngine for one overlay. W, H, R and P are the island's springs. G and S are the side pill's gap and scale (BG, BS) and drive a submenu only. The layer inside is laid out at the surface's final size and clipped by it, pinned to the edge the surface grows from, so the box stretches around the content. */
+  function Surf(el,lay){
+    var s=this;
+    s.el=el;s.lay=lay;
+    s.W=new Spring(0,SP.width);s.H=new Spring(0,SP.height);s.R=new Spring(0,SP.height);s.P=new Spring(1,SP.press);
+    s.G=new Spring(0,SP.width);s.S=new Spring(1,SP.width);
+    s.size={w:0,h:0};s.goal={w:0,h:0};s.from={w:0,h:0,r:0};
+    s.cw=0;s.ch=0;s.sh=0;s.k=1;s.lock=0;s.feelT=0;s.timers=[];
+    s.up=false;s.right=false;s.slide=0;s.mv=false;s.wind=false;
+    s.sim={sp:[s.W,s.H,s.R,s.P,s.G,s.S],apply:function(){if(s.mv)s.paint()},rest:function(){s.rest()}};
+  }
+  var SF=Surf.prototype;
+  SF.later=function(ms,fn){var s=this,t=setTimeout(function(){s.timers.splice(s.timers.indexOf(t),1);fn()},ms);s.timers.push(t)};
+  SF.live=function(){return this.el.classList.contains('open')||this.el.hasAttribute('data-lv')};
+  /* Natural size and content box, read with the surface out of motion mode (and put back after) */
+  SF.measure=function(){
+    var s=this,el=s.el,st=el.style,ls=s.lay.style,keep=null,cs,m;
+    if(s.mv){keep=[st.width,st.height,st.borderRadius,st.translate,st.scale,ls.cssText];el.removeAttribute('data-mv');st.width=st.height=st.borderRadius=st.translate=st.scale='';ls.cssText=''}
+    cs=getComputedStyle(el);
+    m={w:el.offsetWidth,h:el.offsetHeight,r:parseFloat(cs.borderTopLeftRadius)||0,
+      cw:el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),
+      ch:el.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),
+      sh:s.lay.scrollHeight};
+    if(keep){el.setAttribute('data-mv','');st.width=keep[0];st.height=keep[1];st.borderRadius=keep[2];st.translate=keep[3];st.scale=keep[4];ls.cssText=keep[5]}
+    return m;
+  };
+  /* Wind-up and kick velocities scale with the menu: proportional to its height against Nook's 140 px card, never above Nook's own values (so small menus do not wobble more than the island) */
+  SF.fit=function(m){var s=this;s.size={w:m.w,h:m.h};s.goal={w:m.w,h:m.h};s.cw=m.cw;s.ch=m.ch;s.sh=m.sh;s.k=Math.min(1,m.h/140)};
+  SF.begin=function(){var s=this,ls=s.lay.style;s.mv=true;s.el.setAttribute('data-mv','');ls.width=s.cw+'px';ls.height=Math.max(s.ch,s.sh)+'px';ls.flex='none'};
+  SF.end=function(){var s=this,st=s.el.style;s.mv=false;s.el.removeAttribute('data-mv');st.width=st.height=st.borderRadius=st.translate=st.scale='';s.lay.style.cssText=''};
+  /* Into motion mode at the natural size, for a push or a retarget on a surface at rest */
+  SF.wake=function(){
+    var s=this,m;
+    if(s.mv)return true;
+    if(!s.live())return false;
+    m=s.measure();s.fit(m);
+    s.W.jump(m.w);s.H.jump(m.h);s.R.jump(m.r);
+    s.begin();s.paint();
+    return true;
+  };
+  /* Per frame: only writes. The surface (size, radius, scale, the edge it stays on) and its layer (pinned to the same edge, so content does not move with the stretch). */
+  SF.paint=function(){
+    var s=this,st=s.el.style,w=Math.max(0,s.W.x),h=Math.max(0,s.H.x),dx=(s.right?s.size.w-w:0)+s.G.x,sc=s.P.x*s.S.x;
+    st.width=w+'px';st.height=h+'px';st.borderRadius=Math.max(0,s.R.x)+'px';
+    st.translate=dx?dx+'px 0':'';
+    st.scale=sc===1?'':String(sc);
+    s.lay.style.translate=(s.right?w-s.size.w:0)+'px '+(s.up?h-s.size.h:0)+'px';
+  };
+  SF.rest=function(){var s=this;if(s.el.hasAttribute('data-lv')||s.P.to!==1)return;s.end()};
+  SF.settleOrRun=function(){var s=this;if(s.sim.sp.some(function(x){return x.x!==x.to||x.v!==0}))simAdd(s.sim)};
+  /* Retune the shape springs (bouncier by default), back to normal after ms */
+  SF.feel=function(ms,w,h){
+    var s=this,p=mo();
+    s.W.tune(w||p.bW);s.H.tune(h||p.bH);
+    clearTimeout(s.feelT);
+    s.feelT=setTimeout(function(){s.W.tune(SP.width);s.H.tune(SP.height)},ms);
+  };
+  /* A pending wind-up: the shape first draws in a little (70 ms), then releases toward the goal and bulges */
+  SF.shapeTo=function(size,radius){
+    var s=this,p=mo();
+    s.goal=size;s.R.to=radius;
+    if(s.wind&&!reduced()){
+      s.wind=false;
+      s.W.to=s.W.x-p.wind*s.k;s.H.to=s.H.x-MOT.windUpH;
+      s.later(MOT.windUpMs,function(){s.W.to=s.goal.w;s.H.to=s.goal.h;s.H.v+=mo().enterKick*s.k;simAdd(s.sim)});
+      return;
+    }
+    s.W.to=size.w;s.H.to=size.h;
+  };
+  /* Entering: a wind-up, then a bouncier release (set up for the next shapeTo) */
+  SF.punch=function(){this.feel(MOT.entryBouncyMs);this.wind=true};
+  /* Leaving: the shape squashes as it contracts */
+  SF.squash=function(){var s=this;s.feel(MOT.exitBouncyMs);s.H.v-=mo().exitSquash*s.k;s.settleOrRun()};
+  /* Soft width and height springs, no wind-up (layout changes inside the surface) */
+  SF.glide=function(){var s=this,p=mo();if(!s.wake()||reduced())return;s.wind=false;s.feel(1000,p.glideW,p.glideH)};
+  /* Past either end of the content the shape bumps (useIslandDeck: endBump) */
+  SF.endBump=function(dir){var s=this,p=mo();if(reduced()||!p.endBump||!s.wake())return;s.H.v+=(dir>0?1:-1)*p.endBump*s.k;simAdd(s.sim)};
+  /* Push the shape. Velocities in px/s. */
+  SF.bump=function(b){var s=this;if(reduced()||!s.wake())return;s.W.v+=b.w||0;s.H.v+=b.h||0;simAdd(s.sim)};
+  /* Press: the surface squishes under the pointer and springs back */
+  SF.press=function(down){var s=this;if(reduced()||!s.wake())return;s.P.to=down?MOT.pressScale:1;s.settleOrRun()};
+  SF.reset=function(){
+    var s=this,i=SIMS.indexOf(s.sim);
+    s.timers.forEach(clearTimeout);s.timers=[];clearTimeout(s.feelT);
+    if(i>=0)SIMS.splice(i,1);
+    s.el.getAnimations({subtree:true}).forEach(function(a){a.cancel()});
+    s.el.classList.remove('open');s.el.removeAttribute('data-lv');
+    s.end();
+    s.W.tune(SP.width);s.H.tune(SP.height);s.R.tune(SP.height);s.G.tune(SP.width);s.S.tune(SP.width);
+    s.W.v=s.H.v=s.R.v=0;
+    s.P.jump(1);s.G.jump(0);s.S.jump(1);
+    s.wind=false;s.slide=0;
+  };
+  /* Show a surface: items enter, the shape starts at the seed (the trigger, or a row-sized box) and springs out with Nook's punch and wind-up. Call reset() first and position the element first: this reads its natural size. o: {up, right, from:{w,h,r}, slide:+1|-1 for a submenu}. */
+  SF.open=function(o){
+    var s=this,el=s.el,p=mo(),m,f;
+    o=o||{};
+    s.up=!!o.up;s.right=!!o.right;s.slide=o.slide||0;
+    m=s.measure();s.fit(m);
+    f=o.from||{w:32,h:32,r:m.r};s.from=f;
+    el.classList.add('open');
+    if(reduced()){el.animate([{opacity:0},{opacity:1}],{duration:120,easing:'ease-out'});return}
+    s.begin();
+    s.W.jump(f.w);s.H.jump(f.h);s.R.jump(f.r);
+    if(s.slide){s.G.tune(p.side[0]);s.S.tune(p.side[1]);s.G.jump(0);s.G.x=-s.slide*(f.w+4);s.S.jump(1);s.S.x=.5}
+    s.paint();
+    enterRows(s.lay,1);
+    s.punch();
+    s.shapeTo(s.size,m.r);
+    s.settleOrRun();
+  };
+  /* Hide a surface: items blur out in place, the shape squashes back to the seed, then it is gone after exitBouncyMs (leaveLayer + squash) */
+  SF.leave=function(){
+    var s=this,el=s.el,f;
+    if(!el.classList.contains('open'))return;
+    el.classList.remove('open');
+    el.setAttribute('data-lv','');
+    if(reduced()){el.animate([{opacity:1},{opacity:0}],{duration:120,easing:'ease-out',fill:'forwards'});s.later(120,function(){s.reset()});return}
+    s.timers.forEach(clearTimeout);s.timers=[];
+    if(!s.wake())return;
+    f=s.from;s.wind=false;
+    exitItems(s.lay);
+    s.shapeTo(f,f.r);
+    if(s.slide){s.G.to=-s.slide*(f.w+4);s.S.to=.5}
+    s.squash();
+    el.animate([{opacity:1},{opacity:0}],{duration:MOT.exitBouncyMs,easing:EXIT.easing,fill:'forwards'});
+    s.later(MOT.exitBouncyMs,function(){s.reset()});
+  };
+  /* A layout change inside an open surface (flipCard): glide, change, spring to the new size, FLIP the rows */
+  SF.relayout=function(change){
+    var s=this,snap,m;
+    if(reduced()||!s.el.classList.contains('open')){change();return}
+    snap=measureFlip(s.lay);
+    s.glide();
+    change();
+    m=s.measure();s.fit(m);
+    s.lay.style.width=m.cw+'px';s.lay.style.height=Math.max(m.ch,m.sh)+'px';
+    s.shapeTo(s.size,m.r);
+    s.settleOrRun();
+    playFlip(s,snap);
+  };
+  /* FLIP: rows keyed by data-flip spring from their old place to the new one, new rows grow in */
+  function measureFlip(root){
+    var before={};
+    $$('[data-flip]',root).forEach(function(e){before[e.dataset.flip]=e.getBoundingClientRect()});
+    return {box0:root.getBoundingClientRect(),before:before};
+  }
+  function playFlip(s,snap){
+    var p=mo(),root=s.lay,box1=root.getBoundingClientRect();
+    if(p.flipKick)s.bump({h:p.flipKick,w:-p.flipKick*.5});
+    $$('[data-flip]',root).forEach(function(el){
+      var a=el.getBoundingClientRect(),b=snap.before[el.dataset.flip],dx,dy;
+      if(!b){springAnim(el,[{opacity:0,scale:'.8',filter:'blur(4px)'},{opacity:1,scale:'1',filter:'blur(0px)'}],p.flip[0],p.flip[1]);return}
+      dx=b.left-snap.box0.left-(a.left-box1.left);dy=b.top-snap.box0.top-(a.top-box1.top);
+      if(Math.abs(dx)+Math.abs(dy)<.5)return;
+      springAnim(el,[{translate:dx+'px '+dy+'px'},{translate:'0 0'}],p.flip[0],p.flip[1]);
+    });
+  }
+  /* A surface wraps its content in one layer. Menus fill the layer; the rest move their children into it. */
+  function surf(el){
+    var lay=document.createElement('div');
+    lay.className='ll-lay';
+    while(el.firstChild)lay.appendChild(el.firstChild);
+    el.appendChild(lay);
+    el.lay=lay;el.sf=new Surf(el,lay);
+    wheelAttach(el);
+  }
+  /* Wheel (useIslandDeck): over a surface with nothing left to scroll, or scrolled to the end, the shape bumps. Deltas under 4 and wheel events inside the lock are ignored. */
+  function canScroll(n,d){
+    var max=n.scrollHeight-n.clientHeight,oy;
+    if(max<=1)return false;
+    oy=getComputedStyle(n).overflowY;
+    if(oy!=='auto'&&oy!=='scroll')return false;
+    return d<0?n.scrollTop>0:n.scrollTop<max-1;
+  }
+  function wheelAttach(root){
+    root.addEventListener('wheel',function(e){
+      var s=root.sf,d=e.deltaY*(e.deltaMode===1?16:1),n;
+      if(!d||!root.classList.contains('open'))return;
+      for(n=e.target;n&&n!==root.parentNode;n=n.parentNode)if(n.nodeType===1&&canScroll(n,d))return;
+      e.preventDefault();
+      if(Date.now()<s.lock||Math.abs(d)<4)return;
+      s.endBump(d>0?1:-1);
+      s.lock=Date.now()+mo().lock;
+    },{passive:false});
+  }
+  /* Press (engine.press): the pressed row, or the surface when its background is pressed, springs to pressScale and back on release */
+  var PRESS='[role=menuitem],.vi,.vact,.card,.mini,.btn',held=[];
+  function pressEl(el,down){
+    var pr=el._pr;
+    if(!pr){pr=el._pr={P:new Spring(1,SP.press)};pr.sim={sp:[pr.P],apply:function(){el.style.scale=pr.P.x===1?'':String(pr.P.x)}}}
+    pr.P.to=down?MOT.pressScale:1;
+    simAdd(pr.sim);
+  }
+  document.addEventListener('pointerdown',function(e){
+    var root=e.target.closest('.menu,.vpop,.ppop,.ins'),t;
+    if(!root||reduced())return;
+    t=e.target.closest(PRESS);
+    if(t&&root.contains(t)){if(!t.disabled){pressEl(t,1);held.push(function(){pressEl(t,0)})}}
+    else if(e.target===root||e.target===root.lay){root.sf.press(true);held.push(function(){root.sf.press(false)})}
+  });
+  ['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,function(){held.splice(0).forEach(function(f){f()})})});
+
+  var ROW='[role=menuitem],.vi,.vact';
+  /* Replaces a menu's content and keeps its highlight at the end */
+  function fill(root,html){root.lay.innerHTML=html+'<i class="ll-hl" aria-hidden="true"></i>';root.hlRow=null}
+  function hlHide(root){var hl=$('.ll-hl',root);if(hl)hl.classList.remove('show');root.hlRow=null;$$('.ll-lay>.on',root).forEach(function(x){x.classList.remove('on')})}
+  /* The highlight is two springs (top, height) with the preset's glide values. Retargeting keeps velocity, so it carries momentum between rows and rebounds on arrival. */
+  function hsOf(root,hl){
+    var hs=root.hs;
+    if(!hs||hs.el!==hl){
+      var p=mo();
+      hs=root.hs={el:hl,y:new Spring(0,p.glideH),h:new Spring(32,p.glideW)};
+      hs.sim={sp:[hs.y,hs.h],apply:function(){hlApply(root)}};
+    }
+    return hs;
+  }
+  function hlApply(root){
+    var hs=root.hs;
+    hs.el.style.height=Math.max(0,hs.h.x).toFixed(2)+'px';
+    hs.el.style.transform='translate3d(0,'+hs.y.x.toFixed(2)+'px,0)';
+  }
+  function hlMove(root,row,instant){
+    var hl=$('.ll-hl',root);
+    if(!hl||!row||row.disabled)return;
+    var hs=hsOf(root,hl),p=mo(),first=!hl.classList.contains('show');
+    root.hlRow=row;
+    hl.style.left=row.offsetLeft+'px';hl.style.width=row.offsetWidth+'px';
+    hs.y.tune(p.glideH);hs.h.tune(p.glideW);
+    hs.y.to=row.offsetTop;hs.h.to=row.offsetHeight;
+    if(first&&root.hlFrom&&!reduced()){hs.y.x=root.hlFrom.y;hs.y.v=0;hs.h.x=root.hlFrom.h;hs.h.v=0}
+    else if(instant||first||reduced()){hs.y.snap();hs.h.snap()}
+    root.hlFrom=null;
+    hl.classList.add('show');
+    hlApply(root);simAdd(hs.sim);
+  }
+  /* The seed a surface grows from: the trigger's box */
+  function seedOf(el){var r=el.getBoundingClientRect();return {w:r.width,h:r.height,r:parseFloat(getComputedStyle(el).borderTopLeftRadius)||0}}
+  /* Opens a menu, popover or the Insert panel */
+  function surfOpen(el,o){
+    if($('.ll-hl',el)){var on=$('.ll-lay>.on',el);if(on)hlMove(el,on,true);else hlHide(el)}
+    el.sf.open(o);
+  }
+  /* Safe triangle: while a submenu is open, a pointer heading toward it must not switch rows or close it */
+  var ptr={x:0,y:0,px:0,py:0,t:0};
+  document.addEventListener('mousemove',function(e){
+    var n=performance.now();
+    if(n-ptr.t>45){ptr.px=ptr.x;ptr.py=ptr.y;ptr.t=n}
+    ptr.x=e.clientX;ptr.y=e.clientY;
+  },{passive:true});
+  function inTri(){
+    var z=sbm.sf.size,l=parseFloat(sbm.style.left)||0,top=parseFloat(sbm.style.top)||0,bot=top+z.h,ex=sbm.classList.contains('flip')?l+z.w:l,cx=ptr.x,cy=ptr.y;
+    function sg(x1,y1,x2,y2,x3,y3){return (x1-x3)*(y2-y3)-(x2-x3)*(y1-y3)}
+    var d1=sg(cx,cy,ptr.px,ptr.py,ex,top),d2=sg(cx,cy,ex,top,ex,bot),d3=sg(cx,cy,ex,bot,ptr.px,ptr.py);
+    return !((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0));
+  }
+  /* The active feel writes the pop curve CSS uses for the chevron and the parent push */
+  function applyFeel(k){
+    if(!MOTION_PRESETS[k])k='smooth';
+    feelKey=k;
+    var p=mo(),rs=document.documentElement.style,e=springEase(p.pop[0],p.pop[1]);
+    rs.setProperty('--ll-ease-pop',e.easing);rs.setProperty('--ll-dur-pop',e.duration+'ms');
+    $$('#feelseg [data-feel]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.feel===k))});
+    try{localStorage.setItem('ll-feel',k)}catch(_){}
+  }
+  [mm,sbm,vp,ins,POP].forEach(surf);
+  var feelSaved='smooth';try{feelSaved=localStorage.getItem('ll-feel')||'smooth'}catch(_){}
+  applyFeel(feelSaved);
   function closeAll(){
-    mm.classList.remove('open');vp.classList.remove('open');ins.classList.remove('open');aibox.classList.remove('open');aibtn.setAttribute('aria-pressed','false');mm.anchor=null;closeSub();closePop(false);
+    [mm,vp,ins].forEach(function(x){x.sf.leave()});
+    mm.classList.remove('pushed');
+    aibox.classList.remove('open');aibtn.setAttribute('aria-pressed','false');mm.anchor=null;closeSub();closePop(false);
     $$('[aria-haspopup][aria-expanded="true"]').forEach(function(x){x.setAttribute('aria-expanded','false')});
   }
   function openMenu(anchor,html,o){
     o=o||{};
     if(mm.anchor===anchor&&mm.classList.contains('open')){closeAll();return}
     closeAll();
-    mm.className='menu open'+(o.cls?' '+o.cls:'');
+    mm.sf.reset();
+    mm.className='menu'+(o.cls?' '+o.cls:'');
     mm.kind=o.kind||'';
-    if(o.groups)rndr(mm,o.groups);else mm.innerHTML=html;
+    if(o.groups)rndr(mm,o.groups);else fill(mm,html);
     mm.anchor=anchor;
+    mm.style.transformOrigin=(o.up?'bottom':'top')+' '+(o.right?'right':'left');
     var r=anchor.getBoundingClientRect();
     var left=o.right?r.right-mm.offsetWidth:r.left;
     mm.style.left=Math.max(8,Math.min(left,innerWidth-mm.offsetWidth-8))+'px';
     if(o.up){mm.style.top='auto';mm.style.bottom=(innerHeight-r.top+4)+'px'}
     else{mm.style.bottom='auto';mm.style.top=(r.bottom+4)+'px'}
+    surfOpen(mm,{up:o.up,right:o.right,from:seedOf(anchor)});
     anchor.setAttribute('aria-expanded','true');
   }
   function renderShip(){
@@ -1329,7 +1712,7 @@ label.dtrow{cursor:pointer}
     $('#shipc').textContent=n?String(n):'Ready';
     $('#shipbtn').classList.toggle('ready',!n);
     $('#shipbtn').setAttribute('aria-label',n?'Ship, '+n+' to fix':'Ship, ready');
-    if(mm.kind==='ship'&&mm.classList.contains('open'))mm.innerHTML=shipHTML();
+    if(mm.kind==='ship')mm.sf.relayout(function(){fill(mm,shipHTML())});
   }
   function fixIssue(id){issues=issues.filter(function(i){return i.id!==id});renderShip()}
   function setTool(name){$$('#tools [data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.tool===name))})}
@@ -1348,8 +1731,8 @@ label.dtrow{cursor:pointer}
     var t=e.target.closest('button');if(!t||t.disabled)return;
     var d=t.dataset;
     if(d.sub){openSub(t);return}
-    if(d.n!=null){pick(mm,t);return}
     if(d.act==='fix'){fixIssue(d.id);return}
+    if(d.n!=null){pick(mm,t);return}
     if(d.act==='reset')renderIns();
     if(d.page)setPage(d.page);if(d.pact==='rename')startPageRename();
     if(d.shape)pickShape(d.shape);
@@ -1496,9 +1879,10 @@ label.dtrow{cursor:pointer}
   function thItem(n){return {l:n[0].toUpperCase()+n.slice(1),th:n,sw:1,f:function(){setTheme(n)}}}
   function VT(o){return function(){$('#vpop [data-opt="'+o+'"]').click()}}  function selAll(){selection=$$('#p-layers .row[data-sel]').map(function(r){return r.dataset.sel});renderSelection()}
   function vpAt(x,y){
-    vp.style.bottom='auto';vp.classList.add('open');
+    vp.sf.reset();vp.style.bottom='auto';
     vp.style.left=Math.max(8,Math.min(x,innerWidth-vp.offsetWidth-8))+'px';
     vp.style.top=Math.max(8,Math.min(y,innerHeight-vp.offsetHeight-8))+'px';
+    surfOpen(vp);
   }
   var MENUS={
     app:function(){return [
@@ -1557,29 +1941,37 @@ label.dtrow{cursor:pointer}
         list.push(it);
       });
     });
-    root.items=list;root.innerHTML=h;
+    root.items=list;fill(root,h);
   }
   function ctxOpen(e,groups){
     e.preventDefault();closeAll();ptAt={x:e.clientX,y:e.clientY};
-    rndr(mm,groups);mm.className='menu ctx open';
+    mm.sf.reset();rndr(mm,groups);mm.className='menu ctx';mm.style.transformOrigin='left top';
     mm.style.left=Math.max(8,Math.min(e.clientX,innerWidth-mm.offsetWidth-8))+'px';
     mm.style.top=Math.max(8,Math.min(e.clientY,innerHeight-mm.offsetHeight-8))+'px';
     mm.style.bottom='auto';
+    surfOpen(mm);
   }
   function openSub(row){
     clearTimeout(subT);
     if(sbm.anchor===row)return;
-    rndr(sbm,MENUS[row.parentNode.items[+row.dataset.n].sub]());
-    sbm.className='menu ctx open';sbm.anchor=row;
-    var r=row.getBoundingClientRect(),pr=row.closest('.menu').getBoundingClientRect(),w=sbm.offsetWidth,h=sbm.offsetHeight,x=pr.right+4;
-    sbm.classList.toggle('flip',x+w>innerWidth-8);
-    if(x+w>innerWidth-8)x=pr.left-4-w;
+    if(sbm.anchor)sbm.anchor.classList.remove('subopen');
+    sbm.sf.reset();
+    rndr(sbm,MENUS[mm.items[+row.dataset.n].sub]());
+    sbm.className='menu ctx';sbm.anchor=row;row.classList.add('subopen');
+    var ml=parseFloat(mm.style.left)||0,r=row.getBoundingClientRect(),w=sbm.offsetWidth,h=sbm.offsetHeight,x=ml+mm.sf.size.w+4,flip=x+w>innerWidth-8;
+    sbm.classList.toggle('flip',flip);
+    if(flip)x=ml-4-w;
+    var top=Math.max(8,Math.min(r.top-4,innerHeight-h-8));
     sbm.style.left=Math.max(8,Math.min(x,innerWidth-w-8))+'px';
-    sbm.style.top=Math.max(8,Math.min(r.top-4,innerHeight-h-8))+'px';
+    sbm.style.top=top+'px';
+    sbm.style.transformOrigin=(flip?'right ':'left ')+Math.max(0,r.top-top)+'px';
+    sbm.hlFrom={y:r.top-top,h:r.height};
+    mm.classList.add('pushed');
+    surfOpen(sbm,{right:flip,slide:flip?-1:1,from:{w:r.height,h:r.height,r:parseFloat(getComputedStyle(sbm).borderTopLeftRadius)||0}});
   }
-  function closeSub(){clearTimeout(subT);sbm.anchor=null;sbm.classList.remove('open')}
+  function closeSub(){clearTimeout(subT);if(sbm.anchor)sbm.anchor.classList.remove('subopen');sbm.anchor=null;mm.classList.remove('pushed');sbm.sf.leave()}
   function pick(root,t){var it=root.items[+t.dataset.n];closeAll();if(it.f)it.f()}
-  function mark(list,i){list.forEach(function(x){x.classList.remove('on')});if(list[i])list[i].classList.add('on')}
+  function mark(list,i){list.forEach(function(x){x.classList.remove('on')});if(list[i]){list[i].classList.add('on');var r=list[i].closest('.menu');r.classList.add('kb');hlMove(r,list[i])}}
   function keyNav(e){
     var sub=sbm.classList.contains('open'),list=$$('[role=menuitem]:not(:disabled)',sub?sbm:mm),i=-1,cur;
     list.forEach(function(x,j){if(x.classList.contains('on'))i=j});
@@ -1594,15 +1986,32 @@ label.dtrow{cursor:pointer}
     else return false;
     e.preventDefault();return true;
   }
-  [mm,sbm].forEach(function(root){
+  function hoverRow(root,t){
+    clearTimeout(subT);
+    $$('.on',root).forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');root.classList.remove('kb');hlMove(root,t);
+    if(root===mm)subT=setTimeout(t.dataset.sub?function(){openSub(t)}:closeSub,t.dataset.sub?100:200);
+  }
+  [mm,sbm,vp].forEach(function(root){
     root.addEventListener('mouseover',function(e){
-      var t=e.target.closest('[role=menuitem]');if(!t||t.disabled)return;
-      clearTimeout(subT);
-      $$('.on',root).forEach(function(x){x.classList.remove('on')});
-      t.classList.add('on');
-      if(root===mm)subT=setTimeout(t.dataset.sub?function(){openSub(t)}:closeSub,t.dataset.sub?100:200);
+      var t=e.target.closest(ROW);if(!t||t.disabled)return;
+      if(root===mm&&sbm.classList.contains('open')&&t!==sbm.anchor&&inTri()){
+        clearTimeout(subT);subT=setTimeout(function(){if(t.matches(':hover')&&!sbm.matches(':hover'))hoverRow(root,t)},100);return;
+      }
+      hoverRow(root,t);
     });
+    root.addEventListener('focusin',function(e){var t=e.target.closest(ROW);if(t&&root.contains(t))hlMove(root,t)});
+    root.addEventListener('mouseleave',function(){if(root===mm&&sbm.classList.contains('open'))return;hlHide(root)});
   });
+  sbm.addEventListener('mouseenter',function(){clearTimeout(subT)});
+  /* State changes inside the View options popover: the new choice pops in on the pop spring */
+  vp.addEventListener('click',function(e){
+    if(reduced())return;
+    var p=mo(),b=e.target.closest('.vi'),sb=e.target.closest('.seg button');
+    if(b){var k=$('i',b);if(k)springAnim(k,[{scale:'.6'},{scale:'1'}],p.pop[0],p.pop[1])}
+    if(sb&&sb.getAttribute('aria-pressed')!=='true')springAnim(sb,[{scale:'.86'},{scale:'1'}],p.pop[0],p.pop[1]);
+  });
+  $('#feelseg').addEventListener('click',function(e){var b=e.target.closest('[data-feel]');if(b)applyFeel(b.dataset.feel)});
   sbm.addEventListener('click',function(e){e.stopPropagation();var t=e.target.closest('[role=menuitem]');if(t&&!t.disabled)pick(sbm,t)});
   c.addEventListener('contextmenu',function(e){
     if(e.target.closest('.fbar'))return;
@@ -1931,11 +2340,11 @@ label.dtrow{cursor:pointer}
   }
   function usersHTML(){
     var h='';
-    USERS.slice(1,NU).forEach(function(u){h+='<div class="urow"><span class="av">'+u[0]+'</span><span class="uname"><b>'+u[1]+'</b><small>'+u[2]+'</small></span></div>'});
-    if(NU>1)h+='<div class="hl"></div>';
-    return h+'<button role="menuitem" data-act="invite">Invite people</button><button role="menuitem" class="urow" data-act="account"><span class="av">AP</span><span class="uname"><b>Account</b><small>'+USERS[0][1]+' · You</small></span></button>';
+    USERS.slice(1,NU).forEach(function(u){h+='<div class="urow" data-flip="u'+u[1]+'"><span class="av">'+u[0]+'</span><span class="uname"><b>'+u[1]+'</b><small>'+u[2]+'</small></span></div>'});
+    if(NU>1)h+='<div class="hl" data-flip="hl"></div>';
+    return h+'<button role="menuitem" data-flip="invite" data-act="invite">Invite people</button><button role="menuitem" class="urow" data-flip="account" data-act="account"><span class="av">AP</span><span class="uname"><b>Account</b><small>'+USERS[0][1]+' · You</small></span></button>';
   }
-  window.setUsers=function(n){NU=Math.max(1,Math.min(USERS.length,n|0));renderAvs();if(mm.kind==='users'&&mm.classList.contains('open'))mm.innerHTML=usersHTML()};
+  window.setUsers=function(n){NU=Math.max(1,Math.min(USERS.length,n|0));renderAvs();if(mm.kind==='users')mm.sf.relayout(function(){fill(mm,usersHTML())})};
   $('#avs').addEventListener('click',function(){openMenu(this,usersHTML(),{kind:'users',cls:'users',right:true})});
   renderAvs();
 

@@ -58,7 +58,8 @@ Need an off-limits change? List it under "Engine changes requested" in `INTEGRAT
 ## 7. Motion and performance
 
 - `motion` for interface motion, GSAP for timelines and scroll sequences, CSS for simple transitions. Do not use two libraries for one job.
-- Animate **only `transform` and `opacity`**. Respect `prefers-reduced-motion`.
+- **No limit on which properties animate.** Use whatever makes the interaction feel best (transform, opacity, filter, clip-path, size, color). Keep 60fps and no layout shift for neighbouring content. Respect `prefers-reduced-motion`: springs and blur become a short opacity fade.
+- **Springs:** use real springs, defined by `response` (seconds) and damping ratio, not hand-tuned curves. Three global feels (Smooth, Lively, Bouncy), one shared preset table, as in the nook engine (`E:\Projects\Products\nook`, `src/lib/motion.ts`, `motionPresets.ts`).
 - **Lazy-load** heavy effects (three.js, large animations).
 - Smooth 60fps, no layout shift, no long main-thread tasks.
 
