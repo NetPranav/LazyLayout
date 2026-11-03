@@ -266,6 +266,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   // Trigger button references for morph animations
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
   const aiButtonRef = useRef<HTMLButtonElement | null>(null);
+  const topAnchorRef = useRef<HTMLDivElement | null>(null);
 
   // Toggle handlers ensuring mutual exclusivity across floating popovers
   const handleToggleInsert = useCallback(() => {
@@ -485,10 +486,19 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         aiLoading={aiLoading}
       />
 
+      {/* Top bar anchor for View options popover */}
+      <div
+        ref={topAnchorRef}
+        data-top-anchor="true"
+        aria-hidden="true"
+        className="ll:absolute ll:top-0 ll:left-4 ll:w-px ll:h-px ll:pointer-events-none"
+      />
+
       {/* View Options Popover */}
       <ViewOptionsPopover
         open={isViewOptionsOpen}
         onClose={() => setIsViewOptionsOpen(false)}
+        triggerRef={topAnchorRef}
         gridStyle={gridStyle}
         onGridStyleChange={setGridStyle}
         gridSize={gridSize}

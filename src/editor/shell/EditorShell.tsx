@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { TopBar, PageSwitcher, type EditorMode } from "@/editor/components";
-import { LeftPanel } from "@/editor/shell/left-panel";
+import React from "react";
+import { TopBar } from "@/editor/components";
 import { CanvasChrome } from "@/editor/shell/canvas-chrome";
-import { RightPanelFrame } from "@/editor/shell/right-panel";
+import { RightPanelConnected } from "./RightPanelConnected";
+import { LeftPanelConnected } from "@/editor/panels/layers";
+import { Stage } from "@/editor/stage";
+import { TimelinePanel } from "@/editor/panels/timeline";
+import { CodePanel } from "@/editor/panels/code-view";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
-import { useHistoryStore } from "@/core/store/useHistoryStore";
-import { invokeCommand } from "@/core/commands";
+import { useEditorActions } from "./useEditorActions";
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -26,58 +28,38 @@ export function EditorShell({
 }: EditorShellProps) {
   const saving = propSaving;
   const projectName = useProjectMetaStore((s) => s.projectName);
-  const canUndo = useHistoryStore((s) => s.past.length > 0);
-  const canRedo = useHistoryStore((s) => s.future.length > 0);
 
-  // Mode state (Design / Motion / Code)
-  const [mode, setMode] = useState<EditorMode>("design");
-
-  // Panel collapsed state ('lc' = left collapsed, 'rc' = right collapsed)
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
-
-  const togglePanel = useCallback((panel: "lc" | "rc", open?: boolean) => {
-    if (panel === "lc") {
-      setIsLeftCollapsed((prev) => (open !== undefined ? !open : !prev));
-    } else if (panel === "rc") {
-      setIsRightCollapsed((prev) => (open !== undefined ? !open : !prev));
-    }
-  }, []);
-
-  const handleUndo = useCallback(() => {
-    invokeCommand("edit.undo");
-  }, []);
-
-  const handleRedo = useCallback(() => {
-    invokeCommand("edit.redo");
-  }, []);
-
-  const handleSearch = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("antigravity:open_command_palette"));
-    }
-  }, []);
+  // Core shell actions and keyboard shortcut layer
+  const actions = useEditorActions({
+    initialMode: "design",
+    initialLeftCollapsed: false,
+    initialRightCollapsed: false,
+  });
 
   // Bottom drawer height in motion/code modes
-  const bottomHeight =
-    mode === "motion"
-      ? "var(--ll-size-bottom-motion-h)"
-      : mode === "code"
-      ? "var(--ll-size-bottom-code-h)"
-      : "0";
+  const bottomHeight = actions.isZen
+    ? "0"
+    : actions.mode === "motion"
+    ? "var(--ll-size-bottom-motion-h)"
+    : actions.mode === "code"
+    ? "var(--ll-size-bottom-code-h)"
+    : "0";
 
-  const leftWidth = isLeftCollapsed ? "0" : "var(--ll-size-panel-left-w)";
-  const rightWidth = isRightCollapsed ? "0" : "var(--ll-size-panel-right-w)";
+  const topHeight = actions.isZen ? "0" : "var(--ll-size-topbar-h)";
+  const leftWidth = actions.isZen || actions.isLeftCollapsed ? "0" : "var(--ll-size-panel-left-w)";
+  const rightWidth = actions.isZen || actions.isRightCollapsed ? "0" : "var(--ll-size-panel-right-w)";
 
   return (
     <div
-      data-mode={mode}
-      className={`editor-root ${isLeftCollapsed ? "ll-lc " : ""}${
-        isRightCollapsed ? "ll-rc " : ""
+      data-mode={actions.mode}
+      className={`editor-root ${actions.isZen ? "ll-zen " : ""}${
+        actions.isLeftCollapsed ? "ll-lc " : ""
+      }${
+        actions.isRightCollapsed ? "ll-rc " : ""
       }ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
       style={{
         gridTemplateColumns: `${leftWidth} minmax(0, 1fr) ${rightWidth}`,
-        gridTemplateRows: `var(--ll-size-topbar-h) minmax(0, 1fr) ${bottomHeight}`,
+        gridTemplateRows: `${topHeight} minmax(0, 1fr) ${bottomHeight}`,
         gridTemplateAreas: `
           "top top top"
           "left canvas right"
@@ -85,21 +67,36 @@ export function EditorShell({
         `,
       }}
     >
+      {/* Zen mode hint when interface is hidden (prototype parity) */}
+      {actions.isZen && (
+        <span
+          className="ll-zenhint ll:absolute ll:left-1/2 ll:top-2 ll:-translate-x-1/2 ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:z-50 ll:pointer-events-none"
+        >
+          Press Tab to show the interface
+        </span>
+      )}
+
       {/* 1. Top bar in "top" grid area */}
-      <div style={{ gridArea: "top" }} className="ll:w-full ll:h-full">
+      <div
+        style={{ gridArea: "top" }}
+        className={`ll:w-full ll:h-full ${actions.isZen ? "ll:invisible ll:h-0" : "ll:visible"}`}
+      >
         <TopBar
           projectName={projectName}
           saving={saving}
-          mode={mode}
-          onSelectMode={setMode}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onSearch={handleSearch}
-          isLeftCollapsed={isLeftCollapsed}
-          isRightCollapsed={isRightCollapsed}
-          onTogglePanel={togglePanel}
+          mode={actions.mode}
+          onSelectMode={actions.setMode}
+          canUndo={actions.canUndo}
+          canRedo={actions.canRedo}
+          onUndo={actions.undo}
+          onRedo={actions.redo}
+          onSearch={actions.handleSearch}
+          isLeftCollapsed={actions.isLeftCollapsed}
+          isRightCollapsed={actions.isRightCollapsed}
+          onTogglePanel={actions.togglePanel}
+          onMenuAction={actions.handleMenuAction}
+          showRulers={actions.showRulers}
+          isZen={actions.isZen}
         />
       </div>
 
@@ -107,10 +104,12 @@ export function EditorShell({
       <div
         style={{ gridArea: "left" }}
         className={`ll-left ll-zone ll:h-full ll:overflow-hidden ll:relative ${
-          isLeftCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
+          actions.isZen || actions.isLeftCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
         }`}
       >
-        {left ?? <LeftPanel mode={mode} headerStart={<PageSwitcher />} />}
+        {left ?? (
+          <LeftPanelConnected mode={actions.mode} />
+        )}
       </div>
 
       {/* 3. Center canvas slot in "canvas" grid area */}
@@ -118,26 +117,58 @@ export function EditorShell({
         style={{ gridArea: "canvas" }}
         className="ll-canvas ll:w-full ll:h-full ll:relative ll:overflow-hidden"
       >
-        {center ?? <CanvasChrome />}
+        {center ?? (
+          <CanvasChrome
+            activeTool={actions.activeTool}
+            onSelectTool={actions.setActiveTool}
+            activeShape={actions.activeShape}
+            onSelectShape={actions.setActiveShape}
+            zoom={actions.zoom}
+            onZoomIn={actions.zoomIn}
+            onZoomOut={actions.zoomOut}
+            onZoom100={actions.zoom100}
+            onZoomFit={actions.zoomFit}
+            onZoomSelection={actions.zoomSelection}
+            showRulers={actions.showRulers}
+            onToggleRulers={actions.toggleRulers}
+            isInsertOpen={actions.isInsertOpen}
+            onToggleInsert={actions.toggleInsert}
+            isAiBoxOpen={actions.isAiBoxOpen}
+            onToggleAiBox={actions.toggleAiBox}
+            isViewOptionsOpen={actions.isViewOptionsOpen}
+            onToggleViewOptions={actions.toggleViewOptions}
+            canUndo={actions.canUndo}
+            canRedo={actions.canRedo}
+            onUndo={actions.undo}
+            onRedo={actions.redo}
+            panelsCollapsed={actions.isLeftCollapsed && actions.isRightCollapsed}
+            onTogglePanels={actions.toggleBothPanels}
+            onPreview={() =>
+              actions.setMode(actions.mode === "design" ? "motion" : "design")
+            }
+          >
+            <Stage zoom={actions.zoom} />
+          </CanvasChrome>
+        )}
       </div>
 
       {/* 4. Right panel slot in "right" grid area */}
       <div
         style={{ gridArea: "right" }}
         className={`ll-right ll-zone ll:h-full ll:overflow-hidden ll:relative ${
-          isRightCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
+          actions.isZen || actions.isRightCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
         }`}
       >
-        {right ?? <RightPanelFrame mode={mode} />}
+        {right ?? <RightPanelConnected mode={actions.mode} />}
       </div>
 
       {/* 5. Bottom area in "bottom" grid area (motion / code modes) */}
-      {bottomHeight !== "0" && (
+      {bottomHeight !== "0" && !actions.isZen && (
         <div
           style={{ gridArea: "bottom" }}
           className="ll-bottom ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:relative"
         >
-          {/* Bottom timeline/code placeholder */}
+          {actions.mode === "motion" ? <TimelinePanel /> : <CodePanel />}
         </div>
       )}
     </div>

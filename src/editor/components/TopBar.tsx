@@ -127,6 +127,10 @@ export interface TopBarProps {
   /** Fired with a stable id ("file.new", "view.zoomIn", ...) for application-menu items with no core command yet. */
   onMenuAction?: (id: string) => void;
   className?: string;
+  showRulers?: boolean;
+  isZen?: boolean;
+  onPreview?: () => void;
+  onShare?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -146,6 +150,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   users = [],
   onMenuAction,
   className = "",
+  showRulers = false,
+  isZen = false,
+  onPreview,
+  onShare,
 }) => {
   const menuBtnId = useId();
   const themeBtnId = useId();
@@ -353,9 +361,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("view.zoomIn", "Zoom in", Plus, "Ctrl++")}
             {entry("view.zoomOut", "Zoom out", Minus, "Ctrl+-")}
             {entry("view.fit", "Fit to screen", Maximize, "Shift+1")}
-            {entry("view.rulers", "Rulers", Ruler, "Shift+R")}
-            {entry("view.options", "View options…", Palette)}
-            {entry("view.hideInterface", "Hide interface", EyeOff, "Tab")}
+            {entry("view.rulers", "Rulers", Ruler, "Shift+R", () => onMenuAction?.("view.rulers"), showRulers)}
+            {entry("view.options", "View options…", Palette, undefined, () => onMenuAction?.("view.options"))}
+            {entry("view.hideInterface", "Hide interface", EyeOff, "Tab", () => onMenuAction?.("view.hideInterface"), isZen)}
             <MenuSeparator />
             {entry("view.zoom100", "Zoom to 100%", Square, "Ctrl+0")}
             {entry("view.zoomSelection", "Zoom to selection", Focus, "Shift+2")}
@@ -443,6 +451,8 @@ export const TopBar: React.FC<TopBarProps> = ({
           issues={issues}
           onFixIssue={onFixIssue}
           onPublish={onPublish}
+          onPreview={onPreview ?? (() => onMenuAction?.("view.previewMode"))}
+          onShare={onShare ?? (() => onMenuAction?.("file.copyLink"))}
         />
 
         {/* Avatar Stack */}
