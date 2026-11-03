@@ -223,7 +223,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 49 | Static export v1 | 37, 45, 48 | v3 27.1 (part), 48 gate, 50.5 (layout), 75.5 | 1 | 🚧 |
 | 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 🚧 |
 | 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 🚧 |
-| 52 | Stage 1 gate: the design journey | 13–51 | v3 58.1 + new | 1 | 📋 |
+| 52 | Stage 1 gate: the design journey | 13–51 | v3 58.1 + new | 1 | 🚧 |
 
 **Stage 2 · Animation grammar (Phases 53–102)**
 
@@ -856,16 +856,16 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a first-time user builds a landing page from 6 templates in < 10 minutes (usability script). *(Automated: six templates make a landing page and follow Dark in `tests/e2e/templates.spec.ts` in three browsers. The timed run with a first-time user has not been done.)*
 
 ### Phase 52 · Stage 1 gate: the design journey
-**Needs:** 13–51 · **Was:** v3 58.1 + new · **Status:** 📋
-- [ ] **Journey A (Figma user):** two frames; a card component with auto-layout, constraints and 3 variants; a Mobile override; a pen-drawn icon; inline text; colour and text styles.
-- [ ] **Journey B (Wix user):** a 3-page site from templates, with navigation links, breakpoints and Preview.
-- [ ] **Journey C (output):** the export ZIP builds in Next and Vite and matches the canvas at 5 widths; `.lazy.json` round-trips unchanged.
-- [ ] **Journey D (agent):** Claude, through MCP, builds a section that the user approves.
-- [ ] **Performance:** 5 frames × 200 layers pan and zoom at 60 fps; hit-test p95 < 1 ms.
-- [ ] **Cleanup:** the old design-path renderer is gone (grep gate). `UI.md`, `PANELS.md`, `SCHEMA_REFERENCE.md`, `CONVENTIONS.md` and `FOLDER_STRUCTURE_AND_DATA_HIERARCHY.md` are rewritten to match the code (v3 6.3's open item).
+**Needs:** 13–51 · **Was:** v3 58.1 + new · **Status:** 🚧
+- [x] **Journey A (Figma user):** two frames; a card component with auto-layout, constraints and 3 variants; a Mobile override; a pen-drawn icon; inline text; colour and text styles.
+- [x] **Journey B (Wix user):** a 3-page site from templates, with navigation links, breakpoints and Preview.
+- [x] **Journey C (output):** the export ZIP builds in Next and Vite and matches the canvas at 5 widths; `.lazy.json` round-trips unchanged. *(The five-width pixel comparison and the Next and Vite builds are the Phase 49 gate, `export.spec.ts` and `tests/export-harness`; the gate spec downloads the ZIP of a starter site and checks that a saved project file opens as the same document.)*
+- [x] **Journey D (agent):** Claude, through MCP, builds a section that the user approves.
+- [ ] **Performance:** 5 frames × 200 layers pan and zoom at 60 fps; hit-test p95 < 1 ms. *(Hit-test: done, the Phase 22 unit gate. Pan and zoom: measured by the gate spec on a Mac, Chromium and Firefox hold 60 fps (median 16.7 ms), **WebKit does not** (median 33 ms, about 30 fps, p95 50-72 ms). On CI (2026-11-03) Chromium and Firefox hold it too (median 16.7 ms and 17 ms). The probe does not run on WebKit in CI: it takes about 7 minutes there, which pushed the e2e job past its limit, so WebKit's number is the Mac one. The ceilings are 22 ms and, for WebKit locally, 50 ms, so the spec catches a collapse, and the 60 fps claim is not yet true on WebKit.)*
+- [ ] **Cleanup:** the old design-path renderer is gone (grep gate; done, the Phase 18 unit gate in `src/editor/stage/__tests__/stage.test.ts`). `UI.md`, `PANELS.md`, `SCHEMA_REFERENCE.md`, `CONVENTIONS.md` and `FOLDER_STRUCTURE_AND_DATA_HIERARCHY.md` are rewritten to match the code (v3 6.3's open item). *(Not done. The UI rebuild branch `ui/redesign` deletes `UI.md` and `PANELS.md` on purpose, so rewriting them now would be thrown away; the other three have not been checked against the code.)*
 
 **You'll see:** LazyLayout works as a responsive design tool with export. This is the first stage a user could try for real.
-**Done when:** all four journeys pass as Playwright scripts in CI in 3 browsers, plus one recorded manual run.
+**Done when:** all four journeys pass as Playwright scripts in CI in 3 browsers, plus one recorded manual run. *(The four journeys are `tests/e2e/stage1-gate.spec.ts` and pass locally in all three browsers; CI on `main` has not run them yet, and no manual run has been recorded.)*
 
 ---
 
