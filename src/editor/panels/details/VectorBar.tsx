@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { Combine, Network, PenLine, Spline, SquaresExclude, SquaresIntersect, SquaresSubtract, SquaresUnite } from "lucide-react";
+import { Combine, Network, PenLine, Scan, Spline, SquaresExclude, SquaresIntersect, SquaresSubtract, SquaresUnite } from "lucide-react";
 import { invokeCommand } from "@/core/commands";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -24,6 +24,11 @@ export const VectorBar: React.FC = () => {
   const flattenable = sources.some((id) => layers[id].archetype !== "svgPath");
   // FigCraft port F4: a path without a network can become one (then the paint bucket fills any closed area of it)
   const liveable = ids.filter((id) => layers[id] && ["rectangle", "ellipse", "polygon", "star", "svgPath", "container"].includes(layers[id].archetype)).length >= 2;
+  // FigCraft port F3: a visible stroke can become a filled path of its own
+  const strokeable = ids.some((id) => {
+    const p = layers[id]?.properties;
+    return !!p && typeof p["svg.stroke"] === "string" && p["svg.stroke"] !== "none" && Number(p["svg.strokeWidth"]) > 0;
+  });
   const groupSelected = ids.some((id) => !!layers[id]?.properties["boolean.operation"]);
   const networkable = ids.some((id) => layers[id]?.archetype === "svgPath" && !layers[id].properties["svg.network"]);
   // the operation of a selected boolean group, or of selected operands (they share one, else "mixed")
@@ -36,7 +41,7 @@ export const VectorBar: React.FC = () => {
   };
   const ops = ids.map(opOf);
   const shownOp = ops.length > 0 && ops[0] !== null && ops.every((o) => o === ops[0]) ? ops[0] : ops.some((o) => o !== null) ? "mixed" : null;
-  if (!single && sources.length === 0 && !editing && !groupSelected && !shownOp) return null;
+  if (!single && sources.length === 0 && !editing && !groupSelected && !shownOp && !strokeable) return null;
   const button = (command: string, label: string, Icon: React.ComponentType<{ size?: number }>, enabled: boolean) => (
     <button key={command} type="button" className="panel-icon-btn" title={label} aria-label={label} disabled={!enabled} data-command={command} onClick={() => void invokeCommand(command)}>
       <Icon size={14} />
@@ -52,6 +57,7 @@ export const VectorBar: React.FC = () => {
       {button("boolean.exclude", "Exclude selection", SquaresExclude, !editing && sources.length >= 2)}
       <span style={{ width: 8 }} aria-hidden />
       {button("vector.flatten", "Flatten to path", Spline, !editing && flattenable)}
+      {button("vector.outlineStroke", "Outline stroke", Scan, !editing && strokeable)}
       {button("vector.makeNetwork", "Make vector network", Network, !editing && networkable)}
       <span style={{ width: 8 }} aria-hidden />
       {/* FigCraft port F5: a live boolean group keeps its operands editable; the plain buttons above bake the result */}

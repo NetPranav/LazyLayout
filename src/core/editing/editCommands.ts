@@ -32,6 +32,7 @@ import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage, setStrokes
 import { BLEND_MODES } from "../paint/color";
 import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
+import { outlineStrokes } from "./outlineStroke";
 import { arrangement, buildShapes } from "./shapeBuilder";
 import type { Paint } from "../paint/paints";
 import { setFill, setFrame, setOpacity, setRadius, setSimpleText, setStroke } from "../inspector/simpleOps";
@@ -200,6 +201,7 @@ export function registerEditingCommands(): () => void {
   }));
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
   // FigCraft port F4: vector networks on path layers
+  add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
   add(defineTypedCommand({ id: "vector.makeNetwork", title: "Make Vector Network", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: makeNetwork(t ?? ids()) }) }));
   add(defineTypedCommand({
     id: "vector.paintBucket",

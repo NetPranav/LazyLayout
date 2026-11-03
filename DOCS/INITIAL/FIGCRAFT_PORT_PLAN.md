@@ -68,8 +68,8 @@ Port kind: **logic** (pure TS port with tests) · **render** (logic plus a rende
 | Dashes, caps, joins, miter limit | `doc/src/props.rs` | strokes | `svg.strokeDasharray`, caps, joins (25, 39) | render | ✅ (`stroke.miterLimit` added) |
 | Arrowheads (line, triangle, circle, diamond …) | `pathops/src/points.rs` | `src/core/paths/arrowheads.ts` | Arrow archetype (25) | logic | ✅ lines and pen paths |
 | Variable-width strokes and width profiles | `pathops/src/width.rs` | `src/core/paths/strokeWidth.ts` | — | logic | ✅ model, outliner, presets; on-canvas width tool is F12 |
-| Outline stroke (stroke → filled path) | `pathops/src/lib.rs` | `src/core/paths/outlineStroke.ts` + command | — | logic | 🚧 `strokeOutline` ported and tested; the command that replaces a layer's stroke with it lands with F4's vector layers |
-| Brushes (stretch, scatter) | `pathops/src/brush.rs` | `src/core/paths/brush.ts` | — | logic | 📋 |
+| Outline stroke (stroke → filled path) | `pathops/src/lib.rs` | `src/core/paths/strokes.ts`, `src/core/editing/outlineStroke.ts` + command `vector.outlineStroke` | — | logic | ✅ a line or an unfilled path is replaced by its outline; a filled shape keeps its fill and gets the outline as a layer above; the new layer fits the outline (outside strokes reach past the box); button in the vector bar |
+| Brushes (stretch, scatter) | `pathops/src/brush.rs` | `src/core/paths/brush.ts`, `strokePaint.tsx`, stroke settings | — | render | ✅ presets, spacing and jitter, width profile; chosen in the stroke settings (`stroke.brush`) |
 
 ### F4 · Vector networks
 
@@ -150,7 +150,7 @@ FigCraft's layout solver is not ported: the browser lays out our frames as CSS f
 | Bindings: string to text and fonts, boolean to visibility | `engine/src/cmd/variables.rs` | `tokenOps.ts` | Colour and number (45) | behaviour | ✅ |
 | Bindings to fills, strokes, effects, layout grids inside paint lists | `engine/src/style_vars.rs` | `tokenOps.ts` | Plain properties (45) | behaviour | 📋 bindings by list index (`fills/0/color`) on layers are not ported; inside styles they are |
 | Paint, text, effect and grid styles; descriptions; variables bound inside styles | `doc/src/styles.rs`, `engine/src/style_vars.rs` | `tokens.ts` (slots), `tokenOps.ts` | Text and effect (45) | behaviour | ✅ fill, stroke and grid slots; `bound` resolved per layer's modes |
-| Style folders and order; variables import/export JSON | `engine/src/cmd/styles.rs`, `variables_io_tests.rs` | — | — | behaviour | 📋 |
+| Style folders and order; variables import/export JSON | `engine/src/cmd/styles.rs`, `variables_io_tests.rs` | `src/core/tokens/variablesIO.ts`, Token Manager | — | behaviour | 🚧 variables export (JSON, CSS) and import ✅; style folders and order 📋 |
 | Extended collections | `engine/src/library_variables_tests.rs` | `tokens.ts` | — | behaviour | ✖ needs team libraries (not in Stage 1) |
 | Generated CSS using a variable's code syntax (`var(--x, 4px)`) | `engine/src/codegen` | export | — | behaviour | ⏭ F13 Dev Mode |
 
