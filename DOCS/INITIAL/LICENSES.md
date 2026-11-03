@@ -111,6 +111,13 @@ exists; this one records the *current status* of each gate, kept current as the 
 - **`polygon-clipping` (MIT, Phase 40 booleans), `@hugeicons/core-free-icons` and
   `@hugeicons/react` (MIT, the icons BranchedMenu uses), `fflate` (MIT, ZIP in the export
   tests):** permissive, no competitive-use restriction.
+- **FigCraft (translated code, added 2026-10-26):** `storytold/figcraft` at commit `6ea44e9`,
+  offered as MIT OR Apache-2.0 and used under **MIT**. Its engine logic (shape geometry, colour,
+  strokes, vector networks, booleans, layout behaviour, editing rules) is translated from Rust to
+  TypeScript under `FIGCRAFT_PORT_PLAN.md`. No open question: MIT allows commercial use and
+  changes with the notice kept. The notice is in `THIRD_PARTY_NOTICES.md` at the repo root, and
+  every translated file names its source. The ArtCraft/FigCraft names and logos are trademarks,
+  not covered by the licence, and are never used in the product.
 - **The archived C++/Wasm kernel:** Not a licensing gate — its removal (`DOCS/INITIAL/
   decisions/0001-wasm.md`) was a performance decision (No-Go, mean 0.67x–1.93x vs. the 2x bar),
   unrelated to licensing.

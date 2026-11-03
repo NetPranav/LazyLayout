@@ -1,5 +1,7 @@
 "use client";
 
+import { useDevModeStore } from "@/core/devmode/useDevModeStore";
+import { useRotationOriginStore } from "@/core/editing/rotationOrigin";
 import React, { useEffect, useRef } from "react";
 import type { CanvasHitTester } from "@/core/hit/CanvasHitTester";
 import { documentStore, getDocument } from "@/core/store/documentState";
@@ -16,6 +18,7 @@ import { nodesToPathData } from "@/core/paths/pathFit";
 import { penRubberBand } from "@/core/paths/penModel";
 import { useStackDropStore } from "@/core/store/useStackDropStore";
 import { GridOverlay } from "./GridOverlay";
+import { LayoutGridsOverlay } from "./LayoutGridsOverlay";
 import { VectorEditLayer } from "../vector/VectorEditLayer";
 import type { TransformModel } from "../transformModel";
 
@@ -99,7 +102,7 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ hitTester, canvasRef
       layerName: (id) => getDocument().layers[id]?.name ?? id,
       transformModel: () => transformModelRef.current(),
       snapFeedback: () => ({ lines: useSnapStore.getState().lines, spacing: useSnapStore.getState().spacing }),
-      hudMarks: () => hudRef.current(),
+      hudMarks: (hovered) => hudRef.current(hovered),
       guides: () => guidesRef.current(),
     });
     onController?.(controller);
@@ -130,6 +133,10 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ hitTester, canvasRef
       if (pointer && s.camera !== p.camera) controller.invalidate();
     });
     const offSnap = useSnapStore.subscribe(() => controller.invalidate());
+    // the rotation origin (FigCraft port F12) shown, hidden or moved
+    const offOrigin = useRotationOriginStore.subscribe(() => controller.invalidate());
+    // Dev Mode shown or hidden (FigCraft port F13): the kept measurements come and go
+    const offDev = useDevModeStore.subscribe(() => controller.invalidate());
     const offFonts = useFontsStore.subscribe(() => controller.invalidate(true)); // a font loaded: text changed size
 
     const offTool = useToolStore.subscribe((s, p) => {
@@ -140,6 +147,8 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ hitTester, canvasRef
     return () => {
       offTool();
       offSnap();
+      offOrigin();
+      offDev();
       offFonts();
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mouseleave", onLeave);
@@ -157,6 +166,7 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ hitTester, canvasRef
       <div ref={layerRef} className="canvas-overlay" aria-hidden="true" />
       <DraftPath />
       <VectorEditLayer />
+      <LayoutGridsOverlay />
       <GridOverlay />
       <StackDropLine />
     </>

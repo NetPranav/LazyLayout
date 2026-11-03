@@ -25,6 +25,10 @@ import type { Paint } from "@/core/paint/paints";
 import { moveBoxes, paramValue, resizeBoxes, rotateBoxes, rotationDelta, unionBox, type Box } from "@/core/geometry/transform";
 import { frameContains, type HandleHit, type TransformModel } from "../transformModel";
 import { createPathTools } from "./pathTools";
+import { tryRunCommand } from "@/core/commands";
+import type { Layer } from "@/core/document/schema";
+import { scaleAnchor, scaleFactor, scaleHandleOf, scaleLayers } from "@/core/editing/scaleLayers";
+import { dragRotationOrigin } from "@/core/editing/rotationOrigin";
 
 /** One of the samples a browser coalesced into a pointer move (a 120 Hz pen reports two or more per frame). */
 export interface CoalescedSample {
@@ -89,6 +93,8 @@ export interface ToolContext {
   /** Opens one transaction for a transform gesture: everything until `commitTransform` is one undo step, `cancelTransform` undoes it. */
   beginTransform: (label: string) => void;
   applyBoxes: (ids: readonly string[], boxes: readonly Box[]) => void;
+  /** Copies layers where they are and selects the copies (an Alt-drag moves copies, FigCraft port F12). Returns their ids. */
+  duplicateInPlace?: (ids: readonly string[]) => string[];
   setParam: (layerId: string, prop: string, value: number) => void;
   /** Replaces one fill of a layer (a gradient being shaped with its handles). */
   setPaint: (layerId: string, index: number, paint: Paint) => void;
@@ -204,9 +210,9 @@ const HANDLE_DIRS: Record<string, { sx: -1 | 0 | 1; sy: -1 | 0 | 1 }> = {
  *    (Shift snaps to 15 degrees) or changes a parameter (corner radius, star points and inner radius, polygon sides).
  *  - Every gesture writes through one transaction: one undo step, and Escape puts everything back.
  */
-export function createSelectTool(id: "select" | "deepSelect"): Tool {
+export function createSelectTool(id: "select" | "deepSelect" | "scale"): Tool {
   const pan = panGesture();
-  type Mode = "idle" | "click" | "marquee" | "pan" | "pending-move" | "move" | "resize" | "rotate" | "param" | "gap" | "gradient" | "guide" | "cancelled";
+  type Mode = "idle" | "click" | "marquee" | "pan" | "pending-move" | "move" | "resize" | "rotate" | "param" | "gap" | "gradient" | "guide" | "origin" | "cancelled";
   let guide: { frameId: string; index: number; axis: "x" | "y" } | null = null;
   let mode: Mode = "idle";
   let down: ToolPointer | null = null;
@@ -215,7 +221,9 @@ export function createSelectTool(id: "select" | "deepSelect"): Tool {
   let marqueeFrame: string | null = null;
   let began = false;
   let reorder: { parentId: string; index: number } | null = null;
-  let start: { ids: string[]; boxes: Box[]; frame: Box; handle?: HandleHit; startValue?: number; gap?: { axis: "h" | "v"; size: number }; gradient?: { layerId: string; paintIndex: number; paint: Paint; box: Box; kind: string; stopIndex?: number } } | null = null;
+  /** The Scale tool: the layers as they were when its drag began (each move writes its absolute result). */
+  let scaleBase: { layers: Record<string, Layer>; boxes: Map<string, Box> } | null = null;
+  let start: { ids: string[]; boxes: Box[]; frame: Box; origin?: { x: number; y: number }; handle?: HandleHit; startValue?: number; gap?: { axis: "h" | "v"; size: number }; gradient?: { layerId: string; paintIndex: number; paint: Paint; box: Box; kind: string; stopIndex?: number } } | null = null;
 
   const moved = (p: ToolPointer, from: ToolPointer | null) => from !== null && Math.hypot(p.screen.x - from.screen.x, p.screen.y - from.screen.y) >= CLICK_SLOP;
   const reset = () => {
@@ -225,11 +233,12 @@ export function createSelectTool(id: "select" | "deepSelect"): Tool {
     hit = null;
     began = false;
     start = null;
+    scaleBase = null;
     guide = null;
     reorder = null;
   };
   const snapshot = (model: TransformModel, handle?: HandleHit) => {
-    start = { ids: model.ids, boxes: model.boxes, frame: model.frame, handle };
+    start = { ids: model.ids, boxes: model.boxes, frame: model.frame, origin: model.origin, handle };
     if (handle?.kind === "param") start.startValue = model.params[handle.index].value;
     if (handle?.kind === "gradient" && model.gradient) {
       const g = model.gradient;
@@ -299,6 +308,13 @@ export function createSelectTool(id: "select" | "deepSelect"): Tool {
           snapshot(model);
         }
         mode = "move";
+        // Alt held as the drag starts: drag copies, leaving the originals (one undo step with the move)
+        if (down.altKey && start && ctx.duplicateInPlace) {
+          begin(ctx, "Duplicate");
+          // the copies sit exactly on the originals: drag them with the originals' boxes (they aren't measured yet)
+          const copies = ctx.duplicateInPlace(start.ids);
+          if (copies.length === start.ids.length) start = { ...start, ids: copies };
+        }
       }
       if (mode === "click" && moved(p, down) && (hit === null || hit.depth === 0)) mode = "marquee";
       if (mode === "marquee") ctx.requestOverlay();
@@ -322,6 +338,21 @@ export function createSelectTool(id: "select" | "deepSelect"): Tool {
         const snap = ctx.snapMove(start.ids, { x: union.cx - union.w / 2, y: union.cy - union.h / 2, width: union.w, height: union.h }, p.metaKey || p.ctrlKey);
         // a Shift-locked axis stays locked: its snap is ignored
         ctx.applyBoxes(start.ids, moveBoxes(start.boxes, x + (lockX ? 0 : snap.dx), y + (lockY ? 0 : snap.dy)));
+      } else if (mode === "resize" && start.handle?.kind === "resize" && moved(p, down) && id === "scale") {
+        // FigCraft port F12, the Scale tool: one factor for everything, about the anchor (Alt: the centre), from where the drag began
+        const f = start.frame;
+        const r = (-f.rot * Math.PI) / 180;
+        const dx = p.world.x - f.cx;
+        const dy = p.world.y - f.cy;
+        const q = { x: dx * Math.cos(r) - dy * Math.sin(r) + f.w / 2, y: dx * Math.sin(r) + dy * Math.cos(r) + f.h / 2 };
+        const s = scaleFactor(scaleHandleOf(start.handle.handle), q, f.w, f.h, scaleAnchor(), p.altKey);
+        if (!s) return;
+        begin(ctx, "Scale");
+        scaleBase ??= { layers: getDocument().layers, boxes: new Map(start.ids.map((sid, i) => [sid, start!.boxes[i]])) };
+        const rr = (f.rot * Math.PI) / 180;
+        const lx = s.pivot.x - f.w / 2;
+        const ly = s.pivot.y - f.h / 2;
+        scaleLayers(start.ids, s.k, { x: f.cx + lx * Math.cos(rr) - ly * Math.sin(rr), y: f.cy + lx * Math.sin(rr) + ly * Math.cos(rr) }, scaleBase);
       } else if (mode === "resize" && start.handle?.kind === "resize" && moved(p, down)) {
         begin(ctx, "Resize");
         const opts = { aspect: p.shiftKey, fromCenter: p.altKey };
@@ -340,9 +371,14 @@ export function createSelectTool(id: "select" | "deepSelect"): Tool {
           d = { x: delta.x + (dir.sx === 1 ? adj.right : dir.sx === -1 ? adj.left : 0), y: delta.y + (dir.sy === 1 ? adj.bottom : dir.sy === -1 ? adj.top : 0) };
         }
         ctx.applyBoxes(start.ids, resizeBoxes(start.boxes, start.frame, start.handle.handle, d, opts));
+      } else if (mode === "origin") {
+        // FigCraft port F12: drag the rotation origin (it snaps to the box's corners, edge middles and centre)
+        dragRotationOrigin(start.ids, p.world, start.frame, start.boxes[0], ctx.zoom());
+        ctx.requestOverlay();
       } else if (mode === "rotate" && moved(p, down)) {
         begin(ctx, "Rotate");
-        const pivot = { x: start.frame.cx, y: start.frame.cy };
+        // about the rotation origin (FigCraft port F12): the centre unless it was moved
+        const pivot = start.origin ?? { x: start.frame.cx, y: start.frame.cy };
         ctx.applyBoxes(start.ids, rotateBoxes(start.boxes, pivot, rotationDelta(pivot, down.world, p.world), p.shiftKey));
       } else if (mode === "gradient" && start.gradient && moved(p, down)) {
         // Dragging a gradient handle reshapes that fill (Shift keeps a linear angle or a conic angle to 15 degree steps).
@@ -569,6 +605,94 @@ export function createCreationTool(id: ToolId): Tool {
   };
 }
 
+/**
+ * The paint bucket (FigCraft port F4): a click inside a closed area of a path layer fills it, or unfills it when it is
+ * filled; dragging on keeps doing what the first click did. The point goes to the layer's own 200 × 200 path space.
+ */
+export function createPaintBucketTool(): Tool {
+  let target: string | null = null;
+  let want: boolean | undefined;
+  const hit = (p: ToolPointer, ctx: ToolContext, first: boolean) => {
+    const picked = first ? ctx.pick(p.world, true) : null;
+    if (first) {
+      if (!picked || getDocument().layers[picked.id]?.archetype !== "svgPath") return false;
+      ctx.select(picked);
+      target = picked.id;
+    }
+    const tm = ctx.transformModel();
+    const box = tm && target ? tm.boxes[tm.ids.indexOf(target)] : undefined;
+    if (!box || !target) return false;
+    // the canvas point in the layer's unrotated box, then in its 200 × 200 path space
+    const r = (-box.rot * Math.PI) / 180;
+    const dx = p.world.x - box.cx;
+    const dy = p.world.y - box.cy;
+    const lx = dx * Math.cos(r) - dy * Math.sin(r) + box.w / 2;
+    const ly = dx * Math.sin(r) + dy * Math.cos(r) + box.h / 2;
+    const out = tryRunCommand("vector.paintBucket", { id: target, x: (lx / Math.max(1e-6, box.w)) * 200, y: (ly / Math.max(1e-6, box.h)) * 200, ...(want === undefined ? {} : { want }) });
+    const filled = out.ok ? (out.result as { filled?: boolean | null } | undefined)?.filled : undefined;
+    if (first && typeof filled === "boolean") want = filled;
+    return true;
+  };
+  return {
+    id: "paintBucket",
+    cursor: "cell",
+    onPointerDown: (p, ctx) => {
+      want = undefined;
+      return hit(p, ctx, true);
+    },
+    onPointerMove: (p, ctx) => void (target && hit(p, ctx, false)),
+    onPointerUp: () => {
+      target = null;
+      want = undefined;
+    },
+    onPointerCancel: () => {
+      target = null;
+      want = undefined;
+    },
+  };
+}
+
+/**
+ * The Shape Builder (FigCraft port F5): with shapes selected, a click or a drag across the regions where they overlap
+ * merges those regions into a new shape; with Alt held, it removes them. Each gesture is one command, so one undo step.
+ * A click outside every region selects the layer there, so shapes can be picked without changing tools.
+ */
+export function createShapeBuilderTool(): Tool {
+  let points: Point[] = [];
+  let remove = false;
+  let start: ToolPointer | null = null;
+  return {
+    id: "shapeBuilder",
+    cursor: "crosshair",
+    onPointerDown: (p) => {
+      start = p;
+      remove = p.altKey;
+      points = [p.world];
+      return true;
+    },
+    onPointerMove: (p) => {
+      const last = points[points.length - 1];
+      if (!last) return;
+      // sample the drag every few px so a fast stroke doesn't skip a region
+      const steps = Math.min(500, Math.max(1, Math.ceil(Math.hypot(p.world.x - last.x, p.world.y - last.y) / 3)));
+      for (let k = 1; k <= steps; k++) points.push({ x: last.x + ((p.world.x - last.x) * k) / steps, y: last.y + ((p.world.y - last.y) * k) / steps });
+    },
+    onPointerUp: (p, ctx) => {
+      const pts = points;
+      points = [];
+      const out = tryRunCommand(remove ? "shapeBuilder.remove" : "shapeBuilder.merge", { points: pts.slice(0, 10_000).map((q) => [q.x, q.y]) });
+      const picked = out.ok && out.result !== null;
+      // nothing under the gesture: a click picks the layer there
+      if (!picked && start && Math.hypot(p.screen.x - start.screen.x, p.screen.y - start.screen.y) < CLICK_SLOP) ctx.select(ctx.pick(p.world, true), p.shiftKey ? "toggle" : "replace");
+      start = null;
+    },
+    onPointerCancel: () => {
+      points = [];
+      start = null;
+    },
+  };
+}
+
 /** The tools that have behaviour on the canvas, by id. */
 export function createTools(): Partial<Record<ToolId, Tool>> {
   // the pen and pencil live in their own module
@@ -581,5 +705,8 @@ export function createTools(): Partial<Record<ToolId, Tool>> {
   for (const id of Object.keys(CREATION) as ToolId[]) tools[id] = createCreationTool(id);
   tools.pen = paths.pen;
   tools.pencil = paths.pencil;
+  tools.paintBucket = createPaintBucketTool();
+  tools.shapeBuilder = createShapeBuilderTool();
+  tools.scale = createSelectTool("scale");
   return tools;
 }

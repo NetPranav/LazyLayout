@@ -191,6 +191,8 @@ const CAMERA3D = only("camera3D");
 const LIGHT3D = only("light3D");
 const SCENE3D = only("object3D", "camera3D", "light3D");
 const ALL = only(...ARCHETYPE_IDS);
+/** Stroke ends (FigCraft port F3), plus the three older names Phase 7.6 stored. */
+const CAP_OPTIONS = ["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled", "arrow", "triangle", "circle"] as const;
 
 const DEFS = {
   // --- Geometry (Phase 42.3): layout, what the canvas edits -----------------
@@ -203,6 +205,19 @@ const DEFS = {
   "frame.rotation": deg(0, "rotate", "layout", VISUAL),
   // Phase 28: a frame's ruler guides, as JSON text: [{"axis":"x"|"y","pos":px relative to the frame}]. Only top-level frames use it.
   "frame.guides": str("[]", null, "layout", only("container")),
+  /** Layout grids shown over a frame (FigCraft port F6, `core/layout/layoutGrids.ts`): JSON; editor-only, never exported. */
+  "frame.layoutGrids": typed(str("", null, "none", only("container"))),
+  /** What a container is (FigCraft port F11): a frame, a group (its box is its layers', no fill or clip), or a section (a canvas organiser holding frames). */
+  "frame.kind": oneOf(["frame", "group", "section"], "frame", null, "none", only("container")),
+  /** Export settings as JSON (FigCraft port F11): `[{ "format": "png" | "jpg" | "svg", "scale": 2, "suffix": "@2x" }]`. */
+  "export.settings": typed(str("", null, "none", VISUAL)),
+  /**
+   * A live boolean group (FigCraft port F5): a container whose children are drawn as one shape, combined by this
+   * operation (union, subtract, intersect, exclude). Empty: an ordinary container. See `core/editing/layerOutline.ts`.
+   */
+  "boolean.operation": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("container", "form"))),
+  /** In a boolean group, how this operand combines with the ones below it; empty takes the group's operation. */
+  "boolean.operandOp": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "container", "form"))),
   "sizing.horizontal": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
   "sizing.vertical": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
   positioning: oneOf(["absolute", "flow"], "flow", "position", "layout", VISUAL),
@@ -229,6 +244,8 @@ const DEFS = {
   "paint.fills": typed(str("", null, "paint", only("container", "form", "generic", "button", "badge", "fab", "rectangle", "ellipse", "polygon", "star", "arrow"))),
   /** Drop and inner shadows. */
   "paint.shadows": typed(str("", "box-shadow", "paint", VISUAL)),
+  /** FigCraft port F7: blurs (uniform or progressive), noise, texture and glass, as a JSON list (`paint/effects.ts`). */
+  "paint.effects": typed(str("", null, "paint", VISUAL)),
   /** Blur of what shows through the layer, in px. */
   "paint.backgroundBlur": ranged(px(0, "backdrop-filter", "paint", VISUAL), { min: 0, max: 200 }),
   "appearance.radius": px(0, "border-radius", "paint", VISUAL),
@@ -284,6 +301,32 @@ const DEFS = {
   "typography.format.strike": flag(false, "paint", TYPOGRAPHY),
   "typography.format.code": flag(false, "layout", TYPOGRAPHY),
   "typography.split": oneOf(["none", "chars", "words", "lines"], "none", null, "layout", TYPOGRAPHY),
+  // FigCraft port F8: how a decoration line looks, small caps, OpenType features
+  "typography.decorationStyle": oneOf(["solid", "dotted", "wavy"], "solid", "text-decoration-style", "paint", TYPOGRAPHY),
+  /** The decoration's thickness (px); 0 is the font's own. */
+  "typography.decorationThickness": ranged(px(0, "text-decoration-thickness", "paint", TYPOGRAPHY), { min: 0, max: 100 }),
+  /** How far below the baseline an underline sits (px); 0 is the font's own. */
+  "typography.decorationOffset": ranged(px(0, "text-underline-offset", "paint", TYPOGRAPHY), { min: -100, max: 100 }),
+  /** Whether underlines break where descenders cross them (`auto`, the browser's own, does). */
+  "typography.decorationSkipInk": oneOf(["auto", "none"], "auto", "text-decoration-skip-ink", "paint", TYPOGRAPHY),
+  "typography.smallCaps": flag(false, "layout", TYPOGRAPHY),
+  /** OpenType feature toggles as JSON (`{"liga": false, "tnum": true}`), drawn as `font-feature-settings`. */
+  "typography.fontFeatures": typed(str("", "font-feature-settings", "layout", TYPOGRAPHY)),
+  // FigCraft port F8, text layers: paragraphs, lists, truncation, vertical alignment and trim, text on a path
+  "typography.paragraphSpacing": ranged(px(0, null, "layout", only("text")), { min: 0, max: 1000 }),
+  "typography.paragraphIndent": ranged(px(0, null, "layout", only("text")), { min: 0, max: 1000 }),
+  "typography.list": oneOf(["none", "bulleted", "numbered"], "none", null, "layout", only("text")),
+  /** Each paragraph's list settings as JSON (`[{"list":"numbered","indent":1}]`), when they differ from `typography.list`. */
+  "typography.listParagraphs": typed(str("", null, "layout", only("text"))),
+  "typography.listSpacing": ranged(px(0, null, "layout", only("text")), { min: 0, max: 1000 }),
+  "typography.hangingList": flag(false, "layout", only("text")),
+  "typography.hangingPunctuation": flag(false, "layout", only("text")),
+  /** Lines shown before an ellipsis (0: as many as fit). */
+  "typography.maxLines": ranged(num(0, null, "layout", only("text")), { min: 0, max: 1000 }),
+  "typography.verticalAlign": oneOf(["top", "middle", "bottom"], "top", null, "layout", only("text")),
+  "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
+  /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
+  "typography.textPath": typed(str("", null, "layout", only("text"))),
 
   // --- Content ---------------------------------------------------------------
   "content.text": str("", null, "layout", only("text", "svgText", "generic")),
@@ -309,6 +352,12 @@ const DEFS = {
   "layout.flexDirection": oneOf(["row", "column", "row-reverse", "column-reverse"], "column", "flex-direction", "layout", FLEX),
   "layout.flexWrap": oneOf(["nowrap", "wrap", "wrap-reverse"], "nowrap", "flex-wrap", "layout", FLEX),
   "layout.justifyContent": oneOf(null, "flex-start", "justify-content", "layout", FLEX),
+  /** Wrapped lines (FigCraft port F6): `auto` packs them where the cross alignment says, `space-between` spreads them. */
+  "layout.alignContent": typed(oneOf(["auto", "space-between"], "auto", null, "layout", FLEX)),
+  /** Whether the frame's own inside stroke takes up room in its auto layout, like padding (FigCraft port F6). */
+  "layout.strokesIncluded": typed(flag(true, "layout", FLEX)),
+  /** Canvas stacking: the first child paints on top instead of the last (FigCraft port F6). */
+  "layout.reverseZ": typed(flag(false, "paint", FLEX)),
   "layout.alignItems": oneOf(null, "stretch", "align-items", "layout", FLEX),
   "layout.gap": px(0, "gap", "layout", FLEX),
   "layout.gapUnit": unitOf(FLEX),
@@ -331,6 +380,8 @@ const DEFS = {
   "layout.marginTop": px(0, "margin-top", "layout", LAYOUT),
   "layout.marginBottom": px(0, "margin-bottom", "layout", LAYOUT),
   "layout.alignSelf": oneOf(null, "auto", "align-self", "layout", LAYOUT),
+  /** A grid child's horizontal place in its cell (FigCraft port F6); `layout.alignSelf` is the vertical one. Empty follows the grid. */
+  "layout.justifySelf": typed(oneOf(["", "start", "center", "end", "stretch"], "", "justify-self", "layout", LAYOUT)),
   "layout.flex": str("", "flex", "layout", LAYOUT),
   /** How a free layer follows its frame when the frame is resized (Phase 42); the editor applies it at the resize. */
   /** A top-level frame whose width follows the breakpoint being viewed (Phase 43). */
@@ -429,6 +480,12 @@ const DEFS = {
   "svg.strokeDashoffset": num(0, "stroke-dashoffset", "paint", SVG_STROKED),
   /** The drawn path as nodes with handles, times and pressures, JSON (Phase 39); `svg.path` is what is drawn, this is what is edited and replayed. */
   "svg.nodes": typed(str("", null, "paint", only("svgPath"))),
+  /**
+   * A vector network (FigCraft port F4, `core/paths/vectorNetwork.ts`), JSON in the same 200 × 200 space as `svg.path`:
+   * points joined by any number of segments, filled by regions. When set it is what the layer draws; a Phase 40 path
+   * edit drops it.
+   */
+  "svg.network": typed(str("", null, "paint", only("svgPath"))),
   /** How overlapping parts of one path are filled; the boolean operations make compound paths that need `evenodd` (Phase 40). */
   "svg.fillRule": typed(oneOf(["nonzero", "evenodd"], "nonzero", "fill-rule", "paint", only("svgPath"))),
   "svg.href": str("", null, "paint", only("svgUse")),
@@ -454,9 +511,34 @@ const DEFS = {
   "shape.innerRadius": ranged(num(0.5, null, "paint", only("star")), { min: 0, max: 1 }),
   /** Corner rounding of polygon and star vertices. */
   "shape.vertexRadius": ranged(px(0, null, "paint", only("polygon", "star")), { min: 0 }),
-  /** Line and arrow ends. A line runs across its frame's width at mid-height; rotate the frame to angle it. */
-  "shape.startCap": typed(oneOf(["none", "arrow", "triangle", "circle", "square"], "none", null, "paint", only("line", "arrow"))),
-  "shape.endCap": typed(oneOf(["none", "arrow", "triangle", "circle", "square"], "none", null, "paint", only("line", "arrow"))),
+  /** Corner smoothing, 0 to 1: the continuous-curvature corner (0.6 is the iOS look). FigCraft port F1 (`core/geometry/shapes.ts`). */
+  "shape.cornerSmoothing": ranged(num(0, null, "paint", only("rectangle", "polygon", "star")), { min: 0, max: 1 }),
+  /** Ellipse arcs, pies and rings (FigCraft port F1): where the arc starts, clockwise from 3 o'clock, and how far it sweeps. */
+  "shape.arcStart": ranged(deg(0, null, "paint", only("ellipse")), { min: -360, max: 360 }),
+  "shape.arcSweep": ranged(deg(360, null, "paint", only("ellipse")), { min: -360, max: 360 }),
+  /** A ring's hole, as a fraction of the ellipse (0 is a solid pie or ellipse). */
+  "shape.arcInnerRatio": ranged(num(0, null, "paint", only("ellipse")), { min: 0, max: 1 }),
+  /**
+   * Line, arrow and path ends. A line runs across its frame's width at mid-height; rotate the frame to angle it.
+   * FigCraft port F3 adds round, the five arrowheads and draws them; `arrow`, `triangle` and `circle` are the older
+   * names of line arrow, triangle arrow and circle, still read.
+   */
+  "shape.startCap": typed(oneOf(CAP_OPTIONS, "none", null, "paint", only("line", "arrow", "svgPath"))),
+  "shape.endCap": typed(oneOf(CAP_OPTIONS, "none", null, "paint", only("line", "arrow", "svgPath"))),
+
+  // --- Strokes (FigCraft port F3, `core/paths/strokes.ts`) -------------------------
+  /** Where the stroke sits: inside the edge, centred on it, or outside. Unset keeps each archetype's older drawing. */
+  "stroke.align": typed(oneOf(["inside", "center", "outside"], "inside", null, "paint", VISUAL)),
+  /** Per-side weights, "top right bottom left" in px (rectangles and frames). Empty: one weight all round. */
+  "stroke.sides": typed(str("", null, "paint", only("rectangle", "container", "form", "button", "badge", "fab", "generic"))),
+  /** Variable width: JSON points `[{t, scale, bias?}]` along the path (see `parseWidthProfile`). Empty: uniform. */
+  "stroke.widthProfile": typed(str("", null, "paint", only("line", "svgPath", "rectangle", "ellipse", "polygon", "star"))),
+  /** A brush the stroke is drawn with (FigCraft port F3), as JSON: `{ "preset": "taper" | "dots" | …, spacing, sizeJitter, rotationJitter, scatter, seed }`. */
+  "stroke.brush": typed(str("", null, "paint", only("line", "svgPath", "rectangle", "ellipse", "polygon", "star"))),
+  /** Corners sharper than this ratio bevel instead of mitring (default 4, about 29°). */
+  "stroke.miterLimit": ranged(num(4, "stroke-miterlimit", "paint", SVG_STROKED), { min: 1, max: 100 }),
+  /** More than one stroke: a list of paints like `paint.fills`, first on top. When set it replaces the plain stroke colour. */
+  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath"))),
   "shape.headLength": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.headWidth": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.shaftWidth": ranged(px(4, null, "paint", only("arrow")), { min: 0 }),

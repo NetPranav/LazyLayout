@@ -28,6 +28,9 @@ import {
   Plus,
   PenTool,
   Pencil,
+  PaintBucket,
+  Shapes,
+  Scaling,
 } from "lucide-react";
 
 // Sub-Phase 43.2 (2026-09-27): replaces the old select/pan/pencil/text/wire/
@@ -63,6 +66,9 @@ const ICONS: Partial<Record<ToolId, React.ComponentType<{ size?: number; classNa
   text: Type,
   pen: PenTool,
   pencil: Pencil,
+  paintBucket: PaintBucket,
+  shapeBuilder: Shapes,
+  scale: Scaling,
 };
 
 export const FloatingDock: React.FC<FloatingDockProps> = ({

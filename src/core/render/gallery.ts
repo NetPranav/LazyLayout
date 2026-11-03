@@ -93,6 +93,9 @@ export const GALLERY_CASES: GalleryCase[] = [
   text("text-empty", "Text, empty falls back to the layer name", { "content.text": "" }),
   { ...text("text-long", "Text, long and wrapping", { "content.text": "The quick brown fox jumps over the lazy dog. ".repeat(6), "frame.width": 260 }), expectSize: { width: 260, height: 0 } },
   text("text-hostile", "Text, HTML is shown, not run", { "content.text": '<img src=x onerror="document.title=\'pwned\'"> <b>bold?</b>' }),
+  // FigCraft port F8: a nested numbered list with paragraph spacing, and text following an arc
+  text("text-list", "Text, a numbered list nested one level", { "content.text": "Plan\nDraw\nOutline\nShip", "typography.list": "numbered", "typography.listParagraphs": JSON.stringify([{ list: "numbered", indent: 0 }, { list: "numbered", indent: 0 }, { list: "numbered", indent: 1 }, { list: "numbered", indent: 0 }]), "typography.listSpacing": 4, "frame.width": 200 }),
+  { ...text("text-on-path", "Text on a path (an arc)", { "content.text": "Text along a curve", "frame.width": 200, "frame.height": 100, "text.sizing": "fixed", "typography.textPath": JSON.stringify({ d: "M10 90 C60 10 140 10 190 90", start: 0 }) }), expectSize: { width: 200, height: 100 } },
   text("text-centered", "Text, centred, wide word", { "content.text": "Supercalifragilisticexpialidocious_and_more_and_more_and_more", "typography.textAlign": "center", "frame.width": 200 }),
   // ---- vector ----
   { id: "svg-path", archetype: "svgPath", label: "SVG path", properties: { "svg.path": "M10 100 C 40 10, 90 10, 120 100 S 180 190, 190 100", "frame.width": 160, "frame.height": 80 }, expectSize: { width: 160, height: 80 } },
@@ -122,6 +125,77 @@ export const GALLERY_CASES: GalleryCase[] = [
   { id: "polygon-many", archetype: "polygon", label: "Polygon, 64 sides (clamped from 500)", properties: { "shape.sides": 500 }, expectSize: { width: 120, height: 120 } },
   { id: "star", archetype: "star", label: "Star", expectSize: { width: 120, height: 120 } },
   { id: "star-sharp", archetype: "star", label: "Star, 8 points, sharp", properties: { "shape.points": 8, "shape.innerRadius": 0.2 }, expectSize: { width: 120, height: 120 } },
+  // ---- FigCraft port F1: per-corner radii, corner smoothing, rounded vertices, arcs, pies and rings ----
+  { id: "rectangle-corners", archetype: "rectangle", label: "Rectangle, a radius per corner", properties: { "shape.cornerRadius.topLeft": 40, "shape.cornerRadius.topRight": 0, "shape.cornerRadius.bottomRight": 24, "shape.cornerRadius.bottomLeft": 8, "frame.width": 180, "frame.height": 100 }, expectSize: { width: 180, height: 100 } },
+  { id: "rectangle-smooth", archetype: "rectangle", label: "Rectangle, corner smoothing 60%, stroked", properties: { "shape.cornerRadius": 32, "shape.cornerSmoothing": 0.6, "svg.stroke": "#0f172a", "svg.strokeWidth": 4, "frame.width": 140, "frame.height": 140 }, expectSize: { width: 140, height: 140 } },
+  { id: "polygon-rounded", archetype: "polygon", label: "Polygon, rounded and smoothed vertices", properties: { "shape.sides": 5, "shape.vertexRadius": 14, "shape.cornerSmoothing": 0.6 }, expectSize: { width: 120, height: 120 } },
+  { id: "star-rounded", archetype: "star", label: "Star, rounded points", properties: { "shape.vertexRadius": 6, "shape.innerRadius": 0.45 }, expectSize: { width: 120, height: 120 } },
+  { id: "ellipse-pie", archetype: "ellipse", label: "Ellipse, a three-quarter pie", properties: { "shape.arcStart": -90, "shape.arcSweep": 270 }, expectSize: { width: 120, height: 120 } },
+  { id: "ellipse-ring", archetype: "ellipse", label: "Ellipse, a ring", properties: { "shape.arcInnerRatio": 0.6, "frame.width": 160, "frame.height": 120 }, expectSize: { width: 160, height: 120 } },
+  { id: "ellipse-arc-ring", archetype: "ellipse", label: "Ellipse, a half ring, stroked", properties: { "shape.arcStart": 180, "shape.arcSweep": 180, "shape.arcInnerRatio": 0.5, "svg.stroke": "#206859", "svg.strokeWidth": 3 }, expectSize: { width: 120, height: 120 } },
+  // ---- FigCraft port F2: the diamond gradient and blend modes per fill ----
+  { id: "rectangle-diamond", archetype: "rectangle", label: "Rectangle, diamond gradient", properties: { "paint.fills": JSON.stringify([{ type: "diamond", stops: [{ at: 0, color: "#facc15" }, { at: 1, color: "#7c3aed" }], center: { x: 0.5, y: 0.5 }, radius: { x: 0.5, y: 0.5 } }]), "frame.width": 160, "frame.height": 100 }, expectSize: { width: 160, height: 100 } },
+  { id: "container-diamond", archetype: "container", label: "Frame, off-centre diamond gradient", properties: { "paint.fills": JSON.stringify([{ type: "diamond", stops: [{ at: 0, color: "#ffffff" }, { at: 1, color: "#0f766e" }], center: { x: 0.3, y: 0.4 }, radius: { x: 0.4, y: 0.6 } }]), "frame.width": 160, "frame.height": 100, "sizing.horizontal": "fixed", "sizing.vertical": "fixed" }, expectSize: { width: 160, height: 100 } },
+  { id: "rectangle-blend", archetype: "rectangle", label: "Rectangle, a multiply fill over a gradient", properties: { "paint.fills": JSON.stringify([{ type: "solid", color: "#38bdf8", blend: "multiply" }, { type: "linear", stops: [{ at: 0, color: "#f43f5e" }, { at: 1, color: "#fde047" }], from: { x: 0, y: 0.5 }, to: { x: 1, y: 0.5 } }]), "frame.width": 160, "frame.height": 80 }, expectSize: { width: 160, height: 80 } },
+  // ---- FigCraft port F3: stroke alignment, several strokes, per-side weights, widths and arrowheads ----
+  { id: "rectangle-stroke-inside", archetype: "rectangle", label: "Rectangle, 8 px inside stroke", properties: { "svg.stroke": "#0f172a", "svg.strokeWidth": 8, "stroke.align": "inside", "shape.cornerRadius": 16, "frame.width": 140, "frame.height": 90 }, expectSize: { width: 140, height: 90 } },
+  { id: "ellipse-stroke-outside", archetype: "ellipse", label: "Ellipse, 6 px outside stroke", properties: { "svg.stroke": "#be185d", "svg.strokeWidth": 6, "stroke.align": "outside", "svg.fill": "#fbcfe8" }, expectSize: { width: 120, height: 120 } },
+  { id: "star-two-strokes", archetype: "star", label: "Star, a gradient stroke over a wide solid one", properties: { "svg.strokeWidth": 4, "stroke.align": "center", "paint.strokes": JSON.stringify([{ type: "linear", stops: [{ at: 0, color: "#f59e0b" }, { at: 1, color: "#dc2626" }], from: { x: 0, y: 0 }, to: { x: 1, y: 1 } }]) }, expectSize: { width: 120, height: 120 } },
+  { id: "rectangle-stroke-sides", archetype: "rectangle", label: "Rectangle, a bottom border only", properties: { "svg.stroke": "#2563eb", "svg.strokeWidth": 1, "stroke.sides": "0 0 6 0", "shape.cornerRadius": 12, "frame.width": 160, "frame.height": 60, "svg.fill": "#eff6ff" }, expectSize: { width: 160, height: 60 } },
+  { id: "line-arrow", archetype: "line", label: "Line, triangle arrow at the end, round start", properties: { "shape.endCap": "triangleArrow", "shape.startCap": "circleFilled", "svg.strokeWidth": 3, "frame.width": 180, "frame.height": 24 }, expectSize: { width: 180, height: 24 } },
+  { id: "line-tapered", archetype: "line", label: "Line, tapered both ends", properties: { "stroke.widthProfile": JSON.stringify([{ t: 0, scale: 0 }, { t: 0.2, scale: 1 }, { t: 0.8, scale: 1 }, { t: 1, scale: 0 }]), "svg.strokeWidth": 10, "frame.width": 180, "frame.height": 12 }, expectSize: { width: 180, height: 12 } },
+  { id: "container-stroke-outside", archetype: "container", label: "Frame, 4 px outside stroke", properties: { "appearance.border.width": 4, "appearance.border.style": "solid", "appearance.border.color": "#0f766e", "stroke.align": "outside", "appearance.radius": 12, "frame.width": 140, "frame.height": 80, "sizing.horizontal": "fixed", "sizing.vertical": "fixed", "appearance.background.color": "#f0fdfa" }, expectSize: { width: 140, height: 80 } },
+  // ---- FigCraft port F4: a vector network (a square with a diagonal, one triangle filled, one rounded point) ----
+  {
+    id: "svg-network",
+    archetype: "svgPath",
+    label: "Vector network, one of two faces filled, a rounded point",
+    properties: {
+      "frame.width": 120,
+      "frame.height": 120,
+      "svg.fill": "#a78bfa",
+      "svg.stroke": "#4c1d95",
+      "svg.strokeWidth": 2,
+      "svg.network": '{"vertices":[{"x":20,"y":20},{"x":180,"y":20,"radius":30},{"x":180,"y":180},{"x":20,"y":180}],"segments":[{"a":0,"b":1},{"a":1,"b":2},{"a":2,"b":3},{"a":3,"b":0},{"a":0,"b":2}],"regions":[{"loops":[[0,1,4]]}]}',
+    },
+    expectSize: { width: 120, height: 120 },
+  },
+  // ---- FigCraft port F5: a live boolean group (a square minus a circle), its operands hidden but kept ----
+  {
+    id: "boolean-subtract",
+    archetype: "container",
+    label: "Live boolean group: a square minus a circle",
+    properties: { "boolean.operation": "subtract", "frame.width": 120, "frame.height": 120, "sizing.horizontal": "fixed", "sizing.vertical": "fixed", "paint.fills": JSON.stringify([{ type: "solid", color: "#0ea5e9" }]) },
+    children: [
+      { id: "boolean-subtract-square", archetype: "rectangle", label: "square", properties: { positioning: "absolute", "frame.x": 0, "frame.y": 0, "frame.width": 90, "frame.height": 90 } },
+      { id: "boolean-subtract-circle", archetype: "ellipse", label: "circle", properties: { positioning: "absolute", "frame.x": 40, "frame.y": 40, "frame.width": 80, "frame.height": 80 } },
+    ],
+    expectSize: { width: 120, height: 120 },
+  },
+  // ---- FigCraft port F7: noise, texture, glass and a progressive blur (not screenshot goldens: grain differs by browser) ----
+  { id: "fx-noise-mono", archetype: "rectangle", label: "Noise, mono grains on a rectangle", properties: { "frame.width": 120, "frame.height": 80, "svg.fill": "#e2e8f0", "paint.effects": JSON.stringify([{ type: "noise", mode: "mono", size: 1, density: 0.6, color: "rgba(0, 0, 0, 0.5)" }]) }, expectSize: { width: 120, height: 80 } },
+  { id: "fx-noise-duo", archetype: "container", label: "Noise, duo grains on a frame", properties: { "frame.width": 120, "frame.height": 80, "appearance.background.color": "#6366f1", "appearance.radius": 12, "paint.effects": JSON.stringify([{ type: "noise", mode: "duo", size: 2, density: 0.5, color: "rgba(0, 0, 0, 0.4)", secondary: "rgba(255, 255, 255, 0.4)" }]) }, expectSize: { width: 120, height: 80 } },
+  { id: "fx-texture", archetype: "ellipse", label: "Texture: roughened edges on an ellipse", properties: { "frame.width": 100, "frame.height": 100, "svg.fill": "#0ea5e9", "paint.effects": JSON.stringify([{ type: "texture", size: 2, radius: 6, clipToShape: false }]) }, expectSize: { width: 100, height: 100 } },
+  {
+    id: "fx-glass",
+    archetype: "container",
+    label: "Glass over stripes (an approximation)",
+    properties: { "frame.width": 160, "frame.height": 100, "layout.padding": 0, "paint.fills": JSON.stringify([{ type: "linear", stops: [{ at: 0, color: "#f59e0b" }, { at: 0.5, color: "#ec4899" }, { at: 1, color: "#6366f1" }], from: { x: 0, y: 0 }, to: { x: 1, y: 1 } }]) },
+    children: [
+      { id: "fx-glass-pane", archetype: "container", label: "Pane", properties: { positioning: "absolute", "frame.x": 25, "frame.y": 20, "frame.width": 110, "frame.height": 60, "appearance.radius": 16, "paint.fills": JSON.stringify([{ type: "solid", color: "#ffffff", opacity: 0.15 }]), "paint.effects": JSON.stringify([{ type: "glass" }]) } },
+    ],
+    expectSize: { width: 160, height: 100 },
+  },
+  {
+    id: "fx-progressive-blur",
+    archetype: "container",
+    label: "Progressive background blur: sharp at the top, blurred at the bottom",
+    properties: { "frame.width": 160, "frame.height": 100, "layout.padding": 0, "paint.fills": JSON.stringify([{ type: "conic", stops: [{ at: 0, color: "#ef4444" }, { at: 0.25, color: "#22c55e" }, { at: 0.5, color: "#3b82f6" }, { at: 0.75, color: "#eab308" }, { at: 1, color: "#ef4444" }], center: { x: 0.5, y: 0.5 }, angle: 0 }]) },
+    children: [
+      { id: "fx-progressive-blur-pane", archetype: "container", label: "Pane", properties: { positioning: "absolute", "frame.x": 0, "frame.y": 0, "frame.width": 160, "frame.height": 100, "paint.effects": JSON.stringify([{ type: "backgroundBlur", blurType: "progressive", radius: 12, startRadius: 0, start: [0.5, 0], end: [0.5, 1] }]) } },
+    ],
+    expectSize: { width: 160, height: 100 },
+  },
   { id: "arrow", archetype: "arrow", label: "Arrow", expectSize: { width: 160, height: 32 } },
   { id: "arrow-big-head", archetype: "arrow", label: "Arrow, head larger than the box", properties: { "shape.headLength": 400, "shape.headWidth": 400 }, expectSize: { width: 160, height: 32 } },
   // ---- paint and effects (Phase 35): the cases the screenshot gate compares across browsers ----
