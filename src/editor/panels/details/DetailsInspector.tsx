@@ -39,7 +39,11 @@ import { MaterialInspectorSection } from "./sections/MaterialInspectorSection";
 import { EnvironmentInspector } from "./EnvironmentInspector";
 import { VectorBar } from "./VectorBar";
 import { OverridesPanel } from "./OverridesPanel";
+import { LinkPanel } from "./LinkPanel";
+import { ComponentPanel } from "./ComponentPanel";
+import { BindingsPanel } from "./BindingsPanel";
 import { AutoLayoutPanel } from "./AutoLayoutPanel";
+import { LayoutGridsPanel } from "./LayoutGridsPanel";
 import { ConstraintsPanel, GridPanel } from "./GridPanel";
 import { AlignBar } from "./AlignBar";
 import { TextProperties } from "./TextProperties";
@@ -154,9 +158,13 @@ export const DetailsInspector: React.FC<DetailsInspectorProps> = ({
         {face === "pro" && <SectionRail items={railItems} onSelect={jumpToSection} />}
         <div className="panel-content">
         <AlignBar />
+        <ComponentPanel />
+        <LinkPanel />
         <OverridesPanel />
+        <BindingsPanel />
         <VectorBar />
         <AutoLayoutPanel />
+        <LayoutGridsPanel />
         <GridPanel />
         <ConstraintsPanel />
         <div className="inspector-face-switch" role="tablist" aria-label="Inspector face">

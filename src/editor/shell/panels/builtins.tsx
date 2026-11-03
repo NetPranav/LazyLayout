@@ -65,10 +65,12 @@ export function registerBuiltInPanels(): void {
   // ---- left ----
   registerPanel({ id: "layers", title: "Layers", zone: "left", edition: "initial", focusScope: "canvas", component: LayersPanel });
   registerPanel({ id: "assets", title: "Assets", zone: "left", edition: "initial", component: AssetsPanel });
+  registerPanel({ id: "pages", title: "Pages", zone: "left", edition: "initial", load: async () => (await import("@/editor/panels/pages/PagesPanel")).PagesPanel });
 
   // ---- right ----
   // The inspector's tabs (Phase 15): Design · Motion · Code, and Debug in the full edition.
   registerPanel({ id: "design", title: "Design", zone: "right", edition: "initial", component: DetailsInspector, props: detailsProps });
+  registerPanel({ id: "tokens", title: "Tokens", zone: "right", edition: "initial", load: async () => (await import("@/editor/panels/tokens/TokenManager")).TokenManager });
   registerPanel({
     id: "motion",
     title: "Motion",
@@ -81,7 +83,7 @@ export function registerBuiltInPanels(): void {
       onOpenTimeline: () => c.showBottomTab("sequencer"),
     }),
   });
-  registerPanel({ id: "code", title: "Code", zone: "right", edition: "initial", load: async () => (await import("@/editor/panels/code-view")).LiveCodeInspector });
+  registerPanel({ id: "code", title: "Code", zone: "right", edition: "initial", load: async () => (await import("@/editor/panels/export/ExportCodePanel")).ExportCodePanel });
   registerPanel({ id: "debug", title: "Debug", zone: "right", edition: "full", load: async () => (await import("@/editor/panels/console/OutputConsole")).OutputConsole });
   // The Output Log drawer renders the console on its own.
   registerPanel({ id: "console", title: "Output Log", zone: "right", edition: "initial", load: async () => (await import("@/editor/panels/console/OutputConsole")).OutputConsole });

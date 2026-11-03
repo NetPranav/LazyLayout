@@ -26,6 +26,7 @@ import { MAX_CLIP_LAYERS, parseClip, serializeClip, type ClipPayload } from "./c
 import { parentOrigin, worldBox, writeBoxes } from "./layerBoxes";
 import { documentOrder, isSelectable } from "../selection/selectionOps";
 import { repairPageRoots } from "../frames/pageRoots";
+import { insertInstance } from "../components/componentOps";
 
 const DEFAULT_OFFSET = { dx: 16, dy: 16 };
 
@@ -167,12 +168,16 @@ function duplicateOffset(ids: readonly string[]): { dx: number; dy: number } {
   return DEFAULT_OFFSET;
 }
 
-/** Duplicates the selection beside the originals (frames to the right). Returns the copies' ids. */
-export function duplicateLayers(ids: readonly string[]): string[] {
+/**
+ * Duplicates the selection beside the originals (frames to the right). With `inPlace` the copies sit exactly on the
+ * originals (an Alt-drag copies, then moves the copies: FigCraft port F12); a later Duplicate of those copies repeats
+ * the step they were moved by. Returns the copies' ids.
+ */
+export function duplicateLayers(ids: readonly string[], options: { inPlace?: boolean } = {}): string[] {
   const roots = editableRoots(ids);
   if (roots.length === 0) return [];
   const doc = getDocument();
-  const offset = duplicateOffset(roots);
+  const offset = options.inPlace ? { dx: 0, dy: 0 } : duplicateOffset(roots);
   const copies: string[] = [];
   transaction("Duplicate", () => {
     for (const id of roots) {
@@ -180,6 +185,19 @@ export function duplicateLayers(ids: readonly string[]): string[] {
       if (original.parentId === null) {
         copies.push(duplicateFrame(id));
         continue;
+      }
+      // a main component duplicates as an instance of it, as in Figma (FigCraft port F9)
+      const comp = original.componentMain ? doc.designComponents?.[original.componentMain] : undefined;
+      if (comp) {
+        const absolute = original.properties.positioning === "absolute";
+        const at = { x: (typeof original.properties["frame.x"] === "number" ? original.properties["frame.x"] : 0) + offset.dx, y: (typeof original.properties["frame.y"] === "number" ? original.properties["frame.y"] : 0) + offset.dy };
+        const index = getDocument().layers[original.parentId].children.indexOf(id) + 1;
+        const variant = comp.variants?.find((v) => v.mainId === id)?.values;
+        const inst = insertInstance(comp.id, { parentId: original.parentId, index, flow: !absolute, ...(absolute ? { at } : {}), ...(variant ? { variant } : {}) });
+        if (inst) {
+          copies.push(inst);
+          continue;
+        }
       }
       const bundle = cloneLayers(getDocument().layers, getDocument().clips, [id], { layers: getDocument().layers, clips: getDocument().clips });
       const root = bundle.layers[0];
@@ -229,6 +247,31 @@ export function deleteLayers(ids: readonly string[]): number {
 /** Moves the selection by (dx, dy). A flow-placed layer becomes absolute at its place first. */
 export function nudgeLayers(ids: readonly string[], dx: number, dy: number): void {
   const roots = editableRoots(ids);
+  // FigCraft port F6: in an auto-layout stack, arrows along its direction move a child one place through the flow
+  // (instead of pulling it out of the stack to a free position); arrows across it do nothing
+  const l = layers();
+  const flowParent = (id: string) => {
+    const layer = l[id];
+    const parent = layer?.parentId ? l[layer.parentId] : undefined;
+    return parent && parent.archetype === "container" && parent.properties["layout.auto"] === true && layer.properties.positioning !== "absolute" ? parent : null;
+  };
+  // a layer inside an instance keeps the main's order and place (FigCraft port F9)
+  if (roots.some((id) => l[id]?.instance && !l[id].instance!.root)) return;
+  if (roots.length > 0 && roots.every((id) => flowParent(id))) {
+    transaction("Reorder", () => {
+      for (const id of roots) {
+        const parent = flowParent(id)!;
+        const row = parent.properties["layout.flexDirection"] === "row";
+        const step = row ? Math.sign(dx) : Math.sign(dy);
+        if (step === 0) continue;
+        const kids = getDocument().layers[parent.id].children;
+        const at = kids.indexOf(id);
+        const to = Math.max(0, Math.min(kids.length - 1, at + step));
+        if (to !== at) documentCommands.moveLayer(id, parent.id, to);
+      }
+    });
+    return;
+  }
   const boxes = roots.map((id) => worldBox(id)).filter((b): b is Box => b !== null);
   if (boxes.length !== roots.length || roots.length === 0) return;
   transaction("Nudge", () => writeBoxes(roots, moveBoxes(boxes, dx, dy)));

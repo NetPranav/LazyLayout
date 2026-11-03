@@ -5,6 +5,9 @@ import { invokeCommand } from "@/core/commands";
 import { breakpointsOf, isBase } from "@/core/breakpoints/breakpoints";
 import { targetFrameId } from "@/core/breakpoints/breakpointOps";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { useBreakpointViewStore } from "@/core/store/useBreakpointViewStore";
+import { useModeStore } from "@/core/store/useModeStore";
+import { modesOf } from "@/core/tokens/tokens";
 import { documentStore } from "@/core/store/documentState";
 
 /**
@@ -18,6 +21,9 @@ export const BreakpointBar: React.FC = () => {
   const doc = documentStore((s) => s.document);
   const list = breakpointsOf(doc);
   const base = isBase(list, activeId);
+  const showAll = useBreakpointViewStore((s) => s.showAll);
+  const activeMode = useModeStore((s) => s.activeModeId);
+  const modes = modesOf(doc);
   const [adding, setAdding] = useState(false);
   const [width, setWidth] = useState("1024");
   const frameId = targetFrameId();
@@ -61,6 +67,18 @@ export const BreakpointBar: React.FC = () => {
         <button type="button" className="panel-icon-btn panel-text-btn" aria-label="Add breakpoint" title="Add a breakpoint" onClick={() => setAdding(true)} style={{ padding: "3px 8px" }}>
           +
         </button>
+      )}
+      <button type="button" className="panel-icon-btn panel-text-btn" aria-pressed={showAll} aria-label="Show all breakpoints" title="Show every breakpoint of a responsive page side by side" onClick={() => useBreakpointViewStore.getState().setShowAll(!showAll)} style={{ fontWeight: showAll ? 600 : 400 }}>
+        All
+      </button>
+      {Object.keys(doc.variables ?? {}).length > 0 && (
+        <span role="group" aria-label="Mode" style={{ display: "inline-flex", gap: 2, marginLeft: 6, paddingLeft: 6, borderLeft: "1px solid rgba(128,128,128,0.3)" }}>
+          {modes.map((m, i) => (
+            <button key={m.id} type="button" className="panel-icon-btn panel-text-btn" aria-pressed={(activeMode ?? modes[0].id) === m.id} aria-label={`Mode: ${m.name}`} style={{ fontWeight: (activeMode ?? modes[0].id) === m.id ? 600 : 400 }} onClick={() => void invokeCommand("token.setMode", { id: i === 0 ? null : m.id })}>
+              {m.name}
+            </button>
+          ))}
+        </span>
       )}
       {!base && list.length > 1 && (
         <button type="button" className="panel-icon-btn panel-text-btn" aria-label={`Remove ${list.find((b) => b.id === activeId)?.name ?? "breakpoint"}`} title="Remove this breakpoint and its overrides" onClick={() => void invokeCommand("breakpoint.remove", { id: activeId })} style={{ padding: "3px 8px" }}>
