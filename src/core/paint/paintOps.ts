@@ -3,12 +3,14 @@
  * layers and layers that can't carry the property. The commands in `editCommands.ts` wrap them (Law 20).
  */
 
+import { sanitizeProfile, serializeWidthProfile, type StrokeAlign, type StrokeCap } from "../paths/strokes";
 import { isPropertyLegalFor } from "../document/properties";
 import { setLayerProps } from "../editing/editOps";
 import { resolveProps } from "../render/resolve";
 import { getDocument } from "../store/documentState";
 import { simplePaths } from "../inspector/simpleControls";
 import { safeImageSrc } from "../render/limits";
+import { parseEffect, parseEffects, serializeEffects, type Effect } from "./effects";
 import { DASH_PRESETS, effectiveFills, parseShadows, safeDashArray, serializeFills, serializeShadows, type Paint, type Shadow } from "./paints";
 
 const layers = () => getDocument().layers;
@@ -55,6 +57,20 @@ export function setShadows(ids: readonly string[], shadows: readonly Shadow[]): 
   return setLayerProps(ids, { "paint.shadows": serializeShadows(shadows) }, "Shadow");
 }
 
+// --- Effects (FigCraft port F7) ------------------------------------------------------
+
+/** A layer's effect list: progressive blurs, noise, texture, glass (`paint.effects`). */
+export function effectsOf(id: string): Effect[] {
+  const layer = layers()[id];
+  return layer ? parseEffects(resolveProps(layer).get("paint.effects")) : [];
+}
+
+/** Sets the effect list of layers (each effect sanitised); an empty list removes it. */
+export function setEffects(ids: readonly string[], effects: readonly unknown[]): number {
+  const list = effects.map(parseEffect).filter((e): e is Effect => e !== null);
+  return setLayerProps(ids.filter((id) => layers()[id] && isPropertyLegalFor("paint.effects", layers()[id].archetype as never)), { "paint.effects": serializeEffects(list) }, "Effect");
+}
+
 export function setBlur(ids: readonly string[], blur: { layer?: number; background?: number }): number {
   const props: Record<string, number> = {};
   if (blur.layer !== undefined && Number.isFinite(blur.layer)) props["filter.blur"] = Math.min(200, Math.max(0, blur.layer));
@@ -71,7 +87,7 @@ export function fillSummary(id: string): string {
   const fills = fillsOf(id).filter((p) => p.visible);
   if (fills.length === 0) return "None";
   if (fills.length === 1 && fills[0].type === "solid") return fills[0].color;
-  if (fills.some((p) => p.type === "linear" || p.type === "radial" || p.type === "conic")) return "Gradient";
+  if (fills.some((p) => p.type === "linear" || p.type === "radial" || p.type === "conic" || p.type === "diamond")) return "Gradient";
   if (fills.some((p) => p.type === "image")) return "Picture";
   return "Multiple fills";
 }
@@ -137,6 +153,52 @@ export function replaceImage(ids: readonly string[], src: string, natural?: { w:
     const fills = fillsOf(id);
     if (!fills.some((p, i) => p.type === "image" && (index === undefined || i === index))) continue;
     changed += setFills([id], fills.map((p, i) => (p.type === "image" && (index === undefined || i === index) ? { ...p, src: safe, natural } : p)));
+  }
+  return changed;
+}
+
+// --- Strokes (FigCraft port F3) ---------------------------------------------------
+
+/** Which kinds of layer take a list of stroke paints (`paint.strokes`). */
+const STROKE_LIST_ARCHETYPES = new Set(["rectangle", "ellipse", "polygon", "star", "line", "svgPath"]);
+
+/** The stroke paints of a layer: its `paint.strokes`, else its plain stroke colour as one solid paint (none for `none`). */
+export function strokesOf(id: string): Paint[] {
+  const layer = layers()[id];
+  if (!layer) return [];
+  const r = resolveProps(layer);
+  return effectiveFills(r.get("paint.strokes"), r.str("svg.stroke", "none"));
+}
+
+/** Sets the stroke paints of layers that take them; an empty list removes the list (the plain stroke colour returns). */
+export function setStrokes(ids: readonly string[], strokes: readonly Paint[]): number {
+  return setLayerProps(ids.filter((id) => layers()[id] && STROKE_LIST_ARCHETYPES.has(layers()[id].archetype)), { "paint.strokes": strokes.length ? serializeFills(strokes) : "" }, "Stroke");
+}
+
+export interface StrokeSettingsPatch {
+  align?: StrokeAlign | null;
+  sides?: [number, number, number, number] | null;
+  widthProfile?: { t: number; scale: number; bias?: number }[] | null;
+  capStart?: StrokeCap;
+  capEnd?: StrokeCap;
+  miterLimit?: number;
+}
+
+/** Writes stroke settings to the layers each applies to (a null clears it). Returns how many layers changed. */
+export function setStrokeSettings(ids: readonly string[], patch: StrokeSettingsPatch): number {
+  let changed = 0;
+  for (const id of ids) {
+    const layer = layers()[id];
+    if (!layer) continue;
+    const props: Record<string, string | number> = {};
+    const legal = (path: string) => isPropertyLegalFor(path, layer.archetype);
+    if (patch.align !== undefined && legal("stroke.align")) props["stroke.align"] = patch.align ?? "";
+    if (patch.sides !== undefined && legal("stroke.sides")) props["stroke.sides"] = patch.sides ? patch.sides.map((v) => Math.max(0, Math.min(1000, v))).join(" ") : "";
+    if (patch.widthProfile !== undefined && legal("stroke.widthProfile")) props["stroke.widthProfile"] = serializeWidthProfile(patch.widthProfile ? sanitizeProfile(patch.widthProfile) : null);
+    if (patch.capStart !== undefined && legal("shape.startCap")) props["shape.startCap"] = patch.capStart;
+    if (patch.capEnd !== undefined && legal("shape.endCap")) props["shape.endCap"] = patch.capEnd;
+    if (patch.miterLimit !== undefined && legal("stroke.miterLimit")) props["stroke.miterLimit"] = Math.max(1, Math.min(100, patch.miterLimit));
+    if (Object.keys(props).length) changed += setLayerProps([id], props, "Stroke settings");
   }
   return changed;
 }

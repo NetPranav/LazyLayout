@@ -16,11 +16,16 @@ import type { PropValue } from "@/core/document/registry";
 import { proGroupsFor, type ProProperty } from "@/core/inspector/proModel";
 import { proValue, type ProValue } from "@/core/inspector/proRead";
 import { useLayers } from "@/core/store/useDocumentStore";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { ColorField } from "../controls/ColorField";
 import { PaintEditor } from "../paint/PaintEditor";
 import { EffectsEditor, StrokeStyleEditor } from "../paint/EffectsEditor";
+import { StrokeSettingsEditor } from "../paint/StrokeSettingsEditor";
 import { ImageSourcePicker } from "../paint/ImageSourcePicker";
+import { TextExtrasEditor } from "../paint/TextExtrasEditor";
+import { SelectionToolsEditor } from "../paint/SelectionToolsEditor";
+import { ExportSettingsEditor } from "../paint/ExportSettingsEditor";
 import { ScrubNumber } from "../controls/ScrubNumber";
 import "@/editor/styles/pro-face.css";
 
@@ -143,6 +148,7 @@ const TextControl: React.FC<{ property: ProProperty; value: ProValue["value"]; l
 export const ProFace: React.FC = () => {
   const layers = useLayers();
   const ids = useSelectionStore((s) => s.selectedIds);
+  const activeBreakpoint = useBreakpointStore((s) => s.activeId);
   const [filter, setFilter] = useState("");
   const archetypeKey = ids.map((id) => layers[id]?.archetype ?? "").join(",");
   const groups = useMemo(() => proGroupsFor(archetypeKey.split(",").filter(Boolean)), [archetypeKey]);
@@ -155,7 +161,11 @@ export const ProFace: React.FC = () => {
           <ImageSourcePicker />
           <PaintEditor />
           <StrokeStyleEditor />
+          <StrokeSettingsEditor />
           <EffectsEditor />
+          <TextExtrasEditor />
+          <SelectionToolsEditor />
+          <ExportSettingsEditor />
         </>
       )}
       <input type="search" className="pro-face__filter" aria-label="Filter properties" placeholder="Filter properties" value={filter} onChange={(e) => setFilter(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
@@ -172,11 +182,12 @@ export const ProFace: React.FC = () => {
                 const state = proValue(layers, ids, p.path, p.def);
                 const unit = p.unitPath ? proValue(layers, ids, p.unitPath, PROPERTY_REGISTRY[p.unitPath]) : null;
                 return (
-                  <div key={p.path} className="pro-row" role="group" aria-label={p.label} data-prop-path={p.path} data-kind={p.kind}>
+                  <div key={p.path} className="pro-row" role="group" aria-label={p.label} data-prop-path={p.path} data-kind={p.kind} data-overridden={activeBreakpoint && ids.some((id) => layers[id]?.overrides?.[activeBreakpoint]?.[p.path] !== undefined) ? "true" : undefined}>
                     {p.kind !== "number" && <span className="pro-row__label">{p.label}</span>}
                     <span className="pro-row__control">
                       <Control property={p} state={state} unit={unit} />
                     </span>
+                    {activeBreakpoint && ids.some((id) => layers[id]?.overrides?.[activeBreakpoint]?.[p.path] !== undefined) && <span className="pro-row__override" title="Overridden at this breakpoint" aria-label="Overridden" style={{ width: 6, height: 6, borderRadius: 3, background: "#2563eb", display: "inline-block", marginRight: 2 }} />}
                     {state.explicit ? (
                       <button type="button" className="pro-row__reset" aria-label={`Reset ${p.label}`} title="Back to the default" onClick={() => write(p.path, null)}>
                         <RotateCcw size={11} />

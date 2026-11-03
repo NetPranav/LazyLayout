@@ -42,6 +42,12 @@ import { attachClip, createLayer, getLayerClips, getSubtreeIds, type NewLayerInp
 import { type ArchetypeId, type LayerProps, type PropValue } from "../document/registry";
 import { canonicalizeProps, canonicalizeTrackPath, coercePropertyValue, getPropertyDefinition, resolvePropertyPath } from "../document/properties";
 import { removeLayerDependents } from "../document/migrations";
+import { applyConstraintsToChildren } from "../layout/constrainChildren";
+import { appliedBreakpoints, breakpointsOf, isBase, resolveDocumentAt, resolveLayerAt, VISIBLE_KEY } from "../breakpoints/breakpoints";
+import { useBreakpointStore } from "./useBreakpointStore";
+import { useModeStore } from "./useModeStore";
+import { STYLE_SLOTS, slotProps, slotTriggers, type StyleSlot } from "../tokens/tokens";
+import { lockedByInstance, markOverridden, syncInstances } from "../components/instances";
 import { syncCompositions, type CompositionLayer, type Marker } from "../document/compositions";
 import {
   validateMotionDocument,
@@ -203,6 +209,8 @@ function commit(label: string | undefined, recipe: (draft: Draft<MotionDocument>
     recipe(draft);
     commitHook?.(draft, before);
     syncCompositions(draft as MotionDocument);
+    // an edited main component brings its instances in line, in this same change (Phase 46)
+    syncInstances(draft as MotionDocument, before);
   });
   const resolvedLabel = label ?? DEFAULT_LABEL;
   if (patches.length === 0) return { label: resolvedLabel, patches, inversePatches };
@@ -517,6 +525,31 @@ function canonicalClip<T extends { duration: number; tracks: Track[] }>(archetyp
   return coverKeyframes({ ...clip, tracks: canonicalTracks(archetype, clip.tracks, where) });
 }
 
+/**
+ * Before a hand edit lands on `paths` of `layer`: a property bound to a variable is marked detached (the edit is its new
+ * literal value), and a text or effect style that owns an edited property is let go after its values are copied into
+ * the layer, so the rest of the style's look stays where it was.
+ */
+function detachOnEdit(doc: MotionDocument, layer: Layer, paths: readonly string[]) {
+  if (layer.tokens) {
+    for (const key of paths) {
+      const res = resolvePropertyPath(key, layer.archetype);
+      const b = layer.tokens[res.ok ? res.path : key];
+      if (b && !b.detached) b.detached = true;
+    }
+  }
+  if (layer.styleRefs) {
+    // editing what a style gives the layer lets go of the style, keeping its values (text and effect: Phase 45; fill, stroke and grid: FigCraft port F10)
+    const refs = layer.styleRefs as Partial<Record<StyleSlot, string>>;
+    for (const slot of STYLE_SLOTS) {
+      if (!refs[slot] || !paths.some((p) => slotTriggers(slot, layer.archetype).includes(p))) continue;
+      Object.assign(layer.properties, slotProps(doc, layer, slot));
+      delete refs[slot];
+    }
+    if (STYLE_SLOTS.every((s) => !refs[s])) delete layer.styleRefs;
+  }
+}
+
 export const documentCommands = {
   /** Opens a transaction for a gesture (see the file header). Nested calls join the open one. */
   begin(label: string): DocumentTransaction {
@@ -567,6 +600,12 @@ export const documentCommands = {
     commit(label, (draft) => {
       const layer = draft.layers[layerId];
       if (!layer) return;
+      // a layer inside an instance mirrors the main one: deleting it hides it (the instance's own change), it isn't gone (Phase 46)
+      if (layer.instance && !layer.instance.root) {
+        layer.visible = false;
+        markOverridden(layer as Layer, ["visible"]);
+        return;
+      }
       detachChild(draft, layer);
       const doomed = new Set(getSubtreeIds(draft as MotionDocument, layerId));
       doomed.forEach((id) => delete draft.layers[id]);
@@ -580,13 +619,34 @@ export const documentCommands = {
     });
   },
 
-  /** Shallow-merges `patch` into the layer's props. An `undefined` value deletes that prop. */
+  /**
+   * Shallow-merges `patch` into the layer's props. An `undefined` value deletes that prop. While a smaller breakpoint
+   * is active (Phase 43) the changes go to the layer's overrides for it instead, so the base is untouched; a change
+   * to the value the layer already has there writes nothing, and a change back to the base value drops the override.
+   */
   updateProps(layerId: string, patch: Record<string, PropValue | undefined>, label?: string) {
     commit(label, (draft) => {
       const layer = requireLayer(draft, layerId);
       const props = layer.properties;
+      const list = breakpointsOf(draft);
+      const activeId = useBreakpointStore.getState().activeId;
+      const routed: Record<string, PropValue | undefined> = {};
+      // a layer inside an instance can't be moved or rotated: the main places it (FigCraft port F9)
+      if (layer.instance && !layer.instance.root) patch = Object.fromEntries(Object.entries(patch).filter(([k]) => !lockedByInstance(layer as Layer, resolvePropertyPath(k, layer.archetype).ok ? (resolvePropertyPath(k, layer.archetype) as { path: string }).path : k)));
+      let direct = patch;
+      if (!isBase(list, activeId)) {
+        direct = {};
+        for (const [key, value] of Object.entries(patch)) {
+          const res = resolvePropertyPath(key, layer.archetype);
+          const path = res.ok ? res.path : key;
+          // the canvas position of a top-level frame, and the responsive flag, are the document's, not a breakpoint's
+          const global = path === "breakpoints.responsive" || (layer.parentId === null && (path === "frame.x" || path === "frame.y" || path === "positioning"));
+          if (global) direct[key] = value;
+          else routed[path] = value;
+        }
+      }
       const defined: LayerProps = {};
-      for (const [key, value] of Object.entries(patch)) {
+      for (const [key, value] of Object.entries(direct)) {
         if (value !== undefined) {
           defined[key] = value;
           continue;
@@ -594,7 +654,40 @@ export const documentCommands = {
         const res = resolvePropertyPath(key, layer.archetype);
         delete props[res.ok ? res.path : key];
       }
+      const before = { width: props["frame.width"], height: props["frame.height"] };
+      // an instance's own change is an override: the main no longer overwrites it (Phase 46)
+      if (layer.instance) {
+        const named = [...Object.keys(direct)].map((k) => {
+          const res = resolvePropertyPath(k, layer.archetype);
+          return res.ok ? res.path : k;
+        });
+        markOverridden(layer as Layer, [...named, ...(Object.keys(routed).length > 0 ? ["overrides"] : [])]);
+      }
+      // a property a person edits by hand stops following its variable or style, and keeps the value they gave it (Phase 45)
+      detachOnEdit(draft as MotionDocument, layer as Layer, [...Object.keys(defined), ...Object.keys(direct).filter((k) => direct[k] === undefined)]);
       Object.assign(props, canonicalProps(layer.archetype, defined, "updateProps"));
+      if (Object.keys(routed).length > 0) {
+        // what a larger breakpoint (or the base) already says: a value equal to it needs no override of its own
+        const inherited = resolveLayerAt(layer as Layer, appliedBreakpoints(list, activeId).filter((b) => b.id !== activeId)).properties;
+        const slot = ((layer.overrides ??= {})[activeId!] ??= {});
+        for (const [path, value] of Object.entries(routed)) {
+          if (value === undefined) {
+            delete slot[path];
+            continue;
+          }
+          const canon = canonicalProps(layer.archetype, { [path]: value }, "updateProps")[path];
+          if (canon === undefined) continue;
+          if (JSON.stringify(canon) === JSON.stringify(inherited[path])) delete slot[path];
+          else slot[path] = canon;
+        }
+        if (Object.keys(slot).length === 0) delete layer.overrides![activeId!];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+      }
+      // a frame that changed size: the layers pinned to it follow, in this same change (Phase 42)
+      const after = { width: props["frame.width"], height: props["frame.height"] };
+      if (typeof before.width === "number" && typeof before.height === "number" && typeof after.width === "number" && typeof after.height === "number" && (before.width !== after.width || before.height !== after.height)) {
+        applyConstraintsToChildren(draft as MotionDocument, layerId, { width: before.width, height: before.height }, { width: after.width, height: after.height });
+      }
     });
   },
 
@@ -608,7 +701,84 @@ export const documentCommands = {
 
   setLayerFlags(layerId: string, flags: Partial<Pick<Layer, "visible" | "locked" | "solo" | "shy" | "motionBlur">>, label?: string) {
     commit(label, (draft) => {
-      Object.assign(requireLayer(draft, layerId), flags);
+      const layer = requireLayer(draft, layerId);
+      if ("visible" in flags) markOverridden(layer as Layer, ["visible"]);
+      // showing or hiding a layer by hand lets go of a boolean variable bound to its visibility (FigCraft port F10)
+      if ("visible" in flags && layer.tokens?.visible && !layer.tokens.visible.detached) layer.tokens.visible.detached = true;
+      const activeId = useBreakpointStore.getState().activeId;
+      // at a smaller breakpoint, showing or hiding a layer is that breakpoint's override (Phase 43)
+      if ("visible" in flags && !isBase(breakpointsOf(draft), activeId)) {
+        const { visible, ...rest } = flags;
+        Object.assign(layer, rest);
+        // visible or hidden as the larger breakpoints (or the base) have it: no override; otherwise this breakpoint says so
+        const above = resolveLayerAt(layer as Layer, appliedBreakpoints(breakpointsOf(draft), activeId).filter((b) => b.id !== activeId));
+        const slot = ((layer.overrides ??= {})[activeId!] ??= {});
+        if ((visible !== false) === (above.visible !== false)) delete slot[VISIBLE_KEY];
+        else slot[VISIBLE_KEY] = visible !== false;
+        if (Object.keys(slot).length === 0) delete layer.overrides![activeId!];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+        return;
+      }
+      Object.assign(layer, flags);
+    });
+  },
+
+  /**
+   * Changes the document in one undo step with a recipe over the draft. The token operations (variables, styles,
+   * modes, bindings; Phase 45) are written this way: they touch layers and document fields together.
+   */
+  mutate(label: string, recipe: (draft: MotionDocument) => void) {
+    commit(label, (draft) => recipe(draft as MotionDocument));
+  },
+
+  /** Replaces the document's breakpoints (widest first is the base). Overrides of breakpoints that are gone are dropped. */
+  setBreakpoints(list: { id: string; name: string; width: number }[], label = "Change breakpoints") {
+    commit(label, (draft) => {
+      const sorted = [...list].sort((a, b) => b.width - a.width);
+      draft.breakpoints = sorted;
+      const keep = new Set(sorted.map((b) => b.id));
+      for (const layer of Object.values(draft.layers)) {
+        if (!layer.overrides) continue;
+        for (const id of Object.keys(layer.overrides)) if (!keep.has(id)) delete layer.overrides[id];
+        if (Object.keys(layer.overrides).length === 0) delete layer.overrides;
+      }
+    });
+  },
+
+  /** Removes a breakpoint's overrides from layers (all of them, or just `keys`): a layer goes back to what it inherits there. */
+  resetOverrides(layerIds: readonly string[], breakpointId: string, keys?: readonly string[], label = "Reset overrides") {
+    commit(label, (draft) => {
+      for (const id of layerIds) {
+        const layer = draft.layers[id];
+        const slot = layer?.overrides?.[breakpointId];
+        if (!layer || !slot) continue;
+        if (keys) for (const k of keys) delete slot[k];
+        else delete layer.overrides![breakpointId];
+        if (layer.overrides![breakpointId] && Object.keys(slot).length === 0) delete layer.overrides![breakpointId];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+      }
+    });
+  },
+
+  /** Sets how fonts show while loading (the project's `font-display`). */
+  setFontDisplay(display: "swap" | "block" | "fallback" | "optional" | "auto", label = "Font loading") {
+    commit(label, (draft) => {
+      if (display === "swap") delete draft.fontDisplay;
+      else draft.fontDisplay = display;
+    });
+  },
+
+  /** Records an imported file in the document's asset manifest (Phase 36). The bytes are in the asset store. */
+  addAsset(entry: AssetEntry, label = "Import asset") {
+    commit(label, (draft) => {
+      (draft.assets ??= {})[entry.id] = entry;
+    });
+  },
+
+  /** Removes a file from the manifest (the bytes stay in the store until nothing refers to them). */
+  removeAsset(id: string, label = "Remove asset") {
+    commit(label, (draft) => {
+      if (draft.assets) delete draft.assets[id];
     });
   },
 
@@ -663,28 +833,6 @@ export const documentCommands = {
       const comp = draft.compositions[compositionId];
       if (!comp) throw new Error(`No composition "${compositionId}".`);
       comp.markers = comp.markers.filter((m) => m.id !== markerId);
-    });
-  },
-
-  /** Sets how fonts show while loading (the project's `font-display`). */
-  setFontDisplay(display: "swap" | "block" | "fallback" | "optional" | "auto", label = "Font loading") {
-    commit(label, (draft) => {
-      if (display === "swap") delete draft.fontDisplay;
-      else draft.fontDisplay = display;
-    });
-  },
-
-  /** Records an imported file in the document's asset manifest (Phase 36). The bytes are in the asset store. */
-  addAsset(entry: AssetEntry, label = "Import asset") {
-    commit(label, (draft) => {
-      (draft.assets ??= {})[entry.id] = entry;
-    });
-  },
-
-  /** Removes a file from the manifest (the bytes stay in the store until nothing refers to them). */
-  removeAsset(id: string, label = "Remove asset") {
-    commit(label, (draft) => {
-      if (draft.assets) delete draft.assets[id];
     });
   },
 
@@ -889,15 +1037,43 @@ export type DocumentCommands = typeof documentCommands;
 
 /** Subscribe to a slice of the document. The selector must return a stable value (not a new array/object). */
 export function useDocument<T>(selector: (document: MotionDocument) => T): T {
-  return documentStore((state) => selector(state.document));
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  // the document as seen at the breakpoint and in the mode being edited (the document itself when neither changes anything)
+  return documentStore((state) => selector(resolveDocumentAt(state.document, activeId, mode)));
 }
 
 export function useLayer(layerId: string | null | undefined): Layer | undefined {
-  return documentStore((state) => (layerId ? state.document.layers[layerId] : undefined));
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  return documentStore((state) => (layerId ? resolveDocumentAt(state.document, activeId, mode).layers[layerId] : undefined));
 }
 
 export function useLayers(): Record<string, Layer> {
-  return documentStore((state) => state.document.layers);
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  return documentStore((state) => resolveDocumentAt(state.document, activeId, mode).layers);
+}
+
+/** `useLayer`, at a given breakpoint rather than the one being edited (a stage drawing a breakpoint of its own, Phase 44). `undefined` follows the one being edited. */
+export function useLayerAt(layerId: string | null | undefined, breakpointId: string | null | undefined): Layer | undefined {
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  const at = breakpointId === undefined ? activeId : breakpointId;
+  return documentStore((state) => (layerId ? resolveDocumentAt(state.document, at, mode).layers[layerId] : undefined));
+}
+
+/** `useDocument`, at a given breakpoint (`undefined`: the one being edited). */
+export function useDocumentAt<T>(selector: (document: MotionDocument) => T, breakpointId: string | null | undefined): T {
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  const at = breakpointId === undefined ? activeId : breakpointId;
+  return documentStore((state) => selector(resolveDocumentAt(state.document, at, mode)));
+}
+
+/** The document as seen at the breakpoint being edited, for reads outside React that need what is drawn (hit testing, measuring). */
+export function getResolvedDocument(): MotionDocument {
+  return resolveDocumentAt(documentStore.getState().document, useBreakpointStore.getState().activeId, useModeStore.getState().activeModeId);
 }
 
 /** The layer's clips in stack order; stable between renders while clips are unchanged. */
@@ -914,4 +1090,12 @@ export function useClip(clipId: string | null | undefined): Clip | undefined {
 /** Sub-Phase 41.3: a per-entity selector — re-renders only when this composition's own object reference changes. */
 export function useComposition(compositionId: string | null | undefined): Composition | undefined {
   return documentStore((state) => (compositionId ? state.document.compositions[compositionId] : undefined));
+}
+
+/**
+ * Test seam: with `window.__LL_TEST__` set before load, `window.__LL_DOC__` gives a browser test the real document
+ * commands and the current document, to build fixtures a person would build by hand (nested stacks, many components).
+ */
+if (typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__) {
+  (window as unknown as Record<string, unknown>).__LL_DOC__ = { commands: documentCommands, get: () => documentStore.getState().document };
 }
