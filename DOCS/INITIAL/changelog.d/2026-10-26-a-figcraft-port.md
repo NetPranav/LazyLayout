@@ -20,6 +20,7 @@ FigCraft's engine logic (MIT) is being translated into ours, batch by batch, und
 - **F14 SVG import:** an SVG file can be placed as an editable design (Assets panel, "Design"; command `svg.import`): its groups, shapes (rectangles and ellipses kept as such), compound paths, gradients, text, images, opacity, strokes and drop shadows become layers in a frame named after the file, with notes on what was left out.
 - Paint editor: a blend menu per fill, Diamond in the type list, adjustment presets and sliders for image fills.
 - Render gallery cases for every new shape and paint.
+- From F3: Outline Stroke (`vector.outlineStroke`, button in the vector bar) turns a stroke into a filled path layer; brushes (stretch, scatter) on strokes. From F10: variables import and export (JSON, CSS) in the Token Manager.
 
 #### Fixed
 - The HTML export added line breaks between text and the elements mixed with it, which showed in text that keeps its white space (styled runs, list markers).
