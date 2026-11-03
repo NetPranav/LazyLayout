@@ -1,6 +1,7 @@
 import type { CanvasTool, GridStyle } from "@/editor/shell/canvas-chrome/types";
 import type { ResizeHandleName } from "./constants";
 import type { SnapLine, SpacingMark } from "@/core/geometry/snap";
+import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 
 export type StagePreset = "1440" | "768" | "375" | string;
 
@@ -113,6 +114,9 @@ export interface ArtboardProps {
   onInsert?: () => void;
   onAskAi?: () => void;
   onElementChange?: (id: string, patch: Partial<StageElement>) => void;
+  onLayerAction?: (action: LayerMenuAction, id: string) => void;
+  onToggleHidden?: (id: string) => void;
+  onToggleLocked?: (id: string) => void;
   mode?: "design" | "motion" | "code";
   snapLines?: SnapLine[];
   spacingMarks?: SpacingMark[];

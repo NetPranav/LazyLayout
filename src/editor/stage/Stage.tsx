@@ -3,6 +3,10 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
+import { useCameraStore } from "@/core/store/useCameraStore";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { invokeCommand } from "@/core/commands";
+import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
 import { useStageTransform } from "./useStageTransform";
 import { SAMPLE_STAGE_ELEMENTS } from "./sampleData";
@@ -21,7 +25,7 @@ export const Stage: React.FC<StageProps> = ({
   elements: controlledElements,
   activeTool = "select",
   snapObjects = true,
-  snapGuides = true,
+  snapGuides = false,
   smartGuides = true,
   snapThreshold = STAGE_CONSTANTS.defaultSnapThreshold,
   preset: controlledPreset,
@@ -44,6 +48,19 @@ export const Stage: React.FC<StageProps> = ({
     () => (controlledSelectedIds !== undefined ? controlledSelectedIds : storeSelectedIds),
     [controlledSelectedIds, storeSelectedIds]
   );
+
+  // 1. Prototype parity: Open with headline selected in the real selection store
+  // 2. Prototype parity: Open at 59% zoom (0.59) centered. If camera has default 1.0 zoom and untouched, set to 0.59
+  useEffect(() => {
+    if (useSelectionStore.getState().selectedIds.length === 0) {
+      useSelectionStore.getState().select("headline", "element");
+    }
+
+    const cam = useCameraStore.getState();
+    if (cam.camera.zoom === 1 && !cam.touched) {
+      cam.setCamera({ x: 0, y: 0, zoom: STAGE_CONSTANTS.defaultZoom });
+    }
+  }, []);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
@@ -164,6 +181,126 @@ export const Stage: React.FC<StageProps> = ({
   const presetDef =
     STAGE_PRESETS.find((p) => p.id === activePreset) || STAGE_PRESETS[0];
 
+  const handleLayerAction = useCallback(
+    (action: LayerMenuAction, targetId: string) => {
+      switch (action) {
+        case "copy":
+          invokeCommand("edit.copy");
+          break;
+        case "duplicate":
+          invokeCommand("edit.duplicate");
+          setElements((prev) => {
+            const item = prev[targetId];
+            if (!item) return prev;
+            const newId = `${targetId}_copy_${Date.now()}`;
+            return {
+              ...prev,
+              [newId]: {
+                ...item,
+                id: newId,
+                name: `${item.name} copy`,
+                x: item.x + 10,
+                y: item.y + 10,
+              },
+            };
+          });
+          break;
+        case "delete":
+          invokeCommand("edit.delete");
+          setElements((prev) => {
+            const { [targetId]: _, ...rest } = prev;
+            return rest;
+          });
+          handleSelect(null);
+          break;
+        case "group":
+          invokeCommand("layer.group");
+          break;
+        case "ungroup":
+          invokeCommand("layer.ungroup");
+          break;
+        case "frame-selection":
+          invokeCommand("layer.frameSelection");
+          break;
+        case "bring-forward":
+          invokeCommand("arrange.bringForward");
+          break;
+        case "send-backward":
+          invokeCommand("arrange.sendBackward");
+          break;
+        case "bring-to-front":
+          invokeCommand("arrange.bringToFront");
+          break;
+        case "send-to-back":
+          invokeCommand("arrange.sendToBack");
+          break;
+        case "align-left":
+          invokeCommand("align.left");
+          break;
+        case "align-center":
+          invokeCommand("align.center");
+          break;
+        case "align-right":
+          invokeCommand("align.right");
+          break;
+        case "align-top":
+          invokeCommand("align.top");
+          break;
+        case "align-middle":
+          invokeCommand("align.middle");
+          break;
+        case "align-bottom":
+          invokeCommand("align.bottom");
+          break;
+        case "distribute-horizontally":
+          invokeCommand("align.distributeHorizontally");
+          break;
+        case "distribute-vertically":
+          invokeCommand("align.distributeVertically");
+          break;
+        case "tidy-up":
+          invokeCommand("align.tidyUp");
+          break;
+        case "rename":
+          invokeCommand("layer.rename");
+          break;
+        default:
+          break;
+      }
+    },
+    [handleSelect]
+  );
+
+  const handleToggleHidden = useCallback((id: string) => {
+    invokeCommand("layer.toggleHidden");
+    setElements((prev) => {
+      const item = prev[id];
+      if (!item) return prev;
+      return {
+        ...prev,
+        [id]: {
+          ...item,
+          hidden: !item.hidden,
+        },
+      };
+    });
+  }, []);
+
+  const handleToggleLocked = useCallback((id: string) => {
+    invokeCommand("layer.toggleLocked");
+    setElements((prev) => {
+      const item = prev[id];
+      if (!item) return prev;
+      return {
+        ...prev,
+        [id]: {
+          ...item,
+          locked: !item.locked,
+        },
+      };
+    });
+  }, []);
+
   // Snapping and Transform Gestures
   const { snapLines, spacingMarks, startMove, startResize } = useStageTransform({
     elements,
@@ -209,6 +346,9 @@ export const Stage: React.FC<StageProps> = ({
         onAddFrame={onAddFrame}
         onInsert={onInsert}
         onAskAi={onAskAi}
+        onLayerAction={handleLayerAction}
+        onToggleHidden={handleToggleHidden}
+        onToggleLocked={handleToggleLocked}
         mode={mode}
         snapLines={snapLines}
         spacingMarks={spacingMarks}

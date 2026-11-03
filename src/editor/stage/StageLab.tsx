@@ -19,7 +19,7 @@ export function StageLabInner() {
   const [showRulers, setShowRulers] = useState<boolean>(false);
   const [pixelGrid, setPixelGrid] = useState<boolean>(false);
   const [snapObjects, setSnapObjects] = useState<boolean>(true);
-  const [snapGuides, setSnapGuides] = useState<boolean>(true);
+  const [snapGuides, setSnapGuides] = useState<boolean>(false);
   const [gridStyle, setGridStyle] = useState<GridStyle>("dots");
   const [activeTool, setActiveTool] = useState<CanvasTool>("select");
   const [mode, setMode] = useState<"design" | "motion" | "code">("design");

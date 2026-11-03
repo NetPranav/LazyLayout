@@ -62,6 +62,9 @@ export const STAGE_CONSTANTS = {
   imageWidth: 150,
   imageHeight: 170,
 
+  // Context menu (.menu.ctx) width from prototype
+  contextMenuWidth: 248,
+
   // Lab frame sizing
   labFrameWidth: 1440,
   labFrameHeight: 900,

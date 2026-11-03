@@ -5,6 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
+import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
+import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { TransformOverlay } from "./TransformOverlay";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
@@ -27,11 +29,14 @@ export const Artboard: React.FC<ArtboardProps> = ({
   hoveredId,
   onSelect,
   onHover,
-  snapGuides = true,
+  snapGuides = false,
   empty = false,
   onAddFrame,
   onInsert,
   onAskAi,
+  onLayerAction,
+  onToggleHidden,
+  onToggleLocked,
   mode = "design",
   snapLines = [],
   spacingMarks = [],
@@ -40,6 +45,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
 }) => {
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
   const [isSizeMenuOpen, setIsSizeMenuOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    coords: { x: number; y: number };
+    elementId: string;
+  } | null>(null);
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
 
   const activePresetId = controlledPreset !== undefined ? controlledPreset : internalPreset;
@@ -97,7 +106,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         aria-haspopup="menu"
         aria-expanded={isSizeMenuOpen}
         title="Canvas size"
-        className="ll-lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+        className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         style={{
           left: STAGE_CONSTANTS.sizeLabelOffsetLeft,
           top: STAGE_CONSTANTS.sizeLabelOffsetTop,
@@ -115,7 +124,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
         >
           {SIZES_MAP[activePresetId] || "Desktop"} ·{" "}
-          <span className="ll:font-mono">{activePresetId}</span>
+          <span className="mono ll:font-mono">{activePresetId}</span>
         </span>
         <Icon
           icon={ChevronDown}
@@ -151,7 +160,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {/* 2. Artboard Title Row (.atit / #atit) */}
       <div
         id="atit"
-        className="ll-atit ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:flex ll:items-center ll:px-2.5 ll:font-mono ll:text-secondary ll:bg-surface-panel ll:border-b ll:border-border ll:select-none"
+        className="ll-atit atit ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:flex ll:items-center ll:px-2.5 ll:font-mono ll:text-secondary ll:bg-surface-panel ll:border-b ll:border-border ll:select-none"
         style={{
           height: STAGE_CONSTANTS.artboardTitleHeight,
           fontSize: "var(--ll-text-micro-size)",
@@ -165,7 +174,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {snapGuides && (
         <>
           <div
-            className="ll-guide ll-guide-v ll:absolute ll:pointer-events-none"
+            className="ll-guide guide v ll-guide-v ll:absolute ll:pointer-events-none"
             style={{
               left: "50%",
               top: 0,
@@ -176,7 +185,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             }}
           />
           <div
-            className="ll-guide ll-guide-h ll:absolute ll:pointer-events-none"
+            className="ll-guide guide h ll-guide-h ll:absolute ll:pointer-events-none"
             style={{
               top: "52%",
               left: 0,
@@ -189,9 +198,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
         </>
       )}
 
-      {/* 4. Empty State if no elements */}
-      {!hasElements && (
-        <div className="ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center">
+      {/* 4. Empty State if no elements or explicitly empty */}
+      {(!hasElements || empty) && (
+        <div id="es" className="ll-es es ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center">
           <EmptyState
             title="Start with"
             onAddFrame={onAddFrame}
@@ -210,17 +219,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
           return (
             <div
               key={el.id}
-              id={`el-${el.id}`}
+              id={el.id === "headline" ? "el-text" : el.id === "button" ? "el-button" : el.id === "image" ? "el-image" : `el-${el.id}`}
               data-sel={el.id}
               data-element-id={el.id}
               className={`ll-element ll:absolute ll:select-none ${
-                isSelected ? "ll-sel " : ""
+                isSelected ? "ll-sel sel " : ""
               }${
                 el.type === "button"
-                  ? "ll-pg-b ll:cursor-pointer ll:grid ll:place-items-center ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:font-medium "
+                  ? "ll-pg-b pg-b ll:cursor-pointer ll:grid ll:place-items-center ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:font-medium "
                   : el.type === "image"
-                  ? "ll-pg-img ll:cursor-pointer ll:bg-placeholder ll:border ll:border-border ll:rounded-sm "
-                  : "ll-pg-h ll:cursor-default "
+                  ? "ll-pg-img pg-img ll:cursor-pointer ll:bg-placeholder ll:border ll:border-border ll:rounded-sm "
+                  : "ll-pg-h pg-h ll:cursor-default "
               }`}
               style={{
                 left: el.x,
@@ -234,6 +243,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(el.id, e.shiftKey);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!selectedIds.includes(el.id)) {
+                  onSelect(el.id, false);
+                }
+                setContextMenu({
+                  coords: { x: e.clientX, y: e.clientY },
+                  elementId: el.id,
+                });
               }}
             >
               {el.type === "text" && (
@@ -295,6 +315,45 @@ export const Artboard: React.FC<ArtboardProps> = ({
         onStartMove={onStartMove}
         onStartResize={onStartResize}
       />
+
+      {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={() => setContextMenu(null)}
+        position={contextMenu?.coords ?? null}
+        variant="context"
+        width={STAGE_CONSTANTS.contextMenuWidth}
+        aria-label="Element context menu"
+      >
+        <LayerContextMenuContent
+          selectionCount={
+            contextMenu && selectedIds.includes(contextMenu.elementId)
+              ? selectedIds.length
+              : 1
+          }
+          onAction={(action) => {
+            const targetId = contextMenu?.elementId ?? "";
+            setContextMenu(null);
+            onLayerAction?.(action, targetId);
+          }}
+          onToggleHidden={() => {
+            if (contextMenu) {
+              const targetId = contextMenu.elementId;
+              const targets = selectedIds.includes(targetId) ? selectedIds : [targetId];
+              targets.forEach((id) => onToggleHidden?.(id));
+            }
+            setContextMenu(null);
+          }}
+          onToggleLocked={() => {
+            if (contextMenu) {
+              const targetId = contextMenu.elementId;
+              const targets = selectedIds.includes(targetId) ? selectedIds : [targetId];
+              targets.forEach((id) => onToggleLocked?.(id));
+            }
+            setContextMenu(null);
+          }}
+        />
+      </Menu>
     </div>
   );
 };

@@ -60,7 +60,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
           <div
             key={id}
             data-selection-id={id}
-            className="ll-selbox ll:absolute ll:pointer-events-none"
+            className="ll-selbox selbox ll:absolute ll:pointer-events-none"
             style={{
               left: el.x + STAGE_CONSTANTS.selectionBoxOffset,
               top: el.y + STAGE_CONSTANTS.selectionBoxOffset,
@@ -131,7 +131,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                 <div
                   key={name}
                   data-handle={name}
-                  className="ll-handle ll:absolute ll:pointer-events-auto ll:z-10 ll:transition-transform ll:duration-swap"
+                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10 ll:transition-transform ll:duration-swap"
                   style={{
                     left: leftStyle,
                     top: topStyle,
@@ -150,12 +150,12 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
               );
             })}
 
-            {/* Dimension Badge (.dim): e.g. "340 x 82" */}
+            {/* Dimension Badge (.dim): e.g. "340 × 82" */}
             <div
-              className="ll-dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none"
+              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none"
               style={{
-                left: STAGE_CONSTANTS.dimBadgeOffsetLeft,
-                bottom: STAGE_CONSTANTS.dimBadgeOffsetBottom,
+                left: 0,
+                top: "calc(100% + 2px)",
                 fontSize: "var(--ll-text-micro-size)",
                 lineHeight: "var(--ll-text-micro-line-height)",
                 fontWeight: "var(--ll-text-micro-weight)",
@@ -168,7 +168,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                 borderRadius: "var(--ll-radius-sm)",
               }}
             >
-              {Math.round(el.width)} x {Math.round(el.height)}
+              {Math.round(el.width)} × {Math.round(el.height)}
             </div>
           </div>
         );
