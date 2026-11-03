@@ -33,6 +33,8 @@ import { BLEND_MODES } from "../paint/color";
 import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
 import { outlineStrokes } from "./outlineStroke";
+import { registerAgentCommands } from "../agent/agentCommands";
+import { registerTemplateCommands } from "../templates/templateCommands";
 import { arrangement, buildShapes } from "./shapeBuilder";
 import type { Paint } from "../paint/paints";
 import { setFill, setFrame, setOpacity, setRadius, setSimpleText, setStroke } from "../inspector/simpleOps";
@@ -377,6 +379,8 @@ export function registerEditingCommands(): () => void {
   add(registerComponentCommands());
   add(registerPageCommands());
   add(registerExportCommands());
+  add(registerAgentCommands());
+  add(registerTemplateCommands());
   add(installClipboardEvents(window));
   return () => offs.forEach((off) => off());
 }

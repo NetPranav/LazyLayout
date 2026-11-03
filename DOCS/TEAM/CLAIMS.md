@@ -18,6 +18,7 @@ Next free number: **0018** (0008 is the threat model and 0009 the render host; 0
 |---|---|---|---|
 | 0008 | A | Threat model for the stage and user content (Phase 16) | |
 | 0009 | A | Render host: live DOM frames, no HTML strings (Phase 18) | |
+| 0014 | A | MCP bridge: a local MCP server paired with an open editor tab (Phase 50) | |
 | 0015 | A (proposed) | Path engine: curve-exact booleans and offsets (Phase 103) | |
 | 0016 | unassigned | Scene rasteriser: any layer to pixels (Phase 172) | |
 | 0017 | unassigned | Rigging and deformation (Phase 203) | |

@@ -3,7 +3,7 @@
 ## Project Name: LazyLayout — AI-Native Motion Design Studio
 **Document Version:** 4.1.0
 **Date:** 2026-10-18 (v4.1: 2026-10-21)
-**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–38 are merged to `main` but their rows still say 🚧 until someone marks them ✅; 39–43 are in open PR #53. **Lane B:** Phases 53–63 ✅; 64–68 are built on the branch `b/phase-64-68-timeline-keyframes-graph` (🚧 until its CI is green on `main`; Phase 68 is only partly done, see its entry). **Next: Phase 69** (Lane B, needs Phase 40 from Lane A as well as 68). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
+**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–51 are merged to `main` (#53 for 39–43, #57 for 44–49 and the FigCraft port, #58 for 50, #59 for 51) but their rows still say 🚧 until someone marks them ✅ once CI on `main` is green; 52 is in open PR #60. **Lane B:** Phases 53–63 ✅; 64–68 are merged to `main` (#55; 🚧, and Phase 68 is only partly done, see its entry); Phase 81 (needs only 59) is merged (#56), fallback path only. **Next: Phase 69** (Lane B, needs Phase 40 from Lane A as well as 68). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
 **File Location:** `DOCS/INITIAL/ROADMAP.md`
 **Supersedes:** v3.3 (91 phases, run through a separate order file). v3.3 is kept unchanged as `ROADMAP_v3_ARCHIVE.md` for its progress logs, amendments and evidence. `order.md` is retired: in v4, **the phase number is the order**.
 **Inputs:** `PRD.md` v2.4, `AUDIT.md`, the grammar (`lazylayout_element_grammer.md` v0.3), `ANIMATION_PROPERTIES_AND_ENGINE_SPECIFICATION.md`, `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md`, and the World Environment properties in `action working.md`.
@@ -223,8 +223,8 @@ One row per phase, in execution order. Update the Status column together with th
 | 47 | Variants & component properties | 46 | v3 75.2 (static), 75.3 | 1 | 🚧 |
 | 48 | Sections, pages & prototype links | 23, 47 | v3 76.1 (static), 77.1, 77.2, 77.4 | 1 | 🚧 |
 | 49 | Static export v1 | 37, 45, 48 | v3 27.1 (part), 48 gate, 50.5 (layout), 75.5 | 1 | 🚧 |
-| 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 📋 |
-| 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 📋 |
+| 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 🚧 |
+| 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 🚧 |
 | 52 | Stage 1 gate: the design journey | 13–51 | v3 58.1 + new | 1 | 📋 |
 
 **Stage 2 · Animation grammar (Phases 53–102)**
@@ -259,7 +259,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 78 | States | 33, 77 | v3 11.1 | 2 | 📋 |
 | 79 | Transitions & smart animate | 78 | v3 11.2 | 2 | 📋 |
 | 80 | Animated variants & interactive components | 47, 79 | v3 75.2 (animated half), 75.4 | 2 | 📋 |
-| 81 | Scroll: model & runtime | 59 | v3 13.1, 13.2 | 2 | 📋 |
+| 81 | Scroll: model & runtime | 59 | v3 13.1, 13.2 | 2 | 🚧 |
 | 82 | Scroll simulator & section choreography | 48, 81 | v3 13.3, 76.2 | 2 | 📋 |
 | 83 | Accessible text splitting | 31, 38, 82 | v3 17.1 | 2 | 📋 |
 | 84 | Text motion | 83 | v3 17.2 | 2 | 📋 |
@@ -926,21 +926,21 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence so far (2026-10-21):** `src/core/export/site/` (`render.tsx` draws each page with the stage's own render definitions via `renderToStaticMarkup` at every breakpoint and mode; `markup.ts` reads it; `css.ts`/`plan.ts` turn inline-style differences into classes, `@media (max-width)` rules and `[data-mode]` rules; `components.ts` makes components with typed props and variants; `targets.ts` lays out plain HTML, Vite + React and Next.js App Router, each with one stylesheet, CSS Modules or Tailwind utilities; only used assets and fonts are written). 30 unit tests (every gallery archetype, TSX is valid TypeScript, the React output renders to the same elements as the HTML export). `tests/e2e/export.spec.ts` in 3 browsers: **the exported HTML, opened at 1440, 1024, 768, 480 and 375 px, matches the stage at the same breakpoint within 0.5% for the whole page and for each gallery case**; Export dialog downloads a ZIP; the Code tab shows HTML / JSX / CSS / Tailwind for the selection. `tests/export-harness/build.mts` compiles the generated 2-page site with a component, a variant and an override (Next.js and Vite + React, one stylesheet and CSS Modules) with `tsc` and the real bundler. **Design:** File > Export Site (Ctrl+E) and the `export.site` command; no schema change. **Not built:** animation, dynamic routes, nested components, instance-swap properties, text or attributes that differ per breakpoint (carried as warnings), the Tailwind build in the harness. Status stays 🚧 until CI passes in 3 browsers and the harness is green on the PR.
 
 ### Phase 50 · Agent bridge: local MCP server v0
-**Needs:** 13, 49 · **Was:** — (new) · **Status:** 📋
+**Needs:** 13, 49 · **Was:** — (new) · **Status:** 🚧
 **Goal:** Claude (Desktop, Code, or any MCP client) can operate the editor through the same commands a person uses.
-- [ ] `npx lazylayout-mcp` (a stdio MCP server) pairs with an open editor tab over a localhost WebSocket. Pairing is off by default, needs a code shown in the editor, and checks the origin (decision record 0014, MCP bridge).
-- [ ] Tools are generated from the command registry (Phase 13): read the document, selection and layers; run any command with typed arguments; apply MDM patches; render a frame to PNG; export. Resources: the MDM JSON Schema, a rules summary and the property registry.
-- [ ] Writes arrive as a pending diff the user approves, or with a per-session "approve automatically" switch. Each change is still one logged undo step (Law 4).
+- [x] `npm run mcp` (a stdio MCP server; not on npm yet, so no `npx lazylayout-mcp`) pairs with an open editor tab over a localhost WebSocket. Pairing is off by default, needs a code shown in the editor, and checks the origin (decision record 0014, MCP bridge).
+- [x] Tools are generated from the command registry (Phase 13): read the document, selection and layers; run any command with typed arguments; export. *(Not done: apply MDM patches, render a frame to PNG; see decision 0014 §2.)* Resources: the MDM JSON Schema, a rules summary and the property registry.
+- [x] Writes arrive as a pending change (the command and its arguments, not yet a picture of the result) the user approves, or with a per-session "approve automatically" switch. Each change is still one logged undo step (Law 4).
 
 **You'll see:** in Claude, "add a pricing section with three cards" builds it on your canvas as a diff you accept.
 **Done when:** an MCP client test drives 20 commands end to end; unpaired connections are refused; the coverage test reports no command missing from MCP.
 
 ### Phase 51 · Section templates & starter projects
-**Needs:** 45, 48 · **Was:** v3 76.3 (static half), 76.4 · **Status:** 📋
-- [ ] Original, token-themed templates: navbar, hero, features, pricing, testimonials, FAQ, CTA, footer. Starter projects (landing page, portfolio). Switching the theme restyles every template.
+**Needs:** 45, 48 · **Was:** v3 76.3 (static half), 76.4 · **Status:** 🚧
+- [x] Original, token-themed templates: navbar, hero, features, pricing, testimonials, FAQ, CTA, footer. Starter projects (landing page, portfolio). Switching the theme restyles every template. *(Built on `brand/*` variables with Light and Dark values; the starters add pages and remove nothing. A page of sections now grows with them, and the canvas draws a hugging frame at its measured height.)*
 
-**You'll see:** an Insert → Sections gallery.
-**Done when:** a first-time user builds a landing page from 6 templates in < 10 minutes (usability script).
+**You'll see:** an Insert → Sections gallery (File > Insert Section…, since there is no Insert menu yet).
+**Done when:** a first-time user builds a landing page from 6 templates in < 10 minutes (usability script). *(Automated: six templates make a landing page and follow Dark in `tests/e2e/templates.spec.ts` in three browsers. The timed run with a first-time user has not been done.)*
 
 ### Phase 52 · Stage 1 gate: the design journey
 **Needs:** 13–51 · **Was:** v3 58.1 + new · **Status:** 📋
@@ -1168,8 +1168,11 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a variant switch matches `evaluate()` in the stage; instance overrides survive main-component edits.
 
 ### Phase 81 · Scroll: model & runtime
-**Needs:** 59 · **Was:** v3 13.1, 13.2 · **Status:** 📋
+**Needs:** 59 · **Was:** v3 13.1, 13.2 · **Status:** 🚧
 - [ ] Scroll triggers (enter, leave, enter-back, leave-back) and scroll-linked ranges (start/end offsets, scrub smoothing, pin); view progress per layer. Native CSS scroll-driven animations where possible, otherwise an IntersectionObserver plus scheduler progress driver (never GSAP).
+
+**Built so far (the scheduler-driven fallback path):** `src/core/scroll/model.ts` (pure: range parsing like `"top 80%"`, `resolveRange`, `viewProgress`, the four crossings `scrollEvents`, `smoothProgress` for scrub, `pinOffset`, and the triggered-clip state `advanceTriggered`); `ScrollDriver.ts` (each frame reads the frame's scroll and each scroll clip's layer, and works out every clip's time: a scrubbed clip follows view progress with optional smoothing, a triggered clip plays once on enter and rewinds on leave-back, a pinned layer is held with CSS `translate`; it also publishes per-layer view progress in `scrollStore`); a new kernel input `EvaluateInputs.scrollClipTime` (the driver tells the kernel each clip's own time, the kernel stays pure); `StageEngine` runs the driver in **Preview only** (in Design the page isn't scrolled and reveals stay as drawn), and layers with a scroll clip are kept off Web Animations. Commands: `motion.setScrollTrigger` (range, scrub, pin) and `motion.addScrollClip` (a parallax or a reveal in one call). Layout is read with `offsetTop`, which ignores transforms, so a reveal that moves a layer can't move its own range. Triggers are `scrollProgress` and `inView`; the range is the clip's `scrollTrigger.start` and `end` (default `top bottom` to `bottom top`).
+**Not built, so the phase stays 🚧:** native CSS scroll-driven animations (a `ViewTimeline`) for the cases they can handle; pinned spacing (a pin holds the layer but doesn't lengthen the page); a scroll trigger set from the UI (only by command for now); and the 3-browser check (Chromium is covered here, Firefox and WebKit run in CI).
 
 **You'll see:** parallax and scroll-reveal work in Preview.
 **Done when:** parallax, scroll-reveal and pinned-sequence references match `evaluate()` at 5 scroll positions in 3 browsers, on both the native and fallback paths.
