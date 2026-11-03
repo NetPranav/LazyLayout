@@ -96,11 +96,27 @@ test("Phase 63: a keyboard-only journey lands on exact times", async ({ page }) 
   await expect.poll(() => rulerWidth(page), { message: "zoom to work area is much wider than the default" }).toBeGreaterThan(full * 1.5);
   const fitted = await rulerWidth(page);
   const pps = fitted / 5;
-  // The needle at 3 s sits 2 s × pps further along the ruler than the one at 1 s.
-  await key("i");
-  const needle1 = await needleOffset(page);
+  // The needle at 3 s sits 2 s × pps further along the ruler than the one at 1 s. Each reading waits for the needle to
+  // stop moving: the playhead's time changes before the panel has drawn it, and a reading taken at once was the old stop's.
+  const settledNeedle = async () => {
+    let previous = Number.NaN;
+    await expect
+      .poll(async () => {
+        const now = await needleOffset(page);
+        const still = Math.abs(now - previous) < 0.5;
+        previous = now;
+        return still;
+      })
+      .toBe(true);
+    return previous;
+  };
   await key("o");
-  await expect.poll(async () => (await needleOffset(page)) - needle1).toBeCloseTo(2 * pps, 0);
+  await expectTime(page, 3);
+  const needle3 = await settledNeedle();
+  await key("i");
+  await expectTime(page, 1);
+  const needle1 = await settledNeedle();
+  expect(needle3 - needle1).toBeCloseTo(2 * pps, 0);
 
   // End: the end of the composition.
   await key("End");
