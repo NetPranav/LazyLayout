@@ -1,0 +1,112 @@
+"use client";
+
+import React, { useState, useId } from "react";
+import { ArrowUp, Sparkles, X } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
+import { IconButton } from "@/editor/components/IconButton";
+import type { AiChatMessage } from "./types";
+
+export interface RightPanelAiChatProps {
+  onAiClose?: () => void;
+  aiMessages?: AiChatMessage[];
+  onAiSendMessage?: (content: string) => void;
+  aiInputPlaceholder?: string;
+  className?: string;
+}
+
+export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
+  onAiClose,
+  aiMessages = [],
+  onAiSendMessage,
+  aiInputPlaceholder = "Ask anything about this…",
+  className = "",
+}) => {
+  const [inputValue, setInputValue] = useState("");
+  const baseId = useId();
+  const inputId = `${baseId}-input`;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    onAiSendMessage?.(trimmed);
+    setInputValue("");
+  };
+
+  return (
+    <section
+      aria-label="AI chat"
+      className={`ll-aichat ll:flex ll:flex-1 ll:flex-col ll:min-h-0 ll:overflow-hidden ${className}`}
+    >
+      {/* AI Chat Header */}
+      <div className="ll-aichead ll:h-header ll:pl-4 ll:pr-3 ll:flex ll:items-center ll:gap-2 ll:border-b ll:border-border ll:shrink-0">
+        <Icon
+          icon={Sparkles}
+          size={18}
+          className="ll-aimark ll:text-primary ll:shrink-0"
+        />
+        <span className="ll-aitl ll:text-small ll:font-medium ll:text-primary ll:font-sans">
+          AI
+        </span>
+
+        <div className="ll:flex-1" />
+
+        <IconButton
+          size="sm"
+          aria-label="Close AI"
+          title="Close AI"
+          icon={<Icon icon={X} size={14} />}
+          onClick={onAiClose}
+        />
+      </div>
+
+      {/* Message List */}
+      <div
+        role="log"
+        aria-live="polite"
+        className="ll-ailist ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:p-4 ll:flex ll:flex-col ll:gap-4"
+      >
+        {aiMessages.map((msg) => (
+          <p
+            key={msg.id}
+            className={`ll-aimsg ll:m-0 ll:font-sans ll:text-small ll:leading-relaxed ${
+              msg.role === "user"
+                ? "ll-you ll:text-secondary"
+                : "ll:text-primary"
+            }`}
+          >
+            {msg.content}
+          </p>
+        ))}
+      </div>
+
+      {/* Footer / Input row */}
+      <div className="ll-aichatfoot ll:shrink-0 ll:p-3 ll:border-t ll:border-border">
+        <form
+          onSubmit={handleSubmit}
+          className="ll-airow ll:flex ll:items-center ll:gap-2 ll:min-w-0"
+        >
+          <input
+            id={inputId}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder={aiInputPlaceholder}
+            aria-label={aiInputPlaceholder}
+            autoComplete="off"
+            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:focus-visible:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim()}
+            aria-label="Send"
+            title="Send"
+            className="ll-aisend ll:w-8 ll:h-8 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:bg-control-primary-bg ll:text-control-primary-fg ll:hover:opacity-90 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:transition-none"
+          >
+            <Icon icon={ArrowUp} size={16} />
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+};
