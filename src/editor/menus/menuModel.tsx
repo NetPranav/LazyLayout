@@ -46,6 +46,7 @@ export const MENU_MODEL: Record<MenuId, { label: string; entries: MenuEntry[] }>
       { kind: "item", label: "Import Project File...", icon: Upload, command: "file.importProjectFile" },
       sep,
       { kind: "item", label: "Export Site...", icon: Sparkles, shortcut: "Ctrl+E", command: "file.exportSite" },
+      { kind: "item", label: "Pair with Claude...", icon: Sparkles, command: "agent.pair" },
       sep,
       { kind: "item", label: "Close Project", icon: LogOut, command: "file.closeProject" },
     ],
