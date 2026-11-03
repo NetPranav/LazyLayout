@@ -83,13 +83,11 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
     if (!isOpen) {
       onToggleOpen();
     }
-    setSearchOpen((prev) => {
-      const next = !prev;
-      if (!next) {
-        setSearchQuery("");
-      }
-      return next;
-    });
+    const next = !searchOpen;
+    setSearchOpen(next);
+    if (!next) {
+      setSearchQuery("");
+    }
   };
 
   // Compute real maximum height based on parent container via useSyncExternalStore + ResizeObserver
@@ -161,7 +159,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
           onPointerUp={handleSeparatorPointerUp}
           onPointerCancel={handleSeparatorPointerUp}
           onKeyDown={handleSeparatorKeyDown}
-          className="lsplit ll:h-2 ll:shrink-0 ll:relative ll:cursor-row-resize ll:touch-none ll:select-none ll:group ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          className="ll-lsplit ll:h-2 ll:shrink-0 ll:relative ll:cursor-row-resize ll:touch-none ll:select-none ll:group ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         >
           <div className="ll:absolute ll:left-0 ll:right-0 ll:top-1 ll:h-px ll:bg-transparent ll:group-hover:bg-muted ll:group-focus-visible:bg-primary" />
         </div>
@@ -173,7 +171,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
         style={{
           height: isOpen ? `${height}px` : "var(--ll-size-row-lg-h)",
         }}
-        className="lassets ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel"
+        className="ll-lassets ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel"
       >
         {/* Header row: 36px height (ll:h-row-lg) with action buttons inside flex row */}
         <div className="arow-container ll:flex ll:items-center ll:justify-between ll:h-row-lg ll:pl-4 ll:pr-3 ll:shrink-0">
@@ -182,7 +180,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
             id="abtn"
             aria-expanded={isOpen}
             onClick={onToggleOpen}
-            className="arow ll:flex ll:items-center ll:gap-2 ll:h-full ll:font-medium ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            className="ll-arow ll:flex ll:items-center ll:gap-2 ll:h-full ll:font-medium ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             <span className="ll:text-small ll:font-medium">Assets</span>
             <Icon
@@ -194,10 +192,10 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
             />
           </button>
 
-          <div className="atools ll:flex ll:items-center ll:gap-0.5">
+          <div className="ll-atools ll:flex ll:items-center ll:gap-0.5">
             <IconButton
               id="aup"
-              size="sm"
+              size="md"
               variant="ghost"
               aria-label="Upload asset"
               title="Upload asset"
@@ -209,7 +207,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
             />
             <IconButton
               id="asrch"
-              size="sm"
+              size="md"
               variant="ghost"
               pressed={searchOpen}
               aria-label="Search assets"
@@ -225,7 +223,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
 
         {/* Assets Body */}
         {isOpen && (
-          <div id="abody" className="abody ll:flex-1 ll:min-h-0 ll:overflow-y-auto">
+          <div id="abody" className="ll-abody ll:flex-1 ll:min-h-0 ll:overflow-y-auto">
             {searchOpen && (
               <div className="ll:px-3 ll:pt-2">
                 <TextField
@@ -236,12 +234,12 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search assets"
                   aria-label="Search assets"
-                  className="asin ll:w-full"
+                  className="ll-asin ll:w-full"
                 />
               </div>
             )}
 
-            <div className="assetgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:p-4 ll:pt-2">
+            <div className="ll-assetgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:p-4 ll:pt-1">
               {filteredAssets.map((asset) => (
                 <AssetTile
                   key={asset.id}

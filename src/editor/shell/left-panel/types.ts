@@ -58,6 +58,36 @@ export interface AssetItem {
   size?: string;
 }
 
+export type LayerMenuAction =
+  | "ask-ai"
+  | "copy"
+  | "paste"
+  | "paste-in-place"
+  | "duplicate"
+  | "delete"
+  | "group"
+  | "frame-selection"
+  | "tidy-up"
+  | "ungroup"
+  | "rename"
+  | "select-all"
+  | "show-all"
+  | "unlock-all"
+  | "copy-as-code"
+  | "add-animation"
+  | "bring-forward"
+  | "send-backward"
+  | "bring-to-front"
+  | "send-to-back"
+  | "align-left"
+  | "align-center"
+  | "align-right"
+  | "align-top"
+  | "align-middle"
+  | "align-bottom"
+  | "distribute-horizontally"
+  | "distribute-vertically";
+
 export interface LeftPanelProps {
   /** Active editor mode: design (layers + assets), motion (layers + tracks), or code (files) */
   mode?: LeftPanelMode;
@@ -87,6 +117,8 @@ export interface LeftPanelProps {
   onToggleHidden?: (id: string) => void;
   /** Lock/unlock toggle callback for layers */
   onToggleLocked?: (id: string) => void;
+  /** Layer context menu action callback (everything except hide and lock, which use the toggle callbacks) */
+  onLayerAction?: (action: LayerMenuAction, id: string) => void;
   /** Rename callback for layers or files */
   onRename?: (id: string, newName: string) => void;
   /** Callback when asset upload button is clicked */

@@ -21,9 +21,9 @@ export const SAMPLE_LAYERS: LayerItem[] = [
     hasChildren: true,
     expanded: true,
     children: [
-      { id: "headline", name: "Headline", type: "text", level: 1, parentId: "hero" },
+      { id: "headline", name: "Headline", type: "text", level: 1, parentId: "hero", hasMotion: true },
       { id: "subtitle", name: "Subtitle", type: "text", level: 1, parentId: "hero" },
-      { id: "button", name: "Get started", type: "button", level: 1, parentId: "hero" },
+      { id: "button", name: "Get started", type: "button", level: 1, parentId: "hero", hasMotion: true },
       { id: "image", name: "Hero image", type: "image", level: 1, parentId: "hero" },
     ],
   },
@@ -132,5 +132,5 @@ export const SAMPLE_ASSETS: AssetItem[] = [
   { id: "a-logo", name: "logo.svg", kind: "svg" },
   { id: "a-hero", name: "hero.jpg", kind: "image" },
   { id: "a-font", name: "Geist.woff2", kind: "font" },
-  { id: "a-icons", name: "icons.svg", kind: "svg" },
+  { id: "a-icons", name: "icons.svg", kind: "box" },
 ];

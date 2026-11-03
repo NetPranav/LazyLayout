@@ -10,12 +10,13 @@ import {
   Minus,
   Star,
   Hexagon,
-  MousePointerClick,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { TreeRow } from "@/editor/components/TreeRow";
+import { ContextMenu } from "@/editor/components/ContextMenu";
 import { LeftPanelEmpty } from "./LeftPanelEmpty";
-import type { LayerItem } from "./types";
+import { LayerContextMenuContent } from "./LayerContextMenu";
+import type { LayerItem, LayerMenuAction } from "./types";
 import { flattenLayers, filterTreeNodes, type FlatLayerNode } from "./treeFilter";
 import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
 
@@ -30,6 +31,9 @@ export interface LayersTreeProps {
   onToggleHidden?: (id: string) => void;
   onToggleLocked?: (id: string) => void;
   onRename?: (id: string, newName: string) => void;
+  onLayerAction?: (action: LayerMenuAction, id: string) => void;
+  /** Show the motion badge on animated layers (design mode only, as in the prototype). */
+  showMotion?: boolean;
 }
 
 function getLayerIcon(type?: string): React.ReactNode {
@@ -38,6 +42,7 @@ function getLayerIcon(type?: string): React.ReactNode {
     case "input":
       return <Icon icon={Type} size={14} />;
     case "box":
+    case "button":
     case "object3d":
       return <Icon icon={Square} size={14} />;
     case "image":
@@ -55,8 +60,6 @@ function getLayerIcon(type?: string): React.ReactNode {
     case "poly":
     case "shape":
       return <Icon icon={Hexagon} size={14} />;
-    case "button":
-      return <Icon icon={MousePointerClick} size={14} />;
     case "frame":
     default:
       return <Icon icon={Frame} size={14} />;
@@ -74,6 +77,8 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   onToggleHidden,
   onToggleLocked,
   onRename,
+  onLayerAction,
+  showMotion = true,
 }) => {
   const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
@@ -121,33 +126,56 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Layers"
       onKeyDown={handleTreeKeyDown}
-      className="zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
+      className="ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
     >
       {visibleNodes.length > 0 ? (
-        visibleNodes.map((node) => (
-          <TreeRow
-            key={node.id}
-            id={node.id}
-            name={node.name}
-            level={node.level}
-            icon={getLayerIcon(node.item.type)}
-            hasChildren={node.hasChildren}
-            expanded={node.expanded}
-            selected={node.selected}
-            hidden={node.hidden}
-            locked={node.locked}
-            hasMotion={node.hasMotion}
-            className="ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
-            onToggleExpand={() => onToggleExpand?.(node.id)}
-            onSelect={(e) => {
-              onSelect?.(node.id, e);
-              (e.currentTarget as HTMLElement)?.focus();
-            }}
-            onRename={onRename ? (newName) => onRename(node.id, newName) : undefined}
-            onToggleHidden={onToggleHidden ? () => onToggleHidden(node.id) : undefined}
-            onToggleLocked={onToggleLocked ? () => onToggleLocked(node.id) : undefined}
-          />
-        ))
+        visibleNodes.map((node) => {
+          // Right-click on an unselected row selects it first. The menu then acts on the selection.
+          const targetIds = selectedSet.has(node.id) ? selectedIds : [node.id];
+          return (
+            <div
+              key={node.id}
+              role="presentation"
+              className="ll:contents"
+              onContextMenuCapture={() => {
+                if (!selectedSet.has(node.id)) onSelect?.(node.id);
+              }}
+            >
+              <ContextMenu
+                content={
+                  <LayerContextMenuContent
+                    selectionCount={targetIds.length}
+                    onAction={(action) => onLayerAction?.(action, node.id)}
+                    onToggleHidden={() => targetIds.forEach((id) => onToggleHidden?.(id))}
+                    onToggleLocked={() => targetIds.forEach((id) => onToggleLocked?.(id))}
+                  />
+                }
+              >
+                <TreeRow
+                  id={node.id}
+                  name={node.name}
+                  level={node.level}
+                  icon={getLayerIcon(node.item.type)}
+                  hasChildren={node.hasChildren}
+                  expanded={node.expanded}
+                  selected={node.selected}
+                  hidden={node.hidden}
+                  locked={node.locked}
+                  hasMotion={showMotion && node.hasMotion}
+                  className="ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+                  onToggleExpand={() => onToggleExpand?.(node.id)}
+                  onSelect={(e) => {
+                    onSelect?.(node.id, e);
+                    (e.currentTarget as HTMLElement)?.focus();
+                  }}
+                  onRename={onRename ? (newName) => onRename(node.id, newName) : undefined}
+                  onToggleHidden={onToggleHidden ? () => onToggleHidden(node.id) : undefined}
+                  onToggleLocked={onToggleLocked ? () => onToggleLocked(node.id) : undefined}
+                />
+              </ContextMenu>
+            </div>
+          );
+        })
       ) : searchQuery.trim().length > 0 ? (
         <LeftPanelEmpty
             title="No layers found"

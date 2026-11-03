@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, Play, Code2, Layers, Search, Sun, Moon } from "lucide-react";
+import { Play, Code2, Layers, Search, Sun, Moon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { PageSwitcher } from "@/editor/components/PageSwitcher";
 import { LeftPanel } from "./LeftPanel";
 import type { LeftPanelMode } from "./types";
 import {
@@ -28,8 +29,6 @@ function LeftPanelLabInner() {
   const [assetsOpen, setAssetsOpen] = useState(initialAssets);
   const [selectedIds, setSelectedIds] = useState<string[]>(DEFAULT_SELECTED_IDS);
   const [expandedIds, setExpandedIds] = useState<string[]>(DEFAULT_EXPANDED_IDS);
-  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
-  const [lockedIds, setLockedIds] = useState<string[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string>(DEFAULT_SELECTED_TRACK_ID);
   const [theme, setTheme] = useState<"paper" | "dark">("paper");
 
@@ -41,33 +40,7 @@ function LeftPanelLabInner() {
     setTheme((prev) => (prev === "paper" ? "dark" : "paper"));
   };
 
-  const handleToggleHidden = (id: string) => {
-    setHiddenIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleLocked = (id: string) => {
-    setLockedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const headerStart = (
-    <button
-      type="button"
-      id="pagebtn"
-      aria-haspopup="menu"
-      aria-expanded="false"
-      title="Switch page"
-      className="pagebtn ll:h-7 ll:px-2.5 ll:flex ll:items-center ll:gap-1.5 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:text-small ll:font-medium ll:text-primary ll:hover:border-muted ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-    >
-      <span id="pagelabel" className="ll:truncate">
-        Home
-      </span>
-      <Icon icon={ChevronDown} size={12} className="ll:text-muted ll:shrink-0" />
-    </button>
-  );
+  const headerStart = <PageSwitcher />;
 
   return (
     <div className="editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none">
@@ -202,8 +175,6 @@ function LeftPanelLabInner() {
                 prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
               )
             }
-            onToggleHidden={handleToggleHidden}
-            onToggleLocked={handleToggleLocked}
             selectedTrackId={selectedTrackId}
             onSelectTrack={(id) => setSelectedTrackId(id)}
             searchOpen={searchOpen}

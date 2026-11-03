@@ -89,7 +89,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Files"
       onKeyDown={handleTreeKeyDown}
-      className="zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
+      className="ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
     >
       {visibleNodes.length > 0 ? (
         visibleNodes.map((node) => (
