@@ -1,1 +1,71 @@
-/* Blank: the new animation styles go here. */
+/*
+ * Shared motion classes ported from Nook (the owner's own product) & prototype.
+ * Open, close, the scroll bump and layout changes are driven by the spring engine (JS).
+ * CSS holds rest states, the highlight and the parent push. Reduced motion: short opacity fade.
+ */
+
+:is(.menu, .vpop, .ppop, .ins, .ll-surface-overlay) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:is(.menu, .vpop, .ppop, .ins, .ll-surface-overlay).open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+:is(.menu, .vpop, .ppop, .ins, .ll-surface-overlay)[data-lv] {
+  visibility: visible;
+}
+
+:is(.menu, .vpop, .ppop, .ins, .ll-surface-overlay)[data-mv] {
+  overflow: hidden !important;
+  max-height: none !important;
+  min-width: 0 !important;
+}
+
+.ll-lay {
+  position: relative;
+  isolation: isolate;
+  display: flow-root;
+}
+
+.vpop > .ll-lay,
+.ppop > .ll-lay {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.ins > .ll-lay {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.ll-hl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: var(--ll-size-row-h);
+  border-radius: var(--ll-radius-sm);
+  background: var(--ll-surface-hover);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition: opacity var(--ll-dur-fade) ease-out;
+}
+
+.ll-hl.show {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-hl {
+    transition: none;
+  }
+}

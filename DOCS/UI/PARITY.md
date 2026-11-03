@@ -17,7 +17,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 
 | Area | Status | Legacy files | Bridged entry points now in `src/editor` |
 |---|---|---|---|
-| `foundations` (tokens, type and spacing scales, base components) | wip | new | - |
+| `foundations` (tokens, type and spacing scales, base components) | done | new | - |
 | `design-system` (the `/design-system` page, shows every component and its states) | wip | new | - |
 | `shell` | wip | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
 | `menus` | todo | 4 | - |

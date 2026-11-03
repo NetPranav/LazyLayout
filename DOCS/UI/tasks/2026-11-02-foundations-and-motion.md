@@ -64,3 +64,36 @@ The route stays 404 in production unless labs are enabled, as now.
 - `DECISIONS.md` (who chose what), `COMPONENT_SOURCES.md` (Nook engine row already exists, update "Copied to"), `INTEGRATION.md` if anything changed.
 - Handoff in `DOCS/UI/handoffs/` from `TEMPLATE.md`.
 - No commit, no push, no full checks.
+
+## Retry 1: review failed (2026-11-03), fix all of these
+
+1. Lint errors in changed files (run `npx eslint` on the changed files until clean):
+   - `src/editor/motion/loop.ts:18,20`: raw `requestAnimationFrame` / `cancelAnimationFrame` are banned outside `src/core/time/**`. Run the loop through `frameScheduler` from `src/core/time/scheduler.ts` (import only, never edit it), or inject it through a `FrameHost`.
+   - `src/editor/motion/feel.ts:83`: no setState inside `useEffect`. Use a lazy `useState` initialiser or `useSyncExternalStore`.
+   - `src/editor/design-system/MotionDemo.tsx:11`: remove the unused `prefersReducedMotion` import.
+   - `src/editor/components/ThemeToggle.tsx:39`: fix the setState-in-effect error.
+2. No hardcoded colors in components: remove the hex values and inline colors in `ThemeToggle.tsx` (19-23, 154-157) and `DesignSystemPage.tsx` (palette copy 147-401, contrast table 406-445, theme switcher ~1003, swatches 1059-1136). Render each theme's swatches inside a wrapper with `data-theme={id}` and use the semantic `ll:` classes. Read the shown hex values and compute contrast ratios from the live tokens (`getComputedStyle`), so the page cannot drift from `tokens.css`.
+3. Replace inline sizes with tokens: `MotionDemo.tsx:212` (`width: 260`), `DesignSystemPage.tsx:1330` (`${step.px}px`). Also replace `ll:w-[1440px]`, `ll:w-[1024px]`, `ll:w-[390px]` (around lines 1907-1948) with tokens.
+4. Map every `--ll-size-*` layout token and the `--ll-text-*-weight` tokens into the Tailwind `@theme` block, so classes like `ll:h-topbar` and `ll:w-panel` exist.
+5. Delete the unused tokens `--ll-radius-sm-value`, `--ll-radius-md-value`, `--ll-radius-lg-value`, `--ll-shadow-soft-value` (all themes) and `--ll-canvas-max-width-value`.
+6. `MotionDemo.tsx:125` shows raw LaTeX ("(\(T\))", "(\(\zeta\))"). Write plain words: "response (seconds) and damping ratio".
+7. `src/editor/motion/surface.ts` `reset()`: call `simRemove(this.sim)` as the prototype does.
+8. Move the `prefersReducedMotion` import in `ease.ts` to the top, and put `prefersReducedMotion` in its own module so `ease.ts` and `feel.ts` do not import each other.
+9. Theme switcher on the design system page: show the selected state for the active theme.
+10. Retake the 390 motion screenshots (Paper and Dark) so they show the motion demo itself, and add one screenshot with the sample surface open.
+11. Correct the handoff: Dark's `--ll-accent` is `transparent` (only Lilac has an accent). Add a "Retry 1" section to the same handoff listing what you fixed.
+
+## Retry 2: second review failed (2026-11-03), fix all of these
+
+Retry 1 fixed 7 of 11 items. Remaining and new:
+
+1. **Hydration mismatch** (every screenshot shows the Next dev badge "2 Issues"). Lazy `useState` initialisers read browser-only values on the first render while the page is server-rendered: `DesignSystemPage.tsx:752` (`getInitialTheme`), `:753` (`readLiveThemeTokens`), `ThemeToggle.tsx:40` (theme and its `aria-label`), `feel.ts:73-74` (feel and reduced motion). Use `useSyncExternalStore` with a server snapshot (server: Paper, Smooth, no reduced motion, tokens "—"), and read live token values after mount through a subscription. Remove the unused `_setLiveTokens`. Must stay lint-clean (no setState in effects). Load the page in headless Playwright and confirm there is no hydration warning in the console and no dev "Issues" badge.
+2. `DesignSystemPage.tsx:1285`: remove the inline `style={{ width: ... }}` and use `step.widthClass` (currently unused).
+3. `src/editor/styles/animations.css`, `.ll-hl`: replace `height: 32px` with `var(--ll-size-row-h)`.
+4. Theme switcher buttons: add `aria-pressed={isSelected}`. Retake all colors screenshots so the selected theme is visible (Dark selected in the dark ones).
+5. Retake the 390 motion screenshots (Paper and Dark) scrolled so the surface demo and its trigger button are fully in view, and retake `foundations-motion-surface-open-390.png` with the whole open surface visible.
+6. Handoff line 27: remove "Lilac accent in dark mode".
+7. `DOCS/UI/INTEGRATION.md`: add an entry saying the motion loop depends on the engine's `frameScheduler` (`src/core/time/scheduler.ts`).
+8. Small, do them too: `MotionDemo.tsx:217` close button needs a visible focus style; `MotionDemo.tsx:282-291` press tile must be a `button` reachable by keyboard (Space/Enter press); in `tailwind.css` remove duplicate aliases (keep one name each: `panel`, `viewport-desktop`, `sample-surface` style; update usages).
+
+This is the last retry. Add a "Retry 2" section to the handoff.

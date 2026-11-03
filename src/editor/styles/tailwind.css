@@ -19,6 +19,7 @@
   --color-surface-panel: var(--ll-surface-panel);
   --color-surface-bar: var(--ll-surface-bar);
   --color-surface-raised: var(--ll-surface-raised);
+  --color-surface-hover: var(--ll-surface-hover);
 
   /* Semantic text & icon colors */
   --color-primary: var(--ll-text-primary);
@@ -32,6 +33,30 @@
   --color-control-primary: var(--ll-control-primary-bg);
   --color-control-primary-bg: var(--ll-control-primary-bg);
   --color-control-primary-fg: var(--ll-control-primary-fg);
+  --color-control-active: var(--ll-control-active);
+
+  /* Semantic selection colors */
+  --color-select-bg: var(--ll-select-bg);
+  --color-select-fg: var(--ll-select-fg);
+
+  /* Semantic ship colors */
+  --color-ship-bg: var(--ll-ship-bg);
+  --color-ship-fg: var(--ll-ship-fg);
+
+  /* Semantic avatar colors */
+  --color-avatar-bg: var(--ll-avatar-bg);
+  --color-avatar-fg: var(--ll-avatar-fg);
+
+  /* Canvas content colors */
+  --color-board-bg: var(--ll-board-bg);
+  --color-board-line: var(--ll-board-line);
+  --color-placeholder: var(--ll-placeholder);
+  --color-swatch-line: var(--ll-swatch-line);
+  --color-thumb-bg: var(--ll-thumb-bg);
+  --color-thumb-line: var(--ll-thumb-line);
+
+  /* Accent (Lilac) */
+  --color-accent: var(--ll-accent);
 
   /* Semantic hairline border */
   --color-border: var(--ll-border-color);
@@ -60,16 +85,74 @@
 
   --border-width-hairline: var(--ll-border-hairline);
 
-  --radius-sm: var(--ll-radius-sm-value);
-  --radius-md: var(--ll-radius-md-value);
-  --radius-lg: var(--ll-radius-lg-value);
+  --radius-sm: var(--ll-radius-sm);
+  --radius-md: var(--ll-radius-md);
+  --radius-lg: var(--ll-radius-lg);
 
-  --shadow-soft: var(--ll-shadow-soft-value);
+  --shadow-soft: var(--ll-shadow-soft);
 
-  --container-canvas: var(--ll-canvas-max-width-value);
-  --max-width-canvas: var(--ll-canvas-max-width-value);
+  --container-canvas: var(--ll-canvas-max-width);
+  --max-width-canvas: var(--ll-canvas-max-width);
 
-  --duration-swap: var(--ll-duration-swap-value);
+  --duration-swap: var(--ll-duration-swap);
+  --duration-pop: var(--ll-dur-pop);
+  --duration-fade: var(--ll-dur-fade);
+
+  /* Font weights */
+  --font-weight-display: var(--ll-text-display-weight);
+  --font-weight-title: var(--ll-text-title-weight);
+  --font-weight-body: var(--ll-text-body-weight);
+  --font-weight-small: var(--ll-text-small-weight);
+  --font-weight-micro: var(--ll-text-micro-weight);
+
+  /* Layout dimensions (generates ll:w-*, ll:h-*, ll:size-*) */
+  --spacing-topbar: var(--ll-size-topbar-h);
+  --spacing-panel: var(--ll-size-panel-right-w);
+  --spacing-panel-left: var(--ll-size-panel-left-w);
+  --spacing-panel-compact: var(--ll-size-panel-right-w-compact);
+  --spacing-ruler: var(--ll-size-ruler);
+  --spacing-row: var(--ll-size-row-h);
+  --spacing-row-lg: var(--ll-size-row-lg-h);
+  --spacing-header: var(--ll-size-header-h);
+  --spacing-btn: var(--ll-size-btn-h);
+  --spacing-btn-sm: var(--ll-size-btn-sm-h);
+  --spacing-icon-btn: var(--ll-size-icon-btn);
+  --spacing-avatar: var(--ll-size-avatar);
+  --spacing-menu: var(--ll-size-menu-w);
+  --spacing-menu-wide: var(--ll-size-menu-wide-w);
+  --spacing-menu-ctx: var(--ll-size-menu-ctx-w);
+  --spacing-menu-users: var(--ll-size-menu-users-w);
+  --spacing-sample-surface: var(--ll-size-surface-sample-w);
+  --spacing-viewport-desktop: var(--ll-size-viewport-desktop);
+  --spacing-viewport-tablet: var(--ll-size-viewport-tablet);
+  --spacing-viewport-mobile: var(--ll-size-viewport-mobile);
+
+  /* Explicit heights */
+  --height-topbar: var(--ll-size-topbar-h);
+  --height-header: var(--ll-size-header-h);
+  --height-row: var(--ll-size-row-h);
+  --height-row-lg: var(--ll-size-row-lg-h);
+  --height-btn: var(--ll-size-btn-h);
+  --height-btn-sm: var(--ll-size-btn-sm-h);
+  --height-ruler: var(--ll-size-ruler);
+  --height-icon-btn: var(--ll-size-icon-btn);
+  --height-avatar: var(--ll-size-avatar);
+
+  /* Explicit widths */
+  --width-panel: var(--ll-size-panel-right-w);
+  --width-panel-left: var(--ll-size-panel-left-w);
+  --width-panel-compact: var(--ll-size-panel-right-w-compact);
+  --width-menu: var(--ll-size-menu-w);
+  --width-menu-wide: var(--ll-size-menu-wide-w);
+  --width-menu-ctx: var(--ll-size-menu-ctx-w);
+  --width-menu-users: var(--ll-size-menu-users-w);
+  --width-sample-surface: var(--ll-size-surface-sample-w);
+  --width-viewport-desktop: var(--ll-size-viewport-desktop);
+  --width-viewport-tablet: var(--ll-size-viewport-tablet);
+  --width-viewport-mobile: var(--ll-size-viewport-mobile);
+  --width-icon-btn: var(--ll-size-icon-btn);
+  --width-avatar: var(--ll-size-avatar);
+  --width-ruler: var(--ll-size-ruler);
 }
 
 /* Default border color for new UI hairline boundaries */

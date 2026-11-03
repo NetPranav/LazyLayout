@@ -46,6 +46,11 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What the UI uses:** `useSelectionStore((s) => s.selectedIds)`; `invokeCommand` with `align.left`, `align.hcenter`, `align.right`, `align.top`, `align.vcenter`, `align.bottom`, `distribute.horizontal`, `distribute.vertical`, `layer.tidy`, `layer.bringForward`, `layer.sendBackward`, `edit.group`, `edit.undo`, `edit.redo`, `view.commandPalette`; `MENU_MODEL` actions; `useProjectStore` `mountDemoProject` and `clearToBlankCanvas`.
 - **Status:** open
 
+### Motion engine frame loop scheduler
+- **Area:** motion
+- **What the UI uses:** The motion loop (`src/editor/motion/loop.ts`) coordinates its frame execution using the core engine's `frameScheduler` (`src/core/time/scheduler.ts`).
+- **Status:** done
+
 ## 3. Engine changes requested
 
 ## 4. New shared UI pieces
@@ -102,6 +107,13 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 - **What changed:** Full 8-color approved palette from `PALETTE.md` implemented: `--ll-neutral-0` (#FFFFFF), `--ll-neutral-50` (#F1F1F1), `--ll-neutral-100` (#DFDFDF), `--ll-neutral-200` (#C4C4C4), `--ll-neutral-400` (#8F8F8F), `--ll-neutral-800` (#464646), `--ll-neutral-1000` (#000000), and `--ll-border-color` (rgba(143, 143, 143, 0.5)). All `@theme inline` properties reference `var(--ll-...)` without repeating raw hex or rgba values. Non-circular mappings ensure tokens under `prefix(ll)` compile correctly. Typography explicitly bound to Geist and Geist Mono across `.ll:font-sans` and `.ll:font-mono` (scoped in `globals.css` with legacy reset). Focus ring updated to `neutral-1000` (exceeds 3:1 contrast on panels). Transitions restricted to `transform` and `opacity` only (instant hover).
 - **What A/B must do:** Use `ll:` classes in new UI. The prefix and scoping can be dropped when `src/legacy-editor` is removed.
 - **Status:** open
+
+### Five official themes and motion engine foundations
+- **Area:** foundations / motion / styling
+- **Files:** `src/editor/styles/tokens.css`, `src/editor/styles/tailwind.css`, `src/editor/styles/animations.css`, `src/editor/motion/**`, `src/app/layout.tsx`, `src/editor/components/ThemeToggle.tsx`
+- **What changed:** Implemented five official themes from `PALETTE.md` (Paper default, Dark, White, Warm, Lilac) with semantic tokens (`--ll-surface-*`, `--ll-text-*`, `--ll-control-*`, `--ll-select-*`, `--ll-ship-*`, `--ll-avatar-*`, `--ll-board-*`, `--ll-placeholder`, `--ll-swatch-line`, `--ll-thumb-*`, `--ll-shadow-soft`, `--ll-accent`). Non-color tokens (30px display type scale, 4px geometric spacing grid up to 64px, modest 4/6/8px radii, 16 prototype layout sizes) added. Nook mass-1 spring motion engine ported to TypeScript in `src/editor/motion/` with presets, cached linear() CSS easing generator, shared frame loop, FLIP, and Surf box controller. Layout default theme changed to Paper.
+- **What A/B must do:** Use semantic tokens and `@/editor/motion` across rebuilt screens. Do not use raw colors or candidate themes.
+- **Status:** done
 
 ## 6. Routes and layout
 
