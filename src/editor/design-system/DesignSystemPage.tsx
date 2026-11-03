@@ -5,7 +5,6 @@ import { Swatch } from "../components/Swatch";
 import { WorkspaceFrame } from "../components/WorkspaceFrame";
 import { Button } from "../components/Button";
 import { Icon } from "../components/Icon";
-import { TopBar, type DeviceMode } from "../components/TopBar";
 import { ThemeToggle, type Theme, useTheme } from "../components/ThemeToggle";
 import { MotionDemo } from "./MotionDemo";
 
@@ -41,6 +40,7 @@ import {
   TabsDemo,
   AvatarDemo,
   EmptyStateDemo,
+  TopBarDemo,
 } from "./demos/ComponentDemos";
 
 import { Menu as MenuIcon } from "lucide-react";
@@ -449,9 +449,6 @@ export function DesignSystemPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Demo state for TopBar
-  const [topBarDevice, setTopBarDevice] = useState<DeviceMode>("desktop");
-
   useEffect(() => {
     cachedLiveTokens = computeLiveTokensClient();
     liveTokensListeners.forEach((fn) => fn());
@@ -851,23 +848,7 @@ export function DesignSystemPage() {
             {activeSection === "empty-state" && <EmptyStateDemo />}
 
             {/* Existing Studio Components */}
-            {activeSection === "top-bar" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">TopBar</h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    52px Shell Header Bar
-                  </span>
-                </div>
-                <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
-                  <TopBar
-                    projectName="My Design Project"
-                    deviceMode={topBarDevice}
-                    onSelectDeviceMode={setTopBarDevice}
-                  />
-                </div>
-              </div>
-            )}
+            {activeSection === "top-bar" && <TopBarDemo />}
 
             {activeSection === "theme-toggle" && (
               <div className="ll:flex ll:flex-col ll:gap-8">

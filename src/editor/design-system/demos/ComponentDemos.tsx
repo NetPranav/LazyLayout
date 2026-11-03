@@ -47,6 +47,13 @@ import {
   AvatarStack,
   ShipButton,
   EmptyState,
+  TopBar,
+  LogoMark,
+  ModeTabs,
+  ShipPopover,
+  PageSwitcher,
+  type EditorMode,
+  type CollabUser,
 } from "../../components";
 import { Icon } from "../../components/Icon";
 import { flipCard } from "../../motion/flip";
@@ -1211,6 +1218,274 @@ export function EmptyStateDemo() {
             onInsert={() => console.log("Insert")}
             onAskAi={() => console.log("Ask AI")}
           />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   22. TOP BAR DEMO
+   ========================================================================= */
+const SAMPLE_COLLAB_USERS: readonly CollabUser[] = [
+  { id: "1", initials: "AP", name: "Adarsh Pathade", status: "Viewing" },
+  { id: "2", initials: "RK", name: "Rina Kapoor", status: "Editing Hero" },
+  { id: "3", initials: "SM", name: "Sam Mori", status: "Viewing" },
+  { id: "4", initials: "JL", name: "Jun Lee", status: "Viewing" },
+  { id: "5", initials: "TO", name: "Tara Osei", status: "Viewing" },
+];
+
+export function TopBarDemo() {
+  const [mode, setMode] = useState<EditorMode>("design");
+  const [saving, setSaving] = useState(false);
+  const [demoIssues, setDemoIssues] = useState([
+    { id: "alt", title: "Hero image has no alt text" },
+    { id: "contrast", title: "Button contrast is 3.9:1" },
+  ]);
+  const [selectedPage, setSelectedPage] = useState("Home");
+
+  const handleFixIssue = (id: string) => {
+    setDemoIssues((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const resetIssues = () => {
+    setDemoIssues([
+      { id: "alt", title: "Hero image has no alt text" },
+      { id: "contrast", title: "Button contrast is 3.9:1" },
+    ]);
+  };
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-8">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">TopBar</h1>
+        <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          52px Apple-Level Header, Logo Saving Trace, Mode Tabs, Theme Toggle, Ship Popover &amp; Page Switcher
+        </span>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        {/* 1. Full TopBar */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Full Bar Interactive Preview
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-panel">
+          <TopBar
+            projectName="MyProject"
+            saving={saving}
+            mode={mode}
+            onSelectMode={setMode}
+            issues={demoIssues}
+            onFixIssue={handleFixIssue}
+            users={SAMPLE_COLLAB_USERS}
+          />
+        </div>
+        <div className="ll:flex ll:items-center ll:gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setSaving((prev) => !prev)}
+          >
+            {saving ? "Stop Saving Trace" : "Trigger Saving Trace"}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={resetIssues}
+          >
+            Reset Issues (2 to fix)
+          </Button>
+          <span className="ll:text-small ll:text-secondary">
+            Current mode: <strong className="ll:text-primary">{mode}</strong> · Issues: <strong className="ll:text-primary">{demoIssues.length}</strong>
+          </span>
+        </div>
+
+        {/* 2. Logo Mark States */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Logo Mark (Idle &amp; Saving Trace)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:items-center ll:gap-8">
+          <div className="ll:flex ll:flex-col ll:items-center ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Idle</span>
+            <div className="ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm">
+              <LogoMark saving={false} size={20} />
+            </div>
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:items-center ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Saving Trace (1.6s loop)</span>
+            <div
+              data-saving="true"
+              className="ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm"
+            >
+              <LogoMark saving={true} size={20} />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Mode Tabs (Interactive, Hover, Focus, Disabled) */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Mode Tabs (Keyboard Arrow Navigation &amp; Forced States)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-6">
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Interactive (Arrow Keys)</span>
+            <ModeTabs mode={mode} onChange={setMode} />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Hover State</span>
+            <ModeTabs mode={mode} onChange={setMode} dataState="hover" />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Focus State</span>
+            <ModeTabs mode={mode} onChange={setMode} dataState="focus" />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Disabled State</span>
+            <ModeTabs mode={mode} onChange={setMode} disabled={true} />
+          </div>
+        </div>
+
+        {/* 4. Ship Button & Popover States */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Ship Button &amp; Popover States
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-6">
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">With Issues (Interactive Fix)</span>
+            <ShipPopover
+              issues={demoIssues}
+              onFixIssue={handleFixIssue}
+            />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Hover State</span>
+            <ShipPopover
+              issues={demoIssues}
+              dataState="hover"
+            />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Focus State</span>
+            <ShipPopover
+              issues={demoIssues}
+              dataState="focus"
+            />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Ready State (0 Issues, Inverted)</span>
+            <ShipPopover
+              issues={[]}
+              ready={true}
+            />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Disabled State</span>
+            <ShipPopover
+              issues={demoIssues}
+              disabled={true}
+            />
+          </div>
+        </div>
+
+        {/* 5. Ship in All 5 Themes */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Ship Across All 5 Themes
+        </div>
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-5 ll:gap-3">
+          {(
+            [
+              { id: "paper", label: "Paper (Default)" },
+              { id: "dark", label: "Noir / Dark" },
+              { id: "white", label: "White" },
+              { id: "warm", label: "Warm" },
+              { id: "lilac", label: "Lilac (Accent)" },
+            ] as const
+          ).map((t) => (
+            <div
+              key={t.id}
+              data-theme={t.id}
+              className="ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:p-4 ll:flex ll:flex-col ll:gap-3"
+            >
+              <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                {t.label}
+              </span>
+              <div className="ll:flex ll:flex-col ll:gap-2">
+                <ShipPopover issues={[{ id: "1", title: "Theme check" }]} />
+                <ShipPopover issues={[]} ready={true} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 6. Page Switcher (Interactive, Hover, Focus, Disabled) */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Page Switcher (Searchable Select-Style Dropdown &amp; Forced States)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-6">
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Interactive (Arrow Up/Down/Enter)</span>
+            <div className="ll:bg-surface-panel ll:px-3 ll:py-1 ll:border ll:border-border ll:rounded-sm">
+              <PageSwitcher
+                currentPage={selectedPage}
+                onSelectPage={setSelectedPage}
+                onNewPage={() => setSelectedPage("New Untitled Page")}
+              />
+            </div>
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Hover State</span>
+            <div className="ll:bg-surface-panel ll:px-3 ll:py-1 ll:border ll:border-border ll:rounded-sm">
+              <PageSwitcher
+                currentPage={selectedPage}
+                dataState="hover"
+              />
+            </div>
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Forced Focus State</span>
+            <div className="ll:bg-surface-panel ll:px-3 ll:py-1 ll:border ll:border-border ll:rounded-sm">
+              <PageSwitcher
+                currentPage={selectedPage}
+                dataState="focus"
+              />
+            </div>
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Disabled State</span>
+            <div className="ll:bg-surface-panel ll:px-3 ll:py-1 ll:border ll:border-border ll:rounded-sm">
+              <PageSwitcher
+                currentPage={selectedPage}
+                disabled={true}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 7. Avatar Stack */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Collaborator Avatar Stack (Reusable Component)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:items-center ll:gap-6">
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">5 Collaborators (Click for Menu)</span>
+            <AvatarStack users={SAMPLE_COLLAB_USERS} />
+          </div>
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:text-secondary">Single Collaborator</span>
+            <AvatarStack users={[SAMPLE_COLLAB_USERS[0]]} />
+          </div>
         </div>
       </div>
     </div>

@@ -10,8 +10,8 @@
  */
 
 :root,
-:root[data-theme="paper"],
-[data-theme="paper"] {
+:root[data-theme],
+[data-theme] {
   /* 4px spacing grid base */
   --ll-spacing: 4px;
   --ll-spacing-0-5: 2px;
@@ -50,12 +50,24 @@
   --ll-size-btn-sm-h: 24px;
   --ll-size-icon-btn: 28px;
   --ll-size-avatar: 28px;
+  --ll-size-mode-tab-w: 76px;
+  --ll-size-mode-tab-h: 26px;
+  --ll-size-logo: 32px;
+  --ll-size-logo-icon: 20px;
+  --ll-size-divider-h: 20px;
+  --ll-size-bottom-motion-h: 260px;
+  --ll-size-bottom-code-h: 200px;
   --ll-size-menu-w: 200px;
   --ll-size-menu-wide-w: 320px;
   --ll-size-menu-ctx-w: 248px;
   --ll-size-menu-users-w: 240px;
+  --ll-size-page-dropdown-w: 220px;
+  --ll-size-ship-popover-w: 280px;
+  --ll-pad-popover-edge: 12px;
+  --ll-gap-popover-y: 4px;
   --ll-size-surface-sample-w: 260px;
   --ll-size-viewport-desktop: 1440px;
+  --ll-size-viewport-desktop-h: 900px;
   --ll-size-viewport-tablet: 1024px;
   --ll-size-viewport-mobile: 390px;
 
@@ -134,11 +146,18 @@
   --ll-dur-fade: 120ms;
   --ll-duration-swap: 120ms;
   --ll-duration-spin: 800ms;
+  --ll-dur-trace: 1.6s;
+  --ll-dur-trace-fade: 2.8s;
+  --ll-ease-trace: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Canvas max width */
   --ll-canvas-max-width: 820px;
+}
 
-  /* ===== OFFICIAL THEME: Paper (Default) ===== */
+/* ===== OFFICIAL THEME: Paper (Default) ===== */
+:root,
+:root[data-theme="paper"],
+[data-theme="paper"] {
   --ll-surface-backdrop: #E7E6E1;
   --ll-surface-canvas: #E7E6E1;
   --ll-surface-panel: #F4F3EF;
@@ -169,7 +188,8 @@
 }
 
 /* ===== OFFICIAL THEME: Dark ===== */
-[data-theme="dark"] {
+[data-theme="dark"],
+[data-theme="noir"] {
   --ll-surface-backdrop: #141414;
   --ll-surface-canvas: #1E1E1E;
   --ll-surface-panel: #2C2C2C;

@@ -113,6 +113,9 @@
   --duration-pop: var(--ll-dur-pop);
   --duration-fade: var(--ll-dur-fade);
 
+  /* Grid columns */
+  --grid-template-columns-topbar: 1fr auto 1fr;
+
   /* Font weights */
   --font-weight-display: var(--ll-text-display-weight);
   --font-weight-title: var(--ll-text-title-weight);
@@ -140,10 +143,17 @@
   --spacing-btn-sm: var(--ll-size-btn-sm-h);
   --spacing-icon-btn: var(--ll-size-icon-btn);
   --spacing-avatar: var(--ll-size-avatar);
+  --spacing-mode-tab: var(--ll-size-mode-tab-w);
+  --spacing-mode-tab-h: var(--ll-size-mode-tab-h);
+  --spacing-logo: var(--ll-size-logo);
+  --spacing-logo-icon: var(--ll-size-logo-icon);
+  --spacing-divider: var(--ll-size-divider-h);
   --spacing-menu: var(--ll-size-menu-w);
   --spacing-menu-wide: var(--ll-size-menu-wide-w);
   --spacing-menu-ctx: var(--ll-size-menu-ctx-w);
   --spacing-menu-users: var(--ll-size-menu-users-w);
+  --spacing-ship-popover: var(--ll-size-ship-popover-w);
+  --spacing-page-dropdown: var(--ll-size-page-dropdown-w);
   --spacing-sample-surface: var(--ll-size-surface-sample-w);
   --spacing-viewport-desktop: var(--ll-size-viewport-desktop);
   --spacing-viewport-tablet: var(--ll-size-viewport-tablet);
@@ -165,8 +175,13 @@
   --height-ruler: var(--ll-size-ruler);
   --height-icon-btn: var(--ll-size-icon-btn);
   --height-avatar: var(--ll-size-avatar);
+  --height-mode-tab: var(--ll-size-mode-tab-h);
+  --height-logo: var(--ll-size-logo);
+  --height-logo-icon: var(--ll-size-logo-icon);
+  --height-divider: var(--ll-size-divider-h);
 
   /* Explicit widths */
+  --width-px: 1px;
   --width-toggle-track: var(--ll-size-toggle-track-w);
   --width-toggle-track-sm: var(--ll-size-toggle-track-sm-w);
   --width-toggle-knob: var(--ll-size-toggle-knob);
@@ -178,12 +193,17 @@
   --width-menu-wide: var(--ll-size-menu-wide-w);
   --width-menu-ctx: var(--ll-size-menu-ctx-w);
   --width-menu-users: var(--ll-size-menu-users-w);
+  --width-ship-popover: var(--ll-size-ship-popover-w);
+  --width-page-dropdown: var(--ll-size-page-dropdown-w);
   --width-sample-surface: var(--ll-size-surface-sample-w);
   --width-viewport-desktop: var(--ll-size-viewport-desktop);
   --width-viewport-tablet: var(--ll-size-viewport-tablet);
   --width-viewport-mobile: var(--ll-size-viewport-mobile);
   --width-icon-btn: var(--ll-size-icon-btn);
   --width-avatar: var(--ll-size-avatar);
+  --width-mode-tab: var(--ll-size-mode-tab-w);
+  --width-logo: var(--ll-size-logo);
+  --width-logo-icon: var(--ll-size-logo-icon);
   --width-ruler: var(--ll-size-ruler);
 }
 

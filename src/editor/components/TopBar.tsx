@@ -1,218 +1,546 @@
-import React from "react";
+"use client";
+
+import React, { useState, useRef, useCallback, useId } from "react";
 import {
-  Monitor,
-  Tablet,
-  Smartphone,
+  ChevronLeft,
+  Search,
+  Plus,
+  Folder,
+  Save,
+  Code,
+  Link as LinkIcon,
+  FolderInput,
+  FolderOutput,
   Undo2,
   Redo2,
-  Search,
+  Scissors,
+  Copy,
+  Clipboard,
+  ClipboardPaste,
+  CheckSquare,
+  CopyPlus,
+  Trash2,
+  Box,
+  Frame,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Ruler,
+  EyeOff,
+  Expand,
+  Focus,
+  Monitor,
+  PanelLeft,
+  PanelRight,
+  Image as ImageIcon,
+  Terminal,
+  Activity,
+  History,
+  GitBranch,
   Settings,
+  Keyboard,
+  BookOpen,
+  Info,
+  Sun,
+  Moon,
+  Palette,
 } from "lucide-react";
-import { Button } from "./Button";
-import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
-import { Tooltip } from "./Tooltip";
-import { ThemeToggle } from "./ThemeToggle";
+import { LogoMark } from "./LogoMark";
+import { ModeTabs, type EditorMode } from "./ModeTabs";
+import { ShipPopover, type ShipIssue } from "./ShipPopover";
+import { AvatarStack, type CollabUser } from "./AvatarStack";
+import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
+import { useTheme, THEMES, type Theme } from "./ThemeToggle";
 import { Icon } from "./Icon";
-
-export type DeviceMode = "desktop" | "tablet" | "mobile";
+import { Tooltip } from "./Tooltip";
+import { invokeCommand } from "@/core/commands";
+import {
+  LOGO_ICON_SIZE,
+  MENU_DEFAULT_WIDTH,
+  MENU_ICON_SIZE,
+  ACTION_ICON_SIZE,
+} from "./topbar-constants";
 
 export interface TopBarProps {
   projectName?: string;
-  deviceMode?: DeviceMode;
-  onSelectDeviceMode?: (mode: DeviceMode) => void;
+  saving?: boolean;
+  mode?: EditorMode;
+  onSelectMode?: (mode: EditorMode) => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
   onSearch?: () => void;
+  // Panel collapse toggles:
+  onTogglePanel?: (panel: "lc" | "rc", open?: boolean) => void;
+  isLeftCollapsed?: boolean;
+  isRightCollapsed?: boolean;
+  // Ship button issues:
+  issues?: readonly ShipIssue[];
+  onFixIssue?: (id: string) => void;
+  onPublish?: () => void;
+  // Collaborators:
+  users?: readonly CollabUser[];
   className?: string;
-  compact?: boolean;
 }
 
-export function TopBar({
+export const TopBar: React.FC<TopBarProps> = ({
   projectName = "Visual Web App",
-  deviceMode = "desktop",
-  onSelectDeviceMode,
+  saving = false,
+  mode: propMode,
+  onSelectMode,
   canUndo = false,
   canRedo = false,
   onUndo,
   onRedo,
   onSearch,
+  onTogglePanel,
+  isLeftCollapsed = false,
+  isRightCollapsed = false,
+  issues,
+  onFixIssue,
+  onPublish,
+  users = [],
   className = "",
-  compact = false,
-}: TopBarProps) {
-  const deviceOptions: readonly SegmentedControlOption<DeviceMode>[] = [
-    {
-      value: "desktop",
-      title: "Desktop Canvas (1440px)",
-      ariaLabel: "Desktop view",
-      icon: <Icon icon={Monitor} size={16} />,
-      label: (
-        <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
-          Desktop
-        </span>
-      ),
+}) => {
+  const menuBtnId = useId();
+  const themeBtnId = useId();
+
+  // Mode tabs state
+  const [internalMode, setInternalMode] = useState<EditorMode>("design");
+  const activeMode = propMode !== undefined ? propMode : internalMode;
+
+  const handleModeChange = useCallback(
+    (newMode: EditorMode) => {
+      if (onSelectMode) {
+        onSelectMode(newMode);
+      } else {
+        setInternalMode(newMode);
+      }
     },
-    {
-      value: "tablet",
-      title: "Tablet Canvas (768px)",
-      ariaLabel: "Tablet view",
-      icon: <Icon icon={Tablet} size={16} />,
-      label: (
-        <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
-          Tablet
-        </span>
-      ),
-    },
-    {
-      value: "mobile",
-      title: "Mobile Canvas (375px)",
-      ariaLabel: "Mobile view",
-      icon: <Icon icon={Smartphone} size={16} />,
-      label: (
-        <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
-          Mobile
-        </span>
-      ),
-    },
-  ];
+    [onSelectMode]
+  );
+
+  // Logo application menu state
+  const logoBtnRef = useRef<HTMLButtonElement>(null);
+  const [logoMenuOpen, setLogoMenuOpen] = useState(false);
+
+  // Theme integration
+  const [theme, selectTheme] = useTheme();
+  const isDark = theme === "dark";
+
+  const handleThemeToggle = useCallback(() => {
+    selectTheme(isDark ? "paper" : "dark");
+  }, [isDark, selectTheme]);
+
+  const handleOpenSearch = useCallback(() => {
+    if (onSearch) {
+      onSearch();
+    } else if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("antigravity:open_command_palette"));
+    }
+  }, [onSearch]);
+
+  const handleUndo = useCallback(() => {
+    if (onUndo) {
+      onUndo();
+    } else {
+      invokeCommand("edit.undo");
+    }
+  }, [onUndo]);
+
+  const handleRedo = useCallback(() => {
+    if (onRedo) {
+      onRedo();
+    } else {
+      invokeCommand("edit.redo");
+    }
+  }, [onRedo]);
 
   return (
     <header
       role="banner"
-      className={`ll:relative ll:h-12 ll:w-full ll:bg-surface-bar ll:border-b ll:border-border ll:px-3 ll:flex ll:items-center ll:justify-between ll:gap-2 ll:shrink-0 ll:box-border ll:font-sans ll:select-none ${className}`}
+      className={`ll-top ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
     >
-      {/* Left group */}
-      <div className="ll:flex ll:items-center ll:gap-2 ll:shrink-0 ll:z-10">
-        {/* Small square logo mark (rounded-rectangle 24px, radius 6px, Geist bold) */}
-        <div
-          aria-label="Lazy Layout Logo"
-          className="ll:w-6 ll:h-6 ll:rounded-md ll:bg-control-primary ll:flex ll:items-center ll:justify-center ll:shrink-0"
+      {/* =====================================================================
+          1. LEFT COLUMN: Logo, 1px divider, Project Name
+          ===================================================================== */}
+      <div className="ll-tl ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-start ll:pl-2.5">
+        <button
+          ref={logoBtnRef}
+          type="button"
+          id={menuBtnId}
+          data-saving={saving ? "true" : undefined}
+          aria-label="Application menu"
+          title="Application menu"
+          aria-haspopup="menu"
+          aria-expanded={logoMenuOpen}
+          onClick={() => setLogoMenuOpen((prev) => !prev)}
+          className="ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:rounded-sm ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
         >
-          <span className="ll:font-sans ll:font-bold ll:text-body ll:leading-none ll:text-control-primary-fg ll:select-none">
-            L
+          <LogoMark saving={saving} size={LOGO_ICON_SIZE} />
+          <span className="ll:sr-only" role="status">
+            {saving ? "Saving" : "Saved"}
+          </span>
+        </button>
+
+        {/* 1px hairline divider (height 20px, margin 0 4px, visible in Noir) */}
+        <i
+          aria-hidden="true"
+          className="ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
+        />
+
+        {/* Project Name (14px, 500 font-weight, truncate) */}
+        <div className="ll-pinfo ll:flex ll:items-center ll:min-w-0 ll:text-secondary">
+          <span
+            className="ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
+            title={projectName}
+          >
+            {projectName}
           </span>
         </div>
 
-        {/* Brand title */}
-        <span
-          className={`ll:text-title ll:font-semibold ll:text-primary ll:leading-none ${
-            compact ? "ll:hidden" : "ll:hidden ll:sm:inline"
-          }`}
+        {/* Logo Application Menu */}
+        <Menu
+          open={logoMenuOpen}
+          onClose={() => setLogoMenuOpen(false)}
+          anchorRef={logoBtnRef}
+          width={MENU_DEFAULT_WIDTH}
+          aria-label="Application menu"
         >
-          Lazy Layout
-        </span>
-
-        {/* Hairline vertical divider */}
-        <div
-          className={`ll:h-4 ll:w-px ll:bg-border ${
-            compact ? "ll:hidden" : "ll:hidden ll:sm:block"
-          }`}
-        />
-
-        {/* Project name as a quiet text button */}
-        <button
-          type="button"
-          title={`Project: ${projectName}`}
-          className={`ll:text-small ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-panel ll:px-2 ll:py-1 ll:rounded-sm ll:transition-none ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ll:truncate ll:max-w-48 ${
-            compact ? "ll:hidden" : "ll:hidden ll:sm:inline-flex"
-          }`}
-        >
-          {projectName}
-        </button>
-      </div>
-
-      {/* Center group: truly centered on the bar */}
-      <div className="ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:flex ll:items-center ll:justify-center ll:z-10">
-        <SegmentedControl<DeviceMode>
-          options={deviceOptions}
-          value={deviceMode}
-          onChange={(mode) => onSelectDeviceMode?.(mode)}
-          size="md"
-          ariaLabel="Device Preview Target"
-        />
-      </div>
-
-      {/* Right group */}
-      <div className="ll:flex ll:items-center ll:gap-2 ll:shrink-0 ll:z-10">
-        {/* Undo icon button */}
-        <div className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline-flex"}>
-          <Tooltip content="Undo (Ctrl+Z)">
-            <Button
-              variant="secondary"
-              size="md"
-              iconOnly
-              disabled={!canUndo}
-              onClick={onUndo}
-              aria-label="Undo"
-            >
-              <Icon icon={Undo2} size={16} />
-            </Button>
-          </Tooltip>
-        </div>
-
-        {/* Redo icon button */}
-        <div className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline-flex"}>
-          <Tooltip content="Redo (Ctrl+Shift+Z)">
-            <Button
-              variant="secondary"
-              size="md"
-              iconOnly
-              disabled={!canRedo}
-              onClick={onRedo}
-              aria-label="Redo"
-            >
-              <Icon icon={Redo2} size={16} />
-            </Button>
-          </Tooltip>
-        </div>
-
-        {/* Search icon button */}
-        <div className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline-flex"}>
-          <Tooltip content="Search commands (Ctrl+K)">
-            <Button
-              variant="secondary"
-              size="md"
-              iconOnly
-              onClick={onSearch}
-              aria-label="Search commands"
-            >
-              <Icon icon={Search} size={16} />
-            </Button>
-          </Tooltip>
-        </div>
-
-        {/* Hairline vertical divider */}
-        <div
-          className={`ll:h-4 ll:w-px ll:bg-border ${
-            compact ? "ll:hidden" : "ll:hidden ll:sm:block"
-          }`}
-        />
-
-        {/* Share primary button */}
-        <Button
-          variant="primary"
-          size="md"
-          aria-label="Share project"
-        >
-          Share
-        </Button>
-
-        {/* Theme toggle button */}
-        <ThemeToggle size="md" />
-
-        {/* Settings icon button */}
-        <Tooltip content="Project settings">
-          <Button
-            variant="secondary"
-            size="md"
-            iconOnly
-            aria-label="Settings"
+          <MenuItem
+            icon={<Icon icon={ChevronLeft} size={MENU_ICON_SIZE} />}
+            onClick={() => setLogoMenuOpen(false)}
           >
-            <Icon icon={Settings} size={16} />
-          </Button>
+            Back to projects
+          </MenuItem>
+
+          <MenuItem
+            icon={<Icon icon={Search} size={MENU_ICON_SIZE} />}
+            shortcut="Ctrl+K"
+            onClick={handleOpenSearch}
+          >
+            Search
+          </MenuItem>
+
+          <MenuSeparator />
+
+          {/* Submenu: File */}
+          <SubMenu
+            id="sub-file"
+            label="File"
+            icon={<Icon icon={Folder} size={MENU_ICON_SIZE} />}
+          >
+            <MenuItem
+              icon={<Icon icon={Plus} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+N"
+            >
+              New project
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Folder} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+O"
+            >
+              Open project…
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Save} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+S"
+            >
+              Save project
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={Code} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+Shift+E"
+            >
+              Export code
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={LinkIcon} size={MENU_ICON_SIZE} />}
+            >
+              Share link
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={FolderInput} size={MENU_ICON_SIZE} />}
+            >
+              Import…
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={FolderOutput} size={MENU_ICON_SIZE} />}
+            >
+              Export…
+            </MenuItem>
+          </SubMenu>
+
+          {/* Submenu: Edit */}
+          <SubMenu
+            id="sub-edit"
+            label="Edit"
+            icon={<Icon icon={Undo2} size={MENU_ICON_SIZE} />}
+          >
+            <MenuItem
+              icon={<Icon icon={Undo2} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+Z"
+              disabled={!canUndo}
+              onClick={handleUndo}
+            >
+              Undo
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Redo2} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+Shift+Z"
+              disabled={!canRedo}
+              onClick={handleRedo}
+            >
+              Redo
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={Scissors} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+X"
+            >
+              Cut
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Copy} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+C"
+            >
+              Copy
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Clipboard} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+V"
+            >
+              Paste
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={ClipboardPaste} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+Shift+V"
+            >
+              Paste in place
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={CheckSquare} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+A"
+            >
+              Select all
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={CopyPlus} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+D"
+            >
+              Duplicate
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Trash2} size={MENU_ICON_SIZE} />}
+              shortcut="Del"
+            >
+              Delete
+            </MenuItem>
+          </SubMenu>
+
+          {/* Submenu: View */}
+          <SubMenu
+            id="sub-view"
+            label="View"
+            icon={<Icon icon={Box} size={MENU_ICON_SIZE} />}
+          >
+            <MenuItem
+              icon={<Icon icon={Frame} size={MENU_ICON_SIZE} />}
+            >
+              Layers
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={ImageIcon} size={MENU_ICON_SIZE} />}
+            >
+              Assets
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={ZoomIn} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl++"
+            >
+              Zoom in
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={ZoomOut} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+-"
+            >
+              Zoom out
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Maximize} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+0"
+            >
+              Zoom to 100%
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Expand} size={MENU_ICON_SIZE} />}
+              shortcut="Shift+1"
+            >
+              Zoom to fit
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={Ruler} size={MENU_ICON_SIZE} />}
+              shortcut="Shift+R"
+            >
+              Rulers
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={EyeOff} size={MENU_ICON_SIZE} />}
+              shortcut="Shift+W"
+            >
+              Wireframe mode
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Monitor} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+\\"
+            >
+              Toggle UI
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Focus} size={MENU_ICON_SIZE} />}
+              shortcut="F"
+            >
+              Focus mode
+            </MenuItem>
+          </SubMenu>
+
+          {/* Submenu: Window */}
+          <SubMenu
+            id="sub-window"
+            label="Window"
+            icon={<Icon icon={PanelLeft} size={MENU_ICON_SIZE} />}
+          >
+            <MenuItem
+              icon={<Icon icon={PanelLeft} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+B"
+              onClick={() => onTogglePanel?.("lc")}
+            >
+              {isLeftCollapsed ? "Show Left Panel" : "Hide Left Panel"}
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={PanelRight} size={MENU_ICON_SIZE} />}
+              shortcut="Ctrl+Shift+B"
+              onClick={() => onTogglePanel?.("rc")}
+            >
+              {isRightCollapsed ? "Show Right Panel" : "Hide Right Panel"}
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Icon icon={ImageIcon} size={MENU_ICON_SIZE} />}
+            >
+              Assets
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Terminal} size={MENU_ICON_SIZE} />}
+            >
+              Terminal
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Activity} size={MENU_ICON_SIZE} />}
+            >
+              Performance
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={History} size={MENU_ICON_SIZE} />}
+            >
+              History
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={GitBranch} size={MENU_ICON_SIZE} />}
+            >
+              Branches
+            </MenuItem>
+          </SubMenu>
+
+          {/* Submenu: Theme */}
+          <SubMenu
+            id="sub-theme"
+            label="Theme"
+            icon={<Icon icon={Palette} size={MENU_ICON_SIZE} />}
+          >
+            {THEMES.map((t) => (
+              <MenuItem
+                key={t.id}
+                onClick={() => selectTheme(t.id)}
+              >
+                {t.label}
+              </MenuItem>
+            ))}
+          </SubMenu>
+
+          <MenuSeparator />
+
+          <MenuItem
+            icon={<Icon icon={Settings} size={MENU_ICON_SIZE} />}
+            shortcut="Ctrl+,"
+            onClick={() => setLogoMenuOpen(false)}
+          >
+            Settings
+          </MenuItem>
+
+          {/* Submenu: Help */}
+          <SubMenu
+            id="sub-help"
+            label="Help"
+            icon={<Icon icon={BookOpen} size={MENU_ICON_SIZE} />}
+          >
+            <MenuItem
+              icon={<Icon icon={Keyboard} size={MENU_ICON_SIZE} />}
+              shortcut="F1"
+            >
+              Keyboard shortcuts
+            </MenuItem>
+            <MenuItem icon={<Icon icon={BookOpen} size={MENU_ICON_SIZE} />}>
+              Documentation
+            </MenuItem>
+            <MenuItem icon={<Icon icon={Info} size={MENU_ICON_SIZE} />}>
+              About
+            </MenuItem>
+          </SubMenu>
+        </Menu>
+      </div>
+
+      {/* =====================================================================
+          2. CENTER COLUMN: Mode Tabs (Design, Motion, Code)
+          ===================================================================== */}
+      <div className="ll:flex ll:items-center ll:justify-center">
+        <ModeTabs mode={activeMode} onChange={handleModeChange} />
+      </div>
+
+      {/* =====================================================================
+          3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
+          ===================================================================== */}
+      <div className="ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
+        {/* Theme button (32x32, toggles Paper and Noir) */}
+        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
+          <button
+            type="button"
+            id={themeBtnId}
+            onClick={handleThemeToggle}
+            aria-label={isDark ? "Switch to Paper" : "Switch to Noir"}
+            title={isDark ? "Switch to Paper" : "Switch to Noir"}
+            className="ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          >
+            <Icon icon={isDark ? Sun : Moon} size={ACTION_ICON_SIZE} />
+          </button>
         </Tooltip>
+
+        {/* Ship Button & Popover */}
+        <ShipPopover
+          issues={issues}
+          onFixIssue={onFixIssue}
+          onPublish={onPublish}
+        />
+
+        {/* Avatar Stack */}
+        <AvatarStack users={users} />
       </div>
     </header>
   );
-}
+};

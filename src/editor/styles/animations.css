@@ -362,3 +362,155 @@
     background-image: none;
   }
 }
+
+
+/* =========================================================================
+   TOP BAR ANIMATIONS & TRANSITIONS (PORTED FROM PROTOTYPE)
+   ========================================================================= */
+
+/* Logo mark saving trace animation */
+.ll-logo {
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: opacity var(--ll-dur-fade) ease-out;
+}
+
+.ll-logo svg {
+  overflow: visible;
+}
+
+.ll-logo:hover svg {
+  opacity: 0.7;
+}
+
+.ll-logo .ll-tfl {
+  fill: currentColor;
+  stroke: none;
+}
+
+.ll-logo .ll-tro {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 10;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.ll-logo[data-saving="true"] .ll-tfl {
+  animation: ll-trf var(--ll-dur-trace) var(--ll-ease-trace) infinite;
+}
+
+.ll-logo[data-saving="true"] .ll-tro {
+  stroke-dasharray: 100;
+  animation: ll-tro var(--ll-dur-trace) var(--ll-ease-trace) infinite;
+}
+
+@keyframes ll-tro {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  55%, 90% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ll-trf {
+  0%, 55% {
+    opacity: 0;
+  }
+  75%, 90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ll-fade {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-logo[data-saving="true"] .ll-tro {
+    animation: none;
+    opacity: 0;
+  }
+  .ll-logo[data-saving="true"] .ll-tfl {
+    animation: ll-fade var(--ll-dur-trace-fade) ease-in-out infinite;
+  }
+}
+
+/* Page switcher button and chevron motion from prototype */
+.ll-pagebtn {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: scale var(--ll-dur-pop) var(--ll-ease-pop),
+              outline-color var(--ll-dur-fade) ease-out,
+              outline-offset var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.ll-pagebtn:focus-visible {
+  outline-color: var(--ll-text-primary);
+  outline-offset: -2px;
+}
+
+.ll-pagebtn:active {
+  scale: 0.97;
+}
+
+.ll-chevron-flip {
+  transition: translate var(--ll-dur-pop) var(--ll-ease-pop),
+              rotate var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+button:hover > .ll-chevron-flip {
+  translate: 0 1.5px;
+}
+
+button[aria-expanded="true"] > .ll-chevron-flip {
+  rotate: 180deg;
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-pagebtn,
+  .ll-chevron-flip {
+    transition: none;
+  }
+}
+
+/* Top bar grid layout (1fr auto 1fr) */
+.ll-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+/* Hairline vertical divider between logo and project name */
+.ll-tdiv {
+  display: block;
+  width: 1px;
+  height: var(--ll-size-divider-h, 20px);
+  background-color: var(--ll-border-color);
+  margin-left: 4px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Lab frame for 1440x900 viewport verification */
+.ll-lab-frame {
+  width: var(--ll-size-viewport-desktop, 1440px);
+  height: var(--ll-size-viewport-desktop-h, 900px);
+}
