@@ -230,13 +230,6 @@ test.describe("Phase 41: reordering by dragging", () => {
     await ready(page);
     const tree = stack("root", { direction: "column", gap: 10, padding: uniformPadding(10) }, [leaf("a", 100, 40), leaf("b", 100, 40), leaf("c", 100, 40)], { sh: "fixed", sv: "hug", w: 200 });
     const ids = await build(page, tree);
-    // bring the frame into view and measure on screen
-    await page.evaluate((id) => {
-      const reg = (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } }).__LL_COMMANDS__;
-      reg.all().find((c) => c.id === "selection.set")!.run({ ids: [id] });
-      reg.all().find((c) => c.id === "canvas.zoomToSelection")?.run();
-    }, ids.root);
-    await page.waitForTimeout(600);
     const screenRect = (name: string) =>
       page.evaluate(
         ({ id }) => {
@@ -250,6 +243,16 @@ test.describe("Phase 41: reordering by dragging", () => {
       );
     const order = () => page.evaluate((id) => (window as unknown as { __LL_DOC__: Doc }).__LL_DOC__.get().layers[id].children, ids.root);
     expect(await order()).toEqual([ids.a, ids.b, ids.c]);
+    // bring the frame into view, refitting until a leaf is big enough to aim at: on a slow runner the first fit can run before the canvas has its size (leaves a few pixels high)
+    await expect(async () => {
+      await page.evaluate((id) => {
+        const reg = (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } }).__LL_COMMANDS__;
+        reg.all().find((c) => c.id === "selection.set")!.run({ ids: [id] });
+        reg.all().find((c) => c.id === "canvas.zoomToSelection")?.run();
+      }, ids.root);
+      await page.waitForTimeout(300);
+      expect((await screenRect("a")).w).toBeGreaterThan(60);
+    }).toPass({ timeout: 15_000 });
     const a = await screenRect("a");
     const c = await screenRect("c");
     // select a, then drag it to the lower half of c
