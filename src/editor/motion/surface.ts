@@ -1,4 +1,4 @@
-// Surface motion engine (IslandEngine reduced to an overlay surface) ported from Nook (the owner's own product)
+// Surface motion engine (IslandEngine overlay surface) ported from Nook & prototype
 
 import { Spring } from "./spring";
 import { simAdd, simRemove, type Sim } from "./loop";
@@ -11,6 +11,7 @@ export interface SurfaceOptions {
   up?: boolean;
   right?: boolean;
   from?: { w: number; h: number; r: number };
+  y0?: number;
   slide?: number;
 }
 
@@ -23,40 +24,76 @@ export interface MeasureResult {
   sh: number;
 }
 
-const BLOCK_SELECTOR = ".hl, .mh, .vgrp, .grp, .srow, .pubrow, .urow, [data-row]";
+function shp(): [number, number] {
+  return getActivePreset().shape;
+}
 
 /**
- * Animate rows entering a surface layer from below with spring physics and blur fade
+ * Blur and fade an item into view (runs on CSS animation, never on a spring)
  */
-export function enterRows(layer: HTMLElement, dir = 1): void {
+export function blurIn(c: HTMLElement, d: number): void {
+  if (typeof c.animate !== "function") return;
+  c.animate(
+    [
+      { opacity: 0, filter: `blur(${MOT.blur[0]}px)` },
+      { opacity: 1, filter: "blur(0px)" },
+    ],
+    {
+      duration: MOT.blurMs,
+      easing: "cubic-bezier(.2,.8,.3,1)",
+      delay: d,
+      fill: "backwards",
+    }
+  );
+}
+
+/**
+ * Animate rows entering a surface layer from trigger with spring physics and blur fade
+ */
+export function enterRows(layer: HTMLElement): void {
   const p = getActivePreset();
-  let g = 0;
+  let n = 0;
+  const isMenu = layer.parentElement?.classList.contains("menu");
+  const sc = isMenu
+    ? (typeof p.rowScale === "number" ? p.rowScale : 0.9)
+    : 1 - (1 - (typeof p.rowScale === "number" ? p.rowScale : 0.9)) / 3;
   const children = Array.from(layer.children) as HTMLElement[];
 
-  children.forEach((c, i) => {
+  children.forEach((c) => {
     if (c.classList.contains("ll-hl") || c.offsetParent === null) return;
-    if (i && c.matches(BLOCK_SELECTOR)) g++;
     cancelAll(c);
-    const d = 40 + g * p.stagger;
+    const d = 40 + Math.min(n++, 10) * p.stagger;
     springAnim(
       c,
-      [
-        { translate: `0 ${dir * (p.travel[0] + g * p.travel[1])}px`, scale: p.rowScale },
-        { translate: "0 0", scale: "1" },
-      ],
+      [{ scale: String(sc) }, { scale: "1" }],
       p.rows[0],
       p.rows[1],
-      { delay: d, fill: "backwards" },
+      { delay: d, fill: "backwards" }
     );
-    if (!prefersReducedMotion()) {
-      c.animate(
-        [
-          { opacity: 0, filter: "blur(6px)" },
-          { opacity: 1, filter: "blur(0px)" },
-        ],
-        { duration: 240, easing: "cubic-bezier(.2,.8,.3,1)", delay: d, fill: "backwards" },
-      );
-    }
+    blurIn(c, d);
+  });
+}
+
+/**
+ * A submenu changes list: new items slide in from opposite direction with tiny stagger
+ */
+export function swapIn(layer: HTMLElement, dir: number): void {
+  const p = getActivePreset();
+  let n = 0;
+  const children = Array.from(layer.children) as HTMLElement[];
+
+  children.forEach((c) => {
+    if (c.classList.contains("ll-hl") || c.offsetParent === null) return;
+    cancelAll(c);
+    const d = 20 + Math.min(n++, 10) * Math.max(2, Math.round(p.stagger / 3));
+    springAnim(
+      c,
+      [{ translate: `0 ${-dir * MOT.slide}px` }, { translate: "0 0" }],
+      p.rows[0],
+      p.rows[1],
+      { delay: d, fill: "backwards" }
+    );
+    blurIn(c, d);
   });
 }
 
@@ -67,61 +104,101 @@ export function exitItems(layer: HTMLElement): void {
   const children = Array.from(layer.children) as HTMLElement[];
   children.forEach((c) => {
     cancelAll(c);
-    if (prefersReducedMotion()) {
-      c.animate([{ opacity: 1 }, { opacity: 0 }], {
-        duration: 120,
-        easing: "ease-out",
-        fill: "forwards",
-      });
-      return;
-    }
+    if (typeof c.animate !== "function") return;
     c.animate(
       [
         { opacity: 1, filter: "blur(0px)" },
-        { opacity: 0, filter: `blur(${EXIT.blur}px)`, scale: EXIT.scale },
+        { opacity: 0, filter: `blur(${MOT.blur[1]}px)` },
       ],
-      { duration: EXIT.ms, easing: EXIT.easing, fill: "forwards" },
+      { duration: MOT.blurMs, easing: EXIT.easing, fill: "forwards" }
     );
   });
 }
 
 /**
- * Surf is the single overlay surface motion controller (menus, popovers, insert panel).
- * Springs W (width), H (height), R (radius), P (press), G (gap), S (scale) drive geometry.
+ * The old list of a submenu, copied and left behind to slide, fade and blur out while surface retargets
+ */
+export function ghostOf(root: HTMLElement & { lay?: HTMLElement }, dir: number): void {
+  const lay = root.lay;
+  if (!lay) return;
+  const g = document.createElement("div");
+  const c = lay.cloneNode(true) as HTMLElement;
+  const h = c.querySelector(".ll-hl");
+  if (h) h.remove();
+  c.removeAttribute("style");
+  g.setAttribute("aria-hidden", "true");
+  g.style.cssText = `position:absolute;left:${lay.offsetLeft}px;top:${lay.offsetTop}px;width:${lay.offsetWidth}px;height:${lay.offsetHeight}px;translate:${lay.style.translate || "0 0"};pointer-events:none`;
+  g.appendChild(c);
+  root.insertBefore(g, lay);
+  const a = c.animate(
+    [
+      { opacity: 1, filter: "blur(0px)", translate: "0 0" },
+      { opacity: 0, filter: `blur(${MOT.blur[1]}px)`, translate: `0 ${dir * MOT.slide}px` },
+    ],
+    { duration: MOT.blurMs, easing: EXIT.easing, fill: "forwards" }
+  );
+  a.onfinish = a.oncancel = () => g.remove();
+}
+
+/**
+ * Pop an item row upon selection: scale 1.12 back to 1
+ */
+export function popRow(t: HTMLElement): void {
+  if (!prefersReducedMotion()) {
+    springAnim(t, [{ scale: "1.12" }, { scale: "1" }], 0.2, 0.4);
+  }
+}
+
+/**
+ * Icon wiggle on row hover: rotates back and forth
+ */
+export function wiggle(row: HTMLElement): void {
+  const p = getActivePreset();
+  const ic = row.querySelector<HTMLElement>(".ico, svg, [data-icon]");
+  if (prefersReducedMotion() || !p.wiggle || !ic) return;
+  const parent = row.parentElement;
+  const idx = parent ? Array.from(parent.children).indexOf(row) : 0;
+  const deg = (idx & 1 ? -1 : 1) * p.wiggle;
+  springAnim(ic, [{ rotate: `${deg}deg` }, { rotate: "0deg" }], 0.26, 0.35);
+}
+
+/**
+ * Surf is IslandEngine for one overlay surface (Menu, SubMenu, Popover, Select, CommandPalette).
+ * Springs W, H, R, P, G, Y drive physics.
  */
 export class Surf {
   readonly el: HTMLElement;
   readonly lay: HTMLElement;
-  readonly W = new Spring(0, SP.width);
-  readonly H = new Spring(0, SP.height);
-  readonly R = new Spring(0, SP.height);
+  readonly W = new Spring(0, shp());
+  readonly H = new Spring(0, shp());
+  readonly R = new Spring(0, shp());
   readonly P = new Spring(1, SP.press);
-  readonly G = new Spring(0, SP.width);
-  readonly S = new Spring(1, SP.width);
+  readonly G = new Spring(0, shp());
+  readonly Y = new Spring(0, shp());
 
   size = { w: 0, h: 0 };
-  goal = { w: 0, h: 0 };
   from = { w: 0, h: 0, r: 0 };
   cw = 0;
   ch = 0;
   sh = 0;
   k = 1;
   lock = 0;
+  feelT: ReturnType<typeof setTimeout> | undefined;
+  timers: ReturnType<typeof setTimeout>[] = [];
   up = false;
   right = false;
   slide = 0;
+  exitY = 0;
   mv = false;
-  wind = false;
+  initialInlineWidth: string | null = null;
 
-  private feelTimer: ReturnType<typeof setTimeout> | undefined;
-  private readonly timers: ReturnType<typeof setTimeout>[] = [];
   readonly sim: Sim;
 
   constructor(el: HTMLElement, lay: HTMLElement) {
     this.el = el;
     this.lay = lay;
     this.sim = {
-      sp: [this.W, this.H, this.R, this.P, this.G, this.S],
+      sp: [this.W, this.H, this.R, this.P, this.G, this.Y],
       apply: () => {
         if (this.mv) this.paint();
       },
@@ -153,8 +230,13 @@ export class Surf {
     if (this.mv) {
       keep = [st.width, st.height, st.borderRadius, st.translate, st.scale, ls.cssText];
       el.removeAttribute("data-mv");
-      st.width = st.height = st.borderRadius = st.translate = st.scale = "";
+      st.width = this.initialInlineWidth || "";
+      st.height = st.borderRadius = st.translate = st.scale = "";
       ls.cssText = "";
+    } else {
+      if (this.initialInlineWidth === null && st.width) {
+        this.initialInlineWidth = st.width;
+      }
     }
 
     const cs = getComputedStyle(el);
@@ -182,16 +264,17 @@ export class Surf {
 
   fit(m: MeasureResult): void {
     this.size = { w: m.w, h: m.h };
-    this.goal = { w: m.w, h: m.h };
     this.cw = m.cw;
     this.ch = m.ch;
     this.sh = m.sh;
-    // Size scale: proportional to height against Nook's 140px card
     this.k = Math.min(1, m.h / 140);
   }
 
   begin(): void {
     this.mv = true;
+    if (this.initialInlineWidth === null && this.el.style.width) {
+      this.initialInlineWidth = this.el.style.width;
+    }
     this.el.setAttribute("data-mv", "");
     const ls = this.lay.style;
     ls.width = `${this.cw}px`;
@@ -203,7 +286,8 @@ export class Surf {
     this.mv = false;
     this.el.removeAttribute("data-mv");
     const st = this.el.style;
-    st.width = st.height = st.borderRadius = st.translate = st.scale = "";
+    st.width = this.initialInlineWidth || (this.size.w ? `${this.size.w}px` : "");
+    st.height = st.borderRadius = st.translate = st.scale = "";
     this.lay.style.cssText = "";
   }
 
@@ -225,13 +309,13 @@ export class Surf {
     const w = Math.max(0, this.W.x);
     const h = Math.max(0, this.H.x);
     const dx = (this.right ? this.size.w - w : 0) + this.G.x;
-    const sc = this.P.x * this.S.x;
+    const dy = this.Y.x;
 
     st.width = `${w}px`;
     st.height = `${h}px`;
     st.borderRadius = `${Math.max(0, this.R.x)}px`;
-    st.translate = dx ? `${dx}px 0` : "";
-    st.scale = sc === 1 ? "" : String(sc);
+    st.translate = dx || dy ? `${dx}px ${dy}px` : "";
+    st.scale = this.P.x === 1 ? "" : String(this.P.x);
 
     this.lay.style.translate = `${this.right ? w - this.size.w : 0}px ${
       this.up ? h - this.size.h : 0
@@ -244,60 +328,31 @@ export class Surf {
   }
 
   settleOrRun(): void {
-    const isMoving = this.sim.sp.some((s) => s.x !== s.to || s.v !== 0);
-    if (isMoving) {
+    if (this.sim.sp.some((x) => x.x !== x.to || x.v !== 0)) {
       simAdd(this.sim);
     }
   }
 
   feel(ms: number, w?: [number, number], h?: [number, number]): void {
-    const p = getActivePreset();
-    this.W.tune(w || p.bW);
-    this.H.tune(h || p.bH);
-    if (this.feelTimer) clearTimeout(this.feelTimer);
-    this.feelTimer = setTimeout(() => {
-      this.W.tune(SP.width);
-      this.H.tune(SP.height);
+    const s = shp();
+    this.W.tune(w || s);
+    this.H.tune(h || s);
+    if (this.feelT) clearTimeout(this.feelT);
+    this.feelT = setTimeout(() => {
+      this.W.tune(shp());
+      this.H.tune(shp());
     }, ms);
   }
 
   shapeTo(size: { w: number; h: number }, radius: number): void {
-    const p = getActivePreset();
-    this.goal = size;
     this.R.to = radius;
-
-    if (this.wind && !prefersReducedMotion()) {
-      this.wind = false;
-      this.W.to = this.W.x - p.wind * this.k;
-      this.H.to = this.H.x - MOT.windUpH;
-      this.later(MOT.windUpMs, () => {
-        this.W.to = this.goal.w;
-        this.H.to = this.goal.h;
-        this.H.v += getActivePreset().enterKick * this.k;
-        simAdd(this.sim);
-      });
-      return;
-    }
-
     this.W.to = size.w;
     this.H.to = size.h;
-  }
-
-  punch(): void {
-    this.feel(MOT.entryBouncyMs);
-    this.wind = true;
-  }
-
-  squash(): void {
-    this.feel(MOT.exitBouncyMs);
-    this.H.v -= getActivePreset().exitSquash * this.k;
-    this.settleOrRun();
   }
 
   glide(): void {
     const p = getActivePreset();
     if (!this.wake() || prefersReducedMotion()) return;
-    this.wind = false;
     this.feel(1000, p.glideW, p.glideH);
   }
 
@@ -323,9 +378,8 @@ export class Surf {
 
   reset(): void {
     this.timers.forEach(clearTimeout);
-    this.timers.length = 0;
-    if (this.feelTimer) clearTimeout(this.feelTimer);
-
+    this.timers = [];
+    if (this.feelT) clearTimeout(this.feelT);
     simRemove(this.sim);
 
     if (typeof this.el.getAnimations === "function") {
@@ -336,29 +390,29 @@ export class Surf {
     this.el.removeAttribute("data-lv");
     this.end();
 
-    this.W.tune(SP.width);
-    this.H.tune(SP.height);
-    this.R.tune(SP.height);
-    this.G.tune(SP.width);
-    this.S.tune(SP.width);
+    const s = shp();
+    [this.W, this.H, this.R, this.G, this.Y].forEach((x) => {
+      x.tune(s);
+      x.v = 0;
+    });
 
-    this.W.v = this.H.v = this.R.v = 0;
     this.P.jump(1);
     this.G.jump(0);
-    this.S.jump(1);
-    this.wind = false;
+    this.Y.jump(0);
     this.slide = 0;
+    this.exitY = 0;
   }
 
   open(options: SurfaceOptions = {}): void {
-    const p = getActivePreset();
+    const s = shp();
     this.up = !!options.up;
     this.right = !!options.right;
     this.slide = options.slide || 0;
+    this.exitY = options.y0 || 0;
 
     const m = this.measure();
     this.fit(m);
-    const f = options.from || { w: 32, h: 32, r: m.r };
+    const f = options.from || { w: 12, h: 12, r: 6 };
     this.from = f;
 
     this.el.classList.add("open");
@@ -367,24 +421,19 @@ export class Surf {
       return;
     }
 
+    [this.W, this.H, this.R, this.G, this.Y].forEach((x) => x.tune(s));
     this.begin();
     this.W.jump(f.w);
     this.H.jump(f.h);
     this.R.jump(f.r);
-
-    if (this.slide) {
-      this.G.tune(p.side[0]);
-      this.S.tune(p.side[1]);
-      this.G.jump(0);
-      this.G.x = -this.slide * (f.w + 4);
-      this.S.jump(1);
-      this.S.x = 0.5;
-    }
-
+    this.Y.jump(this.exitY);
+    this.G.jump(0);
+    if (this.slide) this.G.x = -this.slide * MOT.edge;
     this.paint();
-    enterRows(this.lay, 1);
-    this.punch();
+    enterRows(this.lay);
     this.shapeTo(this.size, m.r);
+    this.Y.to = 0;
+    this.G.to = 0;
     this.settleOrRun();
   }
 
@@ -405,26 +454,23 @@ export class Surf {
     }
 
     this.timers.forEach(clearTimeout);
-    this.timers.length = 0;
+    this.timers = [];
     if (!this.wake()) return;
 
     const f = this.from;
-    this.wind = false;
     exitItems(this.lay);
     this.shapeTo(f, f.r);
+    this.Y.to = this.exitY;
+    if (this.slide) this.G.to = -this.slide * MOT.edge;
+    this.settleOrRun();
 
-    if (this.slide) {
-      this.G.to = -this.slide * (f.w + 4);
-      this.S.to = 0.5;
-    }
-
-    this.squash();
     el.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: MOT.exitBouncyMs,
+      duration: MOT.exitMs,
+      delay: MOT.exitDelay,
       easing: EXIT.easing,
       fill: "forwards",
     });
-    this.later(MOT.exitBouncyMs, () => this.reset());
+    this.later(MOT.exitDelay + MOT.exitMs, () => this.reset());
   }
 
   relayout(change: () => void): void {
@@ -475,7 +521,7 @@ export function wheelAttach(root: HTMLElement & { sf?: Surf }): void {
       s.endBump(d > 0 ? 1 : -1);
       s.lock = Date.now() + getActivePreset().lock;
     },
-    { passive: false },
+    { passive: false }
   );
 }
 
@@ -496,6 +542,101 @@ export function pressEl(el: HTMLElement & { _pr?: { P: Spring; sim: Sim } }, dow
   simAdd(pr.sim);
 }
 
+/** Highlight state and momentum spring engine */
+export interface HighlightState {
+  el: HTMLElement;
+  y: Spring;
+  h: Spring;
+  sim: Sim;
+}
+
+export function hsOf(root: HTMLElement & { hs?: HighlightState }, hl: HTMLElement): HighlightState {
+  let hs = root.hs;
+  if (!hs || hs.el !== hl) {
+    const p = getActivePreset();
+    const y = new Spring(0, p.hl);
+    const h = new Spring(32, p.hl);
+    const sim: Sim = {
+      sp: [y, h],
+      apply: () => hlApply(root),
+    };
+    hs = root.hs = { el: hl, y, h, sim };
+  }
+  return hs;
+}
+
+export function hlApply(root: HTMLElement & { hs?: HighlightState }): void {
+  const hs = root.hs;
+  if (!hs) return;
+  const p = getActivePreset();
+  const v = hs.y.v;
+  const st = Math.min(Math.abs(v) * p.stretch, 14);
+  let y = hs.y.x;
+  if (v < 0) y -= st;
+  hs.el.style.height = `${Math.max(0, hs.h.x + st).toFixed(2)}px`;
+  hs.el.style.transform = `translate3d(0,${y.toFixed(2)}px,0)`;
+}
+
+export function hlMove(
+  root: HTMLElement & { hs?: HighlightState; hlRow?: HTMLElement | null },
+  row: HTMLElement,
+  instant = false
+): void {
+  const hl = root.querySelector<HTMLElement>(".ll-hl");
+  if (!hl || !row || (row as HTMLButtonElement).disabled) return;
+  const hs = hsOf(root, hl);
+  const p = getActivePreset();
+  const first = !hl.classList.contains("show");
+  root.hlRow = row;
+  hl.style.left = `${row.offsetLeft}px`;
+  hl.style.width = `${row.offsetWidth}px`;
+  hs.y.tune(p.hl);
+  hs.h.tune(p.hl);
+  hs.y.to = row.offsetTop;
+  hs.h.to = row.offsetHeight;
+  if (instant || first || prefersReducedMotion()) {
+    hs.y.snap();
+    hs.h.snap();
+  }
+  hl.classList.add("show");
+  hlApply(root);
+  simAdd(hs.sim);
+}
+
+export function hlHide(root: HTMLElement & { hlRow?: HTMLElement | null }): void {
+  const hl = root.querySelector<HTMLElement>(".ll-hl");
+  if (hl) hl.classList.remove("show");
+  root.hlRow = null;
+  root.querySelectorAll(".ll-lay > .on").forEach((x) => x.classList.remove("on"));
+}
+
+/**
+ * Safe triangle: while a submenu is open, pointer heading toward it must not switch rows or close it
+ */
+export function inSafeTriangle(
+  subEl: HTMLElement,
+  mousePos: { x: number; y: number; prevX: number; prevY: number }
+): boolean {
+  const sf = (subEl as HTMLElement & { sf?: Surf }).sf;
+  const z = sf?.size || { w: subEl.offsetWidth, h: subEl.offsetHeight };
+  const l = parseFloat(subEl.style.left) || 0;
+  const top = parseFloat(subEl.style.top) || 0;
+  const bot = top + z.h;
+  const ex = subEl.classList.contains("flip") ? l + z.w : l;
+  const cx = mousePos.x;
+  const cy = mousePos.y;
+
+  function sg(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+    return (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
+  }
+
+  const d1 = sg(cx, cy, mousePos.prevX, mousePos.prevY, ex, top);
+  const d2 = sg(cx, cy, ex, top, ex, bot);
+  const d3 = sg(cx, cy, ex, bot, mousePos.prevX, mousePos.prevY);
+
+  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+}
+
 /** Attach a new Surf instance to an overlay element */
 export function surf(el: HTMLElement & { lay?: HTMLElement; sf?: Surf }): Surf {
   let lay = el.querySelector<HTMLElement>(".ll-lay");
@@ -513,4 +654,3 @@ export function surf(el: HTMLElement & { lay?: HTMLElement; sf?: Surf }): Surf {
   wheelAttach(el);
   return s;
 }
-

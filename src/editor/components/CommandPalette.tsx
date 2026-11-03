@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Search } from "lucide-react";
 import { Icon } from "./Icon";
 import { surf, type Surf } from "../motion/surface";
+import { defaultHost } from "../motion/loop";
 import { useMounted } from "./useMounted";
 
 export interface CommandItem {
@@ -95,10 +96,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   useEffect(() => {
     if (open) {
       prevActiveElement.current = document.activeElement as HTMLElement | null;
-      const t = setTimeout(() => {
+      const unreg = defaultHost.register(() => {
+        unreg();
         inputRef.current?.focus();
-      }, 50);
-      return () => clearTimeout(t);
+      });
+      return () => unreg();
     } else {
       if (prevActiveElement.current && document.contains(prevActiveElement.current)) {
         prevActiveElement.current.focus();

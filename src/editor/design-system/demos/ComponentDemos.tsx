@@ -474,26 +474,35 @@ export function NumberFieldDemo() {
 /* =========================================================================
    9. SELECT DEMO
    ========================================================================= */
+export const PROTOTYPE_FONTS = [
+  "Geist", "Inter", "Playfair Display", "Roboto", "Open Sans", "Lato",
+  "Montserrat", "Poppins", "Raleway", "Merriweather", "Source Sans 3",
+  "Nunito", "Work Sans", "DM Sans", "DM Serif Display", "Fira Sans",
+  "IBM Plex Sans", "IBM Plex Mono", "JetBrains Mono", "Space Grotesk",
+  "Space Mono", "Manrope", "Outfit", "Sora", "Lora",
+  "Libre Baskerville", "Oswald", "Bebas Neue", "Archivo", "Cormorant Garamond"
+];
+
 export function SelectDemo() {
   const [blend, setBlend] = useState("normal");
-  const [easing, setEasing] = useState("spring");
+  const [font, setFont] = useState("Geist");
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-8">
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Select</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Dropdown Field Anchored to Menu Surface, Active Radio Item Check
+          Dropdown Field Morphing into List, Flying Label Pop, Momentum Scroll &amp; Edge Bulge
         </span>
       </div>
 
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Inspector Select Fields
+          Short Select &amp; 30-Font Long List with Search
         </div>
-        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4 ll:max-w-sm">
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6 ll:max-w-sm">
           <Select
-            label="Blend Mode"
+            label="Short Select (Blend Mode)"
             value={blend}
             onChange={setBlend}
             options={[
@@ -507,15 +516,15 @@ export function SelectDemo() {
           />
 
           <Select
-            label="Timing Curve"
-            value={easing}
-            onChange={setEasing}
-            options={[
-              { value: "linear", label: "Linear" },
-              { value: "ease-in-out", label: "Ease In Out" },
-              { value: "spring", label: "Nook Spring (Physics)" },
-              { value: "bounce", label: "Bouncy Decay" },
-            ]}
+            label="Long Font Select (30 Fonts, Search & Bulge)"
+            value={font}
+            onChange={setFont}
+            searchable={true}
+            options={PROTOTYPE_FONTS.map((f) => ({
+              value: f,
+              label: f,
+              hint: f === "Geist" || f === "Inter" ? "Sans" : undefined,
+            }))}
           />
         </div>
       </div>
@@ -566,6 +575,8 @@ export function ColorSwatchFieldDemo() {
 export function MenuDemo() {
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
   const [longMenuOpen, setLongMenuOpen] = useState(false);
+  const [canvasSize, setCanvasSize] = useState("1440");
+  const [font, setFont] = useState("Geist");
   const logoBtnRef = useRef<HTMLButtonElement>(null);
   const longBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -647,6 +658,62 @@ export function MenuDemo() {
               </MenuItem>
             ))}
           </Menu>
+        </div>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          2. Right-Click Area (ContextMenu)
+        </div>
+        <ContextMenu
+          content={
+            <>
+              <MenuItem shortcut="⌘C">Copy</MenuItem>
+              <MenuItem shortcut="⌘V">Paste</MenuItem>
+              <MenuItem shortcut="⌘D">Duplicate</MenuItem>
+              <MenuSeparator />
+              <MenuItem shortcut="⌫">Delete layer</MenuItem>
+            </>
+          }
+        >
+          <div className="ll:h-36 ll:w-full ll:rounded-md ll:border ll:border-dashed ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2 ll:select-none">
+            <span className="ll:text-small ll:font-medium ll:text-primary">
+              Right-click anywhere inside this target area
+            </span>
+            <span className="ll:text-micro ll:text-secondary">
+              Opens the custom spring-animated Context Menu from pointer
+            </span>
+          </div>
+        </ContextMenu>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          3. Short Select &amp; Long Font Select (Bulge Test)
+        </div>
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-2 ll:gap-6 ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar">
+          <Select
+            label="Canvas size (Short Select)"
+            value={canvasSize}
+            onChange={setCanvasSize}
+            options={[
+              { value: "1440", label: "Desktop", hint: "1440" },
+              { value: "768", label: "Tablet", hint: "768" },
+              { value: "375", label: "Mobile", hint: "375" },
+            ]}
+          />
+
+          <Select
+            label="Font family (30 Fonts, Search & Bulge)"
+            value={font}
+            onChange={setFont}
+            searchable={true}
+            options={PROTOTYPE_FONTS.map((f) => ({
+              value: f,
+              label: f,
+              hint: f === "Geist" || f === "Inter" ? "Sans" : undefined,
+            }))}
+          />
         </div>
       </div>
     </div>

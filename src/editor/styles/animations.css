@@ -1,7 +1,7 @@
 /*
  * Shared motion classes ported from Nook (the owner's own product) & prototype.
  * Open, close, the scroll bump and layout changes are driven by the spring engine (JS).
- * CSS holds rest states, the highlight and the parent push. Reduced motion: short opacity fade.
+ * CSS holds rest states, the highlight and the focus states. Reduced motion: short opacity fade.
  */
 
 :is(.menu, .vpop, .ppop, .ins, .ll-surface-overlay) {
@@ -74,67 +74,298 @@
   outline-offset: var(--ll-outline-offset-inset);
 }
 
-/* Submenu chevron right-facing */
+/* Submenu chevron right-facing, rotates 90deg when open */
 .menu .chv {
-  transition: transform var(--ll-dur-pop) var(--ll-ease-pop);
+  transition: rotate var(--ll-dur-pop) var(--ll-ease-pop);
 }
 
 .menu [role=menuitem].subopen .chv,
+.menu [role=menuitem][data-subopen] .chv,
 .menu [role=menuitem][aria-expanded="true"] .chv {
-  transform: translateX(1px);
-}
-
-/* Parent menu push when submenu opens */
-.menu.open {
-  transition: scale var(--ll-dur-pop) var(--ll-ease-pop);
-}
-
-.menu.open.pushed,
-.menu.open[data-pushed="true"] {
-  scale: 0.985;
-}
-
-.menu .ll-lay> :not(.ll-hl) {
-  transition: opacity var(--ll-dur-pop) var(--ll-ease-pop);
-}
-
-.menu.pushed .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl),
-.menu[data-pushed="true"] .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl) {
-  opacity: 0.6;
+  rotate: 90deg;
 }
 
 /* Submenu safe bridge */
 .menu[data-submenu]::after,
-.menu.ctx[data-submenu]::after {
+.menu.ctx[data-submenu]::after,
+.menu[data-variant="context"][data-submenu]::after,
+[data-submenu]::after,
+.ll-submenu::after,
+#sub::after {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -4px;
-  width: 4px;
+  left: calc(0px - var(--ll-submenu-gap));
+  width: var(--ll-submenu-gap);
 }
 
 .menu[data-submenu].flip::after,
-.menu.ctx[data-submenu].flip::after {
+.menu[data-submenu][data-flip]::after,
+.menu.ctx[data-submenu].flip::after,
+.menu.ctx[data-submenu][data-flip]::after,
+[data-submenu][data-flip]::after,
+.ll-submenu.flip::after,
+.ll-submenu[data-flip]::after,
+#sub.flip::after,
+#sub[data-flip]::after {
   left: auto;
-  right: -4px;
+  right: calc(0px - var(--ll-submenu-gap));
+}
+
+/* Dropdown fields: the field is the seed of the list surface (same spring engine as the menus) */
+.dnat {
+  display: none;
+}
+
+.dfield.dd {
+  position: relative;
+  transition: scale var(--ll-dur-pop) var(--ll-ease-pop), border-color var(--ll-dur-fade);
+}
+
+.dfield.dd:has(.dd-f:active:not(:disabled)) {
+  scale: 0.97;
+}
+
+.dfield.dd::after {
+  content: "";
+  position: absolute;
+  inset: calc(0px - var(--ll-spacing-0-5));
+  border: var(--ll-spacing-0-5) solid var(--ll-text-primary);
+  border-radius: calc(var(--ll-radius-sm) + var(--ll-spacing-0-5));
+  opacity: 0;
+  scale: 1.06;
+  pointer-events: none;
+  transition: opacity var(--ll-dur-fade) ease-out, scale var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.dfield.dd:has(.dd-f:focus-visible)::after,
+.dfield.dd[data-focused]::after {
+  opacity: 1;
+  scale: 1;
+}
+
+.dd-f {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  color: var(--ll-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dd-f:disabled {
+  cursor: default;
+}
+
+.dd-f .ddt {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform-origin: 0 50%;
+}
+
+.dfield.dd .dchev {
+  transition: translate var(--ll-dur-pop) var(--ll-ease-pop), rotate var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.dfield.dd:not(.dis):not([data-disabled]):hover .dchev {
+  translate: 0 var(--ll-spacing-0-5);
+}
+
+.dfield.dd.open .dchev,
+.dfield.dd[data-open] .dchev,
+.dfield.dd.open:hover .dchev,
+.dfield.dd[data-open]:hover .dchev {
+  rotate: 180deg;
+  translate: 0 0;
+}
+
+.dfield.dd.dis,
+.dfield.dd[data-disabled] {
+  opacity: 0.45;
+}
+
+.dfield.dd.dis,
+.dfield.dd[data-disabled],
+.dfield.dd.dis .dchev,
+.dfield.dd[data-disabled] .dchev {
+  transition: none;
+}
+
+.dfield.mixed .ddt,
+.dfield.dd[data-mixed] .ddt {
+  color: var(--ll-text-muted);
+}
+
+@keyframes ddshim {
+  from {
+    background-position: -120% 0;
+  }
+  to {
+    background-position: 240% 0;
+  }
+}
+
+.dfield.mixed:not(.dis):not([data-disabled]),
+.dfield.dd[data-mixed]:not([data-disabled]) {
+  background-image: linear-gradient(100deg, transparent 30%, var(--ll-surface-hover) 50%, transparent 70%);
+  background-repeat: no-repeat;
+  background-size: 60% 100%;
+  animation: ddshim var(--ll-duration-spin) ease-out 1 both;
+}
+
+.menu.dd {
+  z-index: 80;
+  padding: 0;
+  min-width: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+.dd-s {
+  display: flex;
+  align-items: center;
+  gap: var(--ll-spacing-2);
+  height: var(--ll-size-row-lg-h);
+  padding: 0 var(--ll-spacing-3);
+  border-bottom: var(--ll-border-hairline) solid var(--ll-border-color);
+  color: var(--ll-text-muted);
+}
+
+.dd-s input {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  color: var(--ll-text-primary);
+}
+
+.dd-s input::placeholder {
+  color: var(--ll-text-muted);
+}
+
+.ddl {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ddl:focus {
+  outline: none;
+}
+
+.ddi {
+  position: relative;
+  isolation: isolate;
+  padding: var(--ll-spacing-1);
+}
+
+.menu.dd .ddi .ll-hl {
+  border-radius: var(--ll-radius-sm);
+}
+
+.dd-o {
+  display: block;
+  height: var(--ll-size-icon-btn);
+  cursor: pointer;
+  color: var(--ll-text-secondary);
+}
+
+.dd-o.on,
+.dd-o.cur,
+.dd-o[data-cur] {
+  color: var(--ll-text-primary);
+}
+
+.dd-i {
+  display: flex;
+  align-items: center;
+  gap: var(--ll-spacing-2);
+  height: 100%;
+  padding: 0 var(--ll-spacing-3) 0 var(--ll-spacing-8);
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  white-space: nowrap;
+  transform-origin: 20% 50%;
+}
+
+.dd-a .dd-i {
+  padding-left: var(--ll-spacing-3);
+}
+
+.dd-h {
+  margin-left: auto;
+  font: 500 var(--ll-text-micro-size) / var(--ll-text-micro-line-height) var(--ll-font-mono);
+  color: var(--ll-text-muted);
+}
+
+.dd-sep {
+  height: var(--ll-border-hairline);
+  margin: var(--ll-spacing-1) calc(0px - var(--ll-spacing-1));
+  background: var(--ll-border-color);
+}
+
+.dd-ck,
+.dd-gh {
+  position: absolute;
+  left: var(--ll-spacing-3);
+  top: 0;
+  width: var(--ll-size-toggle-knob);
+  height: var(--ll-size-toggle-knob);
+  pointer-events: none;
+  color: var(--ll-text-primary);
+}
+
+.dd-ck svg,
+.dd-gh svg {
+  width: var(--ll-size-toggle-knob);
+  height: var(--ll-size-toggle-knob);
+}
+
+.dd-ck {
+  opacity: 0;
+}
+
+.dd-gh {
+  opacity: 0;
+  transition: opacity var(--ll-dur-fade) ease-out, translate var(--ll-dur-fade) ease-out;
+}
+
+.dd-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--ll-size-btn-h) + var(--ll-size-btn-sm-h));
+  color: var(--ll-text-muted);
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+}
+
+.dd-rm {
+  position: absolute;
+  pointer-events: none;
+}
+
+.gone {
+  display: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .ll-hl,
-    .menu.open,
-    .menu .ll-lay> :not(.ll-hl),
-    .menu .chv {
-      transition: none;
-    }
-
-    .menu.open.pushed,
-    .menu.open[data-pushed="true"] {
-      scale: none;
-    }
-
-    .menu.pushed .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl),
-    .menu[data-pushed="true"] .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl) {
-      opacity: 1;
-    }
+  .ll-hl,
+  .menu .chv,
+  .dfield.dd,
+  .dfield.dd::after,
+  .dfield.dd .dchev,
+  .dd-gh {
+    transition: none;
   }
+
+  .dfield.mixed {
+    animation: none;
+    background-image: none;
+  }
+}

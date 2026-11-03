@@ -55,3 +55,32 @@ The menu demo must show the logo menu with File, Edit and View submenus, a right
 3. `Menu.tsx:799` `setTimeout(…, 50)`: use a frame callback through the motion loop.
 4. Remove the 0.6 dim on the other parent rows while a submenu is open (`animations.css:101-104`). It fails the contrast check, and the prototype doesn't do it.
 5. `INTEGRATION.md`: mark the old "Imported candidate packages and components (as-is)" entry as removed. The `imported/` folder is gone.
+
+## Retry 1: review failed (2026-11-03)
+
+The motion works well: the morph, the single retargeting submenu, the bulge, search and the odometer. Fix these, and edit only `Menu.tsx`, `Select.tsx`, `Popover.tsx`, `animations.css`, `presets.ts` and `ComponentDemos.tsx`:
+
+1. **Lint must be clean.** Run `npx eslint src/editor` once at the end. Errors to fix: refs read during render, setState in an effect, and prefer-const (`Select.tsx:186,198,205,215`; `Menu.tsx:156,478,558,656,717`). Also the unused `mounted` (`Select.tsx:92`) and the extra `options` dependency (`:369`).
+2. `Select.tsx:269`: raw `requestAnimationFrame` is banned. Use the motion loop (`defaultHost` / `frameScheduler`).
+3. **The Select field is broken.** `.dd-f { all: unset }` (`animations.css:137-145`) is unlayered and beats Tailwind, so the field has no border, background or padding (15.6 px tall). The focus ring (`:120`) wraps the label. Make the field look like the prototype's select field at row height.
+4. `Select.tsx:810`: React `onWheel` is passive, so attach a native wheel listener with `{ passive: false }`. There should be no console warning.
+5. Left or Escape in a submenu must put focus back on the parent row, not on `BODY` (`Menu.tsx` `closeSub` and its key handler).
+6. **React must not own classes that the motion code writes.** Keep the classNames static at `Menu.tsx:727,938` and `Select.tsx:733,834-836`, and use data attributes for `subopen`, `cur`, `open`, `kb` and `flip`.
+7. **No px or duration constants in CSS** (`animations.css:86-92,108,131,166,180-290`). Use the `--ll-spacing-*`, `--ll-text-*`, `--ll-size-*` and `--ll-dur-*` tokens, adding tokens where one is missing.
+8. **No magic numbers in TS:** `Menu.tsx:105` (`- 4`), `:289` (`120`), and the `|| 8 / 4 / 248 / 320 / 200 / 6` fallbacks (`Menu.tsx:87,93,337,397-422,454`; `Popover.tsx:83,89,100`). Read the values from tokens, or put them in one named constant block in `presets.ts`.
+9. `ComponentDemos.tsx:694`: `md:ll:grid-cols-2` must be `ll:md:grid-cols-2`.
+10. `presets.ts`: restore Nook's `rows`, `stagger`, `lock`, `endBump` and `rowScale`, and put the playful values in a separate object beside them.
+11. Small items: remove the module-level `window` mousemove listener, or add and remove it while a menu is open (`Menu.tsx:35-50`). Make `id="sub"` unique per menu (`Menu.tsx:742`), and prefix global class names with `ll-`.
+12. Set `menus` in `PARITY.md` back to `wip`. Add a "Retry 1" section to the handoff with the `tsc` and `eslint` output.
+
+## Retry 2: last retry (2026-11-03)
+
+Lint and typecheck are clean now, and focus, the bulge, search and the odometer work. Fix these:
+
+1. **The playful feel is not in use.** `PLAYFUL_PRESETS` (`presets.ts:131`) is never used, so the menus run on plain Nook values. Wire it in: the Bouncy feel, which is the default, uses the playful values for every menu, submenu, popover and Select surface, exactly as the prototype's `applyFeel` does. Smooth and Lively stay calmer.
+2. **The Select field is still 17.6 px tall.** Remove the unlayered `.dd-f { height: 100% }` (`animations.css:148-152`) so the field is row height (`--ll-size-row-h`). Remove the conflicting duplicate `ll:px-*` (`Select.tsx:792,827`). Check that the value text uses the prototype's font (it renders in mono now), then take a screenshot and LOOK at it.
+3. `Select.tsx:827`: change `hover:ll:border-text-muted` to `ll:hover:border-text-muted`. Check every file for `hover:ll:`, `focus:ll:`, `md:ll:` and `group-hover:ll:`, since the variant always goes after `ll:`.
+4. `Menu.tsx:757`: use `useId()` for menu and submenu ids, so no two menus share an id.
+5. **No literals:** the `120` at `Popover.tsx:148` and `Select.tsx:287,530`, `width = 248` at `Popover.tsx:33`, `|| 11` at `Select.tsx:501`, the seeds `{ w: 32, h: 32 }` and `16` at `Menu.tsx:441,457` and `Popover.tsx:93`, the `45` ms throttle at `Menu.tsx:688`, and `outline: 2px` at `animations.css:73`. Move them into `MENU_FALLBACKS` or tokens.
+6. **Prefix every global class and id with `ll-`** in `animations.css` and in the code that writes them: `.menu`, `.vpop`, `.ppop`, `.ins`, `.open`, `.kb`, `.ctx`, `.dfield`, `.dd-*`, `.ddl`, `.gone`, and the `kb`, `on` and `open` class writes (`Menu.tsx:375,603`; `Select.tsx:404,641-643`). Delete the dead `#sub` selectors (`animations.css:94,111`) and the redundant `classList` writes of `subopen` and `flip` (`Menu.tsx:218,259,287,337`), since the data attributes replace them. Give `data-subopen` and `aria-expanded` one owner only.
+7. Add a "Retry 2" section to the handoff with the real `tsc` and `eslint` output.

@@ -12,51 +12,26 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, Check } from "lucide-react";
-import { Spring } from "../motion/spring";
-import { simAdd, simRemove, defaultHost, type Sim } from "../motion/loop";
-import { getActivePreset, prefersReducedMotion } from "../motion/feel";
-import { surf, pressEl, type Surf } from "../motion/surface";
+import { defaultHost } from "../motion/loop";
+import { MOT, MENU_FALLBACKS } from "../motion/presets";
+import { prefersReducedMotion } from "../motion/feel";
+import {
+  surf,
+  pressEl,
+  popRow,
+  wiggle,
+  hlMove,
+  hlHide,
+  swapIn,
+  ghostOf,
+  inSafeTriangle,
+  type Surf,
+} from "../motion/surface";
 import { useMounted } from "./useMounted";
 import { Icon } from "./Icon";
 
-// Safe mouse position tracking for safe triangle submenu hover protection
-const lastMousePos = { x: 0, y: 0, prevX: 0, prevY: 0, t: 0 };
-if (typeof window !== "undefined") {
-  window.addEventListener(
-    "mousemove",
-    (e: MouseEvent) => {
-      const now = performance.now();
-      if (now - lastMousePos.t > 45) {
-        lastMousePos.prevX = lastMousePos.x;
-        lastMousePos.prevY = lastMousePos.y;
-        lastMousePos.t = now;
-      }
-      lastMousePos.x = e.clientX;
-      lastMousePos.y = e.clientY;
-    },
-    { passive: true }
-  );
-}
-
-function isPointerHeadingToward(subRect: DOMRect, flip: boolean): boolean {
-  const top = subRect.top;
-  const bot = subRect.bottom;
-  const ex = flip ? subRect.right : subRect.left;
-  const cx = lastMousePos.x;
-  const cy = lastMousePos.y;
-  const px = lastMousePos.prevX;
-  const py = lastMousePos.prevY;
-
-  function sign(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
-    return (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
-  }
-
-  const d1 = sign(cx, cy, px, py, ex, top);
-  const d2 = sign(cx, cy, ex, top, ex, bot);
-  const d3 = sign(cx, cy, ex, bot, px, py);
-
-  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
-}
+// Pointer tracking for safe triangle submenu hover protection
+const mousePos = { x: 0, y: 0, prevX: 0, prevY: 0, t: 0 };
 
 export interface MenuItemData {
   id: string;
@@ -65,19 +40,60 @@ export interface MenuItemData {
   isSubMenu?: boolean;
 }
 
+export interface SubMenuData {
+  id: string;
+  label: string;
+  rowEl: HTMLElement;
+  children: React.ReactNode;
+}
+
 interface MenuContextValue {
   closeMenu: () => void;
   registerItem: (item: MenuItemData) => void;
   unregisterItem: (id: string) => void;
+  registerSubMenu: (sub: SubMenuData) => void;
+  unregisterSubMenu: (id: string) => void;
   moveHighlight: (rowEl: HTMLElement, instant?: boolean) => void;
   hideHighlight: () => void;
-  setOpenSubmenuId: (id: string | null) => void;
+  hoverRow: (rowEl: HTMLElement, subId?: string) => void;
   openSubmenuId: string | null;
   getMenuEl: () => HTMLElement | null;
-  onSubmenuOpenChange?: (open: boolean) => void;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
+
+function placeSub(parentEl: HTMLElement, rowEl: HTMLElement, w: number, h: number) {
+  const pad =
+    parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--ll-spacing-2"
+      )
+    ) || MENU_FALLBACKS.viewportPadding;
+  const edgeGap =
+    parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--ll-submenu-gap"
+      )
+    ) || MENU_FALLBACKS.edgeGap;
+
+  const parentRect = parentEl.getBoundingClientRect();
+  const r = rowEl.getBoundingClientRect();
+  const parentLeft = parentRect.left;
+  const parentWidth = parentRect.width;
+
+  let x = parentLeft + parentWidth + edgeGap;
+  const flip = x + w > window.innerWidth - pad;
+  if (flip) {
+    x = parentLeft - edgeGap - w;
+  }
+  const top = Math.max(pad, Math.min(r.top - edgeGap, window.innerHeight - h - pad));
+  return {
+    x: Math.max(pad, Math.min(x, window.innerWidth - w - pad)),
+    top,
+    flip,
+    rowY: r.top - top,
+  };
+}
 
 export interface MenuProps {
   open: boolean;
@@ -109,105 +125,275 @@ export const Menu: React.FC<MenuProps> = ({
   const mounted = useMounted();
   const menuRef = useRef<HTMLDivElement>(null);
   const layRef = useRef<HTMLDivElement>(null);
-  const hlRef = useRef<HTMLElement>(null);
   const surfRef = useRef<Surf | null>(null);
+
+  // Single shared flyout submenu surface for all submenus
+  const subElRef = useRef<HTMLDivElement>(null);
+  const subLayRef = useRef<HTMLDivElement>(null);
+  const subSurfRef = useRef<Surf | null>(null);
+
   const prevActiveElementRef = useRef<HTMLElement | null>(null);
 
-  const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
+  const [activeSubId, setActiveSubId] = useState<string | null>(null);
+  const [inSub, setInSub] = useState(false);
+  const inSubRef = useRef(false);
+
+  useEffect(() => {
+    inSubRef.current = inSub;
+  }, [inSub]);
+
   const [isRendered, setIsRendered] = useState(open);
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
       setIsRendered(true);
+    } else {
+      setInSub(false);
+      setActiveSubId(null);
     }
   }
+
   const itemsRef = useRef<MenuItemData[]>([]);
-  const activeIdxRef = useRef<number>(-1);
+  const [subMenus, setSubMenus] = useState<Record<string, SubMenuData>>({});
+  const activeSubRowRef = useRef<HTMLElement | null>(null);
+  const subTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sliding highlight springs
-  const hlSpringsRef = useRef<{ y: Spring; h: Spring; sim: Sim } | null>(null);
+  // Submenu registry
+  const registerSubMenu = useCallback((sub: SubMenuData) => {
+    setSubMenus((prev) => ({ ...prev, [sub.id]: sub }));
+  }, []);
 
-  // Initialize Surf and Highlight springs whenever rendered
+  const unregisterSubMenu = useCallback((subId: string) => {
+    setSubMenus((prev) => {
+      const next = { ...prev };
+      delete next[subId];
+      return next;
+    });
+  }, []);
+
+  // Initialize Surf instances for menu and single flyout submenu
   useEffect(() => {
     if (!isRendered || !menuRef.current) return;
     const menuEl = menuRef.current;
-
-    // Attach Surf instance
     const s = surf(menuEl);
     surfRef.current = s;
 
-    // Highlight springs
-    const p = getActivePreset();
-    const defaultRowH =
-      parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          "--ll-size-row-h"
-        )
-      ) || 32;
-    const y = new Spring(0, p.glideH);
-    const h = new Spring(defaultRowH, p.glideW);
-    const sim: Sim = {
-      sp: [y, h],
-      apply: () => {
-        if (hlRef.current) {
-          hlRef.current.style.height = `${Math.max(0, h.x).toFixed(2)}px`;
-          hlRef.current.style.transform = `translate3d(0, ${y.x.toFixed(2)}px, 0)`;
-        }
-      },
+    return () => {
+      s.reset();
     };
-    hlSpringsRef.current = { y, h, sim };
+  }, [isRendered]);
+
+  useEffect(() => {
+    if (!isRendered || !subElRef.current) return;
+    const subEl = subElRef.current;
+    const s = surf(subEl);
+    subSurfRef.current = s;
 
     return () => {
       s.reset();
-      if (hlSpringsRef.current) {
-        simRemove(hlSpringsRef.current.sim);
-      }
     };
   }, [isRendered]);
 
   const moveHighlight = useCallback((rowEl: HTMLElement, instant = false) => {
-    const hl = hlRef.current;
-    const hs = hlSpringsRef.current;
-    if (!hl || !hs || !rowEl) return;
-
-    const idx = itemsRef.current.findIndex((it) => it.el === rowEl);
-    if (idx >= 0) {
-      activeIdxRef.current = idx;
-    }
-
-    hl.style.left = `${rowEl.offsetLeft}px`;
-    hl.style.width = `${rowEl.offsetWidth}px`;
-
-    const p = getActivePreset();
-
-    if (instant || prefersReducedMotion()) {
-      hs.y.jump(rowEl.offsetTop);
-      hs.h.jump(rowEl.offsetHeight);
-      hl.style.height = `${rowEl.offsetHeight}px`;
-      hl.style.transform = `translate3d(0, ${rowEl.offsetTop}px, 0)`;
-      hl.classList.add("show");
-      return;
-    }
-
-    hs.y.tune(p.glideH);
-    hs.h.tune(p.glideW);
-    hs.y.to = rowEl.offsetTop;
-    hs.h.to = rowEl.offsetHeight;
-
-    hl.classList.add("show");
-    simAdd(hs.sim);
+    if (!menuRef.current || !rowEl) return;
+    hlMove(menuRef.current, rowEl, instant);
   }, []);
 
   const hideHighlight = useCallback(() => {
-    const hl = hlRef.current;
-    if (hl) {
-      hl.classList.remove("show");
+    if (menuRef.current) {
+      hlHide(menuRef.current);
     }
-    activeIdxRef.current = -1;
   }, []);
 
-  // Open & Close with Surf physics
+  const closeSub = useCallback((restoreFocus = false) => {
+    if (subTimerRef.current) {
+      clearTimeout(subTimerRef.current);
+      subTimerRef.current = null;
+    }
+    setInSub(false);
+    inSubRef.current = false;
+    const parentRow = activeSubRowRef.current;
+    if (parentRow) {
+      parentRow.classList.remove("subopen");
+      delete parentRow.dataset.subopen;
+      parentRow.setAttribute("aria-expanded", "false");
+      if (restoreFocus) {
+        parentRow.focus();
+        moveHighlight(parentRow);
+      }
+      activeSubRowRef.current = null;
+    }
+    setActiveSubId(null);
+    if (subSurfRef.current) {
+      subSurfRef.current.leave();
+    }
+  }, [moveHighlight]);
+
+  const openSub = useCallback((rowEl: HTMLElement, subId: string) => {
+    if (subTimerRef.current) {
+      clearTimeout(subTimerRef.current);
+      subTimerRef.current = null;
+    }
+    const sbm = subElRef.current;
+    const ss = subSurfRef.current;
+    const mm = menuRef.current;
+    if (!sbm || !ss || !mm) return;
+
+    const live = sbm.classList.contains("open");
+    if (activeSubRowRef.current === rowEl && live) return;
+
+    if (live || (sbm.hasAttribute("data-lv") && !prefersReducedMotion())) {
+      // Retarget open submenu surface (swapSub)
+      const oldRow = activeSubRowRef.current;
+      const oldTop = parseFloat(sbm.style.top) || 0;
+      const oldLeft = parseFloat(sbm.style.left) || 0;
+      let dir = 1;
+      if (oldRow) {
+        oldRow.classList.remove("subopen");
+        delete oldRow.dataset.subopen;
+        oldRow.setAttribute("aria-expanded", "false");
+        dir = rowEl.getBoundingClientRect().top >= oldRow.getBoundingClientRect().top ? 1 : -1;
+      }
+      activeSubRowRef.current = rowEl;
+      rowEl.classList.add("subopen");
+      rowEl.dataset.subopen = "true";
+      rowEl.setAttribute("aria-expanded", "true");
+
+      if (!prefersReducedMotion()) {
+        ss.wake();
+        if (live) {
+          ghostOf(sbm, dir);
+        } else {
+          ss.timers.forEach(clearTimeout);
+          ss.timers = [];
+          if (typeof sbm.getAnimations === "function") {
+            sbm.getAnimations().forEach((a) => a.cancel());
+          }
+          sbm.classList.add("open");
+          sbm.removeAttribute("data-lv");
+          ss.G.to = 0;
+          ss.Y.to = 0;
+        }
+      }
+
+      setActiveSubId(subId);
+
+      const unreg = defaultHost.register(() => {
+        unreg();
+        if (!sbm || !ss) return;
+        const m = ss.measure();
+        const g = placeSub(mm, rowEl, m.w, m.h);
+        sbm.classList.toggle("flip", g.flip);
+        if (g.flip) {
+          sbm.dataset.flip = "true";
+        } else {
+          delete sbm.dataset.flip;
+        }
+        sbm.style.left = `${g.x}px`;
+        sbm.style.top = `${g.top}px`;
+
+        if (prefersReducedMotion()) {
+          ss.lay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MENU_FALLBACKS.reducedMotionDuration, easing: "ease-out" });
+          return;
+        }
+
+        ss.fit(m);
+        ss.lay.style.width = `${m.cw}px`;
+        ss.lay.style.height = `${Math.max(m.ch, m.sh)}px`;
+        ss.right = g.flip;
+        ss.slide = g.flip ? -1 : 1;
+        ss.exitY = g.rowY;
+        ss.Y.x += oldTop - g.top;
+        ss.G.x += oldLeft - g.x;
+        ss.shapeTo(ss.size, m.r);
+        ss.Y.to = 0;
+        ss.G.to = 0;
+        ss.paint();
+        ss.settleOrRun();
+        swapIn(ss.lay, dir);
+      });
+      return;
+    }
+
+    // Fresh open
+    if (activeSubRowRef.current) {
+      activeSubRowRef.current.classList.remove("subopen");
+      delete activeSubRowRef.current.dataset.subopen;
+      activeSubRowRef.current.setAttribute("aria-expanded", "false");
+    }
+    ss.reset();
+    activeSubRowRef.current = rowEl;
+    rowEl.classList.add("subopen");
+    rowEl.dataset.subopen = "true";
+    rowEl.setAttribute("aria-expanded", "true");
+    setActiveSubId(subId);
+
+    const unreg = defaultHost.register(() => {
+      unreg();
+      if (!sbm || !ss) return;
+      const m = ss.measure();
+      const g = placeSub(mm, rowEl, m.w, m.h);
+      sbm.classList.toggle("flip", g.flip);
+      if (g.flip) {
+        sbm.dataset.flip = "true";
+      } else {
+        delete sbm.dataset.flip;
+      }
+      sbm.style.left = `${g.x}px`;
+      sbm.style.top = `${g.top}px`;
+      ss.open({
+        right: g.flip,
+        slide: g.flip ? -1 : 1,
+        y0: g.rowY,
+        from: {
+          w: 16,
+          h: rowEl.offsetHeight,
+          r: parseFloat(getComputedStyle(sbm).borderRadius) || MENU_FALLBACKS.menuRadius,
+        },
+      });
+    });
+  }, []);
+
+  // Hover row logic with safe triangle and delays: open 80ms, switch 60ms, close 200ms
+  const hoverRow = useCallback(
+    (rowEl: HTMLElement, subId?: string) => {
+      const sbm = subElRef.current;
+      const mm = menuRef.current;
+      if (!mm) return;
+
+      if (subTimerRef.current) {
+        clearTimeout(subTimerRef.current);
+        subTimerRef.current = null;
+      }
+
+      if (!rowEl.classList.contains("on")) {
+        wiggle(rowEl);
+      }
+      mm.querySelectorAll(".ll-lay > .on").forEach((x) => x.classList.remove("on"));
+      rowEl.classList.add("on");
+      mm.classList.remove("kb");
+      hlMove(mm, rowEl);
+
+      const subLive = sbm?.classList.contains("open");
+
+      if (subId) {
+        const delay = subLive ? 60 : 80;
+        subTimerRef.current = setTimeout(() => {
+          openSub(rowEl, subId);
+        }, delay);
+      } else {
+        if (subLive) {
+          subTimerRef.current = setTimeout(() => {
+            closeSub();
+          }, 200);
+        }
+      }
+    },
+    [openSub, closeSub]
+  );
+
+  // Open & Close Menu Surf Physics
   useEffect(() => {
     if (!isRendered) return;
     const s = surfRef.current;
@@ -218,57 +404,110 @@ export const Menu: React.FC<MenuProps> = ({
 
     if (open) {
       prevActiveElementRef.current = document.activeElement as HTMLElement | null;
-
-      // Position the menu
-      let left = 8;
-      let top = 8;
-      let seed = { w: 32, h: 32, r: 6 };
-
-      const m = s.measure();
-      const menuW = m.w || (variant === "wide" ? 320 : variant === "context" ? 248 : 200);
-      const menuH = m.h || 240;
-
       const pad =
         parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue(
             "--ll-spacing-2"
           )
-        ) || 8;
+        ) || MENU_FALLBACKS.viewportPadding;
+      const gap =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--ll-submenu-gap"
+          )
+        ) || MENU_FALLBACKS.edgeGap;
+
+      const defaultCtxW =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--ll-size-menu-ctx-w"
+          )
+        ) || MENU_FALLBACKS.menuWidthContext;
+      const defaultWideW =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--ll-size-menu-wide-w"
+          )
+        ) || MENU_FALLBACKS.menuWidthWide;
+      const defaultMenuW =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--ll-size-menu-w"
+          )
+        ) || MENU_FALLBACKS.menuWidthDefault;
+
+      let left = pad;
+      let top = pad;
+      let seed: { w: number; h: number; r: number } = { w: 32, h: 32, r: MENU_FALLBACKS.menuRadius };
+      let up = false;
+
+      const m = s.measure();
+      const menuW =
+        m.w ||
+        (variant === "wide"
+          ? defaultWideW
+          : variant === "context"
+          ? defaultCtxW
+          : defaultMenuW);
+      const menuH = m.h || (layRef.current?.offsetHeight ?? MENU_FALLBACKS.defaultMenuHeight);
 
       if (position) {
         left = Math.max(pad, Math.min(position.x, window.innerWidth - menuW - pad));
         top = Math.max(pad, Math.min(position.y, window.innerHeight - menuH - pad));
-        seed = { w: 16, h: 16, r: 6 };
+        seed = { w: 16, h: 16, r: MENU_FALLBACKS.menuRadius };
       } else if (targetAnchor) {
         const r = targetAnchor.getBoundingClientRect();
         left = Math.max(pad, Math.min(r.left, window.innerWidth - menuW - pad));
-        top = r.bottom + 4;
+        top = r.bottom + gap;
         if (top + menuH > window.innerHeight - pad) {
-          top = Math.max(pad, r.top - menuH - 4);
+          top = Math.max(pad, r.top - menuH - gap);
+          up = true;
         }
         seed = {
           w: Math.round(r.width),
           h: Math.round(r.height),
-          r: parseFloat(getComputedStyle(targetAnchor).borderRadius) || 6,
+          r: parseFloat(getComputedStyle(targetAnchor).borderRadius) || MENU_FALLBACKS.menuRadius,
         };
       }
 
       menuEl.style.left = `${Math.max(pad, left)}px`;
       menuEl.style.top = `${Math.max(pad, top)}px`;
 
+      const y0 = position
+        ? 0
+        : targetAnchor
+        ? (up ? 1 : -1) * (targetAnchor.getBoundingClientRect().height + gap)
+        : 0;
+
       s.open({
         from: seed,
+        y0,
+        up,
       });
 
-      // Move focus into the menu container on next frame
       const unreg = defaultHost.register(() => {
         unreg();
         menuEl.focus();
       });
     } else {
+      if (subTimerRef.current) {
+        clearTimeout(subTimerRef.current);
+        subTimerRef.current = null;
+      }
+      if (activeSubRowRef.current) {
+        activeSubRowRef.current.classList.remove("subopen");
+        delete activeSubRowRef.current.dataset.subopen;
+        activeSubRowRef.current.setAttribute("aria-expanded", "false");
+        activeSubRowRef.current = null;
+      }
+      if (subSurfRef.current) {
+        subSurfRef.current.leave();
+      }
       hideHighlight();
       s.leave();
-      const exitDuration = prefersReducedMotion() ? 120 : 160;
+      const exitDuration = prefersReducedMotion()
+        ? MENU_FALLBACKS.reducedMotionDuration
+        : MOT.exitDelay + MOT.exitMs;
       const t = setTimeout(() => {
         setIsRendered(false);
         if (prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
@@ -277,138 +516,186 @@ export const Menu: React.FC<MenuProps> = ({
       }, exitDuration);
       return () => clearTimeout(t);
     }
-  }, [open, isRendered, anchorEl, anchorRef, position, variant, hideHighlight]);
+  }, [open, isRendered, anchorEl, anchorRef, position, variant, hideHighlight, closeSub]);
 
-  // Outside click & global keydown handling
+  // Outside click & global mousemove/pointerdown handling
   useEffect(() => {
     if (!open || !isRendered) return;
-
     const targetAnchor = anchorRef?.current ?? anchorEl;
 
-    const handlePointerDownOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        // Also check if click is inside any active portaled submenu
-        const target = e.target as HTMLElement | null;
-        if (target?.closest('[data-submenu="true"]')) return;
-        if (targetAnchor && targetAnchor.contains(e.target as Node)) return;
-        onClose();
-      }
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (menuRef.current?.contains(target)) return;
+      if (subElRef.current?.contains(target)) return;
+      if (targetAnchor?.contains(target)) return;
+      onClose();
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const menuEl = menuRef.current;
-      if (!menuEl) return;
+    const handlePointerOver = (e: MouseEvent) => {
+      const sbm = subElRef.current;
+      const mm = menuRef.current;
+      if (!mm || !sbm) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
 
-      // When a submenu is open, let the submenu handle its own internal arrow/item keys
-      if (openSubmenuId) {
-        if (e.key === "ArrowLeft" || e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          const closedSubId = openSubmenuId;
-          setOpenSubmenuId(null);
-          // Return focus/highlight to the active submenu trigger item
-          const triggerIdx = itemsRef.current.findIndex((it) => it.id === closedSubId);
-          if (triggerIdx >= 0) {
-            activeIdxRef.current = triggerIdx;
-            const curItem = itemsRef.current[triggerIdx];
-            moveHighlight(curItem.el);
-            curItem.el.focus();
-          }
+      if (sbm.contains(target)) {
+        setInSub(true);
+        if (subTimerRef.current) {
+          clearTimeout(subTimerRef.current);
+          subTimerRef.current = null;
         }
         return;
       }
+
+      if (mm.contains(target)) {
+        setInSub(false);
+        const row = target.closest<HTMLElement>('[role="menuitem"]');
+        if (!row || (row as HTMLButtonElement).disabled) return;
+        if (sbm.classList.contains("open") && row !== activeSubRowRef.current && inSafeTriangle(sbm, mousePos)) {
+          if (subTimerRef.current) clearTimeout(subTimerRef.current);
+          subTimerRef.current = setTimeout(() => {
+            if (row.matches(":hover") && !sbm.matches(":hover")) {
+              const subId = row.dataset.subId;
+              hoverRow(row, subId);
+            }
+          }, 100);
+          return;
+        }
+        const subId = row.dataset.subId;
+        hoverRow(row, subId);
+      }
+    };
+
+    const handleMouseLeaveMenu = () => {
+      const sbm = subElRef.current;
+      if (sbm?.classList.contains("open")) return;
+      hideHighlight();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mm = menuRef.current;
+      const sbm = subElRef.current;
+      if (!mm) return;
+      const subLive = sbm?.classList.contains("open");
+      const currentScope: HTMLElement = subLive && inSubRef.current && sbm ? sbm : mm;
+      const list = Array.from(
+        currentScope.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')
+      );
+      if (!list.length) return;
+
+      const curIdx = list.findIndex((x) => x.classList.contains("on"));
 
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
-        onClose();
-        targetAnchor?.focus();
+        if (subLive) {
+          closeSub(true);
+        } else {
+          onClose();
+        }
         return;
       }
-
-      const items = itemsRef.current;
-      if (!items.length) return;
 
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
-        menuEl.classList.add("kb");
-
-        let next =
+        e.stopPropagation();
+        currentScope.classList.add("kb");
+        const next =
           e.key === "ArrowDown"
-            ? activeIdxRef.current + 1
-            : activeIdxRef.current <= 0
-            ? items.length - 1
-            : activeIdxRef.current - 1;
+            ? (curIdx + 1) % list.length
+            : curIdx <= 0
+            ? list.length - 1
+            : curIdx - 1;
+        const target = list[next];
+        if (target) {
+          list.forEach((x) => x.classList.remove("on"));
+          target.classList.add("on");
+          hlMove(currentScope, target);
+          wiggle(target);
+          target.focus();
 
-        if (next >= items.length) next = 0;
-        activeIdxRef.current = next;
-        const item = items[next];
-        if (item) {
-          moveHighlight(item.el);
-          item.el.focus();
-        }
-        return;
-      }
-
-      if (e.key === "ArrowRight") {
-        let cur = items[activeIdxRef.current];
-        if (!cur) {
-          const focusedIdx = items.findIndex((it) => it.el === document.activeElement);
-          if (focusedIdx >= 0) {
-            activeIdxRef.current = focusedIdx;
-            cur = items[focusedIdx];
+          if (subLive && !inSubRef.current) {
+            const subId = target.dataset.subId;
+            if (subId) {
+              openSub(target, subId);
+            } else {
+              closeSub();
+            }
           }
         }
-        if (cur && cur.isSubMenu) {
-          e.preventDefault();
-          setOpenSubmenuId(cur.id);
-        }
         return;
       }
 
-      if (e.key === "Enter" || e.key === " ") {
-        const cur = items[activeIdxRef.current];
+      if (e.key === "ArrowLeft" && subLive) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeSub(true);
+        return;
+      }
+
+      if ((e.key === "ArrowRight" || e.key === "Enter") && !inSubRef.current && curIdx >= 0) {
+        const cur = list[curIdx];
+        const subId = cur?.dataset.subId;
+        if (subId && cur) {
+          e.preventDefault();
+          e.stopPropagation();
+          openSub(cur, subId);
+          setInSub(true);
+          const unreg = defaultHost.register(() => {
+            unreg();
+            if (sbm) {
+              const first = sbm.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)');
+              if (first) {
+                hlMove(sbm, first);
+                first.focus();
+              }
+            }
+          });
+          return;
+        }
+      }
+
+      if (e.key === "Enter" && curIdx >= 0) {
+        const cur = list[curIdx];
         if (cur) {
           e.preventDefault();
-          if (cur.isSubMenu) {
-            setOpenSubmenuId(cur.id);
-          } else {
-            cur.el.click();
-          }
-        }
-        return;
-      }
-
-      // Type-ahead: jump to next item starting with pressed letter
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const char = e.key.toLowerCase();
-        const start = (activeIdxRef.current + 1) % items.length;
-        const searchOrder = [
-          ...items.slice(start),
-          ...items.slice(0, start),
-        ];
-        const match = searchOrder.find((it) =>
-          it.label.trim().toLowerCase().startsWith(char)
-        );
-        if (match) {
-          e.preventDefault();
-          menuEl.classList.add("kb");
-          const idx = items.findIndex((it) => it.id === match.id);
-          activeIdxRef.current = idx;
-          moveHighlight(match.el);
-          match.el.focus();
+          e.stopPropagation();
+          cur.click();
         }
       }
     };
 
-    document.addEventListener("mousedown", handlePointerDownOutside);
+    const currentMenuEl = menuRef.current;
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("mouseover", handlePointerOver);
+    currentMenuEl?.addEventListener("mouseleave", handleMouseLeaveMenu);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", handlePointerDownOutside);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("mouseover", handlePointerOver);
+      currentMenuEl?.removeEventListener("mouseleave", handleMouseLeaveMenu);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, isRendered, onClose, anchorEl, anchorRef, openSubmenuId, moveHighlight]);
+  }, [open, isRendered, onClose, anchorEl, anchorRef, closeSub, hideHighlight, hoverRow, moveHighlight, openSub]);
+
+  // Track mouse coordinates while menu is open for safe-triangle calculation
+  useEffect(() => {
+    if (!open) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const now = performance.now();
+      if (now - mousePos.t > 45) {
+        mousePos.prevX = mousePos.x;
+        mousePos.prevY = mousePos.y;
+        mousePos.t = now;
+      }
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    };
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [open]);
 
   const registerItem = useCallback((item: MenuItemData) => {
     const list = itemsRef.current;
@@ -420,21 +707,8 @@ export const Menu: React.FC<MenuProps> = ({
     }
   }, []);
 
-  const unregisterItem = useCallback((id: string) => {
-    itemsRef.current = itemsRef.current.filter((x) => x.id !== id);
-  }, []);
-
-  // Imperative push state on parent menu to avoid React wiping classes
-  const handleSubmenuOpenChange = useCallback((isOpen: boolean) => {
-    const el = menuRef.current;
-    if (!el) return;
-    if (isOpen) {
-      el.classList.add("pushed");
-      el.setAttribute("data-pushed", "true");
-    } else {
-      el.classList.remove("pushed");
-      el.removeAttribute("data-pushed");
-    }
+  const unregisterItem = useCallback((itemId: string) => {
+    itemsRef.current = itemsRef.current.filter((x) => x.id !== itemId);
   }, []);
 
   const getMenuEl = useCallback(() => menuRef.current, []);
@@ -444,23 +718,25 @@ export const Menu: React.FC<MenuProps> = ({
       closeMenu: onClose,
       registerItem,
       unregisterItem,
+      registerSubMenu,
+      unregisterSubMenu,
       moveHighlight,
       hideHighlight,
-      setOpenSubmenuId,
-      openSubmenuId,
+      hoverRow,
+      openSubmenuId: activeSubId,
       getMenuEl,
-      onSubmenuOpenChange: handleSubmenuOpenChange,
     }),
     [
       onClose,
       registerItem,
       unregisterItem,
+      registerSubMenu,
+      unregisterSubMenu,
       moveHighlight,
       hideHighlight,
-      setOpenSubmenuId,
-      openSubmenuId,
+      hoverRow,
+      activeSubId,
       getMenuEl,
-      handleSubmenuOpenChange,
     ]
   );
 
@@ -475,139 +751,154 @@ export const Menu: React.FC<MenuProps> = ({
       ? "var(--ll-size-menu-wide-w)"
       : variant === "context"
       ? "var(--ll-size-menu-ctx-w)"
-      : "var(--ll-size-menu-w)";
+      : undefined;
+
+  const activeSubData = activeSubId ? subMenus[activeSubId] : null;
+  const menuId = id || "menu";
+  const subSurfaceId = `${menuId}-sub`;
 
   return createPortal(
-    <div
-      ref={menuRef}
-      id={id}
-      role="menu"
-      aria-label={ariaLabel}
-      tabIndex={-1}
-      style={{ width: widthStyle }}
-      className={`menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans ${
-        variant === "context" ? "ctx ll:rounded-lg" : ""
-      } ${className}`}
-      onMouseLeave={hideHighlight}
-    >
+    <>
       <div
-        ref={layRef}
-        className="ll-lay ll:flex ll:flex-col ll:gap-0 ll:max-h-menu ll:overflow-y-auto ll:overscroll-contain"
+        ref={menuRef}
+        id={id}
+        role="menu"
+        tabIndex={-1}
+        aria-label={ariaLabel}
+        data-variant={variant}
+        className={`menu ll-menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans ${className}`}
+        style={widthStyle ? { width: widthStyle } : undefined}
       >
-        {/* Single sliding spring highlight across menu items */}
-        <i
-          ref={hlRef as React.RefObject<HTMLElement>}
-          aria-hidden="true"
-          className="ll-hl"
-        />
-
-        <MenuContext.Provider value={contextValue}>{children}</MenuContext.Provider>
+        <div
+          ref={layRef}
+          className="ll-lay ll:flex ll:flex-col ll:gap-0 ll:max-h-menu ll:overflow-y-auto ll:overscroll-contain"
+        >
+          <i aria-hidden="true" className="ll-hl" />
+          <MenuContext.Provider value={contextValue}>{children}</MenuContext.Provider>
+        </div>
       </div>
-    </div>,
+
+      {/* Single side flyout surface for submenus */}
+      <div
+        ref={subElRef}
+        id={subSurfaceId}
+        role="menu"
+        tabIndex={-1}
+        data-submenu="true"
+        aria-label={activeSubData?.label || "Submenu"}
+        className="menu ctx ll-menu ll-submenu ll:fixed ll:z-60 ll:w-56 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans"
+      >
+        <div
+          ref={subLayRef}
+          className="ll-lay ll:flex ll:flex-col ll:gap-0 ll:max-h-menu ll:overflow-y-auto ll:overscroll-contain"
+        >
+          <i aria-hidden="true" className="ll-hl" />
+          <MenuContext.Provider value={contextValue}>
+            {activeSubData?.children}
+          </MenuContext.Provider>
+        </div>
+      </div>
+    </>,
     document.body
   );
 };
 
 export interface MenuItemProps {
-  id?: string;
-  icon?: React.ReactNode;
   children: React.ReactNode;
+  icon?: React.ReactNode;
   shortcut?: string;
-  checked?: boolean;
   disabled?: boolean;
-  role?: "menuitem" | "menuitemcheckbox" | "menuitemradio";
-  onClick?: (e: React.MouseEvent) => void;
+  checked?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
+  role?: string;
+  id?: string;
 }
 
 export const MenuItem: React.FC<MenuItemProps> = ({
-  id: propId,
-  icon,
   children,
+  icon,
   shortcut,
-  checked,
   disabled = false,
-  role = "menuitem",
+  checked,
   onClick,
   className = "",
+  role = "menuitem",
+  id,
 }) => {
   const generatedId = useId();
-  const id = propId ?? generatedId;
+  const itemId = id || generatedId;
+  const itemRef = useRef<HTMLButtonElement>(null);
   const ctx = useContext(MenuContext);
-  const rowRef = useRef<HTMLButtonElement>(null);
-
-  const labelText = typeof children === "string" ? children : "";
 
   useEffect(() => {
-    if (ctx && rowRef.current && !disabled) {
-      ctx.registerItem({
-        id,
-        el: rowRef.current,
-        label: labelText,
-        isSubMenu: false,
-      });
-    }
+    if (!itemRef.current || !ctx) return;
+    const el = itemRef.current;
+    const label = el.textContent || "";
+    ctx.registerItem({ id: itemId, el, label });
     return () => {
-      ctx?.unregisterItem(id);
+      ctx.unregisterItem(itemId);
     };
-  }, [ctx, id, disabled, labelText]);
+  }, [ctx, itemId]);
 
-  const handlePointerEnter = () => {
-    if (disabled || !ctx || !rowRef.current) return;
-    ctx.moveHighlight(rowRef.current);
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled || prefersReducedMotion()) return;
+    pressEl(e.currentTarget, true);
   };
 
-  const handlePointerDown = () => {
-    if (disabled || !rowRef.current) return;
-    pressEl(rowRef.current, true);
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled || prefersReducedMotion()) return;
+    pressEl(e.currentTarget, false);
   };
 
-  const handlePointerUp = () => {
-    if (disabled || !rowRef.current) return;
-    pressEl(rowRef.current, false);
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled) return;
+    popRow(e.currentTarget);
     onClick?.(e);
     ctx?.closeMenu();
   };
 
+  const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    ctx?.hoverRow(e.currentTarget);
+  };
+
+  const isRadio = role === "menuitemradio";
+  const isCheckbox = role === "menuitemcheckbox" || (checked !== undefined && !isRadio);
+
   return (
     <button
-      ref={rowRef}
-      role={role}
+      ref={itemRef}
+      id={itemId}
       type="button"
-      tabIndex={-1}
-      disabled={disabled}
+      role={role}
       aria-checked={checked}
-      onClick={handleClick}
-      onPointerEnter={handlePointerEnter}
+      disabled={disabled}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
-      className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:transition-none ll:outline-none ll:font-sans ${
+      onPointerEnter={handlePointerEnter}
+      onClick={handleClick}
+      className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
           ? "ll:opacity-40 ll:cursor-not-allowed ll:text-muted"
           : "ll:text-primary"
       } ${className}`}
     >
-      {checked !== undefined && (
-        <span className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0">
-          {checked && <Icon icon={Check} size={14} className="ll:text-primary" />}
+      {isCheckbox || isRadio ? (
+        <span className="ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-primary">
+          {checked && <Icon icon={Check} size={14} />}
         </span>
-      )}
-
-      {icon && (
-        <span className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+      ) : icon ? (
+        <span className="ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
           {icon}
         </span>
-      )}
+      ) : null}
 
-      <span className="ll:flex-1 ll:truncate ll:text-body ll:font-normal">{children}</span>
+      <span className="ll:flex-1 ll:truncate ll:text-body">{children}</span>
 
       {shortcut && (
-        <kbd className="ll:ml-auto ll:font-mono ll:text-micro ll:text-muted">
+        <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:ml-auto ll:tracking-wider">
           {shortcut}
         </kbd>
       )}
@@ -616,412 +907,87 @@ export const MenuItem: React.FC<MenuItemProps> = ({
 };
 
 export interface SubMenuProps {
-  id?: string;
+  id: string;
   label: React.ReactNode;
   icon?: React.ReactNode;
-  children: React.ReactNode;
   disabled?: boolean;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export const SubMenu: React.FC<SubMenuProps> = ({
-  id: propId,
+  id,
   label,
   icon,
-  children,
   disabled = false,
+  children,
+  className = "",
 }) => {
-  const generatedId = useId();
-  const id = propId ?? generatedId;
+  const rowRef = useRef<HTMLButtonElement>(null);
   const ctx = useContext(MenuContext);
-  const isOpen = ctx?.openSubmenuId === id;
+
   const labelText = typeof label === "string" ? label : "";
 
-  const rowRef = useRef<HTMLButtonElement>(null);
-  const subMenuRef = useRef<HTMLDivElement>(null);
-  const layRef = useRef<HTMLDivElement>(null);
-  const hlRef = useRef<HTMLElement>(null);
-  const surfRef = useRef<Surf | null>(null);
-
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isRendered, setIsRendered] = useState(isOpen);
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-  if (isOpen !== prevIsOpen) {
-    setPrevIsOpen(isOpen);
-    if (isOpen) {
-      setIsRendered(true);
-    }
-  }
-  const subItemsRef = useRef<MenuItemData[]>([]);
-  const subActiveIdxRef = useRef<number>(-1);
-  const hlSpringsRef = useRef<{ y: Spring; h: Spring; sim: Sim } | null>(null);
-
-  // Register submenu trigger item with parent
+  // Register submenu metadata and children with parent Menu
   useEffect(() => {
-    if (ctx && rowRef.current && !disabled) {
-      ctx.registerItem({
-        id,
-        el: rowRef.current,
-        label: labelText,
-        isSubMenu: true,
-      });
-    }
+    if (!ctx || !rowRef.current) return;
+    const el = rowRef.current;
+    ctx.registerSubMenu({
+      id,
+      label: labelText,
+      rowEl: el,
+      children,
+    });
     return () => {
-      ctx?.unregisterItem(id);
+      ctx.unregisterSubMenu(id);
     };
-  }, [ctx, id, disabled, labelText]);
+  }, [ctx, id, labelText, children]);
 
-  // Initialize Submenu Surf & Highlight
-  useEffect(() => {
-    if (!isRendered || !subMenuRef.current) return;
-    const subEl = subMenuRef.current;
-
-    const s = surf(subEl);
-    surfRef.current = s;
-
-    const p = getActivePreset();
-    const defaultRowH =
-      parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue(
-          "--ll-size-row-h"
-        )
-      ) || 32;
-    const y = new Spring(0, p.glideH);
-    const h = new Spring(defaultRowH, p.glideW);
-    const sim: Sim = {
-      sp: [y, h],
-      apply: () => {
-        if (hlRef.current) {
-          hlRef.current.style.height = `${Math.max(0, h.x).toFixed(2)}px`;
-          hlRef.current.style.transform = `translate3d(0, ${y.x.toFixed(2)}px, 0)`;
-        }
-      },
-    };
-    hlSpringsRef.current = { y, h, sim };
-
-    return () => {
-      s.reset();
-      if (hlSpringsRef.current) {
-        simRemove(hlSpringsRef.current.sim);
-      }
-    };
-  }, [isRendered]);
-
-  const moveHighlight = useCallback((rowEl: HTMLElement, instant = false) => {
-    const hl = hlRef.current;
-    const hs = hlSpringsRef.current;
-    if (!hl || !hs || !rowEl) return;
-
-    const idx = subItemsRef.current.findIndex((it) => it.el === rowEl);
-    if (idx >= 0) {
-      subActiveIdxRef.current = idx;
-    }
-
-    hl.style.left = `${rowEl.offsetLeft}px`;
-    hl.style.width = `${rowEl.offsetWidth}px`;
-
-    const p = getActivePreset();
-
-    if (instant || prefersReducedMotion()) {
-      hs.y.jump(rowEl.offsetTop);
-      hs.h.jump(rowEl.offsetHeight);
-      hl.style.height = `${rowEl.offsetHeight}px`;
-      hl.style.transform = `translate3d(0, ${rowEl.offsetTop}px, 0)`;
-      hl.classList.add("show");
-      return;
-    }
-
-    hs.y.tune(p.glideH);
-    hs.h.tune(p.glideW);
-    hs.y.to = rowEl.offsetTop;
-    hs.h.to = rowEl.offsetHeight;
-
-    hl.classList.add("show");
-    simAdd(hs.sim);
-  }, []);
-
-  const hideHighlight = useCallback(() => {
-    const hl = hlRef.current;
-    if (hl) {
-      hl.classList.remove("show");
-    }
-    subActiveIdxRef.current = -1;
-  }, []);
-
-  // Open & Close Submenu Surf Surface
-  useEffect(() => {
-    if (!isRendered) return;
-    const s = surfRef.current;
-    const subEl = subMenuRef.current;
-    const triggerRow = rowRef.current;
-    if (!s || !subEl || !triggerRow) return;
-
-    if (isOpen) {
-      const pad =
-        parseFloat(
-          getComputedStyle(document.documentElement).getPropertyValue(
-            "--ll-spacing-2"
-          )
-        ) || 8;
-      const r = triggerRow.getBoundingClientRect();
-      const m = s.measure();
-      const w = m.w || 224;
-      const h = m.h || 180;
-
-      let x = r.right + 4;
-      const flip = x + w > window.innerWidth - pad;
-      if (flip) {
-        x = r.left - 4 - w;
-        subEl.classList.add("flip");
-      } else {
-        subEl.classList.remove("flip");
-      }
-
-      const top = Math.max(pad, Math.min(r.top - 4, window.innerHeight - h - pad));
-      subEl.style.left = `${Math.max(pad, Math.min(x, window.innerWidth - w - pad))}px`;
-      subEl.style.top = `${top}px`;
-      subEl.style.transformOrigin = `${flip ? "right " : "left "}${Math.max(0, r.top - top)}px`;
-
-      ctx?.onSubmenuOpenChange?.(true);
-
-      const seed = {
-        w: Math.round(r.height),
-        h: Math.round(r.height),
-        r: parseFloat(getComputedStyle(subEl).borderTopLeftRadius) || 6,
-      };
-
-      s.open({
-        right: flip,
-        slide: flip ? -1 : 1,
-        from: seed,
-      });
-
-      setTimeout(() => {
-        if (subEl) {
-          const first = subEl.querySelector<HTMLElement>('button[role="menuitem"]:not(:disabled)');
-          if (first) {
-            moveHighlight(first);
-            first.focus();
-          }
-        }
-      }, 50);
-    } else {
-      ctx?.onSubmenuOpenChange?.(false);
-      hideHighlight();
-      s.leave();
-      const exitDuration = prefersReducedMotion() ? 120 : 160;
-      const t = setTimeout(() => {
-        setIsRendered(false);
-      }, exitDuration);
-      return () => clearTimeout(t);
-    }
-  }, [isOpen, isRendered, ctx, hideHighlight, moveHighlight]);
-
-  // Keyboard navigation inside open submenu
-  useEffect(() => {
-    if (!isOpen || !isRendered) return;
-
-    const handleSubKeyDown = (e: KeyboardEvent) => {
-      const subItems = subItemsRef.current;
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!subItems.length) return;
-
-        let next =
-          e.key === "ArrowDown"
-            ? subActiveIdxRef.current + 1
-            : subActiveIdxRef.current <= 0
-            ? subItems.length - 1
-            : subActiveIdxRef.current - 1;
-
-        if (next >= subItems.length) next = 0;
-        subActiveIdxRef.current = next;
-        const item = subItems[next];
-        if (item) {
-          moveHighlight(item.el);
-          item.el.focus();
-        }
-        return;
-      }
-
-      if (e.key === "Enter" || e.key === " ") {
-        const subItems = subItemsRef.current;
-        const item = subItems[subActiveIdxRef.current];
-        if (item) {
-          e.preventDefault();
-          e.stopPropagation();
-          item.el.click();
-        }
-        return;
-      }
-
-      // Type-ahead inside submenu
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const subItems = subItemsRef.current;
-        const char = e.key.toLowerCase();
-        const start = (subActiveIdxRef.current + 1) % subItems.length;
-        const searchOrder = [
-          ...subItems.slice(start),
-          ...subItems.slice(0, start),
-        ];
-        const match = searchOrder.find((it) =>
-          it.label.trim().toLowerCase().startsWith(char)
-        );
-        if (match) {
-          e.preventDefault();
-          e.stopPropagation();
-          const idx = subItems.findIndex((it) => it.id === match.id);
-          subActiveIdxRef.current = idx;
-          moveHighlight(match.el);
-          match.el.focus();
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleSubKeyDown);
-    return () => document.removeEventListener("keydown", handleSubKeyDown);
-  }, [isOpen, isRendered, moveHighlight]);
-
-  const handlePointerEnterTrigger = () => {
-    if (disabled || !ctx || !rowRef.current) return;
-    ctx.moveHighlight(rowRef.current);
-
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-
-    openTimerRef.current = setTimeout(() => {
-      ctx.setOpenSubmenuId(id);
-    }, 100); // 100ms open delay per prototype
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled || prefersReducedMotion()) return;
+    pressEl(e.currentTarget, true);
   };
 
-  const handlePointerLeaveTrigger = () => {
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-
-    if (isOpen && subMenuRef.current) {
-      const subRect = subMenuRef.current.getBoundingClientRect();
-      const isHeadingToward = isPointerHeadingToward(subRect, false);
-      if (isHeadingToward) {
-        // Safe triangle active: give user time to enter submenu
-        closeTimerRef.current = setTimeout(() => {
-          ctx?.setOpenSubmenuId(null);
-        }, 200); // 200ms close delay
-        return;
-      }
-    }
-
-    closeTimerRef.current = setTimeout(() => {
-      ctx?.setOpenSubmenuId(null);
-    }, 100);
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled || prefersReducedMotion()) return;
+    pressEl(e.currentTarget, false);
   };
 
-  const handleSubMenuMouseEnter = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
+  const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled || !ctx) return;
+    ctx.hoverRow(e.currentTarget, id);
   };
 
-  const registerSubItem = useCallback((item: MenuItemData) => {
-    const list = subItemsRef.current;
-    const existing = list.findIndex((x) => x.id === item.id);
-    if (existing >= 0) {
-      list[existing] = item;
-    } else {
-      list.push(item);
-    }
-  }, []);
-
-  const unregisterSubItem = useCallback((itemId: string) => {
-    subItemsRef.current = subItemsRef.current.filter((x) => x.id !== itemId);
-  }, []);
-
-  const getSubMenuEl = useCallback(() => subMenuRef.current, []);
-
-  const subContextValue: MenuContextValue = useMemo(
-    () => ({
-      closeMenu: () => {
-        ctx?.setOpenSubmenuId(null);
-        ctx?.closeMenu();
-      },
-      registerItem: registerSubItem,
-      unregisterItem: unregisterSubItem,
-      moveHighlight,
-      hideHighlight,
-      setOpenSubmenuId: () => {},
-      openSubmenuId: null,
-      getMenuEl: getSubMenuEl,
-    }),
-    [
-      ctx,
-      registerSubItem,
-      unregisterSubItem,
-      moveHighlight,
-      hideHighlight,
-      getSubMenuEl,
-    ]
-  );
+  const isSubOpen = ctx?.openSubmenuId === id;
 
   return (
-    <>
-      <button
-        ref={rowRef}
-        type="button"
-        role="menuitem"
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        disabled={disabled}
-        onPointerEnter={handlePointerEnterTrigger}
-        onPointerLeave={handlePointerLeaveTrigger}
-        className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
-          disabled
-            ? "ll:opacity-40 ll:cursor-not-allowed ll:text-muted"
-            : "ll:text-primary"
-        } ${isOpen ? "subopen" : ""}`}
-      >
-        {icon && (
-          <span className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
-            {icon}
-          </span>
-        )}
-        <span className="ll:flex-1 ll:truncate ll:text-body">{label}</span>
-        <Icon icon={ChevronRight} size={14} className="chv ll:text-muted ll:ml-auto" />
-      </button>
-
-      {isRendered &&
-        createPortal(
-          <div
-            ref={subMenuRef}
-            role="menu"
-            tabIndex={-1}
-            data-submenu="true"
-            aria-label={labelText || "Submenu"}
-            onMouseEnter={handleSubMenuMouseEnter}
-            onMouseLeave={hideHighlight}
-            className="menu ctx ll:fixed ll:z-50 ll:w-56 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans"
-          >
-            <div
-              ref={layRef}
-              className="ll-lay ll:flex ll:flex-col ll:gap-0 ll:max-h-menu ll:overflow-y-auto ll:overscroll-contain"
-            >
-              <i
-                ref={hlRef as React.RefObject<HTMLElement>}
-                aria-hidden="true"
-                className="ll-hl"
-              />
-              <MenuContext.Provider value={subContextValue}>
-                {children}
-              </MenuContext.Provider>
-            </div>
-          </div>,
-          document.body
-        )}
-    </>
+    <button
+      ref={rowRef}
+      data-sub-id={id}
+      data-subopen={isSubOpen ? "true" : undefined}
+      type="button"
+      role="menuitem"
+      aria-haspopup="menu"
+      aria-expanded={isSubOpen}
+      disabled={disabled}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerEnter={handlePointerEnter}
+      className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
+        disabled
+          ? "ll:opacity-40 ll:cursor-not-allowed ll:text-muted"
+          : "ll:text-primary"
+      } ${className}`}
+    >
+      {icon && (
+        <span className="ico ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+          {icon}
+        </span>
+      )}
+      <span className="ll:flex-1 ll:truncate ll:text-body">{label}</span>
+      <Icon icon={ChevronRight} size={14} className="chv ll-chv ll:text-muted ll:ml-auto" />
+    </button>
   );
 };
 

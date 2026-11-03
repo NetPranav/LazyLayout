@@ -83,12 +83,12 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Import components from `@/editor/components` across all rebuilt panels (`shell`, `panels/layers`, `panels/details`, `canvas`, `menus`).
 - **Status:** in progress (wip, retry 2)
 
-### Imported candidate packages and components (as-is)
+### Imported candidate packages and components (as-is) [REMOVED]
 - **Area:** imported components / design system
 - **Files:** `package.json`, `src/editor/components/imported/**`, `src/editor/design-system/DesignSystemPage.tsx`
-- **What changed:** Installed user-approved candidate packages with `--legacy-peer-deps` (`@animate-ui/react`, `@base-ui/react`, `@floating-ui/react`, `@hugeicons/react`, `@hugeicons/core-free-icons`, `radix-ui`). Added 12 candidate components as-is without restyling under `src/editor/components/imported/` and registered demos on `/design-system` under right-panel group "Imported (as-is)".
-- **What A/B must do:** Review candidate components on `/design-system` for eventual restyling, token adaptation, and prefix conversion.
-- **Status:** open
+- **What changed:** Previously installed candidate packages and components under `src/editor/components/imported/` have been removed. The `imported/` folder is gone.
+- **What A/B must do:** None (the imported folder is removed).
+- **Status:** removed
 
 ## 5. Tokens and styles
 

@@ -20,7 +20,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `foundations` (tokens, type and spacing scales, base components) | done | new | - |
 | `design-system` (the `/design-system` page, shows every component and its states) | wip | new | - |
 | `shell` | wip | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
-| `menus` | todo | 4 | - |
+| `menus` | wip | 4 | - |
 | `canvas` | todo | 20 | - |
 | `stage` | todo | 2 | - |
 | `runtime` | todo | 3 | - |

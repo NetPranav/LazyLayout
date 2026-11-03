@@ -1,4 +1,4 @@
-// Active motion feel and reduced motion support ported from Nook (the owner's own product)
+// Active motion feel and reduced motion support ported from Nook (the owner's own product) & prototype
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { MOTION_PRESETS, type MotionPresetKey, type MotionPreset } from "./presets";
@@ -7,9 +7,10 @@ import { prefersReducedMotion, subscribeReducedMotion, getServerReducedMotion } 
 
 export { prefersReducedMotion } from "./reducedMotion";
 
-const STORAGE_KEY = "lazy-layout-motion-feel";
+const STORAGE_KEY = "ll-feel-v2";
+const LEGACY_STORAGE_KEY = "lazy-layout-motion-feel";
 
-let currentFeel: MotionPresetKey = "smooth";
+let currentFeel: MotionPresetKey = "bouncy";
 const feelListeners = new Set<() => void>();
 
 function notifyFeelListeners(): void {
@@ -27,7 +28,7 @@ export function subscribeFeel(callback: () => void): () => void {
 // Initialize feel from localStorage if in browser
 if (typeof window !== "undefined") {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) as MotionPresetKey | null;
+    const stored = (localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY)) as MotionPresetKey | null;
     if (stored && stored in MOTION_PRESETS) {
       currentFeel = stored;
     }
@@ -44,14 +45,14 @@ if (typeof window !== "undefined") {
   });
 }
 
-/** Return the active feel key ('smooth' | 'lively' | 'bouncy'). */
+/** Return the active feel key ('smooth' | 'lively' | 'bouncy'). Default is 'bouncy'. */
 export function getFeel(): MotionPresetKey {
   return currentFeel;
 }
 
-/** Server snapshot for feel (defaults to 'smooth' on server). */
+/** Server snapshot for feel (defaults to 'bouncy' on server). */
 export function getServerFeel(): MotionPresetKey {
-  return "smooth";
+  return "bouncy";
 }
 
 /** Return the MotionPreset object for the active feel. */
@@ -65,13 +66,14 @@ export function getActivePreset(): MotionPreset {
  */
 export function applyFeel(feel: MotionPresetKey): void {
   if (!(feel in MOTION_PRESETS)) {
-    feel = "smooth";
+    feel = "bouncy";
   }
   currentFeel = feel;
 
   try {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, feel);
+      localStorage.setItem(LEGACY_STORAGE_KEY, feel);
     }
   } catch {
     // ignore storage errors
@@ -122,4 +124,3 @@ export function useFeel() {
     reducedMotion: reduced,
   };
 }
-
