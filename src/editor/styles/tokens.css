@@ -14,6 +14,8 @@
 [data-theme="paper"] {
   /* 4px spacing grid base */
   --ll-spacing: 4px;
+  --ll-spacing-0-5: 2px;
+  --ll-spacing-px: 1px;
   --ll-spacing-1: 4px;
   --ll-spacing-2: 8px;
   --ll-spacing-3: 12px;
@@ -26,12 +28,14 @@
   --ll-spacing-16: 64px;
 
   /* Modest radius scale (Apple-level layout, no pills/capsules) */
+  --ll-radius-xs: 2px;
   --ll-radius-sm: 4px;
   --ll-radius-md: 6px;
   --ll-radius-lg: 8px;
 
   /* Hairline border */
   --ll-border-hairline: 1px;
+  --ll-outline-offset-inset: -2px;
 
   /* Layout dimensions from prototype */
   --ll-size-topbar-h: 52px;
@@ -55,6 +59,33 @@
   --ll-size-viewport-tablet: 1024px;
   --ll-size-viewport-mobile: 390px;
 
+  /* Control geometry tokens */
+  --ll-size-toggle-track-w: 34px;
+  --ll-size-toggle-track-h: 18px;
+  --ll-size-toggle-track-sm-w: 28px;
+  --ll-size-toggle-track-sm-h: 16px;
+  --ll-size-toggle-knob: 14px;
+  --ll-size-toggle-knob-sm: 12px;
+  --ll-size-tree-indent: 16px;
+  --ll-size-tree-indent-base: 12px;
+
+  /* Viewport and overlay layout tokens */
+  --ll-pt-dialog: 15vh;
+  --ll-max-h-menu: 70vh;
+  --ll-max-h-popover: 60vh;
+  --ll-submenu-gap: 4px;
+
+  /* Drop indicator shadows */
+  --ll-shadow-drop-above: inset 0 2px 0 var(--ll-control-primary-bg);
+  --ll-shadow-drop-below: inset 0 -2px 0 var(--ll-control-primary-bg);
+  --ll-shadow-drop-inside: inset 0 0 0 1px var(--ll-control-primary-bg);
+  --ll-size-menu-ctx-w: 248px;
+  --ll-size-menu-users-w: 240px;
+  --ll-size-surface-sample-w: 260px;
+  --ll-size-viewport-desktop: 1440px;
+  --ll-size-viewport-tablet: 1024px;
+  --ll-size-viewport-mobile: 390px;
+
   /* Typography - Geist & Geist Mono families */
   --ll-font-sans-family: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --ll-font-mono-family: var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -66,6 +97,11 @@
   --ll-text-display-line-height: 1.05;
   --ll-text-display-letter-spacing: -0.03em;
   --ll-text-display-weight: 600;
+
+  --ll-text-lead-size: 16px;
+  --ll-text-lead-line-height: 1.4;
+  --ll-text-lead-letter-spacing: -0.01em;
+  --ll-text-lead-weight: 500;
 
   --ll-text-title-size: 14px;
   --ll-text-title-line-height: 1.4;
@@ -86,6 +122,11 @@
   --ll-text-micro-line-height: 1.2;
   --ll-text-micro-letter-spacing: 0.08em;
   --ll-text-micro-weight: 500;
+
+  --ll-text-nano-size: 10px;
+  --ll-text-nano-line-height: 1.2;
+  --ll-text-nano-letter-spacing: 0.08em;
+  --ll-text-nano-weight: 500;
 
   /* Motion tokens from prototype (written by active feel) */
   --ll-ease-pop: ease-out;
@@ -249,4 +290,9 @@
   --ll-thumb-line: #CECDC8;
   --ll-shadow-soft: 0 4px 16px rgba(34,35,30,.1);
   --ll-accent: #CEB4F5;
+}
+
+/* Shared SVG icon stroke weight from prototype */
+svg {
+  stroke-width: 1.5;
 }

@@ -76,6 +76,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Reuse these components, and add or change them on the design system page first.
 - **Status:** open
 
+### 21 Core Components built for the new UI
+- **Area:** components
+- **Files:** `src/editor/components/` (`Button.tsx`, `IconButton.tsx`, `SegmentedControl.tsx`, `Toggle.tsx`, `Checkbox.tsx`, `Tooltip.tsx`, `TextField.tsx`, `NumberField.tsx`, `Select.tsx`, `ColorSwatchField.tsx`, `Menu.tsx`, `ContextMenu.tsx`, `Popover.tsx`, `CommandPalette.tsx`, `PanelSection.tsx`, `PropertyRow.tsx`, `ListRow.tsx`, `TreeRow.tsx`, `Tabs.tsx`, `Avatar.tsx`, `EmptyState.tsx`, `Icon.tsx`, `useMounted.ts`, `index.ts`), `src/editor/design-system/demos/ComponentDemos.tsx`
+- **What changed:** Built 21 reusable core UI components following Apple-level layout rules: strict rectangular geometry with modest radii (4px/6px/8px), hairline 1px borders, solid neutral surfaces, zero glass/blur/pill/capsule shapes. Standardized all Lucide icons to `strokeWidth={1.5}` via shared `Icon` wrapper. All spring motion goes through `src/editor/motion/` (Nook mass-1 engine). Submenus are portaled to `document.body` as independent `Surf` instances with safe-triangle hover protection, independent single glide spring highlight, wheel `endBump` with deck lock, Arrow navigation, and parent push scale (0.985). Unmounted when closed. Elastic slider removed per Retry 1 review. All components hydration-safe via `useMounted()` backed by `useSyncExternalStore`.
+- **What A/B must do:** Import components from `@/editor/components` across all rebuilt panels (`shell`, `panels/layers`, `panels/details`, `canvas`, `menus`).
+- **Status:** in progress (wip, retry 2)
+
 ### Imported candidate packages and components (as-is)
 - **Area:** imported components / design system
 - **Files:** `package.json`, `src/editor/components/imported/**`, `src/editor/design-system/DesignSystemPage.tsx`

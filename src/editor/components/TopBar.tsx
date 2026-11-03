@@ -12,6 +12,7 @@ import { Button } from "./Button";
 import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { Tooltip } from "./Tooltip";
 import { ThemeToggle } from "./ThemeToggle";
+import { Icon } from "./Icon";
 
 export type DeviceMode = "desktop" | "tablet" | "mobile";
 
@@ -45,7 +46,7 @@ export function TopBar({
       value: "desktop",
       title: "Desktop Canvas (1440px)",
       ariaLabel: "Desktop view",
-      icon: <Monitor size={16} strokeWidth={1.5} />,
+      icon: <Icon icon={Monitor} size={16} />,
       label: (
         <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
           Desktop
@@ -56,7 +57,7 @@ export function TopBar({
       value: "tablet",
       title: "Tablet Canvas (768px)",
       ariaLabel: "Tablet view",
-      icon: <Tablet size={16} strokeWidth={1.5} />,
+      icon: <Icon icon={Tablet} size={16} />,
       label: (
         <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
           Tablet
@@ -67,7 +68,7 @@ export function TopBar({
       value: "mobile",
       title: "Mobile Canvas (375px)",
       ariaLabel: "Mobile view",
-      icon: <Smartphone size={16} strokeWidth={1.5} />,
+      icon: <Icon icon={Smartphone} size={16} />,
       label: (
         <span className={compact ? "ll:hidden" : "ll:hidden ll:sm:inline"}>
           Mobile
@@ -145,7 +146,7 @@ export function TopBar({
               onClick={onUndo}
               aria-label="Undo"
             >
-              <Undo2 size={16} strokeWidth={1.5} />
+              <Icon icon={Undo2} size={16} />
             </Button>
           </Tooltip>
         </div>
@@ -161,7 +162,7 @@ export function TopBar({
               onClick={onRedo}
               aria-label="Redo"
             >
-              <Redo2 size={16} strokeWidth={1.5} />
+              <Icon icon={Redo2} size={16} />
             </Button>
           </Tooltip>
         </div>
@@ -176,7 +177,7 @@ export function TopBar({
               onClick={onSearch}
               aria-label="Search commands"
             >
-              <Search size={16} strokeWidth={1.5} />
+              <Icon icon={Search} size={16} />
             </Button>
           </Tooltip>
         </div>
@@ -208,7 +209,7 @@ export function TopBar({
             iconOnly
             aria-label="Settings"
           >
-            <Settings size={16} strokeWidth={1.5} />
+            <Icon icon={Settings} size={16} />
           </Button>
         </Tooltip>
       </div>

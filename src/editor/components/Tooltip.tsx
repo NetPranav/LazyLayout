@@ -1,10 +1,13 @@
+"use client";
+
 import React, { useState, useRef, useEffect, useCallback, useId } from "react";
+import { prefersReducedMotion } from "../motion/feel";
 
 export interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   delayMs?: number;
-  side?: "top" | "bottom";
+  side?: "top" | "bottom" | "left" | "right";
   className?: string;
   disabled?: boolean;
 }
@@ -12,14 +15,14 @@ export interface TooltipProps {
 export function Tooltip({
   content,
   children,
-  delayMs = 300,
+  delayMs = 250,
   side = "top",
   className = "",
   disabled = false,
 }: TooltipProps) {
   const tooltipId = useId();
   const [isVisible, setIsVisible] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -61,10 +64,17 @@ export function Tooltip({
     return <>{children}</>;
   }
 
-  const positionStyles =
-    side === "top"
-      ? "ll:bottom-full ll:left-1/2 ll:-translate-x-1/2 ll:mb-1.5"
-      : "ll:top-full ll:left-1/2 ll:-translate-x-1/2 ll:mt-1.5";
+  let positionStyles = "";
+  if (side === "top") {
+    positionStyles = "ll:bottom-full ll:left-1/2 ll:-translate-x-1/2 ll:mb-1.5";
+  } else if (side === "bottom") {
+    positionStyles = "ll:top-full ll:left-1/2 ll:-translate-x-1/2 ll:mt-1.5";
+  } else if (side === "left") {
+    positionStyles = "ll:right-full ll:top-1/2 ll:-translate-y-1/2 ll:mr-1.5";
+  } else {
+    // right
+    positionStyles = "ll:left-full ll:top-1/2 ll:-translate-y-1/2 ll:ml-1.5";
+  }
 
   return (
     <div
@@ -80,9 +90,13 @@ export function Tooltip({
         id={tooltipId}
         role="tooltip"
         aria-hidden={!isVisible}
-        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-nowrap ll:box-border ll:px-2 ll:py-1 ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:border ll:border-border ll:shadow-soft ll:text-micro ll:font-medium ll:transition-opacity ll:duration-swap ${positionStyles} ${
-          isVisible ? "ll:opacity-100" : "ll:opacity-0"
-        }`}
+        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-nowrap ll:box-border ll:px-2 ll:py-1 ll:bg-surface-raised ll:text-primary ll:rounded-sm ll:border ll:border-border ll:shadow-soft ll:text-micro ll:font-medium ${prefersReducedMotion()
+            ? isVisible
+              ? "ll:block"
+              : "ll:hidden"
+            : `ll:transition-opacity ll:duration-120 ${isVisible ? "ll:opacity-100 ll:scale-100" : "ll:opacity-0 ll:scale-95 ll:pointer-events-none"
+            }`
+          } ${positionStyles}`}
       >
         {content}
       </div>

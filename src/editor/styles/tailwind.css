@@ -70,6 +70,9 @@
   --text-display: var(--ll-text-display-size);
   --text-display--line-height: var(--ll-text-display-line-height);
   --text-display--letter-spacing: var(--ll-text-display-letter-spacing);
+  --text-lead: var(--ll-text-lead-size);
+  --text-lead--line-height: var(--ll-text-lead-line-height);
+  --text-lead--letter-spacing: var(--ll-text-lead-letter-spacing);
   --text-title: var(--ll-text-title-size);
   --text-title--line-height: var(--ll-text-title-line-height);
   --text-title--letter-spacing: var(--ll-text-title-letter-spacing);
@@ -82,17 +85,29 @@
   --text-micro: var(--ll-text-micro-size);
   --text-micro--line-height: var(--ll-text-micro-line-height);
   --text-micro--letter-spacing: var(--ll-text-micro-letter-spacing);
+  --text-nano: var(--ll-text-nano-size);
+  --text-nano--line-height: var(--ll-text-nano-line-height);
+  --text-nano--letter-spacing: var(--ll-text-nano-letter-spacing);
 
   --border-width-hairline: var(--ll-border-hairline);
 
+  --outline-offset-inset: var(--ll-outline-offset-inset);
+
+  --radius-xs: var(--ll-radius-xs);
   --radius-sm: var(--ll-radius-sm);
   --radius-md: var(--ll-radius-md);
   --radius-lg: var(--ll-radius-lg);
 
   --shadow-soft: var(--ll-shadow-soft);
+  --shadow-drop-above: var(--ll-shadow-drop-above);
+  --shadow-drop-below: var(--ll-shadow-drop-below);
+  --shadow-drop-inside: var(--ll-shadow-drop-inside);
 
   --container-canvas: var(--ll-canvas-max-width);
   --max-width-canvas: var(--ll-canvas-max-width);
+
+  --max-height-menu: var(--ll-max-h-menu);
+  --max-height-popover: var(--ll-max-h-popover);
 
   --duration-swap: var(--ll-duration-swap);
   --duration-pop: var(--ll-dur-pop);
@@ -106,6 +121,13 @@
   --font-weight-micro: var(--ll-text-micro-weight);
 
   /* Layout dimensions (generates ll:w-*, ll:h-*, ll:size-*) */
+  --spacing-0-5: var(--ll-spacing-0-5);
+  --spacing-sub: var(--ll-spacing-0-5);
+  --spacing-px: var(--ll-spacing-px);
+  --spacing-dialog-pt: var(--ll-pt-dialog);
+  --spacing-submenu-gap: var(--ll-submenu-gap);
+  --spacing-tree-indent: var(--ll-size-tree-indent);
+  --spacing-tree-indent-base: var(--ll-size-tree-indent-base);
   --spacing-topbar: var(--ll-size-topbar-h);
   --spacing-panel: var(--ll-size-panel-right-w);
   --spacing-panel-left: var(--ll-size-panel-left-w);
@@ -128,6 +150,12 @@
   --spacing-viewport-mobile: var(--ll-size-viewport-mobile);
 
   /* Explicit heights */
+  --height-0-5: var(--ll-spacing-0-5);
+  --height-px: var(--ll-spacing-px);
+  --height-toggle-track: var(--ll-size-toggle-track-h);
+  --height-toggle-track-sm: var(--ll-size-toggle-track-sm-h);
+  --height-toggle-knob: var(--ll-size-toggle-knob);
+  --height-toggle-knob-sm: var(--ll-size-toggle-knob-sm);
   --height-topbar: var(--ll-size-topbar-h);
   --height-header: var(--ll-size-header-h);
   --height-row: var(--ll-size-row-h);
@@ -139,6 +167,10 @@
   --height-avatar: var(--ll-size-avatar);
 
   /* Explicit widths */
+  --width-toggle-track: var(--ll-size-toggle-track-w);
+  --width-toggle-track-sm: var(--ll-size-toggle-track-sm-w);
+  --width-toggle-knob: var(--ll-size-toggle-knob);
+  --width-toggle-knob-sm: var(--ll-size-toggle-knob-sm);
   --width-panel: var(--ll-size-panel-right-w);
   --width-panel-left: var(--ll-size-panel-left-w);
   --width-panel-compact: var(--ll-size-panel-right-w-compact);

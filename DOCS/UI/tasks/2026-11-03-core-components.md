@@ -76,3 +76,33 @@ Apply the fixes Claude lists here after reviewing worker 1:
 - `PARITY.md` `design-system` row updated, `DECISIONS.md` (who chose what), `COMPONENT_SOURCES.md` for anything taken from other sites, `INTEGRATION.md` if needed.
 - Handoff in `DOCS/UI/handoffs/` from `TEMPLATE.md`.
 - No commit, no push, no full checks.
+
+## Retry 1: review failed (2026-11-03), fix all of these
+
+1. **Submenus broken:** hovering "File" hides the whole menu and no submenu appears. React re-sets `className` (`Menu.tsx:321-323`) and wipes the classes `Surf` puts on the element; never let React own classes/styles that `Surf` writes (use a wrapper or data attributes). The parent's `overflow-y-auto` clips the submenu: portal submenus or move overflow to the inner layer.
+2. **Submenu must be its own `Surf` surface** (`Menu.tsx:531-540`): wind-up, overshoot, rows in, exit squash, its own highlight and item registry (offsets are wrong now).
+3. **Wire wheel `endBump` with the deck lock** (`wheelAttach` from `src/editor/motion/`) on every Menu, SubMenu, Popover and the CommandPalette list, as in the prototype.
+4. **Menu keyboard:** focus moves into the menu on open, ArrowRight/ArrowLeft open and close submenus, type-ahead, focus returns to the trigger.
+5. **No arbitrary Tailwind values** anywhere: `outline-offset-[-2px]` (Button, Checkbox, IconButton, SegmentedControl, Select, Toggle), `text-[10px]`/`[14px]`/`[16px]` (Avatar, TreeRow, IconButton), `pt-[15vh]`, `max-h-[70vh]`/`[60vh]`, `left-[calc(100%+4px)]`, `p-[2px]`/`gap-[2px]`/`top-[2px]`/`bottom-[2px]`/`h-[2px]`/`top-[1px]`/`rounded-[2px]` (SegmentedControl, Tabs, Toggle), `shadow-[inset_…]` (TreeRow). Add tokens to `tokens.css` + `@theme` and use them.
+6. **No hardcoded sizes:** `Menu.tsx` 195-203 and 290-299 px values, `Toggle.tsx` 121 and 132-136, `TreeRow.tsx:109` indent. Use tokens (`var(--ll-…)` or `ll:` classes); measured runtime positions are fine, constants are not.
+7. **No palette copy:** remove `SERVER_LIVE_TOKENS` (`DesignSystemPage.tsx:319-480`); the server snapshot shows "—" and live values load after mount. `ElasticSlider.tsx` (102-103, 135, 174) and `ElasticSlider.css` (177-178): tokens only, or drop ElasticSlider (its license is unverified, so dropping it is preferred).
+8. **One shared icon stroke:** a single `Icon` wrapper or shared default for lucide icons at 1.5; no hand-set `strokeWidth` per icon; nothing at 1.75.
+9. **Base font:** Popover title, Toggle labels and any text rendering in a serif fallback need `ll:font-sans` (there is no Preflight).
+10. **Closed menus:** mount on open (or `inert` + `aria-hidden` while closed); no hidden `role="menu"` nodes. Remove the dead `group-hover:ll:text-primary` (`Menu.tsx:425`).
+11. **Screenshots:** Components section at 1440, 1024 and 390 in Paper and Dark (named correctly), and real shots of an open menu WITH its submenu open, the popover and the command palette. Check each image before claiming it.
+12. **Status honesty:** `PARITY.md` `design-system` and `INTEGRATION.md` must not say done until menus work. Add a "Retry 1" section to the handoff.
+
+## Retry 2: second review failed (2026-11-03), last retry
+
+The tree does not compile: `npx tsc --noEmit` has 49 errors. A bulk edit at 12:34 mangled JSX in two files. Do not run any bulk reformat or search-and-replace across files. Run `npx tsc --noEmit` and `npx eslint` yourself, and paste their real output in the handoff before claiming anything.
+
+1. `Toggle.tsx:115-140` and `TreeRow.tsx:106-135`: broken JSX (`< div`, `ref = { knobRef }`, `aria - hidden`, `aria- label`, `</button >`, stray `}}`). Restore both so they parse, and keep the tokenised TreeRow indent (item 6 of Retry 1).
+2. Remove `SERVER_LIVE_TOKENS` (`DesignSystemPage.tsx:319-480`, used at 462, 477 and 482). The server snapshot shows "—", and live values load after mount.
+3. Use the `Icon` wrapper for every lucide icon (64 hand-set `strokeWidth` props, for example `EmptyState.tsx:39`, `ListRow.tsx:65`, `TreeRow.tsx:128`, `TopBar.tsx:148`). `Check` (`Menu.tsx:582`), `ChevronRight` (`Menu.tsx:966`) and `Search` (`CommandPalette.tsx:166`) have no stroke set. Every icon goes through `Icon` at 1.5.
+4. `TreeRow.tsx:140,178`: `group-hover:ll:` is the wrong order. Use `ll:group-hover:`, add a `ll:group` parent, and prefix `transition-opacity`.
+5. Menu rows render as native grey buttons with unreadable white text. There is no Preflight, so reset each row button's background, border, color, font and padding with tokens. "File" must show a right chevron. Retake `menu-interactive-with-submenu.png` and LOOK at it.
+6. `Menu.tsx:242-243,754` (`Math.max(8, …)`) and `:143` (`new Spring(32, …)`): use tokens, or read the value from the DOM.
+7. `Toggle.tsx`: make sure Enter or Space does not toggle twice (native button plus keydown). `Popover.tsx:115`: replace `setTimeout(…, 16)` with a frame callback through the motion loop.
+8. Honest status: set `PARITY.md` `design-system` back to `wip`. Correct `INTEGRATION.md:82`. In the handoff, replace the false Retry 1 claims with the real state, and add a "Retry 2" section.
+
+Note: the menu motion design is changing in the prototype (playful, with a morphing side submenu and blur). A follow-up task will port it. For now, make the current menus work, compile and look right.

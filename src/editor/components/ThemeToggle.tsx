@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef, useSyncExternalStore } from "react";
-import { Palette, Check } from "lucide-react";
+import React, { useState, useCallback, useRef, useSyncExternalStore } from "react";
+import { Palette } from "lucide-react";
+import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { Tooltip } from "./Tooltip";
+import { Menu, MenuItem } from "./Menu";
 
 export type Theme = "paper" | "dark" | "white" | "warm" | "lilac";
 
@@ -121,33 +123,13 @@ export interface ThemeToggleProps {
 export function ThemeToggle({ size = "md", className = "", mode = "menu" }: ThemeToggleProps) {
   const [theme, selectTheme] = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close menu on click outside
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [menuOpen]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const handleSelect = useCallback(
     (nextTheme: Theme) => {
       selectTheme(nextTheme);
       setMenuOpen(false);
+      triggerRef.current?.focus();
     },
     [selectTheme]
   );
@@ -170,9 +152,10 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
   const currentLabel = THEMES.find((t) => t.id === theme)?.label ?? "Paper (Default)";
 
   return (
-    <div ref={containerRef} className="ll:relative ll:inline-flex">
+    <div className="ll:relative ll:inline-flex">
       <Tooltip content={`Theme: ${currentLabel}`}>
         <Button
+          ref={triggerRef}
           variant="ghost"
           size={size}
           iconOnly
@@ -182,43 +165,39 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
           aria-expanded={mode === "menu" ? menuOpen : undefined}
           className={className}
         >
-          <Palette size={iconSize} strokeWidth={1.5} />
+          <Icon icon={Palette} size={iconSize} />
         </Button>
       </Tooltip>
 
-      {mode === "menu" && menuOpen && (
-        <div
-          role="menu"
+      {mode === "menu" && (
+        <Menu
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          anchorRef={triggerRef}
+          width={200}
           aria-label="Select theme"
-          className="ll:absolute ll:right-0 ll:top-full ll:mt-1 ll:z-50 ll:w-48 ll:py-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft"
         >
           {THEMES.map((t) => {
             const isSelected = theme === t.id;
             return (
-              <button
+              <MenuItem
                 key={t.id}
-                role="menuitem"
-                type="button"
+                role="menuitemradio"
+                checked={isSelected}
                 onClick={() => handleSelect(t.id)}
-                className={`ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-left ll:transition-none ll:select-none ${
-                  isSelected
-                    ? "ll:bg-surface-hover ll:text-primary ll:font-medium"
-                    : "ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
-                }`}
+                icon={
+                  <span
+                    data-theme={t.id}
+                    className="ll:w-3.5 ll:h-3.5 ll:rounded-sm ll:border ll:border-swatch-line ll:bg-surface-panel ll:shrink-0"
+                    aria-hidden="true"
+                  />
+                }
               >
-                <span
-                  data-theme={t.id}
-                  className="ll:w-3.5 ll:h-3.5 ll:rounded-sm ll:border ll:border-swatch-line ll:bg-surface-panel ll:shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="ll:flex-1 ll:truncate">{t.label}</span>
-                {isSelected && (
-                  <Check size={14} strokeWidth={2} className="ll:text-primary ll:shrink-0" />
-                )}
-              </button>
+                {t.label}
+              </MenuItem>
             );
           })}
-        </div>
+        </Menu>
       )}
     </div>
   );

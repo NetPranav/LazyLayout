@@ -30,14 +30,14 @@
   display: flow-root;
 }
 
-.vpop > .ll-lay,
-.ppop > .ll-lay {
+.vpop>.ll-lay,
+.ppop>.ll-lay {
   display: flex;
   flex-direction: column;
   flex: none;
 }
 
-.ins > .ll-lay {
+.ins>.ll-lay {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -64,8 +64,77 @@
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ll-hl {
-    transition: none;
-  }
+/* Menu highlight corners and keyboard focus ring from prototype */
+.menu:not(.ctx) .ll-hl {
+  border-radius: 0;
 }
+
+.menu.kb .ll-hl {
+  outline: 2px solid var(--ll-text-primary);
+  outline-offset: var(--ll-outline-offset-inset);
+}
+
+/* Submenu chevron right-facing */
+.menu .chv {
+  transition: transform var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.menu [role=menuitem].subopen .chv,
+.menu [role=menuitem][aria-expanded="true"] .chv {
+  transform: translateX(1px);
+}
+
+/* Parent menu push when submenu opens */
+.menu.open {
+  transition: scale var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.menu.open.pushed,
+.menu.open[data-pushed="true"] {
+  scale: 0.985;
+}
+
+.menu .ll-lay> :not(.ll-hl) {
+  transition: opacity var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.menu.pushed .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl),
+.menu[data-pushed="true"] .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl) {
+  opacity: 0.6;
+}
+
+/* Submenu safe bridge */
+.menu[data-submenu]::after,
+.menu.ctx[data-submenu]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  width: 4px;
+}
+
+.menu[data-submenu].flip::after,
+.menu.ctx[data-submenu].flip::after {
+  left: auto;
+  right: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ll-hl,
+    .menu.open,
+    .menu .ll-lay> :not(.ll-hl),
+    .menu .chv {
+      transition: none;
+    }
+
+    .menu.open.pushed,
+    .menu.open[data-pushed="true"] {
+      scale: none;
+    }
+
+    .menu.pushed .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl),
+    .menu[data-pushed="true"] .ll-lay> :not(.subopen):not([aria-expanded="true"]):not(.on):not(.ll-hl) {
+      opacity: 1;
+    }
+  }

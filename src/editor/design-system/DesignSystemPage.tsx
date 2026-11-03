@@ -4,62 +4,46 @@ import React, { useEffect, useState, useRef, useCallback, useSyncExternalStore }
 import { Swatch } from "../components/Swatch";
 import { WorkspaceFrame } from "../components/WorkspaceFrame";
 import { Button } from "../components/Button";
-import { SegmentedControl } from "../components/SegmentedControl";
-import { Tooltip } from "../components/Tooltip";
+import { Icon } from "../components/Icon";
 import { TopBar, type DeviceMode } from "../components/TopBar";
-import { ThemeToggle, THEMES, type Theme, useTheme } from "../components/ThemeToggle";
+import { ThemeToggle, type Theme, useTheme } from "../components/ThemeToggle";
 import { MotionDemo } from "./MotionDemo";
 
-// Imported (as-is) components
-import SquishSwitch from "../components/imported/squish-switch/SquishSwitch";
-import ScrubField from "../components/imported/scrub-field/ScrubField";
-import ElasticSlider from "../components/imported/elastic-slider/ElasticSlider";
+// Kept imported components
 import {
   Cursor,
   CursorContainer,
   CursorFollow,
   CursorProvider,
 } from "../components/imported/cursor";
-import {
-  AvatarGroup,
-  AvatarGroupTooltip,
-  AvatarGroupTooltipArrow,
-} from "../components/imported/avatar-group";
-import {
-  Tooltip as ImportedTooltip,
-  TooltipArrow as ImportedTooltipArrow,
-  TooltipContent as ImportedTooltipContent,
-  TooltipProvider as ImportedTooltipProvider,
-  TooltipTrigger as ImportedTooltipTrigger,
-} from "../components/imported/tooltip";
-import { Select as ImportedSelect } from "../components/imported/select";
-import {
-  Menubar as ImportedMenubar,
-  Menu as ImportedMenubarMenu,
-} from "../components/imported/menubar";
-import { Menu as ImportedDropdownMenu } from "../components/imported/dropdown-menu";
-import { ContextMenu as ImportedContextMenu } from "../components/imported/context-menu";
 import { ScrollFade as ImportedScrollFade } from "../components/imported/scroll-fade";
+
+// Core components demos
 import {
-  FileTree as ImportedFileTree,
-  type FileTreeElement,
-} from "../components/imported/unlumen-ui/file-tree";
-import {
-  Monitor,
-  Tablet,
-  Smartphone,
-  Undo2,
-  Redo2,
-  Search,
-  Settings,
-  Sparkles,
-  Download,
-  Share2,
-  Sun,
-  Moon,
-  Check,
-  Menu as MenuIcon,
-} from "lucide-react";
+  ButtonDemo,
+  IconButtonDemo,
+  SegmentedControlDemo,
+  ToggleDemo,
+  CheckboxDemo,
+  TooltipDemo,
+  TextFieldDemo,
+  NumberFieldDemo,
+  SelectDemo,
+  ColorSwatchFieldDemo,
+  MenuDemo,
+  ContextMenuDemo,
+  PopoverDemo,
+  CommandPaletteDemo,
+  PanelSectionDemo,
+  PropertyRowDemo,
+  ListRowDemo,
+  TreeRowDemo,
+  TabsDemo,
+  AvatarDemo,
+  EmptyStateDemo,
+} from "./demos/ComponentDemos";
+
+import { Menu as MenuIcon } from "lucide-react";
 
 type NavSectionId =
   | "colors"
@@ -70,24 +54,33 @@ type NavSectionId =
   | "sizes"
   | "motion"
   | "button"
+  | "icon-button"
   | "segmented-control"
+  | "toggle"
+  | "checkbox"
   | "tooltip"
+  | "text-field"
+  | "number-field"
+  | "select"
+  | "color-swatch-field"
+  | "menu"
+  | "context-menu"
+  | "popover"
+  | "command-palette"
+  | "panel-section"
+  | "property-row"
+  | "list-row"
+  | "tree-row"
+  | "tabs"
+  | "avatar"
+  | "empty-state"
   | "top-bar"
   | "theme-toggle"
   | "swatch"
   | "workspace-frame"
-  | "imported-squish-switch"
-  | "imported-scrub-field"
-  | "imported-elastic-slider"
   | "imported-cursor"
-  | "imported-avatar-group"
-  | "imported-tooltip"
-  | "imported-select"
-  | "imported-menubar"
-  | "imported-dropdown-menu"
-  | "imported-context-menu"
-  | "imported-scroll-fade"
-  | "imported-file-tree";
+  | "imported-elastic-slider"
+  | "imported-scroll-fade";
 
 interface NavItem {
   id: NavSectionId;
@@ -106,8 +99,26 @@ const FOUNDATIONS_NAV: readonly NavItem[] = [
 
 const COMPONENTS_NAV: readonly NavItem[] = [
   { id: "button", label: "Button" },
+  { id: "icon-button", label: "IconButton" },
   { id: "segmented-control", label: "SegmentedControl" },
+  { id: "toggle", label: "Toggle" },
+  { id: "checkbox", label: "Checkbox" },
   { id: "tooltip", label: "Tooltip" },
+  { id: "text-field", label: "TextField" },
+  { id: "number-field", label: "NumberField" },
+  { id: "select", label: "Select" },
+  { id: "color-swatch-field", label: "ColorSwatchField" },
+  { id: "menu", label: "Menu" },
+  { id: "context-menu", label: "ContextMenu" },
+  { id: "popover", label: "Popover" },
+  { id: "command-palette", label: "CommandPalette" },
+  { id: "panel-section", label: "PanelSection" },
+  { id: "property-row", label: "PropertyRow" },
+  { id: "list-row", label: "ListRow" },
+  { id: "tree-row", label: "TreeRow" },
+  { id: "tabs", label: "Tabs" },
+  { id: "avatar", label: "Avatar & Ship" },
+  { id: "empty-state", label: "EmptyState" },
   { id: "top-bar", label: "TopBar" },
   { id: "theme-toggle", label: "ThemeToggle" },
   { id: "swatch", label: "Swatch" },
@@ -115,18 +126,8 @@ const COMPONENTS_NAV: readonly NavItem[] = [
 ];
 
 const IMPORTED_NAV: readonly NavItem[] = [
-  { id: "imported-squish-switch", label: "SquishSwitch" },
-  { id: "imported-scrub-field", label: "ScrubField" },
-  { id: "imported-elastic-slider", label: "ElasticSlider" },
   { id: "imported-cursor", label: "Cursor" },
-  { id: "imported-avatar-group", label: "Avatar Group" },
-  { id: "imported-tooltip", label: "Tooltip (imported)" },
-  { id: "imported-select", label: "Select" },
-  { id: "imported-menubar", label: "Menubar" },
-  { id: "imported-dropdown-menu", label: "Dropdown Menu" },
-  { id: "imported-context-menu", label: "Context Menu" },
   { id: "imported-scroll-fade", label: "Scroll Fade" },
-  { id: "imported-file-tree", label: "File Tree" },
 ];
 
 const ALL_NAV = [...FOUNDATIONS_NAV, ...COMPONENTS_NAV, ...IMPORTED_NAV];
@@ -298,106 +299,51 @@ const SEMANTIC_ROLES: readonly SemanticRole[] = [
 ];
 
 const THEME_LIST: readonly { id: Theme; label: string }[] = [
-  { id: "paper", label: "Paper (Def)" },
+  { id: "paper", label: "Paper (Default)" },
   { id: "dark", label: "Dark" },
   { id: "white", label: "White" },
   { id: "warm", label: "Warm" },
   { id: "lilac", label: "Lilac" },
 ];
 
-function rgbToHex(color: string): string {
-  const c = color.trim().toLowerCase();
-  if (c.startsWith("#")) return c.toUpperCase();
-  if (c === "transparent" || c === "rgba(0, 0, 0, 0)" || c === "none") return "None";
-  const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (m) {
-    const r = parseInt(m[1], 10).toString(16).padStart(2, "0");
-    const g = parseInt(m[2], 10).toString(16).padStart(2, "0");
-    const b = parseInt(m[3], 10).toString(16).padStart(2, "0");
-    return `#${r}${g}${b}`.toUpperCase();
-  }
-  return color;
+function rgbToHex(rgbStr: string): string {
+  const match = rgbStr.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) return rgbStr.startsWith("#") ? rgbStr.toUpperCase() : rgbStr;
+  const r = parseInt(match[1], 10).toString(16).padStart(2, "0");
+  const g = parseInt(match[2], 10).toString(16).padStart(2, "0");
+  const b = parseInt(match[3], 10).toString(16).padStart(2, "0");
+  return `#${r}${g}${b}`.toUpperCase();
 }
 
-function parseColor(color: string): [number, number, number] | null {
-  const c = color.trim().toLowerCase();
-  if (c.startsWith("#")) {
-    let hex = c.slice(1);
-    if (hex.length === 3) {
-      hex = hex.split("").map((x) => x + x).join("");
-    }
-    if (hex.length === 6) {
-      const num = parseInt(hex, 16);
-      return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
-    }
-  }
-  const rgbMatch = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (rgbMatch) {
-    return [parseInt(rgbMatch[1], 10), parseInt(rgbMatch[2], 10), parseInt(rgbMatch[3], 10)];
-  }
-  return null;
-}
-
-function getLuminance(r: number, g: number, b: number): number {
-  const [rs, gs, bs] = [r, g, b].map((val) => {
-    const s = val / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-}
-
-function getContrastRatio(fg: string, bg: string): { formatted: string; grade: string } {
-  const c1 = parseColor(fg);
-  const c2 = parseColor(bg);
-  if (!c1 || !c2) return { formatted: "—", grade: "—" };
-  const l1 = getLuminance(c1[0], c1[1], c1[2]);
-  const l2 = getLuminance(c2[0], c2[1], c2[2]);
-  const brighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  const ratio = (brighter + 0.05) / (darker + 0.05);
-  return {
-    formatted: `${ratio.toFixed(1)}:1`,
-    grade: ratio >= 7 ? "AAA" : ratio >= 4.5 ? "AA" : "Fail",
-  };
-}
-
-const SERVER_LIVE_TOKENS: Record<Theme, Record<string, string>> = {
-  paper: Object.fromEntries(SEMANTIC_ROLES.map((s) => [s.token, "—"])),
-  dark: Object.fromEntries(SEMANTIC_ROLES.map((s) => [s.token, "—"])),
-  white: Object.fromEntries(SEMANTIC_ROLES.map((s) => [s.token, "—"])),
-  warm: Object.fromEntries(SEMANTIC_ROLES.map((s) => [s.token, "—"])),
-  lilac: Object.fromEntries(SEMANTIC_ROLES.map((s) => [s.token, "—"])),
+const EMPTY_LIVE_TOKENS: Record<Theme, Record<string, string>> = {
+  paper: {},
+  dark: {},
+  white: {},
+  warm: {},
+  lilac: {},
 };
 
-let liveTokensCache: Record<Theme, Record<string, string>> = SERVER_LIVE_TOKENS;
-const tokenSubscribers = new Set<() => void>();
+let cachedLiveTokens: Record<Theme, Record<string, string>> = EMPTY_LIVE_TOKENS;
+const liveTokensListeners = new Set<() => void>();
 
-function subscribeLiveTokens(callback: () => void): () => void {
-  tokenSubscribers.add(callback);
-
-  if (typeof window !== "undefined" && liveTokensCache === SERVER_LIVE_TOKENS) {
-    queueMicrotask(() => {
-      liveTokensCache = readLiveThemeTokens();
-      tokenSubscribers.forEach((fn) => fn());
-    });
-  }
-
+function subscribeLiveTokens(cb: () => void) {
+  liveTokensListeners.add(cb);
   return () => {
-    tokenSubscribers.delete(callback);
+    liveTokensListeners.delete(cb);
   };
 }
 
-function getLiveTokensSnapshot(): Record<Theme, Record<string, string>> {
-  return liveTokensCache;
+function getLiveTokensSnapshot() {
+  return cachedLiveTokens;
 }
 
-function getServerLiveTokensSnapshot(): Record<Theme, Record<string, string>> {
-  return SERVER_LIVE_TOKENS;
+function getServerLiveTokensSnapshot() {
+  return EMPTY_LIVE_TOKENS;
 }
 
-function readLiveThemeTokens(): Record<Theme, Record<string, string>> {
+function computeLiveTokensClient(): Record<Theme, Record<string, string>> {
   if (typeof document === "undefined") {
-    return SERVER_LIVE_TOKENS;
+    return EMPTY_LIVE_TOKENS;
   }
   const result: Record<Theme, Record<string, string>> = {
     paper: {},
@@ -460,69 +406,9 @@ const SPACING_STEPS = [
   { token: "--ll-spacing-16", px: 64, widthClass: "ll:w-16" },
 ];
 
-// Demo components for Imported (as-is)
-function SquishSwitchDemo() {
-  const [airplane, setAirplane] = useState(false);
-  return (
-    <SquishSwitch
-      checked={airplane}
-      onChange={setAirplane}
-      label="Airplane mode"
-      trackColor="#27272a"
-      trackOnColor="#f5f5f5"
-      width={76}
-      height={38}
-      radius={19}
-      speed={50}
-      stretch={36}
-      hoverScale={1.035}
-      colorDuration={320}
-    />
-  );
-}
-
-function ScrubFieldDemo() {
-  const [_radius, setRadius] = useState(24);
-  return (
-    <ScrubField
-      label="Radius"
-      suffix="px"
-      defaultValue={24}
-      min={0}
-      max={100}
-      step={1}
-      size="md"
-      sensitivity={2}
-      rubberReach={8}
-      returnDuration={300}
-      coarseMultiplier={10}
-      fineMultiplier={0.1}
-      showDelta
-      showDirty={false}
-      showFill
-      accent="#f5f5f5"
-      chipColor="#27272a"
-      onChange={(value) => setRadius(value)}
-      onCommit={(value) => setRadius(value)}
-    />
-  );
-}
-
-function ElasticSliderDemo() {
-  return (
-    <ElasticSlider
-      defaultValue={50}
-      startingValue={0}
-      maxValue={100}
-      isStepped
-      stepSize={1}
-    />
-  );
-}
-
 function CursorDemo() {
   return (
-    <div className="relative h-72 w-full border border-dashed border-border flex items-center justify-center">
+    <div className="ll:relative ll:h-72 ll:w-full ll:border ll:border-dashed ll:border-border ll:flex ll:items-center ll:justify-center">
       <CursorProvider>
         <CursorContainer>
           <Cursor>
@@ -531,198 +417,14 @@ function CursorDemo() {
             </svg>
           </Cursor>
           <CursorFollow side="bottom" align="end">
-            <span className="text-xs bg-control-primary text-control-primary-fg px-2 py-0.5 rounded">
+            <span className="ll:text-micro ll:bg-control-primary ll:text-control-primary-fg ll:px-2 ll:py-0.5 ll:rounded-sm">
               Designer
             </span>
           </CursorFollow>
-          <span className="text-small text-secondary">Move cursor within this area</span>
+          <span className="ll:text-small ll:text-secondary">Move cursor within this area</span>
         </CursorContainer>
       </CursorProvider>
     </div>
-  );
-}
-
-const AVATAR_PEOPLE = [
-  { name: "Skyleen", src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" },
-  { name: "Alex", src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
-  { name: "Elena", src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
-];
-
-function AvatarGroupDemo() {
-  return (
-    <div className="flex flex-col gap-6">
-      <AvatarGroup className="h-12 -space-x-3 flex items-center" invertOverlap>
-        {AVATAR_PEOPLE.map((person) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={person.name}
-            src={person.src}
-            alt={person.name}
-            className="size-12 rounded-full border-2 border-background object-cover"
-          />
-        ))}
-      </AvatarGroup>
-      <div className="flex items-center gap-2">
-        <div className="relative size-12 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-semibold">
-          SK
-          <AvatarGroupTooltip className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
-            <AvatarGroupTooltipArrow className="size-2.5 fill-foreground" />
-            <p>Skyleen</p>
-          </AvatarGroupTooltip>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ImportedTooltipDemo() {
-  return (
-    <ImportedTooltipProvider>
-      <div className="flex items-center gap-4">
-        <ImportedTooltip>
-          <ImportedTooltipTrigger asChild>
-            <button type="button" aria-label="Bold" className="px-3 py-1.5 border border-border rounded font-bold">B</button>
-          </ImportedTooltipTrigger>
-          <ImportedTooltipContent className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
-            <ImportedTooltipArrow className="size-2.5 fill-foreground" />
-            <p>Bold</p>
-          </ImportedTooltipContent>
-        </ImportedTooltip>
-
-        <ImportedTooltip side="bottom">
-          <ImportedTooltipTrigger asChild>
-            <button type="button" aria-label="Italic" className="px-3 py-1.5 border border-border rounded italic font-serif">I</button>
-          </ImportedTooltipTrigger>
-          <ImportedTooltipContent className="rounded-md bg-foreground px-3 py-1.5 text-xs text-background">
-            <ImportedTooltipArrow className="size-2.5 fill-foreground" />
-            <p>Italic</p>
-          </ImportedTooltipContent>
-        </ImportedTooltip>
-      </div>
-    </ImportedTooltipProvider>
-  );
-}
-
-const SELECT_FRAMEWORKS = [
-  { label: "React", value: "react" },
-  { label: "Vue", value: "vue" },
-  { label: "Svelte", value: "svelte" },
-  { label: "Solid", value: "solid" },
-];
-
-function SelectDemo() {
-  const [val, setVal] = useState("react");
-  return (
-    <div className="ll:w-64">
-      <ImportedSelect.Root
-        items={SELECT_FRAMEWORKS}
-        value={val}
-        onValueChange={(next) => {
-          if (next) setVal(next);
-        }}
-      >
-        <ImportedSelect.Trigger aria-label="Framework">
-          <ImportedSelect.Value placeholder="Select framework..." />
-          <ImportedSelect.Icon />
-        </ImportedSelect.Trigger>
-        <ImportedSelect.Portal>
-          <ImportedSelect.Positioner alignItemWithTrigger={false} sideOffset={4}>
-            <ImportedSelect.Popup>
-              <ImportedSelect.List>
-                {SELECT_FRAMEWORKS.map((framework) => (
-                  <ImportedSelect.Item key={framework.value} value={framework.value}>
-                    <ImportedSelect.ItemText>{framework.label}</ImportedSelect.ItemText>
-                    <ImportedSelect.ItemIndicator>✓</ImportedSelect.ItemIndicator>
-                  </ImportedSelect.Item>
-                ))}
-              </ImportedSelect.List>
-            </ImportedSelect.Popup>
-          </ImportedSelect.Positioner>
-        </ImportedSelect.Portal>
-      </ImportedSelect.Root>
-    </div>
-  );
-}
-
-function MenubarDemo() {
-  return (
-    <ImportedMenubar className="ll:w-full ll:max-w-md ll:border ll:border-border ll:rounded-md ll:px-2 ll:py-1 ll:flex ll:items-center ll:gap-4">
-      <ImportedMenubarMenu.Root>
-        <ImportedMenubarMenu.Trigger>File</ImportedMenubarMenu.Trigger>
-        <ImportedMenubarMenu.Portal>
-          <ImportedMenubarMenu.Positioner sideOffset={8}>
-            <ImportedMenubarMenu.Popup>
-              <ImportedMenubarMenu.Item>New file</ImportedMenubarMenu.Item>
-              <ImportedMenubarMenu.Item>Save</ImportedMenubarMenu.Item>
-            </ImportedMenubarMenu.Popup>
-          </ImportedMenubarMenu.Positioner>
-        </ImportedMenubarMenu.Portal>
-      </ImportedMenubarMenu.Root>
-      <ImportedMenubarMenu.Root>
-        <ImportedMenubarMenu.Trigger>Edit</ImportedMenubarMenu.Trigger>
-        <ImportedMenubarMenu.Portal>
-          <ImportedMenubarMenu.Positioner sideOffset={8}>
-            <ImportedMenubarMenu.Popup>
-              <ImportedMenubarMenu.Item>Undo</ImportedMenubarMenu.Item>
-              <ImportedMenubarMenu.Item>Redo</ImportedMenubarMenu.Item>
-            </ImportedMenubarMenu.Popup>
-          </ImportedMenubarMenu.Positioner>
-        </ImportedMenubarMenu.Portal>
-      </ImportedMenubarMenu.Root>
-      <ImportedMenubarMenu.Root>
-        <ImportedMenubarMenu.Trigger>View</ImportedMenubarMenu.Trigger>
-        <ImportedMenubarMenu.Portal>
-          <ImportedMenubarMenu.Positioner sideOffset={8}>
-            <ImportedMenubarMenu.Popup>
-              <ImportedMenubarMenu.Item>Zoom In</ImportedMenubarMenu.Item>
-              <ImportedMenubarMenu.Item>Zoom Out</ImportedMenubarMenu.Item>
-            </ImportedMenubarMenu.Popup>
-          </ImportedMenubarMenu.Positioner>
-        </ImportedMenubarMenu.Portal>
-      </ImportedMenubarMenu.Root>
-    </ImportedMenubar>
-  );
-}
-
-function DropdownMenuDemo() {
-  return (
-    <div className="ll:flex ll:items-center ll:justify-center">
-      <ImportedDropdownMenu.Root>
-        <ImportedDropdownMenu.Trigger>
-          Open Menu
-        </ImportedDropdownMenu.Trigger>
-        <ImportedDropdownMenu.Portal>
-          <ImportedDropdownMenu.Positioner sideOffset={4}>
-            <ImportedDropdownMenu.Popup>
-              <ImportedDropdownMenu.Item>Profile</ImportedDropdownMenu.Item>
-              <ImportedDropdownMenu.Item>Billing</ImportedDropdownMenu.Item>
-              <ImportedDropdownMenu.Separator />
-              <ImportedDropdownMenu.Item>Log out</ImportedDropdownMenu.Item>
-            </ImportedDropdownMenu.Popup>
-          </ImportedDropdownMenu.Positioner>
-        </ImportedDropdownMenu.Portal>
-      </ImportedDropdownMenu.Root>
-    </div>
-  );
-}
-
-function ContextMenuDemo() {
-  return (
-    <ImportedContextMenu.Root>
-      <ImportedContextMenu.Trigger className="ll:h-40 ll:w-full ll:max-w-md ll:border ll:border-dashed ll:border-border ll:rounded-md ll:flex ll:items-center ll:justify-center ll:text-small ll:text-secondary">
-        Right-click in this box
-      </ImportedContextMenu.Trigger>
-      <ImportedContextMenu.Portal>
-        <ImportedContextMenu.Positioner>
-          <ImportedContextMenu.Popup>
-            <ImportedContextMenu.Item>Undo</ImportedContextMenu.Item>
-            <ImportedContextMenu.Item>Duplicate</ImportedContextMenu.Item>
-            <ImportedContextMenu.Separator />
-            <ImportedContextMenu.Item>Delete</ImportedContextMenu.Item>
-          </ImportedContextMenu.Popup>
-        </ImportedContextMenu.Positioner>
-      </ImportedContextMenu.Portal>
-    </ImportedContextMenu.Root>
   );
 }
 
@@ -731,7 +433,7 @@ function ScrollFadeDemo() {
     <div className="ll:h-48 ll:w-full ll:max-w-sm ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:relative">
       <ImportedScrollFade className="ll:h-full ll:p-4 ll:overflow-y-auto ll:flex ll:flex-col ll:gap-3">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="ll:p-2 ll:border ll:border-border ll:rounded ll:text-small">
+          <div key={i} className="ll:p-2 ll:border ll:border-border ll:rounded-sm ll:text-small ll:text-primary">
             Scrollable timeline track {i + 1}
           </div>
         ))}
@@ -740,47 +442,20 @@ function ScrollFadeDemo() {
   );
 }
 
-const FILE_TREE_DATA: FileTreeElement[] = [
-  {
-    id: "1",
-    name: "src",
-    type: "folder",
-    defaultOpen: true,
-    children: [
-      {
-        id: "2",
-        name: "components",
-        type: "folder",
-        defaultOpen: true,
-        children: [
-          { id: "3", name: "Button.tsx", type: "file" },
-          { id: "4", name: "TopBar.tsx", type: "file" },
-          { id: "5", name: "ThemeToggle.tsx", type: "file" },
-        ],
-      },
-      { id: "6", name: "index.ts", type: "file" },
-    ],
-  },
-];
-
-function FileTreeDemo() {
-  return (
-    <div className="ll:w-full ll:max-w-xs ll:border ll:border-border ll:rounded-md ll:p-2">
-      <ImportedFileTree elements={FILE_TREE_DATA} defaultOpenIds={["1", "2"]} />
-    </div>
-  );
-}
-
 export function DesignSystemPage() {
   const [activeSection, setActiveSection] = useState<NavSectionId>("colors");
-  const [activeTheme, setActiveTheme] = useTheme();
+  const [activeTheme] = useTheme();
   const liveTokens = useSyncExternalStore(subscribeLiveTokens, getLiveTokensSnapshot, getServerLiveTokensSnapshot);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Demo state for SegmentedControl and TopBar
-  const [demoDevice, setDemoDevice] = useState<DeviceMode>("desktop");
+  // Demo state for TopBar
   const [topBarDevice, setTopBarDevice] = useState<DeviceMode>("desktop");
+
+  useEffect(() => {
+    cachedLiveTokens = computeLiveTokensClient();
+    liveTokensListeners.forEach((fn) => fn());
+  }, []);
 
   // Hash-based routing for bookmarking and direct links
   useEffect(() => {
@@ -802,7 +477,6 @@ export function DesignSystemPage() {
     setMobileNavOpen(false);
   }, []);
 
-  // Keyboard navigation for nav list (arrow keys & Enter/Space)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, index: number) => {
       if (e.key === "ArrowDown") {
@@ -823,7 +497,6 @@ export function DesignSystemPage() {
 
   return (
     <div className="design-system-root ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-backdrop ll:p-4 ll:box-border ll:font-sans ll:text-primary">
-      {/* App frame: 16px inset on surface-backdrop, modest 8px radius, hairline border, soft shadow */}
       <div className="ll:w-full ll:h-full ll:rounded-lg ll:border ll:border-border ll:shadow-soft ll:overflow-hidden ll:isolate ll:flex ll:flex-col ll:xl:flex-row ll:bg-surface-canvas">
         {/* Mobile & Tablet Top Bar (< xl) */}
         <div className="ll:p-3 ll:border-b ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:bg-surface-panel ll:xl:hidden">
@@ -835,7 +508,7 @@ export function DesignSystemPage() {
               onClick={() => setMobileNavOpen((prev) => !prev)}
               aria-label="Toggle navigation menu"
             >
-              <MenuIcon size={16} />
+              <Icon icon={MenuIcon} size={16} />
             </Button>
             <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
               {ALL_NAV.find((n) => n.id === activeSection)?.label ?? "Design System"}
@@ -844,13 +517,12 @@ export function DesignSystemPage() {
           <ThemeToggle size="sm" />
         </div>
 
-        {/* Navigation Panel: Drawer on mobile/tablet, right sidebar on desktop (fixed 320px) */}
+        {/* Navigation Panel */}
         <aside
           className={`${
             mobileNavOpen ? "ll:flex" : "ll:hidden"
           } ll:xl:flex ll:w-full ll:xl:w-80 ll:xl:h-full ll:bg-surface-panel ll:xl:order-last ll:border-b ll:xl:border-b-0 ll:xl:border-l ll:border-border ll:flex-col ll:shrink-0 ll:overflow-y-auto ll:max-h-80 ll:xl:max-h-full`}
         >
-          {/* Header with ThemeToggle (desktop only) */}
           <div className="ll:hidden ll:xl:flex ll:p-4 ll:border-b ll:border-border ll:items-center ll:justify-between ll:gap-2">
             <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
               Design System
@@ -858,7 +530,6 @@ export function DesignSystemPage() {
             <ThemeToggle size="sm" />
           </div>
 
-          {/* Navigation groups */}
           <nav aria-label="Design system navigation" className="ll:p-3 ll:flex ll:flex-col ll:gap-4">
             {/* Foundations group */}
             <div className="ll:flex ll:flex-col ll:gap-1">
@@ -878,7 +549,7 @@ export function DesignSystemPage() {
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
                             ? "ll:bg-control-primary ll:text-control-primary-fg"
                             : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
@@ -892,7 +563,6 @@ export function DesignSystemPage() {
               </ul>
             </div>
 
-            {/* Hairline divider */}
             <div className="ll:h-px ll:w-full ll:bg-border" />
 
             {/* Components group */}
@@ -902,19 +572,19 @@ export function DesignSystemPage() {
               </div>
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
                 {COMPONENTS_NAV.map((item, index) => {
-                  const globalIndex = FOUNDATIONS_NAV.length + index;
+                  const globalIdx = FOUNDATIONS_NAV.length + index;
                   const isSelected = activeSection === item.id;
                   return (
                     <li key={item.id}>
                       <button
                         ref={(el) => {
-                          navButtonRefs.current[globalIndex] = el;
+                          navButtonRefs.current[globalIdx] = el;
                         }}
                         type="button"
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+                        onKeyDown={(e) => handleKeyDown(e, globalIdx)}
+                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
                             ? "ll:bg-control-primary ll:text-control-primary-fg"
                             : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
@@ -928,29 +598,28 @@ export function DesignSystemPage() {
               </ul>
             </div>
 
-            {/* Hairline divider */}
             <div className="ll:h-px ll:w-full ll:bg-border" />
 
-            {/* Imported (as-is) group */}
+            {/* Kept Imported group */}
             <div className="ll:flex ll:flex-col ll:gap-1">
               <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                Imported (as-is)
+                Kept Imported
               </div>
               <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
                 {IMPORTED_NAV.map((item, index) => {
-                  const globalIndex = FOUNDATIONS_NAV.length + COMPONENTS_NAV.length + index;
+                  const globalIdx = FOUNDATIONS_NAV.length + COMPONENTS_NAV.length + index;
                   const isSelected = activeSection === item.id;
                   return (
                     <li key={item.id}>
                       <button
                         ref={(el) => {
-                          navButtonRefs.current[globalIndex] = el;
+                          navButtonRefs.current[globalIdx] = el;
                         }}
                         type="button"
                         aria-current={isSelected ? "page" : undefined}
                         onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                        className={`ll:w-full ll:h-11 ll:min-h-11 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-body ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+                        onKeyDown={(e) => handleKeyDown(e, globalIdx)}
+                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
                           isSelected
                             ? "ll:bg-control-primary ll:text-control-primary-fg"
                             : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
@@ -966,328 +635,113 @@ export function DesignSystemPage() {
           </nav>
         </aside>
 
-        {/* Canvas (left, takes remaining width, content strictly centered) */}
-        <main className="ll:flex-1 ll:h-full ll:overflow-y-auto ll:p-6 ll:sm:p-8 ll:md:p-12 ll:flex ll:flex-col ll:items-center">
-          <div key={activeSection} className="ll:w-full ll:max-w-canvas">
+        {/* Main Canvas Area */}
+        <main className="ll:flex-1 ll:h-full ll:overflow-y-auto ll:p-6 ll:sm:p-8 ll:xl:p-12">
+          <div className="ll:max-w-canvas ll:mx-auto ll:flex ll:flex-col ll:gap-8">
+            {/* Foundations */}
             {activeSection === "colors" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Colors &amp; Semantic Palette
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Colors</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Five Official Themes from PALETTE.md · Paper is Default
+                    Five Official Themes, Semantic Tokens Only &amp; 4.5:1 Contrast Safety
                   </span>
                 </div>
 
-                {/* Theme Switcher Bar for Design System Canvas */}
-                <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:flex ll:flex-col ll:sm:flex-row ll:sm:items-center ll:justify-between ll:gap-3">
-                  <div className="ll:flex ll:flex-col ll:gap-0.5">
-                    <span className="ll:text-body ll:font-semibold ll:text-primary">
-                      Active Theme Switcher
-                    </span>
-                    <span className="ll:text-small ll:text-secondary">
-                      Select any of the 5 official themes to update the entire interface and tokens.
-                    </span>
+                <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                  <div className="ll:p-4 ll:bg-surface-panel ll:border-b ll:border-border ll:flex ll:items-center ll:justify-between">
+                    <span className="ll:text-small ll:font-semibold ll:text-primary">Theme Comparison (Paper Default)</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">Active: {activeTheme}</span>
                   </div>
-                  <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-1.5">
-                    {THEMES.map((t) => {
-                      const isSelected = activeTheme === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() => {
-                            setActiveTheme(t.id);
-                          }}
-                          className={`ll:flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:border ll:text-body ll:transition-none ${
-                            isSelected
-                              ? "ll:bg-control-active ll:border-primary ll:text-primary ll:font-medium"
-                              : "ll:bg-surface-raised ll:border-border ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
-                          }`}
-                        >
-                          <span
-                            data-theme={t.id}
-                            className="ll:w-3 ll:h-3 ll:rounded-sm ll:border ll:border-swatch-line ll:bg-surface-panel ll:shrink-0"
-                            aria-hidden="true"
-                          />
-                          <span>{t.label}</span>
-                          {isSelected && (
-                            <Check size={13} strokeWidth={2} className="ll:text-primary ll:shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Real workspace layer stack in current theme */}
-                <div className="ll:flex ll:flex-col ll:gap-2">
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Workspace Preview (Current Active Theme)
-                  </span>
-                  <WorkspaceFrame />
-                </div>
-
-                {/* All Semantic Tokens Table across 5 Themes */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    All Semantic Tokens (Five Official Themes)
-                  </div>
-
-                  <div className="ll:flex ll:flex-col ll:gap-3">
-                    {SEMANTIC_ROLES.map((spec) => (
-                      <div
-                        key={spec.token}
-                        className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3"
-                      >
-                        <div className="ll:flex ll:flex-col ll:sm:flex-row ll:sm:items-center ll:justify-between ll:gap-1">
-                          <span className="ll:text-body ll:font-semibold ll:text-primary">
-                            {spec.role}
-                          </span>
-                          <span className="ll:font-mono ll:text-small ll:text-secondary">
-                            {spec.token}
-                          </span>
-                        </div>
-                        <span className="ll:text-small ll:text-secondary">
-                          {spec.description}
-                        </span>
-
-                        {/* Five-Theme Grid */}
-                        <div className="ll:grid ll:grid-cols-2 ll:sm:grid-cols-5 ll:gap-2.5 ll:pt-1">
-                          {THEME_LIST.map((themeOption) => {
-                            const hex = liveTokens[themeOption.id]?.[spec.token] || "";
-                            return (
-                              <div
-                                key={themeOption.id}
-                                data-theme={themeOption.id}
-                                className="ll:p-2.5 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:flex ll:flex-col ll:gap-1.5"
-                              >
-                                <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                                  {themeOption.label}
-                                </span>
+                  <div className="ll:overflow-x-auto">
+                    <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                      <thead>
+                        <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Paper</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Dark</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">White</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Warm</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Lilac</th>
+                        </tr>
+                      </thead>
+                      <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                        {SEMANTIC_ROLES.map((role) => (
+                          <tr key={role.token} className="ll:hover:bg-surface-hover">
+                            <td className="ll:p-3 ll:font-medium ll:text-primary">{role.role}</td>
+                            <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{role.token}</td>
+                            {THEME_LIST.map((t) => (
+                              <td key={t.id} className="ll:p-3 ll:font-mono ll:text-micro">
                                 <div className="ll:flex ll:items-center ll:gap-2">
                                   <span
-                                    className={`ll:w-4 ll:h-4 ll:rounded-sm ll:border ll:border-border ll:shrink-0 ${spec.bgClass}`}
-                                    aria-hidden="true"
+                                    className="ll:w-3.5 ll:h-3.5 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
+                                    style={{ backgroundColor: liveTokens[t.id]?.[role.token] || "transparent" }}
                                   />
-                                  <span className="ll:font-mono ll:text-small ll:text-primary ll:truncate">
-                                    {hex || "—"}
-                                  </span>
+                                  <span>{liveTokens[t.id]?.[role.token] || "—"}</span>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Text Role Contrast Ratios Section across 5 Themes (WCAG AA >= 4.5:1) */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Text Role Contrast Ratios (WCAG AA &ge; 4.5:1 / AAA &ge; 7:1)
-                  </div>
-
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:lg:grid-cols-3 ll:gap-4">
-                    {THEME_LIST.map((item) => {
-                      const themeMap = liveTokens[item.id] || {};
-                      const panelBg = themeMap["--ll-surface-panel"] || "";
-                      const primaryHex = themeMap["--ll-text-primary"] || "";
-                      const secondaryHex = themeMap["--ll-text-secondary"] || "";
-                      const mutedHex = themeMap["--ll-text-muted"] || "";
-
-                      const primaryContrast = getContrastRatio(primaryHex, panelBg);
-                      const secondaryContrast = getContrastRatio(secondaryHex, panelBg);
-                      const mutedContrast = getContrastRatio(mutedHex, panelBg);
-
-                      return (
-                        <div
-                          key={item.id}
-                          data-theme={item.id}
-                          className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:flex ll:flex-col ll:gap-3"
-                        >
-                          <div className="ll:flex ll:items-center ll:justify-between">
-                            <span className="ll:text-body ll:font-semibold ll:text-primary">
-                              {item.label}
-                            </span>
-                            <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                              Panel: {panelBg || "—"}
-                            </span>
-                          </div>
-
-                          <div className="ll:flex ll:flex-col ll:gap-2">
-                            <div className="ll:flex ll:items-center ll:justify-between ll:p-2 ll:rounded-sm ll:bg-surface-bar">
-                              <span className="ll:text-small ll:font-medium ll:text-primary">
-                                Primary ({primaryHex || "—"})
-                              </span>
-                              <span className="ll:inline-flex ll:items-center ll:gap-1.5 ll:font-mono ll:text-micro ll:font-semibold ll:text-primary">
-                                {primaryContrast.formatted} · {primaryContrast.grade}
-                              </span>
-                            </div>
-
-                            <div className="ll:flex ll:items-center ll:justify-between ll:p-2 ll:rounded-sm ll:bg-surface-bar">
-                              <span className="ll:text-small ll:text-secondary">
-                                Secondary ({secondaryHex || "—"})
-                              </span>
-                              <span className="ll:inline-flex ll:items-center ll:gap-1.5 ll:font-mono ll:text-micro ll:font-semibold ll:text-secondary">
-                                {secondaryContrast.formatted} · {secondaryContrast.grade}
-                              </span>
-                            </div>
-
-                            <div className="ll:flex ll:items-center ll:justify-between ll:p-2 ll:rounded-sm ll:bg-surface-bar">
-                              <span className="ll:text-small ll:text-muted">
-                                Muted ({mutedHex || "—"})
-                              </span>
-                              <span className="ll:inline-flex ll:items-center ll:gap-1.5 ll:font-mono ll:text-micro ll:font-semibold ll:text-muted">
-                                {mutedContrast.formatted} · {mutedContrast.grade}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === "type" && (
-              <div className="ll:flex ll:flex-col ll:gap-6">
+              <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Type Scale
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Type Scale</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Geist Sans &amp; Geist Mono · Calibrated Hierarchy
+                    Geist Sans &amp; Geist Mono Font Families
                   </span>
                 </div>
-
-                <div className="ll:flex ll:flex-col">
-                  <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Display — 30px / Semibold (600) / Line Height 1.05 / Tracking -0.03em
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-text-display
-                      </span>
-                    </div>
-                    <div className="ll:text-display ll:font-semibold ll:text-primary">
-                      Motion Design Studio
-                    </div>
+                <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
+                  <div>
+                    <span className="ll:text-display ll:font-semibold ll:text-primary ll:block">Display Heading</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">30px / 600 / -0.03em</span>
                   </div>
-
-                  <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Title — 14px / Medium (500) / Line Height 1.4 / Tracking -0.01em
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-text-title
-                      </span>
-                    </div>
-                    <div className="ll:text-title ll:font-medium ll:text-primary">
-                      Apple-level craft and motion choreography
-                    </div>
+                  <div className="ll:h-px ll:bg-border" />
+                  <div>
+                    <span className="ll:text-title ll:font-medium ll:text-primary ll:block">Title Section</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">14px / 500 / -0.01em</span>
                   </div>
-
-                  <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Body — 13px / Regular (400) &amp; Medium (500) / Line Height 1.4
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-text-body
-                      </span>
-                    </div>
-                    <div className="ll:text-body ll:font-normal ll:text-primary">
-                      Visually author interactive motion, effects, and components with GSAP and CSS, compiled to production-grade code.
-                    </div>
+                  <div className="ll:h-px ll:bg-border" />
+                  <div>
+                    <span className="ll:text-body ll:font-normal ll:text-primary ll:block">Body standard interface text</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">13px / 400 / 1.4</span>
                   </div>
-
-                  <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Small — 12px / Regular (400) / Line Height 1.3
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-text-small
-                      </span>
-                    </div>
-                    <div className="ll:text-small ll:font-normal ll:text-primary">
-                      Inspect keyframes, ease curves, transform vectors, and runtime nodes.
-                    </div>
+                  <div className="ll:h-px ll:bg-border" />
+                  <div>
+                    <span className="ll:text-small ll:font-normal ll:text-secondary ll:block">Small labels and secondary text</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">12px / 400 / 1.3</span>
                   </div>
-
-                  <div className="ll:border-b ll:border-border ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Micro Label &amp; Shortcuts — 11px / Medium (500) / Mono Uppercase / Tracking 0.08em
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-text-micro
-                      </span>
-                    </div>
-                    <div className="ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-primary">
-                      FOUNDATIONS &amp; MOTION ARCHITECTURE
-                    </div>
-                  </div>
-
-                  <div className="ll:py-6 ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Code &amp; Numbers — Geist Mono
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-secondary">
-                        --ll-font-mono
-                      </span>
-                    </div>
-                    <div className="ll:font-mono ll:text-small ll:text-primary">
-                      const surface = &quot;--ll-surface-panel&quot;;
-                    </div>
+                  <div className="ll:h-px ll:bg-border" />
+                  <div>
+                    <span className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:block">MICRO CODE &amp; NUMBERS</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">11px / 500 / 0.08em uppercase</span>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === "spacing" && (
-              <div className="ll:flex ll:flex-col ll:gap-6">
+              <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Spacing (4px Grid)
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Spacing</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Single Geometric Scale · Zero One-Off Gaps
+                    4px Base Spacing Grid
                   </span>
                 </div>
-                <div className="ll:flex ll:flex-col">
-                  {SPACING_STEPS.map((step) => (
-                    <div
-                      key={step.px}
-                      className="ll:flex ll:items-center ll:gap-6 ll:py-4 ll:border-b ll:border-border"
-                    >
-                      <span className="ll:font-mono ll:text-small ll:w-16 ll:text-secondary ll:shrink-0">
-                        {step.px}px
-                      </span>
-                      <span className="ll:font-mono ll:text-small ll:w-36 ll:text-secondary ll:shrink-0">
-                        {step.token}
-                      </span>
-                      <div className="ll:flex-1 ll:flex ll:items-center">
-                        <div
-                          className={`ll:h-4 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ${step.widthClass}`}
-                        />
-                      </div>
+                <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+                  {SPACING_STEPS.map((s) => (
+                    <div key={s.token} className="ll:flex ll:items-center ll:gap-4">
+                      <span className="ll:w-28 ll:font-mono ll:text-micro ll:text-secondary">{s.token}</span>
+                      <div className="ll:h-4 ll:bg-control-primary ll:rounded-sm" style={{ width: `${s.px}px` }} />
+                      <span className="ll:font-mono ll:text-micro ll:text-muted">{s.px}px</span>
                     </div>
                   ))}
                 </div>
@@ -1295,709 +749,137 @@ export function DesignSystemPage() {
             )}
 
             {activeSection === "radii" && (
-              <div className="ll:flex ll:flex-col ll:gap-6">
+              <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Radii (Modest, No Pills)
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Radii</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Concentric Where Nested · Strict Rectangular Neutrals
+                    Modest Concentric Radii (Apple-Level Layout, No Pills or Capsules)
                   </span>
                 </div>
-                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-6">
-                  <div className="ll:h-28 ll:rounded-sm ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <div>
-                      <span className="ll:text-body ll:font-medium ll:text-primary">Small (4px)</span>
-                      <p className="ll:text-small ll:text-secondary">Buttons, inputs, tags, thumbnails</p>
-                    </div>
-                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-sm</span>
+                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-4">
+                  <div className="ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
+                    <span className="ll:text-body ll:font-semibold ll:text-primary">Small (4px)</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-sm</span>
+                    <span className="ll:text-small ll:text-secondary">Buttons sm, inputs, swatches, tooltips</span>
                   </div>
-                  <div className="ll:h-28 ll:rounded-md ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <div>
-                      <span className="ll:text-body ll:font-medium ll:text-primary">Medium (6px)</span>
-                      <p className="ll:text-small ll:text-secondary">Menus, popovers, grouped containers</p>
-                    </div>
-                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-md</span>
+                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
+                    <span className="ll:text-body ll:font-semibold ll:text-primary">Medium (6px)</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-md</span>
+                    <span className="ll:text-small ll:text-secondary">Buttons md, menus, avatars, segmented tracks</span>
                   </div>
-                  <div className="ll:h-28 ll:rounded-lg ll:bg-surface-panel ll:border ll:border-border ll:p-4 ll:flex ll:flex-col ll:justify-between">
-                    <div>
-                      <span className="ll:text-body ll:font-medium ll:text-primary">Large (8px)</span>
-                      <p className="ll:text-small ll:text-secondary">Context menus, modal frames, cards</p>
-                    </div>
-                    <span className="ll:font-mono ll:text-small ll:text-secondary">--ll-radius-lg</span>
+                  <div className="ll:rounded-lg ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
+                    <span className="ll:text-body ll:font-semibold ll:text-primary">Large (8px)</span>
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-lg</span>
+                    <span className="ll:text-small ll:text-secondary">Popovers, dialogs, command palette, app frame</span>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === "shadows" && (
-              <div className="ll:flex ll:flex-col ll:gap-6">
+              <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Shadows
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Shadows</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Soft, Low-Elevation Shadows per Theme from PALETTE.md
+                    Soft Shadow Scale Across Themes
                   </span>
                 </div>
-                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6 ll:py-4">
-                  <div className="ll:p-8 ll:rounded-lg ll:bg-surface-raised ll:border ll:border-border ll:shadow-soft ll:flex ll:flex-col ll:gap-2">
-                    <div className="ll:text-body ll:font-semibold ll:text-primary">
-                      Soft Shadow (Active Theme)
-                    </div>
-                    <div className="ll:text-small ll:text-secondary">
-                      Adapts automatically to current theme background.
-                    </div>
-                    <div className="ll:font-mono ll:text-small ll:text-secondary ll:mt-2">
-                      --ll-shadow-soft
-                    </div>
-                  </div>
-
-                  <div className="ll:p-6 ll:rounded-lg ll:bg-surface-panel ll:border ll:border-border ll:flex ll:flex-col ll:gap-2.5">
-                    <div className="ll:text-body ll:font-semibold ll:text-primary">
-                      Token Values per Theme
-                    </div>
-                    <ul className="ll:text-small ll:font-mono ll:text-secondary ll:flex ll:flex-col ll:gap-1">
-                      <li>Paper: 0 4px 16px rgba(34,35,30,.1)</li>
-                      <li>Dark: 0 4px 16px rgba(0,0,0,.5)</li>
-                      <li>White: 0 4px 16px rgba(0,0,0,.12)</li>
-                      <li>Warm: 0 4px 16px rgba(16,16,16,.08)</li>
-                      <li>Lilac: 0 4px 16px rgba(34,35,30,.1)</li>
-                    </ul>
+                <div className="ll:p-8 ll:bg-surface-canvas ll:rounded-md ll:border ll:border-border ll:flex ll:items-center ll:justify-center">
+                  <div className="ll:w-64 ll:h-32 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:flex ll:items-center ll:justify-center">
+                    <span className="ll:text-small ll:font-medium ll:text-primary">Raised Floating Surface</span>
                   </div>
                 </div>
               </div>
             )}
 
             {activeSection === "sizes" && (
-              <div className="ll:flex ll:flex-col ll:gap-6">
+              <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Layout Sizes
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Layout Sizes</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Prototype Structural Metrics · Single System Grid
+                    Dimensions Sampled from Design Reference
                   </span>
                 </div>
-
-                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-3">
-                  {LAYOUT_SIZES.map((item) => (
-                    <div
-                      key={item.token}
-                      className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-1.5"
-                    >
-                      <div className="ll:flex ll:items-center ll:justify-between">
-                        <span className="ll:text-body ll:font-semibold ll:text-primary">
-                          {item.role}
-                        </span>
-                        <span className="ll:font-mono ll:text-small ll:font-bold ll:text-primary">
-                          {item.value}
-                        </span>
-                      </div>
-                      <span className="ll:text-small ll:text-secondary">
-                        {item.description}
-                      </span>
-                      <span className="ll:font-mono ll:text-micro ll:text-muted ll:pt-1">
-                        {item.token}
-                      </span>
-                    </div>
-                  ))}
+                <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                  <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                    <thead>
+                      <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Value</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                      {LAYOUT_SIZES.map((s) => (
+                        <tr key={s.token} className="ll:hover:bg-surface-hover">
+                          <td className="ll:p-3 ll:font-medium ll:text-primary">{s.role}</td>
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{s.token}</td>
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:font-bold ll:text-primary">{s.value}</td>
+                          <td className="ll:p-3 ll:text-secondary">{s.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
 
             {activeSection === "motion" && <MotionDemo />}
 
-            {/* BUTTON COMPONENT */}
-            {activeSection === "button" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Button
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Variants, Sizes, Icon-Only Shapes &amp; All States
-                  </span>
-                </div>
+            {/* Core Rebuilt Components */}
+            {activeSection === "button" && <ButtonDemo />}
+            {activeSection === "icon-button" && <IconButtonDemo />}
+            {activeSection === "segmented-control" && <SegmentedControlDemo />}
+            {activeSection === "toggle" && <ToggleDemo />}
+            {activeSection === "checkbox" && <CheckboxDemo />}
+            {activeSection === "tooltip" && <TooltipDemo />}
+            {activeSection === "text-field" && <TextFieldDemo />}
+            {activeSection === "number-field" && <NumberFieldDemo />}
+            {activeSection === "select" && <SelectDemo />}
+            {activeSection === "color-swatch-field" && <ColorSwatchFieldDemo />}
+            {activeSection === "menu" && <MenuDemo />}
+            {activeSection === "context-menu" && <ContextMenuDemo />}
+            {activeSection === "popover" && <PopoverDemo />}
+            {activeSection === "command-palette" && <CommandPaletteDemo />}
+            {activeSection === "panel-section" && <PanelSectionDemo />}
+            {activeSection === "property-row" && <PropertyRowDemo />}
+            {activeSection === "list-row" && <ListRowDemo />}
+            {activeSection === "tree-row" && <TreeRowDemo />}
+            {activeSection === "tabs" && <TabsDemo />}
+            {activeSection === "avatar" && <AvatarDemo />}
+            {activeSection === "empty-state" && <EmptyStateDemo />}
 
-                {/* Group 1: Variants & Sizes */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Variants &amp; Sizes
-                  </div>
-                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
-                    {/* Primary variant */}
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Primary (Inverting Control: White in Dark, Black in Light)
-                      </span>
-                      <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
-                        <Button variant="primary" size="md">
-                          Primary Medium (32px)
-                        </Button>
-                        <Button variant="primary" size="sm">
-                          Primary Small (28px)
-                        </Button>
-                        <Button
-                          variant="primary"
-                          size="md"
-                          leftIcon={<Sparkles size={14} />}
-                        >
-                          With Icon
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="ll:h-px ll:w-full ll:bg-border" />
-
-                    {/* Secondary variant */}
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Secondary (Raised Surface, Hairline Border)
-                      </span>
-                      <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
-                        <Button variant="secondary" size="md">
-                          Secondary Medium (32px)
-                        </Button>
-                        <Button variant="secondary" size="sm">
-                          Secondary Small (28px)
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="md"
-                          leftIcon={<Download size={14} />}
-                        >
-                          With Icon
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="ll:h-px ll:w-full ll:bg-border" />
-
-                    {/* Ghost variant */}
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Ghost (Transparent Surface, Instant Hover on surface-panel)
-                      </span>
-                      <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
-                        <Button variant="ghost" size="md">
-                          Ghost Medium (32px)
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          Ghost Small (28px)
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="md"
-                          leftIcon={<Share2 size={14} />}
-                        >
-                          With Icon
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Group 2: Icon-Only Buttons */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Icon-Only Shape (Square, 6px Radius)
-                  </div>
-                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-4">
-                    <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
-                      <Button variant="secondary" size="md" iconOnly aria-label="Undo">
-                        <Undo2 size={16} strokeWidth={1.5} />
-                      </Button>
-                      <span className="ll:text-micro ll:text-secondary">Secondary 32px</span>
-                    </div>
-
-                    <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
-                      <Button variant="secondary" size="sm" iconOnly aria-label="Undo">
-                        <Undo2 size={14} strokeWidth={1.5} />
-                      </Button>
-                      <span className="ll:text-micro ll:text-secondary">Secondary 28px</span>
-                    </div>
-
-                    <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
-                      <Button variant="primary" size="md" iconOnly aria-label="Search">
-                        <Search size={16} strokeWidth={1.5} />
-                      </Button>
-                      <span className="ll:text-micro ll:text-secondary">Primary 32px</span>
-                    </div>
-
-                    <div className="ll:flex ll:flex-col ll:items-center ll:gap-1">
-                      <Button variant="ghost" size="md" iconOnly aria-label="Settings">
-                        <Settings size={16} strokeWidth={1.5} />
-                      </Button>
-                      <span className="ll:text-micro ll:text-secondary">Ghost 32px</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Group 3: States Showcase */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    All States
-                  </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:md:grid-cols-3 ll:gap-4">
-                    {/* Default */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Default
-                      </span>
-                      <Button variant="secondary" size="md">
-                        Default Action
-                      </Button>
-                    </div>
-
-                    {/* Hover */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Hover (Instant on surface-panel)
-                      </span>
-                      <button
-                        type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-panel ll:border ll:border-border ll:text-primary ll:flex ll:items-center ll:justify-center"
-                      >
-                        Hovered State
-                      </button>
-                    </div>
-
-                    {/* Focus-Visible */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Focus-Visible (2px Ring, 2px Offset)
-                      </span>
-                      <button
-                        type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-raised ll:border ll:border-border ll:text-primary ll:ring-2 ll:ring-primary ll:ring-offset-2 ll:flex ll:items-center ll:justify-center"
-                      >
-                        Focused Control
-                      </button>
-                    </div>
-
-                    {/* Active */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Active (Pressed on surface-canvas)
-                      </span>
-                      <button
-                        type="button"
-                        className="ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:font-medium ll:text-small ll:bg-surface-canvas ll:border ll:border-border ll:text-primary ll:flex ll:items-center ll:justify-center"
-                      >
-                        Active Pressed
-                      </button>
-                    </div>
-
-                    {/* Disabled */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Disabled (Opacity 40%)
-                      </span>
-                      <Button variant="secondary" size="md" disabled>
-                        Disabled Action
-                      </Button>
-                    </div>
-
-                    {/* Loading */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Loading (1.5px Stroke Spinner)
-                      </span>
-                      <Button variant="secondary" size="md" loading>
-                        Saving Project...
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* SEGMENTED CONTROL COMPONENT */}
-            {activeSection === "segmented-control" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    SegmentedControl
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Concentric Radii (6px Outer, 4px Inner), Radiogroup, Keyboard Nav
-                  </span>
-                </div>
-
-                {/* Interactive live control */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Interactive Demonstration
-                  </div>
-                  <div className="ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-4">
-                    <div className="ll:flex ll:items-center ll:justify-between">
-                      <span className="ll:text-small ll:font-medium ll:text-secondary">
-                        Selected Target: <strong className="ll:text-primary">{demoDevice}</strong>
-                      </span>
-                      <span className="ll:text-micro ll:text-secondary">Use arrow keys or click</span>
-                    </div>
-
-                    <div className="ll:flex ll:items-center ll:gap-4">
-                      <SegmentedControl<DeviceMode>
-                        value={demoDevice}
-                        onChange={setDemoDevice}
-                        size="md"
-                        ariaLabel="Interactive Device Preview"
-                        options={[
-                          {
-                            value: "desktop",
-                            icon: <Monitor size={16} strokeWidth={1.5} />,
-                            label: "Desktop",
-                          },
-                          {
-                            value: "tablet",
-                            icon: <Tablet size={16} strokeWidth={1.5} />,
-                            label: "Tablet",
-                          },
-                          {
-                            value: "mobile",
-                            icon: <Smartphone size={16} strokeWidth={1.5} />,
-                            label: "Mobile",
-                          },
-                        ]}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sizes and Variants */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Sizes &amp; Concentric Geometry
-                  </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6">
-                    {/* Medium (32px) */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Medium Size (32px Container, 28px Inner)
-                      </span>
-                      <SegmentedControl<DeviceMode>
-                        value="desktop"
-                        onChange={() => {}}
-                        size="md"
-                        options={[
-                          { value: "desktop", label: "Desktop" },
-                          { value: "tablet", label: "Tablet" },
-                          { value: "mobile", label: "Mobile" },
-                        ]}
-                      />
-                    </div>
-
-                    {/* Small (28px) */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Small Size (28px Container, 24px Inner)
-                      </span>
-                      <SegmentedControl<DeviceMode>
-                        value="desktop"
-                        onChange={() => {}}
-                        size="sm"
-                        options={[
-                          { value: "desktop", label: "Desktop" },
-                          { value: "tablet", label: "Tablet" },
-                          { value: "mobile", label: "Mobile" },
-                        ]}
-                      />
-                    </div>
-
-                    {/* Icon-Only */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Icon-Only Mode (Below sm Viewport)
-                      </span>
-                      <SegmentedControl<DeviceMode>
-                        value="desktop"
-                        onChange={() => {}}
-                        size="md"
-                        options={[
-                          { value: "desktop", icon: <Monitor size={16} strokeWidth={1.5} />, ariaLabel: "Desktop" },
-                          { value: "tablet", icon: <Tablet size={16} strokeWidth={1.5} />, ariaLabel: "Tablet" },
-                          { value: "mobile", icon: <Smartphone size={16} strokeWidth={1.5} />, ariaLabel: "Mobile" },
-                        ]}
-                      />
-                    </div>
-
-                    {/* Disabled State */}
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-3">
-                      <span className="ll:text-small ll:font-semibold ll:text-primary">
-                        Disabled State
-                      </span>
-                      <SegmentedControl<DeviceMode>
-                        value="desktop"
-                        onChange={() => {}}
-                        size="md"
-                        disabled
-                        options={[
-                          { value: "desktop", label: "Desktop" },
-                          { value: "tablet", label: "Tablet" },
-                          { value: "mobile", label: "Mobile" },
-                        ]}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TOOLTIP COMPONENT */}
-            {activeSection === "tooltip" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Tooltip
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Solid Inverted Rectangle, Micro Text, 4px Radius, 300ms Delay
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Interactive Hover &amp; Keyboard Focus
-                  </div>
-                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-wrap ll:items-center ll:gap-8">
-                    <Tooltip content="Undo last change (Ctrl+Z)">
-                      <Button variant="secondary" size="md" iconOnly aria-label="Undo action">
-                        <Undo2 size={16} strokeWidth={1.5} />
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip content="Redo action (Ctrl+Shift+Z)">
-                      <Button variant="secondary" size="md" iconOnly aria-label="Redo action">
-                        <Redo2 size={16} strokeWidth={1.5} />
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip content="Search commands &amp; actions (Ctrl+K)">
-                      <Button variant="secondary" size="md" iconOnly aria-label="Search actions">
-                        <Search size={16} strokeWidth={1.5} />
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip content="Configure project settings">
-                      <Button variant="secondary" size="md" iconOnly aria-label="Settings">
-                        <Settings size={16} strokeWidth={1.5} />
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip content="Primary inverting action button">
-                      <Button variant="primary" size="md">
-                        Hover Me
-                      </Button>
-                    </Tooltip>
-                  </div>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Static Visual Geometry
-                  </div>
-                  <div className="ll:p-8 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:items-center ll:justify-center">
-                    <div className="ll:flex ll:flex-col ll:items-center ll:gap-2">
-                      {/* Visible Tooltip Specimen */}
-                      <div className="ll:px-2 ll:py-1 ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:whitespace-nowrap ll:shadow-soft">
-                        Tooltip: 4px radius, micro text, hairline border
-                      </div>
-                      <div className="ll:h-8 ll:px-3 ll:rounded-md ll:bg-surface-raised ll:border ll:border-border ll:text-small ll:font-medium ll:text-primary ll:flex ll:items-center ll:justify-center">
-                        Target Control
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TOP BAR COMPONENT */}
+            {/* Existing Studio Components */}
             {activeSection === "top-bar" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    TopBar
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">TopBar</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Master Shell Top Bar Specification &amp; Three Width Previews
+                    52px Shell Header Bar
                   </span>
                 </div>
-
-                {/* Desktop Preview (1440px) */}
-                <div className="ll:flex ll:flex-col ll:gap-2">
-                  <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                      Desktop Viewport Preview (1440px)
-                    </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-secondary">1440 &times; 48</span>
-                  </div>
-                  <div className="ll:w-full ll:overflow-x-auto ll:rounded-md ll:border ll:border-border ll:shadow-soft">
-                    <div className="ll:w-viewport-desktop">
-                      <TopBar
-                        projectName="Visual Web App"
-                        deviceMode={topBarDevice}
-                        onSelectDeviceMode={setTopBarDevice}
-                        canUndo={true}
-                        canRedo={false}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tablet Preview (1024px) */}
-                <div className="ll:flex ll:flex-col ll:gap-2">
-                  <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                      Tablet Viewport Preview (1024px)
-                    </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-secondary">1024 &times; 48</span>
-                  </div>
-                  <div className="ll:w-full ll:overflow-x-auto ll:rounded-md ll:border ll:border-border ll:shadow-soft">
-                    <div className="ll:w-viewport-tablet">
-                      <TopBar
-                        projectName="Visual Web App"
-                        deviceMode={topBarDevice}
-                        onSelectDeviceMode={setTopBarDevice}
-                        canUndo={true}
-                        canRedo={false}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile Preview (390px) */}
-                <div className="ll:flex ll:flex-col ll:gap-2">
-                  <div className="ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                      Mobile Viewport Preview (390px — Compact, No Overflow)
-                    </span>
-                    <span className="ll:font-mono ll:text-micro ll:text-secondary">390 &times; 48</span>
-                  </div>
-                  <div className="ll:w-viewport-mobile ll:max-w-full ll:rounded-md ll:border ll:border-border ll:shadow-soft ll:overflow-hidden">
-                    <TopBar
-                      compact={true}
-                      projectName="Visual Web App"
-                      deviceMode={topBarDevice}
-                      onSelectDeviceMode={setTopBarDevice}
-                      canUndo={true}
-                      canRedo={false}
-                    />
-                  </div>
+                <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                  <TopBar
+                    projectName="My Design Project"
+                    deviceMode={topBarDevice}
+                    onSelectDeviceMode={setTopBarDevice}
+                  />
                 </div>
               </div>
             )}
 
-            {/* THEME TOGGLE COMPONENT */}
             {activeSection === "theme-toggle" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    ThemeToggle
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">ThemeToggle</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Ghost Icon Button, Sun / Moon (Lucide), 16px Icon, Switch theme Tooltip
+                    Rebuilt on Menu Component with Radio Semantics &amp; Arrow Navigation
                   </span>
                 </div>
-
-                {/* Interactive demo */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Interactive Demonstration
-                  </div>
-                  <div className="ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:items-center ll:justify-between">
-                    <div className="ll:flex ll:flex-col ll:gap-1">
-                      <span className="ll:text-body ll:font-medium ll:text-primary">
-                        Toggle Studio Theme
-                      </span>
-                      <span className="ll:text-small ll:text-secondary">
-                        Stores choice in localStorage and updates data-theme attribute with zero flash
-                      </span>
-                    </div>
-                    <div className="ll:flex ll:items-center ll:gap-4">
-                      <ThemeToggle size="md" />
-                      <ThemeToggle size="sm" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* States showcase */}
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    States
-                  </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-4">
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Default
-                      </span>
-                      <div className="ll:flex ll:items-center ll:gap-2">
-                        <ThemeToggle size="md" />
-                        <span className="ll:text-small ll:text-secondary">Click to switch</span>
-                      </div>
-                    </div>
-
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Hover State
-                      </span>
-                      <button
-                        type="button"
-                        className="ll:h-8 ll:w-8 ll:rounded-md ll:bg-surface-panel ll:border-0 ll:text-primary ll:flex ll:items-center ll:justify-center"
-                      >
-                        <Sun size={16} strokeWidth={1.5} />
-                      </button>
-                    </div>
-
-                    <div className="ll:p-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:gap-2">
-                      <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                        Focus-Visible State
-                      </span>
-                      <button
-                        type="button"
-                        className="ll:h-8 ll:w-8 ll:rounded-md ll:bg-transparent ll:border-0 ll:text-primary ll:ring-2 ll:ring-primary ll:ring-offset-2 ll:flex ll:items-center ll:justify-center"
-                      >
-                        <Moon size={16} strokeWidth={1.5} />
-                      </button>
-                    </div>
-                  </div>
+                <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:items-center ll:gap-4">
+                  <ThemeToggle size="md" />
+                  <span className="ll:text-small ll:text-secondary">Click palette icon to select from 5 themes</span>
                 </div>
               </div>
             )}
@@ -2005,368 +887,15 @@ export function DesignSystemPage() {
             {activeSection === "swatch" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Swatch
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Swatch</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Component Specification &amp; Variants
+                    Token Inspection Swatch
                   </span>
                 </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Component Variants
-                  </div>
-                  <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-6">
-                    <Swatch
-                      role="Surface Swatch"
-                      token="--ll-surface-canvas"
-                      hex={liveTokens[activeTheme]?.["--ll-surface-canvas"] || "—"}
-                      bgClass="ll:bg-surface-canvas"
-                    />
-                    <Swatch
-                      role="Text Sample Variant"
-                      token="--ll-text-secondary"
-                      hex={liveTokens[activeTheme]?.["--ll-text-secondary"] || "—"}
-                      sample={
-                        <div className="ll:w-full ll:h-full ll:bg-surface-panel ll:p-4 ll:flex ll:items-center ll:justify-center">
-                          <span className="ll:text-small ll:font-medium ll:text-secondary">
-                            Sample on surface-panel
-                          </span>
-                        </div>
-                      }
-                    />
-                    <Swatch
-                      role="Line Sample Variant"
-                      token="--ll-border-color"
-                      hex={liveTokens[activeTheme]?.["--ll-border-color"] || "—"}
-                      sample={
-                        <div className="ll:w-full ll:h-full ll:bg-surface-canvas ll:p-4 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2">
-                          <div className="ll:w-full ll:h-px ll:bg-border" />
-                          <span className="ll:text-micro ll:text-secondary">
-                            1px Hairline Divider
-                          </span>
-                          <div className="ll:w-full ll:h-px ll:bg-border" />
-                        </div>
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-squish-switch" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    SquishSwitch
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from React Bits
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <SquishSwitchDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-scrub-field" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    ScrubField
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from React Bits
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <ScrubFieldDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-elastic-slider" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    ElasticSlider
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from React Bits
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <ElasticSliderDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-cursor" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Cursor
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Animate UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <CursorDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-avatar-group" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Avatar Group
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Animate UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <AvatarGroupDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-tooltip" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Tooltip (Imported)
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Animate UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <ImportedTooltipDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-select" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Select
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Origin UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <SelectDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-menubar" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Menubar
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Radix UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <MenubarDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-dropdown-menu" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Dropdown Menu
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Radix UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <DropdownMenuDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-context-menu" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Context Menu
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Radix UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <ContextMenuDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-scroll-fade" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    Scroll Fade
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Fancy Components
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <ScrollFadeDemo />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "imported-file-tree" && (
-              <div className="ll:flex ll:flex-col ll:gap-8">
-                <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    File Tree
-                  </h1>
-                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported as-is from Unlumen UI
-                  </span>
-                </div>
-
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Usage Example
-                  </div>
-                  <div className="ll:p-6 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:flex ll:items-center ll:justify-center">
-                    <FileTreeDemo />
-                  </div>
+                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-4">
+                  <Swatch role="Surface Canvas" token="--ll-surface-canvas" hex={liveTokens[activeTheme]?.["--ll-surface-canvas"] || "—"} bgClass="ll:bg-surface-canvas" />
+                  <Swatch role="Surface Panel" token="--ll-surface-panel" hex={liveTokens[activeTheme]?.["--ll-surface-panel"] || "—"} bgClass="ll:bg-surface-panel" />
+                  <Swatch role="Primary Control" token="--ll-control-primary-bg" hex={liveTokens[activeTheme]?.["--ll-control-primary-bg"] || "—"} bgClass="ll:bg-control-primary" />
                 </div>
               </div>
             )}
@@ -2374,24 +903,37 @@ export function DesignSystemPage() {
             {activeSection === "workspace-frame" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
-                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
-                    WorkspaceFrame
-                  </h1>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">WorkspaceFrame</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Component Specification &amp; Real Layers
+                    Real Layer Studio Workspace Preview
                   </span>
                 </div>
+                <WorkspaceFrame />
+              </div>
+            )}
 
-                <div className="ll:flex ll:flex-col ll:gap-4">
-                  <div
-                    role="heading"
-                    aria-level={2}
-                    className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary"
-                  >
-                    Interactive Studio Workspace Frame
-                  </div>
-                  <WorkspaceFrame />
+            {/* Kept Imported Components */}
+            {activeSection === "imported-cursor" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Cursor</h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported Collaborative Cursor Component (Token-Styled)
+                  </span>
                 </div>
+                <CursorDemo />
+              </div>
+            )}
+
+            {activeSection === "imported-scroll-fade" && (
+              <div className="ll:flex ll:flex-col ll:gap-8">
+                <div>
+                  <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Scroll Fade</h1>
+                  <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    Imported Scroll Fade Component (Token-Styled)
+                  </span>
+                </div>
+                <ScrollFadeDemo />
               </div>
             )}
           </div>

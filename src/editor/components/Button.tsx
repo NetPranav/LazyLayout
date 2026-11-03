@@ -1,4 +1,7 @@
-import React, { forwardRef } from "react";
+"use client";
+
+import React, { forwardRef, useRef, useImperativeHandle } from "react";
+import { pressEl } from "../motion/surface";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md";
@@ -24,49 +27,79 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     disabled,
     className = "",
     type = "button",
+    onPointerDown,
+    onPointerUp,
+    onPointerLeave,
     ...props
   },
   ref
 ) {
+  const innerRef = useRef<HTMLButtonElement>(null);
+  useImperativeHandle(ref, () => innerRef.current as HTMLButtonElement);
+
   const isDisabled = disabled || loading;
 
-  const baseStyles =
-    "ll:inline-flex ll:items-center ll:justify-center ll:box-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ll:rounded-md ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ll:focus-visible:ring-offset-2";
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDisabled && innerRef.current) {
+      pressEl(innerRef.current, true);
+    }
+    onPointerDown?.(e);
+  };
 
-  // Sizes: sm is 28px, md is 32px
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDisabled && innerRef.current) {
+      pressEl(innerRef.current, false);
+    }
+    onPointerUp?.(e);
+  };
+
+  const handlePointerLeave = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDisabled && innerRef.current) {
+      pressEl(innerRef.current, false);
+    }
+    onPointerLeave?.(e);
+  };
+
+  const baseStyles =
+  "ll:inline-flex ll:items-center ll:justify-center ll:box-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset";
+
+  // Sizes: sm is 24px/28px (modest radius sm 4px), md is 32px (modest radius md 6px). No pill shapes.
   let sizeStyles = "";
   if (size === "sm") {
     sizeStyles = iconOnly
-      ? "ll:h-7 ll:w-7 ll:min-w-7 ll:p-0"
-      : "ll:h-7 ll:px-2.5 ll:gap-1.5 ll:text-small";
+      ? "ll:h-7 ll:w-7 ll:min-w-7 ll:p-0 ll:rounded-sm"
+      : "ll:h-7 ll:px-2.5 ll:gap-1.5 ll:text-small ll:rounded-sm";
   } else {
     sizeStyles = iconOnly
-      ? "ll:h-8 ll:w-8 ll:min-w-8 ll:p-0"
-      : "ll:h-8 ll:px-3 ll:gap-2 ll:text-small";
+      ? "ll:h-8 ll:w-8 ll:min-w-8 ll:p-0 ll:rounded-md"
+      : "ll:h-8 ll:px-3 ll:gap-2 ll:text-small ll:rounded-md";
   }
 
-  // Variants & states (instant hover on surface-panel, no color transitions)
+  // Variants & states
   let variantStyles = "";
   if (variant === "primary") {
     variantStyles =
       "ll:bg-control-primary ll:text-control-primary-fg ll:border-0 ll:hover:opacity-90 ll:active:opacity-80 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed";
   } else if (variant === "secondary") {
     variantStyles =
-      "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:hover:bg-surface-panel ll:active:bg-surface-canvas ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-surface-raised";
+      "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:hover:bg-surface-hover ll:active:bg-control-active ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-surface-raised";
   } else {
     // ghost
     variantStyles =
-      "ll:bg-transparent ll:text-primary ll:border-0 ll:hover:bg-surface-panel ll:active:bg-surface-canvas ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent";
+      "ll:bg-transparent ll:text-primary ll:border-0 ll:hover:bg-surface-hover ll:active:bg-control-active ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent";
   }
 
   const spinnerSize = size === "sm" ? 14 : 16;
 
   return (
     <button
-      ref={ref}
+      ref={innerRef}
       type={type}
       disabled={isDisabled}
       aria-busy={loading ? "true" : undefined}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
       className={`${baseStyles} ${sizeStyles} ${variantStyles} ${className}`}
       {...props}
     >
