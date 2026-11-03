@@ -67,3 +67,16 @@ The overlays morph through `surf()` correctly, `useId()` is used for the search 
 17. **Themes** (`ViewOptionsPopover.tsx:350-368`): check against `DOCS/UI/PALETTE.md` and the five themes. The option list and the guard arrays must match (`darkroom` and `plum` appear in the guards but not in the options). Do not invent themes.
 18. `CanvasChrome.tsx:92-152`: about 30 pairs of `controlledX ?? localX`. Replace them with one small `useControllable` helper.
 19. Handoff "Retry 1" section: the real `npx tsc --noEmit` output after the fixes; correct the claims about the zoom menu and shape picker under "Legacy behaviour dropped" if either stays out; the token wishes.
+
+## Retry 2 (2026-11-03)
+
+Retry 1 landed 10 of the 14 required fixes. Remaining:
+
+1. **Trace loader (`AiBox.tsx:341-364`):** `ll-tro` and `ll-trf` are scoped to `.ll-logo` in `animations.css:392-406`, so the loader draws as a static filled mark. Do not edit `animations.css` (top bar worker's file). Instead define the AI loader's keyframes in a CSS file inside `src/editor/shell/canvas-chrome/` (`ai-loader.css`, imported by `AiBox.tsx`) with `ll-aiload-tro` and `ll-aiload-trf`, using `--ll-dur-trace` (add the 2.4 s wish to the handoff: it is 1.6 s today) and `--ll-ease-trace` for easing, and a `prefers-reduced-motion` opacity pulse. Remove the literals `2.4s`, `2.8s` and `cubic-bezier(...)` from the TSX. Then **prove it**: two screenshots of the loading AI box 600 ms apart showing a different dash offset, saved as `ai-loading-a.png` and `ai-loading-b.png`.
+2. **Remaining px:** `Toolbar.tsx:377,411` (`width={160}`, `width={180}`), the Icon `size={16}` and `{12}` (`Toolbar.tsx:289`, the zoom button, the lab artboard label), `AiBox.tsx:344-348` (`strokeWidth: 10`), inline px in `Rulers.tsx:62,79`, tick steps of 200 (`Rulers.tsx:23,35`), and the lab's inline calcs (`CanvasChromeLab.tsx:192-196`). Use tokens or one named constants file. The lab frame uses `--ll-size-viewport-desktop-h`, not `h-screen`.
+3. **Raw buttons:** `AiBox.tsx:247`, `InsertBox.tsx:198,219,300` and `ViewOptionsPopover.tsx:242,254` become `Button` or `IconButton`. Anything that cannot is listed as an exception in the handoff.
+4. **View options popover is clipped** at the bottom (`view-options-open.png`). Size it to its content up to `--ll-max-h-popover`, and when it scrolls show a clear affordance (a bottom edge shadow token or a visible scrollbar). Retake the screenshot so every row is reachable.
+5. **Sliders:** keep the native range inputs only if there is no slider component; list "Slider component" in the wish list in the handoff.
+6. **Handoff:** correct the claims ("mid-trace", "all resolved", "no exceptions") to match what is true after these fixes. Add "Retry 2" with the real tsc output.
+
+This is the last retry: after it, the build session fixes what is left itself. Do not touch files outside your list. `npx tsc --noEmit` once at the end, add a "Retry 2" section to your handoff (the real tsc output, the new screenshots, anything you could not fix), do not commit.

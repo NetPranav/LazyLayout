@@ -59,3 +59,17 @@ The structure is right: modes, search keeps ancestors, the separator has `role="
 10. **Default Tailwind scale values** (`LeftPanelLab.tsx:49,189-194,201`: `ll:ml-24`, `ll:w-48`, `ll:max-w-2xl`, `ll:h-96`, `ll:tracking-wider`): replace with tokens or simplify the mock stage.
 11. Move the pre-seeded expanded ids and sample state (`LeftPanel.tsx:44-52`) out of the production component into `sampleData` or the lab. Share the arrow-key logic between `LayersTree` and `FilesTree` as one hook.
 12. Update the handoff with a "Retry 1" section: the real `npx tsc --noEmit` output, the new screenshots, the design decisions (for example, the "Layers" title fallback in Design mode is a worker choice) and everything under "Not done / blocked".
+
+## Retry 2 (2026-11-03)
+
+Retry 1 landed 9 of 12 fixes. Remaining:
+
+1. `LeftPanel.tsx:5,17-20`: remove the `SAMPLE_*` default props. The production component takes data through props only (default to empty arrays). Only the lab imports `sampleData`.
+2. `AssetsSection.tsx:67-71,129`: `aria-valuemax` reads `containerRef.current?.clientHeight` during render, so it is wrong on first render. Track the container height with a `ResizeObserver` stored through `useSyncExternalStore` or a ref callback plus a state update from the observer callback (not from an effect body), and compute the real maximum from it.
+3. `constants.ts:28` `ASSETS_COLLAPSED_HEIGHT_PX` duplicates the `ll:h-row-lg` token (`AssetsSection.tsx:150`). Remove the constant and use the token (read the pixel value from the DOM where you need a number).
+4. `TracksList.tsx:46` `ll:h-8` and the lab's `gap-16`, `p-12`, `left-24`, `h-8` (`LeftPanelLab.tsx:221,230,274`): check each against the `@theme` block in `tailwind.css`. Replace any that is not a theme token with a token.
+5. `TracksList.tsx`: add an explicit visible focus ring (`ll:focus-visible:` outline, the same as the other controls). `LeftPanelHeader.tsx:109`: the clear button uses `IconButton`.
+6. Tree rows (`LayersTree.tsx`, `FilesTree.tsx`): move real focus onto the active row with a roving `tabindex` (arrow keys move focus), so a visible focus ring shows on the row. Keep `role="tree"` and `treeitem`.
+7. Check `AssetTile.tsx` hover transition has `ll:motion-reduce:transition-none`.
+
+This is the last retry: after it, the build session fixes what is left itself. Do not touch files outside your list. `npx tsc --noEmit` once at the end, add a "Retry 2" section to your handoff (the real tsc output, the new screenshots, anything you could not fix), do not commit.

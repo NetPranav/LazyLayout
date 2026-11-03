@@ -83,3 +83,16 @@ Layout, the logo menu, the trace and the theme store reuse are right. Fix these.
 13. **Screenshots:** retake 04 (saving, must show a clear trace frame) and 05 (Noir) **from the real editor** at `/editor`, not the lab frame, and add the Ship popover open in the Ready state. Check that the 1 px divider between the logo and the project name is visible in Noir.
 14. **PageSwitcher:** Up, Down and Enter keys in the list. Add the disabled, focus and hover states for Ship, the mode tabs and the page switcher to the demo, and Ship in each theme.
 15. Handoff "Retry 1" section: the real `npx tsc --noEmit` output; list the menu items that do nothing yet; record that the Desktop/Tablet/Mobile segmented control was dropped "per the task, set by Claude".
+
+## Retry 2 (2026-11-03)
+
+Retry 1 landed 12 of 15 fixes. Remaining:
+
+1. **Handoff:** the handoff for this task (`DOCS/UI/handoffs/2026-11-03-2035-shell-top-bar.md`) has no "Retry 1" section. Add "Retry 1" and "Retry 2" sections: the tsc output, `saving` is a shell **prop** (no store signal exists), the list of logo-menu items that do nothing yet, and "the Desktop/Tablet/Mobile segmented control was dropped per the task, set by Claude".
+2. **Noir divider:** the 1 px divider between the logo and the project name is nearly invisible in Noir. Check which token it uses and switch to the border token that is visible in all five themes (contrast against the panel background). Do the same check for the other 1 px lines in the top bar.
+3. **ARIA:** `ShipPopover.tsx:265,276` has `role="menuitem"` buttons inside a `role="dialog"`. Remove the `menuitem` roles (plain buttons inside the dialog).
+4. **Literals:** `ll:w-72` (`ShipPopover.tsx:232`) and `ll:w-56` (`PageSwitcher.tsx:268`) duplicate `SHIP_POPOVER_WIDTH` and `PAGE_DROPDOWN_WIDTH`: use one source (a token), delete the duplicate. Icon `size={14}` and `{16}` (`TopBar.tsx:210,528`) use the icon size constants. `EditorShell.tsx:63,65,66,78,79` (`"0px"`, `100vh`, `100vw`): use tokens or classes.
+5. **Demo states:** add hover and focus samples for Ship, the mode tabs and the page switcher (force them with a `data-state` attribute or a class in the demo, not by hovering).
+6. **Screenshots:** retake 04 (saving) with the pointer away from the Ship button, so no hover shows and the chevron sits level, and 05 (Noir) without the tooltip sliver at the top and without the theme button hover fill. Move the pointer to a neutral spot before each shot.
+
+This is the last retry: after it, the build session fixes what is left itself. Do not touch files outside your list. `npx tsc --noEmit` once at the end, add a "Retry 2" section to your handoff (the real tsc output, the new screenshots, anything you could not fix), do not commit.

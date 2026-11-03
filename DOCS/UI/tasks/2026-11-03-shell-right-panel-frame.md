@@ -57,3 +57,14 @@ Structure, section order and the four screenshots are right. Fix these. Same fil
 9. **Status chips** (`RightPanelFrame.tsx:179-190`) must open a collapsed section and then scroll to it, as the prototype does. Lift `openIds` state, or add an open-by-id control.
 10. Cheap tidy-ups: `Date.now()` ids in `RightPanelLabView.tsx:45,50` become an incrementing ref; the default chat messages exist twice (`RightPanelAiChat.tsx:17-28`, `RightPanelLabView.tsx:16-27`), keep one copy in the lab.
 11. Retake the four screenshots. Handoff "Retry 1" section with the real `npx tsc --noEmit` output. Note that the sections are collapsible with no persisted state, and keep the token wishes (18 px name, 13 px section titles).
+
+## Retry 2 (2026-11-03)
+
+Retry 1 landed 9 of 11 fixes. Remaining:
+
+1. **Ids:** the section and row body ids are built from the fixed config ids (`position-body`, `layer-content`; `RightPanelSection.tsx:39-40`, `RightPanelAccordionRow.tsx:28-29`). Derive them with `useId()` (for example `${autoId}-body`). The config id is only for a `data-section-id` attribute and for scrolling by id inside the same frame (scope the lookup to the frame's own ref, not `document`).
+2. **Dead placeholder buttons:** `EmptyState` renders "Add frame", "Insert" and "Ask AI" buttons in every section (`RightPanelSection.tsx:128`), and "Ask AI" is clipped off the right edge in the Design screenshot. The `[&_.esb]:ll:hidden` attempt does not work and is an arbitrary variant: delete it. Do not edit `EmptyState.tsx` (read-only). Use a small local placeholder in `src/editor/shell/right-panel/` (one line of muted text, a dashed `border`, token padding) for the empty section bodies. Do the same for the Motion/Code accordion fallback (`RightPanelAccordionRow.tsx:86-89`, which only repeats the label and value): show the same placeholder.
+3. Retake all four screenshots. The Design shot must show no clipped button and no dead buttons.
+4. Handoff: confirm the "Retry 1" section holds the real tsc output, and add "Retry 2".
+
+This is the last retry: after it, the build session fixes what is left itself. Do not touch files outside your list. `npx tsc --noEmit` once at the end, add a "Retry 2" section to your handoff (the real tsc output, the new screenshots, anything you could not fix), do not commit.
