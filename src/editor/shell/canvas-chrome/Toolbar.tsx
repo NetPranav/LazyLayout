@@ -251,12 +251,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-hidden="true"
         />
 
-        {/* Insert / Add (+) - Disclosure button (keep aria-expanded, drop pressed) */}
+        {/* Insert (+) - Disclosure button (keep aria-expanded, drop pressed) */}
         <IconButton
           ref={insertButtonRef}
           size="md"
-          aria-label="Add"
-          tooltip="Add"
+          aria-label="Insert"
+          tooltip="Insert (I)"
           aria-haspopup="dialog"
           aria-expanded={isInsertOpen}
           tabIndex={focusedIndex === 6 ? 0 : -1}

@@ -24,6 +24,7 @@ export default async function Page({ searchParams }: PageProps) {
   const ai = typeof params.ai === "string" ? params.ai : undefined;
   const view = typeof params.view === "string" ? params.view : undefined;
   const theme = typeof params.theme === "string" ? params.theme : undefined;
+  const usersParam = typeof params.users === "string" ? params.users : undefined;
 
   const initialShowRulers =
     rulers === "on" ? true : rulers === "off" ? false : false;
@@ -34,6 +35,7 @@ export default async function Page({ searchParams }: PageProps) {
     ai === "loading" ? "work" : ai === "done" ? "done" : "idle";
   const initialViewOptionsOpen = view === "open";
   const initialTheme = theme || "paper";
+  const initialUsers = usersParam === "none" || usersParam === "off" ? [] : undefined;
 
   return (
     <CanvasChromeLab
@@ -44,6 +46,7 @@ export default async function Page({ searchParams }: PageProps) {
       initialAiState={initialAiState}
       initialViewOptionsOpen={initialViewOptionsOpen}
       initialTheme={initialTheme}
+      initialUsers={initialUsers}
     />
   );
 }

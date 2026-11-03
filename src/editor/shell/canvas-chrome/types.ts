@@ -1,3 +1,5 @@
+import type { CollabUser } from "@/editor/components/AvatarStack";
+
 export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image";
 
 export type ShapeTool = "box" | "circle" | "line" | "arrow" | "poly" | "star";
@@ -105,4 +107,7 @@ export interface CanvasChromeProps {
   panelsCollapsed?: boolean;
   onTogglePanels?: () => void;
   onPreview?: () => void;
+
+  /** Collaborator avatars stack (.fbar.fpeople) shown when entries exist */
+  users?: readonly CollabUser[];
 }

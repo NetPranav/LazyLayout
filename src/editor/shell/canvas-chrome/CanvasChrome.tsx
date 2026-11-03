@@ -6,6 +6,10 @@ import { Toolbar } from "./Toolbar";
 import { InsertBox } from "./InsertBox";
 import { AiBox } from "./AiBox";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
+import { CanvasContextMenu } from "./CanvasContextMenu";
+import { AvatarStack, type CollabUser } from "@/editor/components/AvatarStack";
+import { useCollabStore } from "@/core/store/useCollabStore";
+import "./fpeople.css";
 import type {
   CanvasChromeProps,
   CanvasTool,
@@ -119,6 +123,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   panelsCollapsed: controlledPanelsCollapsed,
   onTogglePanels: controlledOnTogglePanels,
   onPreview,
+  users,
 }) => {
   // Controllable state pairs managed by useControllable helper
   const [showRulers, setShowRulers] = useControllable(
@@ -263,10 +268,81 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     false
   );
 
+  // Canvas right-click context menu position state
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Collaborator users resolution from prop or real src/core store
+  const connectedPeers = useCollabStore((s) => s.connectedPeers);
+  const localUser = useCollabStore((s) => s.localUser);
+
+  const storeUsers: CollabUser[] = React.useMemo(() => {
+    const peers = Object.values(connectedPeers || {});
+    if (peers.length === 0) return [];
+    return [
+      {
+        id: localUser.id,
+        name: localUser.name,
+        initials: localUser.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+        status: "You",
+      },
+      ...peers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        initials: p.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+        status: p.role || "Viewing",
+      })),
+    ];
+  }, [connectedPeers, localUser]);
+
+  const effectiveUsers = users !== undefined ? users : storeUsers;
+
   // Trigger button references for morph animations
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
   const aiButtonRef = useRef<HTMLButtonElement | null>(null);
   const topAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      // If stage worker or another component already handled this context menu
+      if (e.defaultPrevented) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Do not open on toolbars, menus, dialogs, buttons, inputs
+      if (
+        target.closest(
+          '[role="toolbar"], [role="menu"], [role="dialog"], .ll-fbar, .ll-ins, .ll-aibox, .ll-vpop, button, input, textarea, select'
+        )
+      ) {
+        return;
+      }
+
+      // Do not open on canvas elements (stage handles element right-clicks)
+      if (target.closest("[data-element], [data-layer], [data-sel]")) {
+        return;
+      }
+
+      e.preventDefault();
+      // Close other popovers if open
+      setIsInsertOpen(false);
+      setIsAiBoxOpen(false);
+      setIsViewOptionsOpen(false);
+
+      setContextMenuPos({ x: e.clientX, y: e.clientY });
+    },
+    [setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen]
+  );
 
   // Toggle handlers ensuring mutual exclusivity across floating popovers
   const handleToggleInsert = useCallback(() => {
@@ -326,6 +402,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         activeEl instanceof HTMLSelectElement;
 
       if (e.key === "Escape") {
+        if (contextMenuPos) setContextMenuPos(null);
         if (isInsertOpen) setIsInsertOpen(false);
         if (isAiBoxOpen) setIsAiBoxOpen(false);
         if (isViewOptionsOpen) setIsViewOptionsOpen(false);
@@ -396,6 +473,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       role="main"
       aria-label="Canvas"
       data-center="true"
+      onContextMenu={handleContextMenu}
       className={`ll-center ll:relative ll:overflow-hidden ll:w-full ll:h-full ll:bg-surface-canvas ll:select-none ${
         !showRulers ? "ll-noruler" : ""
       }`}
@@ -463,6 +541,13 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
         onPreview={onPreview}
       />
+
+      {/* Collaborator Avatars (.ll-fbar.ll-fpeople) at canvas top-right */}
+      {effectiveUsers && effectiveUsers.length > 0 && (
+        <div className="ll-fbar ll-fpeople" data-collab-stack="true">
+          <AvatarStack users={effectiveUsers} max={3} />
+        </div>
+      )}
 
       {/* Insert Box */}
       <InsertBox
@@ -543,6 +628,51 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onSnapThresholdChange={setSnapThreshold}
         onFocusSelection={onFocusSelection}
         onOpenWorldEnvironment={onOpenWorldEnvironment}
+      />
+
+      {/* Canvas Context Menu */}
+      <CanvasContextMenu
+        open={contextMenuPos !== null}
+        onClose={() => setContextMenuPos(null)}
+        position={contextMenuPos}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        onInsert={() => {
+          setIsInsertOpen(true);
+          setContextMenuPos(null);
+        }}
+        onAddFrame={() => {
+          setActiveTool("frame");
+          setContextMenuPos(null);
+        }}
+        onAddText={() => {
+          setActiveTool("text");
+          setContextMenuPos(null);
+        }}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoom100={handleZoom100}
+        onZoomFit={handleZoomFit}
+        showRulers={showRulers}
+        onToggleRulers={() => setShowRulers((prev) => !prev)}
+        pixelGrid={pixelGrid}
+        onTogglePixelGrid={() => setPixelGrid((prev) => !prev)}
+        snapObjects={snapObjects}
+        onToggleSnapObjects={() => setSnapObjects((prev) => !prev)}
+        snapGuides={snapGuides}
+        onToggleSnapGuides={() => setSnapGuides((prev) => !prev)}
+        checkerboard={checkerboard}
+        onToggleCheckerboard={() => setCheckerboard((prev) => !prev)}
+        panelsCollapsed={panelsCollapsed}
+        onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
+        theme={theme}
+        onThemeChange={setTheme}
+        onOpenCanvasSettings={() => {
+          setIsViewOptionsOpen(true);
+          setContextMenuPos(null);
+        }}
       />
     </main>
   );

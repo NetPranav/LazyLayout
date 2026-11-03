@@ -6,7 +6,8 @@ import type { CanvasTool, ShapeTool, GridStyle, MotionFeel, AiState } from "./ty
 import { ChevronDown } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
-import { CANVAS_CHROME_SIZES } from "./constants";
+import { CANVAS_CHROME_SIZES, CANVAS_CHROME_SAMPLE_USERS } from "./constants";
+import type { CollabUser } from "@/editor/components/AvatarStack";
 
 export interface CanvasChromeLabProps {
   initialShowRulers?: boolean;
@@ -16,6 +17,7 @@ export interface CanvasChromeLabProps {
   initialAiState?: AiState;
   initialViewOptionsOpen?: boolean;
   initialTheme?: string;
+  initialUsers?: readonly CollabUser[];
 }
 
 export function CanvasChromeLab({
@@ -26,8 +28,10 @@ export function CanvasChromeLab({
   initialAiState = "idle",
   initialViewOptionsOpen = false,
   initialTheme = "paper",
+  initialUsers = CANVAS_CHROME_SAMPLE_USERS,
 }: CanvasChromeLabProps) {
   const [showRulers, setShowRulers] = useState(initialShowRulers);
+  const [users, setUsers] = useState<readonly CollabUser[]>(initialUsers);
   const [activeTool, setActiveTool] = useState<CanvasTool>("select");
   const [activeShape, setActiveShape] = useState<ShapeTool>("box");
   const [zoom, setZoom] = useState(0.59);
@@ -139,9 +143,21 @@ export function CanvasChromeLab({
         >
           View Options
         </Button>
+        <Button
+          variant={users.length > 0 ? "primary" : "secondary"}
+          size="sm"
+          data-state="users-toggle"
+          onClick={() => {
+            setUsers((prev) => (prev.length > 0 ? [] : CANVAS_CHROME_SAMPLE_USERS));
+          }}
+          className="ll:h-6 ll:px-2 ll:text-nano"
+        >
+          {users.length > 0 ? `Users (${users.length})` : "Users (0)"}
+        </Button>
       </div>
 
       <CanvasChrome
+        users={users}
         showRulers={showRulers}
         onToggleRulers={setShowRulers}
         activeTool={activeTool}

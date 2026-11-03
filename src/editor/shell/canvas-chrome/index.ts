@@ -7,6 +7,12 @@ export {
   ViewOptionsPopover,
   type ViewOptionsPopoverProps,
 } from "./ViewOptionsPopover";
+export {
+  CanvasContextMenu,
+  CanvasContextMenuContent,
+  type CanvasContextMenuProps,
+  type CanvasContextMenuContentProps,
+} from "./CanvasContextMenu";
 export * from "./types";
 export * from "./insertData";
 export * from "./constants";

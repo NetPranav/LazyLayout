@@ -1,0 +1,81 @@
+/*
+ * Collaborator avatars bar (.ll-fpeople) matching prototype .fbar.fpeople.
+ * Apple-level layout with modest radii, hairline borders, and strict tokens.
+ * Tokens only, no arbitrary values or hardcoded hex colors per UI Rules §6.
+ */
+
+.ll-fpeople {
+  position: absolute;
+  top: var(--ll-spacing-4);
+  right: var(--ll-spacing-4);
+  bottom: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  z-index: 20;
+}
+
+.ll-fpeople .ll-avs {
+  height: var(--ll-spacing-10);
+  padding: 0;
+  gap: 0;
+}
+
+.ll-fpeople .ll-av {
+  position: relative;
+  width: var(--ll-spacing-8) !important;
+  height: var(--ll-spacing-8) !important;
+  box-sizing: border-box;
+  background: var(--ll-surface-raised) !important;
+  color: var(--ll-text-primary) !important;
+  border: var(--ll-border-hairline) solid var(--ll-border-color) !important;
+  box-shadow: 0 0 0 var(--ll-spacing-0-5) var(--ll-surface-canvas) !important;
+  border-radius: var(--ll-radius-md) !important;
+  font-family: var(--ll-font-sans-family);
+  font-size: var(--ll-text-micro-size);
+  font-weight: 500;
+  transition: transform var(--ll-dur-fade, 120ms) ease;
+}
+
+.ll-fpeople .ll-av + .ll-av {
+  margin-left: calc(-1 * var(--ll-spacing-1)) !important;
+}
+
+.ll-fpeople .ll-av.ll-more {
+  color: var(--ll-text-muted) !important;
+}
+
+.ll-fpeople .ll-av:nth-child(1) {
+  z-index: 4;
+}
+
+.ll-fpeople .ll-av:nth-child(2) {
+  z-index: 3;
+}
+
+.ll-fpeople .ll-av:nth-child(3) {
+  z-index: 2;
+}
+
+.ll-fpeople .ll-av:nth-child(4) {
+  z-index: 1;
+}
+
+.ll-fpeople .ll-avs:hover .ll-av:nth-child(2) {
+  transform: translateX(var(--ll-radius-md));
+}
+
+.ll-fpeople .ll-avs:hover .ll-av:nth-child(3) {
+  transform: translateX(var(--ll-spacing-3));
+}
+
+.ll-fpeople .ll-avs:hover .ll-av:nth-child(4) {
+  transform: translateX(calc(var(--ll-spacing-4) + var(--ll-spacing-0-5)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-fpeople .ll-av {
+    transition: none !important;
+  }
+}

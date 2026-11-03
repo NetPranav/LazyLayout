@@ -42,3 +42,15 @@ export const CANVAS_CHROME_SIZES = {
   labImageHeight: 170,
 } as const;
 
+/**
+ * Sample collaborator users matching prototype USERS (AP, RK, SM, JL, TO).
+ * Prototype: AP (Adarsh Pathade), RK (Rina Kapoor), SM (Sam Mori), JL (Jun Lee), TO (Tara Osei).
+ */
+export const CANVAS_CHROME_SAMPLE_USERS = [
+  { id: "1", initials: "AP", name: "Adarsh Pathade", status: "Viewing" },
+  { id: "2", initials: "RK", name: "Rina Kapoor", status: "Editing Hero" },
+  { id: "3", initials: "SM", name: "Sam Mori", status: "Viewing" },
+  { id: "4", initials: "JL", name: "Jun Lee", status: "Viewing" },
+  { id: "5", initials: "TO", name: "Tara Osei", status: "Viewing" },
+] as const;
+
