@@ -95,7 +95,7 @@ exists; this one records the *current status* of each gate, kept current as the 
   directly with no open question (Phase 5, `DOCS/INITIAL/decisions/`).
 - **`ws` (added 2026-11-03, Phase 50):** the WebSocket server of the local MCP bridge, `ws@8` (MIT, no
   dependencies), with `@types/ws` (MIT) for development. Used only by `bin/lazylayout-mcp`, never
-  shipped in the editor bundle. Decision `0014-mcp-bridge.md`.
+  shipped in the editor bundle. Decision `decisions/0014-mcp-bridge.md`.
 - **FigCraft (translated code, added 2026-10-26):** `storytold/figcraft` at commit `6ea44e9`,
   offered as MIT OR Apache-2.0 and used under **MIT**. Its engine logic (shape geometry, colour,
   strokes, vector networks, booleans, layout behaviour, editing rules) is translated from Rust to
