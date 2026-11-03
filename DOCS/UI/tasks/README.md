@@ -10,7 +10,11 @@ One file per task: `YYYY-MM-DD-<short-name>.md`. Claude writes them and workers 
 - the files the worker may touch, and the off-limits list
 - what "done" means: screenshots at 1440, 1024 and 390 in `DOCS/UI/handoffs/screenshots/<short-name>/`, a handoff, `INTEGRATION.md`, `DECISIONS.md`, `COMPONENT_SOURCES.md` and `PARITY.md` updated, every new component on the design system page, no commit
 
-## How Claude launches a worker (Antigravity CLI `agy`)
+## How a worker is started now (2026-11-03)
+
+The user pastes a one-line prompt into Antigravity. `DOCS/UI/BUILD_SESSION.md` §3 has the prompt format. Everything the worker needs goes in the task file, and the worker runs only `npx tsc --noEmit` at the end. The `agy` CLI recipe below is the old way.
+
+## Old way: Claude launches a worker (Antigravity CLI `agy`)
 
 Run from the repo root, in the background:
 

@@ -7,6 +7,10 @@ The product is called **Lazy Layout**. The whole UI is being built from scratch 
 
 Original project context (not the rules for this work): `DOCS/PROJECT_OVERVIEW.md`. The old two-lane rules in `DOCS/TEAM/COLLABORATION.md` do **not** apply here.
 
+## 0. Two sessions (from 2026-11-03)
+
+There are two sessions: the **design session** (Opus) works only on the HTML prototype in `DOCS/UI/design/`, and the **build session** (Sonnet) orchestrates the workers that build `src/editor`. Each one commits only the paths it owns, never with `git add -A`. Read `DOCS/UI/BUILD_SESSION.md` before doing anything.
+
 ## 1. Roles
 
 - **The user = director.** Sets the direction, reviews finished work in batches, and can overrule anything.
