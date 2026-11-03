@@ -55,7 +55,7 @@ You may run several Antigravity workers at once, but only when their file sets c
 - 21 core components in `src/editor/components/`
 - the `/design-system` page
 
-**`menus`** (Menu, SubMenu, ContextMenu, Popover, Select and CommandPalette with the playful motion) is in its last retry. The design session is reviewing it and will commit it as `feat(ui): port playful menu and dropdown motion`. Check `git log` before you start. If that commit isn't there yet, start with a task that doesn't touch those files.
+**`menus` components** (Menu, SubMenu, ContextMenu, Popover, Select and CommandPalette with the playful motion) are committed (`c3dd959`). `menus` stays `wip` until the top bar task replaces the legacy menus in the shell.
 
 **Not built yet**, from the prototype: the whole editor screen. It's in section 5.
 
