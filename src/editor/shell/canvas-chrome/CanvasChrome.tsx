@@ -266,7 +266,6 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   // Trigger button references for morph animations
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
   const aiButtonRef = useRef<HTMLButtonElement | null>(null);
-  const viewOptionsButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Toggle handlers ensuring mutual exclusivity across floating popovers
   const handleToggleInsert = useCallback(() => {
@@ -290,17 +289,6 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       return next;
     });
   }, [setIsAiBoxOpen, setIsInsertOpen, setIsViewOptionsOpen]);
-
-  const handleToggleViewOptions = useCallback(() => {
-    setIsViewOptionsOpen((prev) => {
-      const next = !prev;
-      if (next) {
-        setIsInsertOpen(false);
-        setIsAiBoxOpen(false);
-      }
-      return next;
-    });
-  }, [setIsViewOptionsOpen, setIsInsertOpen, setIsAiBoxOpen]);
 
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => Math.min(4, prev * 1.25));
@@ -460,9 +448,6 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         isAiBoxOpen={isAiBoxOpen}
         onToggleAiBox={handleToggleAiBox}
         aiButtonRef={aiButtonRef}
-        isViewOptionsOpen={isViewOptionsOpen}
-        onToggleViewOptions={handleToggleViewOptions}
-        viewOptionsButtonRef={viewOptionsButtonRef}
         zoom={zoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
@@ -504,7 +489,6 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       <ViewOptionsPopover
         open={isViewOptionsOpen}
         onClose={() => setIsViewOptionsOpen(false)}
-        triggerRef={viewOptionsButtonRef}
         gridStyle={gridStyle}
         onGridStyleChange={setGridStyle}
         gridSize={gridSize}

@@ -2,28 +2,30 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import {
-  MousePointer,
+  MousePointer2,
   Hand,
+  Frame,
   Square,
   Circle,
+  Minus,
+  ArrowUpRight,
+  Hexagon,
+  Star,
   Type,
   Image as ImageIcon,
   Plus,
-  Sparkles,
   Play,
-  SlidersHorizontal,
   Undo2,
   Redo2,
-  PanelLeft,
+  Columns3,
   ChevronDown,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
+  type LucideIcon,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
-import { Menu, MenuItem, MenuSeparator } from "@/editor/components/Menu";
+import { Menu, MenuItem } from "@/editor/components/Menu";
 import { CANVAS_CHROME_SIZES } from "./constants";
 import type { CanvasTool, ShapeTool } from "./types";
 
@@ -40,10 +42,6 @@ export interface ToolbarProps {
   isAiBoxOpen?: boolean;
   onToggleAiBox?: () => void;
   aiButtonRef?: React.RefObject<HTMLButtonElement | null>;
-
-  isViewOptionsOpen?: boolean;
-  onToggleViewOptions?: () => void;
-  viewOptionsButtonRef?: React.RefObject<HTMLButtonElement | null>;
 
   zoom?: number;
   onZoomIn?: () => void;
@@ -63,6 +61,20 @@ export interface ToolbarProps {
   onPreview?: () => void;
 }
 
+const SHAPES: ReadonlyArray<{
+  id: ShapeTool;
+  label: string;
+  icon: LucideIcon;
+  shortcut: string;
+}> = [
+  { id: "box", label: "Rectangle", icon: Square, shortcut: "R" },
+  { id: "circle", label: "Ellipse", icon: Circle, shortcut: "O" },
+  { id: "line", label: "Line", icon: Minus, shortcut: "L" },
+  { id: "arrow", label: "Arrow", icon: ArrowUpRight, shortcut: "Shift+L" },
+  { id: "poly", label: "Polygon", icon: Hexagon, shortcut: "Y" },
+  { id: "star", label: "Star", icon: Star, shortcut: "Shift+Y" },
+];
+
 export const Toolbar: React.FC<ToolbarProps> = ({
   activeTool = "select",
   onSelectTool,
@@ -74,9 +86,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isAiBoxOpen = false,
   onToggleAiBox,
   aiButtonRef,
-  isViewOptionsOpen = false,
-  onToggleViewOptions,
-  viewOptionsButtonRef,
   zoom = 0.59,
   onZoomIn,
   onZoomOut,
@@ -136,7 +145,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     []
   );
 
-  const shapeIcon = activeShape === "circle" ? Circle : Square;
+  const shapeIcon = (SHAPES.find((sh) => sh.id === activeShape) ?? SHAPES[0]).icon;
   const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
   return (
@@ -161,7 +170,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           tabIndex={focusedIndex === 0 ? 0 : -1}
           onFocus={() => setFocusedIndex(0)}
           onClick={() => onSelectTool?.("select")}
-          icon={<Icon icon={MousePointer} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Hand (H) */}
@@ -173,7 +182,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           tabIndex={focusedIndex === 1 ? 0 : -1}
           onFocus={() => setFocusedIndex(1)}
           onClick={() => onSelectTool?.("hand")}
-          icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Separator */}
@@ -191,7 +200,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           tabIndex={focusedIndex === 2 ? 0 : -1}
           onFocus={() => setFocusedIndex(2)}
           onClick={() => onSelectTool?.("frame")}
-          icon={<Icon icon={Square} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Shape Picker */}
@@ -209,7 +218,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             onSelectTool?.("shape");
             setIsShapeMenuOpen((prev) => !prev);
           }}
-          icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Text (T) */}
@@ -221,7 +230,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           tabIndex={focusedIndex === 4 ? 0 : -1}
           onFocus={() => setFocusedIndex(4)}
           onClick={() => onSelectTool?.("text")}
-          icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Image */}
@@ -233,7 +242,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           tabIndex={focusedIndex === 5 ? 0 : -1}
           onFocus={() => setFocusedIndex(5)}
           onClick={() => onSelectTool?.("image")}
-          icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Separator */}
@@ -246,14 +255,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         <IconButton
           ref={insertButtonRef}
           size="md"
-          aria-label="Add (I)"
-          tooltip="Add (I)"
+          aria-label="Add"
+          tooltip="Add"
           aria-haspopup="dialog"
           aria-expanded={isInsertOpen}
           tabIndex={focusedIndex === 6 ? 0 : -1}
           onFocus={() => setFocusedIndex(6)}
           onClick={onToggleInsert}
-          icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Ask AI (/) - Disclosure button (keep aria-expanded, drop pressed) */}
@@ -263,11 +272,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-label="Ask AI (/)"
           tooltip="Ask AI (/)"
           aria-haspopup="dialog"
+          pressed={isAiBoxOpen}
           aria-expanded={isAiBoxOpen}
           tabIndex={focusedIndex === 7 ? 0 : -1}
           onFocus={() => setFocusedIndex(7)}
           onClick={onToggleAiBox}
-          icon={<Icon icon={Sparkles} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
         />
 
         {/* Separator */}
@@ -276,29 +286,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-hidden="true"
         />
 
-        {/* View Options Trigger - Disclosure button (keep aria-expanded, drop pressed) */}
-        <IconButton
-          ref={viewOptionsButtonRef}
-          size="md"
-          aria-label="View options"
-          tooltip="View options"
-          aria-haspopup="dialog"
-          aria-expanded={isViewOptionsOpen}
-          tabIndex={focusedIndex === 8 ? 0 : -1}
-          onFocus={() => setFocusedIndex(8)}
-          onClick={onToggleViewOptions}
-          icon={<Icon icon={SlidersHorizontal} size={CANVAS_CHROME_SIZES.iconMd} />}
-        />
-
         {/* Preview */}
         <IconButton
           size="md"
           aria-label="Preview"
           tooltip="Preview"
-          tabIndex={focusedIndex === 9 ? 0 : -1}
-          onFocus={() => setFocusedIndex(9)}
+          tabIndex={focusedIndex === 8 ? 0 : -1}
+          onFocus={() => setFocusedIndex(8)}
           onClick={onPreview}
-          icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
       </div>
 
@@ -315,10 +311,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-label="Show or hide panels (Ctrl+\)"
           tooltip="Show or hide panels (Ctrl+\)"
           pressed={panelsCollapsed}
-          tabIndex={focusedIndex === 10 ? 0 : -1}
-          onFocus={() => setFocusedIndex(10)}
+          tabIndex={focusedIndex === 9 ? 0 : -1}
+          onFocus={() => setFocusedIndex(9)}
           onClick={onTogglePanels}
-          icon={<Icon icon={PanelLeft} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Columns3} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Undo */}
@@ -327,10 +323,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-label="Undo (Ctrl+Z)"
           tooltip="Undo (Ctrl+Z)"
           disabled={!canUndo}
-          tabIndex={focusedIndex === 11 ? 0 : -1}
-          onFocus={() => setFocusedIndex(11)}
+          tabIndex={focusedIndex === 10 ? 0 : -1}
+          onFocus={() => setFocusedIndex(10)}
           onClick={onUndo}
-          icon={<Icon icon={Undo2} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Undo2} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Redo */}
@@ -339,10 +335,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-label="Redo (Ctrl+Shift+Z)"
           tooltip="Redo (Ctrl+Shift+Z)"
           disabled={!canRedo}
-          tabIndex={focusedIndex === 12 ? 0 : -1}
-          onFocus={() => setFocusedIndex(12)}
+          tabIndex={focusedIndex === 11 ? 0 : -1}
+          onFocus={() => setFocusedIndex(11)}
           onClick={onRedo}
-          icon={<Icon icon={Redo2} size={CANVAS_CHROME_SIZES.iconMd} />}
+          icon={<Icon icon={Redo2} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
 
         {/* Separator */}
@@ -356,11 +352,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           ref={zoomButtonRef}
           variant="ghost"
           size="sm"
-          aria-label={`Zoom level ${zoomPercentage}`}
+          title="Zoom"
           aria-haspopup="menu"
           aria-expanded={isZoomMenuOpen}
-          tabIndex={focusedIndex === 13 ? 0 : -1}
-          onFocus={() => setFocusedIndex(13)}
+          tabIndex={focusedIndex === 12 ? 0 : -1}
+          onFocus={() => setFocusedIndex(12)}
           onClick={() => setIsZoomMenuOpen((prev) => !prev)}
           rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
           className="ll-zb ll:h-7 ll:px-2 ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
@@ -377,33 +373,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         aria-label="Shape options"
         width={CANVAS_CHROME_SIZES.shapeMenuWidth}
       >
-        <MenuItem
-          icon={<Icon icon={Square} size={CANVAS_CHROME_SIZES.iconMd} />}
-          shortcut="R"
-          checked={activeShape === "box"}
-          onClick={() => {
-            onSelectShape?.("box");
-            onSelectTool?.("shape");
-            setIsShapeMenuOpen(false);
-          }}
-        >
-          Rectangle
-        </MenuItem>
-        <MenuItem
-          icon={<Icon icon={Circle} size={CANVAS_CHROME_SIZES.iconMd} />}
-          shortcut="O"
-          checked={activeShape === "circle"}
-          onClick={() => {
-            onSelectShape?.("circle");
-            onSelectTool?.("shape");
-            setIsShapeMenuOpen(false);
-          }}
-        >
-          Ellipse
-        </MenuItem>
+        {SHAPES.map((sh) => (
+          <MenuItem
+            key={sh.id}
+            icon={<Icon icon={sh.icon} size={CANVAS_CHROME_SIZES.iconMd} />}
+            shortcut={sh.shortcut}
+            onClick={() => {
+              onSelectShape?.(sh.id);
+              onSelectTool?.("shape");
+              setIsShapeMenuOpen(false);
+            }}
+          >
+            {sh.label}
+          </MenuItem>
+        ))}
       </Menu>
 
-      {/* Zoom Options Menu from prototype's zoomAct */}
+      {/* Zoom menu: same five items as the prototype's ZOOM_HTML */}
       <Menu
         open={isZoomMenuOpen}
         onClose={() => setIsZoomMenuOpen(false)}
@@ -412,8 +398,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         width={CANVAS_CHROME_SIZES.zoomMenuWidth}
       >
         <MenuItem
-          icon={<Icon icon={ZoomIn} size={CANVAS_CHROME_SIZES.iconMd} />}
-          shortcut="Ctrl++"
           onClick={() => {
             onZoomIn?.();
             setIsZoomMenuOpen(false);
@@ -422,8 +406,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Zoom in
         </MenuItem>
         <MenuItem
-          icon={<Icon icon={ZoomOut} size={CANVAS_CHROME_SIZES.iconMd} />}
-          shortcut="Ctrl+-"
           onClick={() => {
             onZoomOut?.();
             setIsZoomMenuOpen(false);
@@ -431,18 +413,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         >
           Zoom out
         </MenuItem>
-        <MenuSeparator />
         <MenuItem
-          shortcut="Ctrl+0"
           onClick={() => {
             onZoom100?.();
             setIsZoomMenuOpen(false);
           }}
         >
-          Zoom to 100%
+          <span className="ll-mono">100%</span>
         </MenuItem>
         <MenuItem
-          shortcut="Shift+1"
           onClick={() => {
             onZoomFit?.();
             setIsZoomMenuOpen(false);
@@ -451,8 +430,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Fit to screen
         </MenuItem>
         <MenuItem
-          icon={<Icon icon={Maximize2} size={CANVAS_CHROME_SIZES.iconMd} />}
-          shortcut="Shift+2"
           onClick={() => {
             onZoomSelection?.();
             setIsZoomMenuOpen(false);

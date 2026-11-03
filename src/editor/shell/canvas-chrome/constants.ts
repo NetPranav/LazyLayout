@@ -9,6 +9,7 @@ export const CANVAS_CHROME_SIZES = {
   iconSm: 12,
   iconMd: 16,
   iconLg: 20,
+  iconAi: 18,
   iconXl: 24,
 
   // Menu popup widths

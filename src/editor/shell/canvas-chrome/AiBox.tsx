@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useId } from "react";
-import { ArrowUp, Check, Square, X, Maximize2 } from "lucide-react";
+import { ArrowUp, Check, Frame, X, Maximize2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
@@ -25,7 +25,14 @@ export interface AiBoxProps {
   aiLoading?: boolean;
 }
 
-const DEFAULT_SUGGESTIONS = ["Make it bolder", "Shorten", "Rewrite", "Animate"];
+const SUGGESTIONS: Record<string, string[]> = {
+  text: ["Make it bolder", "Shorten", "Rewrite", "Animate"],
+  layer: ["Change style", "Animate", "Duplicate"],
+  none: ["Add a section", "Improve the layout"],
+  multi: ["Align them", "Group"],
+  motion: ["Fade in", "Slide up", "Stagger"],
+  code: ["Explain", "Refactor", "Add props"],
+};
 
 export const AiBox: React.FC<AiBoxProps> = ({
   open,
@@ -198,7 +205,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
         bottom:
           "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
       }}
-      className="ll-aibox ll-surface-overlay ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:gap-2 ll:p-3 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:outline-none"
+      className="ll-aibox ll-surface-overlay ll:group ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:gap-2 ll:p-3 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:outline-none"
     >
       <div className="ll-lay ll:flex ll:flex-col ll:gap-2 ll:w-full">
         {/* Done State Banner (.ll-aidone) */}
@@ -235,7 +242,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
             {/* Context tag (.ll-aitag) */}
             {hasContext && (
               <span className="ll-aitag ll:flex ll:items-center ll:gap-1 ll:shrink-0 ll:h-6 ll:pl-1.5 ll:pr-0.5 ll:rounded-sm ll:bg-surface-bar ll:text-secondary ll:text-nano ll:font-medium ll:select-none">
-                <Icon icon={Square} size={CANVAS_CHROME_SIZES.iconSm} className="ll:shrink-0" />
+                <Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconMd} className="ll:shrink-0" />
                 <span
                   style={{
                     maxWidth: "calc(var(--ll-size-menu-users-w) / 2)",
@@ -290,6 +297,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
               size="sm"
               aria-label="Expand AI"
               tooltip="Expand AI"
+              className="ll-aiexpand ll:w-7 ll:h-7 ll:shrink-0 ll:opacity-0 ll:group-hover:opacity-100 ll:focus-visible:opacity-100"
               icon={<Icon icon={Maximize2} size={CANVAS_CHROME_SIZES.iconMd} />}
             />
 
@@ -313,7 +321,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
         {/* Suggestion Chips (.ll-aisugg) */}
         {aiState === "idle" && !prompt.trim() && (
           <div className="ll-aisugg ll:flex ll:flex-wrap ll:gap-1.5 ll:pt-1">
-            {DEFAULT_SUGGESTIONS.map((suggestion) => (
+            {(SUGGESTIONS[context.type] ?? SUGGESTIONS.layer).map((suggestion) => (
               <Button
                 key={suggestion}
                 variant="ghost"
