@@ -1,6 +1,6 @@
 # Task: rebuild the top bar (`shell`, Phase 1, queue item 1)
 
-- **Given by:** Claude (build session), 2026-11-03. **Area:** `shell`: top bar. Set the `shell` row in `PARITY.md` stays `wip` (the build session updates it).
+- **Given by:** Claude (build session), 2026-11-03. **Area:** `shell`: top bar.
 - **Goal:** the editor's top bar looks and behaves exactly like the prototype's: logo menu that traces while saving, project name, the Design / Motion / Code mode tabs, the theme button, the Ship button with its popover, and the page switcher. Replace the old `TopBar.tsx` (device-mode/undo/redo design), keep `EditorShell.tsx` working.
 
 ## Read only these
@@ -31,13 +31,17 @@
 - No browser-only reads on the first render (use `useMounted()` or `useSyncExternalStore` with a server snapshot). No raw `requestAnimationFrame`. No `setState` in effects.
 - Every icon goes through `Icon`. No glass, blur or pill shapes (the mode control is a rectangle with `--ll-radius-md`).
 - Unlayered CSS in `animations.css` beats Tailwind: keep looks in `ll:` classes; only the trace keyframes and `data-saving` rules go in `animations.css`.
-- You are the **only** worker in this batch, so you may edit the shared files (`tokens.css`, `tailwind.css`, `animations.css`, `ComponentDemos.tsx`, `DesignSystemPage.tsx`).
+- You are the **only worker allowed to edit the shared files** (`tokens.css`, `tailwind.css`, `animations.css`, `ComponentDemos.tsx`, `DesignSystemPage.tsx`, `EditorShell.tsx`, `components/index.ts`) in this batch.
 - No new dependencies. Do not bulk-reformat files.
 
 ## Files you may touch
 
 `src/editor/components/TopBar.tsx` (rewrite, keep it exported from `index.ts`), new components in `src/editor/components/` (`PageSwitcher.tsx`, `ShipPopover.tsx`, `ModeTabs.tsx`, `LogoMark.tsx` or similar, exported from `index.ts`), `src/editor/shell/EditorShell.tsx`, `src/editor/styles/{tokens,tailwind,animations}.css`, `src/editor/design-system/**`.
 **Do not edit** `Menu.tsx`, `Popover.tsx`, `Select.tsx`, `CommandPalette.tsx`, `ListRow.tsx` or anything in `src/editor/motion/`: another session is finishing them and they have uncommitted changes. If you need a change there, list it in the handoff under "Not done / blocked".
+
+## Shell grid and slots (also yours)
+
+Rebuild `EditorShell.tsx` as the app grid from the prototype's `.app` (rows: top bar, then body; columns: left panel `--ll-size-panel-left-w`, center 1fr, right panel `--ll-size-panel-right-w`; grep `.app{`, `.app.lc` and `.app.rc` for the collapsed states). Provide three slots (`left`, `center`, `right`) that default to empty placeholders of the right size. Three other workers are building `LeftPanel` (`src/editor/shell/left-panel/`), `CanvasChrome` (`src/editor/shell/canvas-chrome/`) and `RightPanelFrame` (`src/editor/shell/right-panel/`) in parallel. **Do not import them.** The build session mounts them into your slots after the batch. Keep the panel collapse state (`lc`, `rc`) as shell state with a `togglePanel(name, open)` function that the logo menu's Window items call.
 
 ## Design system page
 
@@ -48,3 +52,14 @@ Add a "Top bar" section: the full bar in each of the five themes' current theme 
 - Run `npx tsc --noEmit` once at the end and paste the output in the handoff. Do not run lint, build or e2e.
 - Screenshots at 1440 (Playwright headless; see `.claude/skills/run-editor`) in `DOCS/UI/handoffs/screenshots/shell-top-bar/`: the editor with the top bar, the logo menu open with a submenu, the Ship popover open, the saving state, and Noir.
 - Write the handoff from `DOCS/UI/handoffs/TEMPLATE.md` (`YYYY-MM-DD-HHMM-shell-top-bar.md`). **Do not commit.**
+
+## Parallel batch rules (4 workers run at once in the same working tree)
+
+- Other workers are editing other files right now. **Edit only the files listed under "Files you may touch".** Never run `git add`, `git commit`, `git stash`, `git checkout` or `git reset`.
+- `npx tsc --noEmit` covers the whole project, so errors in other workers' files may appear. Fix only errors in your own files and note the rest in the handoff.
+- **The dev server is already running on http://localhost:3000. Do not start `next dev` or `next build`.** Playwright: headless only, `executablePath` of the `chromium-1248` build under `%LOCALAPPDATA%\ms-playwright` (the default 1243 is not installed). Use your own screenshot folder.
+- Do not edit `DECISIONS.md`, `PARITY.md`, `INTEGRATION.md`, `COMPONENT_SOURCES.md`. Put decisions, integration notes, component sources and token wishes in your handoff and the build session merges them.
+- `Menu.tsx`, `Popover.tsx`, `Select.tsx`, `CommandPalette.tsx`, `ListRow.tsx`, `src/editor/motion/*` are read-only for you (another session has uncommitted work there). Need a change? Put it in the handoff under "Not done / blocked".
+- Shared files (`tokens.css`, `tailwind.css`, `animations.css`, `ComponentDemos.tsx`, `DesignSystemPage.tsx`, `EditorShell.tsx`, `components/index.ts`) belong to the **top bar worker** only unless your list says otherwise. Use only existing tokens. If you need a new token, use the closest existing one and list the wish in the handoff.
+- Verify your component without the shell: add a lab route `src/app/design-system/<your-area>/page.tsx` (copy the `labsEnabled` / `notFound()` guard from `src/app/design-system/page.tsx`) that renders your component inside a 1440 x 900 frame. Screenshots at 1440 only, in `DOCS/UI/handoffs/screenshots/<your-area>/`.
+- Write the handoff as `DOCS/UI/handoffs/2026-11-03-HHMM-<your-area>.md` from `TEMPLATE.md`. **Do not commit.**
