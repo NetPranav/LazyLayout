@@ -1,7 +1,7 @@
 // Active motion feel and reduced motion support ported from Nook (the owner's own product) & prototype
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { MOTION_PRESETS, type MotionPresetKey, type MotionPreset } from "./presets";
+import { MOTION_PRESETS, PLAYFUL_PRESETS, type MotionPresetKey, type MotionPreset } from "./presets";
 import { springEase } from "./ease";
 import { prefersReducedMotion, subscribeReducedMotion, getServerReducedMotion } from "./reducedMotion";
 
@@ -25,6 +25,19 @@ export function subscribeFeel(callback: () => void): () => void {
   };
 }
 
+/** Return the MotionPreset object for a given feel key (all three feels use the prototype's playful values). */
+export function getPresetForFeel(feel: MotionPresetKey): MotionPreset {
+  return {
+    ...MOTION_PRESETS[feel],
+    ...PLAYFUL_PRESETS[feel],
+  };
+}
+
+/** Return the MotionPreset object for the active feel. */
+export function getActivePreset(): MotionPreset {
+  return getPresetForFeel(currentFeel);
+}
+
 // Initialize feel from localStorage if in browser
 if (typeof window !== "undefined") {
   try {
@@ -34,6 +47,14 @@ if (typeof window !== "undefined") {
     }
   } catch {
     // ignore localStorage errors
+  }
+
+  // Initialize pop tokens in browser on load
+  if (typeof document !== "undefined") {
+    const preset = getActivePreset();
+    const e = springEase(preset.pop[0], preset.pop[1]);
+    document.documentElement.style.setProperty("--ll-ease-pop", e.easing);
+    document.documentElement.style.setProperty("--ll-dur-pop", `${e.duration}ms`);
   }
 
   window.addEventListener("ll-feel-change", (e: Event) => {
@@ -53,11 +74,6 @@ export function getFeel(): MotionPresetKey {
 /** Server snapshot for feel (defaults to 'bouncy' on server). */
 export function getServerFeel(): MotionPresetKey {
   return "bouncy";
-}
-
-/** Return the MotionPreset object for the active feel. */
-export function getActivePreset(): MotionPreset {
-  return MOTION_PRESETS[currentFeel];
 }
 
 /**
@@ -80,7 +96,7 @@ export function applyFeel(feel: MotionPresetKey): void {
   }
 
   if (typeof document !== "undefined") {
-    const preset = MOTION_PRESETS[feel];
+    const preset = getActivePreset();
     const e = springEase(preset.pop[0], preset.pop[1]);
     document.documentElement.style.setProperty("--ll-ease-pop", e.easing);
     document.documentElement.style.setProperty("--ll-dur-pop", `${e.duration}ms`);
@@ -106,7 +122,7 @@ export function useFeel() {
   useEffect(() => {
     // Apply document tokens on mount
     if (typeof document !== "undefined") {
-      const preset = MOTION_PRESETS[currentFeel];
+      const preset = getActivePreset();
       const e = springEase(preset.pop[0], preset.pop[1]);
       document.documentElement.style.setProperty("--ll-ease-pop", e.easing);
       document.documentElement.style.setProperty("--ll-dur-pop", `${e.duration}ms`);
@@ -120,7 +136,7 @@ export function useFeel() {
   return {
     feel,
     setFeel: changeFeel,
-    preset: MOTION_PRESETS[feel],
+    preset: getPresetForFeel(feel),
     reducedMotion: reduced,
   };
 }

@@ -191,6 +191,15 @@ export const MENU_FALLBACKS = {
   menuWidthWide: 320,         // --ll-size-menu-wide-w
   reducedMotionDuration: 120, // MOT / reduced motion standard
   defaultMenuHeight: 240,
+  seedDefault: { w: 32, h: 32 },
+  seedPointer: { w: 16, h: 16 },
+  safeTriangleThrottle: 45,   // ms throttle for safe-triangle mouse tracking
+  defaultFontSize: 11,        // px fallback font-size
+  selectionDelay: 120,        // ms delay before landing animated selection
+  surfaceSeedDefault: { w: 12, h: 12, r: 6 }, // px seed size and radius when a surface opens without a source rect
+  selectListMaxHeight: 300,   // px cap for the select list
+  selectListViewportGap: 16,  // px kept free below the select list
+  selectListBorderAllowance: 2, // px for the list surface borders
 };
 
 /** Default shape springs for island / surface overlays */

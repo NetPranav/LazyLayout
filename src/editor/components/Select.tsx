@@ -100,7 +100,7 @@ function applyBulgeEl(
   const S = 1 * (1 + 0.9 * clamp(bvSpring.x, 0, 1));
   const r3 = RH * 3;
 
-  const rowEls = Array.from(ddi.querySelectorAll<HTMLElement>(".dd-o"));
+  const rowEls = Array.from(ddi.querySelectorAll<HTMLElement>(".ll-dd-o"));
   rowEls.forEach((r) => {
     const y = r.offsetTop + RH / 2 - c;
     const ay = Math.abs(y);
@@ -198,7 +198,7 @@ export const Select: React.FC<SelectProps> = ({
         checkSim: {
           sp: [ckSpring],
           apply: () => {
-            const ck = menuRef.current?.querySelector<HTMLElement>(".dd-ck");
+            const ck = menuRef.current?.querySelector<HTMLElement>(".ll-dd-ck");
             if (ck) {
               ck.style.translate = `0 ${ckSpring.x.toFixed(2)}px`;
             }
@@ -284,7 +284,7 @@ export const Select: React.FC<SelectProps> = ({
       surfRef.current.leave();
     }
 
-    const exitDuration = prefersReducedMotion() ? 120 : MOT.exitDelay + MOT.exitMs;
+    const exitDuration = prefersReducedMotion() ? MENU_FALLBACKS.reducedMotionDuration : MOT.exitDelay + MOT.exitMs;
     setTimeout(() => {
       setIsRendered(false);
       setQuery("");
@@ -318,14 +318,17 @@ export const Select: React.FC<SelectProps> = ({
       const box = fld.getBoundingClientRect();
       const sH = isSearchEnabled ? SH : 0;
       const contentH = ddi.offsetHeight;
-      const maxH = Math.min(300, window.innerHeight - 16 - sH - 2);
+      const maxH = Math.min(
+        MENU_FALLBACKS.selectListMaxHeight,
+        window.innerHeight - MENU_FALLBACKS.selectListViewportGap - sH - MENU_FALLBACKS.selectListBorderAllowance
+      );
       const ddlH = Math.min(contentH, maxH);
 
       ddl.style.height = `${ddlH}px`;
       isLongRef.current = contentH > ddlH + 1;
       maxScrollRef.current = Math.max(0, contentH - ddlH);
 
-      const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".dd-o"));
+      const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".ll-dd-o"));
       const curRow = selectedIndex >= 0 ? rows[selectedIndex] : rows[0];
 
       const st = (isLongRef.current && curRow)
@@ -367,7 +370,7 @@ export const Select: React.FC<SelectProps> = ({
 
       cancelAll(ddl);
 
-      const ckEl = menuEl.querySelector<HTMLElement>(".dd-ck");
+      const ckEl = menuEl.querySelector<HTMLElement>(".ll-dd-ck");
       if (curRow && ckEl) {
         m.ckSpring.jump(curRow.offsetTop + (RH - 14) / 2);
         ckEl.style.translate = `0 ${m.ckSpring.x}px`;
@@ -401,9 +404,9 @@ export const Select: React.FC<SelectProps> = ({
       applyBulge();
 
       if (kb) {
-        menuEl.classList.add("kb");
+        menuEl.classList.add("ll-kb");
       } else {
-        menuEl.classList.remove("kb");
+        menuEl.classList.remove("ll-kb");
       }
 
       if (isSearchEnabled && searchInputRef.current) {
@@ -442,7 +445,7 @@ export const Select: React.FC<SelectProps> = ({
       }
 
       isBusyRef.current = true;
-      const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".dd-o"));
+      const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".ll-dd-o"));
       const row = rows[idx];
 
       const box = fld.getBoundingClientRect();
@@ -455,8 +458,8 @@ export const Select: React.FC<SelectProps> = ({
 
       onChange?.(opt.value);
 
-      const ckEl = menuRef.current?.querySelector<HTMLElement>(".dd-ck");
-      const ghEl = menuRef.current?.querySelector<HTMLElement>(".dd-gh");
+      const ckEl = menuRef.current?.querySelector<HTMLElement>(".ll-dd-ck");
+      const ghEl = menuRef.current?.querySelector<HTMLElement>(".ll-dd-gh");
       if (ckEl) ckEl.style.opacity = "1";
       if (ghEl) ghEl.style.opacity = "0";
 
@@ -484,7 +487,7 @@ export const Select: React.FC<SelectProps> = ({
           return;
         }
         const rr = row.getBoundingClientRect();
-        const lbEl = row.querySelector<HTMLElement>(".dd-lb");
+        const lbEl = row.querySelector<HTMLElement>(".ll-dd-lb");
         const lb = lbEl?.getBoundingClientRect();
         const p = getActivePreset();
 
@@ -498,7 +501,7 @@ export const Select: React.FC<SelectProps> = ({
         const tr = le.getBoundingClientRect();
         const s0 =
           parseFloat(getComputedStyle(lbEl).fontSize) /
-          (parseFloat(getComputedStyle(le).fontSize) || 11);
+          (parseFloat(getComputedStyle(le).fontSize) || MENU_FALLBACKS.defaultFontSize);
         const fly = ghostText(le, opt.label, tr);
 
         let done = false;
@@ -527,7 +530,7 @@ export const Select: React.FC<SelectProps> = ({
 
         if (an) an.onfinish = land;
         setTimeout(land, an ? 1200 : 0);
-      }, 120);
+      }, MENU_FALLBACKS.selectionDelay);
     },
     [closeDropdown, getMotion, onChange, options, selectedIndex]
   );
@@ -634,16 +637,16 @@ export const Select: React.FC<SelectProps> = ({
     const ddi = ddiRef.current;
     const menuEl = menuRef.current;
     if (!ddi || !menuEl) return;
-    const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".dd-o"));
+    const rows = Array.from(ddi.querySelectorAll<HTMLElement>(".ll-dd-o"));
     const row = rows[idx];
     if (!row) return;
 
-    menuEl.classList.remove("kb");
-    rows.forEach((r) => r.classList.remove("on"));
-    row.classList.add("on");
+    menuEl.classList.remove("ll-kb");
+    rows.forEach((r) => r.classList.remove("ll-on"));
+    row.classList.add("ll-on");
     hlMove(ddi, row);
 
-    const ghEl = menuEl.querySelector<HTMLElement>(".dd-gh");
+    const ghEl = menuEl.querySelector<HTMLElement>(".ll-dd-gh");
     if (ghEl) {
       if (idx === selectedIndex) {
         ghEl.style.opacity = "0";
@@ -671,7 +674,7 @@ export const Select: React.FC<SelectProps> = ({
       if (k === "ArrowDown" || k === "ArrowUp") {
         e.preventDefault();
         e.stopPropagation();
-        menuRef.current?.classList.add("kb");
+        menuRef.current?.classList.add("ll-kb");
         if (!n) return;
         const next =
           activeIndex < 0
@@ -683,7 +686,7 @@ export const Select: React.FC<SelectProps> = ({
             : clamp(activeIndex + (k === "ArrowDown" ? 1 : -1), 0, n - 1);
         handleItemHover(next);
 
-        const row = ddiRef.current?.querySelectorAll<HTMLElement>(".dd-o")[next];
+        const row = ddiRef.current?.querySelectorAll<HTMLElement>(".ll-dd-o")[next];
         if (row && ddlRef.current) {
           const h = ddlRef.current.clientHeight;
           const top = row.offsetTop;
@@ -696,7 +699,7 @@ export const Select: React.FC<SelectProps> = ({
       if (!isInput && (k === "Home" || k === "End" || k === "PageDown" || k === "PageUp")) {
         e.preventDefault();
         e.stopPropagation();
-        menuRef.current?.classList.add("kb");
+        menuRef.current?.classList.add("ll-kb");
         if (!n) return;
         const next =
           k === "Home"
@@ -738,7 +741,7 @@ export const Select: React.FC<SelectProps> = ({
         );
         if (matchIdx >= 0) {
           handleItemHover(matchIdx);
-          const row = ddiRef.current?.querySelectorAll<HTMLElement>(".dd-o")[matchIdx];
+          const row = ddiRef.current?.querySelectorAll<HTMLElement>(".ll-dd-o")[matchIdx];
           if (row && ddlRef.current) {
             scrollToY(row.offsetTop + RH / 2 - ddlRef.current.clientHeight / 2);
           }
@@ -789,7 +792,7 @@ export const Select: React.FC<SelectProps> = ({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isOpen, closeDropdown]);
 
-  const heightClass = size === "sm" ? "ll:h-7 ll:px-2 ll:gap-1.5" : "ll:h-8 ll:px-2.5 ll:gap-2";
+  const heightClass = size === "sm" ? "ll:h-7 ll:px-2 ll:gap-1.5" : "ll:h-row ll:px-2.5 ll:gap-2";
 
   return (
     <div
@@ -810,7 +813,7 @@ export const Select: React.FC<SelectProps> = ({
         data-open={isOpen ? "true" : undefined}
         data-disabled={disabled ? "true" : undefined}
         data-mixed={mixed ? "true" : undefined}
-        className="dfield dd ll:relative ll:flex ll:items-center ll:w-full"
+        className="ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:w-full"
       >
         <button
           ref={triggerRef}
@@ -824,11 +827,11 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}
-          className={`dd-f ll:relative ll:flex ll:items-center ll:justify-between ll:w-full ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none hover:ll:border-text-muted ${heightClass}`}
+          className={`ll-dd-f ll:relative ll:flex ll:items-center ll:justify-between ll:w-full ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:hover:border-text-muted ${heightClass}`}
         >
           <span
             ref={labelRef}
-            className="ddt ll:flex-1 ll:truncate ll:font-mono ll:text-small ll:text-primary"
+            className="ll-ddt ll:flex-1 ll:truncate ll:font-sans ll:text-small ll:text-primary"
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
@@ -836,7 +839,7 @@ export const Select: React.FC<SelectProps> = ({
           <Icon
             icon={ChevronDown}
             size={14}
-            className="dchev ll:text-muted ll:shrink-0 ll:ml-2"
+            className="ll-dchev ll:text-muted ll:shrink-0 ll:ml-2"
           />
         </button>
       </div>
@@ -848,11 +851,11 @@ export const Select: React.FC<SelectProps> = ({
             role="presentation"
             tabIndex={-1}
             onKeyDown={handleOpenKeyDown}
-            className="menu dd ll-menu ll:fixed ll:z-80 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
+            className="ll-menu ll-dd ll:fixed ll:z-80 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
           >
             <div ref={layRef} className="ll-lay">
               {isSearchEnabled && (
-                <div className="dd-s ll:flex ll:items-center ll:gap-2 ll:h-9 ll:px-3 ll:border-b ll:border-border ll:text-muted">
+                <div className="ll-dd-s ll:flex ll:items-center ll:gap-2 ll:h-9 ll:px-3 ll:border-b ll:border-border ll:text-muted">
                   <Icon icon={Search} size={14} className="ll:shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -878,14 +881,14 @@ export const Select: React.FC<SelectProps> = ({
                 tabIndex={-1}
                 aria-label={ariaLabel ?? label ?? "Options"}
                 onScroll={handleScroll}
-                className="ddl ll:overflow-y-auto ll:overscroll-contain"
+                className="ll-ddl ll:overflow-y-auto ll:overscroll-contain"
               >
-                <div ref={ddiRef} className="ddi ll:relative ll:p-1">
+                <div ref={ddiRef} className="ll-ddi ll:relative ll:p-1">
                   <i aria-hidden="true" className="ll-hl" />
-                  <i aria-hidden="true" className="dd-gh">
+                  <i aria-hidden="true" className="ll-dd-gh">
                     <Icon icon={Check} size={14} />
                   </i>
-                  <i aria-hidden="true" className="dd-ck">
+                  <i aria-hidden="true" className="ll-dd-ck">
                     <Icon icon={Check} size={14} />
                   </i>
 
@@ -903,14 +906,14 @@ export const Select: React.FC<SelectProps> = ({
                           data-cur={isSelected ? "true" : undefined}
                           onClick={() => pickRow(originalIdx)}
                           onMouseEnter={() => handleItemHover(i)}
-                          className="dd-o ll:flex ll:items-center ll:h-7 ll:cursor-pointer ll:rounded-sm"
+                          className="ll-dd-o ll:flex ll:items-center ll:h-7 ll:cursor-pointer ll:rounded-sm"
                         >
-                          <span className="dd-i ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-full ll:pl-8 ll:pr-3 ll:text-small ll:whitespace-nowrap">
-                            <span className="dd-lb ll:truncate ll:text-primary">
+                          <span className="ll-dd-i ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-full ll:pl-8 ll:pr-3 ll:text-small ll:whitespace-nowrap">
+                            <span className="ll-dd-lb ll:truncate ll:text-primary">
                               {opt.label}
                             </span>
                             {opt.hint && (
-                              <span className="dd-h ll:ml-auto ll:font-mono ll:text-micro ll:text-muted">
+                              <span className="ll-dd-h ll:ml-auto ll:font-mono ll:text-micro ll:text-muted">
                                 {opt.hint}
                               </span>
                             )}
@@ -919,7 +922,7 @@ export const Select: React.FC<SelectProps> = ({
                       );
                     })
                   ) : (
-                    <div className="dd-none ll:flex ll:items-center ll:justify-center ll:h-14 ll:text-small ll:text-muted">
+                    <div className="ll-dd-none ll:flex ll:items-center ll:justify-center ll:h-14 ll:text-small ll:text-muted">
                       No results
                     </div>
                   )}

@@ -61,7 +61,7 @@ export const ListRow: React.FC<ListRowProps> = ({
         {/* Drag handle */}
         <div
           aria-hidden="true"
-          className="ll:cursor-grab active:ll:cursor-grabbing ll:text-muted ll:hover:text-primary ll:shrink-0"
+          className="ll:cursor-grab ll:active:cursor-grabbing ll:text-muted ll:hover:text-primary ll:shrink-0"
         >
           <Icon icon={GripVertical} size={14} />
         </div>

@@ -2,7 +2,7 @@
 
 import { Spring } from "./spring";
 import { simAdd, simRemove, type Sim } from "./loop";
-import { MOT, SP, EXIT } from "./presets";
+import { MOT, SP, EXIT, MENU_FALLBACKS } from "./presets";
 import { getActivePreset, prefersReducedMotion } from "./feel";
 import { springAnim, cancelAll } from "./ease";
 import { measureFlip, playFlip } from "./flip";
@@ -53,7 +53,7 @@ export function blurIn(c: HTMLElement, d: number): void {
 export function enterRows(layer: HTMLElement): void {
   const p = getActivePreset();
   let n = 0;
-  const isMenu = layer.parentElement?.classList.contains("menu");
+  const isMenu = layer.parentElement?.classList.contains("ll-menu");
   const sc = isMenu
     ? (typeof p.rowScale === "number" ? p.rowScale : 0.9)
     : 1 - (1 - (typeof p.rowScale === "number" ? p.rowScale : 0.9)) / 3;
@@ -154,7 +154,7 @@ export function popRow(t: HTMLElement): void {
  */
 export function wiggle(row: HTMLElement): void {
   const p = getActivePreset();
-  const ic = row.querySelector<HTMLElement>(".ico, svg, [data-icon]");
+  const ic = row.querySelector<HTMLElement>(".ll-ico, svg, [data-icon]");
   if (prefersReducedMotion() || !p.wiggle || !ic) return;
   const parent = row.parentElement;
   const idx = parent ? Array.from(parent.children).indexOf(row) : 0;
@@ -218,7 +218,7 @@ export class Surf {
   }
 
   live(): boolean {
-    return this.el.classList.contains("open") || this.el.hasAttribute("data-lv");
+    return this.el.classList.contains("ll-open") || this.el.hasAttribute("data-lv");
   }
 
   measure(): MeasureResult {
@@ -386,7 +386,7 @@ export class Surf {
       this.el.getAnimations({ subtree: true }).forEach((a) => a.cancel());
     }
 
-    this.el.classList.remove("open");
+    this.el.classList.remove("ll-open");
     this.el.removeAttribute("data-lv");
     this.end();
 
@@ -412,12 +412,12 @@ export class Surf {
 
     const m = this.measure();
     this.fit(m);
-    const f = options.from || { w: 12, h: 12, r: 6 };
+    const f = options.from || { ...MENU_FALLBACKS.surfaceSeedDefault };
     this.from = f;
 
-    this.el.classList.add("open");
+    this.el.classList.add("ll-open");
     if (prefersReducedMotion()) {
-      this.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: "ease-out" });
+      this.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MENU_FALLBACKS.reducedMotionDuration, easing: "ease-out" });
       return;
     }
 
@@ -439,17 +439,17 @@ export class Surf {
 
   leave(): void {
     const el = this.el;
-    if (!el.classList.contains("open")) return;
-    el.classList.remove("open");
+    if (!el.classList.contains("ll-open")) return;
+    el.classList.remove("ll-open");
     el.setAttribute("data-lv", "");
 
     if (prefersReducedMotion()) {
       el.animate([{ opacity: 1 }, { opacity: 0 }], {
-        duration: 120,
+        duration: MENU_FALLBACKS.reducedMotionDuration,
         easing: "ease-out",
         fill: "forwards",
       });
-      this.later(120, () => this.reset());
+      this.later(MENU_FALLBACKS.reducedMotionDuration, () => this.reset());
       return;
     }
 
@@ -474,7 +474,7 @@ export class Surf {
   }
 
   relayout(change: () => void): void {
-    if (prefersReducedMotion() || !this.el.classList.contains("open")) {
+    if (prefersReducedMotion() || (!this.el.classList.contains("ll-open"))) {
       change();
       return;
     }
@@ -506,7 +506,7 @@ export function wheelAttach(root: HTMLElement & { sf?: Surf }): void {
     "wheel",
     (e: WheelEvent) => {
       const s = root.sf;
-      if (!s || !root.classList.contains("open")) return;
+      if (!s || (!root.classList.contains("ll-open"))) return;
       const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
       if (!d) return;
 
@@ -586,7 +586,7 @@ export function hlMove(
   if (!hl || !row || (row as HTMLButtonElement).disabled) return;
   const hs = hsOf(root, hl);
   const p = getActivePreset();
-  const first = !hl.classList.contains("show");
+  const first = !hl.classList.contains("ll-show");
   root.hlRow = row;
   hl.style.left = `${row.offsetLeft}px`;
   hl.style.width = `${row.offsetWidth}px`;
@@ -598,16 +598,16 @@ export function hlMove(
     hs.y.snap();
     hs.h.snap();
   }
-  hl.classList.add("show");
+  hl.classList.add("ll-show");
   hlApply(root);
   simAdd(hs.sim);
 }
 
 export function hlHide(root: HTMLElement & { hlRow?: HTMLElement | null }): void {
   const hl = root.querySelector<HTMLElement>(".ll-hl");
-  if (hl) hl.classList.remove("show");
+  if (hl) hl.classList.remove("ll-show");
   root.hlRow = null;
-  root.querySelectorAll(".ll-lay > .on").forEach((x) => x.classList.remove("on"));
+  root.querySelectorAll(".ll-lay > .ll-on").forEach((x) => x.classList.remove("ll-on"));
 }
 
 /**
@@ -622,7 +622,7 @@ export function inSafeTriangle(
   const l = parseFloat(subEl.style.left) || 0;
   const top = parseFloat(subEl.style.top) || 0;
   const bot = top + z.h;
-  const ex = subEl.classList.contains("flip") ? l + z.w : l;
+  const ex = subEl.hasAttribute("data-flip") ? l + z.w : l;
   const cx = mousePos.x;
   const cy = mousePos.y;
 

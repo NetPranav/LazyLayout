@@ -122,6 +122,7 @@ export const Menu: React.FC<MenuProps> = ({
   variant = "default",
   id,
 }) => {
+  const autoId = useId();
   const mounted = useMounted();
   const menuRef = useRef<HTMLDivElement>(null);
   const layRef = useRef<HTMLDivElement>(null);
@@ -215,9 +216,6 @@ export const Menu: React.FC<MenuProps> = ({
     inSubRef.current = false;
     const parentRow = activeSubRowRef.current;
     if (parentRow) {
-      parentRow.classList.remove("subopen");
-      delete parentRow.dataset.subopen;
-      parentRow.setAttribute("aria-expanded", "false");
       if (restoreFocus) {
         parentRow.focus();
         moveHighlight(parentRow);
@@ -240,7 +238,7 @@ export const Menu: React.FC<MenuProps> = ({
     const mm = menuRef.current;
     if (!sbm || !ss || !mm) return;
 
-    const live = sbm.classList.contains("open");
+    const live = sbm.classList.contains("ll-open");
     if (activeSubRowRef.current === rowEl && live) return;
 
     if (live || (sbm.hasAttribute("data-lv") && !prefersReducedMotion())) {
@@ -250,15 +248,9 @@ export const Menu: React.FC<MenuProps> = ({
       const oldLeft = parseFloat(sbm.style.left) || 0;
       let dir = 1;
       if (oldRow) {
-        oldRow.classList.remove("subopen");
-        delete oldRow.dataset.subopen;
-        oldRow.setAttribute("aria-expanded", "false");
         dir = rowEl.getBoundingClientRect().top >= oldRow.getBoundingClientRect().top ? 1 : -1;
       }
       activeSubRowRef.current = rowEl;
-      rowEl.classList.add("subopen");
-      rowEl.dataset.subopen = "true";
-      rowEl.setAttribute("aria-expanded", "true");
 
       if (!prefersReducedMotion()) {
         ss.wake();
@@ -270,7 +262,7 @@ export const Menu: React.FC<MenuProps> = ({
           if (typeof sbm.getAnimations === "function") {
             sbm.getAnimations().forEach((a) => a.cancel());
           }
-          sbm.classList.add("open");
+          sbm.classList.add("ll-open");
           sbm.removeAttribute("data-lv");
           ss.G.to = 0;
           ss.Y.to = 0;
@@ -284,7 +276,6 @@ export const Menu: React.FC<MenuProps> = ({
         if (!sbm || !ss) return;
         const m = ss.measure();
         const g = placeSub(mm, rowEl, m.w, m.h);
-        sbm.classList.toggle("flip", g.flip);
         if (g.flip) {
           sbm.dataset.flip = "true";
         } else {
@@ -317,16 +308,8 @@ export const Menu: React.FC<MenuProps> = ({
     }
 
     // Fresh open
-    if (activeSubRowRef.current) {
-      activeSubRowRef.current.classList.remove("subopen");
-      delete activeSubRowRef.current.dataset.subopen;
-      activeSubRowRef.current.setAttribute("aria-expanded", "false");
-    }
     ss.reset();
     activeSubRowRef.current = rowEl;
-    rowEl.classList.add("subopen");
-    rowEl.dataset.subopen = "true";
-    rowEl.setAttribute("aria-expanded", "true");
     setActiveSubId(subId);
 
     const unreg = defaultHost.register(() => {
@@ -334,7 +317,6 @@ export const Menu: React.FC<MenuProps> = ({
       if (!sbm || !ss) return;
       const m = ss.measure();
       const g = placeSub(mm, rowEl, m.w, m.h);
-      sbm.classList.toggle("flip", g.flip);
       if (g.flip) {
         sbm.dataset.flip = "true";
       } else {
@@ -347,7 +329,7 @@ export const Menu: React.FC<MenuProps> = ({
         slide: g.flip ? -1 : 1,
         y0: g.rowY,
         from: {
-          w: 16,
+          w: MENU_FALLBACKS.seedPointer.w,
           h: rowEl.offsetHeight,
           r: parseFloat(getComputedStyle(sbm).borderRadius) || MENU_FALLBACKS.menuRadius,
         },
@@ -367,15 +349,15 @@ export const Menu: React.FC<MenuProps> = ({
         subTimerRef.current = null;
       }
 
-      if (!rowEl.classList.contains("on")) {
+      if (!rowEl.classList.contains("ll-on")) {
         wiggle(rowEl);
       }
-      mm.querySelectorAll(".ll-lay > .on").forEach((x) => x.classList.remove("on"));
-      rowEl.classList.add("on");
-      mm.classList.remove("kb");
+      mm.querySelectorAll(".ll-lay > .ll-on").forEach((x) => x.classList.remove("ll-on"));
+      rowEl.classList.add("ll-on");
+      mm.classList.remove("ll-kb");
       hlMove(mm, rowEl);
 
-      const subLive = sbm?.classList.contains("open");
+      const subLive = sbm?.classList.contains("ll-open");
 
       if (subId) {
         const delay = subLive ? 60 : 80;
@@ -438,7 +420,7 @@ export const Menu: React.FC<MenuProps> = ({
 
       let left = pad;
       let top = pad;
-      let seed: { w: number; h: number; r: number } = { w: 32, h: 32, r: MENU_FALLBACKS.menuRadius };
+      let seed: { w: number; h: number; r: number } = { ...MENU_FALLBACKS.seedDefault, r: MENU_FALLBACKS.menuRadius };
       let up = false;
 
       const m = s.measure();
@@ -454,7 +436,7 @@ export const Menu: React.FC<MenuProps> = ({
       if (position) {
         left = Math.max(pad, Math.min(position.x, window.innerWidth - menuW - pad));
         top = Math.max(pad, Math.min(position.y, window.innerHeight - menuH - pad));
-        seed = { w: 16, h: 16, r: MENU_FALLBACKS.menuRadius };
+        seed = { ...MENU_FALLBACKS.seedPointer, r: MENU_FALLBACKS.menuRadius };
       } else if (targetAnchor) {
         const r = targetAnchor.getBoundingClientRect();
         left = Math.max(pad, Math.min(r.left, window.innerWidth - menuW - pad));
@@ -495,9 +477,6 @@ export const Menu: React.FC<MenuProps> = ({
         subTimerRef.current = null;
       }
       if (activeSubRowRef.current) {
-        activeSubRowRef.current.classList.remove("subopen");
-        delete activeSubRowRef.current.dataset.subopen;
-        activeSubRowRef.current.setAttribute("aria-expanded", "false");
         activeSubRowRef.current = null;
       }
       if (subSurfRef.current) {
@@ -552,7 +531,7 @@ export const Menu: React.FC<MenuProps> = ({
         setInSub(false);
         const row = target.closest<HTMLElement>('[role="menuitem"]');
         if (!row || (row as HTMLButtonElement).disabled) return;
-        if (sbm.classList.contains("open") && row !== activeSubRowRef.current && inSafeTriangle(sbm, mousePos)) {
+        if (sbm.classList.contains("ll-open") && row !== activeSubRowRef.current && inSafeTriangle(sbm, mousePos)) {
           if (subTimerRef.current) clearTimeout(subTimerRef.current);
           subTimerRef.current = setTimeout(() => {
             if (row.matches(":hover") && !sbm.matches(":hover")) {
@@ -569,7 +548,7 @@ export const Menu: React.FC<MenuProps> = ({
 
     const handleMouseLeaveMenu = () => {
       const sbm = subElRef.current;
-      if (sbm?.classList.contains("open")) return;
+      if (sbm?.classList.contains("ll-open")) return;
       hideHighlight();
     };
 
@@ -577,14 +556,14 @@ export const Menu: React.FC<MenuProps> = ({
       const mm = menuRef.current;
       const sbm = subElRef.current;
       if (!mm) return;
-      const subLive = sbm?.classList.contains("open");
+      const subLive = sbm?.classList.contains("ll-open");
       const currentScope: HTMLElement = subLive && inSubRef.current && sbm ? sbm : mm;
       const list = Array.from(
         currentScope.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')
       );
       if (!list.length) return;
 
-      const curIdx = list.findIndex((x) => x.classList.contains("on"));
+      const curIdx = list.findIndex((x) => x.classList.contains("ll-on"));
 
       if (e.key === "Escape") {
         e.preventDefault();
@@ -600,7 +579,7 @@ export const Menu: React.FC<MenuProps> = ({
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         e.stopPropagation();
-        currentScope.classList.add("kb");
+        currentScope.classList.add("ll-kb");
         const next =
           e.key === "ArrowDown"
             ? (curIdx + 1) % list.length
@@ -609,8 +588,8 @@ export const Menu: React.FC<MenuProps> = ({
             : curIdx - 1;
         const target = list[next];
         if (target) {
-          list.forEach((x) => x.classList.remove("on"));
-          target.classList.add("on");
+          list.forEach((x) => x.classList.remove("ll-on"));
+          target.classList.add("ll-on");
           hlMove(currentScope, target);
           wiggle(target);
           target.focus();
@@ -685,7 +664,7 @@ export const Menu: React.FC<MenuProps> = ({
     if (!open) return;
     const handleMouseMove = (e: MouseEvent) => {
       const now = performance.now();
-      if (now - mousePos.t > 45) {
+      if (now - mousePos.t > MENU_FALLBACKS.safeTriangleThrottle) {
         mousePos.prevX = mousePos.x;
         mousePos.prevY = mousePos.y;
         mousePos.t = now;
@@ -754,19 +733,19 @@ export const Menu: React.FC<MenuProps> = ({
       : undefined;
 
   const activeSubData = activeSubId ? subMenus[activeSubId] : null;
-  const menuId = id || "menu";
-  const subSurfaceId = `${menuId}-sub`;
+  const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
+  const subSurfaceId = `ll-sub-${autoId.replace(/:/g, "")}`;
 
   return createPortal(
     <>
       <div
         ref={menuRef}
-        id={id}
+        id={menuId}
         role="menu"
         tabIndex={-1}
         aria-label={ariaLabel}
         data-variant={variant}
-        className={`menu ll-menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans ${className}`}
+        className={`ll-menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans ${className}`}
         style={widthStyle ? { width: widthStyle } : undefined}
       >
         <div
@@ -786,7 +765,7 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         data-submenu="true"
         aria-label={activeSubData?.label || "Submenu"}
-        className="menu ctx ll-menu ll-submenu ll:fixed ll:z-60 ll:w-56 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans"
+        className="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:w-56 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans"
       >
         <div
           ref={subLayRef}
@@ -886,11 +865,11 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       } ${className}`}
     >
       {isCheckbox || isRadio ? (
-        <span className="ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-primary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-primary">
           {checked && <Icon icon={Check} size={14} />}
         </span>
       ) : icon ? (
-        <span className="ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
           {icon}
         </span>
       ) : null}
@@ -981,12 +960,12 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       } ${className}`}
     >
       {icon && (
-        <span className="ico ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
           {icon}
         </span>
       )}
       <span className="ll:flex-1 ll:truncate ll:text-body">{label}</span>
-      <Icon icon={ChevronRight} size={14} className="chv ll-chv ll:text-muted ll:ml-auto" />
+      <Icon icon={ChevronRight} size={14} className="ll-chv ll:text-muted ll:ml-auto" />
     </button>
   );
 };

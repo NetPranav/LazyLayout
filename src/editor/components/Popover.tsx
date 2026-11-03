@@ -30,7 +30,7 @@ export const Popover: React.FC<PopoverProps> = ({
   anchorEl,
   anchorRef,
   title,
-  width = 248,
+  width = MENU_FALLBACKS.menuWidthContext,
   side = "bottom",
   children,
   className = "",
@@ -90,7 +90,7 @@ export const Popover: React.FC<PopoverProps> = ({
 
       let left = pad;
       let top = pad;
-      let seed: { w: number; h: number; r: number } = { w: 32, h: 32, r: MENU_FALLBACKS.popoverRadius };
+      let seed: { w: number; h: number; r: number } = { ...MENU_FALLBACKS.seedDefault, r: MENU_FALLBACKS.popoverRadius };
 
       if (targetAnchor) {
         const r = targetAnchor.getBoundingClientRect();
@@ -145,7 +145,7 @@ export const Popover: React.FC<PopoverProps> = ({
       });
     } else {
       s.leave();
-      const exitDuration = prefersReducedMotion() ? 120 : MOT.exitDelay + MOT.exitMs;
+      const exitDuration = prefersReducedMotion() ? MENU_FALLBACKS.reducedMotionDuration : MOT.exitDelay + MOT.exitMs;
       const t = setTimeout(() => {
         setIsRendered(false);
         if (prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
@@ -198,7 +198,7 @@ export const Popover: React.FC<PopoverProps> = ({
       aria-labelledby={title ? titleId : undefined}
       aria-label={ariaLabel}
       tabIndex={-1}
-      className={`ppop menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:outline-none ${className}`}
+      className={`ll-ppop ll-menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:outline-none ${className}`}
       style={{ width: widthStyle }}
     >
       <div ref={layRef} className="ll-lay">

@@ -69,11 +69,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const dialogEl = dialogRef.current;
     const s = surf(dialogEl);
     surfRef.current = s;
-    dialogEl.classList.add("open");
+    dialogEl.classList.add("ll-open");
 
     return () => {
       s.reset();
-      dialogEl.classList.remove("open");
+      dialogEl.classList.remove("ll-open");
     };
   }, [mounted, open]);
 
@@ -161,7 +161,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         aria-modal="true"
         aria-label="Command palette"
         onKeyDown={handleKeyDown}
-        className="ins ll:relative ll:w-full ll:max-w-xl ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:flex ll:flex-col ll:outline-none ll:font-sans"
+        className="ll-ins ll:relative ll:w-full ll:max-w-xl ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:flex ll:flex-col ll:outline-none ll:font-sans"
       >
         <div className="ll-lay ll:flex ll:flex-col ll:flex-1">
           {/* Search Input Bar */}
