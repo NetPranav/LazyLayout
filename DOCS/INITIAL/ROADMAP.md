@@ -221,7 +221,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 47 | Variants & component properties | 46 | v3 75.2 (static), 75.3 | 1 | 🚧 |
 | 48 | Sections, pages & prototype links | 23, 47 | v3 76.1 (static), 77.1, 77.2, 77.4 | 1 | 🚧 |
 | 49 | Static export v1 | 37, 45, 48 | v3 27.1 (part), 48 gate, 50.5 (layout), 75.5 | 1 | 🚧 |
-| 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 📋 |
+| 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 🚧 |
 | 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 📋 |
 | 52 | Stage 1 gate: the design journey | 13–51 | v3 58.1 + new | 1 | 📋 |
 
@@ -839,11 +839,11 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence so far (2026-10-21):** `src/core/export/site/` (`render.tsx` draws each page with the stage's own render definitions via `renderToStaticMarkup` at every breakpoint and mode; `markup.ts` reads it; `css.ts`/`plan.ts` turn inline-style differences into classes, `@media (max-width)` rules and `[data-mode]` rules; `components.ts` makes components with typed props and variants; `targets.ts` lays out plain HTML, Vite + React and Next.js App Router, each with one stylesheet, CSS Modules or Tailwind utilities; only used assets and fonts are written). 30 unit tests (every gallery archetype, TSX is valid TypeScript, the React output renders to the same elements as the HTML export). `tests/e2e/export.spec.ts` in 3 browsers: **the exported HTML, opened at 1440, 1024, 768, 480 and 375 px, matches the stage at the same breakpoint within 0.5% for the whole page and for each gallery case**; Export dialog downloads a ZIP; the Code tab shows HTML / JSX / CSS / Tailwind for the selection. `tests/export-harness/build.mts` compiles the generated 2-page site with a component, a variant and an override (Next.js and Vite + React, one stylesheet and CSS Modules) with `tsc` and the real bundler. **Design:** File > Export Site (Ctrl+E) and the `export.site` command; no schema change. **Not built:** animation, dynamic routes, nested components, instance-swap properties, text or attributes that differ per breakpoint (carried as warnings), the Tailwind build in the harness. Status stays 🚧 until CI passes in 3 browsers and the harness is green on the PR.
 
 ### Phase 50 · Agent bridge: local MCP server v0
-**Needs:** 13, 49 · **Was:** — (new) · **Status:** 📋
+**Needs:** 13, 49 · **Was:** — (new) · **Status:** 🚧
 **Goal:** Claude (Desktop, Code, or any MCP client) can operate the editor through the same commands a person uses.
-- [ ] `npx lazylayout-mcp` (a stdio MCP server) pairs with an open editor tab over a localhost WebSocket. Pairing is off by default, needs a code shown in the editor, and checks the origin (decision record 0014, MCP bridge).
-- [ ] Tools are generated from the command registry (Phase 13): read the document, selection and layers; run any command with typed arguments; apply MDM patches; render a frame to PNG; export. Resources: the MDM JSON Schema, a rules summary and the property registry.
-- [ ] Writes arrive as a pending diff the user approves, or with a per-session "approve automatically" switch. Each change is still one logged undo step (Law 4).
+- [x] `npm run mcp` (a stdio MCP server; not on npm yet, so no `npx lazylayout-mcp`) pairs with an open editor tab over a localhost WebSocket. Pairing is off by default, needs a code shown in the editor, and checks the origin (decision record 0014, MCP bridge).
+- [x] Tools are generated from the command registry (Phase 13): read the document, selection and layers; run any command with typed arguments; export. *(Not done: apply MDM patches, render a frame to PNG; see decision 0014 §2.)* Resources: the MDM JSON Schema, a rules summary and the property registry.
+- [x] Writes arrive as a pending change (the command and its arguments, not yet a picture of the result) the user approves, or with a per-session "approve automatically" switch. Each change is still one logged undo step (Law 4).
 
 **You'll see:** in Claude, "add a pricing section with three cards" builds it on your canvas as a diff you accept.
 **Done when:** an MCP client test drives 20 commands end to end; unpaired connections are refused; the coverage test reports no command missing from MCP.
