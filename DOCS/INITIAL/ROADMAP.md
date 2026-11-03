@@ -222,7 +222,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 48 | Sections, pages & prototype links | 23, 47 | v3 76.1 (static), 77.1, 77.2, 77.4 | 1 | 🚧 |
 | 49 | Static export v1 | 37, 45, 48 | v3 27.1 (part), 48 gate, 50.5 (layout), 75.5 | 1 | 🚧 |
 | 50 | Agent bridge: local MCP server v0 | 13, 49 | — (new) | 1 | 🚧 |
-| 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 📋 |
+| 51 | Section templates & starter projects | 45, 48 | v3 76.3 (static half), 76.4 | 1 | 🚧 |
 | 52 | Stage 1 gate: the design journey | 13–51 | v3 58.1 + new | 1 | 📋 |
 
 **Stage 2 · Animation grammar (Phases 53–102)**
@@ -849,11 +849,11 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** an MCP client test drives 20 commands end to end; unpaired connections are refused; the coverage test reports no command missing from MCP.
 
 ### Phase 51 · Section templates & starter projects
-**Needs:** 45, 48 · **Was:** v3 76.3 (static half), 76.4 · **Status:** 📋
-- [ ] Original, token-themed templates: navbar, hero, features, pricing, testimonials, FAQ, CTA, footer. Starter projects (landing page, portfolio). Switching the theme restyles every template.
+**Needs:** 45, 48 · **Was:** v3 76.3 (static half), 76.4 · **Status:** 🚧
+- [x] Original, token-themed templates: navbar, hero, features, pricing, testimonials, FAQ, CTA, footer. Starter projects (landing page, portfolio). Switching the theme restyles every template. *(Built on `brand/*` variables with Light and Dark values; the starters add pages and remove nothing. A page of sections now grows with them, and the canvas draws a hugging frame at its measured height.)*
 
-**You'll see:** an Insert → Sections gallery.
-**Done when:** a first-time user builds a landing page from 6 templates in < 10 minutes (usability script).
+**You'll see:** an Insert → Sections gallery (File > Insert Section…, since there is no Insert menu yet).
+**Done when:** a first-time user builds a landing page from 6 templates in < 10 minutes (usability script). *(Automated: six templates make a landing page and follow Dark in `tests/e2e/templates.spec.ts` in three browsers. The timed run with a first-time user has not been done.)*
 
 ### Phase 52 · Stage 1 gate: the design journey
 **Needs:** 13–51 · **Was:** v3 58.1 + new · **Status:** 📋
