@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Eye, EyeOff, Frame, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
+import { Menu, MenuItem } from "@/editor/components/Menu";
+import { MENU_DEFAULT_WIDTH } from "@/editor/components/topbar-constants";
 import type { StatusChip } from "./types";
 
 export interface RightPanelHeaderProps {
@@ -11,7 +13,10 @@ export interface RightPanelHeaderProps {
   selectionIcon?: LucideIcon;
   isLayerHidden?: boolean;
   onToggleHideLayer?: () => void;
-  onMoreOptions?: () => void;
+  /** More menu, Reset item. */
+  onReset?: () => void;
+  /** More menu, Delete item. */
+  onDelete?: () => void;
   statusChips?: StatusChip[];
   onSelectStatusChip?: (chip: StatusChip) => void;
   className?: string;
@@ -22,11 +27,22 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   selectionIcon = Frame,
   isLayerHidden = false,
   onToggleHideLayer,
-  onMoreOptions,
+  onReset,
+  onDelete,
   statusChips = [],
   onSelectStatusChip,
   className = "",
 }) => {
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const [moreAt, setMoreAt] = useState<{ x: number; y: number } | null>(null);
+
+  // The prototype opens this menu right-aligned under the button, so the position is the button's right edge.
+  const openMore = () => {
+    const r = moreRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setMoreAt({ x: r.right - MENU_DEFAULT_WIDTH, y: r.bottom + 4 });
+  };
+
   return (
     <div className={`ll-rhead ll:shrink-0 ll:flex ll:flex-col ${className}`}>
       {/* Top row: icon, name, hide-layer toggle, more options */}
@@ -53,12 +69,25 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             onClick={onToggleHideLayer}
           />
           <IconButton
+            ref={moreRef}
             size="sm"
             aria-label="More"
             title="More"
+            aria-haspopup="menu"
+            aria-expanded={moreAt !== null}
             icon={<Icon icon={MoreHorizontal} size={14} />}
-            onClick={onMoreOptions}
+            onClick={() => (moreAt ? setMoreAt(null) : openMore())}
           />
+          <Menu
+            open={moreAt !== null}
+            onClose={() => setMoreAt(null)}
+            position={moreAt}
+            width={MENU_DEFAULT_WIDTH}
+            aria-label="More"
+          >
+            <MenuItem onClick={onReset}>Reset</MenuItem>
+            <MenuItem onClick={onDelete}>Delete</MenuItem>
+          </Menu>
         </div>
       </div>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useId } from "react";
-import { ArrowUp, Sparkles, X } from "lucide-react";
+import React, { useState, useId, useRef, useEffect } from "react";
+import { ArrowUp, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
+import { LogoMark } from "@/editor/components/LogoMark";
 import type { AiChatMessage } from "./types";
 
 export interface RightPanelAiChatProps {
@@ -24,6 +25,13 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   const [inputValue, setInputValue] = useState("");
   const baseId = useId();
   const inputId = `${baseId}-input`;
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Like the prototype, the list scrolls to the newest message.
+  useEffect(() => {
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [aiMessages.length]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,11 +48,9 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
     >
       {/* AI Chat Header */}
       <div className="ll-aichead ll:h-header ll:pl-4 ll:pr-3 ll:flex ll:items-center ll:gap-2 ll:border-b ll:border-border ll:shrink-0">
-        <Icon
-          icon={Sparkles}
-          size={18}
-          className="ll-aimark ll:text-primary ll:shrink-0"
-        />
+        <span className="ll-logo ll-aimark ll:text-primary ll:shrink-0">
+          <LogoMark size={18} />
+        </span>
         <span className="ll-aitl ll:text-small ll:font-medium ll:text-primary ll:font-sans">
           AI
         </span>
@@ -52,16 +58,16 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
         <div className="ll:flex-1" />
 
         <IconButton
-          size="sm"
           aria-label="Close AI"
           title="Close AI"
-          icon={<Icon icon={X} size={14} />}
+          icon={<Icon icon={X} size={16} />}
           onClick={onAiClose}
         />
       </div>
 
       {/* Message List */}
       <div
+        ref={listRef}
         role="log"
         aria-live="polite"
         className="ll-ailist ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:p-4 ll:flex ll:flex-col ll:gap-4"
@@ -92,16 +98,15 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={aiInputPlaceholder}
-            aria-label={aiInputPlaceholder}
+            aria-label={aiInputPlaceholder.replace(/…$/, "")}
             autoComplete="off"
-            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:focus-visible:border-primary"
+            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:bg-transparent ll:border-0 ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none"
           />
           <button
             type="submit"
-            disabled={!inputValue.trim()}
             aria-label="Send"
             title="Send"
-            className="ll-aisend ll:w-8 ll:h-8 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:bg-control-primary-bg ll:text-control-primary-fg ll:hover:opacity-90 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:transition-none"
+            className="ll-aisend ll:w-8 ll:h-8 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:bg-control-primary-bg ll:text-control-primary-fg ll:hover:opacity-90 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:transition-none"
           >
             <Icon icon={ArrowUp} size={16} />
           </button>

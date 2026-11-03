@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useId } from "react";
-import { Sparkles, Eye, EyeOff, Layers, Code, Play } from "lucide-react";
+import { Eye, EyeOff, Layers, Code, Play } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { LogoMark } from "@/editor/components/LogoMark";
 import { RightPanelFrame } from "./RightPanelFrame";
 import type { RightPanelMode, AiChatMessage, DesignSectionConfig } from "./types";
 
@@ -94,12 +95,7 @@ export function RightPanelLabView({
       role: "user",
       content: text,
     };
-    const replyMsg: AiChatMessage = {
-      id: `lab-msg-${nextMsgIdRef.current++}`,
-      role: "assistant",
-      content: `Updated properties for "${text}".`,
-    };
-    setMessages((prev) => [...prev, newMsg, replyMsg]);
+    setMessages((prev) => [...prev, newMsg]);
   };
 
   return (
@@ -177,7 +173,9 @@ export function RightPanelLabView({
                 : "ll:bg-surface-bar ll:text-secondary ll:hover:text-primary"
             }`}
           >
-            <Icon icon={Sparkles} size={13} />
+            <span className="ll-logo">
+              <LogoMark size={13} />
+            </span>
             <span>{aiOpen ? "Close AI" : "Open AI Chat"}</span>
           </button>
 

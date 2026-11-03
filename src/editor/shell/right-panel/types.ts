@@ -49,8 +49,10 @@ export interface RightPanelFrameProps {
   isLayerHidden?: boolean;
   /** Callback when hide layer eye toggle is clicked. */
   onToggleHideLayer?: () => void;
-  /** Callback for more options button in header. */
-  onMoreOptions?: () => void;
+  /** Callback for the More menu Reset item in the header. */
+  onReset?: () => void;
+  /** Callback for the More menu Delete item in the header. */
+  onDelete?: () => void;
   /** Status chips (e.g. "Animated", "Data bound") shown below top row. */
   statusChips?: StatusChip[];
   /** Callback when a status chip is clicked. */

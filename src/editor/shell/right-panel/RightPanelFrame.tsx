@@ -60,7 +60,8 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   selectionIcon = Frame,
   isLayerHidden = false,
   onToggleHideLayer,
-  onMoreOptions,
+  onReset,
+  onDelete,
   statusChips = DEFAULT_STATUS_CHIPS,
   onSelectStatusChip,
   aiOpen = false,
@@ -152,7 +153,8 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               selectionIcon={selectionIcon}
               isLayerHidden={isLayerHidden}
               onToggleHideLayer={onToggleHideLayer}
-              onMoreOptions={onMoreOptions}
+              onReset={onReset}
+              onDelete={onDelete}
               statusChips={statusChips}
               onSelectStatusChip={handleStatusChipClick}
             />
