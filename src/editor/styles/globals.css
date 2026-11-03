@@ -6,6 +6,18 @@ body {
 }
 
 @layer base {
+  /* Scrollbars are hidden everywhere in the new UI, as in the prototype (`*{scrollbar-width:none}`).
+     Menus and popovers are portaled to <body>, outside .editor-root, so the rule keys off the page. */
+  html:has(.editor-root, .design-system-root),
+  html:has(.editor-root, .design-system-root) * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html:has(.editor-root, .design-system-root) *::-webkit-scrollbar {
+    display: none;
+  }
+
   .design-system-root,
   .editor-root {
     font-family: var(--ll-font-sans);

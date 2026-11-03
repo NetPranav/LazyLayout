@@ -236,8 +236,6 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
         bottom:
           "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
         maxHeight: "var(--ll-max-h-popover)",
-        scrollbarWidth: "thin",
-        scrollbarColor: "var(--ll-text-muted) transparent",
       }}
       className="ll-vpop ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overflow-y-auto ll:overscroll-contain ll:outline-none"
     >
