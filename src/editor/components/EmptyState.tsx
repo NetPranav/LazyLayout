@@ -35,7 +35,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
       <div className="esb ll:flex ll:items-center ll:gap-2.5">
         <Button
-          variant="secondary"
+          variant="primary"
           size="md"
           leftIcon={<Icon icon={Frame} size={14} />}
           onClick={onAddFrame}
@@ -53,7 +53,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </Button>
 
         <Button
-          variant="primary"
+          variant="secondary"
           size="md"
           leftIcon={<Icon icon={Sparkles} size={14} />}
           onClick={onAskAi}

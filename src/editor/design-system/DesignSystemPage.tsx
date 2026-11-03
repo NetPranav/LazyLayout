@@ -43,9 +43,44 @@ import {
   TopBarDemo,
 } from "./demos/ComponentDemos";
 
+// Shell demos
+import {
+  LogoMarkDemo,
+  ModeTabsDemo,
+  PageSwitcherDemo,
+  ShipPopoverDemo,
+  AvatarStackDemo,
+  LeftPanelHeaderDemo,
+  LeftPanelRowsDemo,
+  LayerContextMenuDemo,
+  LeftPanelEmptyDemo,
+  RightPanelHeaderDemo,
+  RightPanelAccordionRowDemo,
+  RightPanelAiChatDemo,
+  RightPanelEmptyDemo,
+} from "./demos/ShellDemos";
+
+// Canvas chrome demos
+import {
+  ToolbarDemo,
+  InsertBoxDemo,
+  AiBoxDemo,
+  ViewOptionsPopoverDemo,
+  RulersDemo,
+  StageSelectionDemo,
+} from "./demos/CanvasDemos";
+
+// Panel & inspector demos
+import {
+  InspectorControlsDemo,
+  TimelineDemo,
+  CodeViewDemo,
+} from "./demos/PanelDemos";
+
 import { Menu as MenuIcon } from "lucide-react";
 
 type NavSectionId =
+  // Foundations
   | "colors"
   | "type"
   | "spacing"
@@ -53,6 +88,7 @@ type NavSectionId =
   | "shadows"
   | "sizes"
   | "motion"
+  // Components
   | "button"
   | "icon-button"
   | "segmented-control"
@@ -67,20 +103,44 @@ type NavSectionId =
   | "context-menu"
   | "popover"
   | "command-palette"
-  | "panel-section"
-  | "property-row"
-  | "list-row"
-  | "tree-row"
   | "tabs"
   | "avatar"
   | "empty-state"
-  | "top-bar"
   | "theme-toggle"
   | "swatch"
   | "workspace-frame"
   | "imported-cursor"
-  | "imported-elastic-slider"
-  | "imported-scroll-fade";
+  | "imported-scroll-fade"
+  // Shell
+  | "top-bar"
+  | "logo-mark"
+  | "mode-tabs"
+  | "page-switcher"
+  | "ship-popover"
+  | "avatar-stack"
+  | "left-panel-header"
+  | "left-panel-rows"
+  | "layer-context-menu"
+  | "left-panel-empty"
+  | "right-panel-header"
+  | "right-panel-accordion"
+  | "right-panel-ai-chat"
+  | "right-panel-empty"
+  // Canvas
+  | "toolbar"
+  | "insert-box"
+  | "ai-box"
+  | "view-options"
+  | "rulers"
+  | "stage-selection"
+  // Panels
+  | "panel-section"
+  | "property-row"
+  | "list-row"
+  | "tree-row"
+  | "inspector-controls"
+  | "timeline"
+  | "code-view";
 
 interface NavItem {
   id: NavSectionId;
@@ -89,7 +149,7 @@ interface NavItem {
 
 const FOUNDATIONS_NAV: readonly NavItem[] = [
   { id: "colors", label: "Colors" },
-  { id: "type", label: "Type" },
+  { id: "type", label: "Type Scale" },
   { id: "spacing", label: "Spacing" },
   { id: "radii", label: "Radii" },
   { id: "shadows", label: "Shadows" },
@@ -112,25 +172,67 @@ const COMPONENTS_NAV: readonly NavItem[] = [
   { id: "context-menu", label: "ContextMenu" },
   { id: "popover", label: "Popover" },
   { id: "command-palette", label: "CommandPalette" },
-  { id: "panel-section", label: "PanelSection" },
-  { id: "property-row", label: "PropertyRow" },
-  { id: "list-row", label: "ListRow" },
-  { id: "tree-row", label: "TreeRow" },
   { id: "tabs", label: "Tabs" },
   { id: "avatar", label: "Avatar & Ship" },
   { id: "empty-state", label: "EmptyState" },
-  { id: "top-bar", label: "TopBar" },
   { id: "theme-toggle", label: "ThemeToggle" },
   { id: "swatch", label: "Swatch" },
   { id: "workspace-frame", label: "WorkspaceFrame" },
-];
-
-const IMPORTED_NAV: readonly NavItem[] = [
   { id: "imported-cursor", label: "Cursor" },
   { id: "imported-scroll-fade", label: "Scroll Fade" },
 ];
 
-const ALL_NAV = [...FOUNDATIONS_NAV, ...COMPONENTS_NAV, ...IMPORTED_NAV];
+const SHELL_NAV: readonly NavItem[] = [
+  { id: "top-bar", label: "TopBar" },
+  { id: "logo-mark", label: "LogoMark" },
+  { id: "mode-tabs", label: "ModeTabs" },
+  { id: "page-switcher", label: "PageSwitcher" },
+  { id: "ship-popover", label: "ShipPopover" },
+  { id: "avatar-stack", label: "AvatarStack" },
+  { id: "left-panel-header", label: "LeftPanelHeader" },
+  { id: "left-panel-rows", label: "Left Panel Rows" },
+  { id: "layer-context-menu", label: "LayerContextMenu" },
+  { id: "left-panel-empty", label: "LeftPanelEmpty" },
+  { id: "right-panel-header", label: "RightPanelHeader" },
+  { id: "right-panel-accordion", label: "RightPanelAccordionRow" },
+  { id: "right-panel-ai-chat", label: "RightPanelAiChat" },
+  { id: "right-panel-empty", label: "RightPanelEmptyPlaceholder" },
+];
+
+const CANVAS_NAV: readonly NavItem[] = [
+  { id: "toolbar", label: "Toolbar & Zoom" },
+  { id: "insert-box", label: "InsertBox" },
+  { id: "ai-box", label: "AiBox" },
+  { id: "view-options", label: "ViewOptionsPopover" },
+  { id: "rulers", label: "Rulers" },
+  { id: "stage-selection", label: "Stage & Selection Handles" },
+];
+
+const PANELS_NAV: readonly NavItem[] = [
+  { id: "panel-section", label: "PanelSection" },
+  { id: "property-row", label: "PropertyRow" },
+  { id: "list-row", label: "ListRow" },
+  { id: "tree-row", label: "TreeRow" },
+  { id: "inspector-controls", label: "Inspector Controls" },
+  { id: "timeline", label: "Timeline" },
+  { id: "code-view", label: "Code View & Console" },
+];
+
+const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
+  { title: "Foundations", items: FOUNDATIONS_NAV },
+  { title: "Components", items: COMPONENTS_NAV },
+  { title: "Shell", items: SHELL_NAV },
+  { title: "Canvas", items: CANVAS_NAV },
+  { title: "Panels", items: PANELS_NAV },
+];
+
+const ALL_NAV = [
+  ...FOUNDATIONS_NAV,
+  ...COMPONENTS_NAV,
+  ...SHELL_NAV,
+  ...CANVAS_NAV,
+  ...PANELS_NAV,
+];
 
 interface SemanticRole {
   role: string;
@@ -380,6 +482,8 @@ const LAYOUT_SIZES = [
   { role: "Left panel width", token: "--ll-size-panel-left-w", value: "248px", description: "Standard left tool/layer rail width" },
   { role: "Right panel width", token: "--ll-size-panel-right-w", value: "320px", description: "Standard right inspector panel width" },
   { role: "Right panel (compact)", token: "--ll-size-panel-right-w-compact", value: "296px", description: "Right inspector on medium viewports (<1200px)" },
+  { role: "Bottom motion panel height", token: "--ll-size-bottom-motion-h", value: "260px", description: "Motion mode timeline panel height" },
+  { role: "Bottom code panel height", token: "--ll-size-bottom-code-h", value: "200px", description: "Code mode bottom preview panel height" },
   { role: "Canvas ruler", token: "--ll-size-ruler", value: "18px", description: "Top and left canvas measurement rulers" },
   { role: "Standard row height", token: "--ll-size-row-h", value: "32px", description: "Default row height in panels and menus" },
   { role: "Large row height", token: "--ll-size-row-lg-h", value: "36px", description: "Asset and section header row height" },
@@ -388,6 +492,10 @@ const LAYOUT_SIZES = [
   { role: "Button mini", token: "--ll-size-btn-sm-h", value: "24px", description: "Compact inline tag and action button height" },
   { role: "Icon button", token: "--ll-size-icon-btn", value: "28px", description: "Toolbar square icon button size" },
   { role: "Avatar size", token: "--ll-size-avatar", value: "28px", description: "User avatar dimension" },
+  { role: "Mode tab width", token: "--ll-size-mode-tab-w", value: "76px", description: "Top bar mode segment width" },
+  { role: "Mode tab height", token: "--ll-size-mode-tab-h", value: "26px", description: "Top bar mode segment height" },
+  { role: "Logo mark size", token: "--ll-size-logo", value: "32px", description: "Top bar logo container dimension" },
+  { role: "Ship popover width", token: "--ll-size-ship-popover-w", value: "280px", description: "Pre-flight checklist popover width" },
   { role: "Menu width", token: "--ll-size-menu-w", value: "200px", description: "Default floating menu width" },
   { role: "Menu wide", token: "--ll-size-menu-wide-w", value: "320px", description: "Wide dropdown/insert panel width" },
   { role: "Context menu", token: "--ll-size-menu-ctx-w", value: "248px", description: "Right-click context menu width" },
@@ -430,13 +538,18 @@ function CursorDemo() {
 
 function ScrollFadeDemo() {
   return (
-    <div className="ll:h-48 ll:w-full ll:max-w-sm ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:relative">
-      <ImportedScrollFade className="ll:h-full ll:p-4 ll:overflow-y-auto ll:flex ll:flex-col ll:gap-3">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="ll:p-2 ll:border ll:border-border ll:rounded-sm ll:text-small ll:text-primary">
-            Scrollable timeline track {i + 1}
-          </div>
-        ))}
+    <div className="ll:relative ll:h-64 ll:w-full ll:border ll:border-border ll:rounded-md ll:bg-surface-bar ll:overflow-hidden">
+      <ImportedScrollFade className="ll:h-full ll:p-4">
+        <div className="ll:flex ll:flex-col ll:gap-4">
+          {Array.from({ length: 15 }).map((_, i) => (
+            <div
+              key={i}
+              className="ll:p-3 ll:rounded-md ll:bg-surface-panel ll:border ll:border-border ll:text-small ll:text-secondary"
+            >
+              Scroll Fade Row Item #{i + 1}
+            </div>
+          ))}
+        </div>
       </ImportedScrollFade>
     </div>
   );
@@ -493,10 +606,10 @@ export function DesignSystemPage() {
   );
 
   return (
-    <div className="design-system-root ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-backdrop ll:p-4 ll:box-border ll:font-sans ll:text-primary">
-      <div className="ll:w-full ll:h-full ll:rounded-lg ll:border ll:border-border ll:shadow-soft ll:overflow-hidden ll:isolate ll:flex ll:flex-col ll:xl:flex-row ll:bg-surface-canvas">
-        {/* Mobile & Tablet Top Bar (< xl) */}
-        <div className="ll:p-3 ll:border-b ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:bg-surface-panel ll:xl:hidden">
+    <div className="design-system-root ll:min-h-screen ll:w-full ll:bg-surface-canvas ll:text-primary ll:font-sans ll:flex ll:justify-center">
+      <div className="ll:w-full ll:min-h-screen ll:bg-surface-backdrop ll:flex ll:flex-col ll:xl:flex-row ll:border-x ll:border-border ll:relative">
+        {/* Mobile Header Bar */}
+        <div className="ll:xl:hidden ll:flex ll:items-center ll:justify-between ll:p-4 ll:border-b ll:border-border ll:bg-surface-panel ll:sticky ll:top-0 ll:z-50">
           <div className="ll:flex ll:items-center ll:gap-2">
             <Button
               variant="ghost"
@@ -514,7 +627,7 @@ export function DesignSystemPage() {
           <ThemeToggle size="sm" />
         </div>
 
-        {/* Navigation Panel */}
+        {/* Navigation Sidebar */}
         <aside
           className={`${
             mobileNavOpen ? "ll:flex" : "ll:hidden"
@@ -528,162 +641,90 @@ export function DesignSystemPage() {
           </div>
 
           <nav aria-label="Design system navigation" className="ll:p-3 ll:flex ll:flex-col ll:gap-4">
-            {/* Foundations group */}
-            <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                Foundations
-              </div>
-              <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
-                {FOUNDATIONS_NAV.map((item, index) => {
-                  const isSelected = activeSection === item.id;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        ref={(el) => {
-                          navButtonRefs.current[index] = el;
-                        }}
-                        type="button"
-                        aria-current={isSelected ? "page" : undefined}
-                        onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-                          isSelected
-                            ? "ll:bg-control-primary ll:text-control-primary-fg"
-                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+            {NAV_GROUPS.map((group, groupIdx) => {
+              // Calculate global offset for keyboard navigation
+              let offset = 0;
+              for (let i = 0; i < groupIdx; i++) {
+                offset += NAV_GROUPS[i].items.length;
+              }
 
-            <div className="ll:h-px ll:w-full ll:bg-border" />
-
-            {/* Components group */}
-            <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                Components
-              </div>
-              <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
-                {COMPONENTS_NAV.map((item, index) => {
-                  const globalIdx = FOUNDATIONS_NAV.length + index;
-                  const isSelected = activeSection === item.id;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        ref={(el) => {
-                          navButtonRefs.current[globalIdx] = el;
-                        }}
-                        type="button"
-                        aria-current={isSelected ? "page" : undefined}
-                        onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => handleKeyDown(e, globalIdx)}
-                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-                          isSelected
-                            ? "ll:bg-control-primary ll:text-control-primary-fg"
-                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div className="ll:h-px ll:w-full ll:bg-border" />
-
-            {/* Kept Imported group */}
-            <div className="ll:flex ll:flex-col ll:gap-1">
-              <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                Kept Imported
-              </div>
-              <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
-                {IMPORTED_NAV.map((item, index) => {
-                  const globalIdx = FOUNDATIONS_NAV.length + COMPONENTS_NAV.length + index;
-                  const isSelected = activeSection === item.id;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        ref={(el) => {
-                          navButtonRefs.current[globalIdx] = el;
-                        }}
-                        type="button"
-                        aria-current={isSelected ? "page" : undefined}
-                        onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => handleKeyDown(e, globalIdx)}
-                        className={`ll:w-full ll:h-9 ll:min-h-9 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-                          isSelected
-                            ? "ll:bg-control-primary ll:text-control-primary-fg"
-                            : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+              return (
+                <div key={group.title} className="ll:flex ll:flex-col ll:gap-1">
+                  {groupIdx > 0 && <div className="ll:h-px ll:w-full ll:bg-border ll:mb-2" />}
+                  <div className="ll:px-3 ll:py-1 ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                    {group.title}
+                  </div>
+                  <ul role="list" className="ll:flex ll:flex-col ll:gap-1">
+                    {group.items.map((item, itemIdx) => {
+                      const globalIdx = offset + itemIdx;
+                      const isSelected = activeSection === item.id;
+                      return (
+                        <li key={item.id}>
+                          <button
+                            ref={(el) => {
+                              navButtonRefs.current[globalIdx] = el;
+                            }}
+                            type="button"
+                            aria-current={isSelected ? "page" : undefined}
+                            onClick={() => handleSelect(item.id)}
+                            onKeyDown={(e) => handleKeyDown(e, globalIdx)}
+                            className={`ll:w-full ll:h-8 ll:min-h-8 ll:px-3 ll:rounded-md ll:flex ll:items-center ll:justify-start ll:text-left ll:text-small ll:font-medium ll:focus-visible:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+                              isSelected
+                                ? "ll:bg-control-primary ll:text-control-primary-fg"
+                                : "ll:text-primary ll:bg-transparent ll:hover:bg-surface-bar"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </nav>
         </aside>
 
-        {/* Main Canvas Area */}
-        <main className="ll:flex-1 ll:h-full ll:overflow-y-auto ll:p-6 ll:sm:p-8 ll:xl:p-12">
-          <div className="ll:max-w-canvas ll:mx-auto ll:flex ll:flex-col ll:gap-8">
-            {/* Foundations */}
+        {/* Main Content Area */}
+        <main className="ll:flex-1 ll:min-w-0 ll:p-6 ll:sm:p-12 ll:overflow-y-auto">
+          <div className="ll:max-w-3xl ll:mx-auto">
+            {/* 1. Foundations */}
             {activeSection === "colors" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Colors</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Five Official Themes, Semantic Tokens Only &amp; 4.5:1 Contrast Safety
+                    Semantic Color Tokens across 5 Official Themes
                   </span>
                 </div>
-
                 <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
-                  <div className="ll:p-4 ll:bg-surface-panel ll:border-b ll:border-border ll:flex ll:items-center ll:justify-between">
-                    <span className="ll:text-small ll:font-semibold ll:text-primary">Theme Comparison (Paper Default)</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">Active: {activeTheme}</span>
-                  </div>
-                  <div className="ll:overflow-x-auto">
-                    <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
-                      <thead>
-                        <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Paper</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Dark</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">White</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Warm</th>
-                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Lilac</th>
+                  <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                    <thead>
+                      <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Sample</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Hex ({activeTheme})</th>
+                      </tr>
+                    </thead>
+                    <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                      {SEMANTIC_ROLES.map((spec) => (
+                        <tr key={spec.token} className="ll:hover:bg-surface-hover">
+                          <td className="ll:p-3 ll:font-medium ll:text-primary">{spec.role}</td>
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{spec.token}</td>
+                          <td className="ll:p-3">
+                            <span
+                              className={`ll:inline-block ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ${spec.bgClass}`}
+                            />
+                          </td>
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-primary">
+                            {liveTokens[activeTheme]?.[spec.token] || "—"}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
-                        {SEMANTIC_ROLES.map((role) => (
-                          <tr key={role.token} className="ll:hover:bg-surface-hover">
-                            <td className="ll:p-3 ll:font-medium ll:text-primary">{role.role}</td>
-                            <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{role.token}</td>
-                            {THEME_LIST.map((t) => (
-                              <td key={t.id} className="ll:p-3 ll:font-mono ll:text-micro">
-                                <div className="ll:flex ll:items-center ll:gap-2">
-                                  <span
-                                    className="ll:w-3.5 ll:h-3.5 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-                                    style={{ backgroundColor: liveTokens[t.id]?.[role.token] || "transparent" }}
-                                  />
-                                  <span>{liveTokens[t.id]?.[role.token] || "—"}</span>
-                                </div>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -693,33 +734,37 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Type Scale</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Geist Sans &amp; Geist Mono Font Families
+                    Geist Sans &amp; Geist Mono Typography Hierarchy
                   </span>
                 </div>
-                <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
-                  <div>
-                    <span className="ll:text-display ll:font-semibold ll:text-primary ll:block">Display Heading</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">30px / 600 / -0.03em</span>
+                <div className="ll:flex ll:flex-col ll:gap-6 ll:p-6 ll:border ll:border-border ll:rounded-md ll:bg-surface-panel">
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Display (30px / 1.05 / -0.03em / 600)</span>
+                    <div className="ll:text-display ll:text-primary">The Quick Brown Fox</div>
                   </div>
-                  <div className="ll:h-px ll:bg-border" />
-                  <div>
-                    <span className="ll:text-title ll:font-medium ll:text-primary ll:block">Title Section</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">14px / 500 / -0.01em</span>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Lead (16px / 1.4 / -0.01em / 500)</span>
+                    <div className="ll:text-lead ll:text-primary">Build responsive layouts at production scale.</div>
                   </div>
-                  <div className="ll:h-px ll:bg-border" />
-                  <div>
-                    <span className="ll:text-body ll:font-normal ll:text-primary ll:block">Body standard interface text</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">13px / 400 / 1.4</span>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Title (14px / 1.4 / -0.01em / 500)</span>
+                    <div className="ll:text-title ll:text-primary">Inspector Section Properties</div>
                   </div>
-                  <div className="ll:h-px ll:bg-border" />
-                  <div>
-                    <span className="ll:text-small ll:font-normal ll:text-secondary ll:block">Small labels and secondary text</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">12px / 400 / 1.3</span>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Body (13px / 1.4 / 0em / 400)</span>
+                    <div className="ll:text-body ll:text-primary">Default text style for application controls, rows, and toolbars.</div>
                   </div>
-                  <div className="ll:h-px ll:bg-border" />
-                  <div>
-                    <span className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:block">MICRO CODE &amp; NUMBERS</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">11px / 500 / 0.08em uppercase</span>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Small (12px / 1.3 / 0em / 400)</span>
+                    <div className="ll:text-small ll:text-secondary">Secondary labels, property row hints, and metadata.</div>
+                  </div>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Micro (11px / 1.2 / 0.08em / 500 Mono)</span>
+                    <div className="ll:text-micro ll:text-secondary">ZONE HEADERS, SHORTCUTS, METRICS</div>
+                  </div>
+                  <div className="ll:flex ll:flex-col ll:gap-1">
+                    <span className="ll:text-micro ll:text-secondary ll:uppercase">Nano (10px / 1.2 / 0.08em / 500 Mono)</span>
+                    <div className="ll:text-nano ll:text-muted">TINY DIMENSIONS &amp; STATUS PILLS</div>
                   </div>
                 </div>
               </div>
@@ -730,17 +775,30 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Spacing</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    4px Base Spacing Grid
+                    4px Baseline Grid Scale
                   </span>
                 </div>
-                <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
-                  {SPACING_STEPS.map((s) => (
-                    <div key={s.token} className="ll:flex ll:items-center ll:gap-4">
-                      <span className="ll:w-28 ll:font-mono ll:text-micro ll:text-secondary">{s.token}</span>
-                      <div className="ll:h-4 ll:bg-control-primary ll:rounded-sm" style={{ width: `${s.px}px` }} />
-                      <span className="ll:font-mono ll:text-micro ll:text-muted">{s.px}px</span>
-                    </div>
-                  ))}
+                <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                  <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                    <thead>
+                      <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Pixels</th>
+                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Visual</th>
+                      </tr>
+                    </thead>
+                    <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                      {SPACING_STEPS.map((s) => (
+                        <tr key={s.token} className="ll:hover:bg-surface-hover">
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{s.token}</td>
+                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:font-bold ll:text-primary">{s.px}px</td>
+                          <td className="ll:p-3">
+                            <div className={`ll:h-4 ll:bg-primary ll:rounded-xs ${s.widthClass}`} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -750,24 +808,25 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Radii</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Modest Concentric Radii (Apple-Level Layout, No Pills or Capsules)
+                    Apple-Level Modest Geometry (No Pills, No Capsules)
                   </span>
                 </div>
-                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-3 ll:gap-4">
-                  <div className="ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
-                    <span className="ll:text-body ll:font-semibold ll:text-primary">Small (4px)</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-sm</span>
-                    <span className="ll:text-small ll:text-secondary">Buttons sm, inputs, swatches, tooltips</span>
+                <div className="ll:grid ll:grid-cols-2 ll:sm:grid-cols-4 ll:gap-4">
+                  <div className="ll:flex ll:flex-col ll:items-center ll:gap-2 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-xs">
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">xs: 2px</span>
+                    <span className="ll:text-small ll:text-muted">Knobs, badges</span>
                   </div>
-                  <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
-                    <span className="ll:text-body ll:font-semibold ll:text-primary">Medium (6px)</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-md</span>
-                    <span className="ll:text-small ll:text-secondary">Buttons md, menus, avatars, segmented tracks</span>
+                  <div className="ll:flex ll:flex-col ll:items-center ll:gap-2 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm">
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">sm: 4px</span>
+                    <span className="ll:text-small ll:text-muted">Buttons, inputs</span>
                   </div>
-                  <div className="ll:rounded-lg ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-2">
-                    <span className="ll:text-body ll:font-semibold ll:text-primary">Large (8px)</span>
-                    <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-radius-lg</span>
-                    <span className="ll:text-small ll:text-secondary">Popovers, dialogs, command palette, app frame</span>
+                  <div className="ll:flex ll:flex-col ll:items-center ll:gap-2 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md">
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">md: 6px</span>
+                    <span className="ll:text-small ll:text-muted">Containers, menus</span>
+                  </div>
+                  <div className="ll:flex ll:flex-col ll:items-center ll:gap-2 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-lg">
+                    <span className="ll:text-micro ll:font-mono ll:text-secondary">lg: 8px</span>
+                    <span className="ll:text-small ll:text-muted">Floating chrome, modals</span>
                   </div>
                 </div>
               </div>
@@ -778,12 +837,14 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Shadows</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Soft Shadow Scale Across Themes
+                    Theme-Calibrated Soft Shadows for Floating Chrome
                   </span>
                 </div>
-                <div className="ll:p-8 ll:bg-surface-canvas ll:rounded-md ll:border ll:border-border ll:flex ll:items-center ll:justify-center">
-                  <div className="ll:w-64 ll:h-32 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:flex ll:items-center ll:justify-center">
-                    <span className="ll:text-small ll:font-medium ll:text-primary">Raised Floating Surface</span>
+                <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-6">
+                  <div className="ll:p-8 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:flex ll:flex-col ll:gap-2">
+                    <span className="ll:text-body ll:font-medium ll:text-primary">Soft Floating Shadow</span>
+                    <code className="ll:text-micro ll:font-mono ll:text-secondary">--ll-shadow-soft</code>
+                    <span className="ll:text-small ll:text-muted">Calibrated per theme to preserve contrast without glare.</span>
                   </div>
                 </div>
               </div>
@@ -794,7 +855,7 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Layout Sizes</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Dimensions Sampled from Design Reference
+                    Fixed Editor Shell, Panels, Header &amp; Row Height Dimensions
                   </span>
                 </div>
                 <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
@@ -824,7 +885,7 @@ export function DesignSystemPage() {
 
             {activeSection === "motion" && <MotionDemo />}
 
-            {/* Core Rebuilt Components */}
+            {/* 2. Core Rebuilt Components */}
             {activeSection === "button" && <ButtonDemo />}
             {activeSection === "icon-button" && <IconButtonDemo />}
             {activeSection === "segmented-control" && <SegmentedControlDemo />}
@@ -839,17 +900,9 @@ export function DesignSystemPage() {
             {activeSection === "context-menu" && <ContextMenuDemo />}
             {activeSection === "popover" && <PopoverDemo />}
             {activeSection === "command-palette" && <CommandPaletteDemo />}
-            {activeSection === "panel-section" && <PanelSectionDemo />}
-            {activeSection === "property-row" && <PropertyRowDemo />}
-            {activeSection === "list-row" && <ListRowDemo />}
-            {activeSection === "tree-row" && <TreeRowDemo />}
             {activeSection === "tabs" && <TabsDemo />}
             {activeSection === "avatar" && <AvatarDemo />}
             {activeSection === "empty-state" && <EmptyStateDemo />}
-
-            {/* Existing Studio Components */}
-            {activeSection === "top-bar" && <TopBarDemo />}
-
             {activeSection === "theme-toggle" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -864,7 +917,6 @@ export function DesignSystemPage() {
                 </div>
               </div>
             )}
-
             {activeSection === "swatch" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -880,7 +932,6 @@ export function DesignSystemPage() {
                 </div>
               </div>
             )}
-
             {activeSection === "workspace-frame" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -892,8 +943,6 @@ export function DesignSystemPage() {
                 <WorkspaceFrame />
               </div>
             )}
-
-            {/* Kept Imported Components */}
             {activeSection === "imported-cursor" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -905,7 +954,6 @@ export function DesignSystemPage() {
                 <CursorDemo />
               </div>
             )}
-
             {activeSection === "imported-scroll-fade" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -917,6 +965,39 @@ export function DesignSystemPage() {
                 <ScrollFadeDemo />
               </div>
             )}
+
+            {/* 3. Shell Parts */}
+            {activeSection === "top-bar" && <TopBarDemo />}
+            {activeSection === "logo-mark" && <LogoMarkDemo />}
+            {activeSection === "mode-tabs" && <ModeTabsDemo />}
+            {activeSection === "page-switcher" && <PageSwitcherDemo />}
+            {activeSection === "ship-popover" && <ShipPopoverDemo />}
+            {activeSection === "avatar-stack" && <AvatarStackDemo />}
+            {activeSection === "left-panel-header" && <LeftPanelHeaderDemo />}
+            {activeSection === "left-panel-rows" && <LeftPanelRowsDemo />}
+            {activeSection === "layer-context-menu" && <LayerContextMenuDemo />}
+            {activeSection === "left-panel-empty" && <LeftPanelEmptyDemo />}
+            {activeSection === "right-panel-header" && <RightPanelHeaderDemo />}
+            {activeSection === "right-panel-accordion" && <RightPanelAccordionRowDemo />}
+            {activeSection === "right-panel-ai-chat" && <RightPanelAiChatDemo />}
+            {activeSection === "right-panel-empty" && <RightPanelEmptyDemo />}
+
+            {/* 4. Canvas Chrome */}
+            {activeSection === "toolbar" && <ToolbarDemo />}
+            {activeSection === "insert-box" && <InsertBoxDemo />}
+            {activeSection === "ai-box" && <AiBoxDemo />}
+            {activeSection === "view-options" && <ViewOptionsPopoverDemo />}
+            {activeSection === "rulers" && <RulersDemo />}
+            {activeSection === "stage-selection" && <StageSelectionDemo />}
+
+            {/* 5. Panels & Details */}
+            {activeSection === "panel-section" && <PanelSectionDemo />}
+            {activeSection === "property-row" && <PropertyRowDemo />}
+            {activeSection === "list-row" && <ListRowDemo />}
+            {activeSection === "tree-row" && <TreeRowDemo />}
+            {activeSection === "inspector-controls" && <InspectorControlsDemo />}
+            {activeSection === "timeline" && <TimelineDemo />}
+            {activeSection === "code-view" && <CodeViewDemo />}
           </div>
         </main>
       </div>

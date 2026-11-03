@@ -397,11 +397,17 @@
   opacity: 0;
 }
 
-.ll-logo[data-saving="true"] .ll-tfl {
+.ll-logo[data-saving="true"] .ll-tfl,
+svg[data-saving="true"] .ll-tfl,
+.saving-on .ll-tfl,
+.saving-on .tfl {
   animation: ll-trf var(--ll-dur-trace) var(--ll-ease-trace) infinite;
 }
 
-.ll-logo[data-saving="true"] .ll-tro {
+.ll-logo[data-saving="true"] .ll-tro,
+svg[data-saving="true"] .ll-tro,
+.saving-on .ll-tro,
+.saving-on .tro {
   stroke-dasharray: 100;
   animation: ll-tro var(--ll-dur-trace) var(--ll-ease-trace) infinite;
 }

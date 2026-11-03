@@ -147,7 +147,9 @@
   --ll-duration-swap: 120ms;
   --ll-duration-spin: 800ms;
   --ll-dur-trace: 1.6s;
+  --ll-dur-trace-ai: 2.4s;
   --ll-dur-trace-fade: 2.8s;
+  --ll-stroke-loader: 10;
   --ll-ease-trace: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Canvas max width */
