@@ -67,14 +67,20 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .app{transition:none}
 .top{grid-area:top;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;height:52px;padding:0;background:var(--panel);border-bottom:1px solid var(--border);min-width:0;position:relative;z-index:2}
 .tl{display:flex;align-items:center;gap:8px;min-width:0;justify-self:start;padding-left:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .logo{width:32px;height:32px;display:grid;place-items:center;color:var(--text)}
 .logo svg{width:20px;height:20px}
 .logo:hover svg{opacity:.7}
+.logo svg{overflow:visible}.logo .tfl{fill:currentColor;stroke:none}.logo .tro{fill:none;stroke:currentColor;stroke-width:10;stroke-linejoin:round;opacity:0}
+.logo.saving-on .tfl{animation:ll-trf 1.6s cubic-bezier(.65,0,.35,1) infinite}
+.logo.saving-on .tro{stroke-dasharray:100;animation:ll-tro 1.6s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes ll-tro{0%{stroke-dashoffset:100;opacity:1}55%,90%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes ll-trf{0%,55%{opacity:0}75%,90%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.logo.saving-on .tro{animation:none;opacity:0}.logo.saving-on .tfl{animation:ll-fade 2.8s ease-in-out infinite}}
 .pinfo{display:flex;align-items:center;gap:16px;min-width:0;color:var(--text2)}
 /* 1px divider: .tl gap (8px) + 4px margin = 12px each side */
 .tdiv{width:1px;height:20px;margin:0 4px;flex:none;align-self:center;background:var(--border)}
 .pname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:500;color:var(--text)}
-.saving{font-size:11px;color:var(--muted);white-space:nowrap}
 .pagebtn{display:flex;align-items:center;gap:4px;height:32px;padding:0;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
 .pagebtn:hover{color:var(--text)}
 .pagebtn svg{width:14px;height:14px}
@@ -365,10 +371,10 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .aidone{color:var(--text)}
 .aidone>svg{width:16px;height:16px;flex:none}
 .aiload{width:20px;height:20px;flex:none;color:var(--text)}
-.aiload path{fill:currentColor;stroke:none;animation:ll-breathe 1.4s ease-in-out infinite}
-.aiload path+path{animation-delay:.35s}
+.aiload{overflow:visible}.aiload .tro{fill:none;stroke:currentColor;stroke-width:10;stroke-linejoin:round;stroke-dasharray:100;animation:ll-tro 2.4s cubic-bezier(.65,0,.35,1) infinite}
+.aiload .tfl{fill:currentColor;stroke:none;animation:ll-trf 2.4s cubic-bezier(.65,0,.35,1) infinite}
 @keyframes ll-breathe{0%,100%{opacity:1}50%{opacity:.25}}
-@media (prefers-reduced-motion:reduce){.aiload path{animation:ll-fade 2.8s ease-in-out infinite}.aiload path+path{animation-delay:0s}}
+@media (prefers-reduced-motion:reduce){.aiload .tro{animation:none;opacity:0}.aiload .tfl{animation:ll-fade 2.8s ease-in-out infinite}}
 @keyframes ll-fade{0%,100%{opacity:1}50%{opacity:.4}}
 .aitxt{font:500 13px var(--sans);color:var(--text2);white-space:nowrap}
 .aitxt:hover{color:var(--text)}
@@ -799,8 +805,8 @@ label.dtrow{cursor:pointer}
 <div class="app" id="main" data-mode="design">
   <header class="top" id="top">
     <div class="tl">
-      <button class="logo" id="menubtn" aria-label="Application menu" title="Application menu" aria-haspopup="menu" aria-expanded="false"><svg><use href="#logo"/></svg></button>
-      <i class="tdiv" aria-hidden="true"></i><div class="pinfo"><span class="pname" title="MyProject">MyProject</span><span class="saving" id="saving" role="status">Saved</span></div>
+      <button class="logo" id="menubtn" aria-label="Application menu" title="Application menu" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 256 256" aria-hidden="true"><path class="tro" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="tfl" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/></svg><span class="sr" id="saving" role="status"></span></button>
+      <i class="tdiv" aria-hidden="true"></i><div class="pinfo"><span class="pname" title="MyProject">MyProject</span></div>
     </div>
     <nav class="modes" id="modes" role="tablist" aria-label="Mode">
       <button class="mode" role="tab" aria-pressed="true" data-mode="design">Design</button>
@@ -914,7 +920,7 @@ label.dtrow{cursor:pointer}
       <div class="aidone hide" id="aidone"><svg><use href="#check"/></svg><span>Changed weight and size</span><span class="sp"></span><button class="aitxt" data-ai="undo">Undo</button><button class="aitxt" data-ai="keep">Keep</button></div>
       <div class="aiinrow" id="aiinrow"><span class="aitag" id="aitag"><svg><use id="aictxic" href="#frame"/></svg><span class="aictx" id="aictx">Home</span><button class="aitagx" id="aitagx" aria-label="Remove context" title="Remove context"><svg><use href="#x"/></svg></button></span><textarea id="aiin" rows="1" placeholder="Ask anything…" aria-label="Ask AI" autocomplete="off"></textarea><button class="ib aiexpand" id="aiexpand" aria-label="Expand AI" title="Expand AI"><svg><use href="#fit"/></svg></button><button class="aisend" id="aisend" aria-label="Send" title="Send" disabled><svg><use href="#up"/></svg></button></div>
       <div class="aisugg" id="aisugg"></div>
-      <div class="aiwork hide" id="aiwork"><svg class="aiload" viewBox="0 0 256 256" aria-hidden="true"><path d="M256 128H128L0 0H128Z"/><path d="M256 256H128L0 128H128Z"/></svg><span id="aiworktxt">Working</span><span class="sp"></span><button class="aitxt" id="aistop">Stop</button></div>
+      <div class="aiwork hide" id="aiwork"><svg class="aiload" viewBox="0 0 256 256" aria-hidden="true"><path class="tro" pathLength="100" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/><path class="tfl" d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"/></svg><span id="aiworktxt">Working</span><span class="sp"></span><button class="aitxt" id="aistop">Stop</button></div>
     </div>
     <div class="fbar fzoom"><button class="ib zpanel" id="panelbtn" aria-pressed="false" aria-label="Show or hide panels (Ctrl+\)" title="Show or hide panels (Ctrl+\)"><svg><use href="#panels"/></svg></button><button class="ib" id="undobtn" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"><svg><use href="#undo"/></svg></button><button class="ib" id="redobtn" aria-label="Redo (Ctrl+Shift+Z)" title="Redo (Ctrl+Shift+Z)"><svg><use href="#redo"/></svg></button><i class="gsep" aria-hidden="true"></i><button class="zb" id="zoombtn" aria-haspopup="menu" aria-expanded="false" title="Zoom"><span class="mono" id="pct">59%</span><svg><use href="#chevd"/></svg></button></div>
     <div class="fbar fpeople"><button class="avs" id="avs" aria-haspopup="menu" aria-expanded="false" aria-label="People" title="People"></button></div>
@@ -2763,7 +2769,7 @@ label.dtrow{cursor:pointer}
     var sec=$$('#ins-design .dsec').find(function(s){return s.querySelector('h3').textContent===b.dataset.go}),rb=$('#rbody');
     rb.scrollTo({top:sec.offsetTop-rb.offsetTop,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   });
-  $('.right').addEventListener('input',function(){savingEl.textContent='Saving…';clearTimeout(savingT);savingT=setTimeout(function(){savingEl.textContent='Saved'},1000)});
+  $('.right').addEventListener('input',function(){var lg=$('#menubtn');lg.classList.add('saving-on');savingEl.textContent='Saving';clearTimeout(savingT);savingT=setTimeout(function(){lg.classList.remove('saving-on');savingEl.textContent='Saved'},1600)});
 
   /* Muted value state for the spec sheet (motion and code) */
   $$('.pv').forEach(function(p){if(['none','0','not bound'].indexOf(p.textContent.trim())>-1)p.classList.add('mt')});
