@@ -5,61 +5,104 @@ import {
   ChevronLeft,
   Search,
   Plus,
+  Minus,
   Folder,
+  File,
   Save,
-  Code,
+  Download,
   Link as LinkIcon,
-  FolderInput,
-  FolderOutput,
   Undo2,
   Redo2,
   Scissors,
   Copy,
   Clipboard,
-  ClipboardPaste,
-  CheckSquare,
   CopyPlus,
   Trash2,
   Box,
   Frame,
-  ZoomIn,
-  ZoomOut,
+  Scan,
   Maximize,
-  Ruler,
-  EyeOff,
-  Expand,
+  Square,
   Focus,
+  Ruler,
+  Eye,
+  EyeOff,
   Monitor,
   PanelLeft,
   PanelRight,
+  LayoutPanelLeft,
   Image as ImageIcon,
-  Terminal,
-  Activity,
-  History,
-  GitBranch,
+  RotateCcw,
+  FileText,
+  Spline,
+  Globe,
+  ListTree,
+  Database,
   Settings,
   Keyboard,
-  BookOpen,
   Info,
+  Play,
+  Star,
   Sun,
   Moon,
   Palette,
+  Check,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
+  AlignHorizontalDistributeCenter,
+  AlignVerticalDistributeCenter,
+  type LucideIcon,
 } from "lucide-react";
 import { LogoMark } from "./LogoMark";
 import { ModeTabs, type EditorMode } from "./ModeTabs";
 import { ShipPopover, type ShipIssue } from "./ShipPopover";
 import { AvatarStack, type CollabUser } from "./AvatarStack";
 import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
-import { useTheme, THEMES, type Theme } from "./ThemeToggle";
+import { useTheme, type Theme } from "./ThemeToggle";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
-import {
-  LOGO_ICON_SIZE,
-  MENU_DEFAULT_WIDTH,
-  MENU_ICON_SIZE,
-  ACTION_ICON_SIZE,
-} from "./topbar-constants";
+import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
+
+const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
+const DARK_THEMES: readonly Theme[] = ["dark"];
+
+const ThemeHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div
+    role="presentation"
+    className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-micro ll:font-medium ll:text-muted ll:select-none"
+  >
+    {children}
+  </div>
+);
+
+/** 28x18 theme preview chip, scoped to the theme it previews. */
+const ThemePreview: React.FC<{ theme: Theme }> = ({ theme }) => (
+  <span
+    data-theme={theme}
+    aria-hidden="true"
+    className="ll:relative ll:flex ll:w-7 ll:h-4.5 ll:shrink-0 ll:overflow-hidden ll:rounded-xs ll:border ll:border-border"
+  >
+    <span className="ll:relative ll:w-3/5 ll:h-full ll:bg-surface-canvas ll:grid ll:place-items-center">
+      <span className="ll:w-2.5 ll:h-1 ll:rounded-xs ll:bg-control-primary" />
+    </span>
+    <span className="ll:flex-1 ll:h-full ll:bg-surface-panel" />
+  </span>
+);
+
+const EntryLabel: React.FC<{ checked: boolean; children: React.ReactNode }> = ({
+  checked,
+  children,
+}) => (
+  <span className="ll:flex ll:w-full ll:items-center ll:justify-between ll:gap-2">
+    <span className="ll:truncate">{children}</span>
+    {checked && <Icon icon={Check} size={MENU_ICON_SIZE} className="ll:text-muted ll:shrink-0" />}
+  </span>
+);
 
 export interface TopBarProps {
   projectName?: string;
@@ -81,6 +124,8 @@ export interface TopBarProps {
   onPublish?: () => void;
   // Collaborators:
   users?: readonly CollabUser[];
+  /** Fired with a stable id ("file.new", "view.zoomIn", ...) for application-menu items with no core command yet. */
+  onMenuAction?: (id: string) => void;
   className?: string;
 }
 
@@ -89,8 +134,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   saving = false,
   mode: propMode,
   onSelectMode,
-  canUndo = false,
-  canRedo = false,
   onUndo,
   onRedo,
   onSearch,
@@ -101,6 +144,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onFixIssue,
   onPublish,
   users = [],
+  onMenuAction,
   className = "",
 }) => {
   const menuBtnId = useId();
@@ -140,6 +184,51 @@ export const TopBar: React.FC<TopBarProps> = ({
       window.dispatchEvent(new CustomEvent("antigravity:open_command_palette"));
     }
   }, [onSearch]);
+
+  const handleCopyLink = useCallback(() => {
+    onMenuAction?.("file.copyLink");
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href).catch(() => undefined);
+    }
+  }, [onMenuAction]);
+
+  const handleFullscreen = useCallback(() => {
+    onMenuAction?.("view.fullscreen");
+    if (typeof document === "undefined") return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => undefined);
+    } else {
+      document.documentElement.requestFullscreen().catch(() => undefined);
+    }
+  }, [onMenuAction]);
+
+  const entry = (
+    id: string,
+    label: string,
+    icon: LucideIcon,
+    shortcut?: string,
+    run?: () => void,
+    checked?: boolean
+  ) => (
+    <MenuItem
+      key={id}
+      icon={<Icon icon={icon} size={MENU_ICON_SIZE} />}
+      shortcut={shortcut}
+      onClick={run ?? (() => onMenuAction?.(id))}
+    >
+      {checked === undefined ? label : <EntryLabel checked={checked}>{label}</EntryLabel>}
+    </MenuItem>
+  );
+
+  const themeEntry = (id: Theme) => (
+    <MenuItem
+      key={id}
+      icon={<ThemePreview theme={id} />}
+      onClick={() => selectTheme(id)}
+    >
+      <EntryLabel checked={theme === id}>{id.charAt(0).toUpperCase() + id.slice(1)}</EntryLabel>
+    </MenuItem>
+  );
 
   const handleUndo = useCallback(() => {
     if (onUndo) {
@@ -200,308 +289,126 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         </div>
 
-        {/* Logo Application Menu */}
+        {/* Logo Application Menu (prototype MENUS.app) */}
         <Menu
           open={logoMenuOpen}
           onClose={() => setLogoMenuOpen(false)}
           anchorRef={logoBtnRef}
-          width={MENU_DEFAULT_WIDTH}
+          variant="context"
           aria-label="Application menu"
         >
-          <MenuItem
-            icon={<Icon icon={ChevronLeft} size={MENU_ICON_SIZE} />}
-            onClick={() => setLogoMenuOpen(false)}
-          >
-            Back to projects
-          </MenuItem>
-
-          <MenuItem
-            icon={<Icon icon={Search} size={MENU_ICON_SIZE} />}
-            shortcut="Ctrl+K"
-            onClick={handleOpenSearch}
-          >
-            Search
-          </MenuItem>
+          {entry("app.back", "Back to projects", ChevronLeft)}
+          {entry("app.search", "Search", Search, "Ctrl+K", handleOpenSearch)}
 
           <MenuSeparator />
 
-          {/* Submenu: File */}
           <SubMenu
             id="sub-file"
             label="File"
-            icon={<Icon icon={Folder} size={MENU_ICON_SIZE} />}
+            icon={<Icon icon={File} size={MENU_ICON_SIZE} />}
           >
-            <MenuItem
-              icon={<Icon icon={Plus} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+N"
-            >
-              New project
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Folder} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+O"
-            >
-              Open project…
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Save} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+S"
-            >
-              Save project
-            </MenuItem>
+            {entry("file.new", "New project", Plus, "Ctrl+N")}
+            {entry("file.open", "Open…", Folder, "Ctrl+O")}
+            {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
+            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={Code} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+Shift+E"
-            >
-              Export code
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={LinkIcon} size={MENU_ICON_SIZE} />}
-            >
-              Share link
-            </MenuItem>
-            <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={FolderInput} size={MENU_ICON_SIZE} />}
-            >
-              Import…
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={FolderOutput} size={MENU_ICON_SIZE} />}
-            >
-              Export…
-            </MenuItem>
+            {entry("file.import", "Import project file…", Folder)}
+            {entry("file.exportFile", "Export project file", Download)}
           </SubMenu>
 
-          {/* Submenu: Edit */}
           <SubMenu
             id="sub-edit"
             label="Edit"
-            icon={<Icon icon={Undo2} size={MENU_ICON_SIZE} />}
+            icon={<Icon icon={Copy} size={MENU_ICON_SIZE} />}
           >
-            <MenuItem
-              icon={<Icon icon={Undo2} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+Z"
-              disabled={!canUndo}
-              onClick={handleUndo}
-            >
-              Undo
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Redo2} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+Shift+Z"
-              disabled={!canRedo}
-              onClick={handleRedo}
-            >
-              Redo
-            </MenuItem>
+            {entry("edit.undo", "Undo", Undo2, "Ctrl+Z", handleUndo)}
+            {entry("edit.redo", "Redo", Redo2, "Ctrl+Shift+Z", handleRedo)}
+            {entry("edit.cut", "Cut", Scissors, "Ctrl+X")}
+            {entry("edit.copy", "Copy", Copy, "Ctrl+C")}
+            {entry("edit.paste", "Paste", Clipboard, "Ctrl+V")}
+            {entry("edit.pasteInPlace", "Paste in Place", Clipboard, "Ctrl+Shift+V")}
+            {entry("edit.selectAll", "Select all", Scan, "Ctrl+A")}
             <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={Scissors} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+X"
-            >
-              Cut
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Copy} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+C"
-            >
-              Copy
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Clipboard} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+V"
-            >
-              Paste
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={ClipboardPaste} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+Shift+V"
-            >
-              Paste in place
-            </MenuItem>
+            {entry("edit.duplicate", "Duplicate", CopyPlus, "Ctrl+D")}
+            {entry("edit.delete", "Delete", Trash2, "Del")}
+            {entry("edit.group", "Group", Box, "Ctrl+G")}
+            {entry("edit.ungroup", "Ungroup", Frame, "Ctrl+Shift+G")}
             <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={CheckSquare} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+A"
-            >
-              Select all
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={CopyPlus} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+D"
-            >
-              Duplicate
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Trash2} size={MENU_ICON_SIZE} />}
-              shortcut="Del"
-            >
-              Delete
-            </MenuItem>
+            {entry("align.left", "Align left", AlignStartVertical)}
+            {entry("align.center", "Align center", AlignCenterVertical)}
+            {entry("align.right", "Align right", AlignEndVertical)}
+            {entry("align.top", "Align top", AlignStartHorizontal)}
+            {entry("align.middle", "Align middle", AlignCenterHorizontal)}
+            {entry("align.bottom", "Align bottom", AlignEndHorizontal)}
+            {entry("align.distributeH", "Distribute horizontally", AlignHorizontalDistributeCenter)}
+            {entry("align.distributeV", "Distribute vertically", AlignVerticalDistributeCenter)}
           </SubMenu>
 
-          {/* Submenu: View */}
           <SubMenu
             id="sub-view"
             label="View"
-            icon={<Icon icon={Box} size={MENU_ICON_SIZE} />}
+            icon={<Icon icon={Eye} size={MENU_ICON_SIZE} />}
           >
-            <MenuItem
-              icon={<Icon icon={Frame} size={MENU_ICON_SIZE} />}
-            >
-              Layers
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={ImageIcon} size={MENU_ICON_SIZE} />}
-            >
-              Assets
-            </MenuItem>
+            {entry("view.zoomIn", "Zoom in", Plus, "Ctrl++")}
+            {entry("view.zoomOut", "Zoom out", Minus, "Ctrl+-")}
+            {entry("view.fit", "Fit to screen", Maximize, "Shift+1")}
+            {entry("view.rulers", "Rulers", Ruler, "Shift+R")}
+            {entry("view.options", "View options…", Palette)}
+            {entry("view.hideInterface", "Hide interface", EyeOff, "Tab")}
             <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={ZoomIn} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl++"
-            >
-              Zoom in
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={ZoomOut} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+-"
-            >
-              Zoom out
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Maximize} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+0"
-            >
-              Zoom to 100%
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Expand} size={MENU_ICON_SIZE} />}
-              shortcut="Shift+1"
-            >
-              Zoom to fit
-            </MenuItem>
-            <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={Ruler} size={MENU_ICON_SIZE} />}
-              shortcut="Shift+R"
-            >
-              Rulers
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={EyeOff} size={MENU_ICON_SIZE} />}
-              shortcut="Shift+W"
-            >
-              Wireframe mode
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Monitor} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+\\"
-            >
-              Toggle UI
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Focus} size={MENU_ICON_SIZE} />}
-              shortcut="F"
-            >
-              Focus mode
-            </MenuItem>
+            {entry("view.zoom100", "Zoom to 100%", Square, "Ctrl+0")}
+            {entry("view.zoomSelection", "Zoom to selection", Focus, "Shift+2")}
+            {entry("view.fullscreen", "Fullscreen", Monitor, "F11", handleFullscreen)}
           </SubMenu>
 
-          {/* Submenu: Window */}
           <SubMenu
             id="sub-window"
             label="Window"
-            icon={<Icon icon={PanelLeft} size={MENU_ICON_SIZE} />}
+            icon={<Icon icon={LayoutPanelLeft} size={MENU_ICON_SIZE} />}
           >
-            <MenuItem
-              icon={<Icon icon={PanelLeft} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+B"
-              onClick={() => onTogglePanel?.("lc")}
-            >
-              {isLeftCollapsed ? "Show Left Panel" : "Hide Left Panel"}
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={PanelRight} size={MENU_ICON_SIZE} />}
-              shortcut="Ctrl+Shift+B"
-              onClick={() => onTogglePanel?.("rc")}
-            >
-              {isRightCollapsed ? "Show Right Panel" : "Hide Right Panel"}
-            </MenuItem>
+            {entry("window.leftPanel", "Left panel", PanelLeft, undefined, () => onTogglePanel?.("lc"), !isLeftCollapsed)}
+            {entry("window.assets", "Assets", ImageIcon)}
+            {entry("window.rightPanel", "Right panel", PanelRight, undefined, () => onTogglePanel?.("rc"), !isRightCollapsed)}
+            {entry("window.layouts", "Layouts", LayoutPanelLeft)}
+            {entry("window.resetLayout", "Reset layout", RotateCcw)}
             <MenuSeparator />
-            <MenuItem
-              icon={<Icon icon={ImageIcon} size={MENU_ICON_SIZE} />}
-            >
-              Assets
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Terminal} size={MENU_ICON_SIZE} />}
-            >
-              Terminal
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={Activity} size={MENU_ICON_SIZE} />}
-            >
-              Performance
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={History} size={MENU_ICON_SIZE} />}
-            >
-              History
-            </MenuItem>
-            <MenuItem
-              icon={<Icon icon={GitBranch} size={MENU_ICON_SIZE} />}
-            >
-              Branches
-            </MenuItem>
+            {entry("window.outputLog", "Output Log", FileText)}
+            {entry("window.executionTrace", "Execution Trace", Spline)}
+            {entry("window.undoHistory", "Undo History", Undo2)}
+            {entry("window.versionHistory", "Version History", Save)}
+            {entry("window.globalSearch", "Global Search", Search)}
+            {entry("window.referenceViewer", "Reference Viewer", LinkIcon)}
+            {entry("window.plugins", "Plugins", Settings)}
+            {entry("window.deployment", "Deployment", Globe)}
+            {entry("window.logic", "Logic", ListTree)}
+            {entry("window.data", "Data", Database)}
           </SubMenu>
 
-          {/* Submenu: Theme */}
+          <MenuSeparator />
+
           <SubMenu
             id="sub-theme"
             label="Theme"
             icon={<Icon icon={Palette} size={MENU_ICON_SIZE} />}
           >
-            {THEMES.map((t) => (
-              <MenuItem
-                key={t.id}
-                onClick={() => selectTheme(t.id)}
-              >
-                {t.label}
-              </MenuItem>
-            ))}
+            <ThemeHeading>Light</ThemeHeading>
+            {LIGHT_THEMES.map((id) => themeEntry(id))}
+            <ThemeHeading>Dark</ThemeHeading>
+            {DARK_THEMES.map((id) => themeEntry(id))}
           </SubMenu>
 
-          <MenuSeparator />
+          {entry("app.settings", "Settings", Settings, "Ctrl+,")}
 
-          <MenuItem
-            icon={<Icon icon={Settings} size={MENU_ICON_SIZE} />}
-            shortcut="Ctrl+,"
-            onClick={() => setLogoMenuOpen(false)}
-          >
-            Settings
-          </MenuItem>
-
-          {/* Submenu: Help */}
           <SubMenu
             id="sub-help"
             label="Help"
-            icon={<Icon icon={BookOpen} size={MENU_ICON_SIZE} />}
+            icon={<Icon icon={Info} size={MENU_ICON_SIZE} />}
           >
-            <MenuItem
-              icon={<Icon icon={Keyboard} size={MENU_ICON_SIZE} />}
-              shortcut="F1"
-            >
-              Keyboard shortcuts
-            </MenuItem>
-            <MenuItem icon={<Icon icon={BookOpen} size={MENU_ICON_SIZE} />}>
-              Documentation
-            </MenuItem>
-            <MenuItem icon={<Icon icon={Info} size={MENU_ICON_SIZE} />}>
-              About
-            </MenuItem>
+            {entry("help.shortcuts", "Keyboard shortcuts", Keyboard, "F1")}
+            {entry("help.demo", "Showcase demo", Play)}
+            {entry("help.docs", "Documentation", FileText)}
+            {entry("help.about", "About", Star)}
           </SubMenu>
         </Menu>
       </div>

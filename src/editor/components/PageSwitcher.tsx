@@ -245,7 +245,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
         aria-controls={isOpen ? menuId : undefined}
         aria-label={`Current page: ${activePage}. Switch page`}
         title="Switch page"
-        className={`ll-pagebtn ll:flex ll:items-center ll:gap-1 ll:h-8 ll:px-2 ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-primary ll:hover:text-primary ll:select-none ll:cursor-pointer ll:outline-none ${
+        className={`ll-pagebtn ll:flex ll:items-center ll:gap-1 ll:h-8 ll:p-0 ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-primary ll:hover:text-primary ll:select-none ll:cursor-pointer ll:outline-none ${
           dataState === "hover" ? "ll:bg-surface-hover " : ""
         }${dataState === "focus" ? "ll:ring-2 ll:ring-primary " : ""}${
           disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""
@@ -258,7 +258,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
         <Icon
           icon={ChevronDown}
           size={MENU_ICON_SIZE}
-          className="ll-chevron-flip ll:text-muted ll:shrink-0"
+          className="ll-chevron-flip ll:shrink-0"
         />
       </button>
 
@@ -271,10 +271,11 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
             role="menu"
             aria-label="Pages"
             tabIndex={-1}
-            className="ll-menu ll-dd ll:fixed ll:z-50 ll:w-page-dropdown ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
+            className="ll-menu ll-dd ll:fixed ll:z-50 ll:min-w-menu ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
           >
             <div ref={layRef} className="ll-lay ll:flex ll:flex-col ll:gap-0">
-              {/* Search box */}
+              {/* Search box (prototype: only when more than 12 pages) */}
+              {pages.length > 12 && (
               <div className="ll-dd-s ll:flex ll:items-center ll:gap-2 ll:h-9 ll:px-3 ll:border-b ll:border-border ll:text-muted">
                 <Icon icon={Search} size={MENU_ICON_SIZE} className="ll:shrink-0" />
                 <input
@@ -291,15 +292,16 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                     setSearchQuery(e.target.value);
                     setActiveIndex(0);
                   }}
-                  className="ll:flex-1 ll:bg-transparent ll:border-0 ll:outline-none ll:text-body ll:text-primary ll:placeholder:text-muted"
+                  className="ll:flex-1 ll:min-w-0 ll:bg-transparent ll:border-0 ll:outline-none ll:text-small ll:text-primary ll:placeholder:text-muted"
                 />
               </div>
+              )}
 
               {/* Pages list */}
               <div
                 role="listbox"
                 aria-label="Pages list"
-                className="ll-ddl ll:max-h-52 ll:overflow-y-auto ll:overscroll-contain ll:py-1"
+                className="ll-ddl ll:max-h-75 ll:overflow-y-auto ll:overscroll-contain"
               >
                 {filteredPages.length > 0 ? (
                   filteredPages.map((page, index) => {
@@ -313,28 +315,26 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                         aria-selected={isSelected}
                         onClick={() => selectPage(page)}
                         onMouseEnter={() => setActiveIndex(index)}
-                        className={`ll-dd-o ll:flex ll:items-center ll:justify-between ll:w-full ll:h-7 ll:px-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-body ll:outline-none ${
-                          isSelected
-                            ? "ll:text-primary ll:font-medium"
-                            : "ll:text-secondary"
+                        className={`ll-dd-o ll:relative ll:flex ll:items-center ll:w-full ll:h-7 ll:pl-8 ll:pr-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-small ll:outline-none ${
+                          isSelected ? "ll:text-primary" : "ll:text-secondary"
                         } ${
                           isFocused ? "ll:bg-surface-hover ll:text-primary" : "ll:bg-transparent"
                         }`}
                       >
-                        <span className="ll:truncate">{page}</span>
                         {isSelected && (
                           <Icon
                             icon={Check}
                             size={MENU_ICON_SIZE}
-                            className="ll:text-primary ll:shrink-0 ll:ml-auto"
+                            className="ll:absolute ll:left-3 ll:text-primary ll:shrink-0"
                           />
                         )}
+                        <span className="ll:truncate">{page}</span>
                       </button>
                     );
                   })
                 ) : (
-                  <div className="ll-dd-none ll:flex ll:items-center ll:justify-center ll:h-12 ll:text-small ll:text-muted">
-                    No pages found
+                  <div className="ll-dd-none ll:flex ll:items-center ll:justify-center ll:h-14 ll:text-small ll:text-muted">
+                    No results
                   </div>
                 )}
               </div>
@@ -343,7 +343,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
               <div className="ll-dd-sep ll:h-px ll:bg-border ll:my-1" />
 
               {/* Page action items */}
-              <div className="ll:flex ll:flex-col ll:pb-1">
+              <div className="ll:flex ll:flex-col">
                 <button
                   type="button"
                   role="menuitem"
@@ -351,7 +351,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                     onNewPage?.();
                     closeDropdown();
                   }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
+                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-small ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
                 >
                   + New page
                 </button>
@@ -362,7 +362,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                     onRenamePage?.(activePage);
                     closeDropdown();
                   }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
+                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-small ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
                 >
                   Rename
                 </button>
@@ -373,7 +373,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                     onDuplicatePage?.(activePage);
                     closeDropdown();
                   }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
+                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-small ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
                 >
                   Duplicate
                 </button>
@@ -384,7 +384,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                     onDeletePage?.(activePage);
                     closeDropdown();
                   }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
+                  className="ll:flex ll:items-center ll:w-full ll:h-7 ll:px-3 ll:text-small ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:border-0 ll:bg-transparent ll:outline-none"
                 >
                   Delete
                 </button>

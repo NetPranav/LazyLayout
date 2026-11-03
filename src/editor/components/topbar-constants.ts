@@ -18,11 +18,11 @@ export const MENU_DEFAULT_WIDTH = 200;
 /** Users/collaborators menu width in pixels (--ll-size-menu-users-w: 240px) */
 export const USERS_MENU_WIDTH = 240;
 
-/** Ship popover width in pixels (--ll-size-ship-popover-w: 280px) */
-export const SHIP_POPOVER_WIDTH = 280;
+/** Ship popover width in pixels (--ll-size-menu-wide-w: 320px) */
+export const SHIP_POPOVER_WIDTH = 320;
 
-/** Page switcher dropdown width in pixels (--ll-size-page-dropdown-w: 220px) */
-export const PAGE_DROPDOWN_WIDTH = 220;
+/** Page switcher dropdown minimum width in pixels (--ll-size-menu-w: 200px) */
+export const PAGE_DROPDOWN_WIDTH = 200;
 
 /** Popover edge padding to viewport in pixels (--ll-pad-popover-edge: 12px) */
 export const VIEWPORT_EDGE_PAD = 12;

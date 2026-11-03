@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useId } from "react";
-import { UserPlus, User } from "lucide-react";
 import { Menu, MenuItem, MenuSeparator } from "./Menu";
-import { Icon } from "./Icon";
 import { USERS_MENU_WIDTH } from "./topbar-constants";
 
 export interface CollabUser {
@@ -19,6 +17,21 @@ export interface AvatarStackProps {
   max?: number;
   size?: "sm" | "md";
   className?: string;
+}
+
+const AVATAR_CLASS =
+  "ll-av ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:shrink-0 ll:rounded-md ll:bg-avatar-bg ll:text-avatar-fg ll:text-micro ll:font-medium";
+
+function initialsOf(u: CollabUser): string {
+  return (
+    u.initials ||
+    u.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+  );
 }
 
 export const AvatarStack: React.FC<AvatarStackProps> = ({
@@ -37,7 +50,7 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
 
   const visibleUsers = users.slice(0, max);
   const remainingCount = users.length - max;
-  const label = `${users.length} collaborator${users.length === 1 ? "" : "s"}`;
+  const label = `${users.length} ${users.length === 1 ? "person" : "people"}`;
   const isSm = size === "sm";
 
   return (
@@ -49,7 +62,7 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-label={label}
-        title={label}
+        title="People"
         onClick={() => setMenuOpen((prev) => !prev)}
         className={`ll-avs ll:flex ll:items-center ll:gap-0.5 ll:self-center ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ${className}`}
       >
@@ -79,7 +92,7 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
           <span
             className={`ll-av ll-more ${
               isSm ? "ll:w-6 ll:h-6 ll:text-nano ll:rounded-sm" : "ll:w-7 ll:h-7 ll:text-micro ll:rounded-md"
-            } ll:grid ll:place-items-center ll:bg-avatar-bg ll:text-avatar-fg ll:font-sans ll:font-medium`}
+            } ll:grid ll:place-items-center ll:bg-avatar-bg ll:text-muted ll:font-sans ll:font-medium`}
           >
             +{remainingCount}
           </span>
@@ -93,51 +106,35 @@ export const AvatarStack: React.FC<AvatarStackProps> = ({
         width={USERS_MENU_WIDTH}
         aria-label="Collaborators"
       >
-        {users.slice(1).map((u) => {
-          const initials =
-            u.initials ||
-            u.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase();
-
-          return (
-            <div
-              key={u.id}
-              className="ll-urow ll:flex ll:items-center ll:gap-2.5 ll:px-3 ll:py-1.5 ll:text-small ll:text-primary"
-            >
-              <span className="ll-av ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:bg-avatar-bg ll:text-avatar-fg ll:text-nano ll:font-medium ll:shrink-0">
-                {initials}
-              </span>
-              <div className="ll:flex ll:flex-col ll:min-w-0 ll:flex-1">
-                <span className="ll:font-medium ll:truncate">{u.name}</span>
-                {u.status && (
-                  <span className="ll:text-micro ll:text-muted ll:truncate">
-                    {u.status}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {users.slice(1).map((u) => (
+          <div
+            key={u.id}
+            className="ll-urow ll:flex ll:items-center ll:gap-2 ll:w-full ll:min-h-10 ll:px-3 ll:text-left ll:text-primary"
+          >
+            <span className={AVATAR_CLASS}>{initialsOf(u)}</span>
+            <span className="ll:flex ll:flex-col ll:min-w-0">
+              <b className="ll:text-body ll:font-medium ll:truncate">{u.name}</b>
+              {u.status && <small className="ll:text-micro ll:text-muted">{u.status}</small>}
+            </span>
+          </div>
+        ))}
 
         {users.length > 1 && <MenuSeparator />}
 
-        <MenuItem
-          icon={<Icon icon={UserPlus} size={14} />}
-          onClick={() => setMenuOpen(false)}
-        >
-          Invite people
-        </MenuItem>
+        <MenuItem onClick={() => setMenuOpen(false)}>Invite people</MenuItem>
 
-        <MenuItem
-          icon={<Icon icon={User} size={14} />}
+        <button
+          type="button"
+          role="menuitem"
           onClick={() => setMenuOpen(false)}
+          className="ll-urow ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-10 ll:px-3 ll:bg-transparent ll:border-0 ll:text-left ll:text-primary ll:cursor-pointer ll:outline-none ll:font-sans"
         >
-          Account · You ({users[0].name})
-        </MenuItem>
+          <span className={AVATAR_CLASS}>{initialsOf(users[0])}</span>
+          <span className="ll:flex ll:flex-col ll:min-w-0">
+            <b className="ll:text-body ll:font-medium ll:truncate">Account</b>
+            <small className="ll:text-micro ll:text-muted">{users[0].name} · You</small>
+          </span>
+        </button>
       </Menu>
     </>
   );

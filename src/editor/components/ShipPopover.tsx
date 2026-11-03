@@ -198,7 +198,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         data-state={dataState}
-        aria-haspopup="dialog"
+        aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? popoverId : undefined}
         aria-label={isReady ? "Ship, ready" : `Ship, ${issueCount} to fix`}
@@ -231,11 +231,10 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
           <div
             ref={popRef}
             id={popoverId}
-            role="dialog"
-            aria-modal="false"
-            aria-label="Ship project details"
+            role="menu"
+            aria-label="Ship"
             tabIndex={-1}
-            className="ll-ppop ll-menu ll:fixed ll:z-50 ll:w-ship-popover ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
+            className="ll-ppop ll-menu ll:fixed ll:z-50 ll:w-menu-wide ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
           >
             <div ref={layRef} className="ll-lay ll:flex ll:flex-col ll:gap-0">
               {/* Issue rows */}
@@ -244,52 +243,54 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
                   issues.map((issue) => (
                     <div
                       key={issue.id}
-                      className="ll-srow ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-9 ll:px-3 ll:border-b ll:border-border ll:text-body ll:text-primary"
+                      className="ll-srow ll:flex ll:items-center ll:gap-2 ll:min-h-9 ll:px-3 ll:text-body ll:text-primary ll:border-t ll:border-border ll:first:border-t-0"
                     >
-                      <span className="ll:flex-1 ll:truncate">{issue.title}</span>
+                      <span className="ll:flex-1 ll:min-w-0">{issue.title}</span>
                       <button
                         type="button"
                         onClick={() => handleFix(issue.id)}
                         aria-label={`Fix: ${issue.title}`}
-                        className="ll-mini ll:h-6 ll:px-2.5 ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:text-primary ll:bg-surface-bar ll:hover:bg-surface-panel ll:cursor-pointer ll:shrink-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                        className="ll-mini ll:h-6 ll:px-2.5 ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:text-primary ll:bg-transparent ll:hover:bg-surface-panel ll:cursor-pointer ll:shrink-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
                       >
                         Fix
                       </button>
                     </div>
                   ))
                 ) : (
-                  <div className="ll-srow ll-muted ll:flex ll:items-center ll:min-h-9 ll:px-3 ll:border-b ll:border-border ll:text-body ll:text-muted">
+                  <div className="ll-srow ll-muted ll:flex ll:items-center ll:min-h-9 ll:px-3 ll:text-body ll:text-muted">
                     No issues left
                   </div>
                 )}
               </div>
 
+              <div role="separator" className="ll:h-px ll:bg-border ll:my-1 ll:shrink-0" />
+
               {/* Action items */}
-              <div className="ll:flex ll:flex-col ll:py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPreview?.();
-                    closePopover();
-                  }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
-                >
-                  Preview link
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onShare?.();
-                    closePopover();
-                  }}
-                  className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
-                >
-                  Share
-                </button>
-              </div>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onPreview?.();
+                  closePopover();
+                }}
+                className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
+              >
+                Preview link
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onShare?.();
+                  closePopover();
+                }}
+                className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
+              >
+                Share
+              </button>
 
               {/* Publish row */}
-              <div className="ll-pubrow ll:p-2.5 ll:pt-1">
+              <div className="ll-pubrow ll:px-3 ll:pt-2 ll:pb-3">
                 <button
                   type="button"
                   disabled={issues.length > 0}
