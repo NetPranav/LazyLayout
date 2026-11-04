@@ -99,6 +99,6 @@ Keep this table updated as lanes start, pass and commit.
 
 | Wave | Lane | Task file | Status | Commit |
 |---|---|---|---|---|
-| 0 | L0 | 2026-11-04-design-system-audit-fixes.md | todo | |
+| 0 | L0 | 2026-11-05-L0-foundation.md (includes 2026-11-04-design-system-audit-fixes.md) | running (launched 2026-11-05) | |
 | 1 | L1 to L7 | 2026-11-05-<lane>.md | todo | |
 | 2 | L8, L9 | 2026-11-05-<lane>.md | todo | |
