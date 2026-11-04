@@ -60,6 +60,19 @@ The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them al
 | Warm | `0 4px 16px rgba(16,16,16,.08)` |
 | Lilac | `0 4px 16px rgba(34,35,30,.1)` |
 
+## Label colours (timeline tracks only)
+
+Approved by the user on 2026-11-04. These six muted tags are used **only** as the 3px strip on a timeline track header and as the clip tint (plus the tiny clips in the mini-map). They never colour text or any other UI. Text on the tints is at least 4.9:1 in dark themes and 8.8:1 in light themes. The light set is used for Paper, White, Warm and Lilac; the dark set for Dark.
+
+| Token | Default for | Light: strip / tint | Dark: strip / tint |
+|---|---|---|---|
+| `--ll-label-1` Slate | Text | #7A8A9C / #D3DAE3 | #8796A8 / #38424F |
+| `--ll-label-2` Sage | Button | #7E9C84 / #D5E3D7 | #8FAE94 / #36443A |
+| `--ll-label-3` Sand | Frame, group | #B89B66 / #EADFC5 | #CDB27E / #4A4130 |
+| `--ll-label-4` Clay | Image | #BF7C62 / #EDD6CB | #D08D74 / #4F3A31 |
+| `--ll-label-5` Rose | Shape | #C48492 / #EFD6DC | #D395A3 / #4E3840 |
+| `--ll-label-6` Lavender | Other | #8F85BE / #DFDBF0 | #A89FD6 / #433F5C |
+
 ## Rules
 
 - The primary control is the strongest color in a theme. Use it sparingly.
