@@ -9,6 +9,9 @@ import {
   ArrowRight,
   Crop,
   WrapText,
+  ArrowUpDown,
+  MoveHorizontal,
+  MoveVertical,
 } from "lucide-react";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
@@ -133,25 +136,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       {isFrame && (
         <SegmentedControl
           size="sm"
+          className="ll:w-full ll:*:flex-1"
           ariaLabel="Layout mode"
           value={layoutMode}
           onChange={handleLayoutModeChange}
           options={[
             {
               value: "free",
-              label: "Free",
               icon: <Icon icon={Move} size={14} />,
               ariaLabel: "Free layout",
             },
             {
               value: "stack",
-              label: "Stack",
               icon: <Icon icon={Rows} size={14} />,
               ariaLabel: "Stack layout",
             },
             {
               value: "grid",
-              label: "Grid",
               icon: <Icon icon={LayoutGrid} size={14} />,
               ariaLabel: "Grid layout",
             },
@@ -163,6 +164,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="W"
           value={widthVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -173,6 +175,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="H"
           value={heightVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -224,6 +227,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             <div className="ll:flex-1">
               <SegmentedControl
                 size="sm"
+                className="ll:w-full ll:*:flex-1"
                 ariaLabel="Stack direction"
                 value={isVertical ? "vertical" : "horizontal"}
                 onChange={(v) =>
@@ -235,13 +239,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 options={[
                   {
                     value: "vertical",
-                    label: "Vertical",
                     icon: <Icon icon={ArrowDown} size={14} />,
                     ariaLabel: "Vertical direction",
                   },
                   {
                     value: "horizontal",
-                    label: "Horizontal",
                     icon: <Icon icon={ArrowRight} size={14} />,
                     ariaLabel: "Horizontal direction",
                   },
@@ -274,7 +276,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             <div className="ll:flex ll:flex-col ll:gap-2">
               <NumberField
                 size="sm"
-                label="Gap"
+                className="ll:*:!text-micro ll:!gap-2"
+                label={<Icon icon={ArrowUpDown} size={14} />}
                 aria-label="Gap"
                 value={gap}
                 step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -282,7 +285,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               />
               <NumberField
                 size="sm"
-                label="Pad X"
+                className="ll:*:!text-micro ll:!gap-2"
+                label={<Icon icon={MoveHorizontal} size={14} />}
                 aria-label="Padding horizontal"
                 value={paddingX}
                 step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -290,7 +294,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               />
               <NumberField
                 size="sm"
-                label="Pad Y"
+                className="ll:*:!text-micro ll:!gap-2"
+                label={<Icon icon={MoveVertical} size={14} />}
                 aria-label="Padding vertical"
                 value={paddingY}
                 step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -327,6 +332,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           <div className="ll:grid ll:grid-cols-2 ll:gap-2">
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="Cols"
               aria-label="Columns"
               value={gridCols}
@@ -336,6 +342,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             />
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="Rows"
               aria-label="Rows"
               value={gridRows}
@@ -353,6 +360,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             <div className="ll:flex ll:flex-col ll:gap-2">
               <NumberField
                 size="sm"
+                className="ll:*:!text-micro ll:!gap-2"
                 label="Col gap"
                 aria-label="Column gap"
                 value={colGap}
@@ -361,6 +369,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               />
               <NumberField
                 size="sm"
+                className="ll:*:!text-micro ll:!gap-2"
                 label="Row gap"
                 aria-label="Row gap"
                 value={rowGap}
@@ -418,6 +427,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Min W"
           aria-label="Min width"
           value={minW}
@@ -426,6 +436,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Max W"
           aria-label="Max width"
           value={maxW || null}
@@ -438,6 +449,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Min H"
           aria-label="Min height"
           value={minH}
@@ -446,6 +458,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Max H"
           aria-label="Max height"
           value={maxH || null}
@@ -462,6 +475,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="T"
             aria-label="Padding Top"
             value={padTop}
@@ -470,6 +484,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="R"
             aria-label="Padding Right"
             value={padRight}
@@ -478,6 +493,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="B"
             aria-label="Padding Bottom"
             value={padBottom}
@@ -486,6 +502,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="L"
             aria-label="Padding Left"
             value={padLeft}
@@ -503,6 +520,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="T"
             aria-label="Margin Top"
             value={marginTop}
@@ -511,6 +529,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="R"
             aria-label="Margin Right"
             value={marginRight}
@@ -519,6 +538,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="B"
             aria-label="Margin Bottom"
             value={marginBottom}
@@ -527,6 +547,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="L"
             aria-label="Margin Left"
             value={marginLeft}
@@ -596,6 +617,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           <div className="ll:grid ll:grid-cols-2 ll:gap-2">
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="Grow"
               aria-label="Grow"
               value={flexGrow}
@@ -604,6 +626,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
             />
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="Shrink"
               aria-label="Shrink"
               value={flexShrink}

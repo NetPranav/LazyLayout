@@ -46,7 +46,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
     >
       {/* Section Header */}
       <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6 ll:select-none">
-        <h3 className="ll:text-small ll:font-medium ll:text-primary ll:truncate ll:m-0">
+        <h3 className="ll:text-body ll:font-medium ll:text-primary ll:truncate ll:m-0">
           {title}
         </h3>
 

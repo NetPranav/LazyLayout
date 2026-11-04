@@ -1,15 +1,19 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
+import { Minus } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
-import { TextField } from "@/editor/components/TextField";
-import { Toggle } from "@/editor/components/Toggle";
 import { ACCESSIBILITY_ROLE_OPTIONS } from "../constants";
 import type { InspectorSectionProps } from "../types";
 
 export interface AccessibilitySectionProps extends InspectorSectionProps {
   onAddA11yRef?: { current?: () => void };
 }
+
+const fieldClass =
+  "ll-dfield ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm";
+const inputClass =
+  "ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-sans ll:text-small ll:text-primary ll:outline-none";
 
 export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   getValue,
@@ -38,37 +42,50 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   }
 
   return (
-    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
-      {/* Role Select */}
-      <Select
-        size="sm"
-        label="Role"
-        aria-label="ARIA role"
-        value={role}
-        options={ACCESSIBILITY_ROLE_OPTIONS}
-        onChange={(val) => onUpdateProp?.("a11y.role", val)}
-      />
+    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
+      <div className="ll-dr ll:flex ll:items-center ll:gap-1 ll:h-8 ll:px-1">
+        <div className="ll:flex-1 ll:min-w-0">
+          <Select
+            size="sm"
+            label="Role"
+            aria-label="ARIA role"
+            value={role}
+            options={ACCESSIBILITY_ROLE_OPTIONS}
+            onChange={(val) => onUpdateProp?.("a11y.role", val)}
+          />
+        </div>
+        <button
+          type="button"
+          aria-label="Remove accessibility"
+          title="Remove accessibility"
+          onClick={() => setHasA11y(false)}
+          className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+        >
+          <Icon icon={Minus} size={14} />
+        </button>
+      </div>
 
-      {/* Accessible Label / Alt text */}
-      <TextField
-        size="sm"
-        label="ARIA Label"
-        placeholder="Describe element for screen readers..."
-        value={ariaLabel}
-        onChange={(e) => onUpdateProp?.("a11y.label", e.target.value)}
-      />
-
-      {/* Aria Hidden Toggle */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:py-1">
-        <span className="ll:text-small ll:font-mono ll:text-primary">
-          Hide from screen readers
-        </span>
-        <Toggle
-          size="sm"
-          checked={ariaHidden}
-          onChange={(checked) => onUpdateProp?.("a11y.hidden", checked)}
+      <div className={fieldClass} title="Label">
+        <span className="ll:font-mono ll:text-micro ll:text-muted">Label</span>
+        <input
+          type="text"
+          aria-label="ARIA label"
+          placeholder="Accessible name"
+          value={ariaLabel}
+          onChange={(e) => onUpdateProp?.("a11y.label", e.target.value)}
+          className={inputClass}
         />
       </div>
+
+      <label className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:text-small ll:text-primary ll:cursor-pointer">
+        <input
+          type="checkbox"
+          checked={ariaHidden}
+          onChange={(e) => onUpdateProp?.("a11y.hidden", e.target.checked)}
+          className="ll:m-0 ll:w-3.5 ll:h-3.5"
+        />
+        Hide from screen readers
+      </label>
     </div>
   );
 };

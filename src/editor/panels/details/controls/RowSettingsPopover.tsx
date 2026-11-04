@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
 
 export interface RowSettingsPopoverProps {
@@ -20,9 +20,33 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
   children,
   className = "",
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
-  // Close on Escape key
+  // Places the popover like the design: floating left of the right panel, top aligned to its row.
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const place = () => {
+      const row = anchorRef.current?.closest(".ll-rr");
+      const zone = anchorRef.current?.closest(".ll-zbody") ?? row;
+      const pop = popRef.current;
+      if (!row || !zone || !pop) return;
+      const r = row.getBoundingClientRect();
+      const z = zone.getBoundingClientRect();
+      const h = pop.offsetHeight;
+      const w = pop.offsetWidth;
+      setPos({
+        left: Math.max(8, z.left - w - 8),
+        top: Math.max(8, Math.min(r.top, window.innerHeight - 8 - h)),
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [isOpen, children]);
+
+  // Escape and outside pointer-down close the popover. Clicks on the owning row keep their own toggle.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -32,38 +56,49 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
         onClose();
       }
     };
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (popRef.current?.contains(target)) return;
+      if (anchorRef.current?.closest(".ll-rr")?.contains(target)) return;
+      onClose();
+    };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      ref={containerRef}
-      role="dialog"
-      aria-label={`${title} settings`}
-      className={`ppop ll:flex ll:flex-col ll:w-full ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:p-3 ll:gap-2.5 ll:my-1.5 ll:transition-all ${className}`}
-    >
-      {/* Popover Header */}
-      <div className="phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:pb-1 ll:border-b ll:border-border">
-        <span className="pt ll:text-small ll:font-medium ll:text-primary">
-          {title}
-        </span>
-        <IconButton
-          size="sm"
-          aria-label="Close settings"
-          tooltip="Close"
-          onClick={onClose}
-          icon={<Icon icon={X} size={14} />}
-        />
-      </div>
-
-      {/* Popover Body */}
-      <div className="pbody ll:flex ll:flex-col ll:gap-2.5 ll:pt-1">
-        {children}
-      </div>
-    </div>
+    <>
+      <span ref={anchorRef} aria-hidden="true" className="ll:hidden" />
+      {isOpen &&
+        createPortal(
+          <div
+            ref={popRef}
+            role="dialog"
+            aria-label={`${title} settings`}
+            style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999 }}
+            className={`ppop ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-62 ll:overflow-auto ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
+          >
+            <div className="phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:pt-2 ll:pr-2 ll:pb-1 ll:pl-4">
+              <span className="pt ll:text-body ll:font-medium ll:text-primary">{title}</span>
+              <button
+                type="button"
+                aria-label="Close settings"
+                title="Close"
+                onClick={onClose}
+                className="ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+              >
+                <Icon icon={X} size={14} />
+              </button>
+            </div>
+            <div className="pbody ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:pt-1 ll:pb-4">{children}</div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 };

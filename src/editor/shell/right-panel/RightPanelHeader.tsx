@@ -52,7 +52,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
           size={16}
           className="ll-rico ll:text-muted ll:shrink-0"
         />
-        <span className="ll-rname ll:text-lead ll:font-semibold ll:text-primary ll:truncate ll:min-w-0">
+        <span className="ll-rname ll:text-heading ll:font-semibold ll:text-primary ll:truncate ll:min-w-0">
           {selectionName}
         </span>
 
@@ -63,6 +63,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             size="sm"
             aria-label={isLayerHidden ? "Show layer" : "Hide layer"}
             title={isLayerHidden ? "Show layer" : "Hide layer"}
+            className="ll:-mr-0.5"
             pressed={isLayerHidden}
             aria-pressed={isLayerHidden}
             icon={<Icon icon={isLayerHidden ? EyeOff : Eye} size={14} />}
@@ -76,7 +77,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             aria-haspopup="menu"
             aria-expanded={moreAt !== null}
             onClick={() => (moreAt ? setMoreAt(null) : openMore())}
-            className={`ll-rmore ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-[0.08em] ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+            className={`ll-rmore ll-more ll:-mr-1 ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-[0.08em] ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
               moreAt !== null ? "ll:bg-control-secondary-bg ll:text-primary" : ""
             }`}
           >
@@ -90,6 +91,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             position={moreAt}
             width={MENU_DEFAULT_WIDTH}
             aria-label="More"
+            className="ll:w-menu"
           >
             <MenuItem onClick={onReset}>Reset</MenuItem>
             <MenuItem onClick={onDelete}>Delete</MenuItem>

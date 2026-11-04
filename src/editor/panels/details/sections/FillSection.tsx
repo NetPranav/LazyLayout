@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { Select } from "@/editor/components/Select";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import type { InspectorSectionProps, FillItem } from "../types";
 
@@ -18,6 +19,14 @@ const DEFAULT_FILL: FillItem = {
   ],
   imageFit: "fill",
 };
+
+const PAINT_OPTIONS = [
+  { value: "solid", label: "Solid" },
+  { value: "linear", label: "Linear" },
+  { value: "radial", label: "Radial" },
+  { value: "conic", label: "Conic" },
+  { value: "image", label: "Image" },
+] as const;
 
 export interface FillSectionProps extends InspectorSectionProps {
   onAddFillRef?: { current?: () => void };
@@ -107,36 +116,36 @@ export const FillSection: React.FC<FillSectionProps> = ({
   }
 
   return (
-    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:w-full ${className}`}>
+    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-0.5 ll:-mx-1 ${className}`}>
       {fills.map((fill) => {
         const isDim = Boolean(fill.hidden);
+        const isOpen = activePopoverId === fill.id;
         return (
           <div
             key={fill.id}
             data-k="fill"
-            className={`ll-dr ll-rr ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-1 ll:rounded-sm ll:hover:bg-surface-bar ll:transition-colors ${
-              isDim ? "ll-rdim ll:opacity-50" : ""
-            }`}
+            className={`ll-dr ll-rr ll:group ll:flex ll:items-center ll:gap-1 ll:h-8 ll:py-0.5 ll:px-1 ll:rounded-sm ${
+              isOpen ? "ll:bg-surface-raised ll:text-primary" : ""
+            } ${isDim ? "ll-rdim ll:opacity-50" : ""}`}
           >
-            {/* Grip handle */}
-            <button
-              type="button"
-              aria-label="Reorder"
-              title="Reorder"
-              className="ll-grip ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-grab ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+            {/* Grip handle, shown on row hover */}
+            <span
+              aria-hidden="true"
+              title="Drag to reorder"
+              className="ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100"
             >
               <Icon icon={GripVertical} size={12} />
-            </button>
+            </span>
 
             {/* Lead swatch button */}
             <button
               type="button"
               aria-label="Settings"
+              aria-haspopup="dialog"
+              aria-expanded={isOpen}
               title="Settings"
-              onClick={() =>
-                setActivePopoverId(activePopoverId === fill.id ? null : fill.id)
-              }
-              className="ll-lead ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+              onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
+              className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
               <span
                 className="ll-dsw ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
@@ -145,8 +154,8 @@ export const FillSection: React.FC<FillSectionProps> = ({
             </button>
 
             {/* Hex and Opacity Fields */}
-            <div className="ll-sum ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-              <div className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+            <div className="ll-sum ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0">
+              <div className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
                 <input
                   type="text"
                   maxLength={6}
@@ -157,11 +166,11 @@ export const FillSection: React.FC<FillSectionProps> = ({
                       hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
                     })
                   }
-                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
+                  className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
                 />
               </div>
 
-              <div className="ll-dfield ll:flex ll:items-center ll:w-16 ll:shrink-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+              <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:w-14.5 ll:shrink-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -173,7 +182,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
                       opacity: isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed)),
                     });
                   }}
-                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
+                  className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
                 />
                 <span className="ll-sf ll:font-mono ll:text-micro ll:text-muted ll:shrink-0 ll:select-none">
                   %
@@ -187,7 +196,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
               aria-label={fill.hidden ? "Show" : "Hide"}
               title={fill.hidden ? "Show" : "Hide"}
               onClick={() => handleToggleHide(fill.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
               <Icon icon={fill.hidden ? EyeOff : Eye} size={14} />
             </button>
@@ -198,25 +207,61 @@ export const FillSection: React.FC<FillSectionProps> = ({
               aria-label="Remove"
               title="Remove"
               onClick={() => handleRemoveFill(fill.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
               <Icon icon={Minus} size={14} />
             </button>
 
             {/* Settings Popover */}
-            {activePopoverId === fill.id && (
-              <RowSettingsPopover
-                isOpen={true}
-                title="Fill Settings"
-                onClose={() => setActivePopoverId(null)}
-              >
-                <div className="ll:flex ll:flex-col ll:gap-2">
-                  <span className="ll:text-nano ll:font-mono ll:text-muted">
-                    Solid Color: #{fill.hex} ({fill.opacity}%)
-                  </span>
+            <RowSettingsPopover isOpen={isOpen} title="Fill" onClose={() => setActivePopoverId(null)}>
+              <Select
+                aria-label="Paint type"
+                options={PAINT_OPTIONS}
+                value={fill.type}
+                width="100%"
+                size="sm"
+                onChange={(value) => handleUpdateFill(fill.id, { type: value as FillItem["type"] })}
+              />
+              <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
+                <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+                  <span
+                    className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
+                    style={{ backgroundColor: `#${fill.hex}` }}
+                  />
+                  <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
+                    <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      aria-label="Fill hex"
+                      value={fill.hex}
+                      onChange={(e) =>
+                        handleUpdateFill(fill.id, {
+                          hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
+                        })
+                      }
+                      className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+                    />
+                  </div>
                 </div>
-              </RowSettingsPopover>
-            )}
+                <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    aria-label="Fill opacity in popover"
+                    value={fill.opacity}
+                    onChange={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      handleUpdateFill(fill.id, {
+                        opacity: isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed)),
+                      });
+                    }}
+                    className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+                  />
+                  <span className="ll:font-mono ll:text-micro ll:text-muted ll:shrink-0 ll:select-none">%</span>
+                </div>
+              </div>
+            </RowSettingsPopover>
           </div>
         );
       })}

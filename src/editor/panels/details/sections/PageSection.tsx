@@ -1,12 +1,39 @@
 "use client";
 
 import React, { useState } from "react";
+import { SquareRoundCorner } from "lucide-react";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
-import {
-  FONT_FAMILY_OPTIONS,
-  INSPECTOR_CONSTANTS,
-} from "../constants";
+import { INSPECTOR_CONSTANTS } from "../constants";
+
+const PAGE_FONT_OPTIONS = [
+  { value: "Geist", label: "Geist" },
+  { value: "Inter", label: "Inter" },
+  { value: "Playfair Display", label: "Playfair Display" },
+] as const;
+
+const SCALE_OPTIONS = [
+  { value: "1.125", label: "1.125" },
+  { value: "1.2", label: "1.2" },
+  { value: "1.25", label: "1.25" },
+  { value: "1.333", label: "1.333" },
+] as const;
+
+const SHADOW_OPTIONS = [
+  { value: "None", label: "None" },
+  { value: "Soft", label: "Soft" },
+  { value: "Medium", label: "Medium" },
+  { value: "Strong", label: "Strong" },
+] as const;
+
+const FIELD_LABEL = "ll:font-mono ll:text-micro ll:tracking-normal ll:text-muted ll:shrink-0";
+const HEX_FIELD =
+  "ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm";
+const HEX_INPUT =
+  "ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none";
+const SWATCH = "ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0";
+const SELECT_ROW =
+  "ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:w-full";
 
 export interface PageSectionProps {
   pageName?: string;
@@ -20,7 +47,7 @@ export interface PageSectionProps {
 }
 
 export const PageSectionBody: React.FC<PageSectionProps> = ({
-  pageName: propPageName = "Landing page",
+  pageName: propPageName = "Home",
   width: propWidth = 1440,
   height: propHeight = 900,
   onChangePageName,
@@ -33,8 +60,9 @@ export const PageSectionBody: React.FC<PageSectionProps> = ({
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
-      {/* Name Input (Full width, matching prototype) */}
-      <div className="ll:w-full">
+      {/* Name row: label and value share one field, as in the prototype */}
+      <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+        <span className={FIELD_LABEL}>Name</span>
         <input
           type="text"
           aria-label="Page name"
@@ -43,7 +71,7 @@ export const PageSectionBody: React.FC<PageSectionProps> = ({
             setPageName(e.target.value);
             onChangePageName?.(e.target.value);
           }}
-          className="ll:w-full ll:box-border ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus:border-border-active ll:focus:ring-1 ll:focus:ring-border-active ll:outline-none ll:rounded-sm ll:font-mono ll:text-small ll:text-primary ll:transition-colors"
+          className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
         />
       </div>
 
@@ -51,7 +79,8 @@ export const PageSectionBody: React.FC<PageSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
-          label="W"
+          className="ll:w-full ll:min-w-0"
+          label={<span className={FIELD_LABEL}>Width</span>}
           aria-label="Page width"
           value={width}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -62,7 +91,8 @@ export const PageSectionBody: React.FC<PageSectionProps> = ({
         />
         <NumberField
           size="sm"
-          label="H"
+          className="ll:w-full ll:min-w-0"
+          label={<span className={FIELD_LABEL}>Height</span>}
           aria-label="Page height"
           value={height}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -86,13 +116,10 @@ export const PageBackgroundBody: React.FC<{
   const [bgHex, setBgHex] = useState(backgroundColor.replace(/^#/, "").toUpperCase());
 
   return (
-    <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-      <span
-        className="ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-        style={{ backgroundColor: `#${bgHex}` }}
-      />
-      <div className="ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-        <span className="ll:font-mono ll:text-nano ll:text-muted ll:mr-1">#</span>
+    <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
+      <span className={SWATCH} style={{ backgroundColor: `#${bgHex}` }} />
+      <div className={`${HEX_FIELD} ll:w-27`}>
+        <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
         <input
           type="text"
           maxLength={6}
@@ -103,7 +130,7 @@ export const PageBackgroundBody: React.FC<{
             setBgHex(next);
             onChangeBackground?.(next);
           }}
-          className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
+          className={HEX_INPUT}
         />
       </div>
     </div>
@@ -119,123 +146,85 @@ export const ThemeTokensBody: React.FC = () => {
   const [typeScale, setTypeScale] = useState("1.25");
   const [themeShadow, setThemeShadow] = useState("Soft");
 
+  const tokenRows: Array<{ label: string; hex: string; set: (v: string) => void }> = [
+    { label: "Primary", hex: primaryHex, set: setPrimaryHex },
+    { label: "Surface", hex: surfaceHex, set: setSurfaceHex },
+    { label: "Text", hex: textHex, set: setTextHex },
+  ];
+
   return (
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* Primary Hex */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:gap-2">
-        <div className="ll:flex ll:items-center ll:gap-2 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${primaryHex}` }}
-          />
-          <div className="ll:flex ll:items-center ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-            <span className="ll:font-mono ll:text-nano ll:text-muted ll:mr-1">#</span>
+      {tokenRows.map((row) => (
+        <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
+          <span className={SWATCH} style={{ backgroundColor: `#${row.hex}` }} />
+          <div className={`${HEX_FIELD} ll:w-27`}>
+            <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
             <input
               type="text"
               maxLength={6}
-              aria-label="Primary hex"
-              value={primaryHex}
-              onChange={(e) => setPrimaryHex(e.target.value.toUpperCase())}
-              className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
+              aria-label={`${row.label} hex`}
+              value={row.hex}
+              onChange={(e) => row.set(e.target.value.toUpperCase())}
+              className={HEX_INPUT}
             />
           </div>
+          <span className="ll:flex-1 ll:min-w-0 ll:ml-1 ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted">
+            {row.label}
+          </span>
         </div>
-        <span className="ll:text-nano ll:text-muted ll:font-sans">Primary</span>
-      </div>
-
-      {/* Surface Hex */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:gap-2">
-        <div className="ll:flex ll:items-center ll:gap-2 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${surfaceHex}` }}
-          />
-          <div className="ll:flex ll:items-center ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-            <span className="ll:font-mono ll:text-nano ll:text-muted ll:mr-1">#</span>
-            <input
-              type="text"
-              maxLength={6}
-              aria-label="Surface hex"
-              value={surfaceHex}
-              onChange={(e) => setSurfaceHex(e.target.value.toUpperCase())}
-              className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
-            />
-          </div>
-        </div>
-        <span className="ll:text-nano ll:text-muted ll:font-sans">Surface</span>
-      </div>
-
-      {/* Text Hex */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:gap-2">
-        <div className="ll:flex ll:items-center ll:gap-2 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${textHex}` }}
-          />
-          <div className="ll:flex ll:items-center ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-            <span className="ll:font-mono ll:text-nano ll:text-muted ll:mr-1">#</span>
-            <input
-              type="text"
-              maxLength={6}
-              aria-label="Text hex"
-              value={textHex}
-              onChange={(e) => setTextHex(e.target.value.toUpperCase())}
-              className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
-            />
-          </div>
-        </div>
-        <span className="ll:text-nano ll:text-muted ll:font-sans">Text</span>
-      </div>
+      ))}
 
       {/* Default Radius */}
-      <NumberField
-        size="sm"
-        label="R"
-        aria-label="Default radius"
-        value={radius}
-        step={1}
-        onChange={(v) => setRadius(v)}
-      />
+      <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:w-35 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+        <SquareRoundCorner size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />
+        <input
+          type="text"
+          inputMode="numeric"
+          aria-label="Default radius"
+          value={radius}
+          onChange={(e) => {
+            const n = parseFloat(e.target.value);
+            if (!Number.isNaN(n)) setRadius(n);
+          }}
+          className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+        />
+      </div>
 
       {/* Theme Font */}
-      <Select
-        size="sm"
-        label="Font"
-        aria-label="Theme font"
-        value={themeFont}
-        options={FONT_FAMILY_OPTIONS}
-        onChange={(v) => setThemeFont(v)}
-      />
+      <div className={SELECT_ROW}>
+        <span className={FIELD_LABEL}>Font</span>
+        <Select
+          size="sm"
+          aria-label="Theme font"
+          value={themeFont}
+          options={PAGE_FONT_OPTIONS}
+          onChange={(v) => setThemeFont(v)}
+        />
+      </div>
 
       {/* Type Scale */}
-      <Select
-        size="sm"
-        label="Scale"
-        aria-label="Type scale"
-        value={typeScale}
-        options={[
-          { value: "1.125", label: "1.125" },
-          { value: "1.2", label: "1.2" },
-          { value: "1.25", label: "1.25" },
-          { value: "1.333", label: "1.333" },
-        ]}
-        onChange={(v) => setTypeScale(v)}
-      />
+      <div className={SELECT_ROW}>
+        <span className={FIELD_LABEL}>Scale</span>
+        <Select
+          size="sm"
+          aria-label="Type scale"
+          value={typeScale}
+          options={SCALE_OPTIONS}
+          onChange={(v) => setTypeScale(v)}
+        />
+      </div>
 
       {/* Theme Shadow */}
-      <Select
-        size="sm"
-        label="Shadow"
-        aria-label="Theme shadow"
-        value={themeShadow}
-        options={[
-          { value: "None", label: "None" },
-          { value: "Soft", label: "Soft" },
-          { value: "Medium", label: "Medium" },
-          { value: "Strong", label: "Strong" },
-        ]}
-        onChange={(v) => setThemeShadow(v)}
-      />
+      <div className={SELECT_ROW}>
+        <span className={FIELD_LABEL}>Shadow</span>
+        <Select
+          size="sm"
+          aria-label="Theme shadow"
+          value={themeShadow}
+          options={SHADOW_OPTIONS}
+          onChange={(v) => setThemeShadow(v)}
+        />
+      </div>
     </div>
   );
 };

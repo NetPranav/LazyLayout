@@ -52,6 +52,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
       <div className="ll:grid ll:grid-cols-3 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="X"
           value={xVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -63,6 +64,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Y"
           value={yVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -74,6 +76,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label={<Icon icon={RotateCw} size={14} />}
           aria-label="Rotation"
           value={rotVal}
@@ -124,6 +127,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Z"
           value={zIndex}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
@@ -140,6 +144,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
           <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="T"
               aria-label="Offset Top"
               value={offTop}
@@ -148,6 +153,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
             />
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="R"
               aria-label="Offset Right"
               value={offRight}
@@ -156,6 +162,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
             />
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="B"
               aria-label="Offset Bottom"
               value={offBottom}
@@ -164,6 +171,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
             />
             <NumberField
               size="sm"
+              className="ll:*:!text-micro ll:!gap-2"
               label="L"
               aria-label="Offset Left"
               value={offLeft}
@@ -178,6 +186,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Scale X"
           value={scaleX}
           step={INSPECTOR_CONSTANTS.STEP_FINE}
@@ -186,6 +195,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Scale Y"
           value={scaleY}
           step={INSPECTOR_CONSTANTS.STEP_FINE}
@@ -198,6 +208,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Skew X"
           suffix="°"
           value={skewX}
@@ -206,6 +217,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Skew Y"
           suffix="°"
           value={skewY}
@@ -218,6 +230,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Rot X"
           suffix="°"
           value={rotX}
@@ -226,6 +239,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="Rot Y"
           suffix="°"
           value={rotY}

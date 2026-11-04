@@ -80,7 +80,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
               });
             }}
             placeholder="Text content"
-            className="ll:w-full ll:box-border ll:px-2 ll:py-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus:border-border-active ll:focus:ring-1 ll:focus:ring-border-active ll:outline-none ll:rounded-sm ll:font-mono ll:text-small ll:text-primary ll:resize-none ll:transition-colors"
+            className="ll:w-full ll:box-border ll:px-2 ll:py-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus:border-border-active ll:focus:ring-1 ll:focus:ring-border-active ll:outline-none ll:rounded-sm ll:font-mono ll:text-micro ll:leading-4 ll:text-primary ll:resize-none ll:transition-colors"
           />
         </div>
       )}
@@ -95,7 +95,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
       />
 
       {/* Font Weight & Size Row */}
-      <div className="ll:grid ll:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] ll:gap-2">
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <Select
           size="sm"
           aria-label="Font weight"
@@ -115,6 +115,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label="S"
           aria-label="Size"
           min={INSPECTOR_CONSTANTS.MIN_FONT_SIZE}
@@ -132,6 +133,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label={<Icon icon={ArrowUpDown} size={14} />}
           aria-label="Line height"
           value={lineHeight}
@@ -144,6 +146,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label={<Icon icon={ArrowLeftRight} size={14} />}
           aria-label="Tracking"
           value={letterSpacing}
@@ -289,6 +292,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
       {/* Word Spacing */}
       <NumberField
         size="sm"
+        className="ll:*:!text-micro ll:!gap-2"
         label="Word"
         aria-label="Word spacing"
         value={wordSpacing}

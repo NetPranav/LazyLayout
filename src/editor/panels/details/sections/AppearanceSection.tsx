@@ -39,6 +39,7 @@ export const AppearanceSection: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label={<Icon icon={Droplet} size={14} />}
           aria-label="Opacity"
           suffix="%"
@@ -54,6 +55,7 @@ export const AppearanceSection: React.FC<InspectorSectionProps> = ({
 
         <NumberField
           size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
           label={<Icon icon={SquareRoundCorner} size={14} />}
           aria-label="Corner radius"
           min={INSPECTOR_CONSTANTS.MIN_RADIUS}
@@ -99,6 +101,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="TL"
             aria-label="Top left radius"
             value={radTL}
@@ -107,6 +110,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="TR"
             aria-label="Top right radius"
             value={radTR}
@@ -115,6 +119,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="BR"
             aria-label="Bottom right radius"
             value={radBR}
@@ -123,6 +128,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
           />
           <NumberField
             size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
             label="BL"
             aria-label="Bottom left radius"
             value={radBL}

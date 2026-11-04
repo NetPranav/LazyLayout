@@ -96,7 +96,7 @@ export const AlignmentGrid: React.FC<AlignmentGridProps> = ({
       ref={containerRef}
       role="group"
       aria-label="Alignment matrix"
-      className={`dal ll:grid ll:grid-cols-3 ll:grid-rows-3 ll:w-25 ll:h-25 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ${
+      className={`dal ll:grid ll:grid-cols-3 ll:grid-rows-3 ll:w-25 ll:h-25 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm ${
         disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""
       } ${className}`}
     >
