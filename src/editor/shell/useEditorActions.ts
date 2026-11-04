@@ -17,18 +17,11 @@ import {
   isCommandAvailable,
   invokeCommand,
   tryRunCommand,
-  installGlobalCommands,
 } from "@/core/commands";
 import { transport, transportStore } from "@/core/time/transport";
 import { isTextEditingTarget } from "@/core/commands/normalize";
-import { registerEditingCommands } from "@/core/editing/editCommands";
-import { registerSelectionCommands } from "@/core/selection/selectionCommands";
-import {
-  registerFrameCommands,
-} from "@/core/frames/frameCommands";
 import { listFrames } from "@/core/frames/frames";
 import { getDocument } from "@/core/store/documentState";
-import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDatabase";
@@ -743,26 +736,11 @@ export function useEditorActions(
     ]
   );
 
-  // Register core commands once at mount
+  // Register view and layout commands once at mount
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const unregisters: (() => void)[] = [];
-
-    // Global editing commands (undo, redo, save, dispatcher)
-    unregisters.push(installGlobalCommands(window));
-
-    // Core layer editing commands (cut, copy, paste, duplicate, delete, group, align, etc.)
-    unregisters.push(registerEditingCommands());
-
-    // Core selection commands (all, none, inverse, children, parent)
-    unregisters.push(registerSelectionCommands());
-
-    // Core frame commands (add, duplicate, rename, resize, move, delete, focus)
-    unregisters.push(registerFrameCommands());
-
-    // Core timeline commands
-    unregisters.push(registerTimelineCommands());
 
     // Custom view/shell commands
     unregisters.push(

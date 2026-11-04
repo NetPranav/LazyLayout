@@ -11,6 +11,16 @@ import { CodePanel } from "@/editor/panels/code-view";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import type { CollabUser } from "@/editor/components/AvatarStack";
+import { useProjectFiles } from "@/legacy-editor/shell/hooks/useProjectFiles";
+import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
+import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
+import { projectSession } from "@/core/storage/ProjectSession";
+import {
+  RecoveryPrompt,
+  SaveErrorBanner,
+  ReadOnlyBanner,
+  FileDropOverlay,
+} from "./persistence";
 import { useEditorActions } from "./useEditorActions";
 
 export interface EditorShellProps {
@@ -36,6 +46,35 @@ export function EditorShell({
     initialMode: "design",
     initialLeftCollapsed: false,
     initialRightCollapsed: false,
+  });
+
+  // Project persistence, locking and shell commands
+  const files = useProjectFiles();
+  useProjectLock();
+
+  useShellCommands({
+    toggleCommandPalette: actions.handleSearch,
+    toggleGlobalSearch: actions.handleSearch,
+    toggleAiCoPilot: () => actions.toggleAiBox(),
+    dockFullPage: (panelId: string) => {
+      if (panelId === "code") actions.setMode("code");
+      else if (panelId === "sequencer" || panelId === "timeline") actions.setMode("motion");
+      else if (panelId === "blueprint" || panelId === "logic") actions.setMode("design");
+      else actions.handleMenuAction("window." + panelId);
+    },
+    showBottomTab: (tabId: string) => {
+      if (tabId === "timeline" || tabId === "sequencer" || tabId === "curves") actions.setMode("motion");
+      else if (tabId === "code" || tabId === "console") actions.setMode("code");
+      else actions.handleMenuAction("window." + tabId);
+    },
+    exportProjectFile: () => void files.handleExportProjectFile(),
+    openImportPicker: files.handleOpenImportPicker,
+    openSettings: () => actions.handleMenuAction("app.settings"),
+    selectPreset: (preset: string) => {
+      if (preset === "design") actions.setMode("design");
+      else if (preset === "animate" || preset === "sequencer") actions.setMode("motion");
+      else if (preset === "code") actions.setMode("code");
+    },
   });
 
   // Real collaborator presence resolution
@@ -80,7 +119,7 @@ export function EditorShell({
     ? "var(--ll-size-bottom-code-h)"
     : "0";
 
-  const topHeight = actions.isZen ? "0" : "var(--ll-size-topbar-h)";
+  const topHeight = actions.isZen ? "0" : "auto";
   const leftWidth = actions.isZen || actions.isLeftCollapsed ? "0" : "var(--ll-size-panel-left-w)";
   const rightWidth = actions.isZen || actions.isRightCollapsed ? "0" : "var(--ll-size-panel-right-w)";
 
@@ -102,6 +141,26 @@ export function EditorShell({
         `,
       }}
     >
+      {/* Persistence overlays & banners */}
+      {files.recovery && (
+        <RecoveryPrompt
+          recovery={files.recovery}
+          onRestore={() => {
+            files.setRecovery(null);
+            void projectSession.restoreRecovery();
+          }}
+          onDiscard={() => {
+            files.setRecovery(null);
+            void projectSession.discardRecovery();
+          }}
+        />
+      )}
+      <SaveErrorBanner
+        fileError={files.fileError}
+        onDismissFileError={() => files.setFileError(null)}
+      />
+      <FileDropOverlay visible={files.isFileDragOver} />
+
       {/* Zen mode hint when interface is hidden (prototype parity) */}
       {actions.isZen && (
         <span
@@ -114,7 +173,7 @@ export function EditorShell({
       {/* 1. Top bar in "top" grid area */}
       <div
         style={{ gridArea: "top" }}
-        className={`ll:w-full ll:h-full ${actions.isZen ? "ll:invisible ll:h-0" : "ll:visible"}`}
+        className={`ll:w-full ll:flex ll:flex-col ${actions.isZen ? "ll:invisible ll:h-0" : "ll:visible"}`}
       >
         <TopBar
           projectName={projectName}
@@ -134,6 +193,7 @@ export function EditorShell({
           isZen={actions.isZen}
           users={collabUsers}
         />
+        <ReadOnlyBanner />
       </div>
 
       {/* 2. Left panel slot in "left" grid area */}

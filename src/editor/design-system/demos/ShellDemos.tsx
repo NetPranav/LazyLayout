@@ -27,6 +27,13 @@ import { RightPanelAiChat } from "@/editor/shell/right-panel/RightPanelAiChat";
 import { RightPanelEmptyPlaceholder } from "@/editor/shell/right-panel/RightPanelEmptyPlaceholder";
 import type { AssetItem } from "@/editor/shell/left-panel/types";
 import type { AiChatMessage } from "@/editor/shell/right-panel/types";
+import {
+  RecoveryPrompt,
+  SaveErrorBanner,
+  ReadOnlyBanner,
+  FileDropOverlay,
+} from "@/editor/shell/persistence";
+import type { PendingRecovery } from "@/core/storage/ProjectSession";
 
 const SAMPLE_USERS: CollabUser[] = [
   { id: "1", name: "Ada Lovelace", status: "Editing Hero" },
@@ -732,6 +739,169 @@ export function RightPanelEmptyDemo() {
 
       <div className="ll:w-80 ll:h-48 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:flex ll:items-center ll:justify-center ll:p-4">
         <RightPanelEmptyPlaceholder label="Select an element to view properties" />
+      </div>
+    </div>
+  );
+}
+
+const SAMPLE_RECOVERY: PendingRecovery = {
+  projectId: "demo-project-id",
+  lastChangeAt: 1730728800000,
+  changeCount: 3,
+  labels: ["Move Hero Heading", "Change Button Variant", "Add Background Clip"],
+};
+
+/* =========================================================================
+   14. PERSISTENCE BANNERS DEMO (Recovery Prompt, Save Errors, Read-Only Lock, File Drop)
+   ========================================================================= */
+export function PersistenceBannersDemo() {
+  const [showRecovery, setShowRecovery] = useState(true);
+  const [fileError, setFileError] = useState<string | null>(
+    "Could not write project snapshot: quota exceeded."
+  );
+  const [showFileDrop, setShowFileDrop] = useState(false);
+  const [lockTakenOver, setLockTakenOver] = useState(false);
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-8">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Persistence Banners</h1>
+        <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Recovery Prompt, Save Error Banner, Read-Only Lock Banner &amp; File Drop Overlay
+        </span>
+      </div>
+
+      {/* 1. Recovery Prompt */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          1. Recovery Prompt (Popover-style Dialog)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:flex ll:items-center ll:gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowRecovery((prev) => !prev)}
+            >
+              {showRecovery ? "Hide Recovery Prompt" : "Show Recovery Prompt"}
+            </Button>
+            <span className="ll:text-small ll:text-secondary">
+              State: <strong className="ll:text-primary">{showRecovery ? "Visible" : "Dismissed"}</strong>
+            </span>
+          </div>
+
+          {showRecovery && (
+            <div className="ll:relative ll:h-44 ll:w-full ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+              <RecoveryPrompt
+                recovery={SAMPLE_RECOVERY}
+                onRestore={() => setShowRecovery(false)}
+                onDiscard={() => setShowRecovery(false)}
+                className="!ll:absolute !ll:top-4"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Save Error Banner */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          2. Save Error Banner (Dismissible)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:flex ll:items-center ll:gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                setFileError(
+                  fileError
+                    ? null
+                    : "Could not write project snapshot: quota exceeded."
+                )
+              }
+            >
+              {fileError ? "Clear Error" : "Trigger Sample Error"}
+            </Button>
+            <span className="ll:text-small ll:text-secondary">
+              Status: <strong className="ll:text-primary">{fileError ? "Error active" : "Dismissed"}</strong>
+            </span>
+          </div>
+
+          {fileError && (
+            <div className="ll:relative ll:h-28 ll:w-full ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+              <SaveErrorBanner
+                fileError={fileError}
+                onDismissFileError={() => setFileError(null)}
+                className="!ll:absolute !ll:bottom-3"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Read-Only Lock Banner */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          3. Read-Only Lock Banner (Multi-tab concurrency)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:flex ll:items-center ll:gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setLockTakenOver((prev) => !prev)}
+            >
+              {lockTakenOver ? "Reset to Read-Only" : "Simulate 'Edit here instead'"}
+            </Button>
+            <span className="ll:text-small ll:text-secondary">
+              Status: <strong className="ll:text-primary">{lockTakenOver ? "Owner (editable)" : "Read-only (another tab holds lock)"}</strong>
+            </span>
+          </div>
+
+          <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-panel">
+            {!lockTakenOver ? (
+              <ReadOnlyBanner
+                forced={true}
+                onTakeOver={() => setLockTakenOver(true)}
+              />
+            ) : (
+              <div className="ll:p-4 ll:text-small ll:text-secondary ll:text-center">
+                Lock taken over. This tab now has full edit access.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 4. File Drop Overlay */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          4. File Drop Overlay (.lazy.json drag-and-drop)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:flex ll:items-center ll:gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setShowFileDrop(true);
+                setTimeout(() => setShowFileDrop(false), 3000);
+              }}
+            >
+              Preview File Drop Overlay (3 seconds)
+            </Button>
+            <span className="ll:text-small ll:text-secondary">
+              Status: <strong className="ll:text-primary">{showFileDrop ? "Active (visible overlay)" : "Idle"}</strong>
+            </span>
+          </div>
+
+          <div className="ll:relative ll:h-44 ll:w-full ll:bg-surface-canvas ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+            <FileDropOverlay visible={true} className="!ll:absolute !ll:inset-0" />
+          </div>
+
+          {showFileDrop && <FileDropOverlay visible={true} />}
+        </div>
       </div>
     </div>
   );

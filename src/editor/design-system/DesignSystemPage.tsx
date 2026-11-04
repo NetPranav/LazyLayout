@@ -58,6 +58,7 @@ import {
   RightPanelAccordionRowDemo,
   RightPanelAiChatDemo,
   RightPanelEmptyDemo,
+  PersistenceBannersDemo,
 } from "./demos/ShellDemos";
 
 // Canvas chrome demos
@@ -126,6 +127,7 @@ type NavSectionId =
   | "right-panel-accordion"
   | "right-panel-ai-chat"
   | "right-panel-empty"
+  | "persistence-banners"
   // Canvas
   | "toolbar"
   | "insert-box"
@@ -197,6 +199,7 @@ const SHELL_NAV: readonly NavItem[] = [
   { id: "right-panel-accordion", label: "RightPanelAccordionRow" },
   { id: "right-panel-ai-chat", label: "RightPanelAiChat" },
   { id: "right-panel-empty", label: "RightPanelEmptyPlaceholder" },
+  { id: "persistence-banners", label: "Persistence Banners" },
 ];
 
 const CANVAS_NAV: readonly NavItem[] = [
@@ -1010,6 +1013,7 @@ export function DesignSystemPage() {
             {activeSection === "right-panel-accordion" && <RightPanelAccordionRowDemo />}
             {activeSection === "right-panel-ai-chat" && <RightPanelAiChatDemo />}
             {activeSection === "right-panel-empty" && <RightPanelEmptyDemo />}
+            {activeSection === "persistence-banners" && <PersistenceBannersDemo />}
 
             {/* 4. Canvas Chrome */}
             {activeSection === "toolbar" && <ToolbarDemo />}

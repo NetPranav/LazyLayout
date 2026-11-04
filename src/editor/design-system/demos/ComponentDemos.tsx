@@ -1470,6 +1470,7 @@ const SAMPLE_COLLAB_USERS: readonly CollabUser[] = [
 export function TopBarDemo() {
   const [mode, setMode] = useState<EditorMode>("design");
   const [saving, setSaving] = useState(false);
+  const [demoSaveStatus, setDemoSaveStatus] = useState<"saved" | "dirty" | "saving" | "error">("saved");
   const [demoIssues, setDemoIssues] = useState([
     { id: "alt", title: "Hero image has no alt text" },
     { id: "contrast", title: "Button contrast is 3.9:1" },
@@ -1505,6 +1506,7 @@ export function TopBarDemo() {
           <TopBar
             projectName="MyProject"
             saving={saving}
+            saveStatus={demoSaveStatus}
             mode={mode}
             onSelectMode={setMode}
             issues={demoIssues}
@@ -1512,7 +1514,7 @@ export function TopBarDemo() {
             users={SAMPLE_COLLAB_USERS}
           />
         </div>
-        <div className="ll:flex ll:items-center ll:gap-3">
+        <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
           <Button
             variant="secondary"
             size="sm"
@@ -1527,9 +1529,41 @@ export function TopBarDemo() {
           >
             Reset Issues (2 to fix)
           </Button>
+          <div className="ll:flex ll:items-center ll:gap-1.5 ll:border-l ll:border-border ll:pl-3">
+            <span className="ll:text-small ll:text-secondary">Save status:</span>
+            {(["saved", "dirty", "saving", "error"] as const).map((st) => (
+              <Button
+                key={st}
+                variant={demoSaveStatus === st ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => setDemoSaveStatus(st)}
+              >
+                {st}
+              </Button>
+            ))}
+          </div>
           <span className="ll:text-small ll:text-secondary">
             Current mode: <strong className="ll:text-primary">{mode}</strong> · Issues: <strong className="ll:text-primary">{demoIssues.length}</strong>
           </span>
+        </div>
+
+        {/* 2. Save Status Indicator States */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Save Status Indicator States (Quiet Project Indicator)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-8">
+          {(["saved", "dirty", "saving", "error"] as const).map((st) => (
+            <div key={st} className="ll:flex ll:flex-col ll:gap-2">
+              <span className="ll:text-small ll:text-secondary ll:capitalize">{st} state</span>
+              <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:bg-surface-panel ll:w-64">
+                <TopBar
+                  projectName="LandingPage.uweb"
+                  saveStatus={st}
+                  mode="design"
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 2. Logo Mark States */}
