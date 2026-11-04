@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import {
   Frame,
   Type,
@@ -10,9 +10,14 @@ import {
   Minus,
   Star,
   Hexagon,
+  ChevronRight,
+  Film,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { TreeRow } from "@/editor/components/TreeRow";
 import { ContextMenu } from "@/editor/components/ContextMenu";
 import { LeftPanelEmpty } from "./LeftPanelEmpty";
 import { LayerContextMenuContent } from "./LayerContextMenu";
@@ -83,6 +88,8 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const treeRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState<string>("");
 
   // Derive visible nodes through shared pure filter function if not provided by parent
   const { visibleNodes } = useMemo(() => {
@@ -118,6 +125,14 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     onToggleExpand,
   });
 
+  const handleCommitRename = (id: string, originalName: string) => {
+    setEditingId(null);
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== originalName) {
+      onRename?.(id, trimmed);
+    }
+  };
+
   return (
     <div
       ref={treeRef}
@@ -126,12 +141,13 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Layers"
       onKeyDown={handleTreeKeyDown}
-      className="ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
+      className="zbody ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
     >
       {visibleNodes.length > 0 ? (
         visibleNodes.map((node) => {
-          // Right-click on an unselected row selects it first. The menu then acts on the selection.
-          const targetIds = selectedSet.has(node.id) ? selectedIds : [node.id];
+          const isSelected = selectedSet.has(node.id);
+          const targetIds = isSelected ? selectedIds : [node.id];
+
           return (
             <div
               key={node.id}
@@ -151,36 +167,160 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                   />
                 }
               >
-                <TreeRow
-                  id={node.id}
-                  name={node.name}
-                  level={node.level}
-                  icon={getLayerIcon(node.item.type)}
-                  hasChildren={node.hasChildren}
-                  expanded={node.expanded}
-                  selected={node.selected}
-                  hidden={node.hidden}
-                  locked={node.locked}
-                  hasMotion={showMotion && node.hasMotion}
-                  className="ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
-                  onToggleExpand={() => onToggleExpand?.(node.id)}
-                  onSelect={(e) => {
-                    onSelect?.(node.id, e);
-                    (e.currentTarget as HTMLElement)?.focus();
+                <button
+                  type="button"
+                  role="treeitem"
+                  data-sel={node.id}
+                  data-id={node.id}
+                  aria-selected={isSelected}
+                  aria-expanded={node.hasChildren ? node.expanded : undefined}
+                  style={{
+                    paddingLeft: `calc(16px + ${node.level} * 16px)`,
                   }}
-                  onRename={onRename ? (newName) => onRename(node.id, newName) : undefined}
-                  onToggleHidden={onToggleHidden ? () => onToggleHidden(node.id) : undefined}
-                  onToggleLocked={onToggleLocked ? () => onToggleLocked(node.id) : undefined}
-                />
+                  onClick={(e) => {
+                    onSelect?.(node.id, e);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    if (!node.locked && onRename) {
+                      setEditingId(node.id);
+                      setDraftName(node.name);
+                    }
+                  }}
+                  className={`row ll-row ll:group ll:relative ll:flex ll:items-center ll:gap-2 ll:h-8 ll:pr-3 ll:text-left ll:w-full ll:whitespace-nowrap ll:select-none ll:outline-none ll:cursor-pointer ll:text-small ll:font-normal ll:transition-none ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${
+                    isSelected
+                      ? "ll:bg-select-bg ll:text-select-fg"
+                      : "ll:text-secondary ll:hover:bg-surface-canvas ll:hover:text-primary"
+                  } ${node.hidden ? "ll:opacity-40" : ""}`}
+                >
+                  {/* Chevron: rotated 90deg on expanded, empty 12px span on leaf node */}
+                  {node.hasChildren ? (
+                    <span
+                      role="button"
+                      aria-label={node.expanded ? "Collapse" : "Expand"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleExpand?.(node.id);
+                      }}
+                      className="c ll-c ll:w-3 ll:h-3 ll:grid ll:place-items-center ll:shrink-0 ll:text-muted ll:hover:text-primary"
+                    >
+                      <Icon
+                        icon={ChevronRight}
+                        size={12}
+                        className={`ll:transition-transform ll:duration-120 ${
+                          node.expanded ? "ll:rotate-90" : ""
+                        }`}
+                      />
+                    </span>
+                  ) : (
+                    <span className="c ll-c ll:w-3 ll:h-3 ll:shrink-0" />
+                  )}
+
+                  {/* Type icon */}
+                  <span
+                    className={`ll:w-3.5 ll:h-3.5 ll:grid ll:place-items-center ll:shrink-0 ${
+                      isSelected ? "ll:text-select-fg" : "ll:text-muted ll:group-hover:text-primary"
+                    }`}
+                  >
+                    {getLayerIcon(node.item.type)}
+                  </span>
+
+                  {/* Layer name */}
+                  <div className="nm ll-nm ll:flex-1 ll:min-w-0 ll:truncate ll:text-small">
+                    {editingId === node.id ? (
+                      <input
+                        type="text"
+                        value={draftName}
+                        autoFocus
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onBlur={() => handleCommitRename(node.id, node.name)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleCommitRename(node.id, node.name);
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="ll:w-full ll:h-6 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-primary ll:rounded-sm ll:outline-none ll:text-small ll:text-primary ll:font-sans"
+                      />
+                    ) : (
+                      <span className="ll:truncate ll:block">{node.name}</span>
+                    )}
+                  </div>
+
+                  {/* Motion Badge for animated layers */}
+                  {showMotion && node.hasMotion && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Animated, open in Motion"
+                      title="Animated, open in Motion"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const motionBtn = document.querySelector<HTMLButtonElement>(
+                          'button[data-mode="motion"]'
+                        );
+                        if (motionBtn) {
+                          motionBtn.click();
+                        }
+                        onSelect?.(node.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const motionBtn = document.querySelector<HTMLButtonElement>(
+                            'button[data-mode="motion"]'
+                          );
+                          if (motionBtn) {
+                            motionBtn.click();
+                          }
+                          onSelect?.(node.id);
+                        }
+                      }}
+                      className="mb ll-mb ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:shrink-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:rounded-sm ll:cursor-pointer"
+                    >
+                      <Icon icon={Film} size={12} />
+                    </span>
+                  )}
+
+                  {/* Actions: Eye (visibility) and Lock */}
+                  <span className="act ll-act ll:flex ll:items-center ll:gap-0.5 ll:shrink-0 ll:opacity-0 ll:group-hover:opacity-100 ll:transition-opacity ll:text-muted">
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      aria-label={node.hidden ? "Show layer" : "Hide layer"}
+                      title={node.hidden ? "Show layer" : "Hide layer"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleHidden?.(node.id);
+                      }}
+                      className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-pointer"
+                    >
+                      <Icon icon={node.hidden ? EyeOff : Eye} size={12} />
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      aria-label={node.locked ? "Unlock layer" : "Lock layer"}
+                      title={node.locked ? "Unlock layer" : "Lock layer"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleLocked?.(node.id);
+                      }}
+                      className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-pointer"
+                    >
+                      <Icon icon={node.locked ? Lock : Unlock} size={12} />
+                    </span>
+                  </span>
+                </button>
               </ContextMenu>
             </div>
           );
         })
       ) : searchQuery.trim().length > 0 ? (
         <LeftPanelEmpty
-            title="No layers found"
-            description={`No layers match "${searchQuery.trim()}"`}
-          />
+          title="No layers found"
+          description={`No layers match "${searchQuery.trim()}"`}
+        />
       ) : (
         <LeftPanelEmpty
           title="No layers"

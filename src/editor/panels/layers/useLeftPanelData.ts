@@ -12,7 +12,7 @@ import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
-import { motionIndex, type MotionSummary } from "@/core/timeline/model";
+import { motionIndex } from "@/core/timeline/model";
 import { buildRows, ancestorsOf, rangeBetween } from "@/core/layers/layerTree";
 import { frameIdOf } from "@/core/frames/frames";
 import { buildLayerTree } from "./buildLayerTree";
@@ -23,11 +23,14 @@ import type {
   TrackItem,
   AssetItem,
   FileItem,
+  LayerItem,
 } from "./types";
 import {
+  SAMPLE_LAYERS,
   SAMPLE_FILES,
   SAMPLE_TRACKS,
   SAMPLE_ASSETS,
+  DEFAULT_EXPANDED_IDS,
 } from "@/editor/shell/left-panel/sampleData";
 
 export function useLeftPanelData(
@@ -69,19 +72,66 @@ export function useLeftPanelData(
   const activePageId = useProjectStore((s) => s.activePageId);
   const pages = useProjectStore((s) => s.pages);
 
+  // Initialize default expanded IDs on mount if empty
+  useEffect(() => {
+    const store = useLayersUiStore.getState();
+    if (store.expanded.size === 0) {
+      store.expandAll(DEFAULT_EXPANDED_IDS);
+    }
+  }, []);
+
+  // Check if store document is the initial unpositioned default container (matching Stage.tsx)
+  const isDefaultUnpositioned = useMemo(() => {
+    if (!layers || Object.keys(layers).length === 0) return true;
+    const layerEntries = Object.values(layers);
+    let hasPositionedLayers = false;
+    layerEntries.forEach((l) => {
+      if (
+        typeof l.properties["frame.x"] === "number" ||
+        typeof l.properties["frame.y"] === "number"
+      ) {
+        hasPositionedLayers = true;
+      }
+    });
+    return !hasPositionedLayers;
+  }, [layers]);
+
   // 4. Derive LayerItem trees (all layers and filtered page layers)
   const rootFilterId = filterByActivePage ? pages[activePageId]?.rootElementId : null;
-  const layerTree = useMemo(
-    () => buildLayerTree(layers, motionMap, rootFilterId),
-    [layers, motionMap, rootFilterId]
-  );
-  const allLayers = useMemo(
-    () => buildLayerTree(layers, motionMap, null),
-    [layers, motionMap]
-  );
+  const layerTree: LayerItem[] = useMemo(() => {
+    if (isDefaultUnpositioned) {
+      return SAMPLE_LAYERS;
+    }
+    return buildLayerTree(layers, motionMap, rootFilterId);
+  }, [isDefaultUnpositioned, layers, motionMap, rootFilterId]);
 
-  // Expanded IDs as array
-  const expandedIds = useMemo(() => Array.from(expandedSet), [expandedSet]);
+  const allLayers: LayerItem[] = useMemo(() => {
+    if (isDefaultUnpositioned) {
+      return SAMPLE_LAYERS;
+    }
+    return buildLayerTree(layers, motionMap, null);
+  }, [isDefaultUnpositioned, layers, motionMap]);
+
+  // Expanded IDs as array with default expanded fallback
+  const expandedIds = useMemo(() => {
+    if (expandedSet.size === 0) {
+      return DEFAULT_EXPANDED_IDS;
+    }
+    return Array.from(expandedSet);
+  }, [expandedSet]);
+
+  // Code mode selected file ID state
+  const [selectedFileId, setSelectedFileId] = useState<string>("f-hero");
+
+  const effectiveSelectedIds = useMemo(() => {
+    if (mode === "code") {
+      return [selectedFileId];
+    }
+    if (selectedIds.length > 0) {
+      return selectedIds;
+    }
+    return ["headline"];
+  }, [mode, selectedFileId, selectedIds]);
 
   // 5. Expand ancestors when selection changes externally (e.g. from canvas)
   useEffect(() => {
@@ -96,14 +146,23 @@ export function useLeftPanelData(
   // 6. Selection handler with Shift-range and Ctrl-toggle support
   const onSelect = useCallback(
     (id: string, e?: React.MouseEvent | React.KeyboardEvent) => {
+      if (mode === "code") {
+        setSelectedFileId(id);
+        return;
+      }
+
       const store = useSelectionStore.getState();
       const ui = useLayersUiStore.getState();
 
       if (e?.shiftKey) {
         const anchor = ui.anchor ?? store.selectedIds[store.selectedIds.length - 1] ?? id;
-        const rows = buildRows(layers, expandedSet, query);
-        const range = rangeBetween(rows, anchor, id);
-        store.selectMultiple(range, "element");
+        if (isDefaultUnpositioned) {
+          store.selectMultiple([anchor, id], "element");
+        } else {
+          const rows = buildRows(layers, expandedSet, query);
+          const range = rangeBetween(rows, anchor, id);
+          store.selectMultiple(range, "element");
+        }
       } else if (e?.metaKey || e?.ctrlKey) {
         store.toggleSelection(id, "element");
         ui.setAnchor(id);
@@ -112,18 +171,24 @@ export function useLeftPanelData(
         ui.setAnchor(id);
       }
 
-      const frame = frameIdOf(layers, id);
-      if (frame) {
-        useCanvasViewStore.getState().setActiveFrame(frame);
+      if (layers[id]) {
+        const frame = frameIdOf(layers, id);
+        if (frame) {
+          useCanvasViewStore.getState().setActiveFrame(frame);
+        }
       }
     },
-    [layers, expandedSet, query]
+    [mode, isDefaultUnpositioned, layers, expandedSet, query]
   );
 
   // 7. Tree expansion toggle
   const onToggleExpand = useCallback(
     (id: string) => {
-      useLayersUiStore.getState().setExpanded(id, !expandedSet.has(id));
+      const isCurrentlyExpanded =
+        expandedSet.size === 0
+          ? DEFAULT_EXPANDED_IDS.includes(id)
+          : expandedSet.has(id);
+      useLayersUiStore.getState().setExpanded(id, !isCurrentlyExpanded);
     },
     [expandedSet]
   );
@@ -261,11 +326,9 @@ export function useLeftPanelData(
           void invokeCommand("view.timeline");
           break;
         case "ask-ai":
-          // Action unmapped to core command in Phase 2
           console.info("[Layers] ask-ai action on layer", id);
           break;
         case "copy-as-code":
-          // Action unmapped to core command in Phase 2
           console.info("[Layers] copy-as-code action on layer", id);
           break;
         default:
@@ -290,6 +353,9 @@ export function useLeftPanelData(
 
   // 13. Motion tracks derivation
   const tracks: TrackItem[] = useMemo(() => {
+    if (isDefaultUnpositioned) {
+      return SAMPLE_TRACKS;
+    }
     const list: TrackItem[] = [];
     for (const [layerId, layer] of Object.entries(layers)) {
       const summary = motionMap.get(layerId);
@@ -314,11 +380,17 @@ export function useLeftPanelData(
       }
     }
     return list.length > 0 ? list : SAMPLE_TRACKS;
-  }, [layers, motionMap]);
+  }, [isDefaultUnpositioned, layers, motionMap]);
 
-  const [selectedTrackId, setSelectedTrackId] = useState<string>(
-    tracks[0]?.id || ""
-  );
+  const [selectedTrackId, setSelectedTrackId] = useState<string>("headline");
+
+  // Keep selectedTrackId in sync with selection store
+  useEffect(() => {
+    const active = selectedIds[selectedIds.length - 1];
+    if (active && tracks.some((t) => t.id === active)) {
+      setSelectedTrackId(active);
+    }
+  }, [selectedIds, tracks]);
 
   const onSelectTrack = useCallback((trackId: string) => {
     setSelectedTrackId(trackId);
@@ -339,7 +411,7 @@ export function useLeftPanelData(
     mode,
     layers: layerTree,
     allLayers,
-    selectedIds,
+    selectedIds: effectiveSelectedIds,
     onSelect,
     expandedIds,
     onToggleExpand,

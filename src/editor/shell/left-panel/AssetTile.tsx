@@ -12,6 +12,7 @@ export interface AssetTileProps {
 
 /**
  * Isolated AssetTile component for grid item rendering in the assets section.
+ * Prototype metrics: .asset (flex column, gap 6px), .th (aspect-ratio 1, background var(--bar), radius var(--r-sm), NO border, 20px icon).
  */
 export const AssetTile: React.FC<AssetTileProps> = ({
   asset,
@@ -44,12 +45,12 @@ export const AssetTile: React.FC<AssetTileProps> = ({
         e.dataTransfer.setData("application/x-lazylayout-asset", asset.id);
       }}
       onClick={() => onClick?.(asset)}
-      className={`ll-asset ll:group ll:flex ll:flex-col ll:gap-1.5 ll:min-w-0 ll:cursor-pointer ${className}`}
+      className={`asset ll-asset ll:group ll:flex ll:flex-col ll:gap-1.5 ll:min-w-0 ll:cursor-pointer ${className}`}
     >
-      <div className="ll-th ll:aspect-square ll:grid ll:place-items-center ll:bg-surface-bar ll:border ll:border-border ll:group-hover:border-muted ll:rounded-sm ll:text-secondary ll:group-hover:text-primary ll:transition-colors ll:duration-swap ll:motion-reduce:transition-none">
+      <div className="th ll-th ll:aspect-square ll:grid ll:place-items-center ll:bg-surface-bar ll:rounded-sm ll:text-secondary ll:group-hover:text-primary ll:transition-colors ll:duration-swap ll:motion-reduce:transition-none">
         {renderThumb()}
       </div>
-      <span className="ll:text-micro ll:text-muted ll:group-hover:text-primary ll:truncate">
+      <span className="ll:text-micro ll:text-muted ll:group-hover:text-primary ll:truncate ll:block">
         {asset.name}
       </span>
     </div>

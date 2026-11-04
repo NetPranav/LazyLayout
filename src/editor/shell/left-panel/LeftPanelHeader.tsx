@@ -35,7 +35,6 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
   }, [searchOpen]);
 
   const isCode = mode === "code";
-  const isDesign = mode === "design";
   const searchLabel = isCode ? "Search files" : "Search layers";
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -56,23 +55,23 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
 
   return (
     <div className="ll:flex ll:flex-col ll:shrink-0 ll:border-b ll:border-border">
-      {/* Top zone header: 44px height */}
-      <div className="ll-zhead ll:h-header ll:flex ll:items-center ll:gap-1 ll:pl-4 ll:pr-2 ll:shrink-0">
-        {isDesign ? (
+      {/* Top zone header: 44px height (zhead) */}
+      <div className="zhead ll-zhead ll:h-header ll:flex ll:items-center ll:gap-1 ll:pl-4 ll:pr-2 ll:shrink-0">
+        {!isCode ? (
           headerStart ? (
             <div className="ll:flex-1 ll:min-w-0">{headerStart}</div>
           ) : (
-            <span className="ll-lh ll:text-title ll:font-medium ll:text-primary ll:truncate">
+            <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
               Layers
             </span>
           )
         ) : (
-          <span className="ll-lh ll:text-title ll:font-medium ll:text-primary ll:truncate">
-            {isCode ? "Files" : "Layers"}
+          <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
+            Files
           </span>
         )}
 
-        <span className="ll-sp ll:flex-1" />
+        <span className="sp ll-sp ll:flex-1" />
 
         <IconButton
           id="lsearchbtn"
@@ -86,10 +85,10 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
         />
       </div>
 
-      {/* Search box if toggled */}
+      {/* Search box if toggled (lsbox) */}
       {searchOpen && (
-        <div id="lfilter" className="ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-t ll:border-border ll:shrink-0">
-          <div className="ll-lsfield ll:relative ll:w-full">
+        <div id="lfilter" className="lsbox ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-t ll:border-border ll:shrink-0">
+          <div className="lsfield ll-lsfield ll:relative ll:w-full">
             <TextField
               ref={inputRef}
               id="lsearch"
@@ -113,13 +112,13 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
                 aria-label="Clear search"
                 onClick={handleClear}
                 icon={<Icon icon={X} size={12} />}
-                className="ll-lsclear ll:absolute ll:right-1.5 ll:top-1/2 ll:-translate-y-1/2 ll:w-5 ll:h-5 ll:min-w-5 ll:min-h-5"
+                className="lsclear ll-lsclear ll:absolute ll:right-1.5 ll:top-1/2 ll:-translate-y-1/2 ll:w-5 ll:h-5 ll:min-w-5 ll:min-h-5"
               />
             )}
           </div>
 
           {trimmedQuery.length > 0 && (
-            <div id="lscount" className="ll-lscount ll:mt-2 ll:text-micro ll:text-muted">
+            <div id="lscount" className="lscount ll-lscount ll:mt-2 ll:text-micro ll:text-muted">
               {countText}
             </div>
           )}

@@ -159,7 +159,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
           onPointerUp={handleSeparatorPointerUp}
           onPointerCancel={handleSeparatorPointerUp}
           onKeyDown={handleSeparatorKeyDown}
-          className="ll-lsplit ll:h-2 ll:shrink-0 ll:relative ll:cursor-row-resize ll:touch-none ll:select-none ll:group ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          className="lsplit ll-lsplit ll:h-2 ll:shrink-0 ll:relative ll:cursor-row-resize ll:touch-none ll:select-none ll:group ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         >
           <div className="ll:absolute ll:left-0 ll:right-0 ll:top-1 ll:h-px ll:bg-transparent ll:group-hover:bg-muted ll:group-focus-visible:bg-primary" />
         </div>
@@ -169,63 +169,62 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
       <div
         id="p-assets"
         style={{
-          height: isOpen ? `${height}px` : "var(--ll-size-row-lg-h)",
+          height: isOpen ? `${height}px` : "36px",
         }}
-        className="ll-lassets ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel"
+        className="lassets ll-lassets ll:relative ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel"
       >
-        {/* Header row: 36px height (ll:h-row-lg) with action buttons inside flex row */}
-        <div className="arow-container ll:flex ll:items-center ll:justify-between ll:h-row-lg ll:pl-4 ll:pr-3 ll:shrink-0">
-          <button
-            type="button"
-            id="abtn"
-            aria-expanded={isOpen}
-            onClick={onToggleOpen}
-            className="ll-arow ll:flex ll:items-center ll:gap-2 ll:h-full ll:font-medium ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-          >
-            <span className="ll:text-small ll:font-medium">Assets</span>
-            <Icon
-              icon={ChevronRight}
-              size={14}
-              className={`ll:text-muted ll:transition-transform ll:duration-swap ll:motion-reduce:transition-none ${
-                isOpen ? "ll:rotate-90" : ""
-              }`}
-            />
-          </button>
+        {/* Header row: 36px height (arow) */}
+        <button
+          type="button"
+          id="abtn"
+          aria-expanded={isOpen}
+          onClick={onToggleOpen}
+          className="arow ll-arow ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-9 ll:px-4 ll:font-medium ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+        >
+          <span className="ll:text-small ll:font-medium">Assets</span>
+          <Icon
+            icon={ChevronRight}
+            size={14}
+            className={`ll:text-muted ll:transition-transform ll:duration-swap ll:motion-reduce:transition-none ${
+              isOpen ? "ll:rotate-90" : ""
+            }`}
+          />
+        </button>
 
-          <div className="ll-atools ll:flex ll:items-center ll:gap-0.5">
-            <IconButton
-              id="aup"
-              size="md"
-              variant="ghost"
-              aria-label="Upload asset"
-              title="Upload asset"
-              icon={<Icon icon={Plus} size={14} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onUploadAsset?.();
-              }}
-            />
-            <IconButton
-              id="asrch"
-              size="md"
-              variant="ghost"
-              pressed={searchOpen}
-              aria-label="Search assets"
-              title="Search assets"
-              icon={<Icon icon={Search} size={14} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleSearch();
-              }}
-            />
-          </div>
-        </div>
+        {/* Action buttons pinned to top right (prototype: .atools { position: absolute; top: 4px; right: 12px; }) */}
+        <span className="atools ll-atools ll:absolute ll:top-1 ll:right-3 ll:flex ll:items-center ll:gap-0.5">
+          <IconButton
+            id="aup"
+            size="md"
+            variant="ghost"
+            aria-label="Upload asset"
+            title="Upload asset"
+            icon={<Icon icon={Plus} size={14} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUploadAsset?.();
+            }}
+          />
+          <IconButton
+            id="asrch"
+            size="md"
+            variant="ghost"
+            pressed={searchOpen}
+            aria-label="Search assets"
+            title="Search assets"
+            icon={<Icon icon={Search} size={14} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleSearch();
+            }}
+          />
+        </span>
 
         {/* Assets Body */}
         {isOpen && (
-          <div id="abody" className="ll-abody ll:flex-1 ll:min-h-0 ll:overflow-y-auto">
+          <div id="abody" className="abody ll-abody ll:flex-1 ll:min-h-0 ll:overflow-y-auto">
             {searchOpen && (
-              <div className="ll:px-3 ll:pt-2">
+              <div className="ll:px-4 ll:pt-2">
                 <TextField
                   ref={searchInputRef}
                   id="asin"
@@ -234,12 +233,12 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search assets"
                   aria-label="Search assets"
-                  className="ll-asin ll:w-full"
+                  className="asin ll-asin ll:w-full"
                 />
               </div>
             )}
 
-            <div className="ll-assetgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:p-4 ll:pt-1">
+            <div className="assetgrid ll-assetgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:p-4 ll:pt-1">
               {filteredAssets.map((asset) => (
                 <AssetTile
                   key={asset.id}

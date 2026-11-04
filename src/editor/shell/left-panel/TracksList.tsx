@@ -20,10 +20,10 @@ export const TracksList: React.FC<TracksListProps> = ({
     <div
       id="p-tracks"
       style={{ height }}
-      className="ll-tracks ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:mt-auto ll:overflow-hidden ll:bg-surface-panel"
+      className="tracks ll-tracks ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:mt-auto ll:overflow-hidden ll:bg-surface-panel"
     >
-      <div className="ll-zhead ll:h-header ll:flex ll:items-center ll:px-4 ll:shrink-0 ll:border-b ll:border-border">
-        <span className="ll-micro ll:text-body ll:font-medium ll:text-primary ll:tracking-normal">
+      <div className="zhead ll-zhead ll:h-header ll:flex ll:items-center ll:px-4 ll:shrink-0 ll:border-b ll:border-border">
+        <span className="micro ll-micro ll:text-body ll:font-medium ll:text-primary ll:tracking-normal">
           Tracks
         </span>
       </div>
@@ -31,7 +31,7 @@ export const TracksList: React.FC<TracksListProps> = ({
       <div
         role="listbox"
         aria-label="Tracks"
-        className="ll-trows ll:flex-1 ll:min-h-0 ll:overflow-y-auto"
+        className="trows ll-trows ll:flex-1 ll:min-h-0 ll:overflow-y-auto"
       >
         {tracks.map((track) => {
           const isSelected = track.id === selectedTrackId || Boolean(track.selected);
@@ -43,13 +43,13 @@ export const TracksList: React.FC<TracksListProps> = ({
               aria-selected={isSelected}
               data-sel={track.id}
               onClick={() => onSelectTrack?.(track.id)}
-              className={`ll-row ll-trow ll:w-full ll:h-row ll:px-4 ll:flex ll:items-center ll:text-left ll:text-small ll:truncate ll:cursor-pointer ll:select-none ll:transition-none ll:outline-none ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${
+              className={`row trow ll-row ll-trow ll:w-full ll:h-8 ll:px-4 ll:flex ll:items-center ll:text-left ll:text-small ll:truncate ll:cursor-pointer ll:select-none ll:transition-none ll:outline-none ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${
                 isSelected
                   ? "ll:bg-select-bg ll:text-select-fg"
-                  : "ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
+                  : "ll:text-secondary ll:hover:bg-surface-canvas ll:hover:text-primary"
               }`}
             >
-              <span className="ll-nm ll:truncate">{track.name}</span>
+              <span className="nm ll-nm ll:truncate">{track.name}</span>
             </button>
           );
         })}

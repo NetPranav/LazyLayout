@@ -20,7 +20,7 @@ export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
   const renderedHeaderStart =
     headerStart !== undefined
       ? headerStart
-      : mode === "design"
+      : mode === "design" || mode === "motion"
       ? <PageSwitcher {...pagesData} />
       : undefined;
 
