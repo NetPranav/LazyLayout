@@ -9,6 +9,8 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 
 **Status, 2026-11-03:** read `DOCS/UI/BUILD_SESSION.md` first. It covers the two sessions (Opus for design, Sonnet for build), the build queue mapped to the prototype, and the rules workers keep breaking. Built and committed: foundations (five themes, tokens, Nook motion engine), 21 core components, and `/design-system`. `menus` is in its last retry. The editor screen itself is not built yet. What's new in the prototype and not built yet is listed in `DOCS/UI/design/CHANGELOG.md`.
 
+**Status, 2026-11-04 (build session):** parity pass done for the shell menus, canvas chrome (toolbar, context menu, view options), stage, left panel, right panel (Design, Motion keyframe, Code file inspectors), timeline and code panel. All are `wip`, not `done`: they match the prototype in screenshots but still lack the Phase checks (`lint`, `build`, `test:e2e`) and engine wiring gaps (see `INTEGRATION.md`). Known stopgaps: the stage opens with a prototype demo selection (`headline`) and `PROTOTYPE_ELEMENTS` in `panels/details/hooks/useSelectionInspector.ts` supplies demo values for ids that are not in the document store; many menu items are shown disabled with a reason because the engine has no command yet.
+
 **Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
 
 | Area | Status | Legacy files | Bridged entry points now in `src/editor` |
@@ -17,14 +19,14 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `design-system` (the `/design-system` page, shows every component and its states) | wip | new | - |
 | `shell` | wip | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
 | `menus` | wip | 4 | - |
-| `canvas` | todo | 20 | - |
-| `stage` | todo | 2 | - |
+| `canvas` | wip | 20 | - |
+| `stage` | wip | 2 | - |
 | `runtime` | todo | 3 | - |
 | `panels/ai` | todo | 3 | - |
 | `panels/assets` | todo | 1 | - |
 | `panels/blueprint` | todo | 8 | `BlueprintCanvas.tsx` |
 | `panels/code` | todo | 1 | - |
-| `panels/code-view` | todo | 2 | - |
+| `panels/code-view` | wip | 2 | - |
 | `panels/common` | todo | 1 | - |
 | `panels/console` | todo | 1 | `OutputConsole.tsx` |
 | `panels/content-browser` | todo | 4 | `ContentBlockShelf.tsx`, `ContentBrowser.tsx`, `AssetFileEditor.tsx` |
@@ -33,19 +35,19 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `panels/database` | todo | 10 | - |
 | `panels/dependencies` | todo | 2 | - |
 | `panels/deployment` | todo | 5 | - |
-| `panels/details` | todo | 46 | - |
+| `panels/details` | wip | 46 | - |
 | `panels/execution-trace` | todo | 1 | - |
 | `panels/global-search` | todo | 2 | - |
 | `panels/history` | todo | 2 | - |
 | `panels/launcher` | todo | 6 | `ProjectHub.tsx`, `TechConfigurator.tsx`, `archetypeData.ts` |
-| `panels/layers` | todo | 1 | - |
-| `panels/motion` | todo | 1 | - |
+| `panels/layers` | wip | 1 | - |
+| `panels/motion` | wip | 1 | - |
 | `panels/pages-manager` | todo | 4 | - |
 | `panels/plugins` | todo | 2 | - |
 | `panels/sequencer` | todo | 8 | `TimelineSequencer.tsx` |
 | `panels/settings` | todo | 1 | - |
 | `panels/state` | todo | 1 | - |
-| `panels/timeline` | todo | 1 | - |
+| `panels/timeline` | wip | 1 | - |
 | `panels/versioning` | todo | 2 | - |
 | `stage-lab` | todo | 2 | `CanvasLab.tsx`, `StageLab.tsx` |
 | `render-gallery` | todo | 1 | `RenderGallery.tsx` |

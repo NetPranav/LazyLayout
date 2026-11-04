@@ -131,6 +131,13 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 - **What A/B must do:** Keep developer routes guarded by `labsEnabled`.
 - **Status:** done
 
+### Editor shell wired to the engine (2026-11-04)
+- **Area:** shell / menus / stage / panels
+- **Files:** `src/editor/shell/{EditorShell,RightPanelConnected,useEditorActions}.ts(x)`, `src/editor/stage/Stage.tsx`, `src/editor/panels/{layers,details,timeline,code-view,inspectors}/**`
+- **Engine used:** `invokeCommand` and the command registry (`@/core/commands`), `useSelectionStore`, `useCameraStore` (`setViewport`, `fitToRect`, `stepZoom`, `zoomTo100`), `useSnapStore` (rulers, snapping), `useProjectStore`, `useProjectMetaStore`, `useCanvasViewStore`, `ProjectDatabase`, `lazyFile` import and export, document layers through `useDocument` and `useLayers`.
+- **What A/B must do:** nothing to the engine. Menu ids with no engine command are shown disabled with a reason (Output Log, Execution Trace, Reference Viewer, Plugins, Deployment, Logic, Data, Debug layout). Collaborator avatars have no presence data in the engine, so the stack is empty.
+- **Engine changes requested:** none. The prototype's demo elements (Headline, Subtitle, Get started, Hero image) are not in the engine's default document; `PROTOTYPE_ELEMENTS` in `useSelectionInspector.ts` fills the gap until a real document is loaded.
+- **Status:** wip
 ## 7. Tests
 
 ### E2E File menu helper
