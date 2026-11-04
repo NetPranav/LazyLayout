@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useId } from "react";
 
 export interface NumberFieldProps {
-  label: string;
+  label: React.ReactNode;
   value: number | null;
   onChange: (value: number) => void;
   step?: number;
@@ -189,7 +189,11 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         data-scrub
         title="Drag horizontally to scrub value (Shift: x10, Alt: x0.1)"
         onPointerDown={handleLabelPointerDown}
-        className={`ll:text-micro ll:font-mono ll:font-medium ll:uppercase ll:tracking-wider ll:select-none ll:shrink-0 ${
+        className={`ll-pf ${
+          typeof label !== "string"
+            ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
+            : "ll:text-micro ll:font-mono ll:font-medium ll:uppercase ll:tracking-wider"
+        } ll:select-none ll:shrink-0 ${
           isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
         } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
       >
@@ -201,7 +205,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         type="text"
         inputMode="decimal"
         disabled={disabled}
-        aria-label={ariaLabel ?? label}
+        aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
         placeholder={isMixed ? "Mixed" : undefined}
         value={displayedText}
         onFocus={() => setDraft(displayedText)}

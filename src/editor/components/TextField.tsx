@@ -6,7 +6,7 @@ import { Icon } from "./Icon";
 
 export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;
-  prefixLabel?: string;
+  prefixLabel?: React.ReactNode;
   error?: string;
   size?: "sm" | "md";
   mono?: boolean;
@@ -58,7 +58,11 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         {prefixLabel && (
           <span
             aria-hidden="true"
-            className="ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:shrink-0 ll:select-none"
+            className={`ll-pf ${
+              typeof prefixLabel !== "string"
+                ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
+                : "ll:text-micro ll:font-mono ll:font-medium"
+            } ll:text-muted ll:shrink-0 ll:select-none`}
           >
             {prefixLabel}
           </span>

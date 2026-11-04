@@ -159,21 +159,21 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 />
               </div>
 
-              <div className="ll-dfield ll:flex ll:items-center ll:w-14 ll:shrink-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+              <div className="ll-dfield ll:flex ll:items-center ll:w-16 ll:shrink-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
                 <input
-                  type="number"
-                  min={0}
-                  max={100}
+                  type="text"
+                  inputMode="decimal"
                   aria-label="Fill opacity"
                   value={fill.opacity}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
                     handleUpdateFill(fill.id, {
-                      opacity: Math.max(0, Math.min(100, Number(e.target.value))),
-                    })
-                  }
-                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      opacity: isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed)),
+                    });
+                  }}
+                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
                 />
-                <span className="ll-sf ll:font-mono ll:text-nano ll:text-muted ll:ml-0.5">
+                <span className="ll-sf ll:font-mono ll:text-micro ll:text-muted ll:shrink-0 ll:select-none">
                   %
                 </span>
               </div>

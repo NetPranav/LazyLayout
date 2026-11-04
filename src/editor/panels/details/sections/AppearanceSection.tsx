@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { Droplet, SquareRoundCorner } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import {
@@ -37,7 +39,7 @@ export const AppearanceSection: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
-          label="O"
+          label={<Icon icon={Droplet} size={14} />}
           aria-label="Opacity"
           suffix="%"
           min={INSPECTOR_CONSTANTS.MIN_OPACITY}
@@ -52,7 +54,7 @@ export const AppearanceSection: React.FC<InspectorSectionProps> = ({
 
         <NumberField
           size="sm"
-          label="R"
+          label={<Icon icon={SquareRoundCorner} size={14} />}
           aria-label="Corner radius"
           min={INSPECTOR_CONSTANTS.MIN_RADIUS}
           max={INSPECTOR_CONSTANTS.MAX_RADIUS}

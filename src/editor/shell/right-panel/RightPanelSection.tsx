@@ -64,11 +64,13 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               aria-label={`More ${title} options`}
               title="More options"
               onClick={() => setShowMore((prev) => !prev)}
-              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:text-xs ll:font-mono ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-[0.08em] ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
                 showMore ? "ll:bg-control-secondary-bg ll:text-primary" : ""
               } ${!onAdd ? "ll:-mr-1.25" : ""}`}
             >
-              ...
+              <span className="ll:inline-block ll:leading-none ll:-translate-y-[2px]" aria-hidden="true">
+                ...
+              </span>
             </button>
           )}
 

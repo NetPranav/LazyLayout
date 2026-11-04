@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { RotateCw } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { AlignBar } from "../controls/AlignBar";
@@ -72,7 +74,8 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
         <NumberField
           size="sm"
-          label="R"
+          label={<Icon icon={RotateCw} size={14} />}
+          aria-label="Rotation"
           value={rotVal}
           suffix="°"
           step={INSPECTOR_CONSTANTS.STEP_ROTATION}

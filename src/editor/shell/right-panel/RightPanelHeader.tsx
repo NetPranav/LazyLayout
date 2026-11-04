@@ -76,11 +76,13 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             aria-haspopup="menu"
             aria-expanded={moreAt !== null}
             onClick={() => (moreAt ? setMoreAt(null) : openMore())}
-            className={`ll-rmore ll-more ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:text-xs ll:font-mono ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+            className={`ll-rmore ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-[0.08em] ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
               moreAt !== null ? "ll:bg-control-secondary-bg ll:text-primary" : ""
             }`}
           >
-            ...
+            <span className="ll:inline-block ll:leading-none ll:-translate-y-[2px]" aria-hidden="true">
+              ...
+            </span>
           </button>
           <Menu
             open={moreAt !== null}

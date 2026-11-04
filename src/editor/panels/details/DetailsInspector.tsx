@@ -6,6 +6,8 @@ import { PositionSection, PositionMore } from "./sections/PositionSection";
 import { LayoutSection, LayoutMore } from "./sections/LayoutSection";
 import { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection";
 import { TypographySection, TypographyMore } from "./sections/TypographySection";
+import { StatesSection, StatesMore } from "./sections/StatesSection";
+import { ImageSection, ImageMore } from "./sections/ImageSection";
 import { FillSection } from "./sections/FillSection";
 import { StrokeSection } from "./sections/StrokeSection";
 import { EffectsSection } from "./sections/EffectsSection";
@@ -119,6 +121,26 @@ export function getInspectorDesignSections(
             title: "Typography",
             children: <TypographySection {...sectionProps} />,
             moreContent: <TypographyMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "button"
+      ? [
+          {
+            id: "states",
+            title: "States",
+            children: <StatesSection {...sectionProps} />,
+            moreContent: <StatesMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "image"
+      ? [
+          {
+            id: "image",
+            title: "Image",
+            children: <ImageSection {...sectionProps} />,
+            moreContent: <ImageMore {...sectionProps} />,
           },
         ]
       : []),

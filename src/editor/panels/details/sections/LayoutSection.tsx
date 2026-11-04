@@ -34,6 +34,18 @@ export interface LayoutSectionProps extends InspectorSectionProps {
   isFrame?: boolean;
 }
 
+const WIDTH_SIZING_OPTIONS = [
+  { value: "fixed", label: "W Fixed" },
+  { value: "hug", label: "W Hug" },
+  { value: "fill", label: "W Fill" },
+] as const;
+
+const HEIGHT_SIZING_OPTIONS = [
+  { value: "fixed", label: "H Fixed" },
+  { value: "hug", label: "H Hug" },
+  { value: "fill", label: "H Fill" },
+] as const;
+
 export const LayoutSection: React.FC<LayoutSectionProps> = ({
   layer,
   isFrame: propIsFrame,
@@ -178,14 +190,14 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           aria-label="Width sizing"
           value={sizingH}
-          options={SIZING_OPTIONS}
+          options={WIDTH_SIZING_OPTIONS}
           onChange={(val) => onUpdateProp?.("sizing.horizontal", val)}
         />
         <Select
           size="sm"
           aria-label="Height sizing"
           value={sizingV}
-          options={SIZING_OPTIONS}
+          options={HEIGHT_SIZING_OPTIONS}
           onChange={(val) => onUpdateProp?.("sizing.vertical", val)}
         />
         <button

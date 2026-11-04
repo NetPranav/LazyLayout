@@ -5,6 +5,11 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  ArrowUpDown,
+  ArrowLeftRight,
+  MoveHorizontal,
+  MoveVertical,
+  Square,
   Italic,
   Underline,
   Strikethrough,
@@ -96,7 +101,17 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
           size="sm"
           aria-label="Font weight"
           value={fontWeight}
-          options={FONT_WEIGHT_OPTIONS}
+          options={[
+            { value: "100", label: "W 100 Thin" },
+            { value: "200", label: "W 200 X-Light" },
+            { value: "300", label: "W 300 Light" },
+            { value: "400", label: "W 400 Regular" },
+            { value: "500", label: "W 500 Medium" },
+            { value: "600", label: "W 600 Semi" },
+            { value: "700", label: "W 700 Bold" },
+            { value: "800", label: "W 800 X-Bold" },
+            { value: "900", label: "W 900 Black" },
+          ]}
           onChange={(val) => onUpdateProp?.("typography.fontWeight", val)}
         />
         <NumberField
@@ -118,7 +133,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <NumberField
           size="sm"
-          label="LH"
+          label={<Icon icon={ArrowUpDown} size={14} />}
           aria-label="Line height"
           value={lineHeight}
           step={INSPECTOR_CONSTANTS.STEP_DECIMAL}
@@ -130,7 +145,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         />
         <NumberField
           size="sm"
-          label="LS"
+          label={<Icon icon={ArrowLeftRight} size={14} />}
           aria-label="Tracking"
           value={letterSpacing}
           step={INSPECTOR_CONSTANTS.STEP_DECIMAL}
@@ -167,16 +182,28 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         ]}
       />
 
-      {/* Text Sizing Segmented Control: Auto width / Auto height / Fixed */}
+      {/* Text Sizing Segmented Control: Auto width / Auto height / Fixed (prototype parity) */}
       <SegmentedControl
         size="sm"
         ariaLabel="Text box sizing"
         value={textSizing}
         onChange={(val) => onUpdateProp?.("text.sizing", val)}
         options={[
-          { value: "autoWidth", label: "Auto width", ariaLabel: "Auto width" },
-          { value: "autoHeight", label: "Auto height", ariaLabel: "Auto height" },
-          { value: "fixed", label: "Fixed", ariaLabel: "Fixed box" },
+          {
+            value: "autoWidth",
+            icon: <Icon icon={MoveHorizontal} size={14} />,
+            ariaLabel: "Auto width",
+          },
+          {
+            value: "autoHeight",
+            icon: <Icon icon={MoveVertical} size={14} />,
+            ariaLabel: "Auto height",
+          },
+          {
+            value: "fixed",
+            icon: <Icon icon={Square} size={14} />,
+            ariaLabel: "Fixed box",
+          },
         ]}
       />
     </div>

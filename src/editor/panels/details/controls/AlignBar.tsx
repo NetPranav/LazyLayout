@@ -2,12 +2,12 @@
 
 import React from "react";
 import {
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignVerticalJustifyStart,
-  AlignVerticalJustifyCenter,
-  AlignVerticalJustifyEnd,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
   Grid,
@@ -47,7 +47,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("left")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignLeft} size={14} />
+        <Icon icon={AlignStartVertical} size={14} />
       </button>
 
       {/* Align Horizontal Center */}
@@ -59,7 +59,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("hcenter")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignCenter} size={14} />
+        <Icon icon={AlignCenterVertical} size={14} />
       </button>
 
       {/* Align Right */}
@@ -71,7 +71,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("right")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignRight} size={14} />
+        <Icon icon={AlignEndVertical} size={14} />
       </button>
 
       {/* Align Top */}
@@ -83,7 +83,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("top")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignVerticalJustifyStart} size={14} />
+        <Icon icon={AlignStartHorizontal} size={14} />
       </button>
 
       {/* Align Vertical Middle */}
@@ -95,7 +95,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("vcenter")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignVerticalJustifyCenter} size={14} />
+        <Icon icon={AlignCenterHorizontal} size={14} />
       </button>
 
       {/* Align Bottom */}
@@ -107,7 +107,7 @@ export const AlignBar: React.FC<AlignBarProps> = ({
         onClick={() => onAlign?.("bottom")}
         className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
       >
-        <Icon icon={AlignVerticalJustifyEnd} size={14} />
+        <Icon icon={AlignEndHorizontal} size={14} />
       </button>
 
       {/* Multi-selection extra actions */}
