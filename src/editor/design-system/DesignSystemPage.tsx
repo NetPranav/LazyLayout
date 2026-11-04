@@ -705,7 +705,14 @@ export function DesignSystemPage() {
                         <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
                         <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
                         <th className="ll:p-3 ll:font-medium ll:text-secondary">Sample</th>
-                        <th className="ll:p-3 ll:font-medium ll:text-secondary">Hex ({activeTheme})</th>
+                        {THEME_LIST.map((theme) => (
+                          <th
+                            key={theme.id}
+                            className={`ll:p-3 ll:font-medium ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                          >
+                            {theme.id.charAt(0).toUpperCase() + theme.id.slice(1)}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
@@ -718,9 +725,14 @@ export function DesignSystemPage() {
                               className={`ll:inline-block ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ${spec.bgClass}`}
                             />
                           </td>
-                          <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-primary">
-                            {liveTokens[activeTheme]?.[spec.token] || "—"}
-                          </td>
+                          {THEME_LIST.map((theme) => (
+                            <td
+                              key={theme.id}
+                              className={`ll:p-3 ll:font-mono ll:text-micro ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                            >
+                              {liveTokens[theme.id]?.[spec.token] || "—"}
+                            </td>
+                          ))}
                         </tr>
                       ))}
                     </tbody>
