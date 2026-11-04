@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lazy Layout Editor</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500&family=Playfair+Display:wght@400;500&display=swap">
-<script>try{var t=localStorage.getItem('ll-theme-v2');document.documentElement.dataset.theme=['paper','dark','white','warm','lilac','graphite','darkroom','plum','noir'].indexOf(t)>-1?t:'paper'}catch(e){document.documentElement.dataset.theme='paper'}</script>
+<script>try{var t=localStorage.getItem('ll-theme-v2');document.documentElement.dataset.theme=['paper','dark','white','warm','lilac','graphite','darkroom','noir'].indexOf(t)>-1?t:'paper'}catch(e){document.documentElement.dataset.theme='paper'}</script>
 <style>
 /* Design mode, blocked layout. PALETTE.md dark. No accent, no pills, no glass, no gradients in chrome. */
 :root{
@@ -62,7 +62,6 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 [data-theme=paper]{--seg:#E7E6E1;--backdrop:#E7E6E1;--canvas:#E7E6E1;--panel:#F4F3EF;--bar:#EEEDE8;--border:#CECDC8;--text:#22231E;--text2:#55554F;--muted:#66665F;--ctl:#22231E;--ctl-fg:#F4F3EF;--float:#F4F3EF;--hover:#E7E6E1;--sel:#E7E6E1;--sel-fg:#22231E;--shipbg:#E7E6E1;--ship-fg:#22231E;--avatar:#E7E6E1;--avatar-fg:#22231E;--board:#FFFFFF;--boardline:#CECDC8;--ph:#E7E6E1;--swline:#CECDC8;--thumb:#EEEDE8;--thumbline:#CECDC8;--shadow:0 4px 16px rgba(34,35,30,.1);--sw-fill:#F4F3EF;--sw-a:#22231E}
 [data-theme=graphite]{--seg:#42423B;--backdrop:#141411;--canvas:#1C1C18;--panel:#262621;--bar:#32322C;--border:#42423B;--text:#F4F3EF;--text2:#BDBCB3;--muted:#A09F96;--ctl:#F4F3EF;--ctl-fg:#22231E;--float:#32322C;--hover:#32322C;--sel:#32322C;--sel-fg:#F4F3EF;--shipbg:#32322C;--ship-fg:#F4F3EF;--avatar:#42423B;--avatar-fg:#F4F3EF;--sw-fill:#262621;--sw-a:#F4F3EF;--board:#32322C;--boardline:#42423B;--ph:#262621;--swline:#42423B;--thumb:#1C1C18;--thumbline:#42423B;--shadow:0 4px 16px rgba(0,0,0,.5)}
 [data-theme=darkroom]{--seg:#34342C;--backdrop:#10100B;--canvas:#26261F;--panel:#16160F;--bar:#20201A;--border:#34342C;--text:#F4F3EF;--text2:#BDBCB3;--muted:#A09F96;--ctl:#F4F3EF;--ctl-fg:#22231E;--float:#16160F;--hover:#20201A;--sel:#2A2A23;--sel-fg:#F4F3EF;--shipbg:#2A2A23;--ship-fg:#F4F3EF;--avatar:#34342C;--avatar-fg:#F4F3EF;--sw-fill:#20201A;--sw-a:#F4F3EF;--board:#32322A;--boardline:#3E3E35;--ph:#26261F;--swline:#3E3E35;--thumb:#20201A;--thumbline:#34342C;--shadow:0 4px 16px rgba(0,0,0,.6)}
-[data-theme=plum]{--seg:#423C4C;--backdrop:#131117;--canvas:#1B1820;--panel:#25212C;--bar:#312C39;--border:#423C4C;--text:#F4F1F8;--text2:#BEB8C8;--muted:#A29BAD;--ctl:#F4F1F8;--ctl-fg:#25212C;--float:#312C39;--hover:#312C39;--sel:#CEB4F5;--sel-fg:#22231E;--shipbg:#CEB4F5;--ship-fg:#22231E;--avatar:#423C4C;--avatar-fg:#F4F1F8;--sw-fill:#25212C;--sw-a:#F4F1F8;--board:#312C39;--boardline:#423C4C;--ph:#25212C;--swline:#423C4C;--thumb:#1B1820;--thumbline:#423C4C;--shadow:0 4px 16px rgba(0,0,0,.5)}
 [data-theme=noir]{--seg:#292629;--backdrop:#050505;--canvas:#141214;--panel:#080808;--bar:#141214;--border:#292629;--text:#ECEBE5;--text2:#A3A3A3;--muted:#8F8F8F;--ctl:#ECEBE5;--ctl-fg:#080808;--float:#080808;--hover:#1C1A1C;--sel:#292629;--sel-fg:#ECEBE5;--shipbg:#CEB4F5;--ship-fg:#080808;--avatar:#292629;--avatar-fg:#ECEBE5;--sw-fill:#141214;--sw-a:#ECEBE5;--board:#1C1A1C;--boardline:#343034;--ph:#141214;--swline:#343034;--thumb:#141214;--thumbline:#292629;--shadow:0 4px 16px rgba(0,0,0,.7)}
 .app{transition:none}
 .top{grid-column:1/-1;grid-row:1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;height:52px;padding:0;background:var(--panel);border-bottom:1px solid var(--border);min-width:0;position:relative;z-index:2}
@@ -113,7 +112,6 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .tpv.t-paper{--c:#E7E6E1;--p:#F4F3EF;--k:#22231E}
 .tpv.t-graphite{--c:#1C1C18;--p:#262621;--k:#F4F3EF}
 .tpv.t-darkroom{--c:#26261F;--p:#16160F;--k:#F4F3EF}
-.tpv.t-plum{--c:#1B1820;--p:#25212C;--k:#CEB4F5}
 .tpv.t-noir{--c:#141214;--p:#080808;--k:#CEB4F5}
 .urow{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 12px;text-align:left;color:var(--text)}
 .menu [role=menuitem].urow{height:40px}
@@ -446,7 +444,7 @@ label.dtrow{cursor:pointer}
 .app[data-mode=motion] .bottom,.app[data-mode=code] .bottom{border-top:1px solid var(--border)}
 .app[data-mode=motion] .bottom .ph,.app[data-mode=code] .bottom .ph{background:color-mix(in srgb,var(--panel) 95%,var(--text))}
 .app[data-mode=motion] .bottom::after,.app[data-mode=code] .bottom::after,.app[data-mode=motion] .bottom::before,.app[data-mode=code] .bottom::before{content:"";position:absolute;top:1px;left:0;width:calc(var(--lw)*var(--fw));height:6px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,var(--pshd,.1)),transparent)}
-[data-theme=dark] .bottom,[data-theme=graphite] .bottom,[data-theme=darkroom] .bottom,[data-theme=plum] .bottom,[data-theme=noir] .bottom{--pshd:.34}
+[data-theme=dark] .bottom,[data-theme=graphite] .bottom,[data-theme=darkroom] .bottom,[data-theme=noir] .bottom{--pshd:.34}
 .app[data-mode=motion] .bottom::before,.app[data-mode=code] .bottom::before{left:auto;right:0;width:calc(var(--rw)*var(--fw))}
 .bottom .ph{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);min-width:0;overflow:hidden}
 .bottom .ph .ib{width:28px;height:28px}
@@ -871,7 +869,7 @@ label.dtrow{cursor:pointer}
 
 /* ===== Motion pass 3: label colours, full-width timeline, clip look, footer, slider, easing editor, mode transitions ===== */
 /* Label colours: six muted, desaturated tags (Finder feel). Dark and light sets tuned separately. Used only for the 3px strip on a track header and the clip tint. */
-:root,[data-theme=dark],[data-theme=graphite],[data-theme=darkroom],[data-theme=plum],[data-theme=noir]{
+:root,[data-theme=dark],[data-theme=graphite],[data-theme=darkroom],[data-theme=noir]{
   --lbl-1:#8796A8;--lbl-1-tint:#38424F;--lbl-2:#8FAE94;--lbl-2-tint:#36443A;--lbl-3:#CDB27E;--lbl-3-tint:#4A4130;
   --lbl-4:#D08D74;--lbl-4-tint:#4F3A31;--lbl-5:#D395A3;--lbl-5-tint:#4E3840;--lbl-6:#A89FD6;--lbl-6-tint:#433F5C}
 [data-theme=paper],[data-theme=white],[data-theme=warm],[data-theme=lilac]{
@@ -1460,7 +1458,7 @@ label.dtrow{cursor:pointer}
     <button class="vi" aria-pressed="false" data-opt="px"><span>Pixel grid</span><i></i></button>
     <button class="vi" aria-pressed="false" data-opt="checker"><span>Checkerboard</span><i></i></button>
     <div class="vgrp micro">Appearance</div>
-    <div class="thgrp" id="themeseg"><div class="vgrp micro">Light</div><div class="seg fill" role="group" aria-label="Light themes" id="themeseg-l"><button data-th="paper" aria-pressed="false">Paper</button><button data-th="white" aria-pressed="false">White</button><button data-th="warm" aria-pressed="false">Warm</button><button data-th="lilac" aria-pressed="false">Lilac</button></div><div class="vgrp micro">Dark</div><div class="seg fill" role="group" aria-label="Dark themes" id="themeseg-d"><button data-th="noir" aria-pressed="false">Noir</button><button data-th="dark" aria-pressed="false">Dark</button><button data-th="graphite" aria-pressed="false">Graphite</button><button data-th="darkroom" aria-pressed="false">Darkroom</button><button data-th="plum" aria-pressed="false">Plum</button></div></div>
+    <div class="thgrp" id="themeseg"><div class="vgrp micro">Light</div><div class="seg fill" role="group" aria-label="Light themes" id="themeseg-l"><button data-th="paper" aria-pressed="false">Paper</button><button data-th="white" aria-pressed="false">White</button><button data-th="warm" aria-pressed="false">Warm</button><button data-th="lilac" aria-pressed="false">Lilac</button></div><div class="vgrp micro">Dark</div><div class="seg fill" role="group" aria-label="Dark themes" id="themeseg-d"><button data-th="noir" aria-pressed="false">Noir</button><button data-th="dark" aria-pressed="false">Dark</button><button data-th="graphite" aria-pressed="false">Graphite</button><button data-th="darkroom" aria-pressed="false">Darkroom</button></div></div>
     <div class="vgrp micro">Motion feel</div><div class="vsub"><div class="seg fill" id="feelseg" role="group" aria-label="Motion feel"><button data-feel="smooth" aria-pressed="false">Smooth</button><button data-feel="lively" aria-pressed="false">Lively</button><button data-feel="bouncy" aria-pressed="true">Bouncy</button></div></div>
     <div class="vgrp micro">Dropdown bulge</div>
     <div class="vsub gsz"><div class="gsrow"><span class="micro">Strength</span><span class="mono" id="bgval">50%</span></div><div class="sld" id="bgsize" data-min="0" data-max="100" data-step="5" data-value="50" data-unit="%" aria-label="Dropdown bulge strength"></div></div>
@@ -2771,7 +2769,7 @@ label.dtrow{cursor:pointer}
   /* Context menus (canvas, element, layer rows): one open at a time, one submenu level, on hover or click */
   function vpOn(o){return $('#vpop [data-opt="'+o+'"]').getAttribute('aria-pressed')==='true'}
   function curTheme(){return document.documentElement.dataset.theme||'paper'}
-  var LIGHT=['paper','white','warm','lilac'],DARKT=['noir','dark','graphite','darkroom','plum'];
+  var LIGHT=['paper','white','warm','lilac'],DARKT=['noir','dark','graphite','darkroom'];
   function themeItems(){return [{h:'Light'}].concat(LIGHT.map(thItem),[{h:'Dark'}],DARKT.map(thItem))}
   function thItem(n){return {l:n[0].toUpperCase()+n.slice(1),th:n,sw:1,f:function(){setTheme(n)}}}
   function VT(o){return function(){$('#vpop [data-opt="'+o+'"]').click()}}  function selAll(){selection=$$('#p-layers .row[data-sel]').map(function(r){return r.dataset.sel});renderSelection()}

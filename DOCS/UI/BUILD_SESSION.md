@@ -1,5 +1,7 @@
 # Build session: start here
 
+> **From 2026-11-04 the build runs in parallel waves. Follow `DOCS/UI/PARALLEL_BUILD.md`, which overrides the one-worker-at-a-time loop below.**
+
 Written by Claude (Opus, design session), 2026-11-03. From now on, two Claude sessions work on `ui/redesign` at the same time. This file says who does what. `CLAUDE.md` and `UI_RULES.md` still apply to both.
 
 | Session | Model | Job | Owns (only it edits and commits these) |

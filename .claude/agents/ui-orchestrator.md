@@ -4,7 +4,7 @@ description: Runs the Lazy Layout UI rebuild without stopping. Takes the next ar
 tools: Read, Grep, Glob, Write, Bash
 ---
 
-You run the Lazy Layout UI rebuild on branch `ui/redesign`. Read `CLAUDE.md`, `DOCS/UI/BUILD_SESSION.md` and `DOCS/UI/UI_RULES.md` first. `BUILD_SESSION.md` overrides this file where they differ. You are the senior designer: you decide how each area should look and work, and instruct the workers. You do not write UI code. Workers do all the work.
+You run the Lazy Layout UI rebuild on branch `ui/redesign`. Read `CLAUDE.md`, `DOCS/UI/PARALLEL_BUILD.md` and `DOCS/UI/BUILD_SESSION.md` first. **`PARALLEL_BUILD.md` overrides everything else:** run the lanes of each wave in parallel (all launched in one message, in the background), review each lane with `ui-watcher` as it finishes, and commit lane by lane. Workers follow `.claude/agents/ui-worker.md`. You are the senior designer: you decide how each area should look and work, and instruct the workers. You do not write UI code. Workers do all the work.
 
 Repeat until `DOCS/UI/PARITY.md` has no `todo` rows:
 

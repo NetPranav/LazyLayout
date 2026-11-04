@@ -1,10 +1,10 @@
 # Palette
 
-The only colors workers may use. There are five official themes, approved by the user on 2026-11-01. **Paper is the default.** Components use the semantic tokens below, never a raw color or a numbered neutral, so every theme works.
+The only colors workers may use. There are **eight official themes**: Paper, Dark, White, Warm and Lilac (approved by the user on 2026-11-01), plus Graphite, Darkroom and Noir (approved by the user on 2026-11-04). **Paper is the default.** Components use the semantic tokens below, never a raw color or a numbered neutral, so every theme works.
 
-The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them all. `src/editor/styles/tokens.css` still holds the earlier dark and light colors until a worker task updates it.
+The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them all. Light themes: Paper, White, Warm, Lilac. Dark themes: Noir, Dark, Graphite, Darkroom.
 
-**Candidates, not official:** the prototype also has Graphite, Darkroom, Plum and Noir, because the user wants a dark theme that does not match Figma's colors. Noir is in the prototype's top bar toggle. Workers must not use these until the user picks and this file is updated.
+**Graphite, Darkroom and Noir** are official since 2026-11-04. Their values are the prototype's `[data-theme=graphite|darkroom|noir]` blocks (lines ~63-66), copied exactly. Noir's Ship button uses `#CEB4F5`. **Plum was removed by the user on 2026-11-04** and must not appear anywhere.
 
 **Sources:** Dark is sampled from the user's Figma screenshot, `palette-refs/ref-02-figma-dark.png`. Warm uses the user's Off white, Ivory, Nude and Obsidian reference. Lilac and Paper are sampled from the user's Paper, Graphite and Lilac reference. White was proposed by Claude and chosen by the user. Mid-tone text colors and the dark backdrop were added by Claude.
 
@@ -62,7 +62,7 @@ The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them al
 
 ## Label colours (timeline tracks only)
 
-Approved by the user on 2026-11-04. These six muted tags are used **only** as the 3px strip on a timeline track header and as the clip tint (plus the tiny clips in the mini-map). They never colour text or any other UI. Text on the tints is at least 4.9:1 in dark themes and 8.8:1 in light themes. The light set is used for Paper, White, Warm and Lilac; the dark set for Dark.
+Approved by the user on 2026-11-04. These six muted tags are used **only** as the 3px strip on a timeline track header and as the clip tint (plus the tiny clips in the mini-map). They never colour text or any other UI. Text on the tints is at least 4.9:1 in dark themes and 8.8:1 in light themes. The light set is used for Paper, White, Warm and Lilac; the dark set for Dark, Graphite, Darkroom and Noir.
 
 | Token | Default for | Light: strip / tint | Dark: strip / tint |
 |---|---|---|---|
