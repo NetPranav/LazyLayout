@@ -43,7 +43,7 @@ function LeftPanelLabInner() {
   const headerStart = <PageSwitcher />;
 
   return (
-    <div className="editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none">
+    <div className="ll-editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none">
       {/* Lab Toolbar */}
       <div className="ll:w-viewport-desktop ll:flex ll:items-center ll:justify-between ll:mb-4 ll:px-4 ll:py-2.5 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:shadow-soft">
         <div className="ll:flex ll:items-center ll:gap-4">
@@ -137,11 +137,11 @@ function LeftPanelLabInner() {
         </div>
       </div>
 
-      {/* Frame Container: 1440 × 900 wrapped in .editor-root */}
+      {/* Frame Container: 1440 × 900 wrapped in .ll-editor-root */}
       <div
         id="lab-frame"
         style={{ height: LAB_FRAME_HEIGHT }}
-        className="editor-root ll:w-viewport-desktop ll:flex ll:flex-col ll:bg-surface-panel ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:relative"
+        className="ll-editor-root ll:w-viewport-desktop ll:flex ll:flex-col ll:bg-surface-panel ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:relative"
       >
         {/* Frame Top Bar (52px) */}
         <header className="ll:h-topbar ll:flex ll:items-center ll:justify-between ll:px-4 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0">

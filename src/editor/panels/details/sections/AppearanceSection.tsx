@@ -95,7 +95,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {/* 4 Corners Grid */}
       <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-nano ll:font-mono ll:uppercase ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted">
           Corners
         </span>
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">

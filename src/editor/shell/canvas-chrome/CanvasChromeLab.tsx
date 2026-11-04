@@ -53,7 +53,7 @@ export function CanvasChromeLab({
 
   return (
     <div
-      className="editor-root ll:overflow-hidden ll:relative ll:bg-surface-canvas ll:select-none"
+      className="ll-editor-root ll:overflow-hidden ll:relative ll:bg-surface-canvas ll:select-none"
       data-theme={theme}
       style={{
         width: "var(--ll-size-viewport-desktop)",

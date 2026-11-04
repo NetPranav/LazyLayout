@@ -98,3 +98,8 @@
 
 ## Report
 Add a short "## Report" here: what was fixed, what was skipped and why, and the output of the three checks.
+
+## Report (L0, 2026-11-05)
+- **Fixed:** items 1 to 31, with Noir kept official (eight themes, Plum removed, stored `plum` maps to `dark`), nine lane blocks in `tokens.css` and `tailwind.css`. A previous worker did most of it; L0 finished: `ColorSwatchField` tsc error, `ll-editor-root` rename in four lab files and `globals.css`, `ll-micro` utility, logo trace stroke token, `PageSection` icon through `Icon`, MotionDemo dots squared, "8 themes" text, sample-value comment in `DetailsLabView`.
+- **Skipped / partial:** `ll:data-[subopen]:` in `Menu.tsx` kept (attribute variant, not a value). Hex in demo data (`ComponentDemos` ListRowDemo, `DetailsLabView`, `PanelDemos`) kept and labelled as sample values. `LayoutSection` still uses `ll:*:!text-micro` for sub-labels; not re-verified against P:410.
+- **Checks:** `npx tsc --noEmit` passes (no output). `npx eslint src/editor` passes (no output). `npm run build` not run (orchestrator).

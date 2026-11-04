@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { SquareRoundCorner } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { INSPECTOR_CONSTANTS } from "../constants";
@@ -176,7 +177,7 @@ export const ThemeTokensBody: React.FC = () => {
 
       {/* Default Radius */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:w-35 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-        <SquareRoundCorner size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />
+        <Icon icon={SquareRoundCorner} size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />
         <input
           type="text"
           inputMode="numeric"

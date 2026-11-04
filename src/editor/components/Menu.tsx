@@ -873,16 +873,16 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
-          ? "ll:opacity-40 ll:cursor-not-allowed ll:text-muted"
-          : "ll:text-primary"
+          ? "ll:opacity-45 ll:cursor-not-allowed ll:text-muted"
+          : "ll:text-secondary ll:hover:text-primary ll:data-[subopen]:text-primary"
       } ${className}`}
     >
       {(isCheckbox || isRadio) && !icon ? (
-        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-primary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-muted">
           {checked && <Icon icon={Check} size={14} />}
         </span>
       ) : icon ? (
-        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-muted">
           {icon}
         </span>
       ) : null}
@@ -892,7 +892,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       {icon && checked && <Icon icon={Check} size={14} className="ll:text-muted ll:shrink-0" />}
 
       {shortcut && (
-        <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:ml-auto ll:tracking-wider">
+        <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:ml-auto ll:tracking-normal">
           {shortcut}
         </kbd>
       )}
@@ -970,12 +970,12 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       onPointerEnter={handlePointerEnter}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
-          ? "ll:opacity-40 ll:cursor-not-allowed ll:text-muted"
-          : "ll:text-primary"
+          ? "ll:opacity-45 ll:cursor-not-allowed ll:text-muted"
+          : "ll:text-secondary ll:hover:text-primary ll:data-[subopen]:text-primary"
       } ${className}`}
     >
       {icon && (
-        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+        <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-muted">
           {icon}
         </span>
       )}

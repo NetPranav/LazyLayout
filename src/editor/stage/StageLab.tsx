@@ -31,7 +31,7 @@ export function StageLabInner() {
   return (
     <div
       data-theme={theme}
-      className="editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none"
+      className="ll-editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none"
     >
       {/* 1. Lab Controls Toolbar */}
       <div

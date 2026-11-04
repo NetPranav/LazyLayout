@@ -45,53 +45,10 @@ export const Avatar: React.FC<AvatarProps> = ({
     <span
       role="img"
       aria-label={name}
-      className={`av ${sizeStyles} ll:inline-grid ll:place-items-center ll:box-border ll:bg-avatar-bg ll:text-avatar-fg ll:border ll:border-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ${className}`}
+      className={`ll-av ${sizeStyles} ll:inline-grid ll:place-items-center ll:box-border ll:bg-avatar-bg ll:text-avatar-fg ll:border ll:border-border ll:font-sans ll:font-medium ll:select-none ll:shrink-0 ${className}`}
     >
       {initials}
     </span>
-  );
-};
-
-export interface AvatarStackProps {
-  users: readonly { id: string; name: string; src?: string }[];
-  max?: number;
-  size?: "sm" | "md";
-  className?: string;
-}
-
-export const AvatarStack: React.FC<AvatarStackProps> = ({
-  users,
-  max = 3,
-  size = "md",
-  className = "",
-}) => {
-  const visible = users.slice(0, max);
-  const remaining = users.length - max;
-  const isSm = size === "sm";
-  const sizeStyles = isSm
-      ? "ll:w-6 ll:h-6 ll:text-nano ll:rounded-sm"
-      : "ll:w-7 ll:h-7 ll:text-micro ll:rounded-md";
-
-  return (
-    <div className={`avs ll:inline-flex ll:items-center -ll:space-x-1.5 ${className}`}>
-      {visible.map((u) => (
-        <Avatar
-          key={u.id}
-          name={u.name}
-          src={u.src}
-          size={size}
-          className="ll:ring-1 ll:ring-surface-panel"
-        />
-      ))}
-
-      {remaining > 0 && (
-        <span
-          className={`av more ${sizeStyles} ll:inline-grid ll:place-items-center ll:box-border ll:bg-surface-bar ll:text-muted ll:border ll:border-border ll:font-mono ll:select-none ll:ring-1 ll:ring-surface-panel`}
-        >
-          +{remaining}
-        </span>
-      )}
-    </div>
   );
 };
 

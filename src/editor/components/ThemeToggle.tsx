@@ -5,22 +5,52 @@ import { Palette } from "lucide-react";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { Tooltip } from "./Tooltip";
-import { Menu, MenuItem } from "./Menu";
+import { Menu, MenuItem, MenuHeading, ThemeSwatch } from "./Menu";
 
-export type Theme = "paper" | "dark" | "white" | "warm" | "lilac";
+export type Theme =
+  | "paper"
+  | "white"
+  | "warm"
+  | "lilac"
+  | "noir"
+  | "dark"
+  | "graphite"
+  | "darkroom";
 
 export interface ThemeOption {
   id: Theme;
   label: string;
 }
 
-export const THEMES: readonly ThemeOption[] = [
+export const LIGHT_THEMES: readonly ThemeOption[] = [
   { id: "paper", label: "Paper (Default)" },
-  { id: "dark", label: "Dark" },
   { id: "white", label: "White" },
   { id: "warm", label: "Warm" },
   { id: "lilac", label: "Lilac" },
 ];
+
+export const DARK_THEMES: readonly ThemeOption[] = [
+  { id: "noir", label: "Noir" },
+  { id: "dark", label: "Dark" },
+  { id: "graphite", label: "Graphite" },
+  { id: "darkroom", label: "Darkroom" },
+];
+
+export const THEMES: readonly ThemeOption[] = [
+  ...LIGHT_THEMES,
+  ...DARK_THEMES,
+];
+
+const VALID_THEMES = new Set<string>([
+  "paper",
+  "white",
+  "warm",
+  "lilac",
+  "noir",
+  "dark",
+  "graphite",
+  "darkroom",
+]);
 
 const themeListeners = new Set<() => void>();
 
@@ -41,10 +71,33 @@ let cachedTheme: Theme = "paper";
 /** Get active theme on client. */
 export function getClientTheme(): Theme {
   if (typeof document !== "undefined") {
-    const attr = document.documentElement.getAttribute("data-theme") as Theme | null;
-    if (attr === "paper" || attr === "dark" || attr === "white" || attr === "warm" || attr === "lilac") {
-      cachedTheme = attr;
+    let attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "plum") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      attr = "dark";
+      try {
+        localStorage.setItem("lazy-layout-theme", "dark");
+      } catch {
+        // ignore
+      }
+    }
+    if (attr && VALID_THEMES.has(attr)) {
+      cachedTheme = attr as Theme;
       return cachedTheme;
+    }
+    try {
+      let stored = localStorage.getItem("lazy-layout-theme");
+      if (stored === "plum") {
+        stored = "dark";
+        localStorage.setItem("lazy-layout-theme", "dark");
+      }
+      if (stored && VALID_THEMES.has(stored)) {
+        cachedTheme = stored as Theme;
+        document.documentElement.setAttribute("data-theme", cachedTheme);
+        return cachedTheme;
+      }
+    } catch {
+      // ignore
     }
   }
   return cachedTheme;
@@ -57,13 +110,10 @@ export function getServerTheme(): Theme {
 
 /** Set and persist active theme across DOM, localStorage, and listeners. */
 export function applyTheme(nextTheme: Theme): void {
-  if (
-    nextTheme !== "paper" &&
-    nextTheme !== "dark" &&
-    nextTheme !== "white" &&
-    nextTheme !== "warm" &&
-    nextTheme !== "lilac"
-  ) {
+  if ((nextTheme as string) === "plum") {
+    nextTheme = "dark";
+  }
+  if (!VALID_THEMES.has(nextTheme)) {
     nextTheme = "paper";
   }
   cachedTheme = nextTheme;
@@ -94,10 +144,14 @@ if (typeof window !== "undefined") {
 
   try {
     const observer = new MutationObserver(() => {
-      const attr = document.documentElement.getAttribute("data-theme") as Theme | null;
-      if (attr && (attr === "paper" || attr === "dark" || attr === "white" || attr === "warm" || attr === "lilac")) {
+      let attr = document.documentElement.getAttribute("data-theme");
+      if (attr === "plum") {
+        attr = "dark";
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+      if (attr && VALID_THEMES.has(attr)) {
         if (attr !== cachedTheme) {
-          cachedTheme = attr;
+          cachedTheme = attr as Theme;
           notifyThemeListeners();
         }
       }
@@ -177,7 +231,8 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
           width={200}
           aria-label="Select theme"
         >
-          {THEMES.map((t) => {
+          <MenuHeading>Light</MenuHeading>
+          {LIGHT_THEMES.map((t) => {
             const isSelected = theme === t.id;
             return (
               <MenuItem
@@ -185,13 +240,22 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
                 role="menuitemradio"
                 checked={isSelected}
                 onClick={() => handleSelect(t.id)}
-                icon={
-                  <span
-                    data-theme={t.id}
-                    className="ll:w-3.5 ll:h-3.5 ll:rounded-sm ll:border ll:border-swatch-line ll:bg-surface-panel ll:shrink-0"
-                    aria-hidden="true"
-                  />
-                }
+                icon={<ThemeSwatch theme={t.id} />}
+              >
+                {t.label}
+              </MenuItem>
+            );
+          })}
+          <MenuHeading>Dark</MenuHeading>
+          {DARK_THEMES.map((t) => {
+            const isSelected = theme === t.id;
+            return (
+              <MenuItem
+                key={t.id}
+                role="menuitemradio"
+                checked={isSelected}
+                onClick={() => handleSelect(t.id)}
+                icon={<ThemeSwatch theme={t.id} />}
               >
                 {t.label}
               </MenuItem>

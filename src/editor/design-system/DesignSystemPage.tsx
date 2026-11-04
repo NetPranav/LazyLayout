@@ -401,14 +401,89 @@ const SEMANTIC_ROLES: readonly SemanticRole[] = [
     bgClass: "ll:bg-accent",
     description: "Only Lilac has an accent (#CEB4F5). No other theme has one.",
   },
+  {
+    role: "Label 1 (Slate)",
+    token: "--ll-label-1",
+    bgClass: "ll:bg-label-1",
+    description: "Timeline track strip (Text)",
+  },
+  {
+    role: "Label 1 Tint",
+    token: "--ll-label-1-tint",
+    bgClass: "ll:bg-label-1-tint",
+    description: "Timeline clip tint (Text)",
+  },
+  {
+    role: "Label 2 (Sage)",
+    token: "--ll-label-2",
+    bgClass: "ll:bg-label-2",
+    description: "Timeline track strip (Button)",
+  },
+  {
+    role: "Label 2 Tint",
+    token: "--ll-label-2-tint",
+    bgClass: "ll:bg-label-2-tint",
+    description: "Timeline clip tint (Button)",
+  },
+  {
+    role: "Label 3 (Sand)",
+    token: "--ll-label-3",
+    bgClass: "ll:bg-label-3",
+    description: "Timeline track strip (Frame, group)",
+  },
+  {
+    role: "Label 3 Tint",
+    token: "--ll-label-3-tint",
+    bgClass: "ll:bg-label-3-tint",
+    description: "Timeline clip tint (Frame, group)",
+  },
+  {
+    role: "Label 4 (Clay)",
+    token: "--ll-label-4",
+    bgClass: "ll:bg-label-4",
+    description: "Timeline track strip (Image)",
+  },
+  {
+    role: "Label 4 Tint",
+    token: "--ll-label-4-tint",
+    bgClass: "ll:bg-label-4-tint",
+    description: "Timeline clip tint (Image)",
+  },
+  {
+    role: "Label 5 (Rose)",
+    token: "--ll-label-5",
+    bgClass: "ll:bg-label-5",
+    description: "Timeline track strip (Shape)",
+  },
+  {
+    role: "Label 5 Tint",
+    token: "--ll-label-5-tint",
+    bgClass: "ll:bg-label-5-tint",
+    description: "Timeline clip tint (Shape)",
+  },
+  {
+    role: "Label 6 (Lavender)",
+    token: "--ll-label-6",
+    bgClass: "ll:bg-label-6",
+    description: "Timeline track strip (Other)",
+  },
+  {
+    role: "Label 6 Tint",
+    token: "--ll-label-6-tint",
+    bgClass: "ll:bg-label-6-tint",
+    description: "Timeline clip tint (Other)",
+  },
 ];
 
 const THEME_LIST: readonly { id: Theme; label: string }[] = [
   { id: "paper", label: "Paper (Default)" },
-  { id: "dark", label: "Dark" },
   { id: "white", label: "White" },
   { id: "warm", label: "Warm" },
   { id: "lilac", label: "Lilac" },
+  { id: "noir", label: "Noir" },
+  { id: "dark", label: "Dark" },
+  { id: "graphite", label: "Graphite" },
+  { id: "darkroom", label: "Darkroom" },
 ];
 
 function rgbToHex(rgbStr: string): string {
@@ -422,10 +497,13 @@ function rgbToHex(rgbStr: string): string {
 
 const EMPTY_LIVE_TOKENS: Record<Theme, Record<string, string>> = {
   paper: {},
-  dark: {},
   white: {},
   warm: {},
   lilac: {},
+  noir: {},
+  dark: {},
+  graphite: {},
+  darkroom: {},
 };
 
 let cachedLiveTokens: Record<Theme, Record<string, string>> = EMPTY_LIVE_TOKENS;
@@ -452,10 +530,13 @@ function computeLiveTokensClient(): Record<Theme, Record<string, string>> {
   }
   const result: Record<Theme, Record<string, string>> = {
     paper: {},
-    dark: {},
     white: {},
     warm: {},
     lilac: {},
+    noir: {},
+    dark: {},
+    graphite: {},
+    darkroom: {},
   };
 
   const probe = document.createElement("div");
@@ -626,7 +707,7 @@ export function DesignSystemPage() {
   );
 
   return (
-    <div className="design-system-root ll:h-screen ll:w-full ll:bg-surface-canvas ll:text-primary ll:font-sans ll:flex ll:justify-center ll:overflow-hidden">
+    <div className="ll-design-system-root design-system-root ll:h-screen ll:w-full ll:bg-surface-canvas ll:text-primary ll:font-sans ll:flex ll:justify-center ll:overflow-hidden">
       <div className="ll:w-full ll:h-full ll:bg-surface-backdrop ll:flex ll:flex-col ll:xl:flex-row ll:border-x ll:border-border ll:relative ll:overflow-hidden">
         {/* Mobile Header Bar */}
         <div className="ll:xl:hidden ll:flex ll:items-center ll:justify-between ll:p-4 ll:border-b ll:border-border ll:bg-surface-panel ll:sticky ll:top-0 ll:z-50 ll:shrink-0">
@@ -945,7 +1026,7 @@ export function DesignSystemPage() {
                 </div>
                 <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:items-center ll:gap-4">
                   <ThemeToggle size="md" />
-                  <span className="ll:text-small ll:text-secondary">Click palette icon to select from 5 themes</span>
+                  <span className="ll:text-small ll:text-secondary">Click palette icon to select from 8 themes</span>
                 </div>
               </div>
             )}

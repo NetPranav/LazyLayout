@@ -94,10 +94,10 @@ function compileProjectFiles(project: {
           borderDefault: "var(--ll-border-color)",
         },
         wires: {
-          exec: "#FFFFFF",
-          string: "#F59E0B",
-          number: "#10B981",
-          boolean: "#EF4444",
+          exec: "var(--ll-text-primary)",
+          string: "var(--ll-text-secondary)",
+          number: "var(--ll-text-secondary)",
+          boolean: "var(--ll-text-muted)",
         },
       })
     );

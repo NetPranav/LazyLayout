@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
@@ -22,7 +22,6 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
 }) => {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
   // Places the popover like the design: floating left of the right panel, top aligned to its row.
   useLayoutEffect(() => {
@@ -36,10 +35,8 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
       const z = zone.getBoundingClientRect();
       const h = pop.offsetHeight;
       const w = pop.offsetWidth;
-      setPos({
-        left: Math.max(8, z.left - w - 8),
-        top: Math.max(8, Math.min(r.top, window.innerHeight - 8 - h)),
-      });
+      pop.style.left = `${Math.max(8, z.left - w - 8)}px`;
+      pop.style.top = `${Math.max(8, Math.min(r.top, window.innerHeight - 8 - h))}px`;
     };
     place();
     window.addEventListener("resize", place);
@@ -80,7 +77,7 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
             ref={popRef}
             role="dialog"
             aria-label={`${title} settings`}
-            style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999 }}
+            style={{ left: -9999, top: -9999 }}
             className={`ppop ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-62 ll:overflow-auto ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
           >
             <div className="phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:pt-2 ll:pr-2 ll:pb-1 ll:pl-4">

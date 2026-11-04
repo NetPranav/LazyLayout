@@ -117,7 +117,7 @@ export function MotionDemo() {
             Motion Engine
           </h1>
           <span className="ll:inline-flex ll:items-center ll:gap-1.5 ll:px-2.5 ll:py-1 ll:rounded-md ll:bg-surface-bar ll:border ll:border-border ll:text-micro ll:font-mono ll:text-secondary">
-            <span className="ll:w-2 ll:h-2 ll:rounded-full ll:bg-control-primary" />
+            <span className="ll:w-2 ll:h-2 ll:rounded-xs ll:bg-control-primary" />
             Motion engine ported from Nook (the owner&apos;s own product)
           </span>
         </div>
@@ -445,7 +445,7 @@ export function MotionDemo() {
           </div>
           <div className="ll:flex ll:items-center ll:gap-2 ll:px-3 ll:py-1.5 ll:rounded-md ll:bg-surface-bar ll:border ll:border-border ll:text-small ll:font-mono">
             <span
-              className={`ll:w-2 ll:h-2 ll:rounded-full ${reducedMotion ? "ll:bg-control-primary" : "ll:bg-muted"
+              className={`ll:w-2 ll:h-2 ll:rounded-xs ${reducedMotion ? "ll:bg-control-primary" : "ll:bg-muted"
                 }`}
             />
             <span className="ll:text-primary">

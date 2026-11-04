@@ -65,7 +65,7 @@ export const TimelinePlayhead = forwardRef<HTMLDivElement, TimelinePlayheadProps
             width: `${PLAYHEAD_KNOB_WIDTH_PX}px`,
             height: `${PLAYHEAD_KNOB_HEIGHT_PX}px`,
             left: `${PLAYHEAD_KNOB_OFFSET_PX}px`,
-            top: "0px",
+            top: 0,
           }}
           className="ll:absolute ll:bg-control-primary ll:rounded-xs ll:pointer-events-auto ll:cursor-ew-resize ll:shadow-sm"
         />

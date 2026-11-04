@@ -306,16 +306,19 @@ export function ShipPopoverDemo() {
         </div>
 
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Themes Comparison
+          Themes Comparison (All 8 Themes)
         </div>
-        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-5 ll:gap-3">
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-4 ll:gap-3">
           {(
             [
               { id: "paper", label: "Paper (Default)" },
-              { id: "dark", label: "Dark" },
               { id: "white", label: "White" },
               { id: "warm", label: "Warm" },
               { id: "lilac", label: "Lilac (Accent)" },
+              { id: "noir", label: "Noir" },
+              { id: "dark", label: "Dark" },
+              { id: "graphite", label: "Graphite" },
+              { id: "darkroom", label: "Darkroom" },
             ] as const
           ).map((t) => (
             <div

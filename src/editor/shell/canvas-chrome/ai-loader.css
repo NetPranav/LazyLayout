@@ -5,38 +5,30 @@
  */
 
 .ll-aiload {
-  /* Stroke width in SVG viewBox units (256 box); wished-for token logged in the handoff. */
-  --ll-aiload-stroke: 10;
   overflow: visible;
 }
 
 .ll-aiload .ll-aiload-tro {
   fill: none;
   stroke: currentColor;
-  stroke-width: var(--ll-aiload-stroke);
+  stroke-width: var(--ll-stroke-loader);
   stroke-linejoin: round;
   stroke-dasharray: 100;
-  animation: ll-aiload-tro var(--ll-dur-trace) var(--ll-ease-trace) infinite;
+  animation: ll-aiload-tro var(--ll-dur-trace-ai) var(--ll-ease-trace) infinite alternate;
 }
 
 .ll-aiload .ll-aiload-trf {
   fill: currentColor;
   stroke: none;
-  animation: ll-aiload-trf var(--ll-dur-trace) var(--ll-ease-trace) infinite;
+  animation: ll-aiload-trf var(--ll-dur-trace-ai) var(--ll-ease-trace) infinite alternate;
 }
 
 @keyframes ll-aiload-tro {
   0% {
     stroke-dashoffset: 100;
-    opacity: 1;
   }
-  55%, 90% {
+  55%, 100% {
     stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
   }
 }
 
@@ -44,11 +36,8 @@
   0%, 55% {
     opacity: 0;
   }
-  75%, 90% {
+  85%, 100% {
     opacity: 1;
-  }
-  100% {
-    opacity: 0;
   }
 }
 

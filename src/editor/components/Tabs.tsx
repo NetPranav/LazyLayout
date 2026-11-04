@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
-import { Spring } from "../motion/spring";
-import { simAdd, simRemove, type Sim } from "../motion/loop";
-import { getActivePreset, prefersReducedMotion } from "../motion/feel";
-import { useMounted } from "./useMounted";
+import React, { useRef } from "react";
+import { useSlidingIndicator } from "./useSlidingIndicator";
 
 export interface TabItem<T extends string = string> {
   id: T;
@@ -33,72 +30,15 @@ export function Tabs<T extends string = string>({
   const containerRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const springRef = useRef<{ x: Spring; w: Spring; sim: Sim } | null>(null);
-  const mounted = useMounted();
 
-  useEffect(() => {
-    const p = getActivePreset();
-    const x = new Spring(0, p.glideH);
-    const w = new Spring(0, p.glideW);
-    const sim: Sim = {
-      sp: [x, w],
-      apply: () => {
-        if (indicatorRef.current) {
-          indicatorRef.current.style.transform = `translate3d(${x.x.toFixed(2)}px, 0, 0)`;
-          indicatorRef.current.style.width = `${Math.max(0, w.x).toFixed(2)}px`;
-        }
-      },
-    };
-    springRef.current = { x, w, sim };
+  const selectedIndex = tabs.findIndex((t) => t.id === activeTab);
 
-    return () => {
-      if (springRef.current) {
-        simRemove(springRef.current.sim);
-      }
-    };
-  }, []);
-
-  const updateIndicator = useCallback((instant = false) => {
-    const idx = tabs.findIndex((t) => t.id === activeTab);
-    const tabEl = tabRefs.current[idx];
-    const indEl = indicatorRef.current;
-    const sp = springRef.current;
-
-    if (!tabEl || !indEl || !sp) return;
-
-    const targetX = tabEl.offsetLeft;
-    const targetW = tabEl.offsetWidth;
-    const p = getActivePreset();
-
-    indEl.style.display = "block";
-
-    if (instant || prefersReducedMotion()) {
-      sp.x.jump(targetX);
-      sp.w.jump(targetW);
-      indEl.style.transform = `translate3d(${targetX}px, 0, 0)`;
-      indEl.style.width = `${targetW}px`;
-      return;
-    }
-
-    sp.x.tune(p.glideH);
-    sp.w.tune(p.glideW);
-    sp.x.to = targetX;
-    sp.w.to = targetW;
-
-    simAdd(sp.sim);
-  }, [tabs, activeTab]);
-
-  useEffect(() => {
-    if (mounted) {
-      updateIndicator(false);
-    }
-  }, [activeTab, mounted, updateIndicator]);
-
-  useEffect(() => {
-    if (mounted) {
-      updateIndicator(true);
-    }
-  }, [mounted, updateIndicator]);
+  useSlidingIndicator({
+    containerRef,
+    indicatorRef,
+    itemRefs: tabRefs,
+    selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     const enabled = tabs
@@ -162,7 +102,7 @@ export function Tabs<T extends string = string>({
             onKeyDown={(e) => handleKeyDown(e, idx)}
             className={`ll:relative ll:z-10 ll:inline-flex ll:items-center ll:justify-center ll:gap-2 ll:px-3 ll:h-full ll:font-sans ll:text-small ll:transition-colors ll:duration-75 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${isSelected
                 ? "ll:font-medium ll:text-primary"
-                : "ll:font-normal ll:text-secondary ll:hover:text-primary"
+                : "ll:font-medium ll:text-muted ll:hover:text-primary"
               } ${tab.disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""}`}
           >
             {tab.icon}

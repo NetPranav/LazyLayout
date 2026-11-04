@@ -42,7 +42,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   return (
     <section
       data-section-id={sectionId}
-      className={`ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:[&:not(:first-child)]:border-t ll:border-border ${className}`}
+      className={`ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-t ll:first:border-t-0 ll:border-border ${className}`}
     >
       {/* Section Header */}
       <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6 ll:select-none">
@@ -64,11 +64,11 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               aria-label={`More ${title} options`}
               title="More options"
               onClick={() => setShowMore((prev) => !prev)}
-              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-[0.08em] ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-wider ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
                 showMore ? "ll:bg-control-secondary-bg ll:text-primary" : ""
-              } ${!onAdd ? "ll:-mr-1.25" : ""}`}
+              } ${!onAdd ? "ll:-mr-1" : ""}`}
             >
-              <span className="ll:inline-block ll:leading-none ll:-translate-y-[2px]" aria-hidden="true">
+              <span className="ll:inline-block ll:leading-none ll:-translate-y-0.5" aria-hidden="true">
                 ...
               </span>
             </button>

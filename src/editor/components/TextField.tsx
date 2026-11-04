@@ -17,7 +17,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     label,
     prefixLabel,
     error,
-    size = "md",
+    size: _size = "md",
     mono = false,
     disabled = false,
     className = "",
@@ -34,25 +34,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   const generatedId = useId();
   const inputId = propId ?? generatedId;
 
-  const isSm = size === "sm";
-  const heightStyles = isSm ? "ll:h-7 ll:px-2 ll:gap-1.5" : "ll:h-8 ll:px-2.5 ll:gap-2";
+  const heightStyles = "ll:h-7 ll:px-2 ll:gap-2";
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-1 ll:w-full ${className}`}>
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none"
-        >
-          {label}
-        </label>
-      )}
-
       <div
         className={`ll:relative ll:inline-flex ll:items-center ll:box-border ll:rounded-sm ll:border ll:transition-colors ll:duration-100 ll:bg-surface-bar ${heightStyles} ${
           error
             ? "ll:border-primary"
-            : "ll:border-border ll:hover:border-muted ll:focus-within:border-primary"
+            : "ll:border-transparent ll:hover:border-muted ll:focus-within:border-primary"
         } ${disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""}`}
       >
         {prefixLabel && (
@@ -61,7 +51,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             className={`ll-pf ${
               typeof prefixLabel !== "string"
                 ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
-                : "ll:text-micro ll:font-mono ll:font-medium"
+                : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
             } ll:text-muted ll:shrink-0 ll:select-none`}
           >
             {prefixLabel}
@@ -74,12 +64,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           type={type}
           disabled={disabled}
           placeholder={placeholder}
+          aria-label={label ?? (typeof prefixLabel === "string" ? prefixLabel : undefined)}
           value={value}
           defaultValue={defaultValue}
           onChange={onChange}
-          className={`ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:text-primary ll:placeholder:text-muted ${
-            mono ? "ll:font-mono" : "ll:font-sans"
-          } ${disabled ? "ll:cursor-not-allowed" : ""}`}
+          className={`ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ${
+            mono ? "ll:font-mono ll:text-micro ll:font-normal ll:tracking-normal" : "ll:font-sans ll:text-body"
+          } ll:text-primary ll:placeholder:text-muted ${
+            disabled ? "ll:cursor-not-allowed" : ""
+          }`}
           {...props}
         />
       </div>

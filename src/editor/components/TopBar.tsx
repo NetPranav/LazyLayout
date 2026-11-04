@@ -60,7 +60,7 @@ import {
 import { LogoMark } from "./LogoMark";
 import { ModeTabs, type EditorMode } from "./ModeTabs";
 import { ShipPopover, type ShipIssue } from "./ShipPopover";
-import { AvatarStack, type CollabUser } from "./AvatarStack";
+import type { CollabUser } from "./AvatarStack";
 import { Menu, MenuItem, SubMenu, MenuSeparator, MenuHeading, ThemeSwatch } from "./Menu";
 import { useTheme, type Theme } from "./ThemeToggle";
 import { Icon } from "./Icon";
@@ -70,7 +70,7 @@ import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
-const DARK_THEMES: readonly Theme[] = ["dark"];
+const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
 
 const EntryLabel: React.FC<{ checked: boolean; children: React.ReactNode }> = ({
   checked,
@@ -127,7 +127,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   issues,
   onFixIssue,
   onPublish,
-  users = [],
+  users: _users = [],
   onMenuAction,
   className = "",
   showRulers = false,
@@ -153,18 +153,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       ? "dirty"
       : "saved";
 
-  let tooltipText = "All changes saved";
-  let accessibleLabel = "All changes saved";
-  if (resolvedState === "dirty") {
-    tooltipText = "Unsaved changes (Ctrl+S)";
-    accessibleLabel = "Unsaved changes";
-  } else if (resolvedState === "saving") {
-    tooltipText = "Saving changes…";
-    accessibleLabel = "Saving changes";
-  } else if (resolvedState === "error") {
-    tooltipText = "Failed to save changes";
-    accessibleLabel = "Save error";
-  }
+  const isSaving = resolvedState === "saving";
 
   // Mode tabs state
   const [internalMode, setInternalMode] = useState<EditorMode>("design");
@@ -187,7 +176,11 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   // Theme integration
   const [theme, selectTheme] = useTheme();
-  const isDark = theme === "dark";
+  const isDark =
+    theme === "dark" ||
+    theme === "noir" ||
+    theme === "graphite" ||
+    theme === "darkroom";
 
   const handleThemeToggle = useCallback(() => {
     selectTheme(isDark ? "paper" : "dark");
@@ -292,7 +285,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           ref={logoBtnRef}
           type="button"
           id={menuBtnId}
-          data-saving={saving ? "true" : undefined}
+          data-saving={isSaving ? "true" : undefined}
           aria-label="Application menu"
           title="Application menu"
           aria-haspopup="menu"
@@ -300,9 +293,9 @@ export const TopBar: React.FC<TopBarProps> = ({
           onClick={() => setLogoMenuOpen((prev) => !prev)}
           className="ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:rounded-sm ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
         >
-          <LogoMark saving={saving} size={LOGO_ICON_SIZE} />
+          <LogoMark saving={isSaving} size={LOGO_ICON_SIZE} />
           <span className="ll:sr-only" role="status">
-            {saving ? "Saving" : "Saved"}
+            {isSaving ? "Saving" : "Saved"}
           </span>
         </button>
 
@@ -312,37 +305,14 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
         />
 
-        {/* Project Name (14px, 500 font-weight, truncate) + Save Status Indicator */}
-        <div className="ll-pinfo ll:flex ll:items-center ll:min-w-0 ll:text-secondary">
+        {/* Project Name (14px, 500 font-weight, truncate) */}
+        <div className="ll-pinfo ll:flex ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
           <span
             className="ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
             title={projectName}
           >
             {projectName}
           </span>
-          <Tooltip content={tooltipText} side="bottom">
-            <span
-              data-testid="save-status"
-              data-state={resolvedState}
-              role="status"
-              aria-label={accessibleLabel}
-              className="ll:inline-flex ll:items-center ll:justify-center ll:ml-2 ll:cursor-default"
-            >
-              <span className="ll:sr-only">{accessibleLabel}</span>
-              <span
-                aria-hidden="true"
-                className={`ll:w-1.5 ll:h-1.5 ll:rounded-xs ${
-                  resolvedState === "dirty"
-                    ? "viewport-action-btn__dirty-dot ll:bg-primary"
-                    : resolvedState === "saving"
-                    ? "ll:bg-muted ll:animate-pulse"
-                    : resolvedState === "error"
-                    ? "ll:bg-primary ll:opacity-80"
-                    : "ll:border ll:border-border ll:bg-transparent"
-                }`}
-              />
-            </span>
-          </Tooltip>
         </div>
 
         {/* Logo Application Menu (prototype MENUS.app) */}
@@ -531,14 +501,14 @@ export const TopBar: React.FC<TopBarProps> = ({
           3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
           ===================================================================== */}
       <div className="ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
-        {/* Theme button (32x32, toggles Paper and Noir) */}
-        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
+        {/* Theme button (32x32, toggles Paper and Dark) */}
+        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Dark"}>
           <button
             type="button"
             id={themeBtnId}
             onClick={handleThemeToggle}
-            aria-label={isDark ? "Switch to Paper" : "Switch to Noir"}
-            title={isDark ? "Switch to Paper" : "Switch to Noir"}
+            aria-label={isDark ? "Switch to Paper" : "Switch to Dark"}
+            title={isDark ? "Switch to Paper" : "Switch to Dark"}
             className="ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             <Icon icon={isDark ? Sun : Moon} size={ACTION_ICON_SIZE} />
@@ -554,8 +524,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           onShare={onShare ?? (() => onMenuAction?.("file.copyLink"))}
         />
 
-        {/* Avatar Stack */}
-        <AvatarStack users={users} />
+        {/* Avatar Stack (hidden per user decision) */}
       </div>
     </header>
   );

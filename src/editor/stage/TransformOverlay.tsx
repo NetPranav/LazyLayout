@@ -155,7 +155,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
               className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none"
               style={{
                 left: 0,
-                top: "calc(100% + 2px)",
+                top: "calc(100% + var(--ll-spacing-0-5))",
                 fontSize: "var(--ll-text-micro-size)",
                 lineHeight: "var(--ll-text-micro-line-height)",
                 fontWeight: "var(--ll-text-micro-weight)",

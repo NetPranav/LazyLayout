@@ -126,7 +126,7 @@ export const LayersLab: React.FC = () => {
   const pageCount = useMemo(() => Object.keys(pages).length, [pages]);
 
   return (
-    <div className="editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none">
+    <div className="ll-editor-root ll:flex ll:flex-col ll:items-center ll:justify-start ll:min-h-screen ll:bg-surface-backdrop ll:p-6 ll:font-sans ll:select-none">
       {/* 1. Lab Header Toolbar */}
       <header
         role="region"
@@ -188,8 +188,8 @@ export const LayersLab: React.FC = () => {
         role="main"
         aria-label="Connected Layers Viewport"
         style={{
-          width: "var(--ll-size-viewport-desktop, 1440px)",
-          height: "var(--ll-size-viewport-desktop-h, 900px)",
+          width: "var(--ll-size-viewport-desktop)",
+          height: "var(--ll-size-viewport-desktop-h)",
         }}
         className="ll:flex ll:flex-row ll:bg-surface-canvas ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:relative"
       >

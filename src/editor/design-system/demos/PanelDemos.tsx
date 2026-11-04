@@ -28,7 +28,7 @@ export function InspectorControlsDemo() {
   const [curve, setCurve] = useState({ name: "Custom", x1: 0.25, y1: 0.1, x2: 0.25, y2: 1 });
   const [_rowOpen, _setRowOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [swatchHex, setSwatchHex] = useState("#CEB4F5");
+  const [swatchHex, setSwatchHex] = useState("#CEB4F5"); // sample value: Lilac accent swatch demo
   const [swatchOpacity, setSwatchOpacity] = useState(100);
   const [numVal, setNumVal] = useState<number | null>(340);
   const [boxValues, setBoxValues] = useState({ t: 16, r: 24, b: 16, l: 24 });

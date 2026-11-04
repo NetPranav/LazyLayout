@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
-import { Spring } from "../motion/spring";
-import { simAdd, simRemove, type Sim } from "../motion/loop";
-import { getActivePreset, prefersReducedMotion } from "../motion/feel";
-import { useMounted } from "./useMounted";
+import React, { useRef, useCallback } from "react";
+import { useSlidingIndicator } from "./useSlidingIndicator";
 
 export interface SegmentedControlOption<T extends string = string> {
   value: T;
@@ -37,76 +34,15 @@ export function SegmentedControl<T extends string = string>({
   const containerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const springsRef = useRef<{ x: Spring; w: Spring; sim: Sim } | null>(null);
-  const mounted = useMounted();
 
-  // Initialize glide springs
-  useEffect(() => {
-    const p = getActivePreset();
-    const x = new Spring(0, p.glideH);
-    const w = new Spring(0, p.glideW);
-    const sim: Sim = {
-      sp: [x, w],
-      apply: () => {
-        if (markerRef.current) {
-          markerRef.current.style.transform = `translate3d(${x.x.toFixed(2)}px, 0, 0)`;
-          markerRef.current.style.width = `${Math.max(0, w.x).toFixed(2)}px`;
-        }
-      },
-    };
-    springsRef.current = { x, w, sim };
+  const selectedIndex = options.findIndex((o) => o.value === value);
 
-    return () => {
-      if (springsRef.current) {
-        simRemove(springsRef.current.sim);
-      }
-    };
-  }, []);
-
-  // Update marker position when value or options change
-  const updateMarker = useCallback((instant = false) => {
-    const idx = options.findIndex((o) => o.value === value);
-    const btn = itemRefs.current[idx];
-    const container = containerRef.current;
-    const marker = markerRef.current;
-    const sp = springsRef.current;
-
-    if (!btn || !container || !marker || !sp) return;
-
-    const targetX = btn.offsetLeft;
-    const targetW = btn.offsetWidth;
-    const p = getActivePreset();
-
-    marker.style.display = "block";
-
-    if (instant || prefersReducedMotion()) {
-      sp.x.jump(targetX);
-      sp.w.jump(targetW);
-      marker.style.transform = `translate3d(${targetX}px, 0, 0)`;
-      marker.style.width = `${targetW}px`;
-      return;
-    }
-
-    sp.x.tune(p.glideH);
-    sp.w.tune(p.glideW);
-    sp.x.to = targetX;
-    sp.w.to = targetW;
-
-    simAdd(sp.sim);
-  }, [options, value]);
-
-  useEffect(() => {
-    if (mounted) {
-      updateMarker(false);
-    }
-  }, [value, mounted, updateMarker]);
-
-  // Initial layout measurement
-  useEffect(() => {
-    if (mounted) {
-      updateMarker(true);
-    }
-  }, [mounted, updateMarker]);
+  useSlidingIndicator({
+    containerRef,
+    indicatorRef: markerRef,
+    itemRefs,
+    selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
+  });
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, index: number) => {
@@ -147,8 +83,9 @@ export function SegmentedControl<T extends string = string>({
     [disabled, options, onChange]
   );
 
-  const containerSizeStyles = size === "sm" ? "ll:h-7" : "ll:h-9";
-  const itemPaddingStyles = size === "sm" ? "ll:px-2 ll:gap-1.5 ll:text-small" : "ll:px-3 ll:gap-2 ll:text-body";
+  const containerSizeStyles = size === "sm" ? "ll:h-7 ll:p-px" : "ll:h-8 ll:p-0.5";
+  const itemPaddingStyles =
+    size === "sm" ? "ll:px-2 ll:gap-1.5 ll:text-micro" : "ll:px-3 ll:gap-2 ll:text-body";
 
   return (
     <div
@@ -156,7 +93,7 @@ export function SegmentedControl<T extends string = string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-disabled={disabled ? "true" : undefined}
-      className={`ll:relative ll:flex ll:w-full ll:items-center ll:box-border ll:border ll:border-border ll:rounded-md ll:p-px ll:gap-px ll:select-none ll:shrink-0 ${containerSizeStyles} ${
+      className={`ll:relative ll:flex ll:w-full ll:items-center ll:box-border ll:border ll:border-border ll:rounded-md ll:gap-px ll:select-none ll:shrink-0 ${containerSizeStyles} ${
         disabled ? "ll:opacity-40 ll:pointer-events-none" : ""
       } ${className}`}
     >
@@ -164,7 +101,7 @@ export function SegmentedControl<T extends string = string>({
       <div
         ref={markerRef}
         aria-hidden="true"
-        className="ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
+        className="ll:absolute ll:top-0.5 ll:bottom-0.5 ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
       />
 
       {options.map((option, index) => {
@@ -188,8 +125,8 @@ export function SegmentedControl<T extends string = string>({
             onKeyDown={(e) => handleKeyDown(e, index)}
             className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-colors ll:duration-100 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
               isSelected
-                ? "ll:text-primary ll:font-semibold"
-                : "ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-bar"
+                ? "ll:text-primary ll:font-medium"
+                : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar"
             } ${isItemDisabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""}`}
           >
             {option.icon}

@@ -80,14 +80,14 @@ if (pressed) {
   variantStyles = "ll:bg-select-bg ll:text-select-fg ll:border-0";
 } else if (variant === "secondary") {
   variantStyles =
-    "ll:bg-surface-raised ll:text-secondary ll:border ll:border-border ll:hover:bg-surface-hover ll:hover:text-primary ll:active:bg-control-active";
+    "ll:bg-surface-raised ll:text-secondary ll:border ll:border-border ll:hover:bg-control-active ll:hover:text-primary ll:active:bg-control-active";
 } else if (variant === "subtle") {
   variantStyles =
-    "ll:bg-surface-bar ll:text-secondary ll:border-0 ll:hover:bg-surface-hover ll:hover:text-primary ll:active:bg-control-active";
+    "ll:bg-surface-bar ll:text-secondary ll:border-0 ll:hover:bg-control-active ll:hover:text-primary ll:active:bg-control-active";
 } else {
   // ghost
   variantStyles =
-    "ll:bg-transparent ll:text-secondary ll:border-0 ll:hover:bg-surface-hover ll:hover:text-primary ll:active:bg-control-active";
+    "ll:bg-transparent ll:text-secondary ll:border-0 ll:hover:bg-control-active ll:hover:text-primary ll:active:bg-control-active";
 }
 
 const baseStyles =

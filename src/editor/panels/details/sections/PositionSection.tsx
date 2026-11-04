@@ -138,7 +138,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
       {/* Offset 4-grid (shown when position type !== 'static') */}
       {posType !== "static" && (
         <div className="ll:flex ll:flex-col ll:gap-1">
-          <span className="ll:text-nano ll:font-mono ll:uppercase ll:text-muted">
+          <span className="ll:text-small ll:font-sans ll:text-muted">
             Offset
           </span>
           <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">

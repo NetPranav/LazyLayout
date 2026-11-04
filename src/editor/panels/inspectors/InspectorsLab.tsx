@@ -80,7 +80,7 @@ export const InspectorsLab: React.FC = () => {
 
       {/* Side-by-side or individual views */}
       {(activeView === "all" || activeView === "motion" || activeView === "code") && (
-        <div className="ll:grid ll:grid-cols-1 md:ll:grid-cols-2 ll:gap-8 ll:items-start">
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-2 ll:gap-8 ll:items-start">
           {/* 1. Motion Right Panel: KeyframeInspector */}
           {(activeView === "all" || activeView === "motion") && (
             <section className="ll:flex ll:flex-col ll:gap-3">

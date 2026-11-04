@@ -99,6 +99,6 @@ Keep this table updated as lanes start, pass and commit.
 
 | Wave | Lane | Task file | Status | Commit |
 |---|---|---|---|---|
-| 0 | L0 | 2026-11-05-L0-foundation.md (includes 2026-11-04-design-system-audit-fixes.md) | running as a Claude subagent (Antigravity quota exhausted until about 2026-11-07; the Antigravity run left partial edits that the subagent continues) | |
+| 0 | L0 | 2026-11-05-L0-foundation.md (includes 2026-11-04-design-system-audit-fixes.md) passed (tsc and eslint clean, 8 themes, 9 lane blocks, no off-limits changes). Antigravity quota is exhausted until about 2026-11-07, so Wave 1 and 2 run as Claude subagents | |
 | 1 | L1 to L7 | 2026-11-05-L1-top-bar.md ... L7-code-mode.md | task files written, waiting for Wave 0 | |
 | 2 | L8, L9 | 2026-11-05-<lane>.md | todo | |

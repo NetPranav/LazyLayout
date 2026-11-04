@@ -27,7 +27,7 @@ const CURVE_TABS: readonly SegmentedControlOption<string>[] = [
 ];
 
 const SECTION_CLASS =
-  "ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-t ll:border-border first:ll:border-t-0";
+  "ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-t ll:border-border ll:first:border-t-0";
 const TITLE_CLASS = "ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6";
 const HEADING_CLASS = "ll:text-body ll:font-medium ll:text-primary ll:m-0";
 const BODY_CLASS = "ll-dbody ll:flex ll:flex-col ll:gap-2";
@@ -178,7 +178,7 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps & KeyframeAction
           {/* SVG curve box (design .kcurve) */}
           <svg
             className="ll-kcurve ll:block ll:w-full ll:bg-surface-canvas ll:rounded-sm ll:text-control-primary"
-            style={{ height: "240px" }}
+            style={{ height: "var(--ll-size-menu-users-w)" }}
             viewBox="0 0 272 240"
             preserveAspectRatio="none"
             role="img"

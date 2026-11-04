@@ -39,7 +39,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
         </Button>
       </div>
 
-      <div className="ll:grid ll:grid-cols-[1fr_220px] ll:gap-4 ll:flex-1 ll:min-h-0">
+      <div className="ll:grid ll:grid-cols-curve-graph ll:gap-4 ll:flex-1 ll:min-h-0">
         {/* SVG Bezier Preview Canvas */}
         <div className="ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:relative ll:flex ll:items-center ll:justify-center ll:overflow-hidden ll:p-4">
           <svg

@@ -58,6 +58,20 @@
   /* Accent (Lilac) */
   --color-accent: var(--ll-accent);
 
+  /* Label colours (timeline tracks only) */
+  --color-label-1: var(--ll-label-1);
+  --color-label-1-tint: var(--ll-label-1-tint);
+  --color-label-2: var(--ll-label-2);
+  --color-label-2-tint: var(--ll-label-2-tint);
+  --color-label-3: var(--ll-label-3);
+  --color-label-3-tint: var(--ll-label-3-tint);
+  --color-label-4: var(--ll-label-4);
+  --color-label-4-tint: var(--ll-label-4-tint);
+  --color-label-5: var(--ll-label-5);
+  --color-label-5-tint: var(--ll-label-5-tint);
+  --color-label-6: var(--ll-label-6);
+  --color-label-6-tint: var(--ll-label-6-tint);
+
   /* Semantic hairline border */
   --color-border: var(--ll-border-color);
   --color-border-color: var(--ll-border-color);
@@ -118,6 +132,9 @@
 
   /* Grid columns */
   --grid-template-columns-topbar: 1fr auto 1fr;
+  --grid-template-columns-layout-dual: minmax(0, 1fr) minmax(0, 1fr) 28px;
+  --grid-template-columns-layout-labeled: 100px minmax(0, 1fr);
+  --grid-template-columns-curve-graph: 1fr 220px;
 
   /* Font weights */
   --font-weight-display: var(--ll-text-display-weight);
@@ -197,6 +214,7 @@
   --width-menu-ctx: var(--ll-size-menu-ctx-w);
   --width-menu-users: var(--ll-size-menu-users-w);
   --width-ship-popover: var(--ll-size-ship-popover-w);
+  --width-dialog: var(--ll-size-dialog-w);
   --width-page-dropdown: var(--ll-size-page-dropdown-w);
   --width-sample-surface: var(--ll-size-surface-sample-w);
   --width-viewport-desktop: var(--ll-size-viewport-desktop);
@@ -208,6 +226,39 @@
   --width-logo: var(--ll-size-logo);
   --width-logo-icon: var(--ll-size-logo-icon);
   --width-ruler: var(--ll-size-ruler);
+  --width-banner: calc(100% - var(--ll-spacing-8));
+
+  /* Grid templates */
+  --grid-template-columns-layout-dual: minmax(0, 1fr) minmax(0, 1fr) var(--ll-size-icon-btn);
+  --grid-template-columns-layout-labeled: 100px minmax(0, 1fr);
+  --grid-template-columns-curve-graph: 1fr var(--ll-size-page-dropdown-w);
+
+  /* === lane: L1 top bar === */
+  /* === end lane: L1 === */
+
+  /* === lane: L2 left panel === */
+  /* === end lane: L2 === */
+
+  /* === lane: L3 inspector === */
+  /* === end lane: L3 === */
+
+  /* === lane: L4 canvas === */
+  /* === end lane: L4 === */
+
+  /* === lane: L5 timeline === */
+  /* === end lane: L5 === */
+
+  /* === lane: L6 motion inspector === */
+  /* === end lane: L6 === */
+
+  /* === lane: L7 code === */
+  /* === end lane: L7 === */
+
+  /* === lane: L8 shell === */
+  /* === end lane: L8 === */
+
+  /* === lane: L9 design system === */
+  /* === end lane: L9 === */
 }
 
 /* Default border color for new UI hairline boundaries */

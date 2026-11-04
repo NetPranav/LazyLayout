@@ -7,7 +7,7 @@ import { InsertBox } from "./InsertBox";
 import { AiBox } from "./AiBox";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
-import { AvatarStack, type CollabUser } from "@/editor/components/AvatarStack";
+import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
 import { applyFeel } from "@/editor/motion/feel";
@@ -125,7 +125,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   panelsCollapsed: controlledPanelsCollapsed,
   onTogglePanels: controlledOnTogglePanels,
   onPreview,
-  users,
+  users: _users,
 }) => {
   // Controllable state pairs managed by useControllable helper
   const [showRulers, setShowRulers] = useControllable(
@@ -293,7 +293,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   const connectedPeers = useCollabStore((s) => s.connectedPeers);
   const localUser = useCollabStore((s) => s.localUser);
 
-  const storeUsers: CollabUser[] = React.useMemo(() => {
+  const _storeUsers: CollabUser[] = React.useMemo(() => {
     const peers = Object.values(connectedPeers || {});
     if (peers.length === 0) return [];
     return [
@@ -322,7 +322,6 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     ];
   }, [connectedPeers, localUser]);
 
-  const effectiveUsers = users !== undefined ? users : storeUsers;
 
   // Trigger button references for morph animations
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -565,12 +564,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onPreview={onPreview}
       />
 
-      {/* Collaborator Avatars (.ll-fbar.ll-fpeople) at canvas top-right */}
-      {effectiveUsers && effectiveUsers.length > 0 && (
-        <div className="ll-fbar ll-fpeople" data-collab-stack="true">
-          <AvatarStack users={effectiveUsers} max={3} />
-        </div>
-      )}
+      {/* Collaborator Avatars at canvas top-right (hidden per user decision) */}
 
       {/* Insert Box */}
       <InsertBox

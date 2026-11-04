@@ -3,7 +3,7 @@
 import React, { forwardRef, useRef, useImperativeHandle } from "react";
 import { pressEl } from "../motion/surface";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "default" | "strong" | "primary" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -17,7 +17,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
-    variant = "secondary",
+    variant = "default",
     size = "md",
     iconOnly = false,
     loading = false,
@@ -68,26 +68,32 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   if (size === "sm") {
     sizeStyles = iconOnly
       ? "ll:h-7 ll:w-7 ll:min-w-7 ll:p-0 ll:rounded-sm"
-      : "ll:h-7 ll:px-2.5 ll:gap-1.5 ll:text-small ll:rounded-sm";
+      : "ll:h-7 ll:px-2.5 ll:gap-1.5 ll:text-body ll:rounded-sm";
   } else {
     sizeStyles = iconOnly
       ? "ll:h-8 ll:w-8 ll:min-w-8 ll:p-0 ll:rounded-md"
-      : "ll:h-8 ll:px-3 ll:gap-2 ll:text-small ll:rounded-md";
+      : "ll:h-8 ll:px-3 ll:gap-2 ll:text-body ll:rounded-md";
   }
 
   // Variants & states
   let variantStyles = "";
   if (variant === "primary") {
     variantStyles =
-      "ll:bg-control-primary ll:text-control-primary-fg ll:border-0 ll:hover:opacity-90 ll:active:opacity-80 ll:disabled:opacity-40 ll:disabled:cursor-not-allowed";
-  } else if (variant === "secondary") {
+      "ll:bg-control-primary ll:text-control-primary-fg ll:border-0 ll:hover:opacity-90 ll:active:opacity-80";
+  } else if (variant === "strong") {
     variantStyles =
-      "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:hover:bg-surface-hover ll:active:bg-control-active ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-surface-raised";
+      "ll:bg-surface-panel ll:text-primary ll:border ll:border-primary ll:hover:bg-surface-hover ll:active:bg-control-active";
+  } else if (variant === "ghost") {
+    variantStyles =
+      "ll:bg-transparent ll:text-primary ll:border-0 ll:hover:bg-surface-hover ll:active:bg-control-active";
   } else {
-    // ghost
+    // default (P:36 transparent with border) and secondary alias
     variantStyles =
-      "ll:bg-transparent ll:text-primary ll:border-0 ll:hover:bg-surface-hover ll:active:bg-control-active ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent";
+      "ll:bg-transparent ll:text-primary ll:border ll:border-border ll:hover:bg-surface-hover ll:active:bg-control-active";
   }
+
+  const disabledStyles =
+    "ll:disabled:bg-surface-canvas ll:disabled:text-muted ll:disabled:border-border ll:disabled:cursor-not-allowed ll:disabled:hover:bg-surface-canvas";
 
   const spinnerSize = size === "sm" ? 14 : 16;
 
@@ -100,7 +106,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${className}`}
+      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${disabledStyles} ${className}`}
       {...props}
     >
       {loading ? (

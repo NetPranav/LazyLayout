@@ -42,7 +42,7 @@ export const SaveErrorBanner: React.FC<SaveErrorBannerProps> = ({
     <div
       role="alert"
       data-testid="save-error-banner"
-      className={`ll:fixed ll:bottom-6 ll:left-1/2 ll:-translate-x-1/2 ll:z-50 ll:w-[calc(100%-32px)] ll:max-w-md ll:rounded-md ll:border ll:border-border ll:bg-surface-raised ll:shadow-soft ll:p-3.5 ll:flex ll:items-start ll:gap-3 ll:font-sans ll:text-primary ${className}`}
+      className={`ll:fixed ll:bottom-6 ll:left-1/2 ll:-translate-x-1/2 ll:z-50 ll:w-banner ll:max-w-md ll:rounded-md ll:border ll:border-border ll:bg-surface-raised ll:shadow-soft ll:p-3.5 ll:flex ll:items-start ll:gap-3 ll:font-sans ll:text-primary ${className}`}
     >
       <Icon
         icon={AlertTriangle}

@@ -41,6 +41,8 @@ interface MockLayerData {
   props: Record<string, PropValue | null>;
 }
 
+// sample value: mock layer properties for interactive lab demo
+// sample value: mock layer data below uses literal colours on purpose, to exercise the colour fields.
 const MOCK_LAYERS: Record<MockLayerKind, MockLayerData> = {
   text: {
     id: "headline",

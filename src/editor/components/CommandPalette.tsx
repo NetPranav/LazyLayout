@@ -161,7 +161,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         aria-modal="true"
         aria-label="Command palette"
         onKeyDown={handleKeyDown}
-        className="ll-ins ll:relative ll:w-full ll:max-w-xl ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:flex ll:flex-col ll:outline-none ll:font-sans"
+        className="ll-cmdk ll:relative ll:w-full ll:max-w-dialog ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:flex ll:flex-col ll:outline-none ll:font-sans"
       >
         <div className="ll-lay ll:flex ll:flex-col ll:flex-1">
           {/* Search Input Bar */}
@@ -179,9 +179,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 setSelectedIndex(0);
               }}
               placeholder={placeholder}
-              className="ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:text-primary ll:placeholder:text-muted ll:font-sans"
+              className="ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-title ll:text-primary ll:placeholder:text-muted ll:font-sans"
             />
-            <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:px-1.5 ll:py-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm">
+            <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:tracking-normal">
               ESC
             </kbd>
           </div>
@@ -212,13 +212,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                     onClose();
                                   }}
                                   onMouseEnter={() => setSelectedIndex(idx)}
-                                  className={`ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-9 ll:px-3 ll:rounded-sm ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:transition-colors ll:duration-75 ll:font-sans ${isSelected
-                                      ? "ll:bg-surface-hover ll:text-primary"
+                                  className={`ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:px-3 ll:rounded-sm ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:transition-colors ll:duration-75 ll:font-sans ${isSelected
+                                      ? "ll:bg-select-bg ll:text-select-fg"
                                       : "ll:text-secondary ll:hover:text-primary"
                                     }`}
                                 >
                                   {cmd.icon && (
-                                    <span className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-secondary">
+                                    <span className={`ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ${isSelected ? "ll:text-select-fg" : "ll:text-secondary"}`}>
                                       {cmd.icon}
                                     </span>
                                   )}
@@ -231,7 +231,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             </span>
                           )}
                           {cmd.shortcut && (
-                            <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:px-1.5 ll:py-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm">
+                            <kbd className={`ll:font-mono ll:text-micro ll:tracking-normal ${isSelected ? "ll:text-select-fg" : "ll:text-muted"}`}>
                               {cmd.shortcut}
                             </kbd>
                           )}

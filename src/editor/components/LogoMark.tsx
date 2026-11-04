@@ -21,7 +21,7 @@ export const LogoMark: React.FC<LogoMarkProps> = ({
       height={size}
       aria-hidden="true"
       data-saving={saving ? "true" : undefined}
-      className={`ll:shrink-0 ${saving ? "saving-on" : ""} ${className}`}
+      className={`ll:shrink-0 ${saving ? "ll-saving-on" : ""} ${className}`}
     >
       <path
         className="ll-tro"

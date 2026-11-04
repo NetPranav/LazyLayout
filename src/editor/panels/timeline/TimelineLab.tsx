@@ -176,8 +176,7 @@ export function TimelineLab() {
       {/* Frame 1440 x 900 Simulation Frame */}
       <div
         id="lab-frame"
-        style={{ width: "1440px", height: "640px" }}
-        className="ll-lab-frame ll:bg-surface-canvas ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:flex ll:flex-col ll:overflow-hidden ll:relative"
+        className="ll:w-viewport-desktop ll:h-160 ll-lab-frame ll:bg-surface-canvas ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:flex ll:flex-col ll:overflow-hidden ll:relative"
       >
         {/* Canvas area (mock canvas above timeline) */}
         <div className="ll:flex-1 ll:flex ll:items-center ll:justify-center ll:p-8 ll:relative ll:bg-surface-canvas">

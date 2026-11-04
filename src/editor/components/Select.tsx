@@ -129,7 +129,7 @@ export const Select: React.FC<SelectProps> = ({
   placeholder = "Select...",
   label,
   disabled = false,
-  size = "md",
+  size: _size = "md",
   className = "",
   width,
   "aria-label": ariaLabel,
@@ -792,28 +792,17 @@ export const Select: React.FC<SelectProps> = ({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isOpen, closeDropdown]);
 
-  const heightClass = size === "sm" ? "ll:h-7 ll:px-2 ll:gap-1.5" : "ll:h-row ll:px-2.5 ll:gap-2";
-
   return (
     <div
       className={`ll:inline-flex ll:flex-col ll:gap-1 ll:w-full ${className}`}
       style={width ? { width: typeof width === "number" ? `${width}px` : width } : undefined}
     >
-      {label && (
-        <label
-          htmlFor={selectId}
-          className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none"
-        >
-          {label}
-        </label>
-      )}
-
       <div
         ref={fieldRef}
         data-open={isOpen ? "true" : undefined}
         data-disabled={disabled ? "true" : undefined}
         data-mixed={mixed ? "true" : undefined}
-        className="ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:w-full"
+        className="ll:relative ll:flex ll:items-center ll:w-full"
       >
         <button
           ref={triggerRef}
@@ -827,11 +816,13 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}
-          className={`ll-dd-f ll:relative ll:flex ll:items-center ll:justify-between ll:w-full ll:rounded-sm ll:border ll:border-transparent ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:hover:border-text-muted ${heightClass}`}
+          className={`ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ${
+            isOpen ? "ll:border-primary" : "ll:border-transparent ll:hover:border-muted"
+          } ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:focus-visible:border-primary`}
         >
           <span
             ref={labelRef}
-            className="ll-ddt ll:flex-1 ll:truncate ll:font-mono ll:text-micro ll:text-primary"
+            className="ll-ddt ll:flex-1 ll:truncate ll:font-mono ll:text-micro ll:font-normal ll:tracking-normal ll:text-primary"
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
@@ -839,7 +830,7 @@ export const Select: React.FC<SelectProps> = ({
           <Icon
             icon={ChevronDown}
             size={12}
-            className="ll-dchev ll:text-muted ll:shrink-0 ll:ml-2"
+            className="ll-dchev ll:text-muted ll:shrink-0"
           />
         </button>
       </div>

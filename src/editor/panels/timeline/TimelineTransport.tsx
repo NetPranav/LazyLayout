@@ -116,7 +116,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
       {/* Total Duration Display */}
       <span
         aria-label="Total duration"
-        className="ll-tt ll:font-mono ll:text-micro ll:text-muted ll:whitespace-nowrap ll:select-none -ll:ml-1"
+        className="ll-tt ll:font-mono ll:text-micro ll:text-muted ll:whitespace-nowrap ll:select-none ll:-ml-1"
       >
         / {durationFormatted}
       </span>

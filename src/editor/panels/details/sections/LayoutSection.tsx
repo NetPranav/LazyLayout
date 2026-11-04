@@ -187,7 +187,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
       </div>
 
       {/* Sizing & Clip Row: Width sizing, Height sizing, Clip toggle */}
-      <div className="ll:grid ll:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] ll:gap-2 ll:w-full ll:items-center">
+      <div className="ll:grid ll:grid-cols-layout-dual ll:gap-2 ll:w-full ll:items-center">
         <Select
           size="sm"
           aria-label="Width sizing"
@@ -268,7 +268,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </button>
           </div>
 
-          <div className="ll:grid ll:grid-cols-[100px_minmax(0,1fr)] ll:gap-2 ll:items-start">
+          <div className="ll:grid ll:grid-cols-layout-labeled ll:gap-2 ll:items-start">
             <AlignmentGrid
               selectedIndex={matrixIndex}
               onChange={handleMatrixChange}
@@ -352,7 +352,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             />
           </div>
 
-          <div className="ll:grid ll:grid-cols-[100px_minmax(0,1fr)] ll:gap-2 ll:items-start">
+          <div className="ll:grid ll:grid-cols-layout-labeled ll:gap-2 ll:items-start">
             <AlignmentGrid
               selectedIndex={matrixIndex}
               onChange={handleMatrixChange}
@@ -469,7 +469,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
 
       {/* Padding 4-grid */}
       <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-nano ll:font-mono ll:uppercase ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted">
           Padding
         </span>
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
@@ -514,7 +514,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
 
       {/* Margin 4-grid */}
       <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-nano ll:font-mono ll:uppercase ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted">
           Margin
         </span>
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">

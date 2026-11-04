@@ -34,6 +34,8 @@ import {
   MenuItem,
   MenuSeparator,
   MenuLabel,
+  MenuHeading,
+  ThemeSwatch,
   SubMenu,
   ContextMenu,
   Popover,
@@ -95,6 +97,16 @@ export function ButtonDemo() {
               <Button variant="secondary" size="md">Secondary Medium</Button>
               <Button variant="secondary" size="sm">Secondary Small</Button>
               <Button variant="secondary" size="md" leftIcon={<Icon icon={Frame} size={14} />}>Frame</Button>
+            </div>
+          </div>
+
+          <div className="ll:h-px ll:w-full ll:bg-border" />
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:font-semibold ll:text-primary">Strong (Panel Surface, Text Border)</span>
+            <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
+              <Button variant="strong" size="md">Strong Medium</Button>
+              <Button variant="strong" size="sm">Strong Small</Button>
             </div>
           </div>
 
@@ -799,7 +811,7 @@ export function MenuDemo() {
             </div>
             <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary">
               <span className="ll:flex ll:items-center ll:gap-2">
-                <span className="ll:text-primary font-bold">✓</span>
+                <span className="ll:text-primary ll:font-bold">✓</span>
                 Checked item
               </span>
               <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘R</span>
@@ -882,6 +894,27 @@ export function MenuDemo() {
               </MenuItem>
             ))}
           </Menu>
+        </div>
+      </div>
+
+      {/* 4. MenuHeadings and ThemeSwatches */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          MenuHeadings &amp; ThemeSwatches (Grouped Theme Submenu)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:gap-6">
+          <div className="ll:w-56 ll:rounded-md ll:border ll:border-border ll:bg-surface-raised ll:shadow-soft ll:py-1">
+            <MenuHeading>Light</MenuHeading>
+            <MenuItem icon={<ThemeSwatch theme="paper" />}>Paper</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="white" />}>White</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="warm" />}>Warm</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="lilac" />}>Lilac</MenuItem>
+            <MenuHeading>Dark</MenuHeading>
+            <MenuItem icon={<ThemeSwatch theme="noir" />}>Noir</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="dark" />}>Dark</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="graphite" />}>Graphite</MenuItem>
+            <MenuItem icon={<ThemeSwatch theme="darkroom" />}>Darkroom</MenuItem>
+          </div>
         </div>
       </div>
     </div>
@@ -1182,6 +1215,7 @@ export function PropertyRowDemo() {
    ========================================================================= */
 export function ListRowDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
+  // sample value: sample list items for demo
   const [items, setItems] = useState([
     { id: "1", name: "Solid Fill", value: "#FFFFFF 100%", swatch: "#FFFFFF", visible: true },
     { id: "2", name: "Drop Shadow", value: "4px 16px 50%", icon: <Icon icon={Layers} size={14} />, visible: true },
@@ -1663,16 +1697,19 @@ export function TopBarDemo() {
 
         {/* 5. Ship in All 5 Themes */}
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Ship Across All 5 Themes
+          Ship Across All 8 Themes
         </div>
-        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-5 ll:gap-3">
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-4 ll:gap-3">
           {(
             [
               { id: "paper", label: "Paper (Default)" },
-              { id: "dark", label: "Noir / Dark" },
               { id: "white", label: "White" },
               { id: "warm", label: "Warm" },
               { id: "lilac", label: "Lilac (Accent)" },
+              { id: "noir", label: "Noir" },
+              { id: "dark", label: "Dark" },
+              { id: "graphite", label: "Graphite" },
+              { id: "darkroom", label: "Darkroom" },
             ] as const
           ).map((t) => (
             <div

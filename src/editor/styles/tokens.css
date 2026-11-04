@@ -52,7 +52,6 @@
   --ll-size-icon-btn-sm: 24px;
   --ll-size-toolbar-btn: 40px;
   --ll-size-tall-btn-w: 32px;
-  --ll-size-tall-btn-h: 40px;
   --ll-size-toolbar-w: 443px;
   --ll-size-toolbar-h: 50px;
   --ll-size-zoombar-w: 186px;
@@ -63,14 +62,15 @@
   --ll-size-logo: 32px;
   --ll-size-logo-icon: 20px;
   --ll-size-divider-h: 20px;
-  --ll-size-bottom-motion-h: 260px;
-  --ll-size-bottom-code-h: 200px;
+  --ll-size-bottom-motion-h: clamp(180px, 40vh, 70vh);
+  --ll-size-bottom-code-h: clamp(180px, 40vh, 70vh);
   --ll-size-menu-w: 200px;
   --ll-size-menu-wide-w: 320px;
   --ll-size-menu-ctx-w: 248px;
   --ll-size-menu-users-w: 240px;
   --ll-size-page-dropdown-w: 220px;
   --ll-size-ship-popover-w: 280px;
+  --ll-size-dialog-w: 520px;
   --ll-pad-popover-edge: 12px;
   --ll-gap-popover-y: 4px;
   --ll-size-surface-sample-w: 260px;
@@ -99,12 +99,6 @@
   --ll-shadow-drop-above: inset 0 2px 0 var(--ll-control-primary-bg);
   --ll-shadow-drop-below: inset 0 -2px 0 var(--ll-control-primary-bg);
   --ll-shadow-drop-inside: inset 0 0 0 1px var(--ll-control-primary-bg);
-  --ll-size-menu-ctx-w: 248px;
-  --ll-size-menu-users-w: 240px;
-  --ll-size-surface-sample-w: 260px;
-  --ll-size-viewport-desktop: 1440px;
-  --ll-size-viewport-tablet: 1024px;
-  --ll-size-viewport-mobile: 390px;
 
   /* Typography - Geist & Geist Mono families */
   --ll-font-sans-family: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -121,12 +115,10 @@
   --ll-text-lead-size: 16px;
   --ll-text-lead-line-height: 1.4;
   --ll-text-lead-letter-spacing: -0.01em;
-  --ll-text-lead-weight: 500;
 
   --ll-text-heading-size: 18px;
   --ll-text-heading-line-height: 1.3;
   --ll-text-heading-letter-spacing: -0.01em;
-  --ll-text-heading-weight: 600;
 
   --ll-text-title-size: 14px;
   --ll-text-title-line-height: 1.4;
@@ -151,7 +143,6 @@
   --ll-text-nano-size: 10px;
   --ll-text-nano-line-height: 1.2;
   --ll-text-nano-letter-spacing: 0.08em;
-  --ll-text-nano-weight: 500;
 
   /* Motion tokens from prototype (written by active feel) */
   --ll-ease-pop: ease-out;
@@ -200,11 +191,22 @@
   --ll-thumb-line: #CECDC8;
   --ll-shadow-soft: 0 4px 16px rgba(34,35,30,.1);
   --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
 }
 
 /* ===== OFFICIAL THEME: Dark ===== */
-[data-theme="dark"],
-[data-theme="noir"] {
+[data-theme="dark"] {
   --ll-surface-backdrop: #141414;
   --ll-surface-canvas: #1E1E1E;
   --ll-surface-panel: #2C2C2C;
@@ -232,6 +234,147 @@
   --ll-thumb-line: #444444;
   --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.5);
   --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Graphite ===== */
+[data-theme="graphite"] {
+  --ll-surface-backdrop: #141411;
+  --ll-surface-canvas: #1C1C18;
+  --ll-surface-panel: #262621;
+  --ll-surface-bar: #32322C;
+  --ll-surface-raised: #32322C;
+  --ll-surface-hover: #32322C;
+  --ll-border-color: #42423B;
+  --ll-text-primary: #F4F3EF;
+  --ll-text-secondary: #BDBCB3;
+  --ll-text-muted: #A09F96;
+  --ll-control-primary-bg: #F4F3EF;
+  --ll-control-primary-fg: #22231E;
+  --ll-control-active: #42423B;
+  --ll-select-bg: #32322C;
+  --ll-select-fg: #F4F3EF;
+  --ll-ship-bg: #32322C;
+  --ll-ship-fg: #F4F3EF;
+  --ll-avatar-bg: #42423B;
+  --ll-avatar-fg: #F4F3EF;
+  --ll-board-bg: #32322C;
+  --ll-board-line: #42423B;
+  --ll-placeholder: #262621;
+  --ll-swatch-line: #42423B;
+  --ll-thumb-bg: #1C1C18;
+  --ll-thumb-line: #42423B;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.5);
+  --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Darkroom ===== */
+[data-theme="darkroom"] {
+  --ll-surface-backdrop: #10100B;
+  --ll-surface-canvas: #26261F;
+  --ll-surface-panel: #16160F;
+  --ll-surface-bar: #20201A;
+  --ll-surface-raised: #16160F;
+  --ll-surface-hover: #20201A;
+  --ll-border-color: #34342C;
+  --ll-text-primary: #F4F3EF;
+  --ll-text-secondary: #BDBCB3;
+  --ll-text-muted: #A09F96;
+  --ll-control-primary-bg: #F4F3EF;
+  --ll-control-primary-fg: #22231E;
+  --ll-control-active: #34342C;
+  --ll-select-bg: #2A2A23;
+  --ll-select-fg: #F4F3EF;
+  --ll-ship-bg: #2A2A23;
+  --ll-ship-fg: #F4F3EF;
+  --ll-avatar-bg: #34342C;
+  --ll-avatar-fg: #F4F3EF;
+  --ll-board-bg: #32322A;
+  --ll-board-line: #3E3E35;
+  --ll-placeholder: #26261F;
+  --ll-swatch-line: #3E3E35;
+  --ll-thumb-bg: #20201A;
+  --ll-thumb-line: #34342C;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.6);
+  --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Noir ===== */
+[data-theme="noir"] {
+  --ll-surface-backdrop: #050505;
+  --ll-surface-canvas: #141214;
+  --ll-surface-panel: #080808;
+  --ll-surface-bar: #141214;
+  --ll-surface-raised: #080808;
+  --ll-surface-hover: #1C1A1C;
+  --ll-border-color: #292629;
+  --ll-text-primary: #ECEBE5;
+  --ll-text-secondary: #A3A3A3;
+  --ll-text-muted: #8F8F8F;
+  --ll-control-primary-bg: #ECEBE5;
+  --ll-control-primary-fg: #080808;
+  --ll-control-active: #292629;
+  --ll-select-bg: #292629;
+  --ll-select-fg: #ECEBE5;
+  --ll-ship-bg: #CEB4F5;
+  --ll-ship-fg: #080808;
+  --ll-avatar-bg: #292629;
+  --ll-avatar-fg: #ECEBE5;
+  --ll-board-bg: #1C1A1C;
+  --ll-board-line: #343034;
+  --ll-placeholder: #141214;
+  --ll-swatch-line: #343034;
+  --ll-thumb-bg: #141214;
+  --ll-thumb-line: #292629;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.7);
+  --ll-accent: #CEB4F5;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
 }
 
 /* ===== OFFICIAL THEME: White ===== */
@@ -263,6 +406,18 @@
   --ll-thumb-line: #E3E3E3;
   --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.12);
   --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
 }
 
 /* ===== OFFICIAL THEME: Warm ===== */
@@ -294,6 +449,18 @@
   --ll-thumb-line: #E3DBCC;
   --ll-shadow-soft: 0 4px 16px rgba(16,16,16,.08);
   --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
 }
 
 /* ===== OFFICIAL THEME: Lilac ===== */
@@ -325,9 +492,48 @@
   --ll-thumb-line: #CECDC8;
   --ll-shadow-soft: 0 4px 16px rgba(34,35,30,.1);
   --ll-accent: #CEB4F5;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
 }
 
 /* Shared SVG icon stroke weight from prototype */
 svg {
   stroke-width: 1.5;
 }
+
+/* === lane: L1 top bar === */
+/* === end lane: L1 === */
+
+/* === lane: L2 left panel === */
+/* === end lane: L2 === */
+
+/* === lane: L3 inspector === */
+/* === end lane: L3 === */
+
+/* === lane: L4 canvas === */
+/* === end lane: L4 === */
+
+/* === lane: L5 timeline === */
+/* === end lane: L5 === */
+
+/* === lane: L6 motion inspector === */
+/* === end lane: L6 === */
+
+/* === lane: L7 code === */
+/* === end lane: L7 === */
+
+/* === lane: L8 shell === */
+/* === end lane: L8 === */
+
+/* === lane: L9 design system === */
+/* === end lane: L9 === */

@@ -28,7 +28,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   suffix,
   precision,
   disabled = false,
-  size = "md",
+  size: _size = "md",
   className = "",
   id: propId,
   "aria-label": ariaLabel,
@@ -173,15 +173,14 @@ export const NumberField: React.FC<NumberFieldProps> = ({
     }
   };
 
-  const isSm = size === "sm";
-  const heightStyles = isSm ? "ll:h-7 ll:px-2 ll:gap-1.5" : "ll:h-7.5 ll:px-2.5 ll:gap-2";
+  const heightStyles = "ll:h-7 ll:px-2 ll:gap-2";
 
   return (
     <div
       className={`ll:relative ll:inline-flex ll:w-full ll:items-center ll:box-border ll:rounded-sm ll:border ll:transition-colors ll:duration-100 ll:bg-surface-bar ${heightStyles} ${
         isScrubbing
           ? "ll:border-primary"
-          : "ll:border-border ll:hover:border-muted ll:focus-within:border-primary"
+          : "ll:border-transparent ll:hover:border-muted ll:focus-within:border-primary"
       } ${disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""} ${className}`}
     >
       {/* Scrub label */}
@@ -193,7 +192,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         className={`ll-pf ${
           typeof label !== "string"
             ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
-            : "ll:text-micro ll:font-mono ll:font-medium ll:uppercase ll:tracking-wider"
+            : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
         } ll:select-none ll:shrink-0 ${
           isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
         } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
@@ -215,7 +214,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={handleCommit}
           onKeyDown={handleKeyDown}
-          className={`ll:field-sizing-content ll:min-w-0 ll:max-w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:tracking-normal ll:text-primary ll:placeholder:text-muted ${
+          className={`ll:field-sizing-content ll:min-w-0 ll:max-w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:font-normal ll:tracking-normal ll:text-primary ll:placeholder:text-muted ${
             disabled ? "ll:cursor-not-allowed" : ""
           }`}
         />
@@ -223,7 +222,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         {suffix && (
           <span
             aria-hidden="true"
-            className="ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:shrink-0 ll:select-none"
+            className="ll:text-micro ll:font-mono ll:font-normal ll:tracking-normal ll:text-muted ll:shrink-0 ll:select-none"
           >
             {suffix}
           </span>

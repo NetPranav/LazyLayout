@@ -7,44 +7,44 @@ body {
 
 @layer base {
   /* Scrollbars are hidden everywhere in the new UI, as in the prototype (`*{scrollbar-width:none}`).
-     Menus and popovers are portaled to <body>, outside .editor-root, so the rule keys off the page. */
-  html:has(.editor-root, .design-system-root),
-  html:has(.editor-root, .design-system-root) * {
+     Menus and popovers are portaled to <body>, outside .ll-editor-root, so the rule keys off the page. */
+  html:has(.ll-editor-root, .ll-design-system-root),
+  html:has(.ll-editor-root, .ll-design-system-root) * {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
-  html:has(.editor-root, .design-system-root) *::-webkit-scrollbar {
+  html:has(.ll-editor-root, .ll-design-system-root) *::-webkit-scrollbar {
     display: none;
   }
 
-  .design-system-root,
-  .editor-root {
+  .ll-design-system-root,
+  .ll-editor-root {
     font-family: var(--ll-font-sans);
   }
 
-  .design-system-root,
-  .design-system-root *,
-  .design-system-root *::before,
-  .design-system-root *::after,
-  .editor-root,
-  .editor-root *,
-  .editor-root *::before,
-  .editor-root *::after {
+  .ll-design-system-root,
+  .ll-design-system-root *,
+  .ll-design-system-root *::before,
+  .ll-design-system-root *::after,
+  .ll-editor-root,
+  .ll-editor-root *,
+  .ll-editor-root *::before,
+  .ll-editor-root *::after {
     box-sizing: border-box;
   }
 
-  .design-system-root ul,
-  .design-system-root ol,
-  .editor-root ul,
-  .editor-root ol {
+  .ll-design-system-root ul,
+  .ll-design-system-root ol,
+  .ll-editor-root ul,
+  .ll-editor-root ol {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .design-system-root button,
-  .editor-root button {
+  .ll-design-system-root button,
+  .ll-editor-root button {
     margin: 0;
     padding: 0;
     border: 0;
@@ -74,4 +74,15 @@ body {
   .ll-spinner-spin {
     animation: none;
   }
+}
+
+/* Prototype .micro: 11px mono 500 uppercase 0.08em muted. Use only where the prototype uses .micro. */
+.ll-micro {
+  font-family: var(--ll-font-mono-family);
+  font-size: var(--ll-text-micro-size);
+  line-height: var(--ll-text-micro-line-height);
+  font-weight: var(--ll-text-micro-weight);
+  letter-spacing: var(--ll-text-micro-letter-spacing);
+  text-transform: uppercase;
+  color: var(--ll-text-muted);
 }

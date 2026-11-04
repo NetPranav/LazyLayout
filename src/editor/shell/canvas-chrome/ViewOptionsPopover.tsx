@@ -232,9 +232,9 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
       aria-label="View options"
       tabIndex={-1}
       style={{
-        width: "var(--ll-size-menu-wide-w, 280px)",
+        width: "var(--ll-size-menu-wide-w)",
         top: "var(--ll-spacing-2)",
-        left: "var(--ll-spacing-2-5)",
+        left: "var(--ll-spacing-2)",
         maxHeight: "calc(100% - var(--ll-spacing-6))",
       }}
       className="ll-vpop ll:absolute ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overflow-y-auto ll:overscroll-contain ll:outline-none"

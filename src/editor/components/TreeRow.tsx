@@ -113,7 +113,7 @@ export const TreeRow: React.FC<TreeRowProps> = ({
           ? "ll:bg-select-bg ll:text-select-fg"
           : rangeSelected
             ? "ll:bg-surface-bar ll:text-primary"
-            : "ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
+            : "ll:text-secondary ll:hover:bg-surface-canvas ll:hover:text-primary"
       } ${hidden ? "ll:opacity-40" : ""} ${dropStyles} ${className}`}
     >
       {hasChildren ? (
@@ -160,10 +160,10 @@ export const TreeRow: React.FC<TreeRowProps> = ({
             onBlur={handleRenameCommit}
             onKeyDown={handleKeyDown}
             onClick={(e) => e.stopPropagation()}
-            className="ll:w-full ll:h-6 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-primary ll:rounded-sm ll:outline-none ll:text-small ll:text-primary ll:font-sans"
+            className="ll:w-full ll:h-6 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-primary ll:rounded-sm ll:outline-none ll:text-body ll:text-primary ll:font-sans"
           />
         ) : (
-          <span className="ll:truncate ll:text-small ll:font-normal ll:block">
+          <span className="ll:truncate ll:text-body ll:font-normal ll:block">
             {name}
           </span>
         )}

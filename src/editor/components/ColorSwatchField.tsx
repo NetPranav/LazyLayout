@@ -24,13 +24,13 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
   size = "md",
   className = "",
 }) => {
-  const [draftHex, setDraftHex] = useState(hex.replace(/^#/, "").toUpperCase());
+  const [draftHex, setDraftHex] = useState(hex.replace(/^#/, ""));
   const [prevHex, setPrevHex] = useState(hex);
 
   // Sync draft state with prop during render without useEffect
   if (hex !== prevHex) {
     setPrevHex(hex);
-    setDraftHex(hex.replace(/^#/, "").toUpperCase());
+    setDraftHex(hex.replace(/^#/, ""));
   }
 
   const handleHexBlur = useCallback(() => {
@@ -39,9 +39,9 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
       clean = clean.split("").map((c) => c + c).join("");
     }
     if (clean.length === 6) {
-      onChangeHex(clean.toUpperCase());
+      onChangeHex(clean);
     } else {
-      setDraftHex(hex.replace(/^#/, "").toUpperCase());
+      setDraftHex(hex.replace(/^#/, ""));
     }
   }, [draftHex, hex, onChangeHex]);
 
@@ -49,25 +49,24 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
     if (e.key === "Enter") {
       e.currentTarget.blur();
     } else if (e.key === "Escape") {
-      setDraftHex(hex.replace(/^#/, "").toUpperCase());
+      setDraftHex(hex.replace(/^#/, ""));
       e.currentTarget.blur();
     }
   };
 
-  const isSm = size === "sm";
-  const heightStyles = isSm ? "ll:h-7" : "ll:h-7.5";
-  const swatchSize = isSm ? "ll:w-6 ll:h-6 ll:min-w-6" : "ll:w-7 ll:h-7 ll:min-w-7";
+  const heightStyles = "ll:h-7";
+  const swatchSize = "ll:w-7 ll:h-7 ll:min-w-7";
 
   const cleanHex = hex.startsWith("#") ? hex : `#${hex}`;
 
   return (
-    <div className={`ll:flex ll:items-center ll:gap-1.5 ll:w-full ${className}`}>
-      {/* Color Swatch */}
+    <div className={`ll:flex ll:items-center ll:gap-2 ll:w-full ${className}`}>
+      {/* Color Swatch: 28px, border only, no shadow */}
       <div
         role="presentation"
         title={label ? `${label}: ${cleanHex}` : cleanHex}
         style={{ backgroundColor: cleanHex }}
-        className={`${swatchSize} ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:shadow-soft`}
+        className={`${swatchSize} ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0`}
       />
 
       {/* Hex Input */}
@@ -88,10 +87,10 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
           disabled={disabled}
           aria-label={label ? `${label} hex color` : "Hex color"}
           value={draftHex}
-          onChange={(e) => setDraftHex(e.target.value.toUpperCase())}
+          onChange={(e) => setDraftHex(e.target.value)}
           onBlur={handleHexBlur}
           onKeyDown={handleHexKeyDown}
-          className="ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-small ll:text-primary ll:uppercase"
+          className="ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:tracking-normal ll:font-normal ll:text-primary"
         />
       </div>
 

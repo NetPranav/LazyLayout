@@ -127,7 +127,7 @@ export function EditorShell({
   return (
     <div
       data-mode={actions.mode}
-      className={`editor-root ${actions.isZen ? "ll-zen " : ""}${
+      className={`ll-editor-root editor-root ${actions.isZen ? "ll-zen " : ""}${
         actions.isLeftCollapsed ? "ll-lc " : ""
       }${
         actions.isRightCollapsed ? "ll-rc " : ""

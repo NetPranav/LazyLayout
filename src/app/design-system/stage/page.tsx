@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { StageLab } from "@/editor/stage/StageLab";
-
-const labsEnabled =
-  process.env.NODE_ENV !== "production" ||
-  process.env.NEXT_PUBLIC_ENABLE_LABS === "1";
+import { labsEnabled } from "@/app/editor/labsEnabled";
 
 export const metadata: Metadata = {
   title: "Stage & Artboard Lab | LazyLayout Design System",

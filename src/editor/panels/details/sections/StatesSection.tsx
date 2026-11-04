@@ -46,7 +46,7 @@ export const StatesSection: React.FC<InspectorSectionProps> = ({
           FFFFFF
         </span>
         <div className="ll:flex-1" />
-        <span className="ll:text-nano ll:font-mono ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted">
           100%
         </span>
       </div>

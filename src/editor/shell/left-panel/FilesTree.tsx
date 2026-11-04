@@ -108,7 +108,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
               aria-selected={isSelected}
               aria-expanded={node.hasChildren ? node.expanded : undefined}
               style={{
-                paddingLeft: `calc(16px + ${node.level} * 16px)`,
+                paddingLeft: `calc(${node.level} * var(--ll-size-tree-indent) + var(--ll-size-tree-indent-base))`,
               }}
               onClick={(e) => {
                 onSelect?.(node.id, e);
