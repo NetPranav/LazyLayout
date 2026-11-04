@@ -9,7 +9,7 @@ export const TIMELINE_RULER_HEIGHT_PX = 24;
 
 export const TIMELINE_DEFAULT_DURATION_SEC = 5;
 export const TIMELINE_DEFAULT_FPS = 60;
-export const TIMELINE_DEFAULT_PPS = 140; // Default pixels per second
+export const TIMELINE_DEFAULT_PPS = 100; // Matches prototype ruler: 100px per second (0s-5s at 0-500px)
 
 export const TIMELINE_ZOOM_MIN_PPS = 20;
 export const TIMELINE_ZOOM_MAX_PPS = 1200;
@@ -43,13 +43,13 @@ export const DEFAULT_SAMPLE_TRACKS = [
     clip: {
       id: "clip-headline",
       name: "Headline FadeUp",
-      start: 0.1,
-      duration: 2.4,
+      start: 0.16,
+      duration: 3.4,
     },
     keyframes: [
-      { id: "kf-1", time: 0.14, value: "30px", ease: "power2.out" },
-      { id: "kf-2", time: 1.28, value: "0px", ease: "power2.out" },
-      { id: "kf-3", time: 2.48, value: "0px", ease: "power2.out" },
+      { id: "kf-1", time: 0.2, value: "30px", ease: "power2.out" },
+      { id: "kf-2", time: 1.8, value: "0px", ease: "power2.out" },
+      { id: "kf-3", time: 3.48, value: "0px", ease: "power2.out" },
     ],
   },
   {
@@ -59,12 +59,12 @@ export const DEFAULT_SAMPLE_TRACKS = [
     clip: {
       id: "clip-button",
       name: "Button Entrance",
-      start: 0.7,
-      duration: 2.0,
+      start: 1.0,
+      duration: 2.8,
     },
     keyframes: [
-      { id: "kf-4", time: 0.74, value: "0", ease: "power2.out" },
-      { id: "kf-5", time: 2.65, value: "1", ease: "power2.out" },
+      { id: "kf-4", time: 1.04, value: "0", ease: "power2.out" },
+      { id: "kf-5", time: 3.72, value: "1", ease: "power2.out" },
     ],
   },
   {
@@ -74,12 +74,12 @@ export const DEFAULT_SAMPLE_TRACKS = [
     clip: {
       id: "clip-image",
       name: "Image Scale",
-      start: 1.28,
-      duration: 2.14,
+      start: 1.8,
+      duration: 3.0,
     },
     keyframes: [
-      { id: "kf-6", time: 1.31, value: "0.92", ease: "power2.out" },
-      { id: "kf-7", time: 3.37, value: "1.0", ease: "power2.out" },
+      { id: "kf-6", time: 1.84, value: "0.92", ease: "power2.out" },
+      { id: "kf-7", time: 4.72, value: "1.0", ease: "power2.out" },
     ],
   },
 ] as const;

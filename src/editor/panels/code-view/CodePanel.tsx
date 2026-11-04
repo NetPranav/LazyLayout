@@ -1,18 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import {
-  FileCode,
-  Zap,
-  Layers,
-  FileText,
-  Terminal,
-  Copy,
-  Check,
-  Download,
-} from "lucide-react";
+import { FileCode, Zap, Layers, FileText } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { Button } from "@/editor/components/Button";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -63,7 +53,7 @@ const DEFAULT_FILES: CodeFileTab[] = [
 ];
 
 export const CodePanel: React.FC<CodePanelProps> = ({
-  activeTab: propActiveTab,
+  activeTab = "code",
   onTabChange,
   activeFileId: propActiveFileId,
   onSelectFile,
@@ -77,12 +67,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   className = "",
   style,
 }) => {
-  const [internalActiveTab, setInternalActiveTab] = useState<CodeTab>("code");
   const [internalActiveFileId, setInternalActiveFileId] = useState<string>("Hero.tsx");
   const [copied, setCopied] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  const activeTab = propActiveTab ?? internalActiveTab;
   const activeFileId = propActiveFileId ?? internalActiveFileId;
 
   // Subscribe to real project store for live compiled code when available
@@ -176,23 +164,6 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const displayCode = propCode ?? currentFile.content;
   const displayFileName = propFileName ?? currentFile.name;
 
-  const handleTabClick = (tab: CodeTab) => {
-    if (onTabChange) {
-      onTabChange(tab);
-    } else {
-      setInternalActiveTab(tab);
-    }
-  };
-
-  const handleSelectFile = (fileId: string) => {
-    handleTabClick("code");
-    if (onSelectFile) {
-      onSelectFile(fileId);
-    } else {
-      setInternalActiveFileId(fileId);
-    }
-  };
-
   const handleCopy = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(displayCode);
@@ -241,85 +212,47 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   return (
     <section
+      id="bottom"
       role="region"
-      aria-label="Code & Output Panel"
+      aria-label="Bottom panel"
       className={`ll-bottom ll:flex ll:flex-col ll:w-full ll:h-full ll:min-w-0 ll:bg-surface-panel ll:border-t ll:border-border ll:overflow-hidden ${className}`}
       style={style}
     >
-      {/* 1. Header Toolbar (.ph in prototype) */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:gap-2 ll:px-3 ll:h-11 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:select-none">
-        {/* Left: File Tabs & Console Tab */}
-        <div
-          role="tablist"
-          aria-label="Code and Console tabs"
-          className="ll:flex ll:items-center ll:gap-1 ll:min-w-0 ll:overflow-x-auto"
-        >
-          {liveCompiledFiles.map((file) => {
-            const isSelected = activeTab === "code" && currentFile.id === file.id;
-            return (
-              <button
-                key={file.id}
-                type="button"
-                role="tab"
-                aria-selected={isSelected}
-                tabIndex={isSelected ? 0 : -1}
-                onClick={() => handleSelectFile(file.id)}
-                className={`ll:inline-flex ll:items-center ll:gap-1.5 ll:px-2.5 ll:h-7 ll:rounded-sm ll:text-small ll:font-medium ll:transition-colors ll:duration-75 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${
-                  isSelected
-                    ? "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:shadow-soft"
-                    : "ll:bg-transparent ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:border ll:border-transparent"
-                }`}
-              >
-                {file.icon}
-                <span className="ll:truncate">{file.name}</span>
-              </button>
-            );
-          })}
+      {/* 1. Header Toolbar matching prototype: .bottom .ph (<span class="ctitle">Hero.tsx</span><span class="sp"></span><button class="tg">Copy</button><button class="tg">Export</button>) */}
+      <div className="ll-ph ll:flex ll:items-center ll:justify-between ll:gap-2 ll:px-3 ll:h-header ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:select-none">
+        {/* Left: Component File Name */}
+        <span className="ll-ctitle ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:whitespace-nowrap">
+          {displayFileName}
+        </span>
 
-          {/* Console / Output Log Tab */}
+        {/* Middle: Spacer */}
+        <div className="ll-sp ll:flex-1" />
+
+        {/* Right: Actions (Copy, Export) matching prototype .tg buttons */}
+        <div className="ll:flex ll:items-center ll:gap-1.5 ll:shrink-0">
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === "console"}
-            tabIndex={activeTab === "console" ? 0 : -1}
-            onClick={() => handleTabClick("console")}
-            className={`ll:inline-flex ll:items-center ll:gap-1.5 ll:px-2.5 ll:h-7 ll:rounded-sm ll:text-small ll:font-medium ll:transition-colors ll:duration-75 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${
-              activeTab === "console"
-                ? "ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:shadow-soft"
-                : "ll:bg-transparent ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:border ll:border-transparent"
-            }`}
-          >
-            <Icon icon={Terminal} size={14} />
-            <span>Console</span>
-          </button>
-        </div>
-
-        {/* Right: Actions (Copy, Export) */}
-        <div className="ll:flex ll:items-center ll:gap-1.5 ll:shrink-0">
-          <Button
-            size="sm"
-            variant="ghost"
             onClick={handleCopy}
-            leftIcon={<Icon icon={copied ? Check : Copy} size={14} />}
+            className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             {copied ? "Copied" : "Copy"}
-          </Button>
+          </button>
 
-          <Button
-            size="sm"
-            variant="secondary"
-            loading={isExporting}
+          <button
+            type="button"
             onClick={handleExport}
-            leftIcon={<Icon icon={Download} size={14} />}
+            className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             {isExporting ? "Exporting..." : "Export"}
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* 2. Body Area (.bb in prototype) */}
-      <div className="ll:flex-1 ll:min-h-0 ll:overflow-hidden ll:relative ll:bg-surface-canvas">
-        {activeTab === "code" ? (
+      <div className="ll-bb ll:flex-1 ll:min-h-0 ll:overflow-hidden ll:relative ll:bg-surface-canvas">
+        {activeTab === "console" ? (
+          <ConsoleView className="ll:h-full ll:w-full" />
+        ) : (
           <SyntaxHighlighter
             code={displayCode}
             language={currentFile.language}
@@ -327,10 +260,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             onLineClick={handleLineClickInternal}
             className="ll:h-full ll:w-full"
           />
-        ) : (
-          <ConsoleView className="ll:h-full ll:w-full" />
         )}
       </div>
     </section>
   );
 };
+
+export default CodePanel;

@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState, useId } from "react";
+import React, { useState, useId, useMemo } from "react";
 import { FileText, Plus, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { useLayers } from "@/core/store/useDocumentStore";
+import { useProjectStore } from "@/core/store/useProjectStore";
 import type { CodeInspectorProps, CodePropItem } from "./types";
 
 const DEFAULT_PROPS: CodePropItem[] = [
@@ -58,14 +61,28 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
 }) => {
   const inspectorId = useId();
 
+  // Connect to selection store and project store
+  const selectedElementId = useSelectionStore((s) => s.selectedId);
+  const elements = useLayers();
+  const activePageId = useProjectStore((s) => s.activePageId);
+  const pages = useProjectStore((s) => s.pages);
+
+  const defaultComponentName = useMemo(() => {
+    if (selectedElementId && elements[selectedElementId]) {
+      return elements[selectedElementId].name || "Hero";
+    }
+    const page = pages[activePageId || "page_home"];
+    return page?.name || "Hero";
+  }, [selectedElementId, elements, activePageId, pages]);
+
   // Internal uncontrolled fallbacks
-  const [internalComponentName, setInternalComponentName] = useState("Hero");
+  const [internalComponentName, setInternalComponentName] = useState<string>(defaultComponentName);
   const [internalExportType, setInternalExportType] = useState<"named" | "default">("named");
   const [internalTargetLib, setInternalTargetLib] = useState<"React" | "HTML" | "Vue">("React");
   const [internalStyleType, setInternalStyleType] = useState<"CSS modules" | "Tailwind" | "Inline">("CSS modules");
   const [internalProps, setInternalProps] = useState<CodePropItem[]>(DEFAULT_PROPS);
   const [internalDeps, setInternalDeps] = useState<string[]>([]);
-  const [internalOutputFile, setInternalOutputFile] = useState("Hero.tsx");
+  const [internalOutputFile, setInternalOutputFile] = useState<string>(`${defaultComponentName}.tsx`);
 
   const [newPropName, setNewPropName] = useState("");
   const [newPropType, setNewPropType] = useState("string");
@@ -74,13 +91,13 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   const [newDepName, setNewDepName] = useState("");
   const [isAddingDep, setIsAddingDep] = useState(false);
 
-  const componentName = propComponentName ?? internalComponentName;
+  const componentName = propComponentName ?? (selectedElementId ? defaultComponentName : internalComponentName);
   const exportType = propExportType ?? internalExportType;
   const targetLib = propTargetLib ?? internalTargetLib;
   const styleType = propStyleType ?? internalStyleType;
   const propsList = propPropsList ?? internalProps;
   const dependencies = propDependencies ?? internalDeps;
-  const outputFile = propOutputFile ?? internalOutputFile;
+  const outputFile = propOutputFile ?? (propComponentName ? `${propComponentName}.tsx` : internalOutputFile);
 
   const handleNameChange = (val: string) => {
     if (onComponentNameChange) onComponentNameChange(val);
@@ -159,7 +176,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       className={`ll-code-inspector ll:flex ll:flex-col ll:w-full ll:bg-surface-panel ll:box-border ll:select-none ${className}`}
       style={style}
     >
-      {/* 1. Header: File icon + File name */}
+      {/* 1. Header: File icon + File name matching prototype: .rtop (.rico + .rname) */}
       <div className="ll-rtop ll:flex ll:items-center ll:gap-2 ll:px-4 ll:h-header ll:border-b ll:border-border ll:shrink-0 ll:min-w-0">
         <Icon icon={FileText} size={16} className="ll-rico ll:text-muted ll:shrink-0" />
         <span className="ll-rname ll:text-title ll:font-semibold ll:text-primary ll:truncate">
@@ -169,13 +186,14 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
 
       {/* 2. Component Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
-        <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6">
+        <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
           <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
             Component
           </h3>
+          <div className="ll-sp ll:flex-1" />
         </div>
         <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
-          {/* Name Field */}
+          {/* Name Field with prefix 'Name' */}
           <div
             className="ll-dfield ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-primary ll:rounded-sm ll:min-w-0 ll:transition-colors"
             title="Component name"
@@ -207,10 +225,11 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
 
       {/* 3. Output Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
-        <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6">
+        <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
           <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
             Output
           </h3>
+          <div className="ll-sp ll:flex-1" />
         </div>
         <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
           {/* React / HTML / Vue Segmented Control */}
@@ -231,7 +250,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
             options={STYLE_OPTIONS}
           />
 
-          {/* Output File Name Field */}
+          {/* Output File Name Field with prefix 'File' */}
           <div
             className="ll-dfield ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-primary ll:rounded-sm ll:min-w-0 ll:transition-colors"
             title="File name"

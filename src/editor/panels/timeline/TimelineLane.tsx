@@ -149,11 +149,11 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
       }}
       className={`ll-lane ll:relative ll:h-row ll:border-b ll:border-border/40 ll:select-none ll:cursor-pointer ll:transition-none ${
         isSelectedTrack
-          ? "ll:bg-surface-raised/50"
-          : "ll:hover:bg-surface-hover/25"
+          ? "ll:bg-surface-raised/40"
+          : "ll:hover:bg-surface-hover/20"
       }`}
     >
-      {/* Clip Bar */}
+      {/* Thin grey clip bar (matches prototype: .clip { height: 18px; top: 7px; background: var(--bar); border-radius: 4px; }) */}
       {clip && (
         <div
           data-clip-id={clip.id}
@@ -164,18 +164,14 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
             height: `${CLIP_HEIGHT_PX}px`,
             top: `${CLIP_TOP_PX}px`,
           }}
-          title={`${clip.name || track.name}: ${clip.start.toFixed(2)}s - ${(
+          title={`${track.name}: ${clip.start.toFixed(2)}s - ${(
             clip.start + clip.duration
           ).toFixed(2)}s`}
-          className="ll-clip ll:absolute ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:cursor-grab ll:flex ll:items-center ll:px-2 ll:overflow-hidden ll:box-border"
-        >
-          <span className="ll:text-nano ll:font-medium ll:text-muted ll:truncate ll:pointer-events-none">
-            {clip.name || track.name}
-          </span>
-        </div>
+          className="ll-clip ll:absolute ll:rounded-sm ll:bg-surface-bar ll:cursor-grab ll:box-border ll:transition-none"
+        />
       )}
 
-      {/* Keyframe Diamonds */}
+      {/* Black diamond keyframes (matches prototype: .kf { top: 12px; width: 8px; height: 8px; background: var(--ctl); transform: rotate(45deg); } .kf.sel { top: 11px; width: 10px; height: 10px; }) */}
       {track.keyframes.map((kf) => {
         const isSelected = selectedKeyframeId === kf.id;
         const size = isSelected
@@ -208,11 +204,9 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               height: `${size}px`,
               transform: `rotate(${KEYFRAME_ROTATION_DEG}deg)`,
             }}
-            className={`ll-kf ll:absolute ll:bg-control-primary ll:cursor-grab ll:transition-none ll:p-0 ll:border-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-              isSelected
-                ? "ll-kf-sel ll:ring-2 ll:ring-primary"
-                : "ll:hover:scale-125"
-            }`}
+            className={`ll-kf ${
+              isSelected ? "ll-kf-sel ll:ring-1 ll:ring-primary" : ""
+            } ll:absolute ll:bg-control-primary ll:cursor-grab ll:transition-none ll:p-0 ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary`}
           />
         );
       })}

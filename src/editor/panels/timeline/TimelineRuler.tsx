@@ -13,7 +13,7 @@ export interface TimelineRulerProps {
   onSeek: (timeSec: number) => void;
 }
 
-const STEP_CANDIDATES = [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60] as const;
+const STEP_CANDIDATES = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60] as const;
 
 function calculateTickStep(pixelsPerSecond: number): number {
   for (const step of STEP_CANDIDATES) {
@@ -21,7 +21,7 @@ function calculateTickStep(pixelsPerSecond: number): number {
       return step;
     }
   }
-  return 60;
+  return 1;
 }
 
 export const TimelineRuler: React.FC<TimelineRulerProps> = ({
@@ -89,13 +89,13 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
         height: `${TIMELINE_RULER_HEIGHT_PX}px`,
         width: `${contentWidth}px`,
       }}
-      className="ll-truler ll:relative ll:border-b ll:border-border ll:bg-surface-panel ll:cursor-pointer ll:select-none ll:shrink-0 ll:overflow-hidden"
+      className="ll-truler ll:relative ll:h-6 ll:border-b ll:border-border ll:bg-surface-panel ll:cursor-pointer ll:select-none ll:shrink-0 ll:overflow-hidden"
     >
       {ticks.map((tick) => (
         <span
           key={`tick-${tick.time}`}
           style={{ left: `${tick.left}px` }}
-          className="ll-tick ll:absolute ll:top-1.5 ll:pl-1 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:border-l ll:border-border ll:h-3"
+          className="ll:absolute ll:top-1.5 ll:pl-1 ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:pointer-events-none ll:select-none"
         >
           {tick.label}
         </span>

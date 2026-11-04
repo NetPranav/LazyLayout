@@ -62,7 +62,7 @@ export function useTimelineAnimation(props: TimelinePanelProps) {
   );
   const [internalSelectedKfId, setInternalSelectedKfId] = useState<
     string | null
-  >(null);
+  >("kf-2");
 
   // Active track and keyframe selection
   const activeTracks = props.tracks || internalTracks;

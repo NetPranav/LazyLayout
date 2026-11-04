@@ -8,13 +8,9 @@ import {
   Pause,
   StepForward,
   Repeat,
-  ZoomIn,
-  ZoomOut,
-  Plus,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
-import { Button } from "@/editor/components/Button";
 import type { TimelineViewMode } from "./types";
 
 export interface TimelineTransportProps {
@@ -28,8 +24,8 @@ export interface TimelineTransportProps {
   onStepBack: () => void;
   onStepForward: () => void;
   onToggleLoop: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
   onToggleGraph: () => void;
   onPresets?: () => void;
   onExport?: () => void;
@@ -47,64 +43,66 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   onStepBack,
   onStepForward,
   onToggleLoop,
-  onZoomIn,
-  onZoomOut,
   onToggleGraph,
   onPresets,
   onExport,
-  onAddKeyframe,
 }) => {
   return (
-    <header className="ll-ph ll:h-header ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden">
-      {/* Rewind to 0 / Stop */}
+    <header className="ll-ph ll:h-header ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden ll:select-none">
+      {/* 1. Stop / Rewind to 0 */}
       <IconButton
         aria-label="Stop"
         tooltip="Stop"
-        size="md"
+        size="sm"
         variant="ghost"
         onClick={onStop}
         icon={<Icon icon={SkipBack} size={15} />}
+        className="ll-ib ll:w-7 ll:h-7"
       />
 
-      {/* Step back 1 frame */}
+      {/* 2. Step back 1 frame */}
       <IconButton
         aria-label="Step back"
         tooltip="Step back"
-        size="md"
+        size="sm"
         variant="ghost"
         onClick={onStepBack}
         icon={<Icon icon={StepBack} size={15} />}
+        className="ll-ib ll:w-7 ll:h-7"
       />
 
-      {/* Play / Pause toggle */}
+      {/* 3. Play / Pause toggle */}
       <IconButton
         aria-label={isPlaying ? "Pause" : "Play"}
         tooltip={isPlaying ? "Pause" : "Play"}
-        size="md"
+        size="sm"
         variant="ghost"
         onClick={onTogglePlay}
         icon={<Icon icon={isPlaying ? Pause : Play} size={15} />}
+        className="ll-ib ll:w-7 ll:h-7"
       />
 
-      {/* Step forward 1 frame */}
+      {/* 4. Step forward 1 frame */}
       <IconButton
         aria-label="Step forward"
         tooltip="Step forward"
-        size="md"
+        size="sm"
         variant="ghost"
         onClick={onStepForward}
         icon={<Icon icon={StepForward} size={15} />}
+        className="ll-ib ll:w-7 ll:h-7"
       />
 
-      {/* Loop toggle */}
+      {/* 5. Loop toggle */}
       <IconButton
         aria-label="Loop"
         tooltip="Loop"
-        size="md"
+        size="sm"
         variant="ghost"
         pressed={isLooping}
         onClick={onToggleLoop}
         icon={<Icon icon={Repeat} size={15} />}
+        className="ll-ib ll:w-7 ll:h-7"
       />
 
       {/* Current Time Display */}
@@ -126,68 +124,35 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
       {/* Spacer */}
       <div className="ll-sp ll:flex-1" />
 
-      {/* Zoom controls & Keyframe add */}
-      <div className="ll:flex ll:items-center ll:gap-1 ll:mr-2">
-        <IconButton
-          aria-label="Zoom out"
-          tooltip="Zoom out"
-          size="sm"
-          variant="ghost"
-          onClick={onZoomOut}
-          icon={<Icon icon={ZoomOut} size={13} />}
-        />
-        <IconButton
-          aria-label="Zoom in"
-          tooltip="Zoom in"
-          size="sm"
-          variant="ghost"
-          onClick={onZoomIn}
-          icon={<Icon icon={ZoomIn} size={13} />}
-        />
-        {onAddKeyframe && (
-          <IconButton
-            aria-label="Add keyframe"
-            tooltip="Add keyframe at playhead"
-            size="sm"
-            variant="ghost"
-            onClick={onAddKeyframe}
-            icon={<Icon icon={Plus} size={13} />}
-          />
-        )}
-      </div>
-
-      {/* Action buttons from prototype */}
-      <div className="ll:flex ll:items-center ll:gap-1.5">
-        <Button
-          variant="ghost"
-          size="sm"
+      {/* Prototype Right Buttons: Presets, Graph, Export */}
+      <div className="ll:flex ll:items-center ll:gap-1.5 ll:shrink-0">
+        <button
+          type="button"
           onClick={onPresets}
-          className="ll-tg ll:text-muted ll:hover:text-primary"
+          className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         >
           Presets
-        </Button>
+        </button>
 
-        <Button
-          variant={viewMode === "graph" ? "secondary" : "ghost"}
-          size="sm"
+        <button
+          type="button"
           onClick={onToggleGraph}
-          className={`ll-tg ${
+          className={`ll-tg ll:border-0 ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
             viewMode === "graph"
               ? "ll:text-primary ll:bg-surface-raised"
-              : "ll:text-muted ll:hover:text-primary"
+              : "ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-transparent"
           }`}
         >
           Graph
-        </Button>
+        </button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           onClick={onExport}
-          className="ll-tg ll:text-muted ll:hover:text-primary"
+          className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         >
           Export
-        </Button>
+        </button>
       </div>
     </header>
   );
