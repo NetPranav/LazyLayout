@@ -163,7 +163,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       >
         {/* Select (V) */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Select (V)"
           tooltip="Select (V)"
           pressed={activeTool === "select"}
@@ -175,7 +175,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Hand (H) */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Hand (H)"
           tooltip="Hand (H)"
           pressed={activeTool === "hand"}
@@ -187,13 +187,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Separator */}
         <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-1 ll:bg-border ll:shrink-0"
+          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
           aria-hidden="true"
         />
 
         {/* Frame (F) */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Frame (F)"
           tooltip="Frame (F)"
           pressed={activeTool === "frame"}
@@ -206,7 +206,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Shape Picker */}
         <IconButton
           ref={shapeButtonRef}
-          size="md"
+          size="lg"
           aria-label="Shape"
           tooltip="Shape"
           pressed={activeTool === "shape"}
@@ -223,7 +223,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Text (T) */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Text (T)"
           tooltip="Text (T)"
           pressed={activeTool === "text"}
@@ -235,7 +235,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Image */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Image"
           tooltip="Image"
           pressed={activeTool === "image"}
@@ -247,14 +247,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Separator */}
         <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-1 ll:bg-border ll:shrink-0"
+          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
           aria-hidden="true"
         />
 
         {/* Insert (+) - Disclosure button (keep aria-expanded, drop pressed) */}
         <IconButton
           ref={insertButtonRef}
-          size="md"
+          size="lg"
           aria-label="Insert"
           tooltip="Insert (I)"
           aria-haspopup="dialog"
@@ -268,7 +268,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Ask AI (/) - Disclosure button (keep aria-expanded, drop pressed) */}
         <IconButton
           ref={aiButtonRef}
-          size="md"
+          size="lg"
           aria-label="Ask AI (/)"
           tooltip="Ask AI (/)"
           aria-haspopup="dialog"
@@ -282,13 +282,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Separator */}
         <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-1 ll:bg-border ll:shrink-0"
+          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
           aria-hidden="true"
         />
 
         {/* Preview */}
         <IconButton
-          size="md"
+          size="lg"
           aria-label="Preview"
           tooltip="Preview"
           tabIndex={focusedIndex === 8 ? 0 : -1}
@@ -307,7 +307,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       >
         {/* Toggle Panels - State button (pressed={panelsCollapsed} stays pressed) */}
         <IconButton
-          size="md"
+          size="tall"
           aria-label="Show or hide panels (Ctrl+\)"
           tooltip="Show or hide panels (Ctrl+\)"
           pressed={panelsCollapsed}
@@ -343,7 +343,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Separator */}
         <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-1 ll:bg-border ll:shrink-0"
+          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
           aria-hidden="true"
         />
 
@@ -359,7 +359,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onFocus={() => setFocusedIndex(12)}
           onClick={() => setIsZoomMenuOpen((prev) => !prev)}
           rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
-          className="ll-zb ll:h-7 ll:px-2 ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+          className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
         >
           <span className="ll-mono">{zoomPercentage}</span>
         </Button>

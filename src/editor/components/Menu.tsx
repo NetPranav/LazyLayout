@@ -241,6 +241,9 @@ export const Menu: React.FC<MenuProps> = ({
     const live = sbm.classList.contains("ll-open");
     if (activeSubRowRef.current === rowEl && live) return;
 
+    // A new or swapped submenu starts without a highlight left over from the previous one
+    hlHide(sbm);
+
     if (live || (sbm.hasAttribute("data-lv") && !prefersReducedMotion())) {
       // Retarget open submenu surface (swapSub)
       const oldRow = activeSubRowRef.current;
@@ -349,13 +352,19 @@ export const Menu: React.FC<MenuProps> = ({
         subTimerRef.current = null;
       }
 
+      // A row inside the open flyout moves the flyout's own highlight. The parent row keeps its highlight
+      // so the user can see which item the submenu belongs to.
+      const inFlyout = !!sbm && sbm.contains(rowEl);
+      const surfaceEl = inFlyout && sbm ? sbm : mm;
+
       if (!rowEl.classList.contains("ll-on")) {
         wiggle(rowEl);
       }
-      mm.querySelectorAll(".ll-lay > .ll-on").forEach((x) => x.classList.remove("ll-on"));
+      surfaceEl.querySelectorAll(".ll-lay > .ll-on").forEach((x) => x.classList.remove("ll-on"));
       rowEl.classList.add("ll-on");
       mm.classList.remove("ll-kb");
-      hlMove(mm, rowEl);
+      hlMove(surfaceEl, rowEl);
+      if (inFlyout) return;
 
       const subLive = sbm?.classList.contains("ll-open");
 

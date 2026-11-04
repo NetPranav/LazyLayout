@@ -4,7 +4,7 @@ import React, { forwardRef, useRef, useImperativeHandle } from "react";
 import { pressEl } from "../motion/surface";
 import { Tooltip } from "./Tooltip";
 
-export type IconButtonSize = "sm" | "md";
+export type IconButtonSize = "sm" | "md" | "lg" | "tall";
 export type IconButtonVariant = "ghost" | "secondary" | "subtle";
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,7 +14,7 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   icon?: React.ReactNode;
   /** Optional tooltip text. Defaults to aria-label if true or string. */
   tooltip?: string | boolean;
-  /** Button sizing: sm is 24x24px, md is 28x28px. Default is md. */
+  /** Button sizing: sm is 24x24px, md is 28x28px, lg is 40x40px (canvas tool bars), tall is 32x40px (the panels toggle). Default is md. */
   size?: IconButtonSize;
   /** Visual variant: ghost (transparent), secondary (bordered), subtle (raised). Default is ghost. */
   variant?: IconButtonVariant;
@@ -69,7 +69,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   const sizeStyles =
     size === "sm"
       ? "ll:w-6 ll:h-6 ll:min-w-6 ll:min-h-6 ll:text-title"
-  : "ll:w-7 ll:h-7 ll:min-w-7 ll:min-h-7 ll:text-lead";
+      : size === "lg"
+        ? "ll:w-10 ll:h-10 ll:min-w-10 ll:min-h-10 ll:text-lead"
+        : size === "tall"
+          ? "ll:w-8 ll:h-10 ll:min-w-8 ll:min-h-10 ll:text-lead"
+          : "ll:w-7 ll:h-7 ll:min-w-7 ll:min-h-7 ll:text-lead";
 
 let variantStyles = "";
 if (pressed) {
