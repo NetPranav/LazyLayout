@@ -1,0 +1,669 @@
+[
+ {
+  "text": "Static",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Center",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Fixed",
+  "trig": {
+   "x": 1160.609375,
+   "y": 298,
+   "w": 68.890625,
+   "h": 26
+  },
+  "field": {
+   "w": 121.5,
+   "h": 28,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": {
+   "text": "W",
+   "x": 1146,
+   "w": 6.609375,
+   "h": 14,
+   "font": "\"Geist Mono\", ui-monospace, mo 11px 500",
+   "color": "rgb(102, 102, 95)"
+  },
+  "chevron": {
+   "x": 1237.5,
+   "y": 305,
+   "w": 12,
+   "h": 12,
+   "right": 1249.5,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Fixed",
+  "trig": {
+   "x": 1290.109375,
+   "y": 298,
+   "w": 68.890625,
+   "h": 26
+  },
+  "field": {
+   "w": 121.5,
+   "h": 28,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": {
+   "text": "H",
+   "x": 1275.5,
+   "w": 6.609375,
+   "h": 14,
+   "font": "\"Geist Mono\", ui-monospace, mo 11px 500",
+   "color": "rgb(102, 102, 95)"
+  },
+  "chevron": {
+   "x": 1367,
+   "y": 305,
+   "w": 12,
+   "h": 12,
+   "right": 1379,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Visible",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Visible",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "px",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Border box",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Auto",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Normal",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Auto",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Auto",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Geist",
+  "trig": {
+   "x": 1146,
+   "y": 522,
+   "w": 249,
+   "h": 26
+  },
+  "field": {
+   "w": 287,
+   "h": 28,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 1403,
+   "y": 529,
+   "w": 12,
+   "h": 12,
+   "right": 1415,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "600 Semi",
+  "trig": {
+   "x": 1160.609375,
+   "y": 558,
+   "w": 86.890625,
+   "h": 26
+  },
+  "field": {
+   "w": 139.5,
+   "h": 28,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": {
+   "text": "W",
+   "x": 1146,
+   "w": 6.609375,
+   "h": 14,
+   "font": "\"Geist Mono\", ui-monospace, mo 11px 500",
+   "color": "rgb(102, 102, 95)"
+  },
+  "chevron": {
+   "x": 1255.5,
+   "y": 565,
+   "w": 12,
+   "h": 12,
+   "right": 1267.5,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Clip",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Normal",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ },
+ {
+  "text": "Swap",
+  "trig": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "field": {
+   "w": 0,
+   "h": 0,
+   "pad": "8px 8px",
+   "bg": "rgb(238, 237, 232)",
+   "radius": "4px",
+   "border": "1px rgba(0, 0, 0, 0)",
+   "gap": "8px"
+  },
+  "font": "\"Geist Mono\", ui-monospace, monospace | 11px | 400",
+  "color": "rgb(34, 35, 30)",
+  "bgTrig": "rgba(0, 0, 0, 0)",
+  "radius": "0px",
+  "padding": "0px",
+  "prefix": null,
+  "chevron": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "right": 0,
+   "color": "rgb(102, 102, 95)"
+  }
+ }
+]
+OPEN {
+ "trigger": "Fixed",
+ "opts": {
+  "texts": [
+   "Fixed",
+   "Hug",
+   "Fill"
+  ],
+  "rowH": 28,
+  "rowFont": "Geist, system-ui, sans-serif 12px 400",
+  "rowColor": "rgb(34, 35, 30)",
+  "menuW": 122,
+  "menuH": 94.03125,
+  "checkVisible": "1",
+  "checkBox": {
+   "x": 1150,
+   "y": 303.99755859375,
+   "w": 14,
+   "h": 14
+  },
+  "selectedRow": "Fixed"
+ }
+}
+OPEN {
+ "trigger": "Geist",
+ "opts": {
+  "texts": [
+   "Geist",
+   "Inter",
+   "Playfair Display",
+   "Roboto",
+   "Open Sans",
+   "Lato",
+   "Montserrat",
+   "Poppins",
+   "Raleway",
+   "Merriweather",
+   "Source Sans 3",
+   "Nunito",
+   "Work Sans",
+   "DM Sans",
+   "DM Serif Display",
+   "Fira Sans",
+   "IBM Plex Sans",
+   "IBM Plex Mono",
+   "JetBrains Mono",
+   "Space Grotesk",
+   "Space Mono",
+   "Manrope",
+   "Outfit",
+   "Sora",
+   "Lora",
+   "Libre Baskerville",
+   "Oswald",
+   "Bebas Neue",
+   "Archivo",
+   "Cormorant Garamond"
+  ],
+  "rowH": 28,
+  "rowFont": "Geist, system-ui, sans-serif 12px 400",
+  "rowColor": "rgb(34, 35, 30)",
+  "menuW": 287,
+  "menuH": 337.96875,
+  "checkVisible": "1",
+  "checkBox": {
+   "x": 1150,
+   "y": 528.0032958984375,
+   "w": 14,
+   "h": 14
+  },
+  "selectedRow": "Geist"
+ }
+}
+OPEN {
+ "trigger": "600 Semi",
+ "opts": {
+  "texts": [
+   "100 Thin",
+   "200 X-Light",
+   "300 Light",
+   "400 Regular",
+   "500 Medium",
+   "600 Semi",
+   "700 Bold",
+   "800 X-Bold",
+   "900 Black"
+  ],
+  "rowH": 28,
+  "rowFont": "Geist, system-ui, sans-serif 12px 400",
+  "rowColor": "rgb(85, 85, 79)",
+  "menuW": 139.984375,
+  "menuH": 261.96875,
+  "checkVisible": "1",
+  "checkBox": {
+   "x": 1150,
+   "y": 564.0032348632812,
+   "w": 14,
+   "h": 14
+  },
+  "selectedRow": "600 Semi"
+ }
+}

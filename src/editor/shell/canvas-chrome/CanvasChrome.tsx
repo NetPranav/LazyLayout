@@ -67,6 +67,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   isAiBoxOpen: controlledIsAiBoxOpen,
   onToggleAiBox: controlledOnToggleAiBox,
   onAiSubmit,
+  onAiExpand,
   onAiStop,
   onAiUndo,
   onAiKeep,
@@ -584,6 +585,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         open={isAiBoxOpen}
         onClose={() => setIsAiBoxOpen(false)}
         onSubmit={onAiSubmit}
+        onExpand={onAiExpand}
         onStop={onAiStop}
         onUndo={onAiUndo}
         onKeep={onAiKeep}

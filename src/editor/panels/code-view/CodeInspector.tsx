@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useId, useMemo } from "react";
-import { FileText, Plus, Minus } from "lucide-react";
+import { FileText, Plus, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Select } from "@/editor/components/Select";
@@ -179,7 +179,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       {/* 1. Header: File icon + File name matching prototype: .rtop (.rico + .rname) */}
       <div className="ll-rtop ll:flex ll:items-center ll:gap-2 ll:px-4 ll:h-header ll:border-b ll:border-border ll:shrink-0 ll:min-w-0">
         <Icon icon={FileText} size={16} className="ll-rico ll:text-muted ll:shrink-0" />
-        <span className="ll-rname ll:text-title ll:font-semibold ll:text-primary ll:truncate">
+        <span className="ll-rname ll:text-heading ll:font-semibold ll:text-primary ll:truncate">
           {outputFile}
         </span>
       </div>
@@ -187,7 +187,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       {/* 2. Component Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
         <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
-          <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
+          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">
             Component
           </h3>
           <div className="ll-sp ll:flex-1" />
@@ -226,7 +226,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       {/* 3. Output Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
         <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
-          <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
+          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">
             Output
           </h3>
           <div className="ll-sp ll:flex-1" />
@@ -272,7 +272,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       {/* 4. Props Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
         <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
-          <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
+          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">
             Props
           </h3>
           <IconButton
@@ -365,7 +365,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
                     size="sm"
                     aria-label={`Remove prop ${prop.name}`}
                     tooltip="Remove prop"
-                    icon={<Icon icon={Minus} size={12} />}
+                    icon={<Icon icon={X} size={12} />}
                     onClick={() => handleDeleteProp(prop.id)}
                   />
                 </div>
@@ -378,7 +378,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
       {/* 5. Dependencies Section */}
       <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3">
         <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:gap-2 ll:min-h-6">
-          <h3 className="ll:text-small ll:font-medium ll:text-primary ll:m-0">
+          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">
             Dependencies
           </h3>
           <IconButton
@@ -433,7 +433,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
                 size="sm"
                 aria-label={`Remove dependency ${dep}`}
                 tooltip="Remove dependency"
-                icon={<Icon icon={Minus} size={12} />}
+                icon={<Icon icon={X} size={12} />}
                 onClick={() => handleDeleteDep(dep)}
               />
             </div>

@@ -42,6 +42,7 @@ export function EditorShell({
   const projectName = useProjectMetaStore((s) => s.projectName);
 
   // Core shell actions and keyboard shortcut layer
+  const [aiPanelOpen, setAiPanelOpen] = React.useState(false);
   const actions = useEditorActions({
     initialMode: "design",
     initialLeftCollapsed: false,
@@ -215,6 +216,7 @@ export function EditorShell({
       >
         {center ?? (
           <CanvasChrome
+            onAiExpand={() => setAiPanelOpen(true)}
             mode={actions.mode}
             activeTool={actions.activeTool}
             onSelectTool={actions.setActiveTool}
@@ -267,7 +269,7 @@ export function EditorShell({
           actions.isZen || actions.isRightCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
         }`}
       >
-        {right ?? <RightPanelConnected mode={actions.mode} />}
+        {right ?? <RightPanelConnected mode={actions.mode} aiOpen={aiPanelOpen} onAiClose={() => setAiPanelOpen(false)} />}
       </div>
 
       {/* 5. Bottom area in "bottom" grid area (motion / code modes) */}

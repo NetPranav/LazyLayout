@@ -44,14 +44,14 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   return (
     <section
       aria-label="AI chat"
-      className={`ll-aichat ll:flex ll:flex-1 ll:flex-col ll:min-h-0 ll:overflow-hidden ${className}`}
+      className={`ll-aichat ll:flex ll:flex-1 ll:flex-col ll:min-h-0 ll:overflow-hidden ll:font-sans ll:text-body ${className}`}
     >
       {/* AI Chat Header */}
       <div className="ll-aichead ll:h-header ll:pl-4 ll:pr-3 ll:flex ll:items-center ll:gap-2 ll:border-b ll:border-border ll:shrink-0">
         <span className="ll-logo ll-aimark ll:text-primary ll:shrink-0">
           <LogoMark size={18} />
         </span>
-        <span className="ll-aitl ll:text-small ll:font-medium ll:text-primary ll:font-sans">
+        <span className="ll-aitl ll:text-body ll:font-medium ll:text-primary ll:font-sans">
           AI
         </span>
 
@@ -75,7 +75,7 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
         {aiMessages.map((msg) => (
           <p
             key={msg.id}
-            className={`ll-aimsg ll:m-0 ll:font-sans ll:text-small ll:leading-relaxed ${
+            className={`ll-aimsg ll:m-0 ll:font-sans ll:text-body ll:leading-normal ${
               msg.role === "user"
                 ? "ll-you ll:text-secondary"
                 : "ll:text-primary"
@@ -100,7 +100,7 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
             placeholder={aiInputPlaceholder}
             aria-label={aiInputPlaceholder.replace(/…$/, "")}
             autoComplete="off"
-            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:px-2.5 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none ll:focus-visible:border-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-all"
+            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:p-0 ll:bg-transparent ll:border-0 ll:font-sans ll:text-body ll:text-primary ll:placeholder:text-muted ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:rounded-sm ll:transition-all"
           />
           <button
             type="submit"

@@ -1,0 +1,102 @@
+[
+ {
+  "trigger": "W Fixed",
+  "opts": {
+   "texts": [
+    "W Fixed",
+    "W Hug",
+    "W Fill"
+   ],
+   "rowH": 28,
+   "rowFont": "Geist, \"Geist Fallback\", Geist 12px 400",
+   "rowColor": "rgb(34, 35, 30)",
+   "menuW": 126,
+   "menuH": 96,
+   "checkVisible": "1",
+   "checkBox": {
+    "x": 1150,
+    "y": 303.9992370605469,
+    "w": 14,
+    "h": 14
+   },
+   "selectedRow": "W Fixed"
+  }
+ },
+ {
+  "trigger": "H Fixed",
+  "opts": {
+   "texts": [
+    "H Fixed",
+    "H Hug",
+    "H Fill"
+   ],
+   "rowH": 28,
+   "rowFont": "Geist, \"Geist Fallback\", Geist 12px 400",
+   "rowColor": "rgb(34, 35, 30)",
+   "menuW": 125.984375,
+   "menuH": 95.984375,
+   "checkVisible": "1",
+   "checkBox": {
+    "x": 1279.5,
+    "y": 304.000732421875,
+    "w": 14,
+    "h": 14
+   },
+   "selectedRow": "H Fixed"
+  }
+ },
+ {
+  "trigger": "Geist",
+  "opts": {
+   "texts": [
+    "Geist",
+    "Inter",
+    "Playfair Display",
+    "Fira Code",
+    "Helvetica"
+   ],
+   "rowH": 28,
+   "rowFont": "Geist, \"Geist Fallback\", Geist 12px 400",
+   "rowColor": "rgb(34, 35, 30)",
+   "menuW": 291,
+   "menuH": 152.015625,
+   "checkVisible": "1",
+   "checkBox": {
+    "x": 1150,
+    "y": 532.9993896484375,
+    "w": 14,
+    "h": 14
+   },
+   "selectedRow": "Geist"
+  }
+ },
+ {
+  "trigger": "W 600 Semi",
+  "opts": {
+   "texts": [
+    "W 100 Thin",
+    "W 200 X-Light",
+    "W 300 Light",
+    "W 400 Regular",
+    "W 500 Medium",
+    "W 600 Semi",
+    "W 700 Bold",
+    "W 800 X-Bold",
+    "W 900 Black"
+   ],
+   "rowH": 28,
+   "rowFont": "Geist, \"Geist Fallback\", Geist 12px 400",
+   "rowColor": "rgb(85, 85, 79)",
+   "menuW": 143.984375,
+   "menuH": 263.96875,
+   "checkVisible": "1",
+   "checkBox": {
+    "x": 1150,
+    "y": 569.0029296875,
+    "w": 14,
+    "h": 14
+   },
+   "selectedRow": "W 600 Semi"
+  }
+ }
+]

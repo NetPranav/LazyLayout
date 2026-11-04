@@ -16,6 +16,8 @@ export interface AiBoxProps {
   open: boolean;
   onClose: () => void;
   onSubmit?: (prompt: string) => void;
+  /** Opens the AI chat view in the right panel with the current prompt. */
+  onExpand?: (prompt: string) => void;
   onStop?: () => void;
   onUndo?: () => void;
   onKeep?: () => void;
@@ -38,6 +40,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
   open,
   onClose,
   onSubmit,
+  onExpand,
   onStop,
   onUndo,
   onKeep,
@@ -297,6 +300,10 @@ export const AiBox: React.FC<AiBoxProps> = ({
               size="sm"
               aria-label="Expand AI"
               tooltip="Expand AI"
+              onClick={() => {
+                onExpand?.(prompt);
+                onClose();
+              }}
               className="ll-aiexpand ll:w-7 ll:h-7 ll:shrink-0 ll:opacity-0 ll:group-hover:opacity-100 ll:focus-visible:opacity-100"
               icon={<Icon icon={Maximize2} size={CANVAS_CHROME_SIZES.iconMd} />}
             />

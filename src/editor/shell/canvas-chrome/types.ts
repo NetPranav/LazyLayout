@@ -47,6 +47,8 @@ export interface CanvasChromeProps {
   isAiBoxOpen?: boolean;
   onToggleAiBox?: (open?: boolean) => void;
   onAiSubmit?: (prompt: string) => void;
+  /** Expand AI: open the AI chat view in the right panel. */
+  onAiExpand?: (prompt: string) => void;
   onAiStop?: () => void;
   onAiUndo?: () => void;
   onAiKeep?: () => void;
