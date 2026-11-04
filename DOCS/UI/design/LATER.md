@@ -32,3 +32,19 @@ Both side panels can be resized. Panels change their layout as they get wider, n
 - Width is remembered per mode.
 
 **Cost:** every Inspector section needs a row layout for each width. Preview needs real layer thumbnails, which is the hardest part. Smaller version: all three right panel layouts, and only List and Icons on the left.
+
+## Liquid glass (parked by the user, 2026-11-04)
+
+This is a future plan, not part of the current redesign. The experiment is in `editor-liquid-glass.html`:
+- Panels float over a full-window canvas.
+- Every surface uses refracting glass, with the technique from Glisse (MIT, `npm glisse`) rebuilt in plain HTML.
+- There's an On/Off switch in View options.
+- The background gradient has been removed.
+
+Open questions for when the user picks it up again:
+- Pill shapes or our current radii.
+- How strong the effect should be.
+- Glass on the whole UI, or only on the floating parts.
+- Whether the app installs `glisse` or ports our own version.
+
+`UI_RULES.md` §1 ("no glass") stays as it is until then.
