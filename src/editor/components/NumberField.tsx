@@ -40,6 +40,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   const [draft, setDraft] = useState<string | null>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const startXRef = useRef(0);
   const startValRef = useRef(0);
   const scrubActiveRef = useRef(false);
@@ -177,7 +178,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
 
   return (
     <div
-      className={`ll:relative ll:inline-flex ll:items-center ll:box-border ll:rounded-sm ll:border ll:transition-colors ll:duration-100 ll:bg-surface-bar ${heightStyles} ${
+      className={`ll:relative ll:inline-flex ll:w-full ll:items-center ll:box-border ll:rounded-sm ll:border ll:transition-colors ll:duration-100 ll:bg-surface-bar ${heightStyles} ${
         isScrubbing
           ? "ll:border-primary"
           : "ll:border-border ll:hover:border-muted ll:focus-within:border-primary"
@@ -200,31 +201,44 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         {label}
       </span>
 
-      <input
-        id={inputId}
-        type="text"
-        inputMode="decimal"
-        disabled={disabled}
-        aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
-        placeholder={isMixed ? "Mixed" : undefined}
-        value={displayedText}
-        onFocus={() => setDraft(displayedText)}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={handleCommit}
-        onKeyDown={handleKeyDown}
-        className={`ll:w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-small ll:text-primary ll:placeholder:text-muted ${
-          disabled ? "ll:cursor-not-allowed" : ""
-        }`}
-      />
+      <div className="ll:inline-flex ll:items-center ll:min-w-0 ll:max-w-full ll:h-full">
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="text"
+          inputMode="decimal"
+          disabled={disabled}
+          aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
+          placeholder={isMixed ? "Mixed" : undefined}
+          value={displayedText}
+          onFocus={() => setDraft(displayedText)}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={handleCommit}
+          onKeyDown={handleKeyDown}
+          className={`ll:field-sizing-content ll:min-w-0 ll:max-w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:tracking-normal ll:text-primary ll:placeholder:text-muted ${
+            disabled ? "ll:cursor-not-allowed" : ""
+          }`}
+        />
 
-      {suffix && (
-        <span
-          aria-hidden="true"
-          className="ll:text-micro ll:font-mono ll:text-muted ll:shrink-0 ll:select-none"
-        >
-          {suffix}
-        </span>
-      )}
+        {suffix && (
+          <span
+            aria-hidden="true"
+            className="ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:shrink-0 ll:select-none"
+          >
+            {suffix}
+          </span>
+        )}
+      </div>
+
+      <div
+        aria-hidden="true"
+        onPointerDown={(e) => {
+          if (disabled || e.button !== 0) return;
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
+        className={`ll:flex-1 ll:self-stretch ll:min-w-0 ${disabled ? "" : "ll:cursor-text"}`}
+      />
     </div>
   );
 };

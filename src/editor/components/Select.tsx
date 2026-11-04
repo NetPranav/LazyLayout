@@ -827,18 +827,18 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}
-          className={`ll-dd-f ll:relative ll:flex ll:items-center ll:justify-between ll:w-full ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:hover:border-text-muted ${heightClass}`}
+          className={`ll-dd-f ll:relative ll:flex ll:items-center ll:justify-between ll:w-full ll:rounded-sm ll:border ll:border-transparent ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:hover:border-text-muted ${heightClass}`}
         >
           <span
             ref={labelRef}
-            className="ll-ddt ll:flex-1 ll:truncate ll:font-sans ll:text-small ll:text-primary"
+            className="ll-ddt ll:flex-1 ll:truncate ll:font-mono ll:text-micro ll:text-primary"
           >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
 
           <Icon
             icon={ChevronDown}
-            size={14}
+            size={12}
             className="ll-dchev ll:text-muted ll:shrink-0 ll:ml-2"
           />
         </button>

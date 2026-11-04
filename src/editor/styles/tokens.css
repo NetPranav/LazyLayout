@@ -123,6 +123,11 @@
   --ll-text-lead-letter-spacing: -0.01em;
   --ll-text-lead-weight: 500;
 
+  --ll-text-heading-size: 18px;
+  --ll-text-heading-line-height: 1.3;
+  --ll-text-heading-letter-spacing: -0.01em;
+  --ll-text-heading-weight: 600;
+
   --ll-text-title-size: 14px;
   --ll-text-title-line-height: 1.4;
   --ll-text-title-letter-spacing: -0.01em;

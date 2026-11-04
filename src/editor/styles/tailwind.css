@@ -70,6 +70,9 @@
   --text-display: var(--ll-text-display-size);
   --text-display--line-height: var(--ll-text-display-line-height);
   --text-display--letter-spacing: var(--ll-text-display-letter-spacing);
+  --text-heading: var(--ll-text-heading-size);
+  --text-heading--line-height: var(--ll-text-heading-line-height);
+  --text-heading--letter-spacing: var(--ll-text-heading-letter-spacing);
   --text-lead: var(--ll-text-lead-size);
   --text-lead--line-height: var(--ll-text-lead-line-height);
   --text-lead--letter-spacing: var(--ll-text-lead-letter-spacing);

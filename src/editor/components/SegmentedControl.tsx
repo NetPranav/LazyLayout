@@ -148,10 +148,7 @@ export function SegmentedControl<T extends string = string>({
   );
 
   const containerSizeStyles = size === "sm" ? "ll:h-7" : "ll:h-9";
-  const itemHeightStyles =
-    size === "sm"
-      ? "ll:h-6 ll:px-2 ll:gap-1.5 ll:text-small"
-      : "ll:h-7.5 ll:px-3 ll:gap-2 ll:text-body";
+  const itemPaddingStyles = size === "sm" ? "ll:px-2 ll:gap-1.5 ll:text-small" : "ll:px-3 ll:gap-2 ll:text-body";
 
   return (
     <div
@@ -159,15 +156,15 @@ export function SegmentedControl<T extends string = string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-disabled={disabled ? "true" : undefined}
-      className={`ll:relative ll:inline-flex ll:items-center ll:box-border ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:p-0.5 ll:gap-0.5 ll:select-none ll:shrink-0 ${containerSizeStyles} ${
+      className={`ll:relative ll:flex ll:w-full ll:items-center ll:box-border ll:border ll:border-border ll:rounded-md ll:p-px ll:gap-px ll:select-none ll:shrink-0 ${containerSizeStyles} ${
         disabled ? "ll:opacity-40 ll:pointer-events-none" : ""
       } ${className}`}
     >
-      {/* Sliding spring active marker */}
+      {/* Sliding spring active marker, covers the selected cell */}
       <div
         ref={markerRef}
         aria-hidden="true"
-        className="ll:absolute ll:top-0.5 ll:bottom-0.5 ll:left-0 ll:bg-surface-raised ll:rounded-sm ll:shadow-soft ll:pointer-events-none ll:hidden"
+        className="ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
       />
 
       {options.map((option, index) => {
@@ -189,10 +186,10 @@ export function SegmentedControl<T extends string = string>({
             aria-label={option.ariaLabel}
             onClick={() => !isItemDisabled && onChange(option.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`ll:relative ll:z-10 ll:inline-flex ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-colors ll:duration-100 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemHeightStyles} ${
+            className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-colors ll:duration-100 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
               isSelected
                 ? "ll:text-primary ll:font-semibold"
-                : "ll:text-secondary ll:hover:text-primary"
+                : "ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-bar"
             } ${isItemDisabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""}`}
           >
             {option.icon}
