@@ -81,8 +81,8 @@ export function ButtonDemo() {
           <div className="ll:flex ll:flex-col ll:gap-2">
             <span className="ll:text-small ll:font-semibold ll:text-primary">Primary (Strongest Neutral Control)</span>
             <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-3">
-              <Button variant="primary" size="md">Primary Medium (32px)</Button>
-              <Button variant="primary" size="sm">Primary Small (28px)</Button>
+              <Button variant="primary" size="md">Primary Medium</Button>
+              <Button variant="primary" size="sm">Primary Small</Button>
               <Button variant="primary" size="md" leftIcon={<Icon icon={Sparkles} size={14} />}>With Icon</Button>
             </div>
           </div>
@@ -114,6 +114,9 @@ export function ButtonDemo() {
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-3">
           <Button variant="secondary">Default</Button>
+          <Button variant="secondary" className="ll:bg-surface-hover ll:text-primary">Hovered</Button>
+          <Button variant="secondary" className="ll:ring-2 ll:ring-primary">Focused</Button>
+          <Button variant="primary">Active</Button>
           <Button variant="secondary" disabled>Disabled</Button>
           <Button variant="secondary" loading={loading} onClick={() => setLoading(!loading)}>
             {loading ? "Loading..." : "Click to Toggle Loading"}
@@ -129,23 +132,68 @@ export function ButtonDemo() {
    ========================================================================= */
 export function IconButtonDemo() {
   const [pressed, setPressed] = useState(false);
+  const [tallPressed, setTallPressed] = useState(false);
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-8">
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">IconButton</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Square Icons, Stroke Weight 1.5, Modest Radius, Tooltips &amp; Pressed Physics
+          Four Standard Sizes (sm: 24px, md: 28px, lg: 40px, tall: 32x40px), Modest Radius, Tooltips &amp; Pressed Physics
         </span>
       </div>
 
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Sizes &amp; Variants
+          Four Standard Sizes (sm, md, lg, tall)
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
+          {/* Size LG (40x40px) */}
           <div className="ll:flex ll:flex-col ll:gap-2">
-            <span className="ll:text-small ll:font-semibold ll:text-primary">Medium (28x28px, Toolbar standard)</span>
+            <div className="ll:flex ll:items-center ll:gap-2">
+              <span className="ll:text-small ll:font-semibold ll:text-primary">Large (40x40px)</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-size-toolbar-btn / Canvas Floating Toolbar Standard</span>
+            </div>
+            <div className="ll:flex ll:items-center ll:gap-3">
+              <IconButton size="lg" aria-label="Select tool" tooltip="Select (V)" icon={<Icon icon={Frame} size={20} />} />
+              <IconButton size="lg" aria-label="Shape tool" tooltip="Rectangle (R)" icon={<Icon icon={Square} size={20} />} />
+              <IconButton size="lg" aria-label="Text tool" tooltip="Text (T)" icon={<Icon icon={Type} size={20} />} />
+              <IconButton size="lg" aria-label="Add component" tooltip="Insert (I)" icon={<Icon icon={Plus} size={20} />} />
+              <IconButton size="lg" aria-label="Preview" tooltip="Preview" icon={<Icon icon={Play} size={20} />} />
+            </div>
+          </div>
+
+          <div className="ll:h-px ll:w-full ll:bg-border" />
+
+          {/* Size TALL (32x40px) */}
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <div className="ll:flex ll:items-center ll:gap-2">
+              <span className="ll:text-small ll:font-semibold ll:text-primary">Tall (32x40px)</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-size-tall-btn-w / Canvas Panels Toggle Standard</span>
+            </div>
+            <div className="ll:flex ll:items-center ll:gap-4">
+              <IconButton
+                size="tall"
+                aria-label="Show or hide panels (Ctrl+\)"
+                tooltip="Toggle panels"
+                pressed={tallPressed}
+                onClick={() => setTallPressed(!tallPressed)}
+                icon={<Icon icon={Sliders} size={20} />}
+              />
+              <span className="ll:text-small ll:text-secondary">
+                State: <strong className="ll:text-primary">{tallPressed ? "Pressed (Active / Panels Hidden)" : "Default (Panels Visible)"}</strong> · Click to toggle
+              </span>
+            </div>
+          </div>
+
+          <div className="ll:h-px ll:w-full ll:bg-border" />
+
+          {/* Size MD (28x28px) */}
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <div className="ll:flex ll:items-center ll:gap-2">
+              <span className="ll:text-small ll:font-semibold ll:text-primary">Medium (28x28px)</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-size-icon-btn / Top Bar &amp; General Chrome Standard</span>
+            </div>
             <div className="ll:flex ll:items-center ll:gap-2">
               <IconButton size="md" aria-label="Select frame" tooltip="Frame (F)" icon={<Icon icon={Frame} size={16} />} />
               <IconButton size="md" aria-label="Add shape" tooltip="Shape (R)" icon={<Icon icon={Square} size={16} />} />
@@ -156,29 +204,63 @@ export function IconButtonDemo() {
 
           <div className="ll:h-px ll:w-full ll:bg-border" />
 
+          {/* Size SM (24x24px) */}
           <div className="ll:flex ll:flex-col ll:gap-2">
-            <span className="ll:text-small ll:font-semibold ll:text-primary">Small (24x24px, Property row standard)</span>
+            <div className="ll:flex ll:items-center ll:gap-2">
+              <span className="ll:text-small ll:font-semibold ll:text-primary">Small (24x24px)</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">--ll-size-icon-btn-sm / Property Inspector &amp; List Rows Standard</span>
+            </div>
             <div className="ll:flex ll:items-center ll:gap-2">
               <IconButton size="sm" aria-label="Add layer" tooltip="Add layer" icon={<Icon icon={Plus} size={14} />} />
               <IconButton size="sm" aria-label="Visibility" tooltip="Toggle visibility" icon={<Icon icon={Eye} size={14} />} />
               <IconButton size="sm" aria-label="Play animation" tooltip="Play" icon={<Icon icon={Play} size={14} />} />
             </div>
           </div>
+        </div>
+
+        {/* All States */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          All Interactive States &amp; Variants
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6">
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:font-semibold ll:text-primary">States (Default, Hover, Focus, Pressed, Disabled)</span>
+            <div className="ll:flex ll:items-center ll:gap-4">
+              <IconButton size="md" aria-label="Default state" tooltip="Default" icon={<Icon icon={Sliders} size={16} />} />
+              <IconButton size="md" aria-label="Hover state" tooltip="Hovered" className="ll:bg-surface-hover ll:text-primary" icon={<Icon icon={Sliders} size={16} />} />
+              <IconButton size="md" aria-label="Focus state" tooltip="Focused" className="ll:ring-2 ll:ring-primary" icon={<Icon icon={Sliders} size={16} />} />
+              <IconButton size="md" aria-label="Pressed state" tooltip="Pressed / Active" pressed={true} icon={<Icon icon={Sliders} size={16} />} />
+              <IconButton size="md" aria-label="Disabled state" tooltip="Disabled" disabled icon={<Icon icon={Sliders} size={16} />} />
+            </div>
+          </div>
 
           <div className="ll:h-px ll:w-full ll:bg-border" />
 
           <div className="ll:flex ll:flex-col ll:gap-2">
-            <span className="ll:text-small ll:font-semibold ll:text-primary">Pressed / Toggled State</span>
+            <span className="ll:text-small ll:font-semibold ll:text-primary">Interactive Toggle (Click to test pressed physics)</span>
             <div className="ll:flex ll:items-center ll:gap-3">
               <IconButton
                 size="md"
-                aria-label="Active selection mode"
+                aria-label="Toggle active mode"
                 tooltip={pressed ? "Toggled On" : "Toggled Off"}
                 pressed={pressed}
                 icon={<Icon icon={Sliders} size={16} />}
                 onClick={() => setPressed(!pressed)}
               />
-              <span className="ll:text-small ll:text-secondary">Click to toggle aria-pressed</span>
+              <span className="ll:text-small ll:text-secondary">
+                Current: <strong className="ll:text-primary">{pressed ? "Active / Pressed" : "Default"}</strong> (Click to toggle)
+              </span>
+            </div>
+          </div>
+
+          <div className="ll:h-px ll:w-full ll:bg-border" />
+
+          <div className="ll:flex ll:flex-col ll:gap-2">
+            <span className="ll:text-small ll:font-semibold ll:text-primary">Variants (Ghost, Secondary, Subtle)</span>
+            <div className="ll:flex ll:items-center ll:gap-4">
+              <IconButton variant="ghost" size="md" aria-label="Ghost variant" tooltip="Ghost (transparent)" icon={<Icon icon={Frame} size={16} />} />
+              <IconButton variant="secondary" size="md" aria-label="Secondary variant" tooltip="Secondary (bordered)" icon={<Icon icon={Frame} size={16} />} />
+              <IconButton variant="subtle" size="md" aria-label="Subtle variant" tooltip="Subtle (bar background)" icon={<Icon icon={Frame} size={16} />} />
             </div>
           </div>
         </div>
@@ -505,7 +587,7 @@ export function SelectDemo() {
 
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Short Select &amp; 30-Font Long List with Search
+          Short Select, 30-Font Searchable List &amp; Disabled State
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-6 ll:max-w-sm">
           <Select
@@ -523,7 +605,7 @@ export function SelectDemo() {
           />
 
           <Select
-            label="Long Font Select (30 Fonts, Search & Bulge)"
+            label="Font family (30 Fonts, Search & Bulge)"
             value={font}
             onChange={setFont}
             searchable={true}
@@ -532,6 +614,16 @@ export function SelectDemo() {
               label: f,
               hint: f === "Geist" || f === "Inter" ? "Sans" : undefined,
             }))}
+          />
+
+          <Select
+            label="Disabled Select (Locked Preset)"
+            value="fixed-default"
+            disabled={true}
+            onChange={() => {}}
+            options={[
+              { value: "fixed-default", label: "Default Locked Scheme" },
+            ]}
           />
         </div>
       </div>
@@ -577,13 +669,11 @@ export function ColorSwatchFieldDemo() {
 }
 
 /* =========================================================================
-   11. MENU DEMO (LOGO MENU, SUBMENUS, LONG SCROLLING ENDBUMP)
+   11. MENU DEMO (LOGO MENU, SUBMENUS, DUAL HIGHLIGHT, ENDBUMP)
    ========================================================================= */
 export function MenuDemo() {
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
   const [longMenuOpen, setLongMenuOpen] = useState(false);
-  const [canvasSize, setCanvasSize] = useState("1440");
-  const [font, setFont] = useState("Geist");
   const logoBtnRef = useRef<HTMLButtonElement>(null);
   const longBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -592,13 +682,140 @@ export function MenuDemo() {
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Menu &amp; SubMenu</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Surf Spring Engine, Single Glide Highlight, Safe Triangle Submenus &amp; Wheel endBump
+          Surf Spring Engine, Dual Submenu Highlight, Safe Triangle Protection &amp; Wheel endBump
         </span>
       </div>
 
+      {/* 1. Static Submenu Dual-Highlight Showcase */}
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          1. Prototype Logo Menu with Submenus
+          Menu with Open Submenu (Parent &amp; Child Dual Highlight)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:text-small ll:text-secondary">
+            Hovering a submenu row highlights the submenu row <strong>and</strong> keeps the parent menu row highlighted simultaneously, giving continuous spatial orientation.
+          </div>
+
+          <div className="ll:relative ll:flex ll:items-start ll:gap-2 ll:p-6 ll:bg-surface-canvas ll:border ll:border-border ll:rounded-md ll:overflow-visible">
+            {/* Parent Menu */}
+            <div className="ll:w-60 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:flex ll:flex-col ll:gap-0.5">
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span className="ll:flex ll:items-center ll:gap-2">
+                  <Icon icon={FileText} size={14} className="ll:text-secondary" />
+                  File
+                </span>
+                <span className="ll:text-micro ll:text-muted">▶</span>
+              </div>
+
+              {/* Active Parent Row with Submenu Indicator */}
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:font-medium ll:bg-surface-hover ll:text-primary ll:cursor-pointer">
+                <span className="ll:flex ll:items-center ll:gap-2">
+                  <Icon icon={Scissors} size={14} className="ll:text-primary" />
+                  Edit
+                </span>
+                <span className="ll:text-micro ll:text-primary">▶</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span className="ll:flex ll:items-center ll:gap-2">
+                  <Icon icon={Grid} size={14} className="ll:text-secondary" />
+                  View
+                </span>
+                <span className="ll:text-micro ll:text-muted">▶</span>
+              </div>
+
+              <div className="ll:h-px ll:w-full ll:bg-border ll:my-1" />
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span className="ll:flex ll:items-center ll:gap-2">
+                  <Icon icon={Sparkles} size={14} className="ll:text-secondary" />
+                  Command Palette
+                </span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘K</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span className="ll:flex ll:items-center ll:gap-2">
+                  <Icon icon={Settings} size={14} className="ll:text-secondary" />
+                  Preferences
+                </span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘,</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-muted ll:opacity-40 ll:cursor-not-allowed">
+                <span>Disabled Action</span>
+                <span className="ll:text-micro ll:font-mono ll:text-muted">⇧⌘D</span>
+              </div>
+            </div>
+
+            {/* Submenu Flyout (positioned alongside active parent row) */}
+            <div className="ll:w-52 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:flex ll:flex-col ll:gap-0.5">
+              {/* Highlighted Submenu Item */}
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:font-medium ll:bg-surface-hover ll:text-primary ll:cursor-pointer">
+                <span>Undo</span>
+                <span className="ll:text-micro ll:font-mono ll:text-primary">⌘Z</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span>Redo</span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⇧⌘Z</span>
+              </div>
+
+              <div className="ll:h-px ll:w-full ll:bg-border ll:my-1" />
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span>Cut</span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘X</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span>Copy</span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘C</span>
+              </div>
+
+              <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+                <span>Paste</span>
+                <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘V</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. All MenuItem States */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          MenuItem States (Default, Hover, Active, Checked, Disabled)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:max-w-md">
+          <div className="ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:p-2 ll:flex ll:flex-col ll:gap-1">
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary">
+              <span>Default row</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌥D</span>
+            </div>
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:font-medium ll:bg-surface-hover ll:text-primary">
+              <span>Hover / Active row</span>
+              <span className="ll:text-micro ll:font-mono ll:text-primary">⏎</span>
+            </div>
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary">
+              <span className="ll:flex ll:items-center ll:gap-2">
+                <span className="ll:text-primary font-bold">✓</span>
+                Checked item
+              </span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘R</span>
+            </div>
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-muted ll:opacity-40 ll:cursor-not-allowed">
+              <span>Disabled item</span>
+              <span className="ll:text-micro ll:font-mono ll:text-muted">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Interactive Live Menus */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Interactive Live Menus
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-wrap ll:items-center ll:gap-4">
           <Button
@@ -667,10 +884,55 @@ export function MenuDemo() {
           </Menu>
         </div>
       </div>
+    </div>
+  );
+}
 
+/* =========================================================================
+   12. CONTEXT MENU DEMO
+   ========================================================================= */
+export function ContextMenuDemo() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-8">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">ContextMenu</h1>
+        <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Pointer-Positioned Menu with Viewport Collision Bounds &amp; Standard Shortcuts
+        </span>
+      </div>
+
+      {/* Static Visual Showcase */}
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          2. Right-Click Area (ContextMenu)
+          Standard Context Menu Surface (248px Wide)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:w-62 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:flex ll:flex-col ll:gap-0.5">
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+              <span>Copy</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘C</span>
+            </div>
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+              <span>Paste</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘V</span>
+            </div>
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+              <span>Duplicate</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌘D</span>
+            </div>
+            <div className="ll:h-px ll:w-full ll:bg-border ll:my-1" />
+            <div className="ll:h-8 ll:px-3 ll:rounded-sm ll:flex ll:items-center ll:justify-between ll:text-small ll:text-primary ll:hover:bg-surface-hover ll:cursor-pointer">
+              <span>Delete layer</span>
+              <span className="ll:text-micro ll:font-mono ll:text-secondary">⌫</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Right-Click Zone */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Interactive Right-Click Target Area
         </div>
         <ContextMenu
           content={
@@ -688,79 +950,7 @@ export function MenuDemo() {
               Right-click anywhere inside this target area
             </span>
             <span className="ll:text-micro ll:text-secondary">
-              Opens the custom spring-animated Context Menu from pointer
-            </span>
-          </div>
-        </ContextMenu>
-      </div>
-
-      <div className="ll:flex ll:flex-col ll:gap-4">
-        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          3. Short Select &amp; Long Font Select (Bulge Test)
-        </div>
-        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-2 ll:gap-6 ll:p-6 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar">
-          <Select
-            label="Canvas size (Short Select)"
-            value={canvasSize}
-            onChange={setCanvasSize}
-            options={[
-              { value: "1440", label: "Desktop", hint: "1440" },
-              { value: "768", label: "Tablet", hint: "768" },
-              { value: "375", label: "Mobile", hint: "375" },
-            ]}
-          />
-
-          <Select
-            label="Font family (30 Fonts, Search & Bulge)"
-            value={font}
-            onChange={setFont}
-            searchable={true}
-            options={PROTOTYPE_FONTS.map((f) => ({
-              value: f,
-              label: f,
-              hint: f === "Geist" || f === "Inter" ? "Sans" : undefined,
-            }))}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================================
-   12. CONTEXT MENU DEMO
-   ========================================================================= */
-export function ContextMenuDemo() {
-  return (
-    <div className="ll:flex ll:flex-col ll:gap-8">
-      <div>
-        <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">ContextMenu</h1>
-        <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Pointer-Positioned Menu with Viewport Collision Bounds
-        </span>
-      </div>
-
-      <div className="ll:flex ll:flex-col ll:gap-4">
-        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Right-Click Zone
-        </div>
-        <ContextMenu
-          content={
-            <>
-              <MenuItem shortcut="⌘C">Copy</MenuItem>
-              <MenuItem shortcut="⌘V">Paste</MenuItem>
-              <MenuItem shortcut="⌘D">Duplicate</MenuItem>
-              <MenuSeparator />
-              <MenuItem shortcut="⌫">Delete layer</MenuItem>
-            </>
-          }
-        >
-          <div className="ll:h-48 ll:w-full ll:rounded-md ll:border ll:border-dashed ll:border-border ll:bg-surface-bar ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2 ll:select-none">
-            <span className="ll:text-small ll:font-medium ll:text-primary">
-              Right-click anywhere inside this target area
-            </span>
-            <span className="ll:text-micro ll:text-secondary">
-              Opens the custom spring-animated Context Menu
+              Opens the spring-animated context menu directly from pointer coordinates
             </span>
           </div>
         </ContextMenu>
@@ -785,6 +975,26 @@ export function PopoverDemo() {
         </span>
       </div>
 
+      {/* Static Visual Showcase */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Popover Surface Anatomy (280px Wide)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
+          <div className="ll:w-70 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-4 ll:flex ll:flex-col ll:gap-3">
+            <div className="ll:flex ll:items-center ll:justify-between ll:border-b ll:border-border ll:pb-2">
+              <span className="ll:text-small ll:font-semibold ll:text-primary">Layer Settings</span>
+              <span className="ll:text-micro ll:text-muted ll:cursor-pointer">✕</span>
+            </div>
+            <div className="ll:flex ll:flex-col ll:gap-3">
+              <TextField label="Name" defaultValue="Rectangle 1" />
+              <Toggle checked={true} onChange={() => {}} label="Visible in canvas" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Trigger */}
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
           Interactive Popover Anchor
@@ -795,7 +1005,7 @@ export function PopoverDemo() {
             variant="secondary"
             onClick={() => setPopOpen(!popOpen)}
           >
-            Open Settings Popover
+            {popOpen ? "Close Settings Popover" : "Open Settings Popover"}
           </Button>
 
           <Popover
@@ -1099,26 +1309,28 @@ export function TreeRowDemo() {
    19. TABS DEMO
    ========================================================================= */
 export function TabsDemo() {
-  const [activeTab, setActiveTab] = useState<"layers" | "assets" | "pages">("layers");
+  const [activeLineTab, setActiveLineTab] = useState<"layers" | "assets" | "pages">("layers");
+  const [activeBoxedTab, setActiveBoxedTab] = useState<"design" | "motion" | "code">("design");
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-8">
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Tabs</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Left Rail Panel Tabs, Sliding Spring Indicator, Keyboard Arrow Navigation
+          Line &amp; Boxed Variants, Sliding Spring Marker, Concentric Radii, Disabled Tab State
         </span>
       </div>
 
       <div className="ll:flex ll:flex-col ll:gap-4">
+        {/* Line Variant */}
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Line Variant (Prototype Left Rail)
+          1. Line Variant (Underline Indicator, Prototype Left Rail)
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:p-4 ll:max-w-md">
           <Tabs
             variant="line"
-            activeTab={activeTab}
-            onChange={setActiveTab}
+            activeTab={activeLineTab}
+            onChange={setActiveLineTab}
             tabs={[
               { id: "layers", label: "Layers", icon: <Icon icon={Layers} size={14} /> },
               { id: "assets", label: "Assets", icon: <Icon icon={Folder} size={14} /> },
@@ -1126,7 +1338,27 @@ export function TabsDemo() {
             ]}
           />
           <div className="ll:pt-4 ll:text-small ll:text-secondary">
-            Viewing active panel: <strong className="ll:text-primary">{activeTab}</strong>
+            Active tab: <strong className="ll:text-primary">{activeLineTab}</strong>
+          </div>
+        </div>
+
+        {/* Boxed Variant */}
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          2. Boxed Variant (Segmented Pill Marker, Modes &amp; Inspector)
+        </div>
+        <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:p-4 ll:max-w-md">
+          <Tabs
+            variant="boxed"
+            activeTab={activeBoxedTab}
+            onChange={setActiveBoxedTab}
+            tabs={[
+              { id: "design", label: "Design", icon: <Icon icon={Square} size={14} /> },
+              { id: "motion", label: "Motion", icon: <Icon icon={Sliders} size={14} /> },
+              { id: "code", label: "Code", icon: <Icon icon={FileCode} size={14} /> },
+            ]}
+          />
+          <div className="ll:pt-4 ll:text-small ll:text-secondary">
+            Active tab: <strong className="ll:text-primary">{activeBoxedTab}</strong>
           </div>
         </div>
       </div>
@@ -1260,7 +1492,7 @@ export function TopBarDemo() {
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">TopBar</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          52px Apple-Level Header, Logo Saving Trace, Mode Tabs, Theme Toggle, Ship Popover &amp; Page Switcher
+          Apple-Level Header, Logo Saving Trace, Mode Tabs, Theme Toggle, Ship Popover &amp; Page Switcher
         </span>
       </div>
 

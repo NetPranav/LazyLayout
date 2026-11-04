@@ -478,6 +478,12 @@ function computeLiveTokensClient(): Record<Theme, Record<string, string>> {
 }
 
 const LAYOUT_SIZES = [
+  { role: "Toolbar button (size lg)", token: "--ll-size-toolbar-btn", value: "40px", description: "Canvas floating tool button (40x40px)" },
+  { role: "Tall button (size tall)", token: "--ll-size-tall-btn-w", value: "32x40px", description: "Panels toggle button (32x40px)" },
+  { role: "Tool bar height", token: "--ll-size-toolbar-h", value: "50px", description: "Center floating tool bar height (443x50px)" },
+  { role: "Tool bar width", token: "--ll-size-toolbar-w", value: "443px", description: "Center floating tool bar fixed width" },
+  { role: "Zoom bar height", token: "--ll-size-zoombar-h", value: "50px", description: "Right floating zoom bar height (186x50px)" },
+  { role: "Zoom bar width", token: "--ll-size-zoombar-w", value: "186px", description: "Right floating zoom bar fixed width" },
   { role: "Top bar height", token: "--ll-size-topbar-h", value: "52px", description: "Fixed height of top bar" },
   { role: "Left panel width", token: "--ll-size-panel-left-w", value: "248px", description: "Standard left tool/layer rail width" },
   { role: "Right panel width", token: "--ll-size-panel-right-w", value: "320px", description: "Standard right inspector panel width" },
@@ -490,7 +496,8 @@ const LAYOUT_SIZES = [
   { role: "Panel zone head", token: "--ll-size-header-h", value: "44px", description: "Header bar height for panels" },
   { role: "Button standard", token: "--ll-size-btn-h", value: "32px", description: "Standard action button height" },
   { role: "Button mini", token: "--ll-size-btn-sm-h", value: "24px", description: "Compact inline tag and action button height" },
-  { role: "Icon button", token: "--ll-size-icon-btn", value: "28px", description: "Toolbar square icon button size" },
+  { role: "Icon button (md)", token: "--ll-size-icon-btn", value: "28px", description: "Standard square icon button size (28x28px)" },
+  { role: "Icon button (sm)", token: "--ll-size-icon-btn-sm", value: "24px", description: "Compact inline square icon button size (24x24px)" },
   { role: "Avatar size", token: "--ll-size-avatar", value: "28px", description: "User avatar dimension" },
   { role: "Mode tab width", token: "--ll-size-mode-tab-w", value: "76px", description: "Top bar mode segment width" },
   { role: "Mode tab height", token: "--ll-size-mode-tab-h", value: "26px", description: "Top bar mode segment height" },
@@ -561,6 +568,7 @@ export function DesignSystemPage() {
   const liveTokens = useSyncExternalStore(subscribeLiveTokens, getLiveTokensSnapshot, getServerLiveTokensSnapshot);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     cachedLiveTokens = computeLiveTokensClient();
@@ -573,6 +581,8 @@ export function DesignSystemPage() {
       const hash = window.location.hash.replace("#", "") as NavSectionId;
       if (ALL_NAV.some((item) => item.id === hash)) {
         setActiveSection(hash);
+        if (mainRef.current) mainRef.current.scrollTop = 0;
+        window.scrollTo(0, 0);
       }
     };
 
@@ -585,7 +595,14 @@ export function DesignSystemPage() {
     setActiveSection(id);
     window.location.hash = id;
     setMobileNavOpen(false);
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+    window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, [activeSection]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, index: number) => {
@@ -606,10 +623,10 @@ export function DesignSystemPage() {
   );
 
   return (
-    <div className="design-system-root ll:min-h-screen ll:w-full ll:bg-surface-canvas ll:text-primary ll:font-sans ll:flex ll:justify-center">
-      <div className="ll:w-full ll:min-h-screen ll:bg-surface-backdrop ll:flex ll:flex-col ll:xl:flex-row ll:border-x ll:border-border ll:relative">
+    <div className="design-system-root ll:h-screen ll:w-full ll:bg-surface-canvas ll:text-primary ll:font-sans ll:flex ll:justify-center ll:overflow-hidden">
+      <div className="ll:w-full ll:h-full ll:bg-surface-backdrop ll:flex ll:flex-col ll:xl:flex-row ll:border-x ll:border-border ll:relative ll:overflow-hidden">
         {/* Mobile Header Bar */}
-        <div className="ll:xl:hidden ll:flex ll:items-center ll:justify-between ll:p-4 ll:border-b ll:border-border ll:bg-surface-panel ll:sticky ll:top-0 ll:z-50">
+        <div className="ll:xl:hidden ll:flex ll:items-center ll:justify-between ll:p-4 ll:border-b ll:border-border ll:bg-surface-panel ll:sticky ll:top-0 ll:z-50 ll:shrink-0">
           <div className="ll:flex ll:items-center ll:gap-2">
             <Button
               variant="ghost"
@@ -631,7 +648,7 @@ export function DesignSystemPage() {
         <aside
           className={`${
             mobileNavOpen ? "ll:flex" : "ll:hidden"
-          } ll:xl:flex ll:w-full ll:xl:w-80 ll:xl:h-full ll:bg-surface-panel ll:xl:order-last ll:border-b ll:xl:border-b-0 ll:xl:border-l ll:border-border ll:flex-col ll:shrink-0 ll:overflow-y-auto ll:max-h-80 ll:xl:max-h-full`}
+          } ll:xl:flex ll:w-full ll:xl:w-80 ll:h-full ll:bg-surface-panel ll:border-b ll:xl:border-b-0 ll:xl:border-r ll:border-border ll:flex-col ll:shrink-0 ll:overflow-y-auto ll:max-h-80 ll:xl:max-h-full`}
         >
           <div className="ll:hidden ll:xl:flex ll:p-4 ll:border-b ll:border-border ll:items-center ll:justify-between ll:gap-2">
             <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
@@ -687,7 +704,7 @@ export function DesignSystemPage() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="ll:flex-1 ll:min-w-0 ll:p-6 ll:sm:p-12 ll:overflow-y-auto">
+        <main ref={mainRef} className="ll:flex-1 ll:min-w-0 ll:h-full ll:p-6 ll:sm:p-12 ll:overflow-y-auto">
           <div className="ll:max-w-3xl ll:mx-auto">
             {/* 1. Foundations */}
             {activeSection === "colors" && (

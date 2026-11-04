@@ -49,6 +49,14 @@
   --ll-size-btn-h: 32px;
   --ll-size-btn-sm-h: 24px;
   --ll-size-icon-btn: 28px;
+  --ll-size-icon-btn-sm: 24px;
+  --ll-size-toolbar-btn: 40px;
+  --ll-size-tall-btn-w: 32px;
+  --ll-size-tall-btn-h: 40px;
+  --ll-size-toolbar-w: 443px;
+  --ll-size-toolbar-h: 50px;
+  --ll-size-zoombar-w: 186px;
+  --ll-size-zoombar-h: 50px;
   --ll-size-avatar: 28px;
   --ll-size-mode-tab-w: 76px;
   --ll-size-mode-tab-h: 26px;

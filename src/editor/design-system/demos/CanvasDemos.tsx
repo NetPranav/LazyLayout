@@ -21,6 +21,9 @@ export function ToolbarDemo() {
   const [zoom, setZoom] = useState(1);
   const [isInsertOpen, setIsInsertOpen] = useState(false);
   const [isAiBoxOpen, setIsAiBoxOpen] = useState(false);
+  const [panelsCollapsed, setPanelsCollapsed] = useState(false);
+  const [canUndo, setCanUndo] = useState(true);
+  const [canRedo, setCanRedo] = useState(false);
   const insertBtnRef = useRef<HTMLButtonElement | null>(null);
   const aiBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -29,15 +32,38 @@ export function ToolbarDemo() {
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Toolbar &amp; Zoom Bar</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Floating Canvas Toolbar (All Tool States, Shape Dropdown, Zoom Controls)
+          Floating Canvas Chrome (Tool Bar 443x50, Zoom Bar 186x50, 40px Buttons &amp; 32x40 Tall Toggle)
         </span>
       </div>
 
+      {/* 1. Exact Dimensions Specification Card */}
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Interactive Floating Canvas Toolbar
+          Layout Geometry &amp; Fixed Sizes
         </div>
-        <div className="ll:relative ll:h-44 ll:rounded-md ll:border ll:border-border ll:bg-surface-canvas ll:p-6 ll:flex ll:items-end ll:justify-center">
+        <div className="ll:grid ll:grid-cols-1 ll:sm:grid-cols-2 ll:gap-4">
+          <div className="ll:p-4 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:flex ll:flex-col ll:gap-1.5">
+            <span className="ll:text-small ll:font-semibold ll:text-primary">Center Tool Bar: 443x50px</span>
+            <span className="ll:text-micro ll:text-secondary">
+              Contains 9 action items with 40px buttons (IconButton size <code className="ll:font-mono">lg</code>), 4px padding, 8px radius (<code className="ll:font-mono">--ll-radius-lg</code>) and soft shadow.
+            </span>
+          </div>
+
+          <div className="ll:p-4 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:flex ll:flex-col ll:gap-1.5">
+            <span className="ll:text-small ll:font-semibold ll:text-primary">Right Zoom Bar: 186x50px</span>
+            <span className="ll:text-micro ll:text-secondary">
+              Contains the Panels toggle (IconButton size <code className="ll:font-mono">tall</code>, 32x40px), Undo/Redo buttons (28px) and Zoom Percentage trigger.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Interactive Canvas Floating Toolbar Stage */}
+      <div className="ll:flex ll:flex-col ll:gap-4">
+        <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+          Interactive Canvas Floating Toolbar (Try Tools, Shapes, Panels Toggle &amp; Zoom)
+        </div>
+        <div className="ll:relative ll:h-48 ll:rounded-md ll:border ll:border-border ll:bg-surface-canvas ll:p-6 ll:flex ll:items-end ll:justify-center">
           <Toolbar
             activeTool={activeTool}
             onSelectTool={setActiveTool}
@@ -50,16 +76,54 @@ export function ToolbarDemo() {
             onToggleAiBox={() => setIsAiBoxOpen((prev) => !prev)}
             aiButtonRef={aiBtnRef}
             zoom={zoom}
-            onZoomIn={() => setZoom((z) => Math.min(4, z + 0.25))}
-            onZoomOut={() => setZoom((z) => Math.max(0.25, z - 0.25))}
+            onZoomIn={() => setZoom((z) => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
+            onZoomOut={() => setZoom((z) => Math.max(0.25, Math.round((z - 0.25) * 100) / 100))}
             onZoom100={() => setZoom(1)}
-            canUndo={true}
-            canRedo={false}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={() => {
+              setCanUndo(false);
+              setCanRedo(true);
+            }}
+            onRedo={() => {
+              setCanUndo(true);
+              setCanRedo(false);
+            }}
+            panelsCollapsed={panelsCollapsed}
+            onTogglePanels={() => setPanelsCollapsed((p) => !p)}
           />
         </div>
-        <span className="ll:text-small ll:text-secondary">
-          Active tool: <strong className="ll:text-primary ll:uppercase">{activeTool}</strong> | Zoom: <strong className="ll:text-primary">{Math.round(zoom * 100)}%</strong>
-        </span>
+
+        {/* Live Status and Interactive Controls */}
+        <div className="ll:flex ll:flex-wrap ll:items-center ll:justify-between ll:gap-4 ll:p-4 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md">
+          <div className="ll:flex ll:items-center ll:gap-3 ll:text-small ll:text-secondary">
+            <span>Active Tool: <strong className="ll:text-primary ll:uppercase">{activeTool}</strong></span>
+            <span>·</span>
+            <span>Zoom: <strong className="ll:text-primary">{Math.round(zoom * 100)}%</strong></span>
+            <span>·</span>
+            <span>Panels: <strong className="ll:text-primary">{panelsCollapsed ? "Hidden (Collapsed)" : "Visible (Open)"}</strong></span>
+          </div>
+
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setCanUndo(!canUndo);
+                setCanRedo(!canRedo);
+              }}
+            >
+              Toggle Undo/Redo Availability
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setPanelsCollapsed(!panelsCollapsed)}
+            >
+              Toggle Panels State
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -76,7 +140,7 @@ export function InsertBoxDemo() {
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">InsertBox</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          520x400 Floating Component Insert Modal (Categories, Search &amp; Wireframe Previews)
+          Floating Component Insert Modal (Categories, Search &amp; Wireframe Previews)
         </span>
       </div>
 
@@ -203,7 +267,7 @@ export function RulersDemo() {
       <div>
         <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Rulers</h1>
         <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          18px Canvas Rulers with Adaptive Zoom Ticks and Origin Corner (.rc0)
+          Canvas Rulers with Adaptive Zoom Ticks and Origin Corner (.rc0)
         </span>
       </div>
 

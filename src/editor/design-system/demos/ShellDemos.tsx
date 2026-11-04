@@ -84,7 +84,7 @@ export function LogoMarkDemo() {
 
           <div className="ll:flex ll:items-center ll:gap-8 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md">
             <div className="ll:flex ll:flex-col ll:items-center ll:gap-2">
-              <span className="ll:text-micro ll:text-secondary ll:uppercase">Standard (20px)</span>
+              <span className="ll:text-micro ll:text-secondary ll:uppercase">Standard Icon Size</span>
               <div className="ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:text-primary">
                 <LogoMark saving={saving} size={20} />
               </div>
@@ -394,7 +394,7 @@ export function LeftPanelHeaderDemo() {
 
       <div className="ll:flex ll:flex-col ll:gap-4">
         <div role="heading" aria-level={2} className="ll:pt-6 ll:border-t ll:border-border ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-          Interactive Header (44px Zone Head)
+          Interactive Left Panel Header (Zone Head)
         </div>
         <div className="ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-6 ll:flex ll:flex-col ll:gap-4">
           <div className="ll:flex ll:items-center ll:gap-4">
