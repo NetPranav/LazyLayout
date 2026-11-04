@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useSelectionInspector } from "./hooks/useSelectionInspector";
-import { PositionSection } from "./sections/PositionSection";
-import { LayoutSection } from "./sections/LayoutSection";
-import { AppearanceSection } from "./sections/AppearanceSection";
-import { TypographySection } from "./sections/TypographySection";
+import { PositionSection, PositionMore } from "./sections/PositionSection";
+import { LayoutSection, LayoutMore } from "./sections/LayoutSection";
+import { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection";
+import { TypographySection, TypographyMore } from "./sections/TypographySection";
 import { FillSection } from "./sections/FillSection";
 import { StrokeSection } from "./sections/StrokeSection";
 import { EffectsSection } from "./sections/EffectsSection";
@@ -13,19 +13,46 @@ import { AnimationSection } from "./sections/AnimationSection";
 import { DataSection } from "./sections/DataSection";
 import { LogicSection } from "./sections/LogicSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
-import { PageSection } from "./sections/PageSection";
+import {
+  PageSectionBody,
+  PageBackgroundBody,
+  ThemeTokensBody,
+  ThemeTokensMore,
+} from "./sections/PageSection";
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
-import { PanelSection } from "@/editor/components/PanelSection";
+import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
 
 /**
  * Returns the array of DesignSectionConfig populated with real inspector field children.
- * Useful when RightPanelFrame needs the 11 section configurations with their bodies.
+ * Useful when RightPanelFrame needs the prototype-compliant section configurations with their bodies.
  */
 export function getInspectorDesignSections(
   inspector: ReturnType<typeof useSelectionInspector>,
   onOpenBlueprint?: () => void
 ): DesignSectionConfig[] {
+  // Empty state: when no element is selected, show the Page inspector sections (prototype parity)
+  if (!inspector.hasSelection) {
+    return [
+      {
+        id: "page",
+        title: "Page",
+        children: <PageSectionBody pageName={inspector.selectionName || "Landing page"} />,
+      },
+      {
+        id: "background",
+        title: "Background",
+        children: <PageBackgroundBody />,
+      },
+      {
+        id: "theme-tokens",
+        title: "Theme & Tokens",
+        children: <ThemeTokensBody />,
+        moreContent: <ThemeTokensMore />,
+      },
+    ];
+  }
+
   const sectionProps = {
     selectedId: inspector.selectedId,
     selectedIds: inspector.selectedIds,
@@ -36,12 +63,28 @@ export function getInspectorDesignSections(
     onUpdateProps: inspector.onUpdateProps,
   };
 
+  const isFrame = inspector.isFrame;
+  const archetype = inspector.primaryLayer?.archetype;
+
   const hasTypography =
     !inspector.primaryLayer ||
-    ["text", "button", "input", "counter", "svgText"].includes(
-      inspector.primaryLayer.archetype
-    ) ||
+    ["text", "button", "input", "counter", "svgText"].includes(archetype || "") ||
     inspector.isMulti;
+
+  const allowsFill =
+    !inspector.primaryLayer ||
+    !["input", "toggle", "divider", "icon", "object3d", "counter"].includes(
+      archetype || ""
+    );
+
+  // References to trigger add actions in child repeatable sections from the section header "+"
+  const fillAddRef: { current?: () => void } = {};
+  const strokeAddRef: { current?: () => void } = {};
+  const effectsAddRef: { current?: () => void } = {};
+  const animAddRef: { current?: () => void } = {};
+  const dataAddRef: { current?: () => void } = {};
+  const logicAddRef: { current?: () => void } = {};
+  const a11yAddRef: { current?: () => void } = {};
 
   return [
     {
@@ -55,16 +98,19 @@ export function getInspectorDesignSections(
           onTidy={inspector.onTidy}
         />
       ),
+      moreContent: <PositionMore {...sectionProps} />,
     },
     {
       id: "layout",
       title: "Layout",
-      children: <LayoutSection {...sectionProps} />,
+      children: <LayoutSection {...sectionProps} isFrame={isFrame} />,
+      moreContent: <LayoutMore {...sectionProps} isFrame={isFrame} />,
     },
     {
       id: "appearance",
       title: "Appearance",
       children: <AppearanceSection {...sectionProps} />,
+      moreContent: <AppearanceMore {...sectionProps} />,
     },
     ...(hasTypography
       ? [
@@ -72,48 +118,63 @@ export function getInspectorDesignSections(
             id: "typography",
             title: "Typography",
             children: <TypographySection {...sectionProps} />,
+            moreContent: <TypographyMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(allowsFill
+      ? [
+          {
+            id: "fill",
+            title: "Fill",
+            onAdd: () => fillAddRef.current?.(),
+            children: <FillSection {...sectionProps} onAddFillRef={fillAddRef} />,
           },
         ]
       : []),
     {
-      id: "fill",
-      title: "Fill",
-      children: <FillSection {...sectionProps} />,
-    },
-    {
       id: "stroke",
       title: "Stroke",
-      children: <StrokeSection {...sectionProps} />,
+      onAdd: () => strokeAddRef.current?.(),
+      children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
     },
     {
       id: "effects",
       title: "Effects",
-      children: <EffectsSection {...sectionProps} />,
+      onAdd: () => effectsAddRef.current?.(),
+      children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
     },
     {
       id: "animation",
       title: "Animation",
-      children: <AnimationSection {...sectionProps} />,
+      onAdd: () => animAddRef.current?.(),
+      children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
     },
     {
       id: "data",
       title: "Data",
-      children: <DataSection {...sectionProps} />,
+      onAdd: () => dataAddRef.current?.(),
+      children: <DataSection {...sectionProps} onAddDataRef={dataAddRef} />,
     },
     {
       id: "logic",
       title: "Logic",
+      onAdd: () => logicAddRef.current?.(),
       children: (
         <LogicSection
           {...sectionProps}
           onOpenBlueprint={onOpenBlueprint}
+          onAddLogicRef={logicAddRef}
         />
       ),
     },
     {
       id: "accessibility",
       title: "Accessibility",
-      children: <AccessibilitySection {...sectionProps} />,
+      onAdd: () => a11yAddRef.current?.(),
+      children: (
+        <AccessibilitySection {...sectionProps} onAddA11yRef={a11yAddRef} />
+      ),
     },
   ];
 }
@@ -124,55 +185,26 @@ export function getInspectorDesignSections(
  */
 export const DetailsInspector: React.FC<DetailsInspectorProps> = ({
   selectedElementId,
-  selectedElementName,
   onOpenBlueprint,
   onDeselect: _onDeselect,
   className = "",
 }) => {
   const inspector = useSelectionInspector({ selectedElementId });
-  const { hasSelection } = inspector;
-
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    position: true,
-    layout: true,
-    appearance: true,
-    typography: true,
-    fill: true,
-    stroke: true,
-    effects: true,
-    animation: true,
-    data: false,
-    logic: false,
-    accessibility: false,
-  });
-
-  const toggleSection = (id: string) => {
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // When no layers are selected, show the canvas page inspector
-  if (!hasSelection) {
-    return (
-      <div className={`ll:flex ll:flex-col ll:p-4 ll:w-full ${className}`}>
-        <PanelSection title="Page Settings" defaultOpen={true}>
-          <PageSection pageName={selectedElementName || "Page 1"} />
-        </PanelSection>
-      </div>
-    );
-  }
-
   const sections = getInspectorDesignSections(inspector, onOpenBlueprint);
 
   return (
-    <div className={`ll:flex ll:flex-col ll:w-full ll:divide-y ll:divide-border ${className}`}>
+    <div className={`ll:flex ll:flex-col ll:w-full ${className}`}>
       {sections.map((sec) => (
-        <PanelSection
+        <RightPanelSection
           key={sec.id}
+          id={sec.id}
           title={sec.title}
-          defaultOpen={openSections[sec.id] ?? sec.defaultOpen ?? true}
+          onAdd={sec.onAdd}
+          moreContent={sec.moreContent}
+          headerAction={sec.headerAction}
         >
           {sec.children}
-        </PanelSection>
+        </RightPanelSection>
       ))}
     </div>
   );

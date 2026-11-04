@@ -1,10 +1,10 @@
 export { DetailsInspector, getInspectorDesignSections } from "./DetailsInspector";
 
 // Individual section components per section id used by RightPanelFrame
-export { PositionSection } from "./sections/PositionSection";
-export { LayoutSection } from "./sections/LayoutSection";
-export { AppearanceSection } from "./sections/AppearanceSection";
-export { TypographySection } from "./sections/TypographySection";
+export { PositionSection, PositionMore } from "./sections/PositionSection";
+export { LayoutSection, LayoutMore } from "./sections/LayoutSection";
+export { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection";
+export { TypographySection, TypographyMore } from "./sections/TypographySection";
 export { FillSection } from "./sections/FillSection";
 export { StrokeSection } from "./sections/StrokeSection";
 export { EffectsSection } from "./sections/EffectsSection";
@@ -12,7 +12,13 @@ export { AnimationSection } from "./sections/AnimationSection";
 export { DataSection } from "./sections/DataSection";
 export { LogicSection } from "./sections/LogicSection";
 export { AccessibilitySection } from "./sections/AccessibilitySection";
-export { PageSection } from "./sections/PageSection";
+export {
+  PageSection,
+  PageSectionBody,
+  PageBackgroundBody,
+  ThemeTokensBody,
+  ThemeTokensMore,
+} from "./sections/PageSection";
 
 // Direct lowercase aliases matching section ids
 export { PositionSection as position } from "./sections/PositionSection";

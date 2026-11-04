@@ -1,19 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Image as ImageIcon } from "lucide-react";
-import { NumberField } from "@/editor/components/NumberField";
-import { Select } from "@/editor/components/Select";
-import { ColorSwatchField } from "@/editor/components/ColorSwatchField";
-import { IconButton } from "@/editor/components/IconButton";
+import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { Button } from "@/editor/components/Button";
-import { RepeatableRow } from "../controls/RepeatableRow";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
-import {
-  INSPECTOR_CONSTANTS,
-  PAINT_TYPE_OPTIONS,
-} from "../constants";
 import type { InspectorSectionProps, FillItem } from "../types";
 
 const DEFAULT_FILL: FillItem = {
@@ -29,19 +19,30 @@ const DEFAULT_FILL: FillItem = {
   imageFit: "fill",
 };
 
-export const FillSection: React.FC<InspectorSectionProps> = ({
+export interface FillSectionProps extends InspectorSectionProps {
+  onAddFillRef?: { current?: () => void };
+}
+
+export const FillSection: React.FC<FillSectionProps> = ({
   getValue,
   onUpdateProp,
+  onAddFillRef,
   className = "",
 }) => {
   // Read existing background color or fills from layer
-  const initialHex = (getValue?.("appearance.background.color") as string) || (getValue?.("backgroundColor") as string) || "FFFFFF";
+  const initialHex =
+    (getValue?.("appearance.background.color") as string) ||
+    (getValue?.("backgroundColor") as string) ||
+    "FFFFFF";
   const cleanHex = initialHex.replace(/^#/, "").toUpperCase();
+  const rawFo = getValue?.("fill.opacity");
+  const initialFo = typeof rawFo === "number" ? rawFo : 100;
 
   const [fills, setFills] = useState<FillItem[]>([
     {
       ...DEFAULT_FILL,
       hex: cleanHex || "FFFFFF",
+      opacity: initialFo,
     },
   ]);
 
@@ -52,6 +53,7 @@ export const FillSection: React.FC<InspectorSectionProps> = ({
     if (visibleFill && visibleFill.type === "solid") {
       onUpdateProp?.("appearance.background.color", `#${visibleFill.hex}`);
       onUpdateProp?.("backgroundColor", `#${visibleFill.hex}`);
+      onUpdateProp?.("fill.opacity", visibleFill.opacity);
     }
   };
 
@@ -71,9 +73,13 @@ export const FillSection: React.FC<InspectorSectionProps> = ({
     };
     const next = [...fills, newFill];
     setFills(next);
-    setActivePopoverId(newId);
     syncPrimaryToStore(next);
   };
+
+  // Expose handleAddFill to parent so section header "+" button calls it
+  if (onAddFillRef) {
+    onAddFillRef.current = handleAddFill;
+  }
 
   const handleUpdateFill = (id: string, patch: Partial<FillItem>) => {
     const next = fills.map((f) => (f.id === id ? { ...f, ...patch } : f));
@@ -94,249 +100,124 @@ export const FillSection: React.FC<InspectorSectionProps> = ({
     syncPrimaryToStore(next);
   };
 
+  if (fills.length === 0) {
+    return null;
+  }
+
   return (
-    <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
-      {/* Add Fill Header Button */}
-      <div className="ll:flex ll:items-center ll:justify-between ll:pb-1">
-        <span className="ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted">
-          Paints
-        </span>
-        <IconButton
-          size="sm"
-          aria-label="Add fill"
-          tooltip="Add fill"
-          onClick={handleAddFill}
-          icon={<Icon icon={Plus} size={14} />}
-        />
-      </div>
+    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:w-full ${className}`}>
+      {fills.map((fill) => {
+        const isDim = Boolean(fill.hidden);
+        return (
+          <div
+            key={fill.id}
+            data-k="fill"
+            className={`ll-dr ll-rr ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-1 ll:rounded-sm ll:hover:bg-surface-bar ll:transition-colors ${
+              isDim ? "ll-rdim ll:opacity-50" : ""
+            }`}
+          >
+            {/* Grip handle */}
+            <button
+              type="button"
+              aria-label="Reorder"
+              title="Reorder"
+              className="ll-grip ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-grab ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+            >
+              <Icon icon={GripVertical} size={12} />
+            </button>
 
-      {/* Repeatable Fills List */}
-      <div className="ll:flex ll:flex-col ll:gap-1.5 ll:w-full">
-        {fills.map((fill) => {
-          const isOpen = activePopoverId === fill.id;
-          const displayHex = fill.hex.replace(/^#/, "").toUpperCase();
-
-          // Lead preview content
-          const leadNode =
-            fill.type === "solid" ? (
+            {/* Lead swatch button */}
+            <button
+              type="button"
+              aria-label="Settings"
+              title="Settings"
+              onClick={() =>
+                setActivePopoverId(activePopoverId === fill.id ? null : fill.id)
+              }
+              className="ll-lead ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+            >
               <span
-                aria-hidden="true"
-                style={{ backgroundColor: `#${displayHex}` }}
-                className="ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-swatch-line ll:shadow-soft"
+                className="ll-dsw ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
+                style={{ backgroundColor: `#${fill.hex}` }}
               />
-            ) : fill.type === "image" ? (
-              <span className="ll:w-5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:bg-surface-bar ll:text-muted">
-                <Icon icon={ImageIcon} size={12} />
-              </span>
-            ) : (
-              <span
-                aria-hidden="true"
-                style={{
-                  background:
-                    fill.stops && fill.stops.length >= 2
-                      ? `linear-gradient(90deg, #${fill.stops[0].hex}, #${fill.stops[1].hex})`
-                      : "var(--ll-border-color)",
-                }}
-                className="ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-swatch-line ll:shadow-soft"
-              />
-            );
+            </button>
 
-          // Summary content
-          const summaryNode =
-            fill.type === "solid" ? (
-              <div className="ll:flex ll:items-center ll:gap-1.5 ll:w-full">
+            {/* Hex and Opacity Fields */}
+            <div className="ll-sum ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
+              <div className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
                 <input
                   type="text"
                   maxLength={6}
                   aria-label="Fill hex"
-                  value={displayHex}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
-                    handleUpdateFill(fill.id, { hex: clean });
-                  }}
-                  className="ll:w-20 ll:h-7 ll:px-2 ll:box-border ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus:border-primary ll:outline-none ll:rounded-sm ll:font-mono ll:text-small ll:text-primary ll:transition-colors"
-                />
-                <NumberField
-                  size="sm"
-                  label=""
-                  aria-label="Fill opacity"
-                  suffix="%"
-                  value={fill.opacity}
-                  min={0}
-                  max={100}
-                  onChange={(v) => handleUpdateFill(fill.id, { opacity: v })}
+                  value={fill.hex}
+                  onChange={(e) =>
+                    handleUpdateFill(fill.id, {
+                      hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
+                    })
+                  }
+                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none"
                 />
               </div>
-            ) : (
-              <div className="ll:flex ll:items-center ll:justify-between ll:w-full ll:gap-1.5">
-                <span className="ll:text-small ll:font-mono ll:text-primary ll:capitalize">
-                  {fill.type}
+
+              <div className="ll-dfield ll:flex ll:items-center ll:w-14 ll:shrink-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  aria-label="Fill opacity"
+                  value={fill.opacity}
+                  onChange={(e) =>
+                    handleUpdateFill(fill.id, {
+                      opacity: Math.max(0, Math.min(100, Number(e.target.value))),
+                    })
+                  }
+                  className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-small ll:text-primary ll:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="ll-sf ll:font-mono ll:text-nano ll:text-muted ll:ml-0.5">
+                  %
                 </span>
-                <NumberField
-                  size="sm"
-                  label=""
-                  aria-label="Fill opacity"
-                  suffix="%"
-                  value={fill.opacity}
-                  min={0}
-                  max={100}
-                  onChange={(v) => handleUpdateFill(fill.id, { opacity: v })}
-                />
               </div>
-            );
+            </div>
 
-          return (
-            <React.Fragment key={fill.id}>
-              <RepeatableRow
-                id={fill.id}
-                isOpen={isOpen}
-                isHidden={fill.hidden}
-                leadContent={leadNode}
-                leadTitle={`${fill.type} settings`}
-                summaryContent={summaryNode}
-                onOpenSettings={() =>
-                  setActivePopoverId((prev) => (prev === fill.id ? null : fill.id))
-                }
-                onToggleHide={() => handleToggleHide(fill.id)}
-                onRemove={() => handleRemoveFill(fill.id)}
-              />
+            {/* Visibility Toggle */}
+            <button
+              type="button"
+              aria-label={fill.hidden ? "Show" : "Hide"}
+              title={fill.hidden ? "Show" : "Hide"}
+              onClick={() => handleToggleHide(fill.id)}
+              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+            >
+              <Icon icon={fill.hidden ? EyeOff : Eye} size={14} />
+            </button>
 
-              {/* Popover Settings */}
-              {isOpen && (
-                <RowSettingsPopover
-                  title="Fill Settings"
-                  isOpen={isOpen}
-                  onClose={() => setActivePopoverId(null)}
-                >
-                  {/* Paint Type Select */}
-                  <Select
-                    size="sm"
-                    label="Type"
-                    aria-label="Paint type"
-                    value={fill.type}
-                    options={PAINT_TYPE_OPTIONS}
-                    onChange={(val) =>
-                      handleUpdateFill(fill.id, {
-                        type: val as FillItem["type"],
-                      })
-                    }
-                  />
+            {/* Remove Button */}
+            <button
+              type="button"
+              aria-label="Remove"
+              title="Remove"
+              onClick={() => handleRemoveFill(fill.id)}
+              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
+            >
+              <Icon icon={Minus} size={14} />
+            </button>
 
-                  {/* Solid Type Settings */}
-                  {fill.type === "solid" && (
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      <ColorSwatchField
-                        size="sm"
-                        hex={fill.hex}
-                        opacity={fill.opacity}
-                        onChangeHex={(hex) => handleUpdateFill(fill.id, { hex })}
-                        onChangeOpacity={(opacity) =>
-                          handleUpdateFill(fill.id, { opacity })
-                        }
-                      />
-                    </div>
-                  )}
-
-                  {/* Gradient Settings */}
-                  {(fill.type === "linear" ||
-                    fill.type === "radial" ||
-                    fill.type === "conic") && (
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      {/* Gradient angle */}
-                      {fill.type !== "radial" && (
-                        <NumberField
-                          size="sm"
-                          label="Angle"
-                          suffix="°"
-                          value={fill.angle ?? 180}
-                          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-                          onChange={(v) => handleUpdateFill(fill.id, { angle: v })}
-                        />
-                      )}
-
-                      {/* Stops list */}
-                      <span className="ll:text-nano ll:font-mono ll:uppercase ll:text-muted">
-                        Stops
-                      </span>
-                      {fill.stops?.map((stop, sIdx) => (
-                        <div
-                          key={stop.id}
-                          className="ll:flex ll:items-center ll:gap-1.5"
-                        >
-                          <span
-                            style={{ backgroundColor: `#${stop.hex}` }}
-                            className="ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0"
-                          />
-                          <input
-                            type="text"
-                            maxLength={6}
-                            aria-label={`Stop ${sIdx + 1} hex`}
-                            value={stop.hex}
-                            onChange={(e) => {
-                              const clean = e.target.value
-                                .replace(/[^0-9A-Fa-f]/g, "")
-                                .toUpperCase();
-                              const nextStops = fill.stops?.map((st, i) =>
-                                i === sIdx ? { ...st, hex: clean } : st
-                              );
-                              handleUpdateFill(fill.id, { stops: nextStops });
-                            }}
-                            className="ll:w-16 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-small ll:text-primary ll:outline-none"
-                          />
-                          <NumberField
-                            size="sm"
-                            label=""
-                            suffix="%"
-                            value={stop.position}
-                            min={0}
-                            max={100}
-                            onChange={(v) => {
-                              const nextStops = fill.stops?.map((st, i) =>
-                                i === sIdx ? { ...st, position: v } : st
-                              );
-                              handleUpdateFill(fill.id, { stops: nextStops });
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Image Settings */}
-                  {fill.type === "image" && (
-                    <div className="ll:flex ll:flex-col ll:gap-2">
-                      <div className="ll:flex ll:items-center ll:justify-between ll:gap-2">
-                        <span className="ll:text-small ll:font-mono ll:text-primary">
-                          {fill.imageName || "asset-hero.jpg"}
-                        </span>
-                        <Button size="sm" variant="secondary">
-                          Replace
-                        </Button>
-                      </div>
-                      <Select
-                        size="sm"
-                        label="Fit"
-                        aria-label="Image fit"
-                        value={fill.imageFit || "fill"}
-                        options={[
-                          { value: "fill", label: "Fill" },
-                          { value: "fit", label: "Fit" },
-                          { value: "crop", label: "Crop" },
-                        ]}
-                        onChange={(val) =>
-                          handleUpdateFill(fill.id, {
-                            imageFit: val as FillItem["imageFit"],
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </RowSettingsPopover>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
+            {/* Settings Popover */}
+            {activePopoverId === fill.id && (
+              <RowSettingsPopover
+                isOpen={true}
+                title="Fill Settings"
+                onClose={() => setActivePopoverId(null)}
+              >
+                <div className="ll:flex ll:flex-col ll:gap-2">
+                  <span className="ll:text-nano ll:font-mono ll:text-muted">
+                    Solid Color: #{fill.hex} ({fill.opacity}%)
+                  </span>
+                </div>
+              </RowSettingsPopover>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

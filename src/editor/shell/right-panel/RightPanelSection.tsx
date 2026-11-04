@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useId } from "react";
-import { ChevronRight, MoreHorizontal, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { IconButton } from "@/editor/components/IconButton";
-import { RightPanelEmptyPlaceholder } from "./RightPanelEmptyPlaceholder";
 
 export interface RightPanelSectionProps {
   id?: string;
@@ -23,115 +21,87 @@ export interface RightPanelSectionProps {
 export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   id: propId,
   title,
-  isOpen: controlledOpen,
-  onToggleOpen,
-  defaultOpen = true,
-  collapsible = true,
+  isOpen: _controlledOpen,
+  onToggleOpen: _onToggleOpen,
+  defaultOpen: _defaultOpen = true,
+  collapsible: _collapsible = false,
   onAdd,
   moreContent,
   headerAction,
   children,
   className = "",
 }) => {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
   const [showMore, setShowMore] = useState(false);
   const autoId = useId();
   const sectionId = propId ?? autoId;
   const bodyId = `${autoId}-body`;
+  const moreId = `${autoId}-more`;
 
-  const isControlled = controlledOpen !== undefined;
-  const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
-
-  const handleToggle = () => {
-    if (!collapsible) return;
-    if (isControlled) {
-      onToggleOpen?.();
-    } else {
-      setUncontrolledOpen((prev) => !prev);
-    }
-  };
+  const hasMore = Boolean(moreContent);
 
   return (
     <section
       data-section-id={sectionId}
-      className={`ll-dsec ll:flex ll:flex-col ll:border-b ll:border-border ll:py-2 ${className}`}
+      className={`ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:[&:not(:first-child)]:border-t ll:border-border ${className}`}
     >
       {/* Section Header */}
-      <div className="ll-dtitle ll:flex ll:items-center ll:justify-between ll:px-4 ll:h-8 ll:select-none">
-        <button
-          type="button"
-          aria-expanded={collapsible ? isOpen : undefined}
-          aria-controls={collapsible ? bodyId : undefined}
-          disabled={!collapsible}
-          onClick={handleToggle}
-          className={`ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:text-left ll:bg-transparent ll:border-0 ll:p-1 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:rounded-sm ${
-            collapsible ? "ll:cursor-pointer" : "ll:cursor-default"
-          }`}
-        >
-          {collapsible && (
-            <Icon
-              icon={ChevronRight}
-              size={14}
-              className={`ll:text-muted ll:shrink-0 ll:transition-transform ll:duration-100 ll:motion-reduce:transition-none ${
-                isOpen ? "ll:rotate-90" : ""
-              }`}
-            />
-          )}
-          <h3 className="ll:text-small ll:font-medium ll:text-primary ll:truncate ll:m-0">
-            {title}
-          </h3>
-        </button>
+      <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6 ll:select-none">
+        <h3 className="ll:text-small ll:font-medium ll:text-primary ll:truncate ll:m-0">
+          {title}
+        </h3>
 
-        {/* Section Actions */}
-        <div className="ll:flex ll:items-center ll:gap-0.5 ll:shrink-0">
+        <div className="ll:flex-1" />
+
+        {/* Section Actions: More button ("...") and Add button ("+") */}
+        <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
           {headerAction}
 
-          {moreContent && (
-            <IconButton
-              size="sm"
-              pressed={showMore}
+          {hasMore && (
+            <button
+              type="button"
+              aria-expanded={showMore}
+              aria-controls={moreId}
               aria-label={`More ${title} options`}
               title="More options"
-              icon={<Icon icon={MoreHorizontal} size={14} />}
               onClick={() => setShowMore((prev) => !prev)}
-            />
+              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:text-xs ll:font-mono ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+                showMore ? "ll:bg-control-secondary-bg ll:text-primary" : ""
+              } ${!onAdd ? "ll:-mr-1.25" : ""}`}
+            >
+              ...
+            </button>
           )}
 
           {onAdd && (
-            <IconButton
-              size="sm"
+            <button
+              type="button"
               aria-label={`Add ${title.toLowerCase()}`}
               title="Add"
-              icon={<Icon icon={Plus} size={14} />}
               onClick={onAdd}
-            />
+              className="ll-ib ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:-mr-1.25 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors"
+            >
+              <Icon icon={Plus} size={14} />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Section Content: region exists with bodyId whether open or closed so aria-controls remains valid */}
-      <div
-        id={bodyId}
-        role="region"
-        aria-label={title}
-        hidden={!isOpen}
-        className={`ll-dbody ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:pt-1.5 ll:pb-1 ${
-          !isOpen ? "ll:hidden" : ""
-        }`}
-      >
-        {children ? (
-          children
-        ) : (
-          <RightPanelEmptyPlaceholder label={`Configure ${title.toLowerCase()}`} />
-        )}
+      {/* Section Content: always visible, generous spacing, no dashed placeholders */}
+      {children && (
+        <div id={bodyId} className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+          {children}
+        </div>
+      )}
 
-        {/* More options collapsible drawer */}
-        {showMore && moreContent && (
-          <div className="ll-dmore ll:flex ll:flex-col ll:gap-2 ll:pt-2 ll:mt-1 ll:border-t ll:border-border">
-            {moreContent}
-          </div>
-        )}
-      </div>
+      {/* Expandable Advanced Options Drawer */}
+      {showMore && moreContent && (
+        <div
+          id={moreId}
+          className="ll-dmore ll:flex ll:flex-col ll:gap-2 ll:pt-3 ll:mt-1 ll:border-t ll:border-border ll:animate-in ll:fade-in ll:slide-in-from-top-1 ll:duration-120 ll:motion-reduce:animate-none"
+        >
+          {moreContent}
+        </div>
+      )}
     </section>
   );
 };

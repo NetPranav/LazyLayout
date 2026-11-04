@@ -7,9 +7,13 @@ import { RightPanelFrame } from "@/editor/shell/right-panel/RightPanelFrame";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import {
   PositionSection,
+  PositionMore,
   LayoutSection,
+  LayoutMore,
   AppearanceSection,
+  AppearanceMore,
   TypographySection,
+  TypographyMore,
   FillSection,
   StrokeSection,
   EffectsSection,
@@ -17,7 +21,10 @@ import {
   DataSection,
   LogicSection,
   AccessibilitySection,
-  PageSection,
+  PageSectionBody,
+  PageBackgroundBody,
+  ThemeTokensBody,
+  ThemeTokensMore,
 } from "./index";
 import { EasingCurveBox } from "./controls/EasingCurveBox";
 import { AlignmentGrid } from "./controls/AlignmentGrid";
@@ -201,14 +208,27 @@ export function DetailsLabView() {
     onUpdateProps: handleUpdateProps,
   };
 
-  // Build the 11 section configurations for RightPanelFrame
+  // Build the section configurations for RightPanelFrame
   const designSections: DesignSectionConfig[] = isPage
     ? [
         {
           id: "page",
-          title: "Page Settings",
+          title: "Page",
           defaultOpen: true,
-          children: <PageSection pageName="Page 1" />,
+          children: <PageSectionBody />,
+        },
+        {
+          id: "page-background",
+          title: "Background",
+          defaultOpen: true,
+          children: <PageBackgroundBody />,
+        },
+        {
+          id: "theme-tokens",
+          title: "Theme & tokens",
+          defaultOpen: true,
+          moreContent: <ThemeTokensMore />,
+          children: <ThemeTokensBody />,
         },
       ]
     : [
@@ -216,66 +236,77 @@ export function DetailsLabView() {
           id: "position",
           title: "Position",
           defaultOpen: true,
+          moreContent: <PositionMore />,
           children: <PositionSection {...sectionProps} />,
         },
         {
           id: "layout",
           title: "Layout",
           defaultOpen: true,
+          moreContent: <LayoutMore />,
           children: <LayoutSection {...sectionProps} />,
         },
         {
           id: "appearance",
           title: "Appearance",
           defaultOpen: true,
+          moreContent: <AppearanceMore />,
           children: <AppearanceSection {...sectionProps} />,
         },
         {
           id: "typography",
           title: "Typography",
           defaultOpen: selectedKind === "text" || selectedKind === "button",
+          moreContent: <TypographyMore />,
           children: <TypographySection {...sectionProps} />,
         },
         {
           id: "fill",
           title: "Fill",
           defaultOpen: true,
+          onAdd: () => console.log("Add fill"),
           children: <FillSection {...sectionProps} />,
         },
         {
           id: "stroke",
           title: "Stroke",
           defaultOpen: true,
+          onAdd: () => console.log("Add stroke"),
           children: <StrokeSection {...sectionProps} />,
         },
         {
           id: "effects",
           title: "Effects",
-          defaultOpen: false,
+          defaultOpen: true,
+          onAdd: () => console.log("Add effect"),
           children: <EffectsSection {...sectionProps} />,
         },
         {
           id: "animation",
           title: "Animation",
-          defaultOpen: false,
+          defaultOpen: true,
+          onAdd: () => console.log("Add animation"),
           children: <AnimationSection {...sectionProps} />,
         },
         {
           id: "data",
           title: "Data",
-          defaultOpen: false,
+          defaultOpen: true,
+          onAdd: () => console.log("Add data"),
           children: <DataSection {...sectionProps} />,
         },
         {
           id: "logic",
           title: "Logic",
-          defaultOpen: false,
+          defaultOpen: true,
+          onAdd: () => console.log("Add logic"),
           children: <LogicSection {...sectionProps} />,
         },
         {
           id: "accessibility",
           title: "Accessibility",
-          defaultOpen: false,
+          defaultOpen: true,
+          onAdd: () => console.log("Add a11y"),
           children: <AccessibilitySection {...sectionProps} />,
         },
       ];

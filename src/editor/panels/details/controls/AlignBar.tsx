@@ -12,7 +12,6 @@ import {
   AlignVerticalDistributeCenter,
   Grid,
 } from "lucide-react";
-import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
 import type { AlignMode, SpreadAxis } from "@/core/geometry/align";
 
@@ -36,112 +35,116 @@ export const AlignBar: React.FC<AlignBarProps> = ({
   return (
     <div
       role="toolbar"
-      aria-label="Alignment and distribution"
-      className={`ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ${className}`}
+      aria-label="Alignment"
+      className={`ll-dgroup ll:flex ll:items-center ll:gap-0.5 ll:h-7 ll:p-px ll:rounded-md ll:border ll:border-border ll:w-full ${className}`}
     >
       {/* Align Left */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align left"
-        tooltip="Align left"
+        title="Align left"
         onClick={() => onAlign?.("left")}
-        icon={<Icon icon={AlignLeft} size={14} />}
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignLeft} size={14} />
+      </button>
 
       {/* Align Horizontal Center */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align center"
-        tooltip="Align center"
+        title="Align center"
         onClick={() => onAlign?.("hcenter")}
-        icon={<Icon icon={AlignCenter} size={14} />}
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignCenter} size={14} />
+      </button>
 
       {/* Align Right */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align right"
-        tooltip="Align right"
+        title="Align right"
         onClick={() => onAlign?.("right")}
-        icon={<Icon icon={AlignRight} size={14} />}
-      />
-
-      {/* Divider */}
-      <div
-        aria-hidden="true"
-        className="ll:w-px ll:h-3.5 ll:bg-border ll:mx-0.5 ll:shrink-0"
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignRight} size={14} />
+      </button>
 
       {/* Align Top */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align top"
-        tooltip="Align top"
+        title="Align top"
         onClick={() => onAlign?.("top")}
-        icon={<Icon icon={AlignVerticalJustifyStart} size={14} />}
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignVerticalJustifyStart} size={14} />
+      </button>
 
       {/* Align Vertical Middle */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align middle"
-        tooltip="Align middle"
+        title="Align middle"
         onClick={() => onAlign?.("vcenter")}
-        icon={<Icon icon={AlignVerticalJustifyCenter} size={14} />}
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignVerticalJustifyCenter} size={14} />
+      </button>
 
       {/* Align Bottom */}
-      <IconButton
-        size="sm"
+      <button
+        type="button"
         disabled={disabled}
         aria-label="Align bottom"
-        tooltip="Align bottom"
+        title="Align bottom"
         onClick={() => onAlign?.("bottom")}
-        icon={<Icon icon={AlignVerticalJustifyEnd} size={14} />}
-      />
+        className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+      >
+        <Icon icon={AlignVerticalJustifyEnd} size={14} />
+      </button>
 
       {/* Multi-selection extra actions */}
       {isMulti && (
         <>
-          <div
-            aria-hidden="true"
-            className="ll:w-px ll:h-3.5 ll:bg-border ll:mx-0.5 ll:shrink-0"
-          />
-
-          {/* Distribute Horizontally */}
-          <IconButton
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             aria-label="Distribute horizontally"
-            tooltip="Distribute horizontally"
+            title="Distribute horizontally"
             onClick={() => onDistribute?.("h")}
-            icon={<Icon icon={AlignHorizontalDistributeCenter} size={14} />}
-          />
+            className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+          >
+            <Icon icon={AlignHorizontalDistributeCenter} size={14} />
+          </button>
 
-          {/* Distribute Vertically */}
-          <IconButton
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             aria-label="Distribute vertically"
-            tooltip="Distribute vertically"
+            title="Distribute vertically"
             onClick={() => onDistribute?.("v")}
-            icon={<Icon icon={AlignVerticalDistributeCenter} size={14} />}
-          />
+            className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+          >
+            <Icon icon={AlignVerticalDistributeCenter} size={14} />
+          </button>
 
-          {/* Tidy Up */}
-          <IconButton
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             aria-label="Tidy up"
-            tooltip="Tidy up (Ctrl+Alt+T)"
+            title="Tidy up (Ctrl+Alt+T)"
             onClick={() => onTidy?.()}
-            icon={<Icon icon={Grid} size={14} />}
-          />
+            className="ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-secondary-bg ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+          >
+            <Icon icon={Grid} size={14} />
+          </button>
         </>
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Eye, EyeOff, Frame, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, Frame, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -36,7 +36,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   const moreRef = useRef<HTMLButtonElement>(null);
   const [moreAt, setMoreAt] = useState<{ x: number; y: number } | null>(null);
 
-  // The prototype opens this menu right-aligned under the button, so the position is the button's right edge.
+  // The prototype opens this menu right-aligned under the button
   const openMore = () => {
     const r = moreRef.current?.getBoundingClientRect();
     if (!r) return;
@@ -68,16 +68,20 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             icon={<Icon icon={isLayerHidden ? EyeOff : Eye} size={14} />}
             onClick={onToggleHideLayer}
           />
-          <IconButton
+          <button
             ref={moreRef}
-            size="sm"
+            type="button"
             aria-label="More"
             title="More"
             aria-haspopup="menu"
             aria-expanded={moreAt !== null}
-            icon={<Icon icon={MoreHorizontal} size={14} />}
             onClick={() => (moreAt ? setMoreAt(null) : openMore())}
-          />
+            className={`ll-rmore ll-more ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:text-xs ll:font-mono ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+              moreAt !== null ? "ll:bg-control-secondary-bg ll:text-primary" : ""
+            }`}
+          >
+            ...
+          </button>
           <Menu
             open={moreAt !== null}
             onClose={() => setMoreAt(null)}
@@ -91,18 +95,18 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
         </div>
       </div>
 
-      {/* Status chips row: shown when chips exist */}
-      {statusChips.length > 0 && (
+      {/* Status chips row: shown ONLY when chips exist (prototype parity) */}
+      {statusChips && statusChips.length > 0 && (
         <div className="ll-rstat ll:h-8 ll:px-4 ll:flex ll:items-center ll:gap-3 ll:shrink-0 ll:border-b ll:border-border">
           {statusChips.map((chip) => (
             <button
               key={chip.id}
               type="button"
-              className="ll-rs ll:text-micro ll:font-medium ll:text-secondary ll:hover:text-primary ll:transition-none ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-1 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:rounded-xs"
               onClick={() => {
                 chip.onClick?.();
                 onSelectStatusChip?.(chip);
               }}
+              className="ll-rs ll:text-micro ll:font-medium ll:text-secondary ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors"
             >
               {chip.label}
             </button>

@@ -100,7 +100,7 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
             placeholder={aiInputPlaceholder}
             aria-label={aiInputPlaceholder.replace(/…$/, "")}
             autoComplete="off"
-            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:bg-transparent ll:border-0 ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none"
+            className="ll:flex-1 ll:min-w-0 ll:h-8 ll:px-2.5 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none ll:focus-visible:border-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-all"
           />
           <button
             type="submit"

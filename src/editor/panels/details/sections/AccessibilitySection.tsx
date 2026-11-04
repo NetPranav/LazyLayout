@@ -1,23 +1,42 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Select } from "@/editor/components/Select";
 import { TextField } from "@/editor/components/TextField";
 import { Toggle } from "@/editor/components/Toggle";
 import { ACCESSIBILITY_ROLE_OPTIONS } from "../constants";
 import type { InspectorSectionProps } from "../types";
 
-export const AccessibilitySection: React.FC<InspectorSectionProps> = ({
+export interface AccessibilitySectionProps extends InspectorSectionProps {
+  onAddA11yRef?: { current?: () => void };
+}
+
+export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   getValue,
   onUpdateProp,
+  onAddA11yRef,
   className = "",
 }) => {
+  const [hasA11y, setHasA11y] = useState(false);
+
+  const handleAdd = () => {
+    setHasA11y(true);
+  };
+
+  if (onAddA11yRef) {
+    onAddA11yRef.current = handleAdd;
+  }
+
   const role = (getValue?.("a11y.role") as string) || "auto";
   const ariaLabel = (getValue?.("a11y.label") as string) || "";
   const ariaHidden = (getValue?.("a11y.hidden") as boolean) ?? false;
 
+  if (!hasA11y) {
+    return null;
+  }
+
   return (
-    <div className={`ll:flex ll:flex-col ll:gap-2.5 ll:w-full ${className}`}>
+    <div className={`ll-dbody ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
       {/* Role Select */}
       <Select
         size="sm"

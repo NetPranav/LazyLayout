@@ -1,22 +1,17 @@
 "use client";
 
-import React, { useRef, useState, useId } from "react";
-import { Frame } from "lucide-react";
+import React, { useRef, useId } from "react";
 import { RightPanelHeader } from "./RightPanelHeader";
 import { RightPanelSection } from "./RightPanelSection";
 import { RightPanelAccordionRow } from "./RightPanelAccordionRow";
 import { RightPanelAiChat } from "./RightPanelAiChat";
+import { useSelectionInspector } from "@/editor/panels/details/hooks/useSelectionInspector";
 import type {
   RightPanelFrameProps,
   DesignSectionConfig,
   AccordionRowConfig,
   StatusChip,
 } from "./types";
-
-const DEFAULT_STATUS_CHIPS: StatusChip[] = [
-  { id: "animation", label: "Animated", targetSection: "animation" },
-  { id: "data", label: "Data bound", targetSection: "data" },
-];
 
 const DEFAULT_DESIGN_SECTIONS: DesignSectionConfig[] = [
   { id: "position", title: "Position" },
@@ -56,13 +51,13 @@ const DEFAULT_CODE_ROWS: AccordionRowConfig[] = [
 
 export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   mode = "design",
-  selectionName = "Headline",
-  selectionIcon = Frame,
-  isLayerHidden = false,
-  onToggleHideLayer,
+  selectionName: propSelectionName,
+  selectionIcon: propSelectionIcon,
+  isLayerHidden: propIsLayerHidden,
+  onToggleHideLayer: propOnToggleHideLayer,
   onReset,
   onDelete,
-  statusChips = DEFAULT_STATUS_CHIPS,
+  statusChips: propStatusChips,
   onSelectStatusChip,
   aiOpen = false,
   onAiClose,
@@ -82,37 +77,20 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   const motionContainerId = `${frameId}-key`;
   const codeContainerId = `${frameId}-code`;
 
-  // Lifted section open state allowing status chips to open collapsed sections
-  const [openSectionIds, setOpenSectionIds] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    for (const sec of designSections) {
-      initial[sec.id] = sec.defaultOpen ?? true;
-    }
-    return initial;
-  });
+  // Live selection inspector hook to resolve real element data when props are not provided
+  const inspector = useSelectionInspector();
 
-  const handleToggleSection = (sec: DesignSectionConfig) => {
-    if (sec.onToggleOpen) {
-      sec.onToggleOpen();
-    } else {
-      setOpenSectionIds((prev) => ({
-        ...prev,
-        [sec.id]: !(prev[sec.id] ?? sec.defaultOpen ?? true),
-      }));
-    }
-  };
+  const activeSelectionName = propSelectionName !== undefined ? propSelectionName : inspector.selectionName;
+  const activeSelectionIcon = propSelectionIcon !== undefined ? propSelectionIcon : inspector.selectionIcon;
+  const activeIsHidden = propIsLayerHidden !== undefined ? propIsLayerHidden : inspector.isLayerHidden;
+  const activeToggleHide = propOnToggleHideLayer !== undefined ? propOnToggleHideLayer : inspector.onToggleHide;
+  const activeStatusChips: StatusChip[] = propStatusChips !== undefined ? propStatusChips : [];
 
   const handleStatusChipClick = (chip: StatusChip) => {
     onSelectStatusChip?.(chip);
     const target = chip.targetSection ?? chip.id;
 
-    // 1. Open the collapsed target section
-    setOpenSectionIds((prev) => ({
-      ...prev,
-      [target]: true,
-    }));
-
-    // 2. Scroll smoothly to target section
+    // Scroll smoothly to target section
     if (bodyRef.current) {
       const targetElement = bodyRef.current.querySelector(
         `[data-section-id="${target}"]`
@@ -149,13 +127,13 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
           {/* Header: visible only in design mode */}
           {mode === "design" && (
             <RightPanelHeader
-              selectionName={selectionName}
-              selectionIcon={selectionIcon}
-              isLayerHidden={isLayerHidden}
-              onToggleHideLayer={onToggleHideLayer}
+              selectionName={activeSelectionName}
+              selectionIcon={activeSelectionIcon}
+              isLayerHidden={activeIsHidden}
+              onToggleHideLayer={activeToggleHide}
               onReset={onReset}
               onDelete={onDelete}
-              statusChips={statusChips}
+              statusChips={activeStatusChips}
               onSelectStatusChip={handleStatusChipClick}
             />
           )}
@@ -170,29 +148,18 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               children
             ) : mode === "design" ? (
               <div id={designContainerId} className="ll:flex ll:flex-col">
-                {designSections.map((sec) => {
-                  const isOpen =
-                    sec.isOpen !== undefined
-                      ? sec.isOpen
-                      : (openSectionIds[sec.id] ?? sec.defaultOpen ?? true);
-
-                  return (
-                    <RightPanelSection
-                      key={sec.id}
-                      id={sec.id}
-                      title={sec.title}
-                      isOpen={isOpen}
-                      onToggleOpen={() => handleToggleSection(sec)}
-                      defaultOpen={sec.defaultOpen}
-                      collapsible={sec.collapsible}
-                      onAdd={sec.onAdd}
-                      moreContent={sec.moreContent}
-                      headerAction={sec.headerAction}
-                    >
-                      {sec.children}
-                    </RightPanelSection>
-                  );
-                })}
+                {designSections.map((sec) => (
+                  <RightPanelSection
+                    key={sec.id}
+                    id={sec.id}
+                    title={sec.title}
+                    onAdd={sec.onAdd}
+                    moreContent={sec.moreContent}
+                    headerAction={sec.headerAction}
+                  >
+                    {sec.children}
+                  </RightPanelSection>
+                ))}
               </div>
             ) : mode === "motion" ? (
               <div id={motionContainerId} className="ll:flex ll:flex-col">
