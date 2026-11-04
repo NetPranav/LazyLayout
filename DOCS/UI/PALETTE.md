@@ -62,7 +62,7 @@ The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them al
 
 ## Label colours (timeline tracks only)
 
-Approved by the user on 2026-11-04. These six muted tags are used **only** as the 3px strip on a timeline track header and as the clip tint (plus the tiny clips in the mini-map). Since 2026-11-04 (user) they also mark the active tab indicator (2px) on the Timeline/Graph, Code/Console/Trace and file tabs. They never colour text. Text on the tints is at least 4.9:1 in dark themes and 8.8:1 in light themes. The light set is used for Paper, White, Warm and Lilac; the dark set for Dark.
+Approved by the user on 2026-11-04. These six muted tags are used **only** as the 3px strip on a timeline track header and as the clip tint (plus the tiny clips in the mini-map). They never colour text or any other UI. Text on the tints is at least 4.9:1 in dark themes and 8.8:1 in light themes. The light set is used for Paper, White, Warm and Lilac; the dark set for Dark.
 
 | Token | Default for | Light: strip / tint | Dark: strip / tint |
 |---|---|---|---|
