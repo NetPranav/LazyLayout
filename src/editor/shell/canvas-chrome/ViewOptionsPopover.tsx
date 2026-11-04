@@ -178,7 +178,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
 
       s.open({
         from: seed,
-        up: true,
+        up: false,
       });
     } else {
       s.leave();
@@ -232,12 +232,12 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
       aria-label="View options"
       tabIndex={-1}
       style={{
-        width: "calc(var(--ll-size-menu-users-w) + var(--ll-spacing-10))",
-        bottom:
-          "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
-        maxHeight: "var(--ll-max-h-popover)",
+        width: "var(--ll-size-menu-wide-w, 280px)",
+        top: "var(--ll-spacing-2)",
+        left: "var(--ll-spacing-2-5)",
+        maxHeight: "calc(100% - var(--ll-spacing-6))",
       }}
-      className="ll-vpop ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overflow-y-auto ll:overscroll-contain ll:outline-none"
+      className="ll-vpop ll:absolute ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overflow-y-auto ll:overscroll-contain ll:outline-none"
     >
       <div className="ll-lay ll:flex ll:flex-col ll:w-full">
         {/* Quick Actions using design system Button */}

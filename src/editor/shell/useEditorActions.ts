@@ -27,6 +27,12 @@ import {
 import { listFrames } from "@/core/frames/frames";
 import { getDocument } from "@/core/store/documentState";
 import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
+import { useProjectStore } from "@/core/store/useProjectStore";
+import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
+import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDatabase";
+import { embedAssets, restoreAssets } from "@/core/assets/embed";
+import { getAssetStore } from "@/core/assets/AssetStore";
+import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/lazyFile";
 
 export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
@@ -72,10 +78,22 @@ export interface UseEditorActionsReturn {
   zoom100: () => void;
   zoomFit: () => void;
   zoomSelection: () => void;
+  viewportPreset: "1440" | "768" | "375";
+  setViewportPreset: (preset: "1440" | "768" | "375") => void;
 
   // Snapping & Rulers
   showRulers: boolean;
   toggleRulers: () => void;
+  snapObjects: boolean;
+  toggleSnapObjects: () => void;
+  snapGuides: boolean;
+  toggleSnapGuides: () => void;
+  snapToGrid: boolean;
+  toggleSnapToGrid: () => void;
+
+  // File import / export
+  exportProjectFile: () => Promise<void>;
+  importProjectFile: () => void;
 
   // History
   canUndo: boolean;
@@ -106,6 +124,98 @@ export function useEditorActions(
 
   // Zen mode (Hide interface) - Tab shortcut
   const [isZen, setIsZen] = useState(false);
+
+  // Viewport preset (Desktop: 1440, Tablet: 768, Mobile: 375)
+  const [viewportPreset, setViewportPresetState] = useState<"1440" | "768" | "375">("1440");
+
+  const setViewportPreset = useCallback((preset: "1440" | "768" | "375") => {
+    setViewportPresetState(preset);
+    const SIZES: Record<string, { width: number; height: number }> = {
+      "1440": { width: 1440, height: 900 },
+      "768": { width: 768, height: 1024 },
+      "375": { width: 375, height: 812 },
+    };
+    const s = SIZES[preset] || SIZES["1440"];
+    useCameraStore.getState().fitToRect(
+      { x: 0, y: 0, width: s.width, height: s.height },
+      { padding: 48, maxZoom: 1, bottomInset: 56 }
+    );
+  }, []);
+
+  // Snapping store bindings
+  const snapObjects = useSnapStore((s) => s.objects);
+  const snapGuides = useSnapStore((s) => s.guides);
+  const snapToGrid = useSnapStore((s) => s.grid);
+
+  const toggleSnapObjects = useCallback(() => {
+    useSnapStore.getState().toggle("objects");
+  }, []);
+
+  const toggleSnapGuides = useCallback(() => {
+    useSnapStore.getState().toggle("guides");
+  }, []);
+
+  const toggleSnapToGrid = useCallback(() => {
+    useSnapStore.getState().toggle("grid");
+  }, []);
+
+  // Real Project Export (.lazy.json download)
+  const exportProjectFile = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const state = useProjectStore.getState();
+      const meta = useProjectMetaStore.getState();
+      const record = meta.projectId ? await ProjectDatabase.getProject(meta.projectId) : null;
+      const snapshot = state.getSnapshot();
+      const embed = await embedAssets(snapshot.document, getAssetStore()).catch(() => undefined);
+      const blob = new Blob([serializeLazyFile(snapshot, record?.settings, embed)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = lazyFileName(meta.projectName || "project");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error("Export project file failed:", err);
+    }
+  }, []);
+
+  // Real Project Import (.lazy.json upload)
+  const importProjectFile = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,.lazy.json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const lazy = parseLazyFile(text);
+        if (lazy.assets.embedded) {
+          await restoreAssets(lazy.assets.embedded, getAssetStore()).catch(() => undefined);
+        }
+        const newId = generateProjectId();
+        await projectSession.open(newId, {
+          create: {
+            name: lazy.project.name,
+            settings: lazy.project.settings,
+            snapshot: lazy.snapshot,
+          },
+        });
+        const url = new URL(window.location.href);
+        url.searchParams.set("projectId", newId);
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch (err) {
+        console.error("Import project file failed:", err);
+      }
+    };
+    input.click();
+  }, []);
 
   // Active tool and shape
   const [activeTool, setActiveToolState] = useState<CanvasTool>("select");
@@ -343,14 +453,15 @@ export function useEditorActions(
         case "file.new": {
           void projectSession.flush().finally(() => {
             if (typeof window !== "undefined") {
-              window.location.href = "/";
+              const newId = generateProjectId();
+              window.location.href = `/editor?projectId=${newId}`;
             }
           });
           break;
         }
         case "file.open":
         case "file.import": {
-          invokeCommand("file.importProjectFile");
+          importProjectFile();
           break;
         }
         case "file.save": {
@@ -370,7 +481,7 @@ export function useEditorActions(
           break;
         }
         case "file.exportFile": {
-          invokeCommand("file.exportProjectFile");
+          void exportProjectFile();
           break;
         }
 
@@ -520,6 +631,36 @@ export function useEditorActions(
           // Preset cycle / layout options
           break;
         }
+        case "layouts.design": {
+          setMode("design");
+          break;
+        }
+        case "layouts.animate": {
+          setMode("motion");
+          break;
+        }
+        case "layouts.code": {
+          setMode("code");
+          break;
+        }
+        case "layouts.debug": {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("antigravity:open_debug"));
+          }
+          break;
+        }
+        case "view.desktop": {
+          setViewportPreset("1440");
+          break;
+        }
+        case "view.tablet": {
+          setViewportPreset("768");
+          break;
+        }
+        case "view.mobile": {
+          setViewportPreset("375");
+          break;
+        }
         case "window.resetLayout": {
           setIsLeftCollapsed(false);
           setIsRightCollapsed(false);
@@ -595,6 +736,10 @@ export function useEditorActions(
       toggleViewOptions,
       toggleZen,
       togglePanel,
+      setMode,
+      setViewportPreset,
+      exportProjectFile,
+      importProjectFile,
     ]
   );
 
@@ -625,21 +770,18 @@ export function useEditorActions(
         id: "view.zoomIn",
         title: "Zoom In",
         category: "View",
-        keybinding: ["Ctrl++", "Ctrl+="],
         run: zoomIn,
       }),
       defineCommand({
         id: "view.zoomOut",
         title: "Zoom Out",
         category: "View",
-        keybinding: "Ctrl+-",
         run: zoomOut,
       }),
       defineCommand({
         id: "view.zoom100",
         title: "Zoom to 100%",
         category: "View",
-        keybinding: "Ctrl+0",
         run: zoom100,
       }),
       defineCommand({
@@ -652,42 +794,36 @@ export function useEditorActions(
         id: "view.fit",
         title: "Fit to Screen",
         category: "View",
-        keybinding: "Shift+1",
         run: zoomFit,
       }),
       defineCommand({
         id: "canvas.zoomToFit",
         title: "Fit to Screen",
         category: "View",
-        keybinding: "Shift+1",
         run: zoomFit,
       }),
       defineCommand({
         id: "view.zoomSelection",
         title: "Zoom to Selection",
         category: "View",
-        keybinding: "Shift+2",
         run: zoomSelection,
       }),
       defineCommand({
         id: "canvas.zoomToSelection",
         title: "Zoom to Selection",
         category: "View",
-        keybinding: "Shift+2",
         run: zoomSelection,
       }),
       defineCommand({
         id: "view.rulers",
         title: "Show / Hide Rulers",
         category: "View",
-        keybinding: "Shift+R",
         run: toggleRulers,
       }),
       defineCommand({
         id: "view.toggleRulers",
         title: "Show / Hide Rulers",
         category: "View",
-        keybinding: "Shift+R",
         run: toggleRulers,
       }),
       defineCommand({
@@ -700,29 +836,103 @@ export function useEditorActions(
         id: "view.hideInterface",
         title: "Hide Interface",
         category: "View",
-        keybinding: "Tab",
         run: toggleZen,
       }),
       defineCommand({
         id: "view.fullscreen",
         title: "Toggle Fullscreen",
         category: "View",
-        keybinding: "F11",
         run: () => handleMenuAction("view.fullscreen"),
       }),
       defineCommand({
         id: "view.toggleFullscreen",
         title: "Toggle Fullscreen",
         category: "View",
-        keybinding: "F11",
         run: () => handleMenuAction("view.fullscreen"),
       }),
       defineCommand({
         id: "shell.togglePanels",
         title: "Toggle Panels",
         category: "View",
-        keybinding: "Ctrl+\\",
         run: toggleBothPanels,
+      }),
+      defineCommand({
+        id: "file.exportProjectFile",
+        title: "Export Project File",
+        category: "File",
+        run: exportProjectFile,
+      }),
+      defineCommand({
+        id: "file.importProjectFile",
+        title: "Import Project File",
+        category: "File",
+        run: importProjectFile,
+      }),
+      defineCommand({
+        id: "edit.selectAll",
+        title: "Select All",
+        category: "Selection",
+        run: () => invokeCommand("selection.all"),
+      }),
+      defineCommand({
+        id: "align.center",
+        title: "Align Horizontal Centers",
+        category: "Arrange",
+        run: () => invokeCommand("align.hcenter"),
+      }),
+      defineCommand({
+        id: "align.middle",
+        title: "Align Vertical Centers",
+        category: "Arrange",
+        run: () => invokeCommand("align.vcenter"),
+      }),
+      defineCommand({
+        id: "align.distributeH",
+        title: "Distribute Horizontal Spacing",
+        category: "Arrange",
+        run: () => invokeCommand("distribute.horizontal"),
+      }),
+      defineCommand({
+        id: "align.distributeV",
+        title: "Distribute Vertical Spacing",
+        category: "Arrange",
+        run: () => invokeCommand("distribute.vertical"),
+      }),
+      defineCommand({
+        id: "layouts.design",
+        title: "Design Layout",
+        category: "Layout",
+        run: () => setMode("design"),
+      }),
+      defineCommand({
+        id: "layouts.animate",
+        title: "Animate Layout",
+        category: "Layout",
+        run: () => setMode("motion"),
+      }),
+      defineCommand({
+        id: "layouts.code",
+        title: "Code Layout",
+        category: "Layout",
+        run: () => setMode("code"),
+      }),
+      defineCommand({
+        id: "viewport.desktop",
+        title: "Desktop Viewport (1440px)",
+        category: "View",
+        run: () => setViewportPreset("1440"),
+      }),
+      defineCommand({
+        id: "viewport.tablet",
+        title: "Tablet Viewport (768px)",
+        category: "View",
+        run: () => setViewportPreset("768"),
+      }),
+      defineCommand({
+        id: "viewport.mobile",
+        title: "Mobile Viewport (375px)",
+        category: "View",
+        run: () => setViewportPreset("375"),
       })
     );
 
@@ -742,6 +952,10 @@ export function useEditorActions(
     toggleZen,
     toggleBothPanels,
     handleMenuAction,
+    exportProjectFile,
+    importProjectFile,
+    setMode,
+    setViewportPreset,
   ]);
 
   // Keyboard shortcut layer covering prototype shortcuts, ignored during text editing
@@ -797,6 +1011,13 @@ export function useEditorActions(
       if (e.key === "F1") {
         e.preventDefault();
         handleMenuAction("help.shortcuts");
+        return;
+      }
+
+      // F2 Rename layer
+      if (e.key === "F2") {
+        e.preventDefault();
+        invokeCommand("layer.rename");
         return;
       }
 
@@ -861,6 +1082,34 @@ export function useEditorActions(
           invokeCommand("edit.duplicate");
           return;
         }
+        if (key === "]" || e.code === "BracketRight") {
+          e.preventDefault();
+          if (isShift) {
+            invokeCommand("layer.bringToFront");
+          } else {
+            invokeCommand("layer.bringForward");
+          }
+          return;
+        }
+        if (key === "[" || e.code === "BracketLeft") {
+          e.preventDefault();
+          if (isShift) {
+            invokeCommand("layer.sendToBack");
+          } else {
+            invokeCommand("layer.sendBackward");
+          }
+          return;
+        }
+        if (key === "h" && isShift) {
+          e.preventDefault();
+          invokeCommand("layer.toggleHidden");
+          return;
+        }
+        if (key === "l" && isShift) {
+          e.preventDefault();
+          invokeCommand("layer.toggleLock");
+          return;
+        }
         if (key === "g") {
           e.preventDefault();
           if (isShift) {
@@ -907,6 +1156,40 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           invokeCommand("layer.tidy");
+          return;
+        }
+      }
+
+      // Alt alignment shortcuts without Ctrl:
+      if (!isCtrl && isAlt && !isShift) {
+        if (key === "a") {
+          e.preventDefault();
+          invokeCommand("align.left");
+          return;
+        }
+        if (key === "h") {
+          e.preventDefault();
+          invokeCommand("align.hcenter");
+          return;
+        }
+        if (key === "d") {
+          e.preventDefault();
+          invokeCommand("align.right");
+          return;
+        }
+        if (key === "w") {
+          e.preventDefault();
+          invokeCommand("align.top");
+          return;
+        }
+        if (key === "v") {
+          e.preventDefault();
+          invokeCommand("align.vcenter");
+          return;
+        }
+        if (key === "s") {
+          e.preventDefault();
+          invokeCommand("align.bottom");
           return;
         }
       }
@@ -1068,6 +1351,16 @@ export function useEditorActions(
       redo,
       handleSearch,
       handleMenuAction,
+      viewportPreset,
+      setViewportPreset,
+      snapObjects,
+      toggleSnapObjects,
+      snapGuides,
+      toggleSnapGuides,
+      snapToGrid,
+      toggleSnapToGrid,
+      exportProjectFile,
+      importProjectFile,
     }),
     [
       mode,
@@ -1102,6 +1395,16 @@ export function useEditorActions(
       redo,
       handleSearch,
       handleMenuAction,
+      viewportPreset,
+      setViewportPreset,
+      snapObjects,
+      toggleSnapObjects,
+      snapGuides,
+      toggleSnapGuides,
+      snapToGrid,
+      toggleSnapToGrid,
+      exportProjectFile,
+      importProjectFile,
     ]
   );
 }

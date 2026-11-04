@@ -9,6 +9,8 @@ import { Stage } from "@/editor/stage";
 import { TimelinePanel } from "@/editor/panels/timeline";
 import { CodePanel } from "@/editor/panels/code-view";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
+import { useCollabStore } from "@/core/store/useCollabStore";
+import type { CollabUser } from "@/editor/components/AvatarStack";
 import { useEditorActions } from "./useEditorActions";
 
 export interface EditorShellProps {
@@ -35,6 +37,39 @@ export function EditorShell({
     initialLeftCollapsed: false,
     initialRightCollapsed: false,
   });
+
+  // Real collaborator presence resolution
+  const connectedPeers = useCollabStore((s) => s.connectedPeers);
+  const localUser = useCollabStore((s) => s.localUser);
+
+  const collabUsers: CollabUser[] = React.useMemo(() => {
+    const peers = Object.values(connectedPeers || {});
+    if (peers.length === 0) return [];
+    return [
+      {
+        id: localUser.id,
+        name: localUser.name,
+        initials: localUser.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+        status: "You",
+      },
+      ...peers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        initials: p.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase(),
+        status: p.role || "Viewing",
+      })),
+    ];
+  }, [connectedPeers, localUser]);
 
   // Bottom drawer height in motion/code modes
   const bottomHeight = actions.isZen
@@ -97,6 +132,7 @@ export function EditorShell({
           onMenuAction={actions.handleMenuAction}
           showRulers={actions.showRulers}
           isZen={actions.isZen}
+          users={collabUsers}
         />
       </div>
 
@@ -131,6 +167,12 @@ export function EditorShell({
             onZoomSelection={actions.zoomSelection}
             showRulers={actions.showRulers}
             onToggleRulers={actions.toggleRulers}
+            snapObjects={actions.snapObjects}
+            onToggleSnapObjects={actions.toggleSnapObjects}
+            snapGuides={actions.snapGuides}
+            onToggleSnapGuides={actions.toggleSnapGuides}
+            snapToGrid={actions.snapToGrid}
+            onToggleSnapToGrid={actions.toggleSnapToGrid}
             isInsertOpen={actions.isInsertOpen}
             onToggleInsert={actions.toggleInsert}
             isAiBoxOpen={actions.isAiBoxOpen}
@@ -146,8 +188,13 @@ export function EditorShell({
             onPreview={() =>
               actions.setMode(actions.mode === "design" ? "motion" : "design")
             }
+            users={collabUsers}
           >
-            <Stage zoom={actions.zoom} />
+            <Stage
+              zoom={actions.zoom}
+              preset={actions.viewportPreset}
+              onPresetChange={(p) => actions.setViewportPreset(p as "1440" | "768" | "375")}
+            />
           </CanvasChrome>
         )}
       </div>

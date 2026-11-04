@@ -216,17 +216,33 @@ export const TopBar: React.FC<TopBarProps> = ({
     icon: LucideIcon,
     shortcut?: string,
     run?: () => void,
-    checked?: boolean
-  ) => (
-    <MenuItem
-      key={id}
-      icon={<Icon icon={icon} size={MENU_ICON_SIZE} />}
-      shortcut={shortcut}
-      onClick={run ?? (() => onMenuAction?.(id))}
-    >
-      {checked === undefined ? label : <EntryLabel checked={checked}>{label}</EntryLabel>}
-    </MenuItem>
-  );
+    checked?: boolean,
+    disabled?: boolean,
+    tooltipReason?: string
+  ) => {
+    const item = (
+      <MenuItem
+        key={id}
+        icon={<Icon icon={icon} size={MENU_ICON_SIZE} />}
+        shortcut={shortcut}
+        disabled={disabled}
+        onClick={run ?? (() => onMenuAction?.(id))}
+      >
+        {checked === undefined ? label : <EntryLabel checked={checked}>{label}</EntryLabel>}
+      </MenuItem>
+    );
+
+    if (disabled && tooltipReason) {
+      return (
+        <div key={id} className="ll:block ll:w-full">
+          <Tooltip content={tooltipReason} side="right">
+            <div className="ll:w-full">{item}</div>
+          </Tooltip>
+        </div>
+      );
+    }
+    return item;
+  };
 
   const themeEntry = (id: Theme) => (
     <MenuItem
@@ -318,7 +334,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.exportCode", "Export code", Download, "Ctrl+E", undefined, undefined, true, "Code generation pipeline coming in Phase 49")}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}
@@ -362,7 +378,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("view.zoomOut", "Zoom out", Minus, "Ctrl+-")}
             {entry("view.fit", "Fit to screen", Maximize, "Shift+1")}
             {entry("view.rulers", "Rulers", Ruler, "Shift+R", () => onMenuAction?.("view.rulers"), showRulers)}
-            {entry("view.options", "View options…", Palette, undefined, () => onMenuAction?.("view.options"))}
+            {entry("view.options", "View options…", Palette, undefined, () => {
+              setLogoMenuOpen(false);
+              onMenuAction?.("view.options");
+            })}
             {entry("view.hideInterface", "Hide interface", EyeOff, "Tab", () => onMenuAction?.("view.hideInterface"), isZen)}
             <MenuSeparator />
             {entry("view.zoom100", "Zoom to 100%", Square, "Ctrl+0")}
@@ -378,19 +397,67 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("window.leftPanel", "Left panel", PanelLeft, undefined, () => onTogglePanel?.("lc"), !isLeftCollapsed)}
             {entry("window.assets", "Assets", ImageIcon)}
             {entry("window.rightPanel", "Right panel", PanelRight, undefined, () => onTogglePanel?.("rc"), !isRightCollapsed)}
-            {entry("window.layouts", "Layouts", LayoutPanelLeft)}
+            <SubMenu
+              id="sub-layouts"
+              label="Layouts"
+              icon={<Icon icon={LayoutPanelLeft} size={MENU_ICON_SIZE} />}
+            >
+              {entry(
+                "layouts.design",
+                "Design",
+                LayoutPanelLeft,
+                undefined,
+                () => {
+                  setLogoMenuOpen(false);
+                  handleModeChange("design");
+                },
+                activeMode === "design"
+              )}
+              {entry(
+                "layouts.animate",
+                "Animate",
+                LayoutPanelLeft,
+                undefined,
+                () => {
+                  setLogoMenuOpen(false);
+                  handleModeChange("motion");
+                },
+                activeMode === "motion"
+              )}
+              {entry(
+                "layouts.code",
+                "Code",
+                LayoutPanelLeft,
+                undefined,
+                () => {
+                  setLogoMenuOpen(false);
+                  handleModeChange("code");
+                },
+                activeMode === "code"
+              )}
+              {entry(
+                "layouts.debug",
+                "Debug",
+                LayoutPanelLeft,
+                undefined,
+                () => onMenuAction?.("layouts.debug"),
+                false,
+                true,
+                "Debug layout available in developer labs"
+              )}
+            </SubMenu>
             {entry("window.resetLayout", "Reset layout", RotateCcw)}
             <MenuSeparator />
-            {entry("window.outputLog", "Output Log", FileText)}
-            {entry("window.executionTrace", "Execution Trace", Spline)}
+            {entry("window.outputLog", "Output Log", FileText, undefined, undefined, undefined, true, "Output log viewer coming in Phase 48")}
+            {entry("window.executionTrace", "Execution Trace", Spline, undefined, undefined, undefined, true, "Execution trace visualizer coming in Phase 48")}
             {entry("window.undoHistory", "Undo History", Undo2)}
             {entry("window.versionHistory", "Version History", Save)}
-            {entry("window.globalSearch", "Global Search", Search)}
-            {entry("window.referenceViewer", "Reference Viewer", LinkIcon)}
-            {entry("window.plugins", "Plugins", Settings)}
-            {entry("window.deployment", "Deployment", Globe)}
-            {entry("window.logic", "Logic", ListTree)}
-            {entry("window.data", "Data", Database)}
+            {entry("window.globalSearch", "Global Search", Search, "Ctrl+K", handleOpenSearch)}
+            {entry("window.referenceViewer", "Reference Viewer", LinkIcon, undefined, undefined, undefined, true, "Reference viewer coming in Phase 52")}
+            {entry("window.plugins", "Plugins", Settings, undefined, undefined, undefined, true, "Plugin manager coming in Phase 55")}
+            {entry("window.deployment", "Deployment", Globe, undefined, undefined, undefined, true, "Deployment manager coming in Phase 60")}
+            {entry("window.logic", "Logic", ListTree, undefined, undefined, undefined, true, "Logic blueprint coming in Phase 42")}
+            {entry("window.data", "Data", Database, undefined, undefined, undefined, true, "Data binding editor coming in Phase 44")}
           </SubMenu>
 
           <MenuSeparator />

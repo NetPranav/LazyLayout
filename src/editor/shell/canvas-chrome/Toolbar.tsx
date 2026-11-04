@@ -398,6 +398,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         width={CANVAS_CHROME_SIZES.zoomMenuWidth}
       >
         <MenuItem
+          shortcut="Ctrl++"
           onClick={() => {
             onZoomIn?.();
             setIsZoomMenuOpen(false);
@@ -406,6 +407,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Zoom in
         </MenuItem>
         <MenuItem
+          shortcut="Ctrl+-"
           onClick={() => {
             onZoomOut?.();
             setIsZoomMenuOpen(false);
@@ -414,6 +416,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Zoom out
         </MenuItem>
         <MenuItem
+          shortcut="Ctrl+0"
           onClick={() => {
             onZoom100?.();
             setIsZoomMenuOpen(false);
@@ -422,6 +425,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <span className="ll-mono">100%</span>
         </MenuItem>
         <MenuItem
+          shortcut="Shift+1"
           onClick={() => {
             onZoomFit?.();
             setIsZoomMenuOpen(false);
@@ -430,6 +434,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           Fit to screen
         </MenuItem>
         <MenuItem
+          shortcut="Shift+2"
           onClick={() => {
             onZoomSelection?.();
             setIsZoomMenuOpen(false);

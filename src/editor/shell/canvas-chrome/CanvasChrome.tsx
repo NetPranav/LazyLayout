@@ -9,6 +9,9 @@ import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { AvatarStack, type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
+import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
+import { applyFeel } from "@/editor/motion/feel";
+import { type MotionPresetKey } from "@/editor/motion/presets";
 import "./fpeople.css";
 import type {
   CanvasChromeProps,
@@ -202,6 +205,22 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     controlledOnMotionFeelChange,
     "bouncy"
   );
+
+  const handleThemeChange = useCallback(
+    (nextTheme: string) => {
+      setTheme(nextTheme);
+      applyTheme(nextTheme as Theme);
+    },
+    [setTheme]
+  );
+
+  const handleMotionFeelChange = useCallback(
+    (nextFeel: MotionFeel) => {
+      setMotionFeel(nextFeel);
+      applyFeel(nextFeel as MotionPresetKey);
+    },
+    [setMotionFeel]
+  );
   const [dropdownBulge, setDropdownBulge] = useControllable(
     controlledDropdownBulge,
     controlledOnDropdownBulgeChange,
@@ -392,8 +411,9 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     controlledOnZoomSelection?.();
   }, [setZoom, controlledOnZoomSelection]);
 
-  // Global keyboard shortcuts for canvas chrome
+  // Global keyboard shortcuts for canvas chrome (standalone only: the editor shell owns them when it controls the chrome)
   useEffect(() => {
+    if (controlledShowRulers !== undefined) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
       const isInput =
@@ -439,6 +459,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     setIsAiBoxOpen,
     setIsViewOptionsOpen,
     setShowRulers,
+    controlledShowRulers,
+    contextMenuPos,
   ]);
 
   // Stage grid style inline calculations using tokens without raw pixel literals
@@ -493,7 +515,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
           {/* Background grid canvas */}
           <div
             data-stage="canvas"
-            className="ll-stage ll:absolute ll:inset-0"
+            data-inspect={inspectMode ? "true" : undefined}
+            className={`ll-stage ll:absolute ll:inset-0 ${inspectMode ? "ll-inspect" : ""}`}
             style={stageBackgroundStyle}
           >
             {/* Pixel Grid Overlay (.ll-pxgrid) */}
@@ -599,9 +622,9 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         checkerboard={checkerboard}
         onToggleCheckerboard={setCheckerboard}
         theme={theme}
-        onThemeChange={setTheme}
+        onThemeChange={handleThemeChange}
         motionFeel={motionFeel}
-        onMotionFeelChange={setMotionFeel}
+        onMotionFeelChange={handleMotionFeelChange}
         dropdownBulge={dropdownBulge}
         onDropdownBulgeChange={setDropdownBulge}
         inspectMode={inspectMode}
@@ -668,7 +691,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         panelsCollapsed={panelsCollapsed}
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
         theme={theme}
-        onThemeChange={setTheme}
+        onThemeChange={handleThemeChange}
         onOpenCanvasSettings={() => {
           setIsViewOptionsOpen(true);
           setContextMenuPos(null);

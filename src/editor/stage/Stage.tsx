@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
@@ -316,8 +316,21 @@ export const Stage: React.FC<StageProps> = ({
     onSelect: handleSelect,
   });
 
+  // Report the stage size to the camera store so fit, zoom to selection and the other camera actions know the viewport.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const syncSize = () => useCameraStore.getState().setViewport({ width: el.clientWidth, height: el.clientHeight });
+    syncSize();
+    const observer = new ResizeObserver(syncSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={viewportRef}
       data-stage="workspace"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
       onClick={(e) => {
