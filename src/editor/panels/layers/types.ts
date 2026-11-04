@@ -30,8 +30,8 @@ export interface UsePagesDataReturn {
   onSelectPage: (pageName: string) => void;
   /** Create a new page */
   onNewPage: () => void;
-  /** Rename a page (prompts or accepts new name) */
-  onRenamePage: (pageName: string, newName?: string) => void;
+  /** Rename a page to the given name */
+  onRenamePage: (pageName: string, newName: string) => void;
   /** Duplicate a page */
   onDuplicatePage: (pageName: string) => void;
   /** Delete a page */

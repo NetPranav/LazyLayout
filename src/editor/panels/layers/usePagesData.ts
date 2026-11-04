@@ -15,6 +15,28 @@ interface ExtendedProjectStoreState {
   duplicatePage?: (pageId: string, actionLabel?: string) => string;
 }
 
+function uniqueName(base: string, taken: readonly string[]): string {
+  if (!taken.includes(base)) return base;
+  let n = 2;
+  while (taken.includes(`${base} ${n}`)) n += 1;
+  return `${base} ${n}`;
+}
+
+function uniqueSlug(base: string, taken: readonly string[]): string {
+  if (!taken.includes(base)) return base;
+  let n = 2;
+  while (taken.includes(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+function syncActiveFrame(): void {
+  const st = useProjectStore.getState();
+  const root = st.pages[st.activePageId]?.rootElementId;
+  if (!root) return;
+  useCanvasViewStore.getState().setActiveFrame(root);
+  useSelectionStore.getState().select(root, "element");
+}
+
 export function usePagesData(): UsePagesDataReturn {
   const pages = useProjectStore((s) => s.pages);
   const activePageId = useProjectStore((s) => s.activePageId);
@@ -50,12 +72,16 @@ export function usePagesData(): UsePagesDataReturn {
   const onNewPage = useCallback(() => {
     const state = useProjectStore.getState() as unknown as ExtendedProjectStoreState;
     const currentPages = useProjectStore.getState().pages;
-    const count = Object.keys(currentPages).length + 1;
-    const newName = `Page ${count}`;
-    const newSlug = `/page-${count}`;
+    const list = Object.values(currentPages);
+    const newName = uniqueName(`Page ${list.length + 1}`, list.map((p) => p.name));
+    const newSlug = uniqueSlug(
+      `/${newName.toLowerCase().replace(/\s+/g, "-")}`,
+      list.map((p) => p.slug)
+    );
 
     if (typeof state.addPage === "function") {
       state.addPage({ name: newName, slug: newSlug });
+      syncActiveFrame();
       return;
     }
 
@@ -96,7 +122,7 @@ export function usePagesData(): UsePagesDataReturn {
   }, []);
 
   const onRenamePage = useCallback(
-    (pageName: string, explicitNewName?: string) => {
+    (pageName: string, explicitNewName: string) => {
       const state = useProjectStore.getState() as unknown as ExtendedProjectStoreState;
       const currentPages = useProjectStore.getState().pages;
       const target = Object.values(currentPages).find(
@@ -104,15 +130,13 @@ export function usePagesData(): UsePagesDataReturn {
       );
       if (!target) return;
 
-      const nextName =
-        explicitNewName !== undefined
-          ? explicitNewName
-          : typeof window !== "undefined"
-          ? window.prompt("Rename page:", target.name)
-          : null;
-
-      if (!nextName || !nextName.trim() || nextName.trim() === target.name) return;
-      const trimmed = nextName.trim();
+      if (!explicitNewName.trim() || explicitNewName.trim() === target.name) return;
+      const trimmed = uniqueName(
+        explicitNewName.trim(),
+        Object.values(currentPages)
+          .filter((p) => p.id !== target.id)
+          .map((p) => p.name)
+      );
 
       if (typeof state.updatePage === "function") {
         state.updatePage(target.id, { name: trimmed });
@@ -139,6 +163,7 @@ export function usePagesData(): UsePagesDataReturn {
 
     if (typeof state.duplicatePage === "function") {
       state.duplicatePage(target.id);
+      syncActiveFrame();
       return;
     }
 
@@ -163,8 +188,8 @@ export function usePagesData(): UsePagesDataReturn {
     const newPage: PageDefinition = {
       ...target,
       id: newPageId,
-      name: `${target.name} Copy`,
-      slug: `${target.slug}-copy`,
+      name: uniqueName(`${target.name} Copy`, Object.values(currentPages).map((p) => p.name)),
+      slug: uniqueSlug(`${target.slug}-copy`, Object.values(currentPages).map((p) => p.slug)),
       rootElementId: newRootId,
       order: Object.keys(currentPages).length,
     };
@@ -193,6 +218,7 @@ export function usePagesData(): UsePagesDataReturn {
 
     if (typeof state.deletePage === "function") {
       state.deletePage(target.id);
+      syncActiveFrame();
       return;
     }
 
@@ -208,6 +234,7 @@ export function usePagesData(): UsePagesDataReturn {
       pages: nextPages,
       activePageId: nextActiveId,
     });
+    syncActiveFrame();
   }, []);
 
   return {

@@ -11,7 +11,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
-import { useProjectStore } from "@/core/store/useProjectStore";
+import { useProjectStore, type PageDefinition } from "@/core/store/useProjectStore";
 import { motionIndex } from "@/core/timeline/model";
 import { buildRows, ancestorsOf, rangeBetween } from "@/core/layers/layerTree";
 import { frameIdOf } from "@/core/frames/frames";
@@ -37,7 +37,7 @@ export function useLeftPanelData(
   options?: UseLeftPanelDataOptions
 ): UseLeftPanelDataReturn {
   const mode = options?.mode ?? "design";
-  const filterByActivePage = options?.filterByActivePage ?? false;
+  const filterByActivePageOption = options?.filterByActivePage;
 
   // 1. Ensure core commands are registered for the lifetime of the left panel
   useEffect(() => {
@@ -97,13 +97,23 @@ export function useLeftPanelData(
   }, [layers]);
 
   // 4. Derive LayerItem trees (all layers and filtered page layers)
+  // With more than one page the tree follows the active page. The sample tree
+  // stands in for the untouched default document on the first page only.
+  const pageList = Object.values(pages);
+  const hasMultiplePages = pageList.length > 1;
+  const firstPageId = pageList.reduce<PageDefinition | null>(
+    (first, p) => (!first || (p.order ?? 0) < (first.order ?? 0) ? p : first),
+    null
+  )?.id;
+  const showSample = isDefaultUnpositioned && (!hasMultiplePages || activePageId === firstPageId);
+  const filterByActivePage = filterByActivePageOption ?? hasMultiplePages;
   const rootFilterId = filterByActivePage ? pages[activePageId]?.rootElementId : null;
   const layerTree: LayerItem[] = useMemo(() => {
-    if (isDefaultUnpositioned) {
+    if (showSample) {
       return SAMPLE_LAYERS;
     }
     return buildLayerTree(layers, motionMap, rootFilterId);
-  }, [isDefaultUnpositioned, layers, motionMap, rootFilterId]);
+  }, [showSample, layers, motionMap, rootFilterId]);
 
   const allLayers: LayerItem[] = useMemo(() => {
     if (isDefaultUnpositioned) {
