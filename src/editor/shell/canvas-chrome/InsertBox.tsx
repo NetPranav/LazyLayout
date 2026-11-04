@@ -9,6 +9,7 @@ import { MENU_FALLBACKS, MOT } from "@/editor/motion/presets";
 import { prefersReducedMotion } from "@/editor/motion/feel";
 import { CANVAS_CHROME_SIZES } from "./constants";
 import { INSERT_CATALOG, type InsertItem } from "./insertData";
+import { insertCatalogItem, canInsertCatalogItem } from "./insertCommands";
 
 export interface InsertBoxProps {
   open: boolean;
@@ -29,6 +30,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
 
   const boxRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const surfRef = useRef<Surf | null>(null);
   const searchInputId = useId();
 
@@ -75,6 +78,7 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
         from: seed,
         up: true,
       });
+      searchRef.current?.focus({ preventScroll: true });
     } else {
       s.leave();
       const exitDuration = prefersReducedMotion()
@@ -116,12 +120,20 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
     };
   }, [open, isRendered, onClose, triggerRef]);
 
+  const selectCategory = useCallback((category: string) => {
+    setActiveCategory(category);
+    setSearchQuery("");
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+  }, []);
+
   const handleSelectCard = useCallback(
     (name: string) => {
-      onInsertItem?.(name);
+      if (onInsertItem) onInsertItem(name);
+      else insertCatalogItem(name);
       onClose();
+      triggerRef?.current?.focus();
     },
-    [onInsertItem, onClose]
+    [onInsertItem, onClose, triggerRef]
   );
 
   // Search filtering logic across all categories
@@ -166,9 +178,24 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
           <Icon icon={Search} size={CANVAS_CHROME_SIZES.iconMd} className="ll:text-muted" />
           <input
             id={searchInputId}
-            autoFocus
+            ref={searchRef}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (panelRef.current) panelRef.current.scrollTop = 0;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                focusCard(boxRef.current, 0);
+              } else if (e.key === "Enter") {
+                const first = boxRef.current?.querySelector<HTMLButtonElement>("[data-card]");
+                if (first) {
+                  e.preventDefault();
+                  first.click();
+                }
+              }
+            }}
             placeholder="Search elements, blocks, assets"
             aria-label="Search elements, blocks, assets"
             autoComplete="off"
@@ -178,66 +205,61 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
 
         {/* Body (.ll-insb) */}
         <div className="ll-insb ll:flex ll:flex-1 ll:min-h-0">
-          {/* Left category list (.ll-insl) - Accessible Tablist */}
-          <div
-            role="tablist"
+          {/* Left category list (.ll-insl) */}
+          <nav
             aria-label="Categories"
-            aria-orientation="vertical"
             style={{
               width: "calc(var(--ll-size-menu-w) - var(--ll-spacing-16))",
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+              const btns = Array.from(
+                e.currentTarget.querySelectorAll<HTMLButtonElement>("button")
+              );
+              const i = btns.indexOf(document.activeElement as HTMLButtonElement);
+              if (i < 0) return;
+              e.preventDefault();
+              btns[(i + (e.key === "ArrowDown" ? 1 : btns.length - 1)) % btns.length]?.focus();
             }}
             className="ll-insl ll:shrink-0 ll:flex ll:flex-col ll:gap-0.5 ll:p-2 ll:border-r ll:border-border ll:overflow-y-auto"
           >
             {Object.keys(INSERT_CATALOG).map((category) => {
               const isSelected = activeCategory === category && !searchQuery;
-              if (category === "Recent") {
-                return (
-                  <React.Fragment key="recent-section">
-                    <div
-                      className="ll:h-px ll:bg-border ll:my-1.5"
-                      aria-hidden="true"
-                    />
-                    <Button
-                      variant={isSelected ? "secondary" : "ghost"}
-                      size="sm"
-                      role="tab"
-                      aria-selected={isSelected}
-                      data-cat={category}
-                      onClick={() => {
-                        setActiveCategory(category);
-                        setSearchQuery("");
-                      }}
-                      className="ll:w-full ll:justify-start ll:h-8 ll:px-2 ll:text-small"
-                    >
-                      {category}
-                    </Button>
-                  </React.Fragment>
-                );
-              }
               return (
-                <Button
-                  key={category}
-                  variant={isSelected ? "secondary" : "ghost"}
-                  size="sm"
-                  role="tab"
-                  aria-selected={isSelected}
-                  data-cat={category}
-                  onClick={() => {
-                    setActiveCategory(category);
-                    setSearchQuery("");
-                  }}
-                  className="ll:w-full ll:justify-start ll:h-8 ll:px-2 ll:text-small"
-                >
-                  {category}
-                </Button>
+                <React.Fragment key={category}>
+                  {category === "Recent" && (
+                    <div className="ll:h-px ll:bg-border ll:my-1.5" aria-hidden="true" />
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-pressed={isSelected}
+                    data-cat={category}
+                    onClick={() => selectCategory(category)}
+                    className="ll:w-full ll:justify-start ll:h-8 ll:px-2 ll:border-0 ll:text-secondary ll:hover:text-primary ll:aria-pressed:bg-surface-hover ll:aria-pressed:text-primary"
+                  >
+                    <span className="ll:text-body ll:font-normal">{category}</span>
+                  </Button>
+                </React.Fragment>
               );
             })}
-          </div>
+          </nav>
 
           {/* Right card grid (.ll-insr) */}
           <div
-            role="tabpanel"
-            aria-label={`${activeCategory} items`}
+            ref={panelRef}
+            onKeyDown={(e) => {
+              const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: GRID_COLS, ArrowUp: -GRID_COLS };
+              const step = keys[e.key];
+              if (step === undefined) return;
+              const cards = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("[data-card]"));
+              const i = cards.indexOf(document.activeElement as HTMLButtonElement);
+              if (i < 0) return;
+              e.preventDefault();
+              const next = i + step;
+              if (next < 0) searchRef.current?.focus();
+              else cards[Math.min(next, cards.length - 1)]?.focus();
+            }}
             className="ll-insr ll:flex-1 ll:min-w-0 ll:overflow-y-auto ll:p-4"
           >
             {filteredItems !== null ? (
@@ -246,6 +268,7 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
                   {filteredItems.map((item) => (
                     <CardItem
                       key={item.name}
+                      enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
                       item={item}
                       onSelect={handleSelectCard}
                     />
@@ -263,7 +286,7 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
                   className={gIdx > 0 ? "ll:mt-4" : ""}
                 >
                   {group.groupName && (
-                    <h4 className="ll-insg ll:text-small ll:font-medium ll:text-primary ll:mb-2">
+                    <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">
                       {group.groupName}
                     </h4>
                   )}
@@ -271,6 +294,7 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
                     {group.items.map((item) => (
                       <CardItem
                         key={item.name}
+                        enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
                         item={item}
                         onSelect={handleSelectCard}
                       />
@@ -288,27 +312,36 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
 
 interface CardItemProps {
   item: InsertItem;
+  enabled: boolean;
   onSelect: (name: string) => void;
 }
 
-const CardItem: React.FC<CardItemProps> = ({ item, onSelect }) => {
+const GRID_COLS = 3;
+
+function focusCard(root: HTMLElement | null, index: number) {
+  root?.querySelectorAll<HTMLButtonElement>("[data-card]")[index]?.focus();
+}
+
+const CardItem: React.FC<CardItemProps> = ({ item, enabled, onSelect }) => {
   return (
-    <Button
-      variant="ghost"
-      onClick={() => onSelect(item.name)}
-      className="ll-card ll:h-auto ll:p-1 ll:flex ll:flex-col ll:items-start ll:gap-1.5 ll:min-w-0 ll:text-left ll:cursor-pointer ll:group ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+    <button
+      type="button"
+      data-card
+      aria-disabled={enabled ? undefined : true}
+      title={enabled ? undefined : "Not available yet: no engine command for this element"}
+      onClick={() => {
+        if (enabled) onSelect(item.name);
+      }}
+      className={`ll-card ll:group ll:flex ll:flex-col ll:items-stretch ll:gap-1.5 ll:min-w-0 ll:px-1.5 ll:py-0 ll:border-0 ll:font-sans ll:bg-transparent ll:text-left ll:text-secondary ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${enabled ? "ll:cursor-pointer" : "ll:cursor-not-allowed ll:opacity-40"}`}
     >
-      <span
-        style={{ aspectRatio: "4 / 3" }}
-        className="ll-thumb ll:relative ll:block ll:w-full ll:bg-thumb-bg ll:border ll:border-border ll:group-hover:border-muted ll:rounded-sm ll:overflow-hidden ll:box-border"
-      >
+      <span className="ll-thumb ll:relative ll:block ll:w-full ll:aspect-4/3 ll:bg-thumb-bg ll:border ll:border-border ll:group-hover:border-muted ll:rounded-sm ll:overflow-hidden ll:box-border">
         {item.kind === "a" ? (
           <span className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-muted">
             <Icon icon={FileText} size={CANVAS_CHROME_SIZES.iconXl} />
           </span>
         ) : item.kind === "f" ? (
           <span
-            className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-center ll:text-body ll:font-medium ll:text-primary"
+            className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-center ll:text-lead ll:leading-tight ll:text-primary"
             style={{ fontFamily: item.name }}
           >
             {item.name}
@@ -331,9 +364,9 @@ const CardItem: React.FC<CardItemProps> = ({ item, onSelect }) => {
           })
         ) : null}
       </span>
-      <span className="ll-cname ll:text-nano ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
+      <span className="ll-cname ll:text-micro ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
         {item.name}
       </span>
-    </Button>
+    </button>
   );
 };
