@@ -4,19 +4,13 @@ import React, { useState } from "react";
 import {
   Frame,
   Type,
-  Image as ImageIcon,
   Square,
-  Sparkles,
   Layers,
   FileCode,
-  Sliders,
   Folder,
-  Eye,
-  Lock,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
-import { IconButton } from "@/editor/components/IconButton";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { ModeTabs, type EditorMode } from "@/editor/components/ModeTabs";
 import { PageSwitcher } from "@/editor/components/PageSwitcher";
@@ -31,7 +25,6 @@ import { RightPanelHeader } from "@/editor/shell/right-panel/RightPanelHeader";
 import { RightPanelAccordionRow } from "@/editor/shell/right-panel/RightPanelAccordionRow";
 import { RightPanelAiChat } from "@/editor/shell/right-panel/RightPanelAiChat";
 import { RightPanelEmptyPlaceholder } from "@/editor/shell/right-panel/RightPanelEmptyPlaceholder";
-import { Menu } from "@/editor/components/Menu";
 import type { AssetItem } from "@/editor/shell/left-panel/types";
 import type { AiChatMessage } from "@/editor/shell/right-panel/types";
 

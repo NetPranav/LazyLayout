@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import { useCameraStore } from "@/core/store/useCameraStore";
@@ -21,8 +21,6 @@ import { registerEditingCommands } from "@/core/editing/editCommands";
 import { registerSelectionCommands } from "@/core/selection/selectionCommands";
 import {
   registerFrameCommands,
-  addFrame,
-  focusFrame,
 } from "@/core/frames/frameCommands";
 import { listFrames } from "@/core/frames/frames";
 import { getDocument } from "@/core/store/documentState";

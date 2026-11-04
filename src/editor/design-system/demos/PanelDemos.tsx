@@ -1,18 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Sliders,
-  Play,
-  RotateCcw,
-  Sparkles,
-  FileCode,
-  Terminal,
-  Layers,
-  Settings,
-  X,
-  Palette,
-} from "lucide-react";
+
 import { AlignBar } from "@/editor/panels/details/controls/AlignBar";
 import { AlignmentGrid } from "@/editor/panels/details/controls/AlignmentGrid";
 import { EasingCurveBox } from "@/editor/panels/details/controls/EasingCurveBox";
@@ -20,10 +9,7 @@ import { RepeatableRow } from "@/editor/panels/details/controls/RepeatableRow";
 import { RowSettingsPopover } from "@/editor/panels/details/controls/RowSettingsPopover";
 import { NumberField } from "@/editor/components/NumberField";
 import { ColorSwatchField } from "@/editor/components/ColorSwatchField";
-import { TextField } from "@/editor/components/TextField";
 import { Button } from "@/editor/components/Button";
-import { IconButton } from "@/editor/components/IconButton";
-import { Icon } from "@/editor/components/Icon";
 import { TimelineTransport } from "@/editor/panels/timeline/TimelineTransport";
 import { TimelineRuler } from "@/editor/panels/timeline/TimelineRuler";
 import { TimelineLane } from "@/editor/panels/timeline/TimelineLane";
@@ -40,7 +26,7 @@ import type { TimelineTrack } from "@/editor/panels/timeline/types";
 export function InspectorControlsDemo() {
   const [gridIndex, setGridIndex] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(4);
   const [curve, setCurve] = useState({ name: "Custom", x1: 0.25, y1: 0.1, x2: 0.25, y2: 1 });
-  const [rowOpen, setRowOpen] = useState(false);
+  const [_rowOpen, _setRowOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [swatchHex, setSwatchHex] = useState("#CEB4F5");
   const [swatchOpacity, setSwatchOpacity] = useState(100);
@@ -198,7 +184,7 @@ const SAMPLE_TRACK: TimelineTrack = {
 
 export function TimelineDemo() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0.6);
+  const [_currentTime, setCurrentTime] = useState(0.6);
   const [selectedKfId, setSelectedKfId] = useState<string | null>("kf2");
   const [viewMode, setViewMode] = useState<"tracks" | "graph">("tracks");
 

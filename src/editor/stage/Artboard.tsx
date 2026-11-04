@@ -6,7 +6,6 @@ import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
-import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { TransformOverlay } from "./TransformOverlay";
 import type { ArtboardProps, StagePreset } from "./types";
 import {

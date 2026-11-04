@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, Play, Pause, Plus, Trash2, RotateCcw } from "lucide-react";
+import { Sun, Moon, RotateCcw } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
 import { IconButton } from "@/editor/components/IconButton";

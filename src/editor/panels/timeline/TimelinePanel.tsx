@@ -59,7 +59,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     handleSelectKeyframe,
     handleAddKeyframe,
     handleUpdateKeyframeTime,
-    handleDeleteKeyframe,
+    handleDeleteKeyframe: _handleDeleteKeyframe,
     handleDeleteSelected,
     handleSlideClip,
   } = useTimelineAnimation({
@@ -212,7 +212,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       {viewMode === "graph" ? (
         <TimelineCurveGraph
           onClose={() => setViewMode("tracks")}
-          onApplyEase={(ease) => {
+          onApplyEase={(_ease) => {
             if (selectedKeyframeId) {
               // Apply easing to selected keyframe
               handleUpdateKeyframeTime(

@@ -59,7 +59,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   className = "",
   style,
 }) => {
-  const inspectorId = useId();
+  const _inspectorId = useId();
 
   // Connect to selection store and project store
   const selectedElementId = useSelectionStore((s) => s.selectedId);

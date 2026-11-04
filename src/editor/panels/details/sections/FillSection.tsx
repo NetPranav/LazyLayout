@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -77,9 +77,11 @@ export const FillSection: React.FC<FillSectionProps> = ({
   };
 
   // Expose handleAddFill to parent so section header "+" button calls it
-  if (onAddFillRef) {
-    onAddFillRef.current = handleAddFill;
-  }
+  useEffect(() => {
+    if (onAddFillRef) {
+      onAddFillRef.current = handleAddFill;
+    }
+  });
 
   const handleUpdateFill = (id: string, patch: Partial<FillItem>) => {
     const next = fills.map((f) => (f.id === id ? { ...f, ...patch } : f));

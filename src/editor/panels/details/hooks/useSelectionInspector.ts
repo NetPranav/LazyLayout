@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useSyncExternalStore } from "react";
 import {
   Type,
   Frame,
@@ -392,17 +392,32 @@ export function getIconForArchetype(archetype?: string): LucideIcon {
 }
 
 /** Local interactive overrides store to persist edits made in inspector when layer is mock */
-const mockOverrides: Record<string, Record<string, PropValue | null>> = {};
+type MockOverrides = Record<string, Record<string, PropValue | null>>;
+let mockOverrides: MockOverrides = {};
+const inspectorListeners = new Set<() => void>();
+
+function subscribeOverrides(cb: () => void) {
+  inspectorListeners.add(cb);
+  return () => {
+    inspectorListeners.delete(cb);
+  };
+}
+const getOverrides = () => mockOverrides;
+
+export function updateMockLayerProps(id: string, patch: Record<string, PropValue | null>) {
+  mockOverrides = { ...mockOverrides, [id]: { ...(mockOverrides[id] ?? {}), ...patch } };
+  inspectorListeners.forEach((fn) => fn());
+}
 
 export interface UseSelectionInspectorOptions {
   selectedElementId?: string | null;
 }
 
 export function useSelectionInspector(options: UseSelectionInspectorOptions = {}) {
-  const storeSelectedId = useSelectionStore((s) => s.selectedId);
+  const _storeSelectedId = useSelectionStore((s) => s.selectedId);
   const storeSelectedIds = useSelectionStore((s) => s.selectedIds);
   const layers = useLayers();
-  const [, setTick] = useState(0);
+  const overrides = useSyncExternalStore(subscribeOverrides, getOverrides, getOverrides);
 
   // Selected IDs resolved with priority to options.selectedElementId
   const selectedIds = useMemo(() => {
@@ -422,7 +437,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
         if (layers[id]) return layers[id];
         const proto = PROTOTYPE_ELEMENTS[id];
         if (proto) {
-          const overrides = mockOverrides[id] || {};
+          const layerOverrides = overrides[id] || {};
           const syntheticLayer: Layer = {
             id,
             name: proto.name,
@@ -452,7 +467,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
               "typography.letterSpacing": proto.letterSpacing || 0,
               "typography.textAlign": proto.textAlign || "left",
               "text.sizing": proto.textSizing || "fixed",
-              ...overrides,
+              ...layerOverrides,
             },
           };
           return syntheticLayer;
@@ -460,7 +475,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
         return undefined;
       })
       .filter(Boolean) as Layer[];
-  }, [selectedIds, layers]);
+  }, [selectedIds, layers, overrides]);
 
   const primaryLayer: Layer | undefined = selectedLayers[0];
   const hasSelection = selectedIds.length > 0;
@@ -534,11 +549,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
         setLayerProps(realIds, { [propKey]: value }, `Change ${propKey}`);
       }
 
-      selectedIds.forEach((id) => {
-        if (!mockOverrides[id]) mockOverrides[id] = {};
-        mockOverrides[id][propKey] = value;
-      });
-      setTick((t) => t + 1);
+      selectedIds.forEach((id) => updateMockLayerProps(id, { [propKey]: value }));
     },
     [selectedIds, layers]
   );
@@ -553,11 +564,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
         setLayerProps(realIds, patch, "Change properties");
       }
 
-      selectedIds.forEach((id) => {
-        if (!mockOverrides[id]) mockOverrides[id] = {};
-        Object.assign(mockOverrides[id], patch);
-      });
-      setTick((t) => t + 1);
+      selectedIds.forEach((id) => updateMockLayerProps(id, patch));
     },
     [selectedIds, layers]
   );

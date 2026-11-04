@@ -22,7 +22,6 @@ import {
 } from "../controls/AlignmentGrid";
 import {
   INSPECTOR_CONSTANTS,
-  SIZING_OPTIONS,
   OVERFLOW_OPTIONS,
   UNIT_OPTIONS,
   BOX_SIZING_OPTIONS,

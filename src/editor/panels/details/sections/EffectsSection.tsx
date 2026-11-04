@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -32,9 +32,11 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
     setEffects((prev) => [...prev, newEffect]);
   };
 
-  if (onAddEffectRef) {
-    onAddEffectRef.current = handleAddEffect;
-  }
+  useEffect(() => {
+    if (onAddEffectRef) {
+      onAddEffectRef.current = handleAddEffect;
+    }
+  });
 
   const handleRemoveEffect = (id: string) => {
     setEffects((prev) => prev.filter((e) => e.id !== id));

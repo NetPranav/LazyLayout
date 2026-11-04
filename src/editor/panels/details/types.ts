@@ -1,5 +1,4 @@
-import type React from "react";
-import type { ArchetypeId, PropValue } from "@/core/document/registry";
+import type { PropValue } from "@/core/document/registry";
 import type { Layer } from "@/core/document/schema";
 import type { CubicBezierCurve } from "./constants";
 

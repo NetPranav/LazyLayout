@@ -16,8 +16,6 @@ export const Rulers: React.FC<RulersProps> = ({
   showRulers = true,
   zoom = 0.59,
 }) => {
-  if (!showRulers) return null;
-
   // Generate horizontal ticks covering typical monitor widths in steps from constants
   const horizontalTicks = useMemo(() => {
     const ticks: { val: number; left: number }[] = [];
@@ -51,6 +49,8 @@ export const Rulers: React.FC<RulersProps> = ({
     }
     return ticks;
   }, [zoom]);
+
+  if (!showRulers) return null;
 
   return (
     <>

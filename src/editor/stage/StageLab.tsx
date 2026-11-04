@@ -8,7 +8,7 @@ import type { StagePreset } from "./types";
 import type { CanvasTool, GridStyle } from "@/editor/shell/canvas-chrome/types";
 import { Button } from "@/editor/components/Button";
 import { Icon } from "@/editor/components/Icon";
-import { Sun, Moon, Frame, Sparkles, Layers } from "lucide-react";
+import { Sun, Moon, Layers } from "lucide-react";
 
 export function StageLabInner() {
   const [theme, setTheme] = useState<string>("paper");
@@ -22,7 +22,7 @@ export function StageLabInner() {
   const [snapGuides, setSnapGuides] = useState<boolean>(false);
   const [gridStyle, setGridStyle] = useState<GridStyle>("dots");
   const [activeTool, setActiveTool] = useState<CanvasTool>("select");
-  const [mode, setMode] = useState<"design" | "motion" | "code">("design");
+  const [mode, _setMode] = useState<"design" | "motion" | "code">("design");
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "paper" ? "dark" : "paper"));

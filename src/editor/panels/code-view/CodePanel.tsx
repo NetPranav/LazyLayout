@@ -19,7 +19,7 @@ import {
   SAMPLE_CODE_README,
   CODE_VIEW_TIMINGS,
 } from "./constants";
-import type { CodePanelProps, CodeTab, CodeFileTab } from "./types";
+import type { CodePanelProps, CodeFileTab } from "./types";
 
 const DEFAULT_FILES: CodeFileTab[] = [
   {
@@ -54,9 +54,9 @@ const DEFAULT_FILES: CodeFileTab[] = [
 
 export const CodePanel: React.FC<CodePanelProps> = ({
   activeTab = "code",
-  onTabChange,
+  onTabChange: _onTabChange,
   activeFileId: propActiveFileId,
-  onSelectFile,
+  onSelectFile: _onSelectFile,
   files: propFiles,
   code: propCode,
   fileName: propFileName,
@@ -67,7 +67,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   className = "",
   style,
 }) => {
-  const [internalActiveFileId, setInternalActiveFileId] = useState<string>("Hero.tsx");
+  const [internalActiveFileId, _setInternalActiveFileId] = useState<string>("Hero.tsx");
   const [copied, setCopied] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
@@ -92,10 +92,13 @@ export const CodePanel: React.FC<CodePanelProps> = ({
       return DEFAULT_FILES;
     }
 
+    let componentTsx = SAMPLE_CODE_HERO;
+    let componentName = "Hero";
+    let stylesContent = SAMPLE_CODE_STYLES;
+    let animationCode = SAMPLE_CODE_ANIMATION;
+
     try {
       const activePage = pages[activePageId || "page_home"];
-      let componentTsx = SAMPLE_CODE_HERO;
-      let componentName = "Hero";
 
       if (activePage?.rootElementId && elements[activePage.rootElementId]) {
         const emitted = ReactComponentEmitter.emitPage(activePage, elements);
@@ -110,46 +113,47 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
       // Styles
       const stylesEmitted = StyleEmitter.emitProjectStyles(elements);
+      stylesContent = stylesEmitted.content || SAMPLE_CODE_STYLES;
 
       // Animation
       const firstSample = Object.values(animationSamples)[0];
-      const animationCode = firstSample
+      animationCode = firstSample
         ? GSAPAnimationEmitter.emitHook(firstSample).content
         : SAMPLE_CODE_ANIMATION;
-
-      return [
-        {
-          id: `${componentName}.tsx`,
-          name: `${componentName}.tsx`,
-          language: "tsx",
-          content: componentTsx,
-          icon: <Icon icon={FileCode} size={14} />,
-        },
-        {
-          id: `use${componentName}Animation.ts`,
-          name: `use${componentName}Animation.ts`,
-          language: "typescript",
-          content: animationCode,
-          icon: <Icon icon={Zap} size={14} />,
-        },
-        {
-          id: `${componentName}.module.css`,
-          name: `${componentName}.module.css`,
-          language: "css",
-          content: stylesEmitted.content || SAMPLE_CODE_STYLES,
-          icon: <Icon icon={Layers} size={14} />,
-        },
-        {
-          id: "README.md",
-          name: "README.md",
-          language: "markdown",
-          content: SAMPLE_CODE_README,
-          icon: <Icon icon={FileText} size={14} />,
-        },
-      ];
     } catch {
       return DEFAULT_FILES;
     }
+
+    return [
+      {
+        id: `${componentName}.tsx`,
+        name: `${componentName}.tsx`,
+        language: "tsx",
+        content: componentTsx,
+        icon: <Icon icon={FileCode} size={14} />,
+      },
+      {
+        id: `use${componentName}Animation.ts`,
+        name: `use${componentName}Animation.ts`,
+        language: "typescript",
+        content: animationCode,
+        icon: <Icon icon={Zap} size={14} />,
+      },
+      {
+        id: `${componentName}.module.css`,
+        name: `${componentName}.module.css`,
+        language: "css",
+        content: stylesContent,
+        icon: <Icon icon={Layers} size={14} />,
+      },
+      {
+        id: "README.md",
+        name: "README.md",
+        language: "markdown",
+        content: SAMPLE_CODE_README,
+        icon: <Icon icon={FileText} size={14} />,
+      },
+    ];
   }, [propFiles, elements, pages, activePageId, selectedElementId, animationSamples]);
 
   // Resolve current active file

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Frame, Type, Square, Layers, Sparkles } from "lucide-react";
+import { Frame, Type, Square, Layers } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RightPanelFrame } from "@/editor/shell/right-panel/RightPanelFrame";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";

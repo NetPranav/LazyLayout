@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Workflow, GripVertical, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -27,9 +27,11 @@ export const LogicSection: React.FC<LogicSectionProps> = ({
     setLogicItems(next);
   };
 
-  if (onAddLogicRef) {
-    onAddLogicRef.current = handleAdd;
-  }
+  useEffect(() => {
+    if (onAddLogicRef) {
+      onAddLogicRef.current = handleAdd;
+    }
+  });
 
   const handleRemove = (id: string) => {
     setLogicItems((prev) => prev.filter((it) => it.id !== id));

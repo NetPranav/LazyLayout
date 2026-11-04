@@ -382,18 +382,18 @@ export function useLeftPanelData(
     return list.length > 0 ? list : SAMPLE_TRACKS;
   }, [isDefaultUnpositioned, layers, motionMap]);
 
-  const [selectedTrackId, setSelectedTrackId] = useState<string>("headline");
+  const [explicitTrackId, setExplicitTrackId] = useState<string | null>(null);
 
-  // Keep selectedTrackId in sync with selection store
-  useEffect(() => {
-    const active = selectedIds[selectedIds.length - 1];
-    if (active && tracks.some((t) => t.id === active)) {
-      setSelectedTrackId(active);
-    }
-  }, [selectedIds, tracks]);
+  const activeSelectedId = selectedIds[selectedIds.length - 1];
+  const selectedTrackId =
+    activeSelectedId && tracks.some((t) => t.id === activeSelectedId)
+      ? activeSelectedId
+      : explicitTrackId && tracks.some((t) => t.id === explicitTrackId)
+      ? explicitTrackId
+      : tracks[0]?.id || "headline";
 
   const onSelectTrack = useCallback((trackId: string) => {
-    setSelectedTrackId(trackId);
+    setExplicitTrackId(trackId);
     const store = useSelectionStore.getState();
     store.select(trackId, "element");
     useTimelineUiStore.getState().focusLayer(trackId);

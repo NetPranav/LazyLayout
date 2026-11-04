@@ -9,7 +9,6 @@ import {
   Check,
   Trash2,
   Play,
-  Terminal,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";

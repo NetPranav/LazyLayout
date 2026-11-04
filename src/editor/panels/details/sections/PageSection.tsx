@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { CornerDownRight } from "lucide-react";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
-import { Icon } from "@/editor/components/Icon";
 import {
   FONT_FAMILY_OPTIONS,
   INSPECTOR_CONSTANTS,

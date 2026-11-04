@@ -26,8 +26,6 @@ import type {
   TimelineTrack,
   TimelineKeyframe,
   TimelinePanelProps,
-  DraggingKeyframeState,
-  DraggingClipState,
 } from "./types";
 
 export function useTimelineAnimation(props: TimelinePanelProps) {

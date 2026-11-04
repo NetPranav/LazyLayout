@@ -59,10 +59,12 @@ import { AnimationSection } from "./sections/AnimationSection";
 import { DataSection } from "./sections/DataSection";
 import { LogicSection } from "./sections/LogicSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
-import { PageSection } from "./sections/PageSection";
+import { PageSection, type PageSectionProps } from "./sections/PageSection";
+import type { InspectorSectionProps } from "./types";
 
 /** Lookup map from section id string to section component */
-export const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
+export type SectionComponentProps = InspectorSectionProps & PageSectionProps;
+export const SECTION_COMPONENTS: Record<string, React.ComponentType<SectionComponentProps>> = {
   position: PositionSection,
   layout: LayoutSection,
   appearance: AppearanceSection,

@@ -29,6 +29,16 @@ import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection"
  * Returns the array of DesignSectionConfig populated with real inspector field children.
  * Useful when RightPanelFrame needs the prototype-compliant section configurations with their bodies.
  */
+/** Stable add-handler holders: the section header "+" reaches the mounted repeatable section through these. */
+type AddRef = { current?: () => void };
+const fillAddRef: AddRef = {};
+const strokeAddRef: AddRef = {};
+const effectsAddRef: AddRef = {};
+const animAddRef: AddRef = {};
+const dataAddRef: AddRef = {};
+const logicAddRef: AddRef = {};
+const a11yAddRef: AddRef = {};
+
 export function getInspectorDesignSections(
   inspector: ReturnType<typeof useSelectionInspector>,
   onOpenBlueprint?: () => void
@@ -78,15 +88,6 @@ export function getInspectorDesignSections(
     !["input", "toggle", "divider", "icon", "object3d", "counter"].includes(
       archetype || ""
     );
-
-  // References to trigger add actions in child repeatable sections from the section header "+"
-  const fillAddRef: { current?: () => void } = {};
-  const strokeAddRef: { current?: () => void } = {};
-  const effectsAddRef: { current?: () => void } = {};
-  const animAddRef: { current?: () => void } = {};
-  const dataAddRef: { current?: () => void } = {};
-  const logicAddRef: { current?: () => void } = {};
-  const a11yAddRef: { current?: () => void } = {};
 
   return [
     {

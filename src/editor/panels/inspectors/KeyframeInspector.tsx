@@ -49,7 +49,7 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps> = ({
   className = "",
   style,
 }) => {
-  const inspectorId = useId();
+  const _inspectorId = useId();
 
   // Connect to real document layers and selection
   const selectedElementId = useSelectionStore((s) => s.selectedId);

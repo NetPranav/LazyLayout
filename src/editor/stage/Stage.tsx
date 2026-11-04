@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useR
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
-import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { updateMockLayerProps } from "@/editor/panels/details/hooks/useSelectionInspector";
 import { invokeCommand } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
@@ -138,13 +138,22 @@ export const Stage: React.FC<StageProps> = ({
 
   // Local elements state for direct interactive dragging / manipulation
   const [elements, setElements] = useState<Record<string, StageElement>>(elementsFromStore);
+  const [prevElementsFromStore, setPrevElementsFromStore] = useState(elementsFromStore);
 
-  useEffect(() => {
+  if (elementsFromStore !== prevElementsFromStore) {
+    setPrevElementsFromStore(elementsFromStore);
     setElements(elementsFromStore);
-  }, [elementsFromStore]);
+  }
 
   const handleElementChange = useCallback(
     (id: string, patch: Partial<StageElement>) => {
+      // Keep the inspector fields in step with the stage while an element is moved or resized
+      const frameProps: Record<string, number> = {};
+      if (patch.x !== undefined) frameProps["frame.x"] = patch.x;
+      if (patch.y !== undefined) frameProps["frame.y"] = patch.y;
+      if (patch.width !== undefined) frameProps["frame.width"] = patch.width;
+      if (patch.height !== undefined) frameProps["frame.height"] = patch.height;
+      if (Object.keys(frameProps).length > 0) updateMockLayerProps(id, frameProps);
       setElements((prev) => {
         const target = prev[id];
         if (!target) return prev;

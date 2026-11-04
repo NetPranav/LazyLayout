@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Film, GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -44,9 +44,11 @@ export const AnimationSection: React.FC<AnimationSectionProps> = ({
     syncPrimaryToStore(next);
   };
 
-  if (onAddAnimationRef) {
-    onAddAnimationRef.current = handleAddAnimation;
-  }
+  useEffect(() => {
+    if (onAddAnimationRef) {
+      onAddAnimationRef.current = handleAddAnimation;
+    }
+  });
 
   const handleRemove = (id: string) => {
     const next = animations.filter((a) => a.id !== id);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
+import { updateMockLayerProps } from "@/editor/panels/details/hooks/useSelectionInspector";
 import {
   STAGE_CONSTANTS,
   type ResizeHandleName,
@@ -65,23 +66,30 @@ export function useStageTransform({
   } | null>(null);
 
   // Parent artboard rect for snapping
-  const parentRect: Rect = {
-    x: 0,
-    y: STAGE_CONSTANTS.artboardTitleHeight,
-    width: artboardWidth,
-    height: Math.max(0, artboardHeight - STAGE_CONSTANTS.artboardTitleHeight),
-  };
+  const parentRect = useMemo<Rect>(
+    () => ({
+      x: 0,
+      y: STAGE_CONSTANTS.artboardTitleHeight,
+      width: artboardWidth,
+      height: Math.max(0, artboardHeight - STAGE_CONSTANTS.artboardTitleHeight),
+    }),
+    [artboardWidth, artboardHeight]
+  );
 
   // Center alignment guides
-  const centerGuides: Guide[] = snapGuides
-    ? [
-        { axis: "x", pos: artboardWidth / 2 },
-        {
-          axis: "y",
-          pos: (artboardHeight + STAGE_CONSTANTS.artboardTitleHeight) / 2,
-        },
-      ]
-    : [];
+  const centerGuides = useMemo<Guide[]>(
+    () =>
+      snapGuides
+        ? [
+            { axis: "x", pos: artboardWidth / 2 },
+            {
+              axis: "y",
+              pos: (artboardHeight + STAGE_CONSTANTS.artboardTitleHeight) / 2,
+            },
+          ]
+        : [],
+    [snapGuides, artboardWidth, artboardHeight]
+  );
 
   const effectiveThreshold = snapThreshold / (zoom > 0 ? zoom : 1);
 
@@ -511,6 +519,13 @@ export function useStageTransform({
         } catch {
           // Document update fallback
         }
+
+        updateMockLayerProps(id, {
+          "frame.x": nextX,
+          "frame.y": nextY,
+          x: nextX,
+          y: nextY,
+        });
       });
     };
 

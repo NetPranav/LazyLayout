@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sliders, Frame, FileCode, Sun, Moon, Sparkles } from "lucide-react";
+import { Sliders, Frame, FileCode, Sun } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { KeyframeInspector } from "./KeyframeInspector";

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link as LinkIcon, GripVertical, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -23,9 +23,11 @@ export const DataSection: React.FC<DataSectionProps> = ({
     setDataBindings(next);
   };
 
-  if (onAddDataRef) {
-    onAddDataRef.current = handleAdd;
-  }
+  useEffect(() => {
+    if (onAddDataRef) {
+      onAddDataRef.current = handleAdd;
+    }
+  });
 
   const handleRemove = (id: string) => {
     setDataBindings((prev) => prev.filter((d) => d.id !== id));

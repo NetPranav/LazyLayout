@@ -1,17 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import {
-  MousePointer2,
-  Hand,
-  Frame,
-  Type,
-  Square,
-  Sparkles,
-  Maximize2,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+
 import { Toolbar } from "@/editor/shell/canvas-chrome/Toolbar";
 import { InsertBox } from "@/editor/shell/canvas-chrome/InsertBox";
 import { AiBox } from "@/editor/shell/canvas-chrome/AiBox";
@@ -19,8 +9,6 @@ import { ViewOptionsPopover } from "@/editor/shell/canvas-chrome/ViewOptionsPopo
 import { Rulers } from "@/editor/shell/canvas-chrome/Rulers";
 import { TransformOverlay } from "@/editor/stage/TransformOverlay";
 import { Button } from "@/editor/components/Button";
-import { IconButton } from "@/editor/components/IconButton";
-import { Icon } from "@/editor/components/Icon";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import type { StageElement } from "@/editor/stage/types";
 

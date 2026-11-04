@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Select } from "@/editor/components/Select";
 import { TextField } from "@/editor/components/TextField";
 import { Toggle } from "@/editor/components/Toggle";
@@ -23,9 +23,11 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
     setHasA11y(true);
   };
 
-  if (onAddA11yRef) {
-    onAddA11yRef.current = handleAdd;
-  }
+  useEffect(() => {
+    if (onAddA11yRef) {
+      onAddA11yRef.current = handleAdd;
+    }
+  });
 
   const role = (getValue?.("a11y.role") as string) || "auto";
   const ariaLabel = (getValue?.("a11y.label") as string) || "";

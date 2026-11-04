@@ -10,6 +10,7 @@ export interface TimelineRulerProps {
   duration: number;
   pixelsPerSecond: number;
   contentWidth: number;
+  currentTime?: number;
   onSeek: (timeSec: number) => void;
 }
 
@@ -28,6 +29,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
   duration,
   pixelsPerSecond,
   contentWidth,
+  currentTime = 0,
   onSeek,
 }) => {
   const rulerRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +86,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       aria-label="Timeline time ruler"
       aria-valuemin={0}
       aria-valuemax={duration}
+      aria-valuenow={currentTime}
       onPointerDown={handlePointerDown}
       style={{
         height: `${TIMELINE_RULER_HEIGHT_PX}px`,

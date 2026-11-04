@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Code, Terminal, Sliders, Split, Sun, Moon } from "lucide-react";
+import { Code, Terminal, Sliders, Split, Sun } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { Button } from "@/editor/components/Button";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { CodePanel } from "./CodePanel";
 import { CodeInspector } from "./CodeInspector";
-import { ConsoleView } from "./ConsoleView";
 import { LiveCodeInspector } from "./LiveCodeInspector";
 
 const THEME_OPTIONS = [

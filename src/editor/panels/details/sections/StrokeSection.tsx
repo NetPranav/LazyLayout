@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -43,9 +43,11 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
     syncPrimaryToStore(next);
   };
 
-  if (onAddStrokeRef) {
-    onAddStrokeRef.current = handleAddStroke;
-  }
+  useEffect(() => {
+    if (onAddStrokeRef) {
+      onAddStrokeRef.current = handleAddStroke;
+    }
+  });
 
   const handleUpdateStroke = (id: string, patch: Partial<StrokeItem>) => {
     const next = strokes.map((s) => (s.id === id ? { ...s, ...patch } : s));

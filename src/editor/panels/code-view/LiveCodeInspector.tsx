@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   FileCode,
   Database,
@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
-import { IconButton } from "@/editor/components/IconButton";
 import { useProjectStore, ProjectStoreState } from "@/core/store/useProjectStore";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { useLayers } from "@/core/store/useDocumentStore";
@@ -184,7 +183,7 @@ export const LiveCodeInspector: React.FC<LiveCodeInspectorProps> = ({
   const animationSamples = useProjectStore((s) => s.animationSamples);
   const blueprintGraphs = useProjectStore((s) => s.blueprintGraphs);
   const projectName = useProjectMetaStore((s) => s.projectName);
-  const selectedElementId = useSelectionStore((s) => s.selectedId);
+  const _selectedElementId = useSelectionStore((s) => s.selectedId);
   const selectElement = useSelectionStore((s) => s.select);
 
   const [internalSelectedPath, setInternalSelectedPath] = useState("app/page.tsx");

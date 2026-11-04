@@ -86,9 +86,12 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
     : pages;
 
   const filteredPagesRef = useRef(filteredPages);
-  filteredPagesRef.current = filteredPages;
   const activeIndexRef = useRef(activeIndex);
-  activeIndexRef.current = activeIndex;
+
+  useEffect(() => {
+    filteredPagesRef.current = filteredPages;
+    activeIndexRef.current = activeIndex;
+  });
 
   // Initialize Surf instance
   useEffect(() => {

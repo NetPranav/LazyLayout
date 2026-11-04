@@ -11,11 +11,12 @@ import {
 export interface TimelinePlayheadProps {
   duration: number;
   pixelsPerSecond: number;
+  currentTime?: number;
   onSeek: (timeSec: number) => void;
 }
 
 export const TimelinePlayhead = forwardRef<HTMLDivElement, TimelinePlayheadProps>(
-  function TimelinePlayhead({ duration, pixelsPerSecond, onSeek }, ref) {
+  function TimelinePlayhead({ duration, pixelsPerSecond, currentTime = 0, onSeek }, ref) {
     const handleKnobPointerDown = useCallback(
       (e: React.PointerEvent<HTMLDivElement>) => {
         if (e.button !== 0) return;
@@ -58,6 +59,7 @@ export const TimelinePlayhead = forwardRef<HTMLDivElement, TimelinePlayheadProps
           aria-label="Playhead knob"
           aria-valuemin={0}
           aria-valuemax={duration}
+          aria-valuenow={currentTime}
           onPointerDown={handleKnobPointerDown}
           style={{
             width: `${PLAYHEAD_KNOB_WIDTH_PX}px`,

@@ -26,7 +26,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
   elements,
   snapLines = [],
   spacingMarks = [],
-  onStartMove,
+  onStartMove: _onStartMove,
   onStartResize,
 }) => {
   return (

@@ -15,9 +15,6 @@ import { type MotionPresetKey } from "@/editor/motion/presets";
 import "./fpeople.css";
 import type {
   CanvasChromeProps,
-  CanvasTool,
-  ShapeTool,
-  GridStyle,
   MotionFeel,
 } from "./types";
 
