@@ -72,10 +72,10 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .logo svg{width:20px;height:20px}
 .logo:hover svg{opacity:.7}
 .logo svg{overflow:visible}.logo .tfl{fill:currentColor;stroke:none}.logo .tro{fill:none;stroke:currentColor;stroke-width:10;stroke-linejoin:round;opacity:0}
-.logo.saving-on .tfl{animation:ll-trf 1.6s cubic-bezier(.65,0,.35,1) infinite}
-.logo.saving-on .tro{stroke-dasharray:100;animation:ll-tro 1.6s cubic-bezier(.65,0,.35,1) infinite}
-@keyframes ll-tro{0%{stroke-dashoffset:100;opacity:1}55%,90%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
-@keyframes ll-trf{0%,55%{opacity:0}75%,90%{opacity:1}100%{opacity:0}}
+.logo.saving-on .tfl{animation:ll-trf 1.6s cubic-bezier(.65,0,.35,1) infinite alternate}
+.logo.saving-on .tro{stroke-dasharray:100;animation:ll-tro 1.6s cubic-bezier(.65,0,.35,1) infinite alternate}
+@keyframes ll-tro{0%{stroke-dashoffset:100}55%,100%{stroke-dashoffset:0}}
+@keyframes ll-trf{0%,55%{opacity:0}85%,100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.logo.saving-on .tro{animation:none;opacity:0}.logo.saving-on .tfl{animation:ll-fade 2.8s ease-in-out infinite}}
 .pinfo{display:flex;align-items:center;gap:16px;min-width:0;color:var(--text2)}
 /* 1px divider: .tl gap (8px) + 4px margin = 12px each side */
@@ -363,8 +363,8 @@ svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke
 .aidone{color:var(--text)}
 .aidone>svg{width:16px;height:16px;flex:none}
 .aiload{width:20px;height:20px;flex:none;color:var(--text)}
-.aiload{overflow:visible}.aiload .tro{fill:none;stroke:currentColor;stroke-width:10;stroke-linejoin:round;stroke-dasharray:100;animation:ll-tro 2.4s cubic-bezier(.65,0,.35,1) infinite}
-.aiload .tfl{fill:currentColor;stroke:none;animation:ll-trf 2.4s cubic-bezier(.65,0,.35,1) infinite}
+.aiload{overflow:visible}.aiload .tro{fill:none;stroke:currentColor;stroke-width:10;stroke-linejoin:round;stroke-dasharray:100;animation:ll-tro 2.4s cubic-bezier(.65,0,.35,1) infinite alternate}
+.aiload .tfl{fill:currentColor;stroke:none;animation:ll-trf 2.4s cubic-bezier(.65,0,.35,1) infinite alternate}
 @keyframes ll-breathe{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){.aiload .tro{animation:none;opacity:0}.aiload .tfl{animation:ll-fade 2.8s ease-in-out infinite}}
 @keyframes ll-fade{0%,100%{opacity:1}50%{opacity:.4}}
@@ -444,6 +444,10 @@ label.dtrow{cursor:pointer}
 /* Bottom block: motion timeline or code preview */
 .bottom{grid-column:2;grid-row:3;z-index:3;margin:0 calc(var(--rw)*var(--fw)*-1) 0 calc(var(--lw)*var(--fw)*-1);background:var(--panel);display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .app[data-mode=motion] .bottom,.app[data-mode=code] .bottom{border-top:1px solid var(--border)}
+.app[data-mode=motion] .bottom .ph,.app[data-mode=code] .bottom .ph{background:color-mix(in srgb,var(--panel) 95%,var(--text))}
+.app[data-mode=motion] .bottom::after,.app[data-mode=code] .bottom::after,.app[data-mode=motion] .bottom::before,.app[data-mode=code] .bottom::before{content:"";position:absolute;top:1px;left:0;width:calc(var(--lw)*var(--fw));height:6px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,var(--pshd,.1)),transparent)}
+[data-theme=dark] .bottom,[data-theme=graphite] .bottom,[data-theme=darkroom] .bottom,[data-theme=plum] .bottom,[data-theme=noir] .bottom{--pshd:.34}
+.app[data-mode=motion] .bottom::before,.app[data-mode=code] .bottom::before{left:auto;right:0;width:calc(var(--rw)*var(--fw))}
 .bottom .ph{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);min-width:0;overflow:hidden}
 .bottom .ph .ib{width:28px;height:28px}
 .tc{font:500 18px var(--mono);padding:0 8px;color:var(--text);white-space:nowrap}
@@ -662,10 +666,9 @@ label.dtrow{cursor:pointer}
 .tlrow.add .tlnm:hover:not(:disabled){color:var(--text)}
 .tlrow.add .tlnm:disabled{opacity:.4;cursor:default}
 .tlrow.add:hover .tlhc{background:var(--hover)}
-.tmm{opacity:1;transition:opacity .28s var(--spr)}
+.tmm{opacity:.7;transition:opacity .28s var(--spr)}
+.tmm:hover,.tmm:active{opacity:1}
 .tmm::before{content:"";position:absolute;inset:-6px 0}
-.tmm.fit{opacity:.25}
-.tmm.fit:hover{opacity:1}
 .tlf .ib{color:var(--muted)}
 .tlf .ib:hover{color:var(--text)}
 .artboard [data-sel]{transition:opacity .28s var(--spr)}
@@ -908,14 +911,15 @@ label.dtrow{cursor:pointer}
 /* Timeline footer */
 .tlf{height:28px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;border-top:1px solid var(--border);background:var(--panel);font:400 11px var(--mono);color:var(--muted);min-width:0}
 .tfs{width:calc(var(--hw) - 24px);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.tmm{position:relative;flex:1;min-width:80px;height:12px;cursor:pointer;touch-action:none}
-.tmc{position:absolute;inset:0;pointer-events:none}
-.tmc i{position:absolute;height:1px;background:var(--muted);opacity:.6}
-.tmw{position:absolute;top:0;bottom:0;border-radius:var(--r-sm);box-shadow:inset 0 0 0 1px var(--muted);cursor:grab}
+.tmm{position:relative;flex:1;min-width:80px;height:20px;cursor:pointer;touch-action:none;background:var(--panel)}
+.tmc{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--muted) 22%,transparent) 0 1px,transparent 1px var(--tms,24px))}
+.tmc i{position:absolute;height:3px;border-radius:1px;background:color-mix(in srgb,var(--lc) 55%,var(--lt))}
+.tmw{position:absolute;top:0;bottom:0;border-radius:var(--r-sm);background:color-mix(in srgb,var(--text) 7%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--text) 28%,transparent);cursor:grab}
 .tmw:active{cursor:grabbing}
 .tmh{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize}
+.tmh::after{content:"";position:absolute;top:5px;bottom:5px;left:3px;width:2px;border-radius:1px;background:var(--muted);opacity:.7}
 .tmh.l{left:-4px}.tmh.r{right:-4px}
-.tmp{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
+.tmp{position:absolute;top:0;bottom:0;width:1px;background:var(--text);pointer-events:none}
 .tlf .sld{width:88px;flex:none}
 .tlf .ib{width:24px;height:24px}
 .tlf .ib svg{width:14px;height:14px}
@@ -5201,13 +5205,13 @@ label.dtrow{cursor:pointer}
     else t='Nothing selected';
     s.textContent=t;
     ls=layerOrder().map(function(o){return o.l});
-    rh=Math.max(2,Math.min(3,Math.floor(10/Math.max(1,ls.length))));
+    rh=Math.max(2,Math.min(4,Math.floor(16/Math.max(1,ls.length))));
     mc='';
     ls.forEach(function(l,i){
-      l.clips.forEach(function(c){mc+='<i style="top:'+(1+i*rh)+'px;left:'+(c.s/DUR*100)+'%;width:'+Math.max(.8,(c.e-c.s)/DUR*100)+'%"></i>'});
+      l.clips.forEach(function(c){mc+='<i style="--lc:var(--lbl-'+lblOf(l)+');--lt:var(--lbl-'+lblOf(l)+'-tint);top:'+(2+i*rh)+'px;height:'+(rh-1)+'px;left:'+(c.s/DUR*100)+'%;width:'+Math.max(.8,(c.e-c.s)/DUR*100)+'%"></i>'});
     });
     $('#tmc').innerHTML=mc;
-    $('#tmm').classList.toggle('fit',M.z<=1.001);
+    $('#tmm').style.setProperty('--tms',(100/secs)+'%');
     w=$('#tmw');
     w.style.left=(M.t0/secs*100)+'%';w.style.width=(100/M.z)+'%';
     $('#tfps').innerHTML=FPS+' fps<svg><use href="#chevd"/></svg>';
