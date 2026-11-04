@@ -155,6 +155,7 @@ export function EditorShell({
       >
         {center ?? (
           <CanvasChrome
+            mode={actions.mode}
             activeTool={actions.activeTool}
             onSelectTool={actions.setActiveTool}
             activeShape={actions.activeShape}

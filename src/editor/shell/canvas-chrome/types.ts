@@ -11,6 +11,9 @@ export type MotionFeel = "smooth" | "lively" | "bouncy";
 export type AiState = "idle" | "work" | "done";
 
 export interface CanvasChromeProps {
+  /** Active editor mode (design, motion, code). Controls motion-mode toolbar tools (.mtools). */
+  mode?: "design" | "motion" | "code";
+
   /** Canvas content slot (artboard, stage elements). Phase 2 mounts inside this slot. */
   children?: React.ReactNode;
 

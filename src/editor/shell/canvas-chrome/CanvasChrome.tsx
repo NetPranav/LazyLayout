@@ -46,6 +46,7 @@ function useControllable<T>(
 }
 
 export const CanvasChrome: React.FC<CanvasChromeProps> = ({
+  mode = "design",
   children,
   showRulers: controlledShowRulers,
   onToggleRulers: controlledOnToggleRulers,
@@ -537,6 +538,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
       {/* Floating Toolbar & Zoom Bar */}
       <Toolbar
+        mode={mode}
         activeTool={activeTool}
         onSelectTool={setActiveTool}
         activeShape={activeShape}

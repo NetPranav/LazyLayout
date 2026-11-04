@@ -450,8 +450,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             <MenuSeparator />
             {entry("window.outputLog", "Output Log", FileText, undefined, undefined, undefined, true, "Output log viewer coming in Phase 48")}
             {entry("window.executionTrace", "Execution Trace", Spline, undefined, undefined, undefined, true, "Execution trace visualizer coming in Phase 48")}
-            {entry("window.undoHistory", "Undo History", Undo2)}
-            {entry("window.versionHistory", "Version History", Save)}
+            {entry("window.undoHistory", "Undo History", Undo2, undefined, undefined, undefined, true, "Undo history panel coming in Phase 48")}
+            {entry("window.versionHistory", "Version History", Save, undefined, undefined, undefined, true, "Version history timeline coming in Phase 48")}
             {entry("window.globalSearch", "Global Search", Search, "Ctrl+K", handleOpenSearch)}
             {entry("window.referenceViewer", "Reference Viewer", LinkIcon, undefined, undefined, undefined, true, "Reference viewer coming in Phase 52")}
             {entry("window.plugins", "Plugins", Settings, undefined, undefined, undefined, true, "Plugin manager coming in Phase 55")}
@@ -473,7 +473,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {DARK_THEMES.map((id) => themeEntry(id))}
           </SubMenu>
 
-          {entry("app.settings", "Settings", Settings, "Ctrl+,")}
+          {entry("app.settings", "Settings", Settings, "Ctrl+,", undefined, undefined, true, "Settings panel coming in Phase 45")}
 
           <SubMenu
             id="sub-help"
@@ -481,9 +481,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             icon={<Icon icon={Info} size={MENU_ICON_SIZE} />}
           >
             {entry("help.shortcuts", "Keyboard shortcuts", Keyboard, "F1")}
-            {entry("help.demo", "Showcase demo", Play)}
+            {entry("help.demo", "Showcase demo", Play, undefined, undefined, undefined, true, "Showcase demo available in gallery")}
             {entry("help.docs", "Documentation", FileText)}
-            {entry("help.about", "About", Star)}
+            {entry("help.about", "About", Star, undefined, undefined, undefined, true, "Lazy Layout v0.1.0")}
           </SubMenu>
         </Menu>
       </div>

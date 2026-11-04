@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import { useCameraStore } from "@/core/store/useCameraStore";
@@ -12,10 +13,13 @@ import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { projectSession } from "@/core/storage/ProjectSession";
 import {
   defineCommand,
+  getCommand,
+  isCommandAvailable,
   invokeCommand,
   tryRunCommand,
   installGlobalCommands,
 } from "@/core/commands";
+import { transport, transportStore } from "@/core/time/transport";
 import { isTextEditingTarget } from "@/core/commands/normalize";
 import { registerEditingCommands } from "@/core/editing/editCommands";
 import { registerSelectionCommands } from "@/core/selection/selectionCommands";
@@ -107,6 +111,7 @@ export interface UseEditorActionsReturn {
 export function useEditorActions(
   options: UseEditorActionsOptions = {}
 ): UseEditorActionsReturn {
+  const router = useRouter();
   const {
     initialMode = "design",
     initialLeftCollapsed = false,
@@ -430,9 +435,7 @@ export function useEditorActions(
         // App / Navigation
         case "app.back": {
           void projectSession.flush().finally(() => {
-            if (typeof window !== "undefined") {
-              window.location.href = "/";
-            }
+            router.push("/");
           });
           break;
         }
@@ -450,10 +453,8 @@ export function useEditorActions(
         // File operations
         case "file.new": {
           void projectSession.flush().finally(() => {
-            if (typeof window !== "undefined") {
-              const newId = generateProjectId();
-              window.location.href = `/editor?projectId=${newId}`;
-            }
+            const newId = generateProjectId();
+            router.push(`/editor?projectId=${newId}`);
           });
           break;
         }
@@ -738,6 +739,7 @@ export function useEditorActions(
       setViewportPreset,
       exportProjectFile,
       importProjectFile,
+      router,
     ]
   );
 
@@ -1225,6 +1227,26 @@ export function useEditorActions(
 
       // Single-key shortcuts without modifiers:
       if (!isCtrl && !isAlt && !isShift) {
+        if (key === " " || e.code === "Space") {
+          const tag = (document.activeElement as HTMLElement | null)?.tagName;
+          if (tag !== "BUTTON" && tag !== "INPUT" && tag !== "TEXTAREA" && !(document.activeElement as HTMLElement | null)?.isContentEditable) {
+            e.preventDefault();
+            transport.togglePlay();
+            return;
+          }
+        }
+        if (key === "k") {
+          e.preventDefault();
+          if (transportStore.getState().playing) {
+            transport.pause();
+          } else {
+            const kfCmd = getCommand("timeline.addKeyframe") || getCommand("keyframe.add");
+            if (kfCmd && isCommandAvailable(kfCmd)) {
+              tryRunCommand(kfCmd.id);
+            }
+          }
+          return;
+        }
         if (key === "v") {
           e.preventDefault();
           setActiveTool("select");

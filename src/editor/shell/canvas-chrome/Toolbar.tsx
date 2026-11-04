@@ -15,12 +15,17 @@ import {
   Image as ImageIcon,
   Plus,
   Play,
+  Pause,
   Undo2,
   Redo2,
   Columns3,
   ChevronDown,
   type LucideIcon,
+  type LucideProps,
 } from "lucide-react";
+import { useStore } from "zustand";
+import { transportStore, transport } from "@/core/time/transport";
+import { getCommand, isCommandAvailable, tryRunCommand } from "@/core/commands";
 import { Icon } from "@/editor/components/Icon";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
@@ -30,6 +35,7 @@ import { CANVAS_CHROME_SIZES } from "./constants";
 import type { CanvasTool, ShapeTool } from "./types";
 
 export interface ToolbarProps {
+  mode?: "design" | "motion" | "code";
   activeTool?: CanvasTool;
   onSelectTool?: (tool: CanvasTool) => void;
   activeShape?: ShapeTool;
@@ -59,7 +65,39 @@ export interface ToolbarProps {
   onTogglePanels?: () => void;
 
   onPreview?: () => void;
+
+  // Motion-mode toolbar controls
+  isPlaying?: boolean;
+  onTogglePlay?: () => void;
+  onAddKeyframe?: () => void;
 }
+
+const KeyframeAddSvg: LucideIcon = Object.assign(
+  React.forwardRef<SVGSVGElement, LucideProps>(function KeyframeAddSvg(
+    { size = 20, strokeWidth = 1.5, className = "", ...props },
+    ref
+  ) {
+    return (
+      <svg
+        ref={ref}
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`ll:shrink-0 ${className}`}
+        {...props}
+      >
+        <path d="M12 3l9 9-9 9-9-9Z" />
+        <path d="M12 9v6M9 12h6" />
+      </svg>
+    );
+  }),
+  { displayName: "KeyframeAddSvg" }
+);
 
 const SHAPES: ReadonlyArray<{
   id: ShapeTool;
@@ -76,6 +114,7 @@ const SHAPES: ReadonlyArray<{
 ];
 
 export const Toolbar: React.FC<ToolbarProps> = ({
+  mode = "design",
   activeTool = "select",
   onSelectTool,
   activeShape = "box",
@@ -99,6 +138,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   panelsCollapsed = false,
   onTogglePanels,
   onPreview,
+  isPlaying,
+  onTogglePlay,
+  onAddKeyframe,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const shapeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -107,6 +149,31 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
+
+  // Playback state and keyframe command wiring
+  const storePlaying = useStore(transportStore, (s) => s.playing);
+  const playingState = isPlaying !== undefined ? isPlaying : storePlaying;
+
+  const handleTogglePlay = useCallback(() => {
+    if (onTogglePlay) {
+      onTogglePlay();
+    } else {
+      transport.togglePlay();
+    }
+  }, [onTogglePlay]);
+
+  const kfCommand = getCommand("timeline.addKeyframe") || getCommand("keyframe.add");
+  const hasKeyframeCommand = Boolean(
+    onAddKeyframe || (kfCommand && isCommandAvailable(kfCommand))
+  );
+
+  const handleAddKeyframe = useCallback(() => {
+    if (onAddKeyframe) {
+      onAddKeyframe();
+    } else if (kfCommand && isCommandAvailable(kfCommand)) {
+      tryRunCommand(kfCommand.id);
+    }
+  }, [onAddKeyframe, kfCommand]);
 
   // WAI-ARIA Toolbar roving arrow-key navigation covering both center and right tool clusters
   const handleKeyDown = useCallback(
@@ -156,146 +223,222 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     >
       {/* Center Floating Toolbar - 16px above bottom edge */}
       <div
+        id="tools"
         role="toolbar"
         aria-label="Canvas tools"
         data-toolbar="main"
         className="ll-fbar ll-ftool ll:absolute ll:bottom-4 ll:left-1/2 ll:-translate-x-1/2 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none"
       >
-        {/* Select (V) */}
-        <IconButton
-          size="lg"
-          aria-label="Select (V)"
-          tooltip="Select (V)"
-          pressed={activeTool === "select"}
-          tabIndex={focusedIndex === 0 ? 0 : -1}
-          onFocus={() => setFocusedIndex(0)}
-          onClick={() => onSelectTool?.("select")}
-          icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+        {mode === "motion" ? (
+          <div className="mtools ll-mtools ll:flex ll:items-center ll:gap-0.5">
+            {/* Select (V) */}
+            <IconButton
+              size="lg"
+              data-tool="select"
+              aria-label="Select (V)"
+              tooltip="Select (V)"
+              pressed={activeTool === "select"}
+              tabIndex={focusedIndex === 0 ? 0 : -1}
+              onFocus={() => setFocusedIndex(0)}
+              onClick={() => onSelectTool?.("select")}
+              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Hand (H) */}
-        <IconButton
-          size="lg"
-          aria-label="Hand (H)"
-          tooltip="Hand (H)"
-          pressed={activeTool === "hand"}
-          tabIndex={focusedIndex === 1 ? 0 : -1}
-          onFocus={() => setFocusedIndex(1)}
-          onClick={() => onSelectTool?.("hand")}
-          icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Hand (H) */}
+            <IconButton
+              size="lg"
+              data-tool="hand"
+              aria-label="Hand (H)"
+              tooltip="Hand (H)"
+              pressed={activeTool === "hand"}
+              tabIndex={focusedIndex === 1 ? 0 : -1}
+              onFocus={() => setFocusedIndex(1)}
+              onClick={() => onSelectTool?.("hand")}
+              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Separator */}
-        <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
-          aria-hidden="true"
-        />
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              aria-hidden="true"
+            />
 
-        {/* Frame (F) */}
-        <IconButton
-          size="lg"
-          aria-label="Frame (F)"
-          tooltip="Frame (F)"
-          pressed={activeTool === "frame"}
-          tabIndex={focusedIndex === 2 ? 0 : -1}
-          onFocus={() => setFocusedIndex(2)}
-          onClick={() => onSelectTool?.("frame")}
-          icon={<Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Add keyframe (K) */}
+            <IconButton
+              size="lg"
+              data-mact="kf"
+              aria-label="Add keyframe (K)"
+              tooltip={
+                hasKeyframeCommand
+                  ? "Add keyframe (K)"
+                  : "Add keyframe (K) — No keyframe command registered in engine"
+              }
+              disabled={!hasKeyframeCommand}
+              tabIndex={focusedIndex === 2 ? 0 : -1}
+              onFocus={() => setFocusedIndex(2)}
+              onClick={handleAddKeyframe}
+              icon={<Icon icon={KeyframeAddSvg} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Shape Picker */}
-        <IconButton
-          ref={shapeButtonRef}
-          size="lg"
-          aria-label="Shape"
-          tooltip="Shape"
-          pressed={activeTool === "shape"}
-          aria-haspopup="menu"
-          aria-expanded={isShapeMenuOpen}
-          tabIndex={focusedIndex === 3 ? 0 : -1}
-          onFocus={() => setFocusedIndex(3)}
-          onClick={() => {
-            onSelectTool?.("shape");
-            setIsShapeMenuOpen((prev) => !prev);
-          }}
-          icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Play preview (Space) */}
+            <IconButton
+              size="lg"
+              data-mact="play"
+              aria-label={playingState ? "Pause preview (Space)" : "Play preview (Space)"}
+              tooltip={playingState ? "Pause preview (Space)" : "Play preview (Space)"}
+              pressed={playingState}
+              tabIndex={focusedIndex === 3 ? 0 : -1}
+              onFocus={() => setFocusedIndex(3)}
+              onClick={handleTogglePlay}
+              icon={<Icon icon={playingState ? Pause : Play} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+          </div>
+        ) : (
+          <div className="dtools ll-dtools ll:flex ll:items-center ll:gap-0.5">
+            {/* Select (V) */}
+            <IconButton
+              size="lg"
+              data-tool="select"
+              aria-label="Select (V)"
+              tooltip="Select (V)"
+              pressed={activeTool === "select"}
+              tabIndex={focusedIndex === 0 ? 0 : -1}
+              onFocus={() => setFocusedIndex(0)}
+              onClick={() => onSelectTool?.("select")}
+              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Text (T) */}
-        <IconButton
-          size="lg"
-          aria-label="Text (T)"
-          tooltip="Text (T)"
-          pressed={activeTool === "text"}
-          tabIndex={focusedIndex === 4 ? 0 : -1}
-          onFocus={() => setFocusedIndex(4)}
-          onClick={() => onSelectTool?.("text")}
-          icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Hand (H) */}
+            <IconButton
+              size="lg"
+              data-tool="hand"
+              aria-label="Hand (H)"
+              tooltip="Hand (H)"
+              pressed={activeTool === "hand"}
+              tabIndex={focusedIndex === 1 ? 0 : -1}
+              onFocus={() => setFocusedIndex(1)}
+              onClick={() => onSelectTool?.("hand")}
+              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Image */}
-        <IconButton
-          size="lg"
-          aria-label="Image"
-          tooltip="Image"
-          pressed={activeTool === "image"}
-          tabIndex={focusedIndex === 5 ? 0 : -1}
-          onFocus={() => setFocusedIndex(5)}
-          onClick={() => onSelectTool?.("image")}
-          icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              aria-hidden="true"
+            />
 
-        {/* Separator */}
-        <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
-          aria-hidden="true"
-        />
+            {/* Frame (F) */}
+            <IconButton
+              size="lg"
+              data-tool="frame"
+              aria-label="Frame (F)"
+              tooltip="Frame (F)"
+              pressed={activeTool === "frame"}
+              tabIndex={focusedIndex === 2 ? 0 : -1}
+              onFocus={() => setFocusedIndex(2)}
+              onClick={() => onSelectTool?.("frame")}
+              icon={<Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Insert (+) - Disclosure button (keep aria-expanded, drop pressed) */}
-        <IconButton
-          ref={insertButtonRef}
-          size="lg"
-          aria-label="Insert"
-          tooltip="Insert (I)"
-          aria-haspopup="dialog"
-          aria-expanded={isInsertOpen}
-          tabIndex={focusedIndex === 6 ? 0 : -1}
-          onFocus={() => setFocusedIndex(6)}
-          onClick={onToggleInsert}
-          icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Shape Picker */}
+            <IconButton
+              ref={shapeButtonRef}
+              size="lg"
+              aria-label="Shape"
+              tooltip="Shape"
+              pressed={activeTool === "shape"}
+              aria-haspopup="menu"
+              aria-expanded={isShapeMenuOpen}
+              tabIndex={focusedIndex === 3 ? 0 : -1}
+              onFocus={() => setFocusedIndex(3)}
+              onClick={() => {
+                onSelectTool?.("shape");
+                setIsShapeMenuOpen((prev) => !prev);
+              }}
+              icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Ask AI (/) - Disclosure button (keep aria-expanded, drop pressed) */}
-        <IconButton
-          ref={aiButtonRef}
-          size="lg"
-          aria-label="Ask AI (/)"
-          tooltip="Ask AI (/)"
-          aria-haspopup="dialog"
-          pressed={isAiBoxOpen}
-          aria-expanded={isAiBoxOpen}
-          tabIndex={focusedIndex === 7 ? 0 : -1}
-          onFocus={() => setFocusedIndex(7)}
-          onClick={onToggleAiBox}
-          icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
-        />
+            {/* Text (T) */}
+            <IconButton
+              size="lg"
+              data-tool="text"
+              aria-label="Text (T)"
+              tooltip="Text (T)"
+              pressed={activeTool === "text"}
+              tabIndex={focusedIndex === 4 ? 0 : -1}
+              onFocus={() => setFocusedIndex(4)}
+              onClick={() => onSelectTool?.("text")}
+              icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Separator */}
-        <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
-          aria-hidden="true"
-        />
+            {/* Image */}
+            <IconButton
+              size="lg"
+              data-tool="image"
+              aria-label="Image"
+              tooltip="Image"
+              pressed={activeTool === "image"}
+              tabIndex={focusedIndex === 5 ? 0 : -1}
+              onFocus={() => setFocusedIndex(5)}
+              onClick={() => onSelectTool?.("image")}
+              icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
-        {/* Preview */}
-        <IconButton
-          size="lg"
-          aria-label="Preview"
-          tooltip="Preview"
-          tabIndex={focusedIndex === 8 ? 0 : -1}
-          onFocus={() => setFocusedIndex(8)}
-          onClick={onPreview}
-          icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconLg} />}
-        />
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              aria-hidden="true"
+            />
+
+            {/* Insert (+) - Disclosure button (keep aria-expanded, drop pressed) */}
+            <IconButton
+              ref={insertButtonRef}
+              size="lg"
+              id="plusbtn"
+              aria-label="Insert"
+              tooltip="Insert (I)"
+              aria-haspopup="dialog"
+              aria-expanded={isInsertOpen}
+              tabIndex={focusedIndex === 6 ? 0 : -1}
+              onFocus={() => setFocusedIndex(6)}
+              onClick={onToggleInsert}
+              icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Ask AI (/) - Disclosure button (keep aria-expanded, drop pressed) */}
+            <IconButton
+              ref={aiButtonRef}
+              size="lg"
+              id="aibtn"
+              aria-label="Ask AI (/)"
+              tooltip="Ask AI (/)"
+              aria-haspopup="dialog"
+              pressed={isAiBoxOpen}
+              aria-expanded={isAiBoxOpen}
+              tabIndex={focusedIndex === 7 ? 0 : -1}
+              onFocus={() => setFocusedIndex(7)}
+              onClick={onToggleAiBox}
+              icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
+            />
+
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              aria-hidden="true"
+            />
+
+            {/* Preview */}
+            <IconButton
+              size="lg"
+              aria-label="Preview"
+              tooltip="Preview"
+              tabIndex={focusedIndex === 8 ? 0 : -1}
+              onFocus={() => setFocusedIndex(8)}
+              onClick={onPreview}
+              icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+          </div>
+        )}
       </div>
 
       {/* Right Floating Zoom & History Controls */}
