@@ -457,8 +457,10 @@ label.dtrow{cursor:pointer}
 .code .ln::before{content:counter(ln);display:inline-block;width:24px;margin-right:16px;text-align:right;color:var(--muted)}
 
 /* Motion: one combined timeline. The header column and the lanes are rows of one vertical scroller, so they always line up. Patterns follow pro editors (header bar, track column, effect-controls rows), the look is ours. */
-.bottom{--hw:200px;position:relative}
-.bottom .ph.mh{height:40px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:0 12px}
+.bottom{--hw:224px;position:relative}
+.bottom .ph.mh{height:40px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:0 12px;container-type:inline-size}
+@container (max-width:900px){.tt{display:none}}
+@container (max-width:780px){#tzoom{display:none}}
 .mtc{display:flex;align-items:baseline;gap:8px;min-width:0}
 .mtr{display:flex;align-items:center;gap:2px;justify-self:center}
 .mrt{display:flex;align-items:center;gap:4px;justify-content:flex-end;min-width:0}
@@ -470,16 +472,16 @@ label.dtrow{cursor:pointer}
 .mdd svg{width:12px;height:12px;color:var(--muted)}
 .bottom .ph .tdiv{margin:0 4px}
 .mrt .ib svg{width:16px;height:16px}
-#tzoom{width:72px;margin:0;accent-color:var(--ctl)}
+#tzoom{width:56px;margin:0;accent-color:var(--ctl)}
 .bsplit{position:absolute;left:0;right:0;top:0;height:6px;z-index:8;cursor:row-resize;touch-action:none}
 .bsplit::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--text);opacity:0;transition:opacity .12s}
 .bsplit:hover::after,.bsplit.on::after{opacity:.5}
 .tl{flex:1;min-height:0;position:relative;user-select:none;-webkit-user-select:none;--rh:32px;--rp:24px}
 .tl.cmp{--rh:24px;--rp:20px}
 .tls{position:absolute;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
-.tlc{position:relative;min-height:100%;--gp:80px;--go:0px}
+.tlc{position:relative;min-height:100%;display:flex;flex-direction:column;--gp:80px;--go:0px}
 .tlc::before{content:"";position:absolute;left:calc(var(--hw) - 1px);top:0;bottom:0;width:1px;background:var(--border);z-index:3;pointer-events:none}
-.tlrow{display:grid;grid-template-columns:var(--hw) minmax(0,1fr);height:var(--rh);overflow:hidden}
+.tlrow{display:grid;grid-template-columns:var(--hw) minmax(0,1fr);height:var(--rh);overflow:hidden;flex:none}
 .tlrow.prp{height:var(--rp)}
 .tlrow.tlrul{height:32px;position:sticky;top:0;z-index:4;background:var(--panel)}
 .tlhc{display:flex;align-items:center;gap:2px;min-width:0;padding:0 4px 0 8px;border-bottom:1px solid var(--border);background:var(--panel);color:var(--text2)}
@@ -526,7 +528,8 @@ label.dtrow{cursor:pointer}
 .clip{position:absolute;top:4px;bottom:4px;background:var(--bar);border:1px solid var(--border);border-radius:var(--r-sm);cursor:grab;touch-action:none;overflow:hidden}
 .clip:active{cursor:grabbing}
 .clip.on{background:var(--seg);border-color:var(--text);box-shadow:0 0 0 1px var(--text)}
-.clip .cn{position:absolute;left:12px;right:12px;top:0;bottom:0;display:flex;align-items:center;font:500 11px var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;pointer-events:none}
+.clip .cn{position:absolute;left:8px;top:2px;max-width:calc(100% - 16px);height:14px;padding:0 6px;display:block;background:var(--panel);border-radius:var(--r-sm);font:500 11px/14px var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.tl.cmp .clip .cn{top:0}
 .clip.on .cn{color:var(--text)}
 .locked .clip{cursor:default}
 .tl.split .clip{cursor:crosshair}
@@ -537,7 +540,8 @@ label.dtrow{cursor:pointer}
 .ch.r::after{left:auto;right:3px}
 .clip:hover .ch::after{opacity:.6}
 .tl.split .ch{cursor:crosshair}
-.skf{position:absolute;bottom:8px;width:5px;height:5px;margin:0 0 0 -2px;background:var(--text2);transform:rotate(45deg);pointer-events:none}
+.ckt{position:absolute;bottom:0;width:2px;height:5px;margin-left:-1px;background:var(--text2);pointer-events:none}
+.tl.cmp .ckt{display:none}
 .kseg{position:absolute;top:50%;height:2px;margin-top:-1px;background:var(--muted);opacity:.4;pointer-events:none}
 .kfb{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;display:grid;place-items:center;cursor:grab;touch-action:none}
 .kfb i{width:9px;height:9px;background:var(--text2);transform:rotate(45deg);pointer-events:none;transition:background .12s}
@@ -548,7 +552,7 @@ label.dtrow{cursor:pointer}
 .tk{position:absolute;bottom:0;width:1px;height:5px;background:var(--muted);opacity:.6}
 .tk.M{height:9px;opacity:1}
 .tkl{position:absolute;top:13px;font:500 11px/1 var(--mono);color:var(--muted);pointer-events:none;white-space:nowrap}
-.tkl.r{transform:translateX(-100%)}
+.tkl.hid{visibility:hidden}
 .wa{position:absolute;top:2px;height:4px;background:var(--text2);pointer-events:none}
 .wah{position:absolute;top:0;width:6px;height:8px;background:var(--text2);cursor:ew-resize}
 .mk{position:absolute;top:11px;height:14px;display:flex;z-index:2}
@@ -588,7 +592,67 @@ label.dtrow{cursor:pointer}
 .dtxt:disabled{color:var(--muted);background:none;cursor:default}
 .dfield input[readonly]{color:var(--text2)}
 .kcurve .g{stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke}
-@media (prefers-reduced-motion:reduce){.tlrow.flash>*,.snl.on{animation:none}.tlch svg,.kfb i,.bsplit::after{transition:none}}
+.tldz{flex:1 0 auto;min-height:56px;display:grid;grid-template-columns:var(--hw) minmax(0,1fr)}
+.dzr{display:grid;place-items:center;margin:8px;border:1px dashed transparent;border-radius:var(--r-md);font:400 12px var(--sans);color:var(--muted);transition:border-color .12s,background-color .12s,color .12s}
+.tldz.over .dzr{border-color:var(--muted);background:var(--hover);color:var(--text2)}
+.vseg{margin-right:4px}
+.vseg button{padding:0 8px;font-size:12px}
+.tl.gv .tls{overflow:hidden}
+.tl.gv .tlc{height:100%;min-height:0}
+.gvb{flex:1;min-height:0;display:grid;grid-template-columns:var(--hw) minmax(0,1fr)}
+.gvl{min-height:0;overflow-y:auto;border-bottom:0}
+.gvl .tlrow{display:block;height:32px}
+.gvl .tlrow.prp{height:32px}
+.gvl .tlrow .tlhc{height:100%}
+.gvl .tlrow.prp .tlhc{padding-left:24px}
+.gvp{position:relative;min-width:0;min-height:0;overflow:hidden;isolation:isolate}
+.gvp::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(to right,var(--border) 1px,transparent 1px);background-size:var(--gp) 100%;background-position:var(--go) 0;opacity:.5;pointer-events:none}
+.gvs{position:absolute;left:0;top:0;display:block}
+.gvs .g{stroke:var(--border);stroke-width:1;shape-rendering:crispEdges}
+.gvs .c{fill:none;stroke:var(--ctl);stroke-width:1.5;stroke-linejoin:round}
+.gvs .f{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.7}
+.gvs .hn{stroke:var(--muted);stroke-width:1}
+.gvy{position:absolute;left:8px;font:400 10px/1 var(--mono);color:var(--muted);pointer-events:none;transform:translateY(calc(-100% - 2px))}
+.gk{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;display:grid;place-items:center;cursor:grab;touch-action:none}
+.gk i{width:9px;height:9px;background:var(--text2);transform:rotate(45deg);pointer-events:none}
+.gk:hover i{background:var(--text)}
+.gk.sel i{width:11px;height:11px;background:var(--ctl);box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--ctl)}
+.gh{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;display:grid;place-items:center;cursor:grab;touch-action:none}
+.gh i{width:7px;height:7px;border-radius:50%;background:var(--panel);border:1.5px solid var(--text);pointer-events:none}
+.gdot{position:absolute;left:0;top:0;width:7px;height:7px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--ctl);box-shadow:0 0 0 2px var(--panel);pointer-events:none}
+.gve{position:absolute;inset:0;display:grid;place-items:center;font:400 12px var(--sans);color:var(--muted)}
+.kce{position:relative}
+.kcurve .hn{stroke:var(--muted);stroke-width:1;vector-effect:non-scaling-stroke}
+.kcurve .sg{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.kh{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;display:grid;place-items:center;cursor:grab;touch-action:none;border-radius:var(--r-sm)}
+.kh i{width:9px;height:9px;border-radius:50%;background:var(--ctl);box-shadow:0 0 0 2px var(--canvas);pointer-events:none}
+.kp{position:absolute;width:5px;height:5px;margin:-2px 0 0 -2px;background:var(--text2);pointer-events:none}
+.dtc input[type=range]{flex:1;min-width:0;margin:0;accent-color:var(--ctl)}
+.sval{min-width:40px;text-align:right;font:400 11px var(--mono);color:var(--text)}
+.stl{display:flex;align-items:center;gap:8px}
+.stest{position:relative;flex:1;height:28px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--canvas);overflow:hidden}
+.stq{position:absolute;left:5px;top:5px;width:16px;height:16px;background:var(--ctl);border-radius:var(--r-sm)}
+.ppop.xpop{width:520px;max-width:calc(100vw - 16px);transform-origin:100% 100%}
+.ppop.xpop.keys{width:360px}
+.xpop:focus{outline:none}
+.xcode{margin:0;height:240px;overflow:auto;background:var(--canvas);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;font:400 12px/1.6 var(--mono);color:var(--text2);white-space:pre;tab-size:2}
+.xcode .k{color:var(--text);font-weight:600}
+.xcode .s{color:var(--text)}
+.xcode .n{color:var(--text)}
+.xcode .c{color:var(--muted)}
+.xmeta{display:flex;align-items:center;gap:8px;font:400 11px var(--mono);color:var(--muted)}
+.xmeta .sp{flex:1}
+.xnote{font-size:11px;color:var(--muted)}
+.xfoot{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.xfoot .btn{height:28px;font-size:12px}
+.xfoot .btn svg{width:14px;height:14px}
+.xfoot .btn[data-xa=copy]{min-width:84px;justify-content:center}
+.xks{display:grid;grid-template-columns:1fr;gap:2px}
+.xks h4{grid-column:1/-1;margin:8px 0 0;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.xks h4:first-child{margin-top:0}
+.xk{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;font-size:12px;color:var(--text2)}
+.xk kbd{font:500 11px var(--mono);color:var(--text);padding:0 6px;height:20px;line-height:18px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bar);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.tlrow.flash>*,.snl.on{animation:none}.tlch svg,.kfb i,.bsplit::after,.dzr{transition:none}}
 
 /* Right panel: header and sections (design) */
 .rhead{flex:none}
@@ -2193,6 +2257,7 @@ label.dtrow{cursor:pointer}
     if(d.act==='fix'){fixIssue(d.id);return}
     if(d.n!=null){pick(mm,t);return}
     if(d.act==='reset')renderIns();
+    if(d.mxa){var ma=d.mxa;setTimeout(function(){mxAct(ma)},0)}
     if(d.page)setPage(d.page);if(d.pact==='rename')startPageRename();
     if(d.shape)pickShape(d.shape);
     if(d.zoom)zoomAct(d.zoom);
@@ -2231,7 +2296,7 @@ label.dtrow{cursor:pointer}
   $('#panelbtn').addEventListener('click',function(){var both=!(app.classList.contains('lc')&&app.classList.contains('rc'));togglePanel('lc',both);togglePanel('rc',both)});
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){if(sbm.classList.contains('open')&&mm.classList.contains('open')){e.preventDefault();closeSub();return}closeAll();return}
-    if(/^i$/i.test(e.key)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();insToggle();return}
+    if(/^i$/i.test(e.key)&&mode!=='motion'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();insToggle();return}
     if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();aiToggle();return}
     if(mm.classList.contains('open')&&!/INPUT/.test(document.activeElement.tagName)&&keyNav(e))return;
     if(e.ctrlKey&&e.key==='\\'){e.preventDefault();var both=!(app.classList.contains('lc')&&app.classList.contains('rc'));togglePanel('lc',both);togglePanel('rc',both);return}
@@ -2784,17 +2849,18 @@ label.dtrow{cursor:pointer}
   st.addEventListener('click',function(){select('world')});
 
   /* ===== Motion: one combined timeline. Layers hold clips (in and out) and property tracks with keyframes. The playhead drives the artboard. Times are whole frames at the composition frame rate. ===== */
-  var FPS=60,DUR=300,PAD=16,HW=200,HEAD=32;
+  var FPS=60,DUR=300,PAD=24,HW=224,HEAD=32;
   var PROPS={opacity:{n:'Opacity',u:'%',d:100,lo:0,hi:100},x:{n:'Position X',u:'px',d:0,lo:-2000,hi:2000},y:{n:'Position Y',u:'px',d:0,lo:-2000,hi:2000},scale:{n:'Scale',u:'%',d:100,lo:0,hi:500},rot:{n:'Rotation',u:'°',d:0,lo:-3600,hi:3600}};
   var PORD=['opacity','x','y','scale','rot'];
-  var EZ={'Linear':[0,0,1,1],'Ease in':[.42,0,1,1],'Ease out':[0,0,.58,1],'Ease in out':[.42,0,.58,1],'Back out':[.34,1.56,.64,1]};
-  var EZL=['Linear','Ease in','Ease out','Ease in out','Back out','Spring','Custom'];
+  var EZ={'Linear':[0,0,1,1],'Ease in':[.42,0,1,1],'Ease out':[0,0,.58,1],'Ease in out':[.42,0,.58,1],'Back out':[.34,1.56,.64,1],'Anticipate':[.36,0,.66,-.56]};
+  var EZL=['Linear','Ease in','Ease out','Ease in out','Back out','Anticipate','Spring','Custom'];
+  var SPD=[.35,.6],HK=['headline','subtitle','button','image'],TRIGS=['On load','On hover','On click','On scroll into view','While scrolling'];
   var TGT={headline:'#el-text > b',subtitle:'#el-text .pg-sub',button:'#el-button',image:'#el-image'};
-  var LTYPE={headline:'txt',subtitle:'txt',button:'box',image:'img'};
+  var LTYPE={headline:'txt',subtitle:'txt',button:'box',image:'img',hero:'frame',features:'frame',footer:'frame',others:'frame',input:'txt',toggle:'circle',divider:'line',background:'img',icon:'star',shape:'poly',counter:'txt',object3d:'box'};
   var kid=0;
   function mkk(t,v,ease){return {id:'k'+(++kid),t:t,v:v,ease:ease||'Ease out'}}
   function mkt(p,keys){return {p:p,keys:keys}}
-  function mkl(id,s,tr){return {id:id,clips:[{s:s,e:DUR}],open:false,mute:false,lock:false,solo:false,trig:'On load',ease:'Ease out',rep:'Once',tr:tr}}
+  function mkl(id,s,tr){return {id:id,clips:[{s:s,e:DUR}],open:false,mute:false,lock:false,solo:false,trig:'On load',ease:'Ease out',rep:'Once',rn:3,yoyo:false,ss:'top 80%',se:'bottom 20%',scrub:false,pin:false,sprev:0,stag:60,sfrom:'Start',tr:tr}}
   var TL={layers:[
     mkl('headline',0,[mkt('opacity',[mkk(0,0),mkk(36,100)]),mkt('y',[mkk(0,24),mkk(36,0)])]),
     mkl('subtitle',18,[mkt('opacity',[mkk(18,0),mkk(60,100)]),mkt('y',[mkk(18,16),mkk(60,0)])]),
@@ -2802,7 +2868,7 @@ label.dtrow{cursor:pointer}
     mkl('image',12,[mkt('opacity',[mkk(12,0),mkk(60,100)]),mkt('x',[mkk(12,40),mkk(66,0)]),mkt('rot',[mkk(12,4),mkk(66,0)])])
   ]};
   /* T is the playhead time in frames. ph is a spring on the shown position, so clicks, steps and Home/End glide. */
-  var M={T:72,speed:1,loop:0,playing:false,dir:1,frames:false,z:1,t0:0,wa:{a:0,b:DUR},ps:null,ks:{},ci:0,fx:null,snap:true,tool:'select',compact:false,defEase:'Ease out',mks:[{id:'m1',t:150,name:'Marker 1'}],last:0,raf:0,ro:null,lastSnap:-1};
+  var M={T:72,speed:1,loop:0,playing:false,dir:1,frames:false,z:1,t0:0,wa:{a:0,b:DUR},ps:null,ks:{},ci:0,fx:null,snap:true,tool:'select',compact:false,defEase:'Ease out',mks:[{id:'m1',t:150,name:'Marker 1'}],last:0,raf:0,ro:null,lastSnap:-1,view:'timeline',shut:0,gx:null,gdrag:false,kr:null,kfr:false,tkl:[]};
   M.ph=new Spring(M.T,mo().hl);
   M.phs={sp:[M.ph],apply:function(){paint(M.ph.x)},rest:function(){}};
   /* The timeline height is a spring too: dragging writes it directly, a double click glides it back */
@@ -2848,9 +2914,16 @@ label.dtrow{cursor:pointer}
     for(i=0;i<22;i++){x=3*(1-t)*(1-t)*t*x1+3*(1-t)*t*t*x2+t*t*t;if(x<u)lo=t;else hi=t;t=(lo+hi)/2}
     return 3*(1-t)*(1-t)*t*y1+3*(1-t)*t*t*y2+t*t*t;
   }
-  /* A damped spring over the segment: about 16% overshoot, settled by the next key */
-  function springC(u){if(u<=0)return 0;if(u>=1)return 1;var z=.5,w=13.5,wd=w*Math.sqrt(1-z*z);return 1-Math.exp(-z*w*u)*(Math.cos(wd*u)+z*w/wd*Math.sin(wd*u))}
-  function easeAt(k,u){if(k.ease==='Spring')return springC(u);var b=bzOf(k);return bez(b[0],b[1],b[2],b[3],u)}
+  /* Spring easing, Nook maths: mass 1, response in seconds and damping ratio. It runs in real seconds, so a longer segment gives the spring more time to settle. */
+  function springX(sp,t){
+    var w=2*Math.PI/sp[0],z=sp[1],wd;
+    if(t<=0)return 0;
+    if(z>=.999)return 1-Math.exp(-w*t)*(1+w*t);
+    wd=w*Math.sqrt(1-z*z);
+    return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+z*w/wd*Math.sin(wd*t));
+  }
+  function settleOf(sp){var t=3,dt=1/120;while(t>.15&&Math.abs(springX(sp,t)-1)<.005)t-=dt;return clampN(t+.05,.2,3)}
+  function easeAt(k,u,sec){if(k.ease==='Spring')return u>=1?1:springX(k.sp||SPD,u*(sec||1));var b=bzOf(k);return bez(b[0],b[1],b[2],b[3],u)}
   function valueAt(tr,f){
     var ks=tr.keys,n=ks.length,i,a,b;
     if(!n)return PROPS[tr.p].d;
@@ -2858,7 +2931,7 @@ label.dtrow{cursor:pointer}
     if(f>=ks[n-1].t)return ks[n-1].v;
     for(i=0;i<n-1;i++){
       a=ks[i];b=ks[i+1];
-      if(f<b.t)return a.v+(b.v-a.v)*easeAt(a,(f-a.t)/(b.t-a.t));
+      if(f<b.t)return a.v+(b.v-a.v)*easeAt(a,(f-a.t)/(b.t-a.t),(b.t-a.t)/FPS);
     }
     return ks[n-1].v;
   }
@@ -2866,16 +2939,39 @@ label.dtrow{cursor:pointer}
   /* Canvas: the model drives the artboard while Motion is open */
   function clearEl(el){['opacity','translate','scale','rotate','visibility'].forEach(function(p){el.style.removeProperty(p)})}
   function clearCanvas(){Object.keys(TGT).forEach(function(k){var el=$(TGT[k]);if(el)clearEl(el)})}
+  /* Stagger: a frame layer in the timeline offsets its children (the Hero rows) by rank times the delay */
+  function stagOf(l){
+    var h=Ly('hero'),i=HK.indexOf(l.id),n=HK.length,d,r;
+    if(!h||h.mute||!(h.stag>0)||i<0)return 0;
+    d=Math.round(h.stag/1000*FPS);
+    r=h.sfrom==='End'?n-1-i:h.sfrom==='Center'?Math.round(Math.abs(i-(n-1)/2)):h.sfrom==='Edges'?Math.round((n-1)/2-Math.abs(i-(n-1)/2)):h.sfrom==='Random'?[2,0,3,1][i]:i;
+    return r*d;
+  }
+  /* Repeat: the keyed part of the layer plays again (Number or Forever), Yoyo mirrors every other pass. Past the last pass it rests on the end state. */
+  function repT(l,t){
+    var ts=allKeys(l).map(function(k){return k.t}),a,b,len,n,cy,lo;
+    if(l.rep==='Once'||ts.length<2)return t;
+    a=Math.min.apply(null,ts);b=Math.max.apply(null,ts);len=b-a;
+    if(len<1||t<=b)return t;
+    n=l.rep==='Forever'?1e9:Math.max(1,l.rn);
+    cy=Math.floor((t-a)/len);
+    if(cy>=n)return l.yoyo&&n%2===0?a:b;
+    lo=t-a-cy*len;
+    if(l.yoyo&&cy%2)lo=len-lo;
+    return a+lo;
+  }
   function applyCanvas(f){
     var solo=TL.layers.some(function(l){return l.solo});
     TL.layers.forEach(function(l){
-      var el=$(TGT[l.id]),v={};
+      var el=TGT[l.id]&&$(TGT[l.id]),v={},lt,vt;
       if(!el)return;
       if(l.mute||(solo&&!l.solo)){clearEl(el);return}
-      if(!l.clips.some(function(c){return f>=c.s&&f<=c.e})){el.style.visibility='hidden';return}
+      lt=f-stagOf(l);
+      if(!l.clips.some(function(c){return lt>=c.s&&lt<=c.e})){el.style.visibility='hidden';return}
       el.style.removeProperty('visibility');
+      vt=repT(l,lt);
       PORD.forEach(function(p){v[p]=PROPS[p].d});
-      l.tr.forEach(function(tr){v[tr.p]=valueAt(tr,f)});
+      l.tr.forEach(function(tr){v[tr.p]=valueAt(tr,vt)});
       el.style.opacity=(v.opacity/100).toFixed(3);
       el.style.translate=v.x.toFixed(2)+'px '+v.y.toFixed(2)+'px';
       el.style.scale=(v.scale/100).toFixed(3);
@@ -2932,6 +3028,7 @@ label.dtrow{cursor:pointer}
       +ib2('fwd','sf','Step forward (Right)')+ib2('knext','knext','Next keyframe (Alt+Right)')+ib2('end','ske','Go to end (End)')
       +'<button class="ib" id="tloop" data-ta="loop" aria-pressed="false" aria-label="Loop: Off" title="Loop: Off"><svg><use href="#loop"/></svg></button></div>'
       +'<div class="mrt">'
+      +'<div class="seg vseg" id="vseg" role="group" aria-label="Timeline view"><button data-view="timeline" aria-pressed="true">Timeline</button><button data-view="graph" aria-pressed="false">Graph</button></div>'
       +'<button class="ib" data-mtool="select" aria-pressed="true" aria-label="Select (V)" title="Select (V)"><svg><use href="#cursor"/></svg></button>'
       +'<button class="ib" data-mtool="split" aria-pressed="false" aria-label="Split clip (C)" title="Split clip (C)"><svg><use href="#split"/></svg></button>'
       +'<i class="tdiv" aria-hidden="true"></i>'
@@ -2941,15 +3038,27 @@ label.dtrow{cursor:pointer}
       +'<input type="range" id="tzoom" min="0" max="5" step="0.01" value="0" aria-label="Timeline zoom" title="Timeline zoom">'
       +ib2('zfit','fit','Fit the timeline')
       +'<i class="tdiv" aria-hidden="true"></i>'
-      +'<button class="ib" id="trows" data-ta="rows" aria-pressed="false" aria-label="Compact tracks" title="Compact tracks"><svg><use href="#stack"/></svg></button>'
+      +'<button class="ib" id="texp" data-ta="export" aria-haspopup="dialog" aria-expanded="false" aria-label="Export animation" title="Export animation"><svg><use href="#exp"/></svg></button>'
+      +'<button class="ib more" id="tmore" data-ta="more" aria-haspopup="menu" aria-expanded="false" aria-label="More timeline options" title="More">...</button>'
       +'</div></div>'
       +'<div class="tl" id="tl" tabindex="0" role="group" aria-label="Timeline"><div class="tls" id="tls"><div class="tlc" id="tlc"></div></div><div class="tlhd" id="tlhd" aria-hidden="true"></div><i class="hvl" id="hvl"></i><span class="hvt" id="hvt"></span><i class="snl" id="snl"></i></div>';
   }
+  /* Ruler labels: 0s, 0.5s, 1s (or frames, or 1:00 past a minute). A label that would be clipped is not printed, and paint() hides the one under the playhead head. */
+  function rl(f){
+    var s=f/FPS;
+    if(M.frames)return String(f);
+    if(s>=60&&f%FPS===0)return Math.floor(s/60)+':'+pad2(s%60);
+    return +s.toFixed(2)+'s';
+  }
   function rulerHTML(){
-    var p=pps(),maj=majorOf(p),mn=minorOf(maj),w=LW(),h='',f,x,a=M.wa.a,b=M.wa.b,r;
+    var p=pps(),maj=majorOf(p),mn=minorOf(maj),w=LW(),h='',f,x,a=M.wa.a,b=M.wa.b,t,lw;
     for(f=Math.max(0,Math.floor(Fx(-12)/mn)*mn);f<=DUR;f+=mn){
       x=X(f);if(x>w+12)break;
-      if(f%maj===0){r=x+64>w;h+='<i class="tk M" style="left:'+x+'px"></i><span class="tkl'+(r?' r':'')+'" style="left:'+(x+(r?-4:4))+'px">'+fmt(f)+'</span>'}
+      if(f%maj===0){
+        t=rl(f);lw=t.length*6.6;
+        h+='<i class="tk M" style="left:'+x+'px"></i>';
+        if(x+5>=2&&x+5+lw<=w-4&&!M.mks.some(function(m){var mx=X(m.t);return mx<x+5+lw&&mx+20>x+5}))h+='<span class="tkl" data-x="'+(x+5)+'" data-w="'+lw+'" style="left:'+(x+5)+'px">'+t+'</span>';
+      }
       else if(mn/FPS*p>=5)h+='<i class="tk" style="left:'+x+'px"></i>';
     }
     h+='<div class="wa" style="left:'+X(a)+'px;width:'+(X(b)-X(a))+'px"></div>'
@@ -2966,12 +3075,12 @@ label.dtrow{cursor:pointer}
   }
   function rdHTML(l,p){return '<span class="rd" data-rd data-l="'+l.id+'" data-p="'+p+'" title="Drag to change the value at the playhead"></span>'}
   function layerRow(l,alt){
-    var on=selection.indexOf(l.id)>-1,nm=lname(l),times={},sk='',free=PORD.length-l.tr.length,cl='';
+    var on=selection.indexOf(l.id)>-1,nm=lname(l),times={},free=PORD.length-l.tr.length,cl='';
     allKeys(l).forEach(function(k){times[k.t]=1});
-    Object.keys(times).forEach(function(t){sk+='<i class="skf" style="left:'+X(+t)+'px"></i>'});
     l.clips.forEach(function(c,i){
-      var x0=X(c.s),x1=X(c.e);
-      cl+='<div class="clip'+(on&&i===M.ci?' on':'')+'" data-clip="'+l.id+'" data-ci="'+i+'" style="left:'+x0+'px;width:'+Math.max(6,x1-x0)+'px"><i class="ch" data-trim="s"></i><span class="cn">'+nm+'</span><i class="ch r" data-trim="e"></i></div>';
+      var x0=X(c.s),x1=X(c.e),tk='';
+      Object.keys(times).forEach(function(t){if(+t>=c.s&&+t<=c.e)tk+='<i class="ckt" style="left:'+(X(+t)-x0-1)+'px"></i>'});
+      cl+='<div class="clip'+(on&&i===M.ci?' on':'')+'" data-clip="'+l.id+'" data-ci="'+i+'" style="left:'+x0+'px;width:'+Math.max(6,x1-x0)+'px"><i class="ch" data-trim="s"></i>'+tk+'<span class="cn" style="left:'+(8+Math.max(0,-x0))+'px">'+nm+'</span><i class="ch r" data-trim="e"></i></div>';
     });
     return '<div class="tlrow lay'+(alt?' alt':'')+(l.mute?' muted':'')+(l.lock?' locked':'')+'" data-l="'+l.id+'"'+(on?' data-on':'')+'>'
       +'<div class="tlhc"><button class="ib tlch" data-la="open" data-l="'+l.id+'" aria-expanded="'+l.open+'" aria-label="'+(l.open?'Collapse ':'Expand ')+nm+'"><svg><use href="#chev"/></svg></button>'
@@ -2983,7 +3092,7 @@ label.dtrow{cursor:pointer}
       +'<button class="ib" data-la="lock" data-l="'+l.id+'" aria-pressed="'+l.lock+'" aria-label="Lock '+nm+'" title="'+(l.lock?'Unlock':'Lock')+'"><svg><use href="#lock"/></svg></button>'
       +'<button class="ib s" data-la="solo" data-l="'+l.id+'" aria-pressed="'+l.solo+'" aria-label="Solo '+nm+'" title="Solo">S</button>'
       +'</span></div>'
-      +'<div class="tlln">'+cl+sk+'</div></div>';
+      +'<div class="tlln">'+cl+'</div></div>';
   }
   function propRow(l,tr,alt){
     var P=PROPS[tr.p],on=M.ps&&M.ps.l===l.id&&M.ps.p===tr.p,ks=tr.keys,s='',i;
@@ -3000,17 +3109,84 @@ label.dtrow{cursor:pointer}
     return h+'<i class="endl" style="left:'+X(DUR)+'px"></i><div class="phl" id="tlph"></div>';
   }
   function tlRender(){
-    var c=$('#tlc'),h,p,maj,n=0,z;
+    var c=$('#tlc'),h,p,maj,n=0,z,gv=M.view==='graph';
     if(!c||mode!=='motion')return;
     clampView();p=pps();maj=majorOf(p);
+    $('#tl').classList.toggle('gv',gv);
     c.style.setProperty('--gp',(maj/FPS*p)+'px');c.style.setProperty('--go',X(0)+'px');
-    h='<div class="tlrow tlrul"><div class="tlhc tlhh"><span class="micro">Layers</span></div><div class="tlln tlruler" id="tlruler">'+rulerHTML()+'</div></div>';
-    TL.layers.forEach(function(l){h+=layerRow(l,n++%2);if(l.open)l.tr.forEach(function(tr){h+=propRow(l,tr,n++%2)})});
+    h='<div class="tlrow tlrul"><div class="tlhc tlhh"><span class="micro">'+(gv?'Properties':'Layers')+'</span></div><div class="tlln tlruler" id="tlruler">'+rulerHTML()+'</div></div>';
+    if(gv)h+=graphHTML();
+    else{
+      TL.layers.forEach(function(l){h+=layerRow(l,n++%2);if(l.open)l.tr.forEach(function(tr){h+=propRow(l,tr,n++%2)})});
+      h+='<div class="tldz" id="tldz"><div></div><div class="dzr">Drag a layer here to animate it</div></div>';
+    }
     c.innerHTML=h;
     $('#tlhd').innerHTML=overlayHTML();
+    M.tkl=$$('.tkl',c);M.tkl.forEach(function(e){e._x=+e.dataset.x;e._w=+e.dataset.w;e._h=false});
     z=$('#tzoom');if(z&&z!==document.activeElement)z.value=Math.log(M.z)/Math.LN2;
     paint(M.ph.x);
     if(M.fx){var fx=M.fx;M.fx=null;runFx(fx)}
+  }
+
+  /* Graph view: the selected property as a value curve over the same time axis. Keys are points (drag for time and value), the eased segments of selected keys show bezier handles. The vertical range fits the curve and holds still while you drag. */
+  function gvInfo(){
+    var L=curLayer(),tr;
+    if(!L||!L.tr.length)L=TL.layers.filter(function(l){return l.tr.length})[0]||null;
+    if(!L)return null;
+    tr=(M.ps&&M.ps.l===L.id&&trOf(L,M.ps.p))||L.tr[0];
+    return {l:L,tr:tr};
+  }
+  function gY(v){var g=M.gx;return g.H-g.pm-(v-g.lo)/(g.hi-g.lo)*(g.H-2*g.pm)}
+  function gV(y){var g=M.gx;return g.lo+(g.H-g.pm-y)/(g.H-2*g.pm)*(g.hi-g.lo)}
+  function niceStep(r){var e=Math.pow(10,Math.floor(Math.log(r)/Math.LN10)),m=r/e;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*e}
+  function graphHTML(){
+    var g=gvInfo(),tr,L,H=Math.max(80,$('#tl').clientHeight-HEAD),W=LW(),lo=1e9,hi=-1e9,i,t,v,a,b,pad,d='',lines='',lab='',pts='',hd='',list='',ks,st,y,x0,x1,bz,dt,dv,n=0,lx;
+    if(!g)return '<div class="gvb"><div class="gvl"></div><div class="gvp"><div class="gve">Select an animated layer to see its curves</div></div></div>';
+    L=g.l;tr=g.tr;ks=tr.keys;
+    if(M.gdrag&&M.gx&&M.gx.tr===tr){lo=M.gx.lo;hi=M.gx.hi}
+    else{
+      ks.forEach(function(k){lo=Math.min(lo,k.v);hi=Math.max(hi,k.v)});
+      for(i=0;i<=80&&ks.length>1;i++){v=valueAt(tr,ks[0].t+(ks[ks.length-1].t-ks[0].t)*i/80);lo=Math.min(lo,v);hi=Math.max(hi,v)}
+      ks.forEach(function(k,j){
+        var nx=ks[j+1],q;
+        if(!nx||k.ease==='Spring'||!(M.ks[k.id]||M.ks[nx.id]))return;
+        q=bzOf(k);
+        [q[1],q[3]].forEach(function(y){var hv=k.v+y*(nx.v-k.v);lo=Math.min(lo,hv);hi=Math.max(hi,hv)});
+      });
+      if(!(hi-lo>1e-6)){lo=(isFinite(lo)?lo:0)-1;hi=(isFinite(hi)?hi:0)+1}
+      pad=(hi-lo)*.14;lo-=pad;hi+=pad;
+    }
+    M.gx={lo:lo,hi:hi,H:H,W:W,pm:16,tr:tr,l:L};
+    st=niceStep((hi-lo)/4);
+    for(v=Math.ceil(lo/st)*st;v<=hi;v+=st){
+      y=gY(v);
+      lines+='<line class="g" x1="0" x2="'+W+'" y1="'+(Math.round(y)+.5)+'" y2="'+(Math.round(y)+.5)+'"/>';
+      lx=8;
+      ks.forEach(function(k){if(Math.abs(gY(k.v)-y)<14&&X(k.t)<48)lx=Math.max(lx,X(k.t)+12)});
+      lab+='<span class="gvy" style="left:'+lx.toFixed(0)+'px;top:'+y.toFixed(1)+'px">'+numStr(v)+PROPS[tr.p].u+'</span>';
+    }
+    if(ks.length){
+      x0=X(ks[0].t);x1=X(ks[ks.length-1].t);
+      lines+='<path class="f" d="M0 '+gY(ks[0].v).toFixed(1)+'H'+x0.toFixed(1)+'M'+x1.toFixed(1)+' '+gY(ks[ks.length-1].v).toFixed(1)+'H'+W+'"/>';
+      n=Math.max(8,Math.min(480,Math.round((x1-x0)/2)));
+      for(i=0;i<=n;i++){t=ks[0].t+(ks[ks.length-1].t-ks[0].t)*i/n;d+=(i?'L':'M')+X(t).toFixed(1)+' '+gY(valueAt(tr,t)).toFixed(1)}
+    }
+    for(i=0;i<ks.length;i++){
+      a=ks[i];
+      pts+='<div class="gk'+(M.ks[a.id]?' sel':'')+'" data-gk="'+a.id+'" style="left:'+X(a.t).toFixed(1)+'px;top:'+gY(a.v).toFixed(1)+'px" title="'+PROPS[tr.p].n+' '+fmtVal(tr.p,a.v)+' at '+fmt(a.t)+'"><i></i></div>';
+      b=ks[i+1];
+      if(b&&a.ease!=='Spring'&&(M.ks[a.id]||M.ks[b.id])){
+        bz=bzOf(a);dt=b.t-a.t;dv=b.v-a.v;
+        hd+='<line class="hn" x1="'+X(a.t).toFixed(1)+'" y1="'+gY(a.v).toFixed(1)+'" x2="'+X(a.t+bz[0]*dt).toFixed(1)+'" y2="'+gY(a.v+bz[1]*dv).toFixed(1)+'"/><line class="hn" x1="'+X(b.t).toFixed(1)+'" y1="'+gY(b.v).toFixed(1)+'" x2="'+X(a.t+bz[2]*dt).toFixed(1)+'" y2="'+gY(a.v+bz[3]*dv).toFixed(1)+'"/>';
+        pts+='<div class="gh" data-gh="1" data-gs="'+a.id+'" style="left:'+X(a.t+bz[0]*dt).toFixed(1)+'px;top:'+gY(a.v+bz[1]*dv).toFixed(1)+'px" title="Ease out handle"><i></i></div><div class="gh" data-gh="2" data-gs="'+a.id+'" style="left:'+X(a.t+bz[2]*dt).toFixed(1)+'px;top:'+gY(a.v+bz[3]*dv).toFixed(1)+'px" title="Ease in handle"><i></i></div>';
+      }
+    }
+    list='<div class="tlrow lay" data-l="'+L.id+'"><div class="tlhc"><svg class="lty"><use href="#'+LTYPE[L.id]+'"/></svg><button class="tlnm" data-la="sel" data-l="'+L.id+'">'+lname(L)+'</button></div></div>';
+    L.tr.forEach(function(q,j){
+      var on=q===tr;
+      list+='<div class="tlrow prp'+(j%2?' alt':'')+'" data-l="'+L.id+'" data-p="'+q.p+'"'+(on?' data-on':'')+'><div class="tlhc"><button class="tlnm" data-pa="sel" data-l="'+L.id+'" data-p="'+q.p+'">'+PROPS[q.p].n+'</button>'+rdHTML(L,q.p)+'</div></div>';
+    });
+    return '<div class="gvb"><div class="gvl">'+list+'</div><div class="gvp" id="gvp"><svg class="gvs" style="width:'+W+'px;height:'+H+'px" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+PROPS[tr.p].n+' over time">'+lines+hd+'<path class="c" d="'+d+'"/></svg>'+lab+pts+'<i class="gdot" id="gdot"></i></div></div>';
   }
   /* Springs on the things that just changed: a new key pops, rows grow open, a released clip squashes */
   function runFx(fx){
@@ -3027,6 +3203,8 @@ label.dtrow{cursor:pointer}
     if(mode!=='motion')return;
     hd=$('#tlph');
     if(hd){x=X(f);hd.style.transform='translateX('+x.toFixed(2)+'px)';hd.style.visibility=(x<-6||x>LW()+6)?'hidden':'visible'}
+    M.tkl.forEach(function(e){var hid=x+9>e._x&&x-9<e._x+e._w;if(hid!==e._h){e._h=hid;e.classList.toggle('hid',hid)}});
+    if(M.view==='graph'&&M.gx&&(hd=$('#gdot'))){var gy=gY(valueAt(M.gx.tr,f));hd.style.transform='translate('+x.toFixed(1)+'px,'+gy.toFixed(1)+'px)';hd.style.visibility=(x<0||x>M.gx.W||!M.gx.tr.keys.length)?'hidden':'visible'}
     $$('[data-rd]').forEach(function(e){
       var l=Ly(e.dataset.l),tr=l&&trOf(l,e.dataset.p),s;
       if(!tr)return;
@@ -3049,13 +3227,13 @@ label.dtrow{cursor:pointer}
       b.querySelector('use').setAttribute('href',pl?'#pause':'#play');
     });
     if(lp){lp.setAttribute('aria-pressed',String(M.loop>0));lp.setAttribute('aria-label','Loop: '+nm);lp.title='Loop: '+nm;lp.querySelector('use').setAttribute('href',M.loop===2?'#autow':'#loop')}
-    if(sp)sp.textContent=M.speed+'×';
+    if(sp)sp.textContent=M.shut?(M.shut<0?'-':'')+Math.abs(M.shut)*M.speed+'×':M.speed+'×';
     if(tt)tt.textContent='/ '+fmt(DUR);
     if(sn){sn.setAttribute('aria-pressed',String(M.snap));sn.title='Snapping '+(M.snap?'on':'off')}
     $$('[data-mtool]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.mtool===M.tool))});
     var tl=$('#tl');
     if(tl){tl.classList.toggle('split',M.tool==='split');tl.classList.toggle('cmp',M.compact)}
-    var rw=$('#trows');if(rw){rw.setAttribute('aria-pressed',String(M.compact));rw.title=M.compact?'Comfortable tracks':'Compact tracks';rw.setAttribute('aria-label',rw.title)}
+    $$('#vseg button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===M.view))});
     tcText();
   }
 
@@ -3069,22 +3247,39 @@ label.dtrow{cursor:pointer}
   function playToggle(on){
     if(on===undefined)on=!M.playing;
     if(on===M.playing)return;
-    M.playing=on;
+    M.shut=0;M.playing=on;
     if(on){
       if(M.T>=M.wa.b||M.T<M.wa.a)M.T=M.wa.a;
       M.dir=1;M.last=performance.now();M.ph.jump(M.T);M.raf=requestAnimationFrame(tick);
     }else{cancelAnimationFrame(M.raf);seek(M.T,true)}
     syncPlayUI();
   }
+  /* J and L shuttle back and forward (press again for 2x, 4x, 8x), K stops */
+  function shuttle(d){
+    var q=M.shut;
+    M.shut=q*d>0?clampN(q*2,-8,8):d;
+    if(!M.playing){
+      if(d>0&&M.T>=M.wa.b)M.T=M.wa.a;
+      M.playing=true;M.dir=1;M.last=performance.now();M.ph.jump(M.T);M.raf=requestAnimationFrame(tick);
+    }
+    syncPlayUI();
+  }
   function tick(now){
     var dt,T,a=M.wa.a,b=M.wa.b;
     if(!M.playing)return;
     dt=Math.min(.1,(now-M.last)/1000);M.last=now;
-    T=M.T+dt*FPS*M.speed*M.dir;
+    if(M.shut<0){
+      T=M.T+dt*FPS*M.speed*M.shut;
+      if(T<=a){M.playing=false;M.shut=0;syncPlayUI();seek(a,false);return}
+      M.T=T;M.ph.jump(T);paint(T);tcText();
+      M.raf=requestAnimationFrame(tick);
+      return;
+    }
+    T=M.T+dt*FPS*M.speed*M.dir*(M.shut||1);
     if(M.dir>0&&T>=b){
       if(M.loop===1)T=a+(T-b)%Math.max(1,b-a);
       else if(M.loop===2){T=Math.max(a,b-(T-b));M.dir=-1}
-      else{M.playing=false;syncPlayUI();seek(b,false);return}
+      else{M.playing=false;M.shut=0;syncPlayUI();seek(b,false);return}
     }else if(M.dir<0&&T<=a){T=Math.min(b,a+(a-T));M.dir=1}
     M.T=T;M.ph.jump(T);paint(T);tcText();
     if(M.z>1){var x=X(T);if(x>LW()-PAD||x<PAD){M.t0=T/FPS-.1*(LW()-2*PAD)/pps();tlRender()}}
@@ -3199,7 +3394,7 @@ label.dtrow{cursor:pointer}
     off=clampN(Math.round(M.T)-lo,-lo,DUR-hi);
     M.ks={};
     ks.forEach(function(s){
-      var t=s.k.t+off,k={id:'k'+(++kid),t:t,v:s.k.v,ease:s.k.ease,bz:s.k.bz&&s.k.bz.slice()};
+      var t=s.k.t+off,k={id:'k'+(++kid),t:t,v:s.k.v,ease:s.k.ease,bz:s.k.bz&&s.k.bz.slice(),sp:s.k.sp&&s.k.sp.slice()};
       s.tr.keys=s.tr.keys.filter(function(o){return o.t!==t});
       s.tr.keys.push(k);sortKeys(s.tr);
       if(!s.l.clips.some(function(c){return t>=c.s&&t<=c.e}))s.l.clips[0].e=Math.max(s.l.clips[0].e,t);
@@ -3325,6 +3520,52 @@ label.dtrow{cursor:pointer}
       if(moved){M.fx={t:how==='move'?'move':'trim',id:l.id,ci:i,edge:how};tlRender();kInspect()}
     });
   }
+  /* Graph: drag a key for time and value, drag a handle for the bezier of its segment */
+  function gkDown(e,el){
+    var id=el.dataset.gk,f=findKey(id),mod=e.shiftKey||e.ctrlKey||e.metaKey,was=!!M.ks[id],sel,base,lo,hi,pi,g,P;
+    if(!f)return;
+    e.preventDefault();focusTl();
+    if(mod){if(was)delete M.ks[id];else M.ks[id]=1}
+    else if(!was){M.ks={};M.ks[id]=1}
+    M.ps={l:f.l.id,p:f.tr.p};
+    M.gdrag=true;g=M.gx;
+    syncKeySel();
+    sel=selKeys().filter(function(s){return !s.l.lock});
+    if(!M.ks[id]||!sel.length){M.gdrag=false;return}
+    P=PROPS[f.tr.p];
+    base=sel.map(function(s){return [s.k.t,s.k.v]});
+    lo=Math.min.apply(null,base.map(function(b){return b[0]}));hi=Math.max.apply(null,base.map(function(b){return b[0]}));
+    pi=sel.map(function(s){return s.k.id}).indexOf(id);if(pi<0)pi=0;
+    dragPtr(e,function(ev,dx,dy){
+      var d=Math.round(dx/pps()*FPS),t=snapT(clampN(base[pi][0]+d,0,DUR),M.ks),dv=-dy/(g.H-2*g.pm)*(g.hi-g.lo);
+      d=clampN(t-base[pi][0],-lo,DUR-hi);
+      sel.forEach(function(q,i){q.k.t=base[i][0]+d;if(q.tr===f.tr)q.k.v=+clampN(base[i][1]+dv,P.lo,P.hi).toFixed(2)});
+      sel.forEach(function(q){sortKeys(q.tr)});
+      tlRender();inspSync();paint(M.ph.x);
+    },function(moved){
+      M.gdrag=false;
+      if(moved){dedupe();tlRender();kInspect()}
+      else if(!mod&&ksCount()>1){M.ks={};M.ks[id]=1;syncKeySel()}
+    });
+  }
+  function ghDown(e,el){
+    var a=findKey(el.dataset.gs),i=+el.dataset.gh,keys,b;
+    if(!a)return;
+    keys=a.tr.keys;b=keys[keys.indexOf(a.k)+1];
+    if(!b||a.l.lock)return;
+    e.preventDefault();M.gdrag=true;
+    dragPtr(e,function(ev){
+      var r=$('#gvp').getBoundingClientRect(),dt=b.t-a.k.t,dv=b.v-a.k.v,bz=bzOf(a.k).slice();
+      bz[i===1?0:2]=clampN((Fx(ev.clientX-r.left)-a.k.t)/dt,0,1);
+      if(Math.abs(dv)>1e-6)bz[i===1?1:3]=clampN((gV(ev.clientY-r.top)-a.k.v)/dv,-2,3);
+      a.k.bz=bz;a.k.ease='Custom';
+      tlRender();easeSync();paint(M.ph.x);
+    },function(){M.gdrag=false;kInspect()});
+  }
+  function gvDown(e){
+    e.preventDefault();focusTl();
+    dragPtr(e,function(){},function(moved){if(!moved&&ksCount()){M.ks={};syncKeySel()}});
+  }
   function laneDown(e,row){
     var l=Ly(row.dataset.l),p=row.dataset.p,mod=e.shiftKey||e.ctrlKey||e.metaKey,base=mod?Object.assign({},M.ks):{},mq=null;
     e.preventDefault();focusTl();
@@ -3365,13 +3606,41 @@ label.dtrow{cursor:pointer}
     if((w=t.closest('.wah'))){waDown(e,w);return}
     if(t.closest('.mk'))return;
     if((w=t.closest('[data-rd]'))){scrubVal(e,w);return}
+    if((w=t.closest('.gk'))){gkDown(e,w);return}
+    if((w=t.closest('.gh'))){ghDown(e,w);return}
+    if(t.closest('.gvp')){gvDown(e);return}
     if(t.closest('.tlruler')){rulerDown(e);return}
     if((k=t.closest('.kfb'))){keyDown(e,k);return}
     if((c=t.closest('.ch'))){clipDown(e,t.closest('.clip'),c.dataset.trim);return}
     if((c=t.closest('.clip'))){clipDown(e,c,'move');return}
     if((c=t.closest('.tlln'))&&!c.classList.contains('tlruler')&&t.closest('.tlrow')){laneDown(e,t.closest('.tlrow'))}
   });
-  insK.addEventListener('pointerdown',function(e){var r=e.target.closest('[data-rd]');if(r&&e.button===0)scrubVal(e,r)});
+  insK.addEventListener('pointerdown',function(e){
+    var r=e.target.closest('[data-rd]'),h=e.target.closest('.kh');
+    if(r&&e.button===0)scrubVal(e,r);
+    else if(h&&e.button===0)khDown(e,h);
+  });
+  /* Curve editor: drag a handle on the .kcurve plot. The vertical range holds still while dragging. */
+  function khDown(e,h){
+    var ks=selKeys().filter(function(s){return !s.l.lock}),i=+h.dataset.kh;
+    if(!ks.length)return;
+    e.preventDefault();M.kfr=true;
+    dragPtr(e,function(ev){
+      var rc=$('.kcurve',insK).getBoundingClientRect(),px=(ev.clientX-rc.left)/rc.width*272,py=(ev.clientY-rc.top)/rc.height*120,r=M.kr,x=clampN((px-6)/260,0,1),y=clampN(r.lo+(114-py)/108*(r.hi-r.lo),Math.max(-2,r.lo),Math.min(3,r.hi));
+      ks.forEach(function(q){var b=bzOf(q.k).slice();b[i*2-2]=+x.toFixed(2);b[i*2-1]=+y.toFixed(2);q.k.bz=b;q.k.ease='Custom'});
+      easeSync();paint(M.ph.x);
+    },function(){M.kfr=false;kInspect()});
+  }
+  insK.addEventListener('keydown',function(e){
+    var h=e.target.closest&&e.target.closest('.kh'),ks,i,st,dx=0,dy=0;
+    if(!h||e.key.indexOf('Arrow')!==0)return;
+    ks=selKeys().filter(function(s){return !s.l.lock});if(!ks.length)return;
+    e.preventDefault();i=+h.dataset.kh;st=e.shiftKey?.1:.01;
+    if(e.key==='ArrowLeft')dx=-st;else if(e.key==='ArrowRight')dx=st;else if(e.key==='ArrowUp')dy=st;else dy=-st;
+    ks.forEach(function(q){var b=bzOf(q.k).slice();b[i*2-2]=+clampN(b[i*2-2]+dx,0,1).toFixed(2);b[i*2-1]=+clampN(b[i*2-1]+dy,-2,3).toFixed(2);q.k.bz=b;q.k.ease='Custom'});
+    easeSync();paint(M.ph.x);
+    $('.kh[data-kh="'+i+'"]',insK).focus();
+  });
   $('#bottom').addEventListener('wheel',function(e){
     var r;
     if(mode!=='motion'||!e.target.closest('.tl'))return;
@@ -3446,6 +3715,7 @@ label.dtrow{cursor:pointer}
     if(mode!=='motion'||!b||!b.closest('.bottom'))return;
     d=b.dataset;
     if(d.mtool){setTool(d.mtool);return}
+    if(d.view){setView(d.view);return}
     if(d.ta){
       if(d.ta==='start')seek(M.wa.a,true);
       else if(d.ta==='end')seek(M.wa.b,true);
@@ -3457,7 +3727,8 @@ label.dtrow{cursor:pointer}
       else if(d.ta==='loop'){M.loop=(M.loop+1)%3;syncPlayUI();kInspect()}
       else if(d.ta==='tc'){M.frames=!M.frames;syncPlayUI();tlRender();kInspect()}
       else if(d.ta==='snap'){M.snap=!M.snap;syncPlayUI()}
-      else if(d.ta==='rows'){M.compact=!M.compact;syncPlayUI()}
+      else if(d.ta==='export')xOpen('export',b);
+      else if(d.ta==='more')openMenu(b,moreHTML(),{kind:'tlmore',right:true});
       else if(d.ta==='speed')ddOpen(speedCfg(b),e.detail===0);
       else if(d.ta==='zfit'){M.z=1;M.t0=0;tlRender()}
       return;
@@ -3508,20 +3779,104 @@ label.dtrow{cursor:pointer}
     setTimeout(function(){row.classList.remove('flash')},1000);
   }
 
+  /* Drag a layer from the Layers panel onto the timeline to animate it. A layer that is already there is revealed. */
+  function addLayer(k){
+    var s0,a,b,l;
+    if(!names[k]||k==='world')return;
+    if(Ly(k)){tlReveal(k);return}
+    s0=clampN(Math.round(M.T),0,DUR-30);
+    a=mkk(s0,0);b=mkk(s0+30,100);
+    l=mkl(k,s0,[mkt('opacity',[a,b])]);l.open=true;
+    TL.layers.push(l);
+    M.ps={l:k,p:'opacity'};M.fx={t:'pop',ids:[a.id,b.id]};
+    if(M.view==='graph')setView('timeline');
+    tlReveal(k);
+  }
+  document.addEventListener('pointermove',function(e){
+    var dz=$('#tldz'),el=ld&&ld.on&&mode==='motion'?document.elementFromPoint(e.clientX,e.clientY):null;
+    if(dz)dz.classList.toggle('over',!!(el&&el.closest('.tl')));
+  });
+  document.addEventListener('pointerup',function(e){
+    var dz=$('#tldz'),el;
+    if(dz)dz.classList.remove('over');
+    if(!ld||!ld.on||mode!=='motion')return;
+    el=document.elementFromPoint(e.clientX,e.clientY);
+    if(el&&el.closest('.tl')){addLayer(ld.row.dataset.sel);ld.to=null}
+  },true);
+  function setView(v){
+    M.view=v;
+    $$('#vseg button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===v))});
+    tlRender();
+  }
+  /* U reveals (or hides) the animated properties of the selected layers, or of every layer */
+  function revealProps(){
+    var L=selection.map(Ly).filter(Boolean).filter(function(l){return l.tr.length}),all;
+    if(!L.length)L=TL.layers.filter(function(l){return l.tr.length});
+    if(!L.length)return;
+    all=L.every(function(l){return l.open});
+    L.forEach(function(l){l.open=!all});
+    if(!all)M.fx={t:'expand',id:L[0].id};
+    if(M.view==='graph')setView('timeline');else tlRender();
+  }
+  /* On hover and On click: the element on the artboard plays its clip */
+  function playClip(l){playToggle(false);seek(lS(l),false);playToggle(true)}
+  function trigHit(e,kind,enter){
+    if(mode!=='motion'||M.playing)return;
+    TL.layers.forEach(function(l){
+      var el=TGT[l.id]&&$(TGT[l.id]);
+      if(l.trig!==kind||l.mute||!el||!el.contains(e.target))return;
+      if(enter&&el.contains(e.relatedTarget))return;
+      playClip(l);
+    });
+  }
+  $('#artboard').addEventListener('mouseover',function(e){trigHit(e,'On hover',true)});
+  $('#artboard').addEventListener('click',function(e){trigHit(e,'On click',false)});
+
   /* Inspector: never empty. Nothing selected shows the composition, a layer shows its clip, keys show the keyframe. */
   function motionTitle(){
     var ks=selKeys(),L=curLayer();
     return ks.length>1?ks.length+' keyframes':ks.length?'Keyframe':L?lname(L):'Timeline';
   }
   function rtop(icon,title){return '<div class="rtop"><svg class="rico"><use href="'+icon+'"/></svg><span class="rname">'+title+'</span></div>'}
-  function curveSVG(k){
-    var n=48,ys=[],i,u,lo=0,hi=1,d='',base,one;
-    for(i=0;i<=n;i++){ys.push(easeAt(k,i/n))}
-    lo=Math.min(0,Math.min.apply(null,ys))-.05;hi=Math.max(1,Math.max.apply(null,ys))+.05;
-    function Y(v){return (114-(v-lo)/(hi-lo)*108).toFixed(1)}
-    for(i=0;i<=n;i++){u=i/n;d+=(i?'L':'M')+(6+u*260).toFixed(1)+' '+Y(ys[i])}
-    base=Y(0);one=Y(1);
-    return '<svg class="kcurve" viewBox="0 0 272 120" preserveAspectRatio="none" role="img" aria-label="Easing curve"><line class="g" x1="6" x2="266" y1="'+base+'" y2="'+base+'"/><line class="g" x1="6" x2="266" y1="'+one+'" y2="'+one+'"/><path d="'+d+'"/></svg>';
+  function segSec(s){var i=s.tr.keys.indexOf(s.k),n=s.tr.keys[i+1];return n?(n.t-s.k.t)/FPS:0}
+  function sinfo(k,seg){return 'Settles in '+settleOf(k.sp||SPD).toFixed(2)+' s'+(seg?'. This segment lasts '+seg.toFixed(2)+' s'+(seg<settleOf(k.sp||SPD)?' and cuts it short.':'.'):'.')}
+  /* The easing plot. Curve: a bezier with two draggable handles. Spring: the real spring over its settle time, with the segment end marked. */
+  function curveSVG(k,seg){
+    var sp=k.ease==='Spring',S=k.sp||SPD,n=64,ys=[],i,lo,hi,d='',bz=bzOf(k),T=sp?settleOf(S):1,Y,ln='',hs='',sx;
+    for(i=0;i<=n;i++)ys.push(sp?springX(S,i/n*T):easeAt(k,i/n));
+    lo=Math.min(0,Math.min.apply(null,ys));hi=Math.max(1,Math.max.apply(null,ys));
+    if(!sp){lo=Math.min(lo,bz[1],bz[3]);hi=Math.max(hi,bz[1],bz[3])}
+    lo-=.08;hi+=.08;
+    if(M.kfr&&M.kr){lo=M.kr.lo;hi=M.kr.hi}
+    M.kr={lo:lo,hi:hi};
+    Y=function(v){return +(114-(v-lo)/(hi-lo)*108).toFixed(1)};
+    for(i=0;i<=n;i++)d+=(i?'L':'M')+(6+i/n*260).toFixed(1)+' '+Y(ys[i]);
+    if(sp){
+      if(seg&&seg<T){sx=(6+seg/T*260).toFixed(1);ln+='<line class="sg" x1="'+sx+'" x2="'+sx+'" y1="6" y2="114"/>'}
+    }else{
+      ln+='<line class="hn" x1="6" y1="'+Y(0)+'" x2="'+(6+bz[0]*260)+'" y2="'+Y(bz[1])+'"/><line class="hn" x1="266" y1="'+Y(1)+'" x2="'+(6+bz[2]*260)+'" y2="'+Y(bz[3])+'"/>';
+      hs='<i class="kp" style="left:'+(6/272*100)+'%;top:'+(Y(0)/120*100)+'%"></i><i class="kp" style="left:'+(266/272*100)+'%;top:'+(Y(1)/120*100)+'%"></i>'
+        +'<button class="kh" data-kh="1" aria-label="Ease out handle, arrow keys to move" title="Drag to shape the curve" style="left:'+((6+bz[0]*260)/272*100)+'%;top:'+(Y(bz[1])/120*100)+'%"><i></i></button>'
+        +'<button class="kh" data-kh="2" aria-label="Ease in handle, arrow keys to move" title="Drag to shape the curve" style="left:'+((6+bz[2]*260)/272*100)+'%;top:'+(Y(bz[3])/120*100)+'%"><i></i></button>';
+    }
+    return '<div class="kce"><svg class="kcurve" viewBox="0 0 272 120" preserveAspectRatio="none" role="img" aria-label="'+(sp?'Spring':'Easing')+' curve"><line class="g" x1="6" x2="266" y1="'+Y(0)+'" y2="'+Y(0)+'"/><line class="g" x1="6" x2="266" y1="'+Y(1)+'" y2="'+Y(1)+'"/>'+ln+'<path d="'+d+'"/></svg>'+hs+'</div>';
+  }
+  function easeBody(ks,k0,lastOnly){
+    var allSp=ks.every(function(s){return s.k.ease==='Spring'}),seg=segSec(ks[0]),h,bz=bzOf(k0),S=k0.sp||SPD,ez=ks.every(function(s){return s.k.ease===k0.ease})?k0.ease:'Mixed';
+    h=dseg([['Curve'],['Spring']],allSp?1:0,' aria-label="Easing type"','etab');
+    if(allSp){
+      h+=curveSVG(k0,seg)
+        +lrow('Response (s)','<input type="range" data-f="sresp" min="0.1" max="1.5" step="0.01" value="'+S[0]+'" aria-label="Spring response in seconds"><span class="sval" data-sv="r">'+S[0].toFixed(2)+'</span>')
+        +lrow('Damping','<input type="range" data-f="sdamp" min="0.1" max="1" step="0.01" value="'+S[1]+'" aria-label="Damping ratio"><span class="sval" data-sv="d">'+S[1].toFixed(2)+'</span>')
+        +'<div class="stl"><div class="stest"><i class="stq"></i></div><button class="dtxt" data-ka="stest" aria-label="Test the spring">Test</button></div>'
+        +'<div class="dsub" data-sinfo>'+sinfo(k0,seg)+'</div>';
+    }else{
+      h+=dsel(EZL.filter(function(x){return x!=='Spring'}),'Easing',ez,' data-f="ease"'+(lastOnly?' disabled':''))+curveSVG(k0,seg)
+        +'<div class="dgrid">'+fld('x1',numStr(bz[0]),{f:'x1',a:'x1'})+fld('y1',numStr(bz[1]),{f:'y1',a:'y1'})+'</div>'
+        +'<div class="dgrid">'+fld('x2',numStr(bz[2]),{f:'x2',a:'x2'})+fld('y2',numStr(bz[3]),{f:'y2',a:'y2'})+'</div>'
+        +sb(lastOnly?'The last keyframe has no segment to ease.':'Drag the two handles, or pick a preset. Eases the segment to the next keyframe.');
+    }
+    return h;
   }
   /* The Effect Controls style row: stopwatch, name, live value (drag to change), keyframe navigator, delete */
   function fxRows(L){
@@ -3539,7 +3894,7 @@ label.dtrow{cursor:pointer}
       +lrow('Frame rate',dsel(['24','30','60'],'Frame rate',String(FPS),' data-f="cfps"',true))
       +lrow('Loop',dseg([['Off'],['Loop'],['Ping-pong']],M.loop,'','cloop'))
       +lrow('Speed',dsel(['0.25×','0.5×','1×','2×'],'Playback speed',M.speed+'×',' data-f="cspeed"',true))
-      +lrow('Easing',dsel(EZL.slice(0,6),'Default easing',M.defEase,' data-f="cease"',true)));
+      +lrow('Easing',dsel(EZL.slice(0,7),'Default easing',M.defEase,' data-f="cease"',true)));
     TL.layers.forEach(function(l){
       lay+='<button class="ktrk" data-lsel="'+l.id+'"><span>'+lname(l)+'</span><span class="mono">'+l.clips.length+(l.clips.length===1?' clip · ':' clips · ')+fmt(lLen(l))+'</span></button>';
     });
@@ -3551,37 +3906,44 @@ label.dtrow{cursor:pointer}
     return h;
   }
   function layerInspector(L){
-    var c=selClip(L),n=L.clips.length;
+    var c=selClip(L),n=L.clips.length,sc=L.trig==='On scroll into view'||L.trig==='While scrolling',tg='';
+    function onoff(on,aria,df){return dseg([['Off'],['On']],on?1:0,' aria-label="'+aria+'"',df)}
+    if(sc)tg=lrow('Start',fld('',L.ss,{t:1,f:'lss',a:'Scroll start'}))+lrow('End',fld('',L.se,{t:1,f:'lse',a:'Scroll end'}))
+      +lrow('Scrub',onoff(L.scrub,'Scrub','lscrub'))+lrow('Pin',onoff(L.pin,'Pin','lpin'))
+      +'<div class="dsub">Scroll preview</div><div class="dtc"><input type="range" data-f="sprev" min="0" max="100" step="1" value="'+L.sprev+'" aria-label="Scroll preview"><span class="sval" data-sv="p">'+L.sprev+'%</span></div>';
+    else if(L.trig==='On hover'||L.trig==='On click')tg=sb('Preview: '+(L.trig==='On hover'?'hover':'click')+' the element on the canvas.');
     return rtop('#'+LTYPE[L.id],lname(L))
+      +dsec('Trigger',lrow('Trigger',dsel(TRIGS,'Trigger',L.trig,' data-f="ltrig"',true))+tg)
       +dsec('Clip',
-        lrow('Trigger',dsel(['On load','On scroll','On hover','On click'],'Trigger',L.trig,' data-f="ltrig"',true))
-        +lrow('Delay',fld('',fmt(c.s),{t:1,f:'cs',a:'Clip delay'}))
+        lrow('Delay',fld('',fmt(c.s),{t:1,f:'cs',a:'Clip delay'}))
         +lrow('Duration',fld('',fmt(c.e-c.s),{t:1,f:'cl',a:'Clip duration'}))
-        +lrow('Easing',dsel(EZL.slice(0,6),'Layer easing',L.ease,' data-f="lease"',true))
-        +lrow('Repeat',dsel(['Once','2×','3×','Loop'],'Repeat',L.rep,' data-f="lrep"',true))
+        +lrow('Easing',dsel(EZL.slice(0,7),'Layer easing',L.ease,' data-f="lease"',true))
         +sb(n>1?'Clip '+(M.ci+1)+' of '+n+'. Delay and Duration are for this clip.':'One clip. Use Split (C) to cut it at the playhead.')
         +'<button class="dtxt wide" data-ka="split">Split at playhead</button>')
+      +dsec('Repeat',
+        lrow('Repeat',dsel(['Once','Number','Forever'],'Repeat',L.rep,' data-f="lrep"',true))
+        +(L.rep==='Number'?lrow('Times',fld('',String(L.rn),{f:'lrn',a:'Repeat count'})):'')
+        +(L.rep!=='Once'?lrow('Yoyo',onoff(L.yoyo,'Yoyo','lyoyo')):''))
+      +(KIND[L.id]==='frame'?dsec('Stagger',
+        lrow('Between',fld('',String(L.stag),{f:'lstag',a:'Delay between children',sf:'ms'}))
+        +lrow('From',dsel(['Start','Center','End','Edges','Random'],'Stagger from',L.sfrom,' data-f="lsfrom"',true))
+        +sb('The children of this frame play one after another.')):'')
       +dsec('Properties',(L.tr.length?fxRows(L):sb('No animated properties yet.'))+'<button class="dtxt wide" data-ka="addprop" aria-haspopup="listbox" aria-expanded="false"'+(L.tr.length>=PORD.length?' disabled':'')+'>Add property</button>');
   }
   function kInspect(){
-    var el=insK,ks=selKeys(),L=ks.length?ks[0].l:curLayer(),h,one,k0,P0,sameL,sameP,ez,bz,ts,lastOnly,ro;
+    var el=insK,ks=selKeys(),L=ks.length?ks[0].l:curLayer(),h,one,k0,P0,sameL,sameP,ts,lastOnly;
     if(!ks.length){
       el.innerHTML=L?layerInspector(L):compInspector();
       fitAll(el);paint(M.ph.x);return;
     }
     one=ks.length===1;k0=ks[0].k;P0=PROPS[ks[0].tr.p];
     sameL=ks.every(function(s){return s.l===ks[0].l});sameP=ks.every(function(s){return s.tr.p===ks[0].tr.p});
-    ez=ks.every(function(s){return s.k.ease===k0.ease})?k0.ease:'Mixed';
-    bz=bzOf(k0);ro=k0.ease==='Spring'?'readonly':'';
     lastOnly=ks.every(function(s){return s.tr.keys[s.tr.keys.length-1]===s.k});
     h=rtop('#film',one?'Keyframe':ks.length+' keyframes')
       +dsec('Target',fld('Layer',sameL?lname(ks[0].l):'Mixed',{t:1,a:'Layer',ds:'readonly'})+fld('Property',sameP?P0.n:'Mixed',{t:1,a:'Property',ds:'readonly'}));
     if(one)h+=dsec('Timing','<div class="dgrid">'+fld('At',fmt(k0.t),{t:1,f:'at',a:'Time'})+(sameP?fld('Value',numStr(k0.v),{f:'val',a:'Value',sf:P0.u}):'')+'</div>');
     else{ts=ks.map(function(s){return s.k.t});h+=dsec('Selection','<div class="dgrid">'+fld('From',fmt(Math.min.apply(null,ts)),{t:1,a:'First keyframe',ds:'readonly'})+fld('To',fmt(Math.max.apply(null,ts)),{t:1,a:'Last keyframe',ds:'readonly'})+'</div>')}
-    h+=dsec('Easing',dsel(EZL,'Easing',ez,' data-f="ease"'+(lastOnly?' disabled':''))+curveSVG(k0)
-      +'<div class="dgrid">'+fld('x1',numStr(bz[0]),{f:'x1',a:'x1',ds:ro})+fld('y1',numStr(bz[1]),{f:'y1',a:'y1',ds:ro})+'</div>'
-      +'<div class="dgrid">'+fld('x2',numStr(bz[2]),{f:'x2',a:'x2',ds:ro})+fld('y2',numStr(bz[3]),{f:'y2',a:'y2',ds:ro})+'</div>'
-      +sb(lastOnly?'The last keyframe has no segment to ease.':'Eases the segment to the next keyframe.'));
+    h+=dsec('Easing',easeBody(ks,k0,lastOnly));
     if(sameL){var c=ks[0].l.clips[0];h+=dsec('Clip','<div class="dgrid">'+fld('Delay',fmt(c.s),{t:1,f:'cs',a:'Clip delay'})+fld('Duration',fmt(c.e-c.s),{t:1,f:'cl',a:'Clip duration'})+'</div>')}
     h+=dsec('Keyframes','<div class="dgrid"><button class="dtxt wide" data-ka="dup">Duplicate</button><button class="dtxt wide" data-ka="del">Delete</button><button class="dtxt wide" data-ka="st90"'+(one?' disabled':'')+'>Stretch 0.9×</button><button class="dtxt wide" data-ka="st110"'+(one?' disabled':'')+'>Stretch 1.1×</button></div>');
     el.innerHTML=h;fitAll(el);
@@ -3590,23 +3952,35 @@ label.dtrow{cursor:pointer}
     var i=$('[data-f="'+f+'"]',insK);
     if(i&&i!==document.activeElement&&i.value!==String(v)){i.value=v;fitIn(i)}
   }
+  /* Test: a small square travels on the spring of the selected key (the same Nook spring as the menus use). Reduced motion: a short fade. */
+  function springTest(){
+    var q=$('.stq',insK),box=$('.stest',insK),s=selKeys()[0],sp,end,from,to;
+    if(!q||!s)return;
+    sp=s.k.sp||SPD;end=box.clientWidth-q.offsetWidth-12;
+    from=q.dataset.at==='1'?end:0;to=from?0:end;q.dataset.at=to?'1':'0';
+    q.style.translate=to+'px 0';
+    springAnim(q,[{translate:from+'px 0'},{translate:to+'px 0'}],sp[0],sp[1]);
+  }
   function inspSync(){
     var ks=selKeys(),L=ks.length?ks[0].l:curLayer(),c;
     if(ks.length===1){setF('at',fmt(ks[0].k.t));setF('val',numStr(ks[0].k.v))}
     if(L){c=ks.length?L.clips[0]:selClip(L);setF('cs',fmt(c.s));setF('cl',fmt(c.e-c.s))}
   }
   function easeSync(){
-    var ks=selKeys(),k0=ks[0]&&ks[0].k,bz,c,svg;
+    var ks=selKeys(),k0=ks[0]&&ks[0].k,bz,ce,c,si;
     if(!k0)return;
     bz=bzOf(k0);
     ['x1','y1','x2','y2'].forEach(function(f,i){
       var inp=$('[data-f="'+f+'"]',insK);
-      if(inp){inp.readOnly=k0.ease==='Spring';if(inp!==document.activeElement)inp.value=numStr(bz[i])}
+      if(inp&&inp!==document.activeElement)inp.value=numStr(bz[i]);
     });
-    svg=$('.kcurve',insK);
-    if(svg)svg.outerHTML=curveSVG(k0);
+    ce=$('.kce',insK);
+    if(ce)ce.outerHTML=curveSVG(k0,segSec(ks[0]));
+    si=$('[data-sinfo]',insK);
+    if(si)si.textContent=sinfo(k0,segSec(ks[0]));
     c=$('select[data-f="ease"]',insK);
     if(c&&c.value!==k0.ease){c.value=k0.ease;c.parentNode.querySelector('.ddt').textContent=k0.ease}
+    if(M.view==='graph')tlRender();
   }
   function motionSel(){
     Object.keys(M.ks).forEach(function(id){var f=findKey(id);if(!f||selection.indexOf(f.l.id)<0)delete M.ks[id]});
@@ -3614,15 +3988,27 @@ label.dtrow{cursor:pointer}
     tlRender();kInspect();
   }
   insK.addEventListener('input',function(e){
-    var t=e.target,f=t.dataset.f,ks,v,i,m;
+    var t=e.target,f=t.dataset.f,ks,v,i,m,L=curLayer();
     if(!f||t.tagName==='SELECT')return;
     if(f==='mname'){m=M.mks.filter(function(x){return x.id===t.dataset.mid})[0];if(m)m.name=t.value;return}
+    if(f==='lss'||f==='lse'){if(L)L[f==='lss'?'ss':'se']=t.value;return}
+    if(f==='sprev'){
+      v=+t.value;if(L)L.sprev=v;
+      $('[data-sv="p"]',insK).textContent=v+'%';
+      playToggle(false);seek(M.wa.a+v/100*(M.wa.b-M.wa.a),false);
+      return;
+    }
     ks=selKeys().filter(function(s){return !s.l.lock});
     if(!ks.length)return;
     if(f==='val'){
       v=parseFloat(t.value);if(isNaN(v)||ks.length!==1)return;
       ks[0].k.v=clampN(v,PROPS[ks[0].tr.p].lo,PROPS[ks[0].tr.p].hi);
       paint(M.ph.x);
+    }else if(f==='sresp'||f==='sdamp'){
+      v=parseFloat(t.value);if(isNaN(v))return;
+      ks.forEach(function(q){var sp=(q.k.sp||SPD).slice();sp[f==='sresp'?0:1]=v;q.k.sp=sp});
+      $('[data-sv="'+(f==='sresp'?'r':'d')+'"]',insK).textContent=v.toFixed(2);
+      easeSync();paint(M.ph.x);
     }else if(/^[xy][12]$/.test(f)){
       v=parseFloat(t.value);if(isNaN(v))return;
       i=['x1','y1','x2','y2'].indexOf(f);
@@ -3637,9 +4023,12 @@ label.dtrow{cursor:pointer}
     if(f==='cfps'){setFps(+t.value);return}
     if(f==='cspeed'){M.speed=parseFloat(t.value);syncPlayUI();return}
     if(f==='cease'){M.defEase=t.value;return}
-    if(f==='ltrig'&&L){L.trig=t.value;return}
+    if(f==='ltrig'&&L){L.trig=t.value;L.scrub=t.value==='While scrolling'?true:L.scrub;kInspect();return}
     if(f==='lease'&&L){L.ease=t.value;return}
-    if(f==='lrep'&&L){L.rep=t.value;return}
+    if(f==='lrep'&&L){L.rep=t.value;kInspect();paint(M.ph.x);return}
+    if(f==='lrn'&&L){L.rn=clampN(parseInt(t.value,10)||1,1,99);t.value=L.rn;paint(M.ph.x);return}
+    if(f==='lstag'&&L){L.stag=clampN(parseInt(t.value,10)||0,0,1000);t.value=L.stag;paint(M.ph.x);return}
+    if(f==='lsfrom'&&L){L.sfrom=t.value;paint(M.ph.x);return}
     if(f==='cdur'){fr=parseT(t.value);if(isNaN(fr)){t.value=fmt(DUR);return}setDur(fr);return}
     ks=selKeys().filter(function(s){return !s.l.lock});
     if(f==='ease'){
@@ -3664,6 +4053,15 @@ label.dtrow{cursor:pointer}
     if(!b)return;
     d=b.dataset;
     if(d.f==='cloop'){M.loop=['Off','Loop','Ping-pong'].indexOf(d.v);syncPlayUI();return}
+    if(d.f==='lscrub'||d.f==='lpin'||d.f==='lyoyo'){L=curLayer();if(L){L[d.f==='lscrub'?'scrub':d.f==='lpin'?'pin':'yoyo']=d.v==='On';paint(M.ph.x)}return}
+    if(d.f==='etab'){
+      selKeys().filter(function(q){return !q.l.lock}).forEach(function(q){
+        if(d.v==='Spring'&&q.k.ease!=='Spring'){q.k.ease='Spring';q.k.sp=q.k.sp||SPD.slice()}
+        else if(d.v==='Curve'&&q.k.ease==='Spring')q.k.ease=q.k.bz?'Custom':'Ease out';
+      });
+      kInspect();paint(M.ph.x);if(M.view==='graph')tlRender();
+      return;
+    }
     if(d.ka){
       L=curLayer();
       if(d.ka==='dup')dupKeys();else if(d.ka==='del')delKeys();else if(d.ka==='st90')stretchKeys(.9);else if(d.ka==='st110')stretchKeys(1.1);
@@ -3671,13 +4069,14 @@ label.dtrow{cursor:pointer}
       else if(d.ka==='addmarker')addMarker();
       else if(d.ka==='split'&&L){if(splitAt(L,M.ci,Math.round(M.T))){tlRender();kInspect();paint(M.ph.x)}}
       else if(d.ka==='addprop'&&L&&!b.disabled)ddOpen(trackCfg(b,L),e.detail===0);
+      else if(d.ka==='stest')springTest();
     }else if(d.lsel){M.ks={};select(d.lsel)}
     else if(d.mseek){m=M.mks.filter(function(x){return x.id===d.mseek})[0];if(m){playToggle(false);seek(m.t,true)}}
     else if(d.mdel){M.mks=M.mks.filter(function(x){return x.id!==d.mdel});tlRender();kInspect()}
     else if(d.pa){L=Ly(d.l);if(L)paAct(L,d)}
   });
 
-  /* Keyboard: Space, Home, End, arrows, K, M, V, C, Delete, Ctrl+D. Skipped inside fields and while a menu is open. */
+  /* Keyboard: Space, J K L, Home, End, arrows, I O, = - \\, U, M, V, C, Delete, Ctrl+D. Skipped inside fields and while a menu is open. */
   document.addEventListener('keydown',function(e){
     var a=document.activeElement,k=e.key,mod=e.ctrlKey||e.metaKey;
     if(mode!=='motion'||inField()||!CK.hidden||DD.open||mm.classList.contains('open'))return;
@@ -3692,7 +4091,15 @@ label.dtrow{cursor:pointer}
     }
     else if(mod&&k.toLowerCase()==='d'){e.preventDefault();dupKeys()}
     else if(mod||e.altKey)return;
-    else if(k.toLowerCase()==='k'){e.preventDefault();addKey()}
+    else if(k.toLowerCase()==='k'){e.preventDefault();if(M.playing)playToggle(false);else addKey()}
+    else if(k.toLowerCase()==='j'){e.preventDefault();shuttle(-1)}
+    else if(k.toLowerCase()==='l'){e.preventDefault();shuttle(1)}
+    else if(k.toLowerCase()==='i'){e.preventDefault();M.wa.a=clampN(Math.round(M.T),0,M.wa.b-1);tlRender()}
+    else if(k.toLowerCase()==='o'){e.preventDefault();M.wa.b=clampN(Math.round(M.T),M.wa.a+1,DUR);tlRender()}
+    else if(k.toLowerCase()==='u'){e.preventDefault();revealProps()}
+    else if(k==='='||k==='+'){e.preventDefault();zoomAt(1.25,clampN(X(M.T),0,LW()))}
+    else if(k==='-'||k==='_'){e.preventDefault();zoomAt(.8,clampN(X(M.T),0,LW()))}
+    else if(k==='\\'){e.preventDefault();M.z=1;M.t0=0;tlRender()}
     else if(k.toLowerCase()==='m'){e.preventDefault();addMarker()}
     else if(k.toLowerCase()==='v'){setTool('select')}
     else if(k.toLowerCase()==='c'){setTool('split')}
@@ -3712,8 +4119,262 @@ label.dtrow{cursor:pointer}
     M.playing=false;cancelAnimationFrame(M.raf);
     M.T=Math.round(M.T);M.ph.jump(M.T);
     if(M.ro){M.ro.disconnect();M.ro=null}
-    clearCanvas();
+    xClose(true);clearCanvas();
     syncPlayUI();
+  }
+
+
+  /* ===== Motion export: code generated from the model (real keyframes and easing) in four flavours. Opens in a .ppop styled panel above the header. ===== */
+  function xr(v){return +(+v).toFixed(3)}
+  function xs(f){return xr(f/FPS)}
+  function xlayers(){return TL.layers.filter(function(l){return !l.mute&&l.tr.some(function(t){return t.keys.length>1})})}
+  function xcls(l){return 'll-'+l.id}
+  function xlin(k,sec){var n=20,i,p=[];for(i=0;i<=n;i++)p.push(i===n?1:xr(springX(k.sp||SPD,i/n*sec)));return 'linear('+p.join(', ')+')'}
+  function xez(k,sec){
+    if(k.ease==='Spring')return xlin(k,sec);
+    if(k.ease==='Linear')return 'linear';
+    return 'cubic-bezier('+bzOf(k).map(xr).join(', ')+')';
+  }
+  function xnum(v){return isNaN(+v)?'"'+v+'"':v}
+  function xv(trs,p,t){var tr=trs.filter(function(q){return q.p===p})[0];return tr?valueAt(tr,t):0}
+  var XPROP={opacity:'opacity',scale:'scale',rot:'rotate'};
+  function xval(prop,v){return prop==='opacity'||prop==='scale'?xr(v/100):xr(v)+'deg'}
+  /* One channel per CSS property: opacity, scale, rotate, and translate (x and y together) */
+  function xchan(l,trs,prop){
+    var ts=[],a,b,off=stagOf(l);
+    trs.forEach(function(tr){tr.keys.forEach(function(k){if(ts.indexOf(k.t)<0)ts.push(k.t)})});
+    ts.sort(function(p,q){return p-q});
+    a=ts[0];b=ts[ts.length-1];
+    return {prop:prop,delay:xs(a+off),dur:xs(b-a),keys:ts.map(function(t,i){
+      var own=null,seg=i<ts.length-1?(ts[i+1]-t)/FPS:0;
+      trs.forEach(function(tr){if(!own)own=tr.keys.filter(function(k){return k.t===t})[0]||null});
+      if(!own)own=trs[0].keys.filter(function(k){return k.t<t}).pop()||trs[0].keys[0];
+      return {pct:xr((t-a)/(b-a)*100),val:prop==='translate'?xr(xv(trs,'x',t))+'px '+xr(xv(trs,'y',t))+'px':xval(prop,valueAt(trs[0],t)),ez:xez(own,seg)};
+    })};
+  }
+  function xchans(l){
+    var out=[],xy=[];
+    l.tr.forEach(function(tr){
+      if(tr.keys.length<2)return;
+      if(tr.p==='x'||tr.p==='y'){xy.push(tr);return}
+      out.push(xchan(l,[tr],XPROP[tr.p]));
+    });
+    if(xy.length)out.push(xchan(l,xy,'translate'));
+    return out;
+  }
+  function xcount(l){return l.rep==='Once'?1:l.rep==='Forever'?'Infinity':l.rn}
+  function xempty(c){return c+' Nothing is animated yet. Add keyframes in the timeline.'}
+  function genCSS(){
+    var o=['/* Lazy Layout animation, '+xs(DUR)+'s at '+FPS+' fps */'],ls=xlayers(),rm=[];
+    if(!ls.length)return xempty('/*')+' */';
+    ls.forEach(function(l){
+      var chs=xchans(l),c='.'+xcls(l),pre=l.trig==='On hover'?':hover':l.trig==='On click'?':active':'',scroll=l.trig.indexOf('scroll')>-1,an=[];
+      o.push('');
+      chs.forEach(function(ch){
+        var nm=l.id+'-'+ch.prop;
+        if(an.length)o.push('');
+        o.push('@keyframes '+nm+' {');
+        ch.keys.forEach(function(k,i){o.push('  '+k.pct+'% { '+ch.prop+': '+k.val+';'+(i<ch.keys.length-1?' animation-timing-function: '+k.ez+';':'')+' }')});
+        o.push('}');
+        an.push(nm+' '+ch.dur+'s linear '+ch.delay+'s '+(l.rep==='Once'?'1':l.rep==='Forever'?'infinite':l.rn)+' '+(l.rep!=='Once'&&l.yoyo?'alternate':'normal')+' both');
+      });
+      o.push('');
+      o.push(c+pre+' {');
+      o.push('  animation:');
+      an.forEach(function(a,i){o.push('    '+a+(i<an.length-1?',':';'))});
+      if(scroll){
+        o.push('  /* Start '+l.ss+', end '+l.se+', scrub '+(l.scrub?'on':'off')+', pin '+(l.pin?'on':'off')+(l.pin?' (wrap the section in position: sticky)':'')+' */');
+        o.push('  animation-timeline: view();');
+        o.push('  animation-range: '+(l.trig==='While scrolling'?'entry 0% exit 100%':'entry 0% cover 40%')+';');
+      }
+      o.push('}');
+      rm.push(c+pre);
+    });
+    o.push('');o.push('@media (prefers-reduced-motion: reduce) {');
+    o.push('  '+rm.join(',\n  ')+' {');o.push('    animation: none;');o.push('  }');o.push('}');
+    return o.join('\n');
+  }
+  function genWAAPI(){
+    var ls=xlayers(),o=['// Lazy Layout animation, '+xs(DUR)+'s at '+FPS+' fps'],tr=[],view=false;
+    if(!ls.length)return xempty('//');
+    o.push('const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;','','export const layers = {');
+    ls.forEach(function(l){
+      o.push('  '+l.id+'() {','    const el = document.querySelector(".'+xcls(l)+'");');
+      xchans(l).forEach(function(ch){
+        o.push('    el?.animate(','      [');
+        ch.keys.forEach(function(k,i){o.push('        { offset: '+xr(k.pct/100)+', '+ch.prop+': '+xnum(k.val)+(i<ch.keys.length-1?', easing: "'+k.ez+'"':'')+' },')});
+        o.push('      ],','      { duration: '+Math.round(ch.dur*1000)+', delay: '+Math.round(ch.delay*1000)+', fill: "both", iterations: '+xcount(l)+(l.rep!=='Once'&&l.yoyo?', direction: "alternate"':'')+' },','    );');
+      });
+      o.push('  },');
+      if(l.trig==='On load')tr.push('  layers.'+l.id+'();');
+      else if(l.trig==='On hover'||l.trig==='On click')tr.push('  document.querySelector(".'+xcls(l)+'")?.addEventListener("'+(l.trig==='On hover'?'mouseenter':'click')+'", layers.'+l.id+');');
+      else{view=true;tr.push('  onView(".'+xcls(l)+'", layers.'+l.id+');')}
+    });
+    o.push('};','');
+    if(view){
+      o.push('function onView(selector: string, run: () => void) {','  const el = document.querySelector(selector);','  if (!el) return;','  new IntersectionObserver(([entry], io) => {','    if (entry.isIntersecting) { run(); io.disconnect(); }','  }, { rootMargin: "0px 0px -20% 0px" }).observe(el);','}','');
+    }
+    o.push('if (!reduced) {');tr.forEach(function(t){o.push(t)});o.push('}');
+    return o.join('\n');
+  }
+  /* Framer Motion and GSAP animate one property per track, so they use the tracks directly */
+  var XFM={opacity:'opacity',x:'x',y:'y',scale:'scale',rot:'rotate'},XGS={opacity:'opacity',x:'x',y:'y',scale:'scale',rot:'rotation'};
+  function xtv(p,v){return p==='opacity'||p==='scale'?xr(v/100):xr(v)}
+  function xspring(k,sec,fns){
+    var w=2*Math.PI/(k.sp||SPD)[0],z=(k.sp||SPD)[1],wd=w*Math.sqrt(Math.max(1e-6,1-z*z)),nm='spring'+fns.length,body;
+    body=z>=.999?'1 - Math.exp(-'+xr(w)+' * t) * (1 + '+xr(w)+' * t)':'1 - Math.exp(-'+xr(z*w)+' * t) * (Math.cos('+xr(wd)+' * t) + '+xr(z*w/wd)+' * Math.sin('+xr(wd)+' * t))';
+    fns.push('const '+nm+' = (u: number) => { const t = u * '+xr(sec)+'; return u >= 1 ? 1 : '+body+'; };');
+    return nm;
+  }
+  function genFM(){
+    var ls=xlayers(),o=['// Lazy Layout animation, '+xs(DUR)+'s at '+FPS+' fps','// Spread a layer onto a motion element: <motion.div {...headline} />','// Wrap the app in <MotionConfig reducedMotion="user"> to respect prefers-reduced-motion.','import type { MotionProps } from "framer-motion";',''],fns=[],body=[];
+    if(!ls.length)return xempty('//');
+    ls.forEach(function(l){
+      var key=l.trig==='On load'?'animate':l.trig==='On hover'?'whileHover':l.trig==='On click'?'whileTap':'whileInView',off=stagOf(l),init=[],vals=[],tx=[],view=key==='whileInView';
+      l.tr.forEach(function(tr){
+        var ks=tr.keys,a,b,p=XFM[tr.p],ez=[];
+        if(ks.length<2)return;
+        a=ks[0].t;b=ks[ks.length-1].t;
+        init.push(p+': '+xtv(tr.p,ks[0].v));
+        vals.push('    '+p+': ['+ks.map(function(k){return xtv(tr.p,k.v)}).join(', ')+'],');
+        ks.forEach(function(k,i){
+          var sec;
+          if(i===ks.length-1)return;
+          sec=(ks[i+1].t-k.t)/FPS;
+          ez.push(k.ease==='Spring'?xspring(k,sec,fns):k.ease==='Linear'?'"linear"':'['+bzOf(k).map(xr).join(', ')+']');
+        });
+        tx.push('      '+p+': { duration: '+xs(b-a)+', delay: '+xs(a+off)+', times: ['+ks.map(function(k){return xr((k.t-a)/(b-a))}).join(', ')+'], ease: ['+ez.join(', ')+']'+(l.rep!=='Once'?', repeat: '+(l.rep==='Forever'?'Infinity':l.rn-1)+', repeatType: "'+(l.yoyo?'reverse':'loop')+'"':'')+' },');
+      });
+      body.push('export const '+l.id+': MotionProps = {','  initial: { '+init.join(', ')+' },','  '+key+': {');
+      vals.forEach(function(v){body.push(v)});
+      body.push('    transition: {');tx.forEach(function(t){body.push(t)});body.push('    },','  },');
+      if(view)body.push('  viewport: { once: true, margin: "0px 0px -20% 0px" },');
+      if(l.trig==='While scrolling')body.push('  // Scrub: drive these values with useScroll() and useTransform() instead.');
+      body.push('};','');
+    });
+    return o.concat(fns.length?fns.concat(['']):[],body).join('\n').replace(/\n+$/,'');
+  }
+  function genGSAP(){
+    var ls=xlayers(),o=['// Lazy Layout animation, '+xs(DUR)+'s at '+FPS+' fps','import gsap from "gsap";','import { CustomEase } from "gsap/CustomEase";'],fns=[],body=[],st=false;
+    if(!ls.length)return xempty('//');
+    ls.forEach(function(l){if(l.trig.indexOf('scroll')>-1)st=true});
+    if(st)o.push('import { ScrollTrigger } from "gsap/ScrollTrigger";');
+    o.push('','gsap.registerPlugin(CustomEase'+(st?', ScrollTrigger':'')+');','');
+    body.push('const mm = gsap.matchMedia();','','mm.add("(prefers-reduced-motion: no-preference)", () => {');
+    ls.forEach(function(l){
+      var hold=l.trig==='On hover'||l.trig==='On click',sc=l.trig.indexOf('scroll')>-1,opts=[],off=stagOf(l),sel='".'+xcls(l)+'"';
+      if(l.rep!=='Once'){opts.push('repeat: '+(l.rep==='Forever'?'-1':l.rn-1));if(l.yoyo)opts.push('yoyo: true')}
+      if(hold)opts.push('paused: true');
+      if(sc)opts.push('scrollTrigger: { trigger: '+sel+', start: "'+l.ss+'", end: "'+l.se+'", scrub: '+l.scrub+', pin: '+l.pin+' }');
+      body.push('  const '+l.id+' = gsap.timeline('+(opts.length?'{ '+opts.join(', ')+' }':'')+');');
+      l.tr.forEach(function(tr){
+        var ks=tr.keys,p=XGS[tr.p],a;
+        if(ks.length<2)return;
+        a=ks[0].t;
+        body.push('  '+l.id+'.to('+sel+', {','    keyframes: [','      { '+p+': '+xtv(tr.p,ks[0].v)+', duration: 0 },');
+        ks.forEach(function(k,i){
+          var prev,sec,ez;
+          if(!i)return;
+          prev=ks[i-1];sec=(k.t-prev.t)/FPS;
+          ez=prev.ease==='Spring'?xspring(prev,sec,fns):prev.ease==='Linear'?'"none"':'CustomEase.create("'+l.id+'-'+p+'-'+i+'", "'+bzOf(prev).map(xr).join(', ')+'")';
+          body.push('      { '+p+': '+xtv(tr.p,k.v)+', duration: '+xs(k.t-prev.t)+', ease: '+ez+' },');
+        });
+        body.push('    ],','  }, '+xs(a+off)+');');
+      });
+      if(l.trig==='On hover'||l.trig==='On click')body.push('  document.querySelector('+sel+')?.addEventListener("'+(l.trig==='On hover'?'mouseenter':'click')+'", () => '+l.id+'.restart());');
+    });
+    body.push('});');
+    return o.concat(fns.length?fns.concat(['']):[],body).join('\n');
+  }
+  var XF={css:{n:'CSS',ext:'css',dep:'No dependencies',note:'Includes a prefers-reduced-motion media query that switches the animation off.',gen:genCSS},
+    waapi:{n:'WAAPI',ext:'ts',dep:'No dependencies',note:'Skips every animation when prefers-reduced-motion is set.',gen:genWAAPI},
+    fm:{n:'Framer Motion',ext:'ts',dep:'framer-motion',note:'Respects prefers-reduced-motion through MotionConfig reducedMotion="user".',gen:genFM},
+    gsap:{n:'GSAP',ext:'ts',dep:'gsap',note:'Runs inside gsap.matchMedia(), so reduced motion gets no animation.',gen:genGSAP}};
+  var xFmt='css',XP=document.createElement('div'),xAnchor=null;
+  XP.className='ppop xpop';XP.setAttribute('role','dialog');XP.tabIndex=-1;document.body.appendChild(XP);
+  /* Syntax colour with the text tokens only: keywords bold, strings and numbers full strength, comments muted */
+  function hlCode(src){
+    var esc=src.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return esc.replace(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|((?<![\w-])(?:import|from|export|const|function|return|new|if|true|false|type|void|number)(?![\w-])|@keyframes|@media)|((?<![\w])-?\d*\.?\d+(?:px|ms|s|deg|%)?)/g,function(m,c,q,k){
+      return c?'<span class="c">'+c+'</span>':q?'<span class="s">'+q+'</span>':k?'<span class="k">'+k+'</span>':'<span class="n">'+m+'</span>';
+    });
+  }
+  function xCode(){return XF[xFmt].gen()}
+  function xRender(){
+    var code=xCode(),n=code.split('\n').length,b=new Blob([code]).size,f=XF[xFmt];
+    $('#xcode').innerHTML=hlCode(code);
+    $('#xinfo').textContent=n+' lines · '+(b<1024?b+' B':(b/1024).toFixed(1)+' KB')+' · '+f.dep;
+    $('#xnote').textContent=f.note;
+    $('#xdl').textContent='Download .'+f.ext;
+    $$('#xtabs button').forEach(function(t){t.setAttribute('aria-pressed',String(t.dataset.xf===xFmt));t.setAttribute('aria-selected',String(t.dataset.xf===xFmt))});
+  }
+  function exportHTML(){
+    return '<div class="phead"><span class="pt">Export animation</span><button class="ib" data-xa="close" aria-label="Close" title="Close"><svg><use href="#x"/></svg></button></div>'
+      +'<div class="pbody"><div class="seg dseg fill" id="xtabs" role="tablist" aria-label="Format">'+Object.keys(XF).map(function(k){return '<button role="tab" data-xf="'+k+'" aria-pressed="false" aria-selected="false">'+XF[k].n+'</button>'}).join('')+'</div>'
+      +'<pre class="xcode" id="xcode" tabindex="0" aria-label="Generated code"></pre>'
+      +'<div class="xmeta"><span id="xinfo"></span></div><div class="xnote" id="xnote"></div></div>'
+      +'<div class="xfoot"><button class="btn" data-xa="copy"><svg><use href="#copy"/></svg><span>Copy</span></button><button class="btn strong" data-xa="dl"><svg><use href="#exp"/></svg><span id="xdl">Download</span></button></div>';
+  }
+  var XKEYS=[['Playback',[['Play or pause','Space'],['Shuttle back, stop, forward','J K L'],['Step 1 frame','← →'],['Step 10 frames','Shift ← →'],['Previous or next keyframe','Alt ← →'],['Go to start or end','Home End']]],
+    ['Edit',[['Add keyframe, or stop playing','K'],['Add marker','M'],['Select or Split tool','V C'],['Set work area in or out','I O'],['Duplicate keyframes','Ctrl D'],['Delete keyframes','Delete']]],
+    ['View',[['Zoom in or out','= -'],['Fit the timeline','\\'],['Reveal animated properties','U']]]];
+  function keysHTML(){
+    return '<div class="phead"><span class="pt">Keyboard shortcuts</span><button class="ib" data-xa="close" aria-label="Close" title="Close"><svg><use href="#x"/></svg></button></div>'
+      +'<div class="pbody"><div class="xks">'+XKEYS.map(function(g){return '<h4>'+g[0]+'</h4>'+g[1].map(function(r){return '<div class="xk"><span>'+r[0]+'</span><kbd>'+r[1]+'</kbd></div>'}).join('')}).join('')+'</div><div class="xnote">Shortcuts work when the focus is not in a field.</div></div>';
+  }
+  function xOpen(kind,anchor){
+    var r,w=kind==='keys'?360:520;
+    if(XP.classList.contains('open')&&XP.dataset.kind===kind){xClose();return}
+    closeAll();
+    XP.dataset.kind=kind;XP.classList.toggle('keys',kind==='keys');
+    XP.setAttribute('aria-label',kind==='keys'?'Keyboard shortcuts':'Export animation');
+    XP.innerHTML=kind==='keys'?keysHTML():exportHTML();
+    xAnchor=anchor;anchor.setAttribute('aria-expanded','true');
+    r=anchor.getBoundingClientRect();
+    XP.style.left=clampN(r.right-w,8,innerWidth-w-8)+'px';
+    XP.style.top='auto';XP.style.bottom=(innerHeight-r.top+4)+'px';XP.style.maxHeight=(r.top-12)+'px';
+    XP.classList.add('open');
+    if(kind==='export')xRender();
+    springAnim(XP,[{opacity:0,scale:'.96'},{opacity:1,scale:'1'}],mo().pop[0],mo().pop[1]);
+    XP.focus({preventScroll:true});
+  }
+  function xClose(now){
+    if(!XP.classList.contains('open'))return;
+    XP.classList.remove('open');
+    if(xAnchor){xAnchor.setAttribute('aria-expanded','false');if(XP.contains(document.activeElement))xAnchor.focus({preventScroll:true})}
+    if(!now&&!reduced()&&XP.animate)XP.animate([{opacity:1,visibility:'visible'},{opacity:0,visibility:'visible'}],{duration:100,easing:'ease-out'});
+  }
+  function xCopy(b){
+    var t=xCode(),sp=$('span',b),u=$('use',b);
+    function done(){sp.textContent='Copied';u.setAttribute('href','#check');clearTimeout(b._t);b._t=setTimeout(function(){sp.textContent='Copy';u.setAttribute('href','#copy')},1600)}
+    function legacy(){var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove();done()}
+    try{navigator.clipboard.writeText(t).then(done,legacy)}catch(_){legacy()}
+  }
+  function xDownload(){
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([xCode()],{type:'text/plain'}));a.download='lazy-layout-animation.'+XF[xFmt].ext;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+  }
+  XP.addEventListener('click',function(e){
+    var b=e.target.closest('button');
+    if(!b)return;
+    if(b.dataset.xf){xFmt=b.dataset.xf;xRender();return}
+    if(b.dataset.xa==='close')xClose();
+    else if(b.dataset.xa==='copy')xCopy(b);
+    else if(b.dataset.xa==='dl')xDownload();
+  });
+  document.addEventListener('pointerdown',function(e){if(XP.classList.contains('open')&&!XP.contains(e.target)&&!e.target.closest('#texp,#tmore'))xClose()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&XP.classList.contains('open')){e.preventDefault();xClose()}});
+  function moreHTML(){
+    return '<button role="menuitem" data-mxa="compact"><span class="ico"><svg><use href="#stack"/></svg></span>Compact tracks'+(M.compact?'<svg class="chv"><use href="#check"/></svg>':'')+'</button>'
+      +'<button role="menuitem" data-mxa="marker"><span class="ico"><svg><use href="#flag"/></svg></span>Add marker<kbd>M</kbd></button>'
+      +'<div class="hl"></div>'
+      +'<button role="menuitem" data-mxa="keys"><span class="ico"><svg><use href="#kbd"/></svg></span>Keyboard shortcuts</button>';
+  }
+  function mxAct(a){
+    if(a==='compact'){M.compact=!M.compact;syncPlayUI()}
+    else if(a==='marker')addMarker();
+    else if(a==='keys'){var m=$('#tmore');if(m)xOpen('keys',m)}
   }
 
   var B={
