@@ -10,7 +10,7 @@ import React, {
   useContext,
   useId,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { ChevronRight, Check } from "lucide-react";
 import { defaultHost } from "../motion/loop";
 import { MOT, MENU_FALLBACKS } from "../motion/presets";
@@ -272,7 +272,8 @@ export const Menu: React.FC<MenuProps> = ({
         }
       }
 
-      setActiveSubId(subId);
+      // Commit the new list before the next frame measures it, so the surface morphs to the right size
+      flushSync(() => setActiveSubId(subId));
 
       const unreg = defaultHost.register(() => {
         unreg();
@@ -313,7 +314,7 @@ export const Menu: React.FC<MenuProps> = ({
     // Fresh open
     ss.reset();
     activeSubRowRef.current = rowEl;
-    setActiveSubId(subId);
+    flushSync(() => setActiveSubId(subId));
 
     const unreg = defaultHost.register(() => {
       unreg();
@@ -394,7 +395,13 @@ export const Menu: React.FC<MenuProps> = ({
     const targetAnchor = anchorRef?.current ?? anchorEl;
 
     if (open) {
-      prevActiveElementRef.current = document.activeElement as HTMLElement | null;
+      // Reopening while the previous close is still animating (right-click again on the canvas): drop that
+      // close's fade animation and reset timer first, or they hide the new menu after it has opened.
+      s.reset();
+      subSurfRef.current?.reset();
+      if (!menuEl.contains(document.activeElement)) {
+        prevActiveElementRef.current = document.activeElement as HTMLElement | null;
+      }
       const pad =
         parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue(
@@ -730,16 +737,11 @@ export const Menu: React.FC<MenuProps> = ({
 
   if (!mounted || !isRendered) return null;
 
+  // Variant widths come from classes: the surface engine clears inline sizes while it measures the natural size
   const widthStyle =
-    width !== undefined
-      ? typeof width === "number"
-        ? `${width}px`
-        : width
-      : variant === "wide"
-      ? "var(--ll-size-menu-wide-w)"
-      : variant === "context"
-      ? "var(--ll-size-menu-ctx-w)"
-      : undefined;
+    width !== undefined ? (typeof width === "number" ? `${width}px` : width) : undefined;
+  const variantWidth =
+    variant === "wide" ? "ll:w-menu-wide" : variant === "context" ? "ll:w-menu-ctx" : "";
 
   const activeSubData = activeSubId ? subMenus[activeSubId] : null;
   const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
@@ -754,7 +756,9 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         aria-label={ariaLabel}
         data-variant={variant}
-        className={`ll-menu ll:fixed ll:z-50 ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans ${className}`}
+        className={`ll-menu ll:fixed ll:z-50 ll:box-border ll:origin-top-left ll:bg-surface-raised ll:border ll:border-border ll:shadow-soft ll:outline-none ll:font-sans ${
+          variant === "context" ? "ll-ctx ll:p-1 ll:rounded-lg" : "ll:py-1 ll:rounded-md"
+        } ${variantWidth} ${className}`}
         style={widthStyle ? { width: widthStyle } : undefined}
       >
         <div
@@ -774,7 +778,7 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         data-submenu="true"
         aria-label={activeSubData?.label || "Submenu"}
-        className="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:w-56 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:py-1 ll:outline-none ll:font-sans"
+        className="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:box-border ll:origin-top-left ll:w-menu-ctx ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:outline-none ll:font-sans"
       >
         <div
           ref={subLayRef}
@@ -873,7 +877,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
           : "ll:text-primary"
       } ${className}`}
     >
-      {isCheckbox || isRadio ? (
+      {(isCheckbox || isRadio) && !icon ? (
         <span className="ll-ico ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:shrink-0 ll:text-primary">
           {checked && <Icon icon={Check} size={14} />}
         </span>
@@ -884,6 +888,8 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       ) : null}
 
       <span className="ll:flex-1 ll:truncate ll:text-body">{children}</span>
+
+      {icon && checked && <Icon icon={Check} size={14} className="ll:text-muted ll:shrink-0" />}
 
       {shortcut && (
         <kbd className="ll:font-mono ll:text-micro ll:text-muted ll:ml-auto ll:tracking-wider">
@@ -1001,3 +1007,27 @@ export const MenuLabel: React.FC<{ children: React.ReactNode; className?: string
     </div>
   );
 };
+
+/** Section heading inside a menu (prototype .mh), used for the Light and Dark theme groups. */
+export const MenuHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div
+    role="presentation"
+    className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-micro ll:font-medium ll:text-muted ll:select-none ll:cursor-default"
+  >
+    {children}
+  </div>
+);
+
+/** 28x18 theme preview chip, scoped to the theme it previews. Pass it as a menu item icon. */
+export const ThemeSwatch: React.FC<{ theme: string }> = ({ theme }) => (
+  <span
+    data-theme={theme}
+    aria-hidden="true"
+    className="ll-tpv ll:relative ll:flex ll:w-7 ll:h-4.5 ll:shrink-0 ll:overflow-hidden ll:rounded-xs ll:border ll:border-border"
+  >
+    <span className="ll:relative ll:w-3/5 ll:h-full ll:bg-surface-canvas ll:grid ll:place-items-center">
+      <span className="ll:w-2.5 ll:h-1 ll:rounded-xs ll:bg-control-primary" />
+    </span>
+    <span className="ll:flex-1 ll:h-full ll:bg-surface-panel" />
+  </span>
+);

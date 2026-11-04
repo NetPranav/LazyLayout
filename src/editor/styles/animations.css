@@ -74,6 +74,11 @@
   outline-offset: var(--ll-outline-offset-inset);
 }
 
+/* Theme preview chips are wider than a regular icon slot */
+.ll-menu .ll-ico:has(.ll-tpv) {
+  width: auto;
+}
+
 /* Submenu chevron right-facing, rotates 90deg when open */
 .ll-menu .ll-chv {
   transition: rotate var(--ll-dur-pop) var(--ll-ease-pop);

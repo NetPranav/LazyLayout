@@ -26,7 +26,8 @@ import {
   MenuItem,
   SubMenu,
   MenuSeparator,
-  MenuLabel,
+  MenuHeading,
+  ThemeSwatch,
 } from "@/editor/components/Menu";
 import { MENU_ICON_SIZE } from "@/editor/components/topbar-constants";
 import { Tooltip } from "@/editor/components/Tooltip";
@@ -34,6 +35,9 @@ import { invokeCommand } from "@/core/commands";
 import { addFrame } from "@/core/frames/frameCommands";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { getDocument } from "@/core/store/documentState";
+
+const LIGHT_THEMES = ["paper", "white", "warm", "lilac"] as const;
+const DARK_THEMES = ["dark"] as const;
 
 export interface CanvasContextMenuContentProps {
   canUndo?: boolean;
@@ -101,15 +105,15 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
   onZoomOut,
   onZoom100,
   onZoomFit,
-  showRulers: _showRulers = false,
+  showRulers = false,
   onToggleRulers,
-  pixelGrid: _pixelGrid = false,
+  pixelGrid = false,
   onTogglePixelGrid,
-  snapObjects: _snapObjects = true,
+  snapObjects = true,
   onToggleSnapObjects,
-  snapGuides: _snapGuides = false,
+  snapGuides = false,
   onToggleSnapGuides,
-  checkerboard: _checkerboard = false,
+  checkerboard = false,
   onToggleCheckerboard,
   onTogglePanels,
   onToggleLeftPanel,
@@ -153,6 +157,17 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
       invokeCommand("tool.text");
     } catch {}
   };
+
+  const themeItem = (id: string) => (
+    <MenuItem
+      key={id}
+      icon={<ThemeSwatch theme={id} />}
+      checked={theme === id}
+      onClick={() => onThemeChange?.(id)}
+    >
+      {id.charAt(0).toUpperCase() + id.slice(1)}
+    </MenuItem>
+  );
 
   return (
     <>
@@ -282,30 +297,35 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
         <MenuItem
           icon={<Icon icon={Ruler} size={MENU_ICON_SIZE} />}
           shortcut="Shift+R"
+          checked={showRulers}
           onClick={onToggleRulers}
         >
           Rulers
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Grid3x3} size={MENU_ICON_SIZE} />}
+          checked={pixelGrid}
           onClick={onTogglePixelGrid}
         >
           Pixel grid
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Magnet} size={MENU_ICON_SIZE} />}
+          checked={snapObjects}
           onClick={onToggleSnapObjects}
         >
           Snap objects
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Minus} size={MENU_ICON_SIZE} />}
+          checked={snapGuides}
           onClick={onToggleSnapGuides}
         >
           Snap guides
         </MenuItem>
         <MenuItem
           icon={<Icon icon={LayoutPanelTop} size={MENU_ICON_SIZE} />}
+          checked={checkerboard}
           onClick={onToggleCheckerboard}
         >
           Checkerboard
@@ -325,40 +345,11 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
 
         <MenuSeparator />
 
-        {/* Five official themes only (PALETTE.md) categorized into Light and Dark */}
-        <MenuLabel>Light</MenuLabel>
-        <MenuItem
-          checked={theme === "paper"}
-          onClick={() => onThemeChange?.("paper")}
-        >
-          Paper
-        </MenuItem>
-        <MenuItem
-          checked={theme === "white"}
-          onClick={() => onThemeChange?.("white")}
-        >
-          White
-        </MenuItem>
-        <MenuItem
-          checked={theme === "warm"}
-          onClick={() => onThemeChange?.("warm")}
-        >
-          Warm
-        </MenuItem>
-        <MenuItem
-          checked={theme === "lilac"}
-          onClick={() => onThemeChange?.("lilac")}
-        >
-          Lilac
-        </MenuItem>
-
-        <MenuLabel>Dark</MenuLabel>
-        <MenuItem
-          checked={theme === "dark"}
-          onClick={() => onThemeChange?.("dark")}
-        >
-          Dark
-        </MenuItem>
+        {/* Five official themes only (PALETTE.md), grouped Light and Dark like the prototype */}
+        <MenuHeading>Light</MenuHeading>
+        {LIGHT_THEMES.map(themeItem)}
+        <MenuHeading>Dark</MenuHeading>
+        {DARK_THEMES.map(themeItem)}
       </SubMenu>
 
       <MenuSeparator />
@@ -378,7 +369,7 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
   open,
   onClose,
   position,
-  width = "var(--ll-size-menu-ctx-w)",
+  width,
   ...contentProps
 }) => {
   return (

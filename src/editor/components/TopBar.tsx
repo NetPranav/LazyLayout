@@ -61,38 +61,16 @@ import { LogoMark } from "./LogoMark";
 import { ModeTabs, type EditorMode } from "./ModeTabs";
 import { ShipPopover, type ShipIssue } from "./ShipPopover";
 import { AvatarStack, type CollabUser } from "./AvatarStack";
-import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
+import { Menu, MenuItem, SubMenu, MenuSeparator, MenuHeading, ThemeSwatch } from "./Menu";
 import { useTheme, type Theme } from "./ThemeToggle";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
+import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["dark"];
-
-const ThemeHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div
-    role="presentation"
-    className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-micro ll:font-medium ll:text-muted ll:select-none"
-  >
-    {children}
-  </div>
-);
-
-/** 28x18 theme preview chip, scoped to the theme it previews. */
-const ThemePreview: React.FC<{ theme: Theme }> = ({ theme }) => (
-  <span
-    data-theme={theme}
-    aria-hidden="true"
-    className="ll:relative ll:flex ll:w-7 ll:h-4.5 ll:shrink-0 ll:overflow-hidden ll:rounded-xs ll:border ll:border-border"
-  >
-    <span className="ll:relative ll:w-3/5 ll:h-full ll:bg-surface-canvas ll:grid ll:place-items-center">
-      <span className="ll:w-2.5 ll:h-1 ll:rounded-xs ll:bg-control-primary" />
-    </span>
-    <span className="ll:flex-1 ll:h-full ll:bg-surface-panel" />
-  </span>
-);
 
 const EntryLabel: React.FC<{ checked: boolean; children: React.ReactNode }> = ({
   checked,
@@ -107,6 +85,7 @@ const EntryLabel: React.FC<{ checked: boolean; children: React.ReactNode }> = ({
 export interface TopBarProps {
   projectName?: string;
   saving?: boolean;
+  saveStatus?: "saved" | "dirty" | "saving" | "error";
   mode?: EditorMode;
   onSelectMode?: (mode: EditorMode) => void;
   canUndo?: boolean;
@@ -136,6 +115,7 @@ export interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({
   projectName = "Visual Web App",
   saving = false,
+  saveStatus,
   mode: propMode,
   onSelectMode,
   onUndo,
@@ -157,6 +137,34 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const menuBtnId = useId();
   const themeBtnId = useId();
+
+  // Save status resolution
+  const sessionSaveState = useSaveStatus((s) => s.state);
+  const resolvedState: "saved" | "dirty" | "saving" | "error" =
+    saveStatus !== undefined
+      ? saveStatus
+      : saving
+      ? "saving"
+      : sessionSaveState === "saving"
+      ? "saving"
+      : sessionSaveState === "error"
+      ? "error"
+      : sessionSaveState === "pending"
+      ? "dirty"
+      : "saved";
+
+  let tooltipText = "All changes saved";
+  let accessibleLabel = "All changes saved";
+  if (resolvedState === "dirty") {
+    tooltipText = "Unsaved changes (Ctrl+S)";
+    accessibleLabel = "Unsaved changes";
+  } else if (resolvedState === "saving") {
+    tooltipText = "Saving changes…";
+    accessibleLabel = "Saving changes";
+  } else if (resolvedState === "error") {
+    tooltipText = "Failed to save changes";
+    accessibleLabel = "Save error";
+  }
 
   // Mode tabs state
   const [internalMode, setInternalMode] = useState<EditorMode>("design");
@@ -247,10 +255,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   const themeEntry = (id: Theme) => (
     <MenuItem
       key={id}
-      icon={<ThemePreview theme={id} />}
+      icon={<ThemeSwatch theme={id} />}
+      checked={theme === id}
       onClick={() => selectTheme(id)}
     >
-      <EntryLabel checked={theme === id}>{id.charAt(0).toUpperCase() + id.slice(1)}</EntryLabel>
+      {id.charAt(0).toUpperCase() + id.slice(1)}
     </MenuItem>
   );
 
@@ -303,7 +312,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
         />
 
-        {/* Project Name (14px, 500 font-weight, truncate) */}
+        {/* Project Name (14px, 500 font-weight, truncate) + Save Status Indicator */}
         <div className="ll-pinfo ll:flex ll:items-center ll:min-w-0 ll:text-secondary">
           <span
             className="ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
@@ -311,6 +320,29 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             {projectName}
           </span>
+          <Tooltip content={tooltipText} side="bottom">
+            <span
+              data-testid="save-status"
+              data-state={resolvedState}
+              role="status"
+              aria-label={accessibleLabel}
+              className="ll:inline-flex ll:items-center ll:justify-center ll:ml-2 ll:cursor-default"
+            >
+              <span className="ll:sr-only">{accessibleLabel}</span>
+              <span
+                aria-hidden="true"
+                className={`ll:w-1.5 ll:h-1.5 ll:rounded-xs ${
+                  resolvedState === "dirty"
+                    ? "viewport-action-btn__dirty-dot ll:bg-primary"
+                    : resolvedState === "saving"
+                    ? "ll:bg-muted ll:animate-pulse"
+                    : resolvedState === "error"
+                    ? "ll:bg-primary ll:opacity-80"
+                    : "ll:border ll:border-border ll:bg-transparent"
+                }`}
+              />
+            </span>
+          </Tooltip>
         </div>
 
         {/* Logo Application Menu (prototype MENUS.app) */}
@@ -467,9 +499,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             label="Theme"
             icon={<Icon icon={Palette} size={MENU_ICON_SIZE} />}
           >
-            <ThemeHeading>Light</ThemeHeading>
+            <MenuHeading>Light</MenuHeading>
             {LIGHT_THEMES.map((id) => themeEntry(id))}
-            <ThemeHeading>Dark</ThemeHeading>
+            <MenuHeading>Dark</MenuHeading>
             {DARK_THEMES.map((id) => themeEntry(id))}
           </SubMenu>
 
