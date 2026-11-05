@@ -91,13 +91,30 @@ export function buildLayerTree(
   filterRootId?: string | null
 ): LayerItem[] {
   if (filterRootId && layers[filterRootId]) {
+    const rootLayer = layers[filterRootId];
+    if (rootLayer.id === "elem_canvas_root" || rootLayer.id === "el_root_container") {
+      const kids = rootLayer.children.filter((cid) => Boolean(layers[cid]));
+      const items: LayerItem[] = [];
+      for (let i = kids.length - 1; i >= 0; i--) {
+        items.push(layerToItem(kids[i], layers, motionMap, 0));
+      }
+      return items;
+    }
     return [layerToItem(filterRootId, layers, motionMap, 0)];
   }
 
   const roots = rootIdsOf(layers);
   const items: LayerItem[] = [];
   for (let i = roots.length - 1; i >= 0; i--) {
-    items.push(layerToItem(roots[i], layers, motionMap, 0));
+    const rootId = roots[i];
+    if (rootId === "elem_canvas_root" || rootId === "el_root_container") {
+      const kids = layers[rootId]?.children?.filter((cid) => Boolean(layers[cid])) ?? [];
+      for (let j = kids.length - 1; j >= 0; j--) {
+        items.push(layerToItem(kids[j], layers, motionMap, 0));
+      }
+    } else {
+      items.push(layerToItem(rootId, layers, motionMap, 0));
+    }
   }
   return items;
 }

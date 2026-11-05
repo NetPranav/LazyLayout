@@ -11,7 +11,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
-import { useProjectStore, type PageDefinition } from "@/core/store/useProjectStore";
+import { useProjectStore } from "@/core/store/useProjectStore";
 import { motionIndex } from "@/core/timeline/model";
 import { buildRows, ancestorsOf, rangeBetween } from "@/core/layers/layerTree";
 import { frameIdOf } from "@/core/frames/frames";
@@ -26,7 +26,6 @@ import type {
   LayerItem,
 } from "./types";
 import {
-  SAMPLE_LAYERS,
   SAMPLE_FILES,
   SAMPLE_TRACKS,
   SAMPLE_ASSETS,
@@ -80,47 +79,19 @@ export function useLeftPanelData(
     }
   }, []);
 
-  // Check if store document is the initial unpositioned default container (matching Stage.tsx)
-  const isDefaultUnpositioned = useMemo(() => {
-    if (!layers || Object.keys(layers).length === 0) return true;
-    const layerEntries = Object.values(layers);
-    let hasPositionedLayers = false;
-    layerEntries.forEach((l) => {
-      if (
-        typeof l.properties["frame.x"] === "number" ||
-        typeof l.properties["frame.y"] === "number"
-      ) {
-        hasPositionedLayers = true;
-      }
-    });
-    return !hasPositionedLayers;
-  }, [layers]);
-
   // 4. Derive LayerItem trees (all layers and filtered page layers)
-  // With more than one page the tree follows the active page. The sample tree
-  // stands in for the untouched default document on the first page only.
+  // With more than one page the tree follows the active page.
   const pageList = Object.values(pages);
   const hasMultiplePages = pageList.length > 1;
-  const firstPageId = pageList.reduce<PageDefinition | null>(
-    (first, p) => (!first || (p.order ?? 0) < (first.order ?? 0) ? p : first),
-    null
-  )?.id;
-  const showSample = isDefaultUnpositioned && (!hasMultiplePages || activePageId === firstPageId);
   const filterByActivePage = filterByActivePageOption ?? hasMultiplePages;
   const rootFilterId = filterByActivePage ? pages[activePageId]?.rootElementId : null;
   const layerTree: LayerItem[] = useMemo(() => {
-    if (showSample) {
-      return SAMPLE_LAYERS;
-    }
     return buildLayerTree(layers, motionMap, rootFilterId);
-  }, [showSample, layers, motionMap, rootFilterId]);
+  }, [layers, motionMap, rootFilterId]);
 
   const allLayers: LayerItem[] = useMemo(() => {
-    if (isDefaultUnpositioned) {
-      return SAMPLE_LAYERS;
-    }
     return buildLayerTree(layers, motionMap, null);
-  }, [isDefaultUnpositioned, layers, motionMap]);
+  }, [layers, motionMap]);
 
   // Expanded IDs as array with default expanded fallback
   const expandedIds = useMemo(() => {
@@ -137,10 +108,7 @@ export function useLeftPanelData(
     if (mode === "code") {
       return [selectedFileId];
     }
-    if (selectedIds.length > 0) {
-      return selectedIds;
-    }
-    return ["headline"];
+    return selectedIds;
   }, [mode, selectedFileId, selectedIds]);
 
   // 5. Expand ancestors when selection changes externally (e.g. from canvas)
@@ -166,13 +134,9 @@ export function useLeftPanelData(
 
       if (e?.shiftKey) {
         const anchor = ui.anchor ?? store.selectedIds[store.selectedIds.length - 1] ?? id;
-        if (isDefaultUnpositioned) {
-          store.selectMultiple([anchor, id], "element");
-        } else {
-          const rows = buildRows(layers, expandedSet, query);
-          const range = rangeBetween(rows, anchor, id);
-          store.selectMultiple(range, "element");
-        }
+        const rows = buildRows(layers, expandedSet, query);
+        const range = rangeBetween(rows, anchor, id);
+        store.selectMultiple(range.length > 0 ? range : [anchor, id], "element");
       } else if (e?.metaKey || e?.ctrlKey) {
         store.toggleSelection(id, "element");
         ui.setAnchor(id);
@@ -188,7 +152,7 @@ export function useLeftPanelData(
         }
       }
     },
-    [mode, isDefaultUnpositioned, layers, expandedSet, query]
+    [mode, layers, expandedSet, query]
   );
 
   // 7. Tree expansion toggle
@@ -363,9 +327,6 @@ export function useLeftPanelData(
 
   // 13. Motion tracks derivation
   const tracks: TrackItem[] = useMemo(() => {
-    if (isDefaultUnpositioned) {
-      return SAMPLE_TRACKS;
-    }
     const list: TrackItem[] = [];
     for (const [layerId, layer] of Object.entries(layers)) {
       const summary = motionMap.get(layerId);
@@ -390,7 +351,7 @@ export function useLeftPanelData(
       }
     }
     return list.length > 0 ? list : SAMPLE_TRACKS;
-  }, [isDefaultUnpositioned, layers, motionMap]);
+  }, [layers, motionMap]);
 
   const [explicitTrackId, setExplicitTrackId] = useState<string | null>(null);
 

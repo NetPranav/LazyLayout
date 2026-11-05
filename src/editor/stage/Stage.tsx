@@ -4,12 +4,10 @@ import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useR
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
-import { updateMockLayerProps } from "@/editor/panels/details/hooks/useSelectionInspector";
 import { invokeCommand } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
 import { useStageTransform } from "./useStageTransform";
-import { SAMPLE_STAGE_ELEMENTS } from "./sampleData";
 import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
@@ -49,13 +47,8 @@ export const Stage: React.FC<StageProps> = ({
     [controlledSelectedIds, storeSelectedIds]
   );
 
-  // 1. Prototype parity: Open with headline selected in the real selection store
-  // 2. Prototype parity: Open at 59% zoom (0.59) centered. If camera has default 1.0 zoom and untouched, set to 0.59
+  // Prototype parity: Open at 59% zoom (0.59) centered. If camera has default 1.0 zoom and untouched, set to 0.59
   useEffect(() => {
-    if (useSelectionStore.getState().selectedIds.length === 0) {
-      useSelectionStore.getState().select("headline", "element");
-    }
-
     const cam = useCameraStore.getState();
     if (cam.camera.zoom === 1 && !cam.touched) {
       cam.setCamera({ x: 0, y: 0, zoom: STAGE_CONSTANTS.defaultZoom });
@@ -74,66 +67,87 @@ export const Stage: React.FC<StageProps> = ({
     [controlledOnPresetChange]
   );
 
-  // Document store layers mapping (if present) or sample elements
+  // Document store layers mapping directly from engine document
   const storeLayers = useDocument((d) => d.layers);
 
   const elementsFromStore = useMemo<Record<string, StageElement>>(() => {
     if (controlledElements) return controlledElements;
+    if (!storeLayers || Object.keys(storeLayers).length === 0) return {};
 
-    if (storeLayers && Object.keys(storeLayers).length > 0) {
-      const result: Record<string, StageElement> = {};
-      const layerEntries = Object.values(storeLayers);
+    const result: Record<string, StageElement> = {};
+    const layerEntries = Object.values(storeLayers);
 
-      // Check if layers are positioned; if root container has sample elements or defaults
-      let hasPositionedLayers = false;
-      layerEntries.forEach((l) => {
-        if (
-          typeof l.properties["frame.x"] === "number" ||
-          typeof l.properties["frame.y"] === "number"
-        ) {
-          hasPositionedLayers = true;
-        }
-      });
+    // Filter out root containers and structural sections from rendering as individual canvas boxes
+    const IGNORED_SECTION_IDS = new Set([
+      "elem_canvas_root",
+      "el_root_container",
+      "hero",
+      "features",
+      "footer",
+      "others",
+    ]);
 
-      if (hasPositionedLayers) {
-        layerEntries.forEach((l) => {
-          if (l.parentId === null && l.archetype === "container") {
-            // Root container
-            return;
-          }
-          const x = (l.properties["frame.x"] as number) ?? 0;
-          const y = (l.properties["frame.y"] as number) ?? 0;
-          const width =
-            (l.properties["frame.width"] as number) ??
-            (l.archetype === "button" ? 112 : 200);
-          const height =
-            (l.properties["frame.height"] as number) ??
-            (l.archetype === "button" ? 34 : 60);
+    // Subtitle is presented as part of headline on canvas (matching prototype canv={subtitle:'headline'})
+    // Other elements under 'others' are catalog elements
+    const IGNORED_STAGE_IDS = new Set([
+      "subtitle",
+      "object3d",
+      "counter",
+      "shape",
+      "icon",
+      "background",
+      "divider",
+      "toggle",
+      "input",
+    ]);
 
-          result[l.id] = {
-            id: l.id,
-            name: l.name,
-            type:
-              l.archetype === "text"
-                ? "text"
-                : l.archetype === "button"
-                ? "button"
-                : l.archetype === "image"
-                ? "image"
-                : "container",
-            x,
-            y,
-            width,
-            height,
-            title: (l.properties["content.text"] as string) || l.name,
-            label: (l.properties["content.label"] as string) || l.name,
-          };
-        });
-        return result;
+    layerEntries.forEach((l) => {
+      if (IGNORED_SECTION_IDS.has(l.id)) return;
+      if (IGNORED_STAGE_IDS.has(l.id)) return;
+
+      const x = (l.properties["frame.x"] as number) ?? 0;
+      const y = (l.properties["frame.y"] as number) ?? 0;
+      const width =
+        (l.properties["frame.width"] as number) ??
+        (l.archetype === "button" ? 112 : 200);
+      const height =
+        (l.properties["frame.height"] as number) ??
+        (l.archetype === "button" ? 34 : 60);
+
+      let subtitleText: string | undefined;
+      if (l.id === "headline") {
+        subtitleText =
+          (storeLayers["subtitle"]?.properties["content.text"] as string) ||
+          "Build pages visually and get production code out.";
       }
-    }
 
-    return SAMPLE_STAGE_ELEMENTS;
+      result[l.id] = {
+        id: l.id,
+        name: l.name,
+        type:
+          l.archetype === "text" || l.archetype === "svgText"
+            ? "text"
+            : l.archetype === "button" || l.archetype === "fab"
+            ? "button"
+            : l.archetype === "image"
+            ? "image"
+            : "container",
+        x,
+        y,
+        width,
+        height,
+        title: (l.properties["content.text"] as string) || l.name,
+        subtitle: subtitleText,
+        label:
+          (l.properties["content.label"] as string) ||
+          (l.properties["content.text"] as string) ||
+          l.name,
+        hidden: l.visible === false,
+        locked: l.locked === true,
+      };
+    });
+
+    return result;
   }, [controlledElements, storeLayers]);
 
   // Local elements state for direct interactive dragging / manipulation
@@ -147,13 +161,6 @@ export const Stage: React.FC<StageProps> = ({
 
   const handleElementChange = useCallback(
     (id: string, patch: Partial<StageElement>) => {
-      // Keep the inspector fields in step with the stage while an element is moved or resized
-      const frameProps: Record<string, number> = {};
-      if (patch.x !== undefined) frameProps["frame.x"] = patch.x;
-      if (patch.y !== undefined) frameProps["frame.y"] = patch.y;
-      if (patch.width !== undefined) frameProps["frame.width"] = patch.width;
-      if (patch.height !== undefined) frameProps["frame.height"] = patch.height;
-      if (Object.keys(frameProps).length > 0) updateMockLayerProps(id, frameProps);
       setElements((prev) => {
         const target = prev[id];
         if (!target) return prev;

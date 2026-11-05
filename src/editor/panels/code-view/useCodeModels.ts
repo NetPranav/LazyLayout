@@ -21,24 +21,60 @@ export function useCodeModels(): CodeModels {
       const shortId = id.replace(/^el_/, "");
       const p = (el.properties || {}) as Record<string, unknown>;
       if (data[shortId]) {
+        const rad =
+          typeof p["appearance.radius"] === "number"
+            ? p["appearance.radius"]
+            : typeof p["style.borderRadius"] === "number"
+            ? p["style.borderRadius"]
+            : data[shortId].rad;
+        const op =
+          typeof p["appearance.opacity"] === "number"
+            ? Math.round(p["appearance.opacity"] * 100)
+            : typeof p["style.opacity"] === "number"
+            ? Math.round(p["style.opacity"] * 100)
+            : data[shortId].op;
+        const rawFill = p["appearance.background.color"] ?? p["style.fill"];
+        const fill =
+          typeof rawFill === "string" ? String(rawFill).replace(/^#/, "") : data[shortId].fill;
+
         data[shortId] = {
           ...data[shortId],
           w: typeof p["frame.width"] === "number" ? p["frame.width"] : data[shortId].w,
           h: typeof p["frame.height"] === "number" ? p["frame.height"] : data[shortId].h,
-          rad: typeof p["style.borderRadius"] === "number" ? p["style.borderRadius"] : data[shortId].rad,
-          op: typeof p["style.opacity"] === "number" ? Math.round(p["style.opacity"] * 100) : data[shortId].op,
-          fill: typeof p["style.fill"] === "string" ? String(p["style.fill"]).replace(/^#/, "") : data[shortId].fill,
+          rad,
+          op,
+          fill,
         };
       }
       if (type[shortId]) {
+        const size =
+          typeof p["typography.fontSize"] === "number"
+            ? p["typography.fontSize"]
+            : typeof p["text.fontSize"] === "number"
+            ? p["text.fontSize"]
+            : type[shortId].size;
+        const rawWeight = p["typography.fontWeight"] ?? p["text.fontWeight"];
+        const weight =
+          typeof rawWeight === "number"
+            ? rawWeight
+            : typeof rawWeight === "string"
+            ? parseInt(rawWeight, 10) || type[shortId].weight
+            : type[shortId].weight;
+
         type[shortId] = {
           ...type[shortId],
-          size: typeof p["text.fontSize"] === "number" ? p["text.fontSize"] : type[shortId].size,
-          weight: typeof p["text.fontWeight"] === "number" ? p["text.fontWeight"] : type[shortId].weight,
+          size,
+          weight,
         };
       }
-      if (txt[shortId] && typeof p["text.content"] === "string") {
-        txt[shortId] = p["text.content"];
+      if (txt[shortId]) {
+        if (typeof p["content.text"] === "string") {
+          txt[shortId] = p["content.text"];
+        } else if (typeof p["content.label"] === "string") {
+          txt[shortId] = p["content.label"];
+        } else if (typeof p["text.content"] === "string") {
+          txt[shortId] = p["text.content"];
+        }
       }
     }
     return { data, type, txt };

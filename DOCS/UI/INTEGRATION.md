@@ -136,8 +136,8 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 - **Files:** `src/editor/shell/{EditorShell,RightPanelConnected,useEditorActions}.ts(x)`, `src/editor/stage/Stage.tsx`, `src/editor/panels/{layers,details,timeline,code-view,inspectors}/**`
 - **Engine used:** `invokeCommand` and the command registry (`@/core/commands`), `useSelectionStore`, `useCameraStore` (`setViewport`, `fitToRect`, `stepZoom`, `zoomTo100`), `useSnapStore` (rulers, snapping), `useProjectStore`, `useProjectMetaStore`, `useCanvasViewStore`, `ProjectDatabase`, `lazyFile` import and export, document layers through `useDocument` and `useLayers`.
 - **What A/B must do:** nothing to the engine. Menu ids with no engine command are shown disabled with a reason (Output Log, Execution Trace, Reference Viewer, Plugins, Deployment, Logic, Data, Debug layout). Collaborator avatars have no presence data in the engine, so the stack is empty.
-- **Engine changes requested:** none. The prototype's demo elements (Headline, Subtitle, Get started, Hero image) are not in the engine's default document; `PROTOTYPE_ELEMENTS` in `useSelectionInspector.ts` fills the gap until a real document is loaded.
-- **Status:** wip
+- **Engine changes requested:** none. Prototype document seeding implemented in `src/editor/shell/prototypeDocument.ts` (16 layers seeded via `documentCommands.insertLayers` on virgin blank project); `PROTOTYPE_ELEMENTS`, `SAMPLE_STAGE_ELEMENTS`, `mockOverrides`, and forced initial selection stopgaps removed.
+- **Status:** done
 ## 7. Tests
 
 ### E2E File menu helper

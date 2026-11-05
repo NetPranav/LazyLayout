@@ -214,7 +214,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {hasElements &&
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
-          const isSelected = selectedIds.includes(el.id);
+          const isSelected = selectedIds.includes(el.id) || (el.id === "headline" && selectedIds.includes("subtitle"));
 
           return (
             <div

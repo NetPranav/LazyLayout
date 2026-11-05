@@ -317,15 +317,15 @@ export const DEFAULT_DATA: Record<string, LayerModel> = {
 };
 
 export const DEFAULT_TYPE: Record<string, TextModel> = {
-  headline: { font: "Geist", size: 36, weight: 700, lineHeight: 1.15, letterSpacing: -0.02 },
-  subtitle: { font: "Geist", size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0 },
-  button: { font: "Geist", size: 13, weight: 500, lineHeight: 1, letterSpacing: 0 },
-  counter: { font: "Geist Mono", size: 14, weight: 600, lineHeight: 1.2, letterSpacing: 0 },
+  headline: { font: "Geist", size: 30, weight: 600, lineHeight: 1.05, letterSpacing: -0.03 },
+  subtitle: { font: "Geist", size: 13, weight: 400, lineHeight: 1.4, letterSpacing: 0 },
+  button: { font: "Geist", size: 15, weight: 500, lineHeight: 1.2, letterSpacing: 0 },
+  counter: { font: "Geist Mono", size: 32, weight: 600, lineHeight: 1, letterSpacing: 0 },
 };
 
 export const DEFAULT_TXT: Record<string, string> = {
   headline: "Design it once. Ship it lazily.",
-  subtitle: "Build modern web apps visually. Clean code, zero lock-in, effortless motion.",
+  subtitle: "Build pages visually and get production code out.",
   button: "Get started",
 };
 

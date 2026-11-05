@@ -1,6 +1,7 @@
 import type {
   Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, PropSpec, PropTrack, SpringParams,
 } from "./types";
+import { documentStore } from "@/core/store/useDocumentStore";
 
 export const FPS = 60;
 export const DUR = 300;
@@ -36,10 +37,40 @@ export function makeLayer(id: string, s: number, tr: PropTrack[]): MotionLayer {
   };
 }
 
-export function defaultComposition(): Composition {
-  const hero = makeLayer("hero", 0, []);
+export function defaultComposition(layers?: Record<string, { id: string; name?: string; archetype?: string }>): Composition {
+  let docLayers = layers;
+  if (!docLayers && typeof window !== "undefined") {
+    try {
+      docLayers = documentStore.getState().document.layers;
+    } catch {
+      // ignore
+    }
+  }
+
+  let heroId = "hero";
+  let headlineId = "headline";
+  let subtitleId = "subtitle";
+  let buttonId = "button";
+  let imageId = "image";
+
+  if (docLayers) {
+    const list = Object.values(docLayers);
+    const heroLayer = list.find((l) => l.id === "hero" || l.name?.toLowerCase() === "hero");
+    const headlineLayer = list.find((l) => l.id === "headline" || (l.archetype === "text" && l.name?.toLowerCase().includes("headline")));
+    const subtitleLayer = list.find((l) => l.id === "subtitle" || (l.archetype === "text" && l.name?.toLowerCase().includes("subtitle")));
+    const buttonLayer = list.find((l) => l.id === "button" || l.archetype === "button" || l.name?.toLowerCase().includes("started"));
+    const imageLayer = list.find((l) => l.id === "image" || l.archetype === "image" || l.name?.toLowerCase().includes("image"));
+
+    if (heroLayer) heroId = heroLayer.id;
+    if (headlineLayer) headlineId = headlineLayer.id;
+    if (subtitleLayer) subtitleId = subtitleLayer.id;
+    if (buttonLayer) buttonId = buttonLayer.id;
+    if (imageLayer) imageId = imageLayer.id;
+  }
+
+  const hero = makeLayer(heroId, 0, []);
   hero.stag = 0;
-  const headline = makeLayer("headline", 0, [
+  const headline = makeLayer(headlineId, 0, [
     mkt("opacity", [mkk(0, 0), mkk(36, 100)]),
     mkt("y", [mkk(0, 24), mkk(36, 0)]),
   ]);
@@ -52,15 +83,15 @@ export function defaultComposition(): Composition {
     layers: [
       hero,
       headline,
-      makeLayer("subtitle", 18, [
+      makeLayer(subtitleId, 18, [
         mkt("opacity", [mkk(18, 0), mkk(60, 100)]),
         mkt("y", [mkk(18, 16), mkk(60, 0)]),
       ]),
-      makeLayer("button", 48, [
+      makeLayer(buttonId, 48, [
         mkt("opacity", [mkk(48, 0), mkk(72, 100)]),
         mkt("scale", [mkk(48, 86, "Back out"), mkk(84, 100)]),
       ]),
-      makeLayer("image", 12, [
+      makeLayer(imageId, 12, [
         mkt("opacity", [mkk(12, 0), mkk(60, 100)]),
         mkt("x", [mkk(12, 40), mkk(66, 0)]),
         mkt("rot", [mkk(12, 4), mkk(66, 0)]),
@@ -171,10 +202,37 @@ export const LAYER_TYPES: Record<string, string> = {
 };
 
 export function layerName(id: string): string {
+  if (typeof window !== "undefined") {
+    try {
+      const docLayer = documentStore.getState().document.layers[id];
+      if (docLayer?.name) return docLayer.name;
+    } catch {
+      // ignore
+    }
+  }
   return LAYER_NAMES[id] ?? id;
 }
 
 export function layerType(id: string): string {
+  if (typeof window !== "undefined") {
+    try {
+      const docLayer = documentStore.getState().document.layers[id];
+      if (docLayer?.archetype) {
+        const arch = docLayer.archetype;
+        if (arch === "container" || (arch as string) === "frame") return "frame";
+        if (arch === "text" || arch === "svgText") return "text";
+        if (arch === "button" || arch === "fab") return "button";
+        if (arch === "image" || arch === "background") return "image";
+        if (arch === "input") return "text";
+        if (arch === "toggle") return "circle";
+        if (arch === "divider" || arch === "line") return "divider";
+        if (arch === "star" || arch === "icon") return "star";
+        return arch;
+      }
+    } catch {
+      // ignore
+    }
+  }
   return LAYER_TYPES[id] ?? "frame";
 }
 

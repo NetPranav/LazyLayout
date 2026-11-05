@@ -36,26 +36,28 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
       aria-hidden="true"
     >
       {/* 1. Hover Outlines for non-selected hovered element */}
-      {hoveredId && !selectedIds.includes(hoveredId) && elements[hoveredId] && (
-        <div
-          data-testid="hover-outline"
-          className="ll-hover-outline ll:absolute ll:border ll:border-muted ll:rounded-sm ll:pointer-events-none"
-          style={{
-            left: elements[hoveredId].x - STAGE_CONSTANTS.selectionBorderWidth,
-            top: elements[hoveredId].y - STAGE_CONSTANTS.selectionBorderWidth,
-            width:
-              elements[hoveredId].width +
-              STAGE_CONSTANTS.selectionBorderWidth * 2,
-            height:
-              elements[hoveredId].height +
-              STAGE_CONSTANTS.selectionBorderWidth * 2,
-          }}
-        />
-      )}
+      {(() => {
+        const targetHover = hoveredId === "subtitle" ? "headline" : hoveredId;
+        if (!targetHover || selectedIds.includes(targetHover) || !elements[targetHover]) return null;
+        const el = elements[targetHover];
+        return (
+          <div
+            data-testid="hover-outline"
+            className="ll-hover-outline ll:absolute ll:border ll:border-muted ll:rounded-sm ll:pointer-events-none"
+            style={{
+              left: el.x - STAGE_CONSTANTS.selectionBorderWidth,
+              top: el.y - STAGE_CONSTANTS.selectionBorderWidth,
+              width: el.width + STAGE_CONSTANTS.selectionBorderWidth * 2,
+              height: el.height + STAGE_CONSTANTS.selectionBorderWidth * 2,
+            }}
+          />
+        );
+      })()}
 
       {/* 2. Selection Boxes & 8 Resize Handles */}
       {selectedIds.map((id) => {
-        const el = elements[id];
+        const targetId = id === "subtitle" ? "headline" : id;
+        const el = elements[targetId];
         if (!el) return null;
 
         return (

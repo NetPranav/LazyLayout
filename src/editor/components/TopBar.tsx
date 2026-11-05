@@ -288,6 +288,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           id="menubtn"
           data-testid="save-status"
           data-state={resolvedState}
+          data-status={resolvedState}
           data-saving={isSaving ? "true" : undefined}
           aria-label="Application menu"
           title="Application menu"

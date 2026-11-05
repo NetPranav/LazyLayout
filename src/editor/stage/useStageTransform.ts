@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
-import { updateMockLayerProps } from "@/editor/panels/details/hooks/useSelectionInspector";
 import {
   STAGE_CONSTANTS,
   type ResizeHandleName,
@@ -519,13 +518,6 @@ export function useStageTransform({
         } catch {
           // Document update fallback
         }
-
-        updateMockLayerProps(id, {
-          "frame.x": nextX,
-          "frame.y": nextY,
-          x: nextX,
-          y: nextY,
-        });
       });
     };
 

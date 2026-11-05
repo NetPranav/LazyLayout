@@ -350,6 +350,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                   data-id={node.id}
                   data-testid="layer-row"
                   data-layer-id={node.id}
+                  data-depth={node.level}
                   data-selected={isSelected ? "true" : "false"}
                   aria-selected={isSelected}
                   aria-expanded={node.hasChildren ? node.expanded : undefined}

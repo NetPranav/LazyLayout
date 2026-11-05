@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect } from "react";
 import { TopBar } from "@/editor/components";
 import { CanvasChrome } from "@/editor/shell/canvas-chrome";
 import { RightPanelConnected } from "./RightPanelConnected";
@@ -8,6 +8,7 @@ import { LeftPanelConnected } from "@/editor/panels/layers";
 import { Stage } from "@/editor/stage";
 import { TimelinePanel } from "@/editor/panels/timeline";
 import { CodePanel } from "@/editor/panels/code-view";
+import { documentStore } from "@/core/store/useDocumentStore";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import type { CollabUser } from "@/editor/components/AvatarStack";
@@ -15,6 +16,7 @@ import { useProjectFiles } from "@/legacy-editor/shell/hooks/useProjectFiles";
 import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
+import { isUntouchedSeed, seedPrototypeDocument } from "./prototypeDocument";
 import {
   RecoveryPrompt,
   SaveErrorBanner,
@@ -64,6 +66,23 @@ export function EditorShell({
   // Project persistence, locking and shell commands
   const files = useProjectFiles();
   useProjectLock();
+
+  // Seed the prototype document if the project is brand new and untouched
+  useEffect(() => {
+    const checkAndSeed = () => {
+      const layers = documentStore.getState().document.layers;
+      if (isUntouchedSeed(layers)) {
+        seedPrototypeDocument();
+      }
+    };
+    checkAndSeed();
+    const unsub = documentStore.subscribe((state) => {
+      if (isUntouchedSeed(state.document.layers)) {
+        seedPrototypeDocument();
+      }
+    });
+    return unsub;
+  }, []);
 
   useShellCommands({
     toggleCommandPalette: actions.handleSearch,
