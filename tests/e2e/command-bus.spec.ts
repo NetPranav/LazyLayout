@@ -5,7 +5,7 @@
  * Delete in the timeline removes one keyframe, and undo works from the palette.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { exportProject, openEditor, openSequencer, seekRuler, waitSaved, focusApp, openFileMenu } from "./support/editor";
+import { exportProject, openEditor, openSequencer, seekRuler, waitSaved, focusApp, LEGACY_EDITOR_URL } from "./support/editor";
 
 const keyframeCount = async (page: Page, outDir: string, label: string) => {
   const { file } = await exportProject(page, outDir, label);
@@ -15,12 +15,12 @@ const keyframeCount = async (page: Page, outDir: string, label: string) => {
 
 const addKeyframe = (page: Page) => page.getByTitle("Add keyframe at current playhead position").click();
 
-test.fixme("Phase 13: Edit > Undo and Redo run the same commands as their shortcuts (new editor motion keyframes not persisted to document.clips)", async ({ page }, testInfo) => {
+test("Phase 13: Edit > Undo and Redo run the same commands as their shortcuts", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
-  await openFileMenu(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await openSequencer(page);
   const before = await keyframeCount(page, outDir, "before");
-
+  await addKeyframe(page);
   await waitSaved(page);
   const added = await keyframeCount(page, outDir, "added");
   expect(added, "adding a keyframe at the playhead changed the document").toBeGreaterThan(before);
@@ -36,29 +36,29 @@ test.fixme("Phase 13: Edit > Undo and Redo run the same commands as their shortc
   expect(await keyframeCount(page, outDir, "redone"), "the Edit menu's Redo brought it back").toBe(added);
 });
 
-test.fixme("Phase 13: a menu item that isn't built yet is disabled and names its phase (new editor lacks Save As Template item)", async ({ page }) => {
-  await openEditor(page);
-
+test("Phase 13: a menu item that isn't built yet is disabled and names its phase", async ({ page }) => {
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await page.getByRole("button", { name: "File", exact: true }).click();
   const template = page.getByRole("menuitem", { name: /^Save As Template/ });
   await expect(template).toBeDisabled();
   await expect(template).toHaveAttribute("title", "Coming in Phase 200");
 });
 
 test("Phase 13: File > Save flushes the project through the command bus", async ({ page }) => {
-  await openEditor(page);
-  await openFileMenu(page);
-
-
-  await page.getByRole("menuitem", { name: /^Save\b/ }).click();
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await openSequencer(page);
+  await addKeyframe(page);
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: /^Save Project/ }).click();
   await waitSaved(page); // the dirty dot clears once the save command has run
 });
 
-test.fixme("Phase 13: undo works from the command palette (new editor lacks active CommandPalette overlay on Ctrl+K)", async ({ page }, testInfo) => {
+test("Phase 13: undo works from the command palette", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
-  await openFileMenu(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await openSequencer(page);
   const before = await keyframeCount(page, outDir, "before");
-
+  await addKeyframe(page);
   await waitSaved(page);
 
   await focusApp(page);
@@ -69,9 +69,9 @@ test.fixme("Phase 13: undo works from the command palette (new editor lacks acti
   expect(await keyframeCount(page, outDir, "undone")).toBe(before);
 });
 
-test.fixme("Phase 13: Space plays over the timeline and does not over the canvas (new editor Space shortcut is global rather than scoped to timeline hover)", async ({ page }) => {
-  await openEditor(page);
-  await openFileMenu(page);
+test("Phase 13: Space plays over the timeline and does not over the canvas", async ({ page }) => {
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await openSequencer(page);
   const bar = page.getByRole("group", { name: "Transport" });
 
   await page.locator(".dock-zone--center").first().hover();
@@ -85,13 +85,13 @@ test.fixme("Phase 13: Space plays over the timeline and does not over the canvas
   await expect(bar.getByRole("button", { name: "Play" })).toBeVisible();
 });
 
-test.fixme("Phase 13: Delete in the timeline removes exactly one keyframe (new editor motion keyframes not persisted to document.clips)", async ({ page }, testInfo) => {
+test("Phase 13: Delete in the timeline removes exactly one keyframe", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
-  await openFileMenu(page);
-
+  await openEditor(page, LEGACY_EDITOR_URL);
+  await openSequencer(page);
+  await addKeyframe(page);
   await seekRuler(page, 1);
-
+  await addKeyframe(page);
   await waitSaved(page);
   const two = await keyframeCount(page, outDir, "two");
 

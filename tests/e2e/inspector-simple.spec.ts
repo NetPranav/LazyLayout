@@ -77,7 +77,7 @@ async function undo(page: Page) {
   await page.keyboard.press(`${MOD}+z`);
 }
 
-test.fixme("Phase 33: every Simple control of a rectangle writes to the layer, the document and one undo step", async ({ page }, testInfo) => {
+test.fixme("Phase 33: every Simple control of a rectangle writes to the layer, the document and one undo step (new editor replaces Simple face with unified Design mode inspector, lacks form[name='Design'] and stage iframe)", async ({ page }, testInfo) => {
   await ready(page);
   const id = await draw(page, "r", { x: 200, y: 300, w: 160, h: 100 });
   await expect(face(page)).toBeVisible();
@@ -125,7 +125,7 @@ test.fixme("Phase 33: every Simple control of a rectangle writes to the layer, t
   expect((await view(page, id))!.fill).toBe("#ff0000");
 });
 
-test.fixme("Phase 33: a text layer's words and colour, and a frame's fill, stroke and radius", async ({ page }) => {
+test.fixme("Phase 33: a text layer's words and colour, and a frame's fill, stroke and radius (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)", async ({ page }) => {
   await ready(page);
   const t = await draw(page, "t", { x: 150, y: 700, w: 300, h: 60 });
   await page.keyboard.type("Hello");
@@ -150,7 +150,7 @@ test.fixme("Phase 33: a text layer's words and colour, and a frame's fill, strok
   await expect.poll(async () => (await view(page, f))?.radius).toBe("20px");
 });
 
-test.fixme("Phase 33: several layers show Mixed where they differ, and one change sets them all", async ({ page }) => {
+test.fixme("Phase 33: several layers show Mixed where they differ, and one change sets them all (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)", async ({ page }) => {
   await ready(page);
   const a = await draw(page, "r", { x: 100, y: 300, w: 120, h: 80 });
   const b = await draw(page, "r", { x: 300, y: 300, w: 120, h: 80 });
@@ -181,7 +181,7 @@ test.fixme("Phase 33: several layers show Mixed where they differ, and one chang
   expect((await view(page, a))!.fill, "one undo step for both layers").not.toBe("#123456");
 });
 
-test.fixme("Phase 33: a layer placed by its parent's layout can be moved, and the Pro face is one click away", async ({ page }) => {
+test.fixme("Phase 33: a layer placed by its parent's layout can be moved, and the Pro face is one click away (new editor replaces Simple/Pro face switching with top-bar Design/Motion/Code mode switch)", async ({ page }) => {
   await ready(page);
   await page.getByRole("button", { name: "Expand RootContainer" }).click();
   await page.locator('[data-layer-row="el_buy_button"]').click();

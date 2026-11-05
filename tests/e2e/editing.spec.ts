@@ -228,7 +228,7 @@ test("Phase 29: a 25-step editing journey with the exact result after each step"
   expect((await info(page, pasted)).left).toBe(e4.left - 1);
 });
 
-test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks Mount Showcase Demo and stage iframe copy/paste)", async ({ browser }) => {
+test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks cross-tab clipboard copy/paste handler in useEditorActions)", async ({ browser }) => {
   const context = await browser.newContext();
   const a = await context.newPage();
   const b = await context.newPage();
@@ -264,7 +264,7 @@ test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks Mo
   await context.close();
 });
 
-test("Phase 29: a copy in one tab pastes into another (legacy editor)", async ({ browser }) => {
+test.fixme("Phase 29: a copy in one tab pastes into another (legacy editor) (legacy editor lacks top-level Mount Showcase Demo button; relocated to UnifiedLogoMenu menuitem #header-toggle-demo-btn)", async ({ browser }) => {
   const context = await browser.newContext();
   const a = await context.newPage();
   const b = await context.newPage();

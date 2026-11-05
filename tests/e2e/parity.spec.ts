@@ -66,7 +66,7 @@ test("Phase 60: an injected wrong easing raises [PARITY_DRIFT]", async ({ page }
   await expect.poll(() => warnings.some((w) => w.includes("[PARITY_DRIFT]") && w.includes("anim_0"))).toBe(true);
 });
 
-test.fixme("Phase 60: the badge shows the state in the editor's status bar", async ({ page }) => {
+test.fixme("Phase 60: the badge shows the state in the editor's status bar (new editor lacks Engine parity status-bar badge and parity monitoring UI)", async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });

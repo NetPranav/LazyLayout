@@ -65,7 +65,7 @@ let editedFile: { snapshot: { document: unknown } };
 let referenceShot: { center: Buffer; bottom: Buffer };
 
 test.describe.serial("Phase 3: store, history & persistence", () => {
-  test.fixme("A. 20 edits persist across reload; 20 undos return to blank", async ({ page }, testInfo) => {
+  test.fixme("A. 20 edits persist across reload; 20 undos return to blank (new editor motion sequencer is client-only useMotionModel and does not persist keyframes to document.clips in .lazy.json)", async ({ page }, testInfo) => {
     const outDir = testInfo.outputPath();
     await openEditor(page);
     const url = page.url();
@@ -104,7 +104,7 @@ test.describe.serial("Phase 3: store, history & persistence", () => {
     editedFile = edited.file;
   });
 
-  test.fixme("B. import in a fresh profile restores the document and renders identically", async ({ page }, testInfo) => {
+  test.fixme("B. import in a fresh profile restores the document and renders identically (depends on Case A export and legacy dock-zone layout)", async ({ page }, testInfo) => {
     test.skip(!editedPath, "depends on Case A's export");
     const outDir = testInfo.outputPath();
     await openEditor(page); // fresh context: empty IndexedDB and localStorage
@@ -130,7 +130,7 @@ test.describe.serial("Phase 3: store, history & persistence", () => {
     }
   });
 
-  test.fixme("C. dropping a .lazy.json onto the window opens it", async ({ page }, testInfo) => {
+  test.fixme("C. dropping a .lazy.json onto the window opens it (depends on Case A export and legacy document loading)", async ({ page }, testInfo) => {
     test.skip(!editedPath, "depends on Case A's export");
     const outDir = testInfo.outputPath();
     await openEditor(page);
@@ -148,7 +148,7 @@ test.describe.serial("Phase 3: store, history & persistence", () => {
   });
 });
 
-test.fixme("D. crash recovery restores the last unsaved edit (Chromium only)", async ({ page, browserName }, testInfo) => {
+test.fixme("D. crash recovery restores the last unsaved edit (Chromium only) (new editor motion sequencer does not record keyframe changes into document.clips for crash recovery snapshot)", async ({ page, browserName }, testInfo) => {
   test.skip(browserName !== "chromium", "Page.crash is a Chromium CDP feature");
   const outDir = testInfo.outputPath();
   await openEditor(page);
@@ -180,7 +180,7 @@ test.fixme("D. crash recovery restores the last unsaved edit (Chromium only)", a
   expect(await again.getByRole("alertdialog").count(), "no prompt after restoring").toBe(0);
 });
 
-test.fixme("E. dragging a keyframe is exactly one undo step", async ({ page }, testInfo) => {
+test.fixme("E. dragging a keyframe is exactly one undo step (new editor motion sequencer does not record keyframe dragging into document command history)", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
   await openEditor(page);
   await openSequencer(page);
