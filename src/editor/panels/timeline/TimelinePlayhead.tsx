@@ -52,6 +52,8 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       {/* 1. Playhead and Markers Overlay */}
       <div
         style={{ left: `${trackWidth}px` }}
+        data-testid="timeline-playhead-layer"
+        data-time={Math.round(playhead)}
         className="ll-tlhd ll:absolute ll:right-0 ll:top-0 ll:bottom-0 ll:pointer-events-none ll:overflow-hidden ll:z-20"
       >
         {/* Work area dimming left */}
@@ -94,6 +96,8 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
             style={{
               transform: `translateX(${phX}px)`,
             }}
+            data-testid="timeline-playhead"
+            data-time={Math.round(playhead)}
             className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
           >
             {/* Playhead Knob on ruler */}

@@ -31,12 +31,14 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
 }) => {
   return (
     <div
+      data-testid="selection-overlay"
       className="ll-transform-overlay ll:absolute ll:inset-0 ll:pointer-events-none ll:overflow-visible"
       aria-hidden="true"
     >
       {/* 1. Hover Outlines for non-selected hovered element */}
       {hoveredId && !selectedIds.includes(hoveredId) && elements[hoveredId] && (
         <div
+          data-testid="hover-outline"
           className="ll-hover-outline ll:absolute ll:border ll:border-muted ll:rounded-sm ll:pointer-events-none"
           style={{
             left: elements[hoveredId].x - STAGE_CONSTANTS.selectionBorderWidth,
@@ -60,6 +62,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
           <div
             key={id}
             data-selection-id={id}
+            data-testid="selection-box"
             className="ll-selbox selbox ll:absolute ll:pointer-events-none"
             style={{
               left: el.x + STAGE_CONSTANTS.selectionBoxOffset,
@@ -131,6 +134,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                 <div
                   key={name}
                   data-handle={name}
+                  data-testid="selection-handle"
                   className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10 ll:transition-transform ll:duration-swap"
                   style={{
                     left: leftStyle,
@@ -180,6 +184,8 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
         return (
           <div
             key={`snap-line-${idx}`}
+            data-testid="snap-guide"
+            data-axis={line.axis}
             className="ll-snap-guide ll:absolute ll:pointer-events-none"
             style={{
               left: isX ? line.pos : line.from,
@@ -199,6 +205,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
         return (
           <div
             key={`spacing-mark-${idx}`}
+            data-testid="spacing-mark"
             className="ll-spacing-mark ll:absolute ll:pointer-events-none ll:flex ll:items-center ll:justify-center"
             style={{
               left: isX ? mark.from : mark.at,

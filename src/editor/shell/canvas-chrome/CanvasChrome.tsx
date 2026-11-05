@@ -493,6 +493,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       role="main"
       aria-label="Canvas"
       data-center="true"
+      data-testid="canvas-chrome"
       onContextMenu={handleContextMenu}
       className={`ll-center ll:relative ll:overflow-hidden ll:w-full ll:h-full ll:bg-surface-canvas ll:select-none ${
         !showRulers ? "ll-noruler" : ""

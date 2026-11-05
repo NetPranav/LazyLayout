@@ -75,6 +75,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
     <div
       id={id}
       data-stage="artboard"
+      data-testid="stage-artboard"
       className="ll-artboard ll:absolute ll:select-none ll:transition-shadow"
       style={{
         left: STAGE_CONSTANTS.artboardLeftPercent,
@@ -221,6 +222,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
               id={el.id === "headline" ? "el-text" : el.id === "button" ? "el-button" : el.id === "image" ? "el-image" : `el-${el.id}`}
               data-sel={el.id}
               data-element-id={el.id}
+              data-testid="stage-element"
+              data-selected={isSelected ? "true" : "false"}
               className={`ll-element ll:absolute ll:select-none ${
                 isSelected ? "ll-sel sel " : ""
               }${

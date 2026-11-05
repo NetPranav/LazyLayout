@@ -107,6 +107,7 @@ export interface MenuProps {
   "aria-label"?: string;
   variant?: "default" | "context" | "wide";
   id?: string;
+  testId?: string;
 }
 
 export const Menu: React.FC<MenuProps> = ({
@@ -121,6 +122,7 @@ export const Menu: React.FC<MenuProps> = ({
   "aria-label": ariaLabel = "Menu",
   variant = "default",
   id,
+  testId,
 }) => {
   const autoId = useId();
   const mounted = useMounted();
@@ -756,6 +758,7 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         aria-label={ariaLabel}
         data-variant={variant}
+        data-testid={testId}
         className={`ll-menu ll:fixed ll:z-50 ll:box-border ll:origin-top-left ll:bg-surface-raised ll:border ll:border-border ll:shadow-soft ll:outline-none ll:font-sans ${
           variant === "context" ? "ll-ctx ll:p-1 ll:rounded-lg" : "ll:py-1 ll:rounded-md"
         } ${variantWidth} ${className}`}

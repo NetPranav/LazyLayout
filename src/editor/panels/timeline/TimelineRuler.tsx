@@ -164,6 +164,10 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       {/* 2. Lane Ruler Area */}
       <div
         ref={rulerRef}
+        data-testid="timeline-ruler"
+        data-pps={pps}
+        data-t0={t0}
+        data-fps={fps}
         onPointerDown={handleRulerPointerDown}
         onContextMenu={(e) => {
           const rect = rulerRef.current?.getBoundingClientRect();

@@ -322,6 +322,9 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     <div className={`ll-tlgrp ${isSelected ? "ll:on" : ""}`}>
       {/* 1. Main Layer Row */}
       <div
+        data-testid="timeline-lane"
+        data-layer-id={layer.id}
+        data-selected={isSelected ? "true" : "false"}
         style={{
           gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)`,
         }}
@@ -372,7 +375,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
           <Icon icon={LayerIconComp} size={13} className="ll:text-muted ll:shrink-0" />
 
           {/* Layer name */}
-          <span className="ll-tlnm ll:flex-1 ll:min-w-0 ll:truncate ll:font-sans ll:text-xs ll:font-medium">
+          <span data-testid="timeline-lane-name" className="ll-tlnm ll:flex-1 ll:min-w-0 ll:truncate ll:font-sans ll:text-xs ll:font-medium">
             {layerName(layer.id)}
           </span>
 
@@ -459,6 +462,9 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
           {isGroup ? (
             /* Group clip representation */
             <div
+              data-testid="timeline-clip"
+              data-layer-id={layer.id}
+              data-group="true"
               style={{
                 left: `${X(minStart, pps, t0, 24, fps)}px`,
                 width: `${Math.max(6, X(maxEnd, pps, t0, 24, fps) - X(minStart, pps, t0, 24, fps))}px`,
@@ -491,6 +497,11 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               return (
                 <div
                   key={`clip-${idx}`}
+                  data-testid="timeline-clip"
+                  data-layer-id={layer.id}
+                  data-clip-index={idx}
+                  data-start={clip.s}
+                  data-end={clip.e}
                   onPointerDown={(e) => handleClipPointerDown(e, idx, clip, "move")}
                   onContextMenu={(e) => {
                     e.stopPropagation();
@@ -562,6 +573,10 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
           return (
             <div
               key={track.p}
+              data-testid="timeline-prop-lane"
+              data-layer-id={layer.id}
+              data-prop={track.p}
+              data-selected={isTrackSelected ? "true" : "false"}
               style={{
                 gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)`,
               }}
@@ -595,6 +610,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
                 {/* Scrubbable readout */}
                 <span
+                  data-testid="timeline-prop-value"
                   onPointerDown={(e) => handleScrubReadout(e, track.p)}
                   title="Drag to change value at playhead"
                   className="ll-rd ll:min-w-9 ll:text-right ll:font-mono ll:text-nano ll:text-primary ll:cursor-ew-resize ll:px-1 ll:rounded-xs ll:hover:bg-surface-segmented"
@@ -698,6 +714,12 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   return (
                     <div
                       key={k.id}
+                      data-testid="keyframe"
+                      data-key-id={k.id}
+                      data-time={k.t}
+                      data-prop={track.p}
+                      data-layer-id={layer.id}
+                      data-selected={isKeySelected ? "true" : "false"}
                       onPointerDown={(e) =>
                         handleKeyframePointerDown(e, k, track)
                       }

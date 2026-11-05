@@ -147,6 +147,7 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
               aria-haspopup="menu"
               aria-expanded={isSelected ? menuOpen : undefined}
               data-mode={item.id}
+              data-testid="mode-tab"
               disabled={disabled}
               tabIndex={isSelected && !disabled ? 0 : -1}
               onClick={() => handleTabClick(item)}

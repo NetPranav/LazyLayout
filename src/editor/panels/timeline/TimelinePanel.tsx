@@ -341,6 +341,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       tabIndex={0}
       role="region"
       aria-label="Motion Timeline"
+      data-testid="bottom-panel"
       onKeyDown={handleKeyDown}
       style={{
         height,

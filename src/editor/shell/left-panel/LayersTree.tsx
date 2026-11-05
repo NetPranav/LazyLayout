@@ -309,6 +309,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     <div
       ref={treeRef}
       id="p-layers"
+      data-testid="layer-tree"
       role="tree"
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Layers"
@@ -347,6 +348,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                   role="treeitem"
                   data-sel={node.id}
                   data-id={node.id}
+                  data-testid="layer-row"
+                  data-layer-id={node.id}
+                  data-selected={isSelected ? "true" : "false"}
                   aria-selected={isSelected}
                   aria-expanded={node.hasChildren ? node.expanded : undefined}
                   style={{
@@ -423,7 +427,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                   </span>
 
                   {/* Layer name */}
-                  <div className="nm ll-nm ll:flex-1 ll:min-w-0 ll:truncate ll:text-body">
+                  <div data-testid="layer-name" className="nm ll-nm ll:flex-1 ll:min-w-0 ll:truncate ll:text-body">
                     {editingId === node.id ? (
                       <input
                         type="text"

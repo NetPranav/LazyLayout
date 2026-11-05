@@ -341,6 +341,7 @@ export const Stage: React.FC<StageProps> = ({
     <div
       ref={viewportRef}
       data-stage="workspace"
+      data-testid="stage-viewport"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
       onClick={(e) => {
         // Clicking on blank canvas space deselects

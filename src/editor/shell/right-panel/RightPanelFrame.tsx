@@ -110,6 +110,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   return (
     <aside
       aria-label="Inspector"
+      data-testid="right-panel"
       data-mode={mode}
       data-ai-open={aiOpen ? "true" : undefined}
       className={`ll-zone ll-right ll:w-panel ll:h-full ll:flex ll:flex-col ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel ll:border-l ll:border-border ${className}`}

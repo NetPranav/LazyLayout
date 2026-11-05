@@ -380,6 +380,7 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
       variant="context"
       width={width}
       aria-label="Canvas actions"
+      testId="canvas-context-menu"
     >
       <CanvasContextMenuContent {...contentProps} />
     </Menu>

@@ -307,6 +307,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
       id="bottom"
       role="region"
       aria-label="Bottom panel"
+      data-testid="bottom-panel"
       className={`ll-bottom ll:flex ll:flex-col ll:w-full ll:h-full ll:min-w-0 ll:bg-surface-panel ll:border-t ll:border-border ll:overflow-hidden ${className}`}
       style={style}
     >

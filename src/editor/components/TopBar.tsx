@@ -275,6 +275,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   return (
     <header
       role="banner"
+      data-testid="top-bar"
       className={`top ll-top ll:text-body ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
     >
       {/* =====================================================================

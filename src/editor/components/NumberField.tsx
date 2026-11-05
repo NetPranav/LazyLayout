@@ -177,6 +177,8 @@ export const NumberField: React.FC<NumberFieldProps> = ({
 
   return (
     <div
+      data-testid="inspector-field"
+      data-prop={ariaLabel ?? (typeof label === "string" ? label : undefined)}
       className={`ll:relative ll:inline-flex ll:w-full ll:items-center ll:box-border ll:rounded-sm ll:border ll:transition-colors ll:duration-100 ll:bg-surface-bar ${heightStyles} ${
         isScrubbing
           ? "ll:border-primary"
