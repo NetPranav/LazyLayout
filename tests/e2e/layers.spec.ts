@@ -77,7 +77,7 @@ async function dragRow(page: Page, from: string, onto: string, at: "before" | "i
 }
 
 test("Phase 32: the tree mirrors the document and the selection stays in sync both ways", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, "/editor");
   const panelEl = page.locator('[data-testid="left-panel"]');
   await expect(panelEl).toBeVisible();
 

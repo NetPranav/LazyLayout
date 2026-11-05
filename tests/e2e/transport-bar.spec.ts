@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 import { openEditor, openSequencer } from "./support/editor";
 
 test("Phase 54: the transport bar plays, steps frames and cycles the loop mode", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, "/editor");
   await openSequencer(page);
   const bar = page.getByRole("toolbar", { name: "Timeline header" });
   const timecode = bar.getByRole("button", { name: "Playhead time" });

@@ -29,8 +29,8 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ### Legacy editor route `/editor/legacy`
 - **Area:** shell / routes
-- **Files:** `src/app/editor/legacy/page.tsx`, `src/legacy-editor/shell/EditorShell.tsx`, `tests/e2e/support/editor.ts`
-- **What changed:** Main's editor is retained and served at `/editor/legacy` with all Phase 39-81 features (pen tool, auto layout, breakpoints, tokens, graph editor). `/editor` serves the new UI with 16 prototype layers.
+- **Files:** `src/app/editor/legacy/page.tsx`, `src/app/editor/legacy/LegacyStudioHeader.tsx`, `src/legacy-editor/shell/EditorShell.tsx`, `tests/e2e/support/editor.ts`
+- **What changed:** Main's editor is retained and served at `/editor/legacy` with all Phase 39-81 features (pen tool, auto layout, breakpoints, tokens, graph editor). Rendered `LegacyStudioHeader` in `headerSlot` to provide the classic menu bar (`File`, `Edit`, `View`, `Window`, `Help`) and `#header-toggle-demo-btn` ("Mount Showcase Demo"), and imported legacy `globals.css` for `--z-header` and `--z-dropdown` stacking context. Configured `openEditor` in `tests/e2e/support/editor.ts` to default to `LEGACY_EDITOR_URL` (`/editor/legacy`). All 29 of main's e2e spec files pass 100% (138/138 tests).
 - **What A/B must do:** Target `LEGACY_EDITOR_URL` (`/editor/legacy`) for old-UI e2e tests.
 - **Status:** done
 
@@ -166,6 +166,11 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
   - `exportProject`: clicks menuitem "Export project file"
   - `tests/e2e/transport-bar.spec.ts`: migrated to toolbar "Timeline header" and passes cleanly.
 - **Test hooks:** Comprehensive `data-testid` and `data-*` attribute list across shell, stage, layers, timeline, and inspector. Full list and old-to-new selector map in [DOCS/UI/handoffs/e2e-testids.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/e2e-testids.md).
+- **Status:** done
+
+### Explicit URL targeting for new UI E2E specs
+- **Files:** `tests/e2e/deterministic-clock.spec.ts`, `tests/e2e/transport-bar.spec.ts`, `tests/e2e/layers.spec.ts`, `tests/e2e/presets.spec.ts`
+- **What changed:** `tests/e2e/support/editor.ts` defaults `openEditor(page, url = LEGACY_EDITOR_URL)` to `/editor/legacy` so legacy specs run cleanly. Specs targeting the new UI explicitly pass `openEditor(page, "/editor")`.
 - **Status:** done
 
 ### Phase check results, 2026-11-05 (build session)
