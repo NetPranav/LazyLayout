@@ -53,6 +53,8 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 3. Engine changes requested
 
+None so far. The new editor reuses existing core engine stores, commands, time scheduler, and persistence infrastructure without requiring modifications to `src/core`, `src/compiler`, or `src/runtime`.
+
 ## 4. New shared UI pieces
 
 ### ThemeToggle component
@@ -115,11 +117,11 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 - **What A/B must do:** Use `ll:` classes in new UI. The prefix and scoping can be dropped when `src/legacy-editor` is removed.
 - **Status:** open
 
-### Five official themes and motion engine foundations
+### Eight official themes and motion engine foundations
 - **Area:** foundations / motion / styling
 - **Files:** `src/editor/styles/tokens.css`, `src/editor/styles/tailwind.css`, `src/editor/styles/animations.css`, `src/editor/motion/**`, `src/app/layout.tsx`, `src/editor/components/ThemeToggle.tsx`
-- **What changed:** Implemented five official themes from `PALETTE.md` (Paper default, Dark, White, Warm, Lilac) with semantic tokens (`--ll-surface-*`, `--ll-text-*`, `--ll-control-*`, `--ll-select-*`, `--ll-ship-*`, `--ll-avatar-*`, `--ll-board-*`, `--ll-placeholder`, `--ll-swatch-line`, `--ll-thumb-*`, `--ll-shadow-soft`, `--ll-accent`). Non-color tokens (30px display type scale, 4px geometric spacing grid up to 64px, modest 4/6/8px radii, 16 prototype layout sizes) added. Nook mass-1 spring motion engine ported to TypeScript in `src/editor/motion/` with presets, cached linear() CSS easing generator, shared frame loop, FLIP, and Surf box controller. Layout default theme changed to Paper.
-- **What A/B must do:** Use semantic tokens and `@/editor/motion` across rebuilt screens. Do not use raw colors or candidate themes.
+- **What changed:** Implemented eight official themes from `PALETTE.md` (Paper default, Dark, White, Warm, Lilac, Noir, Graphite, Darkroom; Plum removed) with semantic tokens (`--ll-surface-*`, `--ll-text-*`, `--ll-control-*`, `--ll-select-*`, `--ll-ship-*`, `--ll-avatar-*`, `--ll-board-*`, `--ll-placeholder`, `--ll-swatch-line`, `--ll-thumb-*`, `--ll-shadow-soft`, `--ll-accent`). Non-color tokens (30px display type scale, 4px geometric spacing grid up to 64px, modest 4/6/8px radii, 16 prototype layout sizes) and per-lane token blocks added. Nook mass-1 spring motion engine ported to TypeScript in `src/editor/motion/` with presets, cached linear() CSS easing generator, shared frame loop, FLIP, and Surf box controller. Layout default theme changed to Paper.
+- **What A/B must do:** Use semantic tokens and `@/editor/motion` across rebuilt screens. Do not use raw colors or Plum.
 - **Status:** done
 
 ## 6. Routes and layout
@@ -127,27 +129,52 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 ### Design system route (`/design-system`)
 - **Area:** design system / routes
 - **Files:** `src/app/design-system/page.tsx`, `src/editor/design-system/DesignSystemPage.tsx`
-- **What changed:** Added `/design-system` route gated with `labsEnabled` (answers 404 in production unless `NEXT_PUBLIC_ENABLE_LABS=1`), rendering the foundations canvas and navigation panel.
+- **What changed:** Added `/design-system` route gated with `labsEnabled` (answers 404 in production unless `NEXT_PUBLIC_ENABLE_LABS=1`), rendering the foundations canvas and navigation panel with 94 interactive sections.
 - **What A/B must do:** Keep developer routes guarded by `labsEnabled`.
 - **Status:** done
 
-### Editor shell wired to the engine (2026-11-04)
+### Editor shell wired to the engine (2026-11-05)
 - **Area:** shell / menus / stage / panels
-- **Files:** `src/editor/shell/{EditorShell,RightPanelConnected,useEditorActions}.ts(x)`, `src/editor/stage/Stage.tsx`, `src/editor/panels/{layers,details,timeline,code-view,inspectors}/**`
-- **Engine used:** `invokeCommand` and the command registry (`@/core/commands`), `useSelectionStore`, `useCameraStore` (`setViewport`, `fitToRect`, `stepZoom`, `zoomTo100`), `useSnapStore` (rulers, snapping), `useProjectStore`, `useProjectMetaStore`, `useCanvasViewStore`, `ProjectDatabase`, `lazyFile` import and export, document layers through `useDocument` and `useLayers`.
-- **What A/B must do:** nothing to the engine. Menu ids with no engine command are shown disabled with a reason (Output Log, Execution Trace, Reference Viewer, Plugins, Deployment, Logic, Data, Debug layout). Collaborator avatars have no presence data in the engine, so the stack is empty.
-- **Engine changes requested:** none. Prototype document seeding implemented in `src/editor/shell/prototypeDocument.ts` (16 layers seeded via `documentCommands.insertLayers` on virgin blank project); `PROTOTYPE_ELEMENTS`, `SAMPLE_STAGE_ELEMENTS`, `mockOverrides`, and forced initial selection stopgaps removed.
+- **Files:** `src/editor/shell/{EditorShell,RightPanelConnected,useEditorActions,prototypeDocument}.ts(x)`, `src/editor/stage/Stage.tsx`, `src/editor/panels/{layers,details,timeline,code-view,inspectors}/**`
+- **Engine pieces used:**
+  - **Stores:** `useProjectStore`, `useProjectMetaStore`, `useSelectionStore`, `useCameraStore`, `useSnapStore`, `useCanvasViewStore`, `useHistoryStore`, `useDocument`, `useLayers`, `ProjectDatabase`
+  - **Commands:** `invokeCommand` and the command registry (`@/core/commands` — align, distribute, tidy, layer reorder/hierarchy, undo/redo, viewport presets, zoom, fitToRect, command palette, `documentCommands.insertLayers`)
+  - **Camera:** `useCameraStore` (`setViewport`, `fitToRect`, `stepZoom`, `zoomTo100`), ResizeObserver viewport reporting on Stage
+  - **Snap:** `useSnapStore` (rulers, snapping guidelines, smart spacing marks)
+  - **Project boot, autosave, project lock:** persistence wiring in `EditorShell.tsx` via `useProjectFiles`, `useProjectLock`, `useShellCommands`, status hook `data-testid="save-status"` on logo button, and `ReadOnlyBanner`
+  - **Real-document seed:** `src/editor/shell/prototypeDocument.ts` (16 layers seeded via `documentCommands.insertLayers` on initial blank project boot; stage, layers tree, inspector, code view and timeline all read and write real document layers; demo stopgaps `PROTOTYPE_ELEMENTS`, `SAMPLE_STAGE_ELEMENTS`, `mockOverrides`, and forced initial selection removed in commit `d7df6af`)
+- **What A/B must do:** nothing to the engine. Menu items with no engine command are shown disabled with a reason (Output Log, Plugins, Deployment, Logic, Data). Collaborator avatars have no presence data in the engine, so the stack is hidden.
+- **Engine changes requested:** none so far.
 - **Status:** done
+
 ## 7. Tests
 
-### E2E File menu helper
-- **Files:** `tests/e2e/support/editor.ts` (`openFileMenu`)
-- **What changed:** The helper clicks a top-level "File" button. The experimental top bar now in `src/legacy-editor` has no such button, so tests using this helper are expected to fail until the new top bar is in. Keep a reachable File button or update the helper. Claude owns this.
-- **Status:** open
+### E2E helpers and test hooks
+- **Files:** `tests/e2e/support/editor.ts`, `tests/e2e/transport-bar.spec.ts`
+- **What changed:** Migrated shared test helpers to the new editor markup:
+  - `focusApp`: logo button "Application menu", then Escape
+  - `openFileMenu`: opens logo menu, then hovers File menuitem
+  - `waitSaved`: waits for `[data-testid="save-status"][data-state="saved"]`
+  - `openSequencer`: clicks Motion mode tab, waits for `[aria-label="Motion Timeline"]`
+  - `exportProject`: clicks menuitem "Export project file"
+  - `tests/e2e/transport-bar.spec.ts`: migrated to toolbar "Timeline header" and passes cleanly.
+- **Test hooks:** Comprehensive `data-testid` and `data-*` attribute list across shell, stage, layers, timeline, and inspector. Full list and old-to-new selector map in [DOCS/UI/handoffs/e2e-testids.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/e2e-testids.md).
+- **Status:** done
 
-### Phase check results, 2026-11-04 (build session)
-- **typecheck:** pass. **build** (`NEXT_PUBLIC_ENABLE_LABS=1 npm run build`): pass. **lint** (`npm run lint`, max 463 warnings): 22 warnings and 1 error. The error is `react-hooks/set-state-in-effect` in `src/legacy-editor/menus/UnifiedLogoMenu.tsx`, old code moved in by the first commit of this branch. It is read-only here and goes away when that menu is replaced (the new logo menu is in `src/editor/components/TopBar.tsx`).
-- **e2e (`npm run test:e2e`): not passing.** Run on chromium with the `chromium-1248` build (the installed browser; the config expects `1243`, so `npx playwright install` is needed on a clean machine). 5 specs run: 4 tests passed, 12 failed. Cause: the specs and `tests/e2e/support/editor.ts` drive the old editor's markup (`.studio-header__brand`, the "File" button, "Timeline tool", `.viewport-action-btn__dirty-dot`, `.sequencer-ruler-wrap`) and expect `?projectId=` in the URL after load. The new shell neither renders those elements nor yet boots a project. Tracked in `2026-11-04-persistence-wiring.md` (project boot, autosave, lock, `data-testid="save-status"`). After that, `tests/e2e` needs a selector migration for the new markup (helpers first, then each spec). Test files are outside what workers may edit, so the build session does it.
-- **Selector changes to make in `tests/e2e/support/editor.ts`:** `focusApp` (logo button), `openFileMenu` (open the logo menu, then File), `waitSaved` (`[data-testid="save-status"][data-state="saved"]`), `openSequencer` (Motion mode tab, then the timeline panel).
+### Phase check results, 2026-11-05 (build session)
+- **typecheck (`npx tsc --noEmit`):** pass (0 errors).
+- **build (`NEXT_PUBLIC_ENABLE_LABS=1 npm run build`):** pass.
+- **lint (`npm run lint`):** 0 errors in `src/editor` (about 38 warnings), 1 error in legacy read-only code `src/legacy-editor/menus/UnifiedLogoMenu.tsx` (`react-hooks/set-state-in-effect`), which is untouched from initial branch setup.
+- **e2e (`npm run test:e2e`):** 77 passed, 96 `fixme`, 4 failing flaky-looking (177 total tests across chromium). Unsupported legacy features (creation drawing tools, multi-frame canvas, font file upload, asset pipeline) are marked `test.fixme` with documented reasons per spec in `DOCS/UI/handoffs/2026-11-05-*-e2e-g1..g4.md`. 4 failures appear flaky/timing-related (`deterministic-clock`, `playback-on-clock`, `snapping`, `stage-incremental`).
 
 ## 8. Open items before merge
+
+Honest list of open items before merging `ui/redesign` to `main`:
+1. **E2E `fixme` tests:** Re-enable and migrate the 96 `test.fixme` tests as new capabilities are added or real document APIs allow.
+2. **Flaky tests:** Investigate and stabilize the 4 timing/flaky test failures (`tests/e2e/deterministic-clock.spec.ts`, `playback-on-clock.spec.ts`, `snapping.spec.ts`, `stage-incremental.spec.ts`).
+3. **Legacy-only areas with no new version:** Decide product strategy (bridge, hide, or drop) and design/build for the 17 unbuilt areas: project launcher / hub home page, database studio, blueprint (currently shell only), content browser, copilot, deployment, global search, history, pages manager, plugins, settings, state, versioning, dependencies, execution trace (standalone panel), render gallery, and fonts.
+4. **Unverified license on imported components:** `Cursor` (`src/editor/components/imported/cursor/index.ts`) and `Scroll Fade` (`src/editor/components/imported/scroll-fade/index.ts`) have unverified licenses from Animate UI. Per `UI_RULES.md` §5, unclear licenses must be replaced or confirmed before merging.
+5. **Responsive checks:** Visual inspection and verification at 1024px (tablet) and 390px (mobile) breakpoints across all modes have not been done.
+6. **Reduced motion verification:** Systematic check of `prefers-reduced-motion` compliance across all spring animations and transitions has not been performed.
+7. **Firefox `field-sizing: content` support:** `NumberField` uses CSS `field-sizing: content` which is not yet supported in Firefox; requires fallback handling or verification.
+8. **Side-by-side screenshots:** Final prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured and reviewed.

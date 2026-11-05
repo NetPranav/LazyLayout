@@ -14,7 +14,10 @@ Read `.claude/agents/ui-worker.md` (worker rules and the known mistakes) and `.c
 
 ## 1. How to run workers in parallel
 
-All workers share one working tree, so parallel only works if their **file lanes never overlap**. Each lane below lists the only paths that lane may edit.
+All workers share one working tree, so parallel only works if their **file lanes never overlap**. Each lane below lists the only paths that lane may edit. Workers do all the build work. Antigravity is preferred, with Claude subagents as the fallback when Antigravity quota runs out (as happened on 2026-11-04).
+
+> [!IMPORTANT]
+> **Runner scripts note:** The night runner scripts `night-runner.sh` and `night-watcher.sh` exist but die when their launching shell ends, so launch lanes with separate background calls.
 
 **Launching a wave:** start every lane in the wave at the same time, in the background, in **one message with one tool call per lane**. Use either option:
 
@@ -99,15 +102,24 @@ Keep this table updated as lanes start, pass and commit.
 
 | Wave | Lane | Task file | Status | Commit |
 |---|---|---|---|---|
-| 0 | L0 | 2026-11-05-L0-foundation.md | committed 340b78f | tsc, eslint clean |
-| 1 | L1 | 2026-11-05-L1-top-bar.md | committed 2575c0c | Antigravity run overnight, review PASS after retry |
-| 1 | L2 | 2026-11-05-L2-left-panel.md | committed 6d39a47 | review PASS |
-| 1 | L3 | 2026-11-05-L3-design-inspector.md | committed 1ada464, retry 46b4855 | review PASS after retry |
-| 1 | L4 | 2026-11-05-L4-canvas.md | committed 8156658 | review PASS |
-| 1 | L5 | 2026-11-05-L5-motion-timeline.md | committed a7de804 | review PASS after retry; known bug: clip bars start left of the 0s mark and overlap track labels |
-| 1 | L6 | 2026-11-05-L6-motion-inspector.md | committed e7f3050 | review PASS after retries |
-| 1 | L7 | 2026-11-05-L7-code-mode.md | committed acc661b | review PASS after retry; known: CodePanel full-width toggle conflicts with Shift+T |
+| 0 | L0 | `2026-11-05-L0-foundation.md` | committed 340b78f | tsc, eslint clean |
+| 1 | L1 | `2026-11-05-L1-top-bar.md` | committed 2575c0c | Antigravity run overnight, review PASS after retry |
+| 1 | L2 | `2026-11-05-L2-left-panel.md` | committed 6d39a47 | review PASS |
+| 1 | L3 | `2026-11-05-L3-design-inspector.md` | committed 1ada464, retry 46b4855 | review PASS after retry |
+| 1 | L4 | `2026-11-05-L4-canvas.md` | committed 8156658 | review PASS |
+| 1 | L5 | `2026-11-05-L5-motion-timeline.md` | committed a7de804 | review PASS after retry |
+| 1 | L6 | `2026-11-05-L6-motion-inspector.md` | committed e7f3050 | review PASS after retries |
+| 1 | L7 | `2026-11-05-L7-code-mode.md` | committed acc661b | review PASS after retry |
+| 1 | tokens | (shared styles) | committed 299bf8d | Wave 1 lane token blocks and shared styles |
 | 1 | lint | (build session) | committed 7f30178 | 16 lint errors fixed |
-| 2 | L8 | 2026-11-05-L8-shell-transitions.md | committed 00a92c1 | Claude subagent |
-| 2 | L9 | 2026-11-05-L9-design-system-page.md | committed 7b38947, retry 165da47 | 94 sections |
-| phase | build, lint | | build passes, lint 1 legacy error | e2e: running, selectors need migration |
+| 2 | L8 | `2026-11-05-L8-shell-transitions.md` | committed 00a92c1 | Claude subagent PASS |
+| 2 | L9 | `2026-11-05-L9-design-system-page.md` | committed 7b38947, retry 165da47 | 94 sections |
+| post | L5 fix | - | committed a2c4d0f | Timeline lane origin: `ll-lay` class clash fix, pps padding |
+| post | L2 fix | - | committed 6bf1cab | Left panel header per mode, files tree icons, assets chevron |
+| post | L7 fix | - | committed a3ef44b | Code mode: panel follows shell full-width toggle and Shift+T |
+| test | hooks | - | committed 9540ab0 | Test hooks (`data-testid`) across stage, shell, layers, timeline, inspector |
+| test | e2e helper | - | committed 11b9b3f | Migrate shared helpers; transport bar spec passes |
+| test | e2e specs | `2026-11-05-e2e-migrate.md` | committed 55b6905 | Groups G1–G4: 77 passed, 96 fixme with written reasons |
+| engine | document | `2026-11-05-real-document.md` | committed d7df6af | Real document wired to stage, layers, inspector, code, timeline; demo stopgaps removed |
+| docs | prune | - | committed 03f9b3b, d912e8f | Pruned superseded handoffs, screenshots, completed pre-wave 0 tasks |
+| phase | checks | - | typecheck pass, build pass, lint 1 legacy error | e2e: 77 passed, 96 fixme, 4 flaky failures |

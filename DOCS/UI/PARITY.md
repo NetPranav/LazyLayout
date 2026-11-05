@@ -7,52 +7,52 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 - **Reference caveat:** `src/legacy-editor` includes the first top-bar and color experiments. The original UI, before them, is at commit `dcd7695`.
 - **Not listed:** 22 legacy test files in `__tests__` folders (move or rewrite them with their area, and keep the logic ones) and 7 empty `.gitkeep` placeholders.
 
-**Status, 2026-11-03:** read `DOCS/UI/BUILD_SESSION.md` first. It covers the two sessions (Opus for design, Sonnet for build), the build queue mapped to the prototype, and the rules workers keep breaking. Built and committed: foundations (five themes, tokens, Nook motion engine), 21 core components, and `/design-system`. `menus` is in its last retry. The editor screen itself is not built yet. What's new in the prototype and not built yet is listed in `DOCS/UI/design/CHANGELOG.md`.
+**Status, 2026-11-03:** read `DOCS/UI/BUILD_SESSION.md` first. It covers the two sessions (Opus for design, Sonnet for build), the build queue mapped to the prototype, and the rules workers keep breaking. Built and committed: foundations (five themes, tokens, Nook motion engine), 21 core components, and `/design-system`.
 
-**Status, 2026-11-04 (build session):** parity pass done for the shell menus, canvas chrome (toolbar, context menu, view options), stage, left panel, right panel (Design, Motion keyframe, Code file inspectors), timeline and code panel. All are `wip`, not `done`: they match the prototype in screenshots but still lack the Phase checks (`lint`, `build`, `test:e2e`) and engine wiring gaps (see `INTEGRATION.md`). Known stopgaps: the stage opens with a prototype demo selection (`headline`) and `PROTOTYPE_ELEMENTS` in `panels/details/hooks/useSelectionInspector.ts` supplies demo values for ids that are not in the document store; many menu items are shown disabled with a reason because the engine has no command yet.
+**Status, 2026-11-05:** Waves 0, 1, and 2 are built, checked against the prototype, and committed. The stage, layers tree, inspector, code view and timeline read and write the real engine document (commit `d7df6af`); initial projects auto-seed 16 prototype layers, and demo-data stopgaps (`PROTOTYPE_ELEMENTS`, `SAMPLE_STAGE_ELEMENTS`, `mockOverrides`) are completely removed. Edits persist to IndexedDB and undo/redo cleanly. E2E migration has migrated shared helpers and 4 spec groups: 77 passed, 96 fixme with written reasons, 4 flaky failures. The core prototype UI (Design, Motion, Code modes, top bar, left panel, canvas chrome, stage, timeline, inspectors, transitions, and 94 design system sections) is `done`. Areas of the old app with no new version yet (the launcher/project hub home page, database, blueprint (shell only), content browser, copilot, deployment, global search, history, pages manager, plugins, settings, state, versioning, dependencies, execution trace, render gallery, fonts) remain `todo` and need design direction from the design session (`DOCS/UI/design/REQUESTS.md`).
 
-**Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`. **Phase 3:** `panels/launcher` and everything else.
+**Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`, `panels/motion`, `panels/code`, `panels/code-view`, `panels/console`, `styles`. **Phase 3:** `panels/launcher` and everything else.
 
-| Area | Status | Legacy files | Bridged entry points now in `src/editor` |
-|---|---|---|---|
-| `foundations` (tokens, type and spacing scales, base components) | done | new | - |
-| `design-system` (the `/design-system` page, shows every component and its states) | wip | new | - |
-| `shell` | wip | 38 | `EditorShell.tsx`, `DetachedPanelShell.tsx` |
-| `menus` | wip | 4 | - |
-| `canvas` | wip | 20 | - |
-| `stage` | wip | 2 | - |
-| `runtime` | todo | 3 | - |
-| `panels/ai` | todo | 3 | - |
-| `panels/assets` | todo | 1 | - |
-| `panels/blueprint` | todo | 8 | `BlueprintCanvas.tsx` |
-| `panels/code` | todo | 1 | - |
-| `panels/code-view` | wip | 2 | - |
-| `panels/common` | todo | 1 | - |
-| `panels/console` | todo | 1 | `OutputConsole.tsx` |
-| `panels/content-browser` | todo | 4 | `ContentBlockShelf.tsx`, `ContentBrowser.tsx`, `AssetFileEditor.tsx` |
-| `panels/copilot` | todo | 1 | - |
-| `panels/curves` | todo | 2 | - |
-| `panels/database` | todo | 10 | - |
-| `panels/dependencies` | todo | 2 | - |
-| `panels/deployment` | todo | 5 | - |
-| `panels/details` | wip | 46 | - |
-| `panels/execution-trace` | todo | 1 | - |
-| `panels/global-search` | todo | 2 | - |
-| `panels/history` | todo | 2 | - |
-| `panels/launcher` | todo | 6 | `ProjectHub.tsx`, `TechConfigurator.tsx`, `archetypeData.ts` |
-| `panels/layers` | wip | 1 | - |
-| `panels/motion` | wip | 1 | - |
-| `panels/pages-manager` | todo | 4 | - |
-| `panels/plugins` | todo | 2 | - |
-| `panels/sequencer` | todo | 8 | `TimelineSequencer.tsx` |
-| `panels/settings` | todo | 1 | - |
-| `panels/state` | todo | 1 | - |
-| `panels/timeline` | wip | 1 | - |
-| `panels/versioning` | todo | 2 | - |
-| `stage-lab` | todo | 2 | `CanvasLab.tsx`, `StageLab.tsx` |
-| `render-gallery` | todo | 1 | `RenderGallery.tsx` |
-| `fonts` | todo | 2 | - |
-| `styles` | todo | 23 | `globals.css`, `animations.css` |
+| Area | Status | Location in `src/editor` | Legacy files | Bridged entry points / notes |
+|---|---|---|---|---|
+| `foundations` (tokens, type and spacing scales, base components) | done | `src/editor/styles/` (`tokens.css`, `tailwind.css`, `animations.css`), `src/editor/motion/` | new | Eight official themes, label colours, token blocks, Nook spring engine |
+| `design-system` (the `/design-system` page, shows every component and its states) | done | `src/editor/design-system/`, `src/app/design-system/` | new | 94 interactive sections wired |
+| `shell` | done | `src/editor/shell/` (`EditorShell.tsx`), `src/editor/components/TopBar.tsx` | 38 | `DetachedPanelShell.tsx` (bridge kept) |
+| `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`) | 4 | Rebuilt with Nook motion engine |
+| `canvas` | done | `src/editor/shell/canvas-chrome/` (`Toolbar.tsx`, `Rulers.tsx`, `AiBox.tsx`, `InsertPanel.tsx`, `ViewOptionsPopover.tsx`, `ZoomControls.tsx`) | 20 | Rebuilt from prototype |
+| `stage` | done | `src/editor/stage/` (`Stage.tsx`, `StageViewport.tsx`, `SelectionOverlay.tsx`, `TransformHandles.tsx`, `HoverOutline.tsx`, `SnapGuides.tsx`) | 2 | Reads/writes real document (d7df6af) |
+| `runtime` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/runtime/`) | 3 | - |
+| `panels/ai` | wip | `src/editor/shell/canvas-chrome/AiBox.tsx`, `src/editor/shell/right-panel/AiChatView.tsx` | 3 | UI built from prototype; engine copilot integration pending |
+| `panels/assets` | wip | `src/editor/shell/left-panel/` (`AssetsSection.tsx`, `AssetTile.tsx`, `AssetImage.tsx`) | 1 | UI built in left panel; asset pipeline and store integration pending |
+| `panels/blueprint` | todo | `src/editor/panels/blueprint/BlueprintCanvas.tsx` | 8 | `BlueprintCanvas.tsx` (coming soon shell only for Logic and Data) |
+| `panels/code` | done | `src/editor/panels/code-view/CodeInspector.tsx`, `src/editor/panels/inspectors/` | 1 | Rebuilt in Code mode right panel |
+| `panels/code-view` | done | `src/editor/panels/code-view/` (`CodePanel.tsx`, `CodeEditor.tsx`, `ConsoleView.tsx`, `TraceView.tsx`) | 2 | Rebuilt from prototype; reads real document |
+| `panels/common` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/common/`) | 1 | `PropertyBlueprintBindingControl.tsx` |
+| `panels/console` | done | `src/editor/panels/console/OutputConsole.tsx` | 1 | Wraps `ConsoleView` & `TraceView` from `code-view` |
+| `panels/content-browser` | todo | `src/editor/panels/content-browser/` | 4 | `ContentBlockShelf.tsx`, `ContentBrowser.tsx`, `AssetFileEditor.tsx` (bridges) |
+| `panels/copilot` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/copilot/`) | 1 | `AiPromptBar.tsx` |
+| `panels/curves` | todo | `src/editor` (EasingEditor ported in `panels/inspectors/`; dedicated panel not rebuilt) | 2 | `CurveEditor.tsx`, `SpringEditor.tsx` |
+| `panels/database` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/database/`) | 10 | Needs design |
+| `panels/dependencies` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/dependencies/`) | 2 | `ReferenceViewerPanel.tsx` |
+| `panels/deployment` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/deployment/`) | 5 | Needs design |
+| `panels/details` | done | `src/editor/panels/details/`, `src/editor/shell/right-panel/` (`DetailsInspector.tsx`, sections, controls) | 46 | Rebuilt from prototype; reads real document |
+| `panels/execution-trace` | todo | `src/editor` (TraceView built inside code-view; standalone panel not rebuilt) | 1 | `ExecutionTracePanel.tsx` |
+| `panels/global-search` | todo | `src/editor` (no new version yet; `CommandPalette` built in components) | 2 | `GlobalSearchPanel.tsx` |
+| `panels/history` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/history/`) | 2 | `UndoHistoryPanel.tsx` |
+| `panels/launcher` | todo | `src/editor/panels/launcher/` (project hub home page) | 6 | `ProjectHub.tsx`, `TechConfigurator.tsx`, `archetypeData.ts` (bridges) |
+| `panels/layers` | done | `src/editor/shell/left-panel/` (`LayersTree.tsx`), `src/editor/panels/layers/` | 1 | Rebuilt from prototype; reads real document |
+| `panels/motion` | done | `src/editor/panels/inspectors/` (`KeyframeInspectorView.tsx`, `EasingEditor.tsx`, `LayerInspector.tsx`, `CompositionInspector.tsx`) | 1 | Rebuilt from prototype |
+| `panels/pages-manager` | todo | `src/editor` (PageSwitcher dropdown built; full manager not rebuilt) | 4 | `NavigationFlowDiagram.tsx`, `PagesManager.tsx`, `RouteCard.tsx` |
+| `panels/plugins` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/plugins/`) | 2 | `PluginManager.tsx` |
+| `panels/sequencer` | todo | `src/editor/panels/sequencer/TimelineSequencer.tsx` | 8 | `TimelineSequencer.tsx` (bridge to legacy) |
+| `panels/settings` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/settings/`) | 1 | `ProjectSettings.tsx` |
+| `panels/state` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/state/`) | 1 | `StateMatrixViewer.tsx` |
+| `panels/timeline` | done | `src/editor/panels/timeline/`, `src/editor/motion-model/` | 1 | Rebuilt from prototype; reads real document |
+| `panels/versioning` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/versioning/`) | 2 | `VersionControlPanel.tsx` |
+| `stage-lab` | todo | `src/editor/stage-lab/` | 2 | `CanvasLab.tsx`, `StageLab.tsx` (bridges) |
+| `render-gallery` | todo | `src/editor/render-gallery/` | 1 | `RenderGallery.tsx` (bridge) |
+| `fonts` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/fonts/`) | 2 | `FontSync.tsx`, `useFontSync.ts` |
+| `styles` | done | `src/editor/styles/` (`tokens.css`, `tailwind.css`, `animations.css`, `globals.css`) | 23 | Replaced by new token and utility architecture |
 
 ## Files per area
 

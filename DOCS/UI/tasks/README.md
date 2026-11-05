@@ -1,28 +1,46 @@
 # Worker tasks
 
-One file per task: `YYYY-MM-DD-<short-name>.md`. Claude writes them and workers execute them, one after another, without waiting for the user.
+One file per task: `YYYY-MM-DD-<name>.md`. Claude writes them and workers execute them, one after another or in parallel waves, without waiting for the user.
 
-## A task names
+## Naming rule
+- **Format:** `YYYY-MM-DD-<name>.md`
+- **Scope:** Self-contained task describing one specific area or lane.
+- **Contents:**
+  - The area (a row in `DOCS/UI/PARITY.md`) and the legacy files/bridges it replaces
+  - Design direction copied from prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` (exact line ranges, selectors, and layout values)
+  - The files the worker may touch (its lane paths), and off-limits paths
+  - Completion criteria: `npx tsc --noEmit` once, screenshots at 1440px in `DOCS/UI/handoffs/screenshots/<lane>/`, a handoff from `TEMPLATE.md`, and no git commits or pushes.
 
-- the area (a row in `DOCS/UI/PARITY.md`) and the bridge files it replaces
-- the design direction from Claude as senior designer, concrete enough to build from: layout, hierarchy, spacing, components to reuse or source, states and motion. The user's words where they exist, and Claude's choices logged in `DECISIONS.md`
-- the legacy files to read for behaviour
-- the files the worker may touch, and the off-limits list
-- what "done" means: screenshots at 1440, 1024 and 390 in `DOCS/UI/handoffs/screenshots/<short-name>/`, a handoff, `INTEGRATION.md`, `DECISIONS.md`, `COMPONENT_SOURCES.md` and `PARITY.md` updated, every new component on the design system page, no commit
+---
 
-## How a worker is started now (2026-11-03)
+## How workers are launched
 
-The user pastes a one-line prompt into Antigravity. `DOCS/UI/BUILD_SESSION.md` §3 has the prompt format. Everything the worker needs goes in the task file, and the worker runs only `npx tsc --noEmit` at the end. The `agy` CLI recipe below is the old way.
+Workers do all the build work. Antigravity is preferred, with Claude subagents as the fallback when Antigravity quota is exhausted:
 
-## Old way: Claude launches a worker (Antigravity CLI `agy`)
-
-Run from the repo root, in the background:
-
+```bash
+agy --dangerously-skip-permissions --output-format text --print="Read .claude/agents/ui-worker.md, then do DOCS/UI/tasks/<file>.md. Edit only the paths in its Lane section. Don't stop to ask. Don't commit." > DOCS/UI/handoffs/logs/<lane>.log 2>&1
 ```
-agy --dangerously-skip-permissions --output-format text --print="<prompt: read AGENTS.md and DOCS/UI/UI_RULES.md, then execute DOCS/UI/tasks/<file>. Do not stop to ask. Write the handoff. Do not commit or push.>" > worker.log 2>&1
-```
 
-- Attach the prompt as `--print="..."`. Other flags go before it.
-- Headless mode cannot ask for permission, so without `--dangerously-skip-permissions` the worker is auto-denied and produces nothing. With it, only the task text limits the worker, so the watcher review is mandatory. An engine edit was lost during an earlier worker session, and no one noticed because no review ran.
-- `--mode auto` is not available on this account.
-- The log stays empty until the worker finishes. Use `git status` to see progress.
+> [!IMPORTANT]
+> **Runner scripts note:** The night runner scripts `night-runner.sh` and `night-watcher.sh` exist but die when their launching shell ends, so launch lanes with separate background calls.
+
+---
+
+## Index of kept task files
+
+| File | What it covers |
+|---|---|
+| [`2026-11-04-design-system-audit-fixes.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-04-design-system-audit-fixes.md) | Wave 0 task for foundation: 8 themes without Plum, lane token blocks, and design system audit fixes |
+| [`2026-11-04-persistence-wiring.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-04-persistence-wiring.md) | Shell persistence task: project boot, autosave, lock, status hook, and persistence banners |
+| [`2026-11-05-e2e-migrate.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-e2e-migrate.md) | Shared task for parallel E2E test migration workers across spec groups G1 to G4 |
+| [`2026-11-05-L0-foundation.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L0-foundation.md) | Wave 0 task: foundations, eight official themes, and per-lane token blocks in `tokens.css` and `tailwind.css` |
+| [`2026-11-05-L1-top-bar.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L1-top-bar.md) | Wave 1 Lane L1: top bar, mode tabs with sliding highlight, logo saving trace, page switcher, 8-theme picker, Ship popover |
+| [`2026-11-05-L2-left-panel.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L2-left-panel.md) | Wave 1 Lane L2: left panel (Layers tree with drag-to-reorder/nest, eye/lock, Motion badge, context menu), Files tree, Assets |
+| [`2026-11-05-L3-design-inspector.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L3-design-inspector.md) | Wave 1 Lane L3: Design mode right panel inspector, 28px/11px mono field spec, repeatability popovers, page inspector |
+| [`2026-11-05-L4-canvas.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L4-canvas.md) | Wave 1 Lane L4: canvas chrome (toolbar, Insert panel, AI box with trace loader, View options, context menus, stage) |
+| [`2026-11-05-L5-motion-timeline.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L5-motion-timeline.md) | Wave 1 Lane L5: Motion bottom panel, shared motion model, 44px header, transport, resizable track column, clips, keyframes, mini-map |
+| [`2026-11-05-L6-motion-inspector.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L6-motion-inspector.md) | Wave 1 Lane L6: Motion right panel (Composition, Layer clip, and Keyframe easing editor), Export panel (CSS, WAAPI, Framer, GSAP) |
+| [`2026-11-05-L7-code-mode.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L7-code-mode.md) | Wave 1 Lane L7: Code bottom panel (Code, Console, Trace), code generator, canvas sync, right-panel code inspector |
+| [`2026-11-05-L8-shell-transitions.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L8-shell-transitions.md) | Wave 2 Lane L8: full-width bottom panel, panel collapse/expand springs, mode-switch transitions, Shift+T toggle, splitter |
+| [`2026-11-05-L9-design-system-page.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-L9-design-system-page.md) | Wave 2 Lane L9: wire 94 demo sections into `/design-system`, shared Slider, MenuHeading, ThemeSwatch, 8 themes |
+| [`2026-11-05-real-document.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-05-real-document.md) | Real document wiring: connect stage, layers, details, code-view, and timeline to engine document; remove demo stopgaps |

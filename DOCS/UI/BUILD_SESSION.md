@@ -28,14 +28,14 @@ The user is the director over both and passes messages between them.
 ## 3. The loop for each area
 
 1. Take the next area (section 5 below), and set its row in `PARITY.md` to `wip`.
-2. Write a **self-contained** task file in `DOCS/UI/tasks/YYYY-MM-DD-<name>.md`, using `2026-11-03-menu-dropdown-motion.md` as the model:
+2. Write a **self-contained** task file in `DOCS/UI/tasks/YYYY-MM-DD-<name>.md`, using `2026-11-05-L1-top-bar.md` or `2026-11-05-real-document.md` as the model:
    - the goal
    - "Read only these": the exact prototype line ranges, CSS selectors and app files (never "read everything")
    - the behaviour to port, with values copied from the prototype
    - the rules that matter for this task (the short list in section 6)
    - the files the worker may touch
    - "Done": `npx tsc --noEmit` once, screenshots at 1440 of what was built, a handoff from `TEMPLATE.md`, no commit
-3. **Give the user a one-line prompt** to paste into Antigravity, in this form:
+3. **Workers do the work:** launch Antigravity first (`agy --dangerously-skip-permissions --print=...`), with Claude subagents as the plan's fallback when Antigravity quota is exhausted (as happened on 2026-11-04). Note on runner scripts: the night runner scripts `night-runner.sh` and `night-watcher.sh` exist but die when their launching shell ends, so launch lanes with separate background calls. Give the user a one-line prompt to paste into Antigravity, in this form:
    `Do the task in DOCS/UI/tasks/<file>.md. Don't stop to ask. When done, run npx tsc --noEmit once, write the handoff, don't commit.`
    Workers don't read all the rule files and don't run lint, build or e2e (`AGENTS.md` loads on its own). Add `npx eslint <paths>` only on a retry that is fixing lint.
 4. When the user says the worker is done, run the `ui-watcher` subagent on the task, the handoff and `git diff`. Also open the screenshots yourself.
@@ -102,5 +102,5 @@ Then run the Phase 1 checks.
 - The logo, and the SVG's source and license.
 - The GSAP license.
 - The page switcher: keep the dropdown, or go back to a menu.
-- Missing features from the original: see `handoffs/2026-11-01-2305-design-tab-prototype.md`, "Not done / blocked".
+- Missing features from the original: see `DOCS/UI/handoffs/LATEST.md` ("Known gaps") and `DOCS/UI/PARITY.md`.
 - Contrast: in Lilac and Warm, secondary and muted text on select and hover backgrounds is below 4.5:1.

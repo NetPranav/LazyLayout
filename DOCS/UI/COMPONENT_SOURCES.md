@@ -2,11 +2,16 @@
 
 Every third-party component used in the new UI. Add a row before finishing the task. The license must allow this use.
 
+> [!WARNING]
+> **Unverified licenses (blocker before merge):** `Cursor` and `Scroll Fade` have unknown / unverified licenses from Animate UI. `UI_RULES.md` §5 explicitly states: *"License unclear? Pick another component."* These two components MUST be replaced or their licenses confirmed before merging `ui/redesign` to `main`.
+
 | Component | Site and URL | License | Copied to | What we changed |
 |---|---|---|---|---|
-| Cursor | Animate UI (https://animate-ui.com/docs/primitives/animate-ui/cursor) | unknown, unverified | `src/editor/components/imported/cursor/index.ts` | kept as-is |
-| Scroll Fade | Animate UI (https://animate-ui.com/docs/primitives/animate-ui/scroll-fade) | unknown, unverified | `src/editor/components/imported/scroll-fade/index.ts` | kept as-is |
+| Cursor | Animate UI (https://animate-ui.com/docs/primitives/animate-ui/cursor) | unknown, unverified (MUST REPLACE OR CONFIRM) | `src/editor/components/imported/cursor/index.ts` | kept as-is; pending license verification or replacement |
+| Scroll Fade | Animate UI (https://animate-ui.com/docs/primitives/animate-ui/scroll-fade) | unknown, unverified (MUST REPLACE OR CONFIRM) | `src/editor/components/imported/scroll-fade/index.ts` | kept as-is; pending license verification or replacement |
 | Nook animation engine (`springEase`, `springAnim`, motion presets, FLIP, kicks, Surf) | Nook, the user's own product (`E:\Projects\Products\nook`, `src/lib/motion.ts`, `src/lib/motionPresets.ts`, `src/features/island/engine/`) | own code | `src/editor/motion/` (`spring.ts`, `presets.ts`, `loop.ts`, `ease.ts`, `feel.ts`, `flip.ts`, `surface.ts`, `index.ts`) | Ported exact Nook mass-1 physics, frame loop, and presets to TypeScript; reduced-motion 120ms fade fallback; credited on design system motion page |
+| Lucide Icons | Lucide (https://lucide.dev) | ISC | `src/editor/components/Icon.tsx` | Standardized wrapper enforcing `strokeWidth={1.5}` and token-based sizes across all UI and inspector panels |
+| Geist & Geist Mono | Vercel (https://vercel.com/font) | SIL Open Font License 1.1 | `src/editor/styles/globals.css`, `tokens.css` | Mapped to `--ll-font-sans` and `--ll-font-mono` with legacy Inter overrides scoped out |
 
 ## Superseded and removed imported components (2026-11-03)
 The following imported components were superseded or deleted from `src/editor/components/imported/`:
