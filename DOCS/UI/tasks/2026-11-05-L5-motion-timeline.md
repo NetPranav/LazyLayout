@@ -94,3 +94,10 @@ Everything in `.claude/agents/ui-worker.md`, in particular: `ll:` prefix and var
 3. Screenshots of what you built, Paper and Dark, 1440, in `DOCS/UI/handoffs/screenshots/L5/`, prototype next to app.
 4. Handoff `DOCS/UI/handoffs/2026-11-05-HHMM-L5.md` from `TEMPLATE.md`: what you built, the real `tsc` output, the measured table, "Needs from other lanes", "Decisions", "Not done / blocked". Say what you did not verify. Do not edit `DECISIONS.md`, `PARITY.md`, `INTEGRATION.md`.
 5. Run every check in the foreground. **Never wait on a background task** (a worker that waits hangs). Finish when the handoff is written.
+
+## Retry 1 (automatic review, 2026-11-05 02:35:59)
+
+The review failed. Fix these first:
+
+- FAIL: arbitrary values: src/editor/panels/timeline/TimelineTransport.tsx:93:      className="ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-[auto_1fr_auto] ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden"
+- FAIL: raw requestAnimationFrame: src/editor/panels/timeline/TimelineLab.tsx:270:            Playhead needle is updated via the single requestAnimationFrame FrameScheduler loop (render phase) without React re-renders.
