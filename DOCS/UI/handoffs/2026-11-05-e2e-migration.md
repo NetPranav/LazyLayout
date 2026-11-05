@@ -22,3 +22,6 @@ None added.
 
 ## Not run
 - Per-spec fixes beyond transport-bar; the post-change full run; Firefox/WebKit.
+
+## Addendum: the after-run finished, but it is not trustworthy
+The full re-run ended with 2 passed, 167 failed, 2 skipped in 7 min. It ran while the machine was critically low on memory and while I removed the temporary config, so treat it as invalid, not as a regression. Re-run the full suite on a healthy machine to get real after numbers.

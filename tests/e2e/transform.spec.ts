@@ -11,8 +11,18 @@ const SHAPES = ["m_rect", "m_ellipse", "m_star", "m_poly"];
 
 async function openShapesLab(page: Page) {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Load one frame with shapes" }).click();
-  await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'), null, { timeout: 60_000 });
+  // Click until hydrated and shapes are loaded
+  await expect
+    .poll(
+      async () => {
+        await page.getByRole("button", { name: "Load one frame with shapes" }).click();
+        return page.evaluate(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'));
+      },
+      { timeout: 45_000, intervals: [500, 1000, 2000] },
+    )
+    .toBe(true);
+
+
   await page.waitForTimeout(600);
 }
 
