@@ -1,159 +1,404 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { Icon } from "@/editor/components/Icon";
 import {
-  SkipBack,
-  StepBack,
   Play,
   Pause,
+  SkipBack,
+  SkipForward,
+  ChevronLeft,
+  ChevronRight,
+  StepBack,
   StepForward,
   Repeat,
+  RotateCcw,
+  MousePointer2,
+  Scissors,
+  Maximize2,
+  Download,
+  MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
-import { Icon } from "@/editor/components/Icon";
-import { IconButton } from "@/editor/components/IconButton";
-import type { TimelineViewMode } from "./types";
+import { Menu, MenuItem } from "@/editor/components/Menu";
+import {
+  useMotionModel,
+  motionActions,
+  timecode,
+} from "@/editor/motion-model";
+import { SPEED_OPTIONS } from "./constants";
 
 export interface TimelineTransportProps {
-  isPlaying: boolean;
-  isLooping: boolean;
-  currentTimeFormatted: string;
-  durationFormatted: string;
-  viewMode: TimelineViewMode;
-  onTogglePlay: () => void;
-  onStop: () => void;
-  onStepBack: () => void;
-  onStepForward: () => void;
-  onToggleLoop: () => void;
+  onExport?: () => void;
+  onPresets?: () => void;
+  fullWidth?: boolean;
+  onToggleFullWidth?: (fw: boolean) => void;
+  // Legacy compatibility props
+  isPlaying?: boolean;
+  isLooping?: boolean;
+  currentTimeFormatted?: string;
+  durationFormatted?: string;
+  viewMode?: "tracks" | "graph" | "timeline";
+  onTogglePlay?: () => void;
+  onStop?: () => void;
+  onStepBack?: () => void;
+  onStepForward?: () => void;
+  onToggleLoop?: () => void;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
-  onToggleGraph: () => void;
-  onPresets?: () => void;
-  onExport?: () => void;
+  onToggleGraph?: () => void;
   onAddKeyframe?: () => void;
 }
 
 export const TimelineTransport: React.FC<TimelineTransportProps> = ({
-  isPlaying,
-  isLooping,
-  currentTimeFormatted,
-  durationFormatted,
-  viewMode,
-  onTogglePlay,
-  onStop,
-  onStepBack,
-  onStepForward,
-  onToggleLoop,
-  onToggleGraph,
-  onPresets,
   onExport,
+  fullWidth,
+  onToggleFullWidth,
+  isPlaying: legacyPlaying,
+  currentTimeFormatted: legacyCurrentTime,
+  durationFormatted: legacyDuration,
+  onTogglePlay: legacyTogglePlay,
+  onStepBack: legacyStepBack,
+  onStepForward: legacyStepForward,
+  onToggleLoop: legacyToggleLoop,
+  onToggleGraph: legacyToggleGraph,
 }) => {
+  const playhead = useMotionModel((s) => s.playhead);
+  const playing = useMotionModel((s) => s.playing);
+  const speed = useMotionModel((s) => s.speed);
+  const loop = useMotionModel((s) => s.loop);
+  const frames = useMotionModel((s) => s.frames);
+  const dur = useMotionModel((s) => s.comp.dur);
+  const fps = useMotionModel((s) => s.fps);
+  const tool = useMotionModel((s) => s.tool);
+  const view = useMotionModel((s) => s.view);
+  const storeFullWidth = useMotionModel((s) => s.fullWidth);
+
+  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [moreAnchor, setMoreAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  const isFw = fullWidth ?? storeFullWidth;
+
+  const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
+  const formattedTime = legacyCurrentTime ?? (frames ? String(playhead) : timecode(playhead, fps));
+  const formattedTotal = legacyDuration ?? (frames ? String(dur) : timecode(dur, fps));
+
   return (
-    <header className="ll-ph ll:h-header ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden ll:select-none">
-      {/* 1. Stop / Rewind to 0 */}
-      <IconButton
-        aria-label="Stop"
-        tooltip="Stop"
-        size="sm"
-        variant="ghost"
-        onClick={onStop}
-        icon={<Icon icon={SkipBack} size={15} />}
-        className="ll-ib ll:w-7 ll:h-7"
-      />
-
-      {/* 2. Step back 1 frame */}
-      <IconButton
-        aria-label="Step back"
-        tooltip="Step back"
-        size="sm"
-        variant="ghost"
-        onClick={onStepBack}
-        icon={<Icon icon={StepBack} size={15} />}
-        className="ll-ib ll:w-7 ll:h-7"
-      />
-
-      {/* 3. Play / Pause toggle */}
-      <IconButton
-        aria-label={isPlaying ? "Pause" : "Play"}
-        tooltip={isPlaying ? "Pause" : "Play"}
-        size="sm"
-        variant="ghost"
-        onClick={onTogglePlay}
-        icon={<Icon icon={isPlaying ? Pause : Play} size={15} />}
-        className="ll-ib ll:w-7 ll:h-7"
-      />
-
-      {/* 4. Step forward 1 frame */}
-      <IconButton
-        aria-label="Step forward"
-        tooltip="Step forward"
-        size="sm"
-        variant="ghost"
-        onClick={onStepForward}
-        icon={<Icon icon={StepForward} size={15} />}
-        className="ll-ib ll:w-7 ll:h-7"
-      />
-
-      {/* 5. Loop toggle */}
-      <IconButton
-        aria-label="Loop"
-        tooltip="Loop"
-        size="sm"
-        variant="ghost"
-        pressed={isLooping}
-        onClick={onToggleLoop}
-        icon={<Icon icon={Repeat} size={15} />}
-        className="ll-ib ll:w-7 ll:h-7"
-      />
-
-      {/* Current Time Display */}
-      <span
-        aria-label="Current timecode"
-        className="ll-tc ll:font-mono ll:text-lead ll:font-medium ll:text-primary ll:px-2 ll:whitespace-nowrap ll:select-none"
-      >
-        {currentTimeFormatted}
-      </span>
-
-      {/* Total Duration Display */}
-      <span
-        aria-label="Total duration"
-        className="ll-tt ll:font-mono ll:text-micro ll:text-muted ll:whitespace-nowrap ll:select-none ll:-ml-1"
-      >
-        / {durationFormatted}
-      </span>
-
-      {/* Spacer */}
-      <div className="ll-sp ll:flex-1" />
-
-      {/* Prototype Right Buttons: Presets, Graph, Export */}
-      <div className="ll:flex ll:items-center ll:gap-1.5 ll:shrink-0">
+    <div
+      role="toolbar"
+      aria-label="Timeline header"
+      className="ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden"
+    >
+      {/* 1. Left: Timecode and total */}
+      <div className="ll-mtc ll:flex ll:items-baseline ll:gap-2 ll:min-w-0">
         <button
           type="button"
-          onClick={onPresets}
-          className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          onClick={() => motionActions.toggleFrames()}
+          aria-label="Playhead time"
+          title="Click to switch between timecode and frames"
+          style={{ fontSize: "20px", lineHeight: "28px" }}
+          className="ll-tc ll:font-mono ll:font-medium ll:h-7 ll:rounded-sm ll:px-1 ll:-ml-1 ll:text-primary ll:hover:bg-surface-hover ll:transition-colors"
         >
-          Presets
+          {formattedTime}
+        </button>
+        <span className="ll-tt ll:font-mono ll:font-normal ll:text-nano ll:text-muted ll:whitespace-nowrap">
+          / {formattedTotal}
+        </span>
+      </div>
+
+      {/* 2. Center: Transport Controls */}
+      <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:justify-self-center">
+        <button
+          type="button"
+          onClick={() => {
+            const wa = useMotionModel.getState().wa;
+            motionActions.setPlayhead(wa.a);
+          }}
+          aria-label="Go to start (Home)"
+          title="Go to start (Home)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={SkipBack} size={15} />
         </button>
 
         <button
           type="button"
-          onClick={onToggleGraph}
-          className={`ll-tg ll:border-0 ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-            viewMode === "graph"
-              ? "ll:text-primary ll:bg-surface-raised"
-              : "ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-transparent"
+          onClick={() => motionActions.jumpKey(-1)}
+          aria-label="Previous keyframe (Alt+Left)"
+          title="Previous keyframe (Alt+Left)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={StepBack} size={15} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => motionActions.stepFrame(-1)}
+          aria-label="Step back (Left)"
+          title="Step back (Left)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={ChevronLeft} size={16} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => motionActions.setPlaying(!playing)}
+          aria-pressed={playing}
+          aria-label={playing ? "Pause (Space)" : "Play (Space)"}
+          title={playing ? "Pause (Space)" : "Play (Space)"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            playing
+              ? "ll:bg-control-active ll:text-control-active-fg"
+              : "ll:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          Graph
+          <Icon icon={playing ? Pause : Play} size={15} />
         </button>
 
+        <button
+          type="button"
+          onClick={() => motionActions.stepFrame(1)}
+          aria-label="Step forward (Right)"
+          title="Step forward (Right)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={ChevronRight} size={16} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => motionActions.jumpKey(1)}
+          aria-label="Next keyframe (Alt+Right)"
+          title="Next keyframe (Alt+Right)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={StepForward} size={15} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const wa = useMotionModel.getState().wa;
+            motionActions.setPlayhead(wa.b);
+          }}
+          aria-label="Go to end (End)"
+          title="Go to end (End)"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={SkipForward} size={15} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => motionActions.toggleLoop()}
+          aria-pressed={loop > 0}
+          aria-label={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
+          title={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            loop > 0
+              ? "ll:text-control-active ll:bg-surface-hover"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={loop === 2 ? RotateCcw : Repeat} size={14} />
+        </button>
+      </div>
+
+      {/* 3. Right: View tabs, Tools, Speed, Full Width, Export */}
+      <div className="ll-mrt ll:flex ll:items-center ll:gap-1 ll:justify-end ll:min-w-0">
+        {/* Segmented view switch (Timeline / Graph) */}
+        <div
+          role="tablist"
+          aria-label="Timeline view"
+          className="ll-vseg ll:flex ll:items-center ll:h-7 ll:p-0.5 ll:bg-surface-segmented ll:rounded-sm"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "timeline"}
+            onClick={() => motionActions.setView("timeline")}
+            className={`ll:h-6 ll:px-2.5 ll:rounded-xs ll:font-sans ll:text-xs ll:font-medium ll:transition-colors ${
+              view === "timeline"
+                ? "ll:bg-surface-panel ll:text-primary ll:shadow-xs"
+                : "ll:text-muted ll:hover:text-primary"
+            }`}
+          >
+            Timeline
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "graph"}
+            onClick={() => motionActions.setView("graph")}
+            className={`ll:h-6 ll:px-2.5 ll:rounded-xs ll:font-sans ll:text-xs ll:font-medium ll:transition-colors ${
+              view === "graph"
+                ? "ll:bg-surface-panel ll:text-primary ll:shadow-xs"
+                : "ll:text-muted ll:hover:text-primary"
+            }`}
+          >
+            Graph
+          </button>
+        </div>
+
+        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+
+        {/* Tools: Select (V) and Split (C) */}
+        <button
+          type="button"
+          onClick={() => motionActions.setTool("select")}
+          aria-pressed={tool === "select"}
+          aria-label="Select (V)"
+          title="Select (V)"
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            tool === "select"
+              ? "ll:bg-selection ll:text-selection-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={MousePointer2} size={15} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => motionActions.setTool("split")}
+          aria-pressed={tool === "split"}
+          aria-label="Split clip (C)"
+          title="Split clip (C)"
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            tool === "split"
+              ? "ll:bg-selection ll:text-selection-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={Scissors} size={15} />
+        </button>
+
+        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+
+        {/* Speed dropdown */}
+        <button
+          type="button"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setSpeedAnchor({ x: rect.left, y: rect.bottom + 4 });
+            setSpeedMenuOpen(true);
+          }}
+          aria-haspopup="listbox"
+          aria-expanded={speedMenuOpen}
+          aria-label="Playback speed"
+          title="Playback speed"
+          className="ll-mdd ll:h-7 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors"
+        >
+          <span>{speed}×</span>
+          <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
+        </button>
+
+        {speedMenuOpen && speedAnchor && (
+          <Menu
+            open={speedMenuOpen}
+            onClose={() => setSpeedMenuOpen(false)}
+            position={speedAnchor}
+          >
+            {SPEED_OPTIONS.map((opt) => (
+              <MenuItem
+                key={opt}
+                onClick={() => {
+                  motionActions.setSpeed(opt);
+                  setSpeedMenuOpen(false);
+                }}
+              >
+                {opt}×
+              </MenuItem>
+            ))}
+          </Menu>
+        )}
+
+        {/* Full width button (Shift+T) */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !isFw;
+            motionActions.setFullWidth(next);
+            onToggleFullWidth?.(next);
+          }}
+          aria-pressed={isFw}
+          aria-label="Full width (Shift+T)"
+          title="Full width (Shift+T)"
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            isFw
+              ? "ll:bg-surface-hover ll:text-primary"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={Maximize2} size={15} />
+        </button>
+
+        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+
+        {/* Export animation */}
         <button
           type="button"
           onClick={onExport}
-          className="ll-tg ll:border-0 ll:bg-transparent ll:h-7 ll:px-2 ll:text-small ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-transparent ll:transition-colors ll:cursor-pointer ll:rounded-sm ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          aria-label="Export animation"
+          title="Export animation"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
         >
-          Export
+          <Icon icon={Download} size={15} />
         </button>
+
+        {/* More options menu */}
+        <button
+          type="button"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setMoreAnchor({ x: rect.left, y: rect.bottom + 4 });
+            setMoreMenuOpen(true);
+          }}
+          aria-label="More timeline options"
+          title="More options"
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          <Icon icon={MoreHorizontal} size={15} />
+        </button>
+
+        {moreMenuOpen && moreAnchor && (
+          <Menu
+            open={moreMenuOpen}
+            onClose={() => setMoreMenuOpen(false)}
+            position={moreAnchor}
+          >
+            <MenuItem
+              onClick={() => {
+                motionActions.setCompact(!useMotionModel.getState().compact);
+                setMoreMenuOpen(false);
+              }}
+            >
+              Toggle compact rows
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                motionActions.resetWorkArea();
+                setMoreMenuOpen(false);
+              }}
+            >
+              Reset work area
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                motionActions.setZoom(1);
+                motionActions.setT0(0);
+                setMoreMenuOpen(false);
+              }}
+            >
+              Fit timeline (1×)
+            </MenuItem>
+          </Menu>
+        )}
       </div>
-    </header>
+    </div>
   );
 };

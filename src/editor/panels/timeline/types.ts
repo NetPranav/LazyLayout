@@ -1,4 +1,5 @@
 import type React from "react";
+import type { EaseName, PropId } from "@/editor/motion-model";
 
 export interface TimelineKeyframe {
   id: string;
@@ -26,9 +27,17 @@ export interface TimelineTrack {
   hidden?: boolean;
 }
 
-export type TimelineViewMode = "tracks" | "graph";
+export type TimelineViewMode = "timeline" | "graph";
 
 export interface TimelinePanelProps {
+  fullWidth?: boolean;
+  onToggleFullWidth?: (fw: boolean) => void;
+  height?: number | string;
+  className?: string;
+  style?: React.CSSProperties;
+  onExport?: () => void;
+  onOpenPresets?: () => void;
+  // Legacy / controlled props compatibility
   tracks?: TimelineTrack[];
   selectedTrackId?: string;
   onSelectTrack?: (id: string) => void;
@@ -38,11 +47,6 @@ export interface TimelinePanelProps {
   onUpdateKeyframeTime?: (trackId: string, kfId: string, time: number) => void;
   onDeleteKeyframe?: (trackId: string, kfId: string) => void;
   onSlideClip?: (trackId: string, deltaSec: number) => void;
-  height?: number | string;
-  className?: string;
-  style?: React.CSSProperties;
-  onExport?: () => void;
-  onOpenPresets?: () => void;
 }
 
 export interface DraggingKeyframeState {
@@ -56,4 +60,18 @@ export interface DraggingClipState {
   trackId: string;
   initialStart: number;
   startClientX: number;
+}
+
+export type ContextMenuKind = "keyframe" | "clip" | "track" | "lane" | "ruler" | null;
+
+export interface ContextMenuState {
+  kind: ContextMenuKind;
+  x: number;
+  y: number;
+  frame: number;
+  layerId?: string;
+  prop?: PropId;
+  clipIndex?: number;
+  keyId?: string;
+  currentEase?: EaseName;
 }

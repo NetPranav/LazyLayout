@@ -1,108 +1,258 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { useRef } from "react";
+import { Icon } from "@/editor/components/Icon";
+import { X as CloseIcon } from "lucide-react";
 import {
-  TIMELINE_RULER_HEIGHT_PX,
-  RULER_MIN_TICK_DISTANCE_PX,
-} from "./constants";
+  useMotionModel,
+  motionActions,
+  majorOf,
+  minorOf,
+  X,
+  Fx,
+  snapT,
+} from "@/editor/motion-model";
 
 export interface TimelineRulerProps {
-  duration: number;
-  pixelsPerSecond: number;
-  contentWidth: number;
+  laneWidth?: number;
+  pps?: number;
+  trackWidth?: number;
+  onContextMenu?: (e: React.MouseEvent, frame: number) => void;
+  // Legacy compatibility props
+  duration?: number;
+  pixelsPerSecond?: number;
+  contentWidth?: number;
   currentTime?: number;
-  onSeek: (timeSec: number) => void;
-}
-
-const STEP_CANDIDATES = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60] as const;
-
-function calculateTickStep(pixelsPerSecond: number): number {
-  for (const step of STEP_CANDIDATES) {
-    if (step * pixelsPerSecond >= RULER_MIN_TICK_DISTANCE_PX) {
-      return step;
-    }
-  }
-  return 1;
+  onSeek?: (timeSec: number) => void;
 }
 
 export const TimelineRuler: React.FC<TimelineRulerProps> = ({
-  duration,
-  pixelsPerSecond,
-  contentWidth,
-  currentTime = 0,
-  onSeek,
+  laneWidth = 600,
+  pps: propPps,
+  trackWidth = 264,
+  onContextMenu,
+  duration: legacyDur,
+  pixelsPerSecond: legacyPps,
+  contentWidth: _contentWidth,
+  currentTime: _currentTime,
+  onSeek: legacySeek,
 }) => {
+  const storeDur = useMotionModel((s) => s.comp.dur);
+  const dur = legacyDur ? Math.round(legacyDur * 60) : storeDur;
+  const pps = propPps ?? legacyPps ?? 100;
+  const fps = useMotionModel((s) => s.fps);
+  const t0 = useMotionModel((s) => s.t0);
+  const wa = useMotionModel((s) => s.wa);
+  const markers = useMotionModel((s) => s.comp.markers);
+  const frames = useMotionModel((s) => s.frames);
+  const view = useMotionModel((s) => s.view);
+  const snap = useMotionModel((s) => s.snap);
+  const comp = useMotionModel((s) => s.comp);
+  const playhead = useMotionModel((s) => s.playhead);
+
   const rulerRef = useRef<HTMLDivElement | null>(null);
 
-  const tickStep = calculateTickStep(pixelsPerSecond);
-  const ticks: Array<{ time: number; left: number; label: string }> = [];
+  const maj = majorOf(pps, fps);
+  const min = minorOf(maj);
 
-  for (let t = 0; t <= duration + 0.0001; t += tickStep) {
-    const rounded = Math.round(t * 1000) / 1000;
-    const label = Number.isInteger(rounded)
-      ? `${rounded}s`
-      : `${rounded.toFixed(1)}s`;
-    ticks.push({
-      time: rounded,
-      left: rounded * pixelsPerSecond,
-      label,
-    });
+  // Generate tick candidates
+  const startF = Math.max(0, Math.floor(Fx(-12, pps, t0, 24, fps) / min) * min);
+  const ticks: Array<{ f: number; isMajor: boolean; x: number; label?: string }> = [];
+
+  for (let f = startF; f <= dur; f += min) {
+    const x = X(f, pps, t0, 24, fps);
+    if (x > laneWidth + 12) break;
+
+    const isMajor = f % maj === 0;
+    let label: string | undefined;
+
+    if (isMajor) {
+      if (frames) {
+        label = String(f);
+      } else {
+        const s = f / fps;
+        label = s >= 60 && f % fps === 0 ? `${Math.floor(s / 60)}:${(s % 60 < 10 ? "0" : "") + (s % 60)}` : `${+s.toFixed(2)}s`;
+      }
+    }
+
+    ticks.push({ f, isMajor, x, label });
   }
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0 || !rulerRef.current) return;
-      e.preventDefault();
+  // Work area positions
+  const waX0 = X(wa.a, pps, t0, 24, fps);
+  const waX1 = X(wa.b, pps, t0, 24, fps);
 
-      const updateSeek = (clientX: number) => {
-        if (!rulerRef.current) return;
-        const rect = rulerRef.current.getBoundingClientRect();
-        const offsetX = clientX - rect.left;
-        const time = offsetX / pixelsPerSecond;
-        onSeek(time);
-      };
+  // Ruler pointer down handler (seek & drag)
+  const handleRulerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !rulerRef.current) return;
+    if ((e.target as HTMLElement).closest(".wah") || (e.target as HTMLElement).closest(".mk")) return;
+    e.preventDefault();
 
-      updateSeek(e.clientX);
+    const getFrame = (clientX: number) => {
+      const rect = rulerRef.current?.getBoundingClientRect();
+      if (!rect) return 0;
+      const x = clientX - rect.left;
+      const rawF = Fx(x, pps, t0, 24, fps);
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      return Math.round(res.snapped);
+    };
 
-      const handlePointerMove = (ev: PointerEvent) => {
-        updateSeek(ev.clientX);
-      };
+    const targetF = getFrame(e.clientX);
+    motionActions.setPlayhead(targetF);
+    legacySeek?.(targetF / 60);
 
-      const handlePointerUp = () => {
-        window.removeEventListener("pointermove", handlePointerMove);
-        window.removeEventListener("pointerup", handlePointerUp);
-      };
+    const onPointerMove = (ev: PointerEvent) => {
+      const f = getFrame(ev.clientX);
+      motionActions.setPlayhead(f);
+      legacySeek?.(f / 60);
+    };
 
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", handlePointerUp);
-    },
-    [onSeek, pixelsPerSecond]
-  );
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
+  // Work area handle drag
+  const handleWaHandleDown = (e: React.PointerEvent, handle: "a" | "b") => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const getFrame = (clientX: number) => {
+      const rect = rulerRef.current?.getBoundingClientRect();
+      if (!rect) return 0;
+      const x = clientX - rect.left;
+      const rawF = Fx(x, pps, t0, 24, fps);
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      return Math.round(res.snapped);
+    };
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const f = getFrame(ev.clientX);
+      if (handle === "a") {
+        motionActions.setWorkArea(Math.min(f, wa.b - 1), wa.b);
+      } else {
+        motionActions.setWorkArea(wa.a, Math.max(f, wa.a + 1));
+      }
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
 
   return (
     <div
-      ref={rulerRef}
-      role="slider"
-      aria-label="Timeline time ruler"
-      aria-valuemin={0}
-      aria-valuemax={duration}
-      aria-valuenow={currentTime}
-      onPointerDown={handlePointerDown}
-      style={{
-        height: `${TIMELINE_RULER_HEIGHT_PX}px`,
-        width: `${contentWidth}px`,
-      }}
-      className="ll-truler ll:relative ll:h-6 ll:border-b ll:border-border ll:bg-surface-panel ll:cursor-pointer ll:select-none ll:shrink-0 ll:overflow-hidden"
+      role="row"
+      style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
+      className="ll-tlrow ll-tlrul ll:grid ll:h-8 ll:sticky ll:top-0 ll:z-10 ll:bg-surface-panel ll:border-b ll:border-border ll:shrink-0 ll:select-none"
     >
-      {ticks.map((tick) => (
-        <span
-          key={`tick-${tick.time}`}
-          style={{ left: `${tick.left}px` }}
-          className="ll:absolute ll:top-1.5 ll:pl-1 ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:pointer-events-none ll:select-none"
-        >
-          {tick.label}
+      {/* 1. Header Column (sticky top-left) */}
+      <div className="ll-tlhc ll-tlhh ll:flex ll:items-center ll:pl-4 ll:pr-2 ll:border-r ll:border-border ll:bg-surface-panel ll:text-muted">
+        <span className="ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:tracking-wider">
+          {view === "graph" ? "Properties" : "Layers"}
         </span>
-      ))}
+      </div>
+
+      {/* 2. Lane Ruler Area */}
+      <div
+        ref={rulerRef}
+        onPointerDown={handleRulerPointerDown}
+        onContextMenu={(e) => {
+          const rect = rulerRef.current?.getBoundingClientRect();
+          const x = rect ? e.clientX - rect.left : 0;
+          const f = Math.round(Fx(x, pps, t0, 24, fps));
+          onContextMenu?.(e, f);
+        }}
+        className="ll-tlln ll-tlruler ll:relative ll:h-full ll:cursor-pointer ll:overflow-hidden ll:bg-surface-panel"
+      >
+        {/* Ticks and labels */}
+        {ticks.map((t, idx) => (
+          <React.Fragment key={`tick-${t.f}-${idx}`}>
+            <i
+              style={{ left: `${t.x}px` }}
+              className={`ll:absolute ll:bottom-0 ll:w-px ll:bg-muted ll:pointer-events-none ${
+                t.isMajor ? "ll:h-2.5 ll:opacity-100" : "ll:h-1.5 ll:opacity-60"
+              }`}
+            />
+            {t.isMajor && t.label && (
+              <span
+                style={{ left: `${t.x + 5}px` }}
+                className="ll-tkl ll:absolute ll:top-2 ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:pointer-events-none ll:whitespace-nowrap"
+              >
+                {t.label}
+              </span>
+            )}
+          </React.Fragment>
+        ))}
+
+        {/* Work area bar */}
+        <div
+          style={{
+            left: `${waX0}px`,
+            width: `${Math.max(0, waX1 - waX0)}px`,
+          }}
+          className="ll-wa ll:absolute ll:top-0.5 ll:h-1 ll:bg-secondary ll:pointer-events-none"
+        />
+
+        {/* Work area handle Left */}
+        <i
+          onPointerDown={(e) => handleWaHandleDown(e, "a")}
+          title="Work area start (I)"
+          style={{ left: `${waX0 - 3}px` }}
+          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2.5 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
+        />
+
+        {/* Work area handle Right */}
+        <i
+          onPointerDown={(e) => handleWaHandleDown(e, "b")}
+          title="Work area end (O)"
+          style={{ left: `${waX1 - 3}px` }}
+          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2.5 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
+        />
+
+        {/* Markers */}
+        {markers.map((m, i) => {
+          const mx = X(m.t, pps, t0, 24, fps);
+          return (
+            <div
+              key={m.id}
+              style={{ left: `${mx}px` }}
+              className="ll-mk ll:group ll:absolute ll:top-2.5 ll:h-3.5 ll:flex ll:items-center ll:z-20"
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  motionActions.setPlayhead(m.t);
+                }}
+                title={`${m.name}, frame ${m.t}`}
+                className="ll-mkb ll:min-w-3.5 ll:px-1 ll:bg-control-active ll:text-control-active-fg ll:font-mono ll:text-micro ll:font-medium ll:leading-3.5 ll:rounded-xs ll:text-center"
+              >
+                {i + 1}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  motionActions.deleteMarker(m.id);
+                }}
+                title="Delete marker"
+                className="ll-mkx ll:hidden ll:group-hover:flex ll:items-center ll:justify-center ll:w-3.5 ll:h-3.5 ll:bg-control-active ll:text-control-active-fg ll:rounded-r-xs"
+              >
+                <Icon icon={CloseIcon} size={10} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

@@ -4,29 +4,39 @@
  */
 
 export const TIMELINE_ROW_HEIGHT_PX = 32;
+export const TIMELINE_PROP_ROW_HEIGHT_PX = 24;
 export const TIMELINE_HEADER_HEIGHT_PX = 44;
-export const TIMELINE_RULER_HEIGHT_PX = 24;
+export const TIMELINE_RULER_HEIGHT_PX = 32;
+export const TIMELINE_FOOTER_HEIGHT_PX = 28;
 
 export const TIMELINE_DEFAULT_DURATION_SEC = 5;
 export const TIMELINE_DEFAULT_FPS = 60;
-export const TIMELINE_DEFAULT_PPS = 100; // Matches prototype ruler: 100px per second (0s-5s at 0-500px)
+export const TIMELINE_DEFAULT_DUR_FRAMES = 300;
+export const TIMELINE_DEFAULT_PPS = 100;
+
+export const TIMELINE_TRACK_COLUMN_DEFAULT_PX = 264;
+export const TIMELINE_TRACK_COLUMN_MIN_PX = 200;
+export const TIMELINE_TRACK_COLUMN_MAX_PX = 420;
+
+export const TIMELINE_ZOOM_MIN = 1;
+export const TIMELINE_ZOOM_MAX = 32;
+export const TIMELINE_ZOOM_STEP_FACTOR = 1.25;
 
 export const TIMELINE_ZOOM_MIN_PPS = 20;
 export const TIMELINE_ZOOM_MAX_PPS = 1200;
-export const TIMELINE_ZOOM_STEP_FACTOR = 1.25;
 
-export const KEYFRAME_SIZE_PX = 8;
-export const KEYFRAME_SELECTED_SIZE_PX = 10;
+export const KEYFRAME_SIZE_PX = 16;
+export const KEYFRAME_DIAMOND_SIZE_PX = 9;
+export const KEYFRAME_SELECTED_DIAMOND_SIZE_PX = 11;
 export const KEYFRAME_ROTATION_DEG = 45;
 
-export const CLIP_HEIGHT_PX = 18;
-export const CLIP_TOP_PX = 7;
 export const CLIP_BORDER_RADIUS_PX = 4;
+export const TIMELINE_PADDING_PX = 24;
 
 export const PLAYHEAD_LINE_WIDTH_PX = 1;
-export const PLAYHEAD_KNOB_WIDTH_PX = 9;
-export const PLAYHEAD_KNOB_HEIGHT_PX = 9;
-export const PLAYHEAD_KNOB_OFFSET_PX = -4;
+export const PLAYHEAD_KNOB_WIDTH_PX = 11;
+export const PLAYHEAD_KNOB_HEIGHT_PX = 12;
+export const PLAYHEAD_KNOB_OFFSET_PX = -5;
 export const PLAYHEAD_KNOB_RADIUS_PX = 2;
 
 export const FRAME_SNAP_FPS = 60;
@@ -34,6 +44,10 @@ export const TIME_STEP_FRAME = 1;
 
 export const TIMELINE_MIN_PADDING_RIGHT_PX = 120;
 export const RULER_MIN_TICK_DISTANCE_PX = 70;
+
+export const SPEED_OPTIONS = [0.25, 0.5, 1, 2] as const;
+export const FPS_OPTIONS = [24, 30, 60, 120] as const;
+export const LABEL_COLORS = ["Slate", "Sage", "Sand", "Clay", "Rose", "Lavender"] as const;
 
 export const DEFAULT_SAMPLE_TRACKS = [
   {

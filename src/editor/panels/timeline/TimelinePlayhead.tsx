@@ -1,81 +1,139 @@
 "use client";
 
-import React, { forwardRef, useCallback } from "react";
+import React from "react";
 import {
-  PLAYHEAD_KNOB_WIDTH_PX,
-  PLAYHEAD_KNOB_HEIGHT_PX,
-  PLAYHEAD_KNOB_OFFSET_PX,
-  PLAYHEAD_LINE_WIDTH_PX,
-} from "./constants";
+  useMotionModel,
+  X,
+  timecode,
+} from "@/editor/motion-model";
 
 export interface TimelinePlayheadProps {
-  duration: number;
-  pixelsPerSecond: number;
+  laneWidth?: number;
+  trackWidth?: number;
+  pps?: number;
+  hoverX?: number | null;
+  hoverFrame?: number | null;
+  snapFlashFrame?: number | null;
+  // Legacy compatibility props
+  duration?: number;
+  pixelsPerSecond?: number;
   currentTime?: number;
-  onSeek: (timeSec: number) => void;
+  onSeek?: (timeSec: number) => void;
 }
 
-export const TimelinePlayhead = forwardRef<HTMLDivElement, TimelinePlayheadProps>(
-  function TimelinePlayhead({ duration, pixelsPerSecond, currentTime = 0, onSeek }, ref) {
-    const handleKnobPointerDown = useCallback(
-      (e: React.PointerEvent<HTMLDivElement>) => {
-        if (e.button !== 0) return;
-        e.stopPropagation();
-        e.preventDefault();
+export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
+  laneWidth = 600,
+  trackWidth = 264,
+  pps: propPps,
+  hoverX = null,
+  hoverFrame = null,
+  snapFlashFrame = null,
+  pixelsPerSecond: legacyPps,
+}) => {
+  const dur = useMotionModel((s) => s.comp.dur);
+  const fps = useMotionModel((s) => s.fps);
+  const t0 = useMotionModel((s) => s.t0);
+  const wa = useMotionModel((s) => s.wa);
+  const playhead = useMotionModel((s) => s.playhead);
+  const markers = useMotionModel((s) => s.comp.markers);
+  const frames = useMotionModel((s) => s.frames);
 
-        const startClientX = e.clientX;
-        const needleEl = (e.currentTarget.parentElement) as HTMLElement | null;
-        const initialTransform = needleEl?.style.transform || "";
-        const match = /translateX\(([-\d.]+)px\)/.exec(initialTransform);
-        const initialX = match ? parseFloat(match[1]) : 0;
+  const pps = propPps ?? legacyPps ?? 100;
 
-        const handlePointerMove = (ev: PointerEvent) => {
-          const deltaPx = ev.clientX - startClientX;
-          const currentX = initialX + deltaPx;
-          const time = Math.max(0, Math.min(duration, currentX / pixelsPerSecond));
-          onSeek(time);
-        };
+  const phX = X(playhead, pps, t0, 24, fps);
+  const waX0 = X(wa.a, pps, t0, 24, fps);
+  const waX1 = X(wa.b, pps, t0, 24, fps);
+  const endX = X(dur, pps, t0, 24, fps);
 
-        const handlePointerUp = () => {
-          window.removeEventListener("pointermove", handlePointerMove);
-          window.removeEventListener("pointerup", handlePointerUp);
-        };
+  const isPhVisible = phX >= -6 && phX <= laneWidth + 6;
 
-        window.addEventListener("pointermove", handlePointerMove);
-        window.addEventListener("pointerup", handlePointerUp);
-      },
-      [duration, onSeek, pixelsPerSecond]
-    );
-
-    return (
+  return (
+    <>
+      {/* 1. Playhead and Markers Overlay */}
       <div
-        ref={ref}
-        data-timeline-needle="true"
-        className="ll-head2 ll:absolute ll:top-0 ll:bottom-0 ll:left-0 ll:pointer-events-none ll:z-20 ll:transition-none"
+        style={{ left: `${trackWidth}px` }}
+        className="ll-tlhd ll:absolute ll:right-0 ll:top-0 ll:bottom-0 ll:pointer-events-none ll:overflow-hidden ll:z-20"
       >
-        {/* Playhead Knob on ruler */}
-        <div
-          role="slider"
-          aria-label="Playhead knob"
-          aria-valuemin={0}
-          aria-valuemax={duration}
-          aria-valuenow={currentTime}
-          onPointerDown={handleKnobPointerDown}
-          style={{
-            width: `${PLAYHEAD_KNOB_WIDTH_PX}px`,
-            height: `${PLAYHEAD_KNOB_HEIGHT_PX}px`,
-            left: `${PLAYHEAD_KNOB_OFFSET_PX}px`,
-            top: 0,
-          }}
-          className="ll:absolute ll:bg-control-primary ll:rounded-xs ll:pointer-events-auto ll:cursor-ew-resize ll:shadow-sm"
+        {/* Work area dimming left */}
+        {wa.a > 0 && (
+          <div
+            style={{ left: 0, width: `${Math.max(0, waX0)}px` }}
+            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-canvas/60"
+          />
+        )}
+
+        {/* Work area dimming right */}
+        {wa.b < dur && (
+          <div
+            style={{ left: `${waX1}px`, right: 0 }}
+            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-canvas/60"
+          />
+        )}
+
+        {/* Markers vertical lines */}
+        {markers.map((m) => {
+          const mx = X(m.t, pps, t0, 24, fps);
+          return (
+            <i
+              key={`mkl-${m.id}`}
+              style={{ left: `${mx}px` }}
+              className="ll-mkl ll:absolute ll:top-8 ll:bottom-0 ll:w-px ll:bg-muted/50"
+            />
+          );
+        })}
+
+        {/* End of composition line */}
+        <i
+          style={{ left: `${endX}px` }}
+          className="ll-endl ll:absolute ll:top-8 ll:bottom-0 ll:w-px ll:bg-border"
         />
 
-        {/* 1px Playhead Needle line */}
-        <div
-          style={{ width: `${PLAYHEAD_LINE_WIDTH_PX}px` }}
-          className="ll:h-full ll:bg-control-primary"
-        />
+        {/* 60fps Playhead needle */}
+        {isPhVisible && (
+          <div
+            style={{
+              transform: `translateX(${phX}px)`,
+            }}
+            className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
+          >
+            {/* Playhead Knob on ruler */}
+            <div className="ll:absolute ll:-left-1.5 ll:top-2 ll:w-3 ll:h-3 ll:bg-control-active ll:rounded-xs ll:shadow-xs" />
+          </div>
+        )}
       </div>
-    );
-  }
-);
+
+      {/* 2. Hover Guide Line & Tooltip */}
+      {hoverX !== null && hoverFrame !== null && (
+        <>
+          <i
+            style={{
+              left: `${trackWidth}px`,
+              transform: `translateX(${hoverX}px)`,
+            }}
+            className="ll-hvl ll:absolute ll:top-8 ll:bottom-0 ll:w-px ll:bg-muted/60 ll:pointer-events-none ll:z-20"
+          />
+          <span
+            style={{
+              left: `${trackWidth}px`,
+              transform: `translateX(${Math.min(hoverX + 6, laneWidth - 60)}px)`,
+            }}
+            className="ll-hvt ll:absolute ll:top-1 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:text-primary ll:shadow-sm ll:pointer-events-none ll:z-30 ll:whitespace-nowrap"
+          >
+            {frames ? String(hoverFrame) : timecode(hoverFrame, fps)}
+          </span>
+        </>
+      )}
+
+      {/* 3. Snapping indicator flash line */}
+      {snapFlashFrame !== null && (
+        <i
+          style={{
+            left: `${trackWidth}px`,
+            transform: `translateX(${X(snapFlashFrame, pps, t0, 24, fps)}px)`,
+          }}
+          className="ll-snl ll-snl-on ll:absolute ll:top-0 ll:bottom-0 ll:w-px ll:bg-primary ll:pointer-events-none ll:z-30"
+        />
+      )}
+    </>
+  );
+};

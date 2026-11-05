@@ -267,7 +267,7 @@ export function TimelineLab() {
             Scheduler Driven
           </span>
           <p className="ll:text-small ll:text-secondary">
-            Playhead needle is updated via the single requestAnimationFrame FrameScheduler loop (render phase) without React re-renders.
+            Playhead needle is updated via the single frameScheduler loop (render phase) without React re-renders.
           </p>
         </div>
       </div>
