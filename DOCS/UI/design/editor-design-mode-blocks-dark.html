@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lazy Layout Editor</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500&family=Playfair+Display:wght@400;500&display=swap">
-<script>try{var t=localStorage.getItem('ll-theme-v2');document.documentElement.dataset.theme=['paper','dark','white','warm','lilac','graphite','darkroom','noir'].indexOf(t)>-1?t:'paper'}catch(e){document.documentElement.dataset.theme='paper'}</script>
+<script>try{var t=localStorage.getItem('ll-theme-v2');document.documentElement.dataset.theme=['paper','dark','white','warm','lilac','graphite','darkroom','noir'].indexOf(t)>-1?t:'warm'}catch(e){document.documentElement.dataset.theme='warm'}</script>
 <style>
 /* Design mode, blocked layout. PALETTE.md dark. No accent, no pills, no glass, no gradients in chrome. */
 :root{
@@ -1320,7 +1320,7 @@ label.dtrow{cursor:pointer}
       <button class="mode" role="tab" aria-pressed="false" data-mode="motion" aria-haspopup="menu">Motion<svg class="mcv" aria-hidden="true"><use href="#chevd"/></svg></button>
       <button class="mode" role="tab" aria-pressed="false" data-mode="code" aria-haspopup="menu">Code<svg class="mcv" aria-hidden="true"><use href="#chevd"/></svg></button>
     </nav>
-    <div class="tr"><button class="themebtn" id="themebtn" aria-label="Switch to Noir" title="Switch to Noir"><svg><use href="#moon"/></svg></button><button class="ship" id="shipbtn" aria-haspopup="menu" aria-expanded="false"><span>Ship</span><span class="shipc" id="shipc">2</span><svg><use href="#chevd"/></svg></button></div>
+    <div class="tr"><button class="themebtn" id="themebtn" aria-label="Switch to Darkroom" title="Switch to Darkroom"><svg><use href="#moon"/></svg></button><button class="ship" id="shipbtn" aria-haspopup="menu" aria-expanded="false"><span>Ship</span><span class="shipc" id="shipc">2</span><svg><use href="#chevd"/></svg></button></div>
   </header>
 
   <aside class="zone left" aria-label="Layers">
@@ -2768,8 +2768,8 @@ label.dtrow{cursor:pointer}
   }
   /* Context menus (canvas, element, layer rows): one open at a time, one submenu level, on hover or click */
   function vpOn(o){return $('#vpop [data-opt="'+o+'"]').getAttribute('aria-pressed')==='true'}
-  function curTheme(){return document.documentElement.dataset.theme||'paper'}
-  var LIGHT=['paper','white','warm','lilac'],DARKT=['noir','dark','graphite','darkroom'];
+  function curTheme(){return document.documentElement.dataset.theme||'warm'}
+  var LIGHT=['warm','paper','white','lilac'],DARKT=['darkroom','noir','dark','graphite'];
   function themeItems(){return [{h:'Light'}].concat(LIGHT.map(thItem),[{h:'Dark'}],DARKT.map(thItem))}
   function thItem(n){return {l:n[0].toUpperCase()+n.slice(1),th:n,sw:1,f:function(){setTheme(n)}}}
   function VT(o){return function(){$('#vpop [data-opt="'+o+'"]').click()}}  function selAll(){selection=$$('#p-layers .row[data-sel]').map(function(r){return r.dataset.sel});renderSelection()}
@@ -4660,7 +4660,7 @@ label.dtrow{cursor:pointer}
   /* Top bar: saving note, theme switch */
   var savingEl=$('#saving'),savingT;
   function syncTheme(){
-    var t=curTheme(),toNoir=LIGHT.indexOf(t)>-1,n=toNoir?'Noir':'Paper',b=$('#themebtn');
+    var t=curTheme(),toNoir=LIGHT.indexOf(t)>-1,n=toNoir?'Darkroom':'Warm',b=$('#themebtn');
     $$('#themeseg button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.th===t))});
     b.setAttribute('aria-label','Switch to '+n);b.title='Switch to '+n;
     b.querySelector('use').setAttribute('href',toNoir?'#moon':'#sun');
@@ -4675,7 +4675,7 @@ label.dtrow{cursor:pointer}
   }
   syncTheme();
   $('#themeseg').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setTheme(b.dataset.th)});
-  $('#themebtn').addEventListener('click',function(){closeAll();setTheme(LIGHT.indexOf(curTheme())>-1?'noir':'paper')});
+  $('#themebtn').addEventListener('click',function(){closeAll();setTheme(LIGHT.indexOf(curTheme())>-1?'darkroom':'warm')});
 
   /* People: top bar avatars and their dropdown. Sample data; window.setUsers(n) changes the count (1 to 5) for dev checks */
   var USERS=[['AP','Adarsh Pathade','Viewing'],['RK','Rina Kapoor','Editing Hero'],['SM','Sam Mori','Viewing'],['JL','Jun Lee','Viewing'],['TO','Tara Osei','Viewing']],NU=5;

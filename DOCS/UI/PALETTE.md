@@ -1,6 +1,6 @@
 # Palette
 
-The only colors workers may use. There are **eight official themes**: Paper, Dark, White, Warm and Lilac (approved by the user on 2026-11-01), plus Graphite, Darkroom and Noir (approved by the user on 2026-11-04). **Paper is the default.** Components use the semantic tokens below, never a raw color or a numbered neutral, so every theme works.
+The only colors workers may use. There are **eight official themes**: Paper, Dark, White, Warm and Lilac (approved by the user on 2026-11-01), plus Graphite, Darkroom and Noir (approved by the user on 2026-11-04). **Defaults (user, 2026-11-05): Warm is the default light theme and Darkroom the default dark theme.** The top-bar theme button toggles between Warm and Darkroom; a first visit gets Warm. Components use the semantic tokens below, never a raw color or a numbered neutral, so every theme works.
 
 The prototype `DOCS/UI/design/editor-design-mode-blocks-dark.html` shows them all. Light themes: Paper, White, Warm, Lilac. Dark themes: Noir, Dark, Graphite, Darkroom.
 
