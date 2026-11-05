@@ -8,44 +8,83 @@ import pixelmatch from "pixelmatch";
 import type { Download, Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 
+export const LEGACY_EDITOR_URL = "/editor/legacy";
+
 export async function openEditor(page: Page, url = "/editor") {
   await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
   await page.waitForFunction(() => new URL(location.href).searchParams.has("projectId"));
   await waitSaved(page);
 }
 
+/**
+ * Waits until React has hydrated the page (its props are on the DOM nodes): a click that lands before that is lost,
+ * which under load left lab pages unloaded until the test timed out.
+ */
+export async function waitHydrated(page: Page, selector = "main button") {
+  await page.waitForFunction((sel) => {
+    const el = document.querySelector(sel);
+    return !!el && Object.keys(el).some((k) => k.startsWith("__reactProps"));
+  }, selector, { timeout: 60_000 });
+}
+
 /** The logo button carries the save state: data-state = saved | dirty | saving | error. */
 export async function waitSaved(page: Page) {
   await page.waitForTimeout(150);
-  await page.locator('[data-testid="save-status"][data-state="saved"]').waitFor({ state: "attached", timeout: 15_000 });
+  const isLegacy = page.url().includes("/editor/legacy");
+  if (isLegacy) {
+    await page.waitForFunction(() => !document.querySelector(".viewport-action-btn__dirty-dot"), null, {
+      timeout: 15_000,
+    });
+  } else {
+    await page.locator('[data-testid="save-status"][data-state="saved"]').waitFor({ state: "attached", timeout: 15_000 });
+  }
 }
 
 /** Focus the app (not an input or the stage iframe) so shortcuts reach the window. */
 export async function focusApp(page: Page) {
-  await page.getByRole("button", { name: "Application menu" }).first().click();
-  await page.keyboard.press("Escape");
+  if (page.url().includes("/editor/legacy")) {
+    await page.locator(".studio-header__brand").first().click();
+  } else {
+    await page.getByRole("button", { name: "Application menu" }).first().click();
+    await page.keyboard.press("Escape");
+  }
 }
 
 /** Opens the logo menu and the File submenu (File is a submenu item, not a top-level button). */
 export async function openFileMenu(page: Page) {
-  const menu = page.getByRole("menu", { name: "Application menu" });
-  if (!(await menu.isVisible().catch(() => false))) await page.getByRole("button", { name: "Application menu" }).first().click();
-  await page.getByRole("menuitem", { name: "File", exact: true }).hover();
-  await page.getByRole("menu", { name: "File", exact: true }).waitFor({ state: "visible" });
+  if (page.url().includes("/editor/legacy")) {
+    await page.getByRole("button", { name: "File", exact: true }).click();
+  } else {
+    const menu = page.getByRole("menu", { name: "Application menu" });
+    if (!(await menu.isVisible().catch(() => false))) await page.getByRole("button", { name: "Application menu" }).first().click();
+    await page.getByRole("menuitem", { name: "File", exact: true }).hover();
+    await page.getByRole("menu", { name: "File", exact: true }).waitFor({ state: "visible" });
+  }
 }
 
 export async function openSequencer(page: Page) {
-  await page.getByRole("tab", { name: "Motion" }).click();
-  await page.locator('[aria-label="Motion Timeline"]').first().waitFor({ state: "visible", timeout: 15_000 });
-  await page.waitForTimeout(300);
+  if (page.url().includes("/editor/legacy")) {
+    // The Design workspace folds the drawer away, so open the timeline from the Motion shelf.
+    await page.getByRole("button", { name: "Timeline tool" }).click();
+    // The Sequencer's code is fetched the first time it is shown (Phase 14).
+    await page.locator(".sequencer-ruler-wrap").waitFor({ state: "visible", timeout: 15_000 });
+    await page.waitForTimeout(300);
+  } else {
+    await page.getByRole("tab", { name: "Motion" }).click();
+    await page.locator('[aria-label="Motion Timeline"]').first().waitFor({ state: "visible", timeout: 15_000 });
+    await page.waitForTimeout(300);
+  }
 }
 
 /** File → Export Project File; returns the parsed .lazy.json, saved under `outDir`. */
 export async function exportProject(page: Page, outDir: string, label: string) {
   await openFileMenu(page);
+  const isLegacy = page.url().includes("/editor/legacy");
   const [download]: [Download, unknown] = (await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("menuitem", { name: "Export project file" }).click(),
+    isLegacy
+      ? page.getByText("Export Project File (.lazy.json)").click()
+      : page.getByRole("menuitem", { name: "Export project file" }).click(),
   ])) as [Download, unknown];
   const path = `${outDir}/${label}.lazy.json`;
   await download.saveAs(path);

@@ -129,6 +129,50 @@ export const LayerSchema = z.object({
   pins: PinsSchema.optional(),
   /** Free-form labels a rule can target as `tag:<name>` (Phase 7.5 / 89). */
   tags: z.array(TagSchema).optional(),
+  /**
+   * Properties that replace this layer's own at a breakpoint and below (Phase 43): breakpoint id to property path to
+   * value. The key `layer.visible` with `false` hides the layer there. Absent: no overrides.
+   */
+  overrides: z.record(z.string(), z.record(z.string(), PropValueSchema)).optional(),
+  /** Properties bound to variables (Phase 45): property path to the variable, and whether the layer has detached from it. */
+  tokens: z.record(z.string(), z.object({ variable: z.string(), detached: z.boolean().optional() })).optional(),
+  /** The styles this layer follows (Phase 45: text and effect; FigCraft port F10: fill, stroke and grid): style ids. */
+  styleRefs: z.object({ text: z.string().optional(), effect: z.string().optional(), fill: z.string().optional(), stroke: z.string().optional(), grid: z.string().optional() }).optional(),
+  /** The mode this frame shows for each variable collection, for everything inside it (FigCraft port F10): collection id to mode id. */
+  variableModes: z.record(z.string(), z.string().max(40)).optional(),
+  /** Dev Mode notes for developers (FigCraft port F13): text, pinned properties, a category. */
+  annotations: z.array(z.object({ label: z.string().max(5000).optional(), properties: z.array(z.string().max(60)).max(40).optional(), category: z.string().max(64).optional() })).max(64).optional(),
+  /** Dev Mode measurements kept in the file (FigCraft port F13): to another layer, or across one side of this one. */
+  measurements: z.array(z.object({ to: z.string().optional(), side: z.enum(["top", "right", "bottom", "left"]).optional() })).max(64).optional(),
+  /** Handoff status (FigCraft port F13): ready for development or completed, when it was set, and the layer as it was then (JSON, for Compare changes). */
+  devStatus: z.object({ status: z.enum(["ready", "completed"]), since: z.number(), snapshot: z.string().max(2_000_000).optional() }).optional(),
+  /** This layer is the main component with this id (Phase 46): the one place the component is edited. */
+  componentMain: z.string().optional(),
+  /**
+   * This layer is part of an instance of a component (Phase 46): the component, the main layer it mirrors, whether it
+   * is the instance's root, and the properties (and `visible`, `tokens`, `styleRefs`, `overrides`) the instance
+   * changed on its own, which the main no longer overwrites.
+   */
+  instance: z
+    .object({
+      component: z.string(),
+      source: z.string(),
+      root: z.boolean().optional(),
+      overridden: z.array(z.string()).optional(),
+      /** On an instance root of a variant set (Phase 47): the value chosen for each variant property. */
+      variant: z.record(z.string(), z.string()).optional(),
+      /** On a nested instance inside another instance (FigCraft port F9): the component it was swapped to, which its layers then mirror. */
+      swap: z.string().optional(),
+    })
+    .optional(),
+  /** This top-level frame is a page (Phase 48): its route (`/`, `/about`) and an optional title. */
+  page: z.object({ route: z.string().min(1).max(200), title: z.string().max(200).optional() }).optional(),
+  /** This layer is a section, a full-width band of a page (Phase 48), with an optional anchor name for links to it (`#pricing`). */
+  section: z.object({ anchor: z.string().max(80).optional() }).optional(),
+  /** Where clicking this layer goes in Preview and in the exported site (Phase 48). */
+  link: z.object({ kind: z.enum(["page", "anchor", "url", "frame"]), target: z.string().min(1).max(2000) }).optional(),
+  /** This main layer is a slot (Phase 47): its instances keep layers of their own inside it, which the main never touches. */
+  componentSlot: z.boolean().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -181,6 +225,75 @@ const MotionDocumentShape = z.object({
   exportSettings: ExportSettingsSchema,
   /** Imported files, by content hash (Phase 36). Absent in documents saved before assets: read it as empty. */
   assets: z.record(z.string(), AssetEntrySchema).optional(),
+  /** The design components: id, name and the layer that is the main component (Phase 46). */
+  designComponents: z
+    .record(
+      z.string(),
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).max(120),
+        /** The main component; for a variant set, the first variant's. */
+        mainId: z.string(),
+        /** A section shared by every page, as the header or the footer (Phase 48). */
+        shared: z.enum(["header", "footer"]).optional(),
+        /** What the component is for (FigCraft port F9). */
+        description: z.string().max(2000).optional(),
+        /** A variant set (Phase 47): its properties (Size: S, M, L) and one main layer for each combination. */
+        variantProps: z.array(z.object({ name: z.string().min(1).max(60), values: z.array(z.string().min(1).max(60)).min(1).max(12) })).max(4).optional(),
+        variants: z.array(z.object({ mainId: z.string(), values: z.record(z.string(), z.string()) })).max(64).optional(),
+        /** Properties exposed on every instance (Phase 47): a name, a kind, and the layer (by name path from the main's root) and property it sets. */
+        properties: z
+          .array(z.object({ id: z.string(), name: z.string().min(1).max(60), type: z.enum(["text", "image", "boolean", "instance"]), path: z.array(z.string()).max(32), prop: z.string().min(1).max(120) }))
+          .max(40)
+          .optional(),
+      }),
+    )
+    .optional(),
+  /** Modes for variables, the first is the default (Phase 45). Absent: Light and Dark. */
+  modes: z.array(z.object({ id: z.string().min(1).max(40), name: z.string().min(1).max(40) })).max(8).optional(),
+  /** More variable collections, each with its own modes (FigCraft port F10). The default collection is `modes`. */
+  collections: z
+    .array(z.object({ id: z.string().min(1).max(40), name: z.string().min(1).max(60), modes: z.array(z.object({ id: z.string().min(1).max(40), name: z.string().min(1).max(40) })).min(1).max(8) }))
+    .max(20)
+    .optional(),
+  /**
+   * Variables with a value for each mode (Phase 45: colour and number). FigCraft port F10: string and boolean types, a
+   * value that is an alias of another variable, a collection, a description, scopes, code syntax.
+   */
+  variables: z
+    .record(
+      z.string(),
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).max(120),
+        type: z.enum(["color", "number", "string", "boolean"]),
+        values: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.object({ alias: z.string() })])),
+        collection: z.string().max(40).optional(),
+        description: z.string().max(2000).optional(),
+        scopes: z.array(z.string().max(40)).max(20).optional(),
+        codeSyntax: z.object({ WEB: z.string().max(200).optional(), iOS: z.string().max(200).optional(), ANDROID: z.string().max(200).optional() }).optional(),
+        hidden: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+  /** Styles (Phase 45: text and effect; FigCraft port F10: paint and grid, a description, and variables bound inside them). */
+  styles: z
+    .record(
+      z.string(),
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).max(120),
+        kind: z.enum(["text", "effect", "paint", "grid"]),
+        props: z.record(z.string(), PropValueSchema),
+        description: z.string().max(2000).optional(),
+        bound: z.record(z.string().max(120), z.string()).optional(),
+      }),
+    )
+    .optional(),
+  /** Dev Mode annotation categories (FigCraft port F13); absent: Development, Interaction, Accessibility, Content. */
+  annotationCategories: z.array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(64), color: z.string().max(40) })).max(64).optional(),
+  /** The breakpoints, widest (the base) first (Phase 43). Absent: Desktop 1440, Tablet 768, Mobile 375. */
+  breakpoints: z.array(z.object({ id: z.string().min(1).max(40), name: z.string().min(1).max(40), width: z.number().int().min(100).max(10000) })).max(12).optional(),
   /** How fonts show while they load (the CSS `font-display`; Phase 38). Absent: `swap`. */
   fontDisplay: z.enum(["swap", "block", "fallback", "optional", "auto"]).optional(),
 });

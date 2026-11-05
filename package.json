@@ -21,6 +21,7 @@
     "check:bundle-scope": "tsx scripts/check-bundle-scope.mts",
     "check:doc-links": "tsx scripts/check-doc-links.mts",
     "check:no-adhoc-compat": "tsx scripts/check-no-adhoc-compat.mts",
+    "mcp": "tsx bin/lazylayout-mcp.ts",
     "check:roadmap-order": "tsx scripts/check-roadmap-order.mts",
     "changelog:fold": "tsx scripts/fold-changelog.mts"
   },
@@ -38,10 +39,12 @@
     "lucide-react": "^1.41.0",
     "motion": "^13.4.3",
     "next": "16.3.4",
+    "polygon-clipping": "^0.15.7",
     "radix-ui": "^1.8.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "^0.186.1",
+    "ws": "^8.22.1",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
@@ -53,6 +56,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.186.0",
+    "@types/ws": "^8.18.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "fake-indexeddb": "^6.2.5",

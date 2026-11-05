@@ -84,25 +84,12 @@ import {
 // compatibility decision.
 import { canAddFromBindings, type CanAddCandidate } from "@/core/rules";
 import { createId } from "@/core/ids";
+import { addStackTrack, removeStackTrack, setStackPropertyValue, setStackTrigger, stackForLayer, updateStackTrack, type AnimationTrigger, type ElementAnimationTrack, type PropertyDelta } from "@/core/animation/stackAdapter";
+import { invokeCommand } from "@/core/commands";
+import { useDocument } from "@/core/store/useDocumentStore";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 
-export type AnimationTrigger = "load" | "hover" | "click" | "scroll" | "state";
-
-export interface PropertyDelta {
-  property: string;
-  from: string;
-  to: string;
-}
-
-export interface ElementAnimationTrack {
-  id: string;
-  name: string;
-  trigger: AnimationTrigger;
-  duration: number;
-  delay: number;
-  easing: string;
-  properties: PropertyDelta[];
-  isCustomTuned?: boolean;
-}
+export type { AnimationTrigger, PropertyDelta, ElementAnimationTrack } from "@/core/animation/stackAdapter";
 
 export interface AnimationPreset {
   id: string;
@@ -230,37 +217,6 @@ export const TRIGGER_CONFIGS: Record<
   },
 };
 
-const INITIAL_ELEMENT_TRACKS: Record<string, ElementAnimationTrack[]> = {
-  untitled: [
-    {
-      id: "trk_entrance",
-      name: "Entrance Reveal",
-      trigger: "load",
-      duration: 0.6,
-      delay: 0.15,
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-      properties: [
-        { property: "transform.y", from: "24px", to: "0px" },
-        { property: "appearance.opacity", from: "0", to: "1" },
-      ],
-      isCustomTuned: true,
-    },
-    {
-      id: "trk_hover",
-      name: "Tactile Lift on Hover",
-      trigger: "hover",
-      duration: 0.4,
-      delay: 0,
-      easing: "elastic.out(1, 0.4)",
-      properties: [
-        { property: "transform.y", from: "0px", to: "-4px" },
-        { property: "transform.scale", from: "1.0", to: "1.02" },
-      ],
-      isCustomTuned: false,
-    },
-  ],
-};
-
 export type AssetCategory = "sequence" | "curve" | "scroll" | "trigger" | "loop" | "sequencer";
 
 export interface AssetEntry {
@@ -336,7 +292,6 @@ export interface ContentBrowserProps {
   onOpenExportPreview?: () => void;
 }
 
-const NO_TRACKS: ElementAnimationTrack[] = [];
 
 export const ContentBrowser: React.FC<ContentBrowserProps> = ({
   selectedFolderId,
@@ -351,18 +306,20 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
   // Project Assets state (starts empty as requested)
   const [projectAssets, setProjectAssets] = useState<AssetEntry[]>(PROJECT_ASSETS);
 
-  // Stack name and renaming capability (defaults to "Untitled")
-  const [stackName, setStackName] = useState<string>("Untitled");
+  // Phase 68: the stack is the selected layer's clips in the document (it used to be local state seeded from a constant).
+  const motionDoc = useDocument((d) => d);
+  const targetLayerId = useSelectionStore((s) => s.selectedIds[0] ?? null);
+  const targetLayer = targetLayerId ? motionDoc.layers[targetLayerId] : undefined;
+  const stackName = targetLayer?.name ?? "No layer selected";
   const [isEditingStackName, setIsEditingStackName] = useState<boolean>(false);
-  const [tempStackName, setTempStackName] = useState<string>("Untitled");
+  const [tempStackName, setTempStackName] = useState<string>("");
   const stackNameInputRef = useRef<HTMLInputElement>(null);
 
   // Element Animation Stack state
-  const [elementTracks, setElementTracks] = useState<Record<string, ElementAnimationTrack[]>>(INITIAL_ELEMENT_TRACKS);
   const [isAddPresetOpen, setIsAddPresetOpen] = useState(false);
   const [pickerTab, setPickerTab] = useState<"candidates" | "presets">("candidates");
   const [activeTriggerDropdownTrackId, setActiveTriggerDropdownTrackId] = useState<string | null>(null);
-  const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({ trk_entrance: true });
+  const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({});
   const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
   const [savingTrackPreset, setSavingTrackPreset] = useState<ElementAnimationTrack | null>(null);
   const [customPresetName, setCustomPresetName] = useState<string>("");
@@ -372,7 +329,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
   const [outlinerPosition, setOutlinerPosition] = useState<"left" | "right">("left");
   const [outlinerWidth, setOutlinerWidth] = useState(315);
   const [isResizingOutliner, setIsResizingOutliner] = useState(false);
-  const selectedTreeNodeId = "untitled"; // the stack pane has no element picker until it is rebuilt on document layers
+  const selectedTreeNodeId = targetLayerId ?? "untitled";
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -628,7 +585,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
       case "loop":
         return <Sparkles size={20} style={{ color: "#EC4899" }} />;
       default:
-        return <Film size={20} style={{ color: "var(--accent-primary)" }} />;
+        return <Film size={20} style={{ color: "#206859" }} />;
     }
   };
 
@@ -692,8 +649,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
   // ELEMENT ANIMATION STACK LOGIC
   // --------------------------------------------------------------------------
   const activeTargetName = stackName;
-  const activeTargetId = stackName.toLowerCase().replace(/[^a-z0-9]/g, "_") || "untitled";
-  const activeTracks = elementTracks[activeTargetId] ?? NO_TRACKS;
+  const activeTargetId = targetLayerId ?? "untitled";
+  const activeTracks = useMemo(() => stackForLayer(motionDoc, targetLayerId), [motionDoc, targetLayerId]);
 
   // Determine active element grammar type
   const activeElementType: GrammarElementType = useMemo(() => {
@@ -723,50 +680,33 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
     return canAddFromBindings(activeElementType, activeGrammarBindings, undefined, {}, { id: activeTargetId });
   }, [activeTargetId, activeElementType, activeGrammarBindings]);
 
+  const needLayer = (): string | null => {
+    if (targetLayerId && motionDoc.layers[targetLayerId]) return targetLayerId;
+    setToastMessage("Select a layer first: animations belong to a layer.");
+    return null;
+  };
+
   const handleCommitStackName = () => {
     const trimmed = tempStackName.trim();
-    const nextName = trimmed || "Untitled";
-    if (nextName !== stackName) {
-      const oldKey = stackName.toLowerCase().replace(/[^a-z0-9]/g, "_") || "untitled";
-      const newKey = nextName.toLowerCase().replace(/[^a-z0-9]/g, "_") || "untitled";
-      setElementTracks((prev) => {
-        const copy = { ...prev };
-        const existing = copy[oldKey] || [];
-        delete copy[oldKey];
-        copy[newKey] = existing;
-        return copy;
-      });
-      setStackName(nextName);
-      if (onSelectElement) {
-        onSelectElement({ id: newKey, name: nextName });
-      }
+    if (targetLayerId && trimmed && trimmed !== stackName) {
+      void invokeCommand("layer.setName", { id: targetLayerId, name: trimmed });
+      if (onSelectElement) onSelectElement({ id: targetLayerId, name: trimmed });
     }
     setIsEditingStackName(false);
   };
 
   const handleAddPreset = (preset: AnimationPreset) => {
-    const newTrack: ElementAnimationTrack = {
-      id: createId("trk"),
-      name: preset.name,
-      trigger: preset.trigger,
-      duration: preset.duration,
-      delay: preset.delay,
-      easing: preset.easing,
-      properties: JSON.parse(JSON.stringify(preset.properties)),
-      isCustomTuned: false,
-    };
-
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: [...(prev[activeTargetId] || []), newTrack],
-    }));
-
+    const layerId = needLayer();
+    if (!layerId) return;
+    const clipId = addStackTrack(layerId, { name: preset.name, trigger: preset.trigger, duration: preset.duration, delay: preset.delay, easing: preset.easing, properties: JSON.parse(JSON.stringify(preset.properties)) });
     setIsAddPresetOpen(false);
-    setExpandedTrackIds((prev) => ({ ...prev, [newTrack.id]: true }));
-    setToastMessage(`Added preset ${preset.name} to ${activeElementType}`);
+    if (clipId) setExpandedTrackIds((prev) => ({ ...prev, [clipId]: true }));
+    setToastMessage(clipId ? `Added preset ${preset.name} to ${activeElementType}` : `${preset.name} can't animate this layer.`);
   };
 
   const handleAddCandidateOffer = (candidate: CanAddCandidate) => {
+    const layerId = needLayer();
+    if (!layerId) return;
     let trigger: AnimationTrigger = "load";
     if (candidate.trigger === "OnHoverEnter" || candidate.trigger === "OnHoverExit") {
       trigger = "hover";
@@ -793,34 +733,21 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
       return { property: p, from: "0", to: "1" };
     });
 
-    const newTrack: ElementAnimationTrack = {
-      id: createId("trk"),
+    const clipId = addStackTrack(layerId, {
       name: `${candidate.category} Motion`,
       trigger,
       duration: candidate.category === "ScrollLinked" ? 1.0 : candidate.category === "Press" ? 0.2 : 0.5,
       delay: 0,
       easing: candidate.category === "Press" ? "back.out(2)" : "cubic-bezier(0.16, 1, 0.3, 1)",
       properties,
-      isCustomTuned: false,
-    };
-
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: [...(prev[activeTargetId] || []), newTrack],
-    }));
-
+    });
     setIsAddPresetOpen(false);
-    setExpandedTrackIds((prev) => ({ ...prev, [newTrack.id]: true }));
-    setToastMessage(`Added ${candidate.category} motion to ${activeElementType}`);
+    if (clipId) setExpandedTrackIds((prev) => ({ ...prev, [clipId]: true }));
+    setToastMessage(clipId ? `Added ${candidate.category} motion to ${activeElementType}` : `${candidate.category} motion can't animate this layer.`);
   };
 
   const handleChangeTrigger = (trackId: string, trigger: AnimationTrigger) => {
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: (prev[activeTargetId] || []).map((t) =>
-        t.id === trackId ? { ...t, trigger, isCustomTuned: true } : t
-      ),
-    }));
+    setStackTrigger(trackId, trigger);
     setActiveTriggerDropdownTrackId(null);
   };
 
@@ -837,15 +764,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
     field: "from" | "to",
     val: string
   ) => {
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: (prev[activeTargetId] || []).map((t) => {
-        if (t.id !== trackId) return t;
-        const updatedProps = [...t.properties];
-        updatedProps[propIndex] = { ...updatedProps[propIndex], [field]: val };
-        return { ...t, properties: updatedProps, isCustomTuned: true };
-      }),
-    }));
+    const property = activeTracks.find((t) => t.id === trackId)?.properties[propIndex]?.property;
+    if (property) setStackPropertyValue(trackId, property, field, val);
   };
 
   const handleUpdateTrackField = <K extends keyof ElementAnimationTrack>(
@@ -853,12 +773,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
     field: K,
     val: ElementAnimationTrack[K]
   ) => {
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: (prev[activeTargetId] || []).map((t) =>
-        t.id === trackId ? { ...t, [field]: val, isCustomTuned: true } : t
-      ),
-    }));
+    if (field === "name" || field === "duration" || field === "delay" || field === "easing") updateStackTrack(trackId, { [field]: val } as Parameters<typeof updateStackTrack>[1]);
   };
 
   const handlePlayPreview = (trackId: string) => {
@@ -916,10 +831,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
   };
 
   const handleDeleteTrack = (trackId: string) => {
-    setElementTracks((prev) => ({
-      ...prev,
-      [activeTargetId]: (prev[activeTargetId] || []).filter((t) => t.id !== trackId),
-    }));
+    removeStackTrack(trackId);
   };
 
   /** "Add Animation" picker — renders as the left half of a split `.cb-cards-pane`
@@ -1048,8 +960,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         fontWeight: 600,
                         padding: "1px 5px",
                         borderRadius: 3,
-                        background: "var(--accent-primary-light)",
-                        color: "var(--accent-primary)",
+                        background: "rgba(32, 104, 89, 0.1)",
+                        color: "var(--accent-primary, #206859)",
                       }}
                     >
                       {offer.trigger}
@@ -1132,7 +1044,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         {!hasSlot ? "Full" : "Blocked"}
                       </span>
                     )}
-                    <span style={{ fontSize: 8.5, fontWeight: 600, padding: "1px 4px", borderRadius: 3, background: "var(--accent-primary-light)", color: "var(--accent-primary)" }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, padding: "1px 4px", borderRadius: 3, background: "rgba(32, 104, 89, 0.1)", color: "var(--accent-primary, #206859)" }}>
                       {preset.badge}
                     </span>
                   </div>
@@ -1286,7 +1198,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                           padding: "1px 5px",
                           borderRadius: 8,
                           background: isChecked ? "rgba(32, 104, 89, 0.12)" : "var(--surface-panel-hover)",
-                          color: isChecked ? "var(--accent-primary)" : "var(--text-tertiary)",
+                          color: isChecked ? "var(--accent-primary, #206859)" : "var(--text-tertiary)",
                           fontFamily: "var(--font-mono)",
                         }}
                       >
@@ -1375,7 +1287,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                   className="eas-element-pill"
                   title={isEditingStackName ? undefined : "Click to rename (press Enter to save)"}
                   onClick={() => {
-                    if (!isEditingStackName) {
+                    if (!isEditingStackName && targetLayerId) {
                       setIsEditingStackName(true);
                       setTempStackName(stackName);
                     }
@@ -1413,7 +1325,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                           padding: "1px 4px",
                           borderRadius: 3,
                           background: "rgba(32, 104, 89, 0.12)",
-                          color: "var(--accent-primary)",
+                          color: "var(--accent-primary, #206859)",
                           marginLeft: 3,
                         }}
                         title={`Authoritative Element Contract: ${activeElementType} (${activeContract?.category || "Element"})`}
@@ -1496,7 +1408,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                       style={{ padding: 12, gap: 10, width: "min(360px, 92vw)" }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#0F172A" }}>
-                        <Save size={13} style={{ color: "var(--accent-primary)" }} />
+                        <Save size={13} style={{ color: "var(--accent-primary, #206859)" }} />
                         <span>Save as Reusable Preset</span>
                       </div>
                       <div style={{ fontSize: 10, color: "#64748B", lineHeight: 1.4 }}>
@@ -1538,7 +1450,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                             padding: "4px 10px",
                             borderRadius: 4,
                             border: "none",
-                            background: "var(--accent-primary)",
+                            background: "var(--accent-primary, #206859)",
                             color: "#FFFFFF",
                             fontSize: 10,
                             fontWeight: 600,
@@ -1565,7 +1477,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                       padding: "24px 12px",
                       textAlign: "center",
                       gap: 8,
-                      border: "1px dashed var(--border-default)",
+                      border: "1px dashed var(--border-default, #E2E8F0)",
                       borderRadius: "var(--radius-md, 8px)",
                       background: "rgba(248, 250, 252, 0.7)",
                     }}
@@ -1575,20 +1487,20 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                         width: 36,
                         height: 36,
                         borderRadius: "50%",
-                        background: "var(--accent-primary-light)",
+                        background: "rgba(32, 104, 89, 0.1)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "var(--accent-primary)",
+                        color: "var(--accent-primary, #206859)",
                       }}
                     >
                       <Film size={18} />
                     </div>
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}>
-                      No Tracks on {activeTargetName}
+                      {targetLayerId ? `No Tracks on ${activeTargetName}` : "No layer selected"}
                     </div>
                     <div style={{ fontSize: 10, color: "var(--text-tertiary)", lineHeight: 1.4, maxWidth: 190 }}>
-                      Add an animation track or apply a motion preset like Fade In Up or Spring Pop.
+                      {targetLayerId ? "Add an animation track or apply a motion preset like Fade In Up or Spring Pop." : "Select a layer on the stage or in the Layers panel to see and edit its animations."}
                     </div>
                     <button
                       type="button"
@@ -1678,8 +1590,8 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                                       gap: 5,
                                       padding: "4px 6px",
                                       border: "none",
-                                      background: track.trigger === trig ? "var(--accent-primary-light)" : "transparent",
-                                      color: track.trigger === trig ? "var(--accent-primary)" : "var(--text-primary)",
+                                      background: track.trigger === trig ? "rgba(32, 104, 89, 0.1)" : "transparent",
+                                      color: track.trigger === trig ? "var(--accent-primary, #206859)" : "#0F172A",
                                       fontSize: 10,
                                       fontWeight: track.trigger === trig ? 700 : 500,
                                       cursor: "pointer",
@@ -1911,7 +1823,7 @@ export const ContentBrowser: React.FC<ContentBrowserProps> = ({
                 marginBottom: 12,
               }}
             >
-              <Film size={20} style={{ color: "var(--accent-primary)" }} />
+              <Film size={20} style={{ color: "var(--accent-primary, #206859)" }} />
             </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
               Animation Library Empty

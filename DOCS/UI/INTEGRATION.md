@@ -27,6 +27,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Make any old-UI fix in `src/legacy-editor`, and port it if that area is already rebuilt.
 - **Status:** open until `src/legacy-editor` is removed
 
+### Legacy editor route `/editor/legacy`
+- **Area:** shell / routes
+- **Files:** `src/app/editor/legacy/page.tsx`, `src/legacy-editor/shell/EditorShell.tsx`, `tests/e2e/support/editor.ts`
+- **What changed:** Main's editor is retained and served at `/editor/legacy` with all Phase 39-81 features (pen tool, auto layout, breakpoints, tokens, graph editor). `/editor` serves the new UI with 16 prototype layers.
+- **What A/B must do:** Target `LEGACY_EDITOR_URL` (`/editor/legacy`) for old-UI e2e tests.
+- **Status:** done
+
 ### Old UI spec docs removed
 - **Area:** docs
 - **Files:** `DOCS/INITIAL/UI.md`, `DOCS/INITIAL/PANELS.md`

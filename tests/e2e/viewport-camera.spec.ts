@@ -3,7 +3,7 @@
  * the range is 2%-6,400%; wheel and pinch over the stage frame reach the camera; the camera is saved per document.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const CANVAS = ".whiteboard-stage";
@@ -219,6 +219,7 @@ const summarize = (intervals: number[]) => {
 
 test("Phase 20/21: pan and zoom hold 60 fps with 5 frames x 200 layers", async ({ page, browserName }) => {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
+  await waitHydrated(page);
   await expect
     .poll(
       async () => {
@@ -231,7 +232,6 @@ test("Phase 20/21: pan and zoom hold 60 fps with 5 frames x 200 layers", async (
       { timeout: 45_000, intervals: [500, 1000, 2000] },
     )
     .toBe(true);
-
   await page.waitForTimeout(500);
 
   for (const kind of ["pan", "zoom"] as const) {
