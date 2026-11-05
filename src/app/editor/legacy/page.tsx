@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * ============================================================================
  * LEGACY EDITOR STUDIO PAGE (/editor/legacy)
@@ -8,8 +10,10 @@
  * ============================================================================
  */
 
+import "@/legacy-editor/styles/globals.css";
 import { EditorShell } from "@/legacy-editor/shell/EditorShell";
+import { LegacyStudioHeader } from "./LegacyStudioHeader";
 
 export default function LegacyEditorPage() {
-  return <EditorShell />;
+  return <EditorShell headerSlot={<LegacyStudioHeader />} />;
 }

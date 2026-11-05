@@ -47,7 +47,6 @@ const undo = async (page: Page) => {
 };
 
 test("Phase 62: twirl a layer open, open a group, and its properties have stopwatches that are off", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   for (const group of ["Transform", "Appearance", "Effects", "States", "Behaviours", "Links"]) {
     // Phase 64: rows are built only for what is in view, so scroll the list until the group's row exists.
@@ -68,7 +67,6 @@ test("Phase 62: twirl a layer open, open a group, and its properties have stopwa
 });
 
 test("Phase 62: a stopwatch on and off round-trips through undo and save", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   const x = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   const button = x.getByRole("button", { name: /^Animate Position X of/ });
@@ -114,7 +112,6 @@ test("Phase 62: a stopwatch on and off round-trips through undo and save", async
 });
 
 test("Phase 62: the value at the playhead follows an animated property", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   const x = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   await seekTo(page, 0.5);
@@ -124,7 +121,6 @@ test("Phase 62: the value at the playhead follows an animated property", async (
 });
 
 test("Phase 62: U reveals the animated properties, and U twice the modified ones", async ({ page }) => {
-  test.fixme(true, "New editor lacks U shortcut, command bus context, and legacy property groups");
   await openTimeline(page);
   await seekTo(page, 1);
   await page.locator('[data-timeline-property="el_hero_heading|transform.x"]').getByRole("button", { name: /^Animate Position X of/ }).click();

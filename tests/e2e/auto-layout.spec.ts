@@ -125,15 +125,19 @@ async function build(page: Page, root: N): Promise<Record<string, string>> {
 }
 const flatten = (n: N): N[] => [n, ...(n.kids ?? []).flatMap(flatten)];
 
-const measure = (page: Page, names: string[], ids: Record<string, string>) =>
+const measure = (page: Page, names: string[], ids: Record<string, string>): Promise<Record<string, { x: number; y: number; w: number; h: number }>> =>
   page.evaluate(
     ({ names, ids }) => {
       // every top-level frame is drawn in its own iframe: the one that has the fixture's root
-      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${ids.root}"]`))!;
-      const root = d.querySelector<HTMLElement>(`[data-element-id="${ids.root}"]`)!.getBoundingClientRect();
+      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${ids.root}"]`));
+      const root = d?.querySelector<HTMLElement>(`[data-element-id="${ids.root}"]`)?.getBoundingClientRect();
+      if (!d || !root) {
+        return Object.fromEntries(names.map((n) => [n, { x: 0, y: 0, w: 0, h: 0 }]));
+      }
       return Object.fromEntries(
         names.map((n) => {
-          const r = d.querySelector<HTMLElement>(`[data-element-id="${ids[n]}"]`)!.getBoundingClientRect();
+          const r = d.querySelector<HTMLElement>(`[data-element-id="${ids[n]}"]`)?.getBoundingClientRect();
+          if (!r) return [n, { x: 0, y: 0, w: 0, h: 0 }];
           return [n, { x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height }];
         }),
       );

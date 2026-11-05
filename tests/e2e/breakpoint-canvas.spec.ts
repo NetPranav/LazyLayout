@@ -126,7 +126,7 @@ test.describe("Phase 44: the breakpoint canvas", () => {
     expect(Math.abs(width - (375 + 60))).toBeLessThanOrEqual(Math.ceil(1 / zoom) + 1);
     await expect.poll(async () => (await inView(page, "view-mobile", ids[0]))?.frameWidth).toBe(width);
     // the pinned layer moved with it
-    expect((await inView(page, "view-mobile", ids[0]))!.x - before.x).toBeCloseTo(width - 375, 0);
+    await expect.poll(async () => (await inView(page, "view-mobile", ids[0]))?.x).toBeCloseTo(before.x + (width - 375), 0);
     // one undo step puts the width back
     await run(page, "edit.undo");
     await expect.poll(async () => (await breakpoints(page))?.find((b) => b.id === "mobile")?.width ?? 375).toBe(375);

@@ -35,7 +35,6 @@ async function ready(page: Page) {
 }
 
 test("Phase 24: the dock shows only the tools that exist, and a button switches the tool", async ({ page }) => {
-  test.fixme(true, "New editor replaces legacy Whiteboard tools dock with Canvas floating tools");
   await ready(page);
   const dock = page.getByRole("toolbar", { name: "Confluence Whiteboard Tools" });
   const names = await dock.getByRole("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
@@ -52,7 +51,6 @@ test("Phase 24: the dock shows only the tools that exist, and a button switches 
 });
 
 test("Phase 24: a shortcut switches the tool", async ({ page }) => {
-  test.fixme(true, "New editor lacks whiteboard stage data-tool attribute reflection");
   await ready(page);
   for (const [key, id] of [["h", "pan"], ["r", "rectangle"], ["o", "ellipse"], ["l", "line"], ["f", "frame"], ["t", "text"], ["b", "paintBucket"], ["v", "select"]] as const) {
     await page.keyboard.press(key);
@@ -67,7 +65,6 @@ test("Phase 24: a shortcut switches the tool", async ({ page }) => {
 });
 
 test("Phase 24: holding Space gives the Hand and releasing returns to the previous tool", async ({ page }) => {
-  test.fixme(true, "New editor lacks spring-loaded hand tool on whiteboard stage");
   await ready(page);
   await page.keyboard.press("r");
   await expectTool(page, "rectangle");
@@ -88,7 +85,6 @@ test("Phase 24: holding Space gives the Hand and releasing returns to the previo
 });
 
 test("Phase 24: holding Cmd/Ctrl gives deep select and releasing returns", async ({ page }) => {
-  test.fixme(true, "New editor lacks deepSelect spring-loaded tool");
   await ready(page);
   await page.keyboard.press("l");
   await page.keyboard.down(DEEP);
@@ -98,7 +94,6 @@ test("Phase 24: holding Cmd/Ctrl gives deep select and releasing returns", async
 });
 
 test("Phase 24: losing the window's focus can't leave a spring stuck on", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy whiteboard stage blur handling");
   await ready(page);
   await page.keyboard.down("Space");
   await expectTool(page, "pan");
@@ -108,7 +103,6 @@ test("Phase 24: losing the window's focus can't leave a spring stuck on", async 
 });
 
 test("Phase 24: the Rectangle tool draws, returns to Select, and undo takes the shape back", async ({ page }) => {
-  test.fixme(true, "New editor canvas does not support direct drag-drawing of shapes");
   const mid = await ready(page);
   const before = await count(page, "rectangle");
   await page.keyboard.press("r");
@@ -124,7 +118,6 @@ test("Phase 24: the Rectangle tool draws, returns to Select, and undo takes the 
 });
 
 test("Phase 24: Space-drag and the middle button pan whatever tool is active, and draw nothing", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy canvas camera pan CSS properties");
   const mid = await ready(page);
   await page.keyboard.press("r");
   const before = await count(page, "rectangle");

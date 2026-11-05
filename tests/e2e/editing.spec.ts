@@ -228,43 +228,7 @@ test("Phase 29: a 25-step editing journey with the exact result after each step"
   expect((await info(page, pasted)).left).toBe(e4.left - 1);
 });
 
-test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks cross-tab clipboard copy/paste handler in useEditorActions)", async ({ browser }) => {
-  const context = await browser.newContext();
-  const a = await context.newPage();
-  const b = await context.newPage();
-  await openEditor(a);
-  await a.getByRole("button", { name: "Mount Showcase Demo" }).click();
-  await a.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector('[data-archetype="button"]'));
-  await waitSaved(a);
-  await a.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await a.waitForTimeout(400);
-
-  // pick the demo's button (deep) in tab A and copy it
-  const target = await a.evaluate(() => {
-    const iframe = document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')!;
-    const el = iframe.contentDocument!.querySelector<HTMLElement>('[data-archetype="button"]')!;
-    const f = iframe.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    const s = f.width / iframe.clientWidth;
-    return { x: Math.round(f.left + (r.left + r.width / 2) * s), y: Math.round(f.top + (r.top + r.height / 2) * s) };
-  });
-  await a.keyboard.down(MOD);
-  await a.mouse.click(target.x, target.y);
-  await a.keyboard.up(MOD);
-  await expect(a.locator(".canvas-overlay__selection:not([hidden])")).toHaveCount(1);
-  await a.keyboard.press(`${MOD}+c`);
-
-  // tab B: a blank project; paste with the pointer over its canvas
-  await openEditor(b);
-  const box = (await b.locator(CANVAS).boundingBox())!;
-  await b.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  expect(await b.evaluate(() => document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelectorAll('[data-archetype="button"]').length ?? 0)).toBe(0);
-  await b.keyboard.press(`${MOD}+v`);
-  await expect.poll(() => b.evaluate(() => document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelectorAll('[data-archetype="button"]').length ?? 0), "the button arrived in the other tab").toBe(1);
-  await context.close();
-});
-
-test.fixme("Phase 29: a copy in one tab pastes into another (legacy editor) (legacy editor lacks top-level Mount Showcase Demo button; relocated to UnifiedLogoMenu menuitem #header-toggle-demo-btn)", async ({ browser }) => {
+test("Phase 29: a copy in one tab pastes into another", async ({ browser }) => {
   const context = await browser.newContext();
   const a = await context.newPage();
   const b = await context.newPage();

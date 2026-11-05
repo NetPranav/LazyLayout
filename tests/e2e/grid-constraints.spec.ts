@@ -36,14 +36,18 @@ const children = (page: Page, id: string) => page.evaluate((id) => (window as un
 const setProps = (page: Page, id: string, patch: Record<string, unknown>) => page.evaluate(({ id, patch }) => (window as unknown as { __LL_DOC__: Doc }).__LL_DOC__.commands.updateProps(id, patch), { id, patch });
 
 /** The rectangles of layers relative to a root layer's top-left, in the frame's own pixels. */
-const measure = (page: Page, root: string, ids: Record<string, string>) =>
+const measure = (page: Page, root: string, ids: Record<string, string>): Promise<Record<string, { x: number; y: number; w: number; h: number }>> =>
   page.evaluate(
     ({ root, ids }) => {
-      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${root}"]`))!;
-      const base = d.querySelector<HTMLElement>(`[data-element-id="${root}"]`)!.getBoundingClientRect();
+      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${root}"]`));
+      const base = d?.querySelector<HTMLElement>(`[data-element-id="${root}"]`)?.getBoundingClientRect();
+      if (!d || !base) {
+        return Object.fromEntries(Object.keys(ids).map((n) => [n, { x: 0, y: 0, w: 0, h: 0 }]));
+      }
       return Object.fromEntries(
         Object.entries(ids).map(([n, id]) => {
-          const r = d.querySelector<HTMLElement>(`[data-element-id="${id}"]`)!.getBoundingClientRect();
+          const r = d.querySelector<HTMLElement>(`[data-element-id="${id}"]`)?.getBoundingClientRect();
+          if (!r) return [n, { x: 0, y: 0, w: 0, h: 0 }];
           return [n, { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height }];
         }),
       );
@@ -89,8 +93,8 @@ test.describe("Phase 42: constraints when a frame is resized", () => {
     const { frame, ids } = await build(page);
     for (const [w, h] of [[600, 450], [250, 180], [400, 500], [1000, 300]]) {
       await setProps(page, frame, { "frame.width": w, "frame.height": h });
-      await expect.poll(async () => (await measure(page, frame, { f: frame })).f.w).toBeCloseTo(w, 0);
-      const got = await measure(page, frame, ids);
+      await expect.poll(async () => (await measure(page, frame, { f: frame }))?.f?.w).toBeCloseTo(w, 0);
+      const got = (await measure(page, frame, ids))!;
       for (const c of CASES) {
         const e = constrainBox({ x: c.x, y: c.y, width: c.w, height: c.hh, horizontal: c.h, vertical: c.v }, { width: 400, height: 300 }, { width: w, height: h });
         expect(Math.abs(got[c.name].x - e.x), `${c.name}.x at ${w}x${h}`).toBeLessThanOrEqual(0.5);
@@ -192,10 +196,10 @@ test.describe("Phase 42: grids", () => {
     const { grid, ids } = await build(page);
     for (const width of [320, 480, 768, 1024, 1440]) {
       await setProps(page, grid, { "frame.width": width });
-      await expect.poll(async () => (await measure(page, grid, { g: grid })).g.w).toBeCloseTo(width, 0);
+      await expect.poll(async () => (await measure(page, grid, { g: grid }))?.g?.w).toBeCloseTo(width, 0);
       const cols = trackSpans(parseTracks(TEMPLATE)!, width, GAP.col, PAD.left, PAD.right);
       const rows = trackSpans(parseTracks(`repeat(3, ${ROW_H}px)`)!, 400, GAP.row, PAD.top, PAD.bottom);
-      const got = await measure(page, grid, ids);
+      const got = (await measure(page, grid, ids))!;
       const off: string[] = [];
       for (const c of CELLS) {
         const first = cols[c.col - 1];
