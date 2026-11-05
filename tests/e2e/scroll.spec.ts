@@ -5,7 +5,7 @@
  * as drawn. This is the scheduler-driven path; native CSS scroll-driven animation is not built yet.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const HERO = "el_hero_heading";
@@ -29,7 +29,7 @@ async function setUp(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector('[data-element-id="el_buy_button"]'), STAGE);
   // a page taller than the frame: the button sits far below the heading, so the frame scrolls

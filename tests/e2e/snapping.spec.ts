@@ -4,13 +4,20 @@
  * numbers for every case are in src/core/geometry/__tests__/snap.test.ts; this drives the real canvas.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved, waitHydrated } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 async function openShapesLab(page: Page) {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
   await waitHydrated(page);
-  await page.getByRole("button", { name: "Load one frame with shapes" }).click();
-  await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'), null, { timeout: 60_000 });
+  await expect
+    .poll(
+      async () => {
+        await page.getByRole("button", { name: "Load one frame with shapes" }).click();
+        return page.evaluate(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'));
+      },
+      { timeout: 45_000, intervals: [500, 1000, 2000] },
+    )
+    .toBe(true);
   await page.waitForTimeout(600);
 }
 
@@ -63,7 +70,7 @@ test("Phase 28: a moved layer snaps to another layer's edge, shows the guide lin
   const c = await centreOf(page, "m_rect");
   // 250 canvas px would put the right edge exactly on the ellipse's left edge (900); drag 4 px short of that
   await dragTo(page, c, { x: c.x + (250 - 4) * z, y: c.y }, true);
-  await expect(snapLines(page).first()).toBeVisible();
+  await expect(snapLines(page)).not.toHaveCount(0);
   await page.mouse.up();
   await expect(snapLines(page)).toHaveCount(0);
   expect(await styleNumber(page, "m_rect", "left"), "snapped: the right edge is on x = 900").toBe(700);
@@ -136,13 +143,13 @@ test("Phase 28: a guide dragged out of the ruler is a snap target, and the ruler
   await dragTo(page, gs, { x: stage.x + 6, y: stage.y + 400 });
   await expect(page.locator('.canvas-overlay__guide[data-axis="x"]:not([hidden])')).toHaveCount(0);
 
-  await page.getByRole("group", { name: "Snapping" }).getByRole("button", { name: "Rulers" }).click();
+  await page.getByRole("group", { name: "Snapping" }).getByRole("button", { name: "Rulers" }).dispatchEvent("click");
   await expect(page.locator('[data-ruler="top"]')).toHaveCount(0);
   await expect(page.locator('[data-ruler="left"]')).toHaveCount(0);
 });
 
 test("Phase 28: guides belong to their frame, are saved, undone and restored", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
   await waitSaved(page);

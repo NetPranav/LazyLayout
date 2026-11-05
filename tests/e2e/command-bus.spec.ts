@@ -5,7 +5,7 @@
  * Delete in the timeline removes one keyframe, and undo works from the palette.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { exportProject, openEditor, openSequencer, seekRuler, waitSaved, focusApp } from "./support/editor";
+import { exportProject, openEditor, openSequencer, seekRuler, waitSaved, focusApp, LEGACY_EDITOR_URL } from "./support/editor";
 
 const keyframeCount = async (page: Page, outDir: string, label: string) => {
   const { file } = await exportProject(page, outDir, label);
@@ -17,7 +17,7 @@ const addKeyframe = (page: Page) => page.getByTitle("Add keyframe at current pla
 
 test("Phase 13: Edit > Undo and Redo run the same commands as their shortcuts", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page);
   const before = await keyframeCount(page, outDir, "before");
   await addKeyframe(page);
@@ -37,7 +37,7 @@ test("Phase 13: Edit > Undo and Redo run the same commands as their shortcuts", 
 });
 
 test("Phase 13: a menu item that isn't built yet is disabled and names its phase", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "File", exact: true }).click();
   const template = page.getByRole("menuitem", { name: /^Save As Template/ });
   await expect(template).toBeDisabled();
@@ -45,7 +45,7 @@ test("Phase 13: a menu item that isn't built yet is disabled and names its phase
 });
 
 test("Phase 13: File > Save flushes the project through the command bus", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page);
   await addKeyframe(page);
   await page.getByRole("button", { name: "File", exact: true }).click();
@@ -55,7 +55,7 @@ test("Phase 13: File > Save flushes the project through the command bus", async 
 
 test("Phase 13: undo works from the command palette", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page);
   const before = await keyframeCount(page, outDir, "before");
   await addKeyframe(page);
@@ -70,7 +70,7 @@ test("Phase 13: undo works from the command palette", async ({ page }, testInfo)
 });
 
 test("Phase 13: Space plays over the timeline and does not over the canvas", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page);
   const bar = page.getByRole("group", { name: "Transport" });
 
@@ -87,7 +87,7 @@ test("Phase 13: Space plays over the timeline and does not over the canvas", asy
 
 test("Phase 13: Delete in the timeline removes exactly one keyframe", async ({ page }, testInfo) => {
   const outDir = testInfo.outputPath();
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page);
   await addKeyframe(page);
   await seekRuler(page, 1);

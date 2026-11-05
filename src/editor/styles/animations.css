@@ -1,186 +1,695 @@
-/**
- * ============================================================================
- * ENGINE ANIMATIONS & KEYFRAMES
- * ============================================================================
- * UI Element: Global Micro-Animations & Dynamic Feedback
- * Screen / Scope: Entire Engine IDE Shell (Panels, Wires, Modals, Tooltips)
- * Role: Provides smooth micro-interactions, pulse animations, and transitions.
- * 
- * CSS ISOLATION RULE:
- * Contains only keyframe definitions and reusable utility animation classes.
- * No layout sizing or colors belong here.
- * ============================================================================
+/*
+ * Shared motion classes ported from Nook (the owner's own product) & prototype.
+ * Open, close, the scroll bump and layout changes are driven by the spring engine (JS).
+ * CSS holds rest states, the highlight and the focus states. Reduced motion: short opacity fade.
  */
 
-/* ----------------------------------------------------------------------------
- * Fade & Scale Micro-Animations
- * ---------------------------------------------------------------------------- */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+:is(.ll-menu, .ll-vpop, .ll-ppop, .ll-ins, .ll-surface-overlay) {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+:is(.ll-menu, .ll-vpop, .ll-ppop, .ll-ins, .ll-surface-overlay).ll-open {
+  visibility: visible;
+  pointer-events: auto;
 }
 
-@keyframes slideUpFade {
+:is(.ll-menu, .ll-vpop, .ll-ppop, .ll-ins, .ll-surface-overlay)[data-lv] {
+  visibility: visible;
+}
+
+:is(.ll-menu, .ll-vpop, .ll-ppop, .ll-ins, .ll-surface-overlay)[data-mv] {
+  overflow: hidden !important;
+  max-height: none !important;
+  min-width: 0 !important;
+}
+
+.ll-lay {
+  position: relative;
+  isolation: isolate;
+  display: flow-root;
+}
+
+:is(.ll-vpop, .ll-ppop) > .ll-lay {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.ll-ins > .ll-lay {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.ll-hl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: var(--ll-size-row-h);
+  border-radius: var(--ll-radius-sm);
+  background: var(--ll-surface-hover);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition: opacity var(--ll-dur-fade) ease-out;
+}
+
+.ll-hl.ll-show {
+  opacity: 1;
+}
+
+/* Menu highlight corners and keyboard focus ring from prototype */
+.ll-menu:not(.ll-ctx) .ll-hl {
+  border-radius: 0;
+}
+
+.ll-menu.ll-kb .ll-hl,
+.ll-menu[data-kb] .ll-hl {
+  outline: var(--ll-spacing-0-5) solid var(--ll-text-primary);
+  outline-offset: var(--ll-outline-offset-inset);
+}
+
+/* Theme preview chips are wider than a regular icon slot */
+.ll-menu .ll-ico:has(.ll-tpv) {
+  width: auto;
+}
+
+/* Submenu chevron right-facing, rotates 90deg when open */
+.ll-menu .ll-chv {
+  transition: rotate var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.ll-menu [role=menuitem][data-subopen] .ll-chv,
+.ll-menu [role=menuitem][aria-expanded="true"] .ll-chv {
+  rotate: 90deg;
+}
+
+/* Submenu safe bridge */
+.ll-menu[data-submenu]::after,
+.ll-menu.ll-ctx[data-submenu]::after,
+.ll-menu[data-variant="context"][data-submenu]::after,
+[data-submenu]::after,
+.ll-submenu::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(0px - var(--ll-submenu-gap));
+  width: var(--ll-submenu-gap);
+}
+
+.ll-menu[data-submenu][data-flip]::after,
+.ll-menu.ll-ctx[data-submenu][data-flip]::after,
+[data-submenu][data-flip]::after,
+.ll-submenu[data-flip]::after {
+  left: auto;
+  right: calc(0px - var(--ll-submenu-gap));
+}
+
+/* Dropdown fields: the field is the seed of the list surface (same spring engine as the menus) */
+.ll-dnat {
+  display: none;
+}
+
+.ll-dfield.ll-dd {
+  position: relative;
+  transition: scale var(--ll-dur-pop) var(--ll-ease-pop), border-color var(--ll-dur-fade);
+}
+
+.ll-dfield.ll-dd:has(.ll-dd-f:active:not(:disabled)) {
+  scale: 0.97;
+}
+
+.ll-dfield.ll-dd::after {
+  content: "";
+  position: absolute;
+  inset: calc(0px - var(--ll-spacing-0-5));
+  border: var(--ll-spacing-0-5) solid var(--ll-text-primary);
+  border-radius: calc(var(--ll-radius-sm) + var(--ll-spacing-0-5));
+  opacity: 0;
+  scale: 1.06;
+  pointer-events: none;
+  transition: opacity var(--ll-dur-fade) ease-out, scale var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.ll-dfield.ll-dd:has(.ll-dd-f:focus-visible)::after,
+.ll-dfield.ll-dd[data-focused]::after {
+  opacity: 1;
+  scale: 1;
+}
+
+/* Select field button: row height driven by Tailwind classes (e.g. ll:h-row) */
+.ll-dd-f {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  color: var(--ll-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ll-dd-f:disabled {
+  cursor: default;
+}
+
+.ll-dd-f .ll-ddt {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform-origin: 0 50%;
+}
+
+.ll-dfield.ll-dd .ll-dchev {
+  transition: translate var(--ll-dur-pop) var(--ll-ease-pop), rotate var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.ll-dfield.ll-dd:not(.ll-dis):not([data-disabled]):hover .ll-dchev {
+  translate: 0 var(--ll-spacing-0-5);
+}
+
+.ll-dfield.ll-dd.ll-open .ll-dchev,
+.ll-dfield.ll-dd[data-open] .ll-dchev,
+.ll-dfield.ll-dd.ll-open:hover .ll-dchev,
+.ll-dfield.ll-dd[data-open]:hover .ll-dchev {
+  rotate: 180deg;
+  translate: 0 0;
+}
+
+.ll-dfield.ll-dd.ll-dis,
+.ll-dfield.ll-dd[data-disabled] {
+  opacity: 0.45;
+}
+
+.ll-dfield.ll-dd.ll-dis,
+.ll-dfield.ll-dd[data-disabled],
+.ll-dfield.ll-dd.ll-dis .ll-dchev,
+.ll-dfield.ll-dd[data-disabled] .ll-dchev {
+  transition: none;
+}
+
+.ll-dfield.ll-mixed .ll-ddt,
+.ll-dfield.ll-dd[data-mixed] .ll-ddt {
+  color: var(--ll-text-muted);
+}
+
+@keyframes ll-ddshim {
   from {
-    opacity: 0;
-    transform: translateY(8px);
+    background-position: -120% 0;
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    background-position: 240% 0;
   }
 }
 
-@keyframes slideDownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
+.ll-dfield.ll-mixed:not(.ll-dis):not([data-disabled]),
+.ll-dfield.ll-dd[data-mixed]:not([data-disabled]) {
+  background-image: linear-gradient(100deg, transparent 30%, var(--ll-surface-hover) 50%, transparent 70%);
+  background-repeat: no-repeat;
+  background-size: 60% 100%;
+  animation: ll-ddshim var(--ll-duration-spin) ease-out 1 both;
+}
+
+.ll-menu.ll-dd {
+  z-index: 80;
+  padding: 0;
+  min-width: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+.ll-dd-s {
+  display: flex;
+  align-items: center;
+  gap: var(--ll-spacing-2);
+  height: var(--ll-size-row-lg-h);
+  padding: 0 var(--ll-spacing-3);
+  border-bottom: var(--ll-border-hairline) solid var(--ll-border-color);
+  color: var(--ll-text-muted);
+}
+
+.ll-dd-s input {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  color: var(--ll-text-primary);
+}
+
+.ll-dd-s input::placeholder {
+  color: var(--ll-text-muted);
+}
+
+.ll-ddl {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ll-ddl:focus {
+  outline: none;
+}
+
+.ll-ddi {
+  position: relative;
+  isolation: isolate;
+  padding: var(--ll-spacing-1);
+}
+
+.ll-menu.ll-dd .ll-ddi .ll-hl {
+  border-radius: var(--ll-radius-sm);
+}
+
+.ll-dd-o {
+  display: block;
+  height: var(--ll-size-icon-btn);
+  cursor: pointer;
+  color: var(--ll-text-secondary);
+}
+
+.ll-dd-o.ll-on,
+.ll-dd-o.ll-cur,
+.ll-dd-o[data-cur] {
+  color: var(--ll-text-primary);
+}
+
+.ll-dd-i {
+  display: flex;
+  align-items: center;
+  gap: var(--ll-spacing-2);
+  height: 100%;
+  padding: 0 var(--ll-spacing-3) 0 var(--ll-spacing-8);
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+  white-space: nowrap;
+  transform-origin: 20% 50%;
+}
+
+.ll-dd-a .ll-dd-i {
+  padding-left: var(--ll-spacing-3);
+}
+
+.ll-dd-h {
+  margin-left: auto;
+  font: 500 var(--ll-text-micro-size) / var(--ll-text-micro-line-height) var(--ll-font-mono);
+  color: var(--ll-text-muted);
+}
+
+.ll-dd-sep {
+  height: var(--ll-border-hairline);
+  margin: var(--ll-spacing-1) calc(0px - var(--ll-spacing-1));
+  background: var(--ll-border-color);
+}
+
+.ll-dd-ck,
+.ll-dd-gh {
+  position: absolute;
+  left: var(--ll-spacing-3);
+  top: 0;
+  width: var(--ll-size-toggle-knob);
+  height: var(--ll-size-toggle-knob);
+  pointer-events: none;
+  color: var(--ll-text-primary);
+}
+
+.ll-dd-ck svg,
+.ll-dd-gh svg {
+  width: var(--ll-size-toggle-knob);
+  height: var(--ll-size-toggle-knob);
+}
+
+.ll-dd-ck {
+  opacity: 0;
+}
+
+.ll-dd-gh {
+  opacity: 0;
+  transition: opacity var(--ll-dur-fade) ease-out, translate var(--ll-dur-fade) ease-out;
+}
+
+.ll-dd-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--ll-size-btn-h) + var(--ll-size-btn-sm-h));
+  color: var(--ll-text-muted);
+  font: 400 var(--ll-text-small-size) / var(--ll-text-small-line-height) var(--ll-font-sans);
+}
+
+.ll-dd-rm {
+  position: absolute;
+  pointer-events: none;
+}
+
+.ll-gone {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-hl,
+  .ll-menu .ll-chv,
+  .ll-dfield.ll-dd,
+  .ll-dfield.ll-dd::after,
+  .ll-dfield.ll-dd .ll-dchev,
+  .ll-dd-gh {
+    transition: none;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .ll-dfield.ll-mixed {
+    animation: none;
+    background-image: none;
   }
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+
+/* =========================================================================
+   TOP BAR ANIMATIONS & TRANSITIONS (PORTED FROM PROTOTYPE)
+   ========================================================================= */
+
+/* Logo mark saving trace animation */
+.ll-logo {
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: opacity var(--ll-dur-fade) ease-out;
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.ll-logo svg {
+  overflow: visible;
 }
 
-@keyframes scaleInSubtle {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.ll-logo:hover svg {
+  opacity: 0.7;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.ll-logo .ll-tfl {
+  fill: currentColor;
+  stroke: none;
 }
 
-/* ----------------------------------------------------------------------------
- * Execution Pulse Animations (Blueprint Live Debugging)
- * ---------------------------------------------------------------------------- */
-@keyframes pulseGlow {
+.ll-logo .ll-tro {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--ll-stroke-loader);
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.ll-logo[data-saving="true"] .ll-tfl,
+svg[data-saving="true"] .ll-tfl,
+.ll-saving-on .ll-tfl {
+  animation: ll-trf var(--ll-dur-trace) var(--ll-ease-trace) infinite alternate;
+}
+
+.ll-logo[data-saving="true"] .ll-tro,
+svg[data-saving="true"] .ll-tro,
+.ll-saving-on .ll-tro {
+  stroke-dasharray: 100;
+  animation: ll-tro var(--ll-dur-trace) var(--ll-ease-trace) infinite alternate;
+}
+
+@keyframes ll-tro {
   0% {
-    box-shadow: 0 0 0 0 rgba(32, 104, 89, 0.4);
+    stroke-dashoffset: 100;
   }
-  70% {
-    box-shadow: 0 0 0 8px rgba(32, 104, 89, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(32, 104, 89, 0);
+  55%, 100% {
+    stroke-dashoffset: 0;
   }
 }
 
-@keyframes pulseGlowSuccess {
-  0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+@keyframes ll-trf {
+  0%, 55% {
+    opacity: 0;
   }
-  70% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  85%, 100% {
+    opacity: 1;
   }
 }
 
-@keyframes pulseGlowDanger {
-  0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+@keyframes ll-fade {
+  0%, 100% {
+    opacity: 1;
   }
-  70% {
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  50% {
+    opacity: 0.4;
   }
 }
 
-@keyframes wireDashFlow {
-  to {
-    stroke-dashoffset: -20;
+@media (prefers-reduced-motion: reduce) {
+  .ll-logo[data-saving="true"] .ll-tro {
+    animation: none;
+    opacity: 0;
+  }
+  .ll-logo[data-saving="true"] .ll-tfl {
+    animation: ll-fade var(--ll-dur-trace-fade) ease-in-out infinite;
   }
 }
 
-/* ----------------------------------------------------------------------------
- * Shimmer / Skeleton Loading
- * ---------------------------------------------------------------------------- */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
+/* Page switcher button and chevron motion from prototype */
+.ll-pagebtn {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: scale var(--ll-dur-pop) var(--ll-ease-pop),
+              outline-color var(--ll-dur-fade) ease-out,
+              outline-offset var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+.ll-pagebtn:focus-visible {
+  outline-color: var(--ll-text-primary);
+  outline-offset: -2px;
+}
+
+.ll-pagebtn:active {
+  scale: 0.97;
+}
+
+.ll-chevron-flip {
+  transition: translate var(--ll-dur-pop) var(--ll-ease-pop),
+              rotate var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+button:hover > .ll-chevron-flip {
+  translate: 0 1.5px;
+}
+
+button[aria-expanded="true"] > .ll-chevron-flip {
+  rotate: 180deg;
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-pagebtn,
+  .ll-chevron-flip {
+    transition: none;
   }
-  100% {
-    background-position: 200% 0;
+}
+
+/* Top bar grid layout (1fr auto 1fr) */
+.ll-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+/* Hairline vertical divider between logo and project name */
+.ll-tdiv {
+  display: block;
+  width: 1px;
+  height: var(--ll-size-divider-h, 20px);
+  background-color: var(--ll-border-color);
+  margin-left: 4px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Lab frame for 1440x900 viewport verification */
+.ll-lab-frame {
+  width: var(--ll-size-viewport-desktop, 1440px);
+  height: var(--ll-size-viewport-desktop-h, 900px);
+}
+
+/* === lane: L8 shell === */
+/* Shell grid. --lw, --rw, --bh and --fw are written inline by the panel spring engine while a change plays (shell/shellFx.ts), then removed. */
+.ll-shell {
+  --lw: var(--ll-size-panel-left-w);
+  --rw: var(--ll-size-panel-right-w);
+  --bh: 0px;
+  --fw: 0;
+  grid-template-columns: var(--lw) minmax(0, 1fr) var(--rw);
+  grid-template-rows: auto minmax(0, 1fr) var(--bh);
+}
+
+.ll-shell[data-fw="1"] {
+  --fw: 1;
+}
+
+.ll-shell[data-mode="motion"],
+.ll-shell[data-mode="code"] {
+  --bh: clamp(var(--ll-size-bottom-min-h), var(--mbh, var(--ll-size-bottom-default-h)), var(--ll-size-bottom-max-h));
+}
+
+.ll-shell[data-lc] {
+  --lw: 0px;
+}
+
+.ll-shell[data-rc] {
+  --rw: 0px;
+}
+
+.ll-shell[data-zen] {
+  --lw: 0px;
+  --rw: 0px;
+  --bh: 0px;
+}
+
+.ll-shell-top {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+}
+
+.ll-shell[data-pfx] .ll-shell-top {
+  z-index: 4;
+}
+
+.ll-shell-left,
+.ll-shell-right {
+  grid-row: 2 / 4;
+  height: calc(100% - var(--bh) * var(--fw));
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.ll-shell-left {
+  grid-column: 1;
+}
+
+.ll-shell-right {
+  grid-column: 3;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ll-shell[data-lc] .ll-shell-left,
+.ll-shell[data-rc] .ll-shell-right,
+.ll-shell[data-zen] .ll-shell-left,
+.ll-shell[data-zen] .ll-shell-right {
+  visibility: hidden;
+}
+
+.ll-shell[data-pfx] .ll-shell-left,
+.ll-shell[data-pfx] .ll-shell-right {
+  visibility: visible;
+}
+
+.ll-shell-canvas {
+  grid-column: 2;
+  grid-row: 2;
+  transition: opacity var(--ll-dur-pop) var(--ll-ease-pop);
+}
+
+/* Cross-panel focus: the canvas settles back while the bottom panel has focus */
+.ll-shell:has(.ll-shell-bottom:focus-within) .ll-shell-canvas {
+  opacity: var(--ll-dim-canvas);
+}
+
+/* Bottom block: motion timeline or code preview. In full-width mode it reaches under both side panels. */
+.ll-shell-bottom {
+  grid-column: 2;
+  grid-row: 3;
+  z-index: 3;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ll-surface-panel);
+  margin: 0 calc(var(--rw) * var(--fw) * -1) 0 calc(var(--lw) * var(--fw) * -1);
+}
+
+.ll-shell[data-pfx] .ll-shell-bottom {
+  box-shadow: var(--ll-shadow-soft);
+}
+
+.ll-shell[data-mode="motion"] .ll-shell-bottom::before,
+.ll-shell[data-mode="motion"] .ll-shell-bottom::after,
+.ll-shell[data-mode="code"] .ll-shell-bottom::before,
+.ll-shell[data-mode="code"] .ll-shell-bottom::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 0;
+  width: calc(var(--lw) * var(--fw));
+  height: var(--ll-size-panel-edge-h);
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, black var(--ll-panel-shade), transparent), transparent);
+}
+
+.ll-shell[data-mode="motion"] .ll-shell-bottom::before,
+.ll-shell[data-mode="code"] .ll-shell-bottom::before {
+  left: auto;
+  right: 0;
+  width: calc(var(--rw) * var(--fw));
+}
+
+/* Header band of the bottom panel */
+.ll-shell[data-mode="motion"] .ll-shell-bottom .ll-ph,
+.ll-shell[data-mode="code"] .ll-shell-bottom .ll-ph {
+  background: color-mix(in srgb, var(--ll-surface-panel) calc(100% - var(--ll-ph-band-mix)), var(--ll-text-primary));
+}
+
+/* Height splitter */
+.ll-shell-bsplit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--ll-size-bsplit-h);
+  z-index: 8;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.ll-shell-bsplit::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--ll-size-bsplit-line-h);
+  background: var(--ll-text-primary);
+  opacity: 0;
+  transition: opacity var(--ll-dur-fade);
+}
+
+.ll-shell-bsplit:hover::after,
+.ll-shell-bsplit[data-on]::after {
+  opacity: var(--ll-opacity-bsplit);
+}
+
+/* Mode switch ghost: a copy of the old panel content that slides out */
+.ll-mgh {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-shell-canvas,
+  .ll-shell-bsplit::after {
+    transition: none;
   }
 }
-
-/* ----------------------------------------------------------------------------
- * Reusable Animation Utility Classes
- * ---------------------------------------------------------------------------- */
-.anim-fade-in {
-  animation: fadeIn var(--transition-fast) ease-out forwards;
-}
-
-.anim-slide-up {
-  animation: slideUpFade var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.anim-slide-down {
-  animation: slideDownFade var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.anim-slide-left {
-  animation: slideInLeft var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.anim-slide-right {
-  animation: slideInRight var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.anim-scale-in {
-  animation: scaleInSubtle var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.anim-pulse {
-  animation: pulseGlow 1.5s infinite;
-}
-
-.anim-pulse-success {
-  animation: pulseGlowSuccess 1.5s infinite;
-}
-
-.anim-pulse-danger {
-  animation: pulseGlowDanger 1.5s infinite;
-}
-
-.anim-spin {
-  animation: spin 1s linear infinite;
-}
+/* === end lane: L8 === */

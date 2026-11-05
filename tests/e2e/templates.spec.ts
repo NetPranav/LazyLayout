@@ -5,7 +5,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
-import { diffPixels, openEditor, openFileMenu } from "./support/editor";
+import { diffPixels, openEditor, openFileMenu, LEGACY_EDITOR_URL } from "./support/editor";
 
 type Reg = { all: () => { id: string; run: (a?: unknown) => unknown }[] };
 type Doc = { get: () => { layers: Record<string, { id: string; name: string; parentId: string | null; children: string[]; section?: unknown; page?: { route: string }; link?: unknown }> } };
@@ -48,7 +48,7 @@ async function fitPage(page: Page, pageId: string) {
 test("Phase 51: six templates make a landing page that follows the theme", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
   await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   const gallery = await openGallery(page);
   await expect(gallery.getByRole("button", { name: /^Insert / })).toHaveCount(8);
   for (const name of ["Navbar", "Hero", "Features", "Pricing", "FAQ", "Footer"]) await gallery.getByRole("button", { name: `Insert ${name}` }).click();
@@ -118,7 +118,7 @@ test("Phase 51: six templates make a landing page that follows the theme", async
 
 test("Phase 51: a starter project adds linked pages in one step", async ({ page }) => {
   await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   const gallery = await openGallery(page);
   await gallery.getByRole("button", { name: "Add Portfolio" }).click();
   await expect(gallery.getByText(/Added the Portfolio pages/)).toBeVisible();

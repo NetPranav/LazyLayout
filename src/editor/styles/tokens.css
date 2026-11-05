@@ -1,203 +1,989 @@
-/**
- * ============================================================================
- * ENGINE UI DESIGN TOKENS
- * ============================================================================
- * UI Element: Global Design Token Registry
- * Screen / Scope: Entire Engine IDE Shell, Viewport, Blueprints, Panels
- * Role: Single Source of Truth for all colors, radii, shadows, typography, and transitions.
- * 
- * SWAPPABILITY NOTE:
- * If modifying the visual design (e.g. updating the palette, changing border radii,
- * or adjusting elevation), change ONLY the tokens defined in this file.
- * Do not override or duplicate these tokens in individual panel stylesheets.
- * ============================================================================
+/*
+ * Lazy Layout design tokens.
+ * Colors come ONLY from DOCS/UI/PALETTE.md. Five official themes:
+ *   - Paper (default)
+ *   - Dark
+ *   - White
+ *   - Warm
+ *   - Lilac (only theme with an accent: #CEB4F5)
+ * No glass, no blur in chrome, no capsule or pill shapes.
  */
 
-:root {
-  /* --------------------------------------------------------------------------
-   * Canvas & Surfaces (Confluence Whiteboard Aesthetic)
-   * -------------------------------------------------------------------------- */
-  --canvas-bg: #FCFDFD;
-  --canvas-dot-color: #E2E8F0;
-  --canvas-dot-size: 1.5px;
-  --canvas-dot-spacing: 24px;
+:root,
+:root[data-theme],
+[data-theme] {
+  /* 4px spacing grid base */
+  --ll-spacing: 4px;
+  --ll-spacing-0-5: 2px;
+  --ll-spacing-px: 1px;
+  --ll-spacing-1: 4px;
+  --ll-spacing-2: 8px;
+  --ll-spacing-3: 12px;
+  --ll-spacing-4: 16px;
+  --ll-spacing-5: 20px;
+  --ll-spacing-6: 24px;
+  --ll-spacing-8: 32px;
+  --ll-spacing-10: 40px;
+  --ll-spacing-12: 48px;
+  --ll-spacing-16: 64px;
 
-  --surface-panel: rgba(255, 255, 255, 0.92);
-  --surface-panel-solid: #FFFFFF;
-  --surface-panel-hover: #F8FAFC;
-  --surface-panel-active: #F1F5F9;
-  --surface-panel-selected: #EBF5F3;
+  /* Modest radius scale (Apple-level layout, no pills/capsules) */
+  --ll-radius-xs: 2px;
+  --ll-radius-sm: 4px;
+  --ll-radius-md: 6px;
+  --ll-radius-lg: 8px;
 
-  --surface-dock-bar: rgba(255, 255, 255, 0.85);
-  --surface-toolbar: rgba(255, 255, 255, 0.95);
-  --surface-statusbar: #FFFFFF;
+  /* Hairline border */
+  --ll-border-hairline: 1px;
+  --ll-outline-offset-inset: -2px;
 
-  --surface-overlay: rgba(15, 23, 42, 0.4);
-  --surface-tooltip: #0F172A;
-  --surface-disabled: #F1F5F9;
-  --text-disabled: #94A3B8;
-  --border-disabled: rgba(15, 23, 42, 0.04);
+  /* Layout dimensions from prototype */
+  --ll-size-topbar-h: 52px;
+  --ll-size-panel-left-w: 248px;
+  --ll-size-panel-right-w: 320px;
+  --ll-size-panel-right-w-compact: 296px;
+  --ll-size-ruler: 18px;
+  --ll-size-row-h: 32px;
+  --ll-size-row-lg-h: 36px;
+  --ll-size-header-h: 44px;
+  --ll-size-btn-h: 32px;
+  --ll-size-btn-sm-h: 24px;
+  --ll-size-icon-btn: 28px;
+  --ll-size-icon-btn-sm: 24px;
+  --ll-size-toolbar-btn: 40px;
+  --ll-size-tall-btn-w: 32px;
+  --ll-size-toolbar-w: 443px;
+  --ll-size-toolbar-h: 50px;
+  --ll-size-zoombar-w: 186px;
+  --ll-size-zoombar-h: 50px;
+  --ll-size-avatar: 28px;
+  --ll-size-mode-tab-w: 76px;
+  --ll-size-mode-tab-h: 26px;
+  --ll-size-logo: 32px;
+  --ll-size-logo-icon: 20px;
+  --ll-size-divider-h: 20px;
+  --ll-size-bottom-motion-h: clamp(180px, 40vh, 70vh);
+  --ll-size-bottom-code-h: clamp(180px, 40vh, 70vh);
+  --ll-size-menu-w: 200px;
+  --ll-size-menu-wide-w: 320px;
+  --ll-size-menu-ctx-w: 248px;
+  --ll-size-menu-users-w: 240px;
+  --ll-size-page-dropdown-w: 220px;
+  --ll-size-ship-popover-w: 280px;
+  --ll-size-dialog-w: 520px;
+  --ll-pad-popover-edge: 12px;
+  --ll-gap-popover-y: 4px;
+  --ll-size-surface-sample-w: 260px;
+  --ll-size-viewport-desktop: 1440px;
+  --ll-size-viewport-desktop-h: 900px;
+  --ll-size-viewport-tablet: 1024px;
+  --ll-size-viewport-mobile: 390px;
 
-  /* --------------------------------------------------------------------------
-   * Code Surfaces (Live Code Inspector, Export Preview) — the one deliberately
-   * dark theme in the app, same rationale as --surface-tooltip. Single source
-   * so the two code-viewing panels don't drift into different near-black hexes.
-   * -------------------------------------------------------------------------- */
-  --surface-code: #0F172A;
-  --surface-code-toolbar: rgba(30, 41, 59, 0.85);
-  --surface-code-statusbar: #0B1120;
-  --surface-code-hover: rgba(255, 255, 255, 0.06);
-  --text-code: #E2E8F0;
-  --text-code-muted: #94A3B8;
-  --border-code: rgba(255, 255, 255, 0.08);
+  /* Control geometry tokens */
+  --ll-size-toggle-track-w: 34px;
+  --ll-size-toggle-track-h: 18px;
+  --ll-size-toggle-track-sm-w: 28px;
+  --ll-size-toggle-track-sm-h: 16px;
+  --ll-size-toggle-knob: 14px;
+  --ll-size-toggle-knob-sm: 12px;
+  --ll-size-tree-indent: 16px;
+  --ll-size-tree-indent-base: 12px;
 
-  /* --------------------------------------------------------------------------
-   * Borders & Separators (Ultra-refined Micro-borders)
-   * -------------------------------------------------------------------------- */
-  --border-subtle: rgba(15, 23, 42, 0.06);
-  --border-default: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
-  --border-focus: #206859;
-  --border-active: rgba(32, 104, 89, 0.5);
+  /* Viewport and overlay layout tokens */
+  --ll-pt-dialog: 15vh;
+  --ll-max-h-menu: 70vh;
+  --ll-max-h-popover: 60vh;
+  --ll-submenu-gap: 4px;
 
-  /* --------------------------------------------------------------------------
-   * Typography & Text Colors
-   * -------------------------------------------------------------------------- */
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "Fira Code", monospace;
+  /* Drop indicator shadows */
+  --ll-shadow-drop-above: inset 0 2px 0 var(--ll-control-primary-bg);
+  --ll-shadow-drop-below: inset 0 -2px 0 var(--ll-control-primary-bg);
+  --ll-shadow-drop-inside: inset 0 0 0 1px var(--ll-control-primary-bg);
 
-  --text-primary: #0F172A;     /* Slate 900 */
-  --text-secondary: #475569;   /* Slate 600 */
-  --text-muted: #64748B;       /* Slate 500 */
-  --text-tertiary: #94A3B8;    /* Slate 400 */
-  --text-inverse: #FFFFFF;
-  --text-accent: #206859;
+  /* Typography - Geist & Geist Mono families */
+  --ll-font-sans-family: var(--font-geist-sans), "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ll-font-mono-family: var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --ll-font-sans: var(--ll-font-sans-family);
+  --ll-font-mono: var(--ll-font-mono-family);
 
-  /* Font Sizes */
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-base: 13px;
-  --text-md: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-  --text-2xl: 22px;
-  --text-3xl: 28px;
-  --text-4xl: 36px;
+  /* Type scale from prototype */
+  --ll-text-display-size: 30px;
+  --ll-text-display-line-height: 1.05;
+  --ll-text-display-letter-spacing: -0.03em;
+  --ll-text-display-weight: 600;
 
-  /* Font Weights */
-  --font-regular: 400;
-  --font-medium: 500;
-  --font-semibold: 600;
-  --font-bold: 700;
+  --ll-text-lead-size: 16px;
+  --ll-text-lead-line-height: 1.4;
+  --ll-text-lead-letter-spacing: -0.01em;
 
-  /* Line Heights */
-  --leading-tight: 1.25;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.625;
+  --ll-text-heading-size: 18px;
+  --ll-text-heading-line-height: 1.3;
+  --ll-text-heading-letter-spacing: -0.01em;
 
-  /* --------------------------------------------------------------------------
-   * Spacing Scale (4px Base Grid)
-   * -------------------------------------------------------------------------- */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 24px;
-  --space-2xl: 32px;
-  --space-3xl: 48px;
-  --space-4xl: 64px;
+  --ll-text-title-size: 14px;
+  --ll-text-title-line-height: 1.4;
+  --ll-text-title-letter-spacing: -0.01em;
+  --ll-text-title-weight: 500;
 
-  /* --------------------------------------------------------------------------
-   * Semantic Accent Colors (#206859 Primary Theme)
-   * -------------------------------------------------------------------------- */
-  --accent-primary: #206859;       /* Deep Pine Green / Teal */
-  --accent-primary-hover: #174f43;
-  --accent-primary-light: #EBF5F3;
+  --ll-text-body-size: 13px;
+  --ll-text-body-line-height: 1.4;
+  --ll-text-body-letter-spacing: 0em;
+  --ll-text-body-weight: 400;
 
-  --accent-success: #10B981;       /* Emerald */
-  --accent-success-light: #ECFDF5;
+  --ll-text-small-size: 12px;
+  --ll-text-small-line-height: 1.3;
+  --ll-text-small-letter-spacing: 0em;
+  --ll-text-small-weight: 400;
 
-  --accent-warning: #F59E0B;       /* Amber */
-  --accent-warning-light: #FFFBEB;
+  --ll-text-micro-size: 11px;
+  --ll-text-micro-line-height: 1.2;
+  --ll-text-micro-letter-spacing: 0.08em;
+  --ll-text-micro-weight: 500;
 
-  --accent-danger: #EF4444;        /* Rose / Red */
-  --accent-danger-light: #FEF2F2;
+  --ll-text-nano-size: 10px;
+  --ll-text-nano-line-height: 1.2;
+  --ll-text-nano-letter-spacing: 0.08em;
 
-  --accent-info: #06B6D4;          /* Cyan */
-  --accent-info-light: #ECFEFF;
+  /* Motion tokens from prototype (written by active feel) */
+  --ll-ease-pop: ease-out;
+  --ll-dur-pop: 200ms;
+  --ll-dur-fade: 120ms;
+  --ll-duration-swap: 120ms;
+  --ll-duration-spin: 800ms;
+  --ll-dur-trace: 1.6s;
+  --ll-dur-trace-ai: 2.4s;
+  --ll-dur-trace-fade: 2.8s;
+  --ll-stroke-loader: 10;
+  --ll-ease-trace: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* --------------------------------------------------------------------------
-   * Wire & Pin Data-Type Taxonomy (Strictly follows UI.md §2.2)
-   * -------------------------------------------------------------------------- */
-  --wire-exec: #0F172A;
-  --wire-string: #E11D48;
-  --wire-number: #06B6D4;
-  --wire-boolean: #EA580C;
-  --wire-object: #F59E0B;
-  --wire-array: #EAB308;
-  --wire-database: #10B981;
-  --wire-motion: #8B5CF6;
-  --wire-event: #206859;
-
-  /* --------------------------------------------------------------------------
-   * Curvature & Border Radii (Refined Unreal Curvature)
-   * -------------------------------------------------------------------------- */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;      /* Buttons, Input fields, Badges */
-  --radius-lg: 12px;     /* Cards, Dropdowns, Section boxes */
-  --radius-xl: 16px;     /* Docked Panels, Windows */
-  --radius-2xl: 20px;    /* Floating Docks, Modals */
-  --radius-full: 9999px; /* Badges, Avatars, Pills */
-
-  /* --------------------------------------------------------------------------
-   * Elevation & Box Shadows
-   * -------------------------------------------------------------------------- */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
-  --shadow-floating-dock: 0 12px 36px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-  --shadow-divider: 0 0 0 1px rgba(15, 23, 42, 0.06);
-
-  /* --------------------------------------------------------------------------
-   * Dock Zone Sizing & Dimensions
-   * -------------------------------------------------------------------------- */
-  --header-height: 74px; /* studio-header (40px + border) + studio-header-workspaces (32px + border) */
-  --toolbar-height: 44px;
-  --statusbar-height: 28px;
-  --dock-left-width: 300px;
-  --dock-right-width: 320px;
-  --dock-bottom-height: 240px;
-  --dock-tab-height: 36px;
-  --collapsed-strip-width: 38px;
-
-  /* --------------------------------------------------------------------------
-   * Blur & Glassmorphism
-   * -------------------------------------------------------------------------- */
-  --glass-blur: blur(20px);
-  --glass-blur-subtle: blur(12px);
-
-  /* --------------------------------------------------------------------------
-   * Z-Index Scale (Strict Layering)
-   * -------------------------------------------------------------------------- */
-  --z-canvas: 1;
-  --z-viewport-elements: 5;
-  --z-gizmo: 10;
-  --z-panels: 20;
-  --z-header: 45;
-  --z-floating-dock: 50;
-  --z-dropdown: 60;
-  --z-modal: 70;
-  --z-tooltip: 80;
-  --z-toast: 90;
-
-  /* --------------------------------------------------------------------------
-   * Transitions & Durations
-   * -------------------------------------------------------------------------- */
-  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 320ms cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Canvas max width */
+  --ll-canvas-max-width: 820px;
 }
+
+/* ===== OFFICIAL THEME: Paper (Default) ===== */
+:root,
+:root[data-theme="paper"],
+[data-theme="paper"] {
+  --ll-surface-backdrop: #E7E6E1;
+  --ll-surface-canvas: #E7E6E1;
+  --ll-surface-panel: #F4F3EF;
+  --ll-surface-bar: #EEEDE8;
+  --ll-surface-raised: #F4F3EF;
+  --ll-surface-hover: #E7E6E1;
+  --ll-border-color: #CECDC8;
+  --ll-text-primary: #22231E;
+  --ll-text-secondary: #55554F;
+  --ll-text-muted: #66665F;
+  --ll-control-primary-bg: #22231E;
+  --ll-control-primary-fg: #F4F3EF;
+  --ll-control-active: #E7E6E1;
+  --ll-select-bg: #E7E6E1;
+  --ll-select-fg: #22231E;
+  --ll-ship-bg: #E7E6E1;
+  --ll-ship-fg: #22231E;
+  --ll-avatar-bg: #E7E6E1;
+  --ll-avatar-fg: #22231E;
+  --ll-board-bg: #FFFFFF;
+  --ll-board-line: #CECDC8;
+  --ll-placeholder: #E7E6E1;
+  --ll-swatch-line: #CECDC8;
+  --ll-thumb-bg: #EEEDE8;
+  --ll-thumb-line: #CECDC8;
+  --ll-shadow-soft: 0 4px 16px rgba(34,35,30,.1);
+  --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
+}
+
+/* ===== OFFICIAL THEME: Dark ===== */
+[data-theme="dark"] {
+  --ll-surface-backdrop: #141414;
+  --ll-surface-canvas: #1E1E1E;
+  --ll-surface-panel: #2C2C2C;
+  --ll-surface-bar: #383838;
+  --ll-surface-raised: #383838;
+  --ll-surface-hover: #2C2C2C;
+  --ll-border-color: #444444;
+  --ll-text-primary: #FFFFFF;
+  --ll-text-secondary: #BFBFBF;
+  --ll-text-muted: #A1A1A1;
+  --ll-control-primary-bg: #FFFFFF;
+  --ll-control-primary-fg: #1E1E1E;
+  --ll-control-active: #444444;
+  --ll-select-bg: #383838;
+  --ll-select-fg: #FFFFFF;
+  --ll-ship-bg: #383838;
+  --ll-ship-fg: #FFFFFF;
+  --ll-avatar-bg: #444444;
+  --ll-avatar-fg: #FFFFFF;
+  --ll-board-bg: #383838;
+  --ll-board-line: #444444;
+  --ll-placeholder: #2C2C2C;
+  --ll-swatch-line: #444444;
+  --ll-thumb-bg: #1E1E1E;
+  --ll-thumb-line: #444444;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.5);
+  --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Graphite ===== */
+[data-theme="graphite"] {
+  --ll-surface-backdrop: #141411;
+  --ll-surface-canvas: #1C1C18;
+  --ll-surface-panel: #262621;
+  --ll-surface-bar: #32322C;
+  --ll-surface-raised: #32322C;
+  --ll-surface-hover: #32322C;
+  --ll-border-color: #42423B;
+  --ll-text-primary: #F4F3EF;
+  --ll-text-secondary: #BDBCB3;
+  --ll-text-muted: #A09F96;
+  --ll-control-primary-bg: #F4F3EF;
+  --ll-control-primary-fg: #22231E;
+  --ll-control-active: #42423B;
+  --ll-select-bg: #32322C;
+  --ll-select-fg: #F4F3EF;
+  --ll-ship-bg: #32322C;
+  --ll-ship-fg: #F4F3EF;
+  --ll-avatar-bg: #42423B;
+  --ll-avatar-fg: #F4F3EF;
+  --ll-board-bg: #32322C;
+  --ll-board-line: #42423B;
+  --ll-placeholder: #262621;
+  --ll-swatch-line: #42423B;
+  --ll-thumb-bg: #1C1C18;
+  --ll-thumb-line: #42423B;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.5);
+  --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Darkroom ===== */
+[data-theme="darkroom"] {
+  --ll-surface-backdrop: #10100B;
+  --ll-surface-canvas: #26261F;
+  --ll-surface-panel: #16160F;
+  --ll-surface-bar: #20201A;
+  --ll-surface-raised: #16160F;
+  --ll-surface-hover: #20201A;
+  --ll-border-color: #34342C;
+  --ll-text-primary: #F4F3EF;
+  --ll-text-secondary: #BDBCB3;
+  --ll-text-muted: #A09F96;
+  --ll-control-primary-bg: #F4F3EF;
+  --ll-control-primary-fg: #22231E;
+  --ll-control-active: #34342C;
+  --ll-select-bg: #2A2A23;
+  --ll-select-fg: #F4F3EF;
+  --ll-ship-bg: #2A2A23;
+  --ll-ship-fg: #F4F3EF;
+  --ll-avatar-bg: #34342C;
+  --ll-avatar-fg: #F4F3EF;
+  --ll-board-bg: #32322A;
+  --ll-board-line: #3E3E35;
+  --ll-placeholder: #26261F;
+  --ll-swatch-line: #3E3E35;
+  --ll-thumb-bg: #20201A;
+  --ll-thumb-line: #34342C;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.6);
+  --ll-accent: transparent;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== THEME: Noir ===== */
+[data-theme="noir"] {
+  --ll-surface-backdrop: #050505;
+  --ll-surface-canvas: #141214;
+  --ll-surface-panel: #080808;
+  --ll-surface-bar: #141214;
+  --ll-surface-raised: #080808;
+  --ll-surface-hover: #1C1A1C;
+  --ll-border-color: #292629;
+  --ll-text-primary: #ECEBE5;
+  --ll-text-secondary: #A3A3A3;
+  --ll-text-muted: #8F8F8F;
+  --ll-control-primary-bg: #ECEBE5;
+  --ll-control-primary-fg: #080808;
+  --ll-control-active: #292629;
+  --ll-select-bg: #292629;
+  --ll-select-fg: #ECEBE5;
+  --ll-ship-bg: #CEB4F5;
+  --ll-ship-fg: #080808;
+  --ll-avatar-bg: #292629;
+  --ll-avatar-fg: #ECEBE5;
+  --ll-board-bg: #1C1A1C;
+  --ll-board-line: #343034;
+  --ll-placeholder: #141214;
+  --ll-swatch-line: #343034;
+  --ll-thumb-bg: #141214;
+  --ll-thumb-line: #292629;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.7);
+  --ll-accent: #CEB4F5;
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+/* ===== OFFICIAL THEME: White ===== */
+[data-theme="white"] {
+  --ll-surface-backdrop: #F5F5F5;
+  --ll-surface-canvas: #F5F5F5;
+  --ll-surface-panel: #FFFFFF;
+  --ll-surface-bar: #F0F0F0;
+  --ll-surface-raised: #FFFFFF;
+  --ll-surface-hover: #F0F0F0;
+  --ll-border-color: #E3E3E3;
+  --ll-text-primary: #000000;
+  --ll-text-secondary: #5C5C5C;
+  --ll-text-muted: #6B6B6B;
+  --ll-control-primary-bg: #000000;
+  --ll-control-primary-fg: #FFFFFF;
+  --ll-control-active: #F0F0F0;
+  --ll-select-bg: #F0F0F0;
+  --ll-select-fg: #000000;
+  --ll-ship-bg: #F0F0F0;
+  --ll-ship-fg: #000000;
+  --ll-avatar-bg: #F0F0F0;
+  --ll-avatar-fg: #000000;
+  --ll-board-bg: #FFFFFF;
+  --ll-board-line: #E3E3E3;
+  --ll-placeholder: #F0F0F0;
+  --ll-swatch-line: #C8C8C8;
+  --ll-thumb-bg: #F5F5F5;
+  --ll-thumb-line: #E3E3E3;
+  --ll-shadow-soft: 0 4px 16px rgba(0,0,0,.12);
+  --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
+}
+
+/* ===== OFFICIAL THEME: Warm ===== */
+[data-theme="warm"] {
+  --ll-surface-backdrop: #F3F0E9;
+  --ll-surface-canvas: #F3F0E9;
+  --ll-surface-panel: #FDFCF8;
+  --ll-surface-bar: #F3F0E9;
+  --ll-surface-raised: #FDFCF8;
+  --ll-surface-hover: #E3DBCC;
+  --ll-border-color: #E3DBCC;
+  --ll-text-primary: #101010;
+  --ll-text-secondary: #5A5549;
+  --ll-text-muted: #6E6859;
+  --ll-control-primary-bg: #101010;
+  --ll-control-primary-fg: #FDFCF8;
+  --ll-control-active: #E3DBCC;
+  --ll-select-bg: #E3DBCC;
+  --ll-select-fg: #101010;
+  --ll-ship-bg: #F3F0E9;
+  --ll-ship-fg: #101010;
+  --ll-avatar-bg: #E3DBCC;
+  --ll-avatar-fg: #101010;
+  --ll-board-bg: #FFFFFF;
+  --ll-board-line: #E3DBCC;
+  --ll-placeholder: #E3DBCC;
+  --ll-swatch-line: #E3DBCC;
+  --ll-thumb-bg: #F3F0E9;
+  --ll-thumb-line: #E3DBCC;
+  --ll-shadow-soft: 0 4px 16px rgba(16,16,16,.08);
+  --ll-accent: transparent;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
+}
+
+/* ===== OFFICIAL THEME: Lilac ===== */
+[data-theme="lilac"] {
+  --ll-surface-backdrop: #E7E6E1;
+  --ll-surface-canvas: #E7E6E1;
+  --ll-surface-panel: #F4F3EF;
+  --ll-surface-bar: #EEEDE8;
+  --ll-surface-raised: #F4F3EF;
+  --ll-surface-hover: #E7E6E1;
+  --ll-border-color: #CECDC8;
+  --ll-text-primary: #22231E;
+  --ll-text-secondary: #55554F;
+  --ll-text-muted: #66665F;
+  --ll-control-primary-bg: #22231E;
+  --ll-control-primary-fg: #F4F3EF;
+  --ll-control-active: #E7E6E1;
+  --ll-select-bg: #CEB4F5;
+  --ll-select-fg: #22231E;
+  --ll-ship-bg: #CEB4F5;
+  --ll-ship-fg: #22231E;
+  --ll-avatar-bg: #E7E6E1;
+  --ll-avatar-fg: #22231E;
+  --ll-board-bg: #FFFFFF;
+  --ll-board-line: #CECDC8;
+  --ll-placeholder: #E7E6E1;
+  --ll-swatch-line: #CECDC8;
+  --ll-thumb-bg: #EEEDE8;
+  --ll-thumb-line: #CECDC8;
+  --ll-shadow-soft: 0 4px 16px rgba(34,35,30,.1);
+  --ll-accent: #CEB4F5;
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
+}
+
+/* Shared SVG icon stroke weight from prototype */
+svg {
+  stroke-width: 1.5;
+}
+
+/* === lane: L1 top bar === */
+/* === end lane: L1 === */
+
+/* === lane: L2 left panel === */
+:root {
+  --ll-size-layer-row-h: 32px;
+  --ll-size-assets-row-h: 36px;
+}
+
+.ldrag {
+  opacity: 0.5;
+}
+
+.row.ldb {
+  box-shadow: inset 0 2px 0 var(--ll-text-primary);
+}
+
+.row.lda {
+  box-shadow: inset 0 -2px 0 var(--ll-text-primary);
+}
+
+.row.ldi {
+  background: var(--ll-bg-hover);
+  box-shadow: inset 0 0 0 1px var(--ll-text-primary);
+}
+
+.lmsg {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 44px;
+  z-index: 50;
+  padding: 6px 8px;
+  background: var(--ll-bg-float);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  font-size: 12px;
+  color: var(--ll-text-muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.lmsg.on {
+  opacity: 1;
+}
+
+.mdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ll-text-primary);
+  flex: none;
+  margin-left: auto;
+}
+/* === end lane: L2 === */
+
+/* === lane: L3 inspector === */
+:root {
+  --ll-size-inspector-demo-max-h: 700px;
+  --ll-size-inspector-demo-short-max-h: 600px;
+  --ll-size-inspector-chat-h: 500px;
+}
+/* === end lane: L3 === */
+
+/* === lane: L4 canvas === */
+:root {
+  --ll-size-insert-w: 520px;
+  --ll-size-insert-h: 400px;
+  --ll-size-vpop-w: 280px;
+  --ll-bottom-floating: 74px;
+}
+/* === end lane: L4 === */
+
+/* === lane: L5 timeline === */
+:root,
+[data-theme="paper"],
+[data-theme="white"],
+[data-theme="warm"],
+[data-theme="lilac"] {
+  --ll-label-1: #7A8A9C;
+  --ll-label-1-tint: #D3DAE3;
+  --ll-label-2: #7E9C84;
+  --ll-label-2-tint: #D5E3D7;
+  --ll-label-3: #B89B66;
+  --ll-label-3-tint: #EADFC5;
+  --ll-label-4: #BF7C62;
+  --ll-label-4-tint: #EDD6CB;
+  --ll-label-5: #C48492;
+  --ll-label-5-tint: #EFD6DC;
+  --ll-label-6: #8F85BE;
+  --ll-label-6-tint: #DFDBF0;
+}
+
+[data-theme="dark"],
+[data-theme="graphite"],
+[data-theme="darkroom"],
+[data-theme="noir"] {
+  --ll-label-1: #8796A8;
+  --ll-label-1-tint: #38424F;
+  --ll-label-2: #8FAE94;
+  --ll-label-2-tint: #36443A;
+  --ll-label-3: #CDB27E;
+  --ll-label-3-tint: #4A4130;
+  --ll-label-4: #D08D74;
+  --ll-label-4-tint: #4F3A31;
+  --ll-label-5: #D395A3;
+  --ll-label-5-tint: #4E3840;
+  --ll-label-6: #A89FD6;
+  --ll-label-6-tint: #433F5C;
+}
+
+:root {
+  --ll-size-timeline-header: 44px;
+  --ll-size-timeline-ruler: 32px;
+  --ll-size-timeline-row: 32px;
+  --ll-size-timeline-row-compact: 24px;
+  --ll-size-timeline-prop-row: 24px;
+  --ll-size-timeline-prop-row-compact: 20px;
+  --ll-size-timeline-footer: 28px;
+  --ll-size-timeline-track-default: 264px;
+  --ll-size-timeline-track-min: 200px;
+  --ll-size-timeline-track-max: 420px;
+  --ll-text-timeline-timecode: 20px;
+  --ll-text-timeline-timecode-line-height: 28px;
+}
+
+@keyframes ll-snl {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes ll-tl-flash {
+  from { background-color: var(--ll-color-surface-segmented); }
+}
+
+.ll-snl-on {
+  animation: ll-snl 0.7s ease-out;
+}
+
+.ll-tl-flash {
+  animation: ll-tl-flash 0.9s ease-out;
+}
+/* === end lane: L5 === */
+
+/* === lane: L6 motion inspector === */
+:root {
+  --ll-size-slider-height: 20px;
+  --ll-size-slider-thumb-w: 6px;
+  --ll-size-slider-thumb-h: 14px;
+  --ll-size-curve-height: 240px;
+}
+
+.ll-sld {
+  position: relative;
+  display: block;
+  height: 20px;
+  min-width: 0;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ll-sld .ll-sl-t {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 2px;
+  background: color-mix(in srgb, var(--ll-text-primary) 18%, transparent);
+}
+.ll-sld .ll-sl-f {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  height: 2px;
+  background: var(--ll-text-primary);
+}
+.ll-sld .ll-sl-h {
+  position: absolute;
+  top: 3px;
+  width: 6px;
+  height: 14px;
+  border-radius: var(--ll-radius-xs);
+  background: var(--ll-text-primary);
+  transform-origin: 0 50%;
+  box-shadow: 0 0 0 2px var(--ll-surface-panel);
+}
+.ll-sld .ll-sl-g {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  min-width: 32px;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 18px;
+  text-align: center;
+  background: var(--ll-control-primary-bg);
+  color: var(--ll-control-primary-fg);
+  border-radius: var(--ll-radius-sm);
+  font: 500 11px/20px var(--ll-font-mono);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  translate: -50% 4px;
+  scale: 0.8;
+  transition: opacity 0.1s, translate var(--ll-dur-pop) var(--ll-ease-pop), scale var(--ll-dur-pop) var(--ll-ease-pop);
+  z-index: 3;
+}
+.ll-sld.drag .ll-sl-g,
+.ll-sld:focus-visible .ll-sl-g {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+}
+.ll-sld:focus-visible {
+  outline: 2px solid var(--ll-text-primary);
+  outline-offset: 2px;
+}
+
+/* Easing editor */
+.ll-kcurve {
+  width: 100%;
+  height: 240px;
+  display: block;
+}
+.ll-kcurve .ll-x {
+  stroke: var(--ll-border-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 2 4;
+}
+.ll-kcurve .ll-g {
+  stroke: var(--ll-border-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ll-kcurve .ll-hn {
+  stroke: var(--ll-text-muted);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ll-kcurve .ll-sg {
+  stroke: var(--ll-text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+.ll-kcurve path {
+  fill: none;
+  stroke: var(--ll-control-primary-bg);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ll-kh {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--ll-radius-sm);
+}
+.ll-kh i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--ll-radius-xs);
+  background: var(--ll-control-primary-bg);
+  box-shadow: 0 0 0 2px var(--ll-surface-canvas);
+  pointer-events: none;
+}
+.ll-kh:focus-visible,
+.ll-ecp:focus-visible {
+  outline: 2px solid var(--ll-text-primary);
+  outline-offset: -2px;
+}
+.ll-ecp {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--ll-radius-sm);
+}
+.ll-ecp i {
+  width: 9px;
+  height: 9px;
+  background: var(--ll-control-primary-bg);
+  box-shadow: 0 0 0 2px var(--ll-surface-canvas);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.ll-ecp.on i {
+  box-shadow: 0 0 0 2px var(--ll-surface-canvas), 0 0 0 3px var(--ll-control-primary-bg);
+}
+.ll-kp {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--ll-text-secondary);
+  border-radius: var(--ll-radius-xs);
+  pointer-events: none;
+}
+.ll-kce {
+  position: relative;
+  background: var(--ll-surface-canvas);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  overflow: hidden;
+}
+.ll-kce.ll-ec {
+  cursor: crosshair;
+}
+.ll-ecv {
+  height: 32px;
+  position: relative;
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  background: var(--ll-surface-canvas);
+  overflow: hidden;
+}
+.ll-ecq {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  background: var(--ll-control-primary-bg);
+  border-radius: var(--ll-radius-sm);
+}
+
+/* Effect Controls Rows */
+.ll-ktr {
+  margin: 0 -16px;
+}
+.ll-ktrk {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 16px;
+  color: var(--ll-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.ll-ktrk:hover {
+  background: var(--ll-surface-hover);
+  color: var(--ll-text-primary);
+}
+.ll-fxr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 16px 0 12px;
+  color: var(--ll-text-secondary);
+}
+.ll-fxr:hover {
+  background: var(--ll-surface-hover);
+}
+.ll-fxr .ll-nm {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ll-text-primary);
+}
+.ll-fxr .ll-rd {
+  min-width: 56px;
+  font: 400 11px var(--ll-font-mono);
+  color: var(--ll-text-primary);
+  text-align: right;
+  cursor: ew-resize;
+  padding: 2px 4px;
+}
+.ll-fxr .ll-rd:hover {
+  background: var(--ll-surface-bar);
+  border-radius: var(--ll-radius-xs);
+}
+
+/* Export Popover */
+.ll-xpop {
+  width: 520px;
+  max-width: calc(100vw - 16px);
+  background: var(--ll-surface-panel);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-md);
+  box-shadow: var(--ll-shadow-soft);
+}
+.ll-xcode {
+  margin: 0;
+  height: 240px;
+  overflow: auto;
+  background: var(--ll-surface-canvas);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-md);
+  padding: 12px 16px;
+  font: 400 12px/1.6 var(--ll-font-mono);
+  color: var(--ll-text-secondary);
+  white-space: pre;
+  tab-size: 2;
+}
+.ll-xcode .k {
+  color: var(--ll-text-primary);
+  font-weight: 600;
+}
+.ll-xcode .s {
+  color: var(--ll-text-primary);
+}
+.ll-xcode .n {
+  color: var(--ll-text-primary);
+}
+.ll-xcode .c {
+  color: var(--ll-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-sld .ll-sl-g {
+    transition: opacity 0.1s;
+  }
+}
+/* === end lane: L6 === */
+
+/* === lane: L7 code === */
+:root {
+  --ll-size-code-header: 44px;
+  --ll-size-code-sub: 28px;
+  --ll-size-code-stick: 24px;
+  --ll-size-code-footer: 28px;
+  --ll-size-code-gutter: 24px;
+  --ll-size-code-line-num: 36px;
+  --ll-size-code-trace-side: 280px;
+  --ll-size-code-prompt: 40px;
+  --ll-size-code-full: 75vh;
+  --ll-grid-console-row: 92px 16px 72px minmax(0, 1fr) auto;
+  --ll-grid-trace-main: minmax(0, 1fr) 280px;
+  --ll-grid-trace-row: 28px minmax(150px, 1.1fr) minmax(120px, 2fr) 72px 64px;
+  --ll-shadow-indicator-active: inset 2px 0 0 var(--ll-text-primary);
+  --ll-shadow-indicator-muted: inset 2px 0 0 var(--ll-text-muted);
+}
+/* === end lane: L7 === */
+
+/* === lane: L8 shell === */
+:root {
+  --ll-size-bottom-min-h: 180px;
+  --ll-size-bottom-max-h: 70vh;
+  --ll-size-bottom-default-h: 40vh;
+  --ll-size-bsplit-h: 6px;
+  --ll-size-bsplit-line-h: 2px;
+  --ll-size-panel-edge-h: 6px;
+  --ll-panel-shade: 10%;
+  --ll-ph-band-mix: 5%;
+  --ll-dim-canvas: 0.6;
+  --ll-opacity-bsplit: 0.5;
+}
+
+[data-theme="dark"],
+[data-theme="graphite"],
+[data-theme="darkroom"],
+[data-theme="noir"] {
+  --ll-panel-shade: 34%;
+}
+/* === end lane: L8 === */
+
+/* === lane: L9 design system === */
+/* === end lane: L9 === */

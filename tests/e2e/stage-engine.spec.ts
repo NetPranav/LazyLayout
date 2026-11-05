@@ -8,7 +8,7 @@ import { test, expect, type Page } from "@playwright/test";
 const STAGE = 'iframe[title="Stage"]';
 const TIMES = [0, 0.2, 0.5, 0.8, 1];
 const animId = (i: number) => `anim_${i}`;
-/** The property each lab layer animates (src/editor/stage-lab/StageLab.tsx, ANIMATION_REFS). */
+/** The property each lab layer animates (src/legacy-editor/stage-lab/StageLab.tsx, ANIMATION_REFS). */
 const PROPERTIES = ["transform.x", "transform.y", "transform.x", "transform.y", "frame.width", "frame.height", "frame.x", "frame.y", "appearance.radius", "appearance.opacity"];
 
 async function openLab(page: Page) {

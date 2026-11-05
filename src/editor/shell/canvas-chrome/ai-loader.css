@@ -1,0 +1,53 @@
+/*
+ * AI prompt box trace loader animations.
+ * Scoped specifically to .ll-aiload to prevent keyframe collisions with .ll-logo.
+ * Uses tokens --ll-dur-trace, --ll-dur-trace-fade, and --ll-ease-trace.
+ */
+
+.ll-aiload {
+  overflow: visible;
+}
+
+.ll-aiload .ll-aiload-tro {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--ll-stroke-loader);
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: ll-aiload-tro var(--ll-dur-trace-ai) var(--ll-ease-trace) infinite alternate;
+}
+
+.ll-aiload .ll-aiload-trf {
+  fill: currentColor;
+  stroke: none;
+  animation: ll-aiload-trf var(--ll-dur-trace-ai) var(--ll-ease-trace) infinite alternate;
+}
+
+@keyframes ll-aiload-tro {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  55%, 100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ll-aiload-trf {
+  0%, 55% {
+    opacity: 0;
+  }
+  85%, 100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-aiload .ll-aiload-tro {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .ll-aiload .ll-aiload-trf {
+    animation: ll-fade var(--ll-dur-trace-fade) ease-in-out infinite !important;
+  }
+}
+

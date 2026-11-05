@@ -5,7 +5,7 @@
  * against the transport's time and the document.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const FPS = 60;
@@ -22,7 +22,7 @@ async function setup(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("tab", { name: /Animate/ }).click();
   await page.locator(".timeline").waitFor({ state: "visible", timeout: 15_000 });
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();

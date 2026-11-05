@@ -1,152 +1,88 @@
-/**
- * ============================================================================
- * ENGINE GLOBAL STYLES & CSS RESET
- * ============================================================================
- * UI Element: Global Document Body, Canvas Stage, and Base Resets
- * Screen / Scope: Whole Application Engine
- * Role: Provides baseline normalization, default font assignments, and custom scrollbars.
- * 
- * CSS ISOLATION RULE:
- * This file handles ONLY base document defaults and root viewport sizing.
- * No panel-specific styles or component rules are permitted here.
- * ============================================================================
- */
+/* New UI global styles. There is no Preflight, so the design system page sets its own base. */
+@import "./tailwind.css";
 
-@import "./tokens.css";
-
-*, *::before, *::after {
-  box-sizing: border-box;
+body {
   margin: 0;
-  padding: 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.12) transparent;
 }
 
-html, body {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: var(--leading-normal);
-  color: var(--text-primary);
-  background-color: var(--canvas-bg);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  user-select: none;
-  -webkit-user-select: none;
+@layer base {
+  /* Scrollbars are hidden everywhere in the new UI, as in the prototype (`*{scrollbar-width:none}`).
+     Menus and popovers are portaled to <body>, outside .ll-editor-root, so the rule keys off the page. */
+  html:has(.ll-editor-root, .ll-design-system-root),
+  html:has(.ll-editor-root, .ll-design-system-root) * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html:has(.ll-editor-root, .ll-design-system-root) *::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ll-design-system-root,
+  .ll-editor-root {
+    font-family: var(--ll-font-sans);
+  }
+
+  .ll-design-system-root,
+  .ll-design-system-root *,
+  .ll-design-system-root *::before,
+  .ll-design-system-root *::after,
+  .ll-editor-root,
+  .ll-editor-root *,
+  .ll-editor-root *::before,
+  .ll-editor-root *::after {
+    box-sizing: border-box;
+  }
+
+  .ll-design-system-root ul,
+  .ll-design-system-root ol,
+  .ll-editor-root ul,
+  .ll-editor-root ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ll-design-system-root button,
+  .ll-editor-root button {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
 }
 
-/* ----------------------------------------------------------------------------
- * Typography Hierarchy (Inter & JetBrains Mono)
- * ---------------------------------------------------------------------------- */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sans);
-  color: var(--text-primary);
-  font-weight: var(--font-semibold);
-  line-height: var(--leading-tight);
+@keyframes ll-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-h1 { font-size: var(--text-4xl); font-weight: var(--font-bold); letter-spacing: -0.02em; }
-h2 { font-size: var(--text-3xl); font-weight: var(--font-bold); letter-spacing: -0.015em; }
-h3 { font-size: var(--text-2xl); font-weight: var(--font-semibold); letter-spacing: -0.01em; }
-h4 { font-size: var(--text-xl); font-weight: var(--font-semibold); }
-h5 { font-size: var(--text-lg); font-weight: var(--font-medium); }
-h6 { font-size: var(--text-md); font-weight: var(--font-medium); }
-
-p {
-  color: var(--text-secondary);
-  font-size: var(--text-base);
-  line-height: var(--leading-normal);
+.ll-spinner-spin {
+  animation: ll-spin var(--ll-duration-spin) linear infinite;
 }
 
-code, kbd, pre {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
+@media (prefers-reduced-motion: reduce) {
+  .ll-spinner-spin {
+    animation: none;
+  }
 }
 
-kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 5px;
-  background-color: var(--surface-panel-hover);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xs);
-  box-shadow: var(--shadow-xs);
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-/* ----------------------------------------------------------------------------
- * Confluence Infinite Dot-Grid Matrix
- * ---------------------------------------------------------------------------- */
-.confluence-grid {
-  background-color: var(--canvas-bg);
-  background-image: radial-gradient(var(--canvas-dot-color) var(--canvas-dot-size), transparent var(--canvas-dot-size));
-  background-size: var(--canvas-dot-spacing) var(--canvas-dot-spacing);
-}
-
-/* ----------------------------------------------------------------------------
- * Custom Scrollbar Styling (Minimalist, Translucent, Curved)
- * ---------------------------------------------------------------------------- */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
-  border-radius: var(--radius-full);
-  transition: background var(--transition-fast);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.24);
-}
-
-/* ----------------------------------------------------------------------------
- * Interactive Elements Reset (Buttons, Inputs, Selects)
- * ---------------------------------------------------------------------------- */
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  border: none;
-  outline: none;
-  background: transparent;
-}
-
-button {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  transition: all var(--transition-fast);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-medium);
-}
-
-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ----------------------------------------------------------------------------
- * Selection & Focus Indicators
- * ---------------------------------------------------------------------------- */
-::selection {
-  background-color: var(--accent-primary-light);
-  color: var(--accent-primary-hover);
-}
-
-:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 1px;
+/* Prototype .micro: 11px mono 500 uppercase 0.08em muted. Use only where the prototype uses .micro. */
+.ll-micro {
+  font-family: var(--ll-font-mono-family);
+  font-size: var(--ll-text-micro-size);
+  line-height: var(--ll-text-micro-line-height);
+  font-weight: var(--ll-text-micro-weight);
+  letter-spacing: var(--ll-text-micro-letter-spacing);
+  text-transform: uppercase;
+  color: var(--ll-text-muted);
 }

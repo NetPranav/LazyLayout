@@ -13,7 +13,7 @@
  * command bus for the rest), and asserts what is in the document and what the renderer draws.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { canonical, exportProject, focusApp, openEditor, openFileMenu, waitSaved } from "./support/editor";
+import { canonical, exportProject, focusApp, openEditor, openFileMenu, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 import { startBridge, type RunningBridge } from "../../bin/lazylayout-mcp/bridgeServer";
 
 type Reg = { all: () => { id: string; run: (a?: unknown) => unknown }[] };
@@ -59,7 +59,7 @@ const css = (page: Page, id: string, prop: string) =>
 
 async function start(page: Page) {
   await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
 }
 
 /** Zooms to a layer and waits until the zoom has settled, so the pointer can aim at what is drawn. */
@@ -285,7 +285,7 @@ test.describe("Phase 52: the design journeys", () => {
         (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
         (window as unknown as { __LL_AGENT_PORT__: number }).__LL_AGENT_PORT__ = port;
       }, bridge.port);
-      await openEditor(page);
+      await openEditor(page, LEGACY_EDITOR_URL);
       await openFileMenu(page);
       await page.getByRole("menuitem", { name: /Pair with Claude/ }).click();
       const dialog = page.getByRole("dialog", { name: "Pair with Claude" });

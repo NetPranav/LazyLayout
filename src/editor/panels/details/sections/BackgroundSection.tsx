@@ -1,138 +1,136 @@
-/**
- * ============================================================================
- * BACKGROUND LAYER DETAIL INSPECTOR SECTION
- * ============================================================================
- * UI Element: Details Inspector — Background Section
- * Screen / Scope: Screen 03: Properties & Details Inspector (`/editor`)
- * Role: Contextual inspector section for Background Layer archetype elements.
- *       Configures Type, Gradient stops, Angle, Parallax speed, and Noise grain.
- * Styling Source: "@/editor/styles/panels.css" & "@/editor/styles/forms.css"
- * Matches: PANELS.md (Panel 03: Background Section) & CONVENTIONS.md §4.4
- * ============================================================================
- */
+"use client";
 
 import React from "react";
-import { documentCommands, useLayers } from "@/core/store/useDocumentStore";
-import type { PropValue } from "@/core/document/registry";
-import { readProps } from "@/core/document/props";
-import type { PropertyPath } from "@/core/document/properties";
+import { Select } from "@/editor/components/Select";
+import { NumberField } from "@/editor/components/NumberField";
+import type { InspectorSectionProps } from "../types";
 
-export interface BackgroundSectionProps {
-  elementId: string;
-  elementName: string;
-}
+export const BG_TYPE_OPTIONS = [
+  { value: "Solid", label: "Solid" },
+  { value: "Gradient", label: "Gradient" },
+  { value: "Pattern", label: "Pattern" },
+  { value: "Noise", label: "Noise" },
+] as const;
 
-export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
-  elementId,
-  elementName: _elementName,
+export const PATTERN_OPTIONS = [
+  { value: "None", label: "None" },
+  { value: "Dots", label: "Dots" },
+  { value: "Grid", label: "Grid" },
+  { value: "Lines", label: "Lines" },
+] as const;
+
+export const BLEND_OPTIONS = [
+  { value: "Normal", label: "Normal" },
+  { value: "Multiply", label: "Multiply" },
+  { value: "Screen", label: "Screen" },
+  { value: "Overlay", label: "Overlay" },
+  { value: "Darken", label: "Darken" },
+  { value: "Lighten", label: "Lighten" },
+] as const;
+
+export const BackgroundSection: React.FC<InspectorSectionProps> = ({
+  getValue,
+  onUpdateProp,
+  className = "",
 }) => {
-  const elements = useLayers();
-  const currentElement = elements[elementId];
-  const props = readProps(currentElement, "background");
-
-  const updateProp = (key: PropertyPath, val: PropValue) => {
-    documentCommands.updateProps(elementId, { [key]: val }, `Update background ${key}`);
-  };
-
-  const bgType = props.type || "gradient";
-  const color = props.color || "#0f172a";
-  const gradientAngle = props.gradientAngle ?? 135;
-  const parallaxSpeed = props.parallaxSpeed ?? 0.2;
-  const blendMode = props.blendMode || "normal";
-  const noiseOpacity = props.noiseOpacity ?? 0.05;
+  const bgType = (getValue?.("background.type") as string) || "Solid";
+  const bgColor = (getValue?.("background.color") as string) || "1E1E1E";
 
   return (
-    <div className="element-specific-editor background-section" data-testid="background-section">
-      <div className="form-group-row">
-        <label className="form-label">Background Type</label>
-        <select
-          className="form-select"
-          value={bgType}
-          onChange={(e) => updateProp("background.type", e.target.value)}
-        >
-          <option value="solid">Solid Color</option>
-          <option value="gradient">Linear Gradient</option>
-          <option value="radial">Radial Gradient</option>
-          <option value="noise">Ambient Noise Grain</option>
-        </select>
-      </div>
+    <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
+      <Select
+        size="sm"
+        aria-label="Background type"
+        value={bgType}
+        options={BG_TYPE_OPTIONS}
+        onChange={(v) => onUpdateProp?.("background.type", v)}
+      />
 
-      <div className="form-group">
-        <label className="form-label">Base Color</label>
-        <div className="form-row">
-          <div className="form-color-picker">
-            <div className="form-color-picker__swatch" style={{ backgroundColor: color }} />
-            <span className="form-color-picker__label">{color}</span>
-          </div>
-          <input
-            type="text"
-            className="form-input"
-            value={color}
-            onChange={(e) => updateProp("background.color", e.target.value)}
+      <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+        <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
+          <span
+            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
+            style={{ backgroundColor: `#${bgColor}` }}
           />
+          <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+            <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
+            <input
+              type="text"
+              maxLength={6}
+              aria-label="Background color hex"
+              value={bgColor}
+              onChange={(e) =>
+                onUpdateProp?.(
+                  "background.color",
+                  e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase()
+                )
+              }
+              className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+            />
+          </div>
         </div>
+        <span className="ll-dsub ll:text-micro ll:font-sans ll:text-muted ll:shrink-0">
+          Background color
+        </span>
       </div>
+    </div>
+  );
+};
 
-      <div className="form-group">
-        <div className="form-label">
-          <span>Gradient Angle</span>
-          <span className="form-label__hint">{gradientAngle}°</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="360"
-          step="5"
-          className="form-slider"
-          value={gradientAngle}
-          onChange={(e) => updateProp("background.gradient.angle", Number(e.target.value))}
+export const BackgroundMore: React.FC<InspectorSectionProps> = ({
+  getValue,
+  onUpdateProp,
+}) => {
+  const angle = (getValue?.("background.angle") as number) ?? 180;
+  const noise = (getValue?.("background.noise") as number) ?? 10;
+  const pattern = (getValue?.("background.pattern") as string) || "None";
+  const parallax = (getValue?.("background.parallax") as number) ?? 0;
+  const blend = (getValue?.("background.blend") as string) || "Normal";
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+        <NumberField
+          size="sm"
+          label="Angle"
+          aria-label="Gradient angle"
+          suffix="°"
+          value={angle}
+          onChange={(v) => onUpdateProp?.("background.angle", v)}
+        />
+        <NumberField
+          size="sm"
+          label="Noise"
+          aria-label="Noise opacity"
+          suffix="%"
+          value={noise}
+          onChange={(v) => onUpdateProp?.("background.noise", v)}
         />
       </div>
 
-      <div className="form-group">
-        <div className="form-label">
-          <span>Scroll Parallax Speed</span>
-          <span className="form-label__hint">{parallaxSpeed}x</span>
-        </div>
-        <input
-          type="range"
-          min="-1"
-          max="2"
-          step="0.1"
-          className="form-slider"
-          value={parallaxSpeed}
-          onChange={(e) => updateProp("background.parallax.speed", Number(e.target.value))}
+      <div className="ll:pt-2 ll:border-t ll:border-border ll:flex ll:flex-col ll:gap-2">
+        <Select
+          size="sm"
+          label="Pattern"
+          aria-label="Pattern"
+          value={pattern}
+          options={PATTERN_OPTIONS}
+          onChange={(v) => onUpdateProp?.("background.pattern", v)}
         />
-      </div>
-
-      <div className="form-group-row">
-        <label className="form-label">Blend Mode</label>
-        <select
-          className="form-select"
-          value={blendMode}
-          onChange={(e) => updateProp("background.blendMode", e.target.value)}
-        >
-          <option value="normal">normal</option>
-          <option value="multiply">multiply</option>
-          <option value="screen">screen</option>
-          <option value="overlay">overlay</option>
-          <option value="difference">difference</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <div className="form-label">
-          <span>Noise Grain Opacity</span>
-          <span className="form-label__hint">{Math.round(noiseOpacity * 100)}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="0.5"
-          step="0.01"
-          className="form-slider"
-          value={noiseOpacity}
-          onChange={(e) => updateProp("background.noise.opacity", Number(e.target.value))}
+        <NumberField
+          size="sm"
+          label="Parallax"
+          aria-label="Parallax speed"
+          value={parallax}
+          onChange={(v) => onUpdateProp?.("background.parallax", v)}
+        />
+        <Select
+          size="sm"
+          label="Blend"
+          aria-label="Background blend"
+          value={blend}
+          options={BLEND_OPTIONS}
+          onChange={(v) => onUpdateProp?.("background.blend", v)}
         />
       </div>
     </div>

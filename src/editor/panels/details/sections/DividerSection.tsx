@@ -1,129 +1,144 @@
-/**
- * ============================================================================
- * DIVIDER PROPERTIES & DETAIL INSPECTOR SECTION
- * ============================================================================
- * UI Element: Details Inspector — Divider Section
- * Screen / Scope: Screen 03: Properties & Details Inspector (`/editor`)
- * Role: Contextual inspector section for Divider archetype elements.
- *       Configures Orientation, Length (draw-in), Thickness, Style, and Colors.
- * Styling Source: "@/editor/styles/panels.css" & "@/editor/styles/forms.css"
- * Matches: PANELS.md (Panel 03: Divider Section) & CONVENTIONS.md §4.4
- * ============================================================================
- */
+"use client";
 
 import React from "react";
-import { documentCommands, useLayers } from "@/core/store/useDocumentStore";
-import type { PropValue } from "@/core/document/registry";
-import { readProps } from "@/core/document/props";
-import type { PropertyPath } from "@/core/document/properties";
+import { MoveHorizontal, MoveVertical } from "lucide-react";
+import { Icon } from "@/editor/components/Icon";
+import { SegmentedControl } from "@/editor/components/SegmentedControl";
+import { NumberField } from "@/editor/components/NumberField";
+import { Select } from "@/editor/components/Select";
+import type { InspectorSectionProps } from "../types";
 
-export interface DividerSectionProps {
-  elementId: string;
-  elementName: string;
-}
+export const CAP_OPTIONS = [
+  { value: "Butt", label: "Butt" },
+  { value: "Round", label: "Round" },
+  { value: "Square", label: "Square" },
+] as const;
 
-export const DividerSection: React.FC<DividerSectionProps> = ({
-  elementId,
-  elementName: _elementName,
+export const DividerSection: React.FC<InspectorSectionProps> = ({
+  getValue,
+  onUpdateProp,
+  className = "",
 }) => {
-  const elements = useLayers();
-  const currentElement = elements[elementId];
-  const props = readProps(currentElement, "divider");
-
-  const updateProp = (key: PropertyPath, val: PropValue) => {
-    documentCommands.updateProps(elementId, { [key]: val }, `Update divider ${key}`);
-  };
-
-  const orientation = props.orientation || "horizontal";
-  const length = props.length ?? 100;
-  const thickness = props.thickness ?? 1;
-  const style = props.style || "solid";
-  const color = props.color || "#e2e8f0";
+  const orientation = (getValue?.("divider.orientation") as string) || "horizontal";
+  const style = (getValue?.("divider.style") as string) || "solid";
+  const thickness = (getValue?.("divider.thickness") as number) ?? 1;
+  const length = (getValue?.("divider.length") as number) ?? 528;
+  const color = (getValue?.("divider.color") as string) || "444444";
 
   return (
-    <div className="element-specific-editor divider-section" data-testid="divider-section">
-      <div className="form-group-row">
-        <label className="form-label">Orientation</label>
-        <div className="form-mode-switch">
-          <button
-            type="button"
-            className={`form-mode-btn ${orientation === "horizontal" ? "form-mode-btn--active" : ""}`}
-            onClick={() => updateProp("divider.orientation", "horizontal")}
-          >
-            Horizontal
-          </button>
-          <button
-            type="button"
-            className={`form-mode-btn ${orientation === "vertical" ? "form-mode-btn--active" : ""}`}
-            onClick={() => updateProp("divider.orientation", "vertical")}
-          >
-            Vertical
-          </button>
-        </div>
-      </div>
+    <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
+      {/* Horizontal / Vertical */}
+      <SegmentedControl
+        size="sm"
+        ariaLabel="Divider orientation"
+        value={orientation}
+        onChange={(v) => onUpdateProp?.("divider.orientation", v)}
+        options={[
+          {
+            value: "horizontal",
+            label: "Horizontal",
+            icon: <Icon icon={MoveHorizontal} size={14} />,
+            ariaLabel: "Horizontal",
+          },
+          {
+            value: "vertical",
+            label: "Vertical",
+            icon: <Icon icon={MoveVertical} size={14} />,
+            ariaLabel: "Vertical",
+          },
+        ]}
+      />
 
-      <div className="form-group">
-        <div className="form-label">
-          <span>Length (Draw-in)</span>
-          <span className="form-label__hint">{length}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          className="form-slider"
+      {/* Style: Solid, Dashed, Dotted */}
+      <SegmentedControl
+        size="sm"
+        ariaLabel="Divider style"
+        value={style}
+        onChange={(v) => onUpdateProp?.("divider.style", v)}
+        options={[
+          { value: "solid", label: "Solid", ariaLabel: "Solid" },
+          { value: "dashed", label: "Dashed", ariaLabel: "Dashed" },
+          { value: "dotted", label: "Dotted", ariaLabel: "Dotted" },
+        ]}
+      />
+
+      {/* Thickness & Length */}
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+        <NumberField
+          size="sm"
+          label="Thick"
+          aria-label="Thickness"
+          value={thickness}
+          step={1}
+          onChange={(v) => onUpdateProp?.("divider.thickness", v)}
+        />
+        <NumberField
+          size="sm"
+          label="Length"
+          aria-label="Length"
           value={length}
-          onChange={(e) => updateProp("divider.length", Number(e.target.value))}
+          step={1}
+          onChange={(v) => onUpdateProp?.("divider.length", v)}
         />
       </div>
 
-      <div className="form-row--2col">
-        <div className="form-group">
-          <label className="form-label">Thickness</label>
-          <div className="form-number-scrub">
-            <span className="form-number-scrub__badge form-number-scrub__badge--neutral">px</span>
+      {/* Divider color */}
+      <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+        <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
+          <span
+            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
+            style={{ backgroundColor: `#${color}` }}
+          />
+          <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+            <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
             <input
-              type="number"
-              min="1"
-              max="40"
-              className="form-number-scrub__input"
-              value={thickness}
-              onChange={(e) => updateProp("divider.thickness", Number(e.target.value))}
+              type="text"
+              maxLength={6}
+              aria-label="Divider color hex"
+              value={color}
+              onChange={(e) =>
+                onUpdateProp?.(
+                  "divider.color",
+                  e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase()
+                )
+              }
+              className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
             />
           </div>
         </div>
-
-        <div className="form-group">
-          <label className="form-label">Style</label>
-          <select
-            className="form-select"
-            value={style}
-            onChange={(e) => updateProp("divider.style", e.target.value)}
-          >
-            <option value="solid">Solid</option>
-            <option value="dashed">Dashed</option>
-            <option value="dotted">Dotted</option>
-            <option value="gradient">Gradient</option>
-          </select>
-        </div>
+        <span className="ll-dsub ll:text-micro ll:font-sans ll:text-muted ll:shrink-0">
+          Divider color
+        </span>
       </div>
+    </div>
+  );
+};
 
-      <div className="form-group">
-        <label className="form-label">Stroke Color</label>
-        <div className="form-row">
-          <div className="form-color-picker">
-            <div className="form-color-picker__swatch" style={{ backgroundColor: color }} />
-            <span className="form-color-picker__label">{color}</span>
-          </div>
-          <input
-            type="text"
-            className="form-input"
-            value={color}
-            onChange={(e) => updateProp("divider.color", e.target.value)}
-          />
-        </div>
-      </div>
+export const DividerMore: React.FC<InspectorSectionProps> = ({
+  getValue,
+  onUpdateProp,
+}) => {
+  const cap = (getValue?.("divider.cap") as string) || "Butt";
+  const dashOffset = (getValue?.("divider.dashOffset") as number) ?? 0;
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
+      <Select
+        size="sm"
+        label="Cap"
+        aria-label="Cap"
+        value={cap}
+        options={CAP_OPTIONS}
+        onChange={(v) => onUpdateProp?.("divider.cap", v)}
+      />
+      <NumberField
+        size="sm"
+        label="Dash"
+        aria-label="Dash offset"
+        value={dashOffset}
+        step={1}
+        onChange={(v) => onUpdateProp?.("divider.dashOffset", v)}
+      />
     </div>
   );
 };

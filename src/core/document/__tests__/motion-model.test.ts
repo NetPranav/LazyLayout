@@ -38,11 +38,15 @@ import {
 describe("Phase 7.2: easing grammar", () => {
   it("accepts every easing the codebase already uses", () => {
     const found = new Set<string>();
+    // The new editor's own motion model (src/editor) keeps display labels in `ease` ("Ease out", "Spring", "Custom"), not engine
+    // easing strings, and never writes them to the document (it has its own in-memory model for now). When that mode is wired to the
+    // engine's keyframes, they must be grammar easings and this exemption goes.
+    const newEditorLabels = join(process.cwd(), "src", "editor");
     const walk = (dir: string) => {
       for (const entry of readdirSync(dir)) {
         const path = join(dir, entry);
         if (statSync(path).isDirectory()) {
-          if (entry !== "node_modules" && entry !== "__tests__") walk(path);
+          if (entry !== "node_modules" && entry !== "__tests__" && path !== newEditorLabels) walk(path);
         } else if (/\.tsx?$/.test(entry)) {
           for (const m of readFileSync(path, "utf8").matchAll(/\b(?:easing|ease):\s*"([^"$\\]+)"/g)) found.add(m[1]);
         }

@@ -1,0 +1,310 @@
+/*
+ * Tailwind for the new UI only. Classes carry the `ll:` prefix (`ll:flex`, `ll:bg-surface-canvas`) so they cannot collide
+ * with legacy class names or tokens, there is no Preflight reset, and only src/editor is scanned. The default color
+ * palette is removed, so only the approved colors exist as utilities. All values reference tokens from tokens.css.
+ */
+@import "./tokens.css";
+@import "tailwindcss/theme.css" prefix(ll);
+@import "tailwindcss/utilities.css" source(none);
+@source "../**/*.{ts,tsx}";
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Semantic surface colors */
+  --color-surface-backdrop: var(--ll-surface-backdrop);
+  --color-surface-canvas: var(--ll-surface-canvas);
+  --color-surface-panel: var(--ll-surface-panel);
+  --color-surface-bar: var(--ll-surface-bar);
+  --color-surface-raised: var(--ll-surface-raised);
+  --color-surface-hover: var(--ll-surface-hover);
+
+  /* Semantic text & icon colors */
+  --color-primary: var(--ll-text-primary);
+  --color-text-primary: var(--ll-text-primary);
+  --color-secondary: var(--ll-text-secondary);
+  --color-text-secondary: var(--ll-text-secondary);
+  --color-muted: var(--ll-text-muted);
+  --color-text-muted: var(--ll-text-muted);
+
+  /* Semantic control colors */
+  --color-control-primary: var(--ll-control-primary-bg);
+  --color-control-primary-bg: var(--ll-control-primary-bg);
+  --color-control-primary-fg: var(--ll-control-primary-fg);
+  --color-control-active: var(--ll-control-active);
+
+  /* Semantic selection colors */
+  --color-select-bg: var(--ll-select-bg);
+  --color-select-fg: var(--ll-select-fg);
+
+  /* Semantic ship colors */
+  --color-ship-bg: var(--ll-ship-bg);
+  --color-ship-fg: var(--ll-ship-fg);
+
+  /* Semantic avatar colors */
+  --color-avatar-bg: var(--ll-avatar-bg);
+  --color-avatar-fg: var(--ll-avatar-fg);
+
+  /* Canvas content colors */
+  --color-board-bg: var(--ll-board-bg);
+  --color-board-line: var(--ll-board-line);
+  --color-placeholder: var(--ll-placeholder);
+  --color-swatch-line: var(--ll-swatch-line);
+  --color-thumb-bg: var(--ll-thumb-bg);
+  --color-thumb-line: var(--ll-thumb-line);
+
+  /* Accent (Lilac) */
+  --color-accent: var(--ll-accent);
+
+  /* Label colours (timeline tracks only) */
+  --color-label-1: var(--ll-label-1);
+  --color-label-1-tint: var(--ll-label-1-tint);
+  --color-label-2: var(--ll-label-2);
+  --color-label-2-tint: var(--ll-label-2-tint);
+  --color-label-3: var(--ll-label-3);
+  --color-label-3-tint: var(--ll-label-3-tint);
+  --color-label-4: var(--ll-label-4);
+  --color-label-4-tint: var(--ll-label-4-tint);
+  --color-label-5: var(--ll-label-5);
+  --color-label-5-tint: var(--ll-label-5-tint);
+  --color-label-6: var(--ll-label-6);
+  --color-label-6-tint: var(--ll-label-6-tint);
+
+  /* Semantic hairline border */
+  --color-border: var(--ll-border-color);
+  --color-border-color: var(--ll-border-color);
+
+  --font-*: initial;
+  --font-sans: var(--ll-font-sans-family);
+  --font-mono: var(--ll-font-mono-family);
+
+  --text-*: initial;
+  --text-display: var(--ll-text-display-size);
+  --text-display--line-height: var(--ll-text-display-line-height);
+  --text-display--letter-spacing: var(--ll-text-display-letter-spacing);
+  --text-heading: var(--ll-text-heading-size);
+  --text-heading--line-height: var(--ll-text-heading-line-height);
+  --text-heading--letter-spacing: var(--ll-text-heading-letter-spacing);
+  --text-lead: var(--ll-text-lead-size);
+  --text-lead--line-height: var(--ll-text-lead-line-height);
+  --text-lead--letter-spacing: var(--ll-text-lead-letter-spacing);
+  --text-title: var(--ll-text-title-size);
+  --text-title--line-height: var(--ll-text-title-line-height);
+  --text-title--letter-spacing: var(--ll-text-title-letter-spacing);
+  --text-body: var(--ll-text-body-size);
+  --text-body--line-height: var(--ll-text-body-line-height);
+  --text-body--letter-spacing: var(--ll-text-body-letter-spacing);
+  --text-small: var(--ll-text-small-size);
+  --text-small--line-height: var(--ll-text-small-line-height);
+  --text-small--letter-spacing: var(--ll-text-small-letter-spacing);
+  --text-micro: var(--ll-text-micro-size);
+  --text-micro--line-height: var(--ll-text-micro-line-height);
+  --text-micro--letter-spacing: var(--ll-text-micro-letter-spacing);
+  --text-nano: var(--ll-text-nano-size);
+  --text-nano--line-height: var(--ll-text-nano-line-height);
+  --text-nano--letter-spacing: var(--ll-text-nano-letter-spacing);
+
+  --border-width-hairline: var(--ll-border-hairline);
+
+  --outline-offset-inset: var(--ll-outline-offset-inset);
+
+  --radius-xs: var(--ll-radius-xs);
+  --radius-sm: var(--ll-radius-sm);
+  --radius-md: var(--ll-radius-md);
+  --radius-lg: var(--ll-radius-lg);
+
+  --shadow-soft: var(--ll-shadow-soft);
+  --shadow-drop-above: var(--ll-shadow-drop-above);
+  --shadow-drop-below: var(--ll-shadow-drop-below);
+  --shadow-drop-inside: var(--ll-shadow-drop-inside);
+
+  --container-canvas: var(--ll-canvas-max-width);
+  --max-width-canvas: var(--ll-canvas-max-width);
+
+  --max-height-menu: var(--ll-max-h-menu);
+  --max-height-popover: var(--ll-max-h-popover);
+
+  --duration-swap: var(--ll-duration-swap);
+  --duration-pop: var(--ll-dur-pop);
+  --duration-fade: var(--ll-dur-fade);
+
+  /* Grid columns */
+  --grid-template-columns-topbar: 1fr auto 1fr;
+  --grid-template-columns-layout-dual: minmax(0, 1fr) minmax(0, 1fr) 28px;
+  --grid-template-columns-layout-labeled: 100px minmax(0, 1fr);
+  --grid-template-columns-curve-graph: 1fr 220px;
+
+  /* Font weights */
+  --font-weight-display: var(--ll-text-display-weight);
+  --font-weight-title: var(--ll-text-title-weight);
+  --font-weight-body: var(--ll-text-body-weight);
+  --font-weight-small: var(--ll-text-small-weight);
+  --font-weight-micro: var(--ll-text-micro-weight);
+
+  /* Layout dimensions (generates ll:w-*, ll:h-*, ll:size-*) */
+  --spacing-0-5: var(--ll-spacing-0-5);
+  --spacing-sub: var(--ll-spacing-0-5);
+  --spacing-px: var(--ll-spacing-px);
+  --spacing-dialog-pt: var(--ll-pt-dialog);
+  --spacing-submenu-gap: var(--ll-submenu-gap);
+  --spacing-tree-indent: var(--ll-size-tree-indent);
+  --spacing-tree-indent-base: var(--ll-size-tree-indent-base);
+  --spacing-topbar: var(--ll-size-topbar-h);
+  --spacing-panel: var(--ll-size-panel-right-w);
+  --spacing-panel-left: var(--ll-size-panel-left-w);
+  --spacing-panel-compact: var(--ll-size-panel-right-w-compact);
+  --spacing-ruler: var(--ll-size-ruler);
+  --spacing-row: var(--ll-size-row-h);
+  --spacing-row-lg: var(--ll-size-row-lg-h);
+  --spacing-header: var(--ll-size-header-h);
+  --spacing-btn: var(--ll-size-btn-h);
+  --spacing-btn-sm: var(--ll-size-btn-sm-h);
+  --spacing-icon-btn: var(--ll-size-icon-btn);
+  --spacing-avatar: var(--ll-size-avatar);
+  --spacing-mode-tab: var(--ll-size-mode-tab-w);
+  --spacing-mode-tab-h: var(--ll-size-mode-tab-h);
+  --spacing-logo: var(--ll-size-logo);
+  --spacing-logo-icon: var(--ll-size-logo-icon);
+  --spacing-divider: var(--ll-size-divider-h);
+  --spacing-menu: var(--ll-size-menu-w);
+  --spacing-menu-wide: var(--ll-size-menu-wide-w);
+  --spacing-menu-ctx: var(--ll-size-menu-ctx-w);
+  --spacing-menu-users: var(--ll-size-menu-users-w);
+  --spacing-ship-popover: var(--ll-size-ship-popover-w);
+  --spacing-page-dropdown: var(--ll-size-page-dropdown-w);
+  --spacing-sample-surface: var(--ll-size-surface-sample-w);
+  --spacing-viewport-desktop: var(--ll-size-viewport-desktop);
+  --spacing-viewport-tablet: var(--ll-size-viewport-tablet);
+  --spacing-viewport-mobile: var(--ll-size-viewport-mobile);
+
+  /* Explicit heights */
+  --height-0-5: var(--ll-spacing-0-5);
+  --height-px: var(--ll-spacing-px);
+  --height-toggle-track: var(--ll-size-toggle-track-h);
+  --height-toggle-track-sm: var(--ll-size-toggle-track-sm-h);
+  --height-toggle-knob: var(--ll-size-toggle-knob);
+  --height-toggle-knob-sm: var(--ll-size-toggle-knob-sm);
+  --height-topbar: var(--ll-size-topbar-h);
+  --height-header: var(--ll-size-header-h);
+  --height-row: var(--ll-size-row-h);
+  --height-row-lg: var(--ll-size-row-lg-h);
+  --height-btn: var(--ll-size-btn-h);
+  --height-btn-sm: var(--ll-size-btn-sm-h);
+  --height-ruler: var(--ll-size-ruler);
+  --height-icon-btn: var(--ll-size-icon-btn);
+  --height-avatar: var(--ll-size-avatar);
+  --height-mode-tab: var(--ll-size-mode-tab-h);
+  --height-logo: var(--ll-size-logo);
+  --height-logo-icon: var(--ll-size-logo-icon);
+  --height-divider: var(--ll-size-divider-h);
+
+  /* Explicit widths */
+  --width-px: 1px;
+  --width-toggle-track: var(--ll-size-toggle-track-w);
+  --width-toggle-track-sm: var(--ll-size-toggle-track-sm-w);
+  --width-toggle-knob: var(--ll-size-toggle-knob);
+  --width-toggle-knob-sm: var(--ll-size-toggle-knob-sm);
+  --width-panel: var(--ll-size-panel-right-w);
+  --width-panel-left: var(--ll-size-panel-left-w);
+  --width-panel-compact: var(--ll-size-panel-right-w-compact);
+  --width-menu: var(--ll-size-menu-w);
+  --width-menu-wide: var(--ll-size-menu-wide-w);
+  --width-menu-ctx: var(--ll-size-menu-ctx-w);
+  --width-menu-users: var(--ll-size-menu-users-w);
+  --width-ship-popover: var(--ll-size-ship-popover-w);
+  --width-dialog: var(--ll-size-dialog-w);
+  --width-page-dropdown: var(--ll-size-page-dropdown-w);
+  --width-sample-surface: var(--ll-size-surface-sample-w);
+  --width-viewport-desktop: var(--ll-size-viewport-desktop);
+  --width-viewport-tablet: var(--ll-size-viewport-tablet);
+  --width-viewport-mobile: var(--ll-size-viewport-mobile);
+  --width-icon-btn: var(--ll-size-icon-btn);
+  --width-avatar: var(--ll-size-avatar);
+  --width-mode-tab: var(--ll-size-mode-tab-w);
+  --width-logo: var(--ll-size-logo);
+  --width-logo-icon: var(--ll-size-logo-icon);
+  --width-ruler: var(--ll-size-ruler);
+  --width-banner: calc(100% - var(--ll-spacing-8));
+
+  /* Grid templates */
+  --grid-template-columns-layout-dual: minmax(0, 1fr) minmax(0, 1fr) var(--ll-size-icon-btn);
+  --grid-template-columns-layout-labeled: 100px minmax(0, 1fr);
+  --grid-template-columns-curve-graph: 1fr var(--ll-size-page-dropdown-w);
+
+  /* === lane: L1 top bar === */
+  /* === end lane: L1 === */
+
+  /* === lane: L2 left panel === */
+  --height-layer-row: var(--ll-size-layer-row-h);
+  --height-assets-row: var(--ll-size-assets-row-h);
+  /* === end lane: L2 === */
+
+  /* === lane: L3 inspector === */
+  --max-height-inspector-demo: var(--ll-size-inspector-demo-max-h);
+  --max-height-inspector-demo-short: var(--ll-size-inspector-demo-short-max-h);
+  --height-inspector-chat: var(--ll-size-inspector-chat-h);
+  /* === end lane: L3 === */
+
+  /* === lane: L4 canvas === */
+  --width-insert: var(--ll-size-insert-w);
+  --height-insert: var(--ll-size-insert-h);
+  --width-vpop: var(--ll-size-vpop-w);
+  /* === end lane: L4 === */
+
+  /* === lane: L5 timeline === */
+  --height-timeline-header: var(--ll-size-timeline-header);
+  --height-timeline-ruler: var(--ll-size-timeline-ruler);
+  --height-timeline-row: var(--ll-size-timeline-row);
+  --height-timeline-row-compact: var(--ll-size-timeline-row-compact);
+  --height-timeline-prop-row: var(--ll-size-timeline-prop-row);
+  --height-timeline-prop-row-compact: var(--ll-size-timeline-prop-row-compact);
+  --height-timeline-footer: var(--ll-size-timeline-footer);
+  --width-timeline-track-default: var(--ll-size-timeline-track-default);
+  --grid-template-columns-timeline-header: auto 1fr auto;
+  --color-label-1: var(--ll-label-1);
+  --color-label-1-tint: var(--ll-label-1-tint);
+  --color-label-2: var(--ll-label-2);
+  --color-label-2-tint: var(--ll-label-2-tint);
+  --color-label-3: var(--ll-label-3);
+  --color-label-3-tint: var(--ll-label-3-tint);
+  --color-label-4: var(--ll-label-4);
+  --color-label-4-tint: var(--ll-label-4-tint);
+  --color-label-5: var(--ll-label-5);
+  --color-label-5-tint: var(--ll-label-5-tint);
+  --color-label-6: var(--ll-label-6);
+  --color-label-6-tint: var(--ll-label-6-tint);
+  --text-timeline-timecode: var(--ll-text-timeline-timecode);
+  --text-timeline-timecode--line-height: var(--ll-text-timeline-timecode-line-height);
+  /* === end lane: L5 === */
+
+  /* === lane: L6 motion inspector === */
+  --height-slider: var(--ll-size-slider-height);
+  --height-curve: var(--ll-size-curve-height);
+  /* === end lane: L6 === */
+
+  /* === lane: L7 code === */
+  --height-code-header: var(--ll-size-code-header);
+  --height-code-sub: var(--ll-size-code-sub);
+  --height-code-stick: var(--ll-size-code-stick);
+  --height-code-footer: var(--ll-size-code-footer);
+  --height-code-full: var(--ll-size-code-full);
+  --grid-template-columns-console-row: var(--ll-grid-console-row);
+  --grid-template-columns-trace-main: var(--ll-grid-trace-main);
+  --grid-template-columns-trace-row: var(--ll-grid-trace-row);
+  --shadow-indicator-active: var(--ll-shadow-indicator-active);
+  --shadow-indicator-muted: var(--ll-shadow-indicator-muted);
+  /* === end lane: L7 === */
+
+  /* === lane: L8 shell === */
+  /* === end lane: L8 === */
+
+  /* === lane: L9 design system === */
+  /* === end lane: L9 === */
+}
+
+/* Default border color for new UI hairline boundaries */
+[class*="ll:"] {
+  border-color: var(--ll-border-color);
+}

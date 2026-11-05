@@ -5,7 +5,7 @@
  * each with 10 groups of 20 text layers.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved, waitHydrated } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 const DEEP = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -133,7 +133,7 @@ test("Phase 26: a 15-step selection journey asserts the exact selection after ea
 });
 
 test("Phase 26: the selection stays in sync across the canvas, the inspector and the status bar", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
   await waitSaved(page);

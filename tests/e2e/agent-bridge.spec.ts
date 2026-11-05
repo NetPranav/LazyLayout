@@ -5,7 +5,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { startBridge, type RunningBridge } from "../../bin/lazylayout-mcp/bridgeServer";
-import { focusApp, openEditor, openFileMenu } from "./support/editor";
+import { focusApp, openEditor, openFileMenu, LEGACY_EDITOR_URL } from "./support/editor";
 
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
 let bridge: RunningBridge;
@@ -26,7 +26,7 @@ async function open(page: Page) {
   await page.addInitScript((port) => {
     (window as unknown as { __LL_AGENT_PORT__: number }).__LL_AGENT_PORT__ = port;
   }, bridge.port);
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForTimeout(500);
   await openFileMenu(page);

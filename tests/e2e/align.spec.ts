@@ -4,7 +4,7 @@
  * canvas set equal gaps, and the inspector's buttons run the same commands.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved, waitHydrated } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -161,7 +161,7 @@ test("Phase 30: tidy turns a ragged 2 x 2 into a grid, in one undo step", async 
 });
 
 test("Phase 30: the inspector's align and distribute buttons run the commands", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
   await waitSaved(page);

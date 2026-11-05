@@ -1,386 +1,334 @@
 "use client";
 
-/**
- * ============================================================================
- * PROPERTIES & DETAILS INSPECTOR PANEL
- * ============================================================================
- * UI Element: Details Inspector (Unreal Equivalent: Details Panel)
- * Screen / Scope: Screen 03: Details Inspector (`/editor`)
- * Role: Context-aware properties editor for selected components.
- * Styling Source: `@/editor/styles/panels.css` & `@/editor/styles/forms.css`
- * Matches: PANELS.md (Panel 03) & UI.md §4.2
- * ============================================================================
- */
-
-import React, { useState } from "react";
+import React from "react";
+import { useSelectionInspector } from "./hooks/useSelectionInspector";
+import { PositionSection, PositionMore } from "./sections/PositionSection";
+import { LayoutSection, LayoutMore } from "./sections/LayoutSection";
+import { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection";
+import { TypographySection, TypographyMore } from "./sections/TypographySection";
+import { StatesSection, StatesMore } from "./sections/StatesSection";
+import { ImageSection, ImageMore } from "./sections/ImageSection";
+import { InputSection, InputMore } from "./sections/InputSection";
+import { ToggleSection } from "./sections/ToggleSection";
+import { DividerSection, DividerMore } from "./sections/DividerSection";
+import { BackgroundSection, BackgroundMore } from "./sections/BackgroundSection";
+import { IconSection, IconMore } from "./sections/IconSection";
+import { ShapeSection, ShapeMore } from "./sections/ShapeSection";
+import { CounterSection, CounterMore } from "./sections/CounterSection";
+import { Object3DSection, Object3DMore } from "./sections/Object3DSection";
+import { FillSection } from "./sections/FillSection";
+import { StrokeSection } from "./sections/StrokeSection";
+import { EffectsSection } from "./sections/EffectsSection";
+import { AnimationSection } from "./sections/AnimationSection";
+import { DataSection } from "./sections/DataSection";
+import { LogicSection } from "./sections/LogicSection";
+import { AccessibilitySection } from "./sections/AccessibilitySection";
 import {
-  ChevronRight,
-  Sparkles,
-  Link,
-  Sliders,
-  RotateCw,
-  Trash2,
-  ExternalLink,
-  Image as ImageIcon,
-  Minus,
-  Layers,
-  Feather,
-  Globe,
-  X,
-  Box,
-} from "lucide-react";
-import { DataBindingEditor } from "./sections/DataBindingEditor";
-import { AnimationEditor } from "./sections/AnimationEditor";
-import { MediaSection } from "./sections/MediaSection";
-import { DividerSection } from "./sections/DividerSection";
-import { BackgroundSection } from "./sections/BackgroundSection";
-import { SvgVectorSection } from "./sections/SvgVectorSection";
-import { MaterialInspectorSection } from "./sections/MaterialInspectorSection";
-import { EnvironmentInspector } from "./EnvironmentInspector";
-import { VectorBar } from "./VectorBar";
-import { OverridesPanel } from "./OverridesPanel";
-import { LinkPanel } from "./LinkPanel";
-import { ComponentPanel } from "./ComponentPanel";
-import { BindingsPanel } from "./BindingsPanel";
-import { AutoLayoutPanel } from "./AutoLayoutPanel";
-import { LayoutGridsPanel } from "./LayoutGridsPanel";
-import { ConstraintsPanel, GridPanel } from "./GridPanel";
-import { AlignBar } from "./AlignBar";
-import { TextProperties } from "./TextProperties";
-import { SimpleFace } from "./simple/SimpleFace";
-import { ProFace } from "./pro/ProFace";
-import { useInspectorFaceStore } from "@/core/store/useInspectorFaceStore";
-import { SectionRail, type SectionRailItem } from "./SectionRail";
-import "@/editor/styles/panels.css";
-import "@/editor/styles/forms.css";
-import { useLayers } from "@/core/store/useDocumentStore";
+  PageSectionBody,
+  PageBackgroundBody,
+  ThemeTokensBody,
+  ThemeTokensMore,
+} from "./sections/PageSection";
+import type { DetailsInspectorProps } from "./types";
+import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
+import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
 
-interface DetailsInspectorProps {
-  selectedElementId?: string | null;
-  selectedElementName?: string;
-  onOpenBlueprint?: () => void;
-  onDeselect?: () => void;
-}
+/**
+ * Returns the array of DesignSectionConfig populated with real inspector field children.
+ * Useful when RightPanelFrame needs the prototype-compliant section configurations with their bodies.
+ */
+/** Stable add-handler holders: the section header "+" reaches the mounted repeatable section through these. */
+type AddRef = { current?: () => void };
+const fillAddRef: AddRef = {};
+const strokeAddRef: AddRef = {};
+const effectsAddRef: AddRef = {};
+const animAddRef: AddRef = {};
+const dataAddRef: AddRef = {};
+const logicAddRef: AddRef = {};
+const a11yAddRef: AddRef = {};
 
-export const DetailsInspector: React.FC<DetailsInspectorProps> = ({
-  selectedElementId,
-  selectedElementName = "Element Details",
-  onOpenBlueprint,
-  onDeselect,
-}) => {
-  const elements = useLayers();
-  const face = useInspectorFaceStore((st) => st.face);
-  const isElementSelected = Boolean(
-    selectedElementId &&
-    selectedElementId !== "" &&
-    selectedElementId !== "world_root" &&
-    selectedElementId !== "world"
-  );
-
-  const currentElement = isElementSelected && selectedElementId ? elements[selectedElementId] : undefined;
-  const archetype = currentElement?.archetype || "button";
-
-  // Collapsible accordion state
-  const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>({
-    media: true,
-    divider: true,
-    background: true,
-    svgVector: true,
-    material: true,
-    transform: true,
-    layout: true,
-    appearance: true,
-    typography: true,
-    bindings: true,
-    motion: true,
-  });
-
-  const toggleSection = (key: string) => {
-    setSectionsOpen((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  /** Rail click: expand the section (if collapsed) and scroll it into view. */
-  const jumpToSection = (key: string) => {
-    setSectionsOpen((prev) => ({ ...prev, [key]: true }));
-    document.getElementById(`details-section-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const railItems: SectionRailItem[] = [
-    { id: "properties", icon: <Sliders size={14} />, label: "Properties" },
-    ...(archetype === "image" ? [{ id: "media", icon: <ImageIcon size={14} />, label: "Media" }] : []),
-    ...(archetype === "divider" ? [{ id: "divider", icon: <Minus size={14} />, label: "Divider" }] : []),
-    ...(archetype === "background" ? [{ id: "background", icon: <Globe size={14} />, label: "Background" }] : []),
-    ...(archetype === "icon" ? [{ id: "svgVector", icon: <Box size={14} />, label: "SVG / Vector" }] : []),
-    ...(archetype === "object3D" ? [{ id: "material", icon: <RotateCw size={14} />, label: "Material" }] : []),
-    { id: "bindings", icon: <Link size={14} />, label: "Data Bindings" },
-    { id: "motion", icon: <Sparkles size={14} />, label: "Motion & Animation" },
-  ];
-
-  // If no element is selected on canvas or outliner, render World Environment settings directly
-  if (!isElementSelected || !selectedElementId) {
-    return <EnvironmentInspector />;
+export function getInspectorDesignSections(
+  inspector: ReturnType<typeof useSelectionInspector>,
+  onOpenBlueprint?: () => void
+): DesignSectionConfig[] {
+  // Empty state: when no element is selected, show the Page inspector sections (prototype parity)
+  if (!inspector.hasSelection) {
+    return [
+      {
+        id: "page",
+        title: "Page",
+        children: <PageSectionBody pageName={inspector.selectionName || "Landing page"} />,
+      },
+      {
+        id: "background",
+        title: "Background",
+        children: <PageBackgroundBody />,
+      },
+      {
+        id: "theme-tokens",
+        title: "Theme & Tokens",
+        children: <ThemeTokensBody />,
+        moreContent: <ThemeTokensMore />,
+      },
+    ];
   }
 
+  const sectionProps = {
+    selectedId: inspector.selectedId,
+    selectedIds: inspector.selectedIds,
+    layer: inspector.primaryLayer,
+    isMulti: inspector.isMulti,
+    getValue: inspector.getValue,
+    onUpdateProp: inspector.onUpdateProp,
+    onUpdateProps: inspector.onUpdateProps,
+  };
+
+  const isFrame = inspector.isFrame;
+  const archetype = inspector.primaryLayer?.archetype;
+
+  const isInput = archetype === "input";
+  const isToggle = archetype === "toggle";
+  const isDivider = archetype === "divider" || (archetype as string) === "line";
+  const isBackground = archetype === "background";
+  const isIcon = archetype === "icon";
+  const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
+  const isCounter = (archetype as string) === "counter";
+  const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
+
+  const hasTypography =
+    !inspector.primaryLayer ||
+    ["text", "button", "input", "counter", "svgText"].includes(archetype || "") ||
+    inspector.isMulti;
+
+  const allowsFill =
+    !inspector.primaryLayer ||
+    !["input", "toggle", "divider", "line", "icon", "object3d", "object3D", "counter"].includes(
+      archetype || ""
+    );
+
+  return [
+    {
+      id: "position",
+      title: "Position",
+      children: (
+        <PositionSection
+          {...sectionProps}
+          onAlign={inspector.onAlign}
+          onDistribute={inspector.onDistribute}
+          onTidy={inspector.onTidy}
+        />
+      ),
+      moreContent: <PositionMore {...sectionProps} />,
+    },
+    {
+      id: "layout",
+      title: "Layout",
+      children: <LayoutSection {...sectionProps} isFrame={isFrame} />,
+      moreContent: <LayoutMore {...sectionProps} isFrame={isFrame} />,
+    },
+    {
+      id: "appearance",
+      title: "Appearance",
+      children: <AppearanceSection {...sectionProps} />,
+      moreContent: <AppearanceMore {...sectionProps} />,
+    },
+    ...(isInput
+      ? [
+          {
+            id: "input",
+            title: "Input",
+            children: <InputSection {...sectionProps} />,
+            moreContent: <InputMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isToggle
+      ? [
+          {
+            id: "toggle",
+            title: "Toggle",
+            children: <ToggleSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isDivider
+      ? [
+          {
+            id: "divider",
+            title: "Divider",
+            children: <DividerSection {...sectionProps} />,
+            moreContent: <DividerMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isBackground
+      ? [
+          {
+            id: "background",
+            title: "Background",
+            children: <BackgroundSection {...sectionProps} />,
+            moreContent: <BackgroundMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isIcon
+      ? [
+          {
+            id: "icon",
+            title: "Icon",
+            children: <IconSection {...sectionProps} />,
+            moreContent: <IconMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isShape
+      ? [
+          {
+            id: "shape",
+            title: "Shape",
+            children: <ShapeSection {...sectionProps} />,
+            moreContent: <ShapeMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isCounter
+      ? [
+          {
+            id: "counter",
+            title: "Counter",
+            children: <CounterSection {...sectionProps} />,
+            moreContent: <CounterMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isObject3D
+      ? [
+          {
+            id: "object3d",
+            title: "3D",
+            children: <Object3DSection {...sectionProps} />,
+            moreContent: <Object3DMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(hasTypography
+      ? [
+          {
+            id: "typography",
+            title: "Typography",
+            children: <TypographySection {...sectionProps} />,
+            moreContent: <TypographyMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "button"
+      ? [
+          {
+            id: "states",
+            title: "States",
+            children: <StatesSection {...sectionProps} />,
+            moreContent: <StatesMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "image"
+      ? [
+          {
+            id: "image",
+            title: "Image",
+            children: <ImageSection {...sectionProps} />,
+            moreContent: <ImageMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(allowsFill
+      ? [
+          {
+            id: "fill",
+            title: "Fill",
+            onAdd: () => fillAddRef.current?.(),
+            children: <FillSection {...sectionProps} onAddFillRef={fillAddRef} />,
+          },
+        ]
+      : []),
+    ...(!isObject3D
+      ? [
+          {
+            id: "stroke",
+            title: "Stroke",
+            onAdd: () => strokeAddRef.current?.(),
+            children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
+          },
+        ]
+      : []),
+    {
+      id: "effects",
+      title: "Effects",
+      onAdd: () => effectsAddRef.current?.(),
+      children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+    },
+    {
+      id: "animation",
+      title: "Animation",
+      onAdd: () => animAddRef.current?.(),
+      children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
+    },
+    {
+      id: "data",
+      title: "Data",
+      onAdd: () => dataAddRef.current?.(),
+      children: <DataSection {...sectionProps} onAddDataRef={dataAddRef} />,
+    },
+    {
+      id: "logic",
+      title: "Logic",
+      onAdd: () => logicAddRef.current?.(),
+      children: (
+        <LogicSection
+          {...sectionProps}
+          onOpenBlueprint={onOpenBlueprint}
+          onAddLogicRef={logicAddRef}
+        />
+      ),
+    },
+    {
+      id: "accessibility",
+      title: "Accessibility",
+      onAdd: () => a11yAddRef.current?.(),
+      children: (
+        <AccessibilitySection {...sectionProps} onAddA11yRef={a11yAddRef} />
+      ),
+    },
+  ];
+}
+
+/**
+ * DetailsInspector
+ * Complete inspector field bodies wired to the live selection and document store.
+ */
+export const DetailsInspector: React.FC<DetailsInspectorProps> = ({
+  selectedElementId,
+  onOpenBlueprint,
+  onDeselect: _onDeselect,
+  className = "",
+}) => {
+  const inspector = useSelectionInspector({ selectedElementId });
+  const sections = getInspectorDesignSections(inspector, onOpenBlueprint);
+
   return (
-    <div className="panel-shell details-inspector" role="region" aria-label="Properties & Details Inspector">
-      {/* Panel Top Header Bar */}
-      <div className="panel-header">
-        <div className="panel-header__title">
-          <Sliders size={13} style={{ color: "var(--accent-primary)" }} />
-          <span>{selectedElementName}</span>
-        </div>
-
-        <div className="panel-header__actions">
-          <span className="panel-header__badge">{selectedElementId}</span>
-          <button type="button" className="panel-icon-btn" title="Inspect Source Blueprint" onClick={onOpenBlueprint}>
-            <ExternalLink size={12} />
-          </button>
-          <button type="button" className="panel-icon-btn" title="Delete Component">
-            <Trash2 size={12} />
-          </button>
-          {onDeselect && (
-            <button
-              type="button"
-              id="details-deselect-btn"
-              className="panel-icon-btn"
-              title="Deselect (Return to World Settings)"
-              onClick={onDeselect}
-              aria-label="Deselect Element"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Section Rail + Scrollable Inspector Body */}
-      <div className="panel-body">
-        {face === "pro" && <SectionRail items={railItems} onSelect={jumpToSection} />}
-        <div className="panel-content">
-        <AlignBar />
-        <ComponentPanel />
-        <LinkPanel />
-        <OverridesPanel />
-        <BindingsPanel />
-        <VectorBar />
-        <AutoLayoutPanel />
-        <LayoutGridsPanel />
-        <GridPanel />
-        <ConstraintsPanel />
-        <div className="inspector-face-switch" role="tablist" aria-label="Inspector face">
-          <button type="button" role="tab" aria-selected={face === "simple"} onClick={() => useInspectorFaceStore.getState().setFace("simple")}>Simple</button>
-          <button type="button" role="tab" aria-selected={face === "pro"} onClick={() => useInspectorFaceStore.getState().setFace("pro")}>Pro</button>
-        </div>
-        {face === "simple" ? (
-          <SimpleFace />
-        ) : (
-        <>
-        <TextProperties />
-        <div id="details-section-properties">
-          <ProFace />
-        </div>
-
-        {/* ====================================================================
-         * ARCHETYPE-SPECIFIC SECTION: MEDIA (Image)
-         * ==================================================================== */}
-        {archetype === "image" && (
-          <div id="details-section-media" className={`panel-section ${sectionsOpen.media ? "panel-section--open" : ""}`} data-testid="section-media">
-            <button
-              type="button"
-              className="panel-section__header"
-              onClick={() => toggleSection("media")}
-            >
-              <div className="panel-section__title-group">
-                <ChevronRight size={13} className="panel-section__chevron" />
-                <span>Media Details</span>
-              </div>
-              <ImageIcon size={12} style={{ color: "var(--accent-primary)" }} />
-            </button>
-
-            {sectionsOpen.media && (
-              <div className="panel-section__content">
-                <MediaSection
-                  elementId={selectedElementId}
-                  elementName={selectedElementName}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ====================================================================
-         * ARCHETYPE-SPECIFIC SECTION: DIVIDER
-         * ==================================================================== */}
-        {archetype === "divider" && (
-          <div id="details-section-divider" className={`panel-section ${sectionsOpen.divider ? "panel-section--open" : ""}`} data-testid="section-divider">
-            <button
-              type="button"
-              className="panel-section__header"
-              onClick={() => toggleSection("divider")}
-            >
-              <div className="panel-section__title-group">
-                <ChevronRight size={13} className="panel-section__chevron" />
-                <span>Divider Properties</span>
-              </div>
-              <Minus size={12} style={{ color: "var(--accent-primary)" }} />
-            </button>
-
-            {sectionsOpen.divider && (
-              <div className="panel-section__content">
-                <DividerSection
-                  elementId={selectedElementId}
-                  elementName={selectedElementName}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ====================================================================
-         * ARCHETYPE-SPECIFIC SECTION: BACKGROUND
-         * ==================================================================== */}
-        {archetype === "background" && (
-          <div id="details-section-background" className={`panel-section ${sectionsOpen.background ? "panel-section--open" : ""}`} data-testid="section-background">
-            <button
-              type="button"
-              className="panel-section__header"
-              onClick={() => toggleSection("background")}
-            >
-              <div className="panel-section__title-group">
-                <ChevronRight size={13} className="panel-section__chevron" />
-                <span>Background Properties</span>
-              </div>
-              <Layers size={12} style={{ color: "var(--accent-primary)" }} />
-            </button>
-
-            {sectionsOpen.background && (
-              <div className="panel-section__content">
-                <BackgroundSection
-                  elementId={selectedElementId}
-                  elementName={selectedElementName}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ====================================================================
-         * ARCHETYPE-SPECIFIC SECTION: SVG VECTOR (Icon)
-         * ==================================================================== */}
-        {archetype === "icon" && (
-          <div id="details-section-svgVector" className={`panel-section ${sectionsOpen.svgVector ? "panel-section--open" : ""}`} data-testid="section-svg-vector">
-            <button
-              type="button"
-              className="panel-section__header"
-              onClick={() => toggleSection("svgVector")}
-            >
-              <div className="panel-section__title-group">
-                <ChevronRight size={13} className="panel-section__chevron" />
-                <span>SVG Vector</span>
-              </div>
-              <Feather size={12} style={{ color: "var(--accent-primary)" }} />
-            </button>
-
-            {sectionsOpen.svgVector && (
-              <div className="panel-section__content">
-                <SvgVectorSection
-                  elementId={selectedElementId}
-                  elementName={selectedElementName}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ====================================================================
-         * SECTION 3.5: PBR MATERIAL (Object3D)
-         * ==================================================================== */}
-        {archetype === "object3D" && (
-          <div
-            id="details-section-material"
-            className={`panel-section ${sectionsOpen.material ? "panel-section--open" : ""}`}
-            data-testid="pbr-material-accordion"
-          >
-            <button
-              type="button"
-              className="panel-section__header"
-              onClick={() => toggleSection("material")}
-            >
-              <div className="panel-section__title-group">
-                <ChevronRight size={13} className="panel-section__chevron" />
-                <span>PBR Material & 3D Geometry</span>
-              </div>
-              <Box size={12} style={{ color: "var(--accent-primary)" }} />
-            </button>
-
-            {sectionsOpen.material && (
-              <div className="panel-section__content">
-                <MaterialInspectorSection
-                  elementId={selectedElementId}
-                  elementName={selectedElementName}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ====================================================================
-         * SECTION 5: DATA BINDINGS & BLUEPRINTS
-         * ==================================================================== */}
-        <div id="details-section-bindings" className={`panel-section ${sectionsOpen.bindings ? "panel-section--open" : ""}`}>
-          <button
-            type="button"
-            className="panel-section__header"
-            onClick={() => toggleSection("bindings")}
-          >
-            <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" />
-              <span>Data Bindings</span>
-            </div>
-            <Link size={12} style={{ color: "var(--accent-info)" }} />
-          </button>
-
-          {sectionsOpen.bindings && (
-            <div className="panel-section__content">
-              <DataBindingEditor
-                elementId={selectedElementId}
-                elementName={selectedElementName}
-                archetype={archetype}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* ====================================================================
-         * SECTION 6: MOTION & ANIMATION
-         * ==================================================================== */}
-        <div id="details-section-motion" className={`panel-section ${sectionsOpen.motion ? "panel-section--open" : ""}`}>
-          <button
-            type="button"
-            className="panel-section__header"
-            onClick={() => toggleSection("motion")}
-          >
-            <div className="panel-section__title-group">
-              <ChevronRight size={13} className="panel-section__chevron" />
-              <span>Motion & Animation</span>
-            </div>
-            <Sparkles size={12} style={{ color: "var(--accent-primary)" }} />
-          </button>
-
-          {sectionsOpen.motion && (
-            <div className="panel-section__content">
-              <AnimationEditor
-                elementId={selectedElementId}
-                elementName={selectedElementName}
-                archetype={archetype}
-              />
-            </div>
-          )}
-        </div>
-        </>
-        )}
-        </div>
-      </div>
+    <div className={`ll:flex ll:flex-col ll:w-full ${className}`}>
+      {sections.map((sec) => (
+        <RightPanelSection
+          key={sec.id}
+          id={sec.id}
+          title={sec.title}
+          onAdd={sec.onAdd}
+          moreContent={sec.moreContent}
+          headerAction={sec.headerAction}
+        >
+          {sec.children}
+        </RightPanelSection>
+      ))}
     </div>
   );
 };

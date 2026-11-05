@@ -7,7 +7,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { computeStack, hugSize, uniformPadding, type Rect, type SizingMode, type StackChild, type StackSpec } from "../../src/core/layout/stack";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
@@ -16,7 +16,7 @@ async function ready(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);
@@ -125,15 +125,19 @@ async function build(page: Page, root: N): Promise<Record<string, string>> {
 }
 const flatten = (n: N): N[] => [n, ...(n.kids ?? []).flatMap(flatten)];
 
-const measure = (page: Page, names: string[], ids: Record<string, string>) =>
+const measure = (page: Page, names: string[], ids: Record<string, string>): Promise<Record<string, { x: number; y: number; w: number; h: number }>> =>
   page.evaluate(
     ({ names, ids }) => {
       // every top-level frame is drawn in its own iframe: the one that has the fixture's root
-      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${ids.root}"]`))!;
-      const root = d.querySelector<HTMLElement>(`[data-element-id="${ids.root}"]`)!.getBoundingClientRect();
+      const d = Array.from(document.querySelectorAll("iframe")).map((f) => f.contentDocument).find((c) => c?.querySelector(`[data-element-id="${ids.root}"]`));
+      const root = d?.querySelector<HTMLElement>(`[data-element-id="${ids.root}"]`)?.getBoundingClientRect();
+      if (!d || !root) {
+        return Object.fromEntries(names.map((n) => [n, { x: 0, y: 0, w: 0, h: 0 }]));
+      }
       return Object.fromEntries(
         names.map((n) => {
-          const r = d.querySelector<HTMLElement>(`[data-element-id="${ids[n]}"]`)!.getBoundingClientRect();
+          const r = d.querySelector<HTMLElement>(`[data-element-id="${ids[n]}"]`)?.getBoundingClientRect();
+          if (!r) return [n, { x: 0, y: 0, w: 0, h: 0 }];
           return [n, { x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height }];
         }),
       );

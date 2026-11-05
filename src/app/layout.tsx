@@ -4,7 +4,7 @@
  * ============================================================================
  * UI Element: Engine Root Shell & Font Provider
  * Screen / Scope: Global (All pages & editor workspaces)
- * Role: Loads Inter and JetBrains Mono fonts, establishes CSS variable bindings,
+ * Role: Loads Geist, Geist Mono, Inter, and JetBrains Mono fonts, establishes CSS variable bindings,
  *       and provides global HTML document shell.
  * 
  * CSS ISOLATION & STYLING NOTE:
@@ -17,9 +17,21 @@
  */
 
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import "@/editor/styles/globals.css";
 import "@/editor/styles/animations.css";
+
+const geistSans = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,7 +57,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      data-theme="paper"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("lazy-layout-theme");var themes=['paper','dark','white','warm','lilac'];if(themes.indexOf(t)>-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","paper");}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

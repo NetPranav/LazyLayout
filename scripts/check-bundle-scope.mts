@@ -4,7 +4,7 @@
  *
  * Requires `npm run build` to have already run with `NEXT_PUBLIC_EDITION`
  * unset (or "initial") — the default. Then, for each gated After-track panel
- * (src/editor/shell/afterTrackPanels.tsx), this:
+ * (src/legacy-editor/shell/afterTrackPanels.tsx), this:
  *
  *   1. Picks a marker string that only occurs inside that panel's own real
  *      implementation (its longest string literal, which in practice is
@@ -43,14 +43,14 @@ interface GatedPanel {
 }
 
 const GATED_PANELS: GatedPanel[] = [
-  { name: "BlueprintCanvas", sourceFile: "src/editor/panels/blueprint/BlueprintCanvas.tsx" },
-  { name: "ExecutionTracePanel", sourceFile: "src/editor/panels/execution-trace/ExecutionTracePanel.tsx" },
-  { name: "PagesManager", sourceFile: "src/editor/panels/pages-manager/PagesManager.tsx" },
-  { name: "DeploymentDashboard", sourceFile: "src/editor/panels/deployment/DeploymentDashboard.tsx" },
-  { name: "PluginManager", sourceFile: "src/editor/panels/plugins/PluginManager.tsx" },
+  { name: "BlueprintCanvas", sourceFile: "src/legacy-editor/panels/blueprint/BlueprintCanvas.tsx" },
+  { name: "ExecutionTracePanel", sourceFile: "src/legacy-editor/panels/execution-trace/ExecutionTracePanel.tsx" },
+  { name: "PagesManager", sourceFile: "src/legacy-editor/panels/pages-manager/PagesManager.tsx" },
+  { name: "DeploymentDashboard", sourceFile: "src/legacy-editor/panels/deployment/DeploymentDashboard.tsx" },
+  { name: "PluginManager", sourceFile: "src/legacy-editor/panels/plugins/PluginManager.tsx" },
   // Phase 18: the logic sandbox is full-edition only; the design stage is StageHost.
-  { name: "SandboxHost", sourceFile: "src/editor/runtime/SandboxHost.tsx" },
-  { name: "VersionControlPanel", sourceFile: "src/editor/panels/versioning/VersionControlPanel.tsx" },
+  { name: "SandboxHost", sourceFile: "src/legacy-editor/runtime/SandboxHost.tsx" },
+  { name: "VersionControlPanel", sourceFile: "src/legacy-editor/panels/versioning/VersionControlPanel.tsx" },
   // Sub-Phase 41.1: the After-track *store action* modules, gated the same way
   // (imported only via `import()` behind `edition === "full"` in
   // afterTrackPanels.tsx) — see that file's header comment. Explicit markers:
