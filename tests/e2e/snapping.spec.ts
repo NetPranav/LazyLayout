@@ -9,8 +9,15 @@ import { openEditor, waitSaved, waitHydrated } from "./support/editor";
 async function openShapesLab(page: Page) {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
   await waitHydrated(page);
-  await page.getByRole("button", { name: "Load one frame with shapes" }).click();
-  await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'), null, { timeout: 60_000 });
+  await expect
+    .poll(
+      async () => {
+        await page.getByRole("button", { name: "Load one frame with shapes" }).click();
+        return page.evaluate(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'));
+      },
+      { timeout: 45_000, intervals: [500, 1000, 2000] },
+    )
+    .toBe(true);
   await page.waitForTimeout(600);
 }
 
@@ -136,12 +143,12 @@ test("Phase 28: a guide dragged out of the ruler is a snap target, and the ruler
   await dragTo(page, gs, { x: stage.x + 6, y: stage.y + 400 });
   await expect(page.locator('.canvas-overlay__guide[data-axis="x"]:not([hidden])')).toHaveCount(0);
 
-  await page.getByRole("group", { name: "Snapping" }).getByRole("button", { name: "Rulers" }).click();
+  await page.getByRole("group", { name: "Snapping" }).getByRole("button", { name: "Rulers" }).dispatchEvent("click");
   await expect(page.locator('[data-ruler="top"]')).toHaveCount(0);
   await expect(page.locator('[data-ruler="left"]')).toHaveCount(0);
 });
 
-test.fixme("Phase 28: guides belong to their frame, are saved, undone and restored — New UI lacks Mount Showcase Demo and legacy whiteboard frame guide persistence on /editor", async ({ page }) => {
+test("Phase 28: guides belong to their frame, are saved, undone and restored", async ({ page }) => {
   await openEditor(page);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));

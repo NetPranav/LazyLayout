@@ -5,7 +5,7 @@
  * against the transport's time and the document.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const FPS = 60;
@@ -22,7 +22,7 @@ async function setup(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("tab", { name: /Animate/ }).click();
   await page.locator(".timeline").waitFor({ state: "visible", timeout: 15_000 });
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
@@ -41,7 +41,6 @@ async function setup(page: Page) {
 }
 
 test("Phase 63: a keyboard-only journey lands on exact times", async ({ page }) => {
-  test.fixme(true, "New editor lacks PageUp/PageDown, B/N shortcuts, showcase demo, and window.__LL_ENGINE__");
   await setup(page);
   const key = (k: string) => page.keyboard.press(k);
 
@@ -125,7 +124,6 @@ test("Phase 63: a keyboard-only journey lands on exact times", async ({ page }) 
 });
 
 test("Phase 63: the keys belong to the timeline: nothing happens over the canvas", async ({ page }) => {
-  test.fixme(true, "New editor lacks PageDown shortcut and window.__LL_ENGINE__");
   await setup(page);
   await page.keyboard.press("Home");
   await expectTime(page, 0);
@@ -143,7 +141,6 @@ test("Phase 63: the keys belong to the timeline: nothing happens over the canvas
 });
 
 test("Phase 63: Ctrl and the wheel zoom the timeline around the pointer", async ({ page }) => {
-  test.fixme(true, "New editor lacks showcase demo setup and window.__LL_ENGINE__");
   await setup(page);
   const before = await rulerWidth(page);
   const box = (await page.locator("[data-timeline-ruler]").boundingBox())!;

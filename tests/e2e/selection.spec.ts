@@ -132,7 +132,7 @@ test("Phase 26: a 15-step selection journey asserts the exact selection after ea
   await expectSelection(page, [], "17. Escape clears");
 });
 
-test.fixme("Phase 26: the selection stays in sync across the canvas, the inspector and the status bar — New UI lacks Mount Showcase Demo, stage iframe, and canvas hit-testing / status bar selection sync on /editor", async ({ page }) => {
+test("Phase 26: the selection stays in sync across the canvas, the inspector and the status bar", async ({ page }) => {
   await openEditor(page);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
