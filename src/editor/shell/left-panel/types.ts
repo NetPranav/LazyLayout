@@ -27,6 +27,7 @@ export interface LayerItem {
   hidden?: boolean;
   locked?: boolean;
   hasMotion?: boolean;
+  labelColor?: number;
   parentId?: string | null;
   children?: LayerItem[];
 }
@@ -39,6 +40,9 @@ export interface FileItem {
   hasChildren?: boolean;
   expanded?: boolean;
   selected?: boolean;
+  modified?: boolean;
+  cat?: "All" | "Pages" | "Components" | "Styles" | "Config" | string;
+  dir?: string;
   parentId?: string | null;
   children?: FileItem[];
 }
@@ -57,6 +61,13 @@ export interface AssetItem {
   thumbUrl?: string;
   size?: string;
 }
+
+export type FileMenuAction =
+  | "open"
+  | "open-side"
+  | "copy-path"
+  | "download"
+  | "reveal-layer";
 
 export type LayerMenuAction =
   | "ask-ai"
@@ -86,7 +97,14 @@ export type LayerMenuAction =
   | "align-middle"
   | "align-bottom"
   | "distribute-horizontally"
-  | "distribute-vertically";
+  | "distribute-vertically"
+  | "set-label-1"
+  | "set-label-2"
+  | "set-label-3"
+  | "set-label-4"
+  | "set-label-5"
+  | "set-label-6"
+  | "set-label-default";
 
 export interface LeftPanelProps {
   /** Active editor mode: design (layers + assets), motion (layers + tracks), or code (files) */
@@ -117,8 +135,12 @@ export interface LeftPanelProps {
   onToggleHidden?: (id: string) => void;
   /** Lock/unlock toggle callback for layers */
   onToggleLocked?: (id: string) => void;
+  /** Layer move / reorder callback */
+  onMoveLayer?: (ids: string[], parentId: string | null, index?: number) => void;
   /** Layer context menu action callback (everything except hide and lock, which use the toggle callbacks) */
   onLayerAction?: (action: LayerMenuAction, id: string) => void;
+  /** File context menu action callback */
+  onFileAction?: (action: FileMenuAction, id: string) => void;
   /** Rename callback for layers or files */
   onRename?: (id: string, newName: string) => void;
   /** Callback when asset upload button is clicked */

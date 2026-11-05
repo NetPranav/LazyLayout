@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect, useCallback, useSyncExternalStore }
 import { ChevronRight, Plus, Search } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
-import { TextField } from "@/editor/components/TextField";
 import type { AssetItem } from "./types";
 import { AssetTile } from "./AssetTile";
 import {
@@ -169,7 +168,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
       <div
         id="p-assets"
         style={{
-          height: isOpen ? `${height}px` : "36px",
+          height: isOpen ? `${height}px` : undefined,
         }}
         className="lassets ll-lassets ll:relative ll:flex ll:flex-col ll:border-t ll:border-border ll:shrink-0 ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel"
       >
@@ -179,9 +178,9 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
           id="abtn"
           aria-expanded={isOpen}
           onClick={onToggleOpen}
-          className="arow ll-arow ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-9 ll:px-4 ll:font-medium ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          className="arow ll-arow ll:flex ll:items-center ll:gap-2 ll:w-full ll:h-9 ll:pl-4 ll:pr-3 ll:font-medium ll:text-body ll:text-secondary ll:hover:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         >
-          <span className="ll:text-small ll:font-medium">Assets</span>
+          <span className="ll:text-body ll:font-medium">Assets</span>
           <Icon
             icon={ChevronRight}
             size={14}
@@ -224,16 +223,20 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
         {isOpen && (
           <div id="abody" className="abody ll-abody ll:flex-1 ll:min-h-0 ll:overflow-y-auto">
             {searchOpen && (
-              <div className="ll:px-4 ll:pt-2">
-                <TextField
+              <div className="ll:px-3 ll:pt-2">
+                <input
                   ref={searchInputRef}
                   id="asin"
-                  size="sm"
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search assets"
                   aria-label="Search assets"
-                  className="asin ll-asin ll:w-full"
+                  autoCapitalize="off"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="asin ll-asin ll:block ll:w-full ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:text-small ll:text-primary ll:outline-none ll:border ll:border-transparent ll:focus:border-primary ll:placeholder:text-muted"
                 />
               </div>
             )}

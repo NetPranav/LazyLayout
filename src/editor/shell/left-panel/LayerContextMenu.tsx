@@ -27,7 +27,9 @@ import {
   LayoutPanelLeft,
   ListTree,
   Lock,
+  Palette,
   Plus,
+  RotateCcw,
   Trash2,
   Type,
   type LucideIcon,
@@ -213,6 +215,56 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
         >
           Lock
         </MenuItem>
+        <MenuSeparator />
+        <SubMenu
+          id="layer-label-colour"
+          label="Label colour"
+          icon={<Icon icon={Palette} size={MENU_ICON_SIZE} />}
+        >
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-1)" }} />}
+            onClick={() => onAction("set-label-1")}
+          >
+            Slate
+          </MenuItem>
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-2)" }} />}
+            onClick={() => onAction("set-label-2")}
+          >
+            Sage
+          </MenuItem>
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-3)" }} />}
+            onClick={() => onAction("set-label-3")}
+          >
+            Sand
+          </MenuItem>
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-4)" }} />}
+            onClick={() => onAction("set-label-4")}
+          >
+            Clay
+          </MenuItem>
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-5)" }} />}
+            onClick={() => onAction("set-label-5")}
+          >
+            Rose
+          </MenuItem>
+          <MenuItem
+            icon={<span className="lsw ll-lsw ll:block ll:w-3 ll:h-3 ll:rounded-xs" style={{ backgroundColor: "var(--ll-label-6)" }} />}
+            onClick={() => onAction("set-label-6")}
+          >
+            Lavender
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem
+            icon={<Icon icon={RotateCcw} size={MENU_ICON_SIZE} />}
+            onClick={() => onAction("set-label-default")}
+          >
+            Type default
+          </MenuItem>
+        </SubMenu>
         <MenuSeparator />
         <MenuItem
           icon={<Icon icon={BoxSelect} size={MENU_ICON_SIZE} />}

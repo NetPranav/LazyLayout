@@ -4,7 +4,6 @@ import React, { useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
-import { TextField } from "@/editor/components/TextField";
 import type { LeftPanelMode } from "./types";
 
 export interface LeftPanelHeaderProps {
@@ -54,17 +53,16 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
   const countText = `${matchCount} ${isCode ? "file" : "layer"}${matchCount === 1 ? "" : "s"}`;
 
   return (
-    <div className="ll:flex ll:flex-col ll:shrink-0 ll:border-b ll:border-border">
+    <div className="ll:flex ll:flex-col ll:shrink-0">
       {/* Top zone header: 44px height (zhead) */}
-      <div className="zhead ll-zhead ll:h-header ll:flex ll:items-center ll:gap-1 ll:pl-4 ll:pr-2 ll:shrink-0">
+      <div className="zhead ll-zhead ll:h-header ll:flex ll:items-center ll:gap-1 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
         {!isCode ? (
-          headerStart ? (
-            <div className="ll:flex-1 ll:min-w-0">{headerStart}</div>
-          ) : (
+          <>
+            {headerStart && <div className="ll:flex-none">{headerStart}</div>}
             <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
               Layers
             </span>
-          )
+          </>
         ) : (
           <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
             Files
@@ -87,12 +85,13 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
 
       {/* Search box if toggled (lsbox) */}
       {searchOpen && (
-        <div id="lfilter" className="lsbox ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-t ll:border-border ll:shrink-0">
-          <div className="lsfield ll-lsfield ll:relative ll:w-full">
-            <TextField
+        <div id="lfilter" className="lsbox ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-b ll:border-border ll:shrink-0">
+          <div className="lsfield ll-lsfield ll:flex ll:items-center ll:gap-2 ll:h-8 ll:px-2 ll:bg-surface-canvas ll:border ll:border-border ll:rounded-sm ll:text-muted ll:focus-within:border-primary">
+            <Icon icon={Search} size={14} className="ll:text-muted ll:shrink-0" />
+            <input
               ref={inputRef}
               id="lsearch"
-              size="sm"
+              type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -102,18 +101,18 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              className="ll:w-full"
+              className="ll:flex-1 ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:font-normal ll:text-primary ll:placeholder:text-muted"
             />
             {searchQuery.length > 0 && (
-              <IconButton
+              <button
+                type="button"
                 id="lsclear"
-                size="sm"
-                variant="ghost"
                 aria-label="Clear search"
                 onClick={handleClear}
-                icon={<Icon icon={X} size={12} />}
-                className="lsclear ll-lsclear ll:absolute ll:right-1.5 ll:top-1/2 ll:-translate-y-1/2 ll:w-5 ll:h-5 ll:min-w-5 ll:min-h-5"
-              />
+                className="lsclear ll-lsclear ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-surface-panel ll:hover:text-primary ll:outline-none"
+              >
+                <Icon icon={X} size={12} />
+              </button>
             )}
           </div>
 

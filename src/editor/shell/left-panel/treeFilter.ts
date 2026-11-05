@@ -23,6 +23,9 @@ export interface FlatFileNode {
   hasChildren: boolean;
   expanded: boolean;
   selected: boolean;
+  modified?: boolean;
+  cat?: string;
+  dir?: string;
   parentId: string | null;
 }
 
@@ -97,6 +100,9 @@ export function flattenFiles(
       hasChildren,
       expanded,
       selected,
+      modified: Boolean(item.modified),
+      cat: item.cat,
+      dir: item.dir,
       parentId: item.parentId !== undefined ? item.parentId : parentId,
     });
 

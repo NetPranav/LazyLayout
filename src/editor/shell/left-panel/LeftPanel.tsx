@@ -5,7 +5,6 @@ import type { LeftPanelProps, LayerItem, FileItem, TrackItem, AssetItem } from "
 import { LeftPanelHeader } from "./LeftPanelHeader";
 import { LayersTree } from "./LayersTree";
 import { FilesTree } from "./FilesTree";
-import { TracksList } from "./TracksList";
 import { AssetsSection } from "./AssetsSection";
 import { flattenLayers, flattenFiles, filterTreeNodes } from "./treeFilter";
 import { ASSETS_DEFAULT_HEIGHT } from "./constants";
@@ -30,8 +29,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onToggleExpand: controlledOnToggleExpand,
   onToggleHidden: controlledOnToggleHidden,
   onToggleLocked: controlledOnToggleLocked,
+  onMoveLayer: controlledOnMoveLayer,
   onRename,
   onLayerAction,
+  onFileAction,
   onUploadAsset,
   onSelectAsset,
   searchOpen: controlledSearchOpen,
@@ -66,16 +67,58 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const assetsOpen = controlledAssetsOpen ?? internalAssetsOpen;
   const assetsHeight = controlledAssetsHeight ?? internalAssetsHeight;
 
+  const isCode = mode === "code";
+  const isMotion = mode === "motion";
+  const isDesign = mode === "design";
+
+  // Pure filtering and match count derivation during render (no setState in useEffect)
+  const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const hiddenSet = useMemo(() => new Set(internalHiddenIds), [internalHiddenIds]);
+  const lockedSet = useMemo(() => new Set(internalLockedIds), [internalLockedIds]);
+
+  const { visibleNodes: visibleLayerNodes, matchCount: layerMatchCount } = useMemo(() => {
+    if (isCode) return { visibleNodes: [], matchCount: 0 };
+    const all = flattenLayers(layers, expandedSet, selectedSet, hiddenSet, lockedSet);
+    return filterTreeNodes(all, searchQuery);
+  }, [isCode, layers, expandedSet, selectedSet, hiddenSet, lockedSet, searchQuery]);
+
+  const { visibleNodes: visibleFileNodes, matchCount: fileMatchCount } = useMemo(() => {
+    if (!isCode) return { visibleNodes: [], matchCount: 0 };
+    const all = flattenFiles(files, expandedSet, selectedSet);
+    return filterTreeNodes(all, searchQuery);
+  }, [isCode, files, expandedSet, selectedSet, searchQuery]);
+
+  const matchCount = isCode ? fileMatchCount : layerMatchCount;
+
   // Handlers with controlled / uncontrolled fallback
   const handleSelect = useCallback(
     (id: string, e?: React.MouseEvent | React.KeyboardEvent) => {
       if (controlledOnSelect) {
         controlledOnSelect(id, e);
       } else {
+        if (e?.shiftKey && internalSelectedIds.length > 0) {
+          const list = isCode ? visibleFileNodes.map((n) => n.id) : visibleLayerNodes.map((n) => n.id);
+          const last = internalSelectedIds[internalSelectedIds.length - 1];
+          const a = list.indexOf(last);
+          const b = list.indexOf(id);
+          if (a > -1 && b > -1) {
+            const min = Math.min(a, b);
+            const max = Math.max(a, b);
+            setInternalSelectedIds(list.slice(min, max + 1));
+            return;
+          }
+        }
+        if (e?.ctrlKey || e?.metaKey) {
+          setInternalSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+          );
+          return;
+        }
         setInternalSelectedIds([id]);
       }
     },
-    [controlledOnSelect]
+    [controlledOnSelect, isCode, visibleFileNodes, visibleLayerNodes, internalSelectedIds]
   );
 
   const handleSelectTrack = useCallback(
@@ -175,30 +218,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     [onAssetsHeightChange]
   );
 
-  const isCode = mode === "code";
-  const isMotion = mode === "motion";
-  const isDesign = mode === "design";
-
-  // Pure filtering and match count derivation during render (no setState in useEffect)
-  const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const hiddenSet = useMemo(() => new Set(internalHiddenIds), [internalHiddenIds]);
-  const lockedSet = useMemo(() => new Set(internalLockedIds), [internalLockedIds]);
-
-  const { visibleNodes: visibleLayerNodes, matchCount: layerMatchCount } = useMemo(() => {
-    if (isCode) return { visibleNodes: [], matchCount: 0 };
-    const all = flattenLayers(layers, expandedSet, selectedSet, hiddenSet, lockedSet);
-    return filterTreeNodes(all, searchQuery);
-  }, [isCode, layers, expandedSet, selectedSet, hiddenSet, lockedSet, searchQuery]);
-
-  const { visibleNodes: visibleFileNodes, matchCount: fileMatchCount } = useMemo(() => {
-    if (!isCode) return { visibleNodes: [], matchCount: 0 };
-    const all = flattenFiles(files, expandedSet, selectedSet);
-    return filterTreeNodes(all, searchQuery);
-  }, [isCode, files, expandedSet, selectedSet, searchQuery]);
-
-  const matchCount = isCode ? fileMatchCount : layerMatchCount;
-
   return (
     <aside
       ref={containerRef}
@@ -227,6 +246,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           onSelect={handleSelect}
           onToggleExpand={handleToggleExpand}
           onRename={onRename}
+          onFileAction={onFileAction}
         />
       ) : (
         <LayersTree
@@ -239,23 +259,14 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           onToggleExpand={handleToggleExpand}
           onToggleHidden={handleToggleHidden}
           onToggleLocked={handleToggleLocked}
+          onMoveLayer={controlledOnMoveLayer}
           onRename={onRename}
           onLayerAction={onLayerAction}
           showMotion={isDesign}
         />
       )}
 
-      {/* Motion Mode: Tracks section at bottom */}
-      {isMotion && (
-        <TracksList
-          tracks={tracks}
-          selectedTrackId={selectedTrackId}
-          onSelectTrack={handleSelectTrack}
-          height={tracksHeight}
-        />
-      )}
-
-      {/* Design Mode: Assets section with resizable split */}
+      {/* Design Mode: Assets section with resizable split (hidden in motion and code modes) */}
       {isDesign && (
         <AssetsSection
           assets={assets}

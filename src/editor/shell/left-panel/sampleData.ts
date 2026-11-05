@@ -22,9 +22,9 @@ export const SAMPLE_LAYERS: LayerItem[] = [
     expanded: true,
     children: [
       { id: "headline", name: "Headline", type: "text", level: 1, parentId: "hero", hasMotion: true },
-      { id: "subtitle", name: "Subtitle", type: "text", level: 1, parentId: "hero" },
+      { id: "subtitle", name: "Subtitle", type: "text", level: 1, parentId: "hero", hasMotion: true },
       { id: "button", name: "Get started", type: "button", level: 1, parentId: "hero", hasMotion: true },
-      { id: "image", name: "Hero image", type: "image", level: 1, parentId: "hero" },
+      { id: "image", name: "Hero image", type: "image", level: 1, parentId: "hero", hasMotion: true },
     ],
   },
   {
@@ -83,9 +83,9 @@ export const SAMPLE_FILES: FileItem[] = [
         expanded: true,
         parentId: "f-src",
         children: [
-          { id: "f-hero", name: "Hero.tsx", isFolder: false, level: 2, parentId: "f-components" },
-          { id: "f-features", name: "Features.tsx", isFolder: false, level: 2, parentId: "f-components" },
-          { id: "f-footer", name: "Footer.tsx", isFolder: false, level: 2, parentId: "f-components" },
+          { id: "f-hero", name: "Hero.tsx", isFolder: false, level: 2, parentId: "f-components", cat: "Components", dir: "src/components" },
+          { id: "f-features", name: "Features.tsx", isFolder: false, level: 2, parentId: "f-components", cat: "Components", dir: "src/components" },
+          { id: "f-footer", name: "Footer.tsx", isFolder: false, level: 2, parentId: "f-components", cat: "Components", dir: "src/components", modified: true },
         ],
       },
       {
@@ -97,7 +97,7 @@ export const SAMPLE_FILES: FileItem[] = [
         expanded: true,
         parentId: "f-src",
         children: [
-          { id: "f-home", name: "Home.tsx", isFolder: false, level: 2, parentId: "f-pages" },
+          { id: "f-home", name: "Home.tsx", isFolder: false, level: 2, parentId: "f-pages", cat: "Pages", dir: "src/pages", modified: true },
         ],
       },
       {
@@ -109,7 +109,7 @@ export const SAMPLE_FILES: FileItem[] = [
         expanded: true,
         parentId: "f-src",
         children: [
-          { id: "f-globals", name: "globals.css", isFolder: false, level: 2, parentId: "f-styles" },
+          { id: "f-globals", name: "globals.css", isFolder: false, level: 2, parentId: "f-styles", cat: "Styles", dir: "src/styles" },
         ],
       },
     ],
@@ -121,6 +121,8 @@ export const SAMPLE_FILES: FileItem[] = [
     level: 0,
     hasChildren: false,
     expanded: false,
+    cat: "Config",
+    dir: "",
   },
 ];
 
