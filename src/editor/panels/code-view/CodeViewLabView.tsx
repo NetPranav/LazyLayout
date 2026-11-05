@@ -7,6 +7,8 @@ import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { CodePanel } from "./CodePanel";
 import { CodeInspector } from "./CodeInspector";
 import { LiveCodeInspector } from "./LiveCodeInspector";
+import { TraceView } from "./TraceView";
+import { BlueprintCanvas } from "@/editor/panels/blueprint/BlueprintCanvas";
 
 const THEME_OPTIONS = [
   { value: "paper", label: "Paper" },
@@ -130,6 +132,28 @@ export const CodeViewLabView: React.FC = () => {
         </section>
       )}
 
+      {/* SECTION 2B: Bottom CodePanel in Trace Mode */}
+      {(activeSection === "all" || activeSection === "bottom-code") && (
+        <section className="ll:flex ll:flex-col ll:gap-3">
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <Icon icon={Terminal} size={16} className="ll:text-primary" />
+            <h2 className="ll:text-title ll:font-semibold ll:text-primary ll:m-0">
+              2B. Bottom CodePanel — Execution Trace View (Waterfall &amp; Scrubber)
+            </h2>
+          </div>
+          <p className="ll:text-small ll:text-secondary ll:m-0">
+            Execution trace waterfall with time scrub slider, step forward/back, breakpoints toggle, and watch expressions evaluation.
+          </p>
+
+          <div
+            className="ll:w-full ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:shadow-soft"
+            style={{ height: "var(--ll-size-bottom-code-h)" }}
+          >
+            <CodePanel activeTab="trace" />
+          </div>
+        </section>
+      )}
+
       {/* SECTION 3: CodeInspector (Right Panel #ins-code) */}
       {(activeSection === "all" || activeSection === "inspector") && (
         <section className="ll:flex ll:flex-col ll:gap-3">
@@ -161,6 +185,26 @@ export const CodeViewLabView: React.FC = () => {
                 <li>• Dependencies: live package dependency adding and removal</li>
                 <li>• Output File: updates output .tsx/.jsx destination path</li>
               </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* SECTION 3B: Coming Soon Shells (Logic and Data) */}
+      {(activeSection === "all" || activeSection === "inspector") && (
+        <section className="ll:flex ll:flex-col ll:gap-3">
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <Icon icon={Sliders} size={16} className="ll:text-primary" />
+            <h2 className="ll:text-title ll:font-semibold ll:text-primary ll:m-0">
+              3B. Full-Page Coming-Soon Shells (Logic and Data)
+            </h2>
+          </div>
+          <div className="ll:grid ll:grid-cols-2 ll:gap-6">
+            <div className="ll:h-64 ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:shadow-soft">
+              <BlueprintCanvas mode="Logic" />
+            </div>
+            <div className="ll:h-64 ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:shadow-soft">
+              <BlueprintCanvas mode="Data" />
             </div>
           </div>
         </section>
@@ -231,6 +275,26 @@ export const CodeViewLabView: React.FC = () => {
               style={{ maxWidth: 390, height: "var(--ll-size-bottom-code-h)" }}
             >
               <CodePanel activeTab="code" />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* SECTION 3B: Coming Soon Shells (Logic and Data) */}
+      {(activeSection === "all" || activeSection === "inspector") && (
+        <section className="ll:flex ll:flex-col ll:gap-3">
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <Icon icon={Sliders} size={16} className="ll:text-primary" />
+            <h2 className="ll:text-title ll:font-semibold ll:text-primary ll:m-0">
+              3B. Full-Page Coming-Soon Shells (Logic and Data)
+            </h2>
+          </div>
+          <div className="ll:grid ll:grid-cols-2 ll:gap-6">
+            <div className="ll:h-64 ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:shadow-soft">
+              <BlueprintCanvas mode="Logic" />
+            </div>
+            <div className="ll:h-64 ll:rounded-md ll:border ll:border-border ll:overflow-hidden ll:shadow-soft">
+              <BlueprintCanvas mode="Data" />
             </div>
           </div>
         </section>

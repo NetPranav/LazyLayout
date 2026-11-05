@@ -5,7 +5,7 @@
 import type React from "react";
 import type { EmittedFile } from "@/core/types/compiler";
 
-export type CodeTab = "code" | "console";
+export type CodeTab = "code" | "console" | "trace";
 
 export interface CodeFileTab {
   id: string;
@@ -101,9 +101,11 @@ export interface ConsoleLogEntry {
 
 export interface ConsoleViewProps {
   /** Initial logs list */
-  initialLogs?: ConsoleLogEntry[];
+  initialLogs?: any[];
   /** Callback when CLI command is executed */
   onCommand?: (command: string) => void;
+  /** Jump to file and line from a log link */
+  onJumpToFile?: (fileId: string, line: number) => void;
   /** Additional CSS classes */
   className?: string;
   /** Inline styles */
