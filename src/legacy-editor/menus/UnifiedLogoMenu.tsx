@@ -93,13 +93,20 @@ export const UnifiedLogoMenu: React.FC<UnifiedLogoMenuProps> = ({
   const [mobileCategory, setMobileCategory] = useState<SubmenuId | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape or click outside
-  useEffect(() => {
+  // Closing the menu forgets which submenu was open. Done while rendering, as React documents for state that follows a prop,
+  // instead of in an effect (a state update inside an effect draws the menu twice and is a lint error).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
     if (!isOpen) {
       setActiveSubmenu(null);
       setMobileCategory(null);
-      return;
     }
+  }
+
+  // Close on Escape or click outside
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
