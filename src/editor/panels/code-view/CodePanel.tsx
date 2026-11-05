@@ -16,11 +16,12 @@ import {
   X,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { useLayers } from "@/core/store/useDocumentStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { ZipPacker } from "@/compiler/export/ZipPacker";
+import { useMotionModel, motionActions } from "@/editor/motion-model";
 import { SyntaxHighlighter } from "./SyntaxHighlighter";
+import { useCodeModels } from "./useCodeModels";
 import { ConsoleView } from "./ConsoleView";
 import { TraceView } from "./TraceView";
 import {
@@ -33,14 +34,9 @@ import {
   fIcon,
   FILE_OF,
   DEFAULT_CODE_STATE,
-  DEFAULT_DATA,
-  DEFAULT_TYPE,
-  DEFAULT_TXT,
   type CodeGeneratorState,
-  type LayerModel,
-  type TextModel,
 } from "./codeGenerator";
-import type { CodePanelProps, CodeTab, CodeFileTab } from "./types";
+import type { CodePanelProps, CodeTab } from "./types";
 
 const VIEWS: Array<[CodeTab, string]> = [
   ["code", "Code"],
@@ -55,6 +51,9 @@ const CXT: Record<string, string> = {
   image: "#el-image, [data-layer-id='image'], [data-layer-id='el_image']",
   hero: "#artboard, [data-layer-id='hero'], [data-layer-id='el_hero']",
 };
+
+const TFB =
+  "ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:flex ll:items-center ll:gap-1 ll:shrink-0 ll:whitespace-nowrap ll:font-mono ll:text-micro ll:font-medium ll:text-muted";
 
 export const CodePanel: React.FC<CodePanelProps> = ({
   activeTab: controlledTab,
@@ -82,7 +81,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   // Generator & Files state
   const [codeState] = useState<CodeGeneratorState>(DEFAULT_CODE_STATE);
-  const [openTabs, setOpenTabs] = useState<string[]>(["hero", "features", "footer", "home"]);
+  const [openTabs, setOpenTabs] = useState<string[]>(["hero"]);
   const [internalActiveFile, setInternalActiveFile] = useState<string>("hero");
   const [wrap, setWrap] = useState<boolean>(true);
   const [folds, setFolds] = useState<Record<number, boolean>>({});
@@ -92,68 +91,16 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
   const [changedRanges, setChangedRanges] = useState<Record<number, [number, number]> | null>(null);
   const [errorCount] = useState<number>(2); // Console error count badge
-  const [isFullWidth, setIsFullWidth] = useState<boolean>(false);
+  const isFullWidth = useMotionModel((s) => s.fullWidth);
 
   const activeFileId = controlledFileId ?? internalActiveFile;
 
   // Real store connections
-  const elements = useLayers();
   const selectedElementId = useSelectionStore((s) => s.selectedId);
   const selectElement = useSelectionStore((s) => s.select);
   const _activePageId = useProjectStore((s) => s.activePageId);
 
-  // Derive model data from document store layers if present
-  const dataModel = useMemo<Record<string, LayerModel>>(() => {
-    const d = { ...DEFAULT_DATA };
-    if (!elements || Object.keys(elements).length === 0) return d;
-    for (const [id, el] of Object.entries(elements)) {
-      const shortId = id.replace(/^el_/, "");
-      if (d[shortId]) {
-        const p = (el.properties || {}) as Record<string, unknown>;
-        d[shortId] = {
-          ...d[shortId],
-          w: typeof p["frame.width"] === "number" ? p["frame.width"] : d[shortId].w,
-          h: typeof p["frame.height"] === "number" ? p["frame.height"] : d[shortId].h,
-          rad: typeof p["style.borderRadius"] === "number" ? p["style.borderRadius"] : d[shortId].rad,
-          op: typeof p["style.opacity"] === "number" ? Math.round(p["style.opacity"] * 100) : d[shortId].op,
-          fill: typeof p["style.fill"] === "string" ? String(p["style.fill"]).replace(/^#/, "") : d[shortId].fill,
-        };
-      }
-    }
-    return d;
-  }, [elements]);
-
-  const typeModel = useMemo<Record<string, TextModel>>(() => {
-    const t = { ...DEFAULT_TYPE };
-    if (!elements || Object.keys(elements).length === 0) return t;
-    for (const [id, el] of Object.entries(elements)) {
-      const shortId = id.replace(/^el_/, "");
-      if (t[shortId]) {
-        const p = (el.properties || {}) as Record<string, unknown>;
-        t[shortId] = {
-          ...t[shortId],
-          size: typeof p["text.fontSize"] === "number" ? p["text.fontSize"] : t[shortId].size,
-          weight: typeof p["text.fontWeight"] === "number" ? p["text.fontWeight"] : t[shortId].weight,
-        };
-      }
-    }
-    return t;
-  }, [elements]);
-
-  const txtModel = useMemo<Record<string, string>>(() => {
-    const x = { ...DEFAULT_TXT };
-    if (!elements || Object.keys(elements).length === 0) return x;
-    for (const [id, el] of Object.entries(elements)) {
-      const shortId = id.replace(/^el_/, "");
-      if (x[shortId]) {
-        const p = (el.properties || {}) as Record<string, unknown>;
-        if (typeof p["text.content"] === "string") {
-          x[shortId] = p["text.content"];
-        }
-      }
-    }
-    return x;
-  }, [elements]);
+  const { data: dataModel, type: typeModel, txt: txtModel } = useCodeModels();
 
   // Generate current file output
   const generatedFile = useMemo(() => {
@@ -316,7 +263,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     }));
   };
 
-  const foldAll = (fold: boolean) => {
+  const _foldAll = (fold: boolean) => {
     if (!fold) {
       setFolds({});
       return;
@@ -360,34 +307,22 @@ export const CodePanel: React.FC<CodePanelProps> = ({
       id="bottom"
       role="region"
       aria-label="Bottom panel"
-      className={`ll-bottom ll:flex ll:flex-col ll:w-full ll:h-full ll:min-w-0 ll:bg-surface-panel ll:border-t ll:border-border ll:overflow-hidden ${
-        isFullWidth ? "ll:fixed ll:inset-x-0 ll:bottom-0 ll:z-50 ll:h-code-full" : ""
-      } ${className}`}
+      className={`ll-bottom ll:flex ll:flex-col ll:w-full ll:h-full ll:min-w-0 ll:bg-surface-panel ll:border-t ll:border-border ll:overflow-hidden ${className}`}
       style={style}
     >
-      {/* Resizer Handle matching prototype .bsplit */}
-      <div
-        id="bsplit"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize panel"
-        title="Drag to resize, double click to reset"
-        className="ll-bsplit ll:h-1 ll:w-full ll:bg-transparent ll:hover:bg-border ll:cursor-row-resize ll:shrink-0 ll:transition-colors"
-      />
-
       {/* 1. Header Toolbar (44px, matching prototype .ph.cxh) */}
       <div
         id="chead"
         role="toolbar"
         aria-label="Code header"
-        className="ll-ph ll-cxh ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:pl-3 ll:pr-2 ll:border-b ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none"
+        className="ll-ph ll-cxh ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:pl-3 ll:pr-3 ll:border-b ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none"
       >
         {/* Playful Segmented Control for Code / Console / Trace (32px high, matching prototype .pseg.cvseg) */}
         <div
           id="cvseg"
           role="tablist"
           aria-label="Bottom panel"
-          className="ll-pseg ll-cvseg ll:flex ll:items-center ll:gap-0.5 ll:h-8 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:shrink-0"
+          className="ll-pseg ll-cvseg ll:flex ll:items-center ll:gap-0.5 ll:h-8 ll:p-0.5 ll:border ll:border-border ll:rounded-md ll:shrink-0"
         >
           {VIEWS.map(([viewKey, viewLabel]) => {
             const isSelected = activeTab === viewKey;
@@ -396,20 +331,19 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                 key={viewKey}
                 role="tab"
                 data-v={viewKey}
-                aria-pressed={isSelected}
                 aria-selected={isSelected}
                 onClick={() => handleTabSwitch(viewKey)}
-                className={`ll:relative ll:h-7 ll:px-3 ll:rounded-xs ll:font-sans ll:text-small ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ll:flex ll:items-center ll:gap-1.5 ${
+                className={`ll:relative ll:h-mode-tab ll:px-2.5 ll:rounded-sm ll:font-sans ll:text-body ll:tracking-normal ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ll:flex ll:items-center ll:gap-1.5 ${
                   isSelected
                     ? "ll:bg-control-active ll:text-primary"
-                    : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
+                    : "ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar"
                 }`}
               >
                 <span>{viewLabel}</span>
                 {viewKey === "console" && errorCount > 0 && (
                   <span
                     id="cbadge"
-                    className="ll-cbadge ll:font-mono ll:text-micro ll:leading-none ll:min-w-4 ll:h-4 ll:px-1 ll:flex ll:items-center ll:justify-center ll:border ll:border-primary ll:text-primary ll:rounded-xs"
+                    className="ll-cbadge ll:font-mono ll:text-nano ll:font-medium ll:leading-3.5 ll:min-w-4 ll:h-4 ll:px-1 ll:ml-1.5 ll:text-center ll:border ll:border-current ll:rounded-sm"
                   >
                     {errorCount}
                   </span>
@@ -429,7 +363,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           <div
             role="tablist"
             aria-label="Open files"
-            className="ll-ctabs ll:flex-1 ll:min-w-0 ll:flex ll:items-stretch ll:h-full ll:overflow-x-auto ll:gap-1"
+            className="ll-ctabs ll:flex-1 ll:min-w-0 ll:flex ll:items-stretch ll:self-stretch ll:overflow-x-auto"
           >
             {openTabs.map((tabId) => {
               const isSelected = activeFileId === tabId;
@@ -445,7 +379,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                   aria-selected={isSelected}
                   onClick={() => handleOpenTab(tabId)}
                   title={fPath(tabId, codeState)}
-                  className={`ll-ctab ll:group ll:relative ll:flex ll:items-center ll:gap-1.5 ll:shrink-0 ll:h-full ll:px-3 ll:font-sans ll:text-small ll:font-medium ll:cursor-pointer ll:select-none ll:transition-colors ${
+                  className={`ll-ctab ll:group ll:relative ll:flex ll:items-center ll:gap-1.5 ll:shrink-0 ll:h-full ll:pl-3 ll:pr-1 ll:font-sans ll:text-small ll:font-medium ll:whitespace-nowrap ll:cursor-pointer ll:select-none ll:transition-colors ${
                     isSelected
                       ? "ll:text-primary ll:after:absolute ll:after:left-0 ll:after:right-0 ll:after:bottom-0 ll:after:h-0.5 ll:after:bg-primary"
                       : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -473,9 +407,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                     aria-label={`Close ${fileNameStr}`}
                     title="Close"
                     onClick={(e) => handleCloseTab(e, tabId)}
-                    className="ll-cx ll:w-4 ll:h-4 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:text-muted ll:opacity-0 ll:group-hover:opacity-100 ll:hover:bg-surface-bar ll:hover:text-primary ll:border-0 ll:bg-transparent ll:cursor-pointer ll:p-0"
+                    className={`ll-cx ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ${isSelected ? "ll:opacity-100" : "ll:opacity-0"} ll:group-hover:opacity-100 ll:hover:bg-surface-bar ll:hover:text-primary ll:border-0 ll:bg-transparent ll:cursor-pointer ll:p-0`}
                   >
-                    <Icon icon={X} size={11} />
+                    <Icon icon={X} size={12} />
                   </button>
                 </div>
               );
@@ -486,7 +420,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
         )}
 
         {/* Right Tools (.chr in prototype) */}
-        <div className="ll-chr ll:flex ll:items-center ll:gap-1 ll:shrink-0">
+        <div className="ll-chr ll:flex ll:items-center ll:gap-0.5 ll:shrink-0">
           {activeTab === "code" && (
             <>
               {/* Word wrap toggle */}
@@ -542,7 +476,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             aria-pressed={isFullWidth}
             aria-label="Full width (Shift+T)"
             title="Full width (Shift+T)"
-            onClick={() => setIsFullWidth((prev) => !prev)}
+            onClick={() => motionActions.setFullWidth(!isFullWidth)}
             className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:border-0 ll:cursor-pointer ll:transition-colors ${
               isFullWidth
                 ? "ll:bg-control-active ll:text-primary"
@@ -584,7 +518,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
         ) : (
           <div className="ll-cpane ll:flex-1 ll:min-h-0 ll:flex ll:flex-col ll:relative ll:overflow-hidden">
             {/* Sub-header (.csub in prototype: height 28px, 11px mono, muted) */}
-            <div className="ll-csub ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-4 ll:border-b ll:border-border ll:font-mono ll:text-micro ll:text-muted ll:select-none">
+            <div className="ll-csub ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:font-mono ll:text-micro ll:text-muted ll:select-none">
               <span className="ll-cpath ll:truncate" title={displayFilePath}>
                 {displayFilePath.includes("/") ? `${displayFilePath.split("/").slice(0, -1).join(" / ")} / ` : ""}
                 <b className="ll:font-medium ll:text-primary">{displayFileName}</b>
@@ -605,13 +539,13 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                   setCurLine(stickyScope.line);
                 }
               }}
-              className="ll-cstick ll:h-6 ll:shrink-0 ll:flex ll:items-center ll:justify-between ll:px-4 ll:bg-surface-panel ll:border-b ll:border-border ll:font-mono ll:text-micro ll:text-secondary ll:hover:text-primary ll:text-left ll:border-0 ll:cursor-pointer"
+              className="ll-cstick ll:h-6 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:pl-6 ll:pr-4 ll:bg-surface-panel ll:border-b ll:border-border ll:font-mono ll:text-micro ll:font-medium ll:text-secondary ll:hover:text-primary ll:text-left ll:cursor-pointer"
             >
               <span className="ll-csk ll:truncate">
                 {stickyScope ? stickyScope.label : "Top level"}
               </span>
               {stickyScope && (
-                <span className="ll-csl ll:text-muted ll:ml-auto">
+                <span className="ll-csl ll:font-normal ll:text-muted ll:ml-auto">
                   Line {stickyScope.line + 1}
                 </span>
               )}
@@ -641,47 +575,47 @@ export const CodePanel: React.FC<CodePanelProps> = ({
       {/* 3. Footer Area (.tlf.cft in prototype: height 28px, 11px mono, muted) */}
       <div
         id="cfoot"
-        className="ll-tlf ll-cft ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-4 ll:px-4 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:text-muted ll:select-none"
+        className="ll-tlf ll-cft ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:text-muted ll:select-none"
       >
         {activeTab === "code" ? (
           <>
-            <span className="ll-tfb">{activeLangLabel}</span>
-            <span className="ll-tfb" id="cpos">
+            <span className={TFB}>{activeLangLabel}</span>
+            <span className={TFB} id="cpos">
               Ln {curLine + 1}, Col {curCol + 1}
             </span>
-            <span className="ll-tfb">UTF-8</span>
-            <span className="ll-tfb">
+            <span className={TFB}>UTF-8</span>
+            <span className={TFB}>
               {displayLines.length} lines · {fileSizeKB} KB
             </span>
 
             <div className="ll:flex-1" />
 
-            <span className="ll-tfb">{genSourceLabel}</span>
+            <span className={TFB}>{genSourceLabel}</span>
 
             {/* Formatted status button */}
             <button
               type="button"
               onClick={handleFormat}
-              className="ll-tfb ll-cfmt ll:flex ll:items-center ll:gap-1.5 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:cursor-pointer"
+              className={`ll-cfmt ${TFB} ll:bg-transparent ll:border-0 ll:text-secondary ll:cursor-default`}
             >
-              <Icon icon={Check} size={12} className="ll:text-primary" />
+              <Icon icon={Check} size={12} className="ll:text-muted" />
               <span>{isFormatting ? "Formatting..." : "Formatted"}</span>
             </button>
           </>
         ) : activeTab === "console" ? (
           <>
-            <span className="ll-tfb">2 errors</span>
-            <span className="ll-tfb">3 warnings</span>
-            <span className="ll-tfb">12 messages</span>
+            <span className={TFB}>2 errors</span>
+            <span className={TFB}>3 warnings</span>
+            <span className={TFB}>12 messages</span>
             <div className="ll:flex-1" />
-            <span className="ll-tfb">Type help for commands</span>
+            <span className={TFB}>Type help for commands</span>
           </>
         ) : (
           <>
-            <span className="ll-tfb">onClick Get started</span>
-            <span className="ll-tfb">Step 5 of 9 · 151.4 ms</span>
+            <span className={TFB}>onClick Get started</span>
+            <span className={TFB}>Step 5 of 9 · 151.4 ms</span>
             <div className="ll:flex-1" />
-            <span className="ll-tfb">9 steps · 218.8 ms</span>
+            <span className={TFB}>9 steps · 218.8 ms</span>
           </>
         )}
       </div>

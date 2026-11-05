@@ -7,7 +7,6 @@ import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { CodePanel } from "./CodePanel";
 import { CodeInspector } from "./CodeInspector";
 import { LiveCodeInspector } from "./LiveCodeInspector";
-import { TraceView } from "./TraceView";
 import { BlueprintCanvas } from "@/editor/panels/blueprint/BlueprintCanvas";
 
 const THEME_OPTIONS = [

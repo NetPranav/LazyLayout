@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Play,
   Pause,
@@ -10,7 +10,6 @@ import {
   Circle,
   Plus,
   X,
-  Sliders,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 

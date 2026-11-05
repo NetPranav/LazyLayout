@@ -237,6 +237,19 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
     return () => el.removeEventListener("scroll", handleScroll);
   }, [handleScroll, scrollRef]);
 
+  // Scroll the selected range into view when the selection changes
+  const selStart = highlightedRanges.length ? highlightedRanges[0][0] : null;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || selStart == null) return;
+    const row = el.querySelector<HTMLElement>(`.ll-cl[data-n="${selStart}"]`);
+    if (!row) return;
+    const top = row.offsetTop;
+    if (top < el.scrollTop || top > el.scrollTop + el.clientHeight - row.offsetHeight * 3) {
+      el.scrollTo({ top: Math.max(0, top - row.offsetHeight * 2), behavior: "smooth" });
+    }
+  }, [selStart, scrollRef]);
+
   // Render tokens for a line, supporting flash diff highlight
   const renderLineTokens = (text: string, lineIdx: number, lang: string) => {
     const tokens = tokLine(text, lang);
@@ -296,7 +309,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
       aria-readonly="true"
       aria-multiline="true"
       aria-label="Code viewer"
-      className={`ll-cscroll ll:relative ll:h-full ll:w-full ll:overflow-auto ll:py-2 ll:px-0 ll:font-mono ll:text-small ll:leading-5 ll:text-primary ll:outline-none ${
+      className={`ll-cscroll ll:relative ll:h-full ll:w-full ll:overflow-auto ll:pt-2 ll:pb-3 ll:px-0 ll:font-mono ll:text-small ll:leading-5 ll:text-primary ll:outline-none ${
         wrap ? "ll:whitespace-pre-wrap ll:break-words" : "ll:whitespace-pre"
       } ${className}`}
       onMouseLeave={() => onLineHover?.(null)}
@@ -316,18 +329,18 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
             data-ref={line.ref || undefined}
             onClick={() => onLineClick?.(idx, line.t, line.ref)}
             onMouseEnter={() => line.ref && onLineHover?.(line.ref)}
-            className={`ll-cl ll:flex ll:items-baseline ll:min-h-5 ll:min-w-max ll:transition-colors ${
+            className={`ll-cl ll:flex ll:min-h-5 ll:min-w-max ll:transition-colors ${
               wrap ? "ll:min-w-0" : ""
             } ${
               isSelected
-                ? "ll:bg-surface-hover ll:shadow-indicator-active"
+                ? "ll:bg-select-bg ll:shadow-indicator-active"
                 : isCurrent
                 ? "ll:bg-surface-hover"
-                : "ll:hover:bg-surface-hover"
+                : ""
             }`}
           >
             {/* Gutter with fold chevron (width 24px) */}
-            <span className="ll-cg ll:w-6 ll:h-5 ll:shrink-0 ll:inline-flex ll:items-center ll:justify-center ll:select-none">
+            <span className="ll-cg ll:w-6 ll:h-5 ll:shrink-0 ll:grid ll:place-items-center ll:items-center ll:justify-center ll:select-none">
               {canFold ? (
                 <button
                   type="button"

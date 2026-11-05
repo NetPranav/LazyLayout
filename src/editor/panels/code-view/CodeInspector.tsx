@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Code,
-  FileText,
   FileCode,
-  Layers,
-  Zap,
   Plus,
   X,
   Copy,
@@ -29,23 +26,19 @@ import {
   cxFmt,
   fName,
   fPath,
-  fLang,
-  fIcon,
   fCompKind,
   cxGen,
+  animOf,
   cxFiles,
   cxSize,
   cxKB,
   FILE_OF,
-  DEFAULT_CODE_STATE,
-  DEFAULT_DATA,
-  DEFAULT_TYPE,
-  DEFAULT_TXT,
   type FrameworkKey,
   type StylingKey,
   type AnimationKey,
   type CodeGeneratorState,
 } from "./codeGenerator";
+import { useCodeModels } from "./useCodeModels";
 import type { CodeInspectorProps, CodePropItem } from "./types";
 
 const TARGET_OPTIONS: Array<"React" | "HTML" | "Vue"> = ["React", "HTML", "Vue"];
@@ -56,6 +49,25 @@ const FWS_BY_TARGET: Record<"React" | "HTML" | "Vue", FrameworkKey[]> = {
   HTML: ["html"],
 };
 
+const ANIM_PROPS = [
+  { key: "opacity", name: "Opacity", unit: "%" },
+  { key: "x", name: "Position X", unit: "px" },
+  { key: "y", name: "Position Y", unit: "px" },
+  { key: "scale", name: "Scale", unit: "%" },
+  { key: "rot", name: "Rotation", unit: "\u00b0" },
+] as const;
+
+function sentenceCase(id: string): string {
+  return id.charAt(0).toUpperCase() + id.slice(1);
+}
+
+const CodeRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="ll-crow ll:flex ll:items-baseline ll:justify-between ll:gap-3 ll:min-h-5 ll:font-sans ll:text-small ll:leading-snug ll:text-muted">
+    <span className="ll:shrink-0">{label}</span>
+    <span className="ll:font-mono ll:text-micro ll:leading-snug ll:text-primary ll:text-right ll:min-w-0 ll:truncate">{value}</span>
+  </div>
+);
+
 export const CodeInspector: React.FC<CodeInspectorProps> = ({
   componentName: propComponentName,
   onComponentNameChange,
@@ -63,14 +75,14 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   onExportTypeChange,
   targetLib: propTargetLib,
   onTargetLibChange,
-  styleType: propStyleType,
+  styleType: _propStyleType,
   onStyleTypeChange,
   propsList: propPropsList,
   onAddProp,
   onRemoveProp,
-  dependencies: propDependencies,
+  dependencies: _propDependencies,
   onAddDependency,
-  onRemoveDependency,
+  onRemoveDependency: _onRemoveDependency,
   outputFile: _propOutputFile,
   onOutputFileChange: _onOutputFileChange,
   className = "",
@@ -79,6 +91,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   // Store integration
   const selectedElementId = useSelectionStore((s) => s.selectedId);
   const elements = useLayers();
+  const models = useCodeModels();
   const _pages = useProjectStore((s) => s.pages);
 
   // Inspector state: Project, File, or Layer
@@ -234,10 +247,24 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   if (inspectorKind === "layer" && selectedElementId) {
     const shortId = selectedElementId.replace(/^el_/, "");
     const fileId = FILE_OF[shortId] || "hero";
-    const gen = cxGen(fileId, codeState);
-    const range = gen.rg[shortId] || [0, 4];
+    const gen = cxGen(fileId, codeState, models.data, models.type, models.txt);
+    const range = gen.rg[shortId] || [0, 0];
     const nodeInfo = gen.nodes[shortId];
-    const layerName = elements[selectedElementId]?.name || shortId;
+    const node = nodeInfo?.node;
+    const layerName = elements[selectedElementId]?.name || sentenceCase(shortId);
+    const classAttr = nodeInfo?.at.find((x) => /^(className|class)=|^:?style=/.test(x)) ?? "";
+    const classMatch = /^(?:className|class)="(.*)"$/.exec(classAttr);
+    const classList = classMatch ? classMatch[1].split(" ").filter(Boolean) : [];
+    const classFallback = classAttr.replace(/^(\w+)=/, "");
+    const decls = node?.st ?? [];
+    const anim = animOf(shortId, codeState, true);
+    const anim0 = codeState.anim;
+    const animRows = anim
+      ? ANIM_PROPS.filter((p) => anim.from[p.key] != null).map((p) => [
+          p.name,
+          `${anim.from[p.key]} to ${anim.to[p.key]}${p.unit}`,
+        ])
+      : [];
 
     return (
       <div
@@ -253,85 +280,91 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
           <Icon
             icon={shortId === "headline" || shortId === "subtitle" ? Type : shortId === "image" ? ImageIcon : Square}
             size={16}
-            className="ll:text-primary"
+            className="ll:text-secondary ll:shrink-0"
           />
-          <span className="ll-rname ll:font-sans ll:text-body ll:font-semibold ll:text-primary ll:truncate">
+          <span className="ll-rname ll:font-sans ll:text-heading ll:leading-snug ll:tracking-normal ll:font-semibold ll:text-primary ll:truncate ll:min-w-0">
             {layerName}
           </span>
           <div className="ll:flex-1" />
-          <span className="ll-rsub ll:font-mono ll:text-micro ll:text-muted">
+          <span className="ll-rsub ll:font-mono ll:text-micro ll:text-muted ll:whitespace-nowrap">
             {fName(fileId, codeState)}
           </span>
         </div>
 
         {/* Section 1: Element */}
-        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:p-4 ll:border-b ll:border-border">
-          <div className="ll-dtitle ll:flex ll:items-center ll:justify-between">
+        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
+          <div className="ll-dtitle ll:flex ll:items-center ll:min-h-6">
             <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Element</h3>
           </div>
-          <div className="ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:font-mono ll:text-micro">
-            <div className="ll-crow ll:flex ll:items-baseline ll:justify-between ll:gap-2">
-              <span className="ll:text-muted">Tag</span>
-              <span className="ll:text-primary">&lt;{nodeInfo?.tag || shortId}&gt;</span>
+          <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+            <CodeRow label="Tag" value={`<${nodeInfo?.tag || shortId}>`} />
+            <CodeRow label="Component" value={compNames[fileId] || fileId} />
+            <CodeRow label="Lines" value={`${range[0] + 1} to ${range[1] + 1}`} />
+            <div className="ll-csub2 ll:font-sans ll:text-micro ll:leading-snug ll:text-muted ll:mt-1">
+              {sty === "tw" ? "Classes" : sty === "mod" ? "Class" : "Inline style"}
             </div>
-            <div className="ll-crow ll:flex ll:items-baseline ll:justify-between ll:gap-2">
-              <span className="ll:text-muted">Component</span>
-              <span className="ll:text-primary">{compNames[fileId] || fileId}</span>
-            </div>
-            <div className="ll-crow ll:flex ll:items-baseline ll:justify-between ll:gap-2">
-              <span className="ll:text-muted">Lines</span>
-              <span className="ll:text-primary">
-                {range[0] + 1} to {range[1] + 1}
-              </span>
-            </div>
-
-            <div className="ll:font-sans ll:text-micro ll:text-muted ll:mt-2">
-              {sty === "tw" ? "Tailwind classes" : sty === "mod" ? "CSS Modules" : "Inline style"}
-            </div>
-            <div className="ll-cclass ll:p-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-xs ll:font-mono ll:text-micro ll:text-secondary ll:break-all">
-              {sty === "tw"
-                ? `flex items-center gap-4 text-white bg-[#${DEFAULT_DATA[shortId]?.fill || "2C2C2C"}]`
-                : `styles.${shortId}`}
+            <code className="ll-cclass ll:block ll:font-mono ll:text-micro ll:leading-4.5 ll:text-secondary ll:break-all">
+              {classMatch
+                ? classList.map((c) => (
+                    <span
+                      key={c}
+                      className="ll:inline-block ll:mr-1 ll:mb-1 ll:px-1 ll:border ll:border-border ll:rounded-sm ll:bg-surface-bar"
+                    >
+                      {c}
+                    </span>
+                  ))
+                : classFallback}
+            </code>
+            <div className="ll-csub2 ll:font-sans ll:text-micro ll:leading-snug ll:text-muted ll:mt-1">Declarations</div>
+            <div className="ll-cdecl ll:flex ll:flex-col ll:gap-0.5 ll:font-mono ll:text-micro ll:leading-snug">
+              {decls.map(([prop, val]) => (
+                <div key={prop} className="ll-cdl ll:flex ll:justify-between ll:gap-3 ll:text-secondary">
+                  <span className="ll:text-muted">{prop}</span>
+                  <span className="ll:text-right ll:min-w-0 ll:truncate">{val}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Section 2: Props and Data */}
-        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:p-4 ll:border-b ll:border-border">
-          <div className="ll-dtitle ll:flex ll:items-center ll:justify-between">
-            <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Props &amp; Data</h3>
+        {/* Section 2: Props and data */}
+        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
+          <div className="ll-dtitle ll:flex ll:items-center ll:min-h-6">
+            <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Props and data</h3>
           </div>
-          <div className="ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:font-mono ll:text-micro">
-            <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
-              <span className="ll:text-muted">Bound to</span>
-              <span className="ll:text-primary">
-                {shortId === "headline" ? "prop title" : shortId === "button" ? "prop cta" : "None"}
-              </span>
-            </div>
-            {DEFAULT_TXT[shortId] && (
-              <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
-                <span className="ll:text-muted">Text</span>
-                <span className="ll:text-primary ll:truncate ll:max-w-44">
-                  {`"${DEFAULT_TXT[shortId]}"`}
-                </span>
-              </div>
-            )}
+          <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+            <CodeRow
+              label={node?.bind ? "Bound to" : "Bound data"}
+              value={node?.bind ? `prop ${node.bind}` : "None"}
+            />
+            {node?.x != null && <CodeRow label="Text" value={`"${node.x}"`} />}
+            {(node?.at ?? []).slice(0, 3).map(([k, v]) => (
+              <CodeRow key={k} label={k} value={v} />
+            ))}
           </div>
         </section>
 
         {/* Section 3: Animation */}
-        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:p-4 ll:border-b ll:border-border">
-          <div className="ll-dtitle ll:flex ll:items-center ll:justify-between">
+        <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-b ll:border-border">
+          <div className="ll-dtitle ll:flex ll:items-center ll:min-h-6">
             <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Animation</h3>
           </div>
-          <div className="ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:font-mono ll:text-micro">
-            <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
-              <span className="ll:text-muted">Engine</span>
-              <span className="ll:text-primary">{ANIMATIONS[anim]}</span>
-            </div>
+          <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+            {anim ? (
+              <>
+                <CodeRow label="Engine" value={anim0 === "none" ? "None (not exported)" : ANIMATIONS[anim0]} />
+                {animRows.map(([k, v]) => (
+                  <CodeRow key={k} label={k} value={v} />
+                ))}
+                <CodeRow label="Timing" value={`${anim.dur} s, delay ${anim.delay} s`} />
+                <CodeRow label="Easing" value={anim.ease} />
+              </>
+            ) : (
+              <p className="ll:m-0 ll:font-sans ll:text-small ll:text-muted">No animation on this layer.</p>
+            )}
             <button
               type="button"
-              className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:mt-2"
+              className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-body ll:font-medium ll:text-primary ll:cursor-pointer"
             >
               <Icon icon={Film} size={13} className="ll:text-muted" />
               <span>Open in Motion</span>

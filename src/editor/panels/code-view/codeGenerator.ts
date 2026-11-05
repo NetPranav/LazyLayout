@@ -646,7 +646,7 @@ const DEFAULT_ANIMS: Record<string, AnimDescriptor> = {
   },
 };
 
-function animOf(ref: string, state: CodeGeneratorState, force = false): AnimDescriptor | null {
+export function animOf(ref: string, state: CodeGeneratorState, force = false): AnimDescriptor | null {
   if (state.anim === "none" && !force) return null;
   return DEFAULT_ANIMS[ref] || null;
 }
