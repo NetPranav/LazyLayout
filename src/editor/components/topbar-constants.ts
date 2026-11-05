@@ -37,3 +37,9 @@ export const RADIUS_MD = 6;
 /** Popup leave durations */
 export const POPUP_LEAVE_DURATION_MS = 280;
 export const POPUP_LEAVE_REDUCED_DURATION_MS = 120;
+
+/** Default issues matching prototype lines 1741 & 1831 */
+export const DEFAULT_SHIP_ISSUES = [
+  { id: "alt", title: "Hero image has no alt text" },
+  { id: "contrast", title: "Button contrast is 3.9:1" },
+] as const;

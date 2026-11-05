@@ -17,6 +17,8 @@ import {
   Palette,
   Terminal,
   AlignLeft,
+  Layout,
+  Sparkles,
 } from "lucide-react";
 import { Icon } from "./Icon";
 import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
@@ -140,6 +142,7 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
               }}
               type="button"
               role="tab"
+              aria-pressed={isSelected ? "true" : "false"}
               aria-selected={isSelected}
               aria-haspopup="menu"
               aria-expanded={isSelected ? menuOpen : undefined}
@@ -201,6 +204,13 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
             >
               Rulers
             </MenuItem>
+            <MenuSeparator />
+            <SubMenu id="m_ws" label="Workspace layout" icon={<Icon icon={Layout} size={14} />}>
+              <MenuItem checked onClick={() => { onChange("design"); setMenuOpen(false); }}>Design</MenuItem>
+              <MenuItem onClick={() => { onChange("motion"); setMenuOpen(false); }}>Animate</MenuItem>
+              <MenuItem onClick={() => { onChange("code"); setMenuOpen(false); }}>Code</MenuItem>
+              <MenuItem disabled onClick={() => setMenuOpen(false)}>Debug</MenuItem>
+            </SubMenu>
           </>
         )}
 
@@ -245,6 +255,11 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
               <MenuItem checked onClick={() => setMenuOpen(false)}>Tailwind</MenuItem>
               <MenuItem onClick={() => setMenuOpen(false)}>CSS Modules</MenuItem>
               <MenuItem onClick={() => setMenuOpen(false)}>Inline styles</MenuItem>
+            </SubMenu>
+            <SubMenu id="m_canim" label="Animation" icon={<Icon icon={Sparkles} size={14} />}>
+              <MenuItem checked onClick={() => setMenuOpen(false)}>Framer Motion</MenuItem>
+              <MenuItem onClick={() => setMenuOpen(false)}>CSS Keyframes</MenuItem>
+              <MenuItem onClick={() => setMenuOpen(false)}>GSAP</MenuItem>
             </SubMenu>
             <MenuSeparator />
             <MenuItem icon={<Icon icon={Download} size={14} />} onClick={() => setMenuOpen(false)}>

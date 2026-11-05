@@ -16,6 +16,7 @@ import {
   POPUP_LEAVE_DURATION_MS,
   POPUP_LEAVE_REDUCED_DURATION_MS,
   MENU_ICON_SIZE,
+  DEFAULT_SHIP_ISSUES,
 } from "./topbar-constants";
 
 export interface ShipIssue {
@@ -36,7 +37,7 @@ export interface ShipPopoverProps {
 }
 
 export const ShipPopover: React.FC<ShipPopoverProps> = ({
-  issues = [],
+  issues = DEFAULT_SHIP_ISSUES,
   ready,
   onFixIssue,
   onPreview,
@@ -192,6 +193,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
       <button
         ref={triggerRef}
         type="button"
+        id="shipbtn"
         disabled={disabled}
         onClick={() => (isOpen ? closePopover() : openPopover())}
         onPointerDown={handlePointerDown}
@@ -202,8 +204,8 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
         aria-expanded={isOpen}
         aria-controls={isOpen ? popoverId : undefined}
         aria-label={isReady ? "Ship, ready" : `Ship, ${issueCount} to fix`}
-        className={`ll-ship ${
-          isReady ? "ll-ready" : ""
+        className={`ship ll-ship ${
+          isReady ? "ready ll-ready" : ""
         } ll:inline-flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:border-0 ll:font-sans ll:text-body ll:font-medium ll:cursor-pointer ll:select-none ll:shrink-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
           isReady
             ? "ll:bg-control-primary ll:text-control-primary-fg"
@@ -214,7 +216,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
       >
         <span>Ship</span>
 
-        <span className="ll-shipc ll:font-sans ll:text-body ll:font-medium ll:tabular-nums">
+        <span id="shipc" className="shipc ll-shipc ll:font-sans ll:text-body ll:font-medium ll:tabular-nums">
           {isReady ? "Ready" : issueCount}
         </span>
 
@@ -243,27 +245,27 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
                   issues.map((issue) => (
                     <div
                       key={issue.id}
-                      className="ll-srow ll:flex ll:items-center ll:gap-2 ll:min-h-9 ll:px-3 ll:text-body ll:text-primary ll:border-t ll:border-border ll:first:border-t-0"
+                      className="srow ll-srow ll:flex ll:items-center ll:gap-2 ll:min-h-9 ll:px-3 ll:text-body ll:text-primary ll:border-t ll:border-border ll:first:border-t-0"
                     >
                       <span className="ll:flex-1 ll:min-w-0">{issue.title}</span>
                       <button
                         type="button"
                         onClick={() => handleFix(issue.id)}
                         aria-label={`Fix: ${issue.title}`}
-                        className="ll-mini ll:h-6 ll:px-2.5 ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:text-primary ll:bg-transparent ll:hover:bg-surface-panel ll:cursor-pointer ll:shrink-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                        className="mini ll-mini ll:h-6 ll:px-2.5 ll:rounded-sm ll:border ll:border-border ll:text-micro ll:font-medium ll:text-primary ll:bg-transparent ll:hover:bg-surface-panel ll:cursor-pointer ll:shrink-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
                       >
                         Fix
                       </button>
                     </div>
                   ))
                 ) : (
-                  <div className="ll-srow ll-muted ll:flex ll:items-center ll:min-h-9 ll:px-3 ll:text-body ll:text-muted">
+                  <div className="srow muted ll-srow ll-muted ll:flex ll:items-center ll:min-h-9 ll:px-3 ll:text-body ll:text-muted">
                     No issues left
                   </div>
                 )}
               </div>
 
-              <div role="separator" className="ll:h-px ll:bg-border ll:my-1 ll:shrink-0" />
+              <div role="separator" className="hl ll:h-px ll:bg-border ll:my-1 ll:shrink-0" />
 
               {/* Action items */}
               <button
@@ -290,7 +292,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
               </button>
 
               {/* Publish row */}
-              <div className="ll-pubrow ll:px-3 ll:pt-2 ll:pb-3">
+              <div className="pubrow ll-pubrow ll:px-3 ll:pt-2 ll:pb-3">
                 <button
                   type="button"
                   disabled={issues.length > 0}
@@ -298,7 +300,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
                     onPublish?.();
                     closePopover();
                   }}
-                  className="ll-btn ll-strong ll-wfull ll:w-full ll:h-8 ll:flex ll:items-center ll:justify-center ll:rounded-md ll:border ll:border-primary ll:bg-control-primary ll:text-control-primary-fg ll:text-body ll:font-medium ll:cursor-pointer ll:disabled:cursor-not-allowed ll:disabled:opacity-40 ll:disabled:border-border ll:disabled:bg-surface-canvas ll:disabled:text-muted ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+                  className="btn strong wfull ll-btn ll-strong ll-wfull ll:w-full ll:h-8 ll:flex ll:items-center ll:justify-center ll:rounded-md ll:border ll:border-primary ll:bg-control-primary ll:text-control-primary-fg ll:text-body ll:font-medium ll:cursor-pointer ll:disabled:cursor-not-allowed ll:disabled:opacity-40 ll:disabled:border-border ll:disabled:bg-surface-canvas ll:disabled:text-muted ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
                 >
                   Publish
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useId } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   ChevronLeft,
   Search,
@@ -135,9 +135,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   onPreview,
   onShare,
 }) => {
-  const menuBtnId = useId();
-  const themeBtnId = useId();
-
   // Save status resolution
   const sessionSaveState = useSaveStatus((s) => s.state);
   const resolvedState: "saved" | "dirty" | "saving" | "error" =
@@ -182,8 +179,11 @@ export const TopBar: React.FC<TopBarProps> = ({
     theme === "graphite" ||
     theme === "darkroom";
 
+  const themeBtnRef = useRef<HTMLButtonElement>(null);
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
+
   const handleThemeToggle = useCallback(() => {
-    selectTheme(isDark ? "paper" : "dark");
+    selectTheme(isDark ? "paper" : "noir");
   }, [isDark, selectTheme]);
 
   const handleOpenSearch = useCallback(() => {
@@ -275,26 +275,30 @@ export const TopBar: React.FC<TopBarProps> = ({
   return (
     <header
       role="banner"
-      className={`ll-top ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
+      className={`top ll-top ll:text-body ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
     >
       {/* =====================================================================
           1. LEFT COLUMN: Logo, 1px divider, Project Name
           ===================================================================== */}
-      <div className="ll-tl ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-start ll:pl-2.5">
+      <div className="tl ll-tl ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-start ll:pl-2.5">
         <button
           ref={logoBtnRef}
           type="button"
-          id={menuBtnId}
+          id="menubtn"
+          data-testid="save-status"
+          data-state={resolvedState}
           data-saving={isSaving ? "true" : undefined}
           aria-label="Application menu"
           title="Application menu"
           aria-haspopup="menu"
           aria-expanded={logoMenuOpen}
           onClick={() => setLogoMenuOpen((prev) => !prev)}
-          className="ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:rounded-sm ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+          className={`logo ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:[&_svg]:opacity-70 ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+            isSaving ? "saving-on ll-saving-on" : ""
+          }`}
         >
           <LogoMark saving={isSaving} size={LOGO_ICON_SIZE} />
-          <span className="ll:sr-only" role="status">
+          <span className="sr ll:sr-only" id="saving" role="status">
             {isSaving ? "Saving" : "Saved"}
           </span>
         </button>
@@ -302,13 +306,13 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* 1px hairline divider (height 20px, margin 0 4px, visible in Noir) */}
         <i
           aria-hidden="true"
-          className="ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
+          className="tdiv ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
         />
 
         {/* Project Name (14px, 500 font-weight, truncate) */}
-        <div className="ll-pinfo ll:flex ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
+        <div className="pinfo ll-pinfo ll:flex ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
           <span
-            className="ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
+            className="pname ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
             title={projectName}
           >
             {projectName}
@@ -500,20 +504,66 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* =====================================================================
           3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
           ===================================================================== */}
-      <div className="ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
-        {/* Theme button (32x32, toggles Paper and Dark) */}
-        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Dark"}>
+      <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
+        {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
+        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
           <button
+            ref={themeBtnRef}
             type="button"
-            id={themeBtnId}
+            id="themebtn"
             onClick={handleThemeToggle}
-            aria-label={isDark ? "Switch to Paper" : "Switch to Dark"}
-            title={isDark ? "Switch to Paper" : "Switch to Dark"}
-            className="ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setThemePickerOpen((prev) => !prev);
+            }}
+            aria-label={isDark ? "Switch to Paper" : "Switch to Noir"}
+            title={isDark ? "Switch to Paper" : "Switch to Noir"}
+            aria-haspopup="menu"
+            aria-expanded={themePickerOpen}
+            className="themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             <Icon icon={isDark ? Sun : Moon} size={ACTION_ICON_SIZE} />
           </button>
         </Tooltip>
+
+        <Menu
+          open={themePickerOpen}
+          onClose={() => setThemePickerOpen(false)}
+          anchorRef={themeBtnRef}
+          width={200}
+          aria-label="Theme picker"
+        >
+          <MenuHeading>Light</MenuHeading>
+          {LIGHT_THEMES.map((id) => (
+            <MenuItem
+              key={id}
+              role="menuitemradio"
+              checked={theme === id}
+              onClick={() => {
+                selectTheme(id);
+                setThemePickerOpen(false);
+              }}
+              icon={<ThemeSwatch theme={id} />}
+            >
+              {id.charAt(0).toUpperCase() + id.slice(1)}
+            </MenuItem>
+          ))}
+          <MenuHeading>Dark</MenuHeading>
+          {DARK_THEMES.map((id) => (
+            <MenuItem
+              key={id}
+              role="menuitemradio"
+              checked={theme === id}
+              onClick={() => {
+                selectTheme(id);
+                setThemePickerOpen(false);
+              }}
+              icon={<ThemeSwatch theme={id} />}
+            >
+              {id.charAt(0).toUpperCase() + id.slice(1)}
+            </MenuItem>
+          ))}
+        </Menu>
 
         {/* Ship Button & Popover */}
         <ShipPopover

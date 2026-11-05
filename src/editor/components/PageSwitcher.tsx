@@ -257,7 +257,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
     [onSelectPage, closeDropdown]
   );
 
-  // Outside click & Escape / ArrowUp / ArrowDown / Enter keyboard navigation (Item 14)
+  // Outside click & Escape / ArrowUp / ArrowDown / Enter keyboard navigation
   useEffect(() => {
     if (!isOpen || !isRendered) return;
 
@@ -364,12 +364,13 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
             }
           }}
           onBlur={() => finishRename(true)}
-          className={`ll:w-full ll:min-w-0 ll:h-6 ll:px-1.5 ll:bg-surface-raised ll:border ll:border-primary ll:rounded-sm ll:text-body ll:font-medium ll:text-primary ll:font-sans ll:outline-none ${className}`}
+          className={`rnin ll-rnin ll:w-full ll:min-w-0 ll:h-6 ll:px-1.5 ll:bg-surface-raised ll:border ll:border-primary ll:rounded-sm ll:text-body ll:font-medium ll:text-primary ll:font-sans ll:outline-none ${className}`}
         />
       ) : (
       <button
         ref={triggerRef}
         type="button"
+        id="pagebtn"
         disabled={disabled}
         data-state={dataState}
         onClick={() => (isOpen ? closeDropdown() : openDropdown())}
@@ -381,13 +382,13 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
         aria-controls={isOpen ? menuId : undefined}
         aria-label={`Current page: ${activePage}. Switch page`}
         title="Switch page"
-        className={`ll-pagebtn ll:flex ll:items-center ll:gap-1 ll:h-8 ll:p-0 ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-primary ll:hover:text-primary ll:select-none ll:cursor-pointer ll:outline-none ${
+        className={`pagebtn ll-pagebtn ll:flex ll:items-center ll:gap-1 ll:h-8 ll:p-0 ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-primary ll:hover:text-primary ll:select-none ll:cursor-pointer ll:outline-none ${
           dataState === "hover" ? "ll:bg-surface-hover " : ""
         }${dataState === "focus" ? "ll:ring-2 ll:ring-primary " : ""}${
           disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""
         } ${className}`}
       >
-        <span className="ll:font-sans ll:text-body ll:font-medium ll:truncate">
+        <span id="pagelabel" className="ll:font-sans ll:text-body ll:font-medium ll:truncate">
           {activePage}
         </span>
 
@@ -408,12 +409,12 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
             role="menu"
             aria-label="Pages"
             tabIndex={-1}
-            className="ll-menu ll-dd ll:fixed ll:z-50 ll:min-w-menu ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
+            className="menu dd ll-menu ll-dd ll:fixed ll:z-50 ll:min-w-menu ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:overflow-hidden ll:outline-none ll:font-sans"
           >
             <div ref={layRef} className="ll-lay ll:flex ll:flex-col ll:gap-0">
               {/* Search box (prototype: only when more than 12 pages) */}
               {hasSearch && (
-              <div className="ll-dd-s ll:flex ll:items-center ll:gap-2 ll:h-9 ll:px-3 ll:border-b ll:border-border ll:text-muted">
+              <div className="dd-s ll-dd-s ll:flex ll:items-center ll:gap-2 ll:h-9 ll:px-3 ll:border-b ll:border-border ll:text-muted">
                 <Icon icon={Search} size={MENU_ICON_SIZE} className="ll:shrink-0" />
                 <input
                   ref={(el) => {
@@ -443,7 +444,7 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
               <div
                 role="listbox"
                 aria-label="Pages list"
-                className="ll-ddl ll:max-h-75 ll:overflow-y-auto ll:overscroll-contain"
+                className="ddl ll-ddl ll:max-h-75 ll:overflow-y-auto ll:overscroll-contain"
               >
                 {filteredPages.length > 0 ? (
                   filteredPages.map((page, index) => {
@@ -460,8 +461,8 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                         aria-selected={isSelected}
                         onClick={() => selectPage(page)}
                         onMouseEnter={() => setActiveIndex(index)}
-                        className={`ll-dd-o ll:relative ll:flex ll:items-center ll:w-full ll:h-7 ll:pl-8 ll:pr-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-small ll:outline-none ${
-                          isSelected ? "ll:text-primary" : "ll:text-secondary"
+                        className={`dd-o ll-dd-o ll:relative ll:flex ll:items-center ll:w-full ll:h-7 ll:pl-8 ll:pr-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-small ll:outline-none ${
+                          isSelected ? "on cur ll:text-primary" : "ll:text-secondary"
                         } ${
                           isFocused ? "ll:bg-surface-hover ll:text-primary" : "ll:bg-transparent"
                         }`}
