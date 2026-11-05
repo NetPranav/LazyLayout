@@ -109,7 +109,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     for (const [id, el] of Object.entries(elements)) {
       const shortId = id.replace(/^el_/, "");
       if (d[shortId]) {
-        const p = (el.properties || {}) as Record<string, any>;
+        const p = (el.properties || {}) as Record<string, unknown>;
         d[shortId] = {
           ...d[shortId],
           w: typeof p["frame.width"] === "number" ? p["frame.width"] : d[shortId].w,
@@ -129,7 +129,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     for (const [id, el] of Object.entries(elements)) {
       const shortId = id.replace(/^el_/, "");
       if (t[shortId]) {
-        const p = (el.properties || {}) as Record<string, any>;
+        const p = (el.properties || {}) as Record<string, unknown>;
         t[shortId] = {
           ...t[shortId],
           size: typeof p["text.fontSize"] === "number" ? p["text.fontSize"] : t[shortId].size,
@@ -146,7 +146,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     for (const [id, el] of Object.entries(elements)) {
       const shortId = id.replace(/^el_/, "");
       if (x[shortId]) {
-        const p = (el.properties || {}) as Record<string, any>;
+        const p = (el.properties || {}) as Record<string, unknown>;
         if (typeof p["text.content"] === "string") {
           x[shortId] = p["text.content"];
         }
@@ -188,26 +188,37 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const displayFileName = propFileName ?? fName(activeFileId, codeState);
   const displayFilePath = fPath(activeFileId, codeState);
 
-  // Sync canvas selection to code file and lines
+  // Open the tab, active file and line of the selected canvas element (adjusted during render)
+  const selectedShort = selectedElementId ? selectedElementId.replace(/^el_/, "") : null;
+  const selectedTargetFile = selectedShort ? FILE_OF[selectedShort] : undefined;
+  if (selectedTargetFile && !openTabs.includes(selectedTargetFile)) {
+    setOpenTabs((prev) => [...prev, selectedTargetFile]);
+  }
+  const [selSync, setSelSync] = useState<{
+    id: string | null;
+    tabs: string[];
+    cb: typeof onSelectFile;
+    rg: typeof generatedFile.rg;
+  } | null>(null);
+  if (
+    selectedTargetFile &&
+    selectedShort &&
+    (!selSync ||
+      selSync.id !== selectedElementId ||
+      selSync.tabs !== openTabs ||
+      selSync.cb !== onSelectFile ||
+      selSync.rg !== generatedFile.rg)
+  ) {
+    setSelSync({ id: selectedElementId, tabs: openTabs, cb: onSelectFile, rg: generatedFile.rg });
+    if (!onSelectFile) setInternalActiveFile(selectedTargetFile);
+    const range = generatedFile.rg[selectedShort];
+    if (range) setCurLine(range[0]);
+  }
+
+  // Notify the controlling parent of the file for the selected canvas element
   useEffect(() => {
-    if (!selectedElementId) return;
-    const short = selectedElementId.replace(/^el_/, "");
-    const targetFile = FILE_OF[short];
-    if (targetFile) {
-      if (!openTabs.includes(targetFile)) {
-        setOpenTabs((prev) => [...prev, targetFile]);
-      }
-      if (onSelectFile) {
-        onSelectFile(targetFile);
-      } else {
-        setInternalActiveFile(targetFile);
-      }
-      const range = generatedFile.rg[short];
-      if (range) {
-        setCurLine(range[0]);
-      }
-    }
-  }, [selectedElementId, openTabs, onSelectFile, generatedFile.rg]);
+    if (selectedTargetFile && onSelectFile) onSelectFile(selectedTargetFile);
+  }, [selectedElementId, openTabs, onSelectFile, generatedFile.rg, selectedTargetFile]);
 
   // Outline element on canvas during line hover
   const handleLineHover = useCallback((ref: string | null) => {

@@ -122,7 +122,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   // Drag and drop state
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
-  dragStateRef.current = dragState;
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);

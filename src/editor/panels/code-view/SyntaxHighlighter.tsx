@@ -212,8 +212,8 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
   }, [folds, fMap]);
 
   // Track sticky scope on scroll
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
+  const handleScroll = useCallback((e: Event) => {
+    const el = e.currentTarget as HTMLElement | null;
     if (!el || !onStickyScopeChange) return;
     const top = el.scrollTop;
     const rowEls = el.querySelectorAll<HTMLElement>(".ll-cl");
@@ -228,7 +228,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
       }
     }
     onStickyScopeChange(hit);
-  }, [sList, onStickyScopeChange, scrollRef]);
+  }, [sList, onStickyScopeChange]);
 
   useEffect(() => {
     const el = scrollRef.current;

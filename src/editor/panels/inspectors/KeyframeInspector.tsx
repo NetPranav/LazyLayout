@@ -87,6 +87,18 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps & KeyframeAction
   // If controlled props like propBezier or propEasing are directly provided without model selection,
   // we treat this as a standalone controlled Keyframe view (e.g. for demos / tests)
   const isDirectControlledKeyframe = Boolean(propBezier || propTimecode || propValue);
+  const firstTarget = keyTargets[0];
+
+  // Segment duration between this keyframe and the next
+  const segmentDurationSec = useMemo(() => {
+    if (!firstTarget) return 1.0;
+    const keys = firstTarget.tr.keys;
+    const idx = keys.findIndex((k) => k.id === firstTarget.k.id);
+    if (idx >= 0 && idx < keys.length - 1) {
+      return (keys[idx + 1].t - firstTarget.k.t) / comp.fps;
+    }
+    return 1.0;
+  }, [firstTarget, comp.fps]);
 
   // If no keys selected and not direct controlled, choose Layer or Composition inspector
   if (!isDirectControlledKeyframe && keyTargets.length === 0) {
@@ -98,7 +110,6 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps & KeyframeAction
 
   // --- Keyframe Inspector View ---
   const isSingleKey = keyTargets.length <= 1;
-  const firstTarget = keyTargets[0];
   const sameLayer = keyTargets.every((s) => s.l.id === firstTarget?.l.id);
   const sameProp = keyTargets.every((s) => s.tr.p === firstTarget?.tr.p);
   const lastOnly =
@@ -136,17 +147,6 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps & KeyframeAction
       });
     }
   };
-
-  // Segment duration between this keyframe and the next
-  const segmentDurationSec = useMemo(() => {
-    if (!firstTarget) return 1.0;
-    const keys = firstTarget.tr.keys;
-    const idx = keys.findIndex((k) => k.id === firstTarget.k.id);
-    if (idx >= 0 && idx < keys.length - 1) {
-      return (keys[idx + 1].t - firstTarget.k.t) / comp.fps;
-    }
-    return 1.0;
-  }, [firstTarget, comp.fps]);
 
   // Keyframe Duplicate / Delete / Stretch
   const handleDuplicate = () => {

@@ -312,7 +312,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
               <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
                 <span className="ll:text-muted">Text</span>
                 <span className="ll:text-primary ll:truncate ll:max-w-44">
-                  "{DEFAULT_TXT[shortId]}"
+                  {`"${DEFAULT_TXT[shortId]}"`}
                 </span>
               </div>
             )}

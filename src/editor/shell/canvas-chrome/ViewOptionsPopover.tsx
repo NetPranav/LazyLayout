@@ -366,7 +366,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           </div>
           <SegmentedControl
             size="sm"
-            value={LIGHT_THEMES.includes(validTheme as any) ? validTheme : ""}
+            value={(LIGHT_THEMES as readonly string[]).includes(validTheme) ? validTheme : ""}
             onChange={(v) => onThemeChange?.(v)}
             options={[
               { value: "paper", label: "Paper" },
@@ -380,7 +380,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           </div>
           <SegmentedControl
             size="sm"
-            value={DARK_THEMES.includes(validTheme as any) ? validTheme : ""}
+            value={(DARK_THEMES as readonly string[]).includes(validTheme) ? validTheme : ""}
             onChange={(v) => onThemeChange?.(v)}
             options={[
               { value: "noir", label: "Noir" },

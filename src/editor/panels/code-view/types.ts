@@ -3,6 +3,7 @@
  */
 
 import type React from "react";
+import type { LogItem } from "./ConsoleView";
 import type { EmittedFile } from "@/core/types/compiler";
 
 export type CodeTab = "code" | "console" | "trace";
@@ -101,7 +102,7 @@ export interface ConsoleLogEntry {
 
 export interface ConsoleViewProps {
   /** Initial logs list */
-  initialLogs?: any[];
+  initialLogs?: LogItem[];
   /** Callback when CLI command is executed */
   onCommand?: (command: string) => void;
   /** Jump to file and line from a log link */

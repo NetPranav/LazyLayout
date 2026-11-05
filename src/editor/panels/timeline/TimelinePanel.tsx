@@ -70,18 +70,20 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
   // Synchronize track width with localStorage on mount (hydration-safe)
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("ll-tlhw");
-      if (stored) {
-        const parsed = parseInt(stored, 10);
-        if (parsed >= TIMELINE_TRACK_COLUMN_MIN_PX && parsed <= TIMELINE_TRACK_COLUMN_MAX_PX) {
-          setTrackWidth(parsed);
-          motionActions.setTrackWidth(parsed);
+    queueMicrotask(() => {
+      try {
+        const stored = localStorage.getItem("ll-tlhw");
+        if (stored) {
+          const parsed = parseInt(stored, 10);
+          if (parsed >= TIMELINE_TRACK_COLUMN_MIN_PX && parsed <= TIMELINE_TRACK_COLUMN_MAX_PX) {
+            setTrackWidth(parsed);
+            motionActions.setTrackWidth(parsed);
+          }
         }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    });
   }, []);
 
   // Update container width observer

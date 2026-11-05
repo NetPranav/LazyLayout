@@ -34,7 +34,7 @@ export interface EasingEditorProps {
   segmentSec?: number;
   presets?: EasingPreset[];
   customPresets?: { name: string; bz?: Bezier; spring?: SpringParams }[];
-  onSavePreset?: (preset: any) => void;
+  onSavePreset?: (preset: { name: string; bz?: Bezier; spring?: SpringParams }) => void;
   className?: string;
 }
 
@@ -93,9 +93,11 @@ export const EasingEditor: React.FC<EasingEditorProps> = ({
   const sp = useMemo<SpringParams>(() => keyframe.spring ?? DEFAULT_SPRING, [keyframe.spring]);
 
   // Synchronize tab if ease switches externally
-  useEffect(() => {
+  const [prevEase, setPrevEase] = useState(keyframe.ease);
+  if (prevEase !== keyframe.ease) {
+    setPrevEase(keyframe.ease);
     setActiveTab(keyframe.ease === "Spring" ? "Spring" : "Curve");
-  }, [keyframe.ease]);
+  }
 
   // Handle Tab Switch
   const handleTabChange = (val: string) => {
