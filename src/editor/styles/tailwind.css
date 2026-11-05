@@ -237,21 +237,64 @@
   /* === end lane: L1 === */
 
   /* === lane: L2 left panel === */
+  --height-layer-row: var(--ll-size-layer-row-h);
+  --height-assets-row: var(--ll-size-assets-row-h);
   /* === end lane: L2 === */
 
   /* === lane: L3 inspector === */
+  --max-height-inspector-demo: var(--ll-size-inspector-demo-max-h);
+  --max-height-inspector-demo-short: var(--ll-size-inspector-demo-short-max-h);
+  --height-inspector-chat: var(--ll-size-inspector-chat-h);
   /* === end lane: L3 === */
 
   /* === lane: L4 canvas === */
+  --width-insert: var(--ll-size-insert-w);
+  --height-insert: var(--ll-size-insert-h);
+  --width-vpop: var(--ll-size-vpop-w);
   /* === end lane: L4 === */
 
   /* === lane: L5 timeline === */
+  --height-timeline-header: var(--ll-size-timeline-header);
+  --height-timeline-ruler: var(--ll-size-timeline-ruler);
+  --height-timeline-row: var(--ll-size-timeline-row);
+  --height-timeline-row-compact: var(--ll-size-timeline-row-compact);
+  --height-timeline-prop-row: var(--ll-size-timeline-prop-row);
+  --height-timeline-prop-row-compact: var(--ll-size-timeline-prop-row-compact);
+  --height-timeline-footer: var(--ll-size-timeline-footer);
+  --width-timeline-track-default: var(--ll-size-timeline-track-default);
+  --grid-template-columns-timeline-header: auto 1fr auto;
+  --color-label-1: var(--ll-label-1);
+  --color-label-1-tint: var(--ll-label-1-tint);
+  --color-label-2: var(--ll-label-2);
+  --color-label-2-tint: var(--ll-label-2-tint);
+  --color-label-3: var(--ll-label-3);
+  --color-label-3-tint: var(--ll-label-3-tint);
+  --color-label-4: var(--ll-label-4);
+  --color-label-4-tint: var(--ll-label-4-tint);
+  --color-label-5: var(--ll-label-5);
+  --color-label-5-tint: var(--ll-label-5-tint);
+  --color-label-6: var(--ll-label-6);
+  --color-label-6-tint: var(--ll-label-6-tint);
+  --text-timeline-timecode: var(--ll-text-timeline-timecode);
+  --text-timeline-timecode--line-height: var(--ll-text-timeline-timecode-line-height);
   /* === end lane: L5 === */
 
   /* === lane: L6 motion inspector === */
+  --height-slider: var(--ll-size-slider-height);
+  --height-curve: var(--ll-size-curve-height);
   /* === end lane: L6 === */
 
   /* === lane: L7 code === */
+  --height-code-header: var(--ll-size-code-header);
+  --height-code-sub: var(--ll-size-code-sub);
+  --height-code-stick: var(--ll-size-code-stick);
+  --height-code-footer: var(--ll-size-code-footer);
+  --height-code-full: var(--ll-size-code-full);
+  --grid-template-columns-console-row: var(--ll-grid-console-row);
+  --grid-template-columns-trace-main: var(--ll-grid-trace-main);
+  --grid-template-columns-trace-row: var(--ll-grid-trace-row);
+  --shadow-indicator-active: var(--ll-shadow-indicator-active);
+  --shadow-indicator-muted: var(--ll-shadow-indicator-muted);
   /* === end lane: L7 === */
 
   /* === lane: L8 shell === */
