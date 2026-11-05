@@ -530,7 +530,7 @@ const SEMANTIC_ROLES: readonly SemanticRole[] = [
     role: "Accent (Lilac only)",
     token: "--ll-accent",
     bgClass: "ll:bg-accent",
-    description: "Only Lilac has an accent (#CEB4F5). No other theme has one.",
+    description: "Only Lilac has an accent. No other theme has one.",
   },
   {
     role: "Label 1 (Slate)",

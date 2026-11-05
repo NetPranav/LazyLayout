@@ -31,10 +31,38 @@ export function MenuHeadingDemo() {
           Muted section heading inside a menu. Used to group the Light and Dark themes.
         </p>
       </div>
-      <div className="ll:flex ll:items-center ll:gap-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:p-6">
-        <Button ref={anchorRef} onClick={() => setOpen((v) => !v)}>
-          Theme: {picked}
-        </Button>
+      <div className="ll:flex ll:flex-col ll:gap-4 ll:rounded-md ll:border ll:border-border ll:bg-surface-panel ll:p-6">
+        <div className="ll:flex ll:items-center ll:gap-4">
+          <Button ref={anchorRef} onClick={() => setOpen((v) => !v)}>
+            Theme: {picked} (Click to open menu)
+          </Button>
+          <span className="ll:text-small ll:text-secondary">Click button to open interactive popup menu</span>
+        </div>
+        <div className="ll:pt-4 ll:border-t ll:border-border ll:flex ll:flex-col ll:gap-2">
+          <div className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+            Static Preview
+          </div>
+          <div className="ll:w-60 ll:rounded-lg ll:border ll:border-border ll:bg-surface-raised ll:p-1 ll:shadow-soft">
+            <MenuHeading>Light</MenuHeading>
+            <div className="ll:flex ll:h-8 ll:items-center ll:gap-2 ll:rounded-sm ll:px-3 ll:text-small ll:text-primary">
+              <ThemeSwatch theme="paper" />
+              <span>Paper</span>
+            </div>
+            <div className="ll:flex ll:h-8 ll:items-center ll:gap-2 ll:rounded-sm ll:px-3 ll:text-small ll:text-primary">
+              <ThemeSwatch theme="lilac" />
+              <span>Lilac</span>
+            </div>
+            <MenuHeading>Dark</MenuHeading>
+            <div className="ll:flex ll:h-8 ll:items-center ll:gap-2 ll:rounded-sm ll:px-3 ll:text-small ll:text-primary">
+              <ThemeSwatch theme="noir" />
+              <span>Noir</span>
+            </div>
+            <div className="ll:flex ll:h-8 ll:items-center ll:gap-2 ll:rounded-sm ll:px-3 ll:text-small ll:text-primary">
+              <ThemeSwatch theme="darkroom" />
+              <span>Darkroom</span>
+            </div>
+          </div>
+        </div>
       </div>
       <Menu open={open} onClose={() => setOpen(false)} anchorRef={anchorRef} aria-label="Theme groups">
         <MenuHeading>Light</MenuHeading>
