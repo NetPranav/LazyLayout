@@ -21,6 +21,7 @@ import {
 import { transport, transportStore } from "@/core/time/transport";
 import { isTextEditingTarget } from "@/core/commands/normalize";
 import { listFrames } from "@/core/frames/frames";
+import { motionActions, useMotionModel } from "@/editor/motion-model";
 import { getDocument } from "@/core/store/documentState";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
@@ -33,6 +34,8 @@ export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
   initialLeftCollapsed?: boolean;
   initialRightCollapsed?: boolean;
+  /** Called synchronously before a mode change commits, so the shell can capture the old panel content for the transition. */
+  onBeforeModeChange?: (next: EditorMode) => void;
 }
 
 export interface UseEditorActionsReturn {
@@ -109,6 +112,7 @@ export function useEditorActions(
     initialMode = "design",
     initialLeftCollapsed = false,
     initialRightCollapsed = false,
+    onBeforeModeChange,
   } = options;
 
   // Mode state: Design | Motion | Code
@@ -230,13 +234,14 @@ export function useEditorActions(
 
   // Sync mode with canvas view store
   const setMode = useCallback((newMode: EditorMode) => {
+    onBeforeModeChange?.(newMode);
     setModeState(newMode);
     if (newMode === "design") {
       useCanvasViewStore.getState().setMode("design");
     } else {
       useCanvasViewStore.getState().setMode("preview");
     }
-  }, []);
+  }, [onBeforeModeChange]);
 
   // Sync tool selection with core tool store
   const setActiveTool = useCallback((tool: CanvasTool) => {
@@ -277,14 +282,10 @@ export function useEditorActions(
 
   // Toggle both panels together (Ctrl+\)
   const toggleBothPanels = useCallback(() => {
-    setIsLeftCollapsed((prevLeft) => {
-      setIsRightCollapsed((prevRight) => {
-        const currentlyAnyOpen = !prevLeft || !prevRight;
-        return currentlyAnyOpen;
-      });
-      return !prevLeft || !isRightCollapsed;
-    });
-  }, [isRightCollapsed]);
+    const anyOpen = !isLeftCollapsed || !isRightCollapsed;
+    setIsLeftCollapsed(anyOpen);
+    setIsRightCollapsed(anyOpen);
+  }, [isLeftCollapsed, isRightCollapsed]);
 
   // Toggle Zen mode (Tab)
   const toggleZen = useCallback(() => {
@@ -1174,6 +1175,11 @@ export function useEditorActions(
 
       // Shift shortcuts without Ctrl or Alt:
       if (isShift && !isCtrl && !isAlt) {
+        if (key === "t" && (mode === "motion" || mode === "code")) {
+          e.preventDefault();
+          motionActions.setFullWidth(!useMotionModel.getState().fullWidth);
+          return;
+        }
         if (key === "r") {
           e.preventDefault();
           toggleRulers();
@@ -1289,6 +1295,7 @@ export function useEditorActions(
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    mode,
     isInsertOpen,
     isAiBoxOpen,
     isViewOptionsOpen,

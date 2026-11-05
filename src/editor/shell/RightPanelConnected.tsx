@@ -7,7 +7,7 @@ import {
   getInspectorDesignSections,
   useSelectionInspector,
 } from "@/editor/panels/details";
-import { DEFAULT_LAYERS, KeyframeInspector } from "@/editor/panels/inspectors";
+import { MotionInspector } from "@/editor/panels/inspectors";
 import { CodeInspector } from "@/editor/panels/code-view";
 
 export interface RightPanelConnectedProps {
@@ -17,17 +17,15 @@ export interface RightPanelConnectedProps {
   onAiClose?: () => void;
 }
 
-/** Right panel frame: the real inspector fields in Design, the keyframe inspector in Motion, the file inspector in Code. */
+/** Right panel frame: the real inspector fields in Design, the motion inspector (composition, layer or keyframe by selection) in Motion, the file inspector in Code. */
 export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, aiOpen = false, onAiClose }) => {
   const inspector = useSelectionInspector();
   const designSections = getInspectorDesignSections(inspector);
 
   if (mode === "motion") {
-    const targetLayer = inspector.hasSelection ? inspector.selectionName : undefined;
-    const layers = targetLayer && !DEFAULT_LAYERS.includes(targetLayer) ? [targetLayer, ...DEFAULT_LAYERS] : DEFAULT_LAYERS;
     return (
       <RightPanelFrame mode={mode} aiOpen={aiOpen} onAiClose={onAiClose}>
-        <KeyframeInspector layer={targetLayer} availableLayers={layers} />
+        <MotionInspector />
       </RightPanelFrame>
     );
   }

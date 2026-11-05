@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { TopBar } from "@/editor/components";
 import { CanvasChrome } from "@/editor/shell/canvas-chrome";
 import { RightPanelConnected } from "./RightPanelConnected";
@@ -22,6 +22,8 @@ import {
   FileDropOverlay,
 } from "./persistence";
 import { useEditorActions } from "./useEditorActions";
+import { useShellFx } from "./shellFx";
+import { useMotionModel } from "@/editor/motion-model";
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -43,11 +45,21 @@ export function EditorShell({
 
   // Core shell actions and keyboard shortcut layer
   const [aiPanelOpen, setAiPanelOpen] = React.useState(false);
+  const { bindRoot, captureMode, sync, onSplitDown, onSplitDouble } = useShellFx();
   const actions = useEditorActions({
     initialMode: "design",
     initialLeftCollapsed: false,
     initialRightCollapsed: false,
+    onBeforeModeChange: captureMode,
   });
+  const timelineFullWidth = useMotionModel((s) => s.fullWidth);
+  const bottomOpen = !actions.isZen && (actions.mode === "motion" || actions.mode === "code");
+  const fullWidth = bottomOpen && timelineFullWidth;
+
+  // Panel springs, mode-switch content transitions: runs before paint, after the new attributes are in the DOM.
+  useLayoutEffect(() => {
+    sync(actions.mode);
+  }, [sync, actions.mode, actions.isLeftCollapsed, actions.isRightCollapsed, actions.isZen, fullWidth]);
 
   // Project persistence, locking and shell commands
   const files = useProjectFiles();
@@ -111,36 +123,15 @@ export function EditorShell({
     ];
   }, [connectedPeers, localUser]);
 
-  // Bottom drawer height in motion/code modes
-  const bottomHeight = actions.isZen
-    ? "0"
-    : actions.mode === "motion"
-    ? "var(--ll-size-bottom-motion-h)"
-    : actions.mode === "code"
-    ? "var(--ll-size-bottom-code-h)"
-    : "0";
-
-  const topHeight = actions.isZen ? "0" : "auto";
-  const leftWidth = actions.isZen || actions.isLeftCollapsed ? "0" : "var(--ll-size-panel-left-w)";
-  const rightWidth = actions.isZen || actions.isRightCollapsed ? "0" : "var(--ll-size-panel-right-w)";
-
   return (
     <div
+      ref={bindRoot}
       data-mode={actions.mode}
-      className={`ll-editor-root editor-root ${actions.isZen ? "ll-zen " : ""}${
-        actions.isLeftCollapsed ? "ll-lc " : ""
-      }${
-        actions.isRightCollapsed ? "ll-rc " : ""
-      }ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
-      style={{
-        gridTemplateColumns: `${leftWidth} minmax(0, 1fr) ${rightWidth}`,
-        gridTemplateRows: `${topHeight} minmax(0, 1fr) ${bottomHeight}`,
-        gridTemplateAreas: `
-          "top top top"
-          "left canvas right"
-          "left bottom right"
-        `,
-      }}
+      data-lc={actions.isLeftCollapsed ? "" : undefined}
+      data-rc={actions.isRightCollapsed ? "" : undefined}
+      data-zen={actions.isZen ? "" : undefined}
+      data-fw={fullWidth ? "1" : "0"}
+      className={`ll-editor-root editor-root ll-shell ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
     >
       {/* Persistence overlays & banners */}
       {files.recovery && (
@@ -173,8 +164,7 @@ export function EditorShell({
 
       {/* 1. Top bar in "top" grid area */}
       <div
-        style={{ gridArea: "top" }}
-        className={`ll:w-full ll:flex ll:flex-col ${actions.isZen ? "ll:invisible ll:h-0" : "ll:visible"}`}
+        className={`ll-shell-top ll:w-full ll:flex ll:flex-col ${actions.isZen ? "ll:invisible ll:h-0" : "ll:visible"}`}
       >
         <TopBar
           projectName={projectName}
@@ -199,10 +189,7 @@ export function EditorShell({
 
       {/* 2. Left panel slot in "left" grid area */}
       <div
-        style={{ gridArea: "left" }}
-        className={`ll-left ll-zone ll:h-full ll:overflow-hidden ll:relative ${
-          actions.isZen || actions.isLeftCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
-        }`}
+        className="ll-shell-left"
       >
         {left ?? (
           <LeftPanelConnected mode={actions.mode} />
@@ -211,8 +198,7 @@ export function EditorShell({
 
       {/* 3. Center canvas slot in "canvas" grid area */}
       <div
-        style={{ gridArea: "canvas" }}
-        className="ll-canvas ll:w-full ll:h-full ll:relative ll:overflow-hidden"
+        className="ll-shell-canvas ll:w-full ll:h-full ll:relative ll:overflow-hidden"
       >
         {center ?? (
           <CanvasChrome
@@ -264,23 +250,28 @@ export function EditorShell({
 
       {/* 4. Right panel slot in "right" grid area */}
       <div
-        style={{ gridArea: "right" }}
-        className={`ll-right ll-zone ll:h-full ll:overflow-hidden ll:relative ${
-          actions.isZen || actions.isRightCollapsed ? "ll:invisible ll:w-0" : "ll:visible"
-        }`}
+        className="ll-shell-right"
       >
         {right ?? <RightPanelConnected mode={actions.mode} aiOpen={aiPanelOpen} onAiClose={() => setAiPanelOpen(false)} />}
       </div>
 
-      {/* 5. Bottom area in "bottom" grid area (motion / code modes) */}
-      {bottomHeight !== "0" && !actions.isZen && (
-        <div
-          style={{ gridArea: "bottom" }}
-          className="ll-bottom ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:relative"
-        >
-          {actions.mode === "motion" ? <TimelinePanel /> : <CodePanel />}
-        </div>
-      )}
+      {/* 5. Bottom area in "bottom" grid area (motion / code modes). The cell stays mounted so its row can spring open and closed. */}
+      <div className="ll-shell-bottom">
+        {bottomOpen && (
+          <>
+            <div
+              className="ll-shell-bsplit"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Resize bottom panel"
+              title="Drag to resize, double click to reset"
+              onPointerDown={onSplitDown}
+              onDoubleClick={onSplitDouble}
+            />
+            {actions.mode === "motion" ? <TimelinePanel height="100%" /> : <CodePanel />}
+          </>
+        )}
+      </div>
     </div>
   );
 }

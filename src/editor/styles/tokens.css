@@ -964,6 +964,25 @@ svg {
 /* === end lane: L7 === */
 
 /* === lane: L8 shell === */
+:root {
+  --ll-size-bottom-min-h: 180px;
+  --ll-size-bottom-max-h: 70vh;
+  --ll-size-bottom-default-h: 40vh;
+  --ll-size-bsplit-h: 6px;
+  --ll-size-bsplit-line-h: 2px;
+  --ll-size-panel-edge-h: 6px;
+  --ll-panel-shade: 10%;
+  --ll-ph-band-mix: 5%;
+  --ll-dim-canvas: 0.6;
+  --ll-opacity-bsplit: 0.5;
+}
+
+[data-theme="dark"],
+[data-theme="graphite"],
+[data-theme="darkroom"],
+[data-theme="noir"] {
+  --ll-panel-shade: 34%;
+}
 /* === end lane: L8 === */
 
 /* === lane: L9 design system === */
