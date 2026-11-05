@@ -4,7 +4,7 @@
  * still reach the command bus; the frame can't run script.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 
@@ -23,7 +23,7 @@ async function mountDemo(page: Page) {
 }
 
 test.fixme("Phase 18: the stage is a script-free same-origin frame with live DOM, not srcdoc — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
 
   const iframe = page.locator(STAGE);
@@ -70,7 +70,7 @@ test.fixme("Phase 18: the stage is a script-free same-origin frame with live DOM
 });
 
 test.fixme("Phase 18: a document edit updates the stage in place, without reloading the frame, in under a frame — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)", async ({ page, browserName }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
   const frame = await stageFrame(page);
   await frame.evaluate(() => ((document as unknown as { __marker: string }).__marker = "same-document"));
@@ -127,7 +127,7 @@ test.fixme("Phase 18: a document edit updates the stage in place, without reload
 });
 
 test.fixme("Phase 18: keys typed with the pointer over the stage reach the command bus — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
   const stage = page.locator(".whiteboard-stage");
   const box = (await stage.boundingBox())!;

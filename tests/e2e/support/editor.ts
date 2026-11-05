@@ -8,9 +8,10 @@ import pixelmatch from "pixelmatch";
 import type { Download, Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 
+export const EDITOR_URL = "/editor";
 export const LEGACY_EDITOR_URL = "/editor/legacy";
 
-export async function openEditor(page: Page, url = LEGACY_EDITOR_URL) {
+export async function openEditor(page: Page, url = EDITOR_URL) {
   await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
   await page.waitForFunction(() => new URL(location.href).searchParams.has("projectId"));
   await waitSaved(page);

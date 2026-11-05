@@ -5,13 +5,13 @@
  * every combination of focus region, text editing, playback and selection size.
  */
 import { test, expect } from "@playwright/test";
-import { openEditor, openSequencer } from "./support/editor";
+import { openEditor, openSequencer, LEGACY_EDITOR_URL } from "./support/editor";
 
 test("no two commands share a key in the same context", async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await openSequencer(page); // mounts the timeline's panel-scoped commands too
   await page.waitForFunction(() => !!(window as unknown as { __LL_COMMANDS__?: unknown }).__LL_COMMANDS__);
 

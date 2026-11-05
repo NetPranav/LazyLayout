@@ -4,7 +4,7 @@
  * custom layout survives a reload. Logic, Data and Debug are full-edition only.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, EDITOR_URL } from "./support/editor";
 
 const tab = (page: Page, name: string | RegExp) =>
   page.getByTestId("mode-tab").filter({ hasText: name });
@@ -13,7 +13,7 @@ const rightPanel = (page: Page) => page.locator(".ll-shell-right > [data-testid=
 const bottomPanel = (page: Page) => page.locator(".ll-shell-bottom [data-testid='bottom-panel']:not(.ll-mgh *)");
 
 test("Phase 15: Design is the default — Layers │ stage │ Design inspector, timeline folded to the transport bar", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await expect(tab(page, "Design")).toHaveAttribute("aria-selected", "true");
   await expect(bottomPanel(page), "the timeline drawer is folded away").toHaveCount(0);
   await expect(page.getByTestId("left-panel")).toBeVisible();
@@ -23,7 +23,7 @@ test("Phase 15: Design is the default — Layers │ stage │ Design inspector,
 });
 
 test("Phase 15: Animate gives the timeline ~40% of the window and opens the Motion inspector", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await tab(page, "Motion").click();
   await expect(tab(page, "Motion")).toHaveAttribute("aria-selected", "true");
   await bottomPanel(page).waitFor({ state: "visible", timeout: 15_000 });
@@ -39,7 +39,7 @@ test("Phase 15: Animate gives the timeline ~40% of the window and opens the Moti
 });
 
 test("Phase 15: a preset switch takes under 100 ms and never replaces the stage", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   // Load the lazy panels once, so the switch itself is what's timed.
   await tab(page, "Motion").click();
   await bottomPanel(page).waitFor({ state: "visible", timeout: 15_000 });
@@ -89,13 +89,13 @@ test("Phase 15: a preset switch takes under 100 ms and never replaces the stage"
 });
 
 test("Phase 15: Logic, Data and Debug are not in the initial edition", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   for (const name of [/Logic/, /Data/, /Debug/]) await expect(tab(page, name)).toHaveCount(0);
   await expect(rightPanel(page).getByText("Debug", { exact: true })).toHaveCount(0);
 });
 
 test("Phase 15: the Code inspector shows the document's code in the right dock", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await tab(page, "Code").click();
   await expect(tab(page, "Code")).toHaveAttribute("aria-selected", "true");
   await expect(rightPanel(page)).toHaveAttribute("data-mode", "code");
@@ -103,7 +103,7 @@ test("Phase 15: the Code inspector shows the document's code in the right dock",
 });
 
 test.fixme("New UI lacks custom saved layouts (legacy dock feature)", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await tab(page, /Animate/).click();
   await page.locator(".timeline").waitFor({ state: "visible", timeout: 15_000 });
 

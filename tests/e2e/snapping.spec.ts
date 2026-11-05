@@ -4,7 +4,7 @@
  * numbers for every case are in src/core/geometry/__tests__/snap.test.ts; this drives the real canvas.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved, waitHydrated } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 async function openShapesLab(page: Page) {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
@@ -149,7 +149,7 @@ test("Phase 28: a guide dragged out of the ruler is a snap target, and the ruler
 });
 
 test("Phase 28: guides belong to their frame, are saved, undone and restored", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
   await waitSaved(page);

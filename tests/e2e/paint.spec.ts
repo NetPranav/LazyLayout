@@ -4,13 +4,13 @@
  * `paint-render.spec.ts`.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { exportProject, openEditor, waitSaved } from "./support/editor";
+import { exportProject, openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
 
 async function ready(page: Page) {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);

@@ -5,7 +5,7 @@
  * whatever tool is active.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const CANVAS = ".whiteboard-stage";
 const DEEP = process.platform === "darwin" ? "Meta" : "Control";
@@ -22,7 +22,7 @@ const count = (page: Page, archetype: string) =>
   page.evaluate(({ sel, a }) => document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelectorAll(`[data-archetype="${a}"]`).length ?? 0, { sel: STAGE, a: archetype });
 
 async function ready(page: Page) {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);

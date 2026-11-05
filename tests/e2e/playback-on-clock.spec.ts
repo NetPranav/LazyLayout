@@ -7,7 +7,7 @@
  * by a frame-scheduler task rather than React state.
  */
 import { test, expect } from "@playwright/test";
-import { openEditor, openSequencer } from "./support/editor";
+import { openEditor, openSequencer, EDITOR_URL } from "./support/editor";
 
 const FPS = 60;
 
@@ -43,7 +43,7 @@ async function seekTimeline(page: import("@playwright/test").Page, seconds: numb
 }
 
 test("App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
   const bar = page.getByRole("toolbar", { name: "Timeline header" });
 
@@ -65,7 +65,7 @@ test("App bug: TimelinePanel playback has no subframe accumulator and setPlayhea
 });
 
 test("Phase 56: playing re-renders the timeline at most 10 times a second", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
   const bar = page.getByRole("toolbar", { name: "Timeline header" });
 

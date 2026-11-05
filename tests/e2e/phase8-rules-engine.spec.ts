@@ -9,10 +9,10 @@
  * picker must show those as disabled with a reason, and refuse the add.
  */
 import { test, expect } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, LEGACY_EDITOR_URL } from "./support/editor";
 
 test.fixme("New UI lacks Content Browser and Presets tool (panels/content-browser is todo in PARITY.md)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: /Mount Showcase Demo/ }).click();
   await page.waitForTimeout(500);
 

@@ -3,7 +3,7 @@
  * Layer Timeline in the Animate workspace: twirl a layer open, open a group, click a stopwatch.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { focusApp, openEditor, waitSaved } from "./support/editor";
+import { focusApp, openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const PPS = 120;
@@ -18,7 +18,7 @@ async function openTimeline(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await prepare(page, true);
 }
 

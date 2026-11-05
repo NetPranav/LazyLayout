@@ -21,10 +21,10 @@
  */
 import { test, expect } from "@playwright/test";
 import { installDeterministicClock } from "./support/clock";
-import { openEditor, openSequencer } from "./support/editor";
+import { openEditor, openSequencer, EDITOR_URL } from "./support/editor";
 
 test("1. the clock deterministically controls rAF/performance.now in isolation", async ({ page }) => {
-  await openEditor(page, "/editor"); // no Sequencer mounted: nothing else is driving rAF
+  await openEditor(page, EDITOR_URL); // no Sequencer mounted: nothing else is driving rAF
   await installDeterministicClock(page, 0);
 
   async function elapsedFor(ms: number) {
@@ -43,7 +43,7 @@ test("1. the clock deterministically controls rAF/performance.now in isolation",
 });
 
 test("2. seekRuler reaches an exact playhead time, repeatably", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
 
   const ruler = page.getByTestId("timeline-ruler");
@@ -66,7 +66,7 @@ test("2. seekRuler reaches an exact playhead time, repeatably", async ({ page })
 });
 
 test("3. AUD-41: transport playback on the frame scheduler is deterministic under the test clock", async ({ page }) => {
-  await openEditor(page, "/editor");
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
   await installDeterministicClock(page, 0);
   await page.clock.pauseAt(100); // virtual time now moves only through runFor, not while Playwright clicks
