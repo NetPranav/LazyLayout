@@ -204,7 +204,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
       aria-label="Ask AI"
       tabIndex={-1}
       style={{
-        width: "calc(var(--ll-size-menu-users-w) * 2)",
+        width: "var(--ll-size-toolbar-w)",
         bottom:
           "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
       }}

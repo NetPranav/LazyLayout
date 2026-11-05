@@ -26,6 +26,7 @@ import {
 import { useStore } from "zustand";
 import { transportStore, transport } from "@/core/time/transport";
 import { getCommand, isCommandAvailable, tryRunCommand } from "@/core/commands";
+import { useMotionModel, motionActions } from "@/editor/motion-model";
 import { Icon } from "@/editor/components/Icon";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
@@ -152,26 +153,33 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   // Playback state and keyframe command wiring
   const storePlaying = useStore(transportStore, (s) => s.playing);
-  const playingState = isPlaying !== undefined ? isPlaying : storePlaying;
+  const motionModelPlaying = useMotionModel((s) => s.playing);
+  const playingState = isPlaying !== undefined ? isPlaying : (motionModelPlaying || storePlaying);
 
   const handleTogglePlay = useCallback(() => {
     if (onTogglePlay) {
       onTogglePlay();
     } else {
+      const current = useMotionModel.getState().playing;
+      motionActions.setPlaying(!current);
       transport.togglePlay();
     }
   }, [onTogglePlay]);
 
   const kfCommand = getCommand("timeline.addKeyframe") || getCommand("keyframe.add");
-  const hasKeyframeCommand = Boolean(
-    onAddKeyframe || (kfCommand && isCommandAvailable(kfCommand))
-  );
+  const hasKeyframeCommand = true;
 
   const handleAddKeyframe = useCallback(() => {
     if (onAddKeyframe) {
       onAddKeyframe();
-    } else if (kfCommand && isCommandAvailable(kfCommand)) {
-      tryRunCommand(kfCommand.id);
+    } else {
+      const s = useMotionModel.getState();
+      const firstLayer = s.comp.layers[0];
+      if (firstLayer) {
+        motionActions.addKey(firstLayer.id, "opacity", s.playhead, 1);
+      } else if (kfCommand && isCommandAvailable(kfCommand)) {
+        tryRunCommand(kfCommand.id);
+      }
     }
   }, [onAddKeyframe, kfCommand]);
 
@@ -268,12 +276,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="kf"
               aria-label="Add keyframe (K)"
-              tooltip={
-                hasKeyframeCommand
-                  ? "Add keyframe (K)"
-                  : "Add keyframe (K) — No keyframe command registered in engine"
-              }
-              disabled={!hasKeyframeCommand}
+              tooltip="Add keyframe (K)"
               tabIndex={focusedIndex === 2 ? 0 : -1}
               onFocus={() => setFocusedIndex(2)}
               onClick={handleAddKeyframe}
@@ -502,9 +505,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onFocus={() => setFocusedIndex(12)}
           onClick={() => setIsZoomMenuOpen((prev) => !prev)}
           rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
-          className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+          className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-body ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
         >
-          <span className="ll-mono">{zoomPercentage}</span>
+          <span className="ll-mono ll:font-mono">{zoomPercentage}</span>
         </Button>
       </div>
 

@@ -77,7 +77,9 @@ export interface ViewOptionsPopoverProps {
   onOpenWorldEnvironment?: () => void;
 }
 
-const OFFICIAL_THEMES = ["paper", "dark", "white", "warm", "lilac"];
+const LIGHT_THEMES = ["paper", "white", "warm", "lilac"] as const;
+const DARK_THEMES = ["noir", "dark", "graphite", "darkroom"] as const;
+const OFFICIAL_THEMES = [...LIGHT_THEMES, ...DARK_THEMES] as const;
 
 export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   open,
@@ -223,7 +225,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
 
   if (!isRendered) return null;
 
-  const validTheme = OFFICIAL_THEMES.includes(theme) ? theme : "paper";
+  const validTheme = (OFFICIAL_THEMES as readonly string[]).includes(theme) ? theme : "paper";
 
   return (
     <div
@@ -232,7 +234,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
       aria-label="View options"
       tabIndex={-1}
       style={{
-        width: "var(--ll-size-menu-wide-w)",
+        width: "var(--ll-size-vpop-w, 280px)",
         top: "var(--ll-spacing-2)",
         left: "var(--ll-spacing-2)",
         maxHeight: "calc(100% - var(--ll-spacing-6))",
@@ -357,21 +359,34 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
 
         <div className="ll:h-px ll:bg-border ll:my-1" aria-hidden="true" />
 
-        {/* Appearance (Five Official Themes only from PALETTE.md) */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Appearance
-        </div>
-        <div className="ll:px-3 ll:pb-2">
+        {/* Appearance (All eight themes from PALETTE.md: Light and Dark) */}
+        <div className="thgrp ll:px-3 ll:pt-2 ll:pb-2 ll:flex ll:flex-col ll:gap-1.5" id="themeseg">
+          <div className="vgrp micro ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+            Light
+          </div>
           <SegmentedControl
             size="sm"
-            value={validTheme}
+            value={LIGHT_THEMES.includes(validTheme as any) ? validTheme : ""}
             onChange={(v) => onThemeChange?.(v)}
             options={[
               { value: "paper", label: "Paper" },
-              { value: "dark", label: "Dark" },
               { value: "white", label: "White" },
               { value: "warm", label: "Warm" },
               { value: "lilac", label: "Lilac" },
+            ]}
+          />
+          <div className="vgrp micro ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+            Dark
+          </div>
+          <SegmentedControl
+            size="sm"
+            value={DARK_THEMES.includes(validTheme as any) ? validTheme : ""}
+            onChange={(v) => onThemeChange?.(v)}
+            options={[
+              { value: "noir", label: "Noir" },
+              { value: "dark", label: "Dark" },
+              { value: "graphite", label: "Graphite" },
+              { value: "darkroom", label: "Darkroom" },
             ]}
           />
         </div>

@@ -37,7 +37,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { getDocument } from "@/core/store/documentState";
 
 const LIGHT_THEMES = ["paper", "white", "warm", "lilac"] as const;
-const DARK_THEMES = ["dark"] as const;
+const DARK_THEMES = ["noir", "dark", "graphite", "darkroom"] as const;
 
 export interface CanvasContextMenuContentProps {
   canUndo?: boolean;
