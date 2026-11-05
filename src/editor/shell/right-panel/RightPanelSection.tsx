@@ -90,7 +90,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
 
       {/* Section Content: always visible, generous spacing, no dashed placeholders */}
       {children && (
-        <div id={bodyId} className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+        <div id={bodyId} className="ll-dbody ll:flex ll:flex-col ll:gap-2 ll:empty:hidden">
           {children}
         </div>
       )}

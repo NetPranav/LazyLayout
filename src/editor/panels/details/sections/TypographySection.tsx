@@ -80,7 +80,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
               });
             }}
             placeholder="Text content"
-            className="ll:w-full ll:box-border ll:px-2 ll:py-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus:border-border-active ll:focus:ring-1 ll:focus:ring-border-active ll:outline-none ll:rounded-sm ll:font-mono ll:text-micro ll:leading-4 ll:text-primary ll:resize-none ll:transition-colors"
+            className="ll:block ll:w-full ll:box-border ll:px-2 ll:py-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus:border-border-active ll:focus:ring-1 ll:focus:ring-border-active ll:outline-none ll:rounded-sm ll:font-mono ll:text-micro ll:leading-4 ll:text-primary ll:resize-none ll:transition-colors"
           />
         </div>
       )}

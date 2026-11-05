@@ -55,8 +55,9 @@ export const LogicSection: React.FC<LogicSectionProps> = ({
 
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-0.5 ll:-mx-1 ${className}`}>
-      {logicItems.map((item) => {
+      {logicItems.map((item, index) => {
         const isOpen = activePopoverId === item.id;
+        const logicNum = index + 1;
         return (
           <div
             key={item.id}
@@ -65,20 +66,23 @@ export const LogicSection: React.FC<LogicSectionProps> = ({
               isOpen ? "ll:bg-surface-raised ll:text-primary" : ""
             }`}
           >
-            <span
-              aria-hidden="true"
-              title="Drag to reorder"
-              className="ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100"
+            <button
+              type="button"
+              data-grip
+              aria-label={`Reorder logic ${logicNum}`}
+              title={`Reorder logic ${logicNum}`}
+              className="ll-ib ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100 ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
               <Icon icon={GripVertical} size={12} />
-            </span>
+            </button>
 
             <button
               type="button"
-              aria-label="Settings"
+              data-lead
+              aria-label={`Logic ${logicNum} settings`}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              title="Settings"
+              title={`Logic ${logicNum} settings`}
               onClick={() => setActivePopoverId(isOpen ? null : item.id)}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:text-muted"
             >
@@ -93,8 +97,9 @@ export const LogicSection: React.FC<LogicSectionProps> = ({
 
             <button
               type="button"
-              aria-label="Remove"
-              title="Remove"
+              data-rm
+              aria-label={`Remove logic ${logicNum}`}
+              title={`Remove logic ${logicNum}`}
               onClick={() => handleRemove(item.id)}
               className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >

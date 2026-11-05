@@ -15,6 +15,17 @@ const fieldClass =
 const inputClass =
   "ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-sans ll:text-small ll:text-primary ll:outline-none";
 
+export const HTML_TAG_OPTIONS = [
+  { value: "div", label: "div" },
+  { value: "section", label: "section" },
+  { value: "header", label: "header" },
+  { value: "nav", label: "nav" },
+  { value: "main", label: "main" },
+  { value: "footer", label: "footer" },
+  { value: "button", label: "button" },
+  { value: "a", label: "a" },
+] as const;
+
 export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   getValue,
   onUpdateProp,
@@ -33,9 +44,10 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
     }
   });
 
-  const role = (getValue?.("a11y.role") as string) || "auto";
+  const htmlTag = (getValue?.("a11y.tag") as string) || "div";
   const ariaLabel = (getValue?.("a11y.label") as string) || "";
-  const ariaHidden = (getValue?.("a11y.hidden") as boolean) ?? false;
+  const role = (getValue?.("a11y.role") as string) || "";
+  const isDisabled = (getValue?.("a11y.disabled") as boolean) ?? false;
 
   if (!hasA11y) {
     return null;
@@ -47,11 +59,10 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
         <div className="ll:flex-1 ll:min-w-0">
           <Select
             size="sm"
-            label="Role"
-            aria-label="ARIA role"
-            value={role}
-            options={ACCESSIBILITY_ROLE_OPTIONS}
-            onChange={(val) => onUpdateProp?.("a11y.role", val)}
+            aria-label="HTML tag"
+            value={htmlTag}
+            options={HTML_TAG_OPTIONS}
+            onChange={(val) => onUpdateProp?.("a11y.tag", val)}
           />
         </div>
         <button
@@ -69,7 +80,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
         <span className="ll:font-mono ll:text-micro ll:text-muted">Label</span>
         <input
           type="text"
-          aria-label="ARIA label"
+          aria-label="Accessible name"
           placeholder="Accessible name"
           value={ariaLabel}
           onChange={(e) => onUpdateProp?.("a11y.label", e.target.value)}
@@ -77,14 +88,26 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
         />
       </div>
 
+      <div className={fieldClass} title="Role">
+        <span className="ll:font-mono ll:text-micro ll:text-muted">Role</span>
+        <input
+          type="text"
+          aria-label="e.g. region"
+          placeholder="e.g. region"
+          value={role}
+          onChange={(e) => onUpdateProp?.("a11y.role", e.target.value)}
+          className={inputClass}
+        />
+      </div>
+
       <label className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:text-small ll:text-primary ll:cursor-pointer">
         <input
           type="checkbox"
-          checked={ariaHidden}
-          onChange={(e) => onUpdateProp?.("a11y.hidden", e.target.checked)}
+          checked={isDisabled}
+          onChange={(e) => onUpdateProp?.("a11y.disabled", e.target.checked)}
           className="ll:m-0 ll:w-3.5 ll:h-3.5"
         />
-        Hide from screen readers
+        Disabled
       </label>
     </div>
   );

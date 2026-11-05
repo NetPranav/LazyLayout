@@ -117,9 +117,10 @@ export const FillSection: React.FC<FillSectionProps> = ({
 
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-0.5 ll:-mx-1 ${className}`}>
-      {fills.map((fill) => {
+      {fills.map((fill, index) => {
         const isDim = Boolean(fill.hidden);
         const isOpen = activePopoverId === fill.id;
+        const fillNum = index + 1;
         return (
           <div
             key={fill.id}
@@ -129,21 +130,24 @@ export const FillSection: React.FC<FillSectionProps> = ({
             } ${isDim ? "ll-rdim ll:opacity-50" : ""}`}
           >
             {/* Grip handle, shown on row hover */}
-            <span
-              aria-hidden="true"
-              title="Drag to reorder"
-              className="ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100"
+            <button
+              type="button"
+              data-grip
+              aria-label={`Reorder fill ${fillNum}`}
+              title={`Reorder fill ${fillNum}`}
+              className="ll-ib ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100 ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
               <Icon icon={GripVertical} size={12} />
-            </span>
+            </button>
 
             {/* Lead swatch button */}
             <button
               type="button"
-              aria-label="Settings"
+              data-lead
+              aria-label={`Fill ${fillNum} settings`}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              title="Settings"
+              title={`Fill ${fillNum} settings`}
               onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
@@ -170,7 +174,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 />
               </div>
 
-              <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:w-14.5 ll:shrink-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+              <div className="ll-dfield ll:flex ll:items-center ll:gap-1.5 ll:w-14.5 ll:shrink-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -182,7 +186,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
                       opacity: isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed)),
                     });
                   }}
-                  className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+                  className="ll:field-sizing-content ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
                 />
                 <span className="ll-sf ll:font-mono ll:text-micro ll:text-muted ll:shrink-0 ll:select-none">
                   %
@@ -193,8 +197,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
             {/* Visibility Toggle */}
             <button
               type="button"
-              aria-label={fill.hidden ? "Show" : "Hide"}
-              title={fill.hidden ? "Show" : "Hide"}
+              data-eye
+              aria-label={fill.hidden ? `Show fill ${fillNum}` : `Hide fill ${fillNum}`}
+              title={fill.hidden ? `Show fill ${fillNum}` : `Hide fill ${fillNum}`}
               onClick={() => handleToggleHide(fill.id)}
               className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
@@ -204,8 +209,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
             {/* Remove Button */}
             <button
               type="button"
-              aria-label="Remove"
-              title="Remove"
+              data-rm
+              aria-label={`Remove fill ${fillNum}`}
+              title={`Remove fill ${fillNum}`}
               onClick={() => handleRemoveFill(fill.id)}
               className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >

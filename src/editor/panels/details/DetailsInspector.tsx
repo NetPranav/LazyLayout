@@ -8,6 +8,14 @@ import { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection"
 import { TypographySection, TypographyMore } from "./sections/TypographySection";
 import { StatesSection, StatesMore } from "./sections/StatesSection";
 import { ImageSection, ImageMore } from "./sections/ImageSection";
+import { InputSection, InputMore } from "./sections/InputSection";
+import { ToggleSection } from "./sections/ToggleSection";
+import { DividerSection, DividerMore } from "./sections/DividerSection";
+import { BackgroundSection, BackgroundMore } from "./sections/BackgroundSection";
+import { IconSection, IconMore } from "./sections/IconSection";
+import { ShapeSection, ShapeMore } from "./sections/ShapeSection";
+import { CounterSection, CounterMore } from "./sections/CounterSection";
+import { Object3DSection, Object3DMore } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
 import { StrokeSection } from "./sections/StrokeSection";
 import { EffectsSection } from "./sections/EffectsSection";
@@ -78,6 +86,15 @@ export function getInspectorDesignSections(
   const isFrame = inspector.isFrame;
   const archetype = inspector.primaryLayer?.archetype;
 
+  const isInput = archetype === "input";
+  const isToggle = archetype === "toggle";
+  const isDivider = archetype === "divider" || (archetype as string) === "line";
+  const isBackground = archetype === "background";
+  const isIcon = archetype === "icon";
+  const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
+  const isCounter = (archetype as string) === "counter";
+  const isObject3D = (archetype as string) === "object3d";
+
   const hasTypography =
     !inspector.primaryLayer ||
     ["text", "button", "input", "counter", "svgText"].includes(archetype || "") ||
@@ -85,7 +102,7 @@ export function getInspectorDesignSections(
 
   const allowsFill =
     !inspector.primaryLayer ||
-    !["input", "toggle", "divider", "icon", "object3d", "counter"].includes(
+    !["input", "toggle", "divider", "line", "icon", "object3d", "counter"].includes(
       archetype || ""
     );
 
@@ -115,6 +132,85 @@ export function getInspectorDesignSections(
       children: <AppearanceSection {...sectionProps} />,
       moreContent: <AppearanceMore {...sectionProps} />,
     },
+    ...(isInput
+      ? [
+          {
+            id: "input",
+            title: "Input",
+            children: <InputSection {...sectionProps} />,
+            moreContent: <InputMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isToggle
+      ? [
+          {
+            id: "toggle",
+            title: "Toggle",
+            children: <ToggleSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isDivider
+      ? [
+          {
+            id: "divider",
+            title: "Divider",
+            children: <DividerSection {...sectionProps} />,
+            moreContent: <DividerMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isBackground
+      ? [
+          {
+            id: "background",
+            title: "Background",
+            children: <BackgroundSection {...sectionProps} />,
+            moreContent: <BackgroundMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isIcon
+      ? [
+          {
+            id: "icon",
+            title: "Icon",
+            children: <IconSection {...sectionProps} />,
+            moreContent: <IconMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isShape
+      ? [
+          {
+            id: "shape",
+            title: "Shape",
+            children: <ShapeSection {...sectionProps} />,
+            moreContent: <ShapeMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isCounter
+      ? [
+          {
+            id: "counter",
+            title: "Counter",
+            children: <CounterSection {...sectionProps} />,
+            moreContent: <CounterMore {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isObject3D
+      ? [
+          {
+            id: "object3d",
+            title: "3D",
+            children: <Object3DSection {...sectionProps} />,
+            moreContent: <Object3DMore {...sectionProps} />,
+          },
+        ]
+      : []),
     ...(hasTypography
       ? [
           {
@@ -155,12 +251,16 @@ export function getInspectorDesignSections(
           },
         ]
       : []),
-    {
-      id: "stroke",
-      title: "Stroke",
-      onAdd: () => strokeAddRef.current?.(),
-      children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
-    },
+    ...(!isObject3D
+      ? [
+          {
+            id: "stroke",
+            title: "Stroke",
+            onAdd: () => strokeAddRef.current?.(),
+            children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
+          },
+        ]
+      : []),
     {
       id: "effects",
       title: "Effects",

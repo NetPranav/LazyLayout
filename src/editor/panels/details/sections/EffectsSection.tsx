@@ -28,11 +28,15 @@ const numberField = (label: string, value: number, onChange: (v: number) => void
   <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
     <span className="ll:font-mono ll:text-micro ll:text-muted">{label}</span>
     <input
-      type="number"
+      type="text"
+      inputMode="numeric"
       aria-label={`Effect ${label}`}
       value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      onChange={(e) => {
+        const val = Number(e.target.value);
+        if (!isNaN(val)) onChange(val);
+      }}
+      className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
     />
   </div>
 );
@@ -86,9 +90,10 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
 
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-0.5 ll:-mx-1 ${className}`}>
-      {effects.map((effect) => {
+      {effects.map((effect, index) => {
         const isDim = Boolean(effect.hidden);
         const isOpen = activePopoverId === effect.id;
+        const effectNum = index + 1;
         const isShadow = effect.type === "drop-shadow" || effect.type === "inner-shadow";
         return (
           <div
@@ -98,20 +103,23 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
               isOpen ? "ll:bg-surface-raised ll:text-primary" : ""
             } ${isDim ? "ll-rdim ll:opacity-50" : ""}`}
           >
-            <span
-              aria-hidden="true"
-              title="Drag to reorder"
-              className="ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100"
+            <button
+              type="button"
+              data-grip
+              aria-label={`Reorder effect ${effectNum}`}
+              title={`Reorder effect ${effectNum}`}
+              className="ll-ib ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100 ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
               <Icon icon={GripVertical} size={12} />
-            </span>
+            </button>
 
             <button
               type="button"
-              aria-label="Settings"
+              data-lead
+              aria-label={`Effect ${effectNum} settings`}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              title="Settings"
+              title={`Effect ${effectNum} settings`}
               onClick={() => setActivePopoverId(isOpen ? null : effect.id)}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
@@ -129,8 +137,9 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
 
             <button
               type="button"
-              aria-label={effect.hidden ? "Show" : "Hide"}
-              title={effect.hidden ? "Show" : "Hide"}
+              data-eye
+              aria-label={effect.hidden ? `Show effect ${effectNum}` : `Hide effect ${effectNum}`}
+              title={effect.hidden ? `Show effect ${effectNum}` : `Hide effect ${effectNum}`}
               onClick={() => handleToggleHide(effect.id)}
               className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
@@ -139,8 +148,9 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
 
             <button
               type="button"
-              aria-label="Remove"
-              title="Remove"
+              data-rm
+              aria-label={`Remove effect ${effectNum}`}
+              title={`Remove effect ${effectNum}`}
               onClick={() => handleRemoveEffect(effect.id)}
               className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
             >
