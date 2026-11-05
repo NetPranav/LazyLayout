@@ -31,3 +31,6 @@ export * from "./PageSwitcher";
 export * from "./AvatarStack";
 export * from "./topbar-constants";
 export * from "./Slider";
+export * from "./Cursor";
+export * from "./ScrollFade";
+
