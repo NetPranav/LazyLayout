@@ -30,3 +30,4 @@ export * from "./ShipPopover";
 export * from "./PageSwitcher";
 export * from "./AvatarStack";
 export * from "./topbar-constants";
+export * from "./Slider";

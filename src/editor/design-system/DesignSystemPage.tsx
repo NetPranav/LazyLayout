@@ -40,20 +40,12 @@ import {
   TabsDemo,
   AvatarDemo,
   EmptyStateDemo,
-  TopBarDemo,
 } from "./demos/ComponentDemos";
 
 // Shell demos
 import {
-  LogoMarkDemo,
-  ModeTabsDemo,
-  PageSwitcherDemo,
-  ShipPopoverDemo,
   AvatarStackDemo,
-  LeftPanelHeaderDemo,
-  LeftPanelRowsDemo,
   LayerContextMenuDemo,
-  LeftPanelEmptyDemo,
   RightPanelHeaderDemo,
   RightPanelAccordionRowDemo,
   RightPanelAiChatDemo,
@@ -62,21 +54,74 @@ import {
 } from "./demos/ShellDemos";
 
 // Canvas chrome demos
+import { RulersDemo, StageSelectionDemo } from "./demos/CanvasDemos";
 import {
-  ToolbarDemo,
+  ToolbarDesignModeDemo,
+  ToolbarMotionModeDemo,
   InsertBoxDemo,
   AiBoxDemo,
   ViewOptionsPopoverDemo,
-  RulersDemo,
-  StageSelectionDemo,
-} from "./demos/CanvasDemos";
+  ContextMenusDemo,
+  StageAndArtboardDemo,
+} from "./demos/CanvasDemos2";
+import {
+  TopBarDemo,
+  ModeTabsDemo,
+  LogoMarkDemo,
+  PageSwitcherDemo,
+  ShipPopoverDemo,
+} from "./demos/TopBarDemos";
+import {
+  LeftPanelDemo,
+  LeftPanelDesignDemo,
+  LeftPanelSearchDemo,
+  LeftPanelAssetsOpenDemo,
+  LeftPanelCodeDemo,
+  LeftPanelEmptyDemo,
+} from "./demos/LeftPanelDemos";
+import {
+  InspectorHeaderDemo,
+  PageInspectorDemo,
+  ElementInspectorTextDemo,
+  ElementInspectorButtonDemo,
+  ElementInspectorFrameDemo,
+  ElementInspectorImageDemo,
+  ElementInspectorInputsDemo,
+  ElementInspectorShapesDemo,
+  ElementInspector3DDemo,
+  RepeatableRowsDemo,
+  AiExpandedViewDemo,
+} from "./demos/InspectorDemos";
+import {
+  TimelineDefaultDemo,
+  TimelineGraphDemo,
+  TimelineCompactDemo,
+  TimelineTransportDemo,
+  TimelineFooterDemo,
+} from "./demos/TimelineDemos";
+import {
+  SliderDemo,
+  EasingEditorCurveDemo,
+  EasingEditorSpringDemo,
+  CompositionInspectorDemo,
+  LayerInspectorDemo,
+  KeyframeInspectorDemo,
+  MotionExportDemo,
+} from "./demos/MotionInspectorDemos";
+import {
+  CodePanelCodeDemo,
+  CodePanelConsoleDemo,
+  CodePanelTraceDemo,
+  CodeInspectorProjectDemo,
+  CodeInspectorFileDemo,
+  CodeInspectorLayerDemo,
+  LogicComingSoonDemo,
+  DataComingSoonDemo,
+} from "./demos/CodeModeDemos";
+import { MenuHeadingDemo, ThemeSwatchDemo } from "./demos/MenuPartsDemos";
 
 // Panel & inspector demos
-import {
-  InspectorControlsDemo,
-  TimelineDemo,
-  CodeViewDemo,
-} from "./demos/PanelDemos";
+import { InspectorControlsDemo } from "./demos/PanelDemos";
 
 import { Menu as MenuIcon } from "lucide-react";
 
@@ -109,6 +154,9 @@ type NavSectionId =
   | "empty-state"
   | "theme-toggle"
   | "swatch"
+  | "theme-swatch"
+  | "menu-heading"
+  | "slider"
   | "workspace-frame"
   | "imported-cursor"
   | "imported-scroll-fade"
@@ -119,8 +167,11 @@ type NavSectionId =
   | "page-switcher"
   | "ship-popover"
   | "avatar-stack"
-  | "left-panel-header"
-  | "left-panel-rows"
+  | "left-panel"
+  | "left-panel-design"
+  | "left-panel-search"
+  | "left-panel-assets"
+  | "left-panel-code"
   | "layer-context-menu"
   | "left-panel-empty"
   | "right-panel-header"
@@ -130,6 +181,9 @@ type NavSectionId =
   | "persistence-banners"
   // Canvas
   | "toolbar"
+  | "toolbar-motion"
+  | "context-menus"
+  | "stage-artboard"
   | "insert-box"
   | "ai-box"
   | "view-options"
@@ -141,8 +195,38 @@ type NavSectionId =
   | "list-row"
   | "tree-row"
   | "inspector-controls"
+  | "inspector-header"
+  | "page-inspector"
+  | "element-text"
+  | "element-button"
+  | "element-frame"
+  | "element-image"
+  | "element-inputs"
+  | "element-shapes"
+  | "element-3d"
+  | "repeatable-rows"
+  | "ai-expanded"
+  // Motion
   | "timeline"
-  | "code-view";
+  | "timeline-graph"
+  | "timeline-compact"
+  | "timeline-transport"
+  | "timeline-footer"
+  | "easing-curve"
+  | "easing-spring"
+  | "composition-inspector"
+  | "layer-inspector"
+  | "keyframe-inspector"
+  | "motion-export"
+  // Code
+  | "code-panel"
+  | "code-console"
+  | "code-trace"
+  | "code-inspector-project"
+  | "code-inspector-file"
+  | "code-inspector-layer"
+  | "logic-shell"
+  | "data-shell";
 
 interface NavItem {
   id: NavSectionId;
@@ -179,6 +263,9 @@ const COMPONENTS_NAV: readonly NavItem[] = [
   { id: "empty-state", label: "EmptyState" },
   { id: "theme-toggle", label: "ThemeToggle" },
   { id: "swatch", label: "Swatch" },
+  { id: "theme-swatch", label: "ThemeSwatch" },
+  { id: "menu-heading", label: "MenuHeading" },
+  { id: "slider", label: "Slider" },
   { id: "workspace-frame", label: "WorkspaceFrame" },
   { id: "imported-cursor", label: "Cursor" },
   { id: "imported-scroll-fade", label: "Scroll Fade" },
@@ -191,8 +278,11 @@ const SHELL_NAV: readonly NavItem[] = [
   { id: "page-switcher", label: "PageSwitcher" },
   { id: "ship-popover", label: "ShipPopover" },
   { id: "avatar-stack", label: "AvatarStack" },
-  { id: "left-panel-header", label: "LeftPanelHeader" },
-  { id: "left-panel-rows", label: "Left Panel Rows" },
+  { id: "left-panel", label: "LeftPanel" },
+  { id: "left-panel-design", label: "LeftPanel: Design" },
+  { id: "left-panel-search", label: "LeftPanel: Search" },
+  { id: "left-panel-assets", label: "LeftPanel: Assets" },
+  { id: "left-panel-code", label: "LeftPanel: Code" },
   { id: "layer-context-menu", label: "LayerContextMenu" },
   { id: "left-panel-empty", label: "LeftPanelEmpty" },
   { id: "right-panel-header", label: "RightPanelHeader" },
@@ -203,7 +293,10 @@ const SHELL_NAV: readonly NavItem[] = [
 ];
 
 const CANVAS_NAV: readonly NavItem[] = [
-  { id: "toolbar", label: "Toolbar & Zoom" },
+  { id: "toolbar", label: "Toolbar: Design" },
+  { id: "toolbar-motion", label: "Toolbar: Motion" },
+  { id: "context-menus", label: "Context Menus" },
+  { id: "stage-artboard", label: "Stage & Artboard" },
   { id: "insert-box", label: "InsertBox" },
   { id: "ai-box", label: "AiBox" },
   { id: "view-options", label: "ViewOptionsPopover" },
@@ -217,8 +310,42 @@ const PANELS_NAV: readonly NavItem[] = [
   { id: "list-row", label: "ListRow" },
   { id: "tree-row", label: "TreeRow" },
   { id: "inspector-controls", label: "Inspector Controls" },
+  { id: "inspector-header", label: "Inspector Header" },
+  { id: "page-inspector", label: "Page Inspector" },
+  { id: "element-text", label: "Element: Text" },
+  { id: "element-button", label: "Element: Button" },
+  { id: "element-frame", label: "Element: Frame" },
+  { id: "element-image", label: "Element: Image" },
+  { id: "element-inputs", label: "Element: Inputs" },
+  { id: "element-shapes", label: "Element: Shapes" },
+  { id: "element-3d", label: "Element: 3D" },
+  { id: "repeatable-rows", label: "Repeatable Rows" },
+  { id: "ai-expanded", label: "AI Expanded View" },
+];
+
+const MOTION_NAV: readonly NavItem[] = [
   { id: "timeline", label: "Timeline" },
-  { id: "code-view", label: "Code View & Console" },
+  { id: "timeline-graph", label: "Timeline: Graph" },
+  { id: "timeline-compact", label: "Timeline: Compact" },
+  { id: "timeline-transport", label: "Transport" },
+  { id: "timeline-footer", label: "Timeline Footer" },
+  { id: "easing-curve", label: "Easing: Curve" },
+  { id: "easing-spring", label: "Easing: Spring" },
+  { id: "composition-inspector", label: "Composition Inspector" },
+  { id: "layer-inspector", label: "Layer Inspector" },
+  { id: "keyframe-inspector", label: "Keyframe Inspector" },
+  { id: "motion-export", label: "Motion Export" },
+];
+
+const CODE_NAV: readonly NavItem[] = [
+  { id: "code-panel", label: "Code Panel" },
+  { id: "code-console", label: "Console" },
+  { id: "code-trace", label: "Execution Trace" },
+  { id: "code-inspector-project", label: "Inspector: Project" },
+  { id: "code-inspector-file", label: "Inspector: File" },
+  { id: "code-inspector-layer", label: "Inspector: Layer" },
+  { id: "logic-shell", label: "Logic Shell" },
+  { id: "data-shell", label: "Data Shell" },
 ];
 
 const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
@@ -227,6 +354,8 @@ const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
   { title: "Shell", items: SHELL_NAV },
   { title: "Canvas", items: CANVAS_NAV },
   { title: "Panels", items: PANELS_NAV },
+  { title: "Motion", items: MOTION_NAV },
+  { title: "Code", items: CODE_NAV },
 ];
 
 const ALL_NAV = [
@@ -235,6 +364,8 @@ const ALL_NAV = [
   ...SHELL_NAV,
   ...CANVAS_NAV,
   ...PANELS_NAV,
+  ...MOTION_NAV,
+  ...CODE_NAV,
 ];
 
 interface SemanticRole {
@@ -574,6 +705,11 @@ const LAYOUT_SIZES = [
   { role: "Right panel (compact)", token: "--ll-size-panel-right-w-compact", value: "296px", description: "Right inspector on medium viewports (<1200px)" },
   { role: "Bottom motion panel height", token: "--ll-size-bottom-motion-h", value: "260px", description: "Motion mode timeline panel height" },
   { role: "Bottom code panel height", token: "--ll-size-bottom-code-h", value: "200px", description: "Code mode bottom preview panel height" },
+  { role: "Timeline header", token: "--ll-size-timeline-header", value: "44px", description: "Timeline workstation header bar" },
+  { role: "Timeline ruler", token: "--ll-size-timeline-ruler", value: "32px", description: "Sticky time ruler" },
+  { role: "Timeline track column", token: "--ll-size-timeline-track-default", value: "264px", description: "Default width of the track name column (min 200, max 420)" },
+  { role: "Timeline row", token: "--ll-size-timeline-row", value: "32px", description: "Track row (compact 24px, property row 24px)" },
+  { role: "Timeline footer", token: "--ll-size-timeline-footer", value: "28px", description: "Timeline status footer" },
   { role: "Canvas ruler", token: "--ll-size-ruler", value: "18px", description: "Top and left canvas measurement rulers" },
   { role: "Standard row height", token: "--ll-size-row-h", value: "32px", description: "Default row height in panels and menus" },
   { role: "Large row height", token: "--ll-size-row-lg-h", value: "36px", description: "Asset and section header row height" },
@@ -604,6 +740,18 @@ const SPACING_STEPS = [
   { token: "--ll-spacing-12", px: 48, widthClass: "ll:w-12" },
   { token: "--ll-spacing-16", px: 64, widthClass: "ll:w-16" },
 ];
+
+function Titled({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-6">
+      <div>
+        <h2 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">{title}</h2>
+        <p className="ll:text-small ll:text-muted">{note}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 function CursorDemo() {
   return (
@@ -1030,6 +1178,13 @@ export function DesignSystemPage() {
                 </div>
               </div>
             )}
+            {activeSection === "theme-swatch" && <ThemeSwatchDemo />}
+            {activeSection === "menu-heading" && <MenuHeadingDemo />}
+            {activeSection === "slider" && (
+              <Titled title="Slider" note="Spring-stretch slider with units and steps. Lives in components/Slider.tsx.">
+                <SliderDemo />
+              </Titled>
+            )}
             {activeSection === "swatch" && (
               <div className="ll:flex ll:flex-col ll:gap-8">
                 <div>
@@ -1086,8 +1241,11 @@ export function DesignSystemPage() {
             {activeSection === "page-switcher" && <PageSwitcherDemo />}
             {activeSection === "ship-popover" && <ShipPopoverDemo />}
             {activeSection === "avatar-stack" && <AvatarStackDemo />}
-            {activeSection === "left-panel-header" && <LeftPanelHeaderDemo />}
-            {activeSection === "left-panel-rows" && <LeftPanelRowsDemo />}
+            {activeSection === "left-panel" && <LeftPanelDemo />}
+            {activeSection === "left-panel-design" && <LeftPanelDesignDemo />}
+            {activeSection === "left-panel-search" && <LeftPanelSearchDemo />}
+            {activeSection === "left-panel-assets" && <LeftPanelAssetsOpenDemo />}
+            {activeSection === "left-panel-code" && <LeftPanelCodeDemo />}
             {activeSection === "layer-context-menu" && <LayerContextMenuDemo />}
             {activeSection === "left-panel-empty" && <LeftPanelEmptyDemo />}
             {activeSection === "right-panel-header" && <RightPanelHeaderDemo />}
@@ -1097,7 +1255,10 @@ export function DesignSystemPage() {
             {activeSection === "persistence-banners" && <PersistenceBannersDemo />}
 
             {/* 4. Canvas Chrome */}
-            {activeSection === "toolbar" && <ToolbarDemo />}
+            {activeSection === "toolbar" && <ToolbarDesignModeDemo />}
+            {activeSection === "toolbar-motion" && <ToolbarMotionModeDemo />}
+            {activeSection === "context-menus" && <ContextMenusDemo />}
+            {activeSection === "stage-artboard" && <StageAndArtboardDemo />}
             {activeSection === "insert-box" && <InsertBoxDemo />}
             {activeSection === "ai-box" && <AiBoxDemo />}
             {activeSection === "view-options" && <ViewOptionsPopoverDemo />}
@@ -1110,8 +1271,116 @@ export function DesignSystemPage() {
             {activeSection === "list-row" && <ListRowDemo />}
             {activeSection === "tree-row" && <TreeRowDemo />}
             {activeSection === "inspector-controls" && <InspectorControlsDemo />}
-            {activeSection === "timeline" && <TimelineDemo />}
-            {activeSection === "code-view" && <CodeViewDemo />}
+            {activeSection === "inspector-header" && <InspectorHeaderDemo />}
+            {activeSection === "page-inspector" && <PageInspectorDemo />}
+            {activeSection === "element-text" && <ElementInspectorTextDemo />}
+            {activeSection === "element-button" && <ElementInspectorButtonDemo />}
+            {activeSection === "element-frame" && <ElementInspectorFrameDemo />}
+            {activeSection === "element-image" && <ElementInspectorImageDemo />}
+            {activeSection === "element-inputs" && <ElementInspectorInputsDemo />}
+            {activeSection === "element-shapes" && <ElementInspectorShapesDemo />}
+            {activeSection === "element-3d" && <ElementInspector3DDemo />}
+            {activeSection === "repeatable-rows" && <RepeatableRowsDemo />}
+            {activeSection === "ai-expanded" && <AiExpandedViewDemo />}
+
+            {/* Motion */}
+            {activeSection === "timeline" && (
+              <Titled title="Timeline" note="Full workstation: 44px header, 32px ruler, 264px track column, label-coloured clips, 28px footer.">
+                <TimelineDefaultDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-graph" && (
+              <Titled title="Timeline: Graph" note="Graph editor mode with value curves and tangent handles.">
+                <TimelineGraphDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-compact" && (
+              <Titled title="Timeline: Compact" note="Compact rows.">
+                <TimelineCompactDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-transport" && (
+              <Titled title="Transport" note="Play, step and timecode controls.">
+                <TimelineTransportDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-footer" && (
+              <Titled title="Timeline Footer" note="28px status footer.">
+                <TimelineFooterDemo />
+              </Titled>
+            )}
+            {activeSection === "easing-curve" && (
+              <Titled title="Easing: Curve" note="Bezier curve editor.">
+                <EasingEditorCurveDemo />
+              </Titled>
+            )}
+            {activeSection === "easing-spring" && (
+              <Titled title="Easing: Spring" note="Spring editor with response and damping.">
+                <EasingEditorSpringDemo />
+              </Titled>
+            )}
+            {activeSection === "composition-inspector" && (
+              <Titled title="Composition Inspector" note="Motion mode right panel, nothing selected.">
+                <CompositionInspectorDemo />
+              </Titled>
+            )}
+            {activeSection === "layer-inspector" && (
+              <Titled title="Layer Inspector" note="Motion mode right panel for a selected layer.">
+                <LayerInspectorDemo />
+              </Titled>
+            )}
+            {activeSection === "keyframe-inspector" && (
+              <Titled title="Keyframe Inspector" note="Motion mode right panel for a selected keyframe.">
+                <KeyframeInspectorDemo />
+              </Titled>
+            )}
+            {activeSection === "motion-export" && (
+              <Titled title="Motion Export" note="Export modal.">
+                <MotionExportDemo />
+              </Titled>
+            )}
+
+            {/* Code */}
+            {activeSection === "code-panel" && (
+              <Titled title="Code Panel" note="Code mode bottom panel, code tab.">
+                <CodePanelCodeDemo />
+              </Titled>
+            )}
+            {activeSection === "code-console" && (
+              <Titled title="Console" note="Code mode bottom panel, console tab.">
+                <CodePanelConsoleDemo />
+              </Titled>
+            )}
+            {activeSection === "code-trace" && (
+              <Titled title="Execution Trace" note="Code mode bottom panel, trace tab.">
+                <CodePanelTraceDemo />
+              </Titled>
+            )}
+            {activeSection === "code-inspector-project" && (
+              <Titled title="Code Inspector: Project" note="Right panel with the project state.">
+                <CodeInspectorProjectDemo />
+              </Titled>
+            )}
+            {activeSection === "code-inspector-file" && (
+              <Titled title="Code Inspector: File" note="Right panel with a file selected.">
+                <CodeInspectorFileDemo />
+              </Titled>
+            )}
+            {activeSection === "code-inspector-layer" && (
+              <Titled title="Code Inspector: Layer" note="Right panel with a layer selected.">
+                <CodeInspectorLayerDemo />
+              </Titled>
+            )}
+            {activeSection === "logic-shell" && (
+              <Titled title="Logic Shell" note="Coming soon placeholder.">
+                <LogicComingSoonDemo />
+              </Titled>
+            )}
+            {activeSection === "data-shell" && (
+              <Titled title="Data Shell" note="Coming soon placeholder.">
+                <DataComingSoonDemo />
+              </Titled>
+            )}
           </div>
         </main>
       </div>

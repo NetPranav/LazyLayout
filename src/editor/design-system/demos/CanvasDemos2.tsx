@@ -8,7 +8,6 @@ import { ViewOptionsPopover } from "@/editor/shell/canvas-chrome/ViewOptionsPopo
 import { CanvasContextMenu } from "@/editor/shell/canvas-chrome/CanvasContextMenu";
 import { Rulers } from "@/editor/shell/canvas-chrome/Rulers";
 import { Artboard } from "@/editor/stage/Artboard";
-import { TransformOverlay } from "@/editor/stage/TransformOverlay";
 import { Button } from "@/editor/components/Button";
 import type { CanvasTool, ShapeTool, GridStyle, MotionFeel, AiState } from "@/editor/shell/canvas-chrome/types";
 import type { StageElement, StagePreset } from "@/editor/stage/types";
@@ -329,7 +328,7 @@ export function ContextMenusDemo() {
    ========================================================================= */
 export function StageAndArtboardDemo() {
   const [preset, setPreset] = useState<StagePreset>("1440");
-  const [zoom, setZoom] = useState(0.59);
+  const [zoom] = useState(0.59);
   const [selectedIds, setSelectedIds] = useState<string[]>(["headline"]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 

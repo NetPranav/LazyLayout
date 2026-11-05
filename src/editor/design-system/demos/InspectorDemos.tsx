@@ -28,7 +28,6 @@ import { ImageSection, ImageMore } from "@/editor/panels/details/sections/ImageS
 import { InputSection, InputMore } from "@/editor/panels/details/sections/InputSection";
 import { ToggleSection } from "@/editor/panels/details/sections/ToggleSection";
 import { DividerSection, DividerMore } from "@/editor/panels/details/sections/DividerSection";
-import { BackgroundSection, BackgroundMore } from "@/editor/panels/details/sections/BackgroundSection";
 import { IconSection, IconMore } from "@/editor/panels/details/sections/IconSection";
 import { ShapeSection, ShapeMore } from "@/editor/panels/details/sections/ShapeSection";
 import { CounterSection, CounterMore } from "@/editor/panels/details/sections/CounterSection";
@@ -52,7 +51,7 @@ import type { PropValue } from "@/core/document/registry";
 function makeMockLayer(
   id: string,
   name: string,
-  archetype: any,
+  archetype: Layer["archetype"],
   properties: Record<string, PropValue>
 ): Layer {
   return {
@@ -574,7 +573,7 @@ export function ElementInspectorShapesDemo() {
     color: "var(--ll-border)",
   };
 
-  const shapeLayer = makeMockLayer("shp-1", "Star Badge", "shape", shapeProps);
+  const shapeLayer = makeMockLayer("shp-1", "Star Badge", "star", shapeProps);
   const iconLayer = makeMockLayer("ic-1", "Search Icon", "icon", iconProps);
   const divLayer = makeMockLayer("div-1", "Section Divider", "divider", divProps);
 
@@ -664,8 +663,8 @@ export function ElementInspector3DDemo() {
     separator: ",",
   };
 
-  const objLayer = makeMockLayer("obj-1", "Torus Knot 3D", "object3d", objProps);
-  const cntLayer = makeMockLayer("cnt-1", "Stat Metric", "counter", cntProps);
+  const objLayer = makeMockLayer("obj-1", "Torus Knot 3D", "object3D", objProps);
+  const cntLayer = makeMockLayer("cnt-1", "Stat Metric", "generic", cntProps);
 
   const objMock = useMockProps(objProps);
   const cntMock = useMockProps(cntProps);

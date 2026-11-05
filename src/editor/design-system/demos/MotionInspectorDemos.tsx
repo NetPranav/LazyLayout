@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Slider } from "@/editor/panels/inspectors/Slider";
+import { Slider } from "@/editor/components/Slider";
 import { EasingEditor } from "@/editor/panels/inspectors/EasingEditor";
 import { KeyframeInspector } from "@/editor/panels/inspectors/KeyframeInspector";
 import { CompositionInspector } from "@/editor/panels/inspectors/CompositionInspector";
