@@ -8,9 +8,6 @@ import {
   motionActions,
   isGrp,
   Fx,
-  snapT,
-  DUR,
-  FPS,
 } from "@/editor/motion-model";
 import { TimelineTransport } from "./TimelineTransport";
 import { TimelineRuler } from "./TimelineRuler";
@@ -62,7 +59,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const [containerWidth, setContainerWidth] = useState<number>(1000);
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [hoverFrame, setHoverFrame] = useState<number | null>(null);
-  const [snapFlashFrame, setSnapFlashFrame] = useState<number | null>(null);
+  const [snapFlashFrame] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [isDropOver, setIsDropOver] = useState(false);
 
@@ -110,46 +107,56 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   useEffect(() => {
     if (!playing) return;
 
+    let lastReadout = performance.now();
+
     const unregister = frameScheduler.register("evaluate", (info) => {
       const dt = Math.min(0.1, Math.max(0, info.dt));
 
-      const currentT = useMotionModel.getState().playhead;
-      const currentWa = useMotionModel.getState().wa;
-      const currentSpeed = useMotionModel.getState().speed;
-      const currentDir = useMotionModel.getState().dir;
-      const currentShuttle = useMotionModel.getState().shuttle;
-      const currentLoop = useMotionModel.getState().loop;
+      const s = useMotionModel.getState();
+      const currentSub = s.subhead;
+      const currentWa = s.wa;
+      const currentSpeed = s.speed;
+      const currentDir = s.dir;
+      const currentShuttle = s.shuttle;
+      const currentLoop = s.loop;
 
       const effectiveSpeed = currentShuttle !== 0 ? Math.abs(currentShuttle) * currentSpeed : currentSpeed;
-      const effectiveDir = currentShuttle < 0 ? -1 : currentDir;
+      const effectiveDir = currentShuttle !== 0 ? (currentShuttle < 0 ? -1 : 1) : currentDir;
 
-      let nextT = currentT + dt * fps * effectiveSpeed * effectiveDir;
+      let nextT = currentSub + dt * fps * effectiveSpeed * effectiveDir;
 
       if (effectiveDir > 0 && nextT >= currentWa.b) {
         if (currentLoop === 1) {
-          nextT = currentWa.a + ((nextT - currentWa.b) % Math.max(1, currentWa.b - currentWa.a));
+          const span = Math.max(1, currentWa.b - currentWa.a);
+          nextT = currentWa.a + ((nextT - currentWa.b) % span);
         } else if (currentLoop === 2) {
           nextT = Math.max(currentWa.a, currentWa.b - (nextT - currentWa.b));
           useMotionModel.setState({ dir: -1 });
         } else {
-          motionActions.setPlayhead(currentWa.b);
+          motionActions.setPlayhead(currentWa.b, { updateReadout: true });
           motionActions.setPlaying(false);
           return;
         }
       } else if (effectiveDir < 0 && nextT <= currentWa.a) {
         if (currentLoop === 1) {
-          nextT = currentWa.b - ((currentWa.a - nextT) % Math.max(1, currentWa.b - currentWa.a));
+          const span = Math.max(1, currentWa.b - currentWa.a);
+          nextT = currentWa.b - ((currentWa.a - nextT) % span);
         } else if (currentLoop === 2) {
           nextT = Math.min(currentWa.b, currentWa.a + (currentWa.a - nextT));
           useMotionModel.setState({ dir: 1 });
         } else {
-          motionActions.setPlayhead(currentWa.a);
+          motionActions.setPlayhead(currentWa.a, { updateReadout: true });
           motionActions.setPlaying(false);
           return;
         }
       }
 
-      motionActions.setPlayhead(nextT);
+      const now = performance.now();
+      const updateReadout = now - lastReadout >= 100;
+      if (updateReadout) {
+        lastReadout = now;
+      }
+      motionActions.setPlayhead(nextT, { updateReadout });
     });
 
     return () => {

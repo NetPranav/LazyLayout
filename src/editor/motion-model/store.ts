@@ -4,7 +4,6 @@ import {
   copyKey,
   defaultComposition,
   DUR,
-  FPS,
   makeLayer,
   newKeyId,
   PROPS,
@@ -17,6 +16,8 @@ import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, Spri
 export interface MotionState {
   comp: Composition;
   playhead: number;
+  subhead: number;
+  readoutPlayhead: number;
   playing: boolean;
   selectedKeys: Record<string, true>;
   selectedClip: number;
@@ -44,6 +45,8 @@ let keyClipboard: { p: PropId; k: Keyframe }[] | null = null;
 export const useMotionModel = create<MotionState>(() => ({
   comp: defaultComposition(),
   playhead: 72,
+  subhead: 72,
+  readoutPlayhead: 72,
   playing: false,
   selectedKeys: {},
   selectedClip: 0,
@@ -94,13 +97,28 @@ function ensureLayer(comp: Composition, id: string): MotionLayer {
 }
 
 export const motionActions = {
-  setPlayhead(t: number): void {
-    useMotionModel.setState((s) => ({
-      playhead: clampN(Math.round(t), 0, s.comp.dur),
-    }));
+  setPlayhead(t: number, options?: { updateReadout?: boolean }): void {
+    useMotionModel.setState((s) => {
+      const clamped = clampN(t, 0, s.comp.dur);
+      const intFrame = clampN(Math.round(clamped), 0, s.comp.dur);
+      const updateReadout = options?.updateReadout ?? !s.playing;
+      return {
+        playhead: intFrame,
+        subhead: clamped,
+        ...(updateReadout ? { readoutPlayhead: intFrame } : {}),
+      };
+    });
+  },
+  setReadoutPlayhead(frame: number): void {
+    useMotionModel.setState({ readoutPlayhead: Math.round(frame) });
   },
   setPlaying(playing: boolean): void {
-    useMotionModel.setState({ playing, shuttle: 0 });
+    useMotionModel.setState((s) => ({
+      playing,
+      shuttle: 0,
+      subhead: s.playhead,
+      readoutPlayhead: s.playhead,
+    }));
   },
   setSpeed(speed: number): void {
     useMotionModel.setState({ speed });
@@ -467,11 +485,16 @@ export const motionActions = {
     });
   },
   stepFrame(delta: number): void {
-    useMotionModel.setState((s) => ({
-      playhead: clampN(s.playhead + delta, 0, s.comp.dur),
-      playing: false,
-      shuttle: 0,
-    }));
+    useMotionModel.setState((s) => {
+      const nextF = clampN(s.playhead + delta, 0, s.comp.dur);
+      return {
+        playhead: nextF,
+        subhead: nextF,
+        readoutPlayhead: nextF,
+        playing: false,
+        shuttle: 0,
+      };
+    });
   },
   jumpKey(dir: 1 | -1): void {
     const s = useMotionModel.getState();
@@ -489,7 +512,13 @@ export const motionActions = {
       }
     }
     if (best !== null) {
-      useMotionModel.setState({ playhead: best, playing: false, shuttle: 0 });
+      useMotionModel.setState({
+        playhead: best,
+        subhead: best,
+        readoutPlayhead: best,
+        playing: false,
+        shuttle: 0,
+      });
     }
   },
   shuttle(dir: 1 | -1): void {

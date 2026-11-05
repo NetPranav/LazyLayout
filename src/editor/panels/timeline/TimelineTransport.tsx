@@ -63,7 +63,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   onToggleLoop: legacyToggleLoop,
   onToggleGraph: legacyToggleGraph,
 }) => {
-  const playhead = useMotionModel((s) => s.playhead);
+  const readoutPlayhead = useMotionModel((s) => s.readoutPlayhead);
   const playing = useMotionModel((s) => s.playing);
   const speed = useMotionModel((s) => s.speed);
   const loop = useMotionModel((s) => s.loop);
@@ -82,8 +82,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
   const isFw = fullWidth ?? storeFullWidth;
 
-  const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
-  const formattedTime = legacyCurrentTime ?? (frames ? String(playhead) : timecode(playhead, fps));
+  const _effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
+  const formattedTime = legacyCurrentTime ?? (frames ? String(readoutPlayhead) : timecode(readoutPlayhead, fps));
   const formattedTotal = legacyDuration ?? (frames ? String(dur) : timecode(dur, fps));
 
   return (
