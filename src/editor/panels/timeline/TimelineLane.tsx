@@ -324,9 +324,8 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
       <div
         style={{
           gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)`,
-          borderLeft: `3px solid var(--ll-label-${labelNum})`,
         }}
-        className={`ll-tlrow ll-lay ${isGroup ? "ll-grp" : ""} ${isChild ? "ll-kid" : ""} ${
+        className={`ll-tlrow ll:relative ${isGroup ? "ll-grp" : ""} ${isChild ? "ll-kid" : ""} ${
           layer.mute ? "ll-muted ll:opacity-50" : ""
         } ll:grid ll:h-8 ll:border-b ll:border-border ll:shrink-0 ll:transition-colors ${
           isSelected ? "ll:bg-selection ll:text-selection-fg" : "ll:bg-surface-panel ll:text-primary"
@@ -345,6 +344,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               layerId: layer.id,
             });
           }}
+          style={{ boxShadow: `inset 3px 0 0 var(--ll-label-${labelNum})` }}
           className={`ll-tlhc ll:flex ll:items-center ll:gap-1.5 ll:pr-2 ll:border-r ll:border-border ll:cursor-pointer ll:select-none ${
             isChild ? "ll:pl-5" : "ll:pl-2"
           }`}

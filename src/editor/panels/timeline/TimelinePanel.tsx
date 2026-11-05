@@ -25,6 +25,7 @@ import {
   TIMELINE_TRACK_COLUMN_MIN_PX,
   TIMELINE_TRACK_COLUMN_MAX_PX,
   TIMELINE_ZOOM_STEP_FACTOR,
+  TIMELINE_PADDING_PX,
 } from "./constants";
 
 export const TimelinePanel: React.FC<TimelinePanelProps> = ({
@@ -103,7 +104,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
   // Calculate pixels per second (pps)
   const laneAvailableWidth = Math.max(300, containerWidth - trackWidth);
-  const pps = (laneAvailableWidth / (comp.dur / fps)) * zoom;
+  const pps = ((laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps)) * zoom;
 
   // 60fps Playback Engine via frameScheduler
   useEffect(() => {
