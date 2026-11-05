@@ -1,0 +1,96 @@
+# Handoff: E2E Migration — Group G3 (`e2e-g3`)
+
+- **Date / time:** 2026-11-05 11:40
+- **Worker:** Antigravity (Advanced Agentic Coding)
+- **Branch:** ui/redesign
+- **Task:** `DOCS/UI/tasks/2026-11-05-e2e-migrate.md` (Group G3)
+
+## Summary of Results
+
+All 10 assigned spec files for Group G3 were tested against the running dev server on `http://localhost:3000` via `pw-g3.config.ts`.
+- **Before:** 17 passed, 16 failed, 0 fixme (33 tests total)
+- **After:** 24 passed, 0 failed, 9 fixme (33 tests total)
+
+### Per-Spec Counts (Real runs)
+
+| Spec | Before Pass | Before Fail | Before Fixme | After Pass | After Fail | After Fixme | Duration |
+|---|---|---|---|---|---|---|---|
+| `tests/e2e/phase8-rules-engine.spec.ts` | 0 | 1 | 0 | 0 | 0 | 1 | 1.5s |
+| `tests/e2e/playback-on-clock.spec.ts` | 0 | 2 | 0 | 1 | 0 | 1 | 6.1s |
+| `tests/e2e/presets.spec.ts` | 1 | 5 | 0 | 5 | 0 | 1 | 12.0s |
+| `tests/e2e/property-migration.spec.ts` | 0 | 1 | 0 | 0 | 0 | 1 | 1.5s |
+| `tests/e2e/render-gallery.spec.ts` | 3 | 0 | 0 | 3 | 0 | 0 | 3.2s |
+| `tests/e2e/selection.spec.ts` | 1 | 1 | 0 | 1 | 0 | 1 | 4.4s |
+| `tests/e2e/snapping.spec.ts` | 3 | 3 | 0 | 5 | 0 | 1 | 9.9s |
+| `tests/e2e/stage-engine.spec.ts` | 3 | 0 | 0 | 3 | 0 | 0 | 4.2s |
+| `tests/e2e/stage-host.spec.ts` | 0 | 3 | 0 | 0 | 0 | 3 | 1.5s |
+| `tests/e2e/stage-incremental.spec.ts` | 6 | 0 | 0 | 6 | 0 | 0 | 6.5s |
+| **Total** | **17** | **16** | **0** | **24** | **0** | **9** | **50.8s** |
+
+---
+
+## What Changed
+
+- `tests/e2e/phase8-rules-engine.spec.ts`: Marked `test.fixme` because the Content Browser and Presets tool (`.eas-preset-item`) are legacy panels marked as `todo` in `DOCS/UI/PARITY.md` and not yet present in the new `/editor`.
+- `tests/e2e/playback-on-clock.spec.ts`: Migrated locators to use the new UI hooks (`[role="toolbar"][aria-label="Timeline header"]`, `[data-testid="timeline-ruler"]`, `[data-testid="timeline-playhead-layer"]`). Test 2 (DOM commit throttling during playback) passes cleanly. Test 1 marked `test.fixme` due to an identified app bug in playback frame advancement (see App Bugs below).
+- `tests/e2e/presets.spec.ts`: Migrated mode tabs (`[data-testid="mode-tab"]`), stage locator (`[data-testid="stage-viewport"]`), and scoped panel locators (`.ll-shell-right > [data-testid="right-panel"]` and `.ll-shell-bottom [data-testid="bottom-panel"]:not(.ll-mgh *)`) to bypass transient transition ghost nodes. Tests 1 through 5 pass in under 12 seconds with sub-100ms preset switching verified. Test 6 marked `test.fixme` due to legacy dock custom layout persistence (`DockLayout.tsx`).
+- `tests/e2e/property-migration.spec.ts`: Marked `test.fixme` because the test requires mounting the native showcase demo (`Mount Showcase Demo`), which is not present in `/editor` (TopBar Help menu item is disabled with `"Showcase demo available in gallery"`).
+- `tests/e2e/render-gallery.spec.ts`: Untouched; all 3 tests on `/editor/render-gallery` pass cleanly.
+- `tests/e2e/selection.spec.ts`: Test 1 (15-step selection journey on `/editor/canvas-lab`) passes cleanly. Test 2 marked `test.fixme` due to reliance on `Mount Showcase Demo`, legacy stage iframe, status bar selection counts, and lack of stage canvas hit-testing on `/editor`.
+- `tests/e2e/snapping.spec.ts`: Fixed test 1 assertion from `.toBeVisible()` to `expect(snapLines(page)).not.toHaveCount(0)` (matching test 5 guide checks) because snaplines have 0px width with 1px border which Playwright's default visibility check treats as hidden. Tests 1 through 5 on `/editor/canvas-lab` all pass cleanly. Test 6 marked `test.fixme` due to legacy whiteboard frame guide persistence on `/editor`.
+- `tests/e2e/stage-engine.spec.ts`: Untouched; all 3 tests on `/editor/stage-lab` pass cleanly.
+- `tests/e2e/stage-host.spec.ts`: All 3 tests marked `test.fixme` because the redesign replaces the legacy Phase 18 iframe architecture (`iframe[title="Stage"]`, `/stage-frame.html`) with inline DOM stage rendering (`[data-testid="stage-viewport"]` / `[data-testid="stage-artboard"]`).
+- `tests/e2e/stage-incremental.spec.ts`: Untouched; all 6 tests on `/editor/stage-lab` pass cleanly.
+
+---
+
+## List of `test.fixme` with Reasons
+
+### `tests/e2e/phase8-rules-engine.spec.ts`
+1. `New UI lacks Content Browser and Presets tool (panels/content-browser is todo in PARITY.md)`: The Content Browser and preset item buttons (`.eas-preset-item`) are unmigrated legacy panels.
+
+### `tests/e2e/playback-on-clock.spec.ts`
+1. `App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks`: Fractional delta time (`dt * fps * speed`) is rounded down to integer frame on every tick and lost, preventing playback from advancing at real time.
+
+### `tests/e2e/presets.spec.ts`
+1. `New UI lacks custom saved layouts (legacy dock feature)`: Saving and restoring named dock layouts was a legacy `DockLayout.tsx` feature. The new shell uses fixed grid modes (`design`, `motion`, `code`).
+
+### `tests/e2e/property-migration.spec.ts`
+1. `Phase 42: a v2 project migrates to v3 and renders identically to the native v3 demo — New UI lacks Mount Showcase Demo action on /editor (TopBar help.demo is disabled: 'Showcase demo available in gallery')`: Cannot generate native comparison baseline without showcase demo mounting.
+
+### `tests/e2e/selection.spec.ts`
+1. `Phase 26: the selection stays in sync across the canvas, the inspector and the status bar — New UI lacks Mount Showcase Demo, stage iframe, and canvas hit-testing / status bar selection sync on /editor`: Canvas clicks on `/editor` stage do not yet update selection store, and status bar selection indicators do not exist.
+
+### `tests/e2e/snapping.spec.ts`
+1. `Phase 28: guides belong to their frame, are saved, undone and restored — New UI lacks Mount Showcase Demo and legacy whiteboard frame guide persistence on /editor`: Frame guides persistence requires legacy whiteboard canvas structure not mounted on `/editor`.
+
+### `tests/e2e/stage-host.spec.ts`
+1. `Phase 18: the stage is a script-free same-origin frame with live DOM, not srcdoc — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)`: Architectural change in redesign.
+2. `Phase 18: a document edit updates the stage in place, without reloading the frame, in under a frame — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)`: Architectural change in redesign.
+3. `Phase 18: keys typed with the pointer over the stage reach the command bus — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)`: Architectural change in redesign.
+
+---
+
+## App Bugs Found
+
+### 1. `TimelinePanel.tsx` Playback Advancement Losing Subframe Deltas
+- **File:** `src/editor/panels/timeline/TimelinePanel.tsx`
+- **Details:** In `TimelinePanel.tsx`, playback hooks into `frameScheduler.register((dt) => { ... })`. Each tick calculates:
+  ```ts
+  let nextT = currentT + dt * fps * effectiveSpeed * effectiveDir;
+  motionActions.setPlayhead(nextT);
+  ```
+  However, `motionActions.setPlayhead` in `useMotionModel` executes `Math.round(t)`.
+  When rAF fires at high refresh rates or standard 60fps intervals where `dt * fps < 0.5` (e.g., `0.016 * 15 = 0.24`), `Math.round(currentT + 0.24)` rounds back down to `currentT`. The fractional progress is lost on every frame. Over a 5-second playback window, only ~15 frames advance instead of 150 frames.
+- **Recommended Fix:** Accumulate fractional frame time in a ref in `TimelinePanel` before calling `motionActions.setPlayhead(Math.floor(accumulator))`, or support float playheads in `useMotionModel`.
+
+---
+
+## Needs from the App
+
+1. **Ghost nodes stripping `data-testid` in `shellFx.ts`:**
+   - During mode transitions (`design` ↔ `motion` ↔ `code`), `ghostOf` clones the zone's DOM into `<div class="ll-mgh">`. While the spring exit animation runs (~300ms), both the new and old panels coexist with identical `data-testid="right-panel"` and `data-testid="bottom-panel"`. Stripping `data-testid` in `ghostOf` alongside `copy.querySelectorAll("[id]")` will prevent Playwright strict mode collisions during tests.
+2. **Showcase Demo Seeding for `/editor`:**
+   - An accessible action or URL query parameter (`/editor?demo=showcase`) to mount the showcase demo would allow end-to-end testing of document export, property migration, and canvas interactions against real projects.
+3. **Stage Canvas Hit-Testing:**
+   - Connecting stage click handlers (`[data-testid="stage-element"]`) to `useSelectionInspector` will restore canvas-to-inspector selection synchronization.
