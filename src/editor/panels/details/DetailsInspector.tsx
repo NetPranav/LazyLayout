@@ -93,7 +93,7 @@ export function getInspectorDesignSections(
   const isIcon = archetype === "icon";
   const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
   const isCounter = (archetype as string) === "counter";
-  const isObject3D = (archetype as string) === "object3d";
+  const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
   const hasTypography =
     !inspector.primaryLayer ||
@@ -102,7 +102,7 @@ export function getInspectorDesignSections(
 
   const allowsFill =
     !inspector.primaryLayer ||
-    !["input", "toggle", "divider", "line", "icon", "object3d", "counter"].includes(
+    !["input", "toggle", "divider", "line", "icon", "object3d", "object3D", "counter"].includes(
       archetype || ""
     );
 
