@@ -8,7 +8,8 @@ import { RenderTree } from "@/core/render";
 import { createShowcaseSnapshot } from "@/core/storage/DemoProjectSnapshot";
 
 const root = process.cwd();
-const stageDir = join(root, "src", "editor", "stage");
+const stageDir = join(root, "src", "legacy-editor", "stage"); // the old design stage (StageFrame, StageHost)
+const newStageDir = join(root, "src", "editor", "stage"); // the new editor's stage keeps the same rules
 const files = (dir: string): string[] =>
   readdirSync(dir).flatMap((e) => {
     const full = join(dir, e);
@@ -16,18 +17,18 @@ const files = (dir: string): string[] =>
   });
 
 describe("Phase 18: the stage host builds no HTML strings and runs no script", () => {
-  it("nothing under src/editor/stage or the canvas uses srcDoc, innerHTML, document.write or dangerouslySetInnerHTML", () => {
+  it("nothing under the old or the new stage, or the old canvas, uses srcDoc, innerHTML, document.write or dangerouslySetInnerHTML", () => {
     const banned = /srcDoc|innerHTML|outerHTML|insertAdjacentHTML|document\.write|dangerouslySetInnerHTML|new Function\(|eval\(/;
-    const offenders = [...files(stageDir), ...files(join(root, "src", "editor", "canvas"))].filter((f) =>
+    const offenders = [...files(stageDir), ...files(newStageDir), ...files(join(root, "src", "legacy-editor", "canvas"))].filter((f) =>
       banned.test(readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")),
     );
     assert.deepEqual(offenders.map((f) => f.slice(root.length + 1)), []);
   });
 
   it("the design path no longer imports the sandbox, the HTML builders or the mock server", () => {
-    const sources = [...files(stageDir), join(root, "src", "editor", "canvas", "WhiteboardCanvas.tsx")].map((f) => [f, readFileSync(f, "utf8")] as const);
+    const sources = [...files(stageDir), ...files(newStageDir), join(root, "src", "legacy-editor", "canvas", "WhiteboardCanvas.tsx")].map((f) => [f, readFileSync(f, "utf8")] as const);
     for (const [file, source] of sources) {
-      assert.ok(!/from\s+["']@\/editor\/runtime\/SandboxHost["']/.test(source), `${file} imports SandboxHost directly`);
+      assert.ok(!/from\s+["']@\/(legacy-)?editor\/runtime\/SandboxHost["']/.test(source), `${file} imports SandboxHost directly`);
       assert.ok(!/buildSandboxDocument|generateElementMarkup|MockApiServer|HotReloadEngine/.test(source), `${file} uses the old HTML path`);
     }
   });

@@ -9,7 +9,7 @@ import { join } from "node:path";
  * import panel modules, so nothing outside the layout is bundled by accident.
  * The browser test (`tests/e2e/workspace.spec.ts`) proves it on a real build.
  */
-const shellDir = join(process.cwd(), "src", "editor", "shell");
+const shellDir = join(process.cwd(), "src", "legacy-editor", "shell"); // the panel-registry shell; the new editor's shell has no registry
 
 function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -32,7 +32,7 @@ describe("Phase 14: shell structure", () => {
       for (const line of readFileSync(file, "utf8").split("\n")) {
         // A static import: `import ... from "@/legacy-editor/panels/..."` (a dynamic `import(...)` has no `from`).
         if (/^\s*import type /.test(line) || line.includes("launcher/LazyLayoutLogo")) continue; // types are erased; the logo is header chrome
-        if (/^\s*(import|\}).*from\s+["']@\/editor\/panels\//.test(line)) offenders.push(`${rel}: ${line.trim().slice(0, 90)}`);
+        if (/^\s*(import|\}).*from\s+["']@\/legacy-editor\/panels\//.test(line)) offenders.push(`${rel}: ${line.trim().slice(0, 90)}`);
       }
     }
     assert.deepEqual(offenders, [], "import panels through registerPanel, or lazily with import()");
