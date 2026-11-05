@@ -99,6 +99,15 @@ Keep this table updated as lanes start, pass and commit.
 
 | Wave | Lane | Task file | Status | Commit |
 |---|---|---|---|---|
-| 0 | L0 | 2026-11-05-L0-foundation.md (includes 2026-11-04-design-system-audit-fixes.md) passed (tsc and eslint clean, 8 themes, 9 lane blocks, no off-limits changes). Antigravity quota is exhausted until about 2026-11-07, so Wave 1 and 2 run as Claude subagents | |
-| 1 | L1 to L7 | 2026-11-05-L1-top-bar.md ... L7-code-mode.md | all 7 lanes launched in parallel as Claude subagents (Sonnet) on 2026-11-05; each is reviewed and committed on its own when it reports | |
-| 2 | L8, L9 | 2026-11-05-<lane>.md | todo | |
+| 0 | L0 | 2026-11-05-L0-foundation.md | committed 340b78f | tsc, eslint clean |
+| 1 | L1 | 2026-11-05-L1-top-bar.md | committed 2575c0c | Antigravity run overnight, review PASS after retry |
+| 1 | L2 | 2026-11-05-L2-left-panel.md | committed 6d39a47 | review PASS |
+| 1 | L3 | 2026-11-05-L3-design-inspector.md | committed 1ada464, retry 46b4855 | review PASS after retry |
+| 1 | L4 | 2026-11-05-L4-canvas.md | committed 8156658 | review PASS |
+| 1 | L5 | 2026-11-05-L5-motion-timeline.md | committed a7de804 | review PASS after retry; known bug: clip bars start left of the 0s mark and overlap track labels |
+| 1 | L6 | 2026-11-05-L6-motion-inspector.md | committed e7f3050 | review PASS after retries |
+| 1 | L7 | 2026-11-05-L7-code-mode.md | committed acc661b | review PASS after retry; known: CodePanel full-width toggle conflicts with Shift+T |
+| 1 | lint | (build session) | committed 7f30178 | 16 lint errors fixed |
+| 2 | L8 | 2026-11-05-L8-shell-transitions.md | committed 00a92c1 | Claude subagent |
+| 2 | L9 | 2026-11-05-L9-design-system-page.md | committed 7b38947, retry 165da47 | 94 sections |
+| phase | build, lint | | build passes, lint 1 legacy error | e2e: running, selectors need migration |
