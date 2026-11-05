@@ -53,7 +53,7 @@ The 65 `fixme` tests are not coverage: each has a written reason (features the n
 3. **The 65 `fixme` tests** come back as those features get built.
 4. **Not checked:** responsive widths 1024 and 390, reduced motion across all springs, the six non-default themes visually, Firefox (`NumberField` uses `field-sizing: content`), final side-by-side screenshots (prototype vs app, Design/Motion/Code, Paper and Dark).
 5. **Small known differences from the prototype:** the Design section of the Code-mode inspector; no sliding highlight in the Code-mode segmented control; the timeline header token is 44px (task said 40); the "All" select outline in the Files tree; page create, rename and delete record no undo history; Add keyframe is disabled (no engine command); menu items with no engine command are disabled with a reason.
-6. **The one old lint error** in `UnifiedLogoMenu.tsx` (old code).
+6. ~~The one old lint error in `UnifiedLogoMenu.tsx`~~ fixed in the merge review (2026-11-05); the root `CLAUDE.md` and `AGENTS.md` were restored to `main`'s and the rebuild rules moved to `DOCS/UI/ORCHESTRATOR_RULES.md` and `DOCS/UI/WORKER_RULES.md` (see INTEGRATION.md).
 
 ## Decisions waiting for the user
 

@@ -41,6 +41,13 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Do not restore them on merge.
 - **Status:** open
 
+### Root `CLAUDE.md` and `AGENTS.md` kept as `main`'s (changed in the merge review, 2026-11-05)
+- **Area:** repo instructions
+- **Files:** `CLAUDE.md`, `AGENTS.md`, `DOCS/UI/ORCHESTRATOR_RULES.md` (new), `DOCS/UI/WORKER_RULES.md` (new)
+- **What changed:** The PR replaced the root `CLAUDE.md` (which imports `AGENTS.md` and `DOCS/TEAM/COLLABORATION.md`) with the UI rebuild's orchestrator rules, and appended the Antigravity worker rules to `AGENTS.md`. Merged as they were, every Claude in the repo (both lanes) would have read "the two-lane rules do not apply here", "never push at all", "do not commit or push" and "do not edit `src/core`". The root files are `main`'s again, each with a short pointer to the UI rules; the rebuild's rules moved unchanged (plus a scope note) to `DOCS/UI/ORCHESTRATOR_RULES.md` and `DOCS/UI/WORKER_RULES.md`.
+- **What the UI sessions must do:** point the workers at `DOCS/UI/WORKER_RULES.md` (they used to get it from `AGENTS.md`). `.claude/agents/ui-orchestrator.md` still says "Read `CLAUDE.md`" and "`CLAUDE.md` §3": read `DOCS/UI/ORCHESTRATOR_RULES.md` instead (that file could not be edited from the review session).
+- **Status:** done
+
 ## 2. Engine contracts the new UI relies on
 
 ### Top bar engine bindings
@@ -201,4 +208,4 @@ Honest list of open items before merging into `main`:
 8. **Firefox `field-sizing: content` support:** `NumberField` uses CSS `field-sizing: content` which is not yet supported in Firefox; requires fallback handling or verification.
 9. **Final side-by-side screenshots:** Prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured.
 10. **Timeline header token:** Timeline header token is 44px (prototype task said 40; flagged for design session).
-11. **Legacy lint error:** 1 error in `src/legacy-editor/menus/UnifiedLogoMenu.tsx` (setState in effect, old code unchanged from main).
+11. **Legacy lint error:** fixed in the merge review (2026-11-05): `src/legacy-editor/menus/UnifiedLogoMenu.tsx` reset its submenu state inside an effect (a lint error that failed CI `verify`); it now resets while rendering, the same behaviour. That file is not from `main`: it came from the `wip(ui)` experiments (feba8ec).

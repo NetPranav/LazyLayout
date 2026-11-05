@@ -23,7 +23,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
   6. Firefox compatibility: `NumberField` uses `field-sizing: content` (needs fallback or verification).
   7. Final side-by-side screenshots (Paper and Dark across Design/Motion/Code) not yet taken.
   8. Timeline header token is 44px (prototype task said 40).
-  9. Lint: 0 errors in `src/editor` and `src/app`, 1 error in old code `src/legacy-editor/menus/UnifiedLogoMenu.tsx`.
+  9. Lint: 0 errors (the one error in `src/legacy-editor/menus/UnifiedLogoMenu.tsx` was fixed in the merge review).
 
 **Phase 1:** foundations, `design-system`, `shell`, `menus`. **Phase 2:** `canvas`, `stage`, `panels/layers`, `panels/details`, `panels/timeline`, `panels/motion`, `panels/code`, `panels/code-view`, `panels/console`, `styles`. **Phase 3:** `panels/launcher` and everything else.
 
