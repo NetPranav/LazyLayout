@@ -2,6 +2,9 @@
 
 Every third-party component used in the new UI. Add a row before finishing the task. The license must allow this use.
 
+> [!NOTE]
+> **Zero license blockers:** All components in `src/editor/components/` are 100% verified licenses or our own clean-room code. The `src/editor/components/imported/` directory has been completely deleted (commit `73edaba`). The unused candidate dependencies `@animate-ui/react`, `@base-ui/react`, `@floating-ui/react`, and `radix-ui` were removed from `package.json` (commits `58ae713` and `5cf6d24`).
+
 | Component | Site and URL | License | Copied to | What we changed |
 |---|---|---|---|---|
 | Nook animation engine (`springEase`, `springAnim`, motion presets, FLIP, kicks, Surf) | Nook, the user's own product (`E:\Projects\Products\nook`, `src/lib/motion.ts`, `src/lib/motionPresets.ts`, `src/features/island/engine/`) | own code | `src/editor/motion/` (`spring.ts`, `presets.ts`, `loop.ts`, `ease.ts`, `feel.ts`, `flip.ts`, `surface.ts`, `index.ts`) | Ported exact Nook mass-1 physics, frame loop, and presets to TypeScript; reduced-motion 120ms fade fallback; credited on design system motion page |

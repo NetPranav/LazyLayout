@@ -35,9 +35,15 @@ The user is the director over both and passes messages between them.
    - the rules that matter for this task (the short list in section 6)
    - the files the worker may touch
    - "Done": `npx tsc --noEmit` once, screenshots at 1440 of what was built, a handoff from `TEMPLATE.md`, no commit
-3. **Workers do the work:** launch Antigravity first (`agy --dangerously-skip-permissions --print=...`), with Claude subagents as the plan's fallback when Antigravity quota is exhausted (as happened on 2026-11-04). Note on runner scripts: the night runner scripts `night-runner.sh` and `night-watcher.sh` exist but die when their launching shell ends, so launch lanes with separate background calls. Give the user a one-line prompt to paste into Antigravity, in this form:
-   `Do the task in DOCS/UI/tasks/<file>.md. Don't stop to ask. When done, run npx tsc --noEmit once, write the handoff, don't commit.`
-   Workers don't read all the rule files and don't run lint, build or e2e (`AGENTS.md` loads on its own). Add `npx eslint <paths>` only on a retry that is fixing lint.
+3. **Workers do the work:** launch Antigravity first (`agy --dangerously-skip-permissions --print=...`), with Claude subagents as the fallback when Antigravity quota is exhausted.
+   - **Background execution:** The night runner scripts (`night-runner.sh` and `night-watcher.sh`) die when their launching shell ends, so launch each worker with its own separate background call.
+   - **Hung workers:** A worker that makes no file edits for 10 minutes, or an idle `agy` process still running after its handoff is written, must be stopped (`taskkill //IM agy.exe //F`) and relaunched once.
+   - **Process cleanup:** Kill leftover Playwright `chromium-1248` processes after runs (`taskkill //IM chrome.exe //F` if stuck).
+   - **Dev server memory:** The dev server needs significant memory; a machine low on memory will kill it. Start it only when needed, and stop it before running `npm run build` (they share `.next`).
+   - **Never run mass rewriters:** Never run `eslint --fix`, prettier, or any command that rewrites many files (an earlier worker rewrote the line endings of 749 files).
+   - Give the user a one-line prompt to paste into Antigravity, in this form:
+     `Do the task in DOCS/UI/tasks/<file>.md. Don't stop to ask. When done, run npx tsc --noEmit once, write the handoff, don't commit.`
+   - Workers don't read all rule files and don't run lint, build or e2e (`AGENTS.md` loads on its own). Add `npx eslint <paths>` only on a retry that is fixing lint.
 4. When the user says the worker is done, run the `ui-watcher` subagent on the task, the handoff and `git diff`. Also open the screenshots yourself.
 5. **Pass:** commit that area's paths (for example `feat(ui): rebuild top bar`), set the row to `done`, and mark the `CHANGELOG.md` entries `built`. **Fail:** add a "Retry N" section to the same task file with numbered `file:line` fixes, and give the user the same one-line prompt that points at that section. **After 2 failed retries,** fix the rest yourself, then commit.
 6. At the end of a phase, run `npm run typecheck`, `npm run lint`, `npm run build` and `npm run test:e2e`, and report to the user.
@@ -50,16 +56,22 @@ You may run several Antigravity workers at once, but only when their file sets c
 - In parallel batches, workers **don't edit** `DECISIONS.md`, `PARITY.md` or `INTEGRATION.md`. They write their decisions in their handoff, and you merge them in when you commit.
 - Each worker gets its own task file, and gets its own screenshot folder.
 
-## 4. Where things stand (2026-11-03)
+## 4. Where things stand (2026-11-05)
 
-**Phase 1, built and committed:**
-- foundations: the five themes, type, spacing, radii, shadows and size tokens, and the Nook spring engine in `src/editor/motion/`
-- 21 core components in `src/editor/components/`
-- the `/design-system` page
+**New editor built from prototype, wired to real document, PR #62 open:**
+- **Core editor:** Shell, TopBar, left panel (Layers, Files, Assets), canvas chrome (Toolbar, AI box, Insert, View options), stage, Design inspector, Motion timeline + model + inspector, Code panel + inspector, persistence (boot, autosave, lock, banners), eight official themes, and 94 design system sections on `/design-system` are all built and committed.
+- **Real document:** Stage, layers tree, inspector, code view, and timeline read and write the real engine document (commit `d7df6af`); demo data stopgaps removed; initial projects auto-seed 16 prototype layers; persistence and undo/redo work.
+- **Main merged & legacy route:** `origin/main` (phases 39 to 81) merged into `integrate/main-into-new-ui` (commit `ce037af`). Main's features live in `src/legacy-editor` and remain reachable at `/editor/legacy` with `LegacyStudioHeader.tsx`. `/editor` is the new editor. PR #62 into `main` is open: https://github.com/NetPranav/LazyLayout/pull/62.
+- **Cleanups & fixes:** Cursor and Scroll Fade replaced with own code (`73edaba`); `src/editor/components/imported/` removed; unused dependencies `@animate-ui/react`, `@base-ui/react`, `@floating-ui/react`, `radix-ui` removed (`58ae713`, `5cf6d24`). Timeline playback bug fixed with sub-frame accumulator (`ea8ee24`).
+- **E2E tests:** `support/editor.ts` defaults to the NEW editor (`EDITOR_URL = "/editor"`), exports `LEGACY_EDITOR_URL = "/editor/legacy"`. Every spec explicitly names its target. Full suite: **199 passed, 65 skipped (`test.fixme`), 0 failed, 0 flaky (264 tests total)**.
 
-**`menus` components** (Menu, SubMenu, ContextMenu, Popover, Select and CommandPalette with the playful motion) are committed (`c3dd959`). `menus` stays `wip` until the top bar task replaces the legacy menus in the shell.
-
-**Not built yet**, from the prototype: the whole editor screen. It's in section 5.
+**What is NOT done (honest list):**
+1. **New-UI screens for main's features:** Pen and vector tools, auto layout, breakpoints, tokens, components and variants, templates, scroll model, and export work only at `/editor/legacy`. They need designs from the design session (`DOCS/UI/design/REQUESTS.md`), then worker tasks.
+2. **Old-app areas with no new version:** 17 unbuilt areas (launcher / hub home page, database studio, blueprint shell only, content browser, copilot, deployment, global search, history, pages manager, plugins, settings, state, versioning, dependencies, execution trace, render gallery, fonts).
+3. **The 65 `test.fixme` tests:** Come back as those features are built.
+4. **Not checked:** Responsive widths 1024 and 390, reduced motion across all springs, the six non-default themes visually, Firefox compatibility (`NumberField` uses `field-sizing: content`), and final side-by-side screenshots Paper and Dark across Design/Motion/Code.
+5. **Timeline header token:** Token is 44px (prototype task said 40).
+6. **Legacy lint error:** 1 error in `src/legacy-editor/menus/UnifiedLogoMenu.tsx` (old code untouched).
 
 ## 5. Build queue (prototype section → area)
 
@@ -97,10 +109,11 @@ Then run the Phase 1 checks.
 
 ## 7. Open decisions for the user (don't block on them)
 
-- **Slider type:** pick one in `DOCS/UI/design/slider-variants.html`. Until then, use the Classic slider.
-- Which themes beyond the five stay (Noir and others are candidates).
-- The logo, and the SVG's source and license.
-- The GSAP license.
-- The page switcher: keep the dropdown, or go back to a menu.
-- Missing features from the original: see `DOCS/UI/handoffs/LATEST.md` ("Known gaps") and `DOCS/UI/PARITY.md`.
-- Contrast: in Lilac and Warm, secondary and muted text on select and hover backgrounds is below 4.5:1.
+- **The 65 `test.fixme` tests:** Accept for the first merge, or re-enable some first?
+- **Keep `/editor/legacy` route:** Keep until each main feature has a new-UI screen (recommended, in PR #62).
+- **Git author email:** Decide author identity for future commits.
+- **Designs for remaining areas:** Design direction for home page, database, and other 17 unbuilt areas (`DOCS/UI/design/REQUESTS.md`).
+- **Slider type:** Pick one in `DOCS/UI/design/slider-variants.html`. Until then, use the Classic slider.
+- **The logo:** SVG source and license.
+- **The GSAP license:** License check or replacement strategy.
+- **Missing features from the original:** See `DOCS/UI/handoffs/LATEST.md` ("Known gaps") and `DOCS/UI/PARITY.md`.

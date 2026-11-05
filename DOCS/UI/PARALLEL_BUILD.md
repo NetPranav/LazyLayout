@@ -17,7 +17,13 @@ Read `.claude/agents/ui-worker.md` (worker rules and the known mistakes) and `.c
 All workers share one working tree, so parallel only works if their **file lanes never overlap**. Each lane below lists the only paths that lane may edit. Workers do all the build work. Antigravity is preferred, with Claude subagents as the fallback when Antigravity quota runs out (as happened on 2026-11-04).
 
 > [!IMPORTANT]
-> **Runner scripts note:** The night runner scripts `night-runner.sh` and `night-watcher.sh` exist but die when their launching shell ends, so launch lanes with separate background calls.
+> **Process and runner rules:**
+> - **Workers:** Antigravity (`agy`) first, with Claude subagents as fallback when quota is exhausted.
+> - **Runner scripts:** The night runner scripts `night-runner.sh` and `night-watcher.sh` die when their launching shell ends, so launch each worker with its own separate background call.
+> - **Hung workers:** A worker that makes no edits for 10 minutes, or an idle `agy` process still alive after its handoff is written, must be stopped (`taskkill //IM agy.exe //F`) and relaunched once.
+> - **Process cleanup:** Kill leftover Playwright `chromium-1248` processes after runs (`taskkill //IM chrome.exe //F`).
+> - **Dev server memory:** The dev server needs significant memory; a machine low on memory will kill it. Start only when needed, and stop before `npm run build` (they share `.next`).
+> - **Never run mass rewriters:** Never run `eslint --fix`, prettier, or any command that rewrites many files (an earlier worker rewrote the line endings of 749 files).
 
 **Launching a wave:** start every lane in the wave at the same time, in the background, in **one message with one tool call per lane**. Use either option:
 
@@ -122,4 +128,14 @@ Keep this table updated as lanes start, pass and commit.
 | test | e2e specs | `2026-11-05-e2e-migrate.md` | committed 55b6905 | Groups G1–G4: 77 passed, 96 fixme with written reasons |
 | engine | document | `2026-11-05-real-document.md` | committed d7df6af | Real document wired to stage, layers, inspector, code, timeline; demo stopgaps removed |
 | docs | prune | - | committed 03f9b3b, d912e8f | Pruned superseded handoffs, screenshots, completed pre-wave 0 tasks |
-| phase | checks | - | typecheck pass, build pass, lint 1 legacy error | e2e: 77 passed, 96 fixme, 4 flaky failures |
+| merge | main | `2026-11-05-merge-main.md` | committed ce037af | Merge origin/main (phases 39-81) into new UI: main's code under `src/legacy-editor`, served at `/editor/legacy`; `/editor` is new editor |
+| components | license | `2026-11-05-1940-components-license.md` | committed 73edaba | Replace unverified Animate UI components (Cursor, Scroll Fade) with own code; `imported/` directory removed |
+| test | e2e group A | `2026-11-05-1950-unfixme-a.md` | committed d363389 | Group A un-fixme: re-enable real document tests (41 pass, 0 fail, 53 fixme) |
+| test | e2e group B | `2026-11-05-1958-unfixme-b.md` | committed 579f11e | Group B un-fixme: re-enable real document tests; timing tests stabilized |
+| fix | playback | `2026-11-05-2028-playback-fix.md` | committed ea8ee24 | Timeline playback bug: sub-frame accumulator restores 60 fps real speed |
+| test | legacy e2e | `2026-11-05-2041-legacy-e2e.md` | committed 9282c25 | Restore `LegacyStudioHeader` on `/editor/legacy`; 29 main specs pass 100% (138/138) |
+| test | e2e targets | `2026-11-05-2115-fix-8-tests.md` | committed 5e9b23c | 8 failing new-editor specs target `/editor` explicitly |
+| test | e2e helper default | `2026-11-05-2148-e2e-target-audit.md` | committed 23a74aa | Helper defaults to new editor (`EDITOR_URL = "/editor"`), exports `LEGACY_EDITOR_URL`; all specs target explicitly |
+| deps | cleanup | - | committed 58ae713 | Remove unused `@animate-ui/react` (broke `npm ci` in CI) |
+| deps | cleanup | - | committed 5cf6d24 | Remove unused `@base-ui/react`, `@floating-ui/react`, `radix-ui` |
+| phase | checks | - | typecheck clean, build pass, lint 0 in src/editor & src/app / 1 in legacy | full suite: 199 passed, 65 skipped (test.fixme), 0 failed, 0 flaky (264 tests). PR #62 open (integrate/main-into-new-ui) |
