@@ -459,7 +459,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                       }}
                       className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-pointer"
                     >
-                      <Icon icon={node.hidden ? EyeOff : Eye} size={14} />
+                      <Icon icon={node.hidden ? EyeOff : Eye} size={16} />
                     </span>
                     <span
                       role="button"
@@ -472,7 +472,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                       }}
                       className="ll:w-4 ll:h-4 ll:grid ll:place-items-center ll:text-muted ll:hover:text-primary ll:cursor-pointer"
                     >
-                      <Icon icon={node.locked ? Lock : Unlock} size={14} />
+                      <Icon icon={node.locked ? Lock : Unlock} size={16} />
                     </span>
                   </span>
 

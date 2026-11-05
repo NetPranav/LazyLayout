@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import { Folder, FolderOpen, File, FileCode, FileText, FileJson, ChevronRight } from "lucide-react";
+import { Folder, File, Code, Hash, Braces, ChevronRight } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { ContextMenu } from "@/editor/components/ContextMenu";
@@ -30,18 +30,18 @@ const CATEGORY_OPTIONS = [
   { value: "Config", label: "Config" },
 ];
 
-function getFileIcon(name: string, isFolder: boolean, expanded: boolean): React.ReactNode {
+function getFileIcon(name: string, isFolder: boolean): React.ReactNode {
   if (isFolder) {
-    return <Icon icon={expanded ? FolderOpen : Folder} size={16} />;
+    return <Icon icon={Folder} size={16} />;
   }
   if (/\.(tsx|jsx|ts|js)$/.test(name)) {
-    return <Icon icon={FileCode} size={16} />;
+    return <Icon icon={Code} size={16} />;
   }
   if (/\.css$/.test(name)) {
-    return <Icon icon={FileText} size={16} />;
+    return <Icon icon={Hash} size={16} />;
   }
   if (/\.json$/.test(name)) {
-    return <Icon icon={FileJson} size={16} />;
+    return <Icon icon={Braces} size={16} />;
   }
   return <Icon icon={File} size={16} />;
 }
@@ -204,7 +204,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
                   node.isFolder ? "fold ll-fold" : ""
                 } ${
                   isSelected
-                    ? "on ll:bg-select-bg ll:text-select-fg"
+                    ? "on ll:font-medium ll:bg-select-bg ll:text-select-fg"
                     : "ll:text-secondary ll:hover:bg-surface-canvas ll:hover:text-primary"
                 }`}
               >
@@ -237,7 +237,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
                     isSelected ? "ll:text-select-fg" : "ll:text-muted ll:group-hover:text-primary"
                   }`}
                 >
-                  {getFileIcon(node.name, node.isFolder, node.expanded)}
+                  {getFileIcon(node.name, node.isFolder)}
                 </span>
 
                 {/* Name */}

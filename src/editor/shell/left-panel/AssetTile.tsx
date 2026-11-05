@@ -50,7 +50,7 @@ export const AssetTile: React.FC<AssetTileProps> = ({
       <div className="th ll-th ll:aspect-square ll:grid ll:place-items-center ll:bg-surface-bar ll:rounded-sm ll:text-secondary ll:group-hover:text-primary ll:transition-colors ll:duration-swap ll:motion-reduce:transition-none">
         {renderThumb()}
       </div>
-      <span className="ll:text-micro ll:text-muted ll:group-hover:text-primary ll:truncate ll:block">
+      <span className="ll:text-micro ll:leading-snug ll:text-muted ll:group-hover:text-primary ll:truncate ll:block">
         {asset.name}
       </span>
     </div>

@@ -184,7 +184,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
           <Icon
             icon={ChevronRight}
             size={14}
-            className={`ll:text-muted ll:transition-transform ll:duration-swap ll:motion-reduce:transition-none ${
+            className={`ll:transition-transform ll:duration-swap ll:motion-reduce:transition-none ${
               isOpen ? "ll:rotate-90" : ""
             }`}
           />

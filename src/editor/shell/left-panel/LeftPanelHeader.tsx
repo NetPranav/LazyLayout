@@ -56,16 +56,11 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
     <div className="ll:flex ll:flex-col ll:shrink-0">
       {/* Top zone header: 44px height (zhead) */}
       <div className="zhead ll-zhead ll:h-header ll:flex ll:items-center ll:gap-1 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
-        {!isCode ? (
-          <>
-            {headerStart && <div className="ll:flex-none">{headerStart}</div>}
-            <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
-              Layers
-            </span>
-          </>
+        {mode === "design" && headerStart ? (
+          <div className="ll:flex-none">{headerStart}</div>
         ) : (
           <span id="lhead" className="lh ll-lh ll:text-body ll:font-medium ll:text-primary ll:truncate">
-            Files
+            {isCode ? "Files" : "Layers"}
           </span>
         )}
 
