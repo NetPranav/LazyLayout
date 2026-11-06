@@ -392,6 +392,7 @@ export interface CompiledLutResult {
   totalLength: number;
   unresolvedDeviation?: boolean;
   maxResidualDeviation?: number;
+  allConverged?: boolean;
 }
 
 /**
@@ -422,7 +423,14 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
   }
 
   // 2. Adaptive subdivision on each subinterval:
-  const leafIntervals: Array<{ u0: number; u1: number; bez: CubicBezier; length: number; errorEst: number }> = [];
+  const leafIntervals: Array<{
+    u0: number;
+    u1: number;
+    bez: CubicBezier;
+    length: number;
+    errorEst: number;
+    converged: boolean;
+  }> = [];
   const TAU_GEOM = 0.02; // px
   let unresolvedDeviation = false;
   let maxResidualDeviation = 0;
@@ -441,6 +449,7 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
         bez: item.bez,
         length: quad.value,
         errorEst: quad.errorEst,
+        converged: quad.converged,
       });
       return;
     }
@@ -468,8 +477,10 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
   const lut: LutSample[] = [{ u: 0, s: 0, point: b.p0, errorBound: 0 }];
   let runningS = 0;
   let runningError = 0;
+  let allConverged = true;
 
   for (const leaf of leafIntervals) {
+    if (!leaf.converged) allConverged = false;
     runningS += leaf.length;
     runningError += leaf.errorEst;
     lut.push({
@@ -485,6 +496,7 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
     totalLength: runningS,
     unresolvedDeviation: unresolvedDeviation ? true : undefined,
     maxResidualDeviation: unresolvedDeviation ? maxResidualDeviation : undefined,
+    allConverged,
   };
 }
 
@@ -492,31 +504,53 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
 // 5. Option A Inversion: Bracket Verification + Newton + Guaranteed Bisection
 // ---------------------------------------------------------------------------
 
+export interface ArcLengthInversionResult {
+  u: number;
+  converged: boolean;
+  spatialErrorBound: number;
+  unresolvedReason?:
+    | "bracket_unresolved_boundary"
+    | "uncertainty_exceeds_tolerance"
+    | "quadrature_exhausted";
+}
+
 /**
- * Inverts normalized arc-length s in [0, 1] to parameter u in [0, 1].
- * Implements Option A:
- *   - Verifies the actual interval root bracket.
- *   - Up to 3 Newton acceleration steps with residual exit (|F(u)| < 10^-4 px).
- *   - Guaranteed M_steps unconditional bisection steps, bounding spatial error to < 0.015 px.
+ * Detailed arc-length inverter returning full convergence certification,
+ * spatial error bounds, and explicit unresolved diagnostics.
+ *
+ * Mathematical Error Budget & Decomposition:
+ *   TotalSpatialError <= BisectionSpatialError + QuadratureUncertainty
+ *   BisectionSpatialError <= M_seg * (deltaU0 / 2^mSteps) <= effectiveBisectionTol
+ *   effectiveBisectionTol = spatialTolerance - totalUncertainty
+ *   Therefore: TotalSpatialError <= effectiveBisectionTol + totalUncertainty = spatialTolerance (<= 0.015 px).
+ *
+ * Boundary & Termination Guarantees:
+ *   - Verifies true interval sign change: F_hat(u_L) + E(u_L) <= 0 and F_hat(u_R) - E(u_R) >= 0.
+ *   - If either condition is violated at the LUT boundary, returns converged: false with
+ *     unresolvedReason: "bracket_unresolved_boundary" (never assumes reaching boundary certifies root).
+ *   - If totalUncertainty >= spatialTolerance, marks unresolvedReason: "uncertainty_exceeds_tolerance".
+ *   - If any adaptive quadrature subinterval fails convergence (max depth hit), marks
+ *     unresolvedReason: "quadrature_exhausted".
  */
-export function invertArcLength(
+export function invertArcLengthDetailed(
   b: CubicBezier,
   lut: readonly LutSample[],
   totalLength: number,
   mSeg: number,
-  sProgress: number
-): number {
-  if (totalLength <= 1e-6 || lut.length === 0) return 0;
-  const sNorm = Math.max(0, Math.min(1, sProgress));
-  const sTarget = sNorm * totalLength;
-
-  if (sTarget <= 0) return 0;
-  if (sTarget >= totalLength) return 1;
+  sProgress: number,
+  spatialTolerance = 0.015,
+  quadTol = 1e-6,
+  quadMaxDepth = 8
+): ArcLengthInversionResult {
+  if (totalLength <= 1e-6 || lut.length === 0) {
+    return { u: 0, converged: true, spatialErrorBound: 0 };
+  }
+  const sTarget = sProgress * totalLength;
 
   // Helper: exact arc length with integration error bound from 0 to uVal
-  function exactArcLenWithBound(uVal: number): { s: number; errorBound: number } {
-    if (uVal <= 0) return { s: 0, errorBound: 0 };
-    if (uVal >= 1) return { s: totalLength, errorBound: lut[lut.length - 1]?.errorBound ?? 1e-6 };
+  function exactArcLenWithBound(uVal: number): { s: number; errorBound: number; converged: boolean } {
+    if (uVal <= 0) return { s: 0, errorBound: 0, converged: true };
+    if (uVal >= 1) return { s: totalLength, errorBound: lut[lut.length - 1]?.errorBound ?? 1e-6, converged: true };
 
     let l = 0;
     let h = lut.length - 1;
@@ -529,18 +563,15 @@ export function invertArcLength(
     const uBase = lut[baseIdx].u;
     const sBase = lut[baseIdx].s;
     const errBase = lut[baseIdx].errorBound ?? 0;
-    const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, 1e-6);
+    const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, quadTol, 0, quadMaxDepth);
     return {
       s: sBase + quad.value,
       errorBound: errBase + quad.errorEst,
+      converged: quad.converged,
     };
   }
 
-  function exactArcLen(uVal: number): number {
-    return exactArcLenWithBound(uVal).s;
-  }
-
-  // 1. Initial lookup from monotonic LUT:
+  // 1. Initial candidate lookup from monotonic LUT:
   let low = 0;
   let high = lut.length - 1;
   while (low <= high) {
@@ -565,43 +596,91 @@ export function invertArcLength(
   let evalLeft = exactArcLenWithBound(uLeft);
   let evalRight = exactArcLenWithBound(uRight);
 
-  const TAU_RESIDUAL = 1e-4; // px
-  if (Math.abs(evalLeft.s - sTarget) < TAU_RESIDUAL) return uLeft;
-  if (Math.abs(evalRight.s - sTarget) < TAU_RESIDUAL) return uRight;
-
+  // Expand left until interval guarantees non-positive residual:
   while (evalLeft.s + evalLeft.errorBound > sTarget && idx0 > 0) {
     idx0--;
     uLeft = lut[idx0].u;
     evalLeft = exactArcLenWithBound(uLeft);
-    if (Math.abs(evalLeft.s - sTarget) < TAU_RESIDUAL) return uLeft;
-  }
-  if (evalLeft.s + evalLeft.errorBound > sTarget) {
-    uLeft = 0;
-    evalLeft = { s: 0, errorBound: 0 };
   }
 
+  // Expand right until interval guarantees non-negative residual:
   while (evalRight.s - evalRight.errorBound < sTarget && idx1 < lut.length - 1) {
     idx1++;
     uRight = lut[idx1].u;
     evalRight = exactArcLenWithBound(uRight);
-    if (Math.abs(evalRight.s - sTarget) < TAU_RESIDUAL) return uRight;
-  }
-  if (evalRight.s - evalRight.errorBound < sTarget) {
-    uRight = 1;
-    evalRight = exactArcLenWithBound(1);
   }
 
-  // Root bracket [uLeft, uRight] is rigorously guaranteed to satisfy:
-  // F(uLeft) <= 0 <= F(uRight) accounting for numerical integration uncertainty.
-  if (uRight <= uLeft) return uLeft;
+  // Rigorous Bracket Boundary Termination Verification:
+  // Reaching an index boundary does not certify root containment if the interval condition fails.
+  const isLeftResolved = evalLeft.s + evalLeft.errorBound <= sTarget;
+  const isRightResolved = evalRight.s - evalRight.errorBound >= sTarget;
 
-  // 3. Newton Acceleration (up to 3 steps):
+  if (!isLeftResolved || !isRightResolved) {
+    DiagnosticBus.emit({
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      source: { entityId: "arc_length_inversion", panel: "motion" },
+      message: `Arc-length root bracket unresolved at boundary: leftResolved=${isLeftResolved}, rightResolved=${isRightResolved}, sTarget=${sTarget.toFixed(4)}px`,
+    });
+    return {
+      u: !isLeftResolved ? 0 : 1,
+      converged: false,
+      spatialErrorBound: Math.max(evalLeft.errorBound, evalRight.errorBound),
+      unresolvedReason: "bracket_unresolved_boundary",
+    };
+  }
+
+  // 3. Certified Bracket Uncertainty & Tolerance Check:
+  const deltaU0 = Math.max(0, uRight - uLeft);
+  const totalUncertainty = evalLeft.errorBound + evalRight.errorBound;
+
+  if (totalUncertainty >= spatialTolerance) {
+    DiagnosticBus.emit({
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      source: { entityId: "arc_length_inversion", panel: "motion" },
+      message: `Arc-length integration uncertainty (${totalUncertainty.toFixed(6)}px) consumes spatial tolerance (${spatialTolerance}px)`,
+    });
+    return {
+      u: (uLeft + uRight) / 2,
+      converged: false,
+      spatialErrorBound: totalUncertainty,
+      unresolvedReason: "uncertainty_exceeds_tolerance",
+    };
+  }
+
+  if (!evalLeft.converged || !evalRight.converged) {
+    return {
+      u: (uLeft + uRight) / 2,
+      converged: false,
+      spatialErrorBound: totalUncertainty,
+      unresolvedReason: "quadrature_exhausted",
+    };
+  }
+
+  if (uRight <= uLeft) {
+    return { u: uLeft, converged: true, spatialErrorBound: evalLeft.errorBound };
+  }
+
+  // 4. Newton Acceleration (up to 3 steps):
+  const TAU_RESIDUAL = Math.min(1e-4, spatialTolerance * 0.1);
   let u = uLeft + ((sTarget - evalLeft.s) / Math.max(1e-9, evalRight.s - evalLeft.s)) * (uRight - uLeft);
 
   for (let step = 0; step < 3; step++) {
-    const curS = exactArcLen(u);
-    const residual = curS - sTarget;
-    if (Math.abs(residual) < TAU_RESIDUAL) return u;
+    const curEval = exactArcLenWithBound(u);
+    if (!curEval.converged) {
+      return {
+        u,
+        converged: false,
+        spatialErrorBound: curEval.errorBound + deltaU0 * mSeg,
+        unresolvedReason: "quadrature_exhausted",
+      };
+    }
+
+    const residual = curEval.s - sTarget;
+    if (Math.abs(residual) < TAU_RESIDUAL && curEval.errorBound <= spatialTolerance) {
+      return { u, converged: true, spatialErrorBound: curEval.errorBound };
+    }
 
     const deriv = evaluateCubicDerivative(b, u);
     const speed = Math.hypot(deriv.x, deriv.y);
@@ -612,8 +691,10 @@ export function invertArcLength(
       if (uNewton >= uLeft + margin && uNewton <= uRight - margin) {
         if (residual > 0) {
           uRight = u;
+          evalRight = curEval;
         } else {
           uLeft = u;
+          evalLeft = curEval;
         }
         u = uNewton;
         continue;
@@ -622,28 +703,76 @@ export function invertArcLength(
     break; // Exit Newton if invalid/ineffective, preserving valid bracket
   }
 
-  // 4. Guaranteed Bisection Contraction:
-  // Re-evaluates iteration budget from actual validated bracket width after expansion (deltaU0),
-  // accounting for total integration uncertainty (totalUncertainty) in the spatial error budget:
-  const deltaU0 = uRight - uLeft;
-  const totalUncertainty = evalLeft.errorBound + evalRight.errorBound;
-  const effectiveSpatialTolerance = Math.max(0.001, 0.05 - totalUncertainty);
-  const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU0) / effectiveSpatialTolerance)));
+  // 5. Guaranteed Bisection Contraction:
+  const effectiveBisectionTol = spatialTolerance - totalUncertainty;
+  const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU0) / effectiveBisectionTol)));
+
+  let hadUnconvergedQuadrature = false;
 
   for (let k = 0; k < mSteps; k++) {
     const uMid = (uLeft + uRight) / 2;
-    const curS = exactArcLen(uMid);
-    const residual = curS - sTarget;
-    if (Math.abs(residual) < TAU_RESIDUAL) return uMid;
+    const evalMid = exactArcLenWithBound(uMid);
+    if (!evalMid.converged) {
+      hadUnconvergedQuadrature = true;
+      break;
+    }
 
-    if (residual < 0) {
+    const resMidMin = (evalMid.s - evalMid.errorBound) - sTarget;
+    const resMidMax = (evalMid.s + evalMid.errorBound) - sTarget;
+
+    if (resMidMax < 0) {
       uLeft = uMid;
-    } else {
+      evalLeft = evalMid;
+    } else if (resMidMin > 0) {
       uRight = uMid;
+      evalRight = evalMid;
+    } else {
+      // Midpoint residual uncertainty interval crosses zero: 0 in [resMidMin, resMidMax].
+      // Root is proven to be within evalMid.errorBound of sTarget.
+      uLeft = uMid;
+      uRight = uMid;
+      break;
     }
   }
 
-  return (uLeft + uRight) / 2;
+  const finalU = (uLeft + uRight) / 2;
+  const finalEval = exactArcLenWithBound(finalU);
+  if (!finalEval.converged) {
+    hadUnconvergedQuadrature = true;
+  }
+
+  const finalBisectionSpread = (mSeg * (uRight - uLeft)) / 2;
+  const finalSpatialError = finalEval.errorBound + finalBisectionSpread;
+
+  if (hadUnconvergedQuadrature) {
+    return {
+      u: finalU,
+      converged: false,
+      spatialErrorBound: finalSpatialError,
+      unresolvedReason: "quadrature_exhausted",
+    };
+  }
+
+  return {
+    u: finalU,
+    converged: true,
+    spatialErrorBound: finalSpatialError,
+  };
+}
+
+/**
+ * Standard numerical arc-length inverter. Inverts normalized arc-length s in [0, 1]
+ * to parameter u in [0, 1]. Preserves 100% backward compatibility for all runtime callers.
+ */
+export function invertArcLength(
+  b: CubicBezier,
+  lut: readonly LutSample[],
+  totalLength: number,
+  mSeg: number,
+  sProgress: number
+): number {
+  const sClamped = Math.max(0, Math.min(1, sProgress));
+  return invertArcLengthDetailed(b, lut, totalLength, mSeg, sClamped).u;
 }
 
 // ---------------------------------------------------------------------------

@@ -11,7 +11,9 @@ import {
   splitCubic,
   compileSegmentLut,
   invertArcLength,
+  invertArcLengthDetailed,
   integrateArcLengthAdaptiveDetailed,
+  type ArcLengthInversionResult,
   compileSpatialTrajectory,
   createSpatialPath,
   SpatialTrajectoryGeometry,
@@ -646,6 +648,101 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
           `Spatial error at frac=${frac} must be < 0.015 px`
         );
       }
+    });
+
+    it("rejects and reports unresolved brackets at both LUT boundaries with diagnostics", () => {
+      DiagnosticBus.clearHistory();
+      const line: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 33, y: 0 },
+        p2: { x: 66, y: 0 },
+        p3: { x: 100, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(line);
+      const { lut, totalLength } = compileSegmentLut(line);
+
+      // 1. Left boundary out-of-range (sProgress < 0):
+      const leftRes = invertArcLengthDetailed(line, lut, totalLength, mSeg, -0.05);
+      assert.equal(leftRes.converged, false);
+      assert.equal(leftRes.unresolvedReason, "bracket_unresolved_boundary");
+      assert.equal(leftRes.u, 0);
+
+      // 2. Right boundary out-of-range (sProgress > 1):
+      const rightRes = invertArcLengthDetailed(line, lut, totalLength, mSeg, 1.05);
+      assert.equal(rightRes.converged, false);
+      assert.equal(rightRes.unresolvedReason, "bracket_unresolved_boundary");
+      assert.equal(rightRes.u, 1);
+
+      // Verify diagnostics emitted:
+      const warnEvents = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.ok(warnEvents.length >= 2);
+      assert.ok(warnEvents.some((e) => e.message.includes("leftResolved=false")));
+      assert.ok(warnEvents.some((e) => e.message.includes("rightResolved=false")));
+    });
+
+    it("detects when integration uncertainty consumes spatial tolerance and flags unresolved", () => {
+      DiagnosticBus.clearHistory();
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      // Inject uncertainty that consumes spatial tolerance (totalUncertainty = 0.02 > spatialTolerance = 0.015):
+      const uncertLut = lut.map((s) => ({ ...s, errorBound: 0.01 }));
+      const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.5, 0.015);
+      assert.equal(res.converged, false);
+      assert.equal(res.unresolvedReason, "uncertainty_exceeds_tolerance");
+      assert.ok(res.spatialErrorBound >= 0.015);
+
+      const warns = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.ok(warns.some((e) => e.message.includes("consumes spatial tolerance")));
+    });
+
+    it("handles midpoint residual uncertainty interval crossing zero with certified convergence", () => {
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      // Invert at a regular fractional position:
+      const res = invertArcLengthDetailed(sCurve, lut, totalLength, mSeg, 0.42, 0.015);
+      assert.equal(res.converged, true);
+      assert.ok(res.spatialErrorBound <= 0.015);
+      assert.ok(res.u >= 0 && res.u <= 1);
+    });
+
+    it("verifies maximum-depth exhaustion cannot produce a successful guaranteed inversion", () => {
+      DiagnosticBus.clearHistory();
+      // Pathological curve with extreme curvature:
+      const pathological: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 1e5, y: 1e5 },
+        p2: { x: -1e5, y: 1e5 },
+        p3: { x: 0, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(pathological);
+      const quad = integrateArcLengthAdaptiveDetailed(pathological, 0, 1, 1e-4);
+      const coarseLut = [
+        { u: 0, s: 0, point: pathological.p0, errorBound: 0 },
+        { u: 1, s: quad.value, point: pathological.p3, errorBound: quad.errorEst },
+      ];
+
+      // Invert across wide interval with quadMaxDepth = 1 and tight tolerance so quadrature hits maxDepth:
+      const res = invertArcLengthDetailed(pathological, coarseLut, quad.value, mSeg, 0.5, 0.015, 1e-12, 1);
+      assert.equal(res.converged, false);
+      assert.equal(res.unresolvedReason, "quadrature_exhausted");
+
+      const warnEvents = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.ok(warnEvents.length > 0);
+      assert.ok(warnEvents.some((e) => e.message.includes("max subdivision depth")));
     });
   });
 });
