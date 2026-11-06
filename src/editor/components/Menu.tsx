@@ -3,6 +3,7 @@
 import React, {
   useRef,
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useMemo,
@@ -160,6 +161,7 @@ export const Menu: React.FC<MenuProps> = ({
   const itemsRef = useRef<MenuItemData[]>([]);
   const [subMenus, setSubMenus] = useState<Record<string, SubMenuData>>({});
   const activeSubRowRef = useRef<HTMLElement | null>(null);
+  const pendingSubIdRef = useRef<string | null>(null);
   const subTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Submenu registry
@@ -169,6 +171,7 @@ export const Menu: React.FC<MenuProps> = ({
 
   const unregisterSubMenu = useCallback((subId: string) => {
     setSubMenus((prev) => {
+      if (!(subId in prev)) return prev;
       const next = { ...prev };
       delete next[subId];
       return next;
@@ -350,11 +353,6 @@ export const Menu: React.FC<MenuProps> = ({
       const mm = menuRef.current;
       if (!mm) return;
 
-      if (subTimerRef.current) {
-        clearTimeout(subTimerRef.current);
-        subTimerRef.current = null;
-      }
-
       // A row inside the open flyout moves the flyout's own highlight. The parent row keeps its highlight
       // so the user can see which item the submenu belongs to.
       const inFlyout = !!sbm && sbm.contains(rowEl);
@@ -372,11 +370,26 @@ export const Menu: React.FC<MenuProps> = ({
       const subLive = sbm?.classList.contains("ll-open");
 
       if (subId) {
+        if (subTimerRef.current && pendingSubIdRef.current === subId && activeSubRowRef.current === rowEl) {
+          return;
+        }
+        if (subTimerRef.current) {
+          clearTimeout(subTimerRef.current);
+          subTimerRef.current = null;
+        }
+        pendingSubIdRef.current = subId;
+        activeSubRowRef.current = rowEl;
         const delay = subLive ? 60 : 80;
         subTimerRef.current = setTimeout(() => {
+          pendingSubIdRef.current = null;
           openSub(rowEl, subId);
         }, delay);
       } else {
+        pendingSubIdRef.current = null;
+        if (subTimerRef.current) {
+          clearTimeout(subTimerRef.current);
+          subTimerRef.current = null;
+        }
         if (subLive) {
           subTimerRef.current = setTimeout(() => {
             closeSub();
@@ -745,7 +758,7 @@ export const Menu: React.FC<MenuProps> = ({
   const variantWidth =
     variant === "wide" ? "ll:w-menu-wide" : variant === "context" ? "ll:w-menu-ctx" : "";
 
-  const activeSubData = activeSubId ? subMenus[activeSubId] : null;
+  const activeSubData = activeSubId ? subMenus[activeSubId] ?? null : null;
   const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
   const subSurfaceId = `ll-sub-${autoId.replace(/:/g, "")}`;
 
@@ -925,20 +938,25 @@ export const SubMenu: React.FC<SubMenuProps> = ({
 
   const labelText = typeof label === "string" ? label : "";
 
+  const unregisterRef = useRef(ctx?.unregisterSubMenu);
+  unregisterRef.current = ctx?.unregisterSubMenu;
+
   // Register submenu metadata and children with parent Menu
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!ctx || !rowRef.current) return;
-    const el = rowRef.current;
     ctx.registerSubMenu({
       id,
       label: labelText,
-      rowEl: el,
+      rowEl: rowRef.current,
       children,
     });
+  });
+
+  useEffect(() => {
     return () => {
-      ctx.unregisterSubMenu(id);
+      unregisterRef.current?.(id);
     };
-  }, [ctx, id, labelText, children]);
+  }, [id]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled || prefersReducedMotion()) return;
@@ -953,6 +971,11 @@ export const SubMenu: React.FC<SubMenuProps> = ({
   const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled || !ctx) return;
     ctx.hoverRow(e.currentTarget, id);
+  };
+
+  const handleClick = () => {
+    if (disabled || !ctx || !rowRef.current) return;
+    ctx.hoverRow(rowRef.current, id);
   };
 
   const isSubOpen = ctx?.openSubmenuId === id;
@@ -971,6 +994,7 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerEnter={handlePointerEnter}
+      onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
           ? "ll:opacity-45 ll:cursor-not-allowed ll:text-muted"
