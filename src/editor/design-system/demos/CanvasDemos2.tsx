@@ -8,9 +8,11 @@ import { ViewOptionsPopover } from "@/editor/shell/canvas-chrome/ViewOptionsPopo
 import { CanvasContextMenu } from "@/editor/shell/canvas-chrome/CanvasContextMenu";
 import { Rulers } from "@/editor/shell/canvas-chrome/Rulers";
 import { Artboard } from "@/editor/stage/Artboard";
+import { MotionPathOverlay } from "@/editor/stage/MotionPathOverlay";
 import { Button } from "@/editor/components/Button";
 import type { CanvasTool, ShapeTool, GridStyle, MotionFeel, AiState } from "@/editor/shell/canvas-chrome/types";
 import type { StageElement, StagePreset } from "@/editor/stage/types";
+import type { Clip, Layer } from "@/core/document/schema";
 
 /* =========================================================================
    1. TOOLBAR & ZOOM BAR DEMO (Design & Motion modes)
@@ -380,6 +382,164 @@ export function StageAndArtboardDemo() {
             onSelect={(id) => setSelectedIds(id ? [id] : [])}
             onHover={setHoveredId}
             snapGuides={true}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   7. MOTION PATH OVERLAY DEMO (Phase 69 Milestone 4)
+   ========================================================================= */
+export function MotionPathOverlayDemo() {
+  const [currentTime, setCurrentTime] = useState(0.85);
+  const [showTicks, setShowTicks] = useState(true);
+  const [showTangents, setShowTangents] = useState(true);
+  const [showPlayhead, setShowPlayhead] = useState(true);
+  const [zoom, setZoom] = useState(1);
+
+  const demoLayer: Layer = {
+    id: "demo-box",
+    name: "Hero Element",
+    archetype: "rectangle",
+    parentId: null,
+    children: [],
+    properties: {
+      "frame.x": 60,
+      "frame.y": 60,
+      "frame.width": 80,
+      "frame.height": 50,
+      "transform.x": 0,
+      "transform.y": 0,
+    },
+  };
+
+  const demoClip: Clip = {
+    id: "clip-demo",
+    layerId: "demo-box",
+    name: "CanvasArcMotion",
+    type: "entrance",
+    trigger: "mount",
+    duration: 2,
+    easing: "linear",
+    enabled: true,
+    tracks: [
+      {
+        id: "tx",
+        property: "transform.x",
+        keyframes: [
+          { id: "k0", time: 0, value: 0 },
+          { id: "k1", time: 1, value: 220 },
+          { id: "k2", time: 2, value: 440 },
+        ],
+      },
+      {
+        id: "ty",
+        property: "transform.y",
+        keyframes: [
+          { id: "ky0", time: 0, value: 0 },
+          { id: "ky1", time: 1, value: 160 },
+          { id: "ky2", time: 2, value: 20 },
+        ],
+      },
+    ],
+    spatialTrajectories: {
+      transform: {
+        id: "st-demo",
+        propertyGroup: "transform",
+        enabled: true,
+        waypoints: [
+          { id: "k0", time: 0, mode: "bezier", spatialOut: { x: 80, y: 100 } },
+          { id: "k1", time: 1, mode: "continuous", spatialIn: { x: -60, y: 40 }, spatialOut: { x: 60, y: -40 } },
+          { id: "k2", time: 2, mode: "linear" },
+        ],
+      },
+    },
+  };
+
+  const elements: Record<string, StageElement> = {
+    "demo-box": { id: "demo-box", x: 60, y: 60, width: 80, height: 50 },
+  };
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-6">
+      <div>
+        <h3 className="ll:text-lead ll:font-semibold ll:text-primary ll:font-sans">
+          Canvas &mdash; Motion Path Overlay (Phase 69)
+        </h3>
+        <p className="ll:text-small ll:text-secondary">
+          After Effects-style motion paths on the canvas: Catmull-Rom &amp; Bezier spline ribbon, velocity ticks (spacing communicates speed), keyframe waypoint handles, tangent control arms, and scrubbed playhead indicator.
+        </p>
+      </div>
+
+      {/* Interactive Controls Bar */}
+      <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-4 ll:p-3 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md">
+        <div className="ll:flex ll:items-center ll:gap-2">
+          <span className="ll:text-micro ll:font-mono ll:text-secondary">Scrub: {currentTime.toFixed(2)}s</span>
+          <input
+            type="range"
+            min={0}
+            max={2}
+            step={0.01}
+            value={currentTime}
+            onChange={(e) => setCurrentTime(parseFloat(e.target.value))}
+            className="ll:w-32 ll:accent-primary"
+            aria-label="Scrub playhead time"
+          />
+        </div>
+
+        <div className="ll:flex ll:items-center ll:gap-2">
+          <span className="ll:text-micro ll:font-mono ll:text-secondary">Zoom: {zoom}x</span>
+          <Button size="sm" variant={zoom === 0.75 ? "primary" : "secondary"} onClick={() => setZoom(0.75)}>0.75x</Button>
+          <Button size="sm" variant={zoom === 1 ? "primary" : "secondary"} onClick={() => setZoom(1)}>1x</Button>
+          <Button size="sm" variant={zoom === 1.5 ? "primary" : "secondary"} onClick={() => setZoom(1.5)}>1.5x</Button>
+        </div>
+
+        <div className="ll:flex ll:items-center ll:gap-2">
+          <Button size="sm" variant={showTicks ? "primary" : "secondary"} onClick={() => setShowTicks((v) => !v)}>
+            Ticks {showTicks ? "On" : "Off"}
+          </Button>
+          <Button size="sm" variant={showTangents ? "primary" : "secondary"} onClick={() => setShowTangents((v) => !v)}>
+            Tangents {showTangents ? "On" : "Off"}
+          </Button>
+          <Button size="sm" variant={showPlayhead ? "primary" : "secondary"} onClick={() => setShowPlayhead((v) => !v)}>
+            Playhead {showPlayhead ? "On" : "Off"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Canvas Viewport */}
+      <div className="ll:relative ll:h-80 ll:w-full ll:bg-surface-canvas ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+        <div
+          className="ll:absolute ll:inset-0 ll:transition-transform"
+          style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}
+        >
+          {/* Base Element Box */}
+          <div
+            className="ll:absolute ll:border ll:border-primary ll:rounded-sm ll:bg-surface-panel ll:flex ll:items-center ll:justify-center ll:text-micro ll:font-mono ll:text-secondary"
+            style={{
+              left: elements["demo-box"].x,
+              top: elements["demo-box"].y,
+              width: elements["demo-box"].width,
+              height: elements["demo-box"].height,
+            }}
+          >
+            Origin Box
+          </div>
+
+          {/* Motion Path Overlay */}
+          <MotionPathOverlay
+            selectedIds={["demo-box"]}
+            elements={elements}
+            layers={{ "demo-box": demoLayer }}
+            clips={{ [demoClip.id]: demoClip }}
+            currentTime={currentTime}
+            zoom={zoom}
+            fps={30}
+            showTicks={showTicks}
+            showTangents={showTangents}
+            showPlayhead={showPlayhead}
           />
         </div>
       </div>

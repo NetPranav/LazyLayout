@@ -63,6 +63,7 @@ import {
   ViewOptionsPopoverDemo,
   ContextMenusDemo,
   StageAndArtboardDemo,
+  MotionPathOverlayDemo,
 } from "./demos/CanvasDemos2";
 import {
   TopBarDemo,
@@ -189,6 +190,7 @@ type NavSectionId =
   | "view-options"
   | "rulers"
   | "stage-selection"
+  | "motion-paths"
   // Panels
   | "panel-section"
   | "property-row"
@@ -302,6 +304,7 @@ const CANVAS_NAV: readonly NavItem[] = [
   { id: "view-options", label: "ViewOptionsPopover" },
   { id: "rulers", label: "Rulers" },
   { id: "stage-selection", label: "Stage & Selection Handles" },
+  { id: "motion-paths", label: "Motion Path Overlay" },
 ];
 
 const PANELS_NAV: readonly NavItem[] = [
@@ -1402,6 +1405,7 @@ export function DesignSystemPage() {
             {activeSection === "view-options" && <ViewOptionsPopoverDemo />}
             {activeSection === "rulers" && <RulersDemo />}
             {activeSection === "stage-selection" && <StageSelectionDemo />}
+            {activeSection === "motion-paths" && <MotionPathOverlayDemo />}
 
             {/* 5. Panels & Details */}
             {activeSection === "panel-section" && <PanelSectionDemo />}
