@@ -692,7 +692,7 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
       const { lut, totalLength } = compileSegmentLut(sCurve);
 
       // Inject uncertainty that consumes spatial tolerance (totalUncertainty = 0.02 > spatialTolerance = 0.015):
-      const uncertLut = lut.map((s) => ({ ...s, errorBound: 0.01 }));
+      const uncertLut = lut.map((s) => ({ ...s, estimatedError: 0.01, errorBound: 0.01 }));
       const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.5, 0.015);
       assert.equal(res.converged, false);
       assert.equal(res.unresolvedReason, "uncertainty_exceeds_tolerance");
