@@ -10,6 +10,7 @@
 
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
+import { documentOrder } from "@/core/selection/selectionOps";
 import { getDefaultProps, type ArchetypeId, type PropValue } from "@/core/document/registry";
 import { dragBox, type DragBox, type DragDefaults, type DragKind, type DragModifiers } from "@/core/geometry/shapeDrag";
 import type { Point } from "@/core/viewport/camera";
@@ -58,18 +59,57 @@ export function drawBox(spec: CreationSpec, start: Point, current: Point, mods: 
   return dragBox(spec.kind, start, current, mods, dragDefaults, CLICK_SLOP / (zoom || 1));
 }
 
+/** Where a layer's own position starts on the page: the sum of its ancestors' positions (the page root is the origin). */
+function worldOrigin(layers: ReturnType<typeof getDocument>["layers"], id: string): { x: number; y: number } {
+  let x = 0;
+  let y = 0;
+  let cur = layers[id];
+  let guard = 0;
+  while (cur && cur.parentId !== null && guard++ < 1000) {
+    const parent = layers[cur.parentId];
+    if (!parent || parent.parentId === null) break;
+    x += (parent.properties["frame.x"] as number) ?? 0;
+    y += (parent.properties["frame.y"] as number) ?? 0;
+    cur = parent;
+  }
+  return { x, y };
+}
+
+/**
+ * The innermost frame (a container with a size) that a page point is inside, with where it starts on the page, so a layer
+ * drawn inside a frame becomes that frame's child. Null when the point is on bare page.
+ */
+export function frameAt(point: { x: number; y: number }): { id: string; x: number; y: number } | null {
+  const layers = getDocument().layers;
+  const order = documentOrder(layers);
+  for (let i = order.length - 1; i >= 0; i--) {
+    const l = layers[order[i]];
+    if (!l || l.parentId === null || l.archetype !== "container" || l.visible === false || l.locked === true) continue;
+    const w = l.properties["frame.width"];
+    const h = l.properties["frame.height"];
+    if (typeof w !== "number" || typeof h !== "number") continue; // the sample sections have no box of their own
+    const o = worldOrigin(layers, l.id);
+    const x = o.x + ((l.properties["frame.x"] as number) ?? 0);
+    const y = o.y + ((l.properties["frame.y"] as number) ?? 0);
+    if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) return { id: l.id, x, y };
+  }
+  return null;
+}
+
 /**
  * Makes the layer a drag describes, absolutely positioned in the page (the document's top-level frame; its children are
  * placed in the artboard's own pixels). One document command: one undo step. Returns the new layer's id.
  */
 export function createLayerFromBox(spec: CreationSpec, box: DragBox): string {
   const roots = Object.values(getDocument().layers).filter((l) => l.parentId === null);
-  const parentId = roots[0]?.id ?? null;
+  // Drawn inside a frame, it belongs to that frame (and is placed from the frame's corner); on bare page it belongs to the page.
+  const inside = frameAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+  const parentId = inside?.id ?? roots[0]?.id ?? null;
   const props: Record<string, PropValue> = {
     ...getDefaultProps(spec.archetype),
     positioning: "absolute",
-    "frame.x": Math.round(box.x * 100) / 100,
-    "frame.y": Math.round(box.y * 100) / 100,
+    "frame.x": Math.round((box.x - (inside?.x ?? 0)) * 100) / 100,
+    "frame.y": Math.round((box.y - (inside?.y ?? 0)) * 100) / 100,
   };
   if (spec.archetype === "text") {
     // A click makes auto-width text; a drag makes a text box of the dragged size. It has words from the start, so it shows at once.
