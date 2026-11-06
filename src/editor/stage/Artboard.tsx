@@ -7,6 +7,7 @@ import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
+import { MotionPathOverlay } from "./MotionPathOverlay";
 import { EngineLayer } from "./EngineLayer";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
@@ -447,6 +448,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
         onStartMove={onStartMove}
         onStartResize={onStartResize}
         zoom={zoomScale}
+      />
+
+      {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
+      <MotionPathOverlay
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+        zoom={zoomScale}
+        mode={mode}
       />
 
       {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}

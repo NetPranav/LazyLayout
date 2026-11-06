@@ -1,6 +1,7 @@
 export { Stage } from "./Stage";
 export { Artboard } from "./Artboard";
 export { TransformOverlay } from "./TransformOverlay";
+export { MotionPathOverlay, type MotionPathOverlayProps } from "./MotionPathOverlay";
 export { useStageTransform } from "./useStageTransform";
 export { SAMPLE_STAGE_ELEMENTS } from "./sampleData";
 export {

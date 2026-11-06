@@ -219,6 +219,15 @@ export const TrackSchema = z
     keyframes: z.array(KeyframeSchema),
   })
   .superRefine((track, ctx) => {
+    // Unique keyframe IDs within a track
+    const seenIds = new Set<string>();
+    for (let i = 0; i < track.keyframes.length; i++) {
+      const kf = track.keyframes[i];
+      if (seenIds.has(kf.id)) {
+        ctx.addIssue({ code: "custom", path: ["keyframes", i, "id"], message: `Duplicate keyframe ID: ${kf.id}` });
+      }
+      seenIds.add(kf.id);
+    }
     // Sorted by time. Two keyframes at one time are an instant jump: the later one holds from then on.
     for (let i = 1; i < track.keyframes.length; i++) {
       if (track.keyframes[i].time < track.keyframes[i - 1].time) {
@@ -310,6 +319,35 @@ export const ScrollTriggerSchema = z.object({
 
 export const PLAY_DIRECTIONS = ["normal", "reverse", "alternate", "alternate-reverse"] as const;
 
+// ---------------------------------------------------------------------------
+// Spatial Motion Paths (ROADMAP Phase 69)
+// ---------------------------------------------------------------------------
+
+export const SpatialControlPointSchema = z.strictObject({
+  x: z.number().describe("Relative delta X in canvas px from waypoint coordinate"),
+  y: z.number().describe("Relative delta Y in canvas px from waypoint coordinate"),
+});
+
+export const SpatialModeSchema = z.enum(["linear", "bezier", "continuous", "auto"]);
+
+export const SpatialWaypointSchema = z.strictObject({
+  id: Id,                                               // Stable waypoint ID
+  time: z.number().min(0).describe("Seconds from clip start"),
+  spatialIn: SpatialControlPointSchema.optional(),       // Incoming tangent handle
+  spatialOut: SpatialControlPointSchema.optional(),      // Outgoing tangent handle
+  mode: SpatialModeSchema.optional(),                   // If absent or "linear", evaluates as scalar linear
+  handleStyle: z.enum(["symmetric", "aligned", "broken"]).optional(),
+  ease: EasingSchema.optional().describe("Authoritative temporal easing along the outgoing 2D segment"),
+  hold: z.boolean().optional().describe("Hold spatial position until next waypoint"),
+});
+
+export const SpatialTrajectorySchema = z.strictObject({
+  id: Id,
+  propertyGroup: z.literal("transform").describe("Extensible to future 2D/3D properties"),
+  enabled: z.boolean().default(true),
+  waypoints: z.array(SpatialWaypointSchema),
+});
+
 export const ClipSchema = z
   .object({
     id: Id,
@@ -330,6 +368,7 @@ export const ClipSchema = z
     scrollTrigger: ScrollTriggerSchema.optional(),
     stagger: StaggerSchema.optional(),
     tracks: z.array(TrackSchema),
+    spatialTrajectories: z.record(z.string(), SpatialTrajectorySchema).optional(),
   })
   .superRefine((clip, ctx) => {
     clip.tracks.forEach((track, t) =>
@@ -531,3 +570,7 @@ export type LayerState = z.infer<typeof StateSchema>;
 export type Transition = z.infer<typeof TransitionSchema>;
 export type Behaviour = z.infer<typeof BehaviourSchema>;
 export type TouchBehaviour = z.infer<typeof TouchBehaviourSchema>;
+export type SpatialControlPoint = z.infer<typeof SpatialControlPointSchema>;
+export type SpatialMode = z.infer<typeof SpatialModeSchema>;
+export type SpatialWaypoint = z.infer<typeof SpatialWaypointSchema>;
+export type SpatialTrajectory = z.infer<typeof SpatialTrajectorySchema>;

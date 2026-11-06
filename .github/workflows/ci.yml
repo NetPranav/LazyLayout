@@ -8,7 +8,12 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -58,11 +63,18 @@ jobs:
 
   # ROADMAP Phase 4.1 — the Phase 3 and Phase 4 browser gates, in CI, on
   # every push/PR, on Chromium, Firefox and WebKit (playwright.config.ts).
-  e2e:
+  # Run in parallel across browsers to reduce wall-clock execution time.
+  e2e-matrix:
+    name: Browser E2E (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    # The suite passed 20 minutes at Phase 34 (three browsers, one worker); a job split by browser would change the
-    # check's name, which branch protection may require, so the limit goes up instead.
-    timeout-minutes: 75
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        browser:
+          - chromium
+          - firefox
+          - webkit
     steps:
       - uses: actions/checkout@v4
 
@@ -74,16 +86,39 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Configure APT timeouts
+        run: |
+          echo 'Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
 
-      - name: Browser E2E (builds and starts the app itself)
-        run: npx playwright test
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Upload Playwright report
-        if: ${{ !cancelled() }}
+      - name: Browser E2E (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }}
+
+      - name: Upload Playwright report (${{ matrix.browser }})
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}
           path: playwright-report/
           retention-days: 14
+
+  # Stable aggregate E2E status gate for branch protection and PR gating.
+  e2e:
+    name: E2E
+    needs: e2e-matrix
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Check browser E2E results
+        env:
+          E2E_RESULT: ${{ needs.e2e-matrix.result }}
+        run: |
+          if [ "$E2E_RESULT" != "success" ]; then
+            echo "One or more browser E2E jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All browser E2E jobs passed."
