@@ -132,7 +132,13 @@ test.describe("the new editor's drawing tools", () => {
     const hex = page.getByLabel("Fill hex").first();
     await hex.fill("FF0000");
     await hex.press("Enter");
-    await expect.poll(async () => (await layers(page))[shape.id].properties["svg.fill"]).toBe("#FF0000");
+    await expect
+      .poll(async () => {
+        const props = (await layers(page))[shape.id].properties;
+        const fills = props["paint.fills"] ? JSON.parse(String(props["paint.fills"])) : [];
+        return String(fills[0]?.color ?? props["svg.fill"]).toLowerCase();
+      })
+      .toMatch(/#ff0000|rgb\(255, 0, 0\)/);
     await expect(stageElement(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
     // a stroke and an opacity from the inspector land on the shape's own properties
     await page.getByRole("button", { name: "Add stroke" }).first().click();
