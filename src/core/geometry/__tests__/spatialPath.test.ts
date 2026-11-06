@@ -11,6 +11,7 @@ import {
   splitCubic,
   compileSegmentLut,
   invertArcLength,
+  integrateArcLengthAdaptiveDetailed,
   compileSpatialTrajectory,
   createSpatialPath,
   SpatialTrajectoryGeometry,
@@ -548,9 +549,103 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
         p2: { x: -1e5, y: 1e5 },
         p3: { x: 0, y: 0 },
       };
-      const result = compileSegmentLut(pathological);
-      // Extreme coordinates trigger deep subdivision
-      assert.ok(result.lut.length > 33);
+      // Test integrateArcLengthAdaptiveDetailed directly with low maxDepth:
+      const res = integrateArcLengthAdaptiveDetailed(pathological, 0, 1, 1e-12, 0, 2);
+      assert.equal(res.converged, false);
+      assert.ok(res.errorEst > 0);
+      assert.ok(res.value > 0);
+
+      const events = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.ok(events.length > 0);
+      assert.equal(events[0].severity, "warning");
+      assert.ok(events[0].message.includes("max subdivision depth"));
+    });
+
+    it("handles interior stationary point B'(0.5) = (0,0) with continuous inversion", () => {
+      // delta0 = (100, 0), delta1 = (-100, 0), delta2 = (100, 0)
+      // At u = 0.5: B'(0.5) = 0.75*(delta0 + 2*delta1 + delta2) = 0.75*(100 - 200 + 100) = (0, 0)
+      const stationaryCusp: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 100, y: 0 },
+        p2: { x: 0, y: 0 },
+        p3: { x: 100, y: 0 },
+      };
+      const derivMid = evaluateCubicDerivative(stationaryCusp, 0.5);
+      assert.ok(Math.hypot(derivMid.x, derivMid.y) < 1e-9, "Midpoint derivative must be 0");
+
+      const mSeg = computeSegmentMaxDerivative(stationaryCusp);
+      const { lut, totalLength } = compileSegmentLut(stationaryCusp);
+      assert.ok(totalLength > 50);
+
+      // Invert across the stationary point:
+      const uMid = invertArcLength(stationaryCusp, lut, totalLength, mSeg, 0.5);
+      assert.ok(!Number.isNaN(uMid));
+      assert.ok(Math.abs(uMid - 0.5) < 0.05);
+
+      for (const frac of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+        const u = invertArcLength(stationaryCusp, lut, totalLength, mSeg, frac);
+        assert.ok(!Number.isNaN(u));
+        assert.ok(u >= 0 && u <= 1);
+      }
+    });
+
+    it("handles nearly stationary micro-scale segments without division by zero", () => {
+      // Segment with tiny dimensions (total chord < 0.01 px)
+      const microSegment: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 0.001, y: 0.002 },
+        p2: { x: 0.003, y: 0.002 },
+        p3: { x: 0.005, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(microSegment);
+      const { lut, totalLength } = compileSegmentLut(microSegment);
+
+      assert.ok(totalLength < 0.02 && totalLength > 0);
+      for (const frac of [0.0, 0.25, 0.5, 0.75, 1.0]) {
+        const u = invertArcLength(microSegment, lut, totalLength, mSeg, frac);
+        assert.ok(!Number.isNaN(u));
+        assert.ok(u >= 0 && u <= 1);
+      }
+    });
+
+    it("strictly verifies interval root bracket validation and expansion under uncertainty", () => {
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      // Verify that every sample in the LUT carries an errorBound
+      for (const sample of lut) {
+        assert.ok(typeof sample.errorBound === "number");
+        assert.ok(sample.errorBound >= 0);
+      }
+
+      // Test a spectrum of target fractions:
+      for (let i = 1; i <= 20; i++) {
+        const frac = i / 20;
+        const u = invertArcLength(sCurve, lut, totalLength, mSeg, frac);
+        assert.ok(u >= 0 && u <= 1);
+
+        // Check residual against adaptive quadrature:
+        let low = 0;
+        let high = lut.length - 1;
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          if (lut[mid].u < u) low = mid + 1;
+          else high = mid - 1;
+        }
+        const idx = Math.max(0, low - 1);
+        const actualS = lut[idx].s + integrateArcLength(sCurve, lut[idx].u, u);
+        const targetS = frac * totalLength;
+        assert.ok(
+          Math.abs(actualS - targetS) < 0.015,
+          `Spatial error at frac=${frac} must be < 0.015 px`
+        );
+      }
     });
   });
 });
