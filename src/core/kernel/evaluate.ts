@@ -34,6 +34,7 @@ import { parseEasing } from "../document/motion";
 import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
+import { createSpatialPath, SpatialTrajectoryGeometry } from "../geometry/spatialPath";
 
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
@@ -101,13 +102,67 @@ interface CategorizedSample {
   props: ResolvedProps;
 }
 
-function sampleClip(clip: Clip, time: number): ResolvedProps {
+/**
+ * Cache for compiled spatial trajectory geometry keyed by Clip reference.
+ * Pure and garbage-collection safe: re-evaluates only when clip reference mutates.
+ */
+const spatialTrajectoryCache = new WeakMap<Clip, SpatialTrajectoryGeometry | null>();
+
+/**
+ * Retrieves or builds the compiled SpatialTrajectoryGeometry for a clip if spatial trajectory
+ * metadata exists with at least 2 waypoints. Returns null for purely scalar clips.
+ */
+export function getSpatialTrajectory(
+  clip: Clip,
+  fallbackProps?: Record<string, PropValue>
+): SpatialTrajectoryGeometry | null {
+  const cached = spatialTrajectoryCache.get(clip);
+  if (cached !== undefined) return cached;
+
+  const spatialWaypoints = clip.spatialTrajectories?.transform?.waypoints;
+  if (!spatialWaypoints || spatialWaypoints.length < 2) {
+    spatialTrajectoryCache.set(clip, null);
+    return null;
+  }
+
+  const geom = createSpatialPath(clip, fallbackProps);
+  spatialTrajectoryCache.set(clip, geom);
+  return geom;
+}
+
+/**
+ * Samples a clip at clip-local time `time`.
+ * Preserves 100% scalar backward compatibility for clips without spatial metadata.
+ * For clips with spatial trajectories, evaluates the 2D spatial path and maps to transform.x / transform.y.
+ */
+export function sampleClip(clip: Clip, time: number, fallbackProps?: Record<string, PropValue>): ResolvedProps {
   const props: ResolvedProps = {};
   for (const track of clip.tracks) {
     if (track.muted) continue;
     const value = sampleTrack(track, time);
     if (value !== undefined) props[track.property] = value;
   }
+
+  // Phase 69 Milestone 3: Single evaluation authority for 2D spatial motion paths
+  const spatialWaypoints = clip.spatialTrajectories?.transform?.waypoints;
+  if (spatialWaypoints && spatialWaypoints.length >= 2) {
+    const trackX = clip.tracks.find((t) => t.property === "transform.x");
+    const trackY = clip.tracks.find((t) => t.property === "transform.y");
+    const xMuted = trackX?.muted ?? false;
+    const yMuted = trackY?.muted ?? false;
+
+    if (!xMuted || !yMuted) {
+      const geom = getSpatialTrajectory(clip, fallbackProps);
+      if (geom) {
+        const point = geom.evaluateAtTime(time);
+        if (point !== null) {
+          if (!xMuted) props["transform.x"] = point.x;
+          if (!yMuted) props["transform.y"] = point.y;
+        }
+      }
+    }
+  }
+
   return props;
 }
 
@@ -182,12 +237,12 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
       if (clip.layerId !== layerId || !clip.enabled) continue;
       const driven = inputs.scrollClipTime?.[clip.id];
       if (driven !== undefined) {
-        samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, Math.min(clip.duration, Math.max(0, driven))) });
+        samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, Math.min(clip.duration, Math.max(0, driven)), layer.properties) });
         continue;
       }
       const timing = clipTimeInComposition(comp, clip, t);
       if (!timing) continue;
-      samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, timing.time) });
+      samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, timing.time, layer.properties) });
     }
     resolved = mergeByPriority(resolved, samples);
   }
