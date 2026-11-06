@@ -21,13 +21,28 @@ const SHAPE_KEY: Record<string, string> = {
   "appearance.border.width": "svg.strokeWidth",
 };
 
+/** A rectangle's corners live under `shape.cornerRadius` (it is an SVG shape, so the box radius is not what draws). */
+const RECT_KEY: Record<string, string> = {
+  "appearance.radius": "shape.cornerRadius",
+  borderRadius: "shape.cornerRadius",
+  "appearance.radiusTopLeft": "shape.cornerRadius.topLeft",
+  "appearance.radiusTopRight": "shape.cornerRadius.topRight",
+  "appearance.radiusBottomRight": "shape.cornerRadius.bottomRight",
+  "appearance.radiusBottomLeft": "shape.cornerRadius.bottomLeft",
+};
+
 /** How a border style is written on an SVG layer. */
 const DASH: Record<string, string> = { solid: "none", dashed: "8 6", dotted: "1 6" };
 
+/** Some layers are painted by something other than the box colour: shapes by `svg.*`, text by its glyph colour. */
+export const isRemapped = (layer: Pick<Layer, "archetype">): boolean => isSvgPainted(layer) || layer.archetype === "text";
+
 /** The property to read or write for `key` on this layer. */
 export function propertyFor(layer: Pick<Layer, "archetype">, key: string): string {
+  if (layer.archetype === "text") return key === "appearance.background.color" || key === "backgroundColor" ? "typography.color" : key;
   if (!isSvgPainted(layer)) return key;
   if (key === "appearance.border.style") return "svg.strokeDasharray";
+  if (layer.archetype === "rectangle" && RECT_KEY[key]) return RECT_KEY[key];
   return SHAPE_KEY[key] ?? key;
 }
 

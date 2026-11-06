@@ -198,7 +198,7 @@ export function useStageTransform({
       const gesture = gestureRef.current;
       if (!gesture) return;
 
-      const scale = zoom > 0 ? (zoom / STAGE_CONSTANTS.defaultZoom) * 0.9 : 1;
+      const scale = zoom > 0 ? zoom : 1;
       const rawDx = (e.clientX - gesture.startClientX) / (scale > 0 ? scale : 1);
       const rawDy = (e.clientY - gesture.startClientY) / (scale > 0 ? scale : 1);
 

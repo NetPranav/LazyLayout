@@ -43,7 +43,7 @@ export const STAGE_CONSTANTS = {
   minElementSize: 16,
 
   // Zoom
-  defaultZoom: 0.59,
+  defaultZoom: 0.5,
   zoomScaleMultiplier: 0.9 / 0.59,
 
   // Sample elements layout from prototype
@@ -88,24 +88,24 @@ export const STAGE_PRESETS: readonly StagePresetDefinition[] = [
     label: "Desktop",
     width: 1440,
     height: 900,
-    artboardWidth: 600,
-    artboardHeight: 380,
+    artboardWidth: 1440,
+    artboardHeight: 900,
   },
   {
     id: "768",
     label: "Tablet",
     width: 768,
     height: 1024,
-    artboardWidth: 480,
-    artboardHeight: 440,
+    artboardWidth: 768,
+    artboardHeight: 1024,
   },
   {
     id: "375",
     label: "Mobile",
     width: 375,
     height: 812,
-    artboardWidth: 320,
-    artboardHeight: 480,
+    artboardWidth: 375,
+    artboardHeight: 812,
   },
 ] as const;
 

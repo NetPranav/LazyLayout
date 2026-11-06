@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useLayers } from "@/core/store/useDocumentStore";
+import { effectItemsOf, writeEffectItems } from "../hooks/effectsModel";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
@@ -43,24 +45,33 @@ const numberField = (label: string, value: number, onChange: (v: number) => void
 
 export const EffectsSection: React.FC<EffectsSectionProps> = ({
   onAddEffectRef,
+  selectedId,
+  selectedIds,
   className = "",
 }) => {
-  const [effects, setEffects] = useState<EffectItem[]>([]);
+  useLayers(); // re-read the rows when the document changes (undo, redo, another panel)
+  const ids = selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
+  const primary = selectedId ?? ids[0] ?? null;
+  const stored = effectItemsOf(primary);
+  // Hidden blurs are not stored, so their rows live here until the selection changes.
+  const [parked, setParked] = useState<EffectItem[]>([]);
+  const [parkedFor, setParkedFor] = useState(primary);
+  if (parkedFor !== primary) {
+    setParkedFor(primary);
+    setParked([]);
+  }
+  const effects: EffectItem[] = [...stored, ...parked];
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
+  const commit = (next: EffectItem[]) => {
+    if (!primary) return;
+    const live = next.filter((e) => !(e.hidden && (e.type === "layer-blur" || e.type === "background-blur")));
+    setParked(next.filter((e) => e.hidden && (e.type === "layer-blur" || e.type === "background-blur")));
+    writeEffectItems(ids, live, primary);
+  };
+
   const handleAddEffect = () => {
-    const newId = `effect-${Date.now()}`;
-    const newEffect: EffectItem = {
-      id: newId,
-      type: "drop-shadow",
-      hex: "000000",
-      x: 0,
-      y: 4,
-      blur: 8,
-      spread: 0,
-      amount: 8,
-    };
-    setEffects((prev) => [...prev, newEffect]);
+    commit([...effects, { id: "shadow-new", type: "drop-shadow", hex: "000000", x: 0, y: 4, blur: 8, spread: 0, amount: 8 }]);
   };
 
   useEffect(() => {
@@ -70,18 +81,17 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
   });
 
   const updateEffect = (id: string, patch: Partial<EffectItem>) => {
-    setEffects((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    if (patch.type) setActivePopoverId(null); // a changed kind moves the row; close its popover
+    commit(effects.map((e) => (e.id === id ? { ...e, ...patch, ...(patch.type && (patch.type === "layer-blur" || patch.type === "background-blur") && e.amount === 0 ? { amount: 8 } : {}) } : e)));
   };
 
   const handleRemoveEffect = (id: string) => {
-    setEffects((prev) => prev.filter((e) => e.id !== id));
+    commit(effects.filter((e) => e.id !== id));
     if (activePopoverId === id) setActivePopoverId(null);
   };
 
   const handleToggleHide = (id: string) => {
-    setEffects((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, hidden: !e.hidden } : e))
-    );
+    commit(effects.map((e) => (e.id === id ? { ...e, hidden: !e.hidden } : e)));
   };
 
   if (effects.length === 0) {

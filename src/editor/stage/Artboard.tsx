@@ -8,6 +8,7 @@ import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
 import { EngineLayer } from "./EngineLayer";
+import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
@@ -55,6 +56,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
     elementId: string;
   } | null>(null);
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
+  // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
+  const [editingText, setEditingText] = useState<string | null>(null);
 
   const activePresetId = controlledPreset !== undefined ? controlledPreset : internalPreset;
   const currentPresetDef =
@@ -66,8 +69,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
     propHeight !== undefined ? propHeight : currentPresetDef.artboardHeight;
 
   // Scale computation: prototype uses `zoom / .59 * .9`
-  const zoomScale =
-    zoom > 0 ? (zoom / STAGE_CONSTANTS.defaultZoom) * 0.9 : 1;
+  const zoomScale = zoom > 0 ? zoom : 1;
 
   const handleSelectPreset = (newPreset: StagePreset) => {
     setInternalPreset(newPreset);
@@ -249,7 +251,16 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 width: el.width,
                 height: el.height,
               }}
-              onPointerDown={(e) => onStartMove?.(el.id, e)}
+              onDoubleClick={(e) => {
+                if (layer && (layer.archetype === "text" || layer.archetype === "button") && !layer.locked) {
+                  e.stopPropagation();
+                  setEditingText(el.id);
+                }
+              }}
+              onPointerDown={(e) => {
+                if (editingText === el.id) return;
+                onStartMove?.(el.id, e);
+              }}
               onMouseEnter={() => onHover(el.id)}
               onMouseLeave={() => onHover(null)}
               onClick={(e) => {
@@ -269,6 +280,36 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
             >
               {engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
+              {editingText === el.id && layer && (
+                <textarea
+                  autoFocus
+                  aria-label="Edit text"
+                  data-testid="stage-text-editor"
+                  defaultValue={String(layer.properties[layer.archetype === "button" ? "content.label" : "content.text"] ?? "")}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
+                  }}
+                  onBlur={(e) => {
+                    const value = e.currentTarget.value;
+                    setEditingText(null);
+                    const key = layer.archetype === "button" ? "content.label" : "content.text";
+                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([el.id], { [key]: value }, "Edit text");
+                  }}
+                  className="ll:absolute ll:inset-0 ll:w-full ll:h-full ll:m-0 ll:p-0 ll:border-0 ll:outline-none ll:resize-none ll:overflow-hidden ll:bg-white/90"
+                  style={{
+                    font: "inherit",
+                    fontFamily: String(layer.properties["typography.fontFamily"] ?? "inherit"),
+                    fontSize: Number(layer.properties["typography.fontSize"] ?? 16),
+                    fontWeight: Number(layer.properties["typography.fontWeight"] ?? 400),
+                    lineHeight: Number(layer.properties["typography.lineHeight"] ?? 1.2),
+                    color: String(layer.properties["typography.color"] ?? "#000"),
+                    textAlign: (layer.properties["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
+                  }}
+                />
+              )}
 
               {!engineDrawn && el.type === "text" && (
                 <>
