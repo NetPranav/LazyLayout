@@ -25,6 +25,7 @@ function useDrag(onMove: (x: number, y: number) => void) {
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
       const el = e.currentTarget;
+      el.closest<HTMLElement>("[data-color-picker]")?.focus(); // preventDefault keeps the browser from focusing it, and Escape needs focus
       el.setPointerCapture(e.pointerId);
       const at = (ev: { clientX: number; clientY: number }) => {
         const r = el.getBoundingClientRect();

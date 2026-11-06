@@ -57,7 +57,7 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
     if (drawn) {
       const cs = getComputedStyle(drawn);
       for (const prop of ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "color", "textAlign", "textTransform", "whiteSpace", "overflowWrap", "textDecorationLine", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
-        el.style[prop] = cs[prop];
+        if (cs[prop]) el.style[prop] = cs[prop]; // (Firefox leaves some shorthands empty: keep the explicit value then)
       }
       drawn.style.visibility = "hidden";
     }
