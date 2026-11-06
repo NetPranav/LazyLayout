@@ -40,6 +40,8 @@ export interface SelectProps {
   className?: string;
   width?: number | string;
   "aria-label"?: string;
+  /** A tooltip for the control: what it does, in a sentence. */
+  title?: string;
   searchable?: boolean;
   mixed?: boolean;
   id?: string;
@@ -133,6 +135,7 @@ export const Select: React.FC<SelectProps> = ({
   className = "",
   width,
   "aria-label": ariaLabel,
+  title,
   searchable,
   mixed = false,
   id,
@@ -813,6 +816,7 @@ export const Select: React.FC<SelectProps> = ({
           aria-expanded={isOpen}
           aria-controls={listboxId}
           aria-label={ariaLabel ?? label}
+          title={title}
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}

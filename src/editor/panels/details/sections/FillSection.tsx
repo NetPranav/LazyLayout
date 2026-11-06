@@ -5,6 +5,7 @@ import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import type { InspectorSectionProps, FillItem } from "../types";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
@@ -82,9 +83,10 @@ export const FillSection: React.FC<FillSectionProps> = ({
     (getValue?.("appearance.background.color") as string) ||
     (getValue?.("backgroundColor") as string) ||
     "FFFFFF";
-  const cleanHex = initialHex.replace(/^#/, "").toUpperCase();
-  const rawFo = getValue?.("fill.opacity");
-  const initialFo = typeof rawFo === "number" ? rawFo : 100;
+  // The colour may carry its own alpha (rgba): the row shows the six digits and the percentage separately.
+  const parsedInitial = parseCss(String(initialHex));
+  const cleanHex = parsedInitial ? toHex(parsedInitial).replace(/^#/, "").slice(0, 6).toUpperCase() : String(initialHex).replace(/^#/, "").toUpperCase();
+  const initialFo = parsedInitial ? Math.round(parsedInitial.a * 100) : 100;
 
   useLayers(); // re-read the fills when the document changes
   const engineIds = (selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : []).filter(Boolean) as string[];
@@ -115,9 +117,13 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const syncPrimaryToStore = (updatedFills: FillItem[]) => {
     const visibleFill = updatedFills.find((f) => !f.hidden);
     if (visibleFill && visibleFill.type === "solid") {
-      onUpdateProp?.("appearance.background.color", `#${visibleFill.hex}`);
-      onUpdateProp?.("backgroundColor", `#${visibleFill.hex}`);
-      onUpdateProp?.("fill.opacity", visibleFill.opacity);
+      // A layer without a fill list keeps its opacity inside the colour itself (rgba), so the percentage shows on the canvas.
+      const h = visibleFill.hex.padEnd(6, "0");
+      const css =
+        visibleFill.opacity < 100
+          ? `rgba(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}, ${(visibleFill.opacity / 100).toFixed(2)})`
+          : `#${visibleFill.hex}`;
+      onUpdateProp?.("appearance.background.color", css);
     }
   };
 
@@ -322,10 +328,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
               />
               <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
                 <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
-                  <span
-                    className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-                    style={{ backgroundColor: `#${fill.hex}` }}
-                  />
+                  <ColorSwatch label="Fill colour picker" hex={fill.hex} onChange={(h) => handleUpdateFill(fill.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
                   <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
                     <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
                     <input

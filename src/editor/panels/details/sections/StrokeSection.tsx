@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import type { InspectorSectionProps, StrokeItem } from "../types";
 
 export interface StrokeSectionProps extends InspectorSectionProps {
@@ -25,11 +26,16 @@ function strokeFromDocument(get: InspectorSectionProps["getValue"]): StrokeItem[
   const color = get?.("appearance.border.color");
   const style = get?.("appearance.border.style");
   const hex = typeof color === "string" ? color.replace(/^#/, "").slice(0, 6).toUpperCase() : "444444";
-  return [{ id: "stroke-doc", hex: hex || "444444", width, style: style === "dashed" || style === "dotted" ? style : "solid", sides: "all" }];
+  const raw = get?.("stroke.sides");
+  const w = typeof raw === "string" ? raw.trim().split(/\s+/).map(Number) : [];
+  const at = w.length === 4 ? w.findIndex((n) => n > 0) : -1;
+  const sides = at >= 0 && w.filter((n) => n > 0).length === 1 ? (["top", "right", "bottom", "left"] as const)[at] : "all";
+  return [{ id: "stroke-doc", hex: hex || "444444", width, style: style === "dashed" || style === "dotted" ? style : "solid", sides }];
 }
 
 export const StrokeSection: React.FC<StrokeSectionProps> = ({
   selectedId,
+  layer,
   getValue,
   onUpdateProp,
   onAddStrokeRef,
@@ -52,6 +58,21 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
     const visible = updatedStrokes.find((s) => !s.hidden);
+    // One side only: the width goes on that side ("top right bottom left") and the rest are 0. Boxes and rectangles only.
+    if (layer && ["rectangle", "container", "button", "badge", "fab", "generic", "form"].includes(layer.archetype)) {
+      const w = visible ? visible.width : 0;
+      const sides =
+        !visible || visible.sides === "all"
+          ? null
+          : visible.sides === "top"
+            ? `${w} 0 0 0`
+            : visible.sides === "right"
+              ? `0 ${w} 0 0`
+              : visible.sides === "bottom"
+                ? `0 0 ${w} 0`
+                : `0 0 0 ${w}`;
+      onUpdateProp?.("stroke.sides", sides);
+    }
     if (visible) {
       onUpdateProp?.("appearance.border.color", `#${visible.hex}`);
       onUpdateProp?.("appearance.border.width", visible.width);
@@ -209,10 +230,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             <RowSettingsPopover isOpen={isOpen} title="Stroke" onClose={() => setActivePopoverId(null)}>
               <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
                 <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
-                  <span
-                    className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-                    style={{ backgroundColor: `#${stroke.hex}` }}
-                  />
+                  <ColorSwatch label="Stroke colour picker" hex={stroke.hex} onChange={(h) => handleUpdateStroke(stroke.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
                   <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
                     <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
                     <input

@@ -354,6 +354,8 @@ export function seedPrototypeDocument(): void {
 
   // Insert complete layers in one command transaction
   documentCommands.insertLayers(seedLayers, [], "Seed prototype document");
+  // The page is as big as the desktop artboard, so aligning a layer to its page (centre, edges) means the page the designer sees.
+  if (rootId) documentCommands.updateProps(rootId, { "frame.width": 1440, "frame.height": 900 });
 
   // Also ensure the active page rootElementId points to root container or hero
   const projectState = useProjectStore.getState();

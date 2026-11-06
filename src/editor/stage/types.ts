@@ -14,6 +14,9 @@ export interface StageElement {
   y: number;
   width: number;
   height: number;
+  /** Where the layer's parent starts on the page; `x` and `y` are page positions, the document keeps them relative to this. */
+  ox?: number;
+  oy?: number;
   rotation?: number;
   title?: string;
   subtitle?: string;
@@ -47,6 +50,8 @@ export interface DrawPreview {
   width: number;
   height: number;
   rotation: number;
+  /** What is being drawn, so the preview has its outline (an ellipse is round, a star pointed). */
+  archetype?: string;
 }
 
 export interface StageProps {

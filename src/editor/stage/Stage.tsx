@@ -17,6 +17,7 @@ import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types
 import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from "./createFromDrag";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
+import { documentOrder } from "@/core/selection/selectionOps";
 
 export const Stage: React.FC<StageProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
@@ -85,7 +86,21 @@ export const Stage: React.FC<StageProps> = ({
     if (!storeLayers || Object.keys(storeLayers).length === 0) return {};
 
     const result: Record<string, StageElement> = {};
-    const layerEntries = Object.values(storeLayers);
+    // Back to front, the way the document stacks them (a parent, then its children in order): the canvas paints in this order, so Arrange moves what you see.
+    const layerEntries = documentOrder(storeLayers).map((id) => storeLayers[id]).filter(Boolean);
+    // Where a layer's parent starts on the page: the sum of its ancestors' positions (the page itself is the origin).
+    const originOf = (id: string): { x: number; y: number } => {
+      let x = 0;
+      let y = 0;
+      let cur = storeLayers[id]?.parentId ? storeLayers[storeLayers[id].parentId as string] : undefined;
+      let guard = 0;
+      while (cur && cur.parentId !== null && guard++ < 1000) {
+        x += (cur.properties["frame.x"] as number) ?? 0;
+        y += (cur.properties["frame.y"] as number) ?? 0;
+        cur = storeLayers[cur.parentId];
+      }
+      return { x, y };
+    };
 
     // Filter out root containers and structural sections from rendering as individual canvas boxes
     const IGNORED_SECTION_IDS = new Set([
@@ -115,8 +130,9 @@ export const Stage: React.FC<StageProps> = ({
       if (IGNORED_SECTION_IDS.has(l.id)) return;
       if (IGNORED_STAGE_IDS.has(l.id)) return;
 
-      const x = (l.properties["frame.x"] as number) ?? 0;
-      const y = (l.properties["frame.y"] as number) ?? 0;
+      const origin = originOf(l.id);
+      const x = ((l.properties["frame.x"] as number) ?? 0) + origin.x;
+      const y = ((l.properties["frame.y"] as number) ?? 0) + origin.y;
       const width =
         (l.properties["frame.width"] as number) ??
         (l.archetype === "button" ? 112 : 200);
@@ -144,6 +160,8 @@ export const Stage: React.FC<StageProps> = ({
             : "container",
         x,
         y,
+        ox: origin.x,
+        oy: origin.y,
         width,
         height,
         title: (l.properties["content.text"] as string) || l.name,
@@ -369,7 +387,9 @@ export const Stage: React.FC<StageProps> = ({
         const { camera, setCamera } = useCameraStore.getState();
         setCamera({ ...camera, zoom: clampZoom(camera.zoom * Math.exp(-e.deltaY * 0.01)) });
       } else if (wheelPans) {
-        setDragPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+        // Shift with the wheel moves sideways (browsers that send it as a vertical wheel are turned around here)
+        const sideways = e.shiftKey && e.deltaX === 0;
+        setDragPan((p) => ({ x: p.x - (sideways ? e.deltaY : e.deltaX), y: p.y - (sideways ? 0 : e.deltaY) }));
       }
     };
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -385,6 +405,8 @@ export const Stage: React.FC<StageProps> = ({
     | null
   >(null);
   const justDragged = useRef(false);
+  const rightPan = useRef(false);
+  const rightMoved = useRef(false);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const toolCursor = activeTool === "hand" ? "grab" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
@@ -399,6 +421,15 @@ export const Stage: React.FC<StageProps> = ({
 
   const handleToolPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     justDragged.current = false;
+    rightMoved.current = false;
+    if (e.button === 2) {
+      // Right button on empty canvas drags the canvas; a plain right-click (no drag) still opens the menu.
+      if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
+      gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
+      rightPan.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      return;
+    }
     if (e.button !== 0) return;
     if (activeTool === "hand") {
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
@@ -411,7 +442,7 @@ export const Stage: React.FC<StageProps> = ({
     if (!spec) return;
     if ((e.target as HTMLElement).closest("button,[role=menu]")) return; // the canvas size label and its menu keep working
     const at = toArtboard(e.clientX, e.clientY);
-    if (!at || at.x < 0 || at.y < 0 || at.x > presetDef.artboardWidth || at.y > presetDef.artboardHeight) return; // only on the artboard
+    if (!at) return; // anywhere on the canvas: a frame or shape can start outside the page too
     gesture.current = { kind: "create", spec, start: { x: at.x, y: at.y } };
     e.currentTarget.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -422,13 +453,14 @@ export const Stage: React.FC<StageProps> = ({
     const g = gesture.current;
     if (!g) return;
     if (g.kind === "pan") {
+      if (rightPan.current && Math.hypot(e.clientX - g.startX, e.clientY - g.startY) > 3) rightMoved.current = true;
       setDragPan({ x: g.from.x + e.clientX - g.startX, y: g.from.y + e.clientY - g.startY });
       return;
     }
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
     const b = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
-    setDrawPreview({ x: b.x, y: b.y, width: b.width, height: b.height, rotation: b.rotation });
+    setDrawPreview({ x: b.x, y: b.y, width: b.width, height: b.height, rotation: b.rotation, archetype: g.spec.archetype });
   };
 
   const handleToolPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -437,7 +469,10 @@ export const Stage: React.FC<StageProps> = ({
     if (!g) return;
     justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    if (g.kind === "pan") return;
+    if (g.kind === "pan") {
+      rightPan.current = false;
+      return;
+    }
     setDrawPreview(null);
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
@@ -481,6 +516,10 @@ export const Stage: React.FC<StageProps> = ({
       data-testid="stage-viewport"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
       style={{ cursor: toolCursor }}
+      onContextMenu={(e) => {
+        if (rightMoved.current) e.preventDefault(); // that was a canvas drag, not a menu request
+        rightMoved.current = false;
+      }}
       onPointerDownCapture={handleToolPointerDown}
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}

@@ -143,6 +143,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
         size="sm"
         label="Blend"
         aria-label="Blend mode"
+        title="How this layer mixes with what is under it: Multiply darkens, Screen lightens, Overlay boosts contrast, Normal just covers."
         value={blendMode}
         options={BLEND_MODE_OPTIONS}
         onChange={(v) => onUpdateProp?.("appearance.blendMode", v)}
@@ -154,6 +155,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
           size="sm"
           label="Cursor"
           aria-label="Cursor"
+          title="The mouse cursor shown over this layer in the finished page (Pointer for links, Text for text, Move for draggable things)."
           value={cursor}
           options={CURSOR_OPTIONS}
           onChange={(v) => onUpdateProp?.("appearance.cursor", v)}
@@ -162,6 +164,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
           size="sm"
           label="Events"
           aria-label="Pointer events"
+          title="Auto lets the layer take clicks; None lets clicks pass through it to what is underneath."
           value={pointerEvents}
           options={POINTER_EVENTS_OPTIONS}
           onChange={(v) => onUpdateProp?.("appearance.pointerEvents", v)}

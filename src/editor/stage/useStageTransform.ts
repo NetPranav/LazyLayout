@@ -299,8 +299,8 @@ export function useStageTransform({
 
           try {
             documentCommands.updateProps(id, {
-              "frame.x": nextX,
-              "frame.y": nextY,
+              "frame.x": nextX - (elements[id]?.ox ?? 0),
+              "frame.y": nextY - (elements[id]?.oy ?? 0),
             });
           } catch {
             // Document store update fallback
@@ -413,8 +413,8 @@ export function useStageTransform({
 
         try {
           documentCommands.updateProps(gesture.activeId, {
-            "frame.x": nextX,
-            "frame.y": nextY,
+            "frame.x": nextX - (elements[gesture.activeId]?.ox ?? 0),
+            "frame.y": nextY - (elements[gesture.activeId]?.oy ?? 0),
             "frame.width": nextWidth,
             "frame.height": nextHeight,
           });
@@ -512,8 +512,8 @@ export function useStageTransform({
 
         try {
           documentCommands.updateProps(id, {
-            "frame.x": nextX,
-            "frame.y": nextY,
+            "frame.x": nextX - (el.ox ?? 0),
+            "frame.y": nextY - (el.oy ?? 0),
           });
         } catch {
           // Document update fallback
