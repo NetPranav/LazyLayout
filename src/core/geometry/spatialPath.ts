@@ -38,6 +38,7 @@ export interface LutSample {
   u: number;
   s: number; // Cumulative arc length from segment start
   point: Point2D;
+  errorBound?: number; // Cumulative integration uncertainty bound
 }
 
 export interface CompiledSegment {
@@ -295,14 +296,60 @@ export function integrateArcLengthGL5(b: CubicBezier, u0: number, u1: number): n
   return half * sum;
 }
 
+export interface AdaptiveQuadratureResult {
+  value: number;
+  errorEst: number;
+  converged: boolean;
+}
+
 /**
  * Adaptive Gauss-Legendre Quadrature with Local Error Estimation.
  * Subdivides [u0, u1] into 2 halves, compares single-interval GL5 (I1) with
  * two-half GL5 (I2), estimates local error as |I2 - I1| / 15.
- * If error <= tol, returns I2.
- * If error > tol and depth < maxDepth, recursively subdivides both halves.
- * Guarantees documented numerical tolerance control even across stationary points (B'(u) = 0) and cusps.
+ * If error <= tol, returns I2 with converged = true.
+ * If error > tol and depth >= maxDepth, emits a DiagnosticBus warning and returns converged = false.
+ * Otherwise, recursively subdivides both halves.
  */
+export function integrateArcLengthAdaptiveDetailed(
+  b: CubicBezier,
+  u0: number,
+  u1: number,
+  tol = 1e-6,
+  depth = 0,
+  maxDepth = 8
+): AdaptiveQuadratureResult {
+  if (u0 >= u1) return { value: 0, errorEst: 0, converged: true };
+  const mid = (u0 + u1) / 2;
+  const i1 = integrateArcLengthGL5(b, u0, u1);
+  const iLeft = integrateArcLengthGL5(b, u0, mid);
+  const iRight = integrateArcLengthGL5(b, mid, u1);
+  const i2 = iLeft + iRight;
+
+  const errorEst = Math.abs(i2 - i1) / 15;
+  if (errorEst <= tol) {
+    return { value: i2, errorEst, converged: true };
+  }
+
+  if (depth >= maxDepth) {
+    DiagnosticBus.emit({
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      source: { entityId: "spatial_quadrature", panel: "motion" },
+      message: `Quadrature reached max subdivision depth (${maxDepth}) with residual error estimate ${errorEst.toFixed(6)}px`,
+    });
+    return { value: i2, errorEst, converged: false };
+  }
+
+  const leftRes = integrateArcLengthAdaptiveDetailed(b, u0, mid, tol / 2, depth + 1, maxDepth);
+  const rightRes = integrateArcLengthAdaptiveDetailed(b, mid, u1, tol / 2, depth + 1, maxDepth);
+
+  return {
+    value: leftRes.value + rightRes.value,
+    errorEst: leftRes.errorEst + rightRes.errorEst,
+    converged: leftRes.converged && rightRes.converged,
+  };
+}
+
 export function integrateArcLengthAdaptive(
   b: CubicBezier,
   u0: number,
@@ -311,22 +358,7 @@ export function integrateArcLengthAdaptive(
   depth = 0,
   maxDepth = 8
 ): number {
-  if (u0 >= u1) return 0;
-  const mid = (u0 + u1) / 2;
-  const i1 = integrateArcLengthGL5(b, u0, u1);
-  const iLeft = integrateArcLengthGL5(b, u0, mid);
-  const iRight = integrateArcLengthGL5(b, mid, u1);
-  const i2 = iLeft + iRight;
-
-  const errorEst = Math.abs(i2 - i1) / 15;
-  if (errorEst <= tol || depth >= maxDepth) {
-    return i2;
-  }
-
-  return (
-    integrateArcLengthAdaptive(b, u0, mid, tol / 2, depth + 1, maxDepth) +
-    integrateArcLengthAdaptive(b, mid, u1, tol / 2, depth + 1, maxDepth)
-  );
+  return integrateArcLengthAdaptiveDetailed(b, u0, u1, tol, depth, maxDepth).value;
 }
 
 export function integrateArcLength(b: CubicBezier, u0: number, u1: number): number {
@@ -390,7 +422,7 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
   }
 
   // 2. Adaptive subdivision on each subinterval:
-  const leafIntervals: Array<{ u0: number; u1: number; bez: CubicBezier; length: number }> = [];
+  const leafIntervals: Array<{ u0: number; u1: number; bez: CubicBezier; length: number; errorEst: number }> = [];
   const TAU_GEOM = 0.02; // px
   let unresolvedDeviation = false;
   let maxResidualDeviation = 0;
@@ -402,8 +434,14 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
         unresolvedDeviation = true;
         maxResidualDeviation = Math.max(maxResidualDeviation, deviation);
       }
-      const len = integrateArcLength(item.bez, 0, 1);
-      leafIntervals.push({ u0: item.u0, u1: item.u1, bez: item.bez, length: len });
+      const quad = integrateArcLengthAdaptiveDetailed(item.bez, 0, 1, 1e-6);
+      leafIntervals.push({
+        u0: item.u0,
+        u1: item.u1,
+        bez: item.bez,
+        length: quad.value,
+        errorEst: quad.errorEst,
+      });
       return;
     }
 
@@ -426,16 +464,19 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
     });
   }
 
-  // 3. Construct monotonic LUT:
-  const lut: LutSample[] = [{ u: 0, s: 0, point: b.p0 }];
+  // 3. Construct monotonic LUT with cumulative error bounds:
+  const lut: LutSample[] = [{ u: 0, s: 0, point: b.p0, errorBound: 0 }];
   let runningS = 0;
+  let runningError = 0;
 
   for (const leaf of leafIntervals) {
     runningS += leaf.length;
+    runningError += leaf.errorEst;
     lut.push({
       u: leaf.u1,
       s: runningS,
       point: leaf.bez.p3,
+      errorBound: runningError,
     });
   }
 
@@ -472,10 +513,10 @@ export function invertArcLength(
   if (sTarget <= 0) return 0;
   if (sTarget >= totalLength) return 1;
 
-  // Helper: exact arc length from 0 to uVal using LUT base + adaptive quadrature
-  function exactArcLen(uVal: number): number {
-    if (uVal <= 0) return 0;
-    if (uVal >= 1) return totalLength;
+  // Helper: exact arc length with integration error bound from 0 to uVal
+  function exactArcLenWithBound(uVal: number): { s: number; errorBound: number } {
+    if (uVal <= 0) return { s: 0, errorBound: 0 };
+    if (uVal >= 1) return { s: totalLength, errorBound: lut[lut.length - 1]?.errorBound ?? 1e-6 };
 
     let l = 0;
     let h = lut.length - 1;
@@ -487,7 +528,16 @@ export function invertArcLength(
     const baseIdx = Math.max(0, l - 1);
     const uBase = lut[baseIdx].u;
     const sBase = lut[baseIdx].s;
-    return sBase + integrateArcLengthAdaptive(b, uBase, uVal);
+    const errBase = lut[baseIdx].errorBound ?? 0;
+    const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, 1e-6);
+    return {
+      s: sBase + quad.value,
+      errorBound: errBase + quad.errorEst,
+    };
+  }
+
+  function exactArcLen(uVal: number): number {
+    return exactArcLenWithBound(uVal).s;
   }
 
   // 1. Initial lookup from monotonic LUT:
@@ -508,47 +558,45 @@ export function invertArcLength(
   let uLeft = lut[idx0].u;
   let uRight = lut[idx1].u;
 
-  // 2. Rigorous Endpoint Residual Evaluation & Root-Bracket Verification:
-  let resLeft = exactArcLen(uLeft) - sTarget;
-  let resRight = exactArcLen(uRight) - sTarget;
+  // 2. Rigorous Interval Residual Validation:
+  // For each endpoint, true residual F(u) in [F_hat(u) - E(u), F_hat(u) + E(u)].
+  // To strictly guarantee F(uLeft) <= 0: F_hat(uLeft) + E(uLeft) <= 0
+  // To strictly guarantee F(uRight) >= 0: F_hat(uRight) - E(uRight) >= 0
+  let evalLeft = exactArcLenWithBound(uLeft);
+  let evalRight = exactArcLenWithBound(uRight);
 
-  // Direct endpoint match:
   const TAU_RESIDUAL = 1e-4; // px
-  if (Math.abs(resLeft) < TAU_RESIDUAL) return uLeft;
-  if (Math.abs(resRight) < TAU_RESIDUAL) return uRight;
+  if (Math.abs(evalLeft.s - sTarget) < TAU_RESIDUAL) return uLeft;
+  if (Math.abs(evalRight.s - sTarget) < TAU_RESIDUAL) return uRight;
 
-  // Ensure resLeft <= 0 (expand left until non-positive):
-  while (resLeft > 0 && idx0 > 0) {
+  while (evalLeft.s + evalLeft.errorBound > sTarget && idx0 > 0) {
     idx0--;
     uLeft = lut[idx0].u;
-    resLeft = exactArcLen(uLeft) - sTarget;
-    if (Math.abs(resLeft) < TAU_RESIDUAL) return uLeft;
+    evalLeft = exactArcLenWithBound(uLeft);
+    if (Math.abs(evalLeft.s - sTarget) < TAU_RESIDUAL) return uLeft;
   }
-  if (resLeft > 0) {
+  if (evalLeft.s + evalLeft.errorBound > sTarget) {
     uLeft = 0;
-    resLeft = -sTarget;
+    evalLeft = { s: 0, errorBound: 0 };
   }
 
-  // Ensure resRight >= 0 (expand right until non-negative):
-  while (resRight < 0 && idx1 < lut.length - 1) {
+  while (evalRight.s - evalRight.errorBound < sTarget && idx1 < lut.length - 1) {
     idx1++;
     uRight = lut[idx1].u;
-    resRight = exactArcLen(uRight) - sTarget;
-    if (Math.abs(resRight) < TAU_RESIDUAL) return uRight;
+    evalRight = exactArcLenWithBound(uRight);
+    if (Math.abs(evalRight.s - sTarget) < TAU_RESIDUAL) return uRight;
   }
-  if (resRight < 0) {
+  if (evalRight.s - evalRight.errorBound < sTarget) {
     uRight = 1;
-    resRight = totalLength - sTarget;
+    evalRight = exactArcLenWithBound(1);
   }
 
   // Root bracket [uLeft, uRight] is rigorously guaranteed to satisfy:
-  // exactArcLen(uLeft) <= sTarget <= exactArcLen(uRight) with opposite residual signs.
+  // F(uLeft) <= 0 <= F(uRight) accounting for numerical integration uncertainty.
   if (uRight <= uLeft) return uLeft;
 
   // 3. Newton Acceleration (up to 3 steps):
-  const sLeftVal = exactArcLen(uLeft);
-  const sRightVal = exactArcLen(uRight);
-  let u = uLeft + ((sTarget - sLeftVal) / Math.max(1e-9, sRightVal - sLeftVal)) * (uRight - uLeft);
+  let u = uLeft + ((sTarget - evalLeft.s) / Math.max(1e-9, evalRight.s - evalLeft.s)) * (uRight - uLeft);
 
   for (let step = 0; step < 3; step++) {
     const curS = exactArcLen(u);
@@ -575,8 +623,12 @@ export function invertArcLength(
   }
 
   // 4. Guaranteed Bisection Contraction:
+  // Re-evaluates iteration budget from actual validated bracket width after expansion (deltaU0),
+  // accounting for total integration uncertainty (totalUncertainty) in the spatial error budget:
   const deltaU0 = uRight - uLeft;
-  const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU0) / 0.05)));
+  const totalUncertainty = evalLeft.errorBound + evalRight.errorBound;
+  const effectiveSpatialTolerance = Math.max(0.001, 0.05 - totalUncertainty);
+  const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU0) / effectiveSpatialTolerance)));
 
   for (let k = 0; k < mSteps; k++) {
     const uMid = (uLeft + uRight) / 2;
