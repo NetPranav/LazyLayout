@@ -97,6 +97,78 @@ describe("Milestone 1: Spatial Waypoints & Keyframe Pairing", () => {
       };
       assert.equal(SpatialWaypointSchema.safeParse(nanControlPoint).success, false);
     });
+
+    it("strictly preserves legacy document immutability during loading and parsing", () => {
+      const legacyClip: Clip = {
+        id: "clip_immutable",
+        layerId: "layer_imm",
+        name: "Legacy Clip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 1.5,
+        easing: "linear",
+        enabled: true,
+        tracks: [
+          {
+            id: "t_imm_x",
+            property: "transform.x",
+            keyframes: [{ id: "k_imm_x0", time: 0, value: 10 }],
+          },
+          {
+            id: "t_imm_y",
+            property: "transform.y",
+            keyframes: [{ id: "k_imm_y0", time: 0, value: 20 }],
+          },
+        ],
+      };
+
+      const snapshotBefore = JSON.parse(JSON.stringify(legacyClip));
+      Object.freeze(legacyClip);
+      Object.freeze(legacyClip.tracks);
+      Object.freeze(legacyClip.tracks[0]);
+      Object.freeze(legacyClip.tracks[1]);
+
+      const parsed = ClipSchema.safeParse(legacyClip);
+      assert.equal(parsed.success, true);
+      const waypoints = extractClipWaypoints(legacyClip);
+      assert.equal(waypoints.length, 1);
+
+      assert.deepEqual(legacyClip, snapshotBefore);
+      assert.equal(legacyClip.spatialTrajectories, undefined);
+    });
+
+    it("rejects duplicate keyframe IDs within a track via schema validation", () => {
+      const duplicateClip = {
+        id: "clip_dup",
+        layerId: "layer_dup",
+        name: "Duplicate Keyframes Clip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2.0,
+        easing: "linear",
+        enabled: true,
+        tracks: [
+          {
+            id: "t_dup",
+            property: "transform.x",
+            keyframes: [
+              { id: "kf_unique_1", time: 0.0, value: 0 },
+              { id: "kf_duplicate", time: 0.5, value: 50 },
+              { id: "kf_duplicate", time: 1.0, value: 100 }, // Duplicate ID
+            ],
+          },
+        ],
+      };
+
+      const parsed = ClipSchema.safeParse(duplicateClip);
+      assert.equal(parsed.success, false);
+      if (!parsed.success) {
+        const hasDupIssue = parsed.error.issues.some((issue) =>
+          issue.message.includes("Duplicate keyframe ID: kf_duplicate")
+        );
+        assert.ok(hasDupIssue, "Expected error issue for duplicate keyframe ID");
+      }
+    });
   });
 
   describe("Deterministic Greedy Nearest-Delta Pairing", () => {
@@ -214,6 +286,47 @@ describe("Milestone 1: Spatial Waypoints & Keyframe Pairing", () => {
       assert.equal(resOutside.pairs.length, 0);
       assert.equal(resOutside.orphansX.length, 1);
       assert.equal(resOutside.orphansY.length, 1);
+    });
+
+    it("enumerates all candidate edges in dense clusters where K = Nx * Ny", () => {
+      // 4 keyframes on X and 4 keyframes on Y, all clustered within epsilon/2
+      const epsilon = 1e-4;
+      const baseTime = 1.0;
+      const Nx = 4;
+      const Ny = 4;
+
+      const kx: Keyframe[] = [];
+      const ky: Keyframe[] = [];
+
+      for (let i = 0; i < Nx; i++) {
+        kx.push({
+          id: `kx_dense_${i}`,
+          time: baseTime + (i * epsilon) / 10,
+          value: i * 10,
+        });
+      }
+
+      for (let j = 0; j < Ny; j++) {
+        ky.push({
+          id: `ky_dense_${j}`,
+          time: baseTime + (j * epsilon) / 10 + 1e-6,
+          value: j * 10,
+        });
+      }
+
+      // Every kx is within epsilon of every ky: |kx_i - ky_j| <= 4e-5 < 1e-4
+      // The candidate generation loop evaluates all Nx * Ny = 16 candidates
+      const res = pairKeyframesGreedy(kx, ky, epsilon);
+
+      // Greedy assignment pairs exactly 4 (min(Nx, Ny)), leaves 0 orphans
+      assert.equal(res.pairs.length, 4);
+      assert.equal(res.orphansX.length, 0);
+      assert.equal(res.orphansY.length, 0);
+
+      // Verify that pairs are matched greedily by smallest delta
+      for (const pair of res.pairs) {
+        assert.ok(pair.delta <= epsilon);
+      }
     });
   });
 

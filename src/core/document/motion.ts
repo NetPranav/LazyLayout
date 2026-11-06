@@ -219,6 +219,15 @@ export const TrackSchema = z
     keyframes: z.array(KeyframeSchema),
   })
   .superRefine((track, ctx) => {
+    // Unique keyframe IDs within a track
+    const seenIds = new Set<string>();
+    for (let i = 0; i < track.keyframes.length; i++) {
+      const kf = track.keyframes[i];
+      if (seenIds.has(kf.id)) {
+        ctx.addIssue({ code: "custom", path: ["keyframes", i, "id"], message: `Duplicate keyframe ID: ${kf.id}` });
+      }
+      seenIds.add(kf.id);
+    }
     // Sorted by time. Two keyframes at one time are an instant jump: the later one holds from then on.
     for (let i = 1; i < track.keyframes.length; i++) {
       if (track.keyframes[i].time < track.keyframes[i - 1].time) {

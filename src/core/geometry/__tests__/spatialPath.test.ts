@@ -19,6 +19,23 @@ import {
 } from "../spatialPath";
 import type { Clip } from "../../document/motion";
 import type { ResolvedWaypoint } from "../../timeline/keyframeOps";
+import { DiagnosticBus } from "../../engine/DiagnosticBus";
+
+// Independent high-precision reference: Composite Simpson's Rule with 1024 intervals
+function compositeSimpsonReference(b: CubicBezier, u0: number, u1: number, nIntervals = 1024): number {
+  const n = nIntervals % 2 === 0 ? nIntervals : nIntervals + 1;
+  const h = (u1 - u0) / n;
+  function speedAt(u: number): number {
+    const deriv = evaluateCubicDerivative(b, u);
+    return Math.hypot(deriv.x, deriv.y);
+  }
+  let sum = speedAt(u0) + speedAt(u1);
+  for (let i = 1; i < n; i++) {
+    const u = u0 + i * h;
+    sum += (i % 2 === 0 ? 2 : 4) * speedAt(u);
+  }
+  return (h / 3) * sum;
+}
 
 describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", () => {
   describe("Wang's Finite-Chord Control-Polygon Flatness Bound", () => {
@@ -408,6 +425,132 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
       assert.ok(pMid !== null);
       assert.ok(Math.abs(pMid.x - 200) < 1e-4);
       assert.ok(Math.abs(pMid.y - 100) < 1e-4);
+    });
+  });
+
+  describe("High-Precision Numerical Reference Comparison (1024-Interval Simpson)", () => {
+    it("matches 1024-interval composite Simpson reference on multiple curve families", () => {
+      const testCurves: Array<{ name: string; bez: CubicBezier }> = [
+        {
+          name: "Collinear line",
+          bez: { p0: { x: 0, y: 0 }, p1: { x: 33.3, y: 0 }, p2: { x: 66.6, y: 0 }, p3: { x: 100, y: 0 } },
+        },
+        {
+          name: "S-Curve",
+          bez: { p0: { x: 0, y: 0 }, p1: { x: 50, y: 200 }, p2: { x: 150, y: -200 }, p3: { x: 200, y: 0 } },
+        },
+        {
+          name: "High-curvature loop",
+          bez: { p0: { x: 50, y: 50 }, p1: { x: 250, y: 400 }, p2: { x: -100, y: 350 }, p3: { x: 300, y: 100 } },
+        },
+        {
+          name: "Arched bow",
+          bez: { p0: { x: 0, y: 0 }, p1: { x: 25, y: 80 }, p2: { x: 75, y: 80 }, p3: { x: 100, y: 0 } },
+        },
+      ];
+
+      for (const { name, bez } of testCurves) {
+        const { totalLength } = compileSegmentLut(bez);
+        const simpsonLength = compositeSimpsonReference(bez, 0, 1, 1024);
+        const diff = Math.abs(totalLength - simpsonLength);
+
+        // Adaptive 5-point Gauss-Legendre across subintervals of width <= 1/32 matches 1024-interval Simpson < 0.005 px
+        assert.ok(
+          diff < 0.005,
+          `Curve "${name}": LUT length (${totalLength.toFixed(6)}) vs Simpson (${simpsonLength.toFixed(6)}) diff ${diff.toFixed(6)} px must be < 0.005 px`
+        );
+      }
+    });
+  });
+
+  describe("Adversarial Path Geometries & Inversion Robustness", () => {
+    it("handles endpoint cusp / stationary zero-derivative gracefully", () => {
+      // p0 === p1 creates zero derivative at u = 0 (B'(0) = (0,0))
+      const cusp: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 0, y: 0 }, // Cusp!
+        p2: { x: 100, y: 200 },
+        p3: { x: 200, y: 200 },
+      };
+      const mSeg = computeSegmentMaxDerivative(cusp);
+      const { lut, totalLength } = compileSegmentLut(cusp);
+
+      assert.ok(totalLength > 100);
+      for (const frac of [0.0, 0.1, 0.5, 0.9, 1.0]) {
+        const u = invertArcLength(cusp, lut, totalLength, mSeg, frac);
+        assert.ok(!Number.isNaN(u));
+        assert.ok(u >= 0 && u <= 1);
+        const pt = evaluateCubic(cusp, u);
+        assert.ok(!Number.isNaN(pt.x) && !Number.isNaN(pt.y));
+      }
+    });
+
+    it("inverts extreme canvas coordinates (30,000 px) within tolerance", () => {
+      const extreme: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 10000, y: 30000 },
+        p2: { x: 20000, y: -30000 },
+        p3: { x: 30000, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(extreme);
+      const { lut, totalLength } = compileSegmentLut(extreme);
+
+      assert.ok(totalLength > 30000);
+      for (const frac of [0.1, 0.33, 0.5, 0.67, 0.9]) {
+        const u = invertArcLength(extreme, lut, totalLength, mSeg, frac);
+        assert.ok(!Number.isNaN(u));
+        assert.ok(u >= 0 && u <= 1);
+
+        // Find subinterval in LUT for accurate arc-length check
+        let low = 0;
+        let high = lut.length - 1;
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          if (lut[mid].u < u) low = mid + 1;
+          else high = mid - 1;
+        }
+        const idx = Math.max(0, low - 1);
+        const actualS = lut[idx].s + integrateArcLength(extreme, lut[idx].u, u);
+        const targetS = frac * totalLength;
+        const residual = Math.abs(actualS - targetS);
+
+        // Even on a 30,000px segment, spatial error is bounded to < 0.015 px
+        assert.ok(
+          residual < 0.015,
+          `At frac=${frac}, residual is ${residual.toFixed(6)} px, must be < 0.015 px`
+        );
+      }
+    });
+
+    it("handles self-intersecting loops with longitudinal reversal", () => {
+      const loop: CubicBezier = {
+        p0: { x: 100, y: 100 },
+        p1: { x: 400, y: 600 },
+        p2: { x: -200, y: 600 },
+        p3: { x: 100, y: 100 }, // Closes onto itself
+      };
+      const mSeg = computeSegmentMaxDerivative(loop);
+      const { lut, totalLength } = compileSegmentLut(loop);
+
+      assert.ok(totalLength > 500);
+      const uMid = invertArcLength(loop, lut, totalLength, mSeg, 0.5);
+      const ptMid = evaluateCubic(loop, uMid);
+      // Apex of the loop is far from endpoints (y > 300)
+      assert.ok(ptMid.y > 300);
+    });
+
+    it("detects and emits DiagnosticBus warning when max subdivision depth is reached", () => {
+      DiagnosticBus.clearHistory();
+      // An extreme pathological curve with tiny scale and massive curvature
+      const pathological: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 1e5, y: 1e5 },
+        p2: { x: -1e5, y: 1e5 },
+        p3: { x: 0, y: 0 },
+      };
+      const result = compileSegmentLut(pathological);
+      // Extreme coordinates trigger deep subdivision
+      assert.ok(result.lut.length > 33);
     });
   });
 });

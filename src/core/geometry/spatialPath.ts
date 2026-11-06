@@ -20,6 +20,7 @@ import type { PropValue } from "../document/registry";
 import { parseEasing } from "../document/motion";
 import { sampleEasing } from "../kernel/easing";
 import { extractClipWaypoints, type ResolvedWaypoint } from "../timeline/keyframeOps";
+import { DiagnosticBus } from "../engine/DiagnosticBus";
 
 export interface Point2D {
   x: number;
@@ -317,7 +318,19 @@ export function splitCubic(b: CubicBezier, t: number): [CubicBezier, CubicBezier
  * Always initializes with an unconditional 32-sample root grid (Delta u_0 <= 0.03125),
  * followed by adaptive subdivision checking Wang's finite-chord bound (tau_geom <= 0.02 px).
  */
-export function compileSegmentLut(b: CubicBezier): { lut: LutSample[]; totalLength: number } {
+export interface CompiledLutResult {
+  lut: LutSample[];
+  totalLength: number;
+  unresolvedDeviation?: boolean;
+  maxResidualDeviation?: number;
+}
+
+/**
+ * Compiles a cubic Bézier segment into an adaptive arc-length LUT.
+ * Always initializes with an unconditional 32-sample root grid (Delta u_0 <= 0.03125),
+ * followed by adaptive subdivision checking Wang's finite-chord bound (tau_geom <= 0.02 px).
+ */
+export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
   interface SubInterval {
     u0: number;
     u1: number;
@@ -342,10 +355,16 @@ export function compileSegmentLut(b: CubicBezier): { lut: LutSample[]; totalLeng
   // 2. Adaptive subdivision on each subinterval:
   const leafIntervals: Array<{ u0: number; u1: number; bez: CubicBezier; length: number }> = [];
   const TAU_GEOM = 0.02; // px
+  let unresolvedDeviation = false;
+  let maxResidualDeviation = 0;
 
   function subdivideAdaptive(item: SubInterval, depth: number) {
     const deviation = computeFiniteChordDeviation(item.bez);
     if (deviation <= TAU_GEOM || depth >= 10) {
+      if (deviation > TAU_GEOM && depth >= 10) {
+        unresolvedDeviation = true;
+        maxResidualDeviation = Math.max(maxResidualDeviation, deviation);
+      }
       const len = integrateArcLength(item.bez, 0, 1);
       leafIntervals.push({ u0: item.u0, u1: item.u1, bez: item.bez, length: len });
       return;
@@ -361,6 +380,15 @@ export function compileSegmentLut(b: CubicBezier): { lut: LutSample[]; totalLeng
     subdivideAdaptive(interval, 0);
   }
 
+  if (unresolvedDeviation) {
+    DiagnosticBus.emit({
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      source: { entityId: "spatial_trajectory", panel: "motion" },
+      message: `Spatial trajectory exceeded max subdivision depth (10) with residual deviation ${maxResidualDeviation.toFixed(4)}px`,
+    });
+  }
+
   // 3. Construct monotonic LUT:
   const lut: LutSample[] = [{ u: 0, s: 0, point: b.p0 }];
   let runningS = 0;
@@ -374,7 +402,12 @@ export function compileSegmentLut(b: CubicBezier): { lut: LutSample[]; totalLeng
     });
   }
 
-  return { lut, totalLength: runningS };
+  return {
+    lut,
+    totalLength: runningS,
+    unresolvedDeviation: unresolvedDeviation ? true : undefined,
+    maxResidualDeviation: unresolvedDeviation ? maxResidualDeviation : undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------
