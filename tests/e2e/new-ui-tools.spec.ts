@@ -132,7 +132,13 @@ test.describe("the new editor's drawing tools", () => {
     const hex = page.getByLabel("Fill hex").first();
     await hex.fill("FF0000");
     await hex.press("Enter");
-    await expect.poll(async () => (await layers(page))[shape.id].properties["svg.fill"]).toBe("#FF0000");
+    await expect
+      .poll(async () => {
+        const props = (await layers(page))[shape.id].properties;
+        const fills = props["paint.fills"] ? JSON.parse(String(props["paint.fills"])) : [];
+        return String(fills[0]?.color ?? props["svg.fill"]).toLowerCase();
+      })
+      .toMatch(/#ff0000|rgb\(255, 0, 0\)/);
     await expect(stageElement(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
     // a stroke and an opacity from the inspector land on the shape's own properties
     await page.getByRole("button", { name: "Add stroke" }).first().click();
@@ -199,7 +205,8 @@ test.describe("moving around the canvas", () => {
   test("the wheel pans, and Ctrl or Cmd with the wheel zooms", async ({ page, browserName }) => {
     await ready(page);
     const start = (await page.locator("[data-stage=artboard]").boundingBox())!;
-    await page.mouse.move(start.x - 30, start.y + 100);
+    const view = (await page.locator('[data-testid="stage-viewport"]').boundingBox())!;
+    await page.mouse.move(view.x + 40, view.y + 120); // over the canvas, whatever size the page is
     await page.mouse.wheel(0, 80);
     await expect.poll(async () => Math.round((await page.locator("[data-stage=artboard]").boundingBox())!.y - start.y)).toBe(-80);
     test.skip(browserName !== "chromium", "Ctrl+wheel is a browser zoom gesture that only Chromium delivers to the page here");

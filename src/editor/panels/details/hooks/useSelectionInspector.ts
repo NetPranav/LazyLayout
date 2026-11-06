@@ -29,7 +29,7 @@ import {
   type AlignTarget,
 } from "@/core/editing/editOps";
 import type { AlignMode, SpreadAxis } from "@/core/geometry/align";
-import { isSvgPainted, propertyFor, readFor, valueFor } from "./shapeProps";
+import { isRemapped, propertyFor, readFor, valueFor } from "./shapeProps";
 
 export function getIconForArchetype(archetype?: string): LucideIcon {
   switch (archetype) {
@@ -147,7 +147,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
 
       const realIds = selectedIds.filter((id) => Boolean(layers[id]));
       if (realIds.length === 0) return;
-      if (!realIds.some((id) => isSvgPainted(layers[id]))) {
+      if (!realIds.some((id) => isRemapped(layers[id]))) {
         setLayerProps(realIds, { [propKey]: value }, `Change ${propKey}`);
         return;
       }
@@ -166,7 +166,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
 
       const realIds = selectedIds.filter((id) => Boolean(layers[id]));
       if (realIds.length === 0) return;
-      if (!realIds.some((id) => isSvgPainted(layers[id]))) {
+      if (!realIds.some((id) => isRemapped(layers[id]))) {
         setLayerProps(realIds, patch, "Change properties");
         return;
       }

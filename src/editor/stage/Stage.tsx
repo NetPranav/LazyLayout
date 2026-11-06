@@ -5,7 +5,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom } from "@/core/viewport/camera";
-import { invokeCommand } from "@/core/commands";
+import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
 import { useStageTransform } from "./useStageTransform";
@@ -15,6 +15,8 @@ import {
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
 import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from "./createFromDrag";
+import { importFiles, placeImage } from "@/core/assets/assetImport";
+import { getDocument } from "@/core/store/documentState";
 
 export const Stage: React.FC<StageProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
@@ -342,6 +344,9 @@ export const Stage: React.FC<StageProps> = ({
 
   // Report the stage size to the camera store so fit, zoom to selection and the other camera actions know the viewport.
   const viewportRef = useRef<HTMLDivElement>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
+  // The canvas owns the keyboard while the pointer is over it: this is what Select All, Delete, Duplicate, Group and arrow-nudging check.
+  useFocusScope("canvas", viewportRef);
   useLayoutEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
@@ -441,6 +446,29 @@ export const Stage: React.FC<StageProps> = ({
     onToolDone?.();
   };
 
+  // The Image tool asks for a picture as soon as it is chosen, then puts it in the middle of the page, at its own size (up to 600px a side).
+  useEffect(() => {
+    if (activeTool === "image") imageInput.current?.click();
+  }, [activeTool]);
+
+  const placePicked = async (files: FileList | null) => {
+    const list = files ? Array.from(files) : [];
+    if (list.length === 0) {
+      onToolDone?.(); // cancelled
+      return;
+    }
+    const outcomes = await importFiles(list);
+    const root = Object.values(getDocument().layers).find((l) => l.parentId === null);
+    let last: string | null = null;
+    outcomes.forEach((o, i) => {
+      if (!o.entry || !root) return;
+      const at = { x: presetDef.artboardWidth / 2 + i * 24, y: presetDef.artboardHeight / 2 + i * 24, parentId: root.id, parentOrigin: { x: 0, y: 0 } };
+      last = placeImage(o.entry, at) ?? last;
+    });
+    if (last) selectStore(last, "element");
+    onToolDone?.();
+  };
+
   const handleToolPointerCancel = () => {
     gesture.current = null;
     setDrawPreview(null);
@@ -468,6 +496,19 @@ export const Stage: React.FC<StageProps> = ({
         }
       }}
     >
+      <input
+        ref={imageInput}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        aria-label="Image file"
+        data-testid="image-tool-input"
+        onChange={(e) => {
+          void placePicked(e.target.files);
+          e.target.value = "";
+        }}
+      />
       <Artboard
         title={title}
         preset={activePreset}

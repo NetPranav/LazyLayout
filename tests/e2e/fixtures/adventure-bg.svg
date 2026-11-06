@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4650"/><stop offset=".45" stop-color="#b79c92"/><stop offset="1" stop-color="#e2c1ab"/>
+    </linearGradient>
+    <linearGradient id="forest" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d3a2c"/><stop offset="1" stop-color="#0c140d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#sky)"/>
+  <path d="M0 560 L220 430 L330 480 L520 250 L610 330 L760 130 L900 300 L1010 210 L1160 330 L1300 260 L1440 380 L1440 900 L0 900Z" fill="#6b625f"/>
+  <path d="M0 640 L180 560 L420 610 L700 470 L980 590 L1200 520 L1440 600 L1440 900 L0 900Z" fill="#4c4743"/>
+  <path d="M0 720 L120 640 L170 700 L240 620 L320 710 L420 650 L520 730 L640 660 L760 740 L900 670 L1040 750 L1180 680 L1300 740 L1440 690 L1440 900 L0 900Z" fill="url(#forest)"/>
+</svg>

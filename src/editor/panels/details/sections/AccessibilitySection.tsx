@@ -29,10 +29,18 @@ export const HTML_TAG_OPTIONS = [
 export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
   getValue,
   onUpdateProp,
+  onUpdateProps,
   onAddA11yRef,
   className = "",
 }) => {
-  const [hasA11y, setHasA11y] = useState(false);
+  const htmlTag = (getValue?.("export.tag") as string) || "div";
+  const ariaLabel = (getValue?.("a11y.label") as string) || "";
+  const role = (getValue?.("a11y.role") as string) || "";
+  const isDisabled = (getValue?.("interaction.disabled") as boolean) ?? false;
+  // The block shows once added, and always for a layer that already has any of these set.
+  const hasValues = Boolean(ariaLabel || role || isDisabled || (getValue?.("export.tag") as string));
+  const [added, setHasA11y] = useState(false);
+  const hasA11y = added || hasValues;
 
   const handleAdd = () => {
     setHasA11y(true);
@@ -43,11 +51,6 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
       onAddA11yRef.current = handleAdd;
     }
   });
-
-  const htmlTag = (getValue?.("a11y.tag") as string) || "div";
-  const ariaLabel = (getValue?.("a11y.label") as string) || "";
-  const role = (getValue?.("a11y.role") as string) || "";
-  const isDisabled = (getValue?.("a11y.disabled") as boolean) ?? false;
 
   if (!hasA11y) {
     return null;
@@ -62,14 +65,17 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
             aria-label="HTML tag"
             value={htmlTag}
             options={HTML_TAG_OPTIONS}
-            onChange={(val) => onUpdateProp?.("a11y.tag", val)}
+            onChange={(val) => onUpdateProp?.("export.tag", val)}
           />
         </div>
         <button
           type="button"
           aria-label="Remove accessibility"
           title="Remove accessibility"
-          onClick={() => setHasA11y(false)}
+          onClick={() => {
+            setHasA11y(false);
+            onUpdateProps?.({ "a11y.label": null, "a11y.role": null, "export.tag": null, "interaction.disabled": null });
+          }}
           className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
         >
           <Icon icon={Minus} size={14} />
@@ -104,7 +110,7 @@ export const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
         <input
           type="checkbox"
           checked={isDisabled}
-          onChange={(e) => onUpdateProp?.("a11y.disabled", e.target.checked)}
+          onChange={(e) => onUpdateProp?.("interaction.disabled", e.target.checked)}
           className="ll:m-0 ll:w-3.5 ll:h-3.5"
         />
         Disabled

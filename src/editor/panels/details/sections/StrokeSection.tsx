@@ -18,12 +18,36 @@ const segClass = (active: boolean) =>
     active ? "ll:bg-surface-panel ll:text-primary" : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
   }`;
 
+/** The stroke a layer already has, as a row: any border width above 0 (a shape's stroke width, through the same fields). */
+function strokeFromDocument(get: InspectorSectionProps["getValue"]): StrokeItem[] {
+  const width = get?.("appearance.border.width");
+  if (typeof width !== "number" || width <= 0) return [];
+  const color = get?.("appearance.border.color");
+  const style = get?.("appearance.border.style");
+  const hex = typeof color === "string" ? color.replace(/^#/, "").slice(0, 6).toUpperCase() : "444444";
+  return [{ id: "stroke-doc", hex: hex || "444444", width, style: style === "dashed" || style === "dotted" ? style : "solid", sides: "all" }];
+}
+
 export const StrokeSection: React.FC<StrokeSectionProps> = ({
+  selectedId,
+  getValue,
   onUpdateProp,
   onAddStrokeRef,
   className = "",
 }) => {
-  const [strokes, setStrokes] = useState<StrokeItem[]>([]);
+  const [strokes, setStrokes] = useState<StrokeItem[]>(() => strokeFromDocument(getValue));
+  // A different layer starts from the stroke it has; the same layer keeps its row (a hidden stroke is width 0 in the document).
+  const docStroke = strokeFromDocument(getValue);
+  const docKey = JSON.stringify(docStroke);
+  const [seen, setSeen] = useState({ selectedId, docKey });
+  if (seen.selectedId !== selectedId) {
+    setSeen({ selectedId, docKey });
+    setStrokes(docStroke);
+  } else if (seen.docKey !== docKey) {
+    setSeen({ selectedId, docKey });
+    // undo or another panel brought a stroke back
+    if (docStroke.length === 1 && !strokes.some((s) => !s.hidden)) setStrokes(docStroke);
+  }
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
