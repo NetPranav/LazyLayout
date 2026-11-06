@@ -115,6 +115,8 @@ export interface StageProps {
 }
 
 export interface ArtboardProps {
+  /** The page's own background colour (the Background block); absent keeps the board colour. */
+  background?: string;
   id?: string;
   title?: string;
   preset?: StagePreset;

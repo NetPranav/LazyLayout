@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLayers } from "@/core/store/useDocumentStore";
+import { setLayerProps } from "@/core/editing/editOps";
+import { useProjectStore } from "@/core/store/useProjectStore";
 import { SquareRoundCorner } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
@@ -258,5 +261,46 @@ export const PageSection: React.FC<PageSectionProps> = (props) => {
       <PageBackgroundBody backgroundColor={props.backgroundColor} onChangeBackground={props.onChangeBackground} />
       <ThemeTokensBody />
     </div>
+  );
+};
+
+const pageRoot = (layers: ReturnType<typeof useLayers>) => Object.values(layers).find((l) => l.parentId === null);
+
+/** The Page block with nothing selected, reading and writing the page's own layer: its size and background are the document's. */
+export const ConnectedPageSection: React.FC<{ pageName?: string }> = ({ pageName }) => {
+  const layers = useLayers();
+  const root = pageRoot(layers);
+  const w = typeof root?.properties["frame.width"] === "number" ? (root.properties["frame.width"] as number) : 1440;
+  const h = typeof root?.properties["frame.height"] === "number" ? (root.properties["frame.height"] as number) : 900;
+  return (
+    <PageSectionBody
+      key={`${root?.id}-${w}-${h}`}
+      pageName={pageName}
+      width={w}
+      height={h}
+      onChangeDimensions={(nw, nh) => {
+        if (root && nw > 0 && nh > 0) setLayerProps([root.id], { "frame.width": nw, "frame.height": nh }, "Page size");
+      }}
+      onChangePageName={(name) => {
+        const st = useProjectStore.getState();
+        const page = st.pages[st.activePageId];
+        if (page && name.trim()) useProjectStore.setState({ pages: { ...st.pages, [st.activePageId]: { ...page, name } } });
+      }}
+    />
+  );
+};
+
+export const ConnectedPageBackground: React.FC = () => {
+  const layers = useLayers();
+  const root = pageRoot(layers);
+  const color = root?.properties["appearance.background.color"];
+  return (
+    <PageBackgroundBody
+      key={root?.id}
+      backgroundColor={typeof color === "string" ? color : "FFFFFF"}
+      onChangeBackground={(hex) => {
+        if (root && hex.length === 6) setLayerProps([root.id], { "appearance.background.color": `#${hex}` }, "Page background");
+      }}
+    />
   );
 };

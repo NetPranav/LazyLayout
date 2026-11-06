@@ -81,6 +81,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   onPresetChange,
   width: propWidth,
   height: propHeight,
+  background,
   zoom = STAGE_CONSTANTS.defaultZoom,
   pan = { x: 0, y: 0 },
   elements,
@@ -150,7 +151,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         height: artboardHeight,
         transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoomScale})`,
         transformOrigin: "center center",
-        backgroundColor: "var(--ll-board-bg)",
+        backgroundColor: background ?? "var(--ll-board-bg)",
         border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-board-line)`,
         boxShadow: "var(--ll-shadow-soft)",
       }}

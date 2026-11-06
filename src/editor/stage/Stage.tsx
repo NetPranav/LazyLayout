@@ -18,6 +18,7 @@ import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from 
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
+import { setLayerProps } from "@/core/editing/editOps";
 
 export const Stage: React.FC<StageProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
@@ -74,6 +75,10 @@ export const Stage: React.FC<StageProps> = ({
     (newPreset: StagePreset) => {
       setInternalPreset(newPreset);
       controlledOnPresetChange?.(newPreset);
+      // choosing Desktop, Tablet or Mobile resizes the page itself
+      const def = STAGE_PRESETS.find((p) => p.id === newPreset);
+      const root = Object.values(getDocument().layers).find((l) => l.parentId === null);
+      if (def && root) setLayerProps([root.id], { "frame.width": def.artboardWidth, "frame.height": def.artboardHeight }, "Page size");
     },
     [controlledOnPresetChange]
   );
@@ -222,8 +227,15 @@ export const Stage: React.FC<StageProps> = ({
     [controlledOnSelect, clearStore, toggleStore, selectStore]
   );
 
-  const presetDef =
+  // The page is as big as its own layer says (the Page block writes it); a document that has not set one follows the preset.
+  const rootSized = Object.values(storeLayers ?? {}).find((l) => l.parentId === null);
+  const presetDef0 =
     STAGE_PRESETS.find((p) => p.id === activePreset) || STAGE_PRESETS[0];
+  const presetDef = {
+    ...presetDef0,
+    artboardWidth: typeof rootSized?.properties["frame.width"] === "number" ? (rootSized.properties["frame.width"] as number) : presetDef0.artboardWidth,
+    artboardHeight: typeof rootSized?.properties["frame.height"] === "number" ? (rootSized.properties["frame.height"] as number) : presetDef0.artboardHeight,
+  };
 
   const handleLayerAction = useCallback(
     (action: LayerMenuAction, targetId: string) => {
@@ -554,6 +566,7 @@ export const Stage: React.FC<StageProps> = ({
         onPresetChange={handlePresetChange}
         width={presetDef.artboardWidth}
         height={presetDef.artboardHeight}
+        background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
         zoom={zoom}
         pan={pan}
         elements={elements}

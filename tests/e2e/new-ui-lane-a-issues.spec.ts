@@ -198,4 +198,42 @@ test.describe("Lane A issue fixes", () => {
     await page.getByRole("button", { name: "Stroke 1 settings" }).click();
     await expect(page.getByLabel("Stroke colour picker")).toHaveCount(1);
   });
+
+  test("Ctrl+K opens the command palette and runs the command you pick", async ({ page }) => {
+    await ready(page);
+    await page.mouse.move(700, 500);
+    await page.keyboard.press("Control+k");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.type("select all");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("the Page block resizes and colours the page, and a drag on a fill grip reorders fills", async ({ page }) => {
+    await ready(page);
+    await page.getByLabel("Page width", { exact: true }).fill("1000");
+    await page.getByLabel("Page width", { exact: true }).press("Enter");
+    await expect.poll(() => page.locator("[data-stage=artboard]").evaluate((e) => (e as HTMLElement).offsetWidth)).toBe(1000);
+    await page.getByLabel("Background hex", { exact: true }).fill("112233");
+    await expect.poll(() => page.locator("[data-stage=artboard]").evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(17, 34, 51)");
+
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
+    const [r] = await ofKind(page, "rectangle");
+    await page.getByRole("button", { name: "Add fill" }).click();
+    const fillsOf = async () => JSON.parse(String((await layers(page))[r.id].properties["paint.fills"] ?? "[]")) as Array<{ color?: string }>;
+    const hexes = page.getByLabel("Fill hex", { exact: true });
+    await hexes.nth(1).fill("FF0000");
+    await hexes.nth(1).press("Enter");
+    const before = await fillsOf();
+    expect(before.length).toBe(2);
+    const grip = page.getByRole("button", { name: "Reorder fill 1" });
+    await page.getByLabel("Fill hex", { exact: true }).first().hover(); // the grip shows when its row is hovered
+    const g = (await grip.boundingBox())!;
+    await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(g.x + g.width / 2, g.y + 40, { steps: 4 });
+    await page.mouse.up();
+    await expect.poll(async () => JSON.stringify((await fillsOf()).map((f) => f.color))).not.toBe(JSON.stringify(before.map((f) => f.color)));
+  });
 });

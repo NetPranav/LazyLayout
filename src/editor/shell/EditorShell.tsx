@@ -18,6 +18,7 @@ import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
 import { isUntouchedSeed, seedPrototypeDocument } from "./prototypeDocument";
 import { useHistoryStore } from "@/core/store/useHistoryStore";
+import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
 import {
   RecoveryPrompt,
   SaveErrorBanner,
@@ -211,6 +212,8 @@ export function EditorShell({
         <ReadOnlyBanner />
       </div>
 
+      <ConnectedCommandPalette />
+
       {/* 2. Left panel slot in "left" grid area */}
       <div
         className="ll-shell-left"
@@ -268,6 +271,8 @@ export function EditorShell({
               activeTool={actions.activeTool}
               activeShape={actions.activeShape}
               onToolDone={() => actions.setActiveTool("select")}
+              snapObjects={actions.snapObjects}
+              snapGuides={actions.snapGuides}
               preset={actions.viewportPreset}
               onPresetChange={(p) => actions.setViewportPreset(p as "1440" | "768" | "375")}
             />
