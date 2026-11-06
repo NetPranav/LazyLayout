@@ -103,6 +103,13 @@ export const FillSection: React.FC<FillSectionProps> = ({
 
   const fills: FillItem[] = engine ? enginePaints.map(itemOf) : localFills;
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  // The row of a layer without a fill list (text, buttons) is local; a different layer starts again from its own colour.
+  const [localFor, setLocalFor] = useState(selectedId);
+  if (localFor !== selectedId) {
+    setLocalFor(selectedId);
+    setFills([{ ...DEFAULT_FILL, hex: cleanHex || "FFFFFF", opacity: initialFo }]);
+    setActivePopoverId(null);
+  }
   const indexOf = (id: string) => Number(id.replace("fill-", ""));
 
   const syncPrimaryToStore = (updatedFills: FillItem[]) => {

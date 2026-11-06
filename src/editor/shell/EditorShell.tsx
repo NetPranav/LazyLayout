@@ -17,6 +17,7 @@ import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
 import { isUntouchedSeed, seedPrototypeDocument } from "./prototypeDocument";
+import { useHistoryStore } from "@/core/store/useHistoryStore";
 import {
   RecoveryPrompt,
   SaveErrorBanner,
@@ -67,20 +68,24 @@ export function EditorShell({
   const files = useProjectFiles();
   useProjectLock();
 
-  // Seed the prototype document if the project is brand new and untouched
+  // Seed the prototype document if the project is brand new and untouched. Once the page has had content in this session,
+  // an empty page is the designer's choice (they deleted everything), not a new project, so it stays empty.
   useEffect(() => {
-    const checkAndSeed = () => {
-      const layers = documentStore.getState().document.layers;
-      if (isUntouchedSeed(layers)) {
+    // A change that came with a history step is the designer's own edit (an emptied page stays empty); loading a saved or
+    // brand-new project changes the document with no step, and an untouched one is seeded.
+    let lastPast = useHistoryStore.getState().past.length;
+    const check = (layers: Record<string, { children?: unknown[] }> | undefined | null) => {
+      const past = useHistoryStore.getState().past.length;
+      const byDesigner = past !== lastPast;
+      lastPast = past;
+      if (byDesigner) return;
+      if (isUntouchedSeed(layers as Parameters<typeof isUntouchedSeed>[0])) {
         seedPrototypeDocument();
+        lastPast = useHistoryStore.getState().past.length;
       }
     };
-    checkAndSeed();
-    const unsub = documentStore.subscribe((state) => {
-      if (isUntouchedSeed(state.document.layers)) {
-        seedPrototypeDocument();
-      }
-    });
+    check(documentStore.getState().document.layers);
+    const unsub = documentStore.subscribe((state) => check(state.document.layers));
     return unsub;
   }, []);
 

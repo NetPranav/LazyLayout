@@ -146,7 +146,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   const [zoom, setZoom] = useControllable(
     controlledZoom,
     onZoomChange,
-    0.59
+    0.5
   );
   const [isInsertOpen, setIsInsertOpen] = useControllable(
     controlledIsInsertOpen,
@@ -400,7 +400,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   }, [setZoom, controlledOnZoom100]);
 
   const handleZoomFit = useCallback(() => {
-    setZoom(0.59);
+    setZoom(0.5);
     controlledOnZoomFit?.();
   }, [setZoom, controlledOnZoomFit]);
 
