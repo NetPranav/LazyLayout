@@ -1,2 +1,3 @@
 ### Fixed
 - New editor: the bottom bar works again. Frame, Shape (rectangle, ellipse, line, arrow, polygon, star) and Text draw by dragging (one undo step each, back to Select afterwards), Hand pans, the wheel pans and Ctrl/Cmd+wheel zooms, drawn layers are painted by the engine, shape Fill/Stroke/dash fields write the SVG properties, and the right-click menu uses real command ids.
+- New editor inspector: Effects (shadows, layer and background blur), Fill (several fills, gradients, hide, remove, reorder with arrow keys), Stroke, Image (alt text, fit, focal point, ratio, Replace) and Accessibility (label, role, tag, disabled) now read and write the document instead of keeping their own state, so they survive reselecting and undo.

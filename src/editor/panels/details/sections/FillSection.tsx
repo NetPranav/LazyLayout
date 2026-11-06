@@ -6,6 +6,42 @@ import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import type { InspectorSectionProps, FillItem } from "../types";
+import { useLayers } from "@/core/store/useDocumentStore";
+import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
+import { addPaint, changeType, movePaint, paintColor, removePaint, updatePaint } from "@/core/paint/paintEdits";
+import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
+import type { Paint, PaintType } from "@/core/paint/paints";
+
+const hexOf = (css: string): string => {
+  const c = parseCss(css);
+  return c ? toHex(c).replace(/^#/, "").slice(0, 6).toUpperCase() : "FFFFFF";
+};
+const cssOfHex = (hex: string, like: string): string => {
+  const c = fromHex(`#${hex.padEnd(6, "0").slice(0, 6)}`);
+  return c ? toCss({ ...c, a: parseCss(like)?.a ?? 1 }) : like;
+};
+const itemOf = (p: Paint, i: number): FillItem => ({
+  id: `fill-${i}`,
+  type: (p.type === "diamond" ? "radial" : p.type) as FillItem["type"],
+  hex: hexOf(paintColor(p)),
+  opacity: Math.round(p.opacity * 100),
+  stops: "stops" in p ? p.stops.map((s, k) => ({ id: `s${k}`, hex: hexOf(s.color), position: Math.round(s.at * 100) })) : undefined,
+  imageFit: p.type === "image" && p.mode !== "tile" ? p.mode : undefined,
+  hidden: !p.visible,
+});
+/** The paint with the edits of a row applied (hex edits the colour, or the first stop of a gradient). */
+const applyItem = (p: Paint, patch: Partial<FillItem>): Paint => {
+  let next = p;
+  if (patch.type && patch.type !== (p.type === "diamond" ? "radial" : p.type)) next = changeType(next, patch.type as PaintType);
+  if (patch.hex !== undefined && patch.hex.length === 6) {
+    if (next.type === "solid") next = { ...next, color: cssOfHex(patch.hex, next.color) };
+    else if ("stops" in next) next = { ...next, stops: next.stops.map((s, k) => (k === 0 ? { ...s, color: cssOfHex(patch.hex!, s.color) } : s)) } as Paint;
+  }
+  if (patch.opacity !== undefined) next = { ...next, opacity: patch.opacity / 100 };
+  if (patch.hidden !== undefined) next = { ...next, visible: !patch.hidden };
+  if (patch.imageFit && next.type === "image") next = { ...next, mode: patch.imageFit };
+  return next;
+};
 
 const DEFAULT_FILL: FillItem = {
   id: "fill-default",
@@ -33,6 +69,9 @@ export interface FillSectionProps extends InspectorSectionProps {
 }
 
 export const FillSection: React.FC<FillSectionProps> = ({
+  selectedId,
+  selectedIds,
+  layer,
   getValue,
   onUpdateProp,
   onAddFillRef,
@@ -47,7 +86,14 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const rawFo = getValue?.("fill.opacity");
   const initialFo = typeof rawFo === "number" ? rawFo : 100;
 
-  const [fills, setFills] = useState<FillItem[]>([
+  useLayers(); // re-read the fills when the document changes
+  const engineIds = (selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : []).filter(Boolean) as string[];
+  const primary = selectedId ?? engineIds[0] ?? null;
+  const engine = Boolean(layer && hasFills(layer.archetype) && primary);
+  const enginePaints: Paint[] = engine && primary ? fillsOf(primary) : [];
+  const writeEngine = (next: Paint[]) => setEngineFills(engineIds, next);
+
+  const [localFills, setFills] = useState<FillItem[]>([
     {
       ...DEFAULT_FILL,
       hex: cleanHex || "FFFFFF",
@@ -55,7 +101,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
     },
   ]);
 
+  const fills: FillItem[] = engine ? enginePaints.map(itemOf) : localFills;
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  const indexOf = (id: string) => Number(id.replace("fill-", ""));
 
   const syncPrimaryToStore = (updatedFills: FillItem[]) => {
     const visibleFill = updatedFills.find((f) => !f.hidden);
@@ -67,6 +115,10 @@ export const FillSection: React.FC<FillSectionProps> = ({
   };
 
   const handleAddFill = () => {
+    if (engine) {
+      writeEngine(addPaint(enginePaints, "solid", enginePaints.length ? undefined : "#cbd5e1"));
+      return;
+    }
     const newId = `fill-${Date.now()}`;
     const newFill: FillItem = {
       id: newId,
@@ -93,19 +145,46 @@ export const FillSection: React.FC<FillSectionProps> = ({
   });
 
   const handleUpdateFill = (id: string, patch: Partial<FillItem>) => {
+    if (engine) {
+      writeEngine(updatePaint(enginePaints, indexOf(id), (p) => applyItem(p, patch)));
+      return;
+    }
     const next = fills.map((f) => (f.id === id ? { ...f, ...patch } : f));
     setFills(next);
     syncPrimaryToStore(next);
   };
 
   const handleRemoveFill = (id: string) => {
+    if (engine) {
+      writeEngine(removePaint(enginePaints, indexOf(id)));
+      setActivePopoverId(null);
+      return;
+    }
     const next = fills.filter((f) => f.id !== id);
     setFills(next);
     if (activePopoverId === id) setActivePopoverId(null);
     syncPrimaryToStore(next);
   };
 
+  const handleMove = (id: string, direction: -1 | 1) => {
+    if (engine) writeEngine(movePaint(enginePaints, indexOf(id), direction));
+    else {
+      const i = indexOf(id);
+      const to = i + direction;
+      if (to >= 0 && to < localFills.length) {
+        const next = [...localFills];
+        [next[i], next[to]] = [next[to], next[i]];
+        setFills(next.map((f, k) => ({ ...f, id: `fill-${k}` })));
+      }
+    }
+  };
+
   const handleToggleHide = (id: string) => {
+    if (engine) {
+      const p = enginePaints[indexOf(id)];
+      if (p) writeEngine(updatePaint(enginePaints, indexOf(id), (q) => ({ ...q, visible: !p.visible })));
+      return;
+    }
     const next = fills.map((f) => (f.id === id ? { ...f, hidden: !f.hidden } : f));
     setFills(next);
     syncPrimaryToStore(next);
@@ -133,6 +212,12 @@ export const FillSection: React.FC<FillSectionProps> = ({
             <button
               type="button"
               data-grip
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  handleMove(fill.id, e.key === "ArrowUp" ? -1 : 1);
+                }
+              }}
               aria-label={`Reorder fill ${fillNum}`}
               title={`Reorder fill ${fillNum}`}
               className="ll-ib ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100 ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
