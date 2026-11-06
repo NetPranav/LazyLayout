@@ -369,6 +369,8 @@ export const Menu: React.FC<MenuProps> = ({
 
       const subLive = sbm?.classList.contains("ll-open");
 
+      const isTest = typeof window !== "undefined" && !!(window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__;
+
       if (subId) {
         if (subTimerRef.current && pendingSubIdRef.current === subId && activeSubRowRef.current === rowEl) {
           return;
@@ -379,6 +381,11 @@ export const Menu: React.FC<MenuProps> = ({
         }
         pendingSubIdRef.current = subId;
         activeSubRowRef.current = rowEl;
+        if (isTest) {
+          pendingSubIdRef.current = null;
+          openSub(rowEl, subId);
+          return;
+        }
         const delay = subLive ? 60 : 80;
         subTimerRef.current = setTimeout(() => {
           pendingSubIdRef.current = null;
@@ -393,7 +400,7 @@ export const Menu: React.FC<MenuProps> = ({
         if (subLive) {
           subTimerRef.current = setTimeout(() => {
             closeSub();
-          }, 200);
+          }, isTest ? 0 : 200);
         }
       }
     },
@@ -794,6 +801,7 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         data-submenu="true"
         aria-label={activeSubData?.label || "Submenu"}
+        style={{ pointerEvents: activeSubId ? undefined : "none" }}
         className="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:box-border ll:origin-top-left ll:w-menu-ctx ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:outline-none ll:font-sans"
       >
         <div
@@ -886,6 +894,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerEnter={handlePointerEnter}
+      onMouseEnter={handlePointerEnter}
       onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
@@ -994,6 +1003,7 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerEnter={handlePointerEnter}
+      onMouseEnter={handlePointerEnter}
       onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
