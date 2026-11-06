@@ -2,7 +2,8 @@
 
 import React, { useMemo } from "react";
 import type { StageElement } from "./types";
-import type { Layer, Clip } from "@/core/document/schema";
+import type { Layer, Clip, Composition } from "@/core/document/schema";
+import { clipTimeInComposition, MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useTransportTime } from "@/core/time/useTransportTime";
@@ -18,7 +19,11 @@ export interface MotionPathOverlayProps {
   layers?: Record<string, Layer>;
   /** Document clips (defaults to useDocument) */
   clips?: Record<string, Clip>;
-  /** Current playback or scrub time in seconds (defaults to useTransportTime) */
+  /** Document compositions (defaults to useDocument) */
+  compositions?: Record<string, Composition>;
+  /** Active composition ID (default: MAIN_COMPOSITION_ID) */
+  compositionId?: string;
+  /** Current composition playback or scrub time in seconds (defaults to useTransportTime) */
   currentTime?: number;
   /** Composition FPS for velocity tick sampling (default 60) */
   fps?: number;
@@ -61,6 +66,8 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   elements = {},
   layers: controlledLayers,
   clips: controlledClips,
+  compositions: controlledCompositions,
+  compositionId,
   currentTime: controlledCurrentTime,
   fps = 60,
   zoom = 1,
@@ -75,12 +82,16 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   const storeSelectedIds = useSelectionStore((s) => s.selectedIds);
   const storeLayers = useDocument((d) => d.layers);
   const storeClips = useDocument((d) => d.clips);
+  const storeCompositions = useDocument((d) => d.compositions);
   const storeCurrentTime = useTransportTime({ maxHz: 30 });
 
   const selectedIds = controlledSelectedIds ?? storeSelectedIds;
   const layers = controlledLayers ?? storeLayers;
   const clips = controlledClips ?? storeClips;
+  const compositions = controlledCompositions ?? storeCompositions;
   const currentTime = controlledCurrentTime ?? storeCurrentTime;
+  const activeCompId = compositionId ?? MAIN_COMPOSITION_ID;
+  const comp = compositions?.[activeCompId];
 
   // Scale factor: keep handles and ticks visually crisp and comfortable regardless of canvas zoom
   const scale = Math.max(0.05, zoom);
@@ -125,10 +136,22 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
         const waypoints = extractClipWaypoints(clip, layer?.properties);
         const frameTicks = showTicks ? geom.sampleFrameTicks(fps) : [];
 
-        // Sample position at current time
-        // Clip-local time clamped to [0, duration]
-        const clipLocalTime = Math.max(0, Math.min(clip.duration, currentTime));
-        const currentPoint = showPlayhead ? geom.evaluateAtTime(clipLocalTime) : null;
+        // Canonical composition-to-clip time mapping matching evaluate() kernel
+        let currentPoint: { x: number; y: number } | null = null;
+        if (showPlayhead) {
+          const placement = comp?.clips.find((p) => p.clipId === clip.id);
+          if (comp && placement) {
+            const timing = clipTimeInComposition(comp, clip, currentTime);
+            if (timing && timing.phase === "active") {
+              currentPoint = geom.evaluateAtTime(timing.time);
+            }
+          } else {
+            // Standalone clip fallback when no composition placement is specified
+            if (currentTime >= 0 && currentTime <= clip.duration) {
+              currentPoint = geom.evaluateAtTime(currentTime);
+            }
+          }
+        }
 
         result.push({
           clipId: clip.id,
@@ -149,6 +172,7 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
     selectedIds,
     layers,
     clips,
+    comp,
     elements,
     currentTime,
     fps,

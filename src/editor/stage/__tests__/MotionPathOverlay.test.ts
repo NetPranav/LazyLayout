@@ -9,7 +9,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MotionPathOverlay } from "../MotionPathOverlay";
 import type { Clip, Layer } from "@/core/document/schema";
 import type { StageElement } from "../types";
-import { getSpatialTrajectory } from "@/core/kernel/evaluate";
+import { getSpatialTrajectory, evaluate } from "@/core/kernel/evaluate";
+import { DocBuilder } from "@/core/document/__tests__/fixtures/builder";
+import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 
 function createTestSpatialClip(layerId: string, overrides: Partial<Clip> = {}): Clip {
   return {
@@ -373,5 +375,194 @@ describe("Phase 69 Milestone 4: MotionPathOverlay (Canvas Overlay & Path Renderi
         })
       );
     }, "Rendering must never mutate layer or clip objects");
+  });
+
+  it("converts composition playhead time to clip-local time for a clip with nonzero start offset and matches evaluate()", () => {
+    const b = new DocBuilder();
+    const layerId = b.layer("container", "AnimatedBox", null, {
+      "frame.x": 100,
+      "frame.y": 200,
+      "frame.width": 80,
+      "frame.height": 40,
+      "transform.x": 0,
+      "transform.y": 0,
+    });
+
+    const clipId = b.clip(layerId, {
+      name: "OffsetSpatialClip",
+      type: "entrance",
+      trigger: "mount",
+      duration: 2,
+      easing: "linear",
+      tracks: [
+        {
+          id: "tx",
+          property: "transform.x",
+          keyframes: [
+            { id: "kx0", time: 0, value: 0 },
+            { id: "kx1", time: 1, value: 150 },
+            { id: "kx2", time: 2, value: 300 },
+          ],
+        },
+        {
+          id: "ty",
+          property: "transform.y",
+          keyframes: [
+            { id: "ky0", time: 0, value: 0 },
+            { id: "ky1", time: 1, value: 100 },
+            { id: "ky2", time: 2, value: 0 },
+          ],
+        },
+      ],
+      spatialTrajectories: {
+        transform: {
+          id: "st-offset",
+          propertyGroup: "transform",
+          enabled: true,
+          waypoints: [
+            { id: "kx0", time: 0, mode: "bezier", spatialOut: { x: 50, y: 50 } },
+            { id: "kx1", time: 1, mode: "continuous", spatialIn: { x: -30, y: 20 }, spatialOut: { x: 30, y: -20 } },
+            { id: "kx2", time: 2, mode: "linear" },
+          ],
+        },
+      },
+    });
+
+    const doc = b.build();
+    const comp = doc.compositions[MAIN_COMPOSITION_ID];
+    // Offset clip placement by 5.0 seconds in composition:
+    const placement = comp.clips.find((p) => p.clipId === clipId)!;
+    placement.offset = 5.0;
+    comp.layers[layerId] = { in: 0, out: 15, start: 0, stretch: 1 };
+
+    // Composition playhead at 6.5s (clip-local time: 1.5s)
+    const compTime = 6.5;
+
+    // Canonical evaluate() oracle from deterministic kernel:
+    const evaluated = evaluate(doc, MAIN_COMPOSITION_ID, layerId, compTime);
+    const evalX = evaluated["transform.x"] as number;
+    const evalY = evaluated["transform.y"] as number;
+
+    const html = renderToStaticMarkup(
+      React.createElement(MotionPathOverlay, {
+        selectedIds: [layerId],
+        layers: doc.layers,
+        clips: doc.clips,
+        compositions: doc.compositions,
+        compositionId: MAIN_COMPOSITION_ID,
+        currentTime: compTime,
+        showPlayhead: true,
+      })
+    );
+
+    assert.ok(
+      html.includes('data-testid="motion-path-playhead"'),
+      "Playhead marker must be rendered when composition playhead is inside clip"
+    );
+    assert.ok(
+      html.includes(`transform="translate(${evalX}, ${evalY})"`),
+      `Playhead marker coordinate (${evalX}, ${evalY}) must identically match canonical evaluate() kernel output`
+    );
+  });
+
+  it("does not render playhead marker when composition playhead is outside the clip active time range", () => {
+    const b = new DocBuilder();
+    const layerId = b.layer("container", "AnimatedBox", null, {
+      "frame.x": 100,
+      "frame.y": 200,
+      "frame.width": 80,
+      "frame.height": 40,
+      "transform.x": 0,
+      "transform.y": 0,
+    });
+
+    const clipId = b.clip(layerId, {
+      name: "OffsetSpatialClip2",
+      type: "entrance",
+      trigger: "mount",
+      duration: 2,
+      easing: "linear",
+      tracks: [
+        {
+          id: "tx",
+          property: "transform.x",
+          keyframes: [
+            { id: "kx0", time: 0, value: 0 },
+            { id: "kx1", time: 1, value: 150 },
+            { id: "kx2", time: 2, value: 300 },
+          ],
+        },
+        {
+          id: "ty",
+          property: "transform.y",
+          keyframes: [
+            { id: "ky0", time: 0, value: 0 },
+            { id: "ky1", time: 1, value: 100 },
+            { id: "ky2", time: 2, value: 0 },
+          ],
+        },
+      ],
+      spatialTrajectories: {
+        transform: {
+          id: "st-offset2",
+          propertyGroup: "transform",
+          enabled: true,
+          waypoints: [
+            { id: "kx0", time: 0, mode: "bezier", spatialOut: { x: 50, y: 50 } },
+            { id: "kx1", time: 1, mode: "continuous", spatialIn: { x: -30, y: 20 }, spatialOut: { x: 30, y: -20 } },
+            { id: "kx2", time: 2, mode: "linear" },
+          ],
+        },
+      },
+    });
+
+    const doc = b.build();
+    const comp = doc.compositions[MAIN_COMPOSITION_ID];
+    // Offset clip placement by 5.0 seconds in composition (active from 5.0s to 7.0s):
+    const placement = comp.clips.find((p) => p.clipId === clipId)!;
+    placement.offset = 5.0;
+    comp.layers[layerId] = { in: 0, out: 15, start: 0, stretch: 1 };
+
+    // 1. At compTime = 3.0s (before clip starts at 5.0s):
+    const htmlBefore = renderToStaticMarkup(
+      React.createElement(MotionPathOverlay, {
+        selectedIds: [layerId],
+        layers: doc.layers,
+        clips: doc.clips,
+        compositions: doc.compositions,
+        compositionId: MAIN_COMPOSITION_ID,
+        currentTime: 3.0,
+        showPlayhead: true,
+      })
+    );
+    assert.ok(
+      !htmlBefore.includes('data-testid="motion-path-playhead"'),
+      "Playhead marker must NOT be rendered when composition time is before clip starts"
+    );
+    assert.ok(
+      htmlBefore.includes('data-testid="motion-path-ribbon"'),
+      "Trajectory ribbon must remain visible for spatial editing context"
+    );
+
+    // 2. At compTime = 8.0s (after clip ends at 5.0 + 2.0 = 7.0s):
+    const htmlAfter = renderToStaticMarkup(
+      React.createElement(MotionPathOverlay, {
+        selectedIds: [layerId],
+        layers: doc.layers,
+        clips: doc.clips,
+        compositions: doc.compositions,
+        compositionId: MAIN_COMPOSITION_ID,
+        currentTime: 8.0,
+        showPlayhead: true,
+      })
+    );
+    assert.ok(
+      !htmlAfter.includes('data-testid="motion-path-playhead"'),
+      "Playhead marker must NOT be rendered when composition time is after clip finishes"
+    );
+    assert.ok(
+      htmlAfter.includes('data-testid="motion-path-ribbon"'),
+      "Trajectory ribbon must remain visible for spatial editing context"
+    );
   });
 });
