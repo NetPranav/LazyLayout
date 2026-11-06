@@ -158,14 +158,14 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                   }}
                 >
                   {/* a larger invisible target around the dot, so the handle is easy to hit and the cursor changes at once */}
-                  <span aria-hidden="true" className="ll:absolute" style={{ inset: -9, cursor: RESIZE_HANDLE_CURSORS[name] }} />
+                  <span aria-hidden="true" className="ll:absolute" style={{ inset: -5.5, cursor: RESIZE_HANDLE_CURSORS[name] }} />
                 </div>
               );
             })}
 
             {/* Dimension Badge (.dim): e.g. "340 × 82" */}
             <div
-              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none"
+              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none ll:pointer-events-none"
               style={{
                 left: 0,
                 top: "calc(100% + var(--ll-spacing-0-5))",
@@ -225,7 +225,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
             }}
           >
             <span
-              className="ll:absolute ll:font-mono ll:px-1 ll:rounded-xs ll:bg-surface-panel ll:text-primary ll:border ll:border-border"
+              className="ll:absolute ll:font-mono ll:px-1 ll:rounded-xs ll:bg-surface-panel ll:text-primary ll:border ll:border-border ll:pointer-events-none"
               style={{
                 left: isX ? mid - mark.from : 4,
                 top: isX ? -16 : mid - mark.from - 8,

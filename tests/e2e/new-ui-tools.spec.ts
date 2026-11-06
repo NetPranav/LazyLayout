@@ -170,15 +170,15 @@ test.describe("the new editor's drawing tools", () => {
     const copy = (await ofKind(page, "ellipse")).find((l) => l.id !== shape.id)!;
     expect(copy, "the duplicate is a layer of its own").toBeTruthy();
 
-    // Arrange > Send to back moves the copy to the bottom of the page
-    const pageId = Object.values(await layers(page)).find((l) => l.parentId === null)!.id;
+    // Arrange > Send to back moves the copy to the bottom of the container
+    const parentId = copy.parentId ?? shape.parentId ?? Object.values(await layers(page)).find((l) => l.parentId === null)!.id;
     await rightClick(copy.id);
     await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
     await page.getByRole("menuitem", { name: /^Send to back/ }).click();
-    // the two sit exactly on each other, so the click may land on either: whichever it was goes to the bottom of the page
+    // the two sit exactly on each other, so the click may land on either: whichever it was goes to the bottom of the container
     await expect
       .poll(async () => {
-        const kids = (await layers(page))[pageId].children;
+        const kids = (await layers(page))[parentId].children;
         return kids.indexOf(copy.id) === 0 || kids.indexOf(shape.id) === 0;
       })
       .toBe(true);
