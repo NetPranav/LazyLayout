@@ -208,7 +208,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           type="button"
           aria-pressed={isClipped}
           aria-label="Clip content"
-          title="Clip content"
+          title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
           onClick={() =>
             onUpdateProp?.("layout.overflowX", isClipped ? "visible" : "hidden")
           }

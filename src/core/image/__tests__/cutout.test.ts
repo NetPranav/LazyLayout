@@ -95,3 +95,51 @@ test("auto finds a mountain that stands on the bottom of the picture by looking 
   assert.equal(mask[(h - 2) * w + 30], 255); // the base is kept
   assert.equal(mask[2 * w + 2], 0); // the sky is cut
 });
+
+/** A noisy photo-like picture: a sky that fades from deep blue to pale at the horizon, a jagged ridge, textured rock. Returns the picture and the true mountain mask. */
+function photoLike(w: number, h: number, seed = 7): { img: Pixels; truth: Uint8Array } {
+  let s = seed;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const data = new Uint8ClampedArray(w * h * 4);
+  const truth = new Uint8Array(w * h);
+  const ridge = (x: number) => h * 0.35 + Math.sin(x / 9) * 6 + Math.abs(x - w / 2) * 0.55 + Math.sin(x / 3.1) * 2;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const rock = y >= ridge(x);
+      const t = y / h;
+      const n = (rnd() - 0.5) * (rock ? 40 : 10);
+      const c = rock ? [70 + n, 62 + n, 55 + n] : [60 + 150 * t + n, 100 + 110 * t + n, 170 + 60 * t + n];
+      data.set([c[0], c[1], c[2], 255], (y * w + x) * 4);
+      truth[y * w + x] = rock ? 255 : 0;
+    }
+  return { img: { data, width: w, height: h }, truth };
+}
+
+test("on a noisy gradient-sky picture, Auto keeps the mountain and drops the sky (overlap with the true outline)", () => {
+  const { img, truth } = photoLike(200, 140);
+  const { mask } = autoSubject(img, 22);
+  let both = 0;
+  let either = 0;
+  for (let i = 0; i < mask.length; i++) {
+    const a = mask[i] > 127;
+    const b = truth[i] > 127;
+    if (a && b) both++;
+    if (a || b) either++;
+  }
+  const overlap = both / either;
+  assert.ok(overlap > 0.9, `kept area overlaps the true mountain by ${(overlap * 100).toFixed(1)}%`);
+});
+
+test("a tolerance set too high does not let the sky leak into the mountain", () => {
+  const { img, truth } = photoLike(200, 140);
+  const { mask } = autoSubject(img, 60);
+  let both = 0;
+  let either = 0;
+  for (let i = 0; i < mask.length; i++) {
+    const a = mask[i] > 127;
+    const b = truth[i] > 127;
+    if (a && b) both++;
+    if (a || b) either++;
+  }
+  assert.ok(both / either > 0.9, `overlap ${((both / either) * 100).toFixed(1)}%`);
+});

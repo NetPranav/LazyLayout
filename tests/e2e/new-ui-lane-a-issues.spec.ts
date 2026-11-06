@@ -59,8 +59,15 @@ test.describe("Lane A issue fixes", () => {
     const order = () => page.evaluate(() => [...document.querySelectorAll('[data-testid="stage-element"]')].map((e) => e.getAttribute("data-element-id")));
     expect(await order()).toEqual([rect.id, ell.id]); // drawn later = on top
     await stageEl(page, ell.id).click({ button: "right", force: true });
-    await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
-    await page.getByRole("menuitem", { name: /^Send to back/ }).click();
+    const arrange = page.getByRole("menuitem", { name: /^Arrange/ });
+    const sendToBack = page.getByRole("menuitem", { name: /^Send to back/ });
+    await arrange.hover();
+    // the submenu opens on hover; where a hover does not open it in time, a click does
+    if (!(await sendToBack.isVisible().catch(() => false))) {
+      await page.waitForTimeout(400);
+      if (!(await sendToBack.isVisible().catch(() => false))) await arrange.click();
+    }
+    await sendToBack.click();
     await expect.poll(order).toEqual([ell.id, rect.id]);
   });
 
@@ -384,5 +391,20 @@ test.describe("Lane A issue fixes", () => {
     await page.mouse.up();
     const [poly] = await ofKind(page, "polygon");
     expect(Number(poly.properties["shape.sides"] ?? 6)).toBe(6);
+  });
+
+  test("round 4: the selection around No wrap text includes the part that runs past the box", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Text");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.3, 0.35));
+    const [t] = await ofKind(page, "text");
+    await page.getByLabel("Text content", { exact: true }).fill("a very long line of words that runs well past the small box it was drawn in");
+    await page.getByRole("button", { name: "More Typography options" }).click();
+    await page.getByRole("combobox", { name: "White space" }).click();
+    await page.getByRole("option", { name: "No wrap" }).click();
+    const boxWidth = Number((await layers(page))[t.id].properties["frame.width"]);
+    await expect
+      .poll(async () => Math.round((await page.locator(`[data-selection-id="${t.id}"]`).boundingBox())!.width))
+      .toBeGreaterThan(boxWidth * 0.5 * 1.5); // the canvas is drawn at half size
   });
 });

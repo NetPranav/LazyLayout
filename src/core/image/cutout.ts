@@ -85,12 +85,33 @@ export function selectBorderBackground(img: Pixels, tolerance: number, sides: "a
  * Finds the subject without a click. It samples the whole edge first; when that leaves almost nothing or almost everything
  * (the subject touches the edge), it samples only the top, where the sky is.
  */
-export function autoSubject(img: Pixels, tolerance: number): { mask: Mask; sides: "all" | "top" } {
+export function autoSubject(img: Pixels, tolerance: number): { mask: Mask; sides: "all" | "top"; tolerance: number } {
   const total = img.width * img.height;
-  const all = invertMask(selectBorderBackground(img, tolerance, "all"));
-  const area = maskArea(all);
-  if (area > total * 0.04 && area < total * 0.96) return { mask: all, sides: "all" };
-  return { mask: invertMask(selectBorderBackground(img, tolerance, "top")), sides: "top" };
+  const background = (sides: "all" | "top", tol: number) => selectBorderBackground(img, tol, sides);
+  const plausible = (m: Mask) => {
+    const kept = total - maskArea(m);
+    return kept > total * 0.04 && kept < total * 0.96;
+  };
+  // Which edges are sky: all of them, unless that leaves almost nothing or almost everything (the subject touches the edge)
+  let sides: "all" | "top" = "all";
+  const probe = background("all", Math.min(tolerance, 14));
+  if (!plausible(probe)) sides = "top";
+  // The tolerance is a ceiling. Grow it step by step and stop just before the fill leaks out of the sky into the subject,
+  // which shows as the background suddenly taking a large extra share of the picture.
+  const steps = [6, 10, 14, 18, 22, 26, 30, 36, 42].filter((t) => t < tolerance);
+  steps.push(tolerance);
+  let best = background(sides, steps[0]);
+  let bestTol = steps[0];
+  let bestArea = maskArea(best);
+  for (const t of steps.slice(1)) {
+    const m = background(sides, t);
+    const area = maskArea(m);
+    if (area - bestArea > total * 0.15) break; // a leak: stay with the last good one
+    best = m;
+    bestTol = t;
+    bestArea = area;
+  }
+  return { mask: invertMask(best), sides, tolerance: bestTol };
 }
 
 export function invertMask(mask: Mask): Mask {

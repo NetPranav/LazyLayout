@@ -183,6 +183,27 @@ export const Stage: React.FC<StageProps> = ({
     return result;
   }, [controlledElements, storeLayers]);
 
+  // Text that is set not to wrap runs past its box: the selection should include the part that sticks out.
+  const [overflowSize, setOverflowSize] = useState<Record<string, { w: number; h: number }>>({});
+  useEffect(() => {
+    // measured after the frame is drawn (and the result set from the callback, not in the effect body)
+    const timer = window.setTimeout(() => {
+    const next: Record<string, { w: number; h: number }> = {};
+    for (const l of Object.values(storeLayers ?? {})) {
+      if (l.archetype !== "text") continue;
+      const space = l.properties["typography.whiteSpace"];
+      if (space !== "nowrap" && space !== "pre" && l.properties["text.sizing"] !== "autoWidth") continue;
+      const node = document.querySelector<HTMLElement>(`[data-archetype="text"][data-element-id="${l.id}"]`);
+      if (!node) continue;
+      const w = Number(l.properties["frame.width"]) || node.offsetWidth;
+      const h = Number(l.properties["frame.height"]) || node.offsetHeight;
+      if (node.scrollWidth > w + 1 || node.scrollHeight > h + 1) next[l.id] = { w: Math.max(w, node.scrollWidth), h: Math.max(h, node.scrollHeight) };
+    }
+    setOverflowSize((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [storeLayers]);
+
   // Local elements state for direct interactive dragging / manipulation
   const [elements, setElements] = useState<Record<string, StageElement>>(elementsFromStore);
   const [prevElementsFromStore, setPrevElementsFromStore] = useState(elementsFromStore);
@@ -236,6 +257,15 @@ export const Stage: React.FC<StageProps> = ({
     artboardWidth: typeof rootSized?.properties["frame.width"] === "number" ? (rootSized.properties["frame.width"] as number) : presetDef0.artboardWidth,
     artboardHeight: typeof rootSized?.properties["frame.height"] === "number" ? (rootSized.properties["frame.height"] as number) : presetDef0.artboardHeight,
   };
+
+  // What the canvas draws and outlines: the boxes, grown to hold text that runs past its own.
+  const drawnElements = useMemo(() => {
+    const ids = Object.keys(overflowSize);
+    if (ids.length === 0) return elements;
+    const out = { ...elements };
+    for (const id of ids) if (out[id]) out[id] = { ...out[id], width: overflowSize[id].w, height: overflowSize[id].h };
+    return out;
+  }, [elements, overflowSize]);
 
   const handleLayerAction = useCallback(
     (action: LayerMenuAction, targetId: string) => {
@@ -584,7 +614,7 @@ export const Stage: React.FC<StageProps> = ({
         background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
         zoom={zoom}
         pan={pan}
-        elements={elements}
+        elements={drawnElements}
         layers={storeLayers}
         drawPreview={drawPreview}
         selectedIds={selectedIds}
