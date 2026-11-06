@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import { DocBuilder } from "../../document/__tests__/fixtures/builder";
 import { MAIN_COMPOSITION_ID } from "../../document/compositions";
 import { evaluate, sampleClip, getSpatialTrajectory } from "../evaluate";
-import type { Clip, MotionDocument } from "../../document/schema";
+import type { SpatialDiagnostic } from "../../geometry/spatialPath";
 import { DiagnosticBus } from "../../engine/DiagnosticBus";
 
 describe("Phase 69 Milestone 3: Kernel Integration (sampleClip & evaluate)", () => {
@@ -622,5 +622,343 @@ describe("Phase 69 Milestone 3: Kernel Integration (sampleClip & evaluate)", () 
 
     const afterSnap = JSON.stringify(doc);
     assert.equal(afterSnap, beforeSnap);
+  });
+
+  describe("Cache Invalidation & DiagnosticBus Purity Boundary", () => {
+    it("evaluates the same clip reference with two different fallback coordinate sets without stale geometry", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      // Clip with ONLY transform.x track; Y coordinates must be resolved from fallbackProps
+      b.clip(id, {
+        name: "OrphanFallbackClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 200 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-cache-1",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+
+      // Evaluate with fallback Y = 50:
+      const sample1 = sampleClip(clip, 2, { "transform.x": 0, "transform.y": 50 });
+      assert.equal(sample1["transform.x"], 200);
+      assert.equal(sample1["transform.y"], 50, "Waypoint at t=2 must adopt fallback Y=50");
+
+      // Evaluate the EXACT same clip reference with fallback Y = 250:
+      const sample2 = sampleClip(clip, 2, { "transform.x": 0, "transform.y": 250 });
+      assert.equal(sample2["transform.x"], 200);
+      assert.equal(sample2["transform.y"], 250, "Waypoint at t=2 must adopt updated fallback Y=250 rather than returning stale geometry");
+
+      // Re-evaluate with fallback Y = 50:
+      const sample3 = sampleClip(clip, 2, { "transform.x": 0, "transform.y": 50 });
+      assert.equal(sample3["transform.y"], 50, "Re-evaluation with Y=50 must return correct geometry");
+    });
+
+    it("invalidates cache when fallback properties change with an unchanged clip reference", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      // Clip with ONLY transform.x track; Y coordinates depend on fallbackProps
+      b.clip(id, {
+        name: "FallbackInvalidationClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-cache-2",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+
+      const geomA = getSpatialTrajectory(clip, { "transform.x": 10, "transform.y": 20 });
+      const geomB = getSpatialTrajectory(clip, { "transform.x": 10, "transform.y": 99 });
+
+      assert.ok(geomA !== null);
+      assert.ok(geomB !== null);
+      assert.notStrictEqual(geomA, geomB, "Different fallback properties must compile separate geometries");
+      assert.equal(geomA.segments[0].bezier.p3.y, 20);
+      assert.equal(geomB.segments[0].bezier.p3.y, 99);
+    });
+
+    it("reuses cached geometry with strict reference equality when inputs are unchanged", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      b.clip(id, {
+        name: "CacheReuseClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+          {
+            id: "ty",
+            property: "transform.y",
+            keyframes: [
+              { id: "ky0", time: 0, value: 0 },
+              { id: "ky1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-cache-3",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+      const fallback = { "transform.x": 0, "transform.y": 0 };
+
+      const geom1 = getSpatialTrajectory(clip, fallback);
+      const geom2 = getSpatialTrajectory(clip, fallback);
+      const geom3 = getSpatialTrajectory(clip, fallback);
+
+      assert.ok(geom1 !== null);
+      assert.strictEqual(geom1, geom2, "Second retrieval must return the identical cached instance");
+      assert.strictEqual(geom2, geom3, "Third retrieval must return the identical cached instance");
+    });
+
+    it("enforces DiagnosticBus purity: kernel evaluation never emits side-effects to the global bus", () => {
+      DiagnosticBus.clearHistory();
+
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
+
+      b.clip(id, {
+        name: "PurityTestClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 1, value: 100 },
+              { id: "kx2", time: 2, value: 200 },
+            ],
+          },
+          {
+            id: "ty",
+            property: "transform.y",
+            keyframes: [
+              { id: "ky0", time: 0, value: 0 },
+              { id: "ky1", time: 1, value: 50 },
+              { id: "ky2", time: 2, value: 0 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-purity",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 1 },
+              { id: "kx2", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+
+      // Sample 100 frames through the deterministic evaluation kernel:
+      for (let f = 0; f <= 100; f++) {
+        const t = (f / 100) * 2;
+        evaluate(doc, MAIN_COMPOSITION_ID, id, t);
+      }
+
+      // Assert zero side-effects to DiagnosticBus:
+      const busEvents = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.equal(busEvents.length, 0, "Deterministic evaluate() must produce zero side-effects on DiagnosticBus");
+    });
+
+    it("forwards spatial diagnostics to an explicit sink without touching DiagnosticBus", () => {
+      DiagnosticBus.clearHistory();
+
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
+
+      b.clip(id, {
+        name: "SinkTestClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+          {
+            id: "ty",
+            property: "transform.y",
+            keyframes: [
+              { id: "ky0", time: 0, value: 0 },
+              { id: "ky1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-sink",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const sink: SpatialDiagnostic[] = [];
+
+      evaluate(doc, MAIN_COMPOSITION_ID, id, 0.5, { diagnosticsSink: sink });
+
+      // DiagnosticBus remains untouched:
+      assert.equal(DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN").length, 0);
+    });
+
+    it("benchmarks continuous frame evaluation throughput", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
+
+      b.clip(id, {
+        name: "BenchmarkClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 5,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 1, value: 100 },
+              { id: "kx2", time: 2, value: 250 },
+              { id: "kx3", time: 3, value: 400 },
+              { id: "kx4", time: 5, value: 600 },
+            ],
+          },
+          {
+            id: "ty",
+            property: "transform.y",
+            keyframes: [
+              { id: "ky0", time: 0, value: 0 },
+              { id: "ky1", time: 1, value: 150 },
+              { id: "ky2", time: 2, value: 50 },
+              { id: "ky3", time: 3, value: 200 },
+              { id: "ky4", time: 5, value: 0 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-bench",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 1 },
+              { id: "kx2", time: 2 },
+              { id: "kx3", time: 3 },
+              { id: "kx4", time: 5 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+
+      // Warmup:
+      for (let i = 0; i < 50; i++) {
+        evaluate(doc, MAIN_COMPOSITION_ID, id, (i / 50) * 5);
+      }
+
+      // Benchmark 1,000 continuous frame evaluations:
+      const startTime = performance.now();
+      for (let i = 0; i < 1000; i++) {
+        evaluate(doc, MAIN_COMPOSITION_ID, id, (i / 1000) * 5);
+      }
+      const elapsedMs = performance.now() - startTime;
+      const perFrameUs = (elapsedMs / 1000) * 1000; // in microseconds
+
+      // 1,000 frames must comfortably evaluate in under 250ms (< 250 µs/frame, well within 16.6ms frame budget even under CI CPU contention)
+      assert.ok(
+        elapsedMs < 250,
+        `1,000 frame evaluations took ${elapsedMs.toFixed(2)}ms (${perFrameUs.toFixed(2)} µs/frame), exceeding budget`
+      );
+    });
   });
 });

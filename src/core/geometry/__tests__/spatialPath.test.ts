@@ -1,22 +1,18 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  dist2D,
   evaluateCubic,
   evaluateCubicDerivative,
   computeSegmentMaxDerivative,
   waypointsToCentripetalCatmullRom,
   computeFiniteChordDeviation,
   integrateArcLength,
-  splitCubic,
   compileSegmentLut,
   invertArcLength,
   invertArcLengthDetailed,
   integrateArcLengthAdaptiveDetailed,
-  type ArcLengthInversionResult,
   compileSpatialTrajectory,
   createSpatialPath,
-  SpatialTrajectoryGeometry,
   type Point2D,
   type CubicBezier,
 } from "../spatialPath";

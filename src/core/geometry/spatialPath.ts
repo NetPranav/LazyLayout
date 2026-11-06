@@ -27,6 +27,14 @@ export interface Point2D {
   y: number;
 }
 
+export interface SpatialDiagnostic {
+  channel: "SPATIAL_TRAJECTORY_WARN";
+  severity: "warning" | "error";
+  code: string;
+  source: { entityId: string; panel: string };
+  message: string;
+}
+
 export interface CubicBezier {
   p0: Point2D;
   p1: Point2D;
@@ -301,6 +309,7 @@ export interface AdaptiveQuadratureResult {
   value: number;
   errorEst: number;
   converged: boolean;
+  diagnostic?: SpatialDiagnostic;
 }
 
 /**
@@ -308,7 +317,7 @@ export interface AdaptiveQuadratureResult {
  * Subdivides [u0, u1] into 2 halves, compares single-interval GL5 (I1) with
  * two-half GL5 (I2), estimates local error as |I2 - I1| / 15.
  * If error <= tol, returns I2 with converged = true.
- * If error > tol and depth >= maxDepth, emits a DiagnosticBus warning and returns converged = false.
+ * If error > tol and depth >= maxDepth, emits a DiagnosticBus warning (if not suppressed) and returns converged = false.
  * Otherwise, recursively subdivides both halves.
  */
 export function integrateArcLengthAdaptiveDetailed(
@@ -317,7 +326,8 @@ export function integrateArcLengthAdaptiveDetailed(
   u1: number,
   tol = 1e-6,
   depth = 0,
-  maxDepth = 8
+  maxDepth = 8,
+  options?: { emitDiagnostic?: boolean }
 ): AdaptiveQuadratureResult {
   if (u0 >= u1) return { value: 0, errorEst: 0, converged: true };
   const mid = (u0 + u1) / 2;
@@ -332,22 +342,27 @@ export function integrateArcLengthAdaptiveDetailed(
   }
 
   if (depth >= maxDepth) {
-    DiagnosticBus.emit({
+    const diag: SpatialDiagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "QUADRATURE_MAX_DEPTH",
       source: { entityId: "spatial_quadrature", panel: "motion" },
       message: `Quadrature reached max subdivision depth (${maxDepth}) with residual error estimate ${errorEst.toFixed(6)}px`,
-    });
-    return { value: i2, errorEst, converged: false };
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
+    return { value: i2, errorEst, converged: false, diagnostic: diag };
   }
 
-  const leftRes = integrateArcLengthAdaptiveDetailed(b, u0, mid, tol / 2, depth + 1, maxDepth);
-  const rightRes = integrateArcLengthAdaptiveDetailed(b, mid, u1, tol / 2, depth + 1, maxDepth);
+  const leftRes = integrateArcLengthAdaptiveDetailed(b, u0, mid, tol / 2, depth + 1, maxDepth, options);
+  const rightRes = integrateArcLengthAdaptiveDetailed(b, mid, u1, tol / 2, depth + 1, maxDepth, options);
 
   return {
     value: leftRes.value + rightRes.value,
     errorEst: leftRes.errorEst + rightRes.errorEst,
     converged: leftRes.converged && rightRes.converged,
+    diagnostic: leftRes.diagnostic ?? rightRes.diagnostic,
   };
 }
 
@@ -394,6 +409,7 @@ export interface CompiledLutResult {
   unresolvedDeviation?: boolean;
   maxResidualDeviation?: number;
   allConverged?: boolean;
+  diagnostic?: SpatialDiagnostic;
 }
 
 /**
@@ -401,7 +417,7 @@ export interface CompiledLutResult {
  * Always initializes with an unconditional 32-sample root grid (Delta u_0 <= 0.03125),
  * followed by adaptive subdivision checking Wang's finite-chord bound (tau_geom <= 0.02 px).
  */
-export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
+export function compileSegmentLut(b: CubicBezier, options?: { emitDiagnostic?: boolean }): CompiledLutResult {
   interface SubInterval {
     u0: number;
     u1: number;
@@ -443,7 +459,7 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
         unresolvedDeviation = true;
         maxResidualDeviation = Math.max(maxResidualDeviation, deviation);
       }
-      const quad = integrateArcLengthAdaptiveDetailed(item.bez, 0, 1, 1e-6);
+      const quad = integrateArcLengthAdaptiveDetailed(item.bez, 0, 1, 1e-6, 0, 8, options);
       leafIntervals.push({
         u0: item.u0,
         u1: item.u1,
@@ -465,13 +481,18 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
     subdivideAdaptive(interval, 0);
   }
 
+  let diagnostic: SpatialDiagnostic | undefined;
   if (unresolvedDeviation) {
-    DiagnosticBus.emit({
+    diagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "SUBDIVISION_MAX_DEPTH",
       source: { entityId: "spatial_trajectory", panel: "motion" },
       message: `Spatial trajectory exceeded max subdivision depth (10) with residual deviation ${maxResidualDeviation.toFixed(4)}px`,
-    });
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diagnostic);
+    }
   }
 
   // 3. Construct monotonic LUT with cumulative error bounds:
@@ -499,6 +520,7 @@ export function compileSegmentLut(b: CubicBezier): CompiledLutResult {
     unresolvedDeviation: unresolvedDeviation ? true : undefined,
     maxResidualDeviation: unresolvedDeviation ? maxResidualDeviation : undefined,
     allConverged,
+    diagnostic,
   };
 }
 
@@ -515,6 +537,15 @@ export interface ArcLengthInversionResult {
     | "bracket_unresolved_boundary"
     | "uncertainty_exceeds_tolerance"
     | "quadrature_exhausted";
+  diagnostic?: SpatialDiagnostic;
+}
+
+export interface TrajectoryEvaluationSample {
+  point: Point2D | null;
+  converged: boolean;
+  unresolvedReason?: string;
+  spatialErrorEst?: number;
+  diagnostic?: SpatialDiagnostic;
 }
 
 /**
@@ -548,7 +579,8 @@ export function invertArcLengthDetailed(
   sProgress: number,
   spatialTolerance = 0.015,
   quadTol = 1e-6,
-  quadMaxDepth = 8
+  quadMaxDepth = 8,
+  options?: { emitDiagnostic?: boolean }
 ): ArcLengthInversionResult {
   if (totalLength <= 1e-6 || lut.length === 0) {
     return { u: 0, converged: true, spatialErrorEst: 0, spatialErrorBound: 0 };
@@ -579,7 +611,7 @@ export function invertArcLengthDetailed(
     const uBase = lut[baseIdx].u;
     const sBase = lut[baseIdx].s;
     const errBase = Math.max(lut[baseIdx].estimatedError ?? 0, lut[baseIdx].errorBound ?? 0);
-    const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, quadTol, 0, quadMaxDepth);
+    const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, quadTol, 0, quadMaxDepth, options);
     const totalEst = errBase + quad.errorEst;
     return {
       s: sBase + quad.value,
@@ -630,12 +662,16 @@ export function invertArcLengthDetailed(
   const isRightResolved = evalRight.s - (evalRight.estimatedError ?? evalRight.errorBound) >= sTarget;
 
   if (!isLeftResolved || !isRightResolved) {
-    DiagnosticBus.emit({
+    const diag: SpatialDiagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "BRACKET_BOUNDARY_UNRESOLVED",
       source: { entityId: "arc_length_inversion", panel: "motion" },
       message: `Arc-length root bracket unresolved at boundary: leftResolved=${isLeftResolved}, rightResolved=${isRightResolved}, sTarget=${sTarget.toFixed(4)}px`,
-    });
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
     const err = Math.max(evalLeft.estimatedError ?? evalLeft.errorBound, evalRight.estimatedError ?? evalRight.errorBound);
     return {
       u: !isLeftResolved ? 0 : 1,
@@ -643,6 +679,7 @@ export function invertArcLengthDetailed(
       spatialErrorEst: err,
       spatialErrorBound: err,
       unresolvedReason: "bracket_unresolved_boundary",
+      diagnostic: diag,
     };
   }
 
@@ -650,18 +687,23 @@ export function invertArcLengthDetailed(
   const initialUncertainty = (evalLeft.estimatedError ?? evalLeft.errorBound) + (evalRight.estimatedError ?? evalRight.errorBound);
 
   if (initialUncertainty >= spatialTolerance) {
-    DiagnosticBus.emit({
+    const diag: SpatialDiagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "UNCERTAINTY_EXCEEDS_TOLERANCE",
       source: { entityId: "arc_length_inversion", panel: "motion" },
       message: `Arc-length integration uncertainty (${initialUncertainty.toFixed(6)}px) consumes spatial tolerance (${spatialTolerance}px)`,
-    });
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
     return {
       u: (uLeft + uRight) / 2,
       converged: false,
       spatialErrorEst: initialUncertainty,
       spatialErrorBound: initialUncertainty,
       unresolvedReason: "uncertainty_exceeds_tolerance",
+      diagnostic: diag,
     };
   }
 
@@ -763,35 +805,45 @@ export function invertArcLengthDetailed(
   const currentUncertainty = (evalLeft.estimatedError ?? evalLeft.errorBound) + (evalRight.estimatedError ?? evalRight.errorBound);
 
   if (currentUncertainty >= spatialTolerance) {
-    DiagnosticBus.emit({
+    const diag: SpatialDiagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "UNCERTAINTY_EXCEEDS_TOLERANCE",
       source: { entityId: "arc_length_inversion", panel: "motion" },
       message: `Post-Newton arc-length uncertainty (${currentUncertainty.toFixed(6)}px) consumes spatial tolerance (${spatialTolerance}px)`,
-    });
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
     return {
       u: (uLeft + uRight) / 2,
       converged: false,
       spatialErrorEst: currentUncertainty,
       spatialErrorBound: currentUncertainty,
       unresolvedReason: "uncertainty_exceeds_tolerance",
+      diagnostic: diag,
     };
   }
 
   const remainingBudget = spatialTolerance - currentUncertainty;
   if (remainingBudget < 1e-6) {
-    DiagnosticBus.emit({
+    const diag: SpatialDiagnostic = {
       channel: "SPATIAL_TRAJECTORY_WARN",
       severity: "warning",
+      code: "BISECTION_BUDGET_TOO_SMALL",
       source: { entityId: "arc_length_inversion", panel: "motion" },
       message: `Remaining bisection budget (${remainingBudget.toExponential(3)}px) is below numerical progress threshold (1e-6px)`,
-    });
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
     return {
       u: (uLeft + uRight) / 2,
       converged: false,
       spatialErrorEst: currentUncertainty,
       spatialErrorBound: currentUncertainty,
       unresolvedReason: "uncertainty_exceeds_tolerance",
+      diagnostic: diag,
     };
   }
 
@@ -839,12 +891,23 @@ export function invertArcLengthDetailed(
   const finalSpatialError = finalResidual + finalEvalErr + finalBisectionSpread;
 
   if (hadUnconvergedQuadrature) {
+    const diag: SpatialDiagnostic = {
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      code: "QUADRATURE_EXHAUSTED",
+      source: { entityId: "arc_length_inversion", panel: "motion" },
+      message: `Quadrature exhausted during bisection inversion`,
+    };
+    if (options?.emitDiagnostic ?? true) {
+      DiagnosticBus.emit(diag);
+    }
     return {
       u: finalU,
       converged: false,
       spatialErrorEst: finalSpatialError,
       spatialErrorBound: finalSpatialError,
       unresolvedReason: "quadrature_exhausted",
+      diagnostic: diag,
     };
   }
 
@@ -857,12 +920,24 @@ export function invertArcLengthDetailed(
     };
   }
 
+  const diag: SpatialDiagnostic = {
+    channel: "SPATIAL_TRAJECTORY_WARN",
+    severity: "warning",
+    code: "UNCERTAINTY_EXCEEDS_TOLERANCE",
+    source: { entityId: "arc_length_inversion", panel: "motion" },
+    message: `Final spatial error (${finalSpatialError.toFixed(6)}px) exceeds spatial tolerance (${spatialTolerance}px)`,
+  };
+  if (options?.emitDiagnostic ?? true) {
+    DiagnosticBus.emit(diag);
+  }
+
   return {
     u: finalU,
     converged: false,
     spatialErrorEst: finalSpatialError,
     spatialErrorBound: finalSpatialError,
     unresolvedReason: "uncertainty_exceeds_tolerance",
+    diagnostic: diag,
   };
 }
 
@@ -875,10 +950,11 @@ export function invertArcLength(
   lut: readonly LutSample[],
   totalLength: number,
   mSeg: number,
-  sProgress: number
+  sProgress: number,
+  options?: { emitDiagnostic?: boolean }
 ): number {
   const sClamped = Math.max(0, Math.min(1, sProgress));
-  return invertArcLengthDetailed(b, lut, totalLength, mSeg, sClamped).u;
+  return invertArcLengthDetailed(b, lut, totalLength, mSeg, sClamped, 0.015, 1e-6, 8, options).u;
 }
 
 // ---------------------------------------------------------------------------
@@ -889,16 +965,24 @@ export class SpatialTrajectoryGeometry {
   readonly segments: CompiledSegment[];
   readonly totalLength: number;
   readonly isClosed: boolean;
+  readonly diagnostics: readonly SpatialDiagnostic[];
 
-  constructor(segments: CompiledSegment[], totalLength: number, isClosed = false) {
+  constructor(
+    segments: CompiledSegment[],
+    totalLength: number,
+    isClosed = false,
+    diagnostics: readonly SpatialDiagnostic[] = []
+  ) {
     this.segments = segments;
     this.totalLength = totalLength;
     this.isClosed = isClosed;
+    this.diagnostics = diagnostics;
   }
 
   /**
    * Evaluates the 2D canvas point at clip-local time `time` (in seconds).
    * Respects outgoing segment ownership: waypoint k owns mode, easing, and hold for segment k.
+   * Pure evaluation: explicitly suppresses global event bus mutation.
    */
   evaluateAtTime(time: number): Point2D | null {
     if (this.segments.length === 0) return null;
@@ -919,12 +1003,60 @@ export class SpatialTrajectoryGeometry {
         const easing = parseEasing(seg.ease ?? "linear") ?? { kind: "linear" as const };
         const easedProgress = sampleEasing(easing, normTime);
 
-        const uParam = invertArcLength(seg.bezier, seg.lut, seg.length, seg.mSeg, easedProgress);
+        const uParam = invertArcLength(seg.bezier, seg.lut, seg.length, seg.mSeg, easedProgress, {
+          emitDiagnostic: false,
+        });
         return evaluateCubic(seg.bezier, uParam);
       }
     }
 
     return last.bezier.p3;
+  }
+
+  /**
+   * Detailed evaluation returning point and numerical inversion convergence details.
+   * Pure and deterministic: does not emit side effects to global event buses.
+   */
+  evaluateDetailedAtTime(time: number): TrajectoryEvaluationSample {
+    if (this.segments.length === 0) return { point: null, converged: true, spatialErrorEst: 0 };
+
+    const first = this.segments[0];
+    const last = this.segments[this.segments.length - 1];
+
+    if (time <= first.timeStart) return { point: first.bezier.p0, converged: true, spatialErrorEst: 0 };
+    if (time >= last.timeEnd) return { point: last.bezier.p3, converged: true, spatialErrorEst: 0 };
+
+    for (const seg of this.segments) {
+      if (time >= seg.timeStart && time <= seg.timeEnd) {
+        if (seg.hold) return { point: seg.bezier.p0, converged: true, spatialErrorEst: 0 };
+
+        const duration = seg.timeEnd - seg.timeStart;
+        const normTime = duration > 0 ? (time - seg.timeStart) / duration : 1;
+        const easing = parseEasing(seg.ease ?? "linear") ?? { kind: "linear" as const };
+        const easedProgress = sampleEasing(easing, normTime);
+
+        const inv = invertArcLengthDetailed(
+          seg.bezier,
+          seg.lut,
+          seg.length,
+          seg.mSeg,
+          easedProgress,
+          0.015,
+          1e-6,
+          8,
+          { emitDiagnostic: false }
+        );
+        return {
+          point: evaluateCubic(seg.bezier, inv.u),
+          converged: inv.converged,
+          spatialErrorEst: inv.spatialErrorEst,
+          unresolvedReason: inv.unresolvedReason,
+          diagnostic: inv.diagnostic,
+        };
+      }
+    }
+
+    return { point: last.bezier.p3, converged: true, spatialErrorEst: 0 };
   }
 
   /** Generates an SVG path string `d="..."` for rendering the trajectory ribbon. */
@@ -967,7 +1099,7 @@ export function compileSpatialTrajectory(
   isClosed = false
 ): SpatialTrajectoryGeometry {
   if (waypoints.length < 2) {
-    return new SpatialTrajectoryGeometry([], 0, isClosed);
+    return new SpatialTrajectoryGeometry([], 0, isClosed, []);
   }
 
   const rawPoints = waypoints.map((w) => ({ x: w.x, y: w.y }));
@@ -975,6 +1107,7 @@ export function compileSpatialTrajectory(
   const defaultCubics = waypointsToCentripetalCatmullRom(rawPoints, isClosed);
 
   const compiledSegments: CompiledSegment[] = [];
+  const diagnostics: SpatialDiagnostic[] = [];
   let totalLength = 0;
 
   for (let k = 0; k < waypoints.length - 1; k++) {
@@ -1006,7 +1139,17 @@ export function compileSpatialTrajectory(
     }
 
     const mSeg = computeSegmentMaxDerivative(bez);
-    const { lut, totalLength: segLength } = compileSegmentLut(bez);
+    const { lut, totalLength: segLength, maxResidualDeviation } = compileSegmentLut(bez, { emitDiagnostic: false });
+
+    if (maxResidualDeviation !== undefined) {
+      diagnostics.push({
+        channel: "SPATIAL_TRAJECTORY_WARN",
+        severity: "warning",
+        code: "SUBDIVISION_MAX_DEPTH",
+        source: { entityId: "spatial_trajectory", panel: "motion" },
+        message: `Spatial trajectory segment ${k} exceeded max subdivision depth (10) with residual deviation ${maxResidualDeviation.toFixed(4)}px`,
+      });
+    }
 
     compiledSegments.push({
       index: k,
@@ -1023,7 +1166,7 @@ export function compileSpatialTrajectory(
     totalLength += segLength;
   }
 
-  return new SpatialTrajectoryGeometry(compiledSegments, totalLength, isClosed);
+  return new SpatialTrajectoryGeometry(compiledSegments, totalLength, isClosed, diagnostics);
 }
 
 /**

@@ -34,7 +34,7 @@ import { parseEasing } from "../document/motion";
 import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
-import { createSpatialPath, SpatialTrajectoryGeometry } from "../geometry/spatialPath";
+import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
@@ -51,6 +51,11 @@ export interface EvaluateInputs {
    * knowing about scrolling.
    */
   scrollClipTime?: Record<string, number>;
+  /**
+   * Optional diagnostics sink for external consumers who wish to collect non-fatal spatial
+   * diagnostics during evaluation without introducing global side-effects to DiagnosticBus.
+   */
+  diagnosticsSink?: SpatialDiagnostic[];
 }
 
 export type ResolvedProps = Record<string, PropValue>;
@@ -103,30 +108,62 @@ interface CategorizedSample {
 }
 
 /**
- * Cache for compiled spatial trajectory geometry keyed by Clip reference.
- * Pure and garbage-collection safe: re-evaluates only when clip reference mutates.
+ * Helper to compute a cache key for fallbackProps.
+ * Only translation coordinates (transform.x, transform.y) can affect orphan waypoint resolution.
  */
-const spatialTrajectoryCache = new WeakMap<Clip, SpatialTrajectoryGeometry | null>();
+function getFallbackSignature(fallbackProps?: Record<string, PropValue>): string {
+  if (!fallbackProps) return "none:none";
+  const fx = fallbackProps["transform.x"];
+  const fy = fallbackProps["transform.y"];
+  const x = typeof fx === "number" ? fx : typeof fx === "string" ? fx : "none";
+  const y = typeof fy === "number" ? fy : typeof fy === "string" ? fy : "none";
+  return `${x}:${y}`;
+}
+
+/**
+ * Cache for compiled spatial trajectory geometry keyed by Clip reference and fallback coordinates.
+ * - Keyed primarily on `Clip` object reference via `WeakMap` for automatic garbage collection when clips mutate or are removed.
+ * - Secondary lookup keyed on fallback translation coordinates (`transform.x`, `transform.y`), ensuring geometry is never stale when fallback layer properties change.
+ */
+const spatialTrajectoryCache = new WeakMap<Clip, Map<string, SpatialTrajectoryGeometry | null>>();
 
 /**
  * Retrieves or builds the compiled SpatialTrajectoryGeometry for a clip if spatial trajectory
  * metadata exists with at least 2 waypoints. Returns null for purely scalar clips.
+ * Cache is validated against both clip identity and relevant fallback coordinates.
  */
 export function getSpatialTrajectory(
   clip: Clip,
   fallbackProps?: Record<string, PropValue>
 ): SpatialTrajectoryGeometry | null {
-  const cached = spatialTrajectoryCache.get(clip);
-  if (cached !== undefined) return cached;
+  let clipMap = spatialTrajectoryCache.get(clip);
+  if (!clipMap) {
+    clipMap = new Map<string, SpatialTrajectoryGeometry | null>();
+    spatialTrajectoryCache.set(clip, clipMap);
+  }
 
-  const spatialWaypoints = clip.spatialTrajectories?.transform?.waypoints;
-  if (!spatialWaypoints || spatialWaypoints.length < 2) {
-    spatialTrajectoryCache.set(clip, null);
+  const spatialTrajectory = clip.spatialTrajectories?.transform;
+  if (
+    !spatialTrajectory ||
+    spatialTrajectory.enabled === false ||
+    !spatialTrajectory.waypoints ||
+    spatialTrajectory.waypoints.length < 2
+  ) {
+    clipMap.set("*", null);
     return null;
   }
 
+  if (clipMap.has("*")) {
+    return clipMap.get("*")!;
+  }
+
+  const fallbackKey = getFallbackSignature(fallbackProps);
+  if (clipMap.has(fallbackKey)) {
+    return clipMap.get(fallbackKey)!;
+  }
+
   const geom = createSpatialPath(clip, fallbackProps);
-  spatialTrajectoryCache.set(clip, geom);
+  clipMap.set(fallbackKey, geom);
   return geom;
 }
 
@@ -134,8 +171,14 @@ export function getSpatialTrajectory(
  * Samples a clip at clip-local time `time`.
  * Preserves 100% scalar backward compatibility for clips without spatial metadata.
  * For clips with spatial trajectories, evaluates the 2D spatial path and maps to transform.x / transform.y.
+ * Optionally forwards diagnostics to an external sink without introducing global event-bus side effects.
  */
-export function sampleClip(clip: Clip, time: number, fallbackProps?: Record<string, PropValue>): ResolvedProps {
+export function sampleClip(
+  clip: Clip,
+  time: number,
+  fallbackProps?: Record<string, PropValue>,
+  diagnosticsSink?: SpatialDiagnostic[]
+): ResolvedProps {
   const props: ResolvedProps = {};
   for (const track of clip.tracks) {
     if (track.muted) continue;
@@ -144,8 +187,13 @@ export function sampleClip(clip: Clip, time: number, fallbackProps?: Record<stri
   }
 
   // Phase 69 Milestone 3: Single evaluation authority for 2D spatial motion paths
-  const spatialWaypoints = clip.spatialTrajectories?.transform?.waypoints;
-  if (spatialWaypoints && spatialWaypoints.length >= 2) {
+  const spatialTrajectory = clip.spatialTrajectories?.transform;
+  if (
+    spatialTrajectory &&
+    spatialTrajectory.enabled !== false &&
+    spatialTrajectory.waypoints &&
+    spatialTrajectory.waypoints.length >= 2
+  ) {
     const trackX = clip.tracks.find((t) => t.property === "transform.x");
     const trackY = clip.tracks.find((t) => t.property === "transform.y");
     const xMuted = trackX?.muted ?? false;
@@ -154,10 +202,22 @@ export function sampleClip(clip: Clip, time: number, fallbackProps?: Record<stri
     if (!xMuted || !yMuted) {
       const geom = getSpatialTrajectory(clip, fallbackProps);
       if (geom) {
-        const point = geom.evaluateAtTime(time);
-        if (point !== null) {
-          if (!xMuted) props["transform.x"] = point.x;
-          if (!yMuted) props["transform.y"] = point.y;
+        if (diagnosticsSink && geom.diagnostics.length > 0) {
+          diagnosticsSink.push(...geom.diagnostics);
+        }
+        if (diagnosticsSink) {
+          const detail = geom.evaluateDetailedAtTime(time);
+          if (detail.diagnostic) diagnosticsSink.push(detail.diagnostic);
+          if (detail.point !== null) {
+            if (!xMuted) props["transform.x"] = detail.point.x;
+            if (!yMuted) props["transform.y"] = detail.point.y;
+          }
+        } else {
+          const point = geom.evaluateAtTime(time);
+          if (point !== null) {
+            if (!xMuted) props["transform.x"] = point.x;
+            if (!yMuted) props["transform.y"] = point.y;
+          }
         }
       }
     }
@@ -237,12 +297,18 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
       if (clip.layerId !== layerId || !clip.enabled) continue;
       const driven = inputs.scrollClipTime?.[clip.id];
       if (driven !== undefined) {
-        samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, Math.min(clip.duration, Math.max(0, driven)), layer.properties) });
+        samples.push({
+          category: CLIP_TYPE_TO_CATEGORY[clip.type],
+          props: sampleClip(clip, Math.min(clip.duration, Math.max(0, driven)), layer.properties, inputs.diagnosticsSink),
+        });
         continue;
       }
       const timing = clipTimeInComposition(comp, clip, t);
       if (!timing) continue;
-      samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, timing.time, layer.properties) });
+      samples.push({
+        category: CLIP_TYPE_TO_CATEGORY[clip.type],
+        props: sampleClip(clip, timing.time, layer.properties, inputs.diagnosticsSink),
+      });
     }
     resolved = mergeByPriority(resolved, samples);
   }
