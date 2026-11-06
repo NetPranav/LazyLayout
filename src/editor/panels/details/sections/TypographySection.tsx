@@ -306,6 +306,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
           size="sm"
           label="Overflow"
           aria-label="Text overflow"
+          title="What happens to text that does not fit: Clip cuts it off, Ellipsis ends it with three dots (on one line)."
           value={textOverflow}
           options={TEXT_OVERFLOW_OPTIONS}
           onChange={(v) => onUpdateProp?.("typography.textOverflow", v)}
@@ -314,6 +315,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
           size="sm"
           label="Wrap"
           aria-label="White space"
+          title="Normal wraps at the box edge; No wrap keeps one line and lets it run past the box; Pre keeps your spaces and line breaks."
           value={whiteSpace}
           options={WHITE_SPACE_OPTIONS}
           onChange={(v) => onUpdateProp?.("typography.whiteSpace", v)}
@@ -325,6 +327,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
         size="sm"
         label="Loading"
         aria-label="Font loading"
+        title="How the text shows while its font downloads: Swap shows a stand-in at once, Block waits, Fallback waits briefly, Optional may skip the font."
         value={fontLoading}
         options={FONT_LOADING_OPTIONS}
         onChange={(v) => onUpdateProp?.("typography.fontLoading", v)}

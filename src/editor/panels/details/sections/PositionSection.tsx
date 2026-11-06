@@ -253,6 +253,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         size="sm"
         label="Origin"
         aria-label="Transform origin"
+        title="The point rotation, scale and skew turn around."
         value={origin}
         options={TRANSFORM_ORIGIN_OPTIONS}
         onChange={(val) => onUpdateProp?.("transform.origin", val)}

@@ -83,10 +83,10 @@ export const POSITION_TYPE_OPTIONS = [
 
 export const TRANSFORM_ORIGIN_OPTIONS = [
   { value: "center", label: "Center" },
-  { value: "top-left", label: "Top left" },
-  { value: "top-right", label: "Top right" },
-  { value: "bottom-left", label: "Bottom left" },
-  { value: "bottom-right", label: "Bottom right" },
+  { value: "top left", label: "Top left" },
+  { value: "top right", label: "Top right" },
+  { value: "bottom left", label: "Bottom left" },
+  { value: "bottom right", label: "Bottom right" },
 ] as const;
 
 export const SIZING_OPTIONS = [

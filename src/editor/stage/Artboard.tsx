@@ -16,6 +16,61 @@ import {
   SIZES_MAP,
 } from "./constants";
 
+/** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
+function designTransform(properties: Record<string, unknown>): { transform?: string; transformOrigin?: string } {
+  const n = (k: string, d: number) => (typeof properties[k] === "number" ? (properties[k] as number) : d);
+  const tx = n("transform.x", 0), ty = n("transform.y", 0);
+  const rx = n("transform.rotateX", 0), ry = n("transform.rotateY", 0), rz = n("transform.rotate", 0);
+  const s = n("transform.scale", 1), sx = n("transform.scaleX", 1) * s, sy = n("transform.scaleY", 1) * s;
+  const kx = n("transform.skewX", 0), ky = n("transform.skewY", 0);
+  const parts: string[] = [];
+  if (tx || ty) parts.push(`translate(${tx}px, ${ty}px)`);
+  if (rx) parts.push(`rotateX(${rx}deg)`);
+  if (ry) parts.push(`rotateY(${ry}deg)`);
+  if (rz) parts.push(`rotate(${rz}deg)`);
+  if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
+  if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
+  const origin = typeof properties["transform.origin"] === "string" ? (properties["transform.origin"] as string) : undefined;
+  return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
+}
+
+/** The outline of what a creation tool is drawing: the shape it will make, not always a box. */
+const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number }> = ({ archetype, width, height }) => {
+  const w = Math.max(1, width);
+  const h = Math.max(1, height);
+  const common = { fill: "none", stroke: "var(--ll-text-primary)", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const };
+  let shape: React.ReactNode;
+  switch (archetype) {
+    case "ellipse":
+      shape = <ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} {...common} />;
+      break;
+    case "line":
+    case "arrow":
+      shape = <line x1={0} y1={h / 2} x2={w} y2={h / 2} {...common} />;
+      break;
+    case "polygon":
+      shape = <polygon points={`${w / 2},0 ${w},${h * 0.38} ${w * 0.81},${h} ${w * 0.19},${h} 0,${h * 0.38}`} {...common} />;
+      break;
+    case "star": {
+      const pts = Array.from({ length: 10 }, (_, i) => {
+        const r = i % 2 === 0 ? 1 : 0.4;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        return `${w / 2 + (Math.cos(a) * r * w) / 2},${h / 2 + (Math.sin(a) * r * h) / 2}`;
+      }).join(" ");
+      shape = <polygon points={pts} {...common} />;
+      break;
+    }
+    default:
+      shape = <rect x={0} y={0} width={w} height={h} {...common} />;
+  }
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: "visible", display: "block" }}>
+      {archetype === "line" || archetype === "arrow" ? null : <rect x={0} y={0} width={w} height={h} fill="none" stroke="var(--ll-text-primary)" strokeWidth={1} strokeDasharray="4 3" opacity={0.35} vectorEffect="non-scaling-stroke" />}
+      {shape}
+    </svg>
+  );
+};
+
 /** The three elements of the seeded prototype page keep their prototype drawing; every other layer is drawn by the engine. */
 const PROTOTYPE_DRAWN = new Set(["headline", "button", "image"]);
 
@@ -250,6 +305,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
+                ...(engineDrawn && layer ? designTransform(layer.properties) : {}),
+                ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
               onDoubleClick={(e) => {
                 if (layer && (layer.archetype === "text" || layer.archetype === "button") && !layer.locked) {
@@ -304,6 +361,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                     fontFamily: String(layer.properties["typography.fontFamily"] ?? "inherit"),
                     fontSize: Number(layer.properties["typography.fontSize"] ?? 16),
                     fontWeight: Number(layer.properties["typography.fontWeight"] ?? 400),
+                    textTransform: (layer.properties["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
                     lineHeight: Number(layer.properties["typography.lineHeight"] ?? 1.2),
                     color: String(layer.properties["typography.color"] ?? "#000"),
                     textAlign: (layer.properties["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
@@ -364,6 +422,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {drawPreview && (
         <div
           data-testid="draw-preview"
+          data-preview-shape={drawPreview.archetype ?? "rectangle"}
           className="ll-draw-preview ll:absolute ll:pointer-events-none"
           style={{
             left: drawPreview.x,
@@ -371,9 +430,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
             width: drawPreview.width,
             height: drawPreview.height,
             transform: drawPreview.rotation ? `rotate(${drawPreview.rotation}deg)` : undefined,
-            border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
           }}
-        />
+        >
+          <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} />
+        </div>
       )}
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
@@ -385,6 +445,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         spacingMarks={spacingMarks}
         onStartMove={onStartMove}
         onStartResize={onStartResize}
+        zoom={zoomScale}
       />
 
       {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}

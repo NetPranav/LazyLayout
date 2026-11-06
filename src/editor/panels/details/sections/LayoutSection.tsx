@@ -191,6 +191,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         <Select
           size="sm"
           aria-label="Width sizing"
+          title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
           value={sizingH}
           options={WIDTH_SIZING_OPTIONS}
           onChange={(val) => onUpdateProp?.("sizing.horizontal", val)}
@@ -198,6 +199,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         <Select
           size="sm"
           aria-label="Height sizing"
+          title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
           value={sizingV}
           options={HEIGHT_SIZING_OPTIONS}
           onChange={(val) => onUpdateProp?.("sizing.vertical", val)}
@@ -563,6 +565,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           size="sm"
           label="Over X"
           aria-label="Overflow X"
+          title="What happens to content wider than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
           value={overflowX}
           options={OVERFLOW_OPTIONS}
           onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
@@ -571,6 +574,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
           size="sm"
           label="Over Y"
           aria-label="Overflow Y"
+          title="What happens to content taller than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
           value={overflowY}
           options={OVERFLOW_OPTIONS}
           onChange={(v) => onUpdateProp?.("layout.overflowY", v)}

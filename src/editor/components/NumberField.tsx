@@ -93,6 +93,8 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   const handleLabelPointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (disabled || e.button !== 0) return;
     e.preventDefault();
+    // A focused field shows what is being typed; leave it first so the scrub's value is the one on screen (and is not overwritten on blur).
+    if (document.activeElement === inputRef.current) inputRef.current?.blur();
 
     const targetEl = e.currentTarget;
     startXRef.current = e.clientX;

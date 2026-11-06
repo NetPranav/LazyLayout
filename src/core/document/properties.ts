@@ -234,6 +234,8 @@ const DEFS = {
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
+  /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */
+  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right"], "center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
   "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
 
@@ -293,6 +295,8 @@ const DEFS = {
   "typography.textTransform": oneOf(["none", "uppercase", "lowercase", "capitalize"], "none", "text-transform", "layout", TYPOGRAPHY),
   "typography.textDecoration": oneOf(null, "none", "text-decoration-line", "paint", TYPOGRAPHY),
   "typography.textDecorationColor": color("currentColor", "text-decoration-color", "paint", TYPOGRAPHY),
+  /** How the webfont shows while it loads (`font-display`): written with the font when the page is exported. */
+  "typography.fontLoading": oneOf(["auto", "swap", "block", "fallback", "optional"], "swap", null, "none", TYPOGRAPHY),
   "typography.textOverflow": oneOf(["clip", "ellipsis"], "clip", "text-overflow", "paint", TYPOGRAPHY),
   "typography.whiteSpace": oneOf(null, "normal", "white-space", "layout", TYPOGRAPHY),
   "typography.format.bold": flag(false, "layout", TYPOGRAPHY),
@@ -379,6 +383,8 @@ const DEFS = {
   "layout.margin": px(0, "margin", "layout", LAYOUT),
   "layout.marginTop": px(0, "margin-top", "layout", LAYOUT),
   "layout.marginBottom": px(0, "margin-bottom", "layout", LAYOUT),
+  "layout.marginLeft": px(0, "margin-left", "layout", LAYOUT),
+  "layout.marginRight": px(0, "margin-right", "layout", LAYOUT),
   "layout.alignSelf": oneOf(null, "auto", "align-self", "layout", LAYOUT),
   /** A grid child's horizontal place in its cell (FigCraft port F6); `layout.alignSelf` is the vertical one. Empty follows the grid. */
   "layout.justifySelf": typed(oneOf(["", "start", "center", "end", "stretch"], "", "justify-self", "layout", LAYOUT)),

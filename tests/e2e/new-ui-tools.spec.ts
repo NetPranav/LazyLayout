@@ -104,13 +104,13 @@ test.describe("the new editor's drawing tools", () => {
     await expect.poll(() => count(page)).toBe(n0 + 1);
   });
 
-  test("a drag that does not start on the artboard draws nothing", async ({ page }) => {
+  test("a drag on bare canvas, outside the page, still draws (LA-031)", async ({ page }) => {
     await ready(page);
     const n0 = await count(page);
     await pickShape(page, "Rectangle");
     const b = (await page.locator("[data-stage=artboard]").boundingBox())!;
     await drag(page, { x: b.x + 20, y: b.y - 40 }, { x: b.x + 120, y: b.y - 10 });
-    expect(await count(page)).toBe(n0);
+    expect(await count(page)).toBe(n0 + 1);
   });
 
   test("a new shape can be selected, moved by dragging, resized and painted from the inspector", async ({ page }) => {

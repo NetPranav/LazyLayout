@@ -41,6 +41,10 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const paragraphs = paragraphSettings(resolved, text);
   const maxLines = Math.floor(resolved.num("typography.maxLines", 0));
   const valign = resolved.get("typography.verticalAlign");
+  // The designer's Wrap choice (Normal, No wrap, Pre) wins over the box's own default, once they have made one.
+  const chosenSpace = layer.properties["typography.whiteSpace"];
+  const space = chosenSpace === "nowrap" || chosenSpace === "pre" || chosenSpace === "normal" ? chosenSpace : null;
+  const ellipsis = layer.properties["typography.textOverflow"] === "ellipsis";
   return (
     <div
       ref={nodeRef}
@@ -52,8 +56,9 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         ...textTypography(resolved),
         ...(textShadow ? { textShadow } : {}),
         // (paragraph blocks keep their own white space; between them it collapses, so an export's indentation adds no lines)
-        whiteSpace: paragraphs ? "normal" : sizing === "autoWidth" ? "pre" : "pre-wrap",
-        overflowWrap: sizing === "autoWidth" ? "normal" : "anywhere",
+        whiteSpace: paragraphs ? "normal" : space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
+        overflowWrap: sizing === "autoWidth" || space === "nowrap" || space === "pre" ? "normal" : "anywhere",
+        ...(ellipsis ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : {}),
         ...(sizing === "autoWidth" ? { width: "max-content" } : {}),
         // FigCraft port F8: lines past `maxLines` end in an ellipsis; a fixed box places its text top, middle or bottom
         ...(maxLines > 0 ? { display: "-webkit-box", WebkitLineClamp: Math.min(1000, maxLines), WebkitBoxOrient: "vertical", overflow: "hidden" } : {}),

@@ -18,6 +18,8 @@ interface TransformOverlayProps {
   spacingMarks?: SpacingMark[];
   onStartMove?: (elementId: string, e: React.PointerEvent) => void;
   onStartResize?: (handle: ResizeHandleName, e: React.PointerEvent) => void;
+  /** How much the artboard is scaled on screen; the handles are drawn against it so they stay a grabbable size. */
+  zoom?: number;
 }
 
 export const TransformOverlay: React.FC<TransformOverlayProps> = ({
@@ -28,7 +30,9 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
   spacingMarks = [],
   onStartMove: _onStartMove,
   onStartResize,
+  zoom = 1,
 }) => {
+  const keep = zoom > 0 && zoom < 1 ? 1 / zoom : 1; // the page is drawn smaller than life, so grow the handles back
   return (
     <div
       data-testid="selection-overlay"
@@ -137,7 +141,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                   key={name}
                   data-handle={name}
                   data-testid="selection-handle"
-                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10 ll:transition-transform ll:duration-swap"
+                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10"
                   style={{
                     left: leftStyle,
                     top: topStyle,
@@ -146,13 +150,16 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                     backgroundColor: "var(--ll-surface-canvas)",
                     border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
                     cursor: RESIZE_HANDLE_CURSORS[name],
-                    transform: transformStyle,
+                    transform: `${transformStyle === "none" ? "" : transformStyle} scale(${keep})`.trim(),
                   }}
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     onStartResize?.(name, e);
                   }}
-                />
+                >
+                  {/* a larger invisible target around the dot, so the handle is easy to hit and the cursor changes at once */}
+                  <span aria-hidden="true" className="ll:absolute" style={{ inset: -9, cursor: RESIZE_HANDLE_CURSORS[name] }} />
+                </div>
               );
             })}
 

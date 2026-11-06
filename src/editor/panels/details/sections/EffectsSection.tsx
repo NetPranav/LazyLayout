@@ -6,6 +6,7 @@ import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import type { InspectorSectionProps, EffectItem } from "../types";
 
 export interface EffectsSectionProps extends InspectorSectionProps {
@@ -179,10 +180,7 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
               {isShadow ? (
                 <>
                   <div className="ll:flex ll:items-center ll:gap-1">
-                    <span
-                      className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-                      style={{ backgroundColor: `#${effect.hex}` }}
-                    />
+                    <ColorSwatch label="Shadow colour picker" hex={effect.hex} onChange={(h) => updateEffect(effect.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
                     <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
                       <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
                       <input
