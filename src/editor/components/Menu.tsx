@@ -939,10 +939,10 @@ export const SubMenu: React.FC<SubMenuProps> = ({
   const labelText = typeof label === "string" ? label : "";
 
   const unregisterRef = useRef(ctx?.unregisterSubMenu);
-  unregisterRef.current = ctx?.unregisterSubMenu;
 
   // Register submenu metadata and children with parent Menu
   useLayoutEffect(() => {
+    unregisterRef.current = ctx?.unregisterSubMenu;
     if (!ctx || !rowRef.current) return;
     ctx.registerSubMenu({
       id,
