@@ -825,5 +825,45 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
       const warns = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
       assert.ok(warns.some((e) => e.message.includes("below numerical progress threshold")));
     });
+
+    it("rejects bisection midpoint zero-crossing when combined residual and uncertainty exceed spatial tolerance", () => {
+      DiagnosticBus.clearHistory();
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      const sTarget = 0.1 * totalLength;
+      let baseIdx = 0;
+      for (let i = 0; i < lut.length - 1; i++) {
+        if (lut[i].s <= sTarget && lut[i + 1].s >= sTarget) {
+          baseIdx = i;
+          break;
+        }
+      }
+
+      // Bracket boundary samples have small uncertainty (0.001 px) so initial bracket uncertainty (0.002 px)
+      // passes spatial tolerance (0.010 px). However, internal baseIdx sample has 0.007 px uncertainty.
+      // During bisection, midpoint residual interval [-0.0021, +0.0118] crosses zero with non-zero residual (0.00485 px).
+      // Final spatial error includes both absolute residual and estimated integration error:
+      // finalSpatialError = 0.00485 px + 0.00700 px = 0.01185 px > 0.010 px.
+      const tol = 0.010;
+      const uncertLut = lut.map((s, i) => {
+        const err = i === baseIdx ? 0.007 : 0.001;
+        return { ...s, estimatedError: err, errorBound: err };
+      });
+
+      const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.1, tol);
+
+      // Verifies that the inverter includes both residual and integration uncertainty, and rejects when exceeding tol:
+      assert.equal(res.converged, false);
+      assert.equal(res.unresolvedReason, "uncertainty_exceeds_tolerance");
+      assert.ok(res.spatialErrorEst > tol);
+      assert.ok(res.spatialErrorEst > 0.007); // strictly greater than quadrature error alone due to non-zero residual
+    });
   });
 });

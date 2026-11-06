@@ -612,22 +612,22 @@ export function invertArcLengthDetailed(
   let evalRight = exactArcLenWithBound(uRight);
 
   // Expand left until interval guarantees non-positive residual:
-  while (evalLeft.s + evalLeft.errorBound > sTarget && idx0 > 0) {
+  while (evalLeft.s + (evalLeft.estimatedError ?? evalLeft.errorBound) > sTarget && idx0 > 0) {
     idx0--;
     uLeft = lut[idx0].u;
     evalLeft = exactArcLenWithBound(uLeft);
   }
 
   // Expand right until interval guarantees non-negative residual:
-  while (evalRight.s - evalRight.errorBound < sTarget && idx1 < lut.length - 1) {
+  while (evalRight.s - (evalRight.estimatedError ?? evalRight.errorBound) < sTarget && idx1 < lut.length - 1) {
     idx1++;
     uRight = lut[idx1].u;
     evalRight = exactArcLenWithBound(uRight);
   }
 
   // Rigorous Bracket Boundary Termination Verification:
-  const isLeftResolved = evalLeft.s + evalLeft.errorBound <= sTarget;
-  const isRightResolved = evalRight.s - evalRight.errorBound >= sTarget;
+  const isLeftResolved = evalLeft.s + (evalLeft.estimatedError ?? evalLeft.errorBound) <= sTarget;
+  const isRightResolved = evalRight.s - (evalRight.estimatedError ?? evalRight.errorBound) >= sTarget;
 
   if (!isLeftResolved || !isRightResolved) {
     DiagnosticBus.emit({
@@ -636,7 +636,7 @@ export function invertArcLengthDetailed(
       source: { entityId: "arc_length_inversion", panel: "motion" },
       message: `Arc-length root bracket unresolved at boundary: leftResolved=${isLeftResolved}, rightResolved=${isRightResolved}, sTarget=${sTarget.toFixed(4)}px`,
     });
-    const err = Math.max(evalLeft.errorBound, evalRight.errorBound);
+    const err = Math.max(evalLeft.estimatedError ?? evalLeft.errorBound, evalRight.estimatedError ?? evalRight.errorBound);
     return {
       u: !isLeftResolved ? 0 : 1,
       converged: false,
@@ -647,7 +647,7 @@ export function invertArcLengthDetailed(
   }
 
   // 3. Certified Initial Bracket Uncertainty & Tolerance Check:
-  const initialUncertainty = evalLeft.errorBound + evalRight.errorBound;
+  const initialUncertainty = (evalLeft.estimatedError ?? evalLeft.errorBound) + (evalRight.estimatedError ?? evalRight.errorBound);
 
   if (initialUncertainty >= spatialTolerance) {
     DiagnosticBus.emit({
@@ -676,11 +676,12 @@ export function invertArcLengthDetailed(
   }
 
   if (uRight <= uLeft) {
+    const leftErr = evalLeft.estimatedError ?? evalLeft.errorBound;
     return {
       u: uLeft,
       converged: true,
-      spatialErrorEst: evalLeft.errorBound,
-      spatialErrorBound: evalLeft.errorBound,
+      spatialErrorEst: leftErr,
+      spatialErrorBound: leftErr,
     };
   }
 
@@ -690,18 +691,19 @@ export function invertArcLengthDetailed(
 
   for (let step = 0; step < 3; step++) {
     const curEval = exactArcLenWithBound(u);
+    const curErr = curEval.estimatedError ?? curEval.errorBound;
     if (!curEval.converged) {
       return {
         u,
         converged: false,
-        spatialErrorEst: curEval.errorBound + (uRight - uLeft) * mSeg,
-        spatialErrorBound: curEval.errorBound + (uRight - uLeft) * mSeg,
+        spatialErrorEst: curErr + (uRight - uLeft) * mSeg,
+        spatialErrorBound: curErr + (uRight - uLeft) * mSeg,
         unresolvedReason: "quadrature_exhausted",
       };
     }
 
     const residual = curEval.s - sTarget;
-    const combinedError = Math.abs(residual) + curEval.errorBound;
+    const combinedError = Math.abs(residual) + curErr;
     if (Math.abs(residual) < TAU_RESIDUAL && combinedError <= spatialTolerance) {
       return {
         u,
@@ -719,12 +721,12 @@ export function invertArcLengthDetailed(
       const margin = 0.1 * (uRight - uLeft);
       if (uNewton >= uLeft + margin && uNewton <= uRight - margin) {
         // Safe bracket contraction: only contract boundary if residual interval is strictly sign-separated:
-        if (curEval.s - curEval.errorBound >= sTarget) {
+        if (curEval.s - curErr >= sTarget) {
           uRight = u;
           evalRight = curEval;
           u = uNewton;
           continue;
-        } else if (curEval.s + curEval.errorBound <= sTarget) {
+        } else if (curEval.s + curErr <= sTarget) {
           uLeft = u;
           evalLeft = curEval;
           u = uNewton;
@@ -732,7 +734,7 @@ export function invertArcLengthDetailed(
         } else {
           // curEval residual interval crosses zero: u is within quadrature uncertainty of root!
           // Do NOT narrow the bracket based on an uncertain residual sign.
-          const zeroCrossingError = Math.abs(residual) + curEval.errorBound;
+          const zeroCrossingError = Math.abs(residual) + curErr;
           if (zeroCrossingError <= spatialTolerance) {
             return {
               u,
@@ -758,7 +760,7 @@ export function invertArcLengthDetailed(
   // 5. Guaranteed Bisection Contraction:
   // Recalculate bracket width and total uncertainty from post-Newton state:
   const deltaU = Math.max(1e-9, uRight - uLeft);
-  const currentUncertainty = evalLeft.errorBound + evalRight.errorBound;
+  const currentUncertainty = (evalLeft.estimatedError ?? evalLeft.errorBound) + (evalRight.estimatedError ?? evalRight.errorBound);
 
   if (currentUncertainty >= spatialTolerance) {
     DiagnosticBus.emit({
@@ -806,8 +808,9 @@ export function invertArcLengthDetailed(
       break;
     }
 
-    const resMidMin = (evalMid.s - evalMid.errorBound) - sTarget;
-    const resMidMax = (evalMid.s + evalMid.errorBound) - sTarget;
+    const evalMidErr = evalMid.estimatedError ?? evalMid.errorBound;
+    const resMidMin = (evalMid.s - evalMidErr) - sTarget;
+    const resMidMax = (evalMid.s + evalMidErr) - sTarget;
 
     if (resMidMax < 0) {
       uLeft = uMid;
@@ -817,7 +820,7 @@ export function invertArcLengthDetailed(
       evalRight = evalMid;
     } else {
       // Midpoint residual uncertainty interval crosses zero: 0 in [resMidMin, resMidMax].
-      // Root is proven to be within evalMid.errorBound of sTarget.
+      // Root is proven to be within evalMid uncertainty of sTarget.
       uLeft = uMid;
       uRight = uMid;
       break;
@@ -830,8 +833,10 @@ export function invertArcLengthDetailed(
     hadUnconvergedQuadrature = true;
   }
 
+  const finalResidual = Math.abs(finalEval.s - sTarget);
+  const finalEvalErr = finalEval.estimatedError ?? finalEval.errorBound;
   const finalBisectionSpread = (mSeg * (uRight - uLeft)) / 2;
-  const finalSpatialError = finalEval.errorBound + finalBisectionSpread;
+  const finalSpatialError = finalResidual + finalEvalErr + finalBisectionSpread;
 
   if (hadUnconvergedQuadrature) {
     return {
@@ -843,11 +848,21 @@ export function invertArcLengthDetailed(
     };
   }
 
+  if (finalSpatialError <= spatialTolerance) {
+    return {
+      u: finalU,
+      converged: true,
+      spatialErrorEst: finalSpatialError,
+      spatialErrorBound: finalSpatialError,
+    };
+  }
+
   return {
     u: finalU,
-    converged: true,
+    converged: false,
     spatialErrorEst: finalSpatialError,
     spatialErrorBound: finalSpatialError,
+    unresolvedReason: "uncertainty_exceeds_tolerance",
   };
 }
 
