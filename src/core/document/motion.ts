@@ -310,6 +310,35 @@ export const ScrollTriggerSchema = z.object({
 
 export const PLAY_DIRECTIONS = ["normal", "reverse", "alternate", "alternate-reverse"] as const;
 
+// ---------------------------------------------------------------------------
+// Spatial Motion Paths (ROADMAP Phase 69)
+// ---------------------------------------------------------------------------
+
+export const SpatialControlPointSchema = z.strictObject({
+  x: z.number().describe("Relative delta X in canvas px from waypoint coordinate"),
+  y: z.number().describe("Relative delta Y in canvas px from waypoint coordinate"),
+});
+
+export const SpatialModeSchema = z.enum(["linear", "bezier", "continuous", "auto"]);
+
+export const SpatialWaypointSchema = z.strictObject({
+  id: Id,                                               // Stable waypoint ID
+  time: z.number().min(0).describe("Seconds from clip start"),
+  spatialIn: SpatialControlPointSchema.optional(),       // Incoming tangent handle
+  spatialOut: SpatialControlPointSchema.optional(),      // Outgoing tangent handle
+  mode: SpatialModeSchema.optional(),                   // If absent or "linear", evaluates as scalar linear
+  handleStyle: z.enum(["symmetric", "aligned", "broken"]).optional(),
+  ease: EasingSchema.optional().describe("Authoritative temporal easing along the outgoing 2D segment"),
+  hold: z.boolean().optional().describe("Hold spatial position until next waypoint"),
+});
+
+export const SpatialTrajectorySchema = z.strictObject({
+  id: Id,
+  propertyGroup: z.literal("transform").describe("Extensible to future 2D/3D properties"),
+  enabled: z.boolean().default(true),
+  waypoints: z.array(SpatialWaypointSchema),
+});
+
 export const ClipSchema = z
   .object({
     id: Id,
@@ -330,6 +359,7 @@ export const ClipSchema = z
     scrollTrigger: ScrollTriggerSchema.optional(),
     stagger: StaggerSchema.optional(),
     tracks: z.array(TrackSchema),
+    spatialTrajectories: z.record(z.string(), SpatialTrajectorySchema).optional(),
   })
   .superRefine((clip, ctx) => {
     clip.tracks.forEach((track, t) =>
@@ -531,3 +561,7 @@ export type LayerState = z.infer<typeof StateSchema>;
 export type Transition = z.infer<typeof TransitionSchema>;
 export type Behaviour = z.infer<typeof BehaviourSchema>;
 export type TouchBehaviour = z.infer<typeof TouchBehaviourSchema>;
+export type SpatialControlPoint = z.infer<typeof SpatialControlPointSchema>;
+export type SpatialMode = z.infer<typeof SpatialModeSchema>;
+export type SpatialWaypoint = z.infer<typeof SpatialWaypointSchema>;
+export type SpatialTrajectory = z.infer<typeof SpatialTrajectorySchema>;

@@ -71,7 +71,7 @@ function findActiveState(doc: MotionDocument, layerId: string, stateName: string
 }
 
 /** Finds the keyframe pair surrounding `time` and the eased, interpolated value between them. */
-function sampleTrack(track: Track, time: number): PropValue | undefined {
+export function sampleTrack(track: Track, time: number): PropValue | undefined {
   const keyframes = track.keyframes;
   if (keyframes.length === 0) return undefined;
   if (keyframes.length === 1 || time <= keyframes[0].time) return keyframes[0].value;

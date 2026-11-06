@@ -104,6 +104,14 @@ export {
   SpringSchema,
   MotionSpecSchema,
   LagSchema,
+  SpatialControlPointSchema,
+  SpatialModeSchema,
+  SpatialWaypointSchema,
+  SpatialTrajectorySchema,
+  type SpatialControlPoint,
+  type SpatialMode,
+  type SpatialWaypoint,
+  type SpatialTrajectory,
 } from "./motion";
 
 // ---------------------------------------------------------------------------

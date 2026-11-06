@@ -14,7 +14,7 @@ This manual is for anyone using the editor, no coding needed. It is written for 
 5. [Edit: copy, group, align, arrange](#5-edit-copy-group-align-arrange)
 6. [Text and fonts](#6-text-and-fonts)
 7. [Colour, images and effects](#7-colour-images-and-effects)
-8. [The Layers panel and the Inspector](#8-the-layers-panel-and-the-inspector)
+8. [Layers, Components and the Inspector](#8-layers-components-and-the-inspector)
 9. [Animate](#9-animate)
 10. [Save, undo, export](#10-save-undo-export)
 11. [Keyboard shortcuts](#11-keyboard-shortcuts)
@@ -27,7 +27,7 @@ This manual is for anyone using the editor, no coding needed. It is written for 
 
 Open the editor in your browser. There are two ways in:
 
-- **`/editor`**: opens a new project with a page ready to draw on. Use this to learn.
+- **`/editor`**: the primary design studio entry point. Opens a full-featured canvas ready for drawing, auto-layout, components and animation.
 - **`/` (the Project Hub)**: name a project, pick what you are building and the tech stack you will export to, and press **Launch Studio**. The choices are saved with the project.
 
 **Keep the address of your project** (it looks like `/editor?projectId=…`). There is no list of your projects yet, so the address is how you come back to one. Your work is saved in your browser as you go.
@@ -74,12 +74,24 @@ Pick a tool from the dock (or press its key while the pointer is over the stage)
 | **Ellipse** | **O** | Circles and ovals |
 | **Line** / **Arrow** | **L** / **Shift+L** | Lines and arrows |
 | **Polygon** / **Star** | **Y** / **Shift+Y** | Polygons and stars |
+| **Pen** | **P** | Precise vector paths with Bézier anchors and tangent handles |
+| **Pencil** | **Shift+P** | Freehand vector sketches with automatic curve smoothing |
 | **Text** | **T** | A text box (type straight away) |
 
 - **Drag** to draw, or **click** to place a default-size shape.
 - Hold **Shift** for a square, circle or 45° line. Hold **Alt** to draw from the centre.
 - Shapes are drawn **inside** the frame you start on. On empty canvas only the **Frame** tool works (it makes a new top-level frame).
 - Every drawing is one **undo** step.
+
+### Vector editing & path tools
+- **Pen Tool (P):** Click to drop sharp corner anchors; click and drag to pull out Bézier tangent handles. Click the initial anchor to close the path, or press **Enter** / **Esc** to leave it open.
+- **Pencil Tool (Shift+P):** Draw freehand strokes directly on the canvas. LazyLayout automatically simplifies and fits smooth Bézier curves to your stroke on release.
+- **Vector Edit Mode:** Double-click any vector path or shape (or select and press **Enter**) to enter vector node editing. Click and move individual anchors, drag tangent handles, convert between sharp and smooth points, or press **Delete** to prune an anchor without breaking the shape. Press **Esc** to return to object mode.
+- **Boolean Operations:** Select two or more overlapping vector shapes to combine them using the Boolean toolbar or **Edit → Boolean**:
+  - **Union (Ctrl+Alt+U):** Combines shapes into a single outer silhouette.
+  - **Subtract (Ctrl+Alt+S):** Cuts the top shapes out of the bottom shape.
+  - **Intersect (Ctrl+Alt+I):** Keeps only the overlapping intersection.
+  - **Exclude (Ctrl+Alt+X):** Keeps everything except where the shapes overlap.
 
 **Zoom:** the dock has **Zoom In / Out**, a percentage button (click to reset to 100%) and **Fit to Screen**. **Ctrl + scroll** zooms at the pointer; hold **Space** and drag to pan.
 
@@ -96,6 +108,17 @@ Pick a tool from the dock (or press its key while the pointer is over the stage)
 - Press **Esc** in the middle of a drag to cancel it.
 - **Snapping:** red guide lines appear when edges and centres line up, and gap markers show equal spacing. Hold **Ctrl** to turn snapping off for one drag, hold **Alt** to see distances. The frame bar has switches for **Snap objects**, **Snap guides**, **Pixel grid** and **Rulers** (**Shift+R**). Drag from a ruler to make a guide; drag it back onto the ruler to delete it.
 - Arrow keys **nudge** 1 px; with **Shift**, 10 px.
+
+### Auto-layout flex containers
+- **Add Auto-layout (Shift+A):** Select any frame or group of layers and press **Shift+A** to convert it into a dynamic CSS-compliant flexbox container.
+- **Flow Direction:** Toggle between **Horizontal (Row)** and **Vertical (Column)** flows. Toggle **Wrap** to automatically wrap children onto subsequent rows as screen width narrows.
+- **Spacing & Gaps:** Set the **Gap** between children in the Inspector, or drag on-canvas pink gap bars between items.
+- **Padding:** Set uniform or independent per-side padding (top, right, bottom, left) with interactive canvas padding margin handles.
+- **Sizing Constraints:** Configure each child layer along width and height:
+  - **Fixed:** Explicit pixel dimensions that do not deform during reflow.
+  - **Hug:** The container shrinks or expands to tightly fit its children's dimensions.
+  - **Fill:** The layer stretches to fill all available space along the container's axis.
+- **Alignment:** Use the 9-point alignment box to align children (start, center, end, space-between).
 
 ---
 
@@ -140,11 +163,24 @@ Select a layer, then use its **Fill**, **Stroke** and **Effects** in the Inspect
 - **Images**: drag a picture from your computer onto the canvas, or use **Assets** (left panel) to import. The same file used twice is stored once. As a fill an image can **Fill, Fit, Crop or Tile**; in Crop, drag the corner handles to zoom and the middle to move. Brightness, contrast and saturation are adjustable. Imported SVGs have scripts removed automatically.
 - Your pictures travel with the project when you export it.
 
+### Design Tokens & Variables
+- **Semantic Tokens:** Define project-wide reusable design tokens for **Colors** (`brand.primary`, `surface.card`), **Typography** (`heading.hero`, `caption`), **Spacing**, and **Corner Radii**.
+- **Binding Properties to Tokens:** In the Inspector, click the **Token Link** icon beside any colour, font, or spacing value to bind it to a semantic token. Changes to a token cascade instantly across the entire canvas.
+- **Theme & Mode Switching:** Tokens support mode definitions (such as Light and Dark). Switch theme modes at the artboard or document level with zero style loss.
+- **Token Export:** Compiles cleanly to standard CSS custom properties (`:root { --brand-primary: ... }`), Tailwind config variables, and design tokens JSON.
+
 ---
 
-## 8. The Layers panel and the Inspector
+## 8. Layers, Components and the Inspector
 
 **Layers** (left panel) lists every layer, front-most first. Click to select (it follows the stage both ways); **Shift-click** a range; **Ctrl-click** to add. **Drag** a row to reorder, or onto a frame or group to move it in (it stays where it was on the canvas). Use the **eye** and **lock** buttons on a row, double-click to rename, and type in **Search layers** to find one.
+
+### Components & Variants
+- **Create Component (Ctrl+Alt+K):** Turn any layer or auto-layout frame into a reusable **Master Component** (identified with a purple diamond icon).
+- **Instances:** Duplicate or drag a component to place an **Instance**. Any structural, stylistic, or timeline animation change made to the master immediately updates every instance across the canvas.
+- **Local Overrides:** Change text content, image fills, colors, or visibility inside an instance without breaking its link to the master. Use **Reset Overrides** in the Inspector to restore master defaults.
+- **Variant Sets:** Group related components (e.g., button sizes `sm | md | lg`, types `primary | secondary`, or interactive states `default | hover | disabled`) into a unified Component Set. Switch between variants cleanly using Inspector property dropdowns.
+- **Detach Instance:** Right-click and choose **Detach Instance** to break the link and convert it into a standard frame.
 
 **Inspector** (right panel, **Design** tab). With **nothing selected** it shows the **World Environment**: grid, snapping, theme and viewport settings. With a layer selected it has two faces; switch with the **Simple / Pro** control at the top (your choice is remembered):
 
@@ -233,6 +269,15 @@ There is no scroll panel yet. Scroll animations are added with commands from the
 
 The **parity badge** in the status bar (development builds) checks that what is playing matches the reference. Green is good. If it turns red, hover it for details and tell the team.
 
+### 9.11 On-canvas motion paths (Phase 69)
+
+When an element has animated position on both X and Y axes, LazyLayout pairs corresponding keyframes into **2D spatial waypoints** on the canvas:
+
+- **Spatial Ribbon Overlay:** The element's flight path is rendered directly on the stage as a smooth trajectory line.
+- **Arc-Length Parameterization:** Movement along the curve uses adaptive arc-length numerical integration, guaranteeing constant velocity without speed distortion or artificial deceleration through high-curvature loops.
+- **Waypoints & Modes:** Waypoints support **Auto** (smooth centripetal Catmull-Rom curves), **Linear** (straight polygonal paths), and **Bézier** control handles.
+- **Frame Ticks:** Visual tick marks along the path line up with individual timeline frames, giving instant feedback on acceleration, deceleration and easing.
+
 ---
 
 ## 10. Save, undo, export
@@ -240,6 +285,11 @@ The **parity badge** in the status bar (development builds) checks that what is 
 - **Save:** your work saves automatically; **Ctrl+S** forces a save. The status bar says **All changes saved**.
 - **Undo / Redo:** **Ctrl+Z** and **Ctrl+Shift+Z**. One gesture is one step: a drag, a paste, a keyframe, an easing change.
 - **File → Export Project File (.lazy.json)** downloads the whole project (with pictures). **File → Import Project File…** loads one.
+- **Static Site Exporter (File → Export Static Site / Zip):** Generates a complete, production-ready website package. Output includes semantic HTML5 markup, clean modern CSS/Tailwind, and all referenced pictures and web fonts.
+- **Cross-Framework Code Generation:** The **Code** workspace emits idiomatic:
+  - **React / Next.js TSX:** Typed functional components with layout props, Tailwind classes, and WAAPI / Framer Motion hooks.
+  - **Vanilla HTML / CSS:** Clean semantic markup with CSS variables for design tokens.
+  - **GSAP Animation Code:** Standalone GSAP timeline and ScrollTrigger scripts for high-end marketing animation pipelines.
 - **The Code tab / Export Preview:** shows the code for the selected layer and lets you copy or download it.
 - **New Project…** saves and returns to the Project Hub. The browser's Back button brings your project back.
 - If the same project is open in **two browser tabs**, the second opens read-only with an **Edit here instead** button, so two tabs can't overwrite each other.
@@ -318,8 +368,9 @@ For anything else, note what you did and what happened, and send it to the team 
 
 So you don't spend time looking: these are planned, not available.
 
-- **Pen and Pencil** tools, vector editing and boolean shapes; **auto layout** and **grid**; **breakpoints** (per-screen overrides); design tokens, **components** and **variants**; pages and prototype links; **static export** to a ready site; templates. (Several are being built by the other half of the team and will appear here as they land.)
-- **Motion paths** drawn on the canvas, onion skin, anchor points, parenting, masks, blend-mode effects, expressions, hover/press **states** and **transitions**, a scroll panel and scrubber (scroll animation works, but only through commands for now), text splitting and motion export (all part of the animation plan).
+- **Pages and prototype links:** Multiple pages and interactive click/hover navigation transitions between pages.
+- **On-canvas motion path interaction handles:** Dragging waypoints and control tangent handles directly on the canvas (Phase 69 Milestones 3–6 in progress; underlying geometry and trajectory evaluator shipped in Milestones 1–2).
+- **Advanced motion tools:** Onion skinning, custom anchor point canvas tool, audio sync tracks, expressions, text character splitting, and dedicated scroll scrubber panel.
 - The stage does not yet draw a precomp's effect; the timeline shows what is inside it but the canvas plays only the layers' own animation.
 - The old **Motion Sequencer** tab is still there beside the new timeline until it is retired.
 - Starter **templates** in the Hub don't change what you get yet.

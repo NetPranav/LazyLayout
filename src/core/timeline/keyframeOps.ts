@@ -1,11 +1,11 @@
 import type { Draft } from "immer";
 import { layerBar, type Composition } from "../document/compositions";
-import type { Clip, Keyframe } from "../document/motion";
+import type { Clip, Keyframe, SpatialWaypoint, SpatialTrajectory, SpatialControlPoint } from "../document/motion";
 import { getPropertyDefinition, isPropertyLegalFor } from "../document/properties";
 import type { PropValue } from "../document/registry";
-import type { ClipTemplate, MotionDocument } from "../document/schema";
+import type { ClipTemplate, MotionDocument, Track } from "../document/schema";
 import { createId } from "../ids";
-import { evaluate } from "../kernel/evaluate";
+import { evaluate, sampleTrack } from "../kernel/evaluate";
 import { transaction } from "../editing/editOps";
 import { getDocument } from "../store/documentState";
 import { documentCommands, setCommitHook } from "../store/useDocumentStore";
@@ -362,4 +362,213 @@ function writeKeyframe(draft: Draft<MotionDocument>, comp: Draft<Composition>, l
 export function installAutoKey(): () => void {
   setCommitHook(applyAutoKey);
   return () => setCommitHook(null);
+}
+
+// ---------------------------------------------------------------------------
+// Spatial Motion Paths & Waypoint Pairing (ROADMAP Phase 69)
+// ---------------------------------------------------------------------------
+
+export interface CandidatePair {
+  idxX: number;
+  idxY: number;
+  delta: number;
+  earliestTime: number;
+  tieBreakerKey: string;
+}
+
+/**
+ * Deterministic Local Greedy Nearest-Delta Pairing Heuristic (ROADMAP Phase 69).
+ *
+ * Scans pre-sorted keyframes from track X and track Y using a sliding window in O(Nx + Ny + K)
+ * to emit all candidate edges within epsilon (default 1e-4s).
+ * Sorts edges deterministically by ascending delta, earliest time, and composite ID string.
+ * Greedily assigns the closest temporal pair.
+ * Unpaired keyframes become distinct orphan waypoints preserving their exact timestamps.
+ */
+export function pairKeyframesGreedy(
+  keyframesX: readonly Keyframe[],
+  keyframesY: readonly Keyframe[],
+  epsilon = 1e-4
+): {
+  pairs: Array<{ keyframeX: Keyframe; keyframeY: Keyframe; delta: number; canonicalTime: number }>;
+  orphansX: Keyframe[];
+  orphansY: Keyframe[];
+} {
+  const candidates: CandidatePair[] = [];
+  const Nx = keyframesX.length;
+  const Ny = keyframesY.length;
+
+  let jStart = 0;
+  for (let i = 0; i < Nx; i++) {
+    const kx = keyframesX[i];
+    while (jStart < Ny && keyframesY[jStart].time < kx.time - epsilon) {
+      jStart++;
+    }
+    for (let j = jStart; j < Ny; j++) {
+      const ky = keyframesY[j];
+      if (ky.time > kx.time + epsilon) break;
+      const delta = Math.abs(kx.time - ky.time);
+      candidates.push({
+        idxX: i,
+        idxY: j,
+        delta,
+        earliestTime: Math.min(kx.time, ky.time),
+        tieBreakerKey: `${kx.id}::${ky.id}`,
+      });
+    }
+  }
+
+  candidates.sort((a, b) => {
+    if (Math.abs(a.delta - b.delta) > 1e-12) return a.delta - b.delta;
+    if (Math.abs(a.earliestTime - b.earliestTime) > 1e-12) return a.earliestTime - b.earliestTime;
+    return a.tieBreakerKey.localeCompare(b.tieBreakerKey);
+  });
+
+  const matchedX = new Set<number>();
+  const matchedY = new Set<number>();
+  const pairs: Array<{ keyframeX: Keyframe; keyframeY: Keyframe; delta: number; canonicalTime: number }> = [];
+
+  for (const cand of candidates) {
+    if (!matchedX.has(cand.idxX) && !matchedY.has(cand.idxY)) {
+      matchedX.add(cand.idxX);
+      matchedY.add(cand.idxY);
+      const kx = keyframesX[cand.idxX];
+      const ky = keyframesY[cand.idxY];
+      pairs.push({
+        keyframeX: kx,
+        keyframeY: ky,
+        delta: cand.delta,
+        canonicalTime: (kx.time + ky.time) / 2,
+      });
+    }
+  }
+
+  // Collect orphans preserving original sorting & timestamps
+  const orphansX: Keyframe[] = [];
+  for (let i = 0; i < Nx; i++) {
+    if (!matchedX.has(i)) orphansX.push(keyframesX[i]);
+  }
+  const orphansY: Keyframe[] = [];
+  for (let j = 0; j < Ny; j++) {
+    if (!matchedY.has(j)) orphansY.push(keyframesY[j]);
+  }
+
+  // Ensure pairs are chronologically sorted by canonical time
+  pairs.sort((a, b) => a.canonicalTime - b.canonicalTime);
+
+  return { pairs, orphansX, orphansY };
+}
+
+export interface ResolvedWaypoint {
+  id: string;
+  time: number; // Canonical timestamp in clip seconds
+  x: number;    // Evaluated X in canvas px
+  y: number;    // Evaluated Y in canvas px
+  keyframeXId?: string;
+  keyframeYId?: string;
+  isOrphanX?: boolean;
+  isOrphanY?: boolean;
+  spatialIn?: { x: number; y: number };
+  spatialOut?: { x: number; y: number };
+  mode?: "linear" | "bezier" | "continuous" | "auto";
+  handleStyle?: "symmetric" | "aligned" | "broken";
+  ease?: string;
+  hold?: boolean;
+}
+
+/**
+ * Extracts and pairs all position waypoints for a clip, combining canonical scalar tracks
+ * and optional spatial trajectory metadata without mutating the document.
+ */
+export function extractClipWaypoints(
+  clip: Clip,
+  fallbackProps?: Record<string, PropValue>
+): ResolvedWaypoint[] {
+  const trackX = clip.tracks.find((t) => t.property === "transform.x");
+  const trackY = clip.tracks.find((t) => t.property === "transform.y");
+  const kx = trackX?.keyframes ?? [];
+  const ky = trackY?.keyframes ?? [];
+
+  if (kx.length === 0 && ky.length === 0) return [];
+
+  const { pairs, orphansX, orphansY } = pairKeyframesGreedy(kx, ky);
+  const spatialMeta = clip.spatialTrajectories?.transform?.waypoints ?? [];
+  const metaById = new Map(spatialMeta.map((w) => [w.id, w]));
+
+  const result: ResolvedWaypoint[] = [];
+
+  for (const pair of pairs) {
+    const tW = pair.canonicalTime;
+    const sampledX = trackX ? sampleTrack(trackX, tW) : pair.keyframeX.value;
+    const sampledY = trackY ? sampleTrack(trackY, tW) : pair.keyframeY.value;
+    const x = typeof sampledX === "number" ? sampledX : 0;
+    const y = typeof sampledY === "number" ? sampledY : 0;
+
+    // Match metadata by id if available, or closest time
+    const waypointId = pair.keyframeX.id;
+    const meta = metaById.get(waypointId) ?? spatialMeta.find((w) => Math.abs(w.time - tW) < 1e-4);
+
+    result.push({
+      id: waypointId,
+      time: tW,
+      x,
+      y,
+      keyframeXId: pair.keyframeX.id,
+      keyframeYId: pair.keyframeY.id,
+      spatialIn: meta?.spatialIn,
+      spatialOut: meta?.spatialOut,
+      mode: meta?.mode,
+      handleStyle: meta?.handleStyle,
+      ease: meta?.ease ?? pair.keyframeX.ease ?? pair.keyframeY.ease,
+      hold: meta?.hold ?? pair.keyframeX.hold ?? pair.keyframeY.hold,
+    });
+  }
+
+  for (const orphan of orphansX) {
+    const tW = orphan.time;
+    const x = typeof orphan.value === "number" ? orphan.value : 0;
+    const sampledY = trackY ? sampleTrack(trackY, tW) : fallbackProps?.["transform.y"];
+    const y = typeof sampledY === "number" ? sampledY : 0;
+    const meta = metaById.get(orphan.id) ?? spatialMeta.find((w) => Math.abs(w.time - tW) < 1e-4);
+
+    result.push({
+      id: orphan.id,
+      time: tW,
+      x,
+      y,
+      keyframeXId: orphan.id,
+      isOrphanX: true,
+      spatialIn: meta?.spatialIn,
+      spatialOut: meta?.spatialOut,
+      mode: meta?.mode,
+      handleStyle: meta?.handleStyle,
+      ease: meta?.ease ?? orphan.ease,
+      hold: meta?.hold ?? orphan.hold,
+    });
+  }
+
+  for (const orphan of orphansY) {
+    const tW = orphan.time;
+    const sampledX = trackX ? sampleTrack(trackX, tW) : fallbackProps?.["transform.x"];
+    const x = typeof sampledX === "number" ? sampledX : 0;
+    const y = typeof orphan.value === "number" ? orphan.value : 0;
+    const meta = metaById.get(orphan.id) ?? spatialMeta.find((w) => Math.abs(w.time - tW) < 1e-4);
+
+    result.push({
+      id: orphan.id,
+      time: tW,
+      x,
+      y,
+      keyframeYId: orphan.id,
+      isOrphanY: true,
+      spatialIn: meta?.spatialIn,
+      spatialOut: meta?.spatialOut,
+      mode: meta?.mode,
+      handleStyle: meta?.handleStyle,
+      ease: meta?.ease ?? orphan.ease,
+      hold: meta?.hold ?? orphan.hold,
+    });
+  }
+
+  return result.sort((a, b) => a.time - b.time);
 }
