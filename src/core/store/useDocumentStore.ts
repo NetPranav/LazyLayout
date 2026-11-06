@@ -1133,6 +1133,52 @@ export const documentCommands = {
     documentCommands.updateWaypointTangents(clipId, waypointId, { mode }, label);
   },
 
+  /**
+   * Retimes a spatial motion path waypoint and its corresponding X and Y keyframes atomically in time.
+   * Keeps timeline keyframes and spatial metadata strictly in lockstep without drift.
+   */
+  retimeWaypoint(
+    clipId: string,
+    waypointId: string,
+    newTime: number,
+    label = "Retime motion path waypoint"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      const trackX = clip.tracks.find((t) => t.property === "transform.x");
+      const trackY = clip.tracks.find((t) => t.property === "transform.y");
+      const clampedTime = Math.max(0, newTime);
+
+      const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+      const oldTime = kfX?.time;
+      const kfY = trackY?.keyframes.find(
+        (k) => k.id === waypointId || (oldTime !== undefined && Math.abs(k.time - oldTime) < 1e-4)
+      );
+
+      const targetOldTime = oldTime ?? kfY?.time;
+
+      if (kfX) kfX.time = clampedTime;
+      if (kfY) kfY.time = clampedTime;
+
+      if (trackX) trackX.keyframes.sort((a, b) => a.time - b.time);
+      if (trackY) trackY.keyframes.sort((a, b) => a.time - b.time);
+
+      // Sync spatial trajectory waypoint timestamp
+      const st = clip.spatialTrajectories?.transform;
+      if (st && st.waypoints) {
+        const wp = st.waypoints.find(
+          (w) => w.id === waypointId || (targetOldTime !== undefined && Math.abs(w.time - targetOldTime) < 1e-4)
+        );
+        if (wp) {
+          wp.time = clampedTime;
+          st.waypoints.sort((a, b) => a.time - b.time);
+        }
+      }
+
+      clip.duration = coverKeyframes(clip).duration;
+    });
+  },
+
   // ---------------------------------------------------------------- states
 
   addState(layerId: string, name: string, props: LayerProps = {}, label = "Add state"): string {

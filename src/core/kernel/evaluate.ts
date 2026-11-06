@@ -185,6 +185,29 @@ export function getSpatialTrajectory(
   return geom;
 }
 
+export interface SpeedGraphSample {
+  time: number;
+  speed: number;
+  distance: number;
+  normalizedProgress: number;
+  point: { x: number; y: number };
+}
+
+/**
+ * Computes a deterministic speed graph sampling for a clip with a 2D spatial trajectory.
+ * Returns instantaneous speed (px/sec), cumulative distance along trajectory, and normalized progress.
+ * Returns null for scalar-only clips.
+ */
+export function computeSpatialSpeedGraph(
+  clip: Clip,
+  fallbackProps?: Record<string, PropValue>,
+  sampleCount = 100
+): SpeedGraphSample[] | null {
+  const geom = getSpatialTrajectory(clip, fallbackProps);
+  if (!geom) return null;
+  return geom.computeSpeedGraph(sampleCount);
+}
+
 /**
  * Samples a clip at clip-local time `time`.
  * Preserves 100% scalar backward compatibility for clips without spatial metadata.

@@ -1110,6 +1110,103 @@ export class SpatialTrajectoryGeometry {
 
     return ticks;
   }
+
+  /**
+   * Evaluates the instantaneous velocity vector and scalar speed (px/sec) along the spatial trajectory at time `time`.
+   * Follows canonical segment easing and arc-length parameterization.
+   */
+  evaluateVelocityAtTime(time: number): { vx: number; vy: number; speed: number } {
+    if (this.segments.length === 0) return { vx: 0, vy: 0, speed: 0 };
+
+    const first = this.segments[0];
+    const last = this.segments[this.segments.length - 1];
+
+    if (time < first.timeStart || time > last.timeEnd) {
+      return { vx: 0, vy: 0, speed: 0 };
+    }
+
+    // Check if on a hold segment: hold segments have strictly zero velocity
+    for (const seg of this.segments) {
+      if (time >= seg.timeStart && time <= seg.timeEnd) {
+        if (seg.hold) return { vx: 0, vy: 0, speed: 0 };
+        break;
+      }
+    }
+
+    const dt = 1e-4; // 0.1 ms finite difference delta
+    const t0 = Math.max(first.timeStart, time - dt);
+    const t1 = Math.min(last.timeEnd, time + dt);
+    const actualDt = t1 - t0;
+
+    if (actualDt <= 1e-9) return { vx: 0, vy: 0, speed: 0 };
+
+    const p0 = this.evaluateAtTime(t0);
+    const p1 = this.evaluateAtTime(t1);
+
+    if (!p0 || !p1) return { vx: 0, vy: 0, speed: 0 };
+
+    const vx = (p1.x - p0.x) / actualDt;
+    const vy = (p1.y - p0.y) / actualDt;
+    const speed = Math.hypot(vx, vy);
+
+    return { vx, vy, speed };
+  }
+
+  /**
+   * Computes a deterministic speed graph sampling across the trajectory.
+   * Returns instantaneous speed (px/sec), cumulative arc distance (px), and normalized progress [0, 1].
+   */
+  computeSpeedGraph(sampleCount = 100): Array<{
+    time: number;
+    speed: number;
+    distance: number;
+    normalizedProgress: number;
+    point: Point2D;
+  }> {
+    if (this.segments.length === 0) return [];
+
+    const first = this.segments[0];
+    const last = this.segments[this.segments.length - 1];
+    const startT = first.timeStart;
+    const endT = last.timeEnd;
+    const duration = Math.max(0, endT - startT);
+
+    const count = Math.max(2, sampleCount);
+    const result: Array<{
+      time: number;
+      speed: number;
+      distance: number;
+      normalizedProgress: number;
+      point: Point2D;
+    }> = [];
+
+    let cumulativeDist = 0;
+    let prevPoint: Point2D | null = null;
+
+    for (let i = 0; i < count; i++) {
+      const alpha = i / (count - 1);
+      const t = startT + alpha * duration;
+      const pt = this.evaluateAtTime(t) ?? (alpha === 0 ? first.bezier.p0 : last.bezier.p3);
+      const vel = this.evaluateVelocityAtTime(t);
+
+      if (prevPoint) {
+        cumulativeDist += Math.hypot(pt.x - prevPoint.x, pt.y - prevPoint.y);
+      }
+      prevPoint = pt;
+
+      const normProgress = this.totalLength > 0 ? Math.min(1, cumulativeDist / this.totalLength) : alpha;
+
+      result.push({
+        time: t,
+        speed: vel.speed,
+        distance: cumulativeDist,
+        normalizedProgress: normProgress,
+        point: pt,
+      });
+    }
+
+    return result;
+  }
 }
 
 /**

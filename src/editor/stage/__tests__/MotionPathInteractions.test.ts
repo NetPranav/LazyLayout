@@ -355,7 +355,10 @@ describe("Phase 69 Milestone 5: Interactive Waypoint & Tangent Editing", () => {
     });
 
     const updated = getDocument();
-    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    const wpList = updated.clips[clipId].spatialTrajectories?.transform?.waypoints;
+    assert.ok(wpList);
+    const wp = wpList.find((w) => w.id === "kf-x1");
+    assert.ok(wp);
     assert.deepEqual(wp.spatialOut, { x: 40, y: 30 });
     assert.deepEqual(wp.spatialIn, { x: -27, y: -20 });
 
@@ -372,7 +375,10 @@ describe("Phase 69 Milestone 5: Interactive Waypoint & Tangent Editing", () => {
     });
 
     const updatedSymm = getDocument();
-    const wpSymm = updatedSymm.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    const wpSymmList = updatedSymm.clips[clipId].spatialTrajectories?.transform?.waypoints;
+    assert.ok(wpSymmList);
+    const wpSymm = wpSymmList.find((w) => w.id === "kf-x1");
+    assert.ok(wpSymm);
     assert.deepEqual(wpSymm.spatialOut, { x: 40, y: 30 });
     assert.deepEqual(wpSymm.spatialIn, { x: -40, y: -30 });
     assert.equal(Math.hypot(wpSymm.spatialIn!.x, wpSymm.spatialIn!.y), Math.hypot(wpSymm.spatialOut!.x, wpSymm.spatialOut!.y));
@@ -397,7 +403,10 @@ describe("Phase 69 Milestone 5: Interactive Waypoint & Tangent Editing", () => {
     });
 
     const updated = getDocument();
-    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    const wpDegList = updated.clips[clipId].spatialTrajectories?.transform?.waypoints;
+    assert.ok(wpDegList);
+    const wp = wpDegList.find((w) => w.id === "kf-x1");
+    assert.ok(wp);
     assert.deepEqual(wp.spatialOut, { x: 0, y: 0 });
     assert.deepEqual(wp.spatialIn, { x: 0, y: 0 });
     assert.ok(!Number.isNaN(wp.spatialIn!.x) && !Number.isNaN(wp.spatialIn!.y));
@@ -416,7 +425,10 @@ describe("Phase 69 Milestone 5: Interactive Waypoint & Tangent Editing", () => {
     });
 
     const updated = getDocument();
-    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    const wpBezList = updated.clips[clipId].spatialTrajectories?.transform?.waypoints;
+    assert.ok(wpBezList);
+    const wp = wpBezList.find((w) => w.id === "kf-x1");
+    assert.ok(wp);
     assert.deepEqual(wp.spatialOut, { x: 95, y: -80 }, "Active handle must update");
     assert.deepEqual(wp.spatialIn, { x: -30, y: 15 }, "Opposing handle in bezier mode must remain completely unchanged");
   });
