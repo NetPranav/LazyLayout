@@ -1,0 +1,2 @@
+### Added
+- Image cutout: select an image, choose "Cut out" in the Image section. Click to keep or cut (magic wand with tolerance and an only-connected option), Auto finds the subject from the edges (falling back to the top edge for a subject that stands on the bottom, like a mountain), Invert, Undo, Reset, Edge grow and shrink, Softness, and crop to the subject. "Apply to this image" swaps the picture for its cutout; "Add as new layer" places the cutout over the original at the same size and place. Works on the device with no model. Pure logic in `src/core/image/cutout.ts`.

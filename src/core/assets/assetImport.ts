@@ -169,6 +169,8 @@ if (typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boole
     },
     list: async () => (await getAssetStore().list()).map((r) => ({ id: r.id, name: r.name, kind: r.kind, bytes: r.bytes, thumb: !!r.thumb })),
     totalBytes: () => getAssetStore().totalBytes(),
+    /** A `blob:` URL for the stored file, so a test can draw it and read its pixels. */
+    urlFor: (id: string) => getAssetStore().urlFor(id),
     text: async (id: string) => (await getAssetStore().get(id))?.blob.text() ?? null,
     /** The SHA-256 of what is stored under `id`, computed again from the bytes. */
     rehash: async (id: string) => {
