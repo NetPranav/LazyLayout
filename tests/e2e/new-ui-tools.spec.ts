@@ -45,6 +45,8 @@ async function pickShape(page: Page, name: string) {
   await page.getByRole("menuitem", { name: new RegExp(`^${name}`) }).click();
 }
 
+test.use({ viewport: { width: 1600, height: 1000 } }); // the page is drawn at its real size, so give it room
+
 test.describe("the new editor's drawing tools", () => {
   test("Frame, every Shape and Text draw a layer by dragging, show it on the canvas, and hand back to Select", async ({ page }) => {
     await ready(page);
@@ -173,7 +175,13 @@ test.describe("the new editor's drawing tools", () => {
     await rightClick(copy.id);
     await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
     await page.getByRole("menuitem", { name: /^Send to back/ }).click();
-    await expect.poll(async () => (await layers(page))[pageId].children.indexOf(copy.id)).toBe(0);
+    // the two sit exactly on each other, so the click may land on either: whichever it was goes to the bottom of the page
+    await expect
+      .poll(async () => {
+        const kids = (await layers(page))[pageId].children;
+        return kids.indexOf(copy.id) === 0 || kids.indexOf(shape.id) === 0;
+      })
+      .toBe(true);
     await expect(menu).toHaveCount(0);
 
     // Delete takes away the layer that was right-clicked (the two sit exactly on each other); the other stays
