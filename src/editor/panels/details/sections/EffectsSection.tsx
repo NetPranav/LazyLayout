@@ -55,7 +55,11 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
   const stored = effectItemsOf(primary);
   // Hidden blurs are not stored, so their rows live here until the selection changes.
   const [parked, setParked] = useState<EffectItem[]>([]);
-  useEffect(() => setParked([]), [primary]);
+  const [parkedFor, setParkedFor] = useState(primary);
+  if (parkedFor !== primary) {
+    setParkedFor(primary);
+    setParked([]);
+  }
   const effects: EffectItem[] = [...stored, ...parked];
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 

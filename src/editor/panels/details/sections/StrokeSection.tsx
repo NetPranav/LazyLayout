@@ -37,18 +37,17 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 }) => {
   const [strokes, setStrokes] = useState<StrokeItem[]>(() => strokeFromDocument(getValue));
   // A different layer starts from the stroke it has; the same layer keeps its row (a hidden stroke is width 0 in the document).
-  const lastId = React.useRef(selectedId);
   const docStroke = strokeFromDocument(getValue);
-  useEffect(() => {
-    if (lastId.current !== selectedId) {
-      lastId.current = selectedId;
-      setStrokes(strokeFromDocument(getValue));
-    } else if (docStroke.length === 1 && !strokes.some((s) => !s.hidden)) {
-      // undo or another panel brought a stroke back
-      setStrokes(docStroke);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, JSON.stringify(docStroke)]);
+  const docKey = JSON.stringify(docStroke);
+  const [seen, setSeen] = useState({ selectedId, docKey });
+  if (seen.selectedId !== selectedId) {
+    setSeen({ selectedId, docKey });
+    setStrokes(docStroke);
+  } else if (seen.docKey !== docKey) {
+    setSeen({ selectedId, docKey });
+    // undo or another panel brought a stroke back
+    if (docStroke.length === 1 && !strokes.some((s) => !s.hidden)) setStrokes(docStroke);
+  }
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
