@@ -1147,7 +1147,7 @@ export const documentCommands = {
       const clip = requireClip(draft, clipId);
       const trackX = clip.tracks.find((t) => t.property === "transform.x");
       const trackY = clip.tracks.find((t) => t.property === "transform.y");
-      const clampedTime = Math.max(0, newTime);
+      let targetTime = Math.max(0, newTime);
 
       const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
       const oldTime = kfX?.time;
@@ -1157,8 +1157,18 @@ export const documentCommands = {
 
       const targetOldTime = oldTime ?? kfY?.time;
 
-      if (kfX) kfX.time = clampedTime;
-      if (kfY) kfY.time = clampedTime;
+      // Guard against exact keyframe timestamp collision with neighboring keyframes
+      if (trackX && kfX) {
+        const collision = trackX.keyframes.find(
+          (k) => k.id !== kfX.id && Math.abs(k.time - targetTime) < 1e-4
+        );
+        if (collision) {
+          targetTime = collision.time + 1e-4;
+        }
+      }
+
+      if (kfX) kfX.time = targetTime;
+      if (kfY) kfY.time = targetTime;
 
       if (trackX) trackX.keyframes.sort((a, b) => a.time - b.time);
       if (trackY) trackY.keyframes.sort((a, b) => a.time - b.time);
@@ -1170,7 +1180,7 @@ export const documentCommands = {
           (w) => w.id === waypointId || (targetOldTime !== undefined && Math.abs(w.time - targetOldTime) < 1e-4)
         );
         if (wp) {
-          wp.time = clampedTime;
+          wp.time = targetTime;
           st.waypoints.sort((a, b) => a.time - b.time);
         }
       }

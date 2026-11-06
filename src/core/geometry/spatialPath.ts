@@ -1112,6 +1112,34 @@ export class SpatialTrajectoryGeometry {
   }
 
   /**
+   * Computes exact cumulative arc-length distance along the trajectory at time `time`.
+   * Incorporates segment base offset: s_global(t) = s_k + s_local(t).
+   */
+  evaluateDistanceAtTime(time: number): number {
+    if (this.segments.length === 0) return 0;
+    const first = this.segments[0];
+    const last = this.segments[this.segments.length - 1];
+
+    if (time <= first.timeStart) return 0;
+    if (time >= last.timeEnd) return this.totalLength;
+
+    let baseDist = 0;
+    for (const seg of this.segments) {
+      if (time >= seg.timeStart && time <= seg.timeEnd) {
+        if (seg.hold) return baseDist;
+        const duration = seg.timeEnd - seg.timeStart;
+        const normTime = duration > 0 ? (time - seg.timeStart) / duration : 1;
+        const easing = parseEasing(seg.ease ?? "linear") ?? { kind: "linear" as const };
+        const easedProgress = sampleEasing(easing, normTime);
+        return baseDist + easedProgress * seg.length;
+      }
+      baseDist += seg.length;
+    }
+
+    return this.totalLength;
+  }
+
+  /**
    * Evaluates the instantaneous velocity vector and scalar speed (px/sec) along the spatial trajectory at time `time`.
    * Follows canonical segment easing and arc-length parameterization.
    */
@@ -1180,26 +1208,18 @@ export class SpatialTrajectoryGeometry {
       point: Point2D;
     }> = [];
 
-    let cumulativeDist = 0;
-    let prevPoint: Point2D | null = null;
-
     for (let i = 0; i < count; i++) {
       const alpha = i / (count - 1);
       const t = startT + alpha * duration;
       const pt = this.evaluateAtTime(t) ?? (alpha === 0 ? first.bezier.p0 : last.bezier.p3);
       const vel = this.evaluateVelocityAtTime(t);
-
-      if (prevPoint) {
-        cumulativeDist += Math.hypot(pt.x - prevPoint.x, pt.y - prevPoint.y);
-      }
-      prevPoint = pt;
-
-      const normProgress = this.totalLength > 0 ? Math.min(1, cumulativeDist / this.totalLength) : alpha;
+      const dist = this.evaluateDistanceAtTime(t);
+      const normProgress = this.totalLength > 0 ? Math.min(1, dist / this.totalLength) : alpha;
 
       result.push({
         time: t,
         speed: vel.speed,
-        distance: cumulativeDist,
+        distance: dist,
         normalizedProgress: normProgress,
         point: pt,
       });

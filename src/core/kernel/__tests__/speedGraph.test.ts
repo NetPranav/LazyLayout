@@ -294,4 +294,148 @@ describe("Phase 69 Milestone 6: Temporal-Spatial Synchronization & Speed Graph C
     assert.equal(redone.tracks.find((t) => t.property === "transform.x")!.keyframes.find((k) => k.id === "k1")!.time, 4.0);
     assert.equal(redone.spatialTrajectories?.transform?.waypoints.find((w) => w.id === "k1")!.time, 4.0);
   });
+
+  it("evaluates velocity at temporal boundaries using exact forward/backward finite differences", () => {
+    const { doc, clipId } = createLinearSpatialDoc();
+    const clip = doc.clips[clipId];
+    const geom = getSpatialTrajectory(clip)!;
+
+    // At t = 0 (t_start): forward difference over dt = 1e-4 -> exact analytical speed 250 px/s
+    const velStart = geom.evaluateVelocityAtTime(0);
+    assert.ok(Math.abs(velStart.speed - 250) < 0.1, `Start speed ${velStart.speed} must match 250 px/s`);
+    assert.ok(Math.abs(velStart.vx - 150) < 0.1, `Start vx ${velStart.vx} must match 150 px/s`);
+    assert.ok(Math.abs(velStart.vy - 200) < 0.1, `Start vy ${velStart.vy} must match 200 px/s`);
+
+    // At t = 2.0 (t_end): backward difference over dt = 1e-4 -> exact analytical speed 250 px/s
+    const velEnd = geom.evaluateVelocityAtTime(2.0);
+    assert.ok(Math.abs(velEnd.speed - 250) < 0.1, `End speed ${velEnd.speed} must match 250 px/s`);
+    assert.ok(Math.abs(velEnd.vx - 150) < 0.1, `End vx ${velEnd.vx} must match 150 px/s`);
+    assert.ok(Math.abs(velEnd.vy - 200) < 0.1, `End vy ${velEnd.vy} must match 200 px/s`);
+
+    // Outside range (t < 0 or t > duration): velocity is strictly 0
+    assert.equal(geom.evaluateVelocityAtTime(-0.5).speed, 0);
+    assert.equal(geom.evaluateVelocityAtTime(2.5).speed, 0);
+  });
+
+  it("calculates multi-segment cumulative arc-length incorporating segment base offset: s_global(t) = s_k + s_local(t)", () => {
+    const b = new DocBuilder();
+    const layerId = b.layer("container", "MultiSegBox", null, {
+      "transform.x": 0,
+      "transform.y": 0,
+    });
+
+    // Segment 1 (t in [0, 1]): (0, 0) to (300, 0) -> length = 300 px
+    // Segment 2 (t in [1, 2]): (300, 0) to (300, 400) -> length = 400 px
+    // Total length = 700 px
+    const clipId = b.clip(layerId, {
+      name: "MultiSegClip",
+      type: "entrance",
+      trigger: "mount",
+      duration: 2,
+      easing: "linear",
+      tracks: [
+        {
+          id: "tx",
+          property: "transform.x",
+          keyframes: [
+            { id: "m0", time: 0, value: 0 },
+            { id: "m1", time: 1, value: 300 },
+            { id: "m2", time: 2, value: 300 },
+          ],
+        },
+        {
+          id: "ty",
+          property: "transform.y",
+          keyframes: [
+            { id: "my0", time: 0, value: 0 },
+            { id: "my1", time: 1, value: 0 },
+            { id: "my2", time: 2, value: 400 },
+          ],
+        },
+      ],
+      spatialTrajectories: {
+        transform: {
+          id: "st-multiseg",
+          propertyGroup: "transform",
+          enabled: true,
+          waypoints: [
+            { id: "m0", time: 0, mode: "linear" },
+            { id: "m1", time: 1, mode: "linear" },
+            { id: "m2", time: 2, mode: "linear" },
+          ],
+        },
+      },
+    });
+
+    const doc = b.build();
+    const clip = doc.clips[clipId];
+    const geom = getSpatialTrajectory(clip)!;
+
+    assert.equal(geom.totalLength, 700, "Total length must be 300 + 400 = 700 px");
+
+    // At t = 0: distance = 0
+    assert.equal(geom.evaluateDistanceAtTime(0), 0);
+
+    // At t = 0.5s: inside segment 1 -> s = 150 px
+    assert.equal(geom.evaluateDistanceAtTime(0.5), 150);
+
+    // At t = 1.0s: boundary between segment 1 and 2 -> s_1 = 300 px
+    assert.equal(geom.evaluateDistanceAtTime(1.0), 300);
+
+    // At t = 1.5s: inside segment 2 -> s = s_1 + s_local = 300 + 200 = 500 px
+    assert.equal(geom.evaluateDistanceAtTime(1.5), 500);
+
+    // At t = 2.0s: end of segment 2 -> s = 700 px
+    assert.equal(geom.evaluateDistanceAtTime(2.0), 700);
+
+    // Normalized progress in computeSpeedGraph:
+    const speedGraph = geom.computeSpeedGraph(21);
+    const mid1 = speedGraph.find((s) => Math.abs(s.time - 1.0) < 1e-4)!;
+    assert.ok(Math.abs(mid1.normalizedProgress - 300 / 700) < 1e-4);
+    assert.equal(mid1.distance, 300);
+  });
+
+  it("guards against timestamp collisions when retiming waypoints", () => {
+    const { doc, clipId } = createLinearSpatialDoc();
+    setDocument(doc);
+
+    // Clip has keyframes at t=0 and t=2.
+    // Retime k1 to t=0 (colliding with k0):
+    documentCommands.retimeWaypoint(clipId, "k1", 0);
+
+    const updated = getDocument();
+    const trackX = updated.clips[clipId].tracks.find((t) => t.property === "transform.x")!;
+
+    // Collision guard must ensure timestamps remain distinct
+    const times = trackX.keyframes.map((k) => k.time);
+    assert.equal(times.length, 2, "Must preserve both keyframes without overwriting");
+    assert.notEqual(times[0], times[1], "Timestamps must remain distinct to avoid collision");
+    assert.ok(Math.abs(times[1] - times[0]) <= 1e-3, "Colliding keyframe is offset by microsecond delta");
+  });
+
+  it("re-sorting preserves outgoing segment metadata and hold flags after retiming", () => {
+    const { doc, clipId } = createEasedSpatialDoc();
+    setDocument(doc);
+
+    // k1 had hold: true at t=2. Retime k1 to t=1.0s (retimed earlier):
+    documentCommands.retimeWaypoint(clipId, "k1", 1.0);
+
+    const updated = getDocument();
+    const updatedClip = updated.clips[clipId];
+    const waypoints = updatedClip.spatialTrajectories?.transform?.waypoints;
+    assert.ok(waypoints);
+
+    const wp1 = waypoints.find((w) => w.id === "k1")!;
+    assert.equal(wp1.time, 1.0);
+    assert.equal(wp1.hold, true, "Outgoing hold metadata must be preserved on retimed waypoint");
+
+    const wp0 = waypoints.find((w) => w.id === "k0")!;
+    assert.equal(wp0.ease, "power2.inOut", "First waypoint ease must remain intact");
+
+    // Geometry compiled with new timestamps:
+    const geom = getSpatialTrajectory(updatedClip)!;
+    assert.equal(geom.segments[0].timeEnd, 1.0);
+    assert.equal(geom.segments[1].timeStart, 1.0);
+    assert.equal(geom.segments[1].hold, true);
+  });
 });
