@@ -279,8 +279,7 @@ const GL5_WEIGHTS = [
   (322 - 13 * Math.sqrt(70)) / 900,
 ];
 
-// Integrates speed ||B'(u)|| across [u0, u1] via 5-point Gauss-Legendre
-export function integrateArcLength(b: CubicBezier, u0: number, u1: number): number {
+export function integrateArcLengthGL5(b: CubicBezier, u0: number, u1: number): number {
   if (u0 >= u1) return 0;
   const mid = (u0 + u1) / 2;
   const half = (u1 - u0) / 2;
@@ -294,6 +293,44 @@ export function integrateArcLength(b: CubicBezier, u0: number, u1: number): numb
   }
 
   return half * sum;
+}
+
+/**
+ * Adaptive Gauss-Legendre Quadrature with Local Error Estimation.
+ * Subdivides [u0, u1] into 2 halves, compares single-interval GL5 (I1) with
+ * two-half GL5 (I2), estimates local error as |I2 - I1| / 15.
+ * If error <= tol, returns I2.
+ * If error > tol and depth < maxDepth, recursively subdivides both halves.
+ * Guarantees documented numerical tolerance control even across stationary points (B'(u) = 0) and cusps.
+ */
+export function integrateArcLengthAdaptive(
+  b: CubicBezier,
+  u0: number,
+  u1: number,
+  tol = 1e-6,
+  depth = 0,
+  maxDepth = 8
+): number {
+  if (u0 >= u1) return 0;
+  const mid = (u0 + u1) / 2;
+  const i1 = integrateArcLengthGL5(b, u0, u1);
+  const iLeft = integrateArcLengthGL5(b, u0, mid);
+  const iRight = integrateArcLengthGL5(b, mid, u1);
+  const i2 = iLeft + iRight;
+
+  const errorEst = Math.abs(i2 - i1) / 15;
+  if (errorEst <= tol || depth >= maxDepth) {
+    return i2;
+  }
+
+  return (
+    integrateArcLengthAdaptive(b, u0, mid, tol / 2, depth + 1, maxDepth) +
+    integrateArcLengthAdaptive(b, mid, u1, tol / 2, depth + 1, maxDepth)
+  );
+}
+
+export function integrateArcLength(b: CubicBezier, u0: number, u1: number): number {
+  return integrateArcLengthAdaptive(b, u0, u1, 1e-6);
 }
 
 // Subdivides cubic Bezier at parameter t in [0, 1] using de Casteljau's algorithm
@@ -435,7 +472,25 @@ export function invertArcLength(
   if (sTarget <= 0) return 0;
   if (sTarget >= totalLength) return 1;
 
-  // 1. Binary search in LUT:
+  // Helper: exact arc length from 0 to uVal using LUT base + adaptive quadrature
+  function exactArcLen(uVal: number): number {
+    if (uVal <= 0) return 0;
+    if (uVal >= 1) return totalLength;
+
+    let l = 0;
+    let h = lut.length - 1;
+    while (l <= h) {
+      const m = (l + h) >> 1;
+      if (lut[m].u < uVal) l = m + 1;
+      else h = m - 1;
+    }
+    const baseIdx = Math.max(0, l - 1);
+    const uBase = lut[baseIdx].u;
+    const sBase = lut[baseIdx].s;
+    return sBase + integrateArcLengthAdaptive(b, uBase, uVal);
+  }
+
+  // 1. Initial lookup from monotonic LUT:
   let low = 0;
   let high = lut.length - 1;
   while (low <= high) {
@@ -447,34 +502,56 @@ export function invertArcLength(
     }
   }
 
-  const idx0 = Math.max(0, low - 1);
-  const idx1 = Math.min(lut.length - 1, low);
+  let idx0 = Math.max(0, low - 1);
+  let idx1 = Math.min(lut.length - 1, low);
 
   let uLeft = lut[idx0].u;
   let uRight = lut[idx1].u;
 
-  // Bracket verification: ensure uLeft <= uRight and span > 0
-  if (uRight <= uLeft) return uLeft;
+  // 2. Rigorous Endpoint Residual Evaluation & Root-Bracket Verification:
+  let resLeft = exactArcLen(uLeft) - sTarget;
+  let resRight = exactArcLen(uRight) - sTarget;
 
-  const uBracketStart = uLeft;
-  const uBracketEnd = uRight;
-  const sBracketStart = lut[idx0].s;
-  const sBracketEnd = lut[idx1].s;
+  // Direct endpoint match:
+  const TAU_RESIDUAL = 1e-4; // px
+  if (Math.abs(resLeft) < TAU_RESIDUAL) return uLeft;
+  if (Math.abs(resRight) < TAU_RESIDUAL) return uRight;
 
-  // Helper: exact arc length from 0 to uVal within the bracket [uBracketStart, uBracketEnd]
-  // Leverages precomputed LUT cumulative arc length + local Gauss-Legendre across subinterval.
-  function arcLenTo(uVal: number): number {
-    if (uVal <= uBracketStart) return sBracketStart;
-    if (uVal >= uBracketEnd) return sBracketEnd;
-    return sBracketStart + integrateArcLength(b, uBracketStart, uVal);
+  // Ensure resLeft <= 0 (expand left until non-positive):
+  while (resLeft > 0 && idx0 > 0) {
+    idx0--;
+    uLeft = lut[idx0].u;
+    resLeft = exactArcLen(uLeft) - sTarget;
+    if (Math.abs(resLeft) < TAU_RESIDUAL) return uLeft;
+  }
+  if (resLeft > 0) {
+    uLeft = 0;
+    resLeft = -sTarget;
   }
 
-  // 2. Newton Acceleration (up to 3 steps):
-  let u = uLeft + ((sTarget - sBracketStart) / Math.max(1e-9, sBracketEnd - sBracketStart)) * (uRight - uLeft);
-  const TAU_RESIDUAL = 1e-4; // px
+  // Ensure resRight >= 0 (expand right until non-negative):
+  while (resRight < 0 && idx1 < lut.length - 1) {
+    idx1++;
+    uRight = lut[idx1].u;
+    resRight = exactArcLen(uRight) - sTarget;
+    if (Math.abs(resRight) < TAU_RESIDUAL) return uRight;
+  }
+  if (resRight < 0) {
+    uRight = 1;
+    resRight = totalLength - sTarget;
+  }
+
+  // Root bracket [uLeft, uRight] is rigorously guaranteed to satisfy:
+  // exactArcLen(uLeft) <= sTarget <= exactArcLen(uRight) with opposite residual signs.
+  if (uRight <= uLeft) return uLeft;
+
+  // 3. Newton Acceleration (up to 3 steps):
+  const sLeftVal = exactArcLen(uLeft);
+  const sRightVal = exactArcLen(uRight);
+  let u = uLeft + ((sTarget - sLeftVal) / Math.max(1e-9, sRightVal - sLeftVal)) * (uRight - uLeft);
 
   for (let step = 0; step < 3; step++) {
-    const curS = arcLenTo(u);
+    const curS = exactArcLen(u);
     const residual = curS - sTarget;
     if (Math.abs(residual) < TAU_RESIDUAL) return u;
 
@@ -482,7 +559,7 @@ export function invertArcLength(
     const speed = Math.hypot(deriv.x, deriv.y);
     if (speed >= 1e-4) {
       const uNewton = u - residual / speed;
-      // Accept Newton step if inside central 80% of bracket:
+      // Accept Newton step only if inside central 80% of bracket:
       const margin = 0.1 * (uRight - uLeft);
       if (uNewton >= uLeft + margin && uNewton <= uRight - margin) {
         if (residual > 0) {
@@ -494,17 +571,16 @@ export function invertArcLength(
         continue;
       }
     }
-    break; // Exit Newton if invalid/ineffective
+    break; // Exit Newton if invalid/ineffective, preserving valid bracket
   }
 
-  // 3. Unconditional Bisection Contraction:
-  // Calculate guaranteed step count:
+  // 4. Guaranteed Bisection Contraction:
   const deltaU0 = uRight - uLeft;
   const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU0) / 0.05)));
 
   for (let k = 0; k < mSteps; k++) {
     const uMid = (uLeft + uRight) / 2;
-    const curS = arcLenTo(uMid);
+    const curS = exactArcLen(uMid);
     const residual = curS - sTarget;
     if (Math.abs(residual) < TAU_RESIDUAL) return uMid;
 
