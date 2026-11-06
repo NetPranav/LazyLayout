@@ -47,13 +47,15 @@ function Stops({ stops, opacity }: { stops: readonly GradientStop[]; opacity: nu
   );
 }
 
-function ShadowFilter({ id, shadows }: { id: string; shadows: readonly Shadow[] }) {
+function ShadowFilter({ id, shadows, width, height }: { id: string; shadows: readonly Shadow[]; width: number; height: number }) {
   const visible = shadows.filter((s) => s.visible);
+  // The filter's region is given in the shape's own pixels, not as a share of its outline: a line has no height, so a share of it is nothing.
+  const reach = Math.ceil(visible.reduce((m, s) => Math.max(m, Math.abs(s.x), Math.abs(s.y)) + s.blur * 1.5 + Math.abs(s.spread) + 2, 8));
   // listed top first; an SVG filter draws bottom first, so go through them backwards
   const drops = visible.filter((s) => s.kind === "drop").reverse();
   const inners = visible.filter((s) => s.kind === "inner").reverse();
   return (
-    <filter id={id} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
+    <filter id={id} filterUnits="userSpaceOnUse" x={-reach} y={-reach} width={width + reach * 2} height={height + reach * 2} colorInterpolationFilters="sRGB">
       {drops.map((s, i) => {
         const c = rgb(s.color);
         return (
@@ -249,7 +251,7 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
       {(defs.length > 0 || shadows.length > 0) && (
         <defs>
           {defs}
-          {shadows.length > 0 && <ShadowFilter id={filterId} shadows={shadows} />}
+          {shadows.length > 0 && <ShadowFilter id={filterId} shadows={shadows} width={width} height={height} />}
         </defs>
       )}
       <g filter={shadows.length > 0 ? `url(#${filterId})` : undefined}>{painted}</g>

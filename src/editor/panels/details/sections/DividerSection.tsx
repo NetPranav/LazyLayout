@@ -7,6 +7,7 @@ import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import type { InspectorSectionProps } from "../types";
+import { ColorSwatch } from "../controls/ColorSwatch";
 
 export const CAP_OPTIONS = [
   { value: "Butt", label: "Butt" },
@@ -23,11 +24,12 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
   const style = (getValue?.("divider.style") as string) || "solid";
   const thickness = (getValue?.("divider.thickness") as number) ?? 1;
   const length = (getValue?.("divider.length") as number) ?? 528;
-  const color = (getValue?.("divider.color") as string) || "444444";
+  const color = (((getValue?.("divider.color") as string) || "444444").replace(/^#/, "").slice(0, 6) || "444444").toUpperCase();
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
       {/* Horizontal / Vertical */}
+      <div title="Which way the line runs: Horizontal is left to right, Vertical turns it upright.">
       <SegmentedControl
         size="sm"
         ariaLabel="Divider orientation"
@@ -48,8 +50,10 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
           },
         ]}
       />
+      </div>
 
       {/* Style: Solid, Dashed, Dotted */}
+      <div title="Solid is unbroken, Dashed is long gaps, Dotted is round dots.">
       <SegmentedControl
         size="sm"
         ariaLabel="Divider style"
@@ -61,12 +65,14 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
           { value: "dotted", label: "Dotted", ariaLabel: "Dotted" },
         ]}
       />
+      </div>
 
       {/* Thickness & Length */}
       <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
         <NumberField
           size="sm"
           label="Thick"
+          title="How thick the line is, in pixels."
           aria-label="Thickness"
           value={thickness}
           step={1}
@@ -75,6 +81,7 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
         <NumberField
           size="sm"
           label="Length"
+          title="How long the line is, in pixels."
           aria-label="Length"
           value={length}
           step={1}
@@ -85,10 +92,7 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
       {/* Divider color */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
         <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${color}` }}
-          />
+          <ColorSwatch label="Divider colour picker" hex={color} onChange={(h) => onUpdateProp?.("divider.color", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
           <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
             <input
@@ -114,7 +118,18 @@ export const DividerSection: React.FC<InspectorSectionProps> = ({
   );
 };
 
+const END_CAP_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "round", label: "Round" },
+  { value: "square", label: "Square" },
+  { value: "lineArrow", label: "Line arrow" },
+  { value: "triangleArrow", label: "Triangle arrow" },
+  { value: "circleFilled", label: "Dot" },
+  { value: "diamondFilled", label: "Diamond" },
+] as const;
+
 export const DividerMore: React.FC<InspectorSectionProps> = ({
+  layer,
   getValue,
   onUpdateProp,
 }) => {
@@ -126,6 +141,7 @@ export const DividerMore: React.FC<InspectorSectionProps> = ({
       <Select
         size="sm"
         label="Cap"
+        title="The shape of the line's ends: Butt stops exactly at the end, Round and Square reach past it by half the thickness."
         aria-label="Cap"
         value={cap}
         options={CAP_OPTIONS}
@@ -133,12 +149,35 @@ export const DividerMore: React.FC<InspectorSectionProps> = ({
       />
       <NumberField
         size="sm"
-        label="Dash"
+        label="Offset"
+        title="Slides the dashes along the line. It only shows on a Dashed or Dotted line."
         aria-label="Dash offset"
         value={dashOffset}
         step={1}
         onChange={(v) => onUpdateProp?.("divider.dashOffset", v)}
       />
+      {layer?.archetype === "line" && (
+        <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+          <Select
+            size="sm"
+            label="Start"
+            title="What the line's first end looks like. Each end is set on its own."
+            aria-label="Start end"
+            value={String(getValue?.("shape.startCap") ?? "none")}
+            options={END_CAP_OPTIONS}
+            onChange={(v) => onUpdateProp?.("shape.startCap", v)}
+          />
+          <Select
+            size="sm"
+            label="End"
+            title="What the line's last end looks like. Each end is set on its own."
+            aria-label="End end"
+            value={String(getValue?.("shape.endCap") ?? "none")}
+            options={END_CAP_OPTIONS}
+            onChange={(v) => onUpdateProp?.("shape.endCap", v)}
+          />
+        </div>
+      )}
     </div>
   );
 };

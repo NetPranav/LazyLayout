@@ -419,6 +419,8 @@ export const Stage: React.FC<StageProps> = ({
   const justDragged = useRef(false);
   const rightPan = useRef(false);
   const rightMoved = useRef(false);
+  const syntheticMenu = useRef(false);
+  const rightDownAt = useRef<{ target: EventTarget | null; x: number; y: number } | null>(null);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const toolCursor = activeTool === "hand" ? "grab" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
@@ -439,6 +441,7 @@ export const Stage: React.FC<StageProps> = ({
       if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
       rightPan.current = true;
+      rightDownAt.current = { target: e.target, x: e.clientX, y: e.clientY };
       e.currentTarget.setPointerCapture(e.pointerId);
       return;
     }
@@ -482,7 +485,15 @@ export const Stage: React.FC<StageProps> = ({
     justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     if (g.kind === "pan") {
+      if (rightPan.current && !rightMoved.current && rightDownAt.current?.target instanceof Element) {
+        // a right-click that did not drag: open the canvas menu now
+        const at = rightDownAt.current;
+        syntheticMenu.current = true;
+        (at.target as Element).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, button: 2 }));
+        syntheticMenu.current = false;
+      }
       rightPan.current = false;
+      rightMoved.current = false;
       return;
     }
     setDrawPreview(null);
@@ -528,14 +539,18 @@ export const Stage: React.FC<StageProps> = ({
       data-testid="stage-viewport"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
       style={{ cursor: toolCursor }}
-      onContextMenu={(e) => {
-        if (rightMoved.current) e.preventDefault(); // that was a canvas drag, not a menu request
-        rightMoved.current = false;
-      }}
       onPointerDownCapture={handleToolPointerDown}
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
+      onContextMenu={(e) => {
+        // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
+        // right-click opens it. Layers keep their own menu, opened at once.
+        if (syntheticMenu.current) return;
+        if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onClick={(e) => {
         if (justDragged.current) {
           justDragged.current = false;

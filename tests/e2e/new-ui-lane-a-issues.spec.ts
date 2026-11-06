@@ -236,4 +236,152 @@ test.describe("Lane A issue fixes", () => {
     await page.mouse.up();
     await expect.poll(async () => JSON.stringify((await fillsOf()).map((f) => f.color))).not.toBe(JSON.stringify(before.map((f) => f.color)));
   });
+
+  test("round 3: a layer dropped on a frame in the Layers panel, or on the canvas, becomes its child and keeps its place", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.7, 0.15), await art(page, 0.9, 0.35));
+    await pick(page, "Frame");
+    await drag(page, await art(page, 0.05, 0.5), await art(page, 0.5, 0.95));
+    const [rect] = await ofKind(page, "rectangle");
+    const [frame] = await ofKind(page, "container");
+    const worldBefore = (await stageEl(page, rect.id).boundingBox())!;
+    const rowOf = (name: string) => page.locator(`#p-layers .row[data-sel]`).filter({ hasText: name }).first();
+    const a = (await rowOf("Rectangle").boundingBox())!;
+    const f = (await rowOf("Frame").boundingBox())!;
+    await page.mouse.move(a.x + 60, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + 60, a.y + a.height / 2 + 12, { steps: 3 });
+    await page.mouse.move(f.x + 60, f.y + f.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await layers(page))[rect.id].parentId).toBe(frame.id);
+    const worldAfter = (await stageEl(page, rect.id).boundingBox())!;
+    expect(Math.abs(worldAfter.x - worldBefore.x)).toBeLessThan(2); // it did not jump
+    expect(Math.abs(worldAfter.y - worldBefore.y)).toBeLessThan(2);
+  });
+
+  test("round 3: Delete removes a layer, Backspace does not; Ctrl+Alt+] and [ bring to front and send to back", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
+    await pick(page, "Shape", "Ellipse");
+    await drag(page, await art(page, 0.3, 0.35), await art(page, 0.5, 0.55));
+    const [rect] = await ofKind(page, "rectangle");
+    const [ell] = await ofKind(page, "ellipse");
+    const pageId = Object.values(await layers(page)).find((l) => l.parentId === null)!.id;
+    await page.getByText("Rectangle", { exact: true }).first().click();
+    await page.mouse.move((await art(page, 0.2, 0.3)).x, (await art(page, 0.2, 0.3)).y);
+    await page.keyboard.press("Control+Alt+]");
+    await expect.poll(async () => (await layers(page))[pageId].children.at(-1)).toBe(rect.id);
+    await page.keyboard.press("Control+Alt+[");
+    await expect.poll(async () => (await layers(page))[pageId].children[0]).toBe(rect.id);
+    await page.keyboard.press("Backspace");
+    expect(Object.keys(await layers(page))).toContain(rect.id);
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => Object.keys(await layers(page)).includes(rect.id)).toBe(false);
+    expect(Object.keys(await layers(page))).toContain(ell.id);
+  });
+
+  test("round 3: a right-drag pans without opening the menu, a right-click opens it", async ({ page }) => {
+    await ready(page);
+    const view = (await page.locator('[data-testid="stage-viewport"]').boundingBox())!;
+    await page.mouse.move(view.x + 40, view.y + 120);
+    await page.mouse.down({ button: "right" });
+    await page.mouse.move(view.x + 140, view.y + 160, { steps: 4 });
+    await page.mouse.up({ button: "right" });
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await page.mouse.click(view.x + 60, view.y + 140, { button: "right" });
+    await expect(page.getByRole("menu").first()).toBeVisible();
+  });
+
+  test("round 3: text you type does not wrap with No wrap, and the open More block stays open", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Text");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.3, 0.35));
+    const [t] = await ofKind(page, "text");
+    await page.getByRole("button", { name: "More Typography options" }).click();
+    await page.getByRole("combobox", { name: "White space" }).click();
+    await page.getByRole("option", { name: "No wrap" }).click();
+    // More stays open after selecting something else and coming back
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.6, 0.6), await art(page, 0.7, 0.7));
+    await page.getByText(t.name, { exact: true }).first().click();
+    await expect(page.getByRole("combobox", { name: "White space" })).toBeVisible();
+    // in-place editing uses the same no-wrap look
+    await stageEl(page, t.id).dblclick({ force: true });
+    const editor = page.getByTestId("stage-text-editor");
+    await expect(editor).toBeVisible();
+    await page.keyboard.type("a long line of words that would normally wrap inside a small box");
+    expect(await editor.evaluate((e) => getComputedStyle(e).whiteSpace)).toBe("nowrap");
+    expect(await editor.evaluate((e) => Math.round(e.getBoundingClientRect().height))).toBeLessThan(60);
+    await page.keyboard.press("Escape");
+    await expect.poll(async () => String((await layers(page))[t.id].properties["content.text"])).toContain("a long line");
+  });
+
+  test("round 3: padding can be typed on text, and choosing Inner shadow, Layer blur or Background blur applies it", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Text");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.4));
+    const [t] = await ofKind(page, "text");
+    await page.getByRole("button", { name: "More Layout options" }).click();
+    await num(page, "Padding Top", 24);
+    await expect.poll(async () => (await layers(page))[t.id].properties["layout.paddingTop"]).toBe(24);
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.5, 0.5), await art(page, 0.7, 0.7));
+    const [r] = await ofKind(page, "rectangle");
+    await page.getByRole("button", { name: "Add effects" }).click();
+    await page.getByRole("button", { name: "Effect 1 settings" }).click();
+    await page.getByRole("combobox", { name: "Effect type" }).click();
+    await page.getByRole("option", { name: "Inner shadow" }).click();
+    await expect.poll(async () => String((await layers(page))[r.id].properties["paint.shadows"])).toContain("inner");
+    await page.getByRole("button", { name: "Effect 1 settings" }).click();
+    await page.getByRole("combobox", { name: "Effect type" }).click();
+    await page.getByRole("option", { name: "Layer blur" }).click();
+    await expect.poll(async () => Number((await layers(page))[r.id].properties["filter.blur"])).toBeGreaterThan(0);
+  });
+
+  test("round 3: a line turns vertical, has a colour picker, separate end caps and a shadow that shows", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Shape", "Line");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.5, 0.3));
+    const [ln] = await ofKind(page, "line");
+    await page.getByRole("radio", { name: "Vertical" }).click();
+    await expect.poll(async () => (await layers(page))[ln.id].properties["frame.rotation"]).toBe(90);
+    await page.getByLabel("Divider colour picker").click();
+    await expect(page.getByTestId("color-sv")).toBeVisible();
+    const sv = (await page.getByTestId("color-sv").boundingBox())!;
+    await page.mouse.click(sv.x + sv.width * 0.9, sv.y + sv.height * 0.2);
+    await expect.poll(async () => String((await layers(page))[ln.id].properties["svg.stroke"])).toMatch(/^#[0-9a-fA-F]{6}$/);
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: /More Divider options/ }).click();
+    await page.getByRole("combobox", { name: "End end" }).click();
+    await page.getByRole("option", { name: "Line arrow" }).click();
+    await expect.poll(async () => (await layers(page))[ln.id].properties["shape.endCap"]).toBe("lineArrow");
+  });
+
+  test("round 3: Animation is in Motion, Data and Logic are in Code, none of them in Design", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Shape", "Rectangle");
+    await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
+    await expect(page.getByRole("button", { name: "Add animation" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Add data" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Add logic" })).toHaveCount(0);
+    await page.getByRole("tab", { name: "Motion" }).click().catch(async () => page.getByText("Motion", { exact: true }).first().click());
+    await expect(page.getByTestId("inspector-extras-animation")).toBeVisible();
+    await page.getByText("Code", { exact: true }).first().click();
+    await expect(page.getByTestId("inspector-extras-data-logic")).toBeVisible();
+  });
+
+  test("round 3: the polygon preview has the sides the polygon gets", async ({ page }) => {
+    await ready(page);
+    await pick(page, "Shape", "Polygon");
+    const a = await art(page, 0.2, 0.3);
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(a.x + 120, a.y + 100, { steps: 4 });
+    expect(await page.getByTestId("draw-preview").locator("polygon").getAttribute("points").then((p) => p!.trim().split(/\s+/).length)).toBe(6);
+    await page.mouse.up();
+    const [poly] = await ofKind(page, "polygon");
+    expect(Number(poly.properties["shape.sides"] ?? 6)).toBe(6);
+  });
 });

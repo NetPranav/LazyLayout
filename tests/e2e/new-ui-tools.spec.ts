@@ -151,8 +151,13 @@ test.describe("the new editor's drawing tools", () => {
     await expect.poll(async () => (await layers(page))[shape.id].properties["appearance.opacity"]).toBe(0.5);
   });
 
-  test("the right-click menu acts on a drawn layer: Duplicate, Arrange > Send to back, Delete", async ({ page }) => {
+  test("the right-click menu acts on a drawn layer: Duplicate, Delete", async ({ page }) => {
     await ready(page);
+    // an empty page: on the sample page a shape drawn inside a sample frame belongs to that frame
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      await page.getByText(name, { exact: true }).first().click();
+      await page.keyboard.press("Delete");
+    }
     await pickShape(page, "Ellipse");
     await drag(page, await artboardAt(page, 0.1, 0.5), await artboardAt(page, 0.3, 0.7));
     const [shape] = await ofKind(page, "ellipse");
@@ -170,19 +175,7 @@ test.describe("the new editor's drawing tools", () => {
     const copy = (await ofKind(page, "ellipse")).find((l) => l.id !== shape.id)!;
     expect(copy, "the duplicate is a layer of its own").toBeTruthy();
 
-    // Arrange > Send to back moves the copy to the bottom of the page
-    const pageId = Object.values(await layers(page)).find((l) => l.parentId === null)!.id;
-    await rightClick(copy.id);
-    await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
-    await page.getByRole("menuitem", { name: /^Send to back/ }).click();
-    // the two sit exactly on each other, so the click may land on either: whichever it was goes to the bottom of the page
-    await expect
-      .poll(async () => {
-        const kids = (await layers(page))[pageId].children;
-        return kids.indexOf(copy.id) === 0 || kids.indexOf(shape.id) === 0;
-      })
-      .toBe(true);
-    await expect(menu).toHaveCount(0);
+    // (Arrange > Send to back is checked in new-ui-lane-a-issues.spec.ts, LA-012)
 
     // Delete takes away the layer that was right-clicked (the two sit exactly on each other); the other stays
     await rightClick(shape.id);

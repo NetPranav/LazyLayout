@@ -66,6 +66,7 @@ const asHex = (v: string): string => (/^[0-9a-fA-F]{3,8}$/.test(v) ? `#${v}` : v
 export function valueFor(layer: Pick<Layer, "archetype">, key: string, value: PropValue | null): PropValue | null {
   if (typeof value !== "string") return value;
   if (key === "divider.color") return asHex(value); // the field types a hex without its #
+  if (layer.archetype === "line" && key === "divider.orientation") return value === "vertical" ? 90 : 0;
   if (layer.archetype === "line") {
     if (key === "divider.style") return DASH[value] ?? "none";
     if (key === "divider.cap") return value.toLowerCase();
