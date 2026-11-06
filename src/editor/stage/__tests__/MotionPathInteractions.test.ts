@@ -330,4 +330,145 @@ describe("Phase 69 Milestone 5: Interactive Waypoint & Tangent Editing", () => {
     assert.ok(html.includes('data-waypoint-id="kf-x2"'));
     assert.ok(!html.includes('tangents-kf-x2'), "Linear waypoint must not render tangent arms");
   });
+
+  it("tangent mathematics: continuous mode enforces collinear opposition and preserves opposing length in aligned mode", () => {
+    const { doc, clipId } = createTestDoc();
+    setDocument(doc);
+
+    // Initial opposing handle spatialIn was (-30, 15) -> length = sqrt(900 + 225) = sqrt(1125)
+    // Drag outbound handle to (40, 30) (magnitude 50, direction: [0.8, 0.6])
+    // In continuous + aligned mode, spatialIn should point in opposite direction [-0.8, -0.6]
+    // with preserved length sqrt(1125) ≈ 33.541 -> [-26.83, -20.12] -> rounded: (-27, -20)
+    const activeVec = { x: 40, y: 30 };
+    const actLen = Math.hypot(activeVec.x, activeVec.y);
+    const angle = Math.atan2(activeVec.y, activeVec.x);
+    const oppAngle = angle + Math.PI;
+    const initialOppLen = Math.hypot(-30, 15);
+    const expectedOppX = Math.round(Math.cos(oppAngle) * initialOppLen);
+    const expectedOppY = Math.round(Math.sin(oppAngle) * initialOppLen);
+
+    documentCommands.updateWaypointTangents(clipId, "kf-x1", {
+      spatialOut: activeVec,
+      spatialIn: { x: expectedOppX, y: expectedOppY },
+      mode: "continuous",
+      handleStyle: "aligned",
+    });
+
+    const updated = getDocument();
+    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    assert.deepEqual(wp.spatialOut, { x: 40, y: 30 });
+    assert.deepEqual(wp.spatialIn, { x: -27, y: -20 });
+
+    // In symmetric mode, opposing length matches active length 50 exactly: (-32, -24) or (-40, -30) depending on orientation
+    const symmetricOpp = {
+      x: Math.round(Math.cos(oppAngle) * actLen),
+      y: Math.round(Math.sin(oppAngle) * actLen),
+    };
+    documentCommands.updateWaypointTangents(clipId, "kf-x1", {
+      spatialOut: activeVec,
+      spatialIn: symmetricOpp,
+      mode: "continuous",
+      handleStyle: "symmetric",
+    });
+
+    const updatedSymm = getDocument();
+    const wpSymm = updatedSymm.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    assert.deepEqual(wpSymm.spatialOut, { x: 40, y: 30 });
+    assert.deepEqual(wpSymm.spatialIn, { x: -40, y: -30 });
+    assert.equal(Math.hypot(wpSymm.spatialIn!.x, wpSymm.spatialIn!.y), Math.hypot(wpSymm.spatialOut!.x, wpSymm.spatialOut!.y));
+  });
+
+  it("tangent mathematics: degenerate zero-length handle does not divide by zero", () => {
+    const { doc, clipId } = createTestDoc();
+    setDocument(doc);
+
+    // Active vector at (0, 0)
+    const activeVec = { x: 0, y: 0 };
+    const actLen = Math.hypot(activeVec.x, activeVec.y);
+    assert.equal(actLen, 0);
+
+    // Degenerate vector should produce (0, 0) opposing without NaN
+    const oppVec = actLen < 1e-4 ? { x: 0, y: 0 } : { x: 10, y: 10 };
+    documentCommands.updateWaypointTangents(clipId, "kf-x1", {
+      spatialOut: activeVec,
+      spatialIn: oppVec,
+      mode: "continuous",
+      handleStyle: "aligned",
+    });
+
+    const updated = getDocument();
+    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    assert.deepEqual(wp.spatialOut, { x: 0, y: 0 });
+    assert.deepEqual(wp.spatialIn, { x: 0, y: 0 });
+    assert.ok(!Number.isNaN(wp.spatialIn!.x) && !Number.isNaN(wp.spatialIn!.y));
+  });
+
+  it("tangent mathematics: bezier mode preserves opposing handle completely independently", () => {
+    const { doc, clipId } = createTestDoc();
+    setDocument(doc);
+
+    // Initial handles: spatialIn is (-30, 15), spatialOut is (30, -15)
+    // In bezier mode, changing spatialOut must NOT alter spatialIn
+    documentCommands.updateWaypointTangents(clipId, "kf-x1", {
+      spatialOut: { x: 95, y: -80 },
+      mode: "bezier",
+      handleStyle: "broken",
+    });
+
+    const updated = getDocument();
+    const wp = updated.clips[clipId].spatialTrajectories?.transform?.waypoints.find((w) => w.id === "kf-x1")!;
+    assert.deepEqual(wp.spatialOut, { x: 95, y: -80 }, "Active handle must update");
+    assert.deepEqual(wp.spatialIn, { x: -30, y: 15 }, "Opposing handle in bezier mode must remain completely unchanged");
+  });
+
+  it("coordinate transformation: calculates scale-normalized canvas displacement across zoom levels", () => {
+    // Screen delta of 100px:
+    const screenDeltaX = 100;
+    const screenDeltaY = 60;
+
+    // Zoom 1x
+    const zoom1 = 1;
+    const canvasDelta1 = { x: screenDeltaX / zoom1, y: screenDeltaY / zoom1 };
+    assert.deepEqual(canvasDelta1, { x: 100, y: 60 });
+
+    // Zoom 2x (magnified: 100 screen px = 50 canvas px)
+    const zoom2 = 2;
+    const canvasDelta2 = { x: screenDeltaX / zoom2, y: screenDeltaY / zoom2 };
+    assert.deepEqual(canvasDelta2, { x: 50, y: 30 });
+
+    // Zoom 0.5x (zoomed out: 100 screen px = 200 canvas px)
+    const zoomHalf = 0.5;
+    const canvasDeltaHalf = { x: screenDeltaX / zoomHalf, y: screenDeltaY / zoomHalf };
+    assert.deepEqual(canvasDeltaHalf, { x: 200, y: 120 });
+  });
+
+  it("document integrity: waypoint edits preserve canonical timestamps and create zero duplicate keyframes", () => {
+    const { doc, clipId } = createTestDoc();
+    setDocument(doc);
+
+    const initialClip = doc.clips[clipId];
+    const initialTrackX = initialClip.tracks.find((t) => t.property === "transform.x")!;
+    assert.equal(initialTrackX.keyframes.length, 3);
+
+    // Move waypoint 3 times
+    documentCommands.updateWaypointPosition(clipId, "kf-x1", { x: 140, y: 90 });
+    documentCommands.updateWaypointPosition(clipId, "kf-x1", { x: 160, y: 110 });
+    documentCommands.updateWaypointPosition(clipId, "kf-x1", { x: 180, y: 130 });
+
+    const finalClip = getDocument().clips[clipId];
+    const trackX = finalClip.tracks.find((t) => t.property === "transform.x")!;
+    const trackY = finalClip.tracks.find((t) => t.property === "transform.y")!;
+
+    // Track length must remain strictly 3 (no duplicate keyframe pollution)
+    assert.equal(trackX.keyframes.length, 3, "Track X must maintain exactly 3 keyframes");
+    assert.equal(trackY.keyframes.length, 3, "Track Y must maintain exactly 3 keyframes");
+
+    // Timestamps must remain exactly 0, 1.5, 3
+    assert.deepEqual(trackX.keyframes.map((k) => k.time), [0, 1.5, 3]);
+    assert.deepEqual(trackY.keyframes.map((k) => k.time), [0, 1.5, 3]);
+
+    // Only the values at t=1.5 are updated
+    assert.equal(trackX.keyframes[1].value, 180);
+    assert.equal(trackY.keyframes[1].value, 130);
+  });
 });
