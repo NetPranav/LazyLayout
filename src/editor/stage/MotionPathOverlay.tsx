@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import type { StageElement } from "./types";
-import type { Layer, Clip, Composition } from "@/core/document/schema";
+import type { Layer, Clip, Composition, SpatialMode } from "@/core/document/schema";
 import { clipTimeInComposition, MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useDocument } from "@/core/store/useDocumentStore";
+import { useDocument, documentCommands, type DocumentTransaction } from "@/core/store/useDocumentStore";
 import { useTransportTime } from "@/core/time/useTransportTime";
 import { getSpatialTrajectory } from "@/core/kernel/evaluate";
 import { extractClipWaypoints, type ResolvedWaypoint } from "@/core/timeline/keyframeOps";
@@ -39,8 +39,24 @@ export interface MotionPathOverlayProps {
   showTangents?: boolean;
   /** Whether to render current playhead position indicator (default true) */
   showPlayhead?: boolean;
+  /** Whether interactive waypoint and tangent editing is enabled (default true) */
+  interactive?: boolean;
+  /** Currently selected waypoint ID (controlled) */
+  selectedWaypointId?: string | null;
+  /** Callback fired when a waypoint is selected or deselected */
+  onSelectWaypoint?: (waypointId: string | null) => void;
+  /** Callback fired during or after waypoint position updates */
+  onWaypointChange?: (clipId: string, waypointId: string, pos: { x: number; y: number }) => void;
+  /** Callback fired during or after tangent handle updates */
+  onTangentChange?: (
+    clipId: string,
+    waypointId: string,
+    patch: { spatialIn?: { x: number; y: number }; spatialOut?: { x: number; y: number } }
+  ) => void;
   /** Optional custom CSS classes */
   className?: string;
+  /** Optional inline styles */
+  style?: React.CSSProperties;
 }
 
 interface RenderableTrajectory {
@@ -55,11 +71,27 @@ interface RenderableTrajectory {
   currentPoint: { x: number; y: number } | null;
 }
 
+interface DragGesture {
+  type: "waypoint" | "tangent-in" | "tangent-out";
+  clipId: string;
+  waypointId: string;
+  startClientX: number;
+  startClientY: number;
+  initialWpX: number;
+  initialWpY: number;
+  initialHandleX: number;
+  initialHandleY: number;
+  initialOpposingX?: number;
+  initialOpposingY?: number;
+  mode?: SpatialMode;
+  handleStyle?: string;
+}
+
 /**
- * Phase 69: Motion paths on the canvas (Milestone 4 — Canvas Overlay & Path Rendering).
+ * Phase 69: Motion paths on the canvas (Milestones 4 & 5).
  * Renders SVG motion path ribbons, per-frame velocity ticks, keyframe waypoint handles,
- * and tangent control handles for selected layers with 2D spatial trajectories.
- * Pure and non-mutating: consumes evaluated geometry without modifying document state.
+ * tangent control handles, and playhead position markers for layers with 2D spatial trajectories.
+ * Supports interactive dragging of waypoints and tangent handles backed by atomic document transactions.
  */
 export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   selectedIds: controlledSelectedIds,
@@ -76,7 +108,13 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   showTicks = true,
   showTangents = true,
   showPlayhead = true,
+  interactive = true,
+  selectedWaypointId: controlledSelectedWaypointId,
+  onSelectWaypoint,
+  onWaypointChange,
+  onTangentChange,
   className = "",
+  style,
 }) => {
   // Store subscriptions (fallback when props are not explicitly provided)
   const storeSelectedIds = useSelectionStore((s) => s.selectedIds);
@@ -96,10 +134,31 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   // Scale factor: keep handles and ticks visually crisp and comfortable regardless of canvas zoom
   const scale = Math.max(0.05, zoom);
   const waypointRadius = 4 / scale;
+  const waypointHitRadius = Math.max(waypointRadius, 10 / scale);
   const tangentRadius = 3 / scale;
+  const tangentHitRadius = Math.max(tangentRadius, 8 / scale);
   const playheadInnerRadius = 4.5 / scale;
   const playheadOuterRadius = 7.5 / scale;
   const tickRadius = 1.5 / scale;
+
+  // Waypoint selection state (controlled vs uncontrolled)
+  const [internalSelectedWaypointId, setInternalSelectedWaypointId] = useState<string | null>(null);
+  const activeWaypointId = controlledSelectedWaypointId !== undefined ? controlledSelectedWaypointId : internalSelectedWaypointId;
+
+  const handleSelectWaypoint = useCallback(
+    (waypointId: string | null) => {
+      if (controlledSelectedWaypointId === undefined) {
+        setInternalSelectedWaypointId(waypointId);
+      }
+      onSelectWaypoint?.(waypointId);
+    },
+    [controlledSelectedWaypointId, onSelectWaypoint]
+  );
+
+  // Gesture state & transaction reference
+  const txRef = useRef<DocumentTransaction | null>(null);
+  const gestureRef = useRef<DragGesture | null>(null);
+  const [isGesturing, setIsGesturing] = useState(false);
 
   // Compile renderable trajectories for selected layers
   const trajectories = useMemo<RenderableTrajectory[]>(() => {
@@ -181,12 +240,203 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
     showPlayhead,
   ]);
 
-  if (trajectories.length === 0) return null;
+  // Pointer gesture handlers
+  const handleWaypointPointerDown = useCallback(
+    (clipId: string, w: ResolvedWaypoint, e: React.PointerEvent) => {
+      if (!interactive) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      try {
+        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      } catch {
+        // Pointer capture fallback
+      }
+
+      handleSelectWaypoint(w.id);
+
+      const tx = documentCommands.begin("Move motion path waypoint");
+      txRef.current = tx;
+      gestureRef.current = {
+        type: "waypoint",
+        clipId,
+        waypointId: w.id,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        initialWpX: w.x,
+        initialWpY: w.y,
+        initialHandleX: 0,
+        initialHandleY: 0,
+      };
+      setIsGesturing(true);
+    },
+    [interactive, handleSelectWaypoint]
+  );
+
+  const handleTangentPointerDown = useCallback(
+    (
+      clipId: string,
+      w: ResolvedWaypoint,
+      handleType: "in" | "out",
+      e: React.PointerEvent
+    ) => {
+      if (!interactive) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      try {
+        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      } catch {
+        // Pointer capture fallback
+      }
+
+      handleSelectWaypoint(w.id);
+
+      const tx = documentCommands.begin("Edit motion path tangent");
+      txRef.current = tx;
+
+      const activeVector = handleType === "in" ? w.spatialIn : w.spatialOut;
+      const opposingVector = handleType === "in" ? w.spatialOut : w.spatialIn;
+
+      gestureRef.current = {
+        type: handleType === "in" ? "tangent-in" : "tangent-out",
+        clipId,
+        waypointId: w.id,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        initialWpX: w.x,
+        initialWpY: w.y,
+        initialHandleX: activeVector?.x ?? 0,
+        initialHandleY: activeVector?.y ?? 0,
+        initialOpposingX: opposingVector?.x,
+        initialOpposingY: opposingVector?.y,
+        mode: w.mode,
+        handleStyle: w.handleStyle,
+      };
+      setIsGesturing(true);
+    },
+    [interactive, handleSelectWaypoint]
+  );
+
+  // Global pointer move, pointer up, and keyboard cancellation
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const gesture = gestureRef.current;
+      if (!gesture) return;
+
+      const deltaX = (e.clientX - gesture.startClientX) / scale;
+      const deltaY = (e.clientY - gesture.startClientY) / scale;
+
+      if (gesture.type === "waypoint") {
+        const nextX = Math.round(gesture.initialWpX + deltaX);
+        const nextY = Math.round(gesture.initialWpY + deltaY);
+        documentCommands.updateWaypointPosition(gesture.clipId, gesture.waypointId, { x: nextX, y: nextY });
+        onWaypointChange?.(gesture.clipId, gesture.waypointId, { x: nextX, y: nextY });
+      } else if (gesture.type === "tangent-in" || gesture.type === "tangent-out") {
+        const isIn = gesture.type === "tangent-in";
+        const rawX = gesture.initialHandleX + deltaX;
+        const rawY = gesture.initialHandleY + deltaY;
+        const activeVec = { x: Math.round(rawX), y: Math.round(rawY) };
+
+        let patch: {
+          spatialIn?: { x: number; y: number };
+          spatialOut?: { x: number; y: number };
+        };
+
+        if (gesture.mode === "continuous") {
+          // Collinear opposite angle
+          const actLen = Math.hypot(activeVec.x, activeVec.y);
+          let oppVec: { x: number; y: number };
+
+          if (actLen < 1e-4) {
+            oppVec = { x: 0, y: 0 };
+          } else {
+            const angle = Math.atan2(activeVec.y, activeVec.x);
+            const oppAngle = angle + Math.PI;
+
+            let oppLen = actLen;
+            if (gesture.handleStyle !== "symmetric" && gesture.initialOpposingX !== undefined && gesture.initialOpposingY !== undefined) {
+              const initOpp = Math.hypot(gesture.initialOpposingX, gesture.initialOpposingY);
+              if (initOpp > 1e-4) oppLen = initOpp;
+            }
+
+            oppVec = {
+              x: Math.round(Math.cos(oppAngle) * oppLen),
+              y: Math.round(Math.sin(oppAngle) * oppLen),
+            };
+          }
+
+          if (isIn) {
+            patch = { spatialIn: activeVec, spatialOut: oppVec };
+          } else {
+            patch = { spatialOut: activeVec, spatialIn: oppVec };
+          }
+        } else {
+          // Independent tangent arms in bezier / broken mode
+          if (isIn) {
+            patch = { spatialIn: activeVec };
+          } else {
+            patch = { spatialOut: activeVec };
+          }
+        }
+
+        documentCommands.updateWaypointTangents(gesture.clipId, gesture.waypointId, patch);
+        onTangentChange?.(gesture.clipId, gesture.waypointId, patch);
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (gestureRef.current) {
+        gestureRef.current = null;
+        setIsGesturing(false);
+        try {
+          txRef.current?.commit();
+        } finally {
+          txRef.current = null;
+        }
+      }
+    };
+
+    const handlePointerCancel = () => {
+      if (gestureRef.current) {
+        gestureRef.current = null;
+        setIsGesturing(false);
+        try {
+          txRef.current?.cancel();
+        } finally {
+          txRef.current = null;
+        }
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+      if (txRef.current) {
+        txRef.current.cancel();
+        txRef.current = null;
+      }
+    };
+  }, [scale, onWaypointChange, onTangentChange]);
+
+  if (trajectories.length === 0) {
+    return null;
+  }
 
   return (
     <svg
       data-testid="motion-path-overlay"
       className={`ll-motion-path-overlay ll:absolute ll:inset-0 ll:w-full ll:h-full ll:pointer-events-none ll:overflow-visible ${className}`}
+      style={{
+        zIndex: 25,
+        ...style,
+      }}
+      aria-label="Motion paths overlay"
       aria-hidden="true"
     >
       {trajectories.map((traj) => (
@@ -236,8 +486,12 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
             ))}
 
           {/* 4. Tangent arms and control handles */}
-          {showTangents &&
-            traj.waypoints.map((w) => (
+          {traj.waypoints.map((w) => {
+            const isSelected = activeWaypointId === w.id;
+            const shouldShowTangents = showTangents || isSelected;
+            if (!shouldShowTangents || w.mode === "linear") return null;
+
+            return (
               <g key={`tangents-${w.id}`}>
                 {/* Incoming tangent handle */}
                 {w.spatialIn && (
@@ -252,14 +506,27 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
                       strokeDasharray={`${3 / scale},${3 / scale}`}
                       vectorEffect="non-scaling-stroke"
                     />
+                    {/* Interactive hit area */}
+                    {interactive && (
+                      <circle
+                        cx={w.x + w.spatialIn.x}
+                        cy={w.y + w.spatialIn.y}
+                        r={tangentHitRadius}
+                        fill="transparent"
+                        style={{ pointerEvents: "all", cursor: isGesturing ? "grabbing" : "grab" }}
+                        onPointerDown={(e) => handleTangentPointerDown(traj.clipId, w, "in", e)}
+                      />
+                    )}
                     <circle
                       data-testid="motion-path-tangent-in"
                       cx={w.x + w.spatialIn.x}
                       cy={w.y + w.spatialIn.y}
                       r={tangentRadius}
-                      fill="var(--ll-label-1, #7A8A9C)"
+                      fill={isSelected ? "var(--ll-accent, #3B82F6)" : "var(--ll-label-1, #7A8A9C)"}
                       stroke="var(--ll-surface-panel, #F4F3EF)"
                       strokeWidth={1.5 / scale}
+                      style={{ pointerEvents: interactive ? "all" : "none", cursor: isGesturing ? "grabbing" : "grab" }}
+                      onPointerDown={(e) => handleTangentPointerDown(traj.clipId, w, "in", e)}
                     />
                   </g>
                 )}
@@ -277,23 +544,39 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
                       strokeDasharray={`${3 / scale},${3 / scale}`}
                       vectorEffect="non-scaling-stroke"
                     />
+                    {/* Interactive hit area */}
+                    {interactive && (
+                      <circle
+                        cx={w.x + w.spatialOut.x}
+                        cy={w.y + w.spatialOut.y}
+                        r={tangentHitRadius}
+                        fill="transparent"
+                        style={{ pointerEvents: "all", cursor: isGesturing ? "grabbing" : "grab" }}
+                        onPointerDown={(e) => handleTangentPointerDown(traj.clipId, w, "out", e)}
+                      />
+                    )}
                     <circle
                       data-testid="motion-path-tangent-out"
                       cx={w.x + w.spatialOut.x}
                       cy={w.y + w.spatialOut.y}
                       r={tangentRadius}
-                      fill="var(--ll-label-1, #7A8A9C)"
+                      fill={isSelected ? "var(--ll-accent, #3B82F6)" : "var(--ll-label-1, #7A8A9C)"}
                       stroke="var(--ll-surface-panel, #F4F3EF)"
                       strokeWidth={1.5 / scale}
+                      style={{ pointerEvents: interactive ? "all" : "none", cursor: isGesturing ? "grabbing" : "grab" }}
+                      onPointerDown={(e) => handleTangentPointerDown(traj.clipId, w, "out", e)}
                     />
                   </g>
                 )}
               </g>
-            ))}
+            );
+          })}
 
           {/* 5. Keyframe waypoint handles */}
           {traj.waypoints.map((w) => {
             const isLinear = w.mode === "linear";
+            const isSelected = activeWaypointId === w.id;
+
             return (
               <g
                 key={`wp-${w.id}`}
@@ -301,7 +584,34 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
                 data-waypoint-id={w.id}
                 data-waypoint-time={w.time}
                 data-waypoint-mode={w.mode ?? "catmull"}
+                data-selected={isSelected ? "true" : "false"}
               >
+                {/* Selection accent ring */}
+                {isSelected && (
+                  <circle
+                    data-testid="motion-path-waypoint-selection-ring"
+                    cx={w.x}
+                    cy={w.y}
+                    r={waypointRadius + 3.5 / scale}
+                    fill="none"
+                    stroke="var(--ll-accent, #3B82F6)"
+                    strokeWidth={2 / scale}
+                    strokeDasharray={isLinear ? undefined : `${2 / scale},${2 / scale}`}
+                  />
+                )}
+
+                {/* Hit area */}
+                {interactive && (
+                  <circle
+                    cx={w.x}
+                    cy={w.y}
+                    r={waypointHitRadius}
+                    fill="transparent"
+                    style={{ pointerEvents: "all", cursor: isGesturing ? "grabbing" : "grab" }}
+                    onPointerDown={(e) => handleWaypointPointerDown(traj.clipId, w, e)}
+                  />
+                )}
+
                 {isLinear ? (
                   // Square waypoint dot for linear corner segments
                   <rect
@@ -309,10 +619,12 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
                     y={w.y - waypointRadius}
                     width={waypointRadius * 2}
                     height={waypointRadius * 2}
-                    fill="var(--ll-surface-panel, #F4F3EF)"
+                    fill={isSelected ? "var(--ll-accent, #3B82F6)" : "var(--ll-surface-panel, #F4F3EF)"}
                     stroke="var(--ll-control-primary-bg, #22231E)"
                     strokeWidth={1.5 / scale}
                     rx={1 / scale}
+                    style={{ pointerEvents: interactive ? "all" : "none", cursor: isGesturing ? "grabbing" : "grab" }}
+                    onPointerDown={(e) => handleWaypointPointerDown(traj.clipId, w, e)}
                   />
                 ) : (
                   // Circular waypoint dot for curved Bezier / Catmull-Rom segments
@@ -320,9 +632,11 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
                     cx={w.x}
                     cy={w.y}
                     r={waypointRadius}
-                    fill="var(--ll-surface-panel, #F4F3EF)"
+                    fill={isSelected ? "var(--ll-accent, #3B82F6)" : "var(--ll-surface-panel, #F4F3EF)"}
                     stroke="var(--ll-control-primary-bg, #22231E)"
                     strokeWidth={1.5 / scale}
+                    style={{ pointerEvents: interactive ? "all" : "none", cursor: isGesturing ? "grabbing" : "grab" }}
+                    onPointerDown={(e) => handleWaypointPointerDown(traj.clipId, w, e)}
                   />
                 )}
               </g>

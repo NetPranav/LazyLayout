@@ -61,6 +61,7 @@ import {
   type LayerState,
   type MotionDocument,
   type Track,
+  type SpatialMode,
 } from "../document/schema";
 
 enablePatches();
@@ -976,6 +977,160 @@ export const documentCommands = {
       const track = requireTrack(draft, clipId, trackId);
       track.keyframes = track.keyframes.filter((k) => k.id !== keyframeId);
     });
+  },
+
+  // ---------------------------------------------------------------- motion paths & spatial waypoints
+
+  /**
+   * Updates a spatial motion path waypoint's position in 2D space.
+   * Modifies the underlying transform.x and transform.y tracks at the waypoint's timestamp.
+   */
+  updateWaypointPosition(
+    clipId: string,
+    waypointId: string,
+    pos: { x: number; y: number },
+    label = "Move motion path waypoint"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      let trackX = clip.tracks.find((t) => t.property === "transform.x");
+      let trackY = clip.tracks.find((t) => t.property === "transform.y");
+
+      const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+      const kfY = trackY?.keyframes.find((k) => k.id === waypointId);
+
+      if (kfX && kfY) {
+        kfX.value = pos.x;
+        kfY.value = pos.y;
+      } else if (kfX) {
+        kfX.value = pos.x;
+        if (trackY) {
+          const matchingY = trackY.keyframes.find((k) => Math.abs(k.time - kfX.time) < 1e-4);
+          if (matchingY) {
+            matchingY.value = pos.y;
+          } else {
+            trackY.keyframes.push({ id: createId("kf"), time: kfX.time, value: pos.y });
+            trackY.keyframes.sort((a, b) => a.time - b.time);
+          }
+        } else {
+          clip.tracks.push({
+            id: createId("trk"),
+            property: "transform.y",
+            keyframes: [{ id: createId("kf"), time: kfX.time, value: pos.y }],
+          });
+        }
+      } else if (kfY) {
+        kfY.value = pos.y;
+        if (trackX) {
+          const matchingX = trackX.keyframes.find((k) => Math.abs(k.time - kfY.time) < 1e-4);
+          if (matchingX) {
+            matchingX.value = pos.x;
+          } else {
+            trackX.keyframes.push({ id: createId("kf"), time: kfY.time, value: pos.x });
+            trackX.keyframes.sort((a, b) => a.time - b.time);
+          }
+        } else {
+          clip.tracks.push({
+            id: createId("trk"),
+            property: "transform.x",
+            keyframes: [{ id: createId("kf"), time: kfY.time, value: pos.x }],
+          });
+        }
+      } else {
+        // Fallback: match by spatial trajectory waypoint id
+        const spWp = clip.spatialTrajectories?.transform?.waypoints.find((w) => w.id === waypointId);
+        if (spWp) {
+          const tW = spWp.time;
+          if (!trackX) {
+            trackX = { id: createId("trk"), property: "transform.x", keyframes: [] };
+            clip.tracks.push(trackX);
+          }
+          const matchingX = trackX.keyframes.find((k) => Math.abs(k.time - tW) < 1e-4);
+          if (matchingX) matchingX.value = pos.x;
+          else {
+            trackX.keyframes.push({ id: waypointId, time: tW, value: pos.x });
+            trackX.keyframes.sort((a, b) => a.time - b.time);
+          }
+
+          if (!trackY) {
+            trackY = { id: createId("trk"), property: "transform.y", keyframes: [] };
+            clip.tracks.push(trackY);
+          }
+          const matchingY = trackY.keyframes.find((k) => Math.abs(k.time - tW) < 1e-4);
+          if (matchingY) matchingY.value = pos.y;
+          else {
+            trackY.keyframes.push({ id: createId("kf"), time: tW, value: pos.y });
+            trackY.keyframes.sort((a, b) => a.time - b.time);
+          }
+        }
+      }
+    });
+  },
+
+  /**
+   * Updates or sets tangent control handles (spatialIn / spatialOut), interpolation mode,
+   * or handleStyle for a motion path waypoint.
+   */
+  updateWaypointTangents(
+    clipId: string,
+    waypointId: string,
+    patch: {
+      spatialIn?: { x: number; y: number };
+      spatialOut?: { x: number; y: number };
+      mode?: SpatialMode;
+      handleStyle?: "symmetric" | "aligned" | "broken";
+    },
+    label = "Edit motion path tangent"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      if (!clip.spatialTrajectories) {
+        clip.spatialTrajectories = {};
+      }
+      if (!clip.spatialTrajectories.transform) {
+        clip.spatialTrajectories.transform = {
+          id: createId("st"),
+          propertyGroup: "transform",
+          enabled: true,
+          waypoints: [],
+        };
+      }
+      const st = clip.spatialTrajectories.transform;
+      let wp = st.waypoints.find((w) => w.id === waypointId);
+      if (!wp) {
+        const trackX = clip.tracks.find((t) => t.property === "transform.x");
+        const trackY = clip.tracks.find((t) => t.property === "transform.y");
+        const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+        const kfY = trackY?.keyframes.find((k) => k.id === waypointId);
+        const time = kfX?.time ?? kfY?.time ?? 0;
+
+        wp = {
+          id: waypointId,
+          time,
+          mode: patch.mode ?? "bezier",
+          handleStyle: patch.handleStyle ?? "aligned",
+        };
+        st.waypoints.push(wp);
+        st.waypoints.sort((a, b) => a.time - b.time);
+      }
+
+      if (patch.mode !== undefined) wp.mode = patch.mode;
+      if (patch.handleStyle !== undefined) wp.handleStyle = patch.handleStyle;
+      if (patch.spatialIn !== undefined) wp.spatialIn = patch.spatialIn;
+      if (patch.spatialOut !== undefined) wp.spatialOut = patch.spatialOut;
+    });
+  },
+
+  /**
+   * Sets the interpolation mode of a spatial waypoint ("linear", "bezier", "continuous", "auto").
+   */
+  setWaypointMode(
+    clipId: string,
+    waypointId: string,
+    mode: SpatialMode,
+    label = "Change waypoint mode"
+  ) {
+    documentCommands.updateWaypointTangents(clipId, waypointId, { mode }, label);
   },
 
   // ---------------------------------------------------------------- states

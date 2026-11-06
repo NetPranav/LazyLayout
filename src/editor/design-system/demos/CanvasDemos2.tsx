@@ -390,13 +390,14 @@ export function StageAndArtboardDemo() {
 }
 
 /* =========================================================================
-   7. MOTION PATH OVERLAY DEMO (Phase 69 Milestone 4)
+   7. MOTION PATH OVERLAY DEMO (Phase 69 Milestones 4 & 5)
    ========================================================================= */
 export function MotionPathOverlayDemo() {
   const [currentTime, setCurrentTime] = useState(0.85);
   const [showTicks, setShowTicks] = useState(true);
   const [showTangents, setShowTangents] = useState(true);
   const [showPlayhead, setShowPlayhead] = useState(true);
+  const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>("k1");
   const [zoom, setZoom] = useState(1);
 
   const demoLayer: Layer = {
@@ -415,7 +416,7 @@ export function MotionPathOverlayDemo() {
     },
   };
 
-  const demoClip: Clip = {
+  const initialClip: Clip = {
     id: "clip-demo",
     layerId: "demo-box",
     name: "CanvasArcMotion",
@@ -451,25 +452,79 @@ export function MotionPathOverlayDemo() {
         enabled: true,
         waypoints: [
           { id: "k0", time: 0, mode: "bezier", spatialOut: { x: 80, y: 100 } },
-          { id: "k1", time: 1, mode: "continuous", spatialIn: { x: -60, y: 40 }, spatialOut: { x: 60, y: -40 } },
+          { id: "k1", time: 1, mode: "continuous", handleStyle: "aligned", spatialIn: { x: -60, y: 40 }, spatialOut: { x: 60, y: -40 } },
           { id: "k2", time: 2, mode: "linear" },
         ],
       },
     },
   };
 
+  const [clip, setClip] = useState<Clip>(initialClip);
+
   const elements: Record<string, StageElement> = {
     "demo-box": { id: "demo-box", x: 60, y: 60, width: 80, height: 50 },
+  };
+
+  const handleWaypointChange = (clipId: string, waypointId: string, pos: { x: number; y: number }) => {
+    setClip((prev) => {
+      const next = JSON.parse(JSON.stringify(prev)) as Clip;
+      const trackX = next.tracks.find((t) => t.property === "transform.x");
+      const trackY = next.tracks.find((t) => t.property === "transform.y");
+      const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+      const kfY = trackY?.keyframes.find((k) => k.id === waypointId || (kfX && Math.abs(k.time - kfX.time) < 1e-4));
+      if (kfX) kfX.value = pos.x;
+      if (kfY) kfY.value = pos.y;
+      return next;
+    });
+  };
+
+  const handleTangentChange = (
+    clipId: string,
+    waypointId: string,
+    patch: { spatialIn?: { x: number; y: number }; spatialOut?: { x: number; y: number } }
+  ) => {
+    setClip((prev) => {
+      const next = JSON.parse(JSON.stringify(prev)) as Clip;
+      const wp = next.spatialTrajectories?.transform?.waypoints.find((w) => w.id === waypointId);
+      if (wp) {
+        if (patch.spatialIn !== undefined) wp.spatialIn = patch.spatialIn;
+        if (patch.spatialOut !== undefined) wp.spatialOut = patch.spatialOut;
+      }
+      return next;
+    });
+  };
+
+  const handleModeChange = (mode: "linear" | "bezier" | "continuous") => {
+    if (!selectedWaypointId) return;
+    setClip((prev) => {
+      const next = JSON.parse(JSON.stringify(prev)) as Clip;
+      const wp = next.spatialTrajectories?.transform?.waypoints.find((w) => w.id === selectedWaypointId);
+      if (wp) {
+        wp.mode = mode;
+        if (mode === "linear") {
+          delete wp.spatialIn;
+          delete wp.spatialOut;
+        } else if (!wp.spatialOut && !wp.spatialIn) {
+          wp.spatialOut = { x: 50, y: 0 };
+          if (mode === "continuous") wp.spatialIn = { x: -50, y: 0 };
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleReset = () => {
+    setClip(initialClip);
   };
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-6">
       <div>
         <h3 className="ll:text-lead ll:font-semibold ll:text-primary ll:font-sans">
-          Canvas &mdash; Motion Path Overlay (Phase 69)
+          Canvas &mdash; Motion Path Overlay (Phase 69 Interactive)
         </h3>
         <p className="ll:text-small ll:text-secondary">
-          After Effects-style motion paths on the canvas: Catmull-Rom &amp; Bezier spline ribbon, velocity ticks (spacing communicates speed), keyframe waypoint handles, tangent control arms, and scrubbed playhead indicator.
+          Interactive motion paths on the canvas: click and drag keyframe waypoint handles to reshape the trajectory, grab tangent arms to manipulate curvature in real-time, and scrub playback along canonical geometry.
         </p>
       </div>
 
@@ -507,6 +562,17 @@ export function MotionPathOverlayDemo() {
             Playhead {showPlayhead ? "On" : "Off"}
           </Button>
         </div>
+
+        {selectedWaypointId && (
+          <div className="ll:flex ll:items-center ll:gap-2 ll:pl-2 ll:border-l ll:border-border">
+            <span className="ll:text-micro ll:font-mono ll:text-secondary">Waypoint [{selectedWaypointId}]:</span>
+            <Button size="sm" variant="secondary" onClick={() => handleModeChange("linear")}>Linear</Button>
+            <Button size="sm" variant="secondary" onClick={() => handleModeChange("bezier")}>Bezier</Button>
+            <Button size="sm" variant="secondary" onClick={() => handleModeChange("continuous")}>Continuous</Button>
+          </div>
+        )}
+
+        <Button size="sm" variant="secondary" onClick={handleReset}>Reset Trajectory</Button>
       </div>
 
       {/* Canvas Viewport */}
@@ -533,13 +599,18 @@ export function MotionPathOverlayDemo() {
             selectedIds={["demo-box"]}
             elements={elements}
             layers={{ "demo-box": demoLayer }}
-            clips={{ [demoClip.id]: demoClip }}
+            clips={{ [clip.id]: clip }}
             currentTime={currentTime}
             zoom={zoom}
             fps={30}
             showTicks={showTicks}
             showTangents={showTangents}
             showPlayhead={showPlayhead}
+            interactive={true}
+            selectedWaypointId={selectedWaypointId}
+            onSelectWaypoint={setSelectedWaypointId}
+            onWaypointChange={handleWaypointChange}
+            onTangentChange={handleTangentChange}
           />
         </div>
       </div>
