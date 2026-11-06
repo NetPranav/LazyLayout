@@ -1,4 +1,5 @@
-import type { CanvasTool, GridStyle } from "@/editor/shell/canvas-chrome/types";
+import type { CanvasTool, GridStyle, ShapeTool } from "@/editor/shell/canvas-chrome/types";
+import type { Layer } from "@/core/document/schema";
 import type { ResizeHandleName } from "./constants";
 import type { SnapLine, SpacingMark } from "@/core/geometry/snap";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
@@ -39,6 +40,15 @@ export interface TransformGestureState {
   currentElements: Record<string, { x: number; y: number; width: number; height: number }>;
 }
 
+/** The box a drag is drawing, in the artboard's own pixels (before it becomes a layer). */
+export interface DrawPreview {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}
+
 export interface StageProps {
   /** Canvas content zoom level (e.g. 0.59). Defaults to 0.59 */
   zoom?: number;
@@ -60,6 +70,12 @@ export interface StageProps {
 
   /** Active canvas tool from canvas chrome */
   activeTool?: CanvasTool;
+
+  /** Which shape the Shape tool draws */
+  activeShape?: ShapeTool;
+
+  /** Called when a tool has made its layer, so the tool can go back to Select */
+  onToolDone?: () => void;
 
   /** Snapping options */
   snapObjects?: boolean;
@@ -108,6 +124,10 @@ export interface ArtboardProps {
   onSelect: (id: string | null, multi?: boolean) => void;
   onHover: (id: string | null) => void;
   activeTool?: CanvasTool;
+  /** The document's layers: a layer the prototype elements don't cover is drawn through the engine's render definition. */
+  layers?: Record<string, Layer>;
+  /** The box being drawn by a creation tool */
+  drawPreview?: DrawPreview | null;
   snapGuides?: boolean;
   empty?: boolean;
   onAddFrame?: () => void;

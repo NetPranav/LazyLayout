@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useR
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
+import { clampZoom } from "@/core/viewport/camera";
 import { invokeCommand } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
@@ -12,16 +13,19 @@ import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
 } from "./constants";
-import type { StageProps, StageElement, StagePreset } from "./types";
+import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
+import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from "./createFromDrag";
 
 export const Stage: React.FC<StageProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
-  pan = { x: 0, y: 0 },
+  pan: controlledPan,
   selectedIds: controlledSelectedIds,
   onSelect: controlledOnSelect,
   frames: _frames,
   elements: controlledElements,
   activeTool = "select",
+  activeShape = "box",
+  onToolDone,
   snapObjects = true,
   snapGuides = false,
   smartGuides = true,
@@ -54,6 +58,10 @@ export const Stage: React.FC<StageProps> = ({
       cam.setCamera({ x: 0, y: 0, zoom: STAGE_CONSTANTS.defaultZoom });
     }
   }, []);
+
+  // The Hand tool moves the artboard in the viewport; the offset is a view setting, not document content.
+  const [dragPan, setDragPan] = useState({ x: 0, y: 0 });
+  const pan = controlledPan ?? dragPan;
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
@@ -230,25 +238,25 @@ export const Stage: React.FC<StageProps> = ({
           handleSelect(null);
           break;
         case "group":
-          invokeCommand("layer.group");
+          invokeCommand("edit.group");
           break;
         case "ungroup":
-          invokeCommand("layer.ungroup");
+          invokeCommand("edit.ungroup");
           break;
         case "frame-selection":
-          invokeCommand("layer.frameSelection");
+          invokeCommand("edit.frameSelection");
           break;
         case "bring-forward":
-          invokeCommand("arrange.bringForward");
+          invokeCommand("layer.bringForward");
           break;
         case "send-backward":
-          invokeCommand("arrange.sendBackward");
+          invokeCommand("layer.sendBackward");
           break;
         case "bring-to-front":
-          invokeCommand("arrange.bringToFront");
+          invokeCommand("layer.bringToFront");
           break;
         case "send-to-back":
-          invokeCommand("arrange.sendToBack");
+          invokeCommand("layer.sendToBack");
           break;
         case "align-left":
           invokeCommand("align.left");
@@ -269,13 +277,13 @@ export const Stage: React.FC<StageProps> = ({
           invokeCommand("align.bottom");
           break;
         case "distribute-horizontally":
-          invokeCommand("align.distributeHorizontally");
+          invokeCommand("distribute.horizontal");
           break;
         case "distribute-vertically":
-          invokeCommand("align.distributeVertically");
+          invokeCommand("distribute.vertical");
           break;
         case "tidy-up":
-          invokeCommand("align.tidyUp");
+          invokeCommand("layer.tidy");
           break;
         case "rename":
           invokeCommand("layer.rename");
@@ -303,7 +311,7 @@ export const Stage: React.FC<StageProps> = ({
   }, []);
 
   const handleToggleLocked = useCallback((id: string) => {
-    invokeCommand("layer.toggleLocked");
+    invokeCommand("layer.toggleLock");
     setElements((prev) => {
       const item = prev[id];
       if (!item) return prev;
@@ -344,13 +352,116 @@ export const Stage: React.FC<StageProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // The wheel, as on the old canvas: a plain wheel or trackpad scroll pans, Ctrl or Cmd with the wheel (a pinch sends the same) zooms.
+  // A native listener, because React's wheel listener is passive and could not stop the page from scrolling or zooming itself.
+  const wheelPans = controlledPan === undefined;
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return undefined;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        const { camera, setCamera } = useCameraStore.getState();
+        setCamera({ ...camera, zoom: clampZoom(camera.zoom * Math.exp(-e.deltaY * 0.01)) });
+      } else if (wheelPans) {
+        setDragPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [wheelPans]);
+
+  // The active tool at work (the old editor's tools, on this stage): Hand moves the artboard; Frame, Shape and Text draw a layer by dragging
+  // (click for the default size, Shift constrains, Alt draws from the centre) and then hand back to Select. Select is the stage's own
+  // move and resize, below.
+  const gesture = useRef<
+    | { kind: "create"; spec: CreationSpec; start: { x: number; y: number } }
+    | { kind: "pan"; startX: number; startY: number; from: { x: number; y: number } }
+    | null
+  >(null);
+  const justDragged = useRef(false);
+  const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
+  const toolCursor = activeTool === "hand" ? "grab" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
+
+  /** A screen point in the artboard's own pixels, and how many screen px one artboard px is. */
+  const toArtboard = useCallback((clientX: number, clientY: number) => {
+    const art = viewportRef.current?.querySelector<HTMLElement>('[data-stage="artboard"]');
+    if (!art) return null;
+    const r = art.getBoundingClientRect();
+    const scale = art.offsetWidth > 0 ? r.width / art.offsetWidth : 1;
+    return { x: (clientX - r.left) / scale - art.clientLeft, y: (clientY - r.top) / scale - art.clientTop, scale };
+  }, []);
+
+  const handleToolPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    justDragged.current = false;
+    if (e.button !== 0) return;
+    if (activeTool === "hand") {
+      gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    const spec = creationSpecFor(activeTool, activeShape);
+    if (!spec) return;
+    if ((e.target as HTMLElement).closest("button,[role=menu]")) return; // the canvas size label and its menu keep working
+    const at = toArtboard(e.clientX, e.clientY);
+    if (!at || at.x < 0 || at.y < 0 || at.x > presetDef.artboardWidth || at.y > presetDef.artboardHeight) return; // only on the artboard
+    gesture.current = { kind: "create", spec, start: { x: at.x, y: at.y } };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleToolPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = gesture.current;
+    if (!g) return;
+    if (g.kind === "pan") {
+      setDragPan({ x: g.from.x + e.clientX - g.startX, y: g.from.y + e.clientY - g.startY });
+      return;
+    }
+    const at = toArtboard(e.clientX, e.clientY);
+    if (!at) return;
+    const b = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
+    setDrawPreview({ x: b.x, y: b.y, width: b.width, height: b.height, rotation: b.rotation });
+  };
+
+  const handleToolPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = gesture.current;
+    gesture.current = null;
+    if (!g) return;
+    justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (g.kind === "pan") return;
+    setDrawPreview(null);
+    const at = toArtboard(e.clientX, e.clientY);
+    if (!at) return;
+    const box = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
+    selectStore(createLayerFromBox(g.spec, box), "element");
+    onToolDone?.();
+  };
+
+  const handleToolPointerCancel = () => {
+    gesture.current = null;
+    setDrawPreview(null);
+  };
+
   return (
     <div
       ref={viewportRef}
       data-stage="workspace"
       data-testid="stage-viewport"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
+      style={{ cursor: toolCursor }}
+      onPointerDownCapture={handleToolPointerDown}
+      onPointerMove={handleToolPointerMove}
+      onPointerUp={handleToolPointerUp}
+      onPointerCancel={handleToolPointerCancel}
       onClick={(e) => {
+        if (justDragged.current) {
+          justDragged.current = false;
+          return;
+        }
         // Clicking on blank canvas space deselects
         if (e.target === e.currentTarget) {
           handleSelect(null);
@@ -366,6 +477,8 @@ export const Stage: React.FC<StageProps> = ({
         zoom={zoom}
         pan={pan}
         elements={elements}
+        layers={storeLayers}
+        drawPreview={drawPreview}
         selectedIds={selectedIds}
         hoveredId={hoveredId}
         onSelect={handleSelect}

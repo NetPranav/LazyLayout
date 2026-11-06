@@ -260,6 +260,9 @@ export function EditorShell({
           >
             <Stage
               zoom={actions.zoom}
+              activeTool={actions.activeTool}
+              activeShape={actions.activeShape}
+              onToolDone={() => actions.setActiveTool("select")}
               preset={actions.viewportPreset}
               onPresetChange={(p) => actions.setViewportPreset(p as "1440" | "768" | "375")}
             />
