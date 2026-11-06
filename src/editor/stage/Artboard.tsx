@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect, useCallback } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -183,15 +183,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
     elementId: string;
   } | null>(null);
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
-  const pressed = useRef<{ x: number; y: number; addedByShift: boolean } | null>(null);
-  const notePress = useCallback((x: number, y: number, addedByShift: boolean) => {
-    pressed.current = { x, y, addedByShift };
-  }, []);
-  const clickWasChoice = useCallback((x: number, y: number) => {
-    const press = pressed.current;
-    pressed.current = null;
-    return !(press && (press.addedByShift || Math.hypot(x - press.x, y - press.y) > 3));
-  }, []);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
 
@@ -405,7 +396,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
               onPointerDown={(e) => {
                 if (editingText === el.id) return;
-                notePress(e.clientX, e.clientY, e.shiftKey && !selectedIds.includes(el.id));
+                // where the press was, for the click that follows
+                e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(el.id) ? 1 : 0}`;
                 onStartMove?.(el.id, e);
               }}
               onMouseEnter={() => onHover(el.id)}
@@ -413,7 +405,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 // the press already added it to the selection, and the click after a drag is not a choice
-                if (clickWasChoice(e.clientX, e.clientY)) onSelect(el.id, e.shiftKey);
+                const [px, py, added] = (e.currentTarget.dataset.press ?? "").split(",").map(Number);
+                delete e.currentTarget.dataset.press;
+                if (added === 1 || Math.hypot(e.clientX - px, e.clientY - py) > 3) return;
+                onSelect(el.id, e.shiftKey);
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
