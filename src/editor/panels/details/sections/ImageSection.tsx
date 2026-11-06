@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { CutoutDialog } from "../CutoutDialog";
 import { Select } from "@/editor/components/Select";
 import { TextField } from "@/editor/components/TextField";
 import { NumberField } from "@/editor/components/NumberField";
@@ -47,6 +48,7 @@ export const ImageSection: React.FC<InspectorSectionProps> = ({
   const src = String(getValue?.("media.src") ?? "");
   const fileName = src.startsWith("asset:") ? (getDocument().assets?.[src.slice(6)]?.name ?? "Image") : (src.split("/").pop() || "Image");
   const picker = React.useRef<HTMLInputElement>(null);
+  const [cutting, setCutting] = useState(false);
   const ids = selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
   const replace = async (file: File | undefined) => {
     if (!file) return;
@@ -70,6 +72,14 @@ export const ImageSection: React.FC<InspectorSectionProps> = ({
         >
           Replace
         </button>
+        <button
+          type="button"
+          onClick={() => setCutting(true)}
+          className="ll-dtxt ll:text-micro ll:font-sans ll:text-muted ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:outline-none ll:whitespace-nowrap"
+        >
+          Cut out
+        </button>
+        {cutting && selectedId && <CutoutDialog layerId={selectedId} onClose={() => setCutting(false)} />}
         <input
           ref={picker}
           type="file"

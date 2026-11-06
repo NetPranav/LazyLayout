@@ -192,6 +192,27 @@ export const FillSection: React.FC<FillSectionProps> = ({
     }
   };
 
+  /** Drag a grip up or down: `steps` rows (negative is up), as one change. */
+  const reorderBy = (id: string, steps: number) => {
+    if (steps === 0) return;
+    const dir: -1 | 1 = steps > 0 ? 1 : -1;
+    if (engine) {
+      let next = enginePaints;
+      let at = indexOf(id);
+      for (let k = 0; k < Math.abs(steps); k++) {
+        next = movePaint(next, at, dir);
+        at += dir;
+      }
+      writeEngine(next);
+    } else {
+      const to = Math.max(0, Math.min(localFills.length - 1, indexOf(id) + steps));
+      const next = [...localFills];
+      const [moved] = next.splice(indexOf(id), 1);
+      next.splice(to, 0, moved);
+      setFills(next.map((f, k) => ({ ...f, id: `fill-${k}` })));
+    }
+  };
+
   const handleToggleHide = (id: string) => {
     if (engine) {
       const p = enginePaints[indexOf(id)];
@@ -225,6 +246,19 @@ export const FillSection: React.FC<FillSectionProps> = ({
             <button
               type="button"
               data-grip
+              onPointerDown={(e) => {
+                // Drag the grip: each 32px up or down moves the row one place; it lands when the pointer is released.
+                e.preventDefault();
+                const startY = e.clientY;
+                const target = e.currentTarget;
+                target.setPointerCapture(e.pointerId);
+                const up = (ev: PointerEvent) => {
+                  target.releasePointerCapture(e.pointerId);
+                  target.removeEventListener("pointerup", up);
+                  reorderBy(fill.id, Math.round((ev.clientY - startY) / 32));
+                };
+                target.addEventListener("pointerup", up);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                   e.preventDefault();

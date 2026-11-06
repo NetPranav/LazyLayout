@@ -29,7 +29,7 @@ const EFFECT_LABEL: Record<EffectItem["type"], string> = {
 
 const numberField = (label: string, value: number, onChange: (v: number) => void) => (
   <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
-    <span className="ll:font-mono ll:text-micro ll:text-muted">{label}</span>
+    <span className="ll:font-mono ll:text-micro ll:text-muted" title={({ X: "Horizontal offset", Y: "Vertical offset", B: "Blur: how soft the shadow edge is", S: "Spread: grow or shrink the shadow", Amt: "Blur amount" } as Record<string, string>)[label]}>{label}</span>
     <input
       type="text"
       inputMode="numeric"
@@ -91,6 +91,15 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
     if (activePopoverId === id) setActivePopoverId(null);
   };
 
+  const reorderBy = (id: string, steps: number) => {
+    const from = effects.findIndex((e) => e.id === id);
+    if (from < 0 || steps === 0) return;
+    const next = [...effects];
+    const [moved] = next.splice(from, 1);
+    next.splice(Math.max(0, Math.min(next.length, from + steps)), 0, moved);
+    commit(next);
+  };
+
   const handleToggleHide = (id: string) => {
     commit(effects.map((e) => (e.id === id ? { ...e, hidden: !e.hidden } : e)));
   };
@@ -117,6 +126,24 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
             <button
               type="button"
               data-grip
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const startY = e.clientY;
+                const target = e.currentTarget;
+                target.setPointerCapture(e.pointerId);
+                const up = (ev: PointerEvent) => {
+                  target.releasePointerCapture(e.pointerId);
+                  target.removeEventListener("pointerup", up);
+                  reorderBy(effect.id, Math.round((ev.clientY - startY) / 32));
+                };
+                target.addEventListener("pointerup", up);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  reorderBy(effect.id, e.key === "ArrowUp" ? -1 : 1);
+                }
+              }}
               aria-label={`Reorder effect ${effectNum}`}
               title={`Reorder effect ${effectNum}`}
               className="ll-ib ll-grip ll:-ml-4 ll:w-3 ll:h-6 ll:grid ll:place-items-center ll:text-muted ll:cursor-grab ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:transition-opacity ll:duration-100 ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"

@@ -26,6 +26,8 @@ import { AccessibilitySection } from "./sections/AccessibilitySection";
 import {
   PageSectionBody,
   PageBackgroundBody,
+  ConnectedPageSection,
+  ConnectedPageBackground,
   ThemeTokensBody,
   ThemeTokensMore,
 } from "./sections/PageSection";
@@ -57,12 +59,12 @@ export function getInspectorDesignSections(
       {
         id: "page",
         title: "Page",
-        children: <PageSectionBody pageName={inspector.selectionName || "Landing page"} />,
+        children: <ConnectedPageSection pageName={inspector.selectionName || "Landing page"} />,
       },
       {
         id: "background",
         title: "Background",
-        children: <PageBackgroundBody />,
+        children: <ConnectedPageBackground />,
       },
       {
         id: "theme-tokens",
