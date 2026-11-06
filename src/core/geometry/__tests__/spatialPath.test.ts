@@ -765,5 +765,65 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
       assert.ok(res.spatialErrorEst <= 0.015);
       assert.ok(res.u >= 0.45 && res.u <= 0.55);
     });
+
+    it("rejects Newton zero-crossing when estimated error exceeds spatial tolerance", () => {
+      DiagnosticBus.clearHistory();
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+      const sTarget = 0.3 * totalLength;
+
+      let baseIdx = 0;
+      for (let i = 0; i < lut.length - 1; i++) {
+        if (lut[i].s <= sTarget && lut[i + 1].s >= sTarget) {
+          baseIdx = i;
+          break;
+        }
+      }
+
+      // Assign baseIdx sample high uncertainty (0.012 px) while neighbors have low uncertainty (0.002 px),
+      // ensuring initial bracket uncertainty (0.004 px) is within spatial tolerance (0.015 px).
+      // During Newton evaluation, residual interval crosses zero but combined zeroCrossingError (0.0156 px) > 0.015 px.
+      const uncertLut = lut.map((s, i) => {
+        const err = i === baseIdx ? 0.012 : 0.002;
+        return { ...s, estimatedError: err, errorBound: err };
+      });
+      const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.3, 0.015);
+
+      // Must not falsely claim convergence if zero-crossing error exceeds tolerance:
+      assert.equal(res.converged, false);
+      assert.equal(res.unresolvedReason, "uncertainty_exceeds_tolerance");
+      assert.ok(res.spatialErrorEst > 0.015);
+    });
+
+    it("rejects bisection when remaining error budget is below numerical progress threshold (< 1e-6 px)", () => {
+      DiagnosticBus.clearHistory();
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      // At sProgress = 0.1 and spatialTolerance = 0.010, set uncertainty such that
+      // remainingBudget = 0.010 - 0.0099996 = 4.000e-7 px < 1e-6 px:
+      const tol = 0.010;
+      const halfUncert = (tol - 0.0000004) / 2;
+      const uncertLut = lut.map((s) => ({ ...s, estimatedError: halfUncert, errorBound: halfUncert }));
+      const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.1, tol);
+
+      assert.equal(res.converged, false);
+      assert.equal(res.unresolvedReason, "uncertainty_exceeds_tolerance");
+
+      const warns = DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN");
+      assert.ok(warns.some((e) => e.message.includes("below numerical progress threshold")));
+    });
   });
 });

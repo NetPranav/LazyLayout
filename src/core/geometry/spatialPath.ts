@@ -556,11 +556,16 @@ export function invertArcLengthDetailed(
   const sTarget = sProgress * totalLength;
 
   // Helper: exact arc length with integration error estimate from 0 to uVal
-  function exactArcLenWithBound(uVal: number): { s: number; errorBound: number; converged: boolean } {
-    if (uVal <= 0) return { s: 0, errorBound: 0, converged: true };
+  function exactArcLenWithBound(uVal: number): {
+    s: number;
+    estimatedError: number;
+    errorBound: number;
+    converged: boolean;
+  } {
+    if (uVal <= 0) return { s: 0, estimatedError: 0, errorBound: 0, converged: true };
     if (uVal >= 1) {
       const err = Math.max(lut[lut.length - 1]?.estimatedError ?? 0, lut[lut.length - 1]?.errorBound ?? 0);
-      return { s: totalLength, errorBound: err, converged: true };
+      return { s: totalLength, estimatedError: err, errorBound: err, converged: true };
     }
 
     let l = 0;
@@ -575,9 +580,11 @@ export function invertArcLengthDetailed(
     const sBase = lut[baseIdx].s;
     const errBase = Math.max(lut[baseIdx].estimatedError ?? 0, lut[baseIdx].errorBound ?? 0);
     const quad = integrateArcLengthAdaptiveDetailed(b, uBase, uVal, quadTol, 0, quadMaxDepth);
+    const totalEst = errBase + quad.errorEst;
     return {
       s: sBase + quad.value,
-      errorBound: errBase + quad.errorEst,
+      estimatedError: totalEst,
+      errorBound: totalEst,
       converged: quad.converged,
     };
   }
@@ -726,11 +733,21 @@ export function invertArcLengthDetailed(
           // curEval residual interval crosses zero: u is within quadrature uncertainty of root!
           // Do NOT narrow the bracket based on an uncertain residual sign.
           const zeroCrossingError = Math.abs(residual) + curEval.errorBound;
+          if (zeroCrossingError <= spatialTolerance) {
+            return {
+              u,
+              converged: true,
+              spatialErrorEst: zeroCrossingError,
+              spatialErrorBound: zeroCrossingError,
+            };
+          }
+          // Zero-crossing error exceeds requested spatial tolerance -> cannot guarantee convergence:
           return {
             u,
-            converged: true,
+            converged: false,
             spatialErrorEst: zeroCrossingError,
             spatialErrorBound: zeroCrossingError,
+            unresolvedReason: "uncertainty_exceeds_tolerance",
           };
         }
       }
@@ -759,7 +776,24 @@ export function invertArcLengthDetailed(
     };
   }
 
-  const effectiveBisectionTol = Math.max(1e-6, spatialTolerance - currentUncertainty);
+  const remainingBudget = spatialTolerance - currentUncertainty;
+  if (remainingBudget < 1e-6) {
+    DiagnosticBus.emit({
+      channel: "SPATIAL_TRAJECTORY_WARN",
+      severity: "warning",
+      source: { entityId: "arc_length_inversion", panel: "motion" },
+      message: `Remaining bisection budget (${remainingBudget.toExponential(3)}px) is below numerical progress threshold (1e-6px)`,
+    });
+    return {
+      u: (uLeft + uRight) / 2,
+      converged: false,
+      spatialErrorEst: currentUncertainty,
+      spatialErrorBound: currentUncertainty,
+      unresolvedReason: "uncertainty_exceeds_tolerance",
+    };
+  }
+
+  const effectiveBisectionTol = remainingBudget;
   const mSteps = Math.max(16, Math.ceil(Math.log2((mSeg * deltaU) / effectiveBisectionTol)));
 
   let hadUnconvergedQuadrature = false;
