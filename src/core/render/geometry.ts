@@ -14,6 +14,24 @@ export const MAX_FRAME_PX = 20_000;
  * parent's layout and take their size from `sizing` (fixed: the frame size, hug: their content,
  * fill: grow along the parent's main axis or stretch across it). Rotation applies to both.
  */
+/** The scale, skew and 3D turn a designer set on a layer (the Position section's More), as CSS; empty when there are none. */
+function designTransform(resolved: ResolvedProps): string {
+  const n = (path: string, fallback: number) => resolved.num(path, fallback);
+  const s = n("transform.scale", 1);
+  const sx = n("transform.scaleX", 1) * s;
+  const sy = n("transform.scaleY", 1) * s;
+  const rx = n("transform.rotateX", 0);
+  const ry = n("transform.rotateY", 0);
+  const kx = n("transform.skewX", 0);
+  const ky = n("transform.skewY", 0);
+  const parts: string[] = [];
+  if (rx) parts.push(`rotateX(${rx}deg)`);
+  if (ry) parts.push(`rotateY(${ry}deg)`);
+  if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
+  if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
+  return parts.join(" ");
+}
+
 export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: RenderContext, options: { shadow?: "box" | "none"; /** The archetype draws progressive blurs itself (a frame's backdrop layers). */ bands?: boolean } = {}): CSSProperties {
   const g = getLayerGeometry(layer);
   const style: CSSProperties = { boxSizing: "border-box" };
@@ -86,7 +104,48 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     if (rs > 0 || re > 1) style.gridRow = rs > 0 ? `${rs} / span ${re}` : `span ${re}`;
   }
 
-  if (g.frame.rotation !== 0) style.transform = `rotate(${g.frame.rotation}deg)`;
+  // Clipping, for any layer: what sticks out of its box.
+  const overflow = (path: string) => {
+    const v = resolved.get(path);
+    return v === "hidden" || v === "scroll" || v === "auto" ? v : undefined;
+  };
+  const ox = overflow("layout.overflowX");
+  const oy = overflow("layout.overflowY");
+  if (ox) style.overflowX = ox;
+  if (oy) style.overflowY = oy;
+  // A layer placed by its stack: the space around it, how it shares the stack's room, and its own cross alignment.
+  if (g.positioning === "flow") {
+    const margin = (path: string) => {
+      const v = resolved.get(path);
+      return typeof v === "number" && v !== 0 ? v : undefined;
+    };
+    const all = margin("layout.margin");
+    if (all !== undefined) style.margin = all;
+    for (const [path, key] of [["layout.marginTop", "marginTop"], ["layout.marginRight", "marginRight"], ["layout.marginBottom", "marginBottom"], ["layout.marginLeft", "marginLeft"]] as const) {
+      const v = margin(path);
+      if (v !== undefined) style[key] = v;
+    }
+    if (!inGrid) {
+      const grow = resolved.get("layout.flexGrow");
+      if (typeof grow === "number" && grow > 0) style.flexGrow = grow;
+      const shrink = resolved.get("layout.flexShrink");
+      if (typeof shrink === "number" && shrink !== 1) style.flexShrink = shrink;
+      const self = resolved.get("layout.alignSelf");
+      if (self === "flex-start" || self === "center" || self === "flex-end" || self === "stretch") style.alignSelf = self;
+    }
+  }
+  // Text is the one leaf with an inside: its padding insets the words.
+  if (layer.archetype === "text") {
+    for (const [path, key] of [["layout.paddingTop", "paddingTop"], ["layout.paddingRight", "paddingRight"], ["layout.paddingBottom", "paddingBottom"], ["layout.paddingLeft", "paddingLeft"]] as const) {
+      const v = resolved.get(path);
+      if (typeof v === "number" && v > 0) style[key] = v;
+    }
+  }
+
+  const designed = designTransform(resolved);
+  if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
+  const origin = resolved.get("transform.origin");
+  if (typeof origin === "string" && origin !== "center" && style.transform) style.transformOrigin = origin;
   const opacity = resolved.get("appearance.opacity");
   if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) style.opacity = opacity;
   // Effects (Phase 35): drop and inner shadows (a shape draws its own, inside its SVG), layer blur and background blur.

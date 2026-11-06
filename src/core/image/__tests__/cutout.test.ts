@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
+import { polygonMask, applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
 
 /** A picture of `w` x `h` filled with `bg`, with a rectangle `box` of `fg` colour. */
 function picture(w: number, h: number, bg: [number, number, number], fg: [number, number, number], box: { x: number; y: number; w: number; h: number }): Pixels {
@@ -142,4 +142,20 @@ test("a tolerance set too high does not let the sky leak into the mountain", () 
     if (a || b) either++;
   }
   assert.ok(both / either > 0.9, `overlap ${((both / either) * 100).toFixed(1)}%`);
+});
+
+test("a shape drawn by hand becomes a mask: inside kept, outside not, concave shapes too", () => {
+  const m = polygonMask([{ x: 10, y: 10 }, { x: 30, y: 10 }, { x: 30, y: 30 }, { x: 20, y: 18 }, { x: 10, y: 30 }], 40, 40);
+  assert.equal(m[12 * 40 + 20], 255); // inside
+  assert.equal(m[28 * 40 + 20], 0); // in the notch
+  assert.equal(m[28 * 40 + 10], 255); // the left leg
+  assert.equal(m[5 * 40 + 5], 0); // outside
+  assert.equal(maskArea(polygonMask([{ x: 0, y: 0 }, { x: 1, y: 1 }], 10, 10)), 0);
+});
+
+test("the border scan stays fast on a big picture", () => {
+  const { img } = photoLike(1400, 860);
+  const t0 = Date.now();
+  autoSubject(img, 22);
+  assert.ok(Date.now() - t0 < 4000, `took ${Date.now() - t0} ms`);
 });

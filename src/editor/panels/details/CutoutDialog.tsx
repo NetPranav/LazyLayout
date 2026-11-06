@@ -21,6 +21,7 @@ import {
   invertMask,
   maskBounds,
   newMask,
+  polygonMask,
   removeSpecks,
   subtractMask,
   unionMask,
@@ -70,6 +71,9 @@ export const CutoutDialog: React.FC<{ layerId: string; onClose: () => void }> = 
   const [base, setBase] = useState<Mask | null>(null);
   const [history, setHistory] = useState<Mask[]>([]);
   const [click, setClick] = useState<Click>("keep");
+  const [how, setHow] = useState<"click" | "draw">("click");
+  const [path, setPath] = useState<Array<{ x: number; y: number }>>([]);
+  const justDrew = useRef(false);
   const [tolerance, setTolerance] = useState(22);
   const [contiguous, setContiguous] = useState(true);
   const [edge, setEdge] = useState(0);
@@ -136,17 +140,52 @@ export const CutoutDialog: React.FC<{ layerId: string; onClose: () => void }> = 
     [base],
   );
 
+  /** Applies a mask the way the Keep / Cut choice says. The first Keep after a reset starts from nothing. */
+  const applyPicked = (picked: Mask) => {
+    if (!base) return;
+    if (click === "keep") commit(base.every((v) => v === 255) ? picked : unionMask(base, picked));
+    else commit(subtractMask(base, picked));
+  };
+
+  const toPicture = (e: { clientX: number; clientY: number }, el: Element) => {
+    const r = el.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * (picture?.pixels.width ?? 1), y: ((e.clientY - r.top) / r.height) * (picture?.pixels.height ?? 1) };
+  };
+
+  // Draw mode: drag a shape around what to keep or cut (the outline closes itself when you let go).
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (how !== "draw" || !picture || e.button !== 0) return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    const pts = [toPicture(e, el)];
+    setPath(pts);
+    const move = (ev: PointerEvent) => {
+      pts.push(toPicture(ev, el));
+      setPath([...pts]);
+    };
+    const up = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      setPath([]);
+      justDrew.current = true;
+      if (pts.length >= 3) applyPicked(polygonMask(pts, picture.pixels.width, picture.pixels.height));
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+  };
+
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (how === "draw" || justDrew.current) {
+      justDrew.current = false;
+      return;
+    }
     if (!picture || !base) return;
     const r = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - r.left) / r.width) * picture.pixels.width;
     const y = ((e.clientY - r.top) / r.height) * picture.pixels.height;
     const picked = wandSelect(picture.pixels, [{ x, y }], tolerance, contiguous);
-    if (click === "keep") {
-      // the first "keep" after a reset starts from nothing, so a click picks the subject
-      const fresh = base.every((v) => v === 255);
-      commit(fresh ? picked : unionMask(base, picked));
-    } else commit(subtractMask(base, picked));
+    applyPicked(picked);
   };
 
   const autoSubject = () => {
@@ -266,14 +305,27 @@ export const CutoutDialog: React.FC<{ layerId: string; onClose: () => void }> = 
                 {error}
               </span>
             ) : picture ? (
-              <canvas
-                ref={canvasRef}
-                data-testid="cutout-canvas"
-                onClick={onCanvasClick}
-                aria-label="Picture: click to keep or cut"
-                className="ll:cursor-crosshair"
-                style={{ maxWidth: "100%", maxHeight: "60vh", width: "auto", height: "auto" }}
-              />
+              <div style={{ position: "relative", display: "inline-block", maxWidth: "100%", lineHeight: 0 }}>
+                <canvas
+                  ref={canvasRef}
+                  data-testid="cutout-canvas"
+                  onPointerDown={startDrawing}
+                  onClick={onCanvasClick}
+                  aria-label="Picture: click or draw to keep or cut"
+                  className="ll:cursor-crosshair"
+                  style={{ maxWidth: "100%", maxHeight: "60vh", width: "auto", height: "auto", touchAction: "none" }}
+                />
+                {path.length > 1 && (
+                  <svg
+                    data-testid="cutout-lasso"
+                    viewBox={`0 0 ${picture.pixels.width} ${picture.pixels.height}`}
+                    preserveAspectRatio="none"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+                  >
+                    <polygon points={path.map((q) => `${q.x},${q.y}`).join(" ")} fill="rgba(47,107,255,.2)" stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+                  </svg>
+                )}
+              </div>
             ) : (
               <span className="ll:font-sans ll:text-small ll:text-muted">Loading the picture…</span>
             )}
@@ -281,7 +333,7 @@ export const CutoutDialog: React.FC<{ layerId: string; onClose: () => void }> = 
 
           <div className="ll:flex ll:flex-col ll:gap-3" style={{ flex: "0 0 300px", maxWidth: "100%" }}>
             <p className="ll:font-sans ll:text-small ll:text-muted ll:m-0">
-              Click the subject to keep it, or switch to Cut and click what to remove. Auto finds the subject by what touches the edges of the picture.
+              Click takes the colour under the pointer; Draw takes the shape you drag around something. Keep adds to what stays, Cut removes from it. Auto finds the subject from the edges of the picture.
             </p>
             <div role="radiogroup" aria-label="What a click does" className="ll:flex ll:gap-1">
               {(["keep", "cut"] as const).map((m) => (
@@ -292,6 +344,13 @@ export const CutoutDialog: React.FC<{ layerId: string; onClose: () => void }> = 
               <Button size="sm" variant="secondary" onClick={autoSubject} disabled={!picture}>
                 Auto
               </Button>
+            </div>
+            <div role="radiogroup" aria-label="How to pick" className="ll:flex ll:gap-1">
+              {(["click", "draw"] as const).map((m) => (
+                <Button key={m} size="sm" variant={how === m ? "strong" : "default"} role="radio" aria-checked={how === m} onClick={() => setHow(m)}>
+                  {m === "click" ? "Click" : "Draw"}
+                </Button>
+              ))}
             </div>
             <div className={rowClass}>
               <span className={labelClass}>Tolerance</span>

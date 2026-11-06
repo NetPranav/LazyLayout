@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { documentCommands } from "@/core/store/useDocumentStore";
 import { colorToHsb, fromHex, hsbToColor, toHex, type Hsb } from "@/core/paint/color";
 
 /**
@@ -31,11 +32,14 @@ function useDrag(onMove: (x: number, y: number) => void) {
         const r = el.getBoundingClientRect();
         onMove(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height)));
       };
+      // the whole drag is one undo step
+      const tx = documentCommands.begin("Colour");
       at(e);
       const move = (ev: PointerEvent) => at(ev);
       const up = () => {
         el.removeEventListener("pointermove", move);
         el.removeEventListener("pointerup", up);
+        tx.commit();
       };
       el.addEventListener("pointermove", move);
       el.addEventListener("pointerup", up);

@@ -437,7 +437,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                         aria-label="Rename layer"
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={() => handleCommitRename(node.id, node.name)}
+                        onKeyUp={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
+                          e.stopPropagation(); // Space and the arrows belong to the name being typed, not to the row
                           if (e.key === "Enter") handleCommitRename(node.id, node.name);
                           if (e.key === "Escape") setEditingId(null);
                         }}

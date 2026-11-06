@@ -7,6 +7,10 @@ import { registerSelectionCommands } from "@/core/selection/selectionCommands";
 import { registerFrameCommands } from "@/core/frames/frameCommands";
 import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
+import { getDocument } from "@/core/store/documentState";
+import { activePageRootId } from "@/editor/stage/activePage";
+import { getAssetStore } from "@/core/assets/AssetStore";
+import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
@@ -28,7 +32,6 @@ import type {
 import {
   SAMPLE_FILES,
   SAMPLE_TRACKS,
-  SAMPLE_ASSETS,
   DEFAULT_EXPANDED_IDS,
 } from "@/editor/shell/left-panel/sampleData";
 
@@ -372,7 +375,47 @@ export function useLeftPanelData(
 
   // 14. Files & Assets defaults
   const files: FileItem[] = SAMPLE_FILES;
-  const assets: AssetItem[] = SAMPLE_ASSETS;
+  // The project's own files, with their pictures from the asset store.
+  const docAssets = useDocument((d) => d.assets);
+  const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    for (const entry of Object.values(docAssets ?? {})) {
+      if (entry.kind === "font" || assetUrls[entry.id]) continue;
+      void getAssetStore().urlFor(entry.id).then((url) => {
+        if (live && url) setAssetUrls((prev) => ({ ...prev, [entry.id]: url }));
+      });
+    }
+    return () => {
+      live = false;
+    };
+  }, [docAssets, assetUrls]);
+  const assets: AssetItem[] = useMemo(
+    () => Object.values(docAssets ?? {}).map((e) => ({ id: e.id, name: e.name, kind: e.kind === "font" ? "font" : e.kind === "svg" ? "svg" : "image", thumbUrl: assetUrls[e.id] })),
+    [docAssets, assetUrls],
+  );
+
+  /** Choosing + : files go into the project, ready to place. */
+  const onUploadAsset = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = "image/*,.svg,.woff,.woff2,.ttf,.otf";
+    input.onchange = () => {
+      if (input.files?.length) void importFiles(Array.from(input.files));
+    };
+    input.click();
+  }, []);
+
+  /** Clicking a picture puts it in the middle of the page. */
+  const onSelectAsset = useCallback((asset: AssetItem) => {
+    const entry = getDocument().assets?.[asset.id];
+    const rootId = activePageRootId();
+    const root = rootId ? getDocument().layers[rootId] : undefined;
+    if (!entry || !root || entry.kind === "font") return;
+    const px = (v: unknown, fallback: number) => (typeof v === "number" && v > 100 ? v : fallback);
+    placeImage(entry, { x: px(root.properties["frame.width"], 1440) / 2, y: px(root.properties["frame.height"], 900) / 2, parentId: root.id, parentOrigin: { x: 0, y: 0 } });
+  }, []);
 
   // 15. Assets drawer state
   const [assetsOpen, setAssetsOpen] = useState(false);
@@ -400,6 +443,8 @@ export function useLeftPanelData(
     onSelectTrack,
     files,
     assets,
+    onUploadAsset,
+    onSelectAsset,
     assetsOpen,
     onAssetsOpenChange: setAssetsOpen,
     assetsHeight,

@@ -1,10 +1,14 @@
 "use client";
 
 import { getDocument } from "@/core/store/documentState";
+import { duplicateLayers } from "@/core/editing/editOps";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import type { PropValue } from "@/core/document/registry";
 import { worldBox } from "@/core/editing/layerBoxes";
 import { subtreeIds } from "@/core/editing/cloneLayers";
 import { moveLayers } from "@/core/layers/reparent";
 import { frameAt } from "./createFromDrag";
+import { activePageRootId } from "./activePage";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
 import {
@@ -39,17 +43,35 @@ interface UseStageTransformOptions {
   onSelect?: (id: string | null, multi?: boolean) => void;
 }
 
+/** A layer placed by its stack comes out of the stack when it is dragged: it keeps the size it was drawn at. */
+function freePlacement(id: string, box: { width: number; height: number }): Record<string, PropValue> {
+  const layer = getDocument().layers[id];
+  if (!layer || layer.properties.positioning === "absolute") return {};
+  return { positioning: "absolute", "frame.width": box.width, "frame.height": box.height, "sizing.horizontal": "fixed", "sizing.vertical": "fixed" };
+}
+
+/** Dragging a size means that size: a layer that hugged or filled becomes fixed, and auto-width text becomes a box. */
+function sizedByHand(id: string): Record<string, PropValue> {
+  const layer = getDocument().layers[id];
+  if (!layer) return {};
+  const out: Record<string, PropValue> = {};
+  const p = layer.properties;
+  if (p["sizing.horizontal"] === "hug" || p["sizing.horizontal"] === "fill") out["sizing.horizontal"] = "fixed";
+  if (p["sizing.vertical"] === "hug" || p["sizing.vertical"] === "fill") out["sizing.vertical"] = "fixed";
+  if (layer.archetype === "text" && p["text.sizing"] === "autoWidth") out["text.sizing"] = "fixed";
+  return out;
+}
+
 /** Puts a layer under the frame it was dropped on (or back on the page when dropped on none). One undo step; keeps its place. */
-function reparentOnDrop(id: string): void {
+function reparentOnDrop(id: string, drawn: Record<string, StageElement>): void {
   const layers = getDocument().layers;
   const layer = layers[id];
   if (!layer || layer.parentId === null || layer.locked) return;
   const box = worldBox(id);
   if (!box) return;
   const exclude = new Set(subtreeIds(layers, id));
-  const target = frameAt({ x: box.cx, y: box.cy }, exclude);
-  const root = Object.values(layers).find((l) => l.parentId === null)?.id ?? null;
-  const parentId = target?.id ?? root;
+  const target = frameAt({ x: box.cx, y: box.cy }, exclude, drawn);
+  const parentId = target?.id ?? activePageRootId();
   if (parentId && parentId !== layer.parentId) moveLayers([id], parentId);
 }
 
@@ -70,6 +92,10 @@ export function useStageTransform({
   const [spacingMarks, setSpacingMarks] = useState<SpacingMark[]>([]);
   const [isGesturing, setIsGesturing] = useState(false);
   const txRef = useRef<DocumentTransaction | null>(null);
+  const latestElements = useRef(elements);
+  useEffect(() => {
+    latestElements.current = elements;
+  });
 
   const gestureRef = useRef<{
     type: "move" | "resize";
@@ -157,6 +183,11 @@ export function useStageTransform({
 
       try {
         txRef.current = documentCommands.begin("Move layer");
+        // Alt-drag leaves a copy behind: the copy stays where it is and what you hold moves. One undo step with the move.
+        if (e.altKey) {
+          duplicateLayers(targetIds, { inPlace: true });
+          useSelectionStore.getState().selectMultiple(targetIds, "element");
+        }
       } catch {
         // Document command transaction fallback for tests / standalone
       }
@@ -318,6 +349,7 @@ export function useStageTransform({
 
           try {
             documentCommands.updateProps(id, {
+              ...freePlacement(id, init),
               "frame.x": nextX - (elements[id]?.ox ?? 0),
               "frame.y": nextY - (elements[id]?.oy ?? 0),
             });
@@ -432,6 +464,8 @@ export function useStageTransform({
 
         try {
           documentCommands.updateProps(gesture.activeId, {
+            ...sizedByHand(gesture.activeId),
+            ...freePlacement(gesture.activeId, init),
             "frame.x": nextX - (elements[gesture.activeId]?.ox ?? 0),
             "frame.y": nextY - (elements[gesture.activeId]?.oy ?? 0),
             "frame.width": nextWidth,
@@ -456,7 +490,7 @@ export function useStageTransform({
         // A layer dropped on a frame goes into it, and one dragged out of its frame goes back to the page.
         if (done.type === "move" && done.hasMoved && done.targetIds.length === 1) {
           try {
-            reparentOnDrop(done.targetIds[0]);
+            reparentOnDrop(done.targetIds[0], latestElements.current);
           } catch {
             // a drop that cannot be made leaves the layer where it is
           }

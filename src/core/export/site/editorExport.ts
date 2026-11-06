@@ -48,6 +48,13 @@ export async function downloadSite(options: Parameters<typeof exportCurrentSite>
   return site;
 }
 
+/** Base64 of any size (spreading a big picture's bytes into one call overflows the stack). */
+function toBase64(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return btoa(s);
+}
+
 /**
  * Test seam: with `window.__LL_TEST__` set before load, `window.__LL_EXPORT__.build(options)` returns the export's files
  * as text (binary files as base64), so a browser test can serve and look at the exported site.
@@ -59,7 +66,7 @@ if (typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boole
       return {
         warnings: site.warnings,
         pages: site.pages,
-        files: site.files.map((f) => (typeof f.content === "string" ? { path: f.path, text: f.content } : { path: f.path, base64: btoa(String.fromCharCode(...f.content)) })),
+        files: site.files.map((f) => (typeof f.content === "string" ? { path: f.path, text: f.content } : { path: f.path, base64: toBase64(f.content) })),
       };
     },
   };

@@ -96,6 +96,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   useEffect(() => {
     if (open) {
       prevActiveElement.current = document.activeElement as HTMLElement | null;
+      // At once as well: the next frame may be far away (a window in the background), and typed keys must not reach the canvas.
+      queueMicrotask(() => inputRef.current?.focus());
       const unreg = defaultHost.register(() => {
         unreg();
         inputRef.current?.focus();

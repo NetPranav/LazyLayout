@@ -76,9 +76,6 @@ export function valueFor(layer: Pick<Layer, "archetype">, key: string, value: Pr
   return value;
 }
 
-/** What a field shows when a layer has not set it: the engine's default for these, never "Mixed" (Mixed means layers differ). */
-const DEFAULTED = new Set(["frame.rotation", "appearance.opacity", "appearance.radius"]);
-
 /** The value a field shows for this layer, or undefined when the layer has none. A colour of "none" or "currentColor" is no colour. */
 export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: string): PropValue | undefined {
   const real = propertyFor(layer, key);
@@ -88,7 +85,9 @@ export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: str
     if (key === "divider.style" && typeof v === "string") return v === "none" ? "solid" : v === "1 6" ? "dotted" : "dashed";
     if (key === "divider.cap" && typeof v === "string") return v.charAt(0).toUpperCase() + v.slice(1);
   }
-  if (v === undefined && DEFAULTED.has(key)) v = getPropertyDefinition(key)?.default;
+  // Not set on this layer: the engine's default for it, never "Mixed" (Mixed means selected layers differ).
+  // (A size is not guessed: an unset width means the layer sizes itself.)
+  if (v === undefined && real !== "frame.width" && real !== "frame.height") v = getPropertyDefinition(real)?.default;
   if (typeof v === "string" && (real === "svg.fill" || real === "svg.stroke") && (v === "none" || v === "currentColor")) return undefined;
   return v;
 }

@@ -342,7 +342,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E", undefined, undefined, true, "Code generation pipeline coming in Phase 49")}
+            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.connectAgent", "Connect an agent", Download)}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}

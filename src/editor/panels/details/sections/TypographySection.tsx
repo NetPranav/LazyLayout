@@ -91,6 +91,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         aria-label="Font family"
         value={fontFamily}
         options={FONT_FAMILY_OPTIONS}
+        searchable
         onChange={(val) => onUpdateProp?.("typography.fontFamily", val)}
       />
 

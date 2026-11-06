@@ -1,3 +1,4 @@
+import type React from "react";
 import type { CanvasTool, GridStyle, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import type { Layer } from "@/core/document/schema";
 import type { ResizeHandleName } from "./constants";
@@ -115,6 +116,10 @@ export interface StageProps {
 }
 
 export interface ArtboardProps {
+  /** Filled with the element the engine draws the page into; the page is measured from it. */
+  pageRef?: React.RefObject<HTMLDivElement | null>;
+  /** The page's top-level layer: the whole tree under it is drawn by the engine. */
+  rootId?: string | null;
   /** The page's own background colour (the Background block); absent keeps the board colour. */
   background?: string;
   id?: string;
