@@ -56,6 +56,11 @@ export interface EvaluateInputs {
    * diagnostics during evaluation without introducing global side-effects to DiagnosticBus.
    */
   diagnosticsSink?: SpatialDiagnostic[];
+  /**
+   * Optional spatial tolerance (px) for arc-length root inversion.
+   * Defaults to 0.015 px.
+   */
+  spatialTolerance?: number;
 }
 
 export type ResolvedProps = Record<string, PropValue>;
@@ -108,24 +113,33 @@ interface CategorizedSample {
 }
 
 /**
- * Helper to compute a cache key for fallbackProps.
- * Only translation coordinates (transform.x, transform.y) can affect orphan waypoint resolution.
+ * Collision-safe, type-preserving serialization for fallbackProps.
+ * Distinguishes numeric 1 from string "1", and absent coordinates from literal "none".
  */
 function getFallbackSignature(fallbackProps?: Record<string, PropValue>): string {
-  if (!fallbackProps) return "none:none";
-  const fx = fallbackProps["transform.x"];
-  const fy = fallbackProps["transform.y"];
-  const x = typeof fx === "number" ? fx : typeof fx === "string" ? fx : "none";
-  const y = typeof fy === "number" ? fy : typeof fy === "string" ? fy : "none";
-  return `${x}:${y}`;
+  if (!fallbackProps) return "absent";
+  const hasX = Object.prototype.hasOwnProperty.call(fallbackProps, "transform.x");
+  const hasY = Object.prototype.hasOwnProperty.call(fallbackProps, "transform.y");
+  const x = hasX ? fallbackProps["transform.x"] : undefined;
+  const y = hasY ? fallbackProps["transform.y"] : undefined;
+  return JSON.stringify([typeof x, x, typeof y, y]);
 }
+
+/** Maximum cached fallback coordinate variations allowed per clip before FIFO eviction */
+export const MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP = 8;
 
 /**
  * Cache for compiled spatial trajectory geometry keyed by Clip reference and fallback coordinates.
  * - Keyed primarily on `Clip` object reference via `WeakMap` for automatic garbage collection when clips mutate or are removed.
- * - Secondary lookup keyed on fallback translation coordinates (`transform.x`, `transform.y`), ensuring geometry is never stale when fallback layer properties change.
+ * - Secondary lookup keyed on collision-safe fallback coordinate signature, ensuring geometry is never stale when fallback layer properties change.
+ * - Bounded to MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP per clip to prevent unbounded memory growth under dynamic fallbacks.
  */
 const spatialTrajectoryCache = new WeakMap<Clip, Map<string, SpatialTrajectoryGeometry | null>>();
+
+/** Test inspection helper returning current number of cached fallback variants for a clip */
+export function getSpatialTrajectoryCacheSize(clip: Clip): number {
+  return spatialTrajectoryCache.get(clip)?.size ?? 0;
+}
 
 /**
  * Retrieves or builds the compiled SpatialTrajectoryGeometry for a clip if spatial trajectory
@@ -163,6 +177,10 @@ export function getSpatialTrajectory(
   }
 
   const geom = createSpatialPath(clip, fallbackProps);
+  if (clipMap.size >= MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP) {
+    const oldestKey = clipMap.keys().next().value;
+    if (oldestKey !== undefined) clipMap.delete(oldestKey);
+  }
   clipMap.set(fallbackKey, geom);
   return geom;
 }
@@ -177,7 +195,8 @@ export function sampleClip(
   clip: Clip,
   time: number,
   fallbackProps?: Record<string, PropValue>,
-  diagnosticsSink?: SpatialDiagnostic[]
+  diagnosticsSink?: SpatialDiagnostic[],
+  spatialTolerance = 0.015
 ): ResolvedProps {
   const props: ResolvedProps = {};
   for (const track of clip.tracks) {
@@ -206,7 +225,7 @@ export function sampleClip(
           diagnosticsSink.push(...geom.diagnostics);
         }
         if (diagnosticsSink) {
-          const detail = geom.evaluateDetailedAtTime(time);
+          const detail = geom.evaluateDetailedAtTime(time, spatialTolerance);
           if (detail.diagnostic) diagnosticsSink.push(detail.diagnostic);
           if (detail.point !== null) {
             if (!xMuted) props["transform.x"] = detail.point.x;
@@ -299,7 +318,13 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
       if (driven !== undefined) {
         samples.push({
           category: CLIP_TYPE_TO_CATEGORY[clip.type],
-          props: sampleClip(clip, Math.min(clip.duration, Math.max(0, driven)), layer.properties, inputs.diagnosticsSink),
+          props: sampleClip(
+            clip,
+            Math.min(clip.duration, Math.max(0, driven)),
+            layer.properties,
+            inputs.diagnosticsSink,
+            inputs.spatialTolerance
+          ),
         });
         continue;
       }
@@ -307,7 +332,13 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
       if (!timing) continue;
       samples.push({
         category: CLIP_TYPE_TO_CATEGORY[clip.type],
-        props: sampleClip(clip, timing.time, layer.properties, inputs.diagnosticsSink),
+        props: sampleClip(
+          clip,
+          timing.time,
+          layer.properties,
+          inputs.diagnosticsSink,
+          inputs.spatialTolerance
+        ),
       });
     }
     resolved = mergeByPriority(resolved, samples);

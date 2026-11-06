@@ -14,7 +14,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { DocBuilder } from "../../document/__tests__/fixtures/builder";
 import { MAIN_COMPOSITION_ID } from "../../document/compositions";
-import { evaluate, sampleClip, getSpatialTrajectory } from "../evaluate";
+import {
+  evaluate,
+  sampleClip,
+  getSpatialTrajectory,
+  getSpatialTrajectoryCacheSize,
+  MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP,
+} from "../evaluate";
 import type { SpatialDiagnostic } from "../../geometry/spatialPath";
 import { DiagnosticBus } from "../../engine/DiagnosticBus";
 
@@ -837,14 +843,152 @@ describe("Phase 69 Milestone 3: Kernel Integration (sampleClip & evaluate)", () 
       assert.equal(busEvents.length, 0, "Deterministic evaluate() must produce zero side-effects on DiagnosticBus");
     });
 
+    it("distinguishes numeric 1 from string '1' in fallback cache without collision", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      b.clip(id, {
+        name: "TypeCollisionClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-type-col",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+
+      const geomNum = getSpatialTrajectory(clip, { "transform.x": 0, "transform.y": 1 });
+      const geomStr = getSpatialTrajectory(clip, { "transform.x": 0, "transform.y": "1" });
+
+      assert.ok(geomNum !== null);
+      assert.ok(geomStr !== null);
+      assert.notStrictEqual(geomNum, geomStr, "Numeric 1 and string '1' must not collide in the fallback cache");
+    });
+
+    it("distinguishes missing coordinates from literal 'none' in fallback cache without collision", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      b.clip(id, {
+        name: "NoneCollisionClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-none-col",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+
+      const geomAbsent = getSpatialTrajectory(clip, { "transform.x": 0 }); // transform.y is absent
+      const geomLiteralNone = getSpatialTrajectory(clip, { "transform.x": 0, "transform.y": "none" });
+
+      assert.ok(geomAbsent !== null);
+      assert.ok(geomLiteralNone !== null);
+      assert.notStrictEqual(geomAbsent, geomLiteralNone, "Absent coordinate and literal string 'none' must not collide in the cache");
+    });
+
+    it("bounds fallback cache growth to MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP under continually changing coordinates", () => {
+      const b = new DocBuilder();
+      const id = b.layer("container", "Box", null);
+
+      b.clip(id, {
+        name: "CacheGrowthClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "tx",
+            property: "transform.x",
+            keyframes: [
+              { id: "kx0", time: 0, value: 0 },
+              { id: "kx1", time: 2, value: 100 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-growth",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              { id: "kx0", time: 0 },
+              { id: "kx1", time: 2 },
+            ],
+          },
+        },
+      });
+
+      const doc = b.build();
+      const clip = Object.values(doc.clips)[0];
+
+      // Request 50 distinct fallback coordinate variations:
+      for (let i = 0; i < 50; i++) {
+        getSpatialTrajectory(clip, { "transform.x": 0, "transform.y": i * 10 });
+      }
+
+      const cacheSize = getSpatialTrajectoryCacheSize(clip);
+      assert.ok(
+        cacheSize <= MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP,
+        `Cache size (${cacheSize}) must not exceed ceiling (${MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP})`
+      );
+      assert.equal(cacheSize, MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP);
+    });
+
     it("forwards spatial diagnostics to an explicit sink without touching DiagnosticBus", () => {
       DiagnosticBus.clearHistory();
 
       const b = new DocBuilder();
-      const id = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
+      const normalId = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
 
-      b.clip(id, {
-        name: "SinkTestClip",
+      // 1. Normal successful clip: must NOT generate false unresolved diagnostics:
+      b.clip(normalId, {
+        name: "NormalClip",
         type: "entrance",
         trigger: "mount",
         duration: 2,
@@ -869,7 +1013,7 @@ describe("Phase 69 Milestone 3: Kernel Integration (sampleClip & evaluate)", () 
         ],
         spatialTrajectories: {
           transform: {
-            id: "st-sink",
+            id: "st-normal",
             propertyGroup: "transform",
             enabled: true,
             waypoints: [
@@ -880,13 +1024,88 @@ describe("Phase 69 Milestone 3: Kernel Integration (sampleClip & evaluate)", () 
         },
       });
 
+      // 2. Pathological clip with extreme curvature that triggers subdivision limits:
+      const pathId = b.layer("container", "Box", null, { "transform.x": 0, "transform.y": 0 });
+      b.clip(pathId, {
+        name: "PathologicalClip",
+        type: "entrance",
+        trigger: "mount",
+        duration: 2,
+        easing: "linear",
+        tracks: [
+          {
+            id: "ptx",
+            property: "transform.x",
+            keyframes: [
+              { id: "pk0", time: 0, value: 0 },
+              { id: "pk1", time: 2, value: 1 },
+            ],
+          },
+          {
+            id: "pty",
+            property: "transform.y",
+            keyframes: [
+              { id: "pky0", time: 0, value: 0 },
+              { id: "pky1", time: 2, value: 0 },
+            ],
+          },
+        ],
+        spatialTrajectories: {
+          transform: {
+            id: "st-unresolved-1",
+            propertyGroup: "transform",
+            enabled: true,
+            waypoints: [
+              {
+                id: "pk0",
+                time: 0,
+                mode: "bezier",
+                spatialOut: { x: 1e6, y: 1e6 },
+              },
+              {
+                id: "pk1",
+                time: 2,
+                mode: "bezier",
+                spatialIn: { x: -1e6, y: 1e6 },
+              },
+            ],
+          },
+        },
+      });
+
       const doc = b.build();
+      const pathClip = Object.values(doc.clips).find((c) => c.layerId === pathId)!;
+
+      // Evaluation of normal clip with sink generates zero false unresolved diagnostics:
+      const normalSink: SpatialDiagnostic[] = [];
+      evaluate(doc, MAIN_COMPOSITION_ID, normalId, 0.5, { diagnosticsSink: normalSink });
+      assert.equal(normalSink.length, 0, "Successful evaluation must not generate false diagnostics in sink");
+
+      // Evaluation of pathological clip with explicit sink and strict tolerance receives the unresolved diagnostic:
       const sink: SpatialDiagnostic[] = [];
+      evaluate(doc, MAIN_COMPOSITION_ID, pathId, 0.5, { diagnosticsSink: sink, spatialTolerance: 1e-15 });
 
-      evaluate(doc, MAIN_COMPOSITION_ID, id, 0.5, { diagnosticsSink: sink });
+      // Diagnostic assertions:
+      assert.ok(sink.length > 0, "Sink must receive diagnostic from unresolved spatial inversion/subdivision");
+      assert.ok(
+        sink.some((d) => d.unresolvedReason === "uncertainty_exceeds_tolerance"),
+        "Diagnostic must record unresolvedReason: 'uncertainty_exceeds_tolerance'"
+      );
+      assert.ok(
+        sink.some((d) => d.code === "UNCERTAINTY_EXCEEDS_TOLERANCE"),
+        "Diagnostic must record code: 'UNCERTAINTY_EXCEEDS_TOLERANCE'"
+      );
+      assert.ok(
+        sink.every((d) => d.clipId === pathClip.id && d.trajectoryId === "st-unresolved-1"),
+        "Diagnostic must strictly correspond to the correct clipId and trajectoryId"
+      );
 
-      // DiagnosticBus remains untouched:
-      assert.equal(DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN").length, 0);
+      // Global DiagnosticBus remains completely untouched:
+      assert.equal(
+        DiagnosticBus.getHistoryByChannel("SPATIAL_TRAJECTORY_WARN").length,
+        0,
+        "DiagnosticBus must remain strictly unmodified during kernel evaluation"
+      );
     });
 
     it("benchmarks continuous frame evaluation throughput", () => {

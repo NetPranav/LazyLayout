@@ -33,6 +33,9 @@ export interface SpatialDiagnostic {
   code: string;
   source: { entityId: string; panel: string };
   message: string;
+  clipId?: string;
+  trajectoryId?: string;
+  unresolvedReason?: string;
 }
 
 export interface CubicBezier {
@@ -966,17 +969,23 @@ export class SpatialTrajectoryGeometry {
   readonly totalLength: number;
   readonly isClosed: boolean;
   readonly diagnostics: readonly SpatialDiagnostic[];
+  readonly clipId?: string;
+  readonly trajectoryId?: string;
 
   constructor(
     segments: CompiledSegment[],
     totalLength: number,
     isClosed = false,
-    diagnostics: readonly SpatialDiagnostic[] = []
+    diagnostics: readonly SpatialDiagnostic[] = [],
+    clipId?: string,
+    trajectoryId?: string
   ) {
     this.segments = segments;
     this.totalLength = totalLength;
     this.isClosed = isClosed;
     this.diagnostics = diagnostics;
+    this.clipId = clipId;
+    this.trajectoryId = trajectoryId;
   }
 
   /**
@@ -1017,7 +1026,10 @@ export class SpatialTrajectoryGeometry {
    * Detailed evaluation returning point and numerical inversion convergence details.
    * Pure and deterministic: does not emit side effects to global event buses.
    */
-  evaluateDetailedAtTime(time: number): TrajectoryEvaluationSample {
+  evaluateDetailedAtTime(
+    time: number,
+    spatialTolerance = 0.015
+  ): TrajectoryEvaluationSample {
     if (this.segments.length === 0) return { point: null, converged: true, spatialErrorEst: 0 };
 
     const first = this.segments[0];
@@ -1041,17 +1053,26 @@ export class SpatialTrajectoryGeometry {
           seg.length,
           seg.mSeg,
           easedProgress,
-          0.015,
+          spatialTolerance,
           1e-6,
           8,
           { emitDiagnostic: false }
         );
+        const diag: SpatialDiagnostic | undefined = inv.diagnostic
+          ? {
+              ...inv.diagnostic,
+              clipId: this.clipId,
+              trajectoryId: this.trajectoryId,
+              unresolvedReason: inv.unresolvedReason,
+            }
+          : undefined;
+
         return {
           point: evaluateCubic(seg.bezier, inv.u),
           converged: inv.converged,
           spatialErrorEst: inv.spatialErrorEst,
           unresolvedReason: inv.unresolvedReason,
-          diagnostic: inv.diagnostic,
+          diagnostic: diag,
         };
       }
     }
@@ -1096,10 +1117,12 @@ export class SpatialTrajectoryGeometry {
  */
 export function compileSpatialTrajectory(
   waypoints: readonly ResolvedWaypoint[],
-  isClosed = false
+  isClosed = false,
+  clipId?: string,
+  trajectoryId?: string
 ): SpatialTrajectoryGeometry {
   if (waypoints.length < 2) {
-    return new SpatialTrajectoryGeometry([], 0, isClosed, []);
+    return new SpatialTrajectoryGeometry([], 0, isClosed, [], clipId, trajectoryId);
   }
 
   const rawPoints = waypoints.map((w) => ({ x: w.x, y: w.y }));
@@ -1146,8 +1169,10 @@ export function compileSpatialTrajectory(
         channel: "SPATIAL_TRAJECTORY_WARN",
         severity: "warning",
         code: "SUBDIVISION_MAX_DEPTH",
-        source: { entityId: "spatial_trajectory", panel: "motion" },
+        source: { entityId: trajectoryId ?? clipId ?? "spatial_trajectory", panel: "motion" },
         message: `Spatial trajectory segment ${k} exceeded max subdivision depth (10) with residual deviation ${maxResidualDeviation.toFixed(4)}px`,
+        clipId,
+        trajectoryId,
       });
     }
 
@@ -1166,7 +1191,7 @@ export function compileSpatialTrajectory(
     totalLength += segLength;
   }
 
-  return new SpatialTrajectoryGeometry(compiledSegments, totalLength, isClosed, diagnostics);
+  return new SpatialTrajectoryGeometry(compiledSegments, totalLength, isClosed, diagnostics, clipId, trajectoryId);
 }
 
 /**
@@ -1178,5 +1203,10 @@ export function createSpatialPath(
 ): SpatialTrajectoryGeometry | null {
   const waypoints = extractClipWaypoints(clip, fallbackProps);
   if (waypoints.length < 2) return null;
-  return compileSpatialTrajectory(waypoints, clip.repeat !== undefined && clip.repeat < 0);
+  return compileSpatialTrajectory(
+    waypoints,
+    clip.repeat !== undefined && clip.repeat < 0,
+    clip.id,
+    clip.spatialTrajectories?.transform?.id
+  );
 }
