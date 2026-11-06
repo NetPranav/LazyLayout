@@ -744,5 +744,26 @@ describe("Spatial Motion Paths - Geometry & Arc Length (Phase 69 Milestone 2)", 
       assert.ok(warnEvents.length > 0);
       assert.ok(warnEvents.some((e) => e.message.includes("max subdivision depth")));
     });
+
+    it("preserves bracket in Newton when residual interval crosses zero despite non-zero estimated residual", () => {
+      const sCurve: CubicBezier = {
+        p0: { x: 0, y: 0 },
+        p1: { x: 50, y: 200 },
+        p2: { x: 150, y: -200 },
+        p3: { x: 200, y: 0 },
+      };
+      const mSeg = computeSegmentMaxDerivative(sCurve);
+      const { lut, totalLength } = compileSegmentLut(sCurve);
+
+      // Create a LUT with moderate uncertainty (0.002 px)
+      // When Newton evaluates a point with small residual (e.g. 0.001 px), the error interval crosses zero.
+      const uncertLut = lut.map((s) => ({ ...s, estimatedError: 0.002, errorBound: 0.002 }));
+      const res = invertArcLengthDetailed(sCurve, uncertLut, totalLength, mSeg, 0.5, 0.015);
+
+      // Verify that Newton does not narrow bracket on an uncertain sign, cleanly detects zero crossing, and converges:
+      assert.equal(res.converged, true);
+      assert.ok(res.spatialErrorEst <= 0.015);
+      assert.ok(res.u >= 0.45 && res.u <= 0.55);
+    });
   });
 });

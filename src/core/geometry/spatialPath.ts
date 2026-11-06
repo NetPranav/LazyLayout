@@ -694,12 +694,13 @@ export function invertArcLengthDetailed(
     }
 
     const residual = curEval.s - sTarget;
-    if (Math.abs(residual) < TAU_RESIDUAL && curEval.errorBound <= spatialTolerance) {
+    const combinedError = Math.abs(residual) + curEval.errorBound;
+    if (Math.abs(residual) < TAU_RESIDUAL && combinedError <= spatialTolerance) {
       return {
         u,
         converged: true,
-        spatialErrorEst: curEval.errorBound,
-        spatialErrorBound: curEval.errorBound,
+        spatialErrorEst: combinedError,
+        spatialErrorBound: combinedError,
       };
     }
 
@@ -723,11 +724,13 @@ export function invertArcLengthDetailed(
           continue;
         } else {
           // curEval residual interval crosses zero: u is within quadrature uncertainty of root!
+          // Do NOT narrow the bracket based on an uncertain residual sign.
+          const zeroCrossingError = Math.abs(residual) + curEval.errorBound;
           return {
             u,
             converged: true,
-            spatialErrorEst: curEval.errorBound,
-            spatialErrorBound: curEval.errorBound,
+            spatialErrorEst: zeroCrossingError,
+            spatialErrorBound: zeroCrossingError,
           };
         }
       }
