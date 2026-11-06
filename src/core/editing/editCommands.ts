@@ -95,7 +95,7 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.paste", title: "Paste", category, run: () => void clipboardText().then((t) => pasteText(t, { into: pasteTarget() })) }));
   add(defineCommand({ id: "edit.pasteInPlace", title: "Paste in Place", category, run: () => void clipboardText().then((t) => pasteText(t, { into: pasteTarget(), inPlace: true })) }));
   add(defineCommand({ id: "edit.duplicate", title: "Duplicate", category, keybinding: "Ctrl+D", when: onSelection, run: () => void duplicateLayers(ids()) }));
-  add(defineCommand({ id: "edit.delete", title: "Delete", category, keybinding: ["Delete", "Backspace"], when: (ctx) => onSelection(ctx) && !isEditingPath(), run: () => void deleteLayers(ids()) }));
+  add(defineCommand({ id: "edit.delete", title: "Delete", category, keybinding: "Delete", when: (ctx) => onSelection(ctx) && !isEditingPath(), run: () => void deleteLayers(ids()) }));
 
   for (const [name, s] of Object.entries(STEP)) {
     add(defineCommand({ id: `edit.nudge${name}`, title: `Nudge ${name}`, category, keybinding: `Arrow${name}`, when: onSelection, run: () => nudgeLayers(ids(), s.dx, s.dy) }));
@@ -103,11 +103,11 @@ export function registerEditingCommands(): () => void {
   }
   add(defineTypedCommand({ id: "edit.nudgeBy", title: "Nudge By", category, args: z.object({ dx: z.number(), dy: z.number() }), run: ({ dx, dy }) => nudgeLayers(ids(), dx, dy) }));
 
-  const order: [string, string, ZOrderOp, string][] = [
+  const order: [string, string, ZOrderOp, string | string[]][] = [
     ["layer.bringForward", "Bring Forward", "forward", "Ctrl+]"],
     ["layer.sendBackward", "Send Backward", "backward", "Ctrl+["],
-    ["layer.bringToFront", "Bring to Front", "front", "Ctrl+Shift+]"],
-    ["layer.sendToBack", "Send to Back", "back", "Ctrl+Shift+["],
+    ["layer.bringToFront", "Bring to Front", "front", ["Ctrl+Alt+]", "Ctrl+Shift+]"]],
+    ["layer.sendToBack", "Send to Back", "back", ["Ctrl+Alt+[", "Ctrl+Shift+["]],
   ];
   for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onSelection, run: () => void reorderLayers(ids(), op) }));
   add(defineTypedCommand({ id: "layer.reorder", title: "Arrange Layers", category: "Layer", args: z.object({ op: z.enum(["forward", "backward", "front", "back"]) }), run: ({ op }) => ({ changed: reorderLayers(ids(), op) }) }));

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -35,6 +35,90 @@ function designTransform(properties: Record<string, unknown>): { transform?: str
   return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
 }
 
+/**
+ * The words of a text layer, edited where they sit. It is styled exactly like the drawn text (same wrapping, same overflow,
+ * same capitals), so what you type, what is highlighted and what you see afterwards are the same lines. Leaving it (click
+ * away, Escape, Ctrl+Enter) writes the words as one undo step.
+ */
+const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[string]; onDone: (value: string) => void }> = ({ layer, onDone }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const key = layer.archetype === "button" ? "content.label" : "content.text";
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.innerText = String(layer.properties[key] ?? "");
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    // Take the look of the drawn text itself (whatever the engine computed), and hide the drawn copy while this one is open.
+    const drawn = document.querySelector<HTMLElement>(`[data-archetype][data-element-id="${layer.id}"]`);
+    if (drawn) {
+      const cs = getComputedStyle(drawn);
+      for (const prop of ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "color", "textAlign", "textTransform", "whiteSpace", "overflowWrap", "textDecorationLine", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
+        el.style[prop] = cs[prop];
+      }
+      drawn.style.visibility = "hidden";
+    }
+    return () => {
+      if (drawn) drawn.style.visibility = "";
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the words are read once, when editing starts
+  }, []);
+  const p = layer.properties;
+  const sizing = String(p["text.sizing"] ?? "fixed");
+  const chosen = p["typography.whiteSpace"];
+  const space = chosen === "nowrap" || chosen === "pre" || chosen === "normal" ? chosen : null;
+  const wraps = sizing !== "autoWidth" && space !== "nowrap" && space !== "pre";
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label="Edit text"
+      aria-multiline="true"
+      data-testid="stage-text-editor"
+      spellCheck={false}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
+      }}
+      onPaste={(e) => {
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+      }}
+      onBlur={(e) => onDone(e.currentTarget.innerText.replace(/\n$/, ""))}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: sizing === "autoWidth" ? "max-content" : "100%",
+        minHeight: "100%",
+        margin: 0,
+        outline: "1px solid var(--ll-border-active, #2F6BFF)",
+        background: "rgba(255,255,255,0.35)",
+        boxSizing: "border-box",
+        whiteSpace: space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
+        overflowWrap: wraps ? "anywhere" : "normal",
+        fontFamily: String(p["typography.fontFamily"] ?? "inherit"),
+        fontSize: Number(p["typography.fontSize"] ?? 16),
+        fontWeight: Number(p["typography.fontWeight"] ?? 400),
+        fontStyle: String(p["typography.fontStyle"] ?? "normal"),
+        lineHeight: Number(p["typography.lineHeight"] ?? 1.2),
+        letterSpacing: Number(p["typography.letterSpacing"] ?? 0),
+        color: String(p["typography.color"] ?? "#000"),
+        textAlign: (p["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
+        textTransform: (p["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
+        textDecorationLine: p["typography.textDecoration"] && p["typography.textDecoration"] !== "none" ? String(p["typography.textDecoration"]) : undefined,
+      }}
+    />
+  );
+};
+
 /** The outline of what a creation tool is drawing: the shape it will make, not always a box. */
 const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number }> = ({ archetype, width, height }) => {
   const w = Math.max(1, width);
@@ -50,12 +134,13 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
       shape = <line x1={0} y1={h / 2} x2={w} y2={h / 2} {...common} />;
       break;
     case "polygon":
-      shape = <polygon points={`${w / 2},0 ${w},${h * 0.38} ${w * 0.81},${h} ${w * 0.19},${h} 0,${h * 0.38}`} {...common} />;
-      break;
     case "star": {
-      const pts = Array.from({ length: 10 }, (_, i) => {
-        const r = i % 2 === 0 ? 1 : 0.4;
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      // the same shape the tool will make: a six-sided polygon, a five-pointed star with its inner radius at half
+      const star = archetype === "star";
+      const n = star ? 10 : 6;
+      const pts = Array.from({ length: n }, (_, i) => {
+        const r = star ? (i % 2 === 0 ? 1 : 0.5) : 1;
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
         return `${w / 2 + (Math.cos(a) * r * w) / 2},${h / 2 + (Math.sin(a) * r * h) / 2}`;
       }).join(" ");
       shape = <polygon points={pts} {...common} />;
@@ -339,34 +424,28 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
             >
               {engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
-              {editingText === el.id && layer && (
-                <textarea
-                  autoFocus
-                  aria-label="Edit text"
-                  data-testid="stage-text-editor"
-                  defaultValue={String(layer.properties[layer.archetype === "button" ? "content.label" : "content.text"] ?? "")}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
+              {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
+              {engineDrawn && layer && ["line", "arrow", "divider"].includes(layer.archetype) && (
+                <span
+                  aria-hidden="true"
+                  data-testid="line-hit-area"
+                  style={{
+                    position: "absolute",
+                    left: -8,
+                    right: -8,
+                    top: -12,
+                    bottom: -12,
+                    transform: typeof layer.properties["frame.rotation"] === "number" ? `rotate(${layer.properties["frame.rotation"]}deg)` : undefined,
                   }}
-                  onBlur={(e) => {
-                    const value = e.currentTarget.value;
+                />
+              )}
+              {editingText === el.id && layer && (
+                <InlineTextEditor
+                  layer={layer}
+                  onDone={(value) => {
                     setEditingText(null);
                     const key = layer.archetype === "button" ? "content.label" : "content.text";
                     if (value !== String(layer.properties[key] ?? "")) setLayerProps([el.id], { [key]: value }, "Edit text");
-                  }}
-                  className="ll:absolute ll:inset-0 ll:w-full ll:h-full ll:m-0 ll:p-0 ll:border-0 ll:outline-none ll:resize-none ll:overflow-hidden ll:bg-white/90"
-                  style={{
-                    font: "inherit",
-                    fontFamily: String(layer.properties["typography.fontFamily"] ?? "inherit"),
-                    fontSize: Number(layer.properties["typography.fontSize"] ?? 16),
-                    fontWeight: Number(layer.properties["typography.fontWeight"] ?? 400),
-                    textTransform: (layer.properties["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
-                    lineHeight: Number(layer.properties["typography.lineHeight"] ?? 1.2),
-                    color: String(layer.properties["typography.color"] ?? "#000"),
-                    textAlign: (layer.properties["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
                   }}
                 />
               )}

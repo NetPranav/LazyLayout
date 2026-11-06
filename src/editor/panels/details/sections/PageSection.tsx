@@ -297,7 +297,7 @@ export const ConnectedPageBackground: React.FC = () => {
   return (
     <PageBackgroundBody
       key={root?.id}
-      backgroundColor={typeof color === "string" ? color : "FFFFFF"}
+      backgroundColor={typeof color === "string" && /^#?[0-9a-fA-F]{6}$/.test(color) ? color : "FFFFFF"}
       onChangeBackground={(hex) => {
         if (root && hex.length === 6) setLayerProps([root.id], { "appearance.background.color": `#${hex}` }, "Page background");
       }}

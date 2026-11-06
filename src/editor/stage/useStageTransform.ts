@@ -1,5 +1,10 @@
 "use client";
 
+import { getDocument } from "@/core/store/documentState";
+import { worldBox } from "@/core/editing/layerBoxes";
+import { subtreeIds } from "@/core/editing/cloneLayers";
+import { moveLayers } from "@/core/layers/reparent";
+import { frameAt } from "./createFromDrag";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
 import {
@@ -32,6 +37,20 @@ interface UseStageTransformOptions {
   snapThreshold?: number;
   onElementChange?: (id: string, patch: Partial<StageElement>) => void;
   onSelect?: (id: string | null, multi?: boolean) => void;
+}
+
+/** Puts a layer under the frame it was dropped on (or back on the page when dropped on none). One undo step; keeps its place. */
+function reparentOnDrop(id: string): void {
+  const layers = getDocument().layers;
+  const layer = layers[id];
+  if (!layer || layer.parentId === null || layer.locked) return;
+  const box = worldBox(id);
+  if (!box) return;
+  const exclude = new Set(subtreeIds(layers, id));
+  const target = frameAt({ x: box.cx, y: box.cy }, exclude);
+  const root = Object.values(layers).find((l) => l.parentId === null)?.id ?? null;
+  const parentId = target?.id ?? root;
+  if (parentId && parentId !== layer.parentId) moveLayers([id], parentId);
 }
 
 export function useStageTransform({
@@ -426,12 +445,21 @@ export function useStageTransform({
 
     const handlePointerUp = () => {
       if (gestureRef.current) {
+        const done = gestureRef.current;
         try {
           // Commit transform transaction
           txRef.current?.commit();
           txRef.current = null;
         } catch {
           // Commit fallback
+        }
+        // A layer dropped on a frame goes into it, and one dragged out of its frame goes back to the page.
+        if (done.type === "move" && done.hasMoved && done.targetIds.length === 1) {
+          try {
+            reparentOnDrop(done.targetIds[0]);
+          } catch {
+            // a drop that cannot be made leaves the layer where it is
+          }
         }
         gestureRef.current = null;
         setSnapLines([]);
