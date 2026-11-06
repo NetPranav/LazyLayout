@@ -7,12 +7,16 @@ import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
+import { EngineLayer } from "./EngineLayer";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
+
+/** The three elements of the seeded prototype page keep their prototype drawing; every other layer is drawn by the engine. */
+const PROTOTYPE_DRAWN = new Set(["headline", "button", "image"]);
 
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
@@ -24,6 +28,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
   pan = { x: 0, y: 0 },
   elements,
+  layers,
+  drawPreview = null,
   selectedIds,
   hoveredId,
   onSelect,
@@ -214,6 +220,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {hasElements &&
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
+          const layer = layers?.[el.id];
+          const engineDrawn = !!layer && !PROTOTYPE_DRAWN.has(el.id);
           const isSelected = selectedIds.includes(el.id) || (el.id === "headline" && selectedIds.includes("subtitle"));
 
           return (
@@ -227,7 +235,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
               className={`ll-element ll:absolute ll:select-none ${
                 isSelected ? "ll-sel sel " : ""
               }${
-                el.type === "button"
+                engineDrawn
+                  ? "ll:cursor-default "
+                  : el.type === "button"
                   ? "ll-pg-b pg-b ll:cursor-pointer ll:grid ll:place-items-center ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:font-medium "
                   : el.type === "image"
                   ? "ll-pg-img pg-img ll:cursor-pointer ll:bg-placeholder ll:border ll:border-border ll:rounded-sm "
@@ -258,7 +268,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 });
               }}
             >
-              {el.type === "text" && (
+              {engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
+
+              {!engineDrawn && el.type === "text" && (
                 <>
                   <b
                     className="ll:block ll:font-semibold ll:text-primary"
@@ -285,7 +297,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 </>
               )}
 
-              {el.type === "button" && (
+              {!engineDrawn && el.type === "button" && (
                 <span
                   style={{
                     fontSize: "var(--ll-text-body-size)",
@@ -296,7 +308,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 </span>
               )}
 
-              {el.type === "image" && (
+              {!engineDrawn && el.type === "image" && (
                 <div className="ll:w-full ll:h-full ll:flex ll:items-center ll:justify-center ll:text-muted">
                   <span className="ll:text-micro ll:font-mono">
                     {Math.round(el.width)} x {Math.round(el.height)}
@@ -306,6 +318,22 @@ export const Artboard: React.FC<ArtboardProps> = ({
             </div>
           );
         })}
+
+      {/* 5b. The box a creation tool is drawing (same outline as a selection) */}
+      {drawPreview && (
+        <div
+          data-testid="draw-preview"
+          className="ll-draw-preview ll:absolute ll:pointer-events-none"
+          style={{
+            left: drawPreview.x,
+            top: drawPreview.y,
+            width: drawPreview.width,
+            height: drawPreview.height,
+            transform: drawPreview.rotation ? `rotate(${drawPreview.rotation}deg)` : undefined,
+            border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
+          }}
+        />
+      )}
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
       <TransformOverlay
