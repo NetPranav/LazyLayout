@@ -466,6 +466,111 @@ test.describe("selecting in the Layers panel by dragging", () => {
   });
 });
 
+test.describe("arranging: what is on top is what you see", () => {
+  const COLOURS = ["#FF0000", "#00FF00", "#0000FF"] as const;
+  const NAMES = ["red", "green", "blue"] as const;
+
+  /** Three overlapping rectangles, drawn red, green, blue (blue on top). Returns their ids in that order. */
+  async function threeColours(page: Page) {
+    await ready(page);
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const r = await rectangle(page, 0.2 + i * 0.05, 0.2 + i * 0.05, 0.5 + i * 0.05, 0.5 + i * 0.05);
+      await setProps(page, r.id, { "svg.fill": COLOURS[i] });
+      ids.push(r.id);
+    }
+    return ids;
+  }
+  /** The colour on screen where all three overlap. */
+  async function onTop(page: Page) {
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(250);
+    const stage = page.locator('[data-testid="stage-page"]');
+    const png = PNG.sync.read(await stage.screenshot());
+    const box = (await stage.boundingBox())!;
+    const at = await art(page, 0.35, 0.35);
+    const k = png.width / box.width;
+    const i = (Math.round((at.y - box.y) * k) * png.width + Math.round((at.x - box.x) * k)) * 4;
+    const [r, g, b] = [png.data[i], png.data[i + 1], png.data[i + 2]];
+    return r > 200 && g < 60 && b < 60 ? "red" : g > 200 && r < 60 && b < 60 ? "green" : b > 200 && r < 60 && g < 60 ? "blue" : `other(${r},${g},${b})`;
+  }
+  const order = async (page: Page, ids: string[]) => {
+    const l = await layers(page);
+    const parent = l[ids[0]].parentId!;
+    return l[parent].children.map((id) => NAMES[ids.indexOf(id)]).join(",");
+  };
+
+  test("Bring to front, Send to back, Bring forward and Send backward: by shortcut, each shows on screen", async ({ page }) => {
+    const ids = await threeColours(page);
+    expect(await onTop(page)).toBe("blue");
+    await page.locator(`#p-layers .row[data-sel="${ids[0]}"]`).click(); // red, the back one
+    // the pointer is over the inspector (and, between presses, in the window's corner over the top bar): the shortcuts still work
+    await page.getByText("Position", { exact: true }).first().hover();
+    for (const [keys, expectedOrder, expectedTop] of [
+      ["Control+Alt+]", "green,blue,red", "red"],
+      ["Control+Alt+[", "red,green,blue", "blue"],
+      ["Control+]", "green,red,blue", "blue"],
+      ["Control+]", "green,blue,red", "red"],
+      ["Control+[", "green,red,blue", "blue"],
+      ["Control+Shift+]", "green,blue,red", "red"],
+      ["Control+Shift+[", "red,green,blue", "blue"],
+    ] as const) {
+      await page.keyboard.press(keys);
+      await expect.poll(() => order(page, ids), `${keys}: order`).toBe(expectedOrder);
+      expect(await onTop(page), `${keys}: what is on top on screen`).toBe(expectedTop);
+    }
+    // undo takes back the last move, and the layer stays selected throughout
+    await page.keyboard.press("Control+Shift+]");
+    await expect.poll(() => order(page, ids)).toBe("green,blue,red");
+    await page.keyboard.press("Control+z");
+    await expect.poll(() => order(page, ids)).toBe("red,green,blue");
+    expect(await onTop(page)).toBe("blue");
+  });
+
+  test("the same four from the right-click Arrange menu, on the canvas and on a row in the Layers panel", async ({ page }) => {
+    const ids = await threeColours(page);
+    const choose = async (label: RegExp) => {
+      await page.waitForTimeout(300); // a person takes a moment to reach the menu
+      await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
+      const item = page.getByRole("menuitem", { name: label });
+      if (!(await item.isVisible().catch(() => false))) await page.getByRole("menuitem", { name: /^Arrange/ }).click();
+      await item.click();
+    };
+    // on the canvas: red's own corner, which no other shape covers
+    const corner = await art(page, 0.21, 0.21);
+    await page.mouse.click(corner.x, corner.y, { button: "right" });
+    await choose(/^Bring to front/);
+    await expect.poll(() => order(page, ids)).toBe("green,blue,red");
+    expect(await onTop(page)).toBe("red");
+    // on a row of the Layers panel: blue, now in the middle
+    await page.locator(`#p-layers .row[data-sel="${ids[2]}"]`).click({ button: "right" });
+    await choose(/^Send to back/);
+    await expect.poll(() => order(page, ids)).toBe("blue,green,red");
+    await page.locator(`#p-layers .row[data-sel="${ids[0]}"]`).click({ button: "right" }); // red, now at the front: one step back
+    await choose(/^Send backward/);
+    await expect.poll(() => order(page, ids)).toBe("blue,red,green");
+    expect(await onTop(page)).toBe("green");
+    await page.locator(`#p-layers .row[data-sel="${ids[2]}"]`).click({ button: "right" }); // blue, at the back: one step forward
+    await choose(/^Bring forward/);
+    await expect.poll(() => order(page, ids)).toBe("red,blue,green");
+  });
+
+  test("the Z field puts a layer over or under the others whatever the order, on the canvas", async ({ page }) => {
+    const ids = await threeColours(page);
+    expect(await onTop(page)).toBe("blue");
+    await page.locator(`#p-layers .row[data-sel="${ids[0]}"]`).click(); // red, at the back
+    await page.getByRole("button", { name: /^More/ }).first().click().catch(() => undefined);
+    await setProps(page, ids[0], { "layout.zIndex": 10 });
+    await expect.poll(() => onTop(page), "Z 10 on the back layer brings it to the top").toBe("red");
+    expect(await order(page, ids), "the list order did not change").toBe("red,green,blue");
+    await setProps(page, ids[2], { "layout.zIndex": 20 });
+    await expect.poll(() => onTop(page)).toBe("blue");
+    await setProps(page, ids[0], { "layout.zIndex": 0 });
+    await setProps(page, ids[2], { "layout.zIndex": 0 });
+    await expect.poll(() => onTop(page), "back to the order alone").toBe("blue");
+  });
+});
+
 test.describe("saved projects", () => {
   test("a current project is left as it is: a sample layer the designer put in flow stays in flow", async ({ page }) => {
     await ready(page, { empty: false });

@@ -86,6 +86,11 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   }
   // FigCraft port F6: a parent that paints its first child on top hands each child its place in the stacking order
   if (typeof ctx.stackZ === "number") style.zIndex = ctx.stackZ;
+  else {
+    // The Z field (Position, More): a number above or below its neighbours puts the layer over or under them whatever the order in the list
+    const z = resolved.get("layout.zIndex");
+    if (typeof z === "number" && Number.isFinite(z) && z !== 0) style.zIndex = Math.round(z);
+  }
   if (inGrid) {
     // the cell this layer sits in: a start (1-based) and how many tracks it spans
     const span = (path: string) => {

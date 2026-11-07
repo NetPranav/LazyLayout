@@ -56,6 +56,14 @@ const hasSelection = () => ids().length > 0;
 const onSelection = (ctx: ContextKeys) =>
   ctx.canvasFocus && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
 
+/**
+ * Arrange shortcuts (bring forward, send back and the like) work wherever the pointer is except over the timeline or the
+ * blueprint, so a layer picked on the canvas can still be moved in the stack with the pointer over the inspector or a bar.
+ * They still never fire while a text field has focus.
+ */
+export const onArrange = (ctx: ContextKeys) =>
+  (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
+
 /** The container a paste goes into when exactly one container is selected (and it isn't a top-level frame being copied elsewhere). */
 function pasteTarget(): string | null {
   const roots = selectionRoots(ids());
@@ -109,7 +117,7 @@ export function registerEditingCommands(): () => void {
     ["layer.bringToFront", "Bring to Front", "front", ["Ctrl+Alt+]", "Ctrl+Shift+]"]],
     ["layer.sendToBack", "Send to Back", "back", ["Ctrl+Alt+[", "Ctrl+Shift+["]],
   ];
-  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onSelection, run: () => void reorderLayers(ids(), op) }));
+  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onArrange, run: () => void reorderLayers(ids(), op) }));
   add(defineTypedCommand({ id: "layer.reorder", title: "Arrange Layers", category: "Layer", args: z.object({ op: z.enum(["forward", "backward", "front", "back"]) }), run: ({ op }) => ({ changed: reorderLayers(ids(), op) }) }));
 
   add(defineCommand({ id: "edit.group", title: "Group Selection", category, keybinding: "Ctrl+G", when: onSelection, run: () => void groupLayers(ids(), "group") }));

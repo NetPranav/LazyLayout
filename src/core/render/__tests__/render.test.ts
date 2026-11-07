@@ -29,6 +29,12 @@ describe("layerBoxStyle: design properties reach the drawn box (and so the expor
     assert.match(String(s.transform), /skew/);
     assert.equal(s.transformOrigin, "top left");
   });
+  it("the Z field becomes a z-index, and zero leaves the order alone", () => {
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": 7 }).zIndex, 7);
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": -2 }).zIndex, -2);
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": 0 }).zIndex, undefined);
+    assert.equal(box({ positioning: "absolute" }).zIndex, undefined);
+  });
   it("overflow and margins are applied", () => {
     const s = box({ positioning: "flow", "layout.overflowX": "hidden", "layout.overflowY": "visible", "layout.marginLeft": 12 });
     assert.equal(s.overflowX, "hidden");
