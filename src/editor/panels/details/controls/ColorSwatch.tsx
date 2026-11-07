@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { documentCommands } from "@/core/store/useDocumentStore";
+import { Pipette } from "lucide-react";
 import { colorToHsb, fromHex, hsbToColor, toHex, type Hsb } from "@/core/paint/color";
 
 /**
@@ -57,6 +58,20 @@ const Picker: React.FC<{ hex: string; anchor: DOMRect; label: string; onChange: 
     setHsb(next);
     setTyped(null);
     onChange(hexOfHsb(next));
+  };
+  /** The browser's own eyedropper (Chrome, Edge): pick any colour on the screen. Not offered where the browser has none. */
+  const eyedropper = typeof window !== "undefined" && "EyeDropper" in window ? (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper : null;
+  const pickFromScreen = async () => {
+    if (!eyedropper) return;
+    try {
+      const { sRGBHex } = await new eyedropper().open();
+      const six = sRGBHex.replace(/^#/, "").slice(0, 6).toUpperCase();
+      setHsb(hsbOfHex(six, hsb.h));
+      setTyped(null);
+      onChange(six);
+    } catch {
+      // cancelled with Escape
+    }
   };
   const dragSv = useDrag((x, y) => push({ h: hsb.h, s: x, b: 1 - y }));
   const dragHue = useDrag((x) => push({ ...hsb, h: x * 360 }));
@@ -128,6 +143,17 @@ const Picker: React.FC<{ hex: string; anchor: DOMRect; label: string; onChange: 
       </div>
       <div className="ll:flex ll:items-center ll:gap-2">
         <span className="ll:w-6 ll:h-6 ll:rounded-sm ll:border ll:border-border ll:shrink-0" style={{ backgroundColor: `#${hexOfHsb(hsb)}` }} />
+        {eyedropper && (
+          <button
+            type="button"
+            aria-label="Pick a colour from the screen"
+            title="Eyedropper: click, then click anywhere on screen to take that colour"
+            onClick={() => void pickFromScreen()}
+            className="ll:grid ll:place-items-center ll:w-6 ll:h-6 ll:rounded-sm ll:border-0 ll:bg-surface-bar ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:p-0 ll:shrink-0"
+          >
+            <Pipette size={14} aria-hidden="true" />
+          </button>
+        )}
         <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
         <input
           type="text"

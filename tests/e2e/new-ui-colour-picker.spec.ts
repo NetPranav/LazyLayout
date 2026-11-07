@@ -31,4 +31,14 @@ test("the page background and theme swatches open the colour picker and apply wh
   await page.locator("[data-color-picker]").getByRole("textbox").first().fill("00AA55");
   await page.locator("[data-color-picker]").getByRole("textbox").first().press("Enter");
   await expect(page.getByLabel("Primary hex", { exact: true })).toHaveValue("00AA55");
+
+  // the eyedropper icon is there where the browser has one, and takes the colour it is given
+  await page.keyboard.press("Escape");
+  await page.addInitScript(() => undefined);
+  await page.evaluate(() => {
+    (window as unknown as { EyeDropper: unknown }).EyeDropper = class { open() { return Promise.resolve({ sRGBHex: "#3366CC" }); } };
+  });
+  await page.getByRole("button", { name: "Page background colour picker" }).click();
+  await page.getByRole("button", { name: "Pick a colour from the screen" }).click();
+  await expect(page.getByLabel("Background hex", { exact: true })).toHaveValue("3366CC");
 });
