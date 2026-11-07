@@ -249,7 +249,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 🚧 |
 | 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 📋 |
 | 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 🚧 |
-| 71 | Onion skin | 70 | v3 53.3 | 2 | 📋 |
+| 71 | Onion skin | 70 | v3 53.3 | 2 | 🚧 |
 | 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 📋 |
 | 73 | Parenting & helper layers | 72 | v3 51.2, 88.1 (rendering) | 2 | 📋 |
 | 74 | Blend modes, adjustment layers, masks & mattes | 73 | v3 51.3, 51.4 | 2 | 📋 |
@@ -1099,7 +1099,7 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-07):** `AutoKeyValueHud.test.ts` (a drag at 3 playhead times creates 3 keyframes, playback matches evaluate(), undo removes them, Value HUD formats live x/y/rotation/opacity); `auto-key-hud.spec.ts` (transport record button toggle, live Value HUD during stage drag in Chromium).
 
 ### Phase 71 · Onion skin
-**Needs:** 70 · **Was:** v3 53.3 · **Status:** 📋
+**Needs:** 70 · **Was:** v3 53.3 · **Status:** 🚧
 - [ ] N ghost frames before and after the playhead at adjustable opacity, drawn from `evaluate()`.
 
 **You'll see:** ghosts of where a layer was and will be.
