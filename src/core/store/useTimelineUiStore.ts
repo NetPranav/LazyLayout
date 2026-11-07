@@ -39,6 +39,9 @@ interface TimelineUiState {
   /** Auto-key (Phase 66): property edits become keyframes at the playhead. */
   recordMode: boolean;
   setRecordMode: (on: boolean) => void;
+  /** Timeline playhead / time readout scrubbing active (Phase 70). */
+  isScrubbing: boolean;
+  setIsScrubbing: (on: boolean) => void;
   /** The compositions opened from the bars (Phase 65): the path from the top one to the one showing, as composition ids. */
   trail: readonly string[];
   /** Precomps the person has opened, shown as tabs next to Main and the interaction compositions. */
@@ -111,6 +114,8 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
   clearKeys: () => set((s) => (s.selectedKeys.size === 0 ? s : { selectedKeys: new Set<string>() })),
   recordMode: false,
   setRecordMode: (recordMode) => set({ recordMode }),
+  isScrubbing: false,
+  setIsScrubbing: (isScrubbing) => set({ isScrubbing }),
   trail: [],
   openPrecomps: [],
   setTrail: (trail) => set({ trail }),

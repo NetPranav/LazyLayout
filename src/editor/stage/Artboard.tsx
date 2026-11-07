@@ -8,6 +8,7 @@ import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
+import { ValueHud } from "./ValueHud";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { RenderLayer } from "@/core/render";
@@ -184,6 +185,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
   spacingMarks = [],
   onStartMove,
   onStartResize,
+  isGesturing = false,
+  showValueHud = false,
 }) => {
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
   const [isSizeMenuOpen, setIsSizeMenuOpen] = useState(false);
@@ -685,6 +688,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
         layers={layers}
         zoom={zoomScale}
         mode={mode}
+      />
+
+      {/* 6b. Value HUD (ROADMAP Phase 70: Auto-key on the stage & value HUD) */}
+      <ValueHud
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+        isGesturing={isGesturing}
+        forceVisible={showValueHud}
       />
 
       {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}

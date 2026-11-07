@@ -248,7 +248,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 67 | Graph editor & easing | 66 | v3 23.3 | 2 | 🚧 |
 | 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 🚧 |
 | 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 📋 |
-| 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 📋 |
+| 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 🚧 |
 | 71 | Onion skin | 70 | v3 53.3 | 2 | 📋 |
 | 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 📋 |
 | 73 | Parenting & helper layers | 72 | v3 51.2, 88.1 (rendering) | 2 | 📋 |
@@ -1091,11 +1091,12 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** dragging a dot changes exactly one keyframe in one undo step; sampled positions match `evaluate()` within 0.5 px.
 
 ### Phase 70 · Auto-key on the stage & value HUD
-**Needs:** 69 · **Was:** v3 53.2, 53.4 · **Status:** 📋
-- [ ] In record mode, dragging a layer on the canvas writes keyframes. While scrubbing, x, y, rotation and opacity show next to the layer.
+**Needs:** 69 · **Was:** v3 53.2, 53.4 · **Status:** 🚧
+- [x] In record mode, dragging a layer on the canvas writes keyframes. While scrubbing, x, y, rotation and opacity show next to the layer.
 
 **You'll see:** animate by dragging things around the canvas.
 **Done when:** a drag at 3 playhead times creates 3 keyframes.
+**Evidence (2026-11-07):** `AutoKeyValueHud.test.ts` (a drag at 3 playhead times creates 3 keyframes, playback matches evaluate(), undo removes them, Value HUD formats live x/y/rotation/opacity); `auto-key-hud.spec.ts` (transport record button toggle, live Value HUD during stage drag in Chromium).
 
 ### Phase 71 · Onion skin
 **Needs:** 70 · **Was:** v3 53.3 · **Status:** 📋

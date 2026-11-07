@@ -697,6 +697,7 @@ export const Stage: React.FC<StageProps> = ({
         spacingMarks={spacingMarks}
         onStartMove={startMove}
         onStartResize={startResize}
+        isGesturing={isGesturing}
       />
     </div>
   );
