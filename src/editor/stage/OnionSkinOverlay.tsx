@@ -14,6 +14,7 @@ import {
   type OnionSkinConfig,
   type GhostSample,
 } from "@/core/timeline/onionSkin";
+import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 
 export interface OnionSkinOverlayProps {
   /** Optional explicit document (defaults to useDocument) */
@@ -118,8 +119,9 @@ export const OnionSkinOverlay: React.FC<OnionSkinOverlayProps> = ({
       className={`ll:pointer-events-none ll:absolute ll:inset-0 ll:overflow-visible ${className}`}
       style={{ zIndex: 12, ...style }}
     >
-      {ghostsByLayer.flatMap(({ layerId, ghosts }) =>
-        ghosts.map((ghost, idx) => {
+      {ghostsByLayer.flatMap(({ layerId, ghosts }) => {
+        const targetLayer = controlledLayers?.[layerId] ?? doc.layers[layerId];
+        return ghosts.map((ghost, idx) => {
           const isBefore = ghost.direction === "before";
           const borderStyle = isBefore
             ? "1.5px dashed var(--ll-text-secondary, rgba(120, 120, 120, 0.6))"
@@ -147,7 +149,7 @@ export const OnionSkinOverlay: React.FC<OnionSkinOverlayProps> = ({
                 height: ghost.height,
                 opacity: ghost.opacity * ghost.layerOpacity,
                 transform: `rotate(${ghost.rotation}deg) scale(${ghost.scaleX}, ${ghost.scaleY})`,
-                transformOrigin: "center center",
+                transformOrigin: formatCssTransformOrigin(resolveLayerAnchor(targetLayer, ghost.width, ghost.height)),
                 border: borderStyle,
                 backgroundColor: bgStyle,
               }}
@@ -161,8 +163,8 @@ export const OnionSkinOverlay: React.FC<OnionSkinOverlayProps> = ({
               </span>
             </div>
           );
-        })
-      )}
+        });
+      })}
     </div>
   );
 };

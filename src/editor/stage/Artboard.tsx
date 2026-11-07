@@ -10,8 +10,11 @@ import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
 import { ValueHud } from "./ValueHud";
 import { OnionSkinOverlay } from "./OnionSkinOverlay";
+import { AnchorOverlay } from "./AnchorOverlay";
 import { EngineLayer } from "./EngineLayer";
 import { setLayerProps } from "@/core/editing/editOps";
+import type { Layer } from "@/core/document/schema";
+import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
@@ -20,7 +23,12 @@ import {
 } from "./constants";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
-function designTransform(properties: Record<string, unknown>): { transform?: string; transformOrigin?: string } {
+function designTransform(
+  properties: Record<string, unknown>,
+  layer?: Layer,
+  width?: number,
+  height?: number
+): { transform?: string; transformOrigin?: string } {
   const n = (k: string, d: number) => (typeof properties[k] === "number" ? (properties[k] as number) : d);
   const tx = n("transform.x", 0), ty = n("transform.y", 0);
   const rx = n("transform.rotateX", 0), ry = n("transform.rotateY", 0), rz = n("transform.rotate", 0);
@@ -33,7 +41,14 @@ function designTransform(properties: Record<string, unknown>): { transform?: str
   if (rz) parts.push(`rotate(${rz}deg)`);
   if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
   if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
-  const origin = typeof properties["transform.origin"] === "string" ? (properties["transform.origin"] as string) : undefined;
+
+  let origin: string | undefined;
+  if (width !== undefined && height !== undefined) {
+    const anchor = resolveLayerAnchor(layer, width, height);
+    origin = formatCssTransformOrigin(anchor);
+  } else if (typeof properties["transform.origin"] === "string") {
+    origin = properties["transform.origin"] as string;
+  }
   return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
 }
 
@@ -318,7 +333,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...(engineDrawn && layer ? designTransform(layer.properties) : {}),
+                ...(engineDrawn && layer ? designTransform(layer.properties, layer, el.width, el.height) : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
               onDoubleClick={(e) => {
@@ -477,6 +492,14 @@ export const Artboard: React.FC<ArtboardProps> = ({
         layers={layers}
         isGesturing={isGesturing}
         forceVisible={showValueHud}
+      />
+
+      {/* 6c. Anchor Overlay (ROADMAP Phase 72: Anchor points & pins) */}
+      <AnchorOverlay
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+        zoom={zoomScale}
       />
 
       {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}

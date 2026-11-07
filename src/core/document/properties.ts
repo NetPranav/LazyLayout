@@ -234,8 +234,8 @@ const DEFS = {
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
-  /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */
-  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right"], "center", "transform-origin", "paint", VISUAL),
+  /** The point a rotation, scale or skew turns about (CSS `transform-origin`). Supports 9 preset pins, custom pins and coordinate strings. */
+  "transform.origin": str("center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
   "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
 
