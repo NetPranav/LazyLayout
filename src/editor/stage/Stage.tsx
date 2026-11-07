@@ -17,7 +17,7 @@ import {
   STAGE_PRESETS,
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
-import { createLayerFromBox, creationSpecFor, drawBox, pictureHome, type CreationSpec } from "./createFromDrag";
+import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, type CreationSpec } from "./createFromDrag";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
@@ -573,6 +573,24 @@ export const Stage: React.FC<StageProps> = ({
     onToolDone?.();
   };
 
+  /** Pictures dropped on the canvas are stored in the assets and placed where they were dropped, in the frame under the drop. */
+  const dropPictures = async (e: React.DragEvent<HTMLDivElement>) => {
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    e.preventDefault();
+    const at = toArtboard(e.clientX, e.clientY) ?? { x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 };
+    const outcomes = await importFiles(files);
+    const under = frameAt(at, undefined, elements);
+    const parentId = under?.id ?? activePageRootId();
+    if (!parentId) return;
+    let last: string | null = null;
+    outcomes.forEach((o, i) => {
+      if (!o.entry || o.entry.kind === "font") return; // a font is only stored
+      last = placeImage(o.entry, { x: at.x + i * 24, y: at.y + i * 24, parentId, parentOrigin: under ? { x: under.x, y: under.y } : { x: 0, y: 0 } }) ?? last;
+    });
+    if (last) selectStore(last, "element");
+  };
+
   const handleToolPointerCancel = () => {
     gesture.current = null;
     setDrawPreview(null);
@@ -589,6 +607,10 @@ export const Stage: React.FC<StageProps> = ({
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => void dropPictures(e)}
       onContextMenu={(e) => {
         // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
         // right-click opens it. Layers keep their own menu, opened at once.
