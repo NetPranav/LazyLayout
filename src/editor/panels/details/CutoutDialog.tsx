@@ -148,7 +148,14 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
         if (!live) return;
         const p = pixelsOf(img);
         setPicture(p);
-        setBase(newMask(p.pixels.width, p.pixels.height, 255));
+        // A picture that already has see-through parts (a piece cut earlier) starts from the shape it has, so it can be inverted or cut further
+        const alpha = newMask(p.pixels.width, p.pixels.height, 255);
+        let hasHoles = false;
+        for (let i = 0; i < alpha.length; i++) {
+          alpha[i] = p.pixels.data[i * 4 + 3];
+          if (alpha[i] < 250) hasHoles = true;
+        }
+        setBase(hasHoles ? alpha : newMask(p.pixels.width, p.pixels.height, 255));
       })
       .catch((e: unknown) => live && setError(e instanceof Error ? e.message : "The picture could not be read."));
     return () => {
@@ -395,6 +402,7 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
                 "frame.y": piece.where.y,
                 "frame.width": piece.where.width,
                 "frame.height": piece.where.height,
+                "media.cutHome": `${piece.where.x},${piece.where.y}`,
               },
             },
             "Depth layer",
@@ -410,35 +418,56 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
     }
   };
 
-  const apply = async (asNewLayer: boolean) => {
+  const apply = async (asNewLayer: boolean, withRest = false) => {
     const r = result();
     if (!r || !layer) return;
     setBusy(true);
     try {
+      // the rest of the picture, with the selection taken out of it, is a piece of its own
+      let rest: { where: { x: number; y: number; width: number; height: number }; src: string } | null = null;
+      if (asNewLayer && withRest && kept) {
+        // the rest's hole is a little smaller than the piece, so the two overlap and no seam shows where the piece's edge is soft
+        const overlap = Math.max(4, Math.round(soft * 2 + (snap ? reach * 0.3 : 0)));
+        const rr = picture ? resultFor(invertMask(growMask(kept, picture.pixels.width, picture.pixels.height, -overlap))) : null;
+        if (rr) {
+          const savedRest = await toFile(rr);
+          const [o] = await importFiles([savedRest.file]);
+          if (!o?.entry) throw new Error(o?.error ?? "The rest could not be kept.");
+          rest = { where: rr.where, src: assetSrc(o.entry.id) };
+        }
+      }
       const saved = await toFile(r);
       const [outcome] = await importFiles([saved.file]);
       if (!outcome?.entry) throw new Error(outcome?.error ?? "The cutout could not be kept.");
       const where = r.where;
       const srcNew = assetSrc(outcome.entry.id);
       if (asNewLayer) {
-        const id = documentCommands.addLayer(
-          {
-            archetype: "image",
-            parentId: insideItself ? layer.id : layer.parentId,
-            name: `${layer.name} cutout`,
-            properties: {
-              positioning: "absolute",
-              "media.src": srcNew,
-              "media.alt": String(layer.properties["media.alt"] ?? layer.name),
-              "media.objectFit": "fill",
-              "frame.x": where.x,
-              "frame.y": where.y,
-              "frame.width": where.width,
-              "frame.height": where.height,
+        const piece = (name: string, src: string, at: { x: number; y: number; width: number; height: number }) =>
+          documentCommands.addLayer(
+            {
+              archetype: "image",
+              parentId: insideItself ? layer.id : layer.parentId,
+              name,
+              properties: {
+                positioning: "absolute",
+                "media.src": src,
+                "media.alt": String(layer.properties["media.alt"] ?? layer.name),
+                "media.objectFit": "fill",
+                "frame.x": at.x,
+                "frame.y": at.y,
+                "frame.width": at.width,
+                "frame.height": at.height,
+                "media.cutHome": `${at.x},${at.y}`,
+              },
             },
-          },
-          "Cut out subject",
-        );
+            "Cut out subject",
+          );
+        let id = "";
+        // one undo step for the selection and the rest together; the rest goes behind the selection
+        transaction("Cut out pieces", () => {
+          if (rest) piece(`${layer.name} rest`, rest.src, rest.where);
+          id = piece(`${layer.name} cutout`, srcNew, where);
+        });
         useSelectionStore.getState().select(id, "element");
       } else {
         replaceImage([layerId], srcNew, { w: saved.width, h: saved.height });
@@ -629,6 +658,9 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
               Edit selection
             </Button>
           )}
+          <Button size="sm" variant="secondary" onClick={() => void apply(true, true)} disabled={busy || !picture || keptPixels === 0 || phase !== "done"} title={phase !== "done" ? "Press Select first" : "Adds the selection as one layer and the rest of the picture, with the selection taken out of it, as another"}>
+            Add selection + rest
+          </Button>
           <Button size="sm" variant="secondary" onClick={() => void apply(true)} disabled={busy || !picture || keptPixels === 0 || phase !== "done"} title={phase !== "done" ? "Press Select first" : undefined}>
             Add as new layer
           </Button>

@@ -352,8 +352,19 @@ export function useStageTransform({
         gesture.targetIds.forEach((id) => {
           const init = gesture.initialBoxes[id];
           if (!init) return;
-          const nextX = init.x + finalDx;
-          const nextY = init.y + finalDy;
+          let nextX = init.x + finalDx;
+          let nextY = init.y + finalDy;
+          // a piece cut from a picture snaps back to where it belongs when it is brought close enough
+          const home = String(getDocument().layers[id]?.properties["media.cutHome"] ?? "").split(",").map(Number);
+          if (home.length === 2 && home.every(Number.isFinite)) {
+            const near = Math.max(effectiveThreshold, 8 / (zoom > 0 ? zoom : 1));
+            const hx = home[0] + (elements[id]?.ox ?? 0);
+            const hy = home[1] + (elements[id]?.oy ?? 0);
+            if (Math.abs(nextX - hx) <= near && Math.abs(nextY - hy) <= near) {
+              nextX = hx;
+              nextY = hy;
+            }
+          }
 
           onElementChange?.(id, { x: nextX, y: nextY });
 

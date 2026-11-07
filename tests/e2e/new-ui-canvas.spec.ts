@@ -571,6 +571,44 @@ test.describe("arranging: what is on top is what you see", () => {
   });
 });
 
+test.describe("corner pin: lay a layer on a surface", () => {
+  test("the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step", async ({ page }) => {
+    await ready(page);
+    const r = await rectangle(page, 0.2, 0.3, 0.45, 0.45);
+    await clickCentre(page, r.id);
+    const p = (await layers(page))[r.id].properties;
+    const [x, y, w, h] = ["frame.x", "frame.y", "frame.width", "frame.height"].map((k) => Number(p[k]));
+    await setProps(page, r.id, { "transform.pin": `${x},${y},${x + w},${y},${x + w},${y + h},${x},${y + h}` });
+    const overlay = page.getByTestId("corner-pin-overlay");
+    await expect(overlay).toBeVisible();
+    await expect(overlay.getByRole("button")).toHaveCount(4);
+    const pin = async () => String((await layers(page))[r.id].properties["transform.pin"]).split(",").map(Number);
+    const before = await pin();
+
+    // drag the top right corner up and in: the far edge of a surface
+    const handle = overlay.getByRole("button", { name: "Corner pin top right" });
+    const b = (await handle.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width / 2 - 20, b.y + b.height / 2 - 30, { steps: 6 });
+    await page.mouse.up();
+    const after = await pin();
+    expect(after[2], "the corner moved left").toBeLessThan(before[2]);
+    expect(after[3], "and up").toBeLessThan(before[3]);
+    expect([after[0], after[1], after[4], after[5], after[6], after[7]], "the other corners stayed").toEqual([before[0], before[1], before[4], before[5], before[6], before[7]]);
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform), "drawn in perspective").toMatch(/^matrix3d/);
+
+    await page.locator("[data-stage=artboard]").hover();
+    await page.keyboard.press("Control+z");
+    await expect.poll(pin, "one undo step takes the whole drag back").toEqual(before);
+
+    // removing the pin puts it back to a plain layer
+    await setProps(page, r.id, { "transform.pin": "" });
+    await expect(overlay).toHaveCount(0);
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform)).toBe("none");
+  });
+});
+
 test.describe("saved projects", () => {
   test("a current project is left as it is: a sample layer the designer put in flow stays in flow", async ({ page }) => {
     await ready(page, { empty: false });
@@ -714,5 +752,51 @@ test.describe("an empty page is empty", () => {
     await page.keyboard.press("Control+a");
     await page.keyboard.press("Delete");
     await expect.poll(async () => (await look()).bg).toBe("rgba(0, 0, 0, 0)");
+  });
+});
+
+test.describe("split text into letters", () => {
+  test("one click turns a word into one layer per letter, in place, each controllable on its own", async ({ page }) => {
+    await ready(page);
+    await page.getByRole("button", { name: /^Text/ }).first().click();
+    await drag(page, await art(page, 0.1, 0.2), await art(page, 0.5, 0.3));
+    await page.keyboard.press("Escape");
+    const [text] = await ofKind(page, "text");
+    await setProps(page, text.id, { "content.text": "Porsche", "typography.fontSize": 80, "typography.fontWeight": 800, "typography.color": "#112233", "frame.width": 520, "frame.height": 120 });
+    await page.waitForTimeout(500);
+    const whole = (await drawn(page, text.id).boundingBox())!;
+
+    await page.getByText(text.name, { exact: true }).first().click({ button: "right" });
+    await page.waitForTimeout(300);
+    await page.getByRole("menuitem", { name: /^Layer/ }).hover();
+    await page.getByRole("menuitem", { name: /^Split into letters/ }).click();
+
+    await expect.poll(async () => (await ofKind(page, "text")).length, "seven letters, no layer for the word").toBe(7);
+    const letters = await ofKind(page, "text");
+    expect(letters.map((l) => l.properties["content.text"]).join("")).toBe("Porsche");
+    expect(letters.every((l) => l.properties["typography.color"] === "#112233" && l.properties["typography.fontSize"] === 80), "each keeps the look").toBe(true);
+    const group = (await layers(page))[letters[0].parentId!];
+    expect(group.name).toBe(`${text.name} letters`);
+
+    // together they fill the place the word was
+    await page.waitForTimeout(400);
+    const boxes = await Promise.all(letters.map((l) => drawn(page, l.id).boundingBox()));
+    const left = Math.min(...boxes.map((b) => b!.x));
+    const right = Math.max(...boxes.map((b) => b!.x + b!.width));
+    expect(Math.abs(left - whole.x), "starts where the word started").toBeLessThan(6);
+    expect(right, "and ends no further than the word did").toBeLessThanOrEqual(whole.x + whole.width + 6);
+
+    // one letter on its own: tilt the P
+    const p = letters.find((l) => l.properties["content.text"] === "P")!;
+    await setProps(page, p.id, { "frame.rotation": 20 });
+    await expect.poll(() => drawn(page, p.id).evaluate((e) => getComputedStyle(e).transform)).not.toBe("none");
+    const o = letters.find((l) => l.properties["content.text"] === "o")!;
+    await expect.poll(() => drawn(page, o.id).evaluate((e) => getComputedStyle(e).transform), "the others stay straight").toBe("none");
+
+    // one undo puts the word back
+    await page.locator("[data-stage=artboard]").hover();
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("Control+z");
+    await expect.poll(async () => (await ofKind(page, "text")).length).toBe(1);
   });
 });

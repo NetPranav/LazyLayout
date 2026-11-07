@@ -27,6 +27,7 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
+import { cannotSplit, measureLetters, splitIntoLetters } from "./splitText";
 import { importAndPlace } from "../assets/assetImport";
 import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage, setStrokes, setStrokeSettings, setEffects } from "../paint/paintOps";
 import { BLEND_MODES } from "../paint/color";
@@ -125,6 +126,22 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.frameSelection", title: "Frame Selection", category, keybinding: "Ctrl+Alt+G", when: onSelection, run: () => void groupLayers(ids(), "frame") }));
   add(defineTypedCommand({ id: "edit.groupSelection", title: "Group or Frame the Selection", category, args: z.object({ kind: z.enum(["group", "frame"]).default("group") }), run: ({ kind }) => ({ id: groupLayers(ids(), kind) }) }));
 
+  add(defineCommand({
+    id: "text.splitLetters",
+    title: "Split Text into Letters",
+    category: "Text",
+    when: onSelection,
+    run: () => {
+      // one layer per letter, each tilted, moved, coloured or animated on its own
+      const made: string[] = [];
+      for (const id of ids()) {
+        const boxes = cannotSplit(id) === null ? measureLetters(id) : null;
+        const group = boxes ? splitIntoLetters(id, boxes) : null;
+        if (group) made.push(group);
+      }
+      if (made.length > 0) useSelectionStore.getState().selectMultiple(made, "element");
+    },
+  }));
   add(defineCommand({ id: "layer.toggleLock", title: "Lock / Unlock", category: "Layer", keybinding: "Ctrl+Shift+L", when: onSelection, run: () => void toggleLock(ids()) }));
   add(defineCommand({ id: "layer.unlockAll", title: "Unlock All", category: "Layer", run: () => void unlockAll() }));
   add(defineCommand({ id: "layer.showAll", title: "Show All", category: "Layer", run: () => void showAll() }));

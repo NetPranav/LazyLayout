@@ -5,6 +5,8 @@ import { RotateCw } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
+import { Button } from "@/editor/components/Button";
+import { formatPin } from "@/core/geometry/cornerPin";
 import { AlignBar } from "../controls/AlignBar";
 import {
   INSPECTOR_CONSTANTS,
@@ -105,6 +107,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const skewY = (getValue?.("transform.skewY") as number) ?? 0;
   const rotX = (getValue?.("transform.rotateX") as number) ?? 0;
   const rotY = (getValue?.("transform.rotateY") as number) ?? 0;
+  const perspective = (getValue?.("transform.perspective") as number) ?? 0;
   const origin = (getValue?.("transform.origin") as string) || "center";
 
   // Offset values when position is relative/absolute/fixed/sticky
@@ -251,6 +254,49 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
           onChange={(val) => onUpdateProp?.("transform.rotateY", val)}
         />
       </div>
+
+      <NumberField
+        size="sm"
+        className="ll:*:!text-micro ll:!gap-2"
+        label="Perspective"
+        aria-label="Perspective"
+        title="3D depth in px. Set it (try 600), then tilt with Rot X: the layer recedes and shrinks into the distance like text lying on a road. Rotation then turns it along the road. 0 is flat."
+        suffix="px"
+        value={perspective}
+        step={50}
+        onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
+      />
+
+      {/* Corner pin: lay the layer on a surface (a road, a wall) by dragging its four corners */}
+      {(() => {
+        const pinned = typeof getValue?.("transform.pin") === "string" && getValue?.("transform.pin") !== "";
+        const x = Number(getValue?.("frame.x") ?? 0);
+        const y = Number(getValue?.("frame.y") ?? 0);
+        const w = Number(getValue?.("frame.width") ?? 0);
+        const h = Number(getValue?.("frame.height") ?? 0);
+        const flat = formatPin([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]);
+        return (
+          <div className="ll:flex ll:flex-col ll:gap-1">
+            <div className="ll:flex ll:gap-1">
+              <Button
+                size="sm"
+                aria-label={pinned ? "Reset corner pin" : "Pin corners"}
+                disabled={w <= 0 || h <= 0}
+                title="Puts four handles on the layer's corners and a grid on the surface. Drag each handle onto a corner of the road, wall or screen the layer should lie on."
+                onClick={() => onUpdateProp?.("transform.pin", flat)}
+              >
+                {pinned ? "Reset pin" : "Pin corners"}
+              </Button>
+              {pinned && (
+                <Button size="sm" aria-label="Remove corner pin" onClick={() => onUpdateProp?.("transform.pin", "")}>
+                  Remove pin
+                </Button>
+              )}
+            </div>
+            <span className="ll:text-micro ll:font-sans ll:text-muted">Lay it on a surface: drag the four handles onto its corners.</span>
+          </div>
+        );
+      })()}
 
       {/* Transform Origin */}
       <Select

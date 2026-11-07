@@ -232,6 +232,10 @@ const DEFS = {
   "transform.rotate": deg(0, "transform", "gpu", VISUAL),
   "transform.rotateX": deg(0, "transform", "gpu", VISUAL),
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
+  /** How strong the 3D is, in px (CSS `perspective()`): smaller is more dramatic, 0 is flat. With it set, Rot X / Rot Y tilt the layer into the distance and Rotation turns it on that plane. */
+  "transform.perspective": px(0, "transform", "gpu", VISUAL),
+  /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
+  "transform.pin": str("", null, "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */
@@ -459,6 +463,8 @@ const DEFS = {
   "media.src": held(str("", null, "paint", IMAGE)),
   "media.fallbackSrc": str("", null, "none", IMAGE),
   "media.alt": str("", null, "none", IMAGE),
+  /** Where a piece cut from a picture belongs, "x,y" in its parent's px: a piece dragged close to it snaps back there. */
+  "media.cutHome": str("", null, "none", IMAGE),
   "media.objectFit": held(oneOf(["cover", "contain", "fill", "none", "scale-down"], "cover", "object-fit", "paint", IMAGE)),
   "media.objectPosition": str("center", "object-position", "paint", IMAGE),
   "media.aspectRatio": str("auto", "aspect-ratio", "layout", IMAGE),

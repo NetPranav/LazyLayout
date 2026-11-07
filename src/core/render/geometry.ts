@@ -3,6 +3,7 @@ import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
 import { boxShadowCss, parseShadows } from "../paint/paints";
 import { blurOf, effectFilterId, glassCss, maxRadius, needsFilter, parseEffects } from "../paint/effects";
+import { isConvex, parsePin, pinMatrix3d, type Quad } from "../geometry/cornerPin";
 import type { RenderContext, ResolvedProps } from "./types";
 
 /** Largest frame dimension the renderer will draw; a larger stored value is clamped. */
@@ -148,9 +149,22 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   }
 
   const designed = designTransform(resolved);
-  if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
+  const perspective = resolved.num("transform.perspective", 0);
+  if (perspective > 0 && (resolved.num("transform.rotateX", 0) || resolved.num("transform.rotateY", 0))) {
+    // 3D: the layer is tilted into the distance first and then turned on that plane, so Rotation steers text along a road, not across the screen
+    const tilt = designed.split(" ").filter((t) => t.startsWith("rotateX") || t.startsWith("rotateY"));
+    const rest = designed.split(" ").filter((t) => !t.startsWith("rotateX") && !t.startsWith("rotateY"));
+    style.transform = [`perspective(${perspective}px)`, ...tilt, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
+  } else if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
+  // Corner pin: the layer's corners are dragged onto a surface, and it is drawn in perspective to fit it
+  const pin = parsePin(resolved.get("transform.pin"));
+  if (pin && g.positioning === "absolute" && g.frame.width > 0 && g.frame.height > 0 && isConvex(pin)) {
+    const relative = pin.map(([x, y]) => [x - g.frame.x, y - g.frame.y]) as Quad;
+    style.transform = pinMatrix3d(g.frame.width, g.frame.height, relative);
+    style.transformOrigin = "0 0";
+  }
   const origin = resolved.get("transform.origin");
-  if (typeof origin === "string" && origin !== "center" && style.transform) style.transformOrigin = origin;
+  if (typeof origin === "string" && origin !== "center" && style.transform && !pin) style.transformOrigin = origin;
   const opacity = resolved.get("appearance.opacity");
   if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) style.opacity = opacity;
   // Effects (Phase 35): drop and inner shadows (a shape draws its own, inside its SVG), layer blur and background blur.

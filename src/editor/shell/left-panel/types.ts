@@ -81,6 +81,7 @@ export type LayerMenuAction =
   | "tidy-up"
   | "ungroup"
   | "rename"
+  | "split-letters"
   | "select-all"
   | "show-all"
   | "unlock-all"
