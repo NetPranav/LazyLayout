@@ -14,24 +14,25 @@ const p = (id: string, path: string) => getDocument().layers[id].properties[path
 
 beforeEach(() => {
   setDocument(createDocumentFromLayers([
-    createLayer({ id: "pg", archetype: "container", parentId: null, name: "pg", children: ["r", "c", "t", "lk"], properties: { "frame.width": 800, "frame.height": 600 } }) as Layer,
+    createLayer({ id: "pg", archetype: "container", parentId: null, name: "pg", children: ["r", "c", "t", "lk", "im"], properties: { "frame.width": 800, "frame.height": 600 } }) as Layer,
     layer("r", "rectangle", {}),
     layer("c", "container", { "appearance.background.color": "#336699" }),
     layer("t", "text", { "content.text": "x" }),
     layer("lk", "rectangle", {}, { locked: true }),
+    layer("im", "image", {}),
   ]));
 });
 
 describe("Phase 35: fills on layers", () => {
   it("which layers can have a list of fills", () => {
-    for (const a of ["container", "form", "button", "rectangle", "ellipse", "polygon", "star", "arrow", "badge", "fab", "generic"]) assert.equal(hasFills(a), true, a);
-    for (const a of ["text", "image", "line", "icon", "divider"]) assert.equal(hasFills(a), false, a);
+    for (const a of ["container", "form", "button", "rectangle", "ellipse", "polygon", "star", "arrow", "badge", "fab", "generic", "text"]) assert.equal(hasFills(a), true, a);
+    for (const a of ["image", "line", "icon", "divider"]) assert.equal(hasFills(a), false, a);
   });
 
   it("a layer with only a plain colour reads it as one solid fill, and a default fill too", () => {
     assert.deepEqual(fillsOf("c"), [{ type: "solid", color: "#336699", opacity: 1, visible: true }]);
     assert.equal(fillsOf("r")[0].type, "solid"); // the rectangle's default grey
-    assert.deepEqual(fillsOf("t"), []);
+    assert.deepEqual(fillsOf("t"), [{ type: "solid", color: "#0f172a", opacity: 1, visible: true }]);
   });
 
   it("setFills stores the list, one undo step, and the layer then reads it back", () => {
@@ -51,7 +52,8 @@ describe("Phase 35: fills on layers", () => {
   });
 
   it("layers that can't have fills, and locked layers, are skipped", () => {
-    assert.equal(setFills(["t", "lk"], [newPaint("solid")]), 0);
+    assert.equal(setFills(["im", "lk"], [newPaint("solid")]), 0);
+    assert.equal(p("im", "paint.fills"), undefined);
     assert.equal(p("lk", "paint.fills"), undefined);
   });
 

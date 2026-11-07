@@ -3,6 +3,9 @@
 import { getDocument } from "@/core/store/documentState";
 import { duplicateLayers, reorderLayers } from "@/core/editing/editOps";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+import { deviceOfFrame, DEVICE_SPECS } from "./deviceViews";
 import type { PropValue } from "@/core/document/registry";
 import { worldBox } from "@/core/editing/layerBoxes";
 import { subtreeIds } from "@/core/editing/cloneLayers";
@@ -149,17 +152,35 @@ export function useStageTransform({
   const startMove = useCallback(
     (elementId: string, e: React.PointerEvent) => {
       e.stopPropagation();
-      const isSelected = selectedIds.includes(elementId);
+      const el = elements[elementId];
+      const targetDocId = el?.targetId ?? elementId;
+
+      if (el?.mirrorId) {
+        useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
+        const mirrorLayer = getDocument().layers[el.mirrorId];
+        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
+        if (dev && dev !== "desktop") {
+          const spec = DEVICE_SPECS[dev];
+          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
+          if (bp) useBreakpointStore.getState().setActive(bp.id);
+        }
+      } else {
+        useSelectionStore.getState().setSelectedMirrorId(null);
+      }
+
+      const isSelected = selectedIds.includes(targetDocId);
       let targetIds = selectedIds;
 
       if (!isSelected) {
         if (e.shiftKey) {
-          targetIds = [...selectedIds, elementId];
-          onSelect?.(elementId, true);
+          targetIds = [...selectedIds, targetDocId];
+          onSelect?.(targetDocId, true);
         } else {
-          targetIds = [elementId];
-          onSelect?.(elementId, false);
+          targetIds = [targetDocId];
+          onSelect?.(targetDocId, false);
         }
+        // Selecting clears the mirror a layer was picked in; put it back.
+        if (el?.mirrorId) useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
       }
 
       const initialBoxes: Record<
@@ -168,13 +189,14 @@ export function useStageTransform({
       > = {};
 
       targetIds.forEach((id) => {
-        const el = elements[id];
-        if (el) {
+        const key = el?.mirrorId && elements[`${el.mirrorId}::${id}`] ? `${el.mirrorId}::${id}` : id;
+        const targetEl = elements[key] ?? elements[id];
+        if (targetEl) {
           initialBoxes[id] = {
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
+            x: targetEl.x,
+            y: targetEl.y,
+            width: targetEl.width,
+            height: targetEl.height,
           };
         }
       });
@@ -214,8 +236,20 @@ export function useStageTransform({
       if (selectedIds.length === 0) return;
 
       const activeId = selectedIds[0];
-      const el = elements[activeId];
+      const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+      const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${activeId}` : null;
+      const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[activeId];
       if (!el) return;
+
+      if (el.mirrorId) {
+        const mirrorLayer = getDocument().layers[el.mirrorId];
+        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
+        if (dev && dev !== "desktop") {
+          const spec = DEVICE_SPECS[dev];
+          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
+          if (bp) useBreakpointStore.getState().setActive(bp.id);
+        }
+      }
 
       const initialBoxes: Record<
         string,
@@ -234,7 +268,7 @@ export function useStageTransform({
         handle,
         startClientX: e.clientX,
         startClientY: e.clientY,
-        activeId,
+        activeId: el.id,
         targetIds: [activeId],
         initialBoxes,
         aspectRatio: el.width > 0 && el.height > 0 ? el.width / el.height : 1,
@@ -266,6 +300,9 @@ export function useStageTransform({
         gesture.hasMoved = true;
       }
 
+      const activeGestureEl = elements[gesture.activeId];
+      const activeMirrorId = activeGestureEl?.mirrorId ?? useSelectionStore.getState().selectedMirrorId;
+
       if (gesture.type === "move") {
         let dx = rawDx;
         let dy = rawDy;
@@ -279,7 +316,7 @@ export function useStageTransform({
           }
         }
 
-        const primaryBox = gesture.initialBoxes[gesture.activeId];
+        const primaryBox = gesture.initialBoxes[gesture.activeId] ?? gesture.initialBoxes[gesture.targetIds[0]];
         if (!primaryBox) return;
 
         const candidateRect: Rect = {
@@ -292,7 +329,7 @@ export function useStageTransform({
         // Collect other element rects for snapping
         const otherRects: Rect[] = [];
         Object.values(elements).forEach((other) => {
-          if (!gesture.targetIds.includes(other.id)) {
+          if (!gesture.targetIds.includes(other.id) && !other.mirrorId) {
             otherRects.push({
               x: other.x,
               y: other.y,
@@ -354,25 +391,27 @@ export function useStageTransform({
           if (!init) return;
           let nextX = init.x + finalDx;
           let nextY = init.y + finalDy;
+          const key = activeMirrorId && elements[`${activeMirrorId}::${id}`] ? `${activeMirrorId}::${id}` : id;
+          const targetEl = elements[key] ?? elements[id];
           // a piece cut from a picture snaps back to where it belongs when it is brought close enough
           const home = String(getDocument().layers[id]?.properties["media.cutHome"] ?? "").split(",").map(Number);
           if (home.length === 2 && home.every(Number.isFinite)) {
             const near = Math.max(effectiveThreshold, 8 / (zoom > 0 ? zoom : 1));
-            const hx = home[0] + (elements[id]?.ox ?? 0);
-            const hy = home[1] + (elements[id]?.oy ?? 0);
+            const hx = home[0] + (targetEl?.ox ?? 0);
+            const hy = home[1] + (targetEl?.oy ?? 0);
             if (Math.abs(nextX - hx) <= near && Math.abs(nextY - hy) <= near) {
               nextX = hx;
               nextY = hy;
             }
           }
 
-          onElementChange?.(id, { x: nextX, y: nextY });
+          onElementChange?.(key, { x: nextX, y: nextY });
 
           try {
             documentCommands.updateProps(id, {
               ...freePlacement(id, init),
-              "frame.x": nextX - (elements[id]?.ox ?? 0),
-              "frame.y": nextY - (elements[id]?.oy ?? 0),
+              "frame.x": nextX - (targetEl?.ox ?? 0),
+              "frame.y": nextY - (targetEl?.oy ?? 0),
             });
           } catch {
             // Document store update fallback
@@ -476,7 +515,11 @@ export function useStageTransform({
         nextWidth = Math.round(nextWidth);
         nextHeight = Math.round(nextHeight);
 
-        onElementChange?.(gesture.activeId, {
+        const targetId = gesture.targetIds[0];
+        const key = activeMirrorId && elements[`${activeMirrorId}::${targetId}`] ? `${activeMirrorId}::${targetId}` : targetId;
+        const targetEl = elements[key] ?? elements[targetId];
+
+        onElementChange?.(key, {
           x: nextX,
           y: nextY,
           width: nextWidth,
@@ -484,11 +527,11 @@ export function useStageTransform({
         });
 
         try {
-          documentCommands.updateProps(gesture.activeId, {
-            ...sizedByHand(gesture.activeId),
-            ...freePlacement(gesture.activeId, init),
-            "frame.x": nextX - (elements[gesture.activeId]?.ox ?? 0),
-            "frame.y": nextY - (elements[gesture.activeId]?.oy ?? 0),
+          documentCommands.updateProps(targetId, {
+            ...sizedByHand(targetId),
+            ...freePlacement(targetId, init),
+            "frame.x": nextX - (targetEl?.ox ?? 0),
+            "frame.y": nextY - (targetEl?.oy ?? 0),
             "frame.width": nextWidth,
             "frame.height": nextHeight,
           });
@@ -511,11 +554,14 @@ export function useStageTransform({
         // Layers dropped on a frame go into it, and ones dragged out of their frame go back to the page.
         if (done.type === "move" && done.hasMoved) {
           try {
-            const art = done.artboard;
-            const r = art?.getBoundingClientRect();
-            const scale = art && r && art.offsetWidth > 0 ? r.width / art.offsetWidth : 1;
-            const pointer = art && r ? { x: (e.clientX - r.left) / scale - art.clientLeft, y: (e.clientY - r.top) / scale - art.clientTop } : null;
-            reparentOnDrop(done.targetIds, pointer, latestElements.current);
+            const activeEl = latestElements.current[done.activeId];
+            if (!activeEl?.mirrorId) {
+              const art = done.artboard;
+              const r = art?.getBoundingClientRect();
+              const scale = art && r && art.offsetWidth > 0 ? r.width / art.offsetWidth : 1;
+              const pointer = art && r ? { x: (e.clientX - r.left) / scale - art.clientLeft, y: (e.clientY - r.top) / scale - art.clientTop } : null;
+              reparentOnDrop(done.targetIds, pointer, latestElements.current);
+            }
           } catch {
             // a drop that cannot be made leaves the layers where they are
           }
@@ -589,13 +635,25 @@ export function useStageTransform({
 
       e.preventDefault();
 
+      const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+      if (selectedMirrorId) {
+        const mirrorLayer = getDocument().layers[selectedMirrorId];
+        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
+        if (dev && dev !== "desktop") {
+          const spec = DEVICE_SPECS[dev];
+          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
+          if (bp) useBreakpointStore.getState().setActive(bp.id);
+        }
+      }
+
       selectedIds.forEach((id) => {
-        const el = elements[id];
+        const key = selectedMirrorId && elements[`${selectedMirrorId}::${id}`] ? `${selectedMirrorId}::${id}` : id;
+        const el = elements[key] ?? elements[id];
         if (!el) return;
         const nextX = el.x + dx;
         const nextY = el.y + dy;
 
-        onElementChange?.(id, { x: nextX, y: nextY });
+        onElementChange?.(key, { x: nextX, y: nextY });
 
         try {
           documentCommands.updateProps(id, {

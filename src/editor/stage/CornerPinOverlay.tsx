@@ -8,6 +8,7 @@
 import React, { useRef } from "react";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { formatPin, isConvex, mapUnit, parsePin, type Quad } from "@/core/geometry/cornerPin";
+import { parseMesh } from "@/core/geometry/meshWarp";
 import type { Layer } from "@/core/document/schema";
 import type { StageElement } from "./types";
 
@@ -27,7 +28,8 @@ export const CornerPinOverlay: React.FC<Props> = ({ selectedIds, elements, layer
   const layer = id && layers ? layers[id] : undefined;
   const el = id ? elements[id] : undefined;
   const pin = parsePin(layer?.properties["transform.pin"]);
-  if (!id || !layer || !el || !pin) return null;
+  const mesh = parseMesh(layer?.properties["transform.mesh"]);
+  if (!id || !layer || !el || !pin || mesh) return null;
   const ox = el.ox ?? 0;
   const oy = el.oy ?? 0;
   const page = pin.map(([x, y]) => [x + ox, y + oy]) as Quad;

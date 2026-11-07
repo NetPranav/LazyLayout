@@ -24,6 +24,8 @@ export interface StageElement {
   label?: string;
   hidden?: boolean;
   locked?: boolean;
+  targetId?: string;
+  mirrorId?: string;
 }
 
 export interface StageFrameInfo {

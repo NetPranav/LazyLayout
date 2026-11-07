@@ -25,25 +25,29 @@ export interface SelectionState {
   selectedId: string | null;
   selectedIds: string[];
   selectionType: SelectionType;
+  selectedMirrorId: string | null;
 
   // Actions
-  select: (id: string, type: SelectionType) => void;
+  select: (id: string, type: SelectionType, mirrorId?: string | null) => void;
   toggleSelection: (id: string, type: SelectionType) => void;
   selectMultiple: (ids: string[], type: SelectionType) => void;
   clearSelection: () => void;
   isSelected: (id: string) => boolean;
+  setSelectedMirrorId: (mirrorId: string | null) => void;
 }
 
 export const useSelectionStore = create<SelectionState>((set, get) => ({
   selectedId: null,
   selectedIds: [],
   selectionType: null,
+  selectedMirrorId: null,
 
-  select: (id: string, type: SelectionType) => {
+  select: (id: string, type: SelectionType, mirrorId?: string | null) => {
     set({
       selectedId: id,
       selectedIds: [id],
       selectionType: type,
+      selectedMirrorId: mirrorId !== undefined ? mirrorId : null,
     });
   },
 
@@ -72,11 +76,16 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       selectedId: null,
       selectedIds: [],
       selectionType: null,
+      selectedMirrorId: null,
     });
   },
 
   isSelected: (id: string) => {
     return get().selectedIds.includes(id);
+  },
+
+  setSelectedMirrorId: (mirrorId: string | null) => {
+    set({ selectedMirrorId: mirrorId });
   },
 }));
 

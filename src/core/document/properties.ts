@@ -208,6 +208,10 @@ const DEFS = {
   /** Layout grids shown over a frame (FigCraft port F6, `core/layout/layoutGrids.ts`): JSON; editor-only, never exported. */
   "frame.layoutGrids": typed(str("", null, "none", only("container"))),
   /** What a container is (FigCraft port F11): a frame, a group (its box is its layers', no fill or clip), or a section (a canvas organiser holding frames). */
+  /** Id of the frame this frame is a live linked view of (device views); empty on an ordinary frame. */
+  "frame.mirrorOf": str("", null, "none", only("container")),
+  /** Device a frame was opened as: desktop, tablet or mobile; empty when none. */
+  "frame.device": str("", null, "none", only("container")),
   "frame.kind": oneOf(["frame", "group", "section"], "frame", null, "none", only("container")),
   /** Export settings as JSON (FigCraft port F11): `[{ "format": "png" | "jpg" | "svg", "scale": 2, "suffix": "@2x" }]`. */
   "export.settings": typed(str("", null, "none", VISUAL)),
@@ -234,12 +238,16 @@ const DEFS = {
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
   /** How strong the 3D is, in px (CSS `perspective()`): smaller is more dramatic, 0 is flat. With it set, Rot X / Rot Y tilt the layer into the distance and Rotation turns it on that plane. */
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
+  "transform.translateZ": px(0, "transform", "gpu", VISUAL),
+  "transform.style3d": oneOf(["flat", "preserve3d"], "flat", "transform-style", "gpu", VISUAL),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
+  /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */
+  "transform.mesh": str("", null, "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */
-  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right"], "center", "transform-origin", "paint", VISUAL),
+  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right", "bottom center"], "center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
   "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
 
@@ -247,7 +255,7 @@ const DEFS = {
   "appearance.opacity": num(1, "opacity", "gpu", VISUAL),
   // --- Paint and effects (Phase 35): lists stored as JSON text, first entry on top; see `core/paint/paints.ts` ---
   /** The layer's fills: solid colours and linear, radial and conic gradients. When set it replaces the plain colour. */
-  "paint.fills": typed(str("", null, "paint", only("container", "form", "generic", "button", "badge", "fab", "rectangle", "ellipse", "polygon", "star", "arrow"))),
+  "paint.fills": typed(str("", null, "paint", only("container", "form", "generic", "button", "badge", "fab", "rectangle", "ellipse", "polygon", "star", "arrow", "text"))),
   /** Drop and inner shadows. */
   "paint.shadows": typed(str("", "box-shadow", "paint", VISUAL)),
   /** FigCraft port F7: blurs (uniform or progressive), noise, texture and glass, as a JSON list (`paint/effects.ts`). */

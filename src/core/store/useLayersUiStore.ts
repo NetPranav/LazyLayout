@@ -7,16 +7,21 @@ interface LayersUiState {
   expanded: ReadonlySet<string>;
   query: string;
   anchor: string | null;
+  toastMsg: string | null;
   setExpanded: (id: string, open: boolean) => void;
   expandAll: (ids: readonly string[]) => void;
   setQuery: (query: string) => void;
   setAnchor: (id: string | null) => void;
+  showToast: (msg: string) => void;
 }
+
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useLayersUiStore = create<LayersUiState>((set) => ({
   expanded: new Set<string>(),
   query: "",
   anchor: null,
+  toastMsg: null,
   setExpanded: (id, open) =>
     set((s) => {
       if (s.expanded.has(id) === open) return s;
@@ -32,4 +37,16 @@ export const useLayersUiStore = create<LayersUiState>((set) => ({
     }),
   setQuery: (query) => set({ query }),
   setAnchor: (anchor) => set({ anchor }),
+  showToast: (msg) => {
+    if (toastTimer) clearTimeout(toastTimer);
+    set({ toastMsg: msg });
+    toastTimer = setTimeout(() => {
+      set({ toastMsg: null });
+    }, 2800);
+  },
 }));
+
+/** Shows a status toast in the layers panel for feedback (e.g. refused moves, cannot split text). */
+export function showToast(msg: string): void {
+  useLayersUiStore.getState().showToast(msg);
+}

@@ -12,14 +12,29 @@ import type { StageElement } from "./types";
 
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
+interface DrawnNodesResult {
+  regular: Map<string, HTMLElement>;
+  mirrored: { mirrorId: string; targetId: string; node: HTMLElement }[];
+}
+
 /** The drawn node of each layer in the page element, by layer id. */
-function drawnNodes(page: HTMLElement): Map<string, HTMLElement> {
-  const out = new Map<string, HTMLElement>();
+function drawnNodes(page: HTMLElement): DrawnNodesResult {
+  const regular = new Map<string, HTMLElement>();
+  const mirrored: { mirrorId: string; targetId: string; node: HTMLElement }[] = [];
   page.querySelectorAll<HTMLElement>("[data-element-id]").forEach((n) => {
     const id = n.getAttribute("data-element-id");
-    if (id && !out.has(id)) out.set(id, n);
+    if (!id) return;
+    const mirrorWrap = n.closest<HTMLElement>("[data-mirror-id]");
+    if (mirrorWrap) {
+      const mirrorId = mirrorWrap.getAttribute("data-mirror-id");
+      if (mirrorId && mirrorId !== id) {
+        mirrored.push({ mirrorId, targetId: id, node: n });
+        return;
+      }
+    }
+    if (!regular.has(id)) regular.set(id, n);
   });
-  return out;
+  return { regular, mirrored };
 }
 
 /** A locked layer, or one inside a locked layer, cannot be picked on the canvas (the Layers panel still can). */
@@ -37,11 +52,11 @@ function isLockedDeep(layers: Record<string, Layer>, id: string): boolean {
 export function measurePage(page: HTMLElement, layers: Record<string, Layer>): Record<string, StageElement> {
   const pageRect = page.getBoundingClientRect();
   const scale = page.offsetWidth > 0 ? pageRect.width / page.offsetWidth : 1;
-  const nodes = drawnNodes(page);
+  const { regular, mirrored } = drawnNodes(page);
   const boxes = new Map<string, { x: number; y: number; width: number; height: number; rotation: number }>();
 
   for (const id of documentOrder(layers)) {
-    const node = nodes.get(id);
+    const node = regular.get(id);
     const layer = layers[id];
     if (!node || !layer) continue;
     const r = node.getBoundingClientRect();
@@ -91,6 +106,52 @@ export function measurePage(page: HTMLElement, layers: Record<string, Layer>): R
       label: String(layer.properties["content.label"] ?? layer.properties["content.text"] ?? layer.name),
     };
   }
+
+  // Measure mirrored child nodes inside live linked views
+  for (const { mirrorId, targetId, node } of mirrored) {
+    const layer = layers[targetId];
+    if (!layer) continue;
+    const r = node.getBoundingClientRect();
+    const rotation = num(layer.properties["frame.rotation"]) ?? 0;
+    let width = r.width / scale;
+    let height = r.height / scale;
+    let x = (r.left - pageRect.left) / scale;
+    let y = (r.top - pageRect.top) / scale;
+    if (rotation !== 0) {
+      const cx = x + width / 2;
+      const cy = y + height / 2;
+      width = num(layer.properties["frame.width"]) ?? width;
+      height = num(layer.properties["frame.height"]) ?? height;
+      x = cx - width / 2;
+      y = cy - height / 2;
+    } else if (layer.archetype === "text") {
+      width = Math.max(width, node.scrollWidth);
+      height = Math.max(height, node.scrollHeight);
+    }
+    const mirrorBox = boxes.get(mirrorId);
+    const ox = mirrorBox ? mirrorBox.x : 0;
+    const oy = mirrorBox ? mirrorBox.y : 0;
+    const compoundId = `${mirrorId}::${targetId}`;
+    result[compoundId] = {
+      id: compoundId,
+      targetId,
+      mirrorId,
+      name: layer.name,
+      type: layer.archetype === "text" || layer.archetype === "svgText" ? "text" : layer.archetype === "button" || layer.archetype === "fab" ? "button" : layer.archetype === "image" ? "image" : "container",
+      x: round(x),
+      y: round(y),
+      ox: round(ox),
+      oy: round(oy),
+      width: round(width),
+      height: round(height),
+      rotation: rotation || undefined,
+      hidden: false,
+      locked: isLockedDeep(layers, targetId),
+      title: typeof layer.properties["content.text"] === "string" ? (layer.properties["content.text"] as string) : layer.name,
+      label: String(layer.properties["content.label"] ?? layer.properties["content.text"] ?? layer.name),
+    };
+  }
+
   return result;
 }
 
@@ -104,7 +165,7 @@ export function pageMeasurer(page: () => HTMLElement | null) {
     if (!el) return ids.map(() => null);
     const pageRect = el.getBoundingClientRect();
     const scale = el.offsetWidth > 0 ? pageRect.width / el.offsetWidth : 1;
-    const nodes = drawnNodes(el);
+    const { regular: nodes } = drawnNodes(el);
     return ids.map((id) => {
       const n = nodes.get(id);
       if (!n) return null;

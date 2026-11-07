@@ -3,6 +3,9 @@
 import React, { useRef, useState, useCallback } from "react";
 import {
   ChevronDown,
+  Monitor,
+  Tablet,
+  Smartphone,
   Frame,
   Grid,
   Magnet,
@@ -23,6 +26,8 @@ import {
 import { Icon } from "./Icon";
 import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
 import { useSlidingIndicator } from "./useSlidingIndicator";
+import { executeDeviceChoice } from "@/editor/stage/deviceViews";
+import { executeStagePreset } from "@/editor/stage/presetBreakpoints";
 
 export type EditorMode = "design" | "motion" | "code";
 
@@ -184,11 +189,43 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
       >
         {mode === "design" && (
           <>
-            <SubMenu id="m_frames" label="Frame presets" icon={<Icon icon={Frame} size={14} />}>
-              <MenuItem onClick={() => setMenuOpen(false)}>Desktop 1440</MenuItem>
-              <MenuItem onClick={() => setMenuOpen(false)}>Tablet 768</MenuItem>
-              <MenuItem onClick={() => setMenuOpen(false)}>Mobile 375</MenuItem>
-            </SubMenu>
+            <MenuItem
+              icon={<Icon icon={Monitor} size={14} />}
+              onClick={() => {
+                setMenuOpen(false);
+                executeDeviceChoice("desktop");
+              }}
+            >
+              <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
+                <span>Desktop</span>
+                <span className="ll:font-mono ll:text-muted ll:text-micro">1440</span>
+              </div>
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Tablet} size={14} />}
+              onClick={() => {
+                setMenuOpen(false);
+                executeDeviceChoice("tablet");
+              }}
+            >
+              <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
+                <span>Tablet</span>
+                <span className="ll:font-mono ll:text-muted ll:text-micro">768</span>
+              </div>
+            </MenuItem>
+            <MenuItem
+              icon={<Icon icon={Smartphone} size={14} />}
+              onClick={() => {
+                setMenuOpen(false);
+                executeDeviceChoice("mobile");
+              }}
+            >
+              <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
+                <span>Mobile</span>
+                <span className="ll:font-mono ll:text-muted ll:text-micro">375</span>
+              </div>
+            </MenuItem>
+            <MenuSeparator />
             <MenuItem icon={<Icon icon={Grid} size={14} />} onClick={() => setMenuOpen(false)}>
               Layout grids
             </MenuItem>

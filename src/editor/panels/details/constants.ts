@@ -87,6 +87,7 @@ export const TRANSFORM_ORIGIN_OPTIONS = [
   { value: "top right", label: "Top right" },
   { value: "bottom left", label: "Bottom left" },
   { value: "bottom right", label: "Bottom right" },
+  { value: "bottom center", label: "Bottom center" },
 ] as const;
 
 export const SIZING_OPTIONS = [

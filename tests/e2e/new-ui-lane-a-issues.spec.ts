@@ -63,6 +63,7 @@ test.describe("Lane A issue fixes", () => {
     await stageEl(page, ell.id).click({ button: "right", force: true });
     const arrange = page.getByRole("menuitem", { name: /^Arrange/ });
     const sendToBack = page.getByRole("menuitem", { name: /^Send to back/ });
+    await page.waitForTimeout(300); // a person takes a moment to reach the menu
     await arrange.hover();
     // the submenu opens on hover; where a hover does not open it in time, a click does
     if (!(await sendToBack.isVisible().catch(() => false))) {
@@ -224,11 +225,13 @@ test.describe("Lane A issue fixes", () => {
     await page.getByLabel("Page width", { exact: true }).press("Enter");
     await expect.poll(() => page.locator("[data-stage=artboard]").evaluate((e) => (e as HTMLElement).offsetWidth)).toBe(1000);
     await page.getByLabel("Background hex", { exact: true }).fill("112233");
-    await expect.poll(() => page.locator("[data-stage=artboard]").evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(17, 34, 51)");
+    // (an empty page draws no sheet, so the colour is checked on the page itself, then seen once it holds a layer)
+    await expect.poll(async () => String(Object.values(await layers(page)).find((l) => l.parentId === null)!.properties["appearance.background.color"]).toUpperCase()).toBe("#112233");
 
     await pick(page, "Shape", "Rectangle");
     await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
     const [r] = await ofKind(page, "rectangle");
+    expect(await page.locator("[data-stage=artboard]").evaluate((e) => getComputedStyle(e).backgroundColor), "the page itself is never drawn").toBe("rgba(0, 0, 0, 0)");
     await page.getByRole("button", { name: "Add fill" }).click();
     const fillsOf = async () => JSON.parse(String((await layers(page))[r.id].properties["paint.fills"] ?? "[]")) as Array<{ color?: string }>;
     const hexes = page.getByLabel("Fill hex", { exact: true });
@@ -256,6 +259,7 @@ test.describe("Lane A issue fixes", () => {
     const [frame] = await ofKind(page, "container");
     const worldBefore = (await stageEl(page, rect.id).boundingBox())!;
     const rowOf = (name: string) => page.locator(`#p-layers .row[data-sel]`).filter({ hasText: name }).first();
+    await rowOf("Rectangle").click(); // a selected row drags to reorder (an unselected one drags to select rows)
     const a = (await rowOf("Rectangle").boundingBox())!;
     const f = (await rowOf("Frame").boundingBox())!;
     await page.mouse.move(a.x + 60, a.y + a.height / 2);
@@ -269,7 +273,7 @@ test.describe("Lane A issue fixes", () => {
     expect(Math.abs(worldAfter.y - worldBefore.y)).toBeLessThan(2);
   });
 
-  test("round 3: Delete removes a layer, Backspace does not; Ctrl+Alt+] and [ bring to front and send to back", async ({ page, browserName }) => {
+  test("round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back", async ({ page, browserName }) => {
     await ready(page);
     await pick(page, "Shape", "Rectangle");
     await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
@@ -285,11 +289,12 @@ test.describe("Lane A issue fixes", () => {
     await expect.poll(async () => (await layers(page))[pageId].children.at(-1)).toBe(rect.id);
     await page.keyboard.press("Control+Alt+[");
     await expect.poll(async () => (await layers(page))[pageId].children[0]).toBe(rect.id);
-    await page.keyboard.press("Backspace");
-    expect(Object.keys(await layers(page))).toContain(rect.id);
-    await page.keyboard.press("Delete");
+    await page.keyboard.press("Backspace"); // the Mac delete key
     await expect.poll(async () => Object.keys(await layers(page)).includes(rect.id)).toBe(false);
     expect(Object.keys(await layers(page))).toContain(ell.id);
+    await page.getByText("Ellipse", { exact: true }).first().click();
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => Object.keys(await layers(page)).includes(ell.id)).toBe(false);
   });
 
   test("round 3: a right-drag pans without opening the menu, a right-click opens it", async ({ page }) => {

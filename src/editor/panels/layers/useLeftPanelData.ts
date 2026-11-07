@@ -258,6 +258,9 @@ export function useLeftPanelData(
         case "split-letters":
           void invokeCommand("text.splitLetters");
           break;
+        case "animate-letters":
+          void invokeCommand("text.animateLetters");
+          break;
         case "select-all":
           void invokeCommand("selection.all");
           break;

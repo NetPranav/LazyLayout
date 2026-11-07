@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { activePageRootId } from "@/editor/stage/activePage";
 import { setLayerProps } from "@/core/editing/editOps";
@@ -122,7 +123,15 @@ export const PageBackgroundBody: React.FC<{
 
   return (
     <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-      <span className={SWATCH} style={{ backgroundColor: `#${bgHex}` }} />
+      <ColorSwatch
+        label="Page background colour picker"
+        hex={bgHex}
+        onChange={(h) => {
+          setBgHex(h);
+          onChangeBackground?.(h);
+        }}
+        className={SWATCH}
+      />
       <div className={`${HEX_FIELD} ll:w-27`}>
         <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
         <input
@@ -161,7 +170,7 @@ export const ThemeTokensBody: React.FC = () => {
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {tokenRows.map((row) => (
         <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <span className={SWATCH} style={{ backgroundColor: `#${row.hex}` }} />
+          <ColorSwatch label={`${row.label} colour picker`} hex={row.hex} onChange={row.set} className={SWATCH} />
           <div className={`${HEX_FIELD} ll:w-27`}>
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
             <input

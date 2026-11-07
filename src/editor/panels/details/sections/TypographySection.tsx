@@ -19,6 +19,12 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { Icon } from "@/editor/components/Icon";
+import { Button } from "@/editor/components/Button";
+import { Slider } from "@/editor/components/Slider";
+import { invokeCommand } from "@/core/commands";
+import { getDocument } from "@/core/store/documentState";
+import { isLettersGroup } from "@/core/editing/splitText";
+import { getLettersDepth } from "@/core/editing/standingLetters";
 import {
   INSPECTOR_CONSTANTS,
   FONT_FAMILY_OPTIONS,
@@ -64,8 +70,108 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
     layer.archetype === "button" ||
     (layer.archetype as string) === "counter";
 
+  const isSingleText = layer?.archetype === "text";
+  const docLayers = getDocument().layers;
+  const isLettersDirect = isLettersGroup(layer, docLayers);
+  const parentIsLetters = Boolean(layer?.parentId && isLettersGroup(docLayers[layer.parentId], docLayers));
+  const lettersGroupId = isLettersDirect ? layer?.id : parentIsLetters ? layer?.parentId : null;
+  const isLetters = Boolean(lettersGroupId);
+
+  const currentDepth = lettersGroupId ? getLettersDepth(lettersGroupId) : null;
+  const [depthInput, setDepthInput] = React.useState<number>(24);
+  const depthValue = currentDepth ?? depthInput;
+
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
+      {/* Split into letters & Animate / Stand / Depth controls */}
+      {(isSingleText || isLetters) && (
+        <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
+          <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ll:flex-1"
+              disabled={!isSingleText}
+              onClick={() => void invokeCommand("text.splitLetters")}
+              title={isSingleText ? "Split text into one layer per letter" : "Already split into letters"}
+            >
+              Split into letters
+            </Button>
+            {isLetters && (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="ll:flex-1"
+                  onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
+                  title="Animate letters with staggered entrance"
+                >
+                  Animate letters
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="ll:flex-1"
+                  onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
+                  title="Stand letters up in 3D on a ground plane"
+                >
+                  Stand letters up
+                </Button>
+              </>
+            )}
+          </div>
+          {isLetters && (
+            <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="ll:flex-1"
+                onClick={() => void invokeCommand("text.extrudeLetters", { id: lettersGroupId ?? undefined, depth: depthValue || 24 })}
+                title="Give letters 3D depth"
+              >
+                Give letters depth
+              </Button>
+              {currentDepth !== null && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void invokeCommand("text.removeDepth", { id: lettersGroupId ?? undefined })}
+                  title="Remove 3D depth"
+                >
+                  Remove depth
+                </Button>
+              )}
+            </div>
+          )}
+          {isLetters && (
+            <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+              <span className="ll:text-micro ll:text-muted ll:w-10">Depth</span>
+              <div className="ll:flex-1">
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={depthValue}
+                  unit="px"
+                  label="Depth"
+                  ariaLabel="Letters depth"
+                  onChange={(val) => {
+                    setDepthInput(val);
+                    if (lettersGroupId) {
+                      if (val === 0) {
+                        void invokeCommand("text.removeDepth", { id: lettersGroupId });
+                      } else {
+                        void invokeCommand("text.extrudeLetters", { id: lettersGroupId, depth: val });
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Content text field: plain clean textarea matching prototype */}
       {isTextOrButton && (
         <div className="ll:w-full">

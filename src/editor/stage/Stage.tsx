@@ -17,7 +17,7 @@ import {
   STAGE_PRESETS,
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
-import { createLayerFromBox, creationSpecFor, drawBox, pictureHome, type CreationSpec } from "./createFromDrag";
+import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, type CreationSpec } from "./createFromDrag";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
@@ -28,6 +28,9 @@ import { activePageRootId } from "./activePage";
 import { marqueeHits } from "./marquee";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useStageOriginStore } from "@/editor/shell/canvas-chrome/stageOrigin";
+import { executeStagePreset, presetForBreakpoint } from "./presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 
 /** The page's size in pixels, or nothing when it is stored as a share of its parent (a project that never set one). */
 function pagePixels(root: { properties: Record<string, unknown> } | undefined, side: "width" | "height"): number | undefined {
@@ -95,24 +98,26 @@ export const Stage: React.FC<StageProps> = ({
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
-  const activePreset = controlledPreset !== undefined ? controlledPreset : internalPreset;
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const docBreakpoints = useDocument((d) => d.breakpoints);
+  const bpPreset = presetForBreakpoint(breakpointsOf({ breakpoints: docBreakpoints }), activeBreakpointId);
+  const activePreset = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? bpPreset : internalPreset);
 
   const handlePresetChange = useCallback(
     (newPreset: StagePreset) => {
       setInternalPreset(newPreset);
-      controlledOnPresetChange?.(newPreset);
-      // choosing Desktop, Tablet or Mobile resizes the page itself
-      resizePageToPreset(newPreset);
+      executeStagePreset(newPreset, { onPresetChange: controlledOnPresetChange });
     },
     [controlledOnPresetChange]
   );
 
-  // A preset chosen from the menu or a command (Tablet, Mobile) resizes the page too, not only one chosen on the size label.
+  // A preset chosen from the menu or a command (Tablet, Mobile) triggers preset logic
   const lastPreset = useRef(activePreset);
   useEffect(() => {
     if (lastPreset.current === activePreset) return;
     lastPreset.current = activePreset;
-    resizePageToPreset(activePreset);
+    if (useSelectionStore.getState().selectedMirrorId) return;
+    executeStagePreset(activePreset);
   }, [activePreset]);
 
   // Document store layers mapping directly from engine document
@@ -211,11 +216,23 @@ export const Stage: React.FC<StageProps> = ({
 
   // The page is as big as its own layer says (the Page block writes it). A size in % (a project that never set one) follows the preset.
   const rootSized = rootId ? storeLayers?.[rootId] : undefined;
+  const maxRight = useMemo(() => {
+    if (!storeLayers) return 0;
+    let r = 0;
+    for (const l of Object.values(storeLayers)) {
+      if ((l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId) {
+        const x = Number(l.properties["frame.x"] ?? 0);
+        const w = Number(l.properties["frame.width"] ?? 0);
+        r = Math.max(r, x + w);
+      }
+    }
+    return r;
+  }, [storeLayers, rootId]);
   const presetDef0 =
     STAGE_PRESETS.find((p) => p.id === activePreset) || STAGE_PRESETS[0];
   const presetDef = {
     ...presetDef0,
-    artboardWidth: pagePixels(rootSized, "width") ?? presetDef0.artboardWidth,
+    artboardWidth: Math.max(pagePixels(rootSized, "width") ?? presetDef0.artboardWidth, maxRight),
     // a page of stacked sections grows with them
     artboardHeight: Math.max(pagePixels(rootSized, "height") ?? presetDef0.artboardHeight, rootSized?.properties["sizing.vertical"] === "hug" ? rootHeight : 0),
   };
@@ -573,6 +590,24 @@ export const Stage: React.FC<StageProps> = ({
     onToolDone?.();
   };
 
+  /** Pictures dropped on the canvas are stored in the assets and placed where they were dropped, in the frame under the drop. */
+  const dropPictures = async (e: React.DragEvent<HTMLDivElement>) => {
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    e.preventDefault();
+    const at = toArtboard(e.clientX, e.clientY) ?? { x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 };
+    const outcomes = await importFiles(files);
+    const under = frameAt(at, undefined, elements);
+    const parentId = under?.id ?? activePageRootId();
+    if (!parentId) return;
+    let last: string | null = null;
+    outcomes.forEach((o, i) => {
+      if (!o.entry || o.entry.kind === "font") return; // a font is only stored
+      last = placeImage(o.entry, { x: at.x + i * 24, y: at.y + i * 24, parentId, parentOrigin: under ? { x: under.x, y: under.y } : { x: 0, y: 0 } }) ?? last;
+    });
+    if (last) selectStore(last, "element");
+  };
+
   const handleToolPointerCancel = () => {
     gesture.current = null;
     setDrawPreview(null);
@@ -589,6 +624,10 @@ export const Stage: React.FC<StageProps> = ({
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => void dropPictures(e)}
       onContextMenu={(e) => {
         // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
         // right-click opens it. Layers keep their own menu, opened at once.

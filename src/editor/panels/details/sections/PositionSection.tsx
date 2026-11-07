@@ -7,6 +7,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { Button } from "@/editor/components/Button";
 import { formatPin } from "@/core/geometry/cornerPin";
+import { defaultMesh, formatMesh, parseMesh } from "@/core/geometry/meshWarp";
 import { AlignBar } from "../controls/AlignBar";
 import {
   INSPECTOR_CONSTANTS,
@@ -108,6 +109,8 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const rotX = (getValue?.("transform.rotateX") as number) ?? 0;
   const rotY = (getValue?.("transform.rotateY") as number) ?? 0;
   const perspective = (getValue?.("transform.perspective") as number) ?? 0;
+  const translateZ = (getValue?.("transform.translateZ") as number) ?? 0;
+  const style3d = (getValue?.("transform.style3d") as string) || "flat";
   const origin = (getValue?.("transform.origin") as string) || "center";
 
   // Offset values when position is relative/absolute/fixed/sticky
@@ -267,6 +270,33 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
       />
 
+      {/* 3D Depth & Space */}
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+        <NumberField
+          size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
+          label="Translate Z"
+          aria-label="Translate Z"
+          title="Distance along the Z axis in px. Negative moves back into depth."
+          suffix="px"
+          value={translateZ}
+          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+          onChange={(val) => onUpdateProp?.("transform.translateZ", val)}
+        />
+        <Select
+          size="sm"
+          label="3D Space"
+          aria-label="3D Space"
+          title="Preserve 3D keeps children in the same shared 3D perspective context."
+          value={style3d}
+          options={[
+            { value: "flat", label: "Flat" },
+            { value: "preserve3d", label: "Preserve 3D" },
+          ]}
+          onChange={(val) => onUpdateProp?.("transform.style3d", val)}
+        />
+      </div>
+
       {/* Corner pin: lay the layer on a surface (a road, a wall) by dragging its four corners */}
       {(() => {
         const pinned = typeof getValue?.("transform.pin") === "string" && getValue?.("transform.pin") !== "";
@@ -294,6 +324,79 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
               )}
             </div>
             <span className="ll:text-micro ll:font-sans ll:text-muted">Lay it on a surface: drag the four handles onto its corners.</span>
+          </div>
+        );
+      })()}
+
+      {/* Warp mesh: multi-point grid for bending text and images along a curve or surface */}
+      {(() => {
+        const meshVal = getValue?.("transform.mesh");
+        const mesh = parseMesh(meshVal);
+        const hasMesh = mesh !== null;
+        const x = Number(getValue?.("frame.x") ?? 0);
+        const y = Number(getValue?.("frame.y") ?? 0);
+        const w = Number(getValue?.("frame.width") ?? 0);
+        const h = Number(getValue?.("frame.height") ?? 0);
+        const currentGrid = mesh ? `${mesh.cols}x${mesh.rows}` : "3x3";
+        const gridOptions = [
+          { value: "3x3", label: "3×3" },
+          { value: "4x4", label: "4×4" },
+          { value: "5x5", label: "5×5" },
+        ];
+
+        return (
+          <div className="ll:flex ll:flex-col ll:gap-1">
+            <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-end">
+              <Select
+                size="sm"
+                label="Mesh grid"
+                aria-label="Mesh grid size"
+                value={currentGrid}
+                options={gridOptions}
+                onChange={(val) => {
+                  const [c, r] = val.split("x").map(Number);
+                  onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, c, r)));
+                }}
+              />
+              <div className="ll:flex ll:gap-1">
+                {!hasMesh ? (
+                  <Button
+                    size="sm"
+                    aria-label="Warp mesh"
+                    disabled={w <= 0 || h <= 0}
+                    title="Creates a multi-point mesh grid across the layer to bend it along curves and surfaces."
+                    onClick={() => {
+                      const [c, r] = currentGrid.split("x").map(Number);
+                      onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, c, r)));
+                    }}
+                  >
+                    Warp mesh
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      aria-label="Reset warp mesh"
+                      title="Resets mesh control points to a flat grid."
+                      onClick={() => onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, mesh.cols, mesh.rows)))}
+                    >
+                      Reset mesh
+                    </Button>
+                    <Button
+                      size="sm"
+                      aria-label="Remove warp mesh"
+                      title="Removes the warp mesh and restores the plain layer."
+                      onClick={() => onUpdateProp?.("transform.mesh", "")}
+                    >
+                      Remove mesh
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            <span className="ll:text-micro ll:font-sans ll:text-muted">
+              Bend along a curve: drag control points to warp. Shift-drag moves row.
+            </span>
           </div>
         );
       })()}

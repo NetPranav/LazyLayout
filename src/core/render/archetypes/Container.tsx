@@ -32,8 +32,8 @@ function BooleanGroup({ layer, resolved, ctx, children, nodeRef, d }: ArchetypeR
   return (
     <div
       ref={nodeRef}
-      data-element-id={layer.id}
-      data-archetype={layer.archetype}
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
       data-boolean={resolved.str("boolean.operation", "")}
       // the group is the size of its frame (its operands are hidden and absolutely placed, so they size nothing)
       style={{ position: "relative", ...layerBoxStyle(layer, resolved, ctx, { shadow: "none" }), width, height, flexShrink: 0 }}
@@ -86,8 +86,9 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
   return (
     <div
       ref={nodeRef}
-      data-element-id={layer.id}
-      data-archetype={layer.archetype}
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
+      data-mirror-of={layer.properties["frame.mirrorOf"] ? String(layer.properties["frame.mirrorOf"]) : undefined}
       role={layer.archetype === "form" ? "form" : undefined}
       data-frame-kind={kind !== "frame" ? kind : undefined}
       style={{

@@ -24,8 +24,8 @@ export const Image: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, no
   return (
     <div
       ref={nodeRef}
-      data-element-id={layer.id}
-      data-archetype="image"
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : "image"}
       style={{ ...box, overflow: "hidden", borderRadius: px(resolved.num("appearance.radius", 0)), display: "inline-block", lineHeight: 0 }}
     >
       {src ? (

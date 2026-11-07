@@ -86,8 +86,9 @@ export function overrideSource(layer: Layer, applied: readonly Breakpoint[], key
 
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
-/** Is a top-level frame responsive: its width follows the breakpoint being viewed. */
-export const isResponsiveFrame = (layer: Layer): boolean => layer.parentId === null && layer.properties["breakpoints.responsive"] === true;
+/** Is a frame responsive: its width follows the breakpoint being viewed. */
+export const isResponsiveFrame = (layer: Layer): boolean =>
+  (layer.parentId === null || layer.archetype === "container") && layer.properties["breakpoints.responsive"] === true;
 
 /**
  * Constraints at a breakpoint: a free layer inside a frame that is wider or narrower here than at the base is put

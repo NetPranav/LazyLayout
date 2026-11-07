@@ -32,6 +32,9 @@ import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDataba
 import { embedAssets, restoreAssets } from "@/core/assets/embed";
 import { getAssetStore } from "@/core/assets/AssetStore";
 import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/lazyFile";
+import { executeStagePreset, presetForBreakpoint } from "@/editor/stage/presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 
 export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
@@ -141,8 +144,18 @@ export function useEditorActions(
   // Viewport preset (Desktop: 1440, Tablet: 768, Mobile: 375)
   const [viewportPreset, setViewportPresetState] = useState<"1440" | "768" | "375">("1440");
 
+  // Keep viewportPresetState in sync when breakpoint is changed elsewhere (e.g. artboard dropdown)
+  useEffect(() => {
+    return useBreakpointStore.subscribe((state) => {
+      const doc = getDocument();
+      const p = presetForBreakpoint(breakpointsOf(doc), state.activeId);
+      setViewportPresetState(p);
+    });
+  }, []);
+
   const setViewportPreset = useCallback((preset: "1440" | "768" | "375") => {
     setViewportPresetState(preset);
+    executeStagePreset(preset);
     const SIZES: Record<string, { width: number; height: number }> = {
       "1440": { width: 1440, height: 900 },
       "768": { width: 768, height: 1024 },
@@ -1305,7 +1318,8 @@ export function useEditorActions(
           toggleAiBox();
           return;
         }
-        if (e.key === "Delete") {
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
           invokeCommand("edit.delete");
           return;
         }
