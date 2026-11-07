@@ -251,7 +251,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 🚧 |
 | 71 | Onion skin | 70 | v3 53.3 | 2 | 🚧 |
 | 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 🚧 |
-| 73 | Parenting & helper layers | 72 | v3 51.2, 88.1 (rendering) | 2 | 📋 |
+| 73 | Parenting & helper layers | 72 | v3 51.2, 88.1 (rendering) | 2 | 🚧 |
 | 74 | Blend modes, adjustment layers, masks & mattes | 73 | v3 51.3, 51.4 | 2 | 📋 |
 | 75 | Effect stack & motion blur | 74 | v3 51.5, 51.6 | 2 | 📋 |
 | 76 | Property links & pick-whip | 75 | v3 47.1, 47.3, 47.4 | 2 | 📋 |
@@ -1115,11 +1115,12 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-07):** `pins.test.ts` (9 preset pins, whitespace aliases, custom px/% pins, unbounded out-of-bounds pins); `anchorTransforms.test.ts` (independently calculated golden matrices for 90° rotation, nonuniform scale [2, 0.5], combined [45°, 1.5, 0.8], anchor invariance A_world = F + A + T for every preset pin, R·S != S·R matrix order test, zero-scale and 1e-6 stability, geometry compensation on anchor move); `AnchorOverlay.test.tsx` (stage handle rendering, preset location, undo/redo via historyCommands); `anchor-points.spec.ts` (interactive drag with snapping to 9 presets, inspector origin synchronization in Chromium).
 
 ### Phase 73 · Parenting & helper layers
-**Needs:** 72 · **Was:** v3 51.2, 88.1 (rendering) · **Status:** 📋
-- [ ] Pick-whip parenting independent of the layer tree; the kernel composes parent transforms. Helper layers (`render.role: helper`, the After Effects null) draw dashed in Design mode and never in Preview or export.
+**Needs:** 72 · **Was:** v3 51.2, 88.1 (rendering) · **Status:** 🚧
+- [x] Pick-whip parenting independent of the layer tree; the kernel composes parent transforms. Helper layers (`render.role: helper`, the After Effects null) draw dashed in Design mode and never in Preview or export.
 
 **You'll see:** link a layer to an invisible null and it follows.
 **Done when:** a 3-level parent chain matches `evaluate()` in the stage; helpers are absent from the Preview DOM.
+**Evidence (2026-11-07):** `parentTransforms.test.ts` (analytically calculated golden matrix for 3-level parent chain C -> B -> A, column-vector non-commutative multiplication MA·MB != MB·MA, DAG cycle validation, safe singular matrix handling, zero visual jump reparenting via L_new = P^-1 · W, multiple children of single helper); `parentEvaluation.test.ts` (evaluate() parity with stage world matrix for 3-level chain, rotating helper rotates child, animated parent keyframe cascade); `HelperLayerExclusion.test.ts` (exclusion from React, HTML, Vue emitters, selectRenderable); `HelperAndParenting.test.tsx` (stage transform composition); `parenting.spec.ts` (helper layer dashed rendering in Design, complete absence from Preview DOM, child follow in Chromium).
 
 ### Phase 74 · Blend modes, adjustment layers, masks & mattes
 **Needs:** 73 · **Was:** v3 51.3, 51.4 · **Status:** 📋

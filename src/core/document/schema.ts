@@ -132,6 +132,11 @@ export const LayerSchema = z.object({
   shy: z.boolean().optional(),
   /** Marks the layer for motion blur. Recorded only; the renderer draws it in a later phase. */
   motionBlur: z.boolean().optional(),
+  /**
+   * Transform parent (Phase 73): the layer this layer follows independently of the visual DOM container tree
+   * (After Effects pick-whip parenting).
+   */
+  parentRef: IdSchema.nullable().optional(),
   properties: LayerPropsSchema,
   /** Custom pins (Phase 7.5 / 88.2); the 10 preset pins always exist. */
   pins: PinsSchema.optional(),

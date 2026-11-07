@@ -35,6 +35,15 @@ import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
+import { resolveLayerAnchor } from "../geometry/pins";
+import {
+  createLayerLocalMatrix,
+  multiplyAffineMatrices,
+  formatCssMatrix,
+  getLayerParentRef,
+  MAX_PARENT_CHAIN_DEPTH,
+  type AffineMatrix2D,
+} from "../geometry/parentTransforms";
 
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
@@ -315,12 +324,42 @@ function synthesizeTransform(props: ResolvedProps): ResolvedProps {
   return { ...props, transform: synthesizeSingleTransformMatrix(components) };
 }
 
+/** Converts resolved properties of a layer into its local 2D affine matrix */
+function propsToLocalMatrix(layer: import("../document/schema").Layer, props: ResolvedProps): AffineMatrix2D {
+  const n = (k: string, d: number) => (typeof props[k] === "number" ? (props[k] as number) : d);
+  const fx = n("frame.x", 0);
+  const fy = n("frame.y", 0);
+  const tx = n("transform.x", 0);
+  const ty = n("transform.y", 0);
+  const deg = n("transform.rotate", 0);
+  const s = n("transform.scale", 1);
+  const sx = n("transform.scaleX", 1) * s;
+  const sy = n("transform.scaleY", 1) * s;
+
+  const w = n("frame.width", 100);
+  const h = n("frame.height", 100);
+  const anchor = resolveLayerAnchor(layer, w, h);
+
+  return createLayerLocalMatrix({
+    frameOrigin: [fx, fy],
+    anchor,
+    rotationDeg: deg,
+    scaleX: sx,
+    scaleY: sy,
+    transformOffset: [tx, ty],
+  });
+}
+
 /**
- * The evaluation kernel. Pure: the same `(doc, compositionId, layerId, t,
- * inputs)` always produces the same `ResolvedProps` (fuzz-tested for this in
- * `__tests__/evaluate.test.ts`).
+ * Evaluates the local properties of a single layer without parent transform composition.
  */
-export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
+export function evaluateLocalProps(
+  doc: MotionDocument,
+  compositionId: string,
+  layerId: string,
+  t: number,
+  inputs: EvaluateInputs = {}
+): ResolvedProps {
   const layer = doc.layers[layerId];
   if (!layer) return {};
 
@@ -370,8 +409,61 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
   // 4. Behaviours (composition slot — see KERNEL_GAPS for what's deferred to Phase 12).
   resolved = applyLoopBehaviours(doc, layerId, t, resolved);
 
-  // 5. Single Transform Authority synthesis.
-  resolved = synthesizeTransform(resolved);
+  return resolved;
+}
+
+/**
+ * The evaluation kernel. Pure: the same `(doc, compositionId, layerId, t,
+ * inputs)` always produces the same `ResolvedProps` (fuzz-tested for this in
+ * `__tests__/evaluate.test.ts`).
+ */
+export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
+  const layer = doc.layers[layerId];
+  if (!layer) return {};
+
+  let resolved = evaluateLocalProps(doc, compositionId, layerId, t, inputs);
+
+  // Phase 73: Transform composition across independent parent chain
+  const parentRef = getLayerParentRef(layer);
+  if (parentRef && doc.layers[parentRef]) {
+    // Collect ancestor chain: Child -> Parent -> Grandparent
+    const chain: Array<{ layer: import("../document/schema").Layer; props: ResolvedProps }> = [
+      { layer, props: resolved },
+    ];
+    const visited = new Set<string>([layerId]);
+    let currentId: string | null | undefined = parentRef;
+    let depth = 0;
+
+    while (currentId && depth++ < MAX_PARENT_CHAIN_DEPTH) {
+      if (visited.has(currentId)) break;
+      visited.add(currentId);
+      const parentLayer = doc.layers[currentId];
+      if (!parentLayer) break;
+      const parentProps = evaluateLocalProps(doc, compositionId, currentId, t, inputs);
+      chain.push({ layer: parentLayer, props: parentProps });
+      currentId = getLayerParentRef(parentLayer);
+    }
+
+    // Multiply from root ancestor down to child: M_world = M_root · ... · M_child
+    let composedM = propsToLocalMatrix(chain[chain.length - 1].layer, chain[chain.length - 1].props);
+    for (let i = chain.length - 2; i >= 0; i--) {
+      const nextM = propsToLocalMatrix(chain[i].layer, chain[i].props);
+      composedM = multiplyAffineMatrices(composedM, nextM);
+    }
+
+    resolved = {
+      ...resolved,
+      transform: formatCssMatrix(composedM),
+      "transform.worldMatrix": composedM as unknown as PropValue,
+    };
+  } else {
+    // Unparented layer
+    const localM = propsToLocalMatrix(layer, resolved);
+    resolved = {
+      ...synthesizeTransform(resolved),
+      "transform.worldMatrix": localM as unknown as PropValue,
+    };
+  }
 
   return resolved;
 }

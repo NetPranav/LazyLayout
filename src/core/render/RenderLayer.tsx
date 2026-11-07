@@ -33,12 +33,13 @@ function soloKeep(layers: Record<string, Layer>): Set<string> | null {
   return keep;
 }
 
-export function selectRenderable(layers: Record<string, Layer>, rootIds: readonly string[]): RenderPlan {
+export function selectRenderable(layers: Record<string, Layer>, rootIds: readonly string[], previewOrExport = false): RenderPlan {
   const plan = new Map<string, string[]>();
   const keep = soloKeep(layers);
   const visit = (id: string, depth: number, path: ReadonlySet<string>): boolean => {
     const layer = layers[id];
     if (!layer || layer.visible === false || (keep && !keep.has(id))) return false;
+    if (previewOrExport && layer.properties["render.role"] === "helper") return false;
     if (depth > MAX_TREE_DEPTH || path.has(id) || plan.has(id) || plan.size >= MAX_RENDERED_LAYERS) return false;
     const kept: string[] = [];
     plan.set(id, kept);
@@ -67,6 +68,7 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const layer = layers[layerId];
   const childIds = permitted.get(layerId);
   if (!layer || !childIds) return null;
+  if (layer.properties["render.role"] === "helper" && (ctx.mode === "preview" || ctx.mode === "export")) return null;
 
   const resolved = resolveProps(layer);
   const Definition = RENDER_DEFINITIONS[layer.archetype];

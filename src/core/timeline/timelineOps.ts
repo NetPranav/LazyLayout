@@ -4,6 +4,7 @@ import type { PropValue } from "../document/registry";
 import { evaluate } from "../kernel/evaluate";
 import { createId } from "../ids";
 import { canReparent } from "../layers/reparent";
+import { validateParentLink } from "../geometry/parentTransforms";
 import { getDocument } from "../store/documentState";
 import { documentCommands } from "../store/useDocumentStore";
 import { transaction } from "../editing/editOps";
@@ -116,6 +117,20 @@ export function parentChoices(layerId: string): Array<{ id: string; name: string
   return Object.values(layers)
     .filter((l) => l.id !== layerId && canReparent(layers, [layerId], l.id).ok)
     .map((l) => ({ id: l.id, name: l.name }));
+}
+
+/** Layers a layer may have as transform parent (Phase 73 pick-whip choices): valid DAG links, helpers labeled. */
+export function transformParentChoices(layerId: string): Array<{ id: string; name: string }> {
+  const layers = getDocument().layers;
+  return Object.values(layers)
+    .filter((l) => validateParentLink(layers, layerId, l.id).valid)
+    .map((l) => {
+      const isHelper = l.properties["render.role"] === "helper";
+      return {
+        id: l.id,
+        name: isHelper ? `⊞ ${l.name} (Helper)` : l.name,
+      };
+    });
 }
 
 // ---------------------------------------------------------------------------

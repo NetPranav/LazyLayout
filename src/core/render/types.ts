@@ -28,6 +28,8 @@ export interface RenderContext {
   layers?: Readonly<Record<string, import("../document/schema").Layer>>;
   /** This layer's z-index, set by a parent whose first child paints on top (`layout.reverseZ`, FigCraft port F6). */
   stackZ?: number;
+  /** Rendering mode: design, preview, or export (Phase 73: helpers excluded in preview/export). */
+  mode?: "design" | "preview" | "export";
 }
 
 /** Every render definition has this shape: draw `layer` from its resolved props (Phase 17, Law 11). */
