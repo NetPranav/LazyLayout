@@ -247,7 +247,7 @@ const DEFS = {
   "appearance.opacity": num(1, "opacity", "gpu", VISUAL),
   // --- Paint and effects (Phase 35): lists stored as JSON text, first entry on top; see `core/paint/paints.ts` ---
   /** The layer's fills: solid colours and linear, radial and conic gradients. When set it replaces the plain colour. */
-  "paint.fills": typed(str("", null, "paint", only("container", "form", "generic", "button", "badge", "fab", "rectangle", "ellipse", "polygon", "star", "arrow"))),
+  "paint.fills": typed(str("", null, "paint", only("container", "form", "generic", "button", "badge", "fab", "rectangle", "ellipse", "polygon", "star", "arrow", "text"))),
   /** Drop and inner shadows. */
   "paint.shadows": typed(str("", "box-shadow", "paint", VISUAL)),
   /** FigCraft port F7: blurs (uniform or progressive), noise, texture and glass, as a JSON list (`paint/effects.ts`). */

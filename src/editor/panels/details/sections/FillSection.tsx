@@ -89,8 +89,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
   onAddFillRef,
   className = "",
 }) => {
-  // Read existing background color or fills from layer
+  // Read existing background color, typography color or fills from layer
   const initialHex =
+    (getValue?.("typography.color") as string) ||
     (getValue?.("appearance.background.color") as string) ||
     (getValue?.("backgroundColor") as string) ||
     "FFFFFF";
