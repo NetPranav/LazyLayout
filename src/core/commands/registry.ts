@@ -45,12 +45,24 @@ export function getCommand(id: string): Command | undefined {
 /** Test seam: with `window.__LL_TEST__` set before load, the registry is reachable at `window.__LL_COMMANDS__` (the keybinding audit reads it). */
 declare global {
   interface Window {
-    __LL_COMMANDS__?: { all: () => Command[]; context: () => ReturnType<typeof getContextKeys> };
+    __LL_COMMANDS__?: {
+      all: () => Command[];
+      context: () => ReturnType<typeof getContextKeys>;
+      run: (id: string, args?: unknown) => boolean;
+      tryRun: (id: string, args?: unknown) => CommandOutcome;
+    };
   }
 }
 if (typeof window !== "undefined") {
   const w = window as Window & { __LL_TEST__?: boolean };
-  if (w.__LL_TEST__) w.__LL_COMMANDS__ = { all: () => Array.from(commands.values()), context: () => getContextKeys() };
+  if (w.__LL_TEST__) {
+    w.__LL_COMMANDS__ = {
+      all: () => Array.from(commands.values()),
+      context: () => getContextKeys(),
+      run: (id: string, args?: unknown) => runCommand(id, args),
+      tryRun: (id: string, args?: unknown) => tryRunCommand(id, args),
+    };
+  }
 }
 
 export function getAllCommands(): Command[] {

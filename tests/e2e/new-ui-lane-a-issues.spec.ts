@@ -231,7 +231,7 @@ test.describe("Lane A issue fixes", () => {
     await pick(page, "Shape", "Rectangle");
     await drag(page, await art(page, 0.2, 0.3), await art(page, 0.4, 0.5));
     const [r] = await ofKind(page, "rectangle");
-    await expect.poll(() => page.locator("[data-stage=artboard]").evaluate((e) => getComputedStyle(e).backgroundColor), "the sheet shows once the page holds a layer").toBe("rgb(17, 34, 51)");
+    expect(await page.locator("[data-stage=artboard]").evaluate((e) => getComputedStyle(e).backgroundColor), "the page itself is never drawn").toBe("rgba(0, 0, 0, 0)");
     await page.getByRole("button", { name: "Add fill" }).click();
     const fillsOf = async () => JSON.parse(String((await layers(page))[r.id].properties["paint.fills"] ?? "[]")) as Array<{ color?: string }>;
     const hexes = page.getByLabel("Fill hex", { exact: true });

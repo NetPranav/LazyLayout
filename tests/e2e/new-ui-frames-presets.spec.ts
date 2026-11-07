@@ -118,7 +118,7 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     await expect(page.locator('[data-testid="stage-page"]')).toHaveCSS("visibility", "visible");
   });
 
-  test("loose shape on the page still shows the sheet", async ({ page }) => {
+  test("a loose shape on the page shows on the canvas and the page is still never drawn", async ({ page }) => {
     await ready(page);
     const artboard = page.locator("[data-stage=artboard]");
     await expect(artboard).toHaveAttribute("data-bare", "true");
@@ -126,10 +126,11 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     const r = await rectangle(page, 0.2, 0.2, 0.4, 0.4);
     expect(r).toBeDefined();
 
-    // Because a loose shape was placed directly on the page, the sheet is shown
-    await expect(artboard).not.toHaveAttribute("data-bare", "true");
-    await expect.poll(() => artboard.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
-    await expect.poll(() => artboard.evaluate((e) => getComputedStyle(e).boxShadow)).not.toBe("none");
+    // the page is never drawn: no sheet, only the shape on the canvas
+    await expect(artboard).toHaveAttribute("data-bare", "true");
+    await expect(page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${r.id}"]`)).toBeVisible();
+    expect(await artboard.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+    expect(await page.locator('[data-testid="stage-page"] > [data-archetype="container"]').first().evaluate((e) => getComputedStyle(e).backgroundColor), "the page's own fill is not drawn").toBe("rgba(0, 0, 0, 0)");
   });
 
   test("empty page + Mobile click creates a frame named Mobile of 375 wide", async ({ page }) => {

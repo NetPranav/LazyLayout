@@ -18,7 +18,6 @@ import {
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
-import { shouldDrawPageSheet } from "./pageSheet";
 import { presetForBreakpoint } from "./presetBreakpoints";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
@@ -218,7 +217,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
   // The page sheet (white fill, border, shadow, size label, title strip) must be drawn only when
   // the page has at least one direct child that is NOT a frame (a loose shape/text/image placed straight on the page).
   // When every direct child of the page is a frame (archetype "container") and when the page is empty, draw NO page sheet.
-  const drawSheet = !empty && (!!references || shouldDrawPageSheet(layers, rootId ?? null, elements));
+  // The page itself is never drawn (the Home page is only a title in the page list): the viewport holds frames and what is on them.
+  // Only the loading-page view draws a sheet, since its page is the frame being designed.
+  const drawSheet = !empty && !!references;
   const bare = !drawSheet;
 
   // Active frame for positioning the frame dropdown / size label
@@ -376,6 +377,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
         <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
+          {bare && (
+            // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
+            <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
+          )}
           <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
         </div>
       )}

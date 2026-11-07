@@ -109,6 +109,8 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const rotX = (getValue?.("transform.rotateX") as number) ?? 0;
   const rotY = (getValue?.("transform.rotateY") as number) ?? 0;
   const perspective = (getValue?.("transform.perspective") as number) ?? 0;
+  const translateZ = (getValue?.("transform.translateZ") as number) ?? 0;
+  const style3d = (getValue?.("transform.style3d") as string) || "flat";
   const origin = (getValue?.("transform.origin") as string) || "center";
 
   // Offset values when position is relative/absolute/fixed/sticky
@@ -267,6 +269,33 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         step={50}
         onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
       />
+
+      {/* 3D Depth & Space */}
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+        <NumberField
+          size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
+          label="Translate Z"
+          aria-label="Translate Z"
+          title="Distance along the Z axis in px. Negative moves back into depth."
+          suffix="px"
+          value={translateZ}
+          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+          onChange={(val) => onUpdateProp?.("transform.translateZ", val)}
+        />
+        <Select
+          size="sm"
+          label="3D Space"
+          aria-label="3D Space"
+          title="Preserve 3D keeps children in the same shared 3D perspective context."
+          value={style3d}
+          options={[
+            { value: "flat", label: "Flat" },
+            { value: "preserve3d", label: "Preserve 3D" },
+          ]}
+          onChange={(val) => onUpdateProp?.("transform.style3d", val)}
+        />
+      </div>
 
       {/* Corner pin: lay the layer on a surface (a road, a wall) by dragging its four corners */}
       {(() => {

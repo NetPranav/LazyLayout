@@ -24,11 +24,13 @@ function designTransform(resolved: ResolvedProps): string {
   const sy = n("transform.scaleY", 1) * s;
   const rx = n("transform.rotateX", 0);
   const ry = n("transform.rotateY", 0);
+  const tz = n("transform.translateZ", 0);
   const kx = n("transform.skewX", 0);
   const ky = n("transform.skewY", 0);
   const parts: string[] = [];
   if (rx) parts.push(`rotateX(${rx}deg)`);
   if (ry) parts.push(`rotateY(${ry}deg)`);
+  if (tz) parts.push(`translateZ(${tz}px)`);
   if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
   if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
   return parts.join(" ");
@@ -155,12 +157,33 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
 
   const designed = designTransform(resolved);
   const perspective = resolved.num("transform.perspective", 0);
-  if (perspective > 0 && (resolved.num("transform.rotateX", 0) || resolved.num("transform.rotateY", 0))) {
+  const style3d = resolved.get("transform.style3d");
+  if (perspective > 0 && (resolved.num("transform.rotateX", 0) || resolved.num("transform.rotateY", 0) || style3d === "preserve3d")) {
     // 3D: the layer is tilted into the distance first and then turned on that plane, so Rotation steers text along a road, not across the screen
     const tilt = designed.split(" ").filter((t) => t.startsWith("rotateX") || t.startsWith("rotateY"));
     const rest = designed.split(" ").filter((t) => !t.startsWith("rotateX") && !t.startsWith("rotateY"));
     style.transform = [`perspective(${perspective}px)`, ...tilt, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
   } else if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
+
+  // 3D stage preserve-3d contract (CSS Transforms Level 2):
+  // Setting `transform-style: preserve-3d` establishes a shared 3D rendering context where children
+  // retain their 3D positions (rotateX, rotateY, translateZ).
+  // However, the browser will forcibly FLATTEN this 3D context into a 2D plane if any of the following
+  // properties are set on the preserve-3d element or any intermediate ancestor:
+  //   1. `overflow` other than `visible` (e.g. `overflow: hidden`, `scroll`, `auto`, `clip`)
+  //   2. `opacity` strictly less than 1.0
+  //   3. `filter` other than `none`
+  //   4. `clip-path` other than `none`
+  //   5. `backdrop-filter` other than `none`
+  //   6. `mix-blend-mode` other than `normal`
+  //   7. `isolation: isolate`
+  // Therefore, when `transform.style3d === "preserve3d"`, parents need `preserve-3d` all the way down,
+  // and we suppress overflow clipping, opacity < 1, and flattening filters on the 3D stage group.
+  if (style3d === "preserve3d") {
+    style.transformStyle = "preserve-3d";
+    delete style.overflowX;
+    delete style.overflowY;
+  }
   // Precedence: transform.mesh > transform.pin > perspective / rotation
   const mesh = parseMesh(resolved.get("transform.mesh"));
   const hasMesh = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0;
@@ -180,7 +203,9 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   const origin = resolved.get("transform.origin");
   if (typeof origin === "string" && origin !== "center" && style.transform && !hasMesh && !ctx.inMeshTile) style.transformOrigin = origin;
   const opacity = resolved.get("appearance.opacity");
-  if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) style.opacity = opacity;
+  if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) {
+    if (style3d !== "preserve3d" || opacity === 1) style.opacity = opacity;
+  }
   // Effects (Phase 35): drop and inner shadows (a shape draws its own, inside its SVG), layer blur and background blur.
   if (options.shadow !== "none") {
     const shadow = boxShadowCss(parseShadows(resolved.get("paint.shadows")));
@@ -198,22 +223,24 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     if (layerBlur.blurType !== "progressive") filters.push(`blur(${Math.min(layerBlur.radius, 200)}px)`);
     else if (!options.bands) filters.push(`blur(${Math.min((layerBlur.radius + layerBlur.startRadius) / 2, 200)}px)`);
   } else if (typeof blur === "number" && blur > 0) filters.push(`blur(${Math.min(blur, 200)}px)`);
-  if (filters.length > 0) style.filter = filters.join(" ");
+  if (filters.length > 0 && style3d !== "preserve3d") style.filter = filters.join(" ");
   const bgBlur = blurOf(effects, "backgroundBlur");
   const backdrop = resolved.get("paint.backgroundBlur");
-  if (bgBlur) {
-    if (bgBlur.blurType !== "progressive") backdrops.push(`blur(${Math.min(bgBlur.radius, 200)}px)`);
-    else if (!options.bands) backdrops.push(`blur(${Math.min(maxRadius(bgBlur), 200)}px)`);
-  } else if (typeof backdrop === "number" && backdrop > 0) backdrops.push(`blur(${Math.min(backdrop, 200)}px)`);
-  const glass = effects.find((e) => e.visible && e.type === "glass");
-  if (glass && glass.type === "glass") {
-    const g = glassCss(glass);
-    backdrops.push(g.backdropFilter);
-    if (options.shadow !== "none") style.boxShadow = style.boxShadow ? `${style.boxShadow}, ${g.boxShadow}` : g.boxShadow;
-  }
-  if (backdrops.length > 0) {
-    style.backdropFilter = backdrops.join(" ");
-    (style as Record<string, unknown>).WebkitBackdropFilter = backdrops.join(" ");
+  if (style3d !== "preserve3d") {
+    if (bgBlur) {
+      if (bgBlur.blurType !== "progressive") backdrops.push(`blur(${Math.min(bgBlur.radius, 200)}px)`);
+      else if (!options.bands) backdrops.push(`blur(${Math.min(maxRadius(bgBlur), 200)}px)`);
+    } else if (typeof backdrop === "number" && backdrop > 0) backdrops.push(`blur(${Math.min(backdrop, 200)}px)`);
+    const glass = effects.find((e) => e.visible && e.type === "glass");
+    if (glass && glass.type === "glass") {
+      const g = glassCss(glass);
+      backdrops.push(g.backdropFilter);
+      if (options.shadow !== "none") style.boxShadow = style.boxShadow ? `${style.boxShadow}, ${g.boxShadow}` : g.boxShadow;
+    }
+    if (backdrops.length > 0) {
+      style.backdropFilter = backdrops.join(" ");
+      (style as Record<string, unknown>).WebkitBackdropFilter = backdrops.join(" ");
+    }
   }
   return style;
 }

@@ -286,8 +286,16 @@ export function isLettersGroup(layer: Layer | null | undefined, allLayers: Recor
   if (layer.archetype !== "container") return false;
   if (!layer.children || layer.children.length === 0) return false;
   const hasLettersName = layer.name.endsWith(" letters");
-  const allTextChildren = layer.children.every((childId) => allLayers[childId]?.archetype === "text");
-  return allTextChildren && (hasLettersName || layer.children.length > 0);
+  const textChildren = layer.children.filter((childId) => allLayers[childId]?.archetype === "text");
+  if (textChildren.length === 0) return false;
+  const allValidChildren = layer.children.every((childId) => {
+    const child = allLayers[childId];
+    if (!child) return false;
+    if (child.archetype === "text") return true;
+    if (child.archetype === "container" && child.name.endsWith(" depth")) return true;
+    return false;
+  });
+  return allValidChildren && (hasLettersName || textChildren.length > 0);
 }
 
 /** Gives the letters of a letters group a staggered entrance (fade and slide up, 40ms stagger). */

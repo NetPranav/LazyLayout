@@ -234,6 +234,8 @@ const DEFS = {
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
   /** How strong the 3D is, in px (CSS `perspective()`): smaller is more dramatic, 0 is flat. With it set, Rot X / Rot Y tilt the layer into the distance and Rotation turns it on that plane. */
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
+  "transform.translateZ": px(0, "transform", "gpu", VISUAL),
+  "transform.style3d": oneOf(["flat", "preserve3d"], "flat", "transform-style", "gpu", VISUAL),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
   /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */
@@ -241,7 +243,7 @@ const DEFS = {
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */
-  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right"], "center", "transform-origin", "paint", VISUAL),
+  "transform.origin": oneOf(["center", "top left", "top right", "bottom left", "bottom right", "bottom center"], "center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
   "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
 

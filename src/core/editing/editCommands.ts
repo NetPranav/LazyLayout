@@ -28,6 +28,7 @@ import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
 import { cannotSplit, measureLetters, splitIntoLetters, animateLetters } from "./splitText";
+import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
 import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
 import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage, setStrokes, setStrokeSettings, setEffects } from "../paint/paintOps";
@@ -184,6 +185,69 @@ export function registerEditingCommands(): () => void {
         showToast("Select a letters group to animate.");
       }
       return { clips: totalClips };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.standLetters",
+    title: "Stand Letters Up",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to stand up.");
+        return { ok: false };
+      }
+      let success = false;
+      for (const targetId of targets) {
+        const res = standLetters(targetId);
+        if (res) success = true;
+      }
+      if (!success) {
+        showToast("Select a letters group to stand up.");
+      }
+      return { ok: success };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.extrudeLetters",
+    title: "Give Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional(), depth: z.number().finite().min(0).max(1000).default(24) }).default({ depth: 24 }),
+    run: ({ id, depth }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to give depth.");
+        return { ok: false, copies: 0 };
+      }
+      let totalCopies = 0;
+      for (const targetId of targets) {
+        const count = extrudeLetters(targetId, depth ?? 24);
+        if (count > 0) totalCopies += count;
+      }
+      if (totalCopies === 0) {
+        showToast("Select a letters group to give depth.");
+      }
+      return { ok: totalCopies > 0, copies: totalCopies };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.removeDepth",
+    title: "Remove Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to remove depth.");
+        return { ok: false, removed: 0 };
+      }
+      let totalRemoved = 0;
+      for (const targetId of targets) {
+        const count = removeDepth(targetId);
+        totalRemoved += count;
+      }
+      return { ok: totalRemoved > 0, removed: totalRemoved };
     },
   }));
   add(defineCommand({ id: "layer.toggleLock", title: "Lock / Unlock", category: "Layer", keybinding: "Ctrl+Shift+L", when: onSelection, run: () => void toggleLock(ids()) }));

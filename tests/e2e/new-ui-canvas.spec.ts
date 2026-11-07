@@ -720,7 +720,7 @@ test.describe("menus, moving between submenus", () => {
 });
 
 test.describe("an empty page is empty", () => {
-  test("no white page, border or size label until the page holds a layer", async ({ page }) => {
+  test("the page is never drawn: no white sheet, border or title strip, with or without layers", async ({ page }) => {
     await ready(page);
     const board = page.locator("[data-stage=artboard]");
     const look = () => board.evaluate((e) => {
@@ -742,7 +742,8 @@ test.describe("an empty page is empty", () => {
     expect(strip.size, "no strip along the top edge: one flat colour").toBe(1);
 
     await rectangle(page, 0.2, 0.3, 0.3, 0.4);
-    await expect.poll(async () => (await look()).bg).not.toBe("rgba(0, 0, 0, 0)");
+    // the page is never drawn, even with a layer on it: the canvas shows through
+    expect((await look()).bg).toBe("rgba(0, 0, 0, 0)");
     expect((await look()).label).toBe("visible");
     await expect(page.locator('[data-testid="stage-page"]')).toHaveCSS("visibility", "visible");
     await expect(page.getByText("Start with")).toHaveCount(0);
