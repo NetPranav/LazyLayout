@@ -305,3 +305,36 @@ export function applyMask(img: Pixels, mask: Mask, crop?: { x: number; y: number
   }
   return { data: out, width: box.width, height: box.height };
 }
+
+/** How a picture is drawn in its box: CSS object-fit words, or a paint's crop (fractions of the picture that show). */
+export type PictureFit = "cover" | "contain" | "fill" | "none" | "scale-down" | { x: number; y: number; w: number; h: number };
+
+/**
+ * Where a picture is really drawn inside a box of `boxW` by `boxH`, centred the way CSS centres it. A cover picture runs
+ * past the box. A piece cut from the picture only lines up with the original if it is placed by this.
+ */
+export function pictureBox(fit: PictureFit, boxW: number, boxH: number, picW: number, picH: number): { x: number; y: number; width: number; height: number } {
+  if (typeof fit === "object") {
+    const width = boxW / fit.w;
+    const height = boxH / fit.h;
+    return { x: 0 - fit.x * width, y: 0 - fit.y * height, width, height };
+  }
+  if (fit === "fill") return { x: 0, y: 0, width: boxW, height: boxH };
+  const cover = Math.max(boxW / picW, boxH / picH);
+  const contain = Math.min(boxW / picW, boxH / picH);
+  const k = fit === "cover" ? cover : fit === "contain" ? contain : fit === "none" ? 1 : Math.min(1, contain);
+  const width = picW * k;
+  const height = picH * k;
+  return { x: (boxW - width) / 2, y: (boxH - height) / 2, width, height };
+}
+
+/** The part of a picture (in its own pixels) that shows in the box, given where `pictureBox` drew it. */
+export function visibleWindow(drawn: { x: number; y: number; width: number; height: number }, boxW: number, boxH: number, picW: number, picH: number): { x: number; y: number; width: number; height: number } {
+  const sx = picW / drawn.width;
+  const sy = picH / drawn.height;
+  const x0 = Math.max(0, Math.floor(-drawn.x * sx));
+  const y0 = Math.max(0, Math.floor(-drawn.y * sy));
+  const x1 = Math.min(picW, Math.ceil((boxW - drawn.x) * sx));
+  const y1 = Math.min(picH, Math.ceil((boxH - drawn.y) * sy));
+  return { x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0) };
+}

@@ -16,3 +16,9 @@
 - In the Layers panel a drop on a row that cannot hold layers goes beside that row, several selected rows drag together, a drop below the last row goes to the bottom of the page, before and after land on the side you dropped on, a drop into a frame lands on top of what it holds, and a refused move says why.
 - A drag on a frame that holds layers now draws a selection box inside it. A click selects the frame, and a drag on a selected frame moves it.
 - A drawn shape's Layout section says Fixed, not Hug.
+
+### Depth from one photo
+- A picture in a frame's or shape's fill now has Cut out too (in the fill's settings). A piece cut from a frame's fill goes inside that frame, on top of what it holds, so anything already there passes behind it.
+- A cut piece lands exactly on its own pixels however the picture is fitted (cover, contain, stretched or cropped by a fill), and what the frame crops away is left out of it.
+- The piece is saved from the picture itself, up to 2880px, not from the 1400px copy it was worked on, so it is as sharp as the photo under it.
+- Pinch or Ctrl + wheel zooms the Cut out picture, for drawing close to an edge.

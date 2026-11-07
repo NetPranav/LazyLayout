@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { polygonMask, applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
+import { pictureBox, visibleWindow, polygonMask, applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
 
 /** A picture of `w` x `h` filled with `bg`, with a rectangle `box` of `fg` colour. */
 function picture(w: number, h: number, bg: [number, number, number], fg: [number, number, number], box: { x: number; y: number; w: number; h: number }): Pixels {
@@ -158,4 +158,23 @@ test("the border scan stays fast on a big picture", () => {
   const t0 = Date.now();
   autoSubject(img, 22);
   assert.ok(Date.now() - t0 < 4000, `took ${Date.now() - t0} ms`);
+});
+
+test("where a cut piece belongs: a cover picture is centred and runs past the box", () => {
+  const d = pictureBox("cover", 1000, 500, 800, 800);
+  assert.deepEqual(d, { x: 0, y: -250, width: 1000, height: 1000 });
+  assert.deepEqual(visibleWindow(d, 1000, 500, 800, 800), { x: 0, y: 200, width: 800, height: 400 });
+});
+test("where a cut piece belongs: a contained picture leaves bars and shows whole", () => {
+  const d = pictureBox("contain", 1000, 500, 800, 800);
+  assert.deepEqual(d, { x: 250, y: 0, width: 500, height: 500 });
+  assert.deepEqual(visibleWindow(d, 1000, 500, 800, 800), { x: 0, y: 0, width: 800, height: 800 });
+});
+test("where a cut piece belongs: a stretched picture fills the box", () => {
+  assert.deepEqual(pictureBox("fill", 1000, 500, 800, 800), { x: 0, y: 0, width: 1000, height: 500 });
+});
+test("where a cut piece belongs: a paint's crop scales up what shows", () => {
+  const d = pictureBox({ x: 0.25, y: 0, w: 0.5, h: 1 }, 400, 400, 800, 400);
+  assert.deepEqual(d, { x: -200, y: 0, width: 800, height: 400 });
+  assert.deepEqual(visibleWindow(d, 400, 400, 800, 400), { x: 200, y: 0, width: 400, height: 400 });
 });

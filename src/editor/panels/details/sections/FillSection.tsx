@@ -6,6 +6,7 @@ import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import { importFiles } from "@/core/assets/assetImport";
+import { CutoutDialog, type CutoutFill } from "../CutoutDialog";
 import { assetSrc } from "@/core/assets/useAssetUrl";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { ColorSwatch } from "../controls/ColorSwatch";
@@ -206,6 +207,14 @@ export const FillSection: React.FC<FillSectionProps> = ({
     const dx = Math.sin(a) / 2;
     const dy = -Math.cos(a) / 2;
     writeEngine(updatePaint(enginePaints, indexOf(id), (p) => (p.type === "linear" ? { ...p, from: { x: 0.5 - dx, y: 0.5 - dy }, to: { x: 0.5 + dx, y: 0.5 + dy } } : p)));
+  };
+
+  const [cuttingFill, setCuttingFill] = useState<string | null>(null);
+  /** The picture in an image fill, for Cut out: a tiled one has no one place on the page. */
+  const pictureOf = (id: string): CutoutFill | null => {
+    const paint = fillsOf(primary as string)[indexOf(id)];
+    if (paint?.type !== "image" || !paint.src || paint.mode === "tile") return null;
+    return { src: paint.src, fit: paint.mode === "fill" ? "cover" : paint.mode === "fit" ? "contain" : paint.crop };
   };
 
   /** Puts a chosen file into an image fill. */
@@ -416,10 +425,25 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 <NumberField size="sm" label="Angle" aria-label="Gradient angle" title="The gradient's direction: 0 runs up, 90 to the right, 180 down." suffix="°" value={linearAngle(enginePaints[index])} step={1} onChange={(v) => setAngle(fill.id, v)} />
               )}
               {engine && fill.type === "image" && (
+                <>
                 <label className="ll:flex ll:items-center ll:justify-center ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer">
                   Choose a picture
                   <input type="file" accept="image/*" hidden aria-label="Fill picture" onChange={(e) => { void pickImage(fill.id, e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
+                {pictureOf(fill.id) && (
+                  <button
+                    type="button"
+                    title="Cut part of this picture into its own layer on top: put a layer between the two and it goes behind that part."
+                    onClick={() => setCuttingFill(fill.id)}
+                    className="ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:cursor-pointer"
+                  >
+                    Cut out
+                  </button>
+                )}
+                {cuttingFill === fill.id && pictureOf(fill.id) && primary && (
+                  <CutoutDialog layerId={primary as string} fill={pictureOf(fill.id)!} onClose={() => setCuttingFill(null)} />
+                )}
+                </>
               )}
               <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
                 <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
