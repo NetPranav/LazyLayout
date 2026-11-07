@@ -46,6 +46,8 @@ const num = async (page: Page, label: string, v: number) => {
   await f.press("Enter");
 };
 const stageEl = (page: Page, id: string) => page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`);
+/** What the engine drew for a layer (the stage element above it is a transparent click target). */
+const drawn = (page: Page, id: string) => page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`);
 
 test.describe("Lane A issue fixes", () => {
   test("LA-012: Arrange changes what is on top, on the canvas as well as in the list", async ({ page }) => {
@@ -114,7 +116,7 @@ test.describe("Lane A issue fixes", () => {
     await page.getByRole("option", { name: "No wrap" }).click();
     const [t] = await ofKind(page, "text");
     await expect.poll(async () => (await layers(page))[t.id].properties["typography.whiteSpace"]).toBe("nowrap");
-    await expect.poll(() => stageEl(page, t.id).locator("[data-archetype=text]").evaluate((e) => getComputedStyle(e).whiteSpace)).toBe("nowrap");
+    await expect.poll(() => drawn(page, t.id).evaluate((e) => (e as HTMLElement).style.whiteSpace)).toBe("nowrap");
     await page.getByRole("combobox", { name: "Font loading" }).click();
     await page.getByRole("option", { name: "Block" }).click();
     await expect.poll(async () => (await layers(page))[t.id].properties["typography.fontLoading"]).toBe("block");
@@ -132,7 +134,7 @@ test.describe("Lane A issue fixes", () => {
     await page.getByRole("combobox", { name: "Transform origin" }).click();
     await page.getByRole("option", { name: "Top left" }).click();
     await expect(page.getByRole("combobox", { name: "Transform origin" })).toContainText("Top left");
-    await expect.poll(() => stageEl(page, r.id).evaluate((e) => getComputedStyle(e).transform)).not.toBe("none");
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform)).not.toBe("none");
     expect((await layers(page))[r.id].properties["transform.origin"]).toBe("top left");
   });
 

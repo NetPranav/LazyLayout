@@ -1,11 +1,25 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { CANVAS_CHROME_SIZES } from "./constants";
+import { useStageOriginStore } from "./stageOrigin";
 
 export interface RulersProps {
   showRulers?: boolean;
   zoom?: number;
+}
+
+/** Ticks a comfortable distance apart at this zoom, covering what is on screen. */
+function ticksFor(zoom: number, origin: number, length: number, key: "left" | "top"): Array<{ val: number; left: number; top: number }> {
+  const z = zoom > 0 ? zoom : 1;
+  const step = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000].find((s) => s * z >= 90) ?? 10000;
+  const from = Math.floor(-origin / z / step) * step;
+  const to = Math.ceil((length - origin) / z / step) * step;
+  const out: Array<{ val: number; left: number; top: number }> = [];
+  for (let v = from; v <= to && out.length < 200; v += step) {
+    const at = Math.round(origin + v * z);
+    out.push({ val: v, left: key === "left" ? at : 0, top: key === "top" ? at : 0 });
+  }
+  return out;
 }
 
 /**
@@ -16,39 +30,10 @@ export const Rulers: React.FC<RulersProps> = ({
   showRulers = true,
   zoom = 0.59,
 }) => {
-  // Generate horizontal ticks covering typical monitor widths in steps from constants
-  const horizontalTicks = useMemo(() => {
-    const ticks: { val: number; left: number }[] = [];
-    const step = CANVAS_CHROME_SIZES.rulerTickStep;
-    for (
-      let i = CANVAS_CHROME_SIZES.rulerHorizontalMin;
-      i <= CANVAS_CHROME_SIZES.rulerHorizontalMax;
-      i += step
-    ) {
-      ticks.push({
-        val: i,
-        left: Math.round((i + step) * zoom),
-      });
-    }
-    return ticks;
-  }, [zoom]);
-
-  // Generate vertical ticks covering typical canvas heights in steps from constants
-  const verticalTicks = useMemo(() => {
-    const ticks: { val: number; top: number }[] = [];
-    const step = CANVAS_CHROME_SIZES.rulerTickStep;
-    for (
-      let j = CANVAS_CHROME_SIZES.rulerVerticalMin;
-      j <= CANVAS_CHROME_SIZES.rulerVerticalMax;
-      j += step
-    ) {
-      ticks.push({
-        val: j,
-        top: Math.round(j * zoom),
-      });
-    }
-    return ticks;
-  }, [zoom]);
+  // The page's corner on screen, in the rulers' own space: the ticks follow pan and zoom, and 0 is the page's edge.
+  const origin = useStageOriginStore((o) => o.origin);
+  const horizontalTicks = useMemo(() => ticksFor(zoom, origin.x, origin.width, "left"), [zoom, origin.x, origin.width]);
+  const verticalTicks = useMemo(() => ticksFor(zoom, origin.y, origin.height, "top"), [zoom, origin.y, origin.height]);
 
   if (!showRulers) return null;
 

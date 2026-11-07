@@ -18,6 +18,24 @@ const html = (layers: Record<string, Layer>, id: string) => renderToStaticMarkup
 const layer = (archetype: Layer["archetype"], properties: Layer["properties"] = {}, extra: Partial<Layer> = {}) =>
   createLayer({ id: "l", archetype, properties, ...extra }) as Layer;
 
+describe("layerBoxStyle: design properties reach the drawn box (and so the export)", () => {
+  const box = (properties: Layer["properties"]) => {
+    const l = layer("container", properties);
+    return layerBoxStyle(l, resolveProps(l), {});
+  };
+  it("scale, skew and origin are in the transform", () => {
+    const s = box({ "transform.scale": 1.5, "transform.skewX": 10, "transform.origin": "top left" });
+    assert.match(String(s.transform), /scale\(1\.5\)|scale\(1\.5, ?1\.5\)/);
+    assert.match(String(s.transform), /skew/);
+    assert.equal(s.transformOrigin, "top left");
+  });
+  it("overflow and margins are applied", () => {
+    const s = box({ positioning: "flow", "layout.overflowX": "hidden", "layout.overflowY": "visible", "layout.marginLeft": 12 });
+    assert.equal(s.overflowX, "hidden");
+    assert.equal(s.marginLeft, 12);
+  });
+});
+
 describe("Phase 17: render definitions", () => {
   it("every archetype has a render definition, and the gallery has a case for each", () => {
     for (const id of ARCHETYPE_IDS) assert.equal(typeof RENDER_DEFINITIONS[id], "function", id);

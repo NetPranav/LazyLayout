@@ -76,6 +76,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
               width: el.width - STAGE_CONSTANTS.selectionBoxOffset * 2,
               height: el.height - STAGE_CONSTANTS.selectionBoxOffset * 2,
               border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
+              ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
             }}
           >
             {/* 8 Resize Handles around the bounding frame */}

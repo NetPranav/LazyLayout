@@ -8,7 +8,7 @@ import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
-import { EngineLayer } from "./EngineLayer";
+import { RenderLayer } from "@/core/render";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
@@ -16,24 +16,6 @@ import {
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
-
-/** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
-function designTransform(properties: Record<string, unknown>): { transform?: string; transformOrigin?: string } {
-  const n = (k: string, d: number) => (typeof properties[k] === "number" ? (properties[k] as number) : d);
-  const tx = n("transform.x", 0), ty = n("transform.y", 0);
-  const rx = n("transform.rotateX", 0), ry = n("transform.rotateY", 0), rz = n("transform.rotate", 0);
-  const s = n("transform.scale", 1), sx = n("transform.scaleX", 1) * s, sy = n("transform.scaleY", 1) * s;
-  const kx = n("transform.skewX", 0), ky = n("transform.skewY", 0);
-  const parts: string[] = [];
-  if (tx || ty) parts.push(`translate(${tx}px, ${ty}px)`);
-  if (rx) parts.push(`rotateX(${rx}deg)`);
-  if (ry) parts.push(`rotateY(${ry}deg)`);
-  if (rz) parts.push(`rotate(${rz}deg)`);
-  if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
-  if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
-  const origin = typeof properties["transform.origin"] === "string" ? (properties["transform.origin"] as string) : undefined;
-  return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
-}
 
 /**
  * The words of a text layer, edited where they sit. It is styled exactly like the drawn text (same wrapping, same overflow,
@@ -146,6 +128,8 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
       shape = <polygon points={pts} {...common} />;
       break;
     }
+    case "marquee":
+      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: "1px solid var(--ll-text-primary)", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)" }} />;
     default:
       shape = <rect x={0} y={0} width={w} height={h} {...common} />;
   }
@@ -157,8 +141,7 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
   );
 };
 
-/** The three elements of the seeded prototype page keep their prototype drawing; every other layer is drawn by the engine. */
-const PROTOTYPE_DRAWN = new Set(["headline", "button", "image"]);
+const ENGINE_CTX = { frameAtOrigin: true };
 
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
@@ -172,6 +155,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
   pan = { x: 0, y: 0 },
   elements,
   layers,
+  pageRef,
+  rootId,
   drawPreview = null,
   selectedIds,
   hoveredId,
@@ -179,6 +164,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   onHover,
   snapGuides = false,
   empty = false,
+  references,
   onAddFrame,
   onInsert,
   onAskAi,
@@ -220,12 +206,16 @@ export const Artboard: React.FC<ArtboardProps> = ({
   };
 
   const hasElements = Object.keys(elements).length > 0 && !empty;
+  // A page with nothing on it is not drawn: no white sheet, no border and no size label, only the canvas and the prompt.
+  // The element stays where it is, so drawing and zooming use the same coordinates, and the page shows as soon as it holds a layer.
+  const bare = !hasElements && !references;
 
   return (
     <div
       id={id}
       data-stage="artboard"
       data-testid="stage-artboard"
+      data-bare={bare ? "true" : undefined}
       className="ll-artboard ll:absolute ll:select-none ll:transition-shadow"
       style={{
         left: STAGE_CONSTANTS.artboardLeftPercent,
@@ -237,9 +227,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
         height: artboardHeight,
         transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoomScale})`,
         transformOrigin: "center center",
-        backgroundColor: background ?? "var(--ll-board-bg)",
-        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-board-line)`,
-        boxShadow: "var(--ll-shadow-soft)",
+        backgroundColor: bare ? "transparent" : (background ?? "var(--ll-board-bg)"),
+        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid ${bare ? "transparent" : "var(--ll-board-line)"}`,
+        boxShadow: bare ? "none" : "var(--ll-shadow-soft)",
       }}
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
@@ -261,6 +251,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           left: STAGE_CONSTANTS.sizeLabelOffsetLeft,
           top: STAGE_CONSTANTS.sizeLabelOffsetTop,
           height: STAGE_CONSTANTS.sizeLabelHeight,
+          ...(bare ? { visibility: "hidden" as const } : {}),
           paddingLeft: "var(--ll-spacing-1)",
           paddingRight: "var(--ll-spacing-1)",
         }}
@@ -315,6 +306,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           height: STAGE_CONSTANTS.artboardTitleHeight,
           fontSize: "var(--ll-text-micro-size)",
           fontWeight: "var(--ll-text-micro-weight)",
+          ...(bare ? { visibility: "hidden" as const } : {}),
         }}
       >
         {title}
@@ -348,6 +340,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
         </>
       )}
 
+      {references}
+
+      {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
+      {layers && rootId && (
+        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(bare ? { visibility: "hidden" as const } : {}) }}>
+          <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
+        </div>
+      )}
+
       {/* 4. Empty State if no elements or explicitly empty */}
       {(!hasElements || empty) && (
         <div id="es" className="ll-es es ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center">
@@ -365,8 +366,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
           const layer = layers?.[el.id];
-          const engineDrawn = !!layer && !PROTOTYPE_DRAWN.has(el.id);
-          const isSelected = selectedIds.includes(el.id) || (el.id === "headline" && selectedIds.includes("subtitle"));
+          const engineDrawn = !!layer;
+          const isSelected = selectedIds.includes(el.id);
 
           return (
             <div
@@ -392,7 +393,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...(engineDrawn && layer ? designTransform(layer.properties) : {}),
+                ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
+                ...(el.locked ? { pointerEvents: "none" as const } : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
               onDoubleClick={(e) => {
@@ -403,12 +405,18 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
               onPointerDown={(e) => {
                 if (editingText === el.id) return;
+                // where the press was, for the click that follows
+                e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(el.id) ? 1 : 0}`;
                 onStartMove?.(el.id, e);
               }}
               onMouseEnter={() => onHover(el.id)}
               onMouseLeave={() => onHover(null)}
               onClick={(e) => {
                 e.stopPropagation();
+                // the press already added it to the selection, and the click after a drag is not a choice
+                const [px, py, added] = (e.currentTarget.dataset.press ?? "").split(",").map(Number);
+                delete e.currentTarget.dataset.press;
+                if (added === 1 || Math.hypot(e.clientX - px, e.clientY - py) > 3) return;
                 onSelect(el.id, e.shiftKey);
               }}
               onContextMenu={(e) => {
@@ -423,8 +431,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 });
               }}
             >
-              {engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
-              {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
+                            {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
               {engineDrawn && layer && ["line", "arrow", "divider"].includes(layer.archetype) && (
                 <span
                   aria-hidden="true"
@@ -435,7 +442,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
                     right: -8,
                     top: -12,
                     bottom: -12,
-                    transform: typeof layer.properties["frame.rotation"] === "number" ? `rotate(${layer.properties["frame.rotation"]}deg)` : undefined,
                   }}
                 />
               )}

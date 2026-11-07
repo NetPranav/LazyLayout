@@ -19,7 +19,10 @@ import {
   tryRunCommand,
 } from "@/core/commands";
 import { transport, transportStore } from "@/core/time/transport";
-import { isTextEditingTarget } from "@/core/commands/normalize";
+import { isTextEditingTarget, normalizeShortcut } from "@/core/commands/normalize";
+import { getAllCommands, getContextKeys } from "@/core/commands";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
+import { useAgentUiStore } from "@/core/store/useAgentUiStore";
 import { listFrames } from "@/core/frames/frames";
 import { motionActions, useMotionModel } from "@/editor/motion-model";
 import { getDocument } from "@/core/store/documentState";
@@ -102,6 +105,16 @@ export interface UseEditorActionsReturn {
   // Search & Menu dispatcher
   handleSearch: () => void;
   handleMenuAction: (id: string) => void;
+}
+
+/** Whether a command currently runs for this normalized key. */
+function shortcutHasCommand(shortcut: string): boolean {
+  const ctx = getContextKeys();
+  return getAllCommands().some((c) => {
+    if (!c.keybinding) return false;
+    const keys = Array.isArray(c.keybinding) ? c.keybinding : [c.keybinding];
+    return keys.includes(shortcut) && (!c.when || c.when(ctx));
+  });
 }
 
 export function useEditorActions(
@@ -462,9 +475,11 @@ export function useEditorActions(
           break;
         }
         case "file.exportCode": {
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("antigravity:export_code"));
-          }
+          useExportUiStore.getState().open();
+          break;
+        }
+        case "file.connectAgent": {
+          useAgentUiStore.getState().open();
           break;
         }
         case "file.copyLink": {
@@ -946,6 +961,11 @@ export function useEditorActions(
       if (isTextEditingTarget(e.target)) {
         return;
       }
+      // 2. A key the command bus answers is its alone (it has its own listener): running it here too made Undo undo two
+      // steps and Duplicate make two copies. Copy and paste are the browser's own events (installClipboardEvents).
+      const shortcut = normalizeShortcut(e);
+      if (e.defaultPrevented || (shortcut && shortcutHasCommand(shortcut))) return;
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "v" || e.key.toLowerCase() === "x")) return;
 
       const key = e.key.toLowerCase();
       const isCtrl = e.ctrlKey || e.metaKey;

@@ -34,7 +34,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `shell` | done | `src/editor/shell/` (`EditorShell.tsx`), `src/editor/components/TopBar.tsx` | 38 | `DetachedPanelShell.tsx` (bridge kept); legacy editor kept at `/editor/legacy` with `LegacyStudioHeader.tsx` |
 | `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`) | 4 | Rebuilt with Nook motion engine |
 | `canvas` | done | `src/editor/shell/canvas-chrome/` (`Toolbar.tsx`, `Rulers.tsx`, `AiBox.tsx`, `InsertPanel.tsx`, `ViewOptionsPopover.tsx`, `ZoomControls.tsx`) | 20 | Rebuilt from prototype; main's vector and pen tools live in legacy at `/editor/legacy` |
-| `stage` | done | `src/editor/stage/` (`Stage.tsx`, `StageViewport.tsx`, `SelectionOverlay.tsx`, `TransformHandles.tsx`, `HoverOutline.tsx`, `SnapGuides.tsx`) | 2 | Reads/writes real document (d7df6af) |
+| `stage` | done | `src/editor/stage/` (`Stage.tsx`, `StageViewport.tsx`, `SelectionOverlay.tsx`, `TransformHandles.tsx`, `HoverOutline.tsx`, `SnapGuides.tsx`, `Artboard.tsx`, `pageMeasure.ts`) | 2 | Reads/writes real document (d7df6af); draws the real tree through the engine, with transparent hit boxes above it |
 | `runtime` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/runtime/`) | 3 | - |
 | `panels/ai` | wip | `src/editor/shell/canvas-chrome/AiBox.tsx`, `src/editor/shell/right-panel/AiChatView.tsx` | 3 | UI built from prototype; engine copilot integration pending; main's MCP agent lives in legacy |
 | `panels/assets` | wip | `src/editor/shell/left-panel/` (`AssetsSection.tsx`, `AssetTile.tsx`, `AssetImage.tsx`) | 1 | UI built in left panel; asset pipeline and store integration pending |

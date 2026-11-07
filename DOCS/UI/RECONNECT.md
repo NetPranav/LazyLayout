@@ -27,3 +27,20 @@ Measured 2026-11-06 by counting files that import each `src/core` area (`src/edi
 ## Order of work
 1. Batch 1, existing controls only: Edit/clipboard/shortcuts, Fill/Stroke/Effects paint, Layout stack/grid, Typography + fonts, Assets + Image, Insert tiles, Ctrl+K, canvas toggles.
 2. Batch 2, needs approval for new UI: pen/vector, tokens, components/variants, pages, breakpoints, export, pairing.
+
+## Status, 2026-11-07
+
+The table above is the starting measurement. Checked by hand in a visible browser and by `tests/e2e/new-ui-*.spec.ts`:
+
+| Area | Now |
+|---|---|
+| Canvas | Draws the real tree through the engine (`RenderLayer` in `Artboard.tsx`); transparent hit boxes above it, placed by measuring the drawn page (`stage/pageMeasure.ts`) |
+| Tools | Frame, Shape, Text, Image, Hand: connected. Pen and vector buttons: not in the new bar yet |
+| Selection, editing, align, arrange, clipboard, shortcuts | Connected |
+| Text, fonts | Connected (`FontSync` is mounted) |
+| Paint, effects | Connected, with gradient stops, built-in colour picker, per-side strokes, line ends |
+| Images | Upload, Assets panel, Cut out (`panels/details/CutoutDialog.tsx`) |
+| Auto layout, grid | Stack, grid, Hug, Fill, gap, padding, clip connected. Breakpoint overrides UI: not built |
+| Pages, Insert > Sections | Connected to the page on screen |
+| Export, agent pairing | Dialogs connected from the top bar and the palette |
+| Not connected yet | Theme & Tokens fields, Insert > Components (Card, Modal, Tabs), Code mode's sample Files, sample collaborators |

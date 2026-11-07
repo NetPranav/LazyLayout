@@ -38,6 +38,10 @@ export interface UsePagesDataReturn {
   onDeletePage: (pageName: string) => void;
   /** Raw pages dictionary from useProjectStore */
   rawPages: Record<string, PageDefinition>;
+  /** Which listed names are loading pages (thin rows between two pages) */
+  pageKinds: Record<string, "page" | "loading">;
+  /** The + between two pages: adds a loading page there */
+  onAddLoading: (fromName: string, toName: string) => void;
 }
 
 export interface UseLeftPanelDataOptions {
@@ -49,7 +53,8 @@ export interface UseLeftPanelDataOptions {
 
 export interface UseLeftPanelDataReturn extends LeftPanelProps {
   /** Helper to move layers within tree (calls layer.move command) */
-  onMoveLayer: (ids: string[], parentId: string | null, index?: number) => void;
+  /** Returns why the move was refused, if it was. */
+  onMoveLayer: (ids: string[], parentId: string | null, index?: number) => string | void;
   /** All document layer items before filtering */
   allLayers: LayerItem[];
 }

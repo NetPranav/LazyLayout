@@ -162,7 +162,11 @@ export const Menu: React.FC<MenuProps> = ({
   const [subMenus, setSubMenus] = useState<Record<string, SubMenuData>>({});
   const activeSubRowRef = useRef<HTMLElement | null>(null);
   const pendingSubIdRef = useRef<string | null>(null);
+  /** The row whose submenu is about to open. `activeSubRowRef` stays the row whose submenu is open until the swap happens. */
+  const pendingSubRowRef = useRef<HTMLElement | null>(null);
   const subTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Cancels the submenu open that is waiting for the next frame. Two opens in one frame would animate one surface twice. */
+  const openFrameRef = useRef<(() => void) | null>(null);
 
   // Submenu registry
   const registerSubMenu = useCallback((sub: SubMenuData) => {
@@ -217,6 +221,8 @@ export const Menu: React.FC<MenuProps> = ({
       clearTimeout(subTimerRef.current);
       subTimerRef.current = null;
     }
+    openFrameRef.current?.();
+    openFrameRef.current = null;
     setInSub(false);
     inSubRef.current = false;
     const parentRow = activeSubRowRef.current;
@@ -245,6 +251,10 @@ export const Menu: React.FC<MenuProps> = ({
 
     const live = sbm.classList.contains("ll-open");
     if (activeSubRowRef.current === rowEl && live) return;
+
+    // A submenu still waiting for its frame gives way to this one
+    openFrameRef.current?.();
+    openFrameRef.current = null;
 
     // A new or swapped submenu starts without a highlight left over from the previous one
     hlHide(sbm);
@@ -282,6 +292,7 @@ export const Menu: React.FC<MenuProps> = ({
 
       const unreg = defaultHost.register(() => {
         unreg();
+        openFrameRef.current = null;
         if (!sbm || !ss) return;
         const m = ss.measure();
         const g = placeSub(mm, rowEl, m.w, m.h);
@@ -313,6 +324,7 @@ export const Menu: React.FC<MenuProps> = ({
         ss.settleOrRun();
         swapIn(ss.lay, dir);
       });
+      openFrameRef.current = unreg;
       return;
     }
 
@@ -323,6 +335,7 @@ export const Menu: React.FC<MenuProps> = ({
 
     const unreg = defaultHost.register(() => {
       unreg();
+      openFrameRef.current = null;
       if (!sbm || !ss) return;
       const m = ss.measure();
       const g = placeSub(mm, rowEl, m.w, m.h);
@@ -344,6 +357,7 @@ export const Menu: React.FC<MenuProps> = ({
         },
       });
     });
+    openFrameRef.current = unreg;
   }, []);
 
   // Hover row logic with safe triangle and delays: open 80ms, switch 60ms, close 200ms
@@ -372,7 +386,7 @@ export const Menu: React.FC<MenuProps> = ({
       const isTest = typeof window !== "undefined" && !!(window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__;
 
       if (subId) {
-        if (subTimerRef.current && pendingSubIdRef.current === subId && activeSubRowRef.current === rowEl) {
+        if (subTimerRef.current && pendingSubIdRef.current === subId && pendingSubRowRef.current === rowEl) {
           return;
         }
         if (subTimerRef.current) {
@@ -380,7 +394,7 @@ export const Menu: React.FC<MenuProps> = ({
           subTimerRef.current = null;
         }
         pendingSubIdRef.current = subId;
-        activeSubRowRef.current = rowEl;
+        pendingSubRowRef.current = rowEl;
         if (isTest) {
           pendingSubIdRef.current = null;
           openSub(rowEl, subId);
