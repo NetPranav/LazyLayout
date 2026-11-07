@@ -21,6 +21,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import {
   useMotionModel,
   motionActions,
@@ -73,6 +74,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const tool = useMotionModel((s) => s.tool);
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
+  const recordMode = useTimelineUiStore((s) => s.recordMode);
 
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
@@ -205,6 +207,26 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           }`}
         >
           <Icon icon={loop === 2 ? RotateCcw : Repeat} size={14} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => useTimelineUiStore.getState().setRecordMode(!recordMode)}
+          aria-pressed={recordMode}
+          aria-label="Auto-key record mode"
+          data-testid="timeline-record-button"
+          title={recordMode ? "Auto-key record mode (ON) - changes create keyframes" : "Auto-key record mode (OFF)"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            recordMode
+              ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <div
+            className={`ll:w-2.5 ll:h-2.5 ll:rounded-full ${
+              recordMode ? "ll:bg-control-primary-fg" : "ll:bg-current"
+            }`}
+          />
         </button>
       </div>
 

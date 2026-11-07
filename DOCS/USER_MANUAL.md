@@ -325,7 +325,12 @@ Follow these exact steps to create a smooth entrance animation for a heading:
 6. **Adjust Timing:** Want the animation faster or slower? Simply click and drag the second keyframe diamond left (faster) or right (slower).
 
 > [!TIP]
-> **Using Auto-Key:** Click the **● Auto-Key** button in the timeline toolbar. When Auto-Key is active, simply scrub the playhead to any moment in time and move, resize, or restyle any element on the stage—LazyLayout will automatically generate the corresponding keyframes for you! Remember to turn Auto-Key off when finished.
+> **Using Auto-Key & Stage Value HUD:** Click the **● Record** button in the timeline transport toolbar. When Auto-Key is active, simply scrub the playhead to any moment in time and move, resize, or restyle any element on the stage—LazyLayout will automatically generate the corresponding keyframes for you at that exact playhead timestamp!
+>
+> While scrubbing the playhead or transforming layers on stage, a floating **Value HUD** automatically appears beside the active layer, displaying live real-time metrics:
+> - **X & Y:** Current position in canvas pixels.
+> - **R:** Rotation in degrees (e.g. `0°`, `45°`).
+> - **O:** Opacity percentage (`0%` to `100%`).
 
 ---
 

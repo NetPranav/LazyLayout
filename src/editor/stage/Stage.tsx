@@ -358,7 +358,7 @@ export const Stage: React.FC<StageProps> = ({
   }, []);
 
   // Snapping and Transform Gestures
-  const { snapLines, spacingMarks, startMove, startResize } = useStageTransform({
+  const { snapLines, spacingMarks, startMove, startResize, isGesturing } = useStageTransform({
     elements,
     selectedIds,
     artboardWidth: presetDef.artboardWidth,
@@ -590,6 +590,7 @@ export const Stage: React.FC<StageProps> = ({
         spacingMarks={spacingMarks}
         onStartMove={startMove}
         onStartResize={startResize}
+        isGesturing={isGesturing}
       />
     </div>
   );

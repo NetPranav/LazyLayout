@@ -12,6 +12,7 @@ import {
   valueAt,
 } from "./model";
 import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams } from "./types";
+import { transport } from "@/core/time/transport";
 
 export interface MotionState {
   comp: Composition;
@@ -102,6 +103,11 @@ export const motionActions = {
       const clamped = clampN(t, 0, s.comp.dur);
       const intFrame = clampN(Math.round(clamped), 0, s.comp.dur);
       const updateReadout = options?.updateReadout ?? !s.playing;
+      try {
+        transport.seek(intFrame / (s.fps || 60));
+      } catch {
+        // Fallback for tests or standalone
+      }
       return {
         playhead: intFrame,
         subhead: clamped,

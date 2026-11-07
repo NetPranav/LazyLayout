@@ -149,4 +149,6 @@ export interface ArtboardProps {
   spacingMarks?: SpacingMark[];
   onStartMove?: (elementId: string, e: React.PointerEvent) => void;
   onStartResize?: (handle: ResizeHandleName, e: React.PointerEvent) => void;
+  isGesturing?: boolean;
+  showValueHud?: boolean;
 }

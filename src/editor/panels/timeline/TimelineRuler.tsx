@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { Icon } from "@/editor/components/Icon";
 import { X as CloseIcon } from "lucide-react";
 import {
@@ -88,6 +89,8 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     if ((e.target as HTMLElement).closest(".wah") || (e.target as HTMLElement).closest(".mk")) return;
     e.preventDefault();
 
+    useTimelineUiStore.getState().setIsScrubbing(true);
+
     const getFrame = (clientX: number) => {
       const rect = rulerRef.current?.getBoundingClientRect();
       if (!rect) return 0;
@@ -108,12 +111,15 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     };
 
     const onPointerUp = () => {
+      useTimelineUiStore.getState().setIsScrubbing(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   };
 
   // Work area handle drag
