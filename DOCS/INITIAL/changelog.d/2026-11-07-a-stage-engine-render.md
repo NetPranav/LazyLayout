@@ -39,3 +39,6 @@
 ### Drag-select reaches everything
 - A drag across the canvas now selects every element it touches, at any depth (the shapes and text inside frames too), instead of only the top-level layers. A frame is selected only when none of its contents are touched, so a layer and its parent are never both selected. A drag that starts inside a frame still picks only what is in that frame.
 - The Layers list unfolds the frames that hold any selected layer, not only the last one, so a multi-selection from the canvas shows every row selected.
+
+### Drag to select in the Layers panel
+- Pressing on empty space in the Layers list, or on a row that is not selected, and dragging selects the rows the drag sweeps over, with a box drawn over them and the list scrolling at its edges. Press Delete to remove them. A click still selects one row, and dragging a row that is already selected still reorders (so to reorder a layer, select it first).

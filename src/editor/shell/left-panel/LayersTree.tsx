@@ -123,6 +123,10 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   // Drag and drop state
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
+  /** A drag that selects: started on empty space in the list or on a row that is not selected (a selected row drags to reorder). */
+  const bandRef = useRef<{ startY: number; active: boolean; lastKey: string } | null>(null);
+  const [band, setBand] = useState<{ top: number; height: number } | null>(null);
+  const bandJustEnded = useRef(false);
   useEffect(() => {
     dragStateRef.current = dragState;
   }, [dragState]);
@@ -206,6 +210,56 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     },
     [visibleNodes]
   );
+
+  // Dragging across rows selects them (the rows the dragged box touches), so a run of layers can be picked with the mouse and deleted.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const b = bandRef.current;
+      const tree = treeRef.current;
+      if (!b || !tree) return;
+      if (!b.active) {
+        if (Math.abs(e.clientY - b.startY) < 4) return;
+        b.active = true;
+      }
+      const box = tree.getBoundingClientRect();
+      // near the top or bottom edge the list scrolls under the drag
+      if (e.clientY < box.top + 24) tree.scrollTop -= 12;
+      else if (e.clientY > box.bottom - 24) tree.scrollTop += 12;
+      const y0 = Math.min(b.startY, e.clientY);
+      const y1 = Math.max(b.startY, e.clientY);
+      setBand({ top: y0 - box.top + tree.scrollTop, height: y1 - y0 });
+      const hits = [...tree.querySelectorAll<HTMLElement>(".row[data-sel]")]
+        .filter((row) => {
+          const r = row.getBoundingClientRect();
+          return r.bottom > y0 && r.top < y1;
+        })
+        .map((row) => row.getAttribute("data-sel") as string);
+      if (hits.length === 0) return;
+      const key = `${hits[0]}|${hits[hits.length - 1]}`;
+      if (key === b.lastKey) return;
+      b.lastKey = key;
+      onSelect?.(hits[0]);
+      if (hits.length > 1) onSelect?.(hits[hits.length - 1], { shiftKey: true } as React.MouseEvent);
+    };
+    const onUp = () => {
+      const b = bandRef.current;
+      bandRef.current = null;
+      if (!b) return;
+      setBand(null);
+      if (b.active) {
+        bandJustEnded.current = true; // the click that follows a drag must not pick one row again
+        window.setTimeout(() => {
+          bandJustEnded.current = false; // (no click follows when the drag ends on another row)
+        }, 60);
+      }
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [onSelect]);
 
   /** A row that is part of the selection drags the whole selection. */
   const movingIds = useCallback((id: string): string[] => (selectedIds.includes(id) ? [...selectedIds] : [id]), [selectedIds]);
@@ -317,8 +371,19 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Layers"
       onKeyDown={handleTreeKeyDown}
+      onPointerDown={(e) => {
+        // empty space in the list: a drag from here selects the rows it touches
+        if (e.button === 0 && e.target === e.currentTarget) bandRef.current = { startY: e.clientY, active: false, lastKey: "" };
+      }}
       className="zbody ll-zbody ll:relative ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:outline-none"
     >
+      {band && (
+        <div
+          aria-hidden="true"
+          data-testid="layers-band"
+          style={{ position: "absolute", left: 0, right: 0, top: band.top, height: band.height, zIndex: 5, pointerEvents: "none", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--ll-text-primary) 45%, transparent)" }}
+        />
+      )}
       {visibleNodes.length > 0 ? (
         visibleNodes.map((node) => {
           const isSelected = selectedSet.has(node.id);
@@ -364,6 +429,11 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                     if (e.button !== 0) return;
                     const target = e.target as HTMLElement;
                     if (target.closest(".mb, .act, input, button:not([role=treeitem])")) return;
+                    if (!isSelected) {
+                      // a row that is not selected: dragging from it selects the rows it sweeps over
+                      bandRef.current = { startY: e.clientY, active: false, lastKey: "" };
+                      return;
+                    }
                     setDragState({
                       id: node.id,
                       startY: e.clientY,
@@ -373,6 +443,10 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                     });
                   }}
                   onClick={(e) => {
+                    if (bandJustEnded.current) {
+                      bandJustEnded.current = false;
+                      return;
+                    }
                     onSelect?.(node.id, e);
                   }}
                   onDoubleClick={(e) => {

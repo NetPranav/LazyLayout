@@ -404,6 +404,68 @@ test.describe("what goes under what", () => {
   });
 });
 
+test.describe("selecting in the Layers panel by dragging", () => {
+  const row = (page: Page, id: string) => page.locator(`#p-layers .row[data-sel="${id}"]`);
+  const chosenRows = (page: Page) => page.evaluate(() => [...document.querySelectorAll('#p-layers .row[aria-selected="true"]')].map((e) => e.getAttribute("data-sel")));
+  const sweep = async (page: Page, from: { x: number; y: number }, to: { x: number; y: number }) => {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x, from.y + (to.y > from.y ? 6 : -6), { steps: 2 });
+    await page.mouse.move(to.x, to.y, { steps: 6 });
+    await page.mouse.up();
+  };
+
+  async function fourLayers(page: Page) {
+    await ready(page);
+    const ids: string[] = [];
+    for (const [x1, y1] of [[0.1, 0.1], [0.3, 0.1], [0.5, 0.1], [0.7, 0.1]] as const) ids.push((await rectangle(page, x1, y1, x1 + 0.1, y1 + 0.1)).id);
+    // the list runs front to back: the last drawn is on top
+    return ids.reverse();
+  }
+
+  test("dragging down across rows selects them, and Delete removes them", async ({ page }) => {
+    const [d, c, b, a] = await fourLayers(page);
+    await page.locator("[data-stage=workspace]").click({ position: { x: 8, y: 300 } });
+    const first = (await row(page, d).boundingBox())!;
+    const third = (await row(page, b).boundingBox())!;
+    await sweep(page, { x: first.x + 100, y: first.y + first.height / 2 }, { x: third.x + 100, y: third.y + third.height / 2 });
+    await expect.poll(async () => (await chosenRows(page)).sort()).toEqual([d, c, b].sort());
+    await expect(page.getByTestId("layers-band"), "the box is gone after the drag").toHaveCount(0);
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => Object.keys(await layers(page)).filter((id) => [d, c, b].includes(id)).length).toBe(0);
+    expect((await layers(page))[a], "the one it did not touch is still there").toBeTruthy();
+    await expect(row(page, a)).toHaveCount(1);
+  });
+
+  test("a drag up from empty space below the rows selects the rows it reaches", async ({ page }) => {
+    const [d, c, b, a] = await fourLayers(page);
+    await page.locator("[data-stage=workspace]").click({ position: { x: 8, y: 300 } });
+    const tree = (await page.locator("#p-layers").boundingBox())!;
+    const last = (await row(page, a).boundingBox())!;
+    const second = (await row(page, c).boundingBox())!;
+    await sweep(page, { x: tree.x + 120, y: last.y + last.height + 40 }, { x: tree.x + 120, y: second.y + second.height / 2 });
+    await expect.poll(async () => (await chosenRows(page)).sort()).toEqual([c, b, a].sort());
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => Object.keys(await layers(page)).filter((id) => [c, b, a].includes(id)).length).toBe(0);
+    expect((await layers(page))[d]).toBeTruthy();
+  });
+
+  test("a click still selects one row, and dragging a selected row still reorders", async ({ page }) => {
+    const [d, c, b, a] = await fourLayers(page);
+    await row(page, c).click();
+    await expect.poll(() => chosenRows(page)).toEqual([c]);
+    // c is selected: dragging it moves it (below a, the last row), it does not select a range
+    const from = (await row(page, c).boundingBox())!;
+    const to = (await row(page, a).boundingBox())!;
+    await sweep(page, { x: from.x + 100, y: from.y + from.height / 2 }, { x: to.x + 100, y: to.y + to.height * 0.9 });
+    const parent = (await layers(page))[c].parentId!;
+    await expect.poll(async () => (await layers(page))[parent].children.indexOf(c), "c went behind a").toBeLessThan((await layers(page))[parent].children.indexOf(a));
+    expect(await chosenRows(page)).toEqual([c]);
+    const now = await layers(page);
+    expect(Boolean(now[d] && now[b]), "nothing was selected or removed besides the move").toBe(true);
+  });
+});
+
 test.describe("saved projects", () => {
   test("a current project is left as it is: a sample layer the designer put in flow stays in flow", async ({ page }) => {
     await ready(page, { empty: false });
