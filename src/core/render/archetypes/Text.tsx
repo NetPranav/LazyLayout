@@ -30,11 +30,13 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const sizing = resolved.str("text.sizing", "fixed");
   const box = layerBoxStyle(layer, resolved, ctx, { shadow: "none" }); // text has text-shadow, not a box shadow
   const textShadow = textShadowCss(parseShadows(resolved.get("paint.shadows")));
-  if (sizing === "autoWidth") {
-    delete box.width;
-    delete box.height;
-  } else if (sizing === "autoHeight") {
-    delete box.height;
+  if (!ctx.inMeshTile) {
+    if (sizing === "autoWidth") {
+      delete box.width;
+      delete box.height;
+    } else if (sizing === "autoHeight") {
+      delete box.height;
+    }
   }
   // FigCraft port F8: text that follows a path is drawn as SVG
   const textPath = parseTextPath(resolved.get("typography.textPath"));
@@ -50,8 +52,8 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   return (
     <div
       ref={nodeRef}
-      data-element-id={layer.id}
-      data-archetype="text"
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : "text"}
       style={{
         ...box,
         margin: 0,

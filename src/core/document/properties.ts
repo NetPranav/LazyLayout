@@ -236,6 +236,8 @@ const DEFS = {
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
+  /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */
+  "transform.mesh": str("", null, "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */

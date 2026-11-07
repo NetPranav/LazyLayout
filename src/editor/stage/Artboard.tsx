@@ -9,6 +9,7 @@ import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextM
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
+import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { RenderLayer } from "@/core/render";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
@@ -567,6 +568,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* Corner pin: handles and a grid on the surface a pinned layer lies on */}
       <CornerPinOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
+
+      {/* Warp mesh: control points and grid on the warped surface */}
+      <WarpMeshOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

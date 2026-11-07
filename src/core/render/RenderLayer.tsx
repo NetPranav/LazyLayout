@@ -1,10 +1,13 @@
 import React, { useMemo } from "react";
 import type { Layer } from "../document/schema";
+import { getLayerGeometry } from "../document/properties";
+import { isMeshConvex, meshTiles, parseMesh } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
 import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
 import { EffectDefs, effectEntries } from "./effectsRender";
+import { layerBoxStyle } from "./geometry";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -69,11 +72,72 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   if (!layer || !childIds) return null;
 
   const resolved = resolveProps(layer);
+  const mesh = parseMesh(resolved.get("transform.mesh"));
+  const g = getLayerGeometry(layer);
+  const isMeshed = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0 && !ctx.inMeshTile;
+
   const Definition = RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
   const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
   const reverseZ = resolved.bool("layout.reverseZ", false);
+
+  if (isMeshed) {
+    const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [g.frame.x, g.frame.y]);
+    const outerBox = layerBoxStyle(layer, resolved, ctx, { shadow: "none" });
+    delete outerBox.transform;
+    delete outerBox.transformOrigin;
+    const tileCtx: RenderContext = { ...(ctx.layers ? ctx : { ...ctx, layers }), inMeshTile: true };
+    const numCols = mesh.cols - 1;
+    const numRows = mesh.rows - 1;
+
+    return (
+      <div
+        data-element-id={layer.id}
+        data-archetype={layer.archetype}
+        data-mesh-warped="true"
+        style={{
+          ...outerBox,
+          overflow: "visible",
+        }}
+      >
+        {tiles.map((tile) => {
+          const [srcX0, srcY0, srcW, srcH] = tile.srcRect;
+          const x0 = tile.col > 0 ? Math.max(0, srcX0 - 0.5) : srcX0;
+          const y0 = tile.row > 0 ? Math.max(0, srcY0 - 0.5) : srcY0;
+          const x1 = tile.col < numCols - 1 ? Math.min(g.frame.width, srcX0 + srcW + 0.5) : srcX0 + srcW;
+          const y1 = tile.row < numRows - 1 ? Math.min(g.frame.height, srcY0 + srcH + 0.5) : srcY0 + srcH;
+
+          return (
+            <div
+              key={`mesh-tile-${tile.col}-${tile.row}`}
+              data-mesh-tile="true"
+              data-tile-col={tile.col}
+              data-tile-row={tile.row}
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                width: g.frame.width,
+                height: g.frame.height,
+                clipPath: `polygon(${x0}px ${y0}px, ${x1}px ${y0}px, ${x1}px ${y1}px, ${x0}px ${y1}px)`,
+                transform: tile.matrix3d,
+                transformOrigin: "0 0",
+                pointerEvents: "none",
+              }}
+            >
+              <Definition layer={layer} resolved={resolved} ctx={tileCtx}>
+                {childIds.map((childId) => (
+                  <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
+                ))}
+              </Definition>
+            </div>
+          );
+        })}
+        {(root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />}
+      </div>
+    );
+  }
 
   return (
     <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>

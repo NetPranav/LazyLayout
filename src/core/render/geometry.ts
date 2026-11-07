@@ -4,6 +4,7 @@ import { getLayerGeometry } from "../document/properties";
 import { boxShadowCss, parseShadows } from "../paint/paints";
 import { blurOf, effectFilterId, glassCss, maxRadius, needsFilter, parseEffects } from "../paint/effects";
 import { isConvex, parsePin, pinMatrix3d, type Quad } from "../geometry/cornerPin";
+import { isMeshConvex, parseMesh } from "../geometry/meshWarp";
 import type { RenderContext, ResolvedProps } from "./types";
 
 /** Largest frame dimension the renderer will draw; a larger stored value is clamped. */
@@ -38,7 +39,11 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   const style: CSSProperties = { boxSizing: "border-box" };
   const px = (n: number, unit: string) => `${Math.min(MAX_FRAME_PX, Math.max(0, n))}${unit}`;
 
-  if (g.positioning === "absolute") {
+  if (ctx.inMeshTile) {
+    style.position = "absolute";
+    style.left = 0;
+    style.top = 0;
+  } else if (g.positioning === "absolute") {
     style.position = "absolute";
     const atOrigin = ctx.frameAtOrigin === true && layer.parentId === null;
     style.left = atOrigin ? 0 : g.frame.x;
@@ -156,15 +161,24 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     const rest = designed.split(" ").filter((t) => !t.startsWith("rotateX") && !t.startsWith("rotateY"));
     style.transform = [`perspective(${perspective}px)`, ...tilt, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
   } else if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
-  // Corner pin: the layer's corners are dragged onto a surface, and it is drawn in perspective to fit it
-  const pin = parsePin(resolved.get("transform.pin"));
-  if (pin && g.positioning === "absolute" && g.frame.width > 0 && g.frame.height > 0 && isConvex(pin)) {
-    const relative = pin.map(([x, y]) => [x - g.frame.x, y - g.frame.y]) as Quad;
-    style.transform = pinMatrix3d(g.frame.width, g.frame.height, relative);
-    style.transformOrigin = "0 0";
+  // Precedence: transform.mesh > transform.pin > perspective / rotation
+  const mesh = parseMesh(resolved.get("transform.mesh"));
+  const hasMesh = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0;
+  if (hasMesh || ctx.inMeshTile) {
+    // Warp mesh takes precedence: outer layer or tile content carries no pin/perspective transform
+    delete style.transform;
+    delete style.transformOrigin;
+  } else {
+    // Corner pin: the layer's corners are dragged onto a surface, and it is drawn in perspective to fit it
+    const pin = parsePin(resolved.get("transform.pin"));
+    if (pin && g.positioning === "absolute" && g.frame.width > 0 && g.frame.height > 0 && isConvex(pin)) {
+      const relative = pin.map(([x, y]) => [x - g.frame.x, y - g.frame.y]) as Quad;
+      style.transform = pinMatrix3d(g.frame.width, g.frame.height, relative);
+      style.transformOrigin = "0 0";
+    }
   }
   const origin = resolved.get("transform.origin");
-  if (typeof origin === "string" && origin !== "center" && style.transform && !pin) style.transformOrigin = origin;
+  if (typeof origin === "string" && origin !== "center" && style.transform && !hasMesh && !ctx.inMeshTile) style.transformOrigin = origin;
   const opacity = resolved.get("appearance.opacity");
   if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) style.opacity = opacity;
   // Effects (Phase 35): drop and inner shadows (a shape draws its own, inside its SVG), layer blur and background blur.

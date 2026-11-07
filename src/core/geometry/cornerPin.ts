@@ -18,7 +18,7 @@ export function parsePin(text: unknown): Quad | null {
 export const formatPin = (q: Quad): string => q.map(([x, y]) => `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`).join(",");
 
 /** The projective map of the unit square onto `q` (Heckbert): x = (a u + b v + c) / (g u + h v + 1), y = (d u + e v + f) / (g u + h v + 1). */
-function squareToQuad(q: Quad) {
+export function squareToQuad(q: Quad) {
   const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = q;
   const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3;
   const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
