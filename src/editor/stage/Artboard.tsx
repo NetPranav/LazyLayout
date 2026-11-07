@@ -205,12 +205,16 @@ export const Artboard: React.FC<ArtboardProps> = ({
   };
 
   const hasElements = Object.keys(elements).length > 0 && !empty;
+  // A page with nothing on it is not drawn: no white sheet, no border and no size label, only the canvas and the prompt.
+  // The element stays where it is, so drawing and zooming use the same coordinates, and the page shows as soon as it holds a layer.
+  const bare = !hasElements;
 
   return (
     <div
       id={id}
       data-stage="artboard"
       data-testid="stage-artboard"
+      data-bare={bare ? "true" : undefined}
       className="ll-artboard ll:absolute ll:select-none ll:transition-shadow"
       style={{
         left: STAGE_CONSTANTS.artboardLeftPercent,
@@ -222,9 +226,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
         height: artboardHeight,
         transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoomScale})`,
         transformOrigin: "center center",
-        backgroundColor: background ?? "var(--ll-board-bg)",
-        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-board-line)`,
-        boxShadow: "var(--ll-shadow-soft)",
+        backgroundColor: bare ? "transparent" : (background ?? "var(--ll-board-bg)"),
+        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid ${bare ? "transparent" : "var(--ll-board-line)"}`,
+        boxShadow: bare ? "none" : "var(--ll-shadow-soft)",
       }}
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
@@ -246,6 +250,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           left: STAGE_CONSTANTS.sizeLabelOffsetLeft,
           top: STAGE_CONSTANTS.sizeLabelOffsetTop,
           height: STAGE_CONSTANTS.sizeLabelHeight,
+          ...(bare ? { visibility: "hidden" as const } : {}),
           paddingLeft: "var(--ll-spacing-1)",
           paddingRight: "var(--ll-spacing-1)",
         }}
@@ -300,6 +305,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           height: STAGE_CONSTANTS.artboardTitleHeight,
           fontSize: "var(--ll-text-micro-size)",
           fontWeight: "var(--ll-text-micro-weight)",
+          ...(bare ? { visibility: "hidden" as const } : {}),
         }}
       >
         {title}
@@ -335,7 +341,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
-        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(bare ? { visibility: "hidden" as const } : {}) }}>
           <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
         </div>
       )}

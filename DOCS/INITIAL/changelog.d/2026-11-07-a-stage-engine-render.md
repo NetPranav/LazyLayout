@@ -26,3 +26,6 @@
 ### Submenus
 - A submenu (Layer, Arrange, More) no longer opens as a narrow empty sliver. A second hover before the first open had finished made the menu read its own half-animated width as its real one and animate toward 16px.
 - Moving from one row with a submenu to another now swaps the submenu to that row's items, instead of leaving the first row's items showing.
+
+### An empty page is empty
+- A page with no layers draws nothing: no white sheet, border, shadow, "Desktop · 1440" label or title strip, only the canvas and the "Start with" prompt. The page appears as soon as it holds a layer, and goes again when the last one is removed. Drawing and zooming use the same coordinates throughout.

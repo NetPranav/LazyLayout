@@ -5,6 +5,7 @@
  * rewrite touched: marquee, Shift-click and Alt-drag.
  */
 import path from "node:path";
+import { PNG } from "pngjs";
 import { test, expect, type Page } from "@playwright/test";
 import { openEditor, waitSaved } from "./support/editor";
 
@@ -485,5 +486,41 @@ test.describe("menus, moving between submenus", () => {
       if (first) await expect(sub.getByRole("menuitem").first()).toContainText(first);
       await expect.poll(async () => Math.round((await sub.boundingBox())?.width ?? 0)).toBeGreaterThan(200);
     }
+  });
+});
+
+test.describe("an empty page is empty", () => {
+  test("no white page, border or size label until the page holds a layer", async ({ page }) => {
+    await ready(page);
+    const board = page.locator("[data-stage=artboard]");
+    const look = () => board.evaluate((e) => {
+      const cs = getComputedStyle(e);
+      const label = document.getElementById("albl");
+      return { bg: cs.backgroundColor, shadow: cs.boxShadow, border: cs.borderTopColor, label: label ? getComputedStyle(label).visibility : "none" };
+    });
+    await expect.poll(look, "nothing drawn for an empty page").toMatchObject({ bg: "rgba(0, 0, 0, 0)", shadow: "none", label: "hidden" });
+    await expect(page.getByText("Start with")).toBeVisible();
+    await expect(board, "it is still there to draw on").toBeVisible();
+    // what the engine draws for the page (its own white fill) is hidden too: no white pixel where the page is
+    await expect.poll(() => page.locator('[data-testid="stage-page"]').evaluate((e) => getComputedStyle(e).visibility)).toBe("hidden");
+    const shot = PNG.sync.read(await page.locator("[data-stage=artboard]").screenshot());
+    const white = [...Array(shot.width * shot.height).keys()].filter((i) => shot.data[i * 4] > 250 && shot.data[i * 4 + 1] > 250 && shot.data[i * 4 + 2] > 250).length;
+    expect(white / (shot.width * shot.height), "the canvas shows through where the page would be").toBeLessThan(0.02);
+    const grey = (x: number, y: number) => shot.data.slice((y * shot.width + x) * 4, (y * shot.width + x) * 4 + 3).join(",");
+    const strip = new Set<string>();
+    for (let x = 4; x < shot.width - 4; x += 40) strip.add(grey(x, 3)); // where the title strip sat, along the top edge
+    expect(strip.size, "no strip along the top edge: one flat colour").toBe(1);
+
+    await rectangle(page, 0.2, 0.3, 0.3, 0.4);
+    await expect.poll(async () => (await look()).bg).not.toBe("rgba(0, 0, 0, 0)");
+    expect((await look()).label).toBe("visible");
+    await expect(page.locator('[data-testid="stage-page"]')).toHaveCSS("visibility", "visible");
+    await expect(page.getByText("Start with")).toHaveCount(0);
+
+    // taking the last layer away empties it again
+    await page.locator("[data-stage=artboard]").hover();
+    await page.keyboard.press("Control+a");
+    await page.keyboard.press("Delete");
+    await expect.poll(async () => (await look()).bg).toBe("rgba(0, 0, 0, 0)");
   });
 });
