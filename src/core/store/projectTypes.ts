@@ -45,6 +45,13 @@ export interface PageDefinition {
   layoutId?: string;
   isCustom404?: boolean;
   order?: number;
+  /**
+   * `"loading"`: not a route but the screen shown while the page change next to it happens. It is listed between the two
+   * pages it sits between, and is exported as the destination route's `loading.tsx`. Absent or `"page"`: an ordinary page.
+   */
+  kind?: "page" | "loading";
+  /** For a loading page: the pages shown beside it while designing it (any page, the same one twice too), and the one it leads to. */
+  transition?: { from: string | null; to: string | null };
 }
 
 export interface ProjectTargetConfig {

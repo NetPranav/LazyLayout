@@ -142,6 +142,8 @@ export interface ArtboardProps {
   drawPreview?: DrawPreview | null;
   snapGuides?: boolean;
   empty?: boolean;
+  /** Drawn beside the page (the reference pages of a loading page). The page is shown even when it is empty. */
+  references?: React.ReactNode;
   onAddFrame?: () => void;
   onInsert?: () => void;
   onAskAi?: () => void;

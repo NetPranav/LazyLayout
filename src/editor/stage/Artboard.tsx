@@ -164,6 +164,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   onHover,
   snapGuides = false,
   empty = false,
+  references,
   onAddFrame,
   onInsert,
   onAskAi,
@@ -207,7 +208,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const hasElements = Object.keys(elements).length > 0 && !empty;
   // A page with nothing on it is not drawn: no white sheet, no border and no size label, only the canvas and the prompt.
   // The element stays where it is, so drawing and zooming use the same coordinates, and the page shows as soon as it holds a layer.
-  const bare = !hasElements;
+  const bare = !hasElements && !references;
 
   return (
     <div
@@ -338,6 +339,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
           />
         </>
       )}
+
+      {references}
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (

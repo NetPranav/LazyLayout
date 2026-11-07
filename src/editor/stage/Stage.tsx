@@ -9,6 +9,8 @@ import { clampZoom } from "@/core/viewport/camera";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
+import { TransitionReferences, TRANSITION_GAP } from "./TransitionReferences";
+import { isLoadingPage } from "@/core/pages/loadingPages";
 import { useStageTransform } from "./useStageTransform";
 import {
   STAGE_CONSTANTS,
@@ -315,6 +317,24 @@ export const Stage: React.FC<StageProps> = ({
     onElementChange: handleElementChange,
     onSelect: handleSelect,
   });
+
+  // A loading page shows the page it comes from and the one it leads to beside it, so the view zooms out to hold all three.
+  const activePageDef = useProjectStore((p) => p.pages[p.activePageId]);
+  const allPages = useProjectStore((p) => p.pages);
+  const onLoadingPage = isLoadingPage(activePageDef);
+  const wasLoadingPage = useRef(false);
+  const pageW = presetDef.artboardWidth;
+  const pageH = presetDef.artboardHeight;
+  useEffect(() => {
+    const camera = useCameraStore.getState();
+    if (onLoadingPage) {
+      wasLoadingPage.current = true;
+      camera.fitToRect({ x: -(pageW + TRANSITION_GAP), y: 0, width: 3 * pageW + 2 * TRANSITION_GAP, height: pageH }, { padding: 64, maxZoom: 1, bottomInset: 56 });
+    } else if (wasLoadingPage.current) {
+      wasLoadingPage.current = false;
+      camera.fitToRect({ x: 0, y: 0, width: pageW, height: pageH }, { padding: 48, maxZoom: 1, bottomInset: 56 });
+    }
+  }, [onLoadingPage, activePageDef?.id, pageW, pageH]);
 
   // Report the stage size to the camera store so fit, zoom to selection and the other camera actions know the viewport.
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -625,6 +645,11 @@ export const Stage: React.FC<StageProps> = ({
         activeTool={activeTool}
         snapGuides={snapGuides && isGesturing}
         empty={empty}
+        references={
+          onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
+            <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
+          ) : undefined
+        }
         onAddFrame={onAddFrame}
         onInsert={onInsert}
         onAskAi={onAskAi}

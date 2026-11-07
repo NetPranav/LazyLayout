@@ -38,6 +38,10 @@ export interface UsePagesDataReturn {
   onDeletePage: (pageName: string) => void;
   /** Raw pages dictionary from useProjectStore */
   rawPages: Record<string, PageDefinition>;
+  /** Which listed names are loading pages (thin rows between two pages) */
+  pageKinds: Record<string, "page" | "loading">;
+  /** The + between two pages: adds a loading page there */
+  onAddLoading: (fromName: string, toName: string) => void;
 }
 
 export interface UseLeftPanelDataOptions {

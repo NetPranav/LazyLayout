@@ -29,3 +29,8 @@
 
 ### An empty page is empty
 - A page with no layers draws nothing: no white sheet, border, shadow, "Desktop · 1440" label or title strip, only the canvas and the "Start with" prompt. The page appears as soon as it holds a layer, and goes again when the last one is removed. Drawing and zooming use the same coordinates throughout.
+
+### Loading pages
+- In the Pages menu, hovering between two pages shows a line with a +. Clicking it adds a thin "Loading" entry there, a page of its own that stands for the screen shown while the page change happens (one undo step).
+- Opening it zooms out to show the page it comes from on the left, the loading page itself, and the page it leads to on the right. Each reference has a dropdown at its top to choose any page, the same one on both sides too, and the choice is saved with the project.
+- The Pages menu no longer stays out of reach of the pointer when it is reopened while it is still closing.
