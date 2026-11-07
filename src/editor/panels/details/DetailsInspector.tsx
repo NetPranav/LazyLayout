@@ -34,6 +34,8 @@ import {
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
+import { isLettersGroup } from "@/core/editing/splitText";
+import { getDocument } from "@/core/store/documentState";
 
 /**
  * Returns the array of DesignSectionConfig populated with real inspector field children.
@@ -97,10 +99,15 @@ export function getInspectorDesignSections(
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
+  const isLetters = inspector.primaryLayer
+    ? isLettersGroup(inspector.primaryLayer, getDocument().layers)
+    : false;
+
   const hasTypography =
     !inspector.primaryLayer ||
     ["text", "button", "input", "counter", "svgText"].includes(archetype || "") ||
-    inspector.isMulti;
+    inspector.isMulti ||
+    isLetters;
 
   const allowsFill =
     !inspector.primaryLayer ||

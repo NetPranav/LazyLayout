@@ -23,6 +23,7 @@ import { LayerContextMenuContent } from "./LayerContextMenu";
 import type { LayerItem, LayerMenuAction } from "./types";
 import { flattenLayers, filterTreeNodes, type FlatLayerNode } from "./treeFilter";
 import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
+import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 
 export interface LayersTreeProps {
   layers: LayerItem[];
@@ -117,6 +118,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   const treeRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState<string>("");
+  const storeToastMsg = useLayersUiStore((s) => s.toastMsg);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -132,10 +134,13 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   }, [dragState]);
 
   const showToast = useCallback((msg: string) => {
+    useLayersUiStore.getState().showToast(msg);
     setToastMsg(msg);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setToastMsg(null), 2200);
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), 2800);
   }, []);
+
+  const currentToast = storeToastMsg ?? toastMsg;
 
   // Derive visible nodes through shared pure filter function if not provided by parent
   const { visibleNodes } = useMemo(() => {
@@ -614,9 +619,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       <div
         id="lmsg"
         role="status"
-        className={`lmsg ll-lmsg ${toastMsg ? "on" : ""}`}
+        className={`lmsg ll-lmsg ${currentToast ? "on" : ""}`}
       >
-        {toastMsg}
+        {currentToast}
       </div>
     </div>
   );

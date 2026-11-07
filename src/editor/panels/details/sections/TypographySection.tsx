@@ -19,6 +19,10 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { Icon } from "@/editor/components/Icon";
+import { Button } from "@/editor/components/Button";
+import { invokeCommand } from "@/core/commands";
+import { getDocument } from "@/core/store/documentState";
+import { isLettersGroup } from "@/core/editing/splitText";
 import {
   INSPECTOR_CONSTANTS,
   FONT_FAMILY_OPTIONS,
@@ -64,8 +68,38 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
     layer.archetype === "button" ||
     (layer.archetype as string) === "counter";
 
+  const isSingleText = layer?.archetype === "text";
+  const isLetters = isLettersGroup(layer, getDocument().layers);
+
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
+      {/* Split into letters & Animate letters buttons */}
+      {(isSingleText || isLetters) && (
+        <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="ll:flex-1"
+            disabled={!isSingleText}
+            onClick={() => void invokeCommand("text.splitLetters")}
+            title={isSingleText ? "Split text into one layer per letter" : "Already split into letters"}
+          >
+            Split into letters
+          </Button>
+          {isLetters && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ll:flex-1"
+              onClick={() => void invokeCommand("text.animateLetters")}
+              title="Animate letters with staggered entrance"
+            >
+              Animate letters
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Content text field: plain clean textarea matching prototype */}
       {isTextOrButton && (
         <div className="ll:w-full">
