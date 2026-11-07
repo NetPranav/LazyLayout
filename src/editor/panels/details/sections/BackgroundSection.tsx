@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import type { InspectorSectionProps } from "../types";
@@ -48,10 +49,7 @@ export const BackgroundSection: React.FC<InspectorSectionProps> = ({
 
       <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
         <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${bgColor}` }}
-          />
+          <ColorSwatch label="Background colour picker" hex={bgColor} onChange={(h) => onUpdateProp?.("background.color", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
           <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
             <input
