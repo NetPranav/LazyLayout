@@ -28,6 +28,8 @@ import {
   Eye,
   EyeOff,
   Monitor,
+  Tablet,
+  Smartphone,
   PanelLeft,
   PanelRight,
   LayoutPanelLeft,
@@ -67,6 +69,10 @@ import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+import { presetForBreakpoint, executeStagePreset } from "@/editor/stage/presetBreakpoints";
+import { useDocument } from "@/core/store/useDocumentStore";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
@@ -110,6 +116,8 @@ export interface TopBarProps {
   isZen?: boolean;
   onPreview?: () => void;
   onShare?: () => void;
+  viewportPreset?: "1440" | "768" | "375";
+  onSelectPreset?: (preset: "1440" | "768" | "375") => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -134,6 +142,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   isZen = false,
   onPreview,
   onShare,
+  viewportPreset: propViewportPreset,
+  onSelectPreset,
 }) => {
   // Save status resolution
   const sessionSaveState = useSaveStatus((s) => s.state);
@@ -165,6 +175,20 @@ export const TopBar: React.FC<TopBarProps> = ({
       }
     },
     [onSelectMode]
+  );
+
+  // Viewport preset resolution & breakpoint sync (Task E)
+  const docBreakpoints = useDocument((d) => d.breakpoints);
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const currentPreset = presetForBreakpoint(breakpointsOf({ breakpoints: docBreakpoints }), activeBreakpointId);
+  const activePreset = propViewportPreset ?? currentPreset;
+
+  const handlePresetClick = useCallback(
+    (preset: "1440" | "768" | "375") => {
+      executeStagePreset(preset);
+      onSelectPreset?.(preset);
+    },
+    [onSelectPreset]
   );
 
   // Logo application menu state
@@ -498,10 +522,65 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* =====================================================================
-          2. CENTER COLUMN: Mode Tabs (Design, Motion, Code)
+          2. CENTER COLUMN: Mode Tabs (Design, Motion, Code) + Viewport Presets
           ===================================================================== */}
-      <div className="ll:flex ll:items-center ll:justify-center">
+      <div className="ll:flex ll:items-center ll:justify-center ll:gap-2">
         <ModeTabs mode={activeMode} onChange={handleModeChange} />
+
+        {activeMode === "design" && (
+          <div
+            role="group"
+            aria-label="Device viewports"
+            data-testid="topbar-presets"
+            className="ll:flex ll:items-center ll:gap-0.5 ll:h-8 ll:p-0.5 ll:border ll:border-border ll:rounded-md ll:bg-surface-panel ll:box-border"
+          >
+            <button
+              type="button"
+              aria-label="Desktop"
+              aria-pressed={activePreset === "1440"}
+              data-testid="preset-desktop"
+              onClick={() => handlePresetClick("1440")}
+              className={`ll:relative ll:z-10 ll:h-mode-tab ll:px-2 ll:rounded-sm ll:flex ll:items-center ll:gap-1.5 ll:text-small ll:font-medium ll:whitespace-nowrap ll:select-none ll:cursor-pointer ll:outline-none ll:border-0 ll:transition-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                activePreset === "1440"
+                  ? "ll:bg-control-active ll:text-primary"
+                  : "ll:bg-transparent ll:text-muted ll:hover:bg-surface-bar ll:hover:text-primary"
+              }`}
+            >
+              <Icon icon={Monitor} size={13} className="ll:shrink-0" />
+              <span>Desktop</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Tablet"
+              aria-pressed={activePreset === "768"}
+              data-testid="preset-tablet"
+              onClick={() => handlePresetClick("768")}
+              className={`ll:relative ll:z-10 ll:h-mode-tab ll:px-2 ll:rounded-sm ll:flex ll:items-center ll:gap-1.5 ll:text-small ll:font-medium ll:whitespace-nowrap ll:select-none ll:cursor-pointer ll:outline-none ll:border-0 ll:transition-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                activePreset === "768"
+                  ? "ll:bg-control-active ll:text-primary"
+                  : "ll:bg-transparent ll:text-muted ll:hover:bg-surface-bar ll:hover:text-primary"
+              }`}
+            >
+              <Icon icon={Tablet} size={13} className="ll:shrink-0" />
+              <span>Tablet</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Mobile"
+              aria-pressed={activePreset === "375"}
+              data-testid="preset-mobile"
+              onClick={() => handlePresetClick("375")}
+              className={`ll:relative ll:z-10 ll:h-mode-tab ll:px-2 ll:rounded-sm ll:flex ll:items-center ll:gap-1.5 ll:text-small ll:font-medium ll:whitespace-nowrap ll:select-none ll:cursor-pointer ll:outline-none ll:border-0 ll:transition-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                activePreset === "375"
+                  ? "ll:bg-control-active ll:text-primary"
+                  : "ll:bg-transparent ll:text-muted ll:hover:bg-surface-bar ll:hover:text-primary"
+              }`}
+            >
+              <Icon icon={Smartphone} size={13} className="ll:shrink-0" />
+              <span>Mobile</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* =====================================================================

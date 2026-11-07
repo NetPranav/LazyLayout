@@ -28,6 +28,9 @@ import { activePageRootId } from "./activePage";
 import { marqueeHits } from "./marquee";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useStageOriginStore } from "@/editor/shell/canvas-chrome/stageOrigin";
+import { executeStagePreset, presetForBreakpoint } from "./presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 
 /** The page's size in pixels, or nothing when it is stored as a share of its parent (a project that never set one). */
 function pagePixels(root: { properties: Record<string, unknown> } | undefined, side: "width" | "height"): number | undefined {
@@ -95,24 +98,25 @@ export const Stage: React.FC<StageProps> = ({
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
-  const activePreset = controlledPreset !== undefined ? controlledPreset : internalPreset;
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const docBreakpoints = useDocument((d) => d.breakpoints);
+  const bpPreset = presetForBreakpoint(breakpointsOf({ breakpoints: docBreakpoints }), activeBreakpointId);
+  const activePreset = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? bpPreset : internalPreset);
 
   const handlePresetChange = useCallback(
     (newPreset: StagePreset) => {
       setInternalPreset(newPreset);
-      controlledOnPresetChange?.(newPreset);
-      // choosing Desktop, Tablet or Mobile resizes the page itself
-      resizePageToPreset(newPreset);
+      executeStagePreset(newPreset, { onPresetChange: controlledOnPresetChange });
     },
     [controlledOnPresetChange]
   );
 
-  // A preset chosen from the menu or a command (Tablet, Mobile) resizes the page too, not only one chosen on the size label.
+  // A preset chosen from the menu or a command (Tablet, Mobile) triggers preset logic
   const lastPreset = useRef(activePreset);
   useEffect(() => {
     if (lastPreset.current === activePreset) return;
     lastPreset.current = activePreset;
-    resizePageToPreset(activePreset);
+    executeStagePreset(activePreset);
   }, [activePreset]);
 
   // Document store layers mapping directly from engine document

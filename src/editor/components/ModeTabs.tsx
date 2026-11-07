@@ -23,6 +23,7 @@ import {
 import { Icon } from "./Icon";
 import { Menu, MenuItem, SubMenu, MenuSeparator } from "./Menu";
 import { useSlidingIndicator } from "./useSlidingIndicator";
+import { executeStagePreset } from "@/editor/stage/presetBreakpoints";
 
 export type EditorMode = "design" | "motion" | "code";
 
@@ -185,9 +186,9 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
         {mode === "design" && (
           <>
             <SubMenu id="m_frames" label="Frame presets" icon={<Icon icon={Frame} size={14} />}>
-              <MenuItem onClick={() => setMenuOpen(false)}>Desktop 1440</MenuItem>
-              <MenuItem onClick={() => setMenuOpen(false)}>Tablet 768</MenuItem>
-              <MenuItem onClick={() => setMenuOpen(false)}>Mobile 375</MenuItem>
+              <MenuItem onClick={() => { setMenuOpen(false); executeStagePreset("1440"); }}>Desktop 1440</MenuItem>
+              <MenuItem onClick={() => { setMenuOpen(false); executeStagePreset("768"); }}>Tablet 768</MenuItem>
+              <MenuItem onClick={() => { setMenuOpen(false); executeStagePreset("375"); }}>Mobile 375</MenuItem>
             </SubMenu>
             <MenuItem icon={<Icon icon={Grid} size={14} />} onClick={() => setMenuOpen(false)}>
               Layout grids

@@ -208,6 +208,8 @@ export function EditorShell({
           showRulers={actions.showRulers}
           isZen={actions.isZen}
           users={collabUsers}
+          viewportPreset={actions.viewportPreset}
+          onSelectPreset={actions.setViewportPreset}
         />
         <ReadOnlyBanner />
       </div>

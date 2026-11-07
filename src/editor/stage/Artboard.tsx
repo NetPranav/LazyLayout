@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -17,6 +17,11 @@ import {
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
+import { shouldDrawPageSheet } from "./pageSheet";
+import { presetForBreakpoint } from "./presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+import { getDocument } from "@/core/store/documentState";
 
 /**
  * The words of a text layer, edited where they sit. It is styled exactly like the drawn text (same wrapping, same overflow,
@@ -188,7 +193,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
 
-  const activePresetId = controlledPreset !== undefined ? controlledPreset : internalPreset;
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const activeBpPreset = presetForBreakpoint(breakpointsOf(getDocument()), activeBreakpointId);
+  const activePresetId = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? activeBpPreset : internalPreset);
   const currentPresetDef =
     STAGE_PRESETS.find((p) => p.id === activePresetId) || STAGE_PRESETS[0];
 
@@ -207,9 +214,31 @@ export const Artboard: React.FC<ArtboardProps> = ({
   };
 
   const hasElements = Object.keys(elements).length > 0 && !empty;
-  // A page with nothing on it is not drawn: no white sheet, no border and no size label, only the canvas and the prompt.
-  // The element stays where it is, so drawing and zooming use the same coordinates, and the page shows as soon as it holds a layer.
-  const bare = !hasElements && !references;
+  // The page sheet (white fill, border, shadow, size label, title strip) must be drawn only when
+  // the page has at least one direct child that is NOT a frame (a loose shape/text/image placed straight on the page).
+  // When every direct child of the page is a frame (archetype "container") and when the page is empty, draw NO page sheet.
+  const drawSheet = !empty && (!!references || shouldDrawPageSheet(layers, rootId ?? null, elements));
+  const bare = !drawSheet;
+
+  // Active frame for positioning the frame dropdown / size label
+  const activeFrame = useMemo(() => {
+    if (!bare) return null;
+    const directFrames = Object.values(elements).filter((el) => {
+      const layer = layers?.[el.id];
+      return layer ? layer.archetype === "container" && (layer.parentId === rootId || layer.parentId === null) : el.type === "container";
+    });
+    if (directFrames.length === 0) return null;
+    const selectedFrame = directFrames.find((f) => selectedIds.includes(f.id));
+    return selectedFrame ?? directFrames[0];
+  }, [bare, elements, layers, rootId, selectedIds]);
+
+  const labelLeft = activeFrame
+    ? activeFrame.x + STAGE_CONSTANTS.sizeLabelOffsetLeft
+    : STAGE_CONSTANTS.sizeLabelOffsetLeft;
+  const labelTop = activeFrame
+    ? activeFrame.y + STAGE_CONSTANTS.sizeLabelOffsetTop
+    : STAGE_CONSTANTS.sizeLabelOffsetTop;
+  const hideLabel = !hasElements || empty;
 
   return (
     <div
@@ -249,10 +278,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
         title="Canvas size"
         className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
         style={{
-          left: STAGE_CONSTANTS.sizeLabelOffsetLeft,
-          top: STAGE_CONSTANTS.sizeLabelOffsetTop,
+          left: labelLeft,
+          top: labelTop,
           height: STAGE_CONSTANTS.sizeLabelHeight,
-          ...(bare ? { visibility: "hidden" as const } : {}),
+          ...(hideLabel ? { visibility: "hidden" as const } : {}),
           paddingLeft: "var(--ll-spacing-1)",
           paddingRight: "var(--ll-spacing-1)",
         }}
@@ -345,7 +374,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
-        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(bare ? { visibility: "hidden" as const } : {}) }}>
+        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
           <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
         </div>
       )}
