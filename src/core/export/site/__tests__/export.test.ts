@@ -309,3 +309,64 @@ describe("FigCraft port F8: the HTML writer keeps text as it is", () => {
     assert.match(html, /<div><\/div>\n$/, "no white space inside an empty element");
   });
 });
+
+describe("loading pages in the export", () => {
+  const site = () => {
+    const doc = createDocumentFromLayers([
+      page("home", "Home", 0, ["h1"]),
+      page("about", "About", 1600, ["h2"]),
+      page("load", "Loading", 3200, ["l1"]),
+      box("h1", "home", "Welcome", {}, "text"),
+      box("h2", "about", "About us", {}, "text"),
+      box("l1", "load", "Please wait", {}, "text"),
+    ]);
+    return doc;
+  };
+  const loading = [{ rootId: "load", toRootId: "about" }];
+
+  it("the next target writes a loading page as the loading.tsx of the page it leads to, and not as a page", async () => {
+    const r = await buildSiteExport(site(), { target: "next", styling: "css", loading });
+    const paths = r.files.map((f) => f.path);
+    assert.ok(paths.includes("app/about/loading.tsx"), "loading.tsx beside the page it leads to");
+    assert.ok(paths.includes("app/about/page.tsx") && paths.includes("app/page.tsx"));
+    assert.ok(!paths.includes("app/loading/page.tsx"), "a loading page is not a route");
+    assert.deepEqual(r.pages.map((p) => p.route).sort(), ["/", "/about"]);
+    const src = text(r.files, "app/about/loading.tsx");
+    assert.match(src, /export default function Loading\(\)/);
+    assert.doesNotMatch(src, /metadata/, "loading.tsx has no metadata");
+    assert.match(src, /please_wait_l1/, "the loading page's own layers");
+    assert.doesNotMatch(text(r.files, "app/about/page.tsx"), /please_wait_l1/, "and none of them in the page");
+  });
+
+  it("one that leads to the home page is app/loading.tsx; modules style gets its own stylesheet", async () => {
+    const r = await buildSiteExport(site(), { target: "next", styling: "modules", loading: [{ rootId: "load", toRootId: "home" }] });
+    const paths = r.files.map((f) => f.path);
+    assert.ok(paths.includes("app/loading.tsx") && paths.includes("app/loading.module.css"));
+    assert.match(text(r.files, "app/loading.tsx"), /from "\.\/loading\.module\.css"/);
+  });
+
+  it("the html and vite targets leave it out, and say so", async () => {
+    for (const target of ["html", "vite"] as const) {
+      const r = await buildSiteExport(site(), { target, styling: "css", loading });
+      assert.ok(!r.files.some((f) => /loading/i.test(f.path)), `${target}: no loading file`);
+      assert.deepEqual(r.pages.map((p) => p.route).sort(), ["/", "/about"], `${target}: two pages`);
+      assert.ok(r.warnings.some((w) => /Loading pages are written for the Next\.js target only/.test(w)), `${target}: says so`);
+    }
+  });
+
+  it("two loading pages for one page: the last is written, and the export says so", async () => {
+    const doc = site();
+    const r = await buildSiteExport(
+      { ...doc, layers: { ...doc.layers, load2: page("load2", "Loading 2", 4800, []), } },
+      { target: "next", styling: "css", loading: [{ rootId: "load", toRootId: "about" }, { rootId: "load2", toRootId: "about" }] },
+    );
+    assert.equal(r.files.filter((f) => f.path === "app/about/loading.tsx").length, 1);
+    assert.ok(r.warnings.some((w) => /More than one loading page leads to \/about/.test(w)));
+  });
+
+  it("a document with no loading pages exports exactly as before", async () => {
+    const plain = await buildSiteExport(site(), { target: "next", styling: "css", loading: [] });
+    assert.ok(!plain.files.some((f) => f.path.endsWith("loading.tsx")));
+    assert.equal(plain.pages.length, 3, "every top-level frame is a page, as before");
+  });
+});

@@ -14,8 +14,8 @@ export const Button: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, n
     <button
       ref={nodeRef}
       type="button"
-      data-element-id={layer.id}
-      data-archetype="button"
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : "button"}
       disabled={disabled}
       style={{
         ...layerBoxStyle(layer, resolved, ctx),

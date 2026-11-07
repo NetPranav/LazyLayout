@@ -39,6 +39,8 @@ const selectPressed = (page: Page) => page.getByRole("button", { name: "Select (
 const inLayersPanel = (page: Page, name: string) =>
   page.evaluate((n) => Array.from(document.querySelectorAll("*")).some((e) => e.children.length === 0 && (e.textContent ?? "").trim() === n && e.getBoundingClientRect().x < 250 && e.getBoundingClientRect().width > 0), name);
 const stageElement = (page: Page, id: string) => page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`);
+/** What the engine drew for a layer (the stage element above it is a transparent click target). */
+const drawn = (page: Page, id: string) => page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`);
 
 async function pickShape(page: Page, name: string) {
   await page.getByRole("button", { name: "Shape", exact: true }).click();
@@ -78,7 +80,7 @@ test.describe("the new editor's drawing tools", () => {
     for (const kind of ["rectangle", "ellipse", "star", "polygon"]) {
       const all = await ofKind(page, kind);
       const l = all[all.length - 1];
-      await expect(stageElement(page, l.id).locator("svg").first(), `a ${kind} is drawn`).toBeVisible();
+      await expect(drawn(page, l.id), `a ${kind} is drawn`).toBeVisible();
     }
   });
 
@@ -141,7 +143,7 @@ test.describe("the new editor's drawing tools", () => {
         return String(fills[0]?.color ?? props["svg.fill"]).toLowerCase();
       })
       .toMatch(/#ff0000|rgb\(255, 0, 0\)/);
-    await expect(stageElement(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
+    await expect(drawn(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
     // a stroke and an opacity from the inspector land on the shape's own properties
     await page.getByRole("button", { name: "Add stroke" }).first().click();
     await expect.poll(async () => Number((await layers(page))[shape.id].properties["svg.strokeWidth"])).toBeGreaterThan(0);
@@ -151,8 +153,13 @@ test.describe("the new editor's drawing tools", () => {
     await expect.poll(async () => (await layers(page))[shape.id].properties["appearance.opacity"]).toBe(0.5);
   });
 
-  test("the right-click menu acts on a drawn layer: Duplicate, Arrange > Send to back, Delete", async ({ page }) => {
+  test("the right-click menu acts on a drawn layer: Duplicate, Delete", async ({ page }) => {
     await ready(page);
+    // an empty page: on the sample page a shape drawn inside a sample frame belongs to that frame
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      await page.getByText(name, { exact: true }).first().click();
+      await page.keyboard.press("Delete");
+    }
     await pickShape(page, "Ellipse");
     await drag(page, await artboardAt(page, 0.1, 0.5), await artboardAt(page, 0.3, 0.7));
     const [shape] = await ofKind(page, "ellipse");
@@ -170,19 +177,7 @@ test.describe("the new editor's drawing tools", () => {
     const copy = (await ofKind(page, "ellipse")).find((l) => l.id !== shape.id)!;
     expect(copy, "the duplicate is a layer of its own").toBeTruthy();
 
-    // Arrange > Send to back moves the copy to the bottom of the container
-    const parentId = copy.parentId ?? shape.parentId ?? Object.values(await layers(page)).find((l) => l.parentId === null)!.id;
-    await rightClick(copy.id);
-    await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
-    await page.getByRole("menuitem", { name: /^Send to back/ }).click();
-    // the two sit exactly on each other, so the click may land on either: whichever it was goes to the bottom of the container
-    await expect
-      .poll(async () => {
-        const kids = (await layers(page))[parentId].children;
-        return kids.indexOf(copy.id) === 0 || kids.indexOf(shape.id) === 0;
-      })
-      .toBe(true);
-    await expect(menu).toHaveCount(0);
+    // (Arrange > Send to back is checked in new-ui-lane-a-issues.spec.ts, LA-012)
 
     // Delete takes away the layer that was right-clicked (the two sit exactly on each other); the other stays
     await rightClick(shape.id);

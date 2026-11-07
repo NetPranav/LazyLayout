@@ -28,6 +28,12 @@ export interface RenderContext {
   layers?: Readonly<Record<string, import("../document/schema").Layer>>;
   /** This layer's z-index, set by a parent whose first child paints on top (`layout.reverseZ`, FigCraft port F6). */
   stackZ?: number;
+  /** When drawn as a tile of a warp mesh, child content sits at tile origin without outer layer transform. */
+  inMeshTile?: boolean;
+  /** When drawn inside a live linked mirror frame (Task I), marks child rendering as part of that mirror. */
+  inMirror?: boolean;
+  /** The container layer ID of the mirror frame enclosing this layer. */
+  mirrorId?: string;
 }
 
 /** Every render definition has this shape: draw `layer` from its resolved props (Phase 17, Law 11). */

@@ -24,9 +24,9 @@ export const ShapeSection: React.FC<InspectorSectionProps> = ({
   className = "",
 }) => {
   const shapeType = (getValue?.("shape.type") as string) || "Star";
-  const sides = (getValue?.("shape.sides") as number) ?? 5;
+  const sides = (getValue?.("shape.sides") as number) ?? 6;
   const points = (getValue?.("shape.points") as number) ?? 5;
-  const innerRadius = (getValue?.("shape.innerRadius") as number) ?? 50;
+  const innerRadius = Math.round(((getValue?.("shape.innerRadius") as number) ?? 0.5) * 100); // stored as 0 to 1
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
@@ -65,7 +65,7 @@ export const ShapeSection: React.FC<InspectorSectionProps> = ({
           suffix="%"
           value={innerRadius}
           step={1}
-          onChange={(v) => onUpdateProp?.("shape.innerRadius", v)}
+          onChange={(v) => onUpdateProp?.("shape.innerRadius", Math.max(0, Math.min(1, v / 100)))}
         />
       </div>
     </div>

@@ -283,14 +283,21 @@ function nextTarget(input: TargetInput): SiteFile[] {
   const used = new Set<string>();
   for (const p of plan.pages) {
     const dir = p.route === "/" ? "app" : `app/${p.route.replace(/^\/+|\/+$/g, "")}`;
+    // A loading page is the `loading.tsx` of the folder of the page it leads to: Next shows it while that page loads.
+    const isLoading = p.kind === "loading";
+    const stem = isLoading ? "loading" : "page";
     let name = pascal(p.name);
     for (let n = 2; used.has(name); n++) name = `${pascal(p.name)}${n}`;
     used.add(name);
     const up = dir === "app" ? "../" : "../".repeat(dir.split("/").length);
     const calls = componentsUsed(p).map((n) => `import ${n} from "${up}components/${n}";\n`).join("");
-    const imports = `${calls}${styling === "modules" ? `import styles from "./page.module.css";\n` : ""}${calls || styling === "modules" ? "\n" : ""}`;
-    out.push({ path: `${dir}/page.tsx`, content: `${imports}export const metadata = { title: ${JSON.stringify(p.title)} };\n\nexport default function ${name}() {\n  return (\n${jsxFor(p, input, names)}  );\n}\n` });
-    if (styling === "modules") out.push({ path: `${dir}/page.module.css`, content: moduleCss(p, names) });
+    const imports = `${calls}${styling === "modules" ? `import styles from "./${stem}.module.css";\n` : ""}${calls || styling === "modules" ? "\n" : ""}`;
+    const metadata = isLoading ? "" : `export const metadata = { title: ${JSON.stringify(p.title)} };\n\n`;
+    const fileName = `${dir}/${stem}.tsx`;
+    const at = out.findIndex((f) => f.path === fileName);
+    if (at >= 0) out.splice(at, 1); // two loading pages for one route: the last one wins (the export says so)
+    out.push({ path: fileName, content: `${imports}${metadata}export default function ${name}() {\n  return (\n${jsxFor(p, input, names)}  );\n}\n` });
+    if (styling === "modules") out.push({ path: `${dir}/${stem}.module.css`, content: moduleCss(p, names) });
   }
   for (const c of plan.components) {
     out.push({ path: `components/${c.name}.tsx`, content: componentSource(c, input, names) });
@@ -302,7 +309,9 @@ function nextTarget(input: TargetInput): SiteFile[] {
 
 export function writeTarget(target: Target, input: TargetInput): SiteFile[] {
   const styling: Styling = target === "html" && input.styling !== "css" ? "css" : input.styling;
-  const adjusted = { ...input, styling };
+  // only the Next.js target has a place for a loading page (a `loading.tsx` beside the page it leads to)
+  const plan = target === "next" ? input.plan : { ...input.plan, pages: input.plan.pages.filter((p) => p.kind !== "loading") };
+  const adjusted = { ...input, plan, styling };
   const files = target === "html" ? htmlTarget(adjusted) : target === "vite" ? viteTarget(adjusted) : nextTarget(adjusted);
   files.push({ path: "README.md", content: readme(target, adjusted) });
   return files;

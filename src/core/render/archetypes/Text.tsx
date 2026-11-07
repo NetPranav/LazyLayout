@@ -3,42 +3,46 @@ import { layerBoxStyle } from "../geometry";
 import { clampText } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
 import { textTypography } from "./textStyle";
+import { useTextFillStyle } from "../paintStyle";
 import { runsOf, type TextRun } from "../../text/runs";
 import { parseShadows, textShadowCss } from "../../paint/paints";
 import { listGutter, listMarkers, paragraphLists, paragraphsOf, parseTextPath, runsByParagraph, textPathD, type TextPath } from "../../text/textFeatures";
 
 /** The inline style of one run. */
-export function runStyle(run: TextRun): React.CSSProperties | undefined {
+export function runStyle(run: TextRun, hasFill = false): React.CSSProperties | undefined {
   const style: React.CSSProperties = {};
   if (run.bold) style.fontWeight = 700;
   if (run.italic) style.fontStyle = "italic";
   if (run.underline || run.strike) style.textDecoration = [run.underline ? "underline" : "", run.strike ? "line-through" : ""].filter(Boolean).join(" ");
-  if (run.color) style.color = run.color;
+  if (run.color && !hasFill) style.color = run.color;
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
 export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nodeRef }) => {
+  const textFill = useTextFillStyle(layer, resolved);
   const stored = resolved.get("content.text");
   const raw = typeof stored === "string" ? stored : layer.name; // an empty text is empty, not its layer name
   const interpolated = ctx.interpolate ? ctx.interpolate(raw) : raw;
   const text = clampText(interpolated);
   // Styled runs only apply while they spell the stored text exactly (and no {{variable}} changed it).
   const runs = interpolated === raw && text === raw ? runsOf(raw, resolved.get("content.runs")) : null;
-  const styled = runs !== null && runs.some((r) => runStyle(r) !== undefined);
+  const styled = runs !== null && runs.some((r) => runStyle(r, Boolean(textFill)) !== undefined);
   const sizing = resolved.str("text.sizing", "fixed");
   const box = layerBoxStyle(layer, resolved, ctx, { shadow: "none" }); // text has text-shadow, not a box shadow
   const textShadow = textShadowCss(parseShadows(resolved.get("paint.shadows")));
-  if (sizing === "autoWidth") {
-    delete box.width;
-    delete box.height;
-  } else if (sizing === "autoHeight") {
-    delete box.height;
+  if (!ctx.inMeshTile) {
+    if (sizing === "autoWidth") {
+      delete box.width;
+      delete box.height;
+    } else if (sizing === "autoHeight") {
+      delete box.height;
+    }
   }
   // FigCraft port F8: text that follows a path is drawn as SVG
   const textPath = parseTextPath(resolved.get("typography.textPath"));
   if (textPath) return <TextOnPath layer={layer} resolved={resolved} ctx={ctx} nodeRef={nodeRef} path={textPath} text={text} runs={styled ? runs : null} box={box} />;
   const allRuns = runs ?? [{ text }];
-  const paragraphs = paragraphSettings(resolved, text);
+  const paragraphs = paragraphSettings(resolved, text, Boolean(textFill));
   const maxLines = Math.floor(resolved.num("typography.maxLines", 0));
   const valign = resolved.get("typography.verticalAlign");
   // The designer's Wrap choice (Normal, No wrap, Pre) wins over the box's own default, once they have made one.
@@ -48,8 +52,8 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   return (
     <div
       ref={nodeRef}
-      data-element-id={layer.id}
-      data-archetype="text"
+      data-element-id={ctx.inMeshTile ? undefined : layer.id}
+      data-archetype={ctx.inMeshTile ? undefined : "text"}
       style={{
         ...box,
         margin: 0,
@@ -63,17 +67,18 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         // FigCraft port F8: lines past `maxLines` end in an ellipsis; a fixed box places its text top, middle or bottom
         ...(maxLines > 0 ? { display: "-webkit-box", WebkitLineClamp: Math.min(1000, maxLines), WebkitBoxOrient: "vertical", overflow: "hidden" } : {}),
         ...(maxLines <= 0 && (valign === "middle" || valign === "bottom") ? { alignContent: valign === "middle" ? "center" : "end" } : {}),
+        ...(textFill ?? {}),
       }}
     >
-      {paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!) : text}
+      {paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!, Boolean(textFill)) : text}
     </div>
   );
 };
 
 /** Styled runs as spans (plain ones as text). */
-function runsContent(runs: readonly TextRun[]): React.ReactNode {
+function runsContent(runs: readonly TextRun[], hasFill = false): React.ReactNode {
   return runs.map((run, i) => {
-    const style = runStyle(run);
+    const style = runStyle(run, hasFill);
     return style ? (
       <span key={i} style={style}>
         {run.text}
@@ -89,7 +94,7 @@ function runsContent(runs: readonly TextRun[]): React.ReactNode {
  * in by a gutter per level with their marker in it (a hanging list puts the outer gutter outside the box). Null when
  * the text uses none of them: then it draws as one block, as before.
  */
-function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: string) {
+function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: string, hasFill = false) {
   const spacing = Math.max(0, resolved.num("typography.paragraphSpacing", 0));
   const indent = Math.max(0, resolved.num("typography.paragraphIndent", 0));
   const paras = paragraphsOf(text);
@@ -114,7 +119,7 @@ function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: str
                 {markers[i]}
               </span>
             )}
-            {para.length > 0 ? runsContent(para) : "\u200b"}
+            {para.length > 0 ? runsContent(para, hasFill) : "\u200b"}
           </div>
         );
       }),

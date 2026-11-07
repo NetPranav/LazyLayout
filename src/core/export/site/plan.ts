@@ -26,6 +26,11 @@ export interface PlanOptions {
   styling: Styling;
   /** Hrefs of links between pages: relative file paths (a plain HTML site) or routes (`/about`, for an app router). */
   hrefs: "files" | "routes";
+  /**
+   * Loading pages: frames that are not pages of the site but the screen shown while the page they lead to loads.
+   * `toRootId` is the frame of that page (null: the whole site, the home page's folder).
+   */
+  loading?: { rootId: string; toRootId: string | null }[];
 }
 
 export interface PagePlan {
@@ -39,6 +44,8 @@ export interface PagePlan {
   blocks: CssBlock[];
   /** The asset ids this page draws. */
   assets: Set<string>;
+  /** `"loading"`: not a page but the `loading` file of the folder for `route` (the page it leads to). */
+  kind?: "loading";
 }
 
 export interface SitePlan {
@@ -169,7 +176,8 @@ interface RootPlan {
 
 export function buildPlan(source: MotionDocument, options: PlanOptions & { components?: boolean; /** Plan this layer alone, as a component-like root (the Code tab). */ only?: string }): SitePlan {
   const warnings: string[] = [];
-  const pagesList = options.only && source.layers[options.only] ? [{ id: options.only, name: source.layers[options.only].name, route: "/", title: source.layers[options.only].name }] : exportedPages(source);
+  const loadingOf = new Map((options.loading ?? []).filter((l) => !options.only && source.layers[l.rootId]).map((l) => [l.rootId, l] as const));
+  const pagesList = options.only && source.layers[options.only] ? [{ id: options.only, name: source.layers[options.only].name, route: "/", title: source.layers[options.only].name }] : exportedPages(source).filter((p) => !loadingOf.has(p.id));
   // every exported page follows the breakpoints, whether or not the frame was marked responsive
   const doc: MotionDocument = options.only
     ? source
@@ -177,7 +185,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         ...source,
         layers: {
           ...source.layers,
-          ...Object.fromEntries(pagesList.map((p) => [p.id, { ...source.layers[p.id], properties: { ...source.layers[p.id].properties, "breakpoints.responsive": true } }])),
+          ...Object.fromEntries([...pagesList.map((p) => p.id), ...loadingOf.keys()].map((id) => [id, { ...source.layers[id], properties: { ...source.layers[id].properties, "breakpoints.responsive": true } }])),
         },
       };
   const bps = breakpointsOf(doc);
@@ -333,20 +341,29 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     return { page: p, plan: planRoot(p.id, options.only ? "component" : "page", p.route, options.hrefs, assets) };
   });
 
+  // a loading page is planned like a page, at the route of the page it leads to
+  const loadingRoots = [...loadingOf.values()].map((l) => {
+    const route = (l.toRootId ? routeOf.get(l.toRootId) : undefined) ?? "/";
+    const assets = new Set<string>();
+    pageAssets.set(l.rootId, assets);
+    const page = { id: l.rootId, name: "Loading", route, title: "Loading" };
+    return { page, plan: planRoot(l.rootId, "page", route, options.hrefs, assets) };
+  });
+
   // components: React targets use a component file for every component an instance (or a main) on a page can call
   const components = new Map<string, ComponentPlan>();
   if (options.components) {
     const defs = new Map<string, ComponentDef>();
-    for (const { page, plan } of roots) componentize(doc, plan, page.id, defs, components, planRoot, siteAssets, warnings);
+    for (const { page, plan } of [...roots, ...loadingRoots]) componentize(doc, plan, page.id, defs, components, planRoot, siteAssets, warnings);
   }
 
-  const pages: PagePlan[] = roots.map(({ page, plan }) => {
+  const pages: PagePlan[] = [...roots, ...loadingRoots].map(({ page, plan }) => {
     let blocks = plan.blocks;
     if (options.styling === "tailwind") {
       applyTailwind([plan.tree], blocks);
       blocks = [];
     }
-    return { id: page.id, name: page.name, route: page.route, title: page.title, tree: plan.tree, blocks, assets: pageAssets.get(page.id)! };
+    return { id: page.id, name: page.name, route: page.route, title: page.title, tree: plan.tree, blocks, assets: pageAssets.get(page.id)!, ...(loadingOf.has(page.id) ? { kind: "loading" as const } : {}) };
   });
   const comps = [...components.values()];
   if (options.styling === "tailwind") {

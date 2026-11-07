@@ -271,10 +271,13 @@ export class Surf {
   }
 
   begin(): void {
-    this.mv = true;
-    if (this.initialInlineWidth === null && this.el.style.width) {
+    // Only an inline width that was there before the surface started painting is the element's own. Once painting, the
+    // width is the animation's: reading it as the original (a second open before the first has finished does) pinned
+    // the surface to its small starting size, so a submenu opened as a narrow sliver.
+    if (!this.mv && this.initialInlineWidth === null && this.el.style.width) {
       this.initialInlineWidth = this.el.style.width;
     }
+    this.mv = true;
     this.el.setAttribute("data-mv", "");
     const ls = this.lay.style;
     ls.width = `${this.cw}px`;

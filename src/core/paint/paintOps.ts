@@ -28,6 +28,7 @@ const PLAIN_FILL: Record<string, { path: string; fallback: string }> = {
   polygon: { path: "svg.fill", fallback: "#cbd5e1" },
   star: { path: "svg.fill", fallback: "#cbd5e1" },
   arrow: { path: "svg.fill", fallback: "#cbd5e1" },
+  text: { path: "typography.color", fallback: "#0f172a" },
 };
 
 /** Whether a layer can have a list of fills. */
@@ -39,13 +40,38 @@ export function fillsOf(id: string): Paint[] {
   if (!layer || !hasFills(layer.archetype)) return [];
   const resolved = resolveProps(layer);
   const plain = PLAIN_FILL[layer.archetype];
-  return effectiveFills(resolved.get("paint.fills"), String(resolved.get(plain.path) ?? plain.fallback));
+  const list = effectiveFills(resolved.get("paint.fills"), String(resolved.get(plain.path) ?? plain.fallback));
+  if (layer.archetype === "text" && list.length === 0) {
+    return [{ type: "solid", color: String(resolved.get(plain.path) ?? plain.fallback), opacity: 1, visible: true }];
+  }
+  return list;
 }
 
 /** Replaces the fills of these layers. An empty list means no fill (stored as `[]`, so the plain colour doesn't come back). Returns how many layers changed. */
 export function setFills(ids: readonly string[], fills: readonly Paint[]): number {
-  const json = serializeFills(fills);
-  return setLayerProps(ids.filter((id) => layers()[id] && hasFills(layers()[id].archetype)), { "paint.fills": json }, "Fill");
+  const l = layers();
+  let changed = 0;
+  const textIds = ids.filter((id) => l[id]?.archetype === "text");
+  const otherIds = ids.filter((id) => l[id] && l[id].archetype !== "text" && hasFills(l[id].archetype));
+
+  if (otherIds.length) {
+    const json = serializeFills(fills);
+    changed += setLayerProps(otherIds, { "paint.fills": json }, "Fill");
+  }
+
+  if (textIds.length) {
+    const hasNonSolid = fills.some((p) => p.type !== "solid");
+    if (hasNonSolid) {
+      const json = serializeFills(fills);
+      changed += setLayerProps(textIds, { "paint.fills": json }, "Fill");
+    } else {
+      const solid = fills.find((p) => p.type === "solid");
+      const props: Record<string, string> = { "paint.fills": "" };
+      if (solid) props["typography.color"] = solid.color;
+      changed += setLayerProps(textIds, props, "Fill");
+    }
+  }
+  return changed;
 }
 
 export function shadowsOf(id: string): Shadow[] {

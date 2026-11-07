@@ -6,6 +6,7 @@ import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { getDocument, setDocument } from "@/core/store/documentState";
 import { createLayer } from "@/core/document/factories";
+import { addLoadingPage, isLoadingPage, orderedPages } from "@/core/pages/loadingPages";
 import type { UsePagesDataReturn } from "./types";
 
 interface ExtendedProjectStoreState {
@@ -43,10 +44,25 @@ export function usePagesData(): UsePagesDataReturn {
 
   // Array of page names for PageSwitcher
   const pageNames = useMemo(() => {
-    const list = Object.values(pages);
+    const list = orderedPages(pages);
     if (list.length === 0) return ["Home"];
     return list.map((p) => p.name || p.id);
   }, [pages]);
+
+  /** Which listed names are loading pages (shown as thin rows between pages). */
+  const pageKinds = useMemo(
+    () => Object.fromEntries(Object.values(pages).map((p) => [p.name || p.id, isLoadingPage(p) ? "loading" : "page"] as const)) as Record<string, "page" | "loading">,
+    [pages],
+  );
+
+  /** The + between two pages: adds a loading page there and opens it. */
+  const onAddLoading = useCallback((fromName: string, toName: string) => {
+    const all = Object.values(useProjectStore.getState().pages);
+    const from = all.find((p) => p.name === fromName || p.id === fromName);
+    const to = all.find((p) => p.name === toName || p.id === toName);
+    if (!from || !to || !addLoadingPage(from.id, to.id)) return;
+    syncActiveFrame();
+  }, []);
 
   const activePage = pages[activePageId];
   const currentPage = activePage ? activePage.name || activePage.id : pageNames[0] || "Home";
@@ -247,5 +263,7 @@ export function usePagesData(): UsePagesDataReturn {
     onDuplicatePage,
     onDeletePage,
     rawPages: pages,
+    pageKinds,
+    onAddLoading,
   };
 }

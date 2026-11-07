@@ -9,6 +9,7 @@ import {
   type ResizeHandleName,
 } from "./constants";
 import type { SnapLine, SpacingMark } from "@/core/geometry/snap";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 
 interface TransformOverlayProps {
   selectedIds: string[];
@@ -33,6 +34,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
   zoom = 1,
 }) => {
   const keep = zoom > 0 && zoom < 1 ? 1 / zoom : 1; // the page is drawn smaller than life, so grow the handles back
+  const selectedMirrorId = useSelectionStore((s) => s.selectedMirrorId);
   return (
     <div
       data-testid="selection-overlay"
@@ -42,8 +44,10 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
       {/* 1. Hover Outlines for non-selected hovered element */}
       {(() => {
         const targetHover = hoveredId === "subtitle" ? "headline" : hoveredId;
-        if (!targetHover || selectedIds.includes(targetHover) || !elements[targetHover]) return null;
-        const el = elements[targetHover];
+        if (!targetHover || selectedIds.includes(targetHover)) return null;
+        const compoundHover = selectedMirrorId ? `${selectedMirrorId}::${targetHover}` : null;
+        const el = (compoundHover && elements[compoundHover]) ? elements[compoundHover] : elements[targetHover];
+        if (!el) return null;
         return (
           <div
             data-testid="hover-outline"
@@ -61,7 +65,8 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
       {/* 2. Selection Boxes & 8 Resize Handles */}
       {selectedIds.map((id) => {
         const targetId = id === "subtitle" ? "headline" : id;
-        const el = elements[targetId];
+        const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${targetId}` : null;
+        const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[targetId];
         if (!el) return null;
 
         return (
@@ -76,6 +81,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
               width: el.width - STAGE_CONSTANTS.selectionBoxOffset * 2,
               height: el.height - STAGE_CONSTANTS.selectionBoxOffset * 2,
               border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
+              ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
             }}
           >
             {/* 8 Resize Handles around the bounding frame */}
