@@ -73,6 +73,7 @@ test("cut a mountain out of its picture and place it over another background", a
   expect(kept).toBeLessThan(65);
 
   const before = (await images(page)).length;
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Add as new layer" }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -128,6 +129,7 @@ test("Apply to this image swaps the picture for its cutout", async ({ page }) =>
   await page.getByRole("button", { name: "Cut out", exact: true }).click();
   const dialog = page.getByTestId("cutout-dialog");
   await dialog.getByRole("button", { name: "Auto", exact: true }).click();
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Apply to this image" }).click();
   await expect(dialog).toHaveCount(0);
   await expect.poll(async () => String((await layers(page))[pic.id].properties["media.src"])).not.toBe(String(pic.properties["media.src"]));
@@ -190,6 +192,7 @@ test("a frame's picture fill: a piece cut from it lines up exactly, and text goe
   await page.mouse.down();
   for (const q of corners.slice(1)) await page.mouse.move(q.x, q.y, { steps: 4 });
   await page.mouse.up();
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Add as new layer" }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -245,8 +248,13 @@ test("a loose shape drawn around the mountain settles onto its edge with Snap to
     await page.mouse.up();
   };
 
+  // marking comes first: nothing can be applied until the area is selected
+  await expect(dialog.getByRole("button", { name: "Add as new layer" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Select", exact: true })).toBeDisabled();
   await dialog.getByLabel("Snap to edges").uncheck();
   await draw();
+  await expect(dialog.getByRole("button", { name: "Select", exact: true })).toBeEnabled();
+  await expect(dialog.getByRole("button", { name: "Add as new layer" }), "still marking").toBeDisabled();
   await expect.poll(() => keptPercent(page), "as drawn, the shape keeps the strip of sky around the mountain").toBeGreaterThanOrEqual(50);
 
   await dialog.getByRole("button", { name: "Reset", exact: true }).click();

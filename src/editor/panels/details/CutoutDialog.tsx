@@ -87,6 +87,8 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
   const [click, setClick] = useState<Click>("keep");
   const [how, setHow] = useState<"click" | "draw" | "depth">("click");
   // Smart: a drawn shape settles onto the object's real edge; the picture's depth is estimated for picking by depth and for depth layers
+  // Marking first: picks highlight an area on the whole picture; Select keeps it, and only then can it be applied
+  const [phase, setPhase] = useState<"mark" | "done">("mark");
   const [snap, setSnap] = useState(true);
   const [reach, setReach] = useState(14);
   const [depth, setDepth] = useState<Float32Array | null>(null);
@@ -187,6 +189,8 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
     const ctx = c.getContext("2d") as CanvasRenderingContext2D;
     const out = ctx.createImageData(width, height);
     const tint = showDepth && depth ? depth : null;
+    const marking = phase === "mark";
+    const anyMarked = marking && !kept.every((v) => v === 255);
     for (let i = 0; i < kept.length; i++) {
       const o = i * 4;
       let r = data[o];
@@ -202,13 +206,23 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
       out.data[o] = r;
       out.data[o + 1] = g;
       out.data[o + 2] = b;
-      out.data[o + 3] = Math.round(data[o + 3] * (0.14 + 0.86 * (kept[i] / 255)));
+      if (marking) {
+        // the marked area is highlighted on the whole picture; nothing is cut yet
+        if (anyMarked) {
+          const m = kept[i] / 255;
+          out.data[o] = r * (1 - 0.4 * m) * (1 - 0.25 * (1 - m)) + 47 * 0.4 * m;
+          out.data[o + 1] = g * (1 - 0.4 * m) * (1 - 0.25 * (1 - m)) + 107 * 0.4 * m;
+          out.data[o + 2] = b * (1 - 0.4 * m) * (1 - 0.25 * (1 - m)) + 255 * 0.4 * m;
+        }
+        out.data[o + 3] = data[o + 3];
+      } else out.data[o + 3] = Math.round(data[o + 3] * (0.14 + 0.86 * (kept[i] / 255)));
     }
     ctx.putImageData(out, 0, 0);
-  }, [picture, kept, depth, showDepth]);
+  }, [picture, kept, depth, showDepth, phase]);
 
   const commit = useCallback(
     (next: Mask) => {
+      setPhase("mark");
       setHistory((h) => (base ? [...h.slice(-19), base] : h));
       setBase(next);
     },
@@ -507,7 +521,7 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
 
           <div className="ll:flex ll:flex-col ll:gap-3" style={{ flex: "0 0 300px", maxWidth: "100%" }}>
             <p className="ll:font-sans ll:text-small ll:text-muted ll:m-0">
-              Click takes the colour under the pointer; Draw takes the shape you drag around something. Keep adds to what stays, Cut removes from it. Draw a rough shape and it settles onto the object&apos;s edge. Depth picks everything at about the depth you click. Pinch or Ctrl + wheel zooms in to draw along an edge. Auto finds the subject from the edges of the picture.
+              Click takes the colour under the pointer; Draw takes the shape you drag around something. Keep adds to the marked area, Cut removes from it; the area is highlighted until you press Select. Draw a rough shape and it settles onto the object&apos;s edge. Depth picks everything at about the depth you click. Pinch or Ctrl + wheel zooms in to draw along an edge. Auto finds the subject from the edges of the picture.
             </p>
             <div role="radiogroup" aria-label="What a click does" className="ll:flex ll:gap-1">
               {(["keep", "cut"] as const).map((m) => (
@@ -575,7 +589,7 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
                 disabled={busy || !picture}
                 aria-label="Make depth layers"
               >
-                {depth ? `Make ${layerCount - 1} ${layerCount === 2 ? "layer" : "layers"}` : depthWanted ? "Estimating…" : "Make layers"}
+                {depth ? `Make ${layerCount - 1}` : depthWanted ? "Estimating…" : "Make layers"}
               </Button>
             </div>
             <div className="ll:flex ll:gap-1 ll:flex-wrap">
@@ -606,11 +620,20 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
         </div>
 
         <div className="ll:flex ll:justify-end ll:gap-2">
-          <Button size="sm" variant="secondary" onClick={() => void apply(true)} disabled={busy || !picture || keptPixels === 0}>
+          {phase === "mark" ? (
+            <Button size="sm" variant="strong" onClick={() => setPhase("done")} disabled={!picture || keptPixels === 0 || (base?.every((v) => v === 255) ?? true)} title="Happy with the marked area? Select it, then add it as a layer or apply it.">
+              Select
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setPhase("mark")} title="Go back to adding to or removing from the marked area.">
+              Edit selection
+            </Button>
+          )}
+          <Button size="sm" variant="secondary" onClick={() => void apply(true)} disabled={busy || !picture || keptPixels === 0 || phase !== "done"} title={phase !== "done" ? "Press Select first" : undefined}>
             Add as new layer
           </Button>
           {!fill && (
-            <Button size="sm" variant="primary" onClick={() => void apply(false)} disabled={busy || !picture || keptPixels === 0}>
+            <Button size="sm" variant="primary" onClick={() => void apply(false)} disabled={busy || !picture || keptPixels === 0 || phase !== "done"} title={phase !== "done" ? "Press Select first" : undefined}>
               Apply to this image
             </Button>
           )}
