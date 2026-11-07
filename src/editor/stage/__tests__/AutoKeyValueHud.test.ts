@@ -338,5 +338,134 @@ describe("Phase 70 · Auto-key on the stage & value HUD", () => {
       assert.ok(html.includes('data-rotation="50"'), "Evaluated rotation at t=1 is 50°");
       assert.ok(html.includes('data-opacity="75"'), "Evaluated opacity at t=1 is 75%");
     });
+
+    it("Condition 1: places keyframes in clip-local time domain for clips with nonzero offset and layer stretch", () => {
+      const { layerId } = createTestDoc();
+      useTimelineUiStore.getState().setRecordMode(true);
+
+      // Setup layer placement and clip offset in composition
+      const doc = getDocument();
+      const updatedDoc = {
+        ...doc,
+        compositions: {
+          ...doc.compositions,
+          [MAIN_COMPOSITION_ID]: {
+            ...doc.compositions[MAIN_COMPOSITION_ID],
+            layers: {
+              ...doc.compositions[MAIN_COMPOSITION_ID].layers,
+              [layerId]: { start: 1.0, stretch: 2.0, in: 0, out: 5.0 },
+            },
+          },
+        },
+      };
+      setDocument(updatedDoc);
+
+      // When recording at composition time 3.0s:
+      // Local time should be: (3.0 - bar.start) / bar.stretch = (3.0 - 1.0) / 2.0 = 1.0s
+      transport.seek(3.0);
+      documentCommands.updateProps(layerId, { "frame.x": 280 });
+
+      const xKeys = getLayerKeyframes(layerId, "frame.x");
+      assert.equal(xKeys.length, 1, "Exactly one keyframe created");
+      assert.equal(xKeys[0].time, 1.0, "Keyframe is recorded at clip-local time 1.0s, not composition time 3.0s");
+      assert.equal(xKeys[0].value, 280, "Keyframe value is 280");
+
+      // Verify canonical evaluate() at composition time 3.0 maps to local time 1.0s
+      const evalAtCompTime = evaluate(getDocument(), MAIN_COMPOSITION_ID, layerId, 3.0);
+      assert.equal(evalAtCompTime["frame.x"], 280, "evaluate() at composition time 3.0s matches recorded value");
+    });
+
+    it("Condition 2: handles nested parent layout origins without double-counting or HUD jumps", () => {
+      const b = new DocBuilder();
+      const parentId = b.layer("container", "ParentGroup", null, {
+        "frame.x": 100,
+        "frame.y": 80,
+        "frame.width": 400,
+        "frame.height": 300,
+      });
+      const childId = b.layer("container", "ChildElement", parentId, {
+        "frame.x": 40,
+        "frame.y": 30,
+        "frame.width": 120,
+        "frame.height": 60,
+        "frame.rotation": 0,
+        "appearance.opacity": 1,
+      });
+
+      setDocument(b.build());
+      transport.setComposition({
+        id: MAIN_COMPOSITION_ID,
+        fps: 60,
+        duration: 5,
+        workArea: { start: 0, end: 5 },
+      });
+      transport.seek(0);
+
+      // Child has origin offset from parent (ox = 100, oy = 80)
+      // Visual canvas coordinates: x = 140, y = 110
+      const elements: Record<string, StageElement> = {
+        [childId]: {
+          id: childId,
+          name: "ChildElement",
+          type: "container",
+          x: 140,
+          y: 110,
+          ox: 100,
+          oy: 80,
+          width: 120,
+          height: 60,
+        },
+      };
+
+      // 1. Static / idle state: HUD shows canvas coordinates (140, 110)
+      const staticHtml = renderToStaticMarkup(
+        React.createElement(ValueHud, {
+          selectedIds: [childId],
+          elements,
+          forceVisible: true,
+          isGesturing: false,
+        })
+      );
+      assert.ok(staticHtml.includes('data-x="140"'), "Nested child X includes parent origin (100 + 40 = 140)");
+      assert.ok(staticHtml.includes('data-y="110"'), "Nested child Y includes parent origin (80 + 30 = 110)");
+
+      // 2. Gesture move state: Child is dragged +20px horizontally, +15px vertically
+      const movingElements: Record<string, StageElement> = {
+        [childId]: {
+          ...elements[childId],
+          x: 160,
+          y: 125,
+        },
+      };
+      const gestureHtml = renderToStaticMarkup(
+        React.createElement(ValueHud, {
+          selectedIds: [childId],
+          elements: movingElements,
+          isGesturing: true,
+        })
+      );
+      assert.ok(gestureHtml.includes('data-x="160"'), "During gesture, live HUD reflects moved position 160");
+      assert.ok(gestureHtml.includes('data-y="125"'), "During gesture, live HUD reflects moved position 125");
+
+      // 3. Gesture commit: updateProps writes relative coordinates (160 - 100 = 60, 125 - 80 = 45)
+      documentCommands.updateProps(childId, {
+        "frame.x": 60,
+        "frame.y": 45,
+      });
+
+      // 4. Post-gesture evaluated state (isGesturing = false)
+      const committedHtml = renderToStaticMarkup(
+        React.createElement(ValueHud, {
+          selectedIds: [childId],
+          elements: movingElements,
+          forceVisible: true,
+          isGesturing: false,
+        })
+      );
+      // Evaluated frame.x (60) + ox (100) = 160
+      // Evaluated frame.y (45) + oy (80) = 125
+      assert.ok(committedHtml.includes('data-x="160"'), "Zero jump: post-gesture evaluated X matches gesture X exactly (160)");
+      assert.ok(committedHtml.includes('data-y="125"'), "Zero jump: post-gesture evaluated Y matches gesture Y exactly (125)");
+    });
   });
 });
