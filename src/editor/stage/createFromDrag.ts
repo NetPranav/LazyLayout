@@ -42,6 +42,8 @@ export function creationSpecFor(tool: CanvasTool, shape: ShapeTool): CreationSpe
   if (tool === "frame") return { archetype: "container", label: "Frame", kind: "box" };
   if (tool === "text") return { archetype: "text", label: "Text", kind: "box" };
   if (tool === "shape") return SHAPES[shape] ?? SHAPES.box;
+  if (tool === "pen") return { archetype: "svgPath", label: "Path", kind: "box" };
+  if (tool === "pencil") return { archetype: "svgPath", label: "Pencil", kind: "box" };
   return null;
 }
 

@@ -12,6 +12,7 @@ import {
   Hexagon,
   Star,
   Type,
+  PenTool,
   Image as ImageIcon,
   Plus,
   Play,
@@ -374,6 +375,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
+            {/* Pen / Vector (P) */}
+            <IconButton
+              size="lg"
+              data-tool="pen"
+              aria-label="Pen (P) / Pencil (Shift+P)"
+              tooltip="Pen (P) / Pencil (Shift+P)"
+              pressed={activeTool === "pen" || activeTool === "pencil"}
+              tabIndex={focusedIndex === 5 ? 0 : -1}
+              onFocus={() => setFocusedIndex(5)}
+              onClick={() => onSelectTool?.("pen")}
+              icon={<Icon icon={PenTool} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
             {/* Image */}
             <IconButton
               size="lg"
@@ -381,8 +395,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-label="Image"
               tooltip="Image"
               pressed={activeTool === "image"}
-              tabIndex={focusedIndex === 5 ? 0 : -1}
-              onFocus={() => setFocusedIndex(5)}
+              tabIndex={focusedIndex === 6 ? 0 : -1}
+              onFocus={() => setFocusedIndex(6)}
               onClick={() => onSelectTool?.("image")}
               icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />

@@ -279,6 +279,8 @@ export function useEditorActions(
       shape: "rectangle",
       text: "text",
       image: "select",
+      pen: "pen",
+      pencil: "pencil",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
   }, []);
@@ -985,8 +987,13 @@ export function useEditorActions(
       const isShift = e.shiftKey;
       const isAlt = e.altKey;
 
-      // Escape closes overlays
+      // Escape closes overlays and exits preview
       if (e.key === "Escape") {
+        if (useCanvasViewStore.getState().mode === "preview") {
+          useCanvasViewStore.getState().setMode("design");
+          e.preventDefault();
+          return;
+        }
         if (isInsertOpen) {
           setIsInsertOpen(false);
           e.preventDefault();
@@ -1282,6 +1289,15 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           setActiveTool("text");
+          return;
+        }
+        if (key === "p") {
+          e.preventDefault();
+          if (e.shiftKey) {
+            setActiveTool("pencil");
+          } else {
+            setActiveTool("pen");
+          }
           return;
         }
         if (key === "r") {
