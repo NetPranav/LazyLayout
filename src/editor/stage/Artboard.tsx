@@ -8,6 +8,7 @@ import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
+import { CornerPinOverlay } from "./CornerPinOverlay";
 import { RenderLayer } from "@/core/render";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
@@ -534,6 +535,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
         onStartResize={onStartResize}
         zoom={zoomScale}
       />
+
+      {/* Corner pin: handles and a grid on the surface a pinned layer lies on */}
+      <CornerPinOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

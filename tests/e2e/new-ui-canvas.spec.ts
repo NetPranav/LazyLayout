@@ -571,6 +571,44 @@ test.describe("arranging: what is on top is what you see", () => {
   });
 });
 
+test.describe("corner pin: lay a layer on a surface", () => {
+  test("the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step", async ({ page }) => {
+    await ready(page);
+    const r = await rectangle(page, 0.2, 0.3, 0.45, 0.45);
+    await clickCentre(page, r.id);
+    const p = (await layers(page))[r.id].properties;
+    const [x, y, w, h] = ["frame.x", "frame.y", "frame.width", "frame.height"].map((k) => Number(p[k]));
+    await setProps(page, r.id, { "transform.pin": `${x},${y},${x + w},${y},${x + w},${y + h},${x},${y + h}` });
+    const overlay = page.getByTestId("corner-pin-overlay");
+    await expect(overlay).toBeVisible();
+    await expect(overlay.getByRole("button")).toHaveCount(4);
+    const pin = async () => String((await layers(page))[r.id].properties["transform.pin"]).split(",").map(Number);
+    const before = await pin();
+
+    // drag the top right corner up and in: the far edge of a surface
+    const handle = overlay.getByRole("button", { name: "Corner pin top right" });
+    const b = (await handle.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width / 2 - 20, b.y + b.height / 2 - 30, { steps: 6 });
+    await page.mouse.up();
+    const after = await pin();
+    expect(after[2], "the corner moved left").toBeLessThan(before[2]);
+    expect(after[3], "and up").toBeLessThan(before[3]);
+    expect([after[0], after[1], after[4], after[5], after[6], after[7]], "the other corners stayed").toEqual([before[0], before[1], before[4], before[5], before[6], before[7]]);
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform), "drawn in perspective").toMatch(/^matrix3d/);
+
+    await page.locator("[data-stage=artboard]").hover();
+    await page.keyboard.press("Control+z");
+    await expect.poll(pin, "one undo step takes the whole drag back").toEqual(before);
+
+    // removing the pin puts it back to a plain layer
+    await setProps(page, r.id, { "transform.pin": "" });
+    await expect(overlay).toHaveCount(0);
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform)).toBe("none");
+  });
+});
+
 test.describe("saved projects", () => {
   test("a current project is left as it is: a sample layer the designer put in flow stays in flow", async ({ page }) => {
     await ready(page, { empty: false });
