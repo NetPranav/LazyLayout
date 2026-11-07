@@ -27,7 +27,7 @@ import {
 } from "./persistence";
 import { useEditorActions } from "./useEditorActions";
 import { useShellFx } from "./shellFx";
-import { useMotionModel } from "@/editor/motion-model";
+import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -68,6 +68,9 @@ export function EditorShell({
   // Project persistence, locking and shell commands
   const files = useProjectFiles();
   useProjectLock();
+
+  // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
+  useEffect(() => installDocumentMotionSync(), []);
 
   // Seed the prototype document if the project is brand new and untouched. Once the page has had content in this session,
   // an empty page is the designer's choice (they deleted everything), not a new project, so it stays empty.

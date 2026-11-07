@@ -13,6 +13,22 @@ import {
 } from "./model";
 import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams } from "./types";
 import { transport } from "@/core/time/transport";
+import {
+  setKeyframeAt,
+  deleteKeyframes,
+  ensureTrack,
+  locateKeyframes,
+  placementsOf,
+} from "@/core/timeline/keyframeOps";
+import { transaction } from "@/core/editing/editOps";
+import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
+import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
+import {
+  UI_TO_CANONICAL_PATH,
+  CANONICAL_TO_UI_PATH,
+  uiToCanonicalValue,
+  uiEaseToCanonical,
+} from "./sync";
 
 export interface MotionState {
   comp: Composition;
@@ -538,6 +554,15 @@ export const motionActions = {
       };
     });
   },
+  ensureLayer(layerId: string): MotionLayer {
+    let l = useMotionModel.getState().comp.layers.find((x) => x.id === layerId);
+    if (!l) {
+      edit((c) => {
+        l = ensureLayer(c, layerId);
+      });
+    }
+    return l ?? makeLayer(layerId, 0, []);
+  },
   addKey(layerId: string, p: PropId, t: number, v?: number): string {
     let id = newKeyId();
     edit((comp) => {
@@ -558,6 +583,21 @@ export const motionActions = {
       }
       sortKeys(tr);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        const fps = useMotionModel.getState().fps || 60;
+        const tSec = t / fps;
+        const val = clampN(v ?? (useMotionModel.getState().comp.layers.find(x => x.id === layerId)?.tr.find(tr => tr.p === p)?.keys.find(k => k.t === t)?.v ?? PROPS[p].d), PROPS[p].lo, PROPS[p].hi);
+        const canonicalVal = uiToCanonicalValue(p, val);
+        const kfId = setKeyframeAt(layerId, canonicalPath, tSec, { value: canonicalVal });
+        if (kfId) id = kfId;
+      }
+    } catch {
+      // Test or standalone fallback
+    }
+
     return id;
   },
   setKeyValue(keyId: string, v: number): void {
@@ -565,6 +605,19 @@ export const motionActions = {
       const f = findKey(c, keyId);
       if (f) f.k.v = clampN(v, PROPS[f.tr.p].lo, PROPS[f.tr.p].hi);
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        const propId = CANONICAL_TO_UI_PATH[loc.property];
+        const canonicalVal = propId ? uiToCanonicalValue(propId, v) : v;
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, value: canonicalVal });
+      }
+    } catch {
+      // fallback
+    }
   },
   setKeyTime(keyId: string, t: number): void {
     edit((c) => {
@@ -574,6 +627,19 @@ export const motionActions = {
         sortKeys(f.tr);
       }
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        const fps = useMotionModel.getState().fps || 60;
+        const tSec = t / fps;
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, time: tSec });
+      }
+    } catch {
+      // fallback
+    }
   },
   setKeyEase(keyId: string, ease: EaseName, bz?: Bezier, spring?: SpringParams): void {
     edit((c) => {
@@ -583,6 +649,17 @@ export const motionActions = {
       if (bz) f.k.bz = bz;
       if (spring) f.k.spring = spring;
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+      }
+    } catch {
+      // fallback
+    }
   },
   deleteKeys(ids: string[]): void {
     const set = new Set(ids);
@@ -598,6 +675,12 @@ export const motionActions = {
       for (const id of ids) delete selectedKeys[id];
       return { selectedKeys };
     });
+
+    try {
+      deleteKeyframes(ids);
+    } catch {
+      // fallback
+    }
   },
   selectKeys(ids: string[], additive?: boolean): void {
     useMotionModel.setState((s) => {
@@ -622,12 +705,39 @@ export const motionActions = {
       l.tr.push({ p, keys: [] });
       sortTracks(l);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        transaction("Add track", () => {
+          ensureTrack(layerId, canonicalPath);
+        });
+      }
+    } catch {
+      // fallback
+    }
   },
   removeProperty(layerId: string, p: PropId): void {
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) l.tr = l.tr.filter((t) => t.p !== p);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        const doc = getDocument();
+        const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+        for (const pl of placed) {
+          const tr = pl.clip.tracks.find((t) => t.property === canonicalPath);
+          if (tr) {
+            documentCommands.removeTrack(pl.clip.id, tr.id);
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
   },
   applyPreset(layerId: string, preset: string): void {
     edit((c) => {
@@ -657,6 +767,32 @@ export const motionActions = {
       }
       sortTracks(l);
     });
+
+    try {
+      const s = useMotionModel.getState();
+      const fps = s.fps || 60;
+      const motionLayer = s.comp.layers.find(l => l.id === layerId);
+      const startFrame = motionLayer ? Math.min(...motionLayer.clips.map(c => c.s)) : 0;
+      const sSec = startFrame / fps;
+      transaction("Apply preset", () => {
+        if (preset === "Fade in") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 36 / fps, { value: 1 });
+        } else if (preset === "Slide up") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 36 / fps, { value: 1 });
+          setKeyframeAt(layerId, "transform.y", sSec, { value: 24 });
+          setKeyframeAt(layerId, "transform.y", sSec + 36 / fps, { value: 0 });
+        } else if (preset === "Pop") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 24 / fps, { value: 1 });
+          setKeyframeAt(layerId, "transform.scale", sSec, { value: 0.86, ease: "back-out" });
+          setKeyframeAt(layerId, "transform.scale", sSec + 36 / fps, { value: 1 });
+        }
+      });
+    } catch {
+      // fallback
+    }
   },
   addMarker(t: number, name?: string): void {
     edit((c) => {

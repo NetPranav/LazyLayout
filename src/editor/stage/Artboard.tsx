@@ -15,6 +15,17 @@ import { EngineLayer } from "./EngineLayer";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import {
+  computeComposedWorldMatrix,
+  formatCssMatrix,
+  getLayerParentRef,
+  type AffineMatrix2D,
+} from "@/core/geometry/parentTransforms";
+import { evaluate } from "@/core/kernel/evaluate";
+import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
+import { getDocument } from "@/core/store/useDocumentStore";
+import { useMotionModel } from "@/editor/motion-model";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
@@ -27,8 +38,31 @@ function designTransform(
   properties: Record<string, unknown>,
   layer?: Layer,
   width?: number,
-  height?: number
+  height?: number,
+  layers?: Record<string, Layer>
 ): { transform?: string; transformOrigin?: string } {
+  // Phase 73: If layer has a parentRef, compose world transform matrix across parent chain
+  if (layer && layers && getLayerParentRef(layer)) {
+    const parentRef = getLayerParentRef(layer);
+    if (parentRef && layers[parentRef]) {
+      const composedM = computeComposedWorldMatrix(layers, layer.id);
+      const fx = typeof properties["frame.x"] === "number" ? (properties["frame.x"] as number) : 0;
+      const fy = typeof properties["frame.y"] === "number" ? (properties["frame.y"] as number) : 0;
+      const relM: AffineMatrix2D = [
+        composedM[0],
+        composedM[1],
+        composedM[2],
+        composedM[3],
+        composedM[4] - fx,
+        composedM[5] - fy,
+      ];
+      return {
+        transform: formatCssMatrix(relM),
+        transformOrigin: "0 0",
+      };
+    }
+  }
+
   const n = (k: string, d: number) => (typeof properties[k] === "number" ? (properties[k] as number) : d);
   const tx = n("transform.x", 0), ty = n("transform.y", 0);
   const rx = n("transform.rotateX", 0), ry = n("transform.rotateY", 0), rz = n("transform.rotate", 0);
@@ -134,6 +168,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
+  const playhead = useMotionModel((s) => s.playhead);
+  const fps = useMotionModel((s) => s.fps) || 60;
+  const motionTimeSec = playhead / fps;
 
   const activePresetId = controlledPreset !== undefined ? controlledPreset : internalPreset;
   const currentPresetDef =
@@ -306,8 +344,26 @@ export const Artboard: React.FC<ArtboardProps> = ({
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
           const layer = layers?.[el.id];
+          const isHelper = layer?.properties["render.role"] === "helper";
+          if (isHelper && canvasViewMode === "preview") return null;
+
           const engineDrawn = !!layer && !PROTOTYPE_DRAWN.has(el.id);
           const isSelected = selectedIds.includes(el.id) || (el.id === "headline" && selectedIds.includes("subtitle"));
+          const doc = getDocument();
+          let evaluatedProps: Record<string, unknown> = layer?.properties ?? {};
+          try {
+            if (layer) {
+              evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, el.id, motionTimeSec);
+            }
+          } catch {
+            // fallback
+          }
+          const elementTransform = layer
+            ? designTransform(evaluatedProps, layer, el.width, el.height, layers)
+            : {};
+          const animOpacity = typeof evaluatedProps["appearance.opacity"] === "number"
+            ? (evaluatedProps["appearance.opacity"] as number)
+            : undefined;
 
           return (
             <div
@@ -317,10 +373,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
               data-element-id={el.id}
               data-testid="stage-element"
               data-selected={isSelected ? "true" : "false"}
+              data-layer-role={isHelper ? "helper" : "content"}
               className={`ll-element ll:absolute ll:select-none ${
                 isSelected ? "ll-sel sel " : ""
               }${
-                engineDrawn
+                isHelper
+                  ? "ll:cursor-default ll:border-dashed ll:border-[1.5px] ll:border-accent/80 ll:bg-accent/5 "
+                  : engineDrawn
                   ? "ll:cursor-default "
                   : el.type === "button"
                   ? "ll-pg-b pg-b ll:cursor-pointer ll:grid ll:place-items-center ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:font-medium "
@@ -333,7 +392,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...(engineDrawn && layer ? designTransform(layer.properties, layer, el.width, el.height) : {}),
+                ...elementTransform,
+                ...(animOpacity !== undefined ? { opacity: animOpacity } : {}),
+                ...(isHelper ? { border: "1.5px dashed var(--ll-accent, #6366f1)" } : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
               onDoubleClick={(e) => {
@@ -364,7 +425,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 });
               }}
             >
-              {engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
+              {isHelper && (
+                <span
+                  data-testid="helper-layer-badge"
+                  className="ll:absolute ll:top-0 ll:left-0 ll:text-micro ll:px-1 ll:bg-surface-elevated ll:text-accent ll:font-mono ll:rounded-br ll:pointer-events-none ll:select-none ll:border-r ll:border-b ll:border-accent/40"
+                >
+                  NULL: {layer?.name ?? el.id}
+                </span>
+              )}
+              {!isHelper && engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
               {editingText === el.id && layer && (
                 <textarea
                   autoFocus

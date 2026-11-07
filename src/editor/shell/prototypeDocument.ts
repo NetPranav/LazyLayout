@@ -3,6 +3,7 @@ import { createLayer } from "@/core/document/factories";
 import { getDefaultProps, type PropValue } from "@/core/document/registry";
 import { documentCommands, getDocument } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
+import { setKeyframeAt } from "@/core/timeline/keyframeOps";
 
 /**
  * Checks whether the document is the initial untouched blank project that needs
@@ -370,5 +371,32 @@ export function seedPrototypeDocument(): void {
         },
       },
     }));
+  }
+
+  // Seed canonical initial keyframes for prototype elements
+  try {
+    setKeyframeAt("headline", "appearance.opacity", 0, { value: 0 });
+    setKeyframeAt("headline", "appearance.opacity", 0.6, { value: 1 });
+    setKeyframeAt("headline", "transform.y", 0, { value: 24 });
+    setKeyframeAt("headline", "transform.y", 0.6, { value: 0 });
+
+    setKeyframeAt("subtitle", "appearance.opacity", 0.3, { value: 0 });
+    setKeyframeAt("subtitle", "appearance.opacity", 1.0, { value: 1 });
+    setKeyframeAt("subtitle", "transform.y", 0.3, { value: 16 });
+    setKeyframeAt("subtitle", "transform.y", 1.0, { value: 0 });
+
+    setKeyframeAt("button", "appearance.opacity", 0.8, { value: 0 });
+    setKeyframeAt("button", "appearance.opacity", 1.2, { value: 1 });
+    setKeyframeAt("button", "transform.scale", 0.8, { value: 0.86, ease: "back-out" });
+    setKeyframeAt("button", "transform.scale", 1.4, { value: 1.0 });
+
+    setKeyframeAt("image", "appearance.opacity", 0.2, { value: 0 });
+    setKeyframeAt("image", "appearance.opacity", 1.0, { value: 1 });
+    setKeyframeAt("image", "transform.x", 0.2, { value: 40 });
+    setKeyframeAt("image", "transform.x", 1.1, { value: 0 });
+    setKeyframeAt("image", "transform.rotate", 0.2, { value: 4 });
+    setKeyframeAt("image", "transform.rotate", 1.1, { value: 0 });
+  } catch {
+    // ignore
   }
 }
