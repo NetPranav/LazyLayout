@@ -4,6 +4,7 @@
  * emptied page stays empty, and a project saved by an older build opens at the right page size. Also the gestures the
  * rewrite touched: marquee, Shift-click and Alt-drag.
  */
+import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { openEditor, waitSaved } from "./support/editor";
 
@@ -135,6 +136,14 @@ test.describe("the canvas draws the real tree", () => {
     expect(await filter.first().getAttribute("filterUnits")).toBe("userSpaceOnUse");
   });
 
+  test("a drawn shape says Fixed, as that is how it is drawn", async ({ page }) => {
+    await ready(page);
+    const r = await rectangle(page, 0.2, 0.3, 0.3, 0.4);
+    await clickCentre(page, r.id);
+    await expect(page.getByRole("combobox", { name: "Width sizing" })).toContainText("Fixed");
+    await expect(page.getByRole("combobox", { name: "Height sizing" })).toContainText("Fixed");
+  });
+
   test("Insert > Sections adds a real section to the page on screen", async ({ page }) => {
     await ready(page);
     const before = await count(page);
@@ -211,6 +220,161 @@ test.describe("gestures", () => {
     expect(order.indexOf(held.id), "what is held is on top of the copy").toBe(order.length - 1);
     await page.keyboard.press("Control+z");
     await expect.poll(() => count(page)).toBe(n);
+  });
+});
+
+test.describe("what goes under what", () => {
+  const parentOf = async (page: Page, id: string) => (await layers(page))[id].parentId;
+  async function picture(page: Page) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: /^Image/ }).first().click();
+    await (await chooser).setFiles(path.join(__dirname, "fixtures", "mountain-subject.svg"));
+    await expect.poll(async () => (await ofKind(page, "image")).length).toBeGreaterThan(0);
+    return (await ofKind(page, "image")).pop()!;
+  }
+
+  test("a new picture goes into the frame it lands on, or the selected frame, and shows on top there", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.2, 0.2, 0.8, 0.8); // the middle of the page is in this frame
+    await page.locator("[data-stage=workspace]").click({ position: { x: 10, y: 400 } }); // nothing selected
+    const img = await picture(page);
+    expect(await parentOf(page, img.id), "it landed on the frame").toBe(f.id);
+    const after = await layers(page);
+    expect(after[f.id].children.at(-1)).toBe(img.id);
+    const fw = Number(after[f.id].properties["frame.width"]);
+    const iw = Number(after[img.id].properties["frame.width"]);
+    expect(Math.abs(Number(after[img.id].properties["frame.x"]) - (fw - iw) / 2), "centred in the frame").toBeLessThan(2);
+    await page.keyboard.press("Control+z");
+
+    const other = await frame(page, 0.02, 0.1, 0.15, 0.3); // away from the middle, selected once drawn
+    await page.getByText(other.name, { exact: true }).first().click();
+    const second = await picture(page);
+    expect(await parentOf(page, second.id), "the selected frame takes it").toBe(other.id);
+  });
+
+  test("on the canvas a layer goes by where it is let go, even when it is bigger than the frame; several go together", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.05, 0.1, 0.25, 0.3);
+    const big = await rectangle(page, 0.4, 0.1, 0.9, 0.9); // much bigger than the frame
+    const b = (await hit(page, big.id).boundingBox())!;
+    const target = await art(page, 0.15, 0.2);
+    await drag(page, { x: b.x + 15, y: b.y + 15 }, target); // its middle stays far outside the frame
+    await expect.poll(() => parentOf(page, big.id)).toBe(f.id);
+
+    // two selected rectangles dropped on a frame both go in; dropped outside they come back to the page
+    const page0 = Object.values(await layers(page)).find((l) => l.parentId === null)!;
+    await page.keyboard.press("Delete");
+    const a1 = await rectangle(page, 0.5, 0.5, 0.56, 0.56);
+    const a2 = await rectangle(page, 0.6, 0.5, 0.66, 0.56);
+    await clickCentre(page, a1.id);
+    await clickCentre(page, a2.id, "Shift");
+    const box = (await hit(page, a1.id).boundingBox())!;
+    await drag(page, { x: box.x + box.width / 2, y: box.y + box.height / 2 }, target);
+    await expect.poll(() => parentOf(page, a1.id)).toBe(f.id);
+    expect(await parentOf(page, a2.id)).toBe(f.id);
+    const again = (await hit(page, a1.id).boundingBox())!;
+    await drag(page, { x: again.x + again.width / 2, y: again.y + again.height / 2 }, await art(page, 0.6, 0.7));
+    await expect.poll(() => parentOf(page, a1.id)).toBe(page0.id);
+    expect(await parentOf(page, a2.id)).toBe(page0.id);
+  });
+
+  test("in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.05, 0.1, 0.5, 0.6);
+    const inside = await rectangle(page, 0.1, 0.2, 0.2, 0.3);
+    expect(inside.parentId).toBe(f.id);
+    const outside = await rectangle(page, 0.7, 0.2, 0.8, 0.3);
+    const dotted = (id: string) => page.locator(`#p-layers .row[data-sel="${id}"]`);
+
+    // onto a row that cannot hold anything: it goes beside that row, in the same frame, on the side it was dropped
+    const dragTo = async (fromId: string, toId: string, at: number) => {
+      const a = (await dotted(fromId).boundingBox())!;
+      const b = (await dotted(toId).boundingBox())!;
+      await page.mouse.move(a.x + 90, a.y + a.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(a.x + 90, a.y + a.height / 2 + 12, { steps: 3 });
+      await page.mouse.move(b.x + 90, b.y + b.height * at, { steps: 5 });
+      await page.waitForTimeout(100);
+      await page.mouse.up();
+    };
+    await dragTo(outside.id, inside.id, 0.1);
+    await expect.poll(() => parentOf(page, outside.id)).toBe(f.id);
+    const shown = () => page.evaluate(() => [...document.querySelectorAll("#p-layers .row[data-sel]")].map((e) => e.getAttribute("data-sel")));
+    let list = await shown();
+    expect(list.indexOf(outside.id), "dropped on the top of the row: shown above it").toBeLessThan(list.indexOf(inside.id));
+    await dragTo(outside.id, inside.id, 0.9);
+    await expect.poll(async () => { list = await shown(); return list.indexOf(outside.id) > list.indexOf(inside.id); }, "dropped on the bottom: below it").toBe(true);
+
+    // back out to the page, then onto the frame's own row: on top of what it holds
+    const pageRoot = Object.values(await layers(page)).find((l) => l.parentId === null)!;
+    await dragTo(outside.id, f.id, 0.9);
+    await expect.poll(() => parentOf(page, outside.id)).toBe(pageRoot.id);
+    await dragTo(outside.id, f.id, 0.5);
+    await expect.poll(() => parentOf(page, outside.id)).toBe(f.id);
+    expect((await layers(page))[f.id].children.at(-1)).toBe(outside.id);
+
+    // and below the last row: out to the bottom of the page's list
+    const last = (await page.locator("#p-layers .row[data-sel]").last().boundingBox())!;
+    const a = (await dotted(outside.id).boundingBox())!;
+    await page.mouse.move(a.x + 90, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + 90, a.y + a.height / 2 + 12, { steps: 3 });
+    await page.mouse.move(last.x + 90, last.y + last.height + 40, { steps: 5 });
+    await page.waitForTimeout(100);
+    await page.mouse.up();
+    await expect.poll(() => parentOf(page, outside.id)).toBe(pageRoot.id);
+    expect((await layers(page))[pageRoot.id].children[0]).toBe(outside.id);
+  });
+
+  test("several selected rows drag together, and Ctrl and Shift clicks select rows", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.05, 0.1, 0.3, 0.4);
+    const a = await rectangle(page, 0.5, 0.2, 0.56, 0.26);
+    const b = await rectangle(page, 0.6, 0.2, 0.66, 0.26);
+    const rowOf = (id: string) => page.locator(`#p-layers .row[data-sel="${id}"]`);
+    const chosen = () => page.evaluate(() => [...document.querySelectorAll('#p-layers .row[aria-selected="true"]')].map((e) => e.getAttribute("data-sel")));
+
+    await rowOf(a.id).click();
+    await rowOf(b.id).click({ modifiers: ["ControlOrMeta"] });
+    await expect.poll(async () => (await chosen()).sort()).toEqual([a.id, b.id].sort());
+    await rowOf(f.id).click();
+    await rowOf(b.id).click({ modifiers: ["Shift"] }); // the list is front to back: b, a, then the frame
+    await expect.poll(async () => (await chosen()).length).toBe(3);
+
+    await rowOf(a.id).click();
+    await rowOf(b.id).click({ modifiers: ["ControlOrMeta"] });
+    const from = (await rowOf(a.id).boundingBox())!;
+    const to = (await rowOf(f.id).boundingBox())!;
+    await page.mouse.move(from.x + 90, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + 90, from.y + from.height / 2 + 12, { steps: 3 });
+    await page.mouse.move(to.x + 90, to.y + to.height / 2, { steps: 5 });
+    await page.waitForTimeout(100);
+    await page.mouse.up();
+    await expect.poll(() => parentOf(page, a.id)).toBe(f.id);
+    expect(await parentOf(page, b.id)).toBe(f.id);
+  });
+
+  test("a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.05, 0.1, 0.7, 0.8);
+    const a = await rectangle(page, 0.15, 0.25, 0.22, 0.33);
+    const b = await rectangle(page, 0.3, 0.25, 0.37, 0.33);
+    const c = await rectangle(page, 0.5, 0.6, 0.57, 0.68);
+    await page.locator("[data-stage=workspace]").click({ position: { x: 10, y: 400 } });
+    const x0 = (await layers(page))[f.id].properties["frame.x"];
+
+    await drag(page, await art(page, 0.1, 0.18), await art(page, 0.42, 0.42));
+    await expect.poll(async () => (await selected(page)).sort()).toEqual([a.id, b.id].sort());
+    expect((await layers(page))[f.id].properties["frame.x"], "the frame did not move").toBe(x0);
+    expect(await selected(page)).not.toContain(c.id);
+
+    const empty = await art(page, 0.1, 0.7);
+    await page.locator("[data-stage=workspace]").click({ position: { x: 10, y: 400 } });
+    await page.mouse.click(empty.x, empty.y);
+    await expect.poll(() => selected(page)).toEqual([f.id]);
+    await drag(page, empty, { x: empty.x + 40, y: empty.y + 20 });
+    await expect.poll(async () => (await layers(page))[f.id].properties["frame.x"]).not.toBe(x0);
   });
 });
 

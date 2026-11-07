@@ -15,7 +15,7 @@ import {
   STAGE_PRESETS,
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
-import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from "./createFromDrag";
+import { createLayerFromBox, creationSpecFor, drawBox, pictureHome, type CreationSpec } from "./createFromDrag";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
@@ -389,7 +389,7 @@ export const Stage: React.FC<StageProps> = ({
   const gesture = useRef<
     | { kind: "create"; spec: CreationSpec; start: { x: number; y: number } }
     | { kind: "pan"; startX: number; startY: number; from: { x: number; y: number } }
-    | { kind: "marquee"; start: { x: number; y: number }; moved: boolean; pointerId: number }
+    | { kind: "marquee"; start: { x: number; y: number }; moved: boolean; pointerId: number; /** The frame it started in: it selects that frame's layers. */ scope: string | null; additive: boolean }
     | null
   >(null);
   const justDragged = useRef(false);
@@ -432,9 +432,23 @@ export const Stage: React.FC<StageProps> = ({
     const spec = creationSpecFor(activeTool, activeShape);
     if (!spec) {
       // Select on empty canvas: a drag selects what it touches
-      if (activeTool !== "select" || (e.target as HTMLElement).closest('[data-testid="stage-element"],[data-testid="selection-handle"],button,[role=menu]')) return;
+      const pressedOn = e.target as HTMLElement;
+      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],button,[role=menu]')) return;
       const from = toArtboard(e.clientX, e.clientY);
-      if (from) gesture.current = { kind: "marquee", start: { x: from.x, y: from.y }, moved: false, pointerId: e.pointerId };
+      if (!from) return;
+      const box = pressedOn.closest<HTMLElement>('[data-testid="stage-element"]');
+      let scope: string | null = null;
+      if (box) {
+        // A drag on a frame that holds layers selects inside it, or nothing could be marquee-selected on a page of frames.
+        // A selected frame still moves, and a plain click still selects the frame (its click handler reads this press).
+        const id = box.dataset.elementId ?? "";
+        const pressed = getDocument().layers[id];
+        if (!pressed || pressed.archetype !== "container" || pressed.children.length === 0 || pressed.locked || selectedIds.includes(id) || e.shiftKey || e.altKey) return;
+        scope = id;
+        box.dataset.press = `${e.clientX},${e.clientY},0`;
+        e.stopPropagation();
+      }
+      gesture.current = { kind: "marquee", start: { x: from.x, y: from.y }, moved: false, pointerId: e.pointerId, scope, additive: e.shiftKey };
       return;
     }
     if ((e.target as HTMLElement).closest("button,[role=menu]")) return; // the canvas size label and its menu keep working
@@ -495,12 +509,16 @@ export const Stage: React.FC<StageProps> = ({
       const y0 = Math.min(g.start.y, at.y);
       const y1 = Math.max(g.start.y, at.y);
       const layersNow = getDocument().layers;
-      // the layers on the page it touches (not what is inside them, as a frame moves with what it holds)
+      // the layers it touches, one level down from where it started (not what is inside them, as a frame moves with what it holds)
+      const inScope = (id: string) => {
+        const parentId = layersNow[id]?.parentId;
+        return !!parentId && (g.scope ? parentId === g.scope : layersNow[parentId]?.parentId === null);
+      };
       const hit = Object.values(elements)
-        .filter((el) => !el.locked && layersNow[el.id] && layersNow[layersNow[el.id].parentId ?? ""]?.parentId === null)
+        .filter((el) => !el.locked && inScope(el.id))
         .filter((el) => el.x < x1 && el.x + el.width > x0 && el.y < y1 && el.y + el.height > y0)
         .map((el) => el.id);
-      useSelectionStore.getState().selectMultiple(hit, "element");
+      useSelectionStore.getState().selectMultiple(g.additive ? [...new Set([...selectedIds, ...hit])] : hit, "element");
       return;
     }
     const box = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
@@ -528,12 +546,11 @@ export const Stage: React.FC<StageProps> = ({
       return;
     }
     const outcomes = await importFiles(list);
-    const root = activePageRootId();
     let last: string | null = null;
+    const home = pictureHome({ x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 }, elements);
     outcomes.forEach((o, i) => {
-      if (!o.entry || !root) return;
-      const at = { x: presetDef.artboardWidth / 2 + i * 24, y: presetDef.artboardHeight / 2 + i * 24, parentId: root, parentOrigin: { x: 0, y: 0 } };
-      last = placeImage(o.entry, at) ?? last;
+      if (!o.entry || !home) return;
+      last = placeImage(o.entry, { ...home, x: home.x + i * 24, y: home.y + i * 24 }) ?? last;
     });
     if (last) selectStore(last, "element");
     onToolDone?.();

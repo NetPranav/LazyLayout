@@ -34,7 +34,8 @@ export interface LayersTreeProps {
   onToggleExpand?: (id: string) => void;
   onToggleHidden?: (id: string) => void;
   onToggleLocked?: (id: string) => void;
-  onMoveLayer?: (ids: string[], parentId: string | null, index?: number) => void;
+  /** Returns why the move was refused, if it was. */
+  onMoveLayer?: (ids: string[], parentId: string | null, index?: number) => string | void;
   onRename?: (id: string, newName: string) => void;
   onLayerAction?: (action: LayerMenuAction, id: string) => void;
   /** Show the motion badge on animated layers (design mode only, as in the prototype). */
@@ -206,6 +207,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     [visibleNodes]
   );
 
+  /** A row that is part of the selection drags the whole selection. */
+  const movingIds = useCallback((id: string): string[] => (selectedIds.includes(id) ? [...selectedIds] : [id]), [selectedIds]);
+
   // Global pointer move & up listeners for drag-to-reorder and drag-to-timeline
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
@@ -225,26 +229,28 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
         return;
       }
 
+      const moving = movingIds(current.id);
+      const blocked = new Set(moving.flatMap((id) => [...getSubtreeIds(id)]));
+
       const targetEl = el?.closest('#p-layers .row[data-sel]');
       if (!targetEl) {
-        setDragState({ ...current, targetId: null, pos: null });
+        // below the last row: the bottom of the page's own list
+        const last = el?.closest("#p-layers") ? [...visibleNodes].reverse().find((n) => n.level === 0 && !blocked.has(n.id)) : undefined;
+        setDragState({ ...current, targetId: last?.id ?? null, pos: last ? "after" : null });
         return;
       }
       const targetId = targetEl.getAttribute("data-sel");
-      if (!targetId || targetId === current.id) {
-        setDragState({ ...current, targetId: null, pos: null });
-        return;
-      }
-
-      const subtree = getSubtreeIds(current.id);
-      if (subtree.has(targetId)) {
+      if (!targetId || blocked.has(targetId)) {
         setDragState({ ...current, targetId: null, pos: null });
         return;
       }
 
       const b = targetEl.getBoundingClientRect();
       const f = (e.clientY - b.top) / b.height;
-      const pos = f < 0.25 ? "before" : f > 0.75 ? "after" : "in";
+      const node = visibleNodes.find((n) => n.id === targetId);
+      // Only a frame can take layers inside it. On any other row the drop goes beside it (so into the frame that row is in).
+      const holds = node?.item.type === "frame" || node?.item.type === "container";
+      const pos = !node?.parentId ? "in" : holds ? (f < 0.25 ? "before" : f > 0.75 ? "after" : "in") : f < 0.5 ? "before" : "after";
 
       setDragState({
         ...current,
@@ -275,26 +281,23 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       const targetNode = visibleNodes.find((n) => n.id === current.targetId);
       if (!targetNode) return;
 
-      if (current.pos === "in") {
-        if (targetNode.item.type !== "frame" && targetNode.item.type !== "container") {
-          showToast("Only frames can hold layers");
-          return;
-        }
-        onMoveLayer?.([current.id], current.targetId, 0);
-        if (!expandedSet.has(current.targetId)) {
+      const moving = movingIds(current.id);
+      let refused: string | void;
+      if (current.pos === "in" || !targetNode.parentId) {
+        // no index: on top of what the frame already holds, as it would be if it had just been drawn there
+        refused = onMoveLayer?.(moving, current.targetId);
+        if (!refused && !expandedSet.has(current.targetId)) {
           onToggleExpand?.(current.targetId);
         }
-      } else if (current.pos === "before") {
-        const parentId = targetNode.parentId;
-        const siblings = visibleNodes.filter((n) => n.parentId === parentId);
-        const targetIdx = siblings.findIndex((n) => n.id === current.targetId);
-        onMoveLayer?.([current.id], parentId, Math.max(0, targetIdx));
       } else {
+        // The list runs front to back and `children` runs back to front, and the index counts after the moved layers have left.
         const parentId = targetNode.parentId;
-        const siblings = visibleNodes.filter((n) => n.parentId === parentId);
-        const targetIdx = siblings.findIndex((n) => n.id === current.targetId);
-        onMoveLayer?.([current.id], parentId, targetIdx + 1);
+        const siblings = visibleNodes.filter((n) => n.parentId === parentId && !moving.includes(n.id));
+        const shownAt = siblings.findIndex((n) => n.id === current.targetId);
+        const index = current.pos === "before" ? siblings.length - shownAt : siblings.length - 1 - shownAt;
+        refused = onMoveLayer?.(moving, parentId, Math.max(0, index));
       }
+      if (refused) showToast(refused);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -303,7 +306,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [visibleNodes, getSubtreeIds, onMoveLayer, onSelect, expandedSet, onToggleExpand, showToast]);
+  }, [visibleNodes, getSubtreeIds, movingIds, onMoveLayer, onSelect, expandedSet, onToggleExpand, showToast]);
 
   return (
     <div
@@ -320,7 +323,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
         visibleNodes.map((node) => {
           const isSelected = selectedSet.has(node.id);
           const targetIds = isSelected ? selectedIds : [node.id];
-          const isBeingDragged = dragState?.active && dragState?.id === node.id;
+          const isBeingDragged = dragState?.active && (selectedSet.has(dragState.id) ? isSelected : dragState.id === node.id);
           const isDropTarget = dragState?.active && dragState?.targetId === node.id;
           const dropPos = isDropTarget ? dragState?.pos : null;
 

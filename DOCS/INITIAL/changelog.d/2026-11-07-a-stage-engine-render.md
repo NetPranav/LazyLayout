@@ -9,3 +9,10 @@
 - A project saved by an older build is now upgraded even when it has an undo history (it was skipped), and only once: a layer the designer later put in flow stays in flow.
 - Alt-drag keeps what you hold above the copy it leaves behind.
 - W and H show the size a Fill or Hug layer is really drawn at, and typing a size makes it fixed.
+
+### What goes under what
+- A new picture goes into the selected frame or the frame it lands on, centred there, instead of always onto the page.
+- On the canvas a layer goes by where it is let go, so a picture bigger than a frame still lands in it, and several selected layers go together.
+- In the Layers panel a drop on a row that cannot hold layers goes beside that row, several selected rows drag together, a drop below the last row goes to the bottom of the page, before and after land on the side you dropped on, a drop into a frame lands on top of what it holds, and a refused move says why.
+- A drag on a frame that holds layers now draws a selection box inside it. A click selects the frame, and a drag on a selected frame moves it.
+- A drawn shape's Layout section says Fixed, not Hug.

@@ -49,7 +49,8 @@ export interface UseLeftPanelDataOptions {
 
 export interface UseLeftPanelDataReturn extends LeftPanelProps {
   /** Helper to move layers within tree (calls layer.move command) */
-  onMoveLayer: (ids: string[], parentId: string | null, index?: number) => void;
+  /** Returns why the move was refused, if it was. */
+  onMoveLayer: (ids: string[], parentId: string | null, index?: number) => string | void;
   /** All document layer items before filtering */
   allLayers: LayerItem[];
 }

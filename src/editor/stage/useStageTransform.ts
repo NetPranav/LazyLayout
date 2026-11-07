@@ -62,17 +62,23 @@ function sizedByHand(id: string): Record<string, PropValue> {
   return out;
 }
 
-/** Puts a layer under the frame it was dropped on (or back on the page when dropped on none). One undo step; keeps its place. */
-function reparentOnDrop(id: string, drawn: Record<string, StageElement>): void {
+/**
+ * Puts what was dragged under the frame it was dropped on (or back on the page when dropped on none). One undo step per
+ * move; each keeps its place on the canvas. Layers go by where the pointer let go, so a picture bigger than the frame still
+ * lands in it. A frame goes by where its middle lands, so grabbing a big section near its edge does not nest it.
+ */
+function reparentOnDrop(ids: readonly string[], pointer: { x: number; y: number } | null, drawn: Record<string, StageElement>): void {
   const layers = getDocument().layers;
-  const layer = layers[id];
-  if (!layer || layer.parentId === null || layer.locked) return;
-  const box = worldBox(id);
-  if (!box) return;
-  const exclude = new Set(subtreeIds(layers, id));
-  const target = frameAt({ x: box.cx, y: box.cy }, exclude, drawn);
-  const parentId = target?.id ?? activePageRootId();
-  if (parentId && parentId !== layer.parentId) moveLayers([id], parentId);
+  const moving = ids.filter((id) => layers[id] && layers[id].parentId !== null && !layers[id].locked);
+  if (moving.length === 0) return;
+  const box = worldBox(moving[0]);
+  const byMiddle = !pointer || moving.some((id) => layers[id].archetype === "container");
+  const point = byMiddle ? (box ? { x: box.cx, y: box.cy } : null) : pointer;
+  if (!point) return;
+  const exclude = new Set(moving.flatMap((id) => subtreeIds(layers, id)));
+  const parentId = frameAt(point, exclude, drawn)?.id ?? activePageRootId();
+  const going = moving.filter((id) => layers[id].parentId !== parentId);
+  if (parentId && going.length > 0) moveLayers(going, parentId);
 }
 
 export function useStageTransform({
@@ -103,6 +109,8 @@ export function useStageTransform({
     startClientX: number;
     startClientY: number;
     activeId: string;
+    /** Where the drop point is measured from (move gestures). */
+    artboard?: HTMLElement | null;
     targetIds: string[];
     initialBoxes: Record<string, { x: number; y: number; width: number; height: number }>;
     aspectRatio?: number;
@@ -179,6 +187,7 @@ export function useStageTransform({
         targetIds,
         initialBoxes,
         hasMoved: false,
+        artboard: (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-stage="artboard"]'),
       };
 
       try {
@@ -478,7 +487,7 @@ export function useStageTransform({
       }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       if (gestureRef.current) {
         const done = gestureRef.current;
         try {
@@ -488,12 +497,16 @@ export function useStageTransform({
         } catch {
           // Commit fallback
         }
-        // A layer dropped on a frame goes into it, and one dragged out of its frame goes back to the page.
-        if (done.type === "move" && done.hasMoved && done.targetIds.length === 1) {
+        // Layers dropped on a frame go into it, and ones dragged out of their frame go back to the page.
+        if (done.type === "move" && done.hasMoved) {
           try {
-            reparentOnDrop(done.targetIds[0], latestElements.current);
+            const art = done.artboard;
+            const r = art?.getBoundingClientRect();
+            const scale = art && r && art.offsetWidth > 0 ? r.width / art.offsetWidth : 1;
+            const pointer = art && r ? { x: (e.clientX - r.left) / scale - art.clientLeft, y: (e.clientY - r.top) / scale - art.clientTop } : null;
+            reparentOnDrop(done.targetIds, pointer, latestElements.current);
           } catch {
-            // a drop that cannot be made leaves the layer where it is
+            // a drop that cannot be made leaves the layers where they are
           }
         }
         gestureRef.current = null;

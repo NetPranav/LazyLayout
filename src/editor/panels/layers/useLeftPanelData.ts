@@ -9,6 +9,8 @@ import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "@/editor/stage/activePage";
+import { pictureHome } from "@/editor/stage/createFromDrag";
+import { canReparent } from "@/core/layers/reparent";
 import { getAssetStore } from "@/core/assets/AssetStore";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -207,6 +209,8 @@ export function useLeftPanelData(
   // 10. Reorder / move helper
   const onMoveLayer = useCallback(
     (ids: string[], parentId: string | null, index?: number) => {
+      const verdict = canReparent(getDocument().layers, ids, parentId);
+      if (!verdict.ok) return verdict.reason; // the tree shows why
       void invokeCommand("layer.move", { ids, parentId, index });
     },
     []
@@ -414,7 +418,8 @@ export function useLeftPanelData(
     const root = rootId ? getDocument().layers[rootId] : undefined;
     if (!entry || !root || entry.kind === "font") return;
     const px = (v: unknown, fallback: number) => (typeof v === "number" && v > 100 ? v : fallback);
-    placeImage(entry, { x: px(root.properties["frame.width"], 1440) / 2, y: px(root.properties["frame.height"], 900) / 2, parentId: root.id, parentOrigin: { x: 0, y: 0 } });
+    const home = pictureHome({ x: px(root.properties["frame.width"], 1440) / 2, y: px(root.properties["frame.height"], 900) / 2 });
+    if (home) placeImage(entry, home);
   }, []);
 
   // 15. Assets drawer state

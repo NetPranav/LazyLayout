@@ -7,7 +7,7 @@
  * so every section keeps working the way it does and nothing in the sections changes.
  */
 
-import { isPropertyLegalFor, getPropertyDefinition } from "@/core/document/properties";
+import { getLayerGeometry, isPropertyLegalFor, getPropertyDefinition } from "@/core/document/properties";
 import type { Layer } from "@/core/document/schema";
 import type { PropValue } from "@/core/document/registry";
 
@@ -84,6 +84,12 @@ export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: str
     if (key === "divider.orientation") return v === 90 || v === 270 ? "vertical" : "horizontal";
     if (key === "divider.style" && typeof v === "string") return v === "none" ? "solid" : v === "1 6" ? "dotted" : "dashed";
     if (key === "divider.cap" && typeof v === "string") return v.charAt(0).toUpperCase() + v.slice(1);
+  }
+  // A layer with a width and no sizing of its own is fixed on that axis, however the property's general default reads.
+  if (v === undefined && (real === "sizing.horizontal" || real === "sizing.vertical")) {
+    const parentId = "parentId" in layer ? (layer.parentId as string | null) : ""; // only the page itself has none
+    const sizing = getLayerGeometry({ parentId, properties: layer.properties }).sizing;
+    return real === "sizing.horizontal" ? sizing.horizontal : sizing.vertical;
   }
   // Not set on this layer: the engine's default for it, never "Mixed" (Mixed means selected layers differ).
   // (A size is not guessed: an unset width means the layer sizes itself.)

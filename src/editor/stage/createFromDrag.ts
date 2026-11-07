@@ -11,6 +11,8 @@
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { worldBox } from "@/core/editing/layerBoxes";
 import { activePageRootId } from "./activePage";
 import { getDefaultProps, type ArchetypeId, type PropValue } from "@/core/document/registry";
 import { dragBox, type DragBox, type DragDefaults, type DragKind, type DragModifiers } from "@/core/geometry/shapeDrag";
@@ -88,7 +90,7 @@ export function frameAt(point: { x: number; y: number }, exclude?: ReadonlySet<s
     if (drawn) {
       // what the stage measured: a frame in a stack has no frame.x of its own
       const d = drawn[order[i]];
-      if (!l || !d || d.locked || exclude?.has(l.id) || l.parentId === null || l.archetype !== "container") continue;
+      if (!l || !d || d.locked || exclude?.has(l.id) || l.parentId === null || l.archetype !== "container" || l.visible === false) continue;
       if (point.x >= d.x && point.x <= d.x + d.width && point.y >= d.y && point.y <= d.y + d.height) return { id: l.id, x: d.x, y: d.y };
       continue;
     }
@@ -102,6 +104,33 @@ export function frameAt(point: { x: number; y: number }, exclude?: ReadonlySet<s
     if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) return { id: l.id, x, y };
   }
   return null;
+}
+
+/**
+ * Where a new picture goes: into the selected frame (or the frame of the selected layer), else the frame at `point` (centred
+ * in the frame), else the page. Same rule as drawing a shape: a layer belongs to the frame it lands on. `x` and `y` are the
+ * picture's middle.
+ */
+export function pictureHome(point: { x: number; y: number }, drawn?: Record<string, { x: number; y: number; width: number; height: number; locked?: boolean }>): { x: number; y: number; parentId: string; parentOrigin: { x: number; y: number } } | null {
+  const layers = getDocument().layers;
+  const frames = Object.values(layers).filter((l) => l.archetype === "container" && l.parentId !== null);
+  const boxes =
+    drawn ??
+    Object.fromEntries(
+      frames.flatMap((l) => {
+        const b = worldBox(l.id);
+        return b ? [[l.id, { x: b.cx - b.w / 2, y: b.cy - b.h / 2, width: b.w, height: b.h, locked: l.locked === true }]] : [];
+      }),
+    );
+  const selected = layers[useSelectionStore.getState().selectedIds.at(-1) ?? ""];
+  const holder = selected && selected.archetype !== "container" && selected.parentId ? layers[selected.parentId] : selected;
+  const chosen = holder && holder.archetype === "container" && holder.parentId !== null && holder.visible !== false ? boxes[holder.id] : undefined;
+  if (holder && chosen && !chosen.locked) return { x: chosen.x + chosen.width / 2, y: chosen.y + chosen.height / 2, parentId: holder.id, parentOrigin: { x: chosen.x, y: chosen.y } };
+  const under = frameAt(point, undefined, boxes);
+  const underBox = under ? boxes[under.id] : undefined;
+  if (under && underBox) return { x: under.x + underBox.width / 2, y: under.y + underBox.height / 2, parentId: under.id, parentOrigin: { x: under.x, y: under.y } };
+  const root = activePageRootId();
+  return root ? { ...point, parentId: root, parentOrigin: { x: 0, y: 0 } } : null;
 }
 
 /**
