@@ -449,3 +449,41 @@ test.describe("saved projects", () => {
     await expect.poll(async () => Math.round((await drawn(page, root.id).boundingBox())!.width)).toBe(Math.round(zoomed));
   });
 });
+
+test.describe("menus", () => {
+  test("a submenu opens at its full width, even when hovered again before it has finished opening", async ({ page }) => {
+    await ready(page);
+    const r = await rectangle(page, 0.2, 0.3, 0.3, 0.4);
+    const box = (await hit(page, r.id).boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: "right" });
+    const layer = page.getByRole("menuitem", { name: /^Layer/ });
+    await expect(layer).toBeVisible();
+    // the test build opens a submenu on the first hover, so each of these asks again straight away
+    for (let i = 0; i < 4; i++) await layer.hover();
+    const sub = page.locator("[data-submenu]");
+    await expect.poll(async () => Math.round((await sub.boundingBox())?.width ?? 0), "the submenu is as wide as its menu").toBeGreaterThan(200);
+    await expect(sub.getByRole("menuitem", { name: /^Rename/ })).toBeVisible();
+    expect((await sub.getByRole("menuitem", { name: /^Rename/ }).boundingBox())!.width, "its rows are as wide as the menu").toBeGreaterThan(150);
+    await page.waitForTimeout(800); // the spring has settled
+    expect(Math.round((await sub.boundingBox())!.width)).toBeGreaterThan(200);
+  });
+});
+
+test.describe("menus, moving between submenus", () => {
+  test("hovering another row with a submenu swaps the submenu to that row's items", async ({ page }) => {
+    await ready(page);
+    const r = await rectangle(page, 0.2, 0.3, 0.3, 0.4);
+    const box = (await hit(page, r.id).boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: "right" });
+    const sub = page.locator("[data-submenu]");
+    for (const [row, first] of [["Arrange", "Bring forward"], ["Layer", "Ungroup"], ["Arrange", "Bring forward"], ["More", ""]] as const) {
+      const item = page.getByRole("menuitem", { name: new RegExp(`^${row}`) });
+      const b = (await item.boundingBox())!;
+      await page.mouse.move(b.x + 40, b.y + b.height / 2, { steps: 6 });
+      await item.hover();
+      await expect(sub, `${row}'s submenu is showing`).toHaveAttribute("aria-label", row);
+      if (first) await expect(sub.getByRole("menuitem").first()).toContainText(first);
+      await expect.poll(async () => Math.round((await sub.boundingBox())?.width ?? 0)).toBeGreaterThan(200);
+    }
+  });
+});

@@ -22,3 +22,7 @@
 - A cut piece lands exactly on its own pixels however the picture is fitted (cover, contain, stretched or cropped by a fill), and what the frame crops away is left out of it.
 - The piece is saved from the picture itself, up to 2880px, not from the 1400px copy it was worked on, so it is as sharp as the photo under it.
 - Pinch or Ctrl + wheel zooms the Cut out picture, for drawing close to an edge.
+
+### Submenus
+- A submenu (Layer, Arrange, More) no longer opens as a narrow empty sliver. A second hover before the first open had finished made the menu read its own half-animated width as its real one and animate toward 16px.
+- Moving from one row with a submenu to another now swaps the submenu to that row's items, instead of leaving the first row's items showing.
