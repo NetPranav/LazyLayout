@@ -232,6 +232,8 @@ const DEFS = {
   "transform.rotate": deg(0, "transform", "gpu", VISUAL),
   "transform.rotateX": deg(0, "transform", "gpu", VISUAL),
   "transform.rotateY": deg(0, "transform", "gpu", VISUAL),
+  /** How strong the 3D is, in px (CSS `perspective()`): smaller is more dramatic, 0 is flat. With it set, Rot X / Rot Y tilt the layer into the distance and Rotation turns it on that plane. */
+  "transform.perspective": px(0, "transform", "gpu", VISUAL),
   "transform.skewX": deg(0, "transform", "gpu", VISUAL),
   "transform.skewY": deg(0, "transform", "gpu", VISUAL),
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). */

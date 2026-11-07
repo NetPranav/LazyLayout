@@ -35,6 +35,12 @@ describe("layerBoxStyle: design properties reach the drawn box (and so the expor
     assert.equal(box({ positioning: "absolute", "layout.zIndex": 0 }).zIndex, undefined);
     assert.equal(box({ positioning: "absolute" }).zIndex, undefined);
   });
+  it("perspective tilts into the distance first and then turns on that plane", () => {
+    const t = String(box({ "transform.perspective": 600, "transform.rotateX": 60, "frame.rotation": 20 }).transform);
+    assert.ok(t.startsWith("perspective(600px) rotateX(60deg)"), t);
+    assert.ok(t.indexOf("rotateX") < t.indexOf("rotate(20deg)"), "Rotation turns on the tilted plane");
+    assert.doesNotMatch(String(box({ "transform.rotateX": 60 }).transform), /perspective/, "no perspective unless set");
+  });
   it("overflow and margins are applied", () => {
     const s = box({ positioning: "flow", "layout.overflowX": "hidden", "layout.overflowY": "visible", "layout.marginLeft": 12 });
     assert.equal(s.overflowX, "hidden");

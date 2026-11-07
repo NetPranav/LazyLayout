@@ -316,3 +316,33 @@ test("Depth: the picture's depth is estimated, shown, picked from, and split int
   expect(parent.children.indexOf(mountain.id)).toBeLessThan(parent.children.indexOf(made[0].id));
   expect(parent.children.indexOf(made[0].id)).toBeLessThan(parent.children.indexOf(made[1].id));
 });
+
+test("Add selection + rest: one go gives the piece and the picture with it taken out; a piece reopens with its own shape", async ({ page }) => {
+  test.setTimeout(150_000);
+  const { dialog, mountain } = await openMountain(page);
+  await dialog.getByRole("button", { name: "Auto", exact: true }).click();
+  await expect.poll(() => keptPercent(page)).toBeGreaterThan(25);
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
+  await dialog.getByRole("button", { name: "Add selection + rest" }).click();
+  await expect(dialog).toHaveCount(0, { timeout: 30_000 });
+  await expect.poll(async () => (await images(page)).length).toBe(3);
+  const all = await layers(page);
+  const piece = Object.values(all).find((l) => l.name === `${mountain.name} cutout`)!;
+  const rest = Object.values(all).find((l) => l.name === `${mountain.name} rest`)!;
+  expect(piece && rest, "both pieces exist").toBeTruthy();
+  const parent = all[mountain.parentId as string] as unknown as { children: string[] };
+  expect(parent.children.indexOf(rest.id), "the rest is behind the selection").toBeLessThan(parent.children.indexOf(piece.id));
+  const a = await alphaAt(page, String(rest.properties["media.src"]), [[0.02, 0.02], [0.5, 0.97]]);
+  expect(a.alpha[0], "the rest keeps the sky").toBe(255);
+  expect(a.alpha[1], "and has the mountain taken out").toBe(0);
+  const b = await alphaAt(page, String(piece.properties["media.src"]), [[0.02, 0.02], [0.5, 0.97]]);
+  expect(b.alpha[1], "the piece is the mountain").toBe(255);
+
+  // reopen Cut out on the piece: it starts from its own shape, and Invert then selects what it is not
+  await page.getByText(piece.name, { exact: true }).first().click();
+  await page.getByRole("button", { name: "Cut out", exact: true }).click();
+  const second = page.getByTestId("cutout-dialog");
+  await expect(page.getByTestId("cutout-canvas")).toBeVisible();
+  await expect.poll(() => keptPercent(page), "the piece's own shape is the marked area").toBeLessThan(95);
+  await second.getByRole("button", { name: "Close cutout" }).click();
+});

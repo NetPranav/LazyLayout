@@ -148,7 +148,13 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   }
 
   const designed = designTransform(resolved);
-  if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
+  const perspective = resolved.num("transform.perspective", 0);
+  if (perspective > 0 && (resolved.num("transform.rotateX", 0) || resolved.num("transform.rotateY", 0))) {
+    // 3D: the layer is tilted into the distance first and then turned on that plane, so Rotation steers text along a road, not across the screen
+    const tilt = designed.split(" ").filter((t) => t.startsWith("rotateX") || t.startsWith("rotateY"));
+    const rest = designed.split(" ").filter((t) => !t.startsWith("rotateX") && !t.startsWith("rotateY"));
+    style.transform = [`perspective(${perspective}px)`, ...tilt, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
+  } else if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
   const origin = resolved.get("transform.origin");
   if (typeof origin === "string" && origin !== "center" && style.transform) style.transformOrigin = origin;
   const opacity = resolved.get("appearance.opacity");

@@ -105,6 +105,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const skewY = (getValue?.("transform.skewY") as number) ?? 0;
   const rotX = (getValue?.("transform.rotateX") as number) ?? 0;
   const rotY = (getValue?.("transform.rotateY") as number) ?? 0;
+  const perspective = (getValue?.("transform.perspective") as number) ?? 0;
   const origin = (getValue?.("transform.origin") as string) || "center";
 
   // Offset values when position is relative/absolute/fixed/sticky
@@ -251,6 +252,18 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
           onChange={(val) => onUpdateProp?.("transform.rotateY", val)}
         />
       </div>
+
+      <NumberField
+        size="sm"
+        className="ll:*:!text-micro ll:!gap-2"
+        label="Perspective"
+        aria-label="Perspective"
+        title="3D depth in px. Set it (try 600), then tilt with Rot X: the layer recedes and shrinks into the distance like text lying on a road. Rotation then turns it along the road. 0 is flat."
+        suffix="px"
+        value={perspective}
+        step={50}
+        onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
+      />
 
       {/* Transform Origin */}
       <Select
