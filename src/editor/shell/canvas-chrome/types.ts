@@ -1,6 +1,6 @@
 import type { CollabUser } from "@/editor/components/AvatarStack";
 
-export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image";
+export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image" | "pen" | "pencil";
 
 export type ShapeTool = "box" | "circle" | "line" | "arrow" | "poly" | "star";
 

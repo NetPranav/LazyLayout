@@ -7,6 +7,8 @@ import { InsertBox } from "./InsertBox";
 import { AiBox } from "./AiBox";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import { BreakpointBar } from "./BreakpointBar";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
@@ -127,6 +129,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   onPreview,
   users: _users,
 }) => {
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Controllable state pairs managed by useControllable helper
   const [showRulers, setShowRulers] = useControllable(
     controlledShowRulers,
@@ -536,6 +539,31 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Responsive Breakpoint Bar (visible in design mode) */}
+      {canvasViewMode !== "preview" && <BreakpointBar />}
+
+      {/* Preview Mode Floating Navigation & Exit Bar */}
+      {canvasViewMode === "preview" && (
+        <div
+          role="toolbar"
+          aria-label="Preview Controls"
+          className="ll:absolute ll:top-3 ll:left-1/2 -ll:translate-x-1/2 ll:z-50 ll:flex ll:items-center ll:gap-2.5 ll:px-3.5 ll:py-1.5 ll:rounded-full ll:bg-surface-panel/95 ll:backdrop-blur-md ll:border ll:border-line-subtle ll:shadow-elevation-2 ll:text-small"
+        >
+          <span className="ll:flex ll:items-center ll:gap-1.5 ll:text-micro ll:font-semibold ll:text-primary ll:uppercase ll:tracking-wider">
+            <span className="ll:w-2 ll:h-2 ll:rounded-full ll:bg-emerald-500 ll:animate-pulse" />
+            Preview Mode
+          </span>
+          <span className="ll:w-px ll:h-4 ll:bg-border/60 ll:mx-0.5" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => useCanvasViewStore.getState().setMode("design")}
+            className="ll:px-2.5 ll:py-0.5 ll:rounded-full ll:bg-control-active ll:text-primary ll:text-micro ll:font-medium ll:hover:bg-control-hover ll:transition-colors ll:cursor-pointer"
+          >
+            Exit Preview (Esc)
+          </button>
+        </div>
+      )}
 
       {/* Floating Toolbar & Zoom Bar */}
       <Toolbar

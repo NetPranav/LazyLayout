@@ -21,6 +21,7 @@ import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
 import { FontSync } from "@/legacy-editor/fonts/FontSync";
 import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
 import { ExportDialog } from "@/legacy-editor/shell/ExportDialog";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
 import { AgentDialog } from "@/legacy-editor/shell/AgentDialog";
 import {
   RecoveryPrompt,
@@ -213,6 +214,7 @@ export function EditorShell({
           users={collabUsers}
           viewportPreset={actions.viewportPreset}
           onSelectPreset={actions.setViewportPreset}
+          onExport={() => useExportUiStore.getState().open()}
         />
         <ReadOnlyBanner />
       </div>

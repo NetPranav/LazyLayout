@@ -68,6 +68,8 @@ import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { useDocument } from "@/core/store/useDocumentStore";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
@@ -110,6 +112,7 @@ export interface TopBarProps {
   showRulers?: boolean;
   isZen?: boolean;
   onPreview?: () => void;
+  onExport?: () => void;
   onShare?: () => void;
   viewportPreset?: "1440" | "768" | "375";
   onSelectPreset?: (preset: "1440" | "768" | "375") => void;
@@ -136,10 +139,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   showRulers = false,
   isZen = false,
   onPreview,
+  onExport,
   onShare,
   viewportPreset: propViewportPreset,
   onSelectPreset,
 }) => {
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Save status resolution
   const sessionSaveState = useSaveStatus((s) => s.state);
   const resolvedState: "saved" | "dirty" | "saving" | "error" =
@@ -513,6 +518,49 @@ export const TopBar: React.FC<TopBarProps> = ({
           3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
           ===================================================================== */}
       <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
+        {/* Dedicated Preview Button */}
+        <Tooltip content={canvasViewMode === "preview" ? "Exit Preview (Esc)" : "Preview Mode"}>
+          <button
+            type="button"
+            aria-label={canvasViewMode === "preview" ? "Exit Preview (Esc)" : "Preview"}
+            aria-pressed={canvasViewMode === "preview"}
+            onClick={() => {
+              if (onPreview) {
+                onPreview();
+              } else {
+                useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview");
+              }
+            }}
+            className={`ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+              canvasViewMode === "preview"
+                ? "ll:bg-accent ll:text-accent-foreground ll:shadow-sm"
+                : "ll:text-muted ll:hover:bg-control-active ll:hover:text-primary"
+            }`}
+          >
+            <Icon icon={canvasViewMode === "preview" ? Square : Play} size={14} />
+            <span>{canvasViewMode === "preview" ? "Exit" : "Preview"}</span>
+          </button>
+        </Tooltip>
+
+        {/* Dedicated Code Export Button */}
+        <Tooltip content="Export Code (Next.js, Vite, HTML, React, Vue)">
+          <button
+            type="button"
+            aria-label="Export Code"
+            onClick={() => {
+              if (onExport) {
+                onExport();
+              } else {
+                useExportUiStore.getState().open();
+              }
+            }}
+            className="ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          >
+            <Icon icon={Download} size={14} />
+            <span>Export</span>
+          </button>
+        </Tooltip>
+
         {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
         <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
           <button

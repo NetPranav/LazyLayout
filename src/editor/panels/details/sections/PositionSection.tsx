@@ -23,6 +23,22 @@ export interface PositionSectionProps extends InspectorSectionProps {
   onTidy?: () => void;
 }
 
+export const CONSTRAINT_HORIZONTAL_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "leftRight", label: "Left & Right" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
+
+export const CONSTRAINT_VERTICAL_OPTIONS = [
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "topBottom", label: "Top & Bottom" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
+
 export const PositionSection: React.FC<PositionSectionProps> = ({
   isMulti = false,
   getValue,
@@ -40,6 +56,10 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
   const xVal = typeof rawX === "number" ? rawX : rawX === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_X;
   const yVal = typeof rawY === "number" ? rawY : rawY === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_Y;
   const rotVal = typeof rawRot === "number" ? rawRot : rawRot === null ? null : INSPECTOR_CONSTANTS.DEFAULT_ROTATION;
+
+  // Read constraints
+  const rawConstraintH = (getValue?.("constraints.horizontal") as string) || "left";
+  const rawConstraintV = (getValue?.("constraints.vertical") as string) || "top";
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
@@ -90,6 +110,33 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
             onUpdateProp?.("rotation", v);
           }}
         />
+      </div>
+
+      {/* Constraints Subsection */}
+      <div className="ll:flex ll:flex-col ll:gap-1.5 ll:pt-2 ll:border-t ll:border-border">
+        <div className="ll:flex ll:items-center ll:justify-between">
+          <span className="ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted">
+            Constraints
+          </span>
+        </div>
+        <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+          <Select
+            size="sm"
+            label="H"
+            aria-label="Horizontal constraint"
+            value={rawConstraintH}
+            options={CONSTRAINT_HORIZONTAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.horizontal", val)}
+          />
+          <Select
+            size="sm"
+            label="V"
+            aria-label="Vertical constraint"
+            value={rawConstraintV}
+            options={CONSTRAINT_VERTICAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.vertical", val)}
+          />
+        </div>
       </div>
     </div>
   );

@@ -160,18 +160,24 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           options={[
             {
               value: "free",
-              icon: <Icon icon={Move} size={14} />,
+              label: "Free",
+              icon: <Icon icon={Move} size={13} />,
               ariaLabel: "Free layout",
+              title: "Free layout (absolute placement)",
             },
             {
               value: "stack",
-              icon: <Icon icon={Rows} size={14} />,
-              ariaLabel: "Stack layout",
+              label: "Auto Layout",
+              icon: <Icon icon={Rows} size={13} />,
+              ariaLabel: "Auto Layout stack",
+              title: "Auto Layout (flexbox stack)",
             },
             {
               value: "grid",
-              icon: <Icon icon={LayoutGrid} size={14} />,
+              label: "Grid",
+              icon: <Icon icon={LayoutGrid} size={13} />,
               ariaLabel: "Grid layout",
+              title: "CSS Grid layout",
             },
           ]}
         />
@@ -261,13 +267,15 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 options={[
                   {
                     value: "vertical",
-                    icon: <Icon icon={ArrowDown} size={14} />,
-                    ariaLabel: "Vertical direction",
+                    label: "Vertical",
+                    icon: <Icon icon={ArrowDown} size={13} />,
+                    ariaLabel: "Vertical stack (column)",
                   },
                   {
                     value: "horizontal",
-                    icon: <Icon icon={ArrowRight} size={14} />,
-                    ariaLabel: "Horizontal direction",
+                    label: "Horizontal",
+                    icon: <Icon icon={ArrowRight} size={13} />,
+                    ariaLabel: "Horizontal stack (row)",
                   },
                 ]}
               />
