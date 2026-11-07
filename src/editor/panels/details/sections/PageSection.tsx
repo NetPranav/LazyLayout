@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import { useLayers } from "@/core/store/useDocumentStore";
+import { activePageRootId } from "@/editor/stage/activePage";
 import { setLayerProps } from "@/core/editing/editOps";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { SquareRoundCorner } from "lucide-react";
@@ -121,7 +123,15 @@ export const PageBackgroundBody: React.FC<{
 
   return (
     <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-      <span className={SWATCH} style={{ backgroundColor: `#${bgHex}` }} />
+      <ColorSwatch
+        label="Page background colour picker"
+        hex={bgHex}
+        onChange={(h) => {
+          setBgHex(h);
+          onChangeBackground?.(h);
+        }}
+        className={SWATCH}
+      />
       <div className={`${HEX_FIELD} ll:w-27`}>
         <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
         <input
@@ -160,7 +170,7 @@ export const ThemeTokensBody: React.FC = () => {
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {tokenRows.map((row) => (
         <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <span className={SWATCH} style={{ backgroundColor: `#${row.hex}` }} />
+          <ColorSwatch label={`${row.label} colour picker`} hex={row.hex} onChange={row.set} className={SWATCH} />
           <div className={`${HEX_FIELD} ll:w-27`}>
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
             <input
@@ -264,14 +274,22 @@ export const PageSection: React.FC<PageSectionProps> = (props) => {
   );
 };
 
-const pageRoot = (layers: ReturnType<typeof useLayers>) => Object.values(layers).find((l) => l.parentId === null);
+const pageRoot = (layers: ReturnType<typeof useLayers>) => {
+  const id = activePageRootId();
+  return id ? layers[id] : undefined;
+};
 
 /** The Page block with nothing selected, reading and writing the page's own layer: its size and background are the document's. */
 export const ConnectedPageSection: React.FC<{ pageName?: string }> = ({ pageName }) => {
   const layers = useLayers();
   const root = pageRoot(layers);
-  const w = typeof root?.properties["frame.width"] === "number" ? (root.properties["frame.width"] as number) : 1440;
-  const h = typeof root?.properties["frame.height"] === "number" ? (root.properties["frame.height"] as number) : 900;
+  // a size in % is a project that never set one: it shows as the Desktop page
+  const px = (side: "width" | "height", fallback: number) => {
+    const v = root?.properties[`frame.${side}`];
+    return typeof v === "number" && !(root?.properties[`frame.${side}Unit`] === "%" && v <= 100) ? v : fallback;
+  };
+  const w = px("width", 1440);
+  const h = px("height", 900);
   return (
     <PageSectionBody
       key={`${root?.id}-${w}-${h}`}
@@ -279,7 +297,7 @@ export const ConnectedPageSection: React.FC<{ pageName?: string }> = ({ pageName
       width={w}
       height={h}
       onChangeDimensions={(nw, nh) => {
-        if (root && nw > 0 && nh > 0) setLayerProps([root.id], { "frame.width": nw, "frame.height": nh }, "Page size");
+        if (root && nw > 0 && nh > 0) setLayerProps([root.id], { "frame.width": nw, "frame.widthUnit": "px", "frame.height": nh, "frame.heightUnit": "px" }, "Page size");
       }}
       onChangePageName={(name) => {
         const st = useProjectStore.getState();
@@ -297,7 +315,7 @@ export const ConnectedPageBackground: React.FC = () => {
   return (
     <PageBackgroundBody
       key={root?.id}
-      backgroundColor={typeof color === "string" ? color : "FFFFFF"}
+      backgroundColor={typeof color === "string" && /^#?[0-9a-fA-F]{6}$/.test(color) ? color : "FFFFFF"}
       onChangeBackground={(hex) => {
         if (root && hex.length === 6) setLayerProps([root.id], { "appearance.background.color": `#${hex}` }, "Page background");
       }}

@@ -5,6 +5,7 @@ import { RightPanelFrame } from "@/editor/shell/right-panel";
 import type { RightPanelMode } from "@/editor/shell/right-panel";
 import {
   getInspectorDesignSections,
+  InspectorExtras,
   useSelectionInspector,
 } from "@/editor/panels/details";
 import { MotionInspector } from "@/editor/panels/inspectors";
@@ -26,6 +27,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
     return (
       <RightPanelFrame mode={mode} aiOpen={aiOpen} onAiClose={onAiClose}>
         <MotionInspector />
+        <InspectorExtras kind="animation" />
       </RightPanelFrame>
     );
   }
@@ -33,6 +35,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
     return (
       <RightPanelFrame mode={mode} aiOpen={aiOpen} onAiClose={onAiClose}>
         <CodeInspector />
+        <InspectorExtras kind="data-logic" />
       </RightPanelFrame>
     );
   }

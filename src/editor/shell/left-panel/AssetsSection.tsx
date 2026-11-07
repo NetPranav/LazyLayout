@@ -6,6 +6,7 @@ import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import type { AssetItem } from "./types";
 import { AssetTile } from "./AssetTile";
+import { importFiles } from "@/core/assets/assetImport";
 import {
   ASSETS_MIN_HEIGHT,
   ASSETS_MAX_HEIGHT_MIN_BOUND,
@@ -167,6 +168,16 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
       {/* Assets Section */}
       <div
         id="p-assets"
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+        }}
+        onDrop={(e) => {
+          // dropped pictures (and fonts) are stored in the project's assets
+          const files = Array.from(e.dataTransfer.files);
+          if (files.length === 0) return;
+          e.preventDefault();
+          void importFiles(files);
+        }}
         style={{
           height: isOpen ? `${height}px` : undefined,
         }}

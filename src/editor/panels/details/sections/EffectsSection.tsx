@@ -5,6 +5,7 @@ import { effectItemsOf, writeEffectItems } from "../hooks/effectsModel";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
+import { NumberField } from "@/editor/components/NumberField";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { ColorSwatch } from "../controls/ColorSwatch";
 import type { InspectorSectionProps, EffectItem } from "../types";
@@ -27,21 +28,26 @@ const EFFECT_LABEL: Record<EffectItem["type"], string> = {
   "background-blur": "Background blur",
 };
 
+const FIELD_TITLE: Record<string, string> = {
+  X: "Horizontal offset: how far the shadow sits to the right (negative: left).",
+  Y: "Vertical offset: how far the shadow sits down (negative: up).",
+  B: "Blur: how soft the shadow's edge is.",
+  S: "Spread: grows (positive) or shrinks (negative) the shadow before it is blurred.",
+  Amt: "Blur amount: how strongly the layer or what is behind it is blurred.",
+};
+
 const numberField = (label: string, value: number, onChange: (v: number) => void) => (
-  <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
-    <span className="ll:font-mono ll:text-micro ll:text-muted" title={({ X: "Horizontal offset", Y: "Vertical offset", B: "Blur: how soft the shadow edge is", S: "Spread: grow or shrink the shadow", Amt: "Blur amount" } as Record<string, string>)[label]}>{label}</span>
-    <input
-      type="text"
-      inputMode="numeric"
-      aria-label={`Effect ${label}`}
-      value={value}
-      onChange={(e) => {
-        const val = Number(e.target.value);
-        if (!isNaN(val)) onChange(val);
-      }}
-      className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-    />
-  </div>
+  <NumberField
+    size="sm"
+    className="ll:*:!text-micro ll:!gap-1"
+    label={label}
+    title={FIELD_TITLE[label]}
+    aria-label={`Effect ${label}`}
+    value={value}
+    step={1}
+    min={label === "B" || label === "Amt" ? 0 : undefined}
+    onChange={onChange}
+  />
 );
 
 export const EffectsSection: React.FC<EffectsSectionProps> = ({

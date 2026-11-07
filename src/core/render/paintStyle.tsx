@@ -2,7 +2,7 @@ import React from "react";
 import type { CSSProperties } from "react";
 import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
-import { effectiveFills, fillLayers, hasAdjustFilter, imageFilterCss, imageLayout, paintBlendCss, paintCss, parseFills, type ImagePaint } from "../paint/paints";
+import { diamondCss, effectiveFills, fillLayers, hasAdjustFilter, imageFilterCss, imageLayout, paintBlendCss, paintCss, parseFills, type ImagePaint } from "../paint/paints";
 import { AdjustFilter } from "./shapePaint";
 import { useAssetUrlMap } from "../assets/useAssetUrl";
 import type { ResolvedProps } from "./types";
@@ -60,4 +60,66 @@ export function useFillStyle(layer: Layer, resolved: ResolvedProps, plainColor: 
       </>
     );
   return { style, overlay };
+}
+
+/**
+ * Fills applied to text glyphs (Phase 35/37 Task A). When a text layer carries a non-solid fill (image or gradient),
+ * the letters are filled with it: background-image + background-clip: text + -webkit-text-fill-color: transparent.
+ * Solid fills keep working through typography.color (undefined returned here).
+ */
+export function useTextFillStyle(layer: Layer, resolved: ResolvedProps): CSSProperties | undefined {
+  const fills = parseFills(resolved.get("paint.fills"));
+  const imageSources = fills ? fills.filter((p): p is ImagePaint => p.type === "image").map((p) => p.src) : [];
+  const urlOf = useAssetUrlMap(imageSources);
+
+  if (!fills || fills.length === 0) return undefined;
+  const hasNonSolid = fills.some((p) => p.visible && p.type !== "solid");
+  if (!hasNonSolid) return undefined;
+
+  const g = getLayerGeometry(layer);
+  const w = g.frame.width > 0 ? g.frame.width : 100;
+  const h = g.frame.height > 0 ? g.frame.height : 100;
+
+  const images: string[] = [];
+  const sizes: string[] = [];
+  const positions: string[] = [];
+  const repeats: string[] = [];
+  const blends: string[] = [];
+
+  for (const p of fills) {
+    if (!p.visible) continue;
+    if (p.type === "diamond") {
+      for (const q of diamondCss(p, w, h)) {
+        images.push(q.image);
+        sizes.push(q.size);
+        positions.push(q.position);
+        repeats.push("no-repeat");
+        blends.push(paintBlendCss(p));
+      }
+      continue;
+    }
+    const css = paintCss(p, w, h, urlOf);
+    if (!css) continue;
+    images.push(css);
+    const l = p.type === "image" ? imageLayout(p) : { size: "auto", position: "0 0", repeat: "no-repeat" };
+    sizes.push(l.size);
+    positions.push(l.position);
+    repeats.push(l.repeat);
+    blends.push(paintBlendCss(p));
+  }
+
+  if (images.length === 0) return undefined;
+  const blend = blends.some((b) => b !== "normal") ? blends.join(", ") : undefined;
+
+  return {
+    backgroundImage: images.join(", "),
+    backgroundSize: sizes.join(", "),
+    backgroundPosition: positions.join(", "),
+    backgroundRepeat: repeats.join(", "),
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    color: "transparent",
+    ...(blend ? { backgroundBlendMode: blend } : {}),
+  };
 }

@@ -4,6 +4,10 @@ import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
+import { NumberField } from "@/editor/components/NumberField";
+import { importFiles } from "@/core/assets/assetImport";
+import { CutoutDialog, type CutoutFill } from "../CutoutDialog";
+import { assetSrc } from "@/core/assets/useAssetUrl";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { ColorSwatch } from "../controls/ColorSwatch";
 import type { InspectorSectionProps, FillItem } from "../types";
@@ -30,6 +34,13 @@ const itemOf = (p: Paint, i: number): FillItem => ({
   imageFit: p.type === "image" && p.mode !== "tile" ? p.mode : undefined,
   hidden: !p.visible,
 });
+/** A linear gradient's direction in degrees: 0 runs up, 90 to the right, 180 down. */
+const linearAngle = (p: Paint | undefined): number => {
+  if (!p || p.type !== "linear") return 180;
+  const deg = (Math.atan2(p.to.x - p.from.x, -(p.to.y - p.from.y)) * 180) / Math.PI;
+  return Math.round(deg < 0 ? deg + 360 : deg);
+};
+
 /** The paint with the edits of a row applied (hex edits the colour, or the first stop of a gradient). */
 const applyItem = (p: Paint, patch: Partial<FillItem>): Paint => {
   let next = p;
@@ -78,8 +89,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
   onAddFillRef,
   className = "",
 }) => {
-  // Read existing background color or fills from layer
+  // Read existing background color, typography color or fills from layer
   const initialHex =
+    (getValue?.("typography.color") as string) ||
     (getValue?.("appearance.background.color") as string) ||
     (getValue?.("backgroundColor") as string) ||
     "FFFFFF";
@@ -177,6 +189,42 @@ export const FillSection: React.FC<FillSectionProps> = ({
     setFills(next);
     if (activePopoverId === id) setActivePopoverId(null);
     syncPrimaryToStore(next);
+  };
+
+  /** The first or last colour of a gradient. */
+  const setStop = (id: string, which: "start" | "end", hex: string) => {
+    writeEngine(
+      updatePaint(enginePaints, indexOf(id), (p) => {
+        if (!("stops" in p)) return p;
+        const at = which === "start" ? 0 : p.stops.length - 1;
+        return { ...p, stops: p.stops.map((st, k) => (k === at ? { ...st, color: cssOfHex(hex, st.color) } : st)) } as Paint;
+      }),
+    );
+  };
+
+  /** A linear gradient's direction: 0 runs up, 90 to the right, 180 down. */
+  const setAngle = (id: string, deg: number) => {
+    const a = (deg * Math.PI) / 180;
+    const dx = Math.sin(a) / 2;
+    const dy = -Math.cos(a) / 2;
+    writeEngine(updatePaint(enginePaints, indexOf(id), (p) => (p.type === "linear" ? { ...p, from: { x: 0.5 - dx, y: 0.5 - dy }, to: { x: 0.5 + dx, y: 0.5 + dy } } : p)));
+  };
+
+  const [cuttingFill, setCuttingFill] = useState<string | null>(null);
+  /** The picture in an image fill, for Cut out: a tiled one has no one place on the page. */
+  const pictureOf = (id: string): CutoutFill | null => {
+    const paint = fillsOf(primary as string)[indexOf(id)];
+    if (paint?.type !== "image" || !paint.src || paint.mode === "tile") return null;
+    return { src: paint.src, fit: paint.mode === "fill" ? "cover" : paint.mode === "fit" ? "contain" : paint.crop };
+  };
+
+  /** Puts a chosen file into an image fill. */
+  const pickImage = async (id: string, file: File | undefined) => {
+    if (!file) return;
+    const [outcome] = await importFiles([file]);
+    if (!outcome?.entry) return;
+    const entry = outcome.entry;
+    writeEngine(updatePaint(fillsOf(primary as string), indexOf(id), (p) => (p.type === "image" ? { ...p, src: assetSrc(entry.id), natural: entry.width && entry.height ? { w: entry.width, h: entry.height } : undefined } : p)));
   };
 
   const handleMove = (id: string, direction: -1 | 1) => {
@@ -358,8 +406,46 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 value={fill.type}
                 width="100%"
                 size="sm"
+                disabled={!engine}
+                title={engine ? undefined : "This kind of layer takes one plain colour."}
                 onChange={(value) => handleUpdateFill(fill.id, { type: value as FillItem["type"] })}
               />
+              {engine && fill.stops && fill.stops.length >= 2 && (
+                <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
+                  <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+                    <ColorSwatch label="Gradient start colour" hex={fill.stops[0].hex} onChange={(h) => setStop(fill.id, "start", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
+                    <span className="ll:font-sans ll:text-micro ll:text-muted">Start</span>
+                  </div>
+                  <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+                    <ColorSwatch label="Gradient end colour" hex={fill.stops[fill.stops.length - 1].hex} onChange={(h) => setStop(fill.id, "end", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
+                    <span className="ll:font-sans ll:text-micro ll:text-muted">End</span>
+                  </div>
+                </div>
+              )}
+              {engine && fill.type === "linear" && (
+                <NumberField size="sm" label="Angle" aria-label="Gradient angle" title="The gradient's direction: 0 runs up, 90 to the right, 180 down." suffix="°" value={linearAngle(enginePaints[index])} step={1} onChange={(v) => setAngle(fill.id, v)} />
+              )}
+              {engine && fill.type === "image" && (
+                <>
+                <label className="ll:flex ll:items-center ll:justify-center ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer">
+                  Choose a picture
+                  <input type="file" accept="image/*" hidden aria-label="Fill picture" onChange={(e) => { void pickImage(fill.id, e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                {pictureOf(fill.id) && (
+                  <button
+                    type="button"
+                    title="Cut part of this picture into its own layer on top: put a layer between the two and it goes behind that part."
+                    onClick={() => setCuttingFill(fill.id)}
+                    className="ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:cursor-pointer"
+                  >
+                    Cut out
+                  </button>
+                )}
+                {cuttingFill === fill.id && pictureOf(fill.id) && primary && (
+                  <CutoutDialog layerId={primary as string} fill={pictureOf(fill.id)!} onClose={() => setCuttingFill(null)} />
+                )}
+                </>
+              )}
               <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
                 <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
                   <ColorSwatch label="Fill colour picker" hex={fill.hex} onChange={(h) => handleUpdateFill(fill.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />

@@ -95,8 +95,8 @@ const DISTRIBUTE: Entry[] = [
 const ARRANGE: Entry[] = [
   { action: "bring-forward", label: "Bring forward", icon: ArrowUp, shortcut: "Ctrl+]" },
   { action: "send-backward", label: "Send backward", icon: ArrowDown, shortcut: "Ctrl+[" },
-  { action: "bring-to-front", label: "Bring to front", icon: ArrowUpToLine },
-  { action: "send-to-back", label: "Send to back", icon: ArrowDownToLine },
+  { action: "bring-to-front", label: "Bring to front", icon: ArrowUpToLine, shortcut: "Ctrl+Alt+]" },
+  { action: "send-to-back", label: "Send to back", icon: ArrowDownToLine, shortcut: "Ctrl+Alt+[" },
 ];
 
 /**
@@ -193,6 +193,18 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
           onClick={() => onAction("ungroup")}
         >
           Ungroup
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
+          onClick={() => onAction("split-letters")}
+        >
+          Split into letters
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={Film} size={MENU_ICON_SIZE} />}
+          onClick={() => onAction("animate-letters")}
+        >
+          Animate letters
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}

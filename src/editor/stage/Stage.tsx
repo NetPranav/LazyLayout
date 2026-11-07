@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
@@ -8,17 +9,45 @@ import { clampZoom } from "@/core/viewport/camera";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
+import { TransitionReferences, TRANSITION_GAP } from "./TransitionReferences";
+import { isLoadingPage } from "@/core/pages/loadingPages";
 import { useStageTransform } from "./useStageTransform";
 import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
-import { createLayerFromBox, creationSpecFor, drawBox, type CreationSpec } from "./createFromDrag";
+import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, type CreationSpec } from "./createFromDrag";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
 import { setLayerProps } from "@/core/editing/editOps";
+import { registerFrameRenderer, type StageRenderer } from "@/core/render/StageRenderer";
+import { measurePage, pageMeasurer } from "./pageMeasure";
+import { activePageRootId } from "./activePage";
+import { marqueeHits } from "./marquee";
+import { useProjectStore } from "@/core/store/useProjectStore";
+import { useStageOriginStore } from "@/editor/shell/canvas-chrome/stageOrigin";
+import { executeStagePreset, presetForBreakpoint } from "./presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+
+/** The page's size in pixels, or nothing when it is stored as a share of its parent (a project that never set one). */
+function pagePixels(root: { properties: Record<string, unknown> } | undefined, side: "width" | "height"): number | undefined {
+  const v = root?.properties[`frame.${side}`];
+  if (typeof v !== "number" || v <= 0) return undefined;
+  return root?.properties[`frame.${side}Unit`] === "%" && v <= 100 ? undefined : v;
+}
+
+/** Choosing Desktop, Tablet or Mobile resizes the page itself. */
+function resizePageToPreset(preset: StagePreset): void {
+  const def = STAGE_PRESETS.find((p) => p.id === preset);
+  const rootLayerId = activePageRootId();
+  const root = rootLayerId ? getDocument().layers[rootLayerId] : undefined;
+  if (!def || !root) return;
+  if (root.properties["frame.width"] === def.artboardWidth && root.properties["frame.height"] === def.artboardHeight && root.properties["frame.widthUnit"] === "px") return;
+  setLayerProps([root.id], { "frame.width": def.artboardWidth, "frame.widthUnit": "px", "frame.height": def.artboardHeight, "frame.heightUnit": "px" }, "Page size");
+}
 
 export const Stage: React.FC<StageProps> = ({
   zoom = STAGE_CONSTANTS.defaultZoom,
@@ -69,119 +98,77 @@ export const Stage: React.FC<StageProps> = ({
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [internalPreset, setInternalPreset] = useState<StagePreset>("1440");
-  const activePreset = controlledPreset !== undefined ? controlledPreset : internalPreset;
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const docBreakpoints = useDocument((d) => d.breakpoints);
+  const bpPreset = presetForBreakpoint(breakpointsOf({ breakpoints: docBreakpoints }), activeBreakpointId);
+  const activePreset = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? bpPreset : internalPreset);
 
   const handlePresetChange = useCallback(
     (newPreset: StagePreset) => {
       setInternalPreset(newPreset);
-      controlledOnPresetChange?.(newPreset);
-      // choosing Desktop, Tablet or Mobile resizes the page itself
-      const def = STAGE_PRESETS.find((p) => p.id === newPreset);
-      const root = Object.values(getDocument().layers).find((l) => l.parentId === null);
-      if (def && root) setLayerProps([root.id], { "frame.width": def.artboardWidth, "frame.height": def.artboardHeight }, "Page size");
+      executeStagePreset(newPreset, { onPresetChange: controlledOnPresetChange });
     },
     [controlledOnPresetChange]
   );
 
+  // A preset chosen from the menu or a command (Tablet, Mobile) triggers preset logic
+  const lastPreset = useRef(activePreset);
+  useEffect(() => {
+    if (lastPreset.current === activePreset) return;
+    lastPreset.current = activePreset;
+    if (useSelectionStore.getState().selectedMirrorId) return;
+    executeStagePreset(activePreset);
+  }, [activePreset]);
+
   // Document store layers mapping directly from engine document
   const storeLayers = useDocument((d) => d.layers);
 
-  const elementsFromStore = useMemo<Record<string, StageElement>>(() => {
-    if (controlledElements) return controlledElements;
-    if (!storeLayers || Object.keys(storeLayers).length === 0) return {};
+  const pageRef = useRef<HTMLDivElement>(null);
+  const activePageRoot = useProjectStore((p) => p.pages[p.activePageId]?.rootElementId);
+  const rootId = useMemo(
+    () => (activePageRoot && storeLayers?.[activePageRoot] ? activePageRoot : (Object.values(storeLayers ?? {}).find((l) => l.parentId === null)?.id ?? null)),
+    [storeLayers, activePageRoot],
+  );
 
-    const result: Record<string, StageElement> = {};
-    // Back to front, the way the document stacks them (a parent, then its children in order): the canvas paints in this order, so Arrange moves what you see.
-    const layerEntries = documentOrder(storeLayers).map((id) => storeLayers[id]).filter(Boolean);
-    // Where a layer's parent starts on the page: the sum of its ancestors' positions (the page itself is the origin).
-    const originOf = (id: string): { x: number; y: number } => {
-      let x = 0;
-      let y = 0;
-      let cur = storeLayers[id]?.parentId ? storeLayers[storeLayers[id].parentId as string] : undefined;
-      let guard = 0;
-      while (cur && cur.parentId !== null && guard++ < 1000) {
-        x += (cur.properties["frame.x"] as number) ?? 0;
-        y += (cur.properties["frame.y"] as number) ?? 0;
-        cur = storeLayers[cur.parentId];
-      }
-      return { x, y };
-    };
-
-    // Filter out root containers and structural sections from rendering as individual canvas boxes
-    const IGNORED_SECTION_IDS = new Set([
-      "elem_canvas_root",
-      "el_root_container",
-      "hero",
-      "features",
-      "footer",
-      "others",
-    ]);
-
-    // Subtitle is presented as part of headline on canvas (matching prototype canv={subtitle:'headline'})
-    // Other elements under 'others' are catalog elements
-    const IGNORED_STAGE_IDS = new Set([
-      "subtitle",
-      "object3d",
-      "counter",
-      "shape",
-      "icon",
-      "background",
-      "divider",
-      "toggle",
-      "input",
-    ]);
-
-    layerEntries.forEach((l) => {
-      if (IGNORED_SECTION_IDS.has(l.id)) return;
-      if (IGNORED_STAGE_IDS.has(l.id)) return;
-
-      const origin = originOf(l.id);
-      const x = ((l.properties["frame.x"] as number) ?? 0) + origin.x;
-      const y = ((l.properties["frame.y"] as number) ?? 0) + origin.y;
-      const width =
-        (l.properties["frame.width"] as number) ??
-        (l.archetype === "button" ? 112 : 200);
-      const height =
-        (l.properties["frame.height"] as number) ??
-        (l.archetype === "button" ? 34 : 60);
-
-      let subtitleText: string | undefined;
-      if (l.id === "headline") {
-        subtitleText =
-          (storeLayers["subtitle"]?.properties["content.text"] as string) ||
-          "Build pages visually and get production code out.";
-      }
-
-      result[l.id] = {
-        id: l.id,
-        name: l.name,
-        type:
-          l.archetype === "text" || l.archetype === "svgText"
-            ? "text"
-            : l.archetype === "button" || l.archetype === "fab"
-            ? "button"
-            : l.archetype === "image"
-            ? "image"
-            : "container",
-        x,
-        y,
-        ox: origin.x,
-        oy: origin.y,
-        width,
-        height,
-        title: (l.properties["content.text"] as string) || l.name,
-        subtitle: subtitleText,
-        label:
-          (l.properties["content.label"] as string) ||
-          (l.properties["content.text"] as string) ||
-          l.name,
-        hidden: l.visible === false,
-        locked: l.locked === true,
-      };
+  // What is on the page, read from what the engine drew (see pageMeasure.ts).
+  const [measured, setMeasured] = useState<Record<string, StageElement>>({});
+  const [rootHeight, setRootHeight] = useState(0);
+  const storeLayersRef = useRef(storeLayers);
+  const remeasure = useCallback(() => {
+    const page = pageRef.current;
+    if (!page || !storeLayersRef.current) return;
+    const next = measurePage(page, storeLayersRef.current);
+    // applied at once, so a selection box never lags a frame behind what it surrounds
+    const rootNode = page.firstElementChild as HTMLElement | null;
+    flushSync(() => {
+      setMeasured((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+      setRootHeight(rootNode?.offsetHeight ?? 0);
     });
+  }, []);
+  useLayoutEffect(() => {
+    storeLayersRef.current = storeLayers;
+    queueMicrotask(remeasure);
+  });
+  // Things that change sizes without the document changing: a picture or a font arriving, the page resizing.
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) return undefined;
+    page.addEventListener("load", remeasure, true);
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(page);
+    let live = true;
+    void document.fonts?.ready.then(() => live && remeasure());
+    // align, group and reparent ask the same reading
+    const off = rootId ? registerFrameRenderer(rootId, pageMeasurer(() => pageRef.current) as unknown as StageRenderer) : undefined;
+    return () => {
+      live = false;
+      page.removeEventListener("load", remeasure, true);
+      observer.disconnect();
+      off?.();
+    };
+  }, [remeasure, rootId]);
 
-    return result;
-  }, [controlledElements, storeLayers]);
+  const elementsFromStore = controlledElements ?? measured;
 
   // Local elements state for direct interactive dragging / manipulation
   const [elements, setElements] = useState<Record<string, StageElement>>(elementsFromStore);
@@ -227,14 +214,27 @@ export const Stage: React.FC<StageProps> = ({
     [controlledOnSelect, clearStore, toggleStore, selectStore]
   );
 
-  // The page is as big as its own layer says (the Page block writes it); a document that has not set one follows the preset.
-  const rootSized = Object.values(storeLayers ?? {}).find((l) => l.parentId === null);
+  // The page is as big as its own layer says (the Page block writes it). A size in % (a project that never set one) follows the preset.
+  const rootSized = rootId ? storeLayers?.[rootId] : undefined;
+  const maxRight = useMemo(() => {
+    if (!storeLayers) return 0;
+    let r = 0;
+    for (const l of Object.values(storeLayers)) {
+      if ((l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId) {
+        const x = Number(l.properties["frame.x"] ?? 0);
+        const w = Number(l.properties["frame.width"] ?? 0);
+        r = Math.max(r, x + w);
+      }
+    }
+    return r;
+  }, [storeLayers, rootId]);
   const presetDef0 =
     STAGE_PRESETS.find((p) => p.id === activePreset) || STAGE_PRESETS[0];
   const presetDef = {
     ...presetDef0,
-    artboardWidth: typeof rootSized?.properties["frame.width"] === "number" ? (rootSized.properties["frame.width"] as number) : presetDef0.artboardWidth,
-    artboardHeight: typeof rootSized?.properties["frame.height"] === "number" ? (rootSized.properties["frame.height"] as number) : presetDef0.artboardHeight,
+    artboardWidth: Math.max(pagePixels(rootSized, "width") ?? presetDef0.artboardWidth, maxRight),
+    // a page of stacked sections grows with them
+    artboardHeight: Math.max(pagePixels(rootSized, "height") ?? presetDef0.artboardHeight, rootSized?.properties["sizing.vertical"] === "hug" ? rootHeight : 0),
   };
 
   const handleLayerAction = useCallback(
@@ -245,29 +245,15 @@ export const Stage: React.FC<StageProps> = ({
           break;
         case "duplicate":
           invokeCommand("edit.duplicate");
-          setElements((prev) => {
-            const item = prev[targetId];
-            if (!item) return prev;
-            const newId = `${targetId}_copy_${Date.now()}`;
-            return {
-              ...prev,
-              [newId]: {
-                ...item,
-                id: newId,
-                name: `${item.name} copy`,
-                x: item.x + 10,
-                y: item.y + 10,
-              },
-            };
-          });
+          break;
+        case "paste":
+          invokeCommand("edit.paste");
+          break;
+        case "paste-in-place":
+          invokeCommand("edit.pasteInPlace");
           break;
         case "delete":
           invokeCommand("edit.delete");
-          setElements((prev) => {
-            const { [targetId]: _, ...rest } = prev;
-            return rest;
-          });
-          handleSelect(null);
           break;
         case "group":
           invokeCommand("edit.group");
@@ -320,45 +306,26 @@ export const Stage: React.FC<StageProps> = ({
         case "rename":
           invokeCommand("layer.rename");
           break;
+        case "split-letters":
+          invokeCommand("text.splitLetters");
+          break;
         default:
           break;
       }
     },
-    [handleSelect]
+    []
   );
 
   const handleToggleHidden = useCallback((id: string) => {
-    invokeCommand("layer.toggleHidden");
-    setElements((prev) => {
-      const item = prev[id];
-      if (!item) return prev;
-      return {
-        ...prev,
-        [id]: {
-          ...item,
-          hidden: !item.hidden,
-        },
-      };
-    });
+    invokeCommand("layer.setVisible", { ids: [id], visible: getDocument().layers[id]?.visible === false });
   }, []);
 
   const handleToggleLocked = useCallback((id: string) => {
-    invokeCommand("layer.toggleLock");
-    setElements((prev) => {
-      const item = prev[id];
-      if (!item) return prev;
-      return {
-        ...prev,
-        [id]: {
-          ...item,
-          locked: !item.locked,
-        },
-      };
-    });
+    invokeCommand("layer.setLocked", { ids: [id], locked: getDocument().layers[id]?.locked !== true });
   }, []);
 
   // Snapping and Transform Gestures
-  const { snapLines, spacingMarks, startMove, startResize, isGesturing } = useStageTransform({
+  const { isGesturing, snapLines, spacingMarks, startMove, startResize } = useStageTransform({
     elements,
     selectedIds,
     artboardWidth: presetDef.artboardWidth,
@@ -372,9 +339,31 @@ export const Stage: React.FC<StageProps> = ({
     onSelect: handleSelect,
   });
 
+  // A loading page shows the page it comes from and the one it leads to beside it, so the view zooms out to hold all three.
+  const activePageDef = useProjectStore((p) => p.pages[p.activePageId]);
+  const allPages = useProjectStore((p) => p.pages);
+  const onLoadingPage = isLoadingPage(activePageDef);
+  const wasLoadingPage = useRef(false);
+  const pageW = presetDef.artboardWidth;
+  const pageH = presetDef.artboardHeight;
+  useEffect(() => {
+    const camera = useCameraStore.getState();
+    if (onLoadingPage) {
+      wasLoadingPage.current = true;
+      camera.fitToRect({ x: -(pageW + TRANSITION_GAP), y: 0, width: 3 * pageW + 2 * TRANSITION_GAP, height: pageH }, { padding: 64, maxZoom: 1, bottomInset: 56 });
+    } else if (wasLoadingPage.current) {
+      wasLoadingPage.current = false;
+      camera.fitToRect({ x: 0, y: 0, width: pageW, height: pageH }, { padding: 48, maxZoom: 1, bottomInset: 56 });
+    }
+  }, [onLoadingPage, activePageDef?.id, pageW, pageH]);
+
   // Report the stage size to the camera store so fit, zoom to selection and the other camera actions know the viewport.
   const viewportRef = useRef<HTMLDivElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const onToolDoneRef = useRef(onToolDone);
+  useEffect(() => {
+    onToolDoneRef.current = onToolDone;
+  });
   // The canvas owns the keyboard while the pointer is over it: this is what Select All, Delete, Duplicate, Group and arrow-nudging check.
   useFocusScope("canvas", viewportRef);
   useLayoutEffect(() => {
@@ -386,6 +375,33 @@ export const Stage: React.FC<StageProps> = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Tell the rulers where the page's corner is on screen; and re-centre when a camera action (fit, 100%) asks for a new view.
+  const reportOrigin = useCallback(() => {
+    const view = viewportRef.current;
+    const art = view?.querySelector<HTMLElement>('[data-stage="artboard"]');
+    if (!view || !art) return;
+    const hRuler = document.querySelector<HTMLElement>('[data-ruler="horizontal"]')?.getBoundingClientRect();
+    const vRuler = document.querySelector<HTMLElement>('[data-ruler="vertical"]')?.getBoundingClientRect();
+    const a = art.getBoundingClientRect();
+    const v = view.getBoundingClientRect();
+    useStageOriginStore.getState().setOrigin({ x: a.left - (hRuler?.left ?? v.left), y: a.top - (vRuler?.top ?? v.top), width: hRuler?.width ?? v.width, height: vRuler?.height ?? v.height });
+  }, []);
+  useLayoutEffect(reportOrigin);
+  useEffect(() => {
+    const view = viewportRef.current;
+    if (!view) return undefined;
+    const observer = new ResizeObserver(reportOrigin);
+    observer.observe(view);
+    return () => observer.disconnect();
+  }, [reportOrigin]);
+  const cameraX = useCameraStore((c) => c.camera.x);
+  const cameraY = useCameraStore((c) => c.camera.y);
+  const [seenCamera, setSeenCamera] = useState({ x: cameraX, y: cameraY });
+  if (seenCamera.x !== cameraX || seenCamera.y !== cameraY) {
+    setSeenCamera({ x: cameraX, y: cameraY });
+    setDragPan({ x: 0, y: 0 });
+  }
 
   // The wheel, as on the old canvas: a plain wheel or trackpad scroll pans, Ctrl or Cmd with the wheel (a pinch sends the same) zooms.
   // A native listener, because React's wheel listener is passive and could not stop the page from scrolling or zooming itself.
@@ -414,11 +430,14 @@ export const Stage: React.FC<StageProps> = ({
   const gesture = useRef<
     | { kind: "create"; spec: CreationSpec; start: { x: number; y: number } }
     | { kind: "pan"; startX: number; startY: number; from: { x: number; y: number } }
+    | { kind: "marquee"; start: { x: number; y: number }; moved: boolean; pointerId: number; /** The frame it started in: it selects that frame's layers. */ scope: string | null; additive: boolean }
     | null
   >(null);
   const justDragged = useRef(false);
   const rightPan = useRef(false);
   const rightMoved = useRef(false);
+  const syntheticMenu = useRef(false);
+  const rightDownAt = useRef<{ target: EventTarget | null; x: number; y: number } | null>(null);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const toolCursor = activeTool === "hand" ? "grab" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
@@ -439,6 +458,7 @@ export const Stage: React.FC<StageProps> = ({
       if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
       rightPan.current = true;
+      rightDownAt.current = { target: e.target, x: e.clientX, y: e.clientY };
       e.currentTarget.setPointerCapture(e.pointerId);
       return;
     }
@@ -451,7 +471,27 @@ export const Stage: React.FC<StageProps> = ({
       return;
     }
     const spec = creationSpecFor(activeTool, activeShape);
-    if (!spec) return;
+    if (!spec) {
+      // Select on empty canvas: a drag selects what it touches
+      const pressedOn = e.target as HTMLElement;
+      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],button,[role=menu]')) return;
+      const from = toArtboard(e.clientX, e.clientY);
+      if (!from) return;
+      const box = pressedOn.closest<HTMLElement>('[data-testid="stage-element"]');
+      let scope: string | null = null;
+      if (box) {
+        // A drag on a frame that holds layers selects inside it, or nothing could be marquee-selected on a page of frames.
+        // A selected frame still moves, and a plain click still selects the frame (its click handler reads this press).
+        const id = box.dataset.elementId ?? "";
+        const pressed = getDocument().layers[id];
+        if (!pressed || pressed.archetype !== "container" || pressed.children.length === 0 || pressed.locked || selectedIds.includes(id) || e.shiftKey || e.altKey) return;
+        scope = id;
+        box.dataset.press = `${e.clientX},${e.clientY},0`;
+        e.stopPropagation();
+      }
+      gesture.current = { kind: "marquee", start: { x: from.x, y: from.y }, moved: false, pointerId: e.pointerId, scope, additive: e.shiftKey };
+      return;
+    }
     if ((e.target as HTMLElement).closest("button,[role=menu]")) return; // the canvas size label and its menu keep working
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return; // anywhere on the canvas: a frame or shape can start outside the page too
@@ -471,6 +511,13 @@ export const Stage: React.FC<StageProps> = ({
     }
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
+    if (g.kind === "marquee") {
+      if (!g.moved && Math.hypot(at.x - g.start.x, at.y - g.start.y) * at.scale < 4) return;
+      if (!g.moved) e.currentTarget.setPointerCapture(g.pointerId);
+      g.moved = true;
+      setDrawPreview({ x: Math.min(g.start.x, at.x), y: Math.min(g.start.y, at.y), width: Math.abs(at.x - g.start.x), height: Math.abs(at.y - g.start.y), rotation: 0, archetype: "marquee" });
+      return;
+    }
     const b = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
     setDrawPreview({ x: b.x, y: b.y, width: b.width, height: b.height, rotation: b.rotation, archetype: g.spec.archetype });
   };
@@ -479,17 +526,37 @@ export const Stage: React.FC<StageProps> = ({
     const g = gesture.current;
     gesture.current = null;
     if (!g) return;
+    if (g.kind === "marquee" && !g.moved) return; // a plain click: the click handler deselects
     justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     if (g.kind === "pan") {
+      if (rightPan.current && !rightMoved.current && rightDownAt.current?.target instanceof Element) {
+        // a right-click that did not drag: open the canvas menu now
+        const at = rightDownAt.current;
+        syntheticMenu.current = true;
+        (at.target as Element).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, button: 2 }));
+        syntheticMenu.current = false;
+      }
       rightPan.current = false;
+      rightMoved.current = false;
       return;
     }
     setDrawPreview(null);
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
+    if (g.kind === "marquee") {
+      const x0 = Math.min(g.start.x, at.x);
+      const x1 = Math.max(g.start.x, at.x);
+      const y0 = Math.min(g.start.y, at.y);
+      const y1 = Math.max(g.start.y, at.y);
+      const layersNow = getDocument().layers;
+      // every element it touches, at any depth (a frame only when nothing in it is touched)
+      const hit = marqueeHits(layersNow, Object.values(elements), { x0, y0, x1, y1 }, g.scope);
+      useSelectionStore.getState().selectMultiple(g.additive ? [...new Set([...selectedIds, ...hit])] : hit, "element");
+      return;
+    }
     const box = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
-    selectStore(createLayerFromBox(g.spec, box), "element");
+    selectStore(createLayerFromBox(g.spec, box, elements), "element");
     onToolDone?.();
   };
 
@@ -497,6 +564,14 @@ export const Stage: React.FC<StageProps> = ({
   useEffect(() => {
     if (activeTool === "image") imageInput.current?.click();
   }, [activeTool]);
+  // Closing the file dialog without a choice hands the tool back too.
+  useEffect(() => {
+    const input = imageInput.current;
+    if (!input) return undefined;
+    const cancelled = () => onToolDoneRef.current?.();
+    input.addEventListener("cancel", cancelled);
+    return () => input.removeEventListener("cancel", cancelled);
+  }, []);
 
   const placePicked = async (files: FileList | null) => {
     const list = files ? Array.from(files) : [];
@@ -505,15 +580,32 @@ export const Stage: React.FC<StageProps> = ({
       return;
     }
     const outcomes = await importFiles(list);
-    const root = Object.values(getDocument().layers).find((l) => l.parentId === null);
     let last: string | null = null;
+    const home = pictureHome({ x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 }, elements);
     outcomes.forEach((o, i) => {
-      if (!o.entry || !root) return;
-      const at = { x: presetDef.artboardWidth / 2 + i * 24, y: presetDef.artboardHeight / 2 + i * 24, parentId: root.id, parentOrigin: { x: 0, y: 0 } };
-      last = placeImage(o.entry, at) ?? last;
+      if (!o.entry || !home) return;
+      last = placeImage(o.entry, { ...home, x: home.x + i * 24, y: home.y + i * 24 }) ?? last;
     });
     if (last) selectStore(last, "element");
     onToolDone?.();
+  };
+
+  /** Pictures dropped on the canvas are stored in the assets and placed where they were dropped, in the frame under the drop. */
+  const dropPictures = async (e: React.DragEvent<HTMLDivElement>) => {
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    e.preventDefault();
+    const at = toArtboard(e.clientX, e.clientY) ?? { x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 };
+    const outcomes = await importFiles(files);
+    const under = frameAt(at, undefined, elements);
+    const parentId = under?.id ?? activePageRootId();
+    if (!parentId) return;
+    let last: string | null = null;
+    outcomes.forEach((o, i) => {
+      if (!o.entry || o.entry.kind === "font") return; // a font is only stored
+      last = placeImage(o.entry, { x: at.x + i * 24, y: at.y + i * 24, parentId, parentOrigin: under ? { x: under.x, y: under.y } : { x: 0, y: 0 } }) ?? last;
+    });
+    if (last) selectStore(last, "element");
   };
 
   const handleToolPointerCancel = () => {
@@ -528,14 +620,22 @@ export const Stage: React.FC<StageProps> = ({
       data-testid="stage-viewport"
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
       style={{ cursor: toolCursor }}
-      onContextMenu={(e) => {
-        if (rightMoved.current) e.preventDefault(); // that was a canvas drag, not a menu request
-        rightMoved.current = false;
-      }}
       onPointerDownCapture={handleToolPointerDown}
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => void dropPictures(e)}
+      onContextMenu={(e) => {
+        // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
+        // right-click opens it. Layers keep their own menu, opened at once.
+        if (syntheticMenu.current) return;
+        if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onClick={(e) => {
         if (justDragged.current) {
           justDragged.current = false;
@@ -570,15 +670,22 @@ export const Stage: React.FC<StageProps> = ({
         zoom={zoom}
         pan={pan}
         elements={elements}
-        layers={storeLayers}
+        layers={controlledElements ? undefined : storeLayers}
+        pageRef={pageRef}
+        rootId={controlledElements ? null : rootId}
         drawPreview={drawPreview}
         selectedIds={selectedIds}
         hoveredId={hoveredId}
         onSelect={handleSelect}
         onHover={setHoveredId}
         activeTool={activeTool}
-        snapGuides={snapGuides}
+        snapGuides={snapGuides && isGesturing}
         empty={empty}
+        references={
+          onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
+            <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
+          ) : undefined
+        }
         onAddFrame={onAddFrame}
         onInsert={onInsert}
         onAskAi={onAskAi}

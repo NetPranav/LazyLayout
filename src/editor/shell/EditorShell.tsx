@@ -16,9 +16,12 @@ import { useProjectFiles } from "@/legacy-editor/shell/hooks/useProjectFiles";
 import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
-import { isUntouchedSeed, seedPrototypeDocument } from "./prototypeDocument";
-import { useHistoryStore } from "@/core/store/useHistoryStore";
+import { isUntouchedSeed, seedPrototypeDocument, upgradeSavedProject } from "./prototypeDocument";
 import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
+import { FontSync } from "@/legacy-editor/fonts/FontSync";
+import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
+import { ExportDialog } from "@/legacy-editor/shell/ExportDialog";
+import { AgentDialog } from "@/legacy-editor/shell/AgentDialog";
 import {
   RecoveryPrompt,
   SaveErrorBanner,
@@ -72,25 +75,22 @@ export function EditorShell({
   // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
   useEffect(() => installDocumentMotionSync(), []);
 
-  // Seed the prototype document if the project is brand new and untouched. Once the page has had content in this session,
-  // an empty page is the designer's choice (they deleted everything), not a new project, so it stays empty.
+  // A brand-new project gets the sample page; one saved by an earlier version is brought up to date when it loads.
   useEffect(() => {
-    // A change that came with a history step is the designer's own edit (an emptied page stays empty); loading a saved or
-    // brand-new project changes the document with no step, and an untouched one is seeded.
-    let lastPast = useHistoryStore.getState().past.length;
-    const check = (layers: Record<string, { children?: unknown[] }> | undefined | null) => {
-      const past = useHistoryStore.getState().past.length;
-      const byDesigner = past !== lastPast;
-      lastPast = past;
-      if (byDesigner) return;
-      if (isUntouchedSeed(layers as Parameters<typeof isUntouchedSeed>[0])) {
+    let upgradedFor: unknown = null;
+    const check = () => {
+      const doc = documentStore.getState().document;
+      if (isUntouchedSeed(doc.layers)) {
         seedPrototypeDocument();
-        lastPast = useHistoryStore.getState().past.length;
+        return;
+      }
+      if (upgradedFor !== doc.layers) {
+        upgradedFor = doc.layers;
+        upgradeSavedProject();
       }
     };
-    check(documentStore.getState().document.layers);
-    const unsub = documentStore.subscribe((state) => check(state.document.layers));
-    return unsub;
+    check();
+    return documentStore.subscribe(check);
   }, []);
 
   useShellCommands({
@@ -211,11 +211,16 @@ export function EditorShell({
           showRulers={actions.showRulers}
           isZen={actions.isZen}
           users={collabUsers}
+          viewportPreset={actions.viewportPreset}
+          onSelectPreset={actions.setViewportPreset}
         />
         <ReadOnlyBanner />
       </div>
 
       <ConnectedCommandPalette />
+      <FontSync />
+      <ExportDialog />
+      <AgentDialog />
 
       {/* 2. Left panel slot in "left" grid area */}
       <div
@@ -274,6 +279,11 @@ export function EditorShell({
               activeTool={actions.activeTool}
               activeShape={actions.activeShape}
               onToolDone={() => actions.setActiveTool("select")}
+              onAddFrame={() => {
+                insertCatalogItem("Frame");
+              }}
+              onInsert={actions.toggleInsert}
+              onAskAi={actions.toggleAiBox}
               snapObjects={actions.snapObjects}
               snapGuides={actions.snapGuides}
               preset={actions.viewportPreset}

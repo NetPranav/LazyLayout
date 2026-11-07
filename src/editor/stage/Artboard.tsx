@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useState, useRef, useLayoutEffect, useMemo } from "react";
+import { ChevronDown, Link2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
@@ -11,7 +11,9 @@ import { MotionPathOverlay } from "./MotionPathOverlay";
 import { ValueHud } from "./ValueHud";
 import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
-import { EngineLayer } from "./EngineLayer";
+import { CornerPinOverlay } from "./CornerPinOverlay";
+import { WarpMeshOverlay } from "./WarpMeshOverlay";
+import { RenderLayer } from "@/core/render";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
@@ -24,7 +26,6 @@ import {
 } from "@/core/geometry/parentTransforms";
 import { evaluate } from "@/core/kernel/evaluate";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
-import { getDocument } from "@/core/store/useDocumentStore";
 import { useMotionModel } from "@/editor/motion-model";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
@@ -32,6 +33,12 @@ import {
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
+import { presetForBreakpoint } from "./presetBreakpoints";
+import { deviceOfFrame, DEVICE_SPECS, switchFrameView, type DeviceKind } from "./deviceViews";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+import { getDocument } from "@/core/store/documentState";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
 function designTransform(
@@ -85,6 +92,89 @@ function designTransform(
   }
   return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
 }
+/**
+ * The words of a text layer, edited where they sit. It is styled exactly like the drawn text (same wrapping, same overflow,
+ * same capitals), so what you type, what is highlighted and what you see afterwards are the same lines. Leaving it (click
+ * away, Escape, Ctrl+Enter) writes the words as one undo step.
+ */
+const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[string]; onDone: (value: string) => void }> = ({ layer, onDone }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const key = layer.archetype === "button" ? "content.label" : "content.text";
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.innerText = String(layer.properties[key] ?? "");
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    // Take the look of the drawn text itself (whatever the engine computed), and hide the drawn copy while this one is open.
+    const drawn = document.querySelector<HTMLElement>(`[data-archetype][data-element-id="${layer.id}"]`);
+    if (drawn) {
+      const cs = getComputedStyle(drawn);
+      for (const prop of ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "color", "textAlign", "textTransform", "whiteSpace", "overflowWrap", "textDecorationLine", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
+        if (cs[prop]) el.style[prop] = cs[prop]; // (Firefox leaves some shorthands empty: keep the explicit value then)
+      }
+      drawn.style.visibility = "hidden";
+    }
+    return () => {
+      if (drawn) drawn.style.visibility = "";
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the words are read once, when editing starts
+  }, []);
+  const p = layer.properties;
+  const sizing = String(p["text.sizing"] ?? "fixed");
+  const chosen = p["typography.whiteSpace"];
+  const space = chosen === "nowrap" || chosen === "pre" || chosen === "normal" ? chosen : null;
+  const wraps = sizing !== "autoWidth" && space !== "nowrap" && space !== "pre";
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label="Edit text"
+      aria-multiline="true"
+      data-testid="stage-text-editor"
+      spellCheck={false}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
+      }}
+      onPaste={(e) => {
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+      }}
+      onBlur={(e) => onDone(e.currentTarget.innerText.replace(/\n$/, ""))}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: sizing === "autoWidth" ? "max-content" : "100%",
+        minHeight: "100%",
+        margin: 0,
+        outline: "1px solid var(--ll-border-active, #2F6BFF)",
+        background: "rgba(255,255,255,0.35)",
+        boxSizing: "border-box",
+        whiteSpace: space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
+        overflowWrap: wraps ? "anywhere" : "normal",
+        fontFamily: String(p["typography.fontFamily"] ?? "inherit"),
+        fontSize: Number(p["typography.fontSize"] ?? 16),
+        fontWeight: Number(p["typography.fontWeight"] ?? 400),
+        fontStyle: String(p["typography.fontStyle"] ?? "normal"),
+        lineHeight: Number(p["typography.lineHeight"] ?? 1.2),
+        letterSpacing: Number(p["typography.letterSpacing"] ?? 0),
+        color: String(p["typography.color"] ?? "#000"),
+        textAlign: (p["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
+        textTransform: (p["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
+        textDecorationLine: p["typography.textDecoration"] && p["typography.textDecoration"] !== "none" ? String(p["typography.textDecoration"]) : undefined,
+      }}
+    />
+  );
+};
 
 /** The outline of what a creation tool is drawing: the shape it will make, not always a box. */
 const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number }> = ({ archetype, width, height }) => {
@@ -101,17 +191,20 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
       shape = <line x1={0} y1={h / 2} x2={w} y2={h / 2} {...common} />;
       break;
     case "polygon":
-      shape = <polygon points={`${w / 2},0 ${w},${h * 0.38} ${w * 0.81},${h} ${w * 0.19},${h} 0,${h * 0.38}`} {...common} />;
-      break;
     case "star": {
-      const pts = Array.from({ length: 10 }, (_, i) => {
-        const r = i % 2 === 0 ? 1 : 0.4;
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      // the same shape the tool will make: a six-sided polygon, a five-pointed star with its inner radius at half
+      const star = archetype === "star";
+      const n = star ? 10 : 6;
+      const pts = Array.from({ length: n }, (_, i) => {
+        const r = star ? (i % 2 === 0 ? 1 : 0.5) : 1;
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
         return `${w / 2 + (Math.cos(a) * r * w) / 2},${h / 2 + (Math.sin(a) * r * h) / 2}`;
       }).join(" ");
       shape = <polygon points={pts} {...common} />;
       break;
     }
+    case "marquee":
+      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: "1px solid var(--ll-text-primary)", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)" }} />;
     default:
       shape = <rect x={0} y={0} width={w} height={h} {...common} />;
   }
@@ -123,8 +216,7 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
   );
 };
 
-/** The three elements of the seeded prototype page keep their prototype drawing; every other layer is drawn by the engine. */
-const PROTOTYPE_DRAWN = new Set(["headline", "button", "image"]);
+const ENGINE_CTX = { frameAtOrigin: true };
 
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
@@ -138,6 +230,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
   pan = { x: 0, y: 0 },
   elements,
   layers,
+  pageRef,
+  rootId,
   drawPreview = null,
   selectedIds,
   hoveredId,
@@ -145,6 +239,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   onHover,
   snapGuides = false,
   empty = false,
+  references,
   onAddFrame,
   onInsert,
   onAskAi,
@@ -165,7 +260,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
     coords: { x: number; y: number };
     elementId: string;
   } | null>(null);
-  const sizeButtonRef = useRef<HTMLButtonElement>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
@@ -173,7 +267,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const fps = useMotionModel((s) => s.fps) || 60;
   const motionTimeSec = playhead / fps;
 
-  const activePresetId = controlledPreset !== undefined ? controlledPreset : internalPreset;
+  const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const activeBpPreset = presetForBreakpoint(breakpointsOf(getDocument()), activeBreakpointId);
+  const activePresetId = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? activeBpPreset : internalPreset);
   const currentPresetDef =
     STAGE_PRESETS.find((p) => p.id === activePresetId) || STAGE_PRESETS[0];
 
@@ -192,12 +288,47 @@ export const Artboard: React.FC<ArtboardProps> = ({
   };
 
   const hasElements = Object.keys(elements).length > 0 && !empty;
+  // The page sheet (white fill, border, shadow, size label, title strip) must be drawn only when
+  // the page has at least one direct child that is NOT a frame (a loose shape/text/image placed straight on the page).
+  // When every direct child of the page is a frame (archetype "container") and when the page is empty, draw NO page sheet.
+  // The page itself is never drawn (the Home page is only a title in the page list): the viewport holds frames and what is on them.
+  // Only the loading-page view draws a sheet, since its page is the frame being designed.
+  const drawSheet = !empty && !!references;
+  const bare = !drawSheet;
+
+  const topFrames = useMemo(() => {
+    if (!bare || !layers) return [];
+    return Object.values(layers).filter(
+      (l) => (l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId
+    );
+  }, [bare, layers, rootId]);
+
+  const [openSizeMenuFrameId, setOpenSizeMenuFrameId] = useState<string | null>(null);
+  const [sizeMenuAnchorEl, setSizeMenuAnchorEl] = useState<HTMLElement | null>(null);
+
+  // Active frame for positioning the frame dropdown / size label
+  const activeFrame = useMemo(() => {
+    if (!bare) return null;
+    if (topFrames.length === 0) return null;
+    const selectedFrame = topFrames.find((f) => selectedIds.includes(f.id));
+    return selectedFrame ?? topFrames[0];
+  }, [bare, topFrames, selectedIds]);
+
+  const activeFrameEl = activeFrame ? elements[activeFrame.id] : null;
+  const labelLeft = activeFrameEl
+    ? activeFrameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft
+    : STAGE_CONSTANTS.sizeLabelOffsetLeft;
+  const labelTop = activeFrameEl
+    ? activeFrameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop
+    : STAGE_CONSTANTS.sizeLabelOffsetTop;
+  const hideLabel = !hasElements || empty;
 
   return (
     <div
       id={id}
       data-stage="artboard"
       data-testid="stage-artboard"
+      data-bare={bare ? "true" : undefined}
       className="ll-artboard ll:absolute ll:select-none ll:transition-shadow"
       style={{
         left: STAGE_CONSTANTS.artboardLeftPercent,
@@ -209,74 +340,158 @@ export const Artboard: React.FC<ArtboardProps> = ({
         height: artboardHeight,
         transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoomScale})`,
         transformOrigin: "center center",
-        backgroundColor: background ?? "var(--ll-board-bg)",
-        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-board-line)`,
-        boxShadow: "var(--ll-shadow-soft)",
+        backgroundColor: bare ? "transparent" : (background ?? "var(--ll-board-bg)"),
+        border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid ${bare ? "transparent" : "var(--ll-board-line)"}`,
+        boxShadow: bare ? "none" : "var(--ll-shadow-soft)",
       }}
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
         if (e.target === e.currentTarget) {
+          useSelectionStore.getState().setSelectedMirrorId(null);
           onSelect(null);
         }
       }}
     >
       {/* 1. Canvas Size Label / Dropdown Trigger (.lbl / #albl) */}
-      <button
-        ref={sizeButtonRef}
-        id="albl"
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={isSizeMenuOpen}
-        title="Canvas size"
-        className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-        style={{
-          left: STAGE_CONSTANTS.sizeLabelOffsetLeft,
-          top: STAGE_CONSTANTS.sizeLabelOffsetTop,
-          height: STAGE_CONSTANTS.sizeLabelHeight,
-          paddingLeft: "var(--ll-spacing-1)",
-          paddingRight: "var(--ll-spacing-1)",
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsSizeMenuOpen((prev) => !prev);
-        }}
-      >
-        <span
-          id="albltx"
-          className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+      {topFrames.length === 0 && (
+        <button
+          id="albl"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={isSizeMenuOpen || openSizeMenuFrameId === "fallback"}
+          title="Canvas size"
+          className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          style={{
+            left: labelLeft,
+            top: labelTop,
+            height: STAGE_CONSTANTS.sizeLabelHeight,
+            ...(hideLabel ? { visibility: "hidden" as const } : {}),
+            paddingLeft: "var(--ll-spacing-1)",
+            paddingRight: "var(--ll-spacing-1)",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSizeMenuAnchorEl(e.currentTarget);
+            setOpenSizeMenuFrameId((prev) => (prev ? null : "fallback"));
+            setIsSizeMenuOpen((prev) => !prev);
+          }}
         >
-          {SIZES_MAP[activePresetId] || "Desktop"} ·{" "}
-          <span className="mono ll:font-mono">{activePresetId}</span>
-        </span>
-        <Icon
-          icon={ChevronDown}
-          size={STAGE_CONSTANTS.sizeLabelIconSize}
-          className="ll:shrink-0 ll:text-muted"
-        />
-      </button>
+          <span
+            id="albltx"
+            className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+          >
+            {SIZES_MAP[activePresetId] || "Desktop"} ·{" "}
+            <span className="mono ll:font-mono">{activePresetId}</span>
+          </span>
+          <Icon
+            icon={ChevronDown}
+            size={STAGE_CONSTANTS.sizeLabelIconSize}
+            className="ll:shrink-0 ll:text-muted"
+          />
+        </button>
+      )}
+
+      {topFrames.length > 0 &&
+        topFrames.map((frame) => {
+          const frameEl = elements[frame.id];
+          if (!frameEl) return null;
+          const isMirror = Boolean(frame.properties["frame.mirrorOf"]);
+          const dev = deviceOfFrame(frame);
+          const spec = DEVICE_SPECS[dev];
+          const isPrimary = frame.id === (activeFrame?.id ?? topFrames[0]?.id);
+          const fLeft = frameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft;
+          const fTop = frameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop;
+
+          return (
+            <button
+              key={`frame-label-${frame.id}`}
+              id={isPrimary ? "albl" : undefined}
+              data-testid={isMirror ? "mirror-frame-label" : "frame-size-label"}
+              data-frame-id={frame.id}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={openSizeMenuFrameId === frame.id}
+              title={isMirror ? `${spec.label} linked view` : "Canvas size"}
+              className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+              style={{
+                left: fLeft,
+                top: fTop,
+                height: STAGE_CONSTANTS.sizeLabelHeight,
+                paddingLeft: "var(--ll-spacing-1)",
+                paddingRight: "var(--ll-spacing-1)",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                useSelectionStore.getState().setSelectedMirrorId(null);
+                onSelect(frame.id);
+                setSizeMenuAnchorEl(e.currentTarget);
+                setOpenSizeMenuFrameId((prev) => (prev === frame.id ? null : frame.id));
+              }}
+            >
+              {isMirror && (
+                <Icon
+                  icon={Link2}
+                  size={STAGE_CONSTANTS.sizeLabelIconSize}
+                  className="ll:shrink-0 ll:text-muted"
+                  aria-label="Linked mirror view"
+                />
+              )}
+              <span
+                id={isPrimary ? "albltx" : undefined}
+                className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+              >
+                {spec.label} ·{" "}
+                <span className="mono ll:font-mono">{spec.width}</span>
+              </span>
+              <Icon
+                icon={ChevronDown}
+                size={STAGE_CONSTANTS.sizeLabelIconSize}
+                className="ll:shrink-0 ll:text-muted"
+              />
+            </button>
+          );
+        })}
 
       {/* Preset Menu */}
       <Menu
-        open={isSizeMenuOpen}
-        onClose={() => setIsSizeMenuOpen(false)}
-        anchorRef={sizeButtonRef}
+        open={openSizeMenuFrameId !== null || isSizeMenuOpen}
+        onClose={() => {
+          setOpenSizeMenuFrameId(null);
+          setSizeMenuAnchorEl(null);
+          setIsSizeMenuOpen(false);
+        }}
+        anchorEl={sizeMenuAnchorEl}
         width={STAGE_CONSTANTS.sizeDropdownWidth}
         aria-label="Canvas size menu"
       >
-        {STAGE_PRESETS.map((p) => (
-          <MenuItem
-            key={p.id}
-            onClick={() => handleSelectPreset(p.id)}
-            checked={p.id === activePresetId}
-          >
-            <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
-              <span>{p.label}</span>
-              <span className="ll:font-mono ll:text-muted ll:text-micro">
-                {p.width}
-              </span>
-            </div>
-          </MenuItem>
-        ))}
+        {STAGE_PRESETS.map((p) => {
+          const targetDev: DeviceKind = p.id === "375" ? "mobile" : p.id === "768" ? "tablet" : "desktop";
+          const activeDev = openSizeMenuFrameId && openSizeMenuFrameId !== "fallback"
+            ? deviceOfFrame(layers?.[openSizeMenuFrameId])
+            : activePresetId === "375" ? "mobile" : activePresetId === "768" ? "tablet" : "desktop";
+          return (
+            <MenuItem
+              key={p.id}
+              onClick={() => {
+                if (openSizeMenuFrameId && openSizeMenuFrameId !== "fallback") {
+                  switchFrameView(openSizeMenuFrameId, targetDev);
+                } else {
+                  handleSelectPreset(p.id);
+                }
+                setOpenSizeMenuFrameId(null);
+                setIsSizeMenuOpen(false);
+              }}
+              checked={targetDev === activeDev}
+            >
+              <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
+                <span>{p.label}</span>
+                <span className="ll:font-mono ll:text-muted ll:text-micro">
+                  {p.width}
+                </span>
+              </div>
+            </MenuItem>
+          );
+        })}
       </Menu>
 
       {/* 2. Artboard Title Row (.atit / #atit) */}
@@ -287,6 +502,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           height: STAGE_CONSTANTS.artboardTitleHeight,
           fontSize: "var(--ll-text-micro-size)",
           fontWeight: "var(--ll-text-micro-weight)",
+          ...(bare ? { visibility: "hidden" as const } : {}),
         }}
       >
         {title}
@@ -320,6 +536,19 @@ export const Artboard: React.FC<ArtboardProps> = ({
         </>
       )}
 
+      {references}
+
+      {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
+      {layers && rootId && (
+        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
+          {bare && (
+            // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
+            <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
+          )}
+          <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
+        </div>
+      )}
+
       {/* 4. Empty State if no elements or explicitly empty */}
       {(!hasElements || empty) && (
         <div id="es" className="ll-es es ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center">
@@ -343,17 +572,18 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {hasElements &&
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
-          const layer = layers?.[el.id];
+          const targetDocId = el.targetId ?? el.id;
+          const layer = layers?.[targetDocId] ?? layers?.[el.id];
           const isHelper = layer?.properties["render.role"] === "helper";
           if (isHelper && canvasViewMode === "preview") return null;
 
-          const engineDrawn = !!layer && !PROTOTYPE_DRAWN.has(el.id);
-          const isSelected = selectedIds.includes(el.id) || (el.id === "headline" && selectedIds.includes("subtitle"));
+          const engineDrawn = !!layer;
+          const isSelected = selectedIds.includes(targetDocId) || (el.id === "headline" && selectedIds.includes("subtitle"));
           const doc = getDocument();
           let evaluatedProps: Record<string, unknown> = layer?.properties ?? {};
           try {
             if (layer) {
-              evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, el.id, motionTimeSec);
+              evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, targetDocId, motionTimeSec);
             }
           } catch {
             // fallback
@@ -369,8 +599,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
             <div
               key={el.id}
               id={el.id === "headline" ? "el-text" : el.id === "button" ? "el-button" : el.id === "image" ? "el-image" : `el-${el.id}`}
-              data-sel={el.id}
-              data-element-id={el.id}
+              data-sel={targetDocId}
+              data-element-id={targetDocId}
+              data-mirror-id={el.mirrorId}
               data-testid="stage-element"
               data-selected={isSelected ? "true" : "false"}
               data-layer-role={isHelper ? "helper" : "content"}
@@ -392,9 +623,11 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...elementTransform,
+                ...(elementTransform.transform ? elementTransform : el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
+                ...(elementTransform.transformOrigin ? { transformOrigin: elementTransform.transformOrigin } : {}),
                 ...(animOpacity !== undefined ? { opacity: animOpacity } : {}),
                 ...(isHelper ? { border: "1.5px dashed var(--ll-accent, #6366f1)" } : {}),
+                ...(el.locked ? { pointerEvents: "none" as const } : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
               onDoubleClick={(e) => {
@@ -405,23 +638,37 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
               onPointerDown={(e) => {
                 if (editingText === el.id) return;
+                // where the press was, for the click that follows
+                e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(targetDocId) ? 1 : 0}`;
+                if (el.mirrorId) {
+                  useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
+                } else {
+                  useSelectionStore.getState().setSelectedMirrorId(null);
+                }
                 onStartMove?.(el.id, e);
               }}
-              onMouseEnter={() => onHover(el.id)}
+              onMouseEnter={() => onHover(targetDocId)}
               onMouseLeave={() => onHover(null)}
               onClick={(e) => {
                 e.stopPropagation();
-                onSelect(el.id, e.shiftKey);
+                // the press already added it to the selection, and the click after a drag is not a choice
+                const [px, py, added] = (e.currentTarget.dataset.press ?? "").split(",").map(Number);
+                delete e.currentTarget.dataset.press;
+                if (added === 1 || Math.hypot(e.clientX - px, e.clientY - py) > 3) return;
+                onSelect(targetDocId, e.shiftKey);
+                // selecting clears the mirror, so say which view the layer was picked in afterwards
+                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!selectedIds.includes(el.id)) {
-                  onSelect(el.id, false);
+                if (!selectedIds.includes(targetDocId)) {
+                  onSelect(targetDocId, false);
                 }
+                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
                 setContextMenu({
                   coords: { x: e.clientX, y: e.clientY },
-                  elementId: el.id,
+                  elementId: targetDocId,
                 });
               }}
             >
@@ -433,35 +680,27 @@ export const Artboard: React.FC<ArtboardProps> = ({
                   NULL: {layer?.name ?? el.id}
                 </span>
               )}
-              {!isHelper && engineDrawn && layer && layers && <EngineLayer layer={layer} layers={layers} />}
-              {editingText === el.id && layer && (
-                <textarea
-                  autoFocus
-                  aria-label="Edit text"
-                  data-testid="stage-text-editor"
-                  defaultValue={String(layer.properties[layer.archetype === "button" ? "content.label" : "content.text"] ?? "")}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
+              {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
+              {engineDrawn && layer && ["line", "arrow", "divider"].includes(layer.archetype) && (
+                <span
+                  aria-hidden="true"
+                  data-testid="line-hit-area"
+                  style={{
+                    position: "absolute",
+                    left: -8,
+                    right: -8,
+                    top: -12,
+                    bottom: -12,
                   }}
-                  onBlur={(e) => {
-                    const value = e.currentTarget.value;
+                />
+              )}
+              {editingText === el.id && layer && (
+                <InlineTextEditor
+                  layer={layer}
+                  onDone={(value) => {
                     setEditingText(null);
                     const key = layer.archetype === "button" ? "content.label" : "content.text";
-                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([el.id], { [key]: value }, "Edit text");
-                  }}
-                  className="ll:absolute ll:inset-0 ll:w-full ll:h-full ll:m-0 ll:p-0 ll:border-0 ll:outline-none ll:resize-none ll:overflow-hidden ll:bg-white/90"
-                  style={{
-                    font: "inherit",
-                    fontFamily: String(layer.properties["typography.fontFamily"] ?? "inherit"),
-                    fontSize: Number(layer.properties["typography.fontSize"] ?? 16),
-                    fontWeight: Number(layer.properties["typography.fontWeight"] ?? 400),
-                    textTransform: (layer.properties["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
-                    lineHeight: Number(layer.properties["typography.lineHeight"] ?? 1.2),
-                    color: String(layer.properties["typography.color"] ?? "#000"),
-                    textAlign: (layer.properties["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
+                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([targetDocId], { [key]: value }, "Edit text");
                   }}
                 />
               )}
@@ -544,6 +783,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
         onStartResize={onStartResize}
         zoom={zoomScale}
       />
+
+      {/* Corner pin: handles and a grid on the surface a pinned layer lies on */}
+      <CornerPinOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
+
+      {/* Warp mesh: control points and grid on the warped surface */}
+      <WarpMeshOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

@@ -1,3 +1,4 @@
+import { GOOGLE_FONTS, SYSTEM_FONTS } from "@/core/fonts/catalog";
 /**
  * Named constants for Details Inspector fields and sections.
  * Enforces no magic numbers or inline px/ms literals across inspector code.
@@ -53,13 +54,12 @@ export const INSPECTOR_CONSTANTS = {
   POPOVER_ENTER_DURATION_MS: 120,
 } as const;
 
-export const FONT_FAMILY_OPTIONS = [
+/** Every font the engine can load and export: the editor's own, then the catalog, then what every computer has. */
+export const FONT_FAMILY_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "Geist", label: "Geist" },
-  { value: "Inter", label: "Inter" },
-  { value: "Playfair Display", label: "Playfair Display" },
-  { value: "Fira Code", label: "Fira Code" },
-  { value: "Helvetica", label: "Helvetica" },
-] as const;
+  ...GOOGLE_FONTS.map((f) => ({ value: f.family, label: f.family })),
+  ...SYSTEM_FONTS.map((f) => ({ value: f.family, label: f.family })),
+].filter((o, i, all) => all.findIndex((x) => x.value === o.value) === i);
 
 export const FONT_WEIGHT_OPTIONS = [
   { value: "100", label: "100 Thin" },
@@ -95,6 +95,7 @@ export const TRANSFORM_ORIGIN_OPTIONS = [
   { value: "top right", label: "Top right (legacy)" },
   { value: "bottom left", label: "Bottom left (legacy)" },
   { value: "bottom right", label: "Bottom right (legacy)" },
+  { value: "bottom center", label: "Bottom center (legacy)" },
 ] as const;
 
 export const SIZING_OPTIONS = [

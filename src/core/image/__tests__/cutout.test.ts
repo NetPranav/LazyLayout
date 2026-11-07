@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
+import { pictureBox, visibleWindow, polygonMask, applyMask, autoSubject, featherMask, fillHoles, growMask, invertMask, maskArea, maskBounds, removeSpecks, selectBorderBackground, wandSelect, type Pixels } from "../cutout";
 
 /** A picture of `w` x `h` filled with `bg`, with a rectangle `box` of `fg` colour. */
 function picture(w: number, h: number, bg: [number, number, number], fg: [number, number, number], box: { x: number; y: number; w: number; h: number }): Pixels {
@@ -94,4 +94,87 @@ test("auto finds a mountain that stands on the bottom of the picture by looking 
   assert.equal(sides, "top");
   assert.equal(mask[(h - 2) * w + 30], 255); // the base is kept
   assert.equal(mask[2 * w + 2], 0); // the sky is cut
+});
+
+/** A noisy photo-like picture: a sky that fades from deep blue to pale at the horizon, a jagged ridge, textured rock. Returns the picture and the true mountain mask. */
+function photoLike(w: number, h: number, seed = 7): { img: Pixels; truth: Uint8Array } {
+  let s = seed;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const data = new Uint8ClampedArray(w * h * 4);
+  const truth = new Uint8Array(w * h);
+  const ridge = (x: number) => h * 0.35 + Math.sin(x / 9) * 6 + Math.abs(x - w / 2) * 0.55 + Math.sin(x / 3.1) * 2;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const rock = y >= ridge(x);
+      const t = y / h;
+      const n = (rnd() - 0.5) * (rock ? 40 : 10);
+      const c = rock ? [70 + n, 62 + n, 55 + n] : [60 + 150 * t + n, 100 + 110 * t + n, 170 + 60 * t + n];
+      data.set([c[0], c[1], c[2], 255], (y * w + x) * 4);
+      truth[y * w + x] = rock ? 255 : 0;
+    }
+  return { img: { data, width: w, height: h }, truth };
+}
+
+test("on a noisy gradient-sky picture, Auto keeps the mountain and drops the sky (overlap with the true outline)", () => {
+  const { img, truth } = photoLike(200, 140);
+  const { mask } = autoSubject(img, 22);
+  let both = 0;
+  let either = 0;
+  for (let i = 0; i < mask.length; i++) {
+    const a = mask[i] > 127;
+    const b = truth[i] > 127;
+    if (a && b) both++;
+    if (a || b) either++;
+  }
+  const overlap = both / either;
+  assert.ok(overlap > 0.9, `kept area overlaps the true mountain by ${(overlap * 100).toFixed(1)}%`);
+});
+
+test("a tolerance set too high does not let the sky leak into the mountain", () => {
+  const { img, truth } = photoLike(200, 140);
+  const { mask } = autoSubject(img, 60);
+  let both = 0;
+  let either = 0;
+  for (let i = 0; i < mask.length; i++) {
+    const a = mask[i] > 127;
+    const b = truth[i] > 127;
+    if (a && b) both++;
+    if (a || b) either++;
+  }
+  assert.ok(both / either > 0.9, `overlap ${((both / either) * 100).toFixed(1)}%`);
+});
+
+test("a shape drawn by hand becomes a mask: inside kept, outside not, concave shapes too", () => {
+  const m = polygonMask([{ x: 10, y: 10 }, { x: 30, y: 10 }, { x: 30, y: 30 }, { x: 20, y: 18 }, { x: 10, y: 30 }], 40, 40);
+  assert.equal(m[12 * 40 + 20], 255); // inside
+  assert.equal(m[28 * 40 + 20], 0); // in the notch
+  assert.equal(m[28 * 40 + 10], 255); // the left leg
+  assert.equal(m[5 * 40 + 5], 0); // outside
+  assert.equal(maskArea(polygonMask([{ x: 0, y: 0 }, { x: 1, y: 1 }], 10, 10)), 0);
+});
+
+test("the border scan stays fast on a big picture", () => {
+  const { img } = photoLike(1400, 860);
+  const t0 = Date.now();
+  autoSubject(img, 22);
+  assert.ok(Date.now() - t0 < 4000, `took ${Date.now() - t0} ms`);
+});
+
+test("where a cut piece belongs: a cover picture is centred and runs past the box", () => {
+  const d = pictureBox("cover", 1000, 500, 800, 800);
+  assert.deepEqual(d, { x: 0, y: -250, width: 1000, height: 1000 });
+  assert.deepEqual(visibleWindow(d, 1000, 500, 800, 800), { x: 0, y: 200, width: 800, height: 400 });
+});
+test("where a cut piece belongs: a contained picture leaves bars and shows whole", () => {
+  const d = pictureBox("contain", 1000, 500, 800, 800);
+  assert.deepEqual(d, { x: 250, y: 0, width: 500, height: 500 });
+  assert.deepEqual(visibleWindow(d, 1000, 500, 800, 800), { x: 0, y: 0, width: 800, height: 800 });
+});
+test("where a cut piece belongs: a stretched picture fills the box", () => {
+  assert.deepEqual(pictureBox("fill", 1000, 500, 800, 800), { x: 0, y: 0, width: 1000, height: 500 });
+});
+test("where a cut piece belongs: a paint's crop scales up what shows", () => {
+  const d = pictureBox({ x: 0.25, y: 0, w: 0.5, h: 1 }, 400, 400, 800, 400);
+  assert.deepEqual(d, { x: -200, y: 0, width: 800, height: 400 });
+  assert.deepEqual(visibleWindow(d, 400, 400, 800, 400), { x: 200, y: 0, width: 400, height: 400 });
 });

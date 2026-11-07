@@ -34,6 +34,8 @@ import {
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
+import { isLettersGroup } from "@/core/editing/splitText";
+import { getDocument } from "@/core/store/documentState";
 
 /**
  * Returns the array of DesignSectionConfig populated with real inspector field children.
@@ -97,10 +99,15 @@ export function getInspectorDesignSections(
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
+  const isLetters = inspector.primaryLayer
+    ? isLettersGroup(inspector.primaryLayer, getDocument().layers)
+    : false;
+
   const hasTypography =
     !inspector.primaryLayer ||
     ["text", "button", "input", "counter", "svgText"].includes(archetype || "") ||
-    inspector.isMulti;
+    inspector.isMulti ||
+    isLetters;
 
   const allowsFill =
     !inspector.primaryLayer ||
@@ -270,11 +277,46 @@ export function getInspectorDesignSections(
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
     },
     {
-      id: "animation",
-      title: "Animation",
-      onAdd: () => animAddRef.current?.(),
-      children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
+      id: "accessibility",
+      title: "Accessibility",
+      onAdd: () => a11yAddRef.current?.(),
+      children: (
+        <AccessibilitySection {...sectionProps} onAddA11yRef={a11yAddRef} />
+      ),
     },
+  ];
+}
+
+/**
+ * The sections that are not about how a layer looks: Animation belongs with Motion, Data and Logic with Code. They are
+ * the same sections (same fields, same document), shown in those modes instead of in Design.
+ */
+export function getInspectorExtraSections(
+  inspector: ReturnType<typeof useSelectionInspector>,
+  kind: "animation" | "data-logic",
+  onOpenBlueprint?: () => void
+): DesignSectionConfig[] {
+  if (!inspector.hasSelection) return [];
+  const sectionProps = {
+    selectedId: inspector.selectedId,
+    selectedIds: inspector.selectedIds,
+    layer: inspector.primaryLayer,
+    isMulti: inspector.isMulti,
+    getValue: inspector.getValue,
+    onUpdateProp: inspector.onUpdateProp,
+    onUpdateProps: inspector.onUpdateProps,
+  };
+  if (kind === "animation") {
+    return [
+      {
+        id: "animation",
+        title: "Animation",
+        onAdd: () => animAddRef.current?.(),
+        children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
+      },
+    ];
+  }
+  return [
     {
       id: "data",
       title: "Data",
@@ -285,24 +327,26 @@ export function getInspectorDesignSections(
       id: "logic",
       title: "Logic",
       onAdd: () => logicAddRef.current?.(),
-      children: (
-        <LogicSection
-          {...sectionProps}
-          onOpenBlueprint={onOpenBlueprint}
-          onAddLogicRef={logicAddRef}
-        />
-      ),
-    },
-    {
-      id: "accessibility",
-      title: "Accessibility",
-      onAdd: () => a11yAddRef.current?.(),
-      children: (
-        <AccessibilitySection {...sectionProps} onAddA11yRef={a11yAddRef} />
-      ),
+      children: <LogicSection {...sectionProps} onOpenBlueprint={onOpenBlueprint} onAddLogicRef={logicAddRef} />,
     },
   ];
 }
+
+/** Those sections as a block under a Motion or Code inspector. */
+export const InspectorExtras: React.FC<{ kind: "animation" | "data-logic" }> = ({ kind }) => {
+  const inspector = useSelectionInspector();
+  const sections = getInspectorExtraSections(inspector, kind);
+  if (sections.length === 0) return null;
+  return (
+    <div className="ll:flex ll:flex-col ll:w-full ll:border-t ll:border-border" data-testid={`inspector-extras-${kind}`}>
+      {sections.map((sec) => (
+        <RightPanelSection key={sec.id} id={sec.id} title={sec.title} onAdd={sec.onAdd}>
+          {sec.children}
+        </RightPanelSection>
+      ))}
+    </div>
+  );
+};
 
 /**
  * DetailsInspector

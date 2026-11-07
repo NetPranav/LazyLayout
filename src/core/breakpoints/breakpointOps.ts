@@ -17,11 +17,28 @@ const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").re
 /** The frame the breakpoint bar acts on: the selection's frame, else the active one. */
 export function targetFrameId(): string | null {
   const layers = getDocument().layers;
+  const root = Object.values(layers).find((l) => l.parentId === null);
   const selected = useSelectionStore.getState().selectedIds[0];
+  if (selected && layers[selected]) {
+    let cur: (typeof layers)[string] | undefined = layers[selected];
+    while (cur) {
+      if (cur.parentId === null || cur.parentId === root?.id) {
+        if (cur.archetype === "container" && cur.id !== root?.id) return cur.id;
+        if (cur.parentId === null) return cur.id;
+        break;
+      }
+      cur = cur.parentId ? layers[cur.parentId] : undefined;
+    }
+  }
   const fromSelection = selected ? frameIdOf(layers, selected) : null;
-  if (fromSelection) return fromSelection;
+  if (fromSelection && fromSelection !== root?.id) return fromSelection;
   const active = useCanvasViewStore.getState().activeFrameId;
-  return active && layers[active] ? active : null;
+  if (active && layers[active]) return active;
+  if (root?.children) {
+    const childFrame = root.children.find((id) => layers[id]?.archetype === "container" && id !== root.id);
+    if (childFrame) return childFrame;
+  }
+  return fromSelection || root?.id || null;
 }
 
 /**
@@ -34,7 +51,7 @@ export function setActiveBreakpoint(id: string | null): boolean {
   if (!isBase(list, id)) {
     const frame = targetFrameId();
     const layer = frame ? getDocument().layers[frame] : undefined;
-    if (layer && layer.parentId === null && layer.properties["breakpoints.responsive"] !== true && !Object.values(getDocument().layers).some((l) => l.parentId === null && l.properties["breakpoints.responsive"] === true)) {
+    if (layer && layer.properties["breakpoints.responsive"] !== true && !Object.values(getDocument().layers).some((l) => l.properties["breakpoints.responsive"] === true)) {
       useBreakpointStore.getState().setActive(null);
       documentCommands.updateProps(layer.id, { "breakpoints.responsive": true }, "Make frame responsive");
     }

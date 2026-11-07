@@ -67,6 +67,7 @@ import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
+import { useDocument } from "@/core/store/useDocumentStore";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
@@ -110,6 +111,8 @@ export interface TopBarProps {
   isZen?: boolean;
   onPreview?: () => void;
   onShare?: () => void;
+  viewportPreset?: "1440" | "768" | "375";
+  onSelectPreset?: (preset: "1440" | "768" | "375") => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -134,6 +137,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   isZen = false,
   onPreview,
   onShare,
+  viewportPreset: propViewportPreset,
+  onSelectPreset,
 }) => {
   // Save status resolution
   const sessionSaveState = useSaveStatus((s) => s.state);
@@ -342,7 +347,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E", undefined, undefined, true, "Code generation pipeline coming in Phase 49")}
+            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.connectAgent", "Connect an agent", Download)}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}
@@ -499,7 +505,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* =====================================================================
           2. CENTER COLUMN: Mode Tabs (Design, Motion, Code)
           ===================================================================== */}
-      <div className="ll:flex ll:items-center ll:justify-center">
+      <div className="ll:flex ll:items-center ll:justify-center ll:gap-2">
         <ModeTabs mode={activeMode} onChange={handleModeChange} />
       </div>
 
