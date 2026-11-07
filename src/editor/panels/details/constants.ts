@@ -83,11 +83,19 @@ export const POSITION_TYPE_OPTIONS = [
 
 export const TRANSFORM_ORIGIN_OPTIONS = [
   { value: "center", label: "Center" },
-  { value: "top left", label: "Top left" },
-  { value: "top right", label: "Top right" },
-  { value: "bottom left", label: "Bottom left" },
-  { value: "bottom right", label: "Bottom right" },
-  { value: "bottom center", label: "Bottom center" },
+  { value: "topLeft", label: "Top Left" },
+  { value: "top", label: "Top" },
+  { value: "topRight", label: "Top Right" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "bottomLeft", label: "Bottom Left" },
+  { value: "bottom", label: "Bottom" },
+  { value: "bottomRight", label: "Bottom Right" },
+  { value: "top left", label: "Top left (legacy)" },
+  { value: "top right", label: "Top right (legacy)" },
+  { value: "bottom left", label: "Bottom left (legacy)" },
+  { value: "bottom right", label: "Bottom right (legacy)" },
+  { value: "bottom center", label: "Bottom center (legacy)" },
 ] as const;
 
 export const SIZING_OPTIONS = [

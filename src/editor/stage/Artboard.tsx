@@ -9,6 +9,8 @@ import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextM
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
 import { ValueHud } from "./ValueHud";
+import { OnionSkinOverlay } from "./OnionSkinOverlay";
+import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { RenderLayer } from "@/core/render";
@@ -491,6 +493,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
         </div>
       )}
 
+      {/* 4a. Onion Skin Overlay (ROADMAP Phase 71: Onion skin - rendered behind live elements) */}
+      <OnionSkinOverlay
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+      />
+
       {/* 5. Elements Layer */}
       {hasElements &&
         Object.values(elements).map((el) => {
@@ -697,6 +706,14 @@ export const Artboard: React.FC<ArtboardProps> = ({
         layers={layers}
         isGesturing={isGesturing}
         forceVisible={showValueHud}
+      />
+
+      {/* 6c. Anchor Overlay (ROADMAP Phase 72: Anchor points & pins) */}
+      <AnchorOverlay
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+        zoom={zoomScale}
       />
 
       {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}

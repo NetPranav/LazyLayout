@@ -1,3 +1,4 @@
+import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 import type { CSSProperties } from "react";
 import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
@@ -201,7 +202,14 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     }
   }
   const origin = resolved.get("transform.origin");
-  if (typeof origin === "string" && origin !== "center" && style.transform && !hasMesh && !ctx.inMeshTile) style.transformOrigin = origin;
+  if (typeof origin === "string" && origin !== "center" && style.transform && !hasMesh && !ctx.inMeshTile) {
+    // A pin name (preset or custom) or a coordinate becomes the pixel point inside the layer's box; plain CSS keeps working.
+    const isPinName = Object.prototype.hasOwnProperty.call(layer.pins ?? {}, origin) || /^[a-z]+[A-Z]/.test(origin);
+    const pinned = isPinName && g.frame.width > 0 && g.frame.height > 0
+      ? resolveLayerAnchor({ pins: layer.pins, properties: { "transform.origin": origin } }, g.frame.width, g.frame.height)
+      : null;
+    style.transformOrigin = pinned ? formatCssTransformOrigin(pinned) : origin;
+  }
   const opacity = resolved.get("appearance.opacity");
   if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) {
     if (style3d !== "preserve3d" || opacity === 1) style.opacity = opacity;

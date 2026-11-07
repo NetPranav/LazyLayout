@@ -3,6 +3,8 @@ export { Artboard } from "./Artboard";
 export { TransformOverlay } from "./TransformOverlay";
 export { MotionPathOverlay, type MotionPathOverlayProps } from "./MotionPathOverlay";
 export { ValueHud, type ValueHudProps } from "./ValueHud";
+export { OnionSkinOverlay, type OnionSkinOverlayProps } from "./OnionSkinOverlay";
+export { AnchorOverlay } from "./AnchorOverlay";
 export { useStageTransform } from "./useStageTransform";
 export { SAMPLE_STAGE_ELEMENTS } from "./sampleData";
 export {

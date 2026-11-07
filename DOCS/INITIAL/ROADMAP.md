@@ -249,8 +249,8 @@ One row per phase, in execution order. Update the Status column together with th
 | 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 🚧 |
 | 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 📋 |
 | 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 🚧 |
-| 71 | Onion skin | 70 | v3 53.3 | 2 | 📋 |
-| 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 📋 |
+| 71 | Onion skin | 70 | v3 53.3 | 2 | 🚧 |
+| 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 🚧 |
 | 73 | Parenting & helper layers | 72 | v3 51.2, 88.1 (rendering) | 2 | 📋 |
 | 74 | Blend modes, adjustment layers, masks & mattes | 73 | v3 51.3, 51.4 | 2 | 📋 |
 | 75 | Effect stack & motion blur | 74 | v3 51.5, 51.6 | 2 | 📋 |
@@ -1099,18 +1099,20 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-07):** `AutoKeyValueHud.test.ts` (a drag at 3 playhead times creates 3 keyframes, playback matches evaluate(), undo removes them, Value HUD formats live x/y/rotation/opacity); `auto-key-hud.spec.ts` (transport record button toggle, live Value HUD during stage drag in Chromium).
 
 ### Phase 71 · Onion skin
-**Needs:** 70 · **Was:** v3 53.3 · **Status:** 📋
-- [ ] N ghost frames before and after the playhead at adjustable opacity, drawn from `evaluate()`.
+**Needs:** 70 · **Was:** v3 53.3 · **Status:** 🚧
+- [x] N ghost frames before and after the playhead at adjustable opacity, drawn from `evaluate()`.
 
 **You'll see:** ghosts of where a layer was and will be.
 **Done when:** 5 ghosts hold 60 fps.
+**Evidence (2026-11-07):** `OnionSkin.test.ts` (60 consecutive frames benchmark P95 0.66ms vs 16.6ms budget, 5 ghosts, boundary suppression, parent-origin arithmetic); `onion-skin.spec.ts` (toggle button, ghost rendering, pointer-event pass-through in Chromium).
 
 ### Phase 72 · Anchor points & pins
-**Needs:** 71 · **Was:** v3 51.1, 88.2 (model) · **Status:** 📋
-- [ ] One pin model: 9 preset pins plus custom pins (which may lie outside the box). The anchor is the pin used for rotation and scale; it can be moved on the canvas.
+**Needs:** 71 · **Was:** v3 51.1, 88.2 (model) · **Status:** 🚧
+- [x] One pin model: 9 preset pins plus custom pins (which may lie outside the box). The anchor is the pin used for rotation and scale; it can be moved on the canvas.
 
 **You'll see:** drag a layer's anchor point; rotation follows it.
 **Done when:** rotation and scale about every preset pin match golden values.
+**Evidence (2026-11-07):** `pins.test.ts` (9 preset pins, whitespace aliases, custom px/% pins, unbounded out-of-bounds pins); `anchorTransforms.test.ts` (independently calculated golden matrices for 90° rotation, nonuniform scale [2, 0.5], combined [45°, 1.5, 0.8], anchor invariance A_world = F + A + T for every preset pin, R·S != S·R matrix order test, zero-scale and 1e-6 stability, geometry compensation on anchor move); `AnchorOverlay.test.tsx` (stage handle rendering, preset location, undo/redo via historyCommands); `anchor-points.spec.ts` (interactive drag with snapping to 9 presets, inspector origin synchronization in Chromium).
 
 ### Phase 73 · Parenting & helper layers
 **Needs:** 72 · **Was:** v3 51.2, 88.1 (rendering) · **Status:** 📋
