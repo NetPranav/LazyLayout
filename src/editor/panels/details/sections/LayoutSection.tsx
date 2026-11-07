@@ -208,7 +208,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           type="button"
           aria-pressed={isClipped}
           aria-label="Clip content"
-          title="Clip content"
+          title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
           onClick={() =>
             onUpdateProp?.("layout.overflowX", isClipped ? "visible" : "hidden")
           }
@@ -471,7 +471,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
 
       {/* Padding 4-grid */}
       <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted" title="Space between a frame's edge and what is inside it. It shows on frames and text; a plain shape has no inside.">
           Padding
         </span>
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
@@ -516,7 +516,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
 
       {/* Margin 4-grid */}
       <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted">
+        <span className="ll:text-small ll:font-sans ll:text-muted" title="Space around a layer. It moves a layer only inside an auto-layout frame; a layer placed by X and Y ignores it.">
           Margin
         </span>
         <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">

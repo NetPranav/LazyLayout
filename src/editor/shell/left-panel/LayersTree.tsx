@@ -276,7 +276,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       if (!targetNode) return;
 
       if (current.pos === "in") {
-        if (targetNode.item.type !== "frame") {
+        if (targetNode.item.type !== "frame" && targetNode.item.type !== "container") {
           showToast("Only frames can hold layers");
           return;
         }

@@ -79,12 +79,12 @@ function worldOrigin(layers: ReturnType<typeof getDocument>["layers"], id: strin
  * The innermost frame (a container with a size) that a page point is inside, with where it starts on the page, so a layer
  * drawn inside a frame becomes that frame's child. Null when the point is on bare page.
  */
-export function frameAt(point: { x: number; y: number }): { id: string; x: number; y: number } | null {
+export function frameAt(point: { x: number; y: number }, exclude?: ReadonlySet<string>): { id: string; x: number; y: number } | null {
   const layers = getDocument().layers;
   const order = documentOrder(layers);
   for (let i = order.length - 1; i >= 0; i--) {
     const l = layers[order[i]];
-    if (!l || l.parentId === null || l.archetype !== "container" || l.visible === false || l.locked === true) continue;
+    if (!l || exclude?.has(l.id) || l.parentId === null || l.archetype !== "container" || l.visible === false || l.locked === true) continue;
     const w = l.properties["frame.width"];
     const h = l.properties["frame.height"];
     if (typeof w !== "number" || typeof h !== "number") continue; // the sample sections have no box of their own

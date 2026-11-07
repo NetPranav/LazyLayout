@@ -1,0 +1,11 @@
+### Fixed (testing round 3)
+- Nesting: a layer dropped on a frame in the Layers panel, or dragged onto a frame on the canvas, becomes its child and keeps its place; dragging it out puts it back on the page (the panel refused every drop because frames are "container", not "frame").
+- Dropdowns inside inspector popovers (effect type, paint type) no longer close the popover before the choice lands: Inner shadow, Layer blur, Background blur and gradient fills now apply.
+- Padding writes on text and boxes; Margin and Padding say what they do. Shadow fields are scrubbable and labelled.
+- Backspace no longer deletes a layer (Delete does). Bring to front and Send to back are Ctrl+Alt+] and Ctrl+Alt+[, shown in the menu.
+- A right-drag pans the canvas without opening the menu; a plain right-click still does (macOS sends the menu on press, so it now waits for release).
+- The open "More" block of a right-panel section stays open when the selection changes.
+- Text editing: the in-place editor is styled like the drawn text, so No wrap, overflow and capitals match while typing and while selected.
+- Lines and dividers: Vertical works, colour picker, tooltips, separate start and end caps, a larger click target, and drop shadows draw (the SVG filter region was zero height).
+- Colour picker: built-in picker with drag for saturation, brightness and hue, and a hex field, on Fill, Stroke, Shadow and Divider.
+- Animation moved to the Motion inspector, Data and Logic to the Code inspector. Polygon preview has the same six sides as the polygon.
