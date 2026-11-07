@@ -15,7 +15,8 @@ import { useCanvasViewStore } from "../store/useCanvasViewStore";
 import { useToolStore } from "../store/useToolStore";
 import { selectAll, selectChildren, selectInverse, selectParents } from "./selectionOps";
 
-const onCanvas = (ctx: ContextKeys) => ctx.canvasFocus && !ctx.textEditing;
+/** Select All and the other selection keys work with the pointer anywhere but the timeline and the blueprint, and never while typing. */
+const onCanvas = (ctx: ContextKeys) => (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing;
 
 function apply(ids: string[]): { ids: string[] } {
   const store = useSelectionStore.getState();
