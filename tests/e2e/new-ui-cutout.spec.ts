@@ -73,6 +73,7 @@ test("cut a mountain out of its picture and place it over another background", a
   expect(kept).toBeLessThan(65);
 
   const before = (await images(page)).length;
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Add as new layer" }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -128,6 +129,7 @@ test("Apply to this image swaps the picture for its cutout", async ({ page }) =>
   await page.getByRole("button", { name: "Cut out", exact: true }).click();
   const dialog = page.getByTestId("cutout-dialog");
   await dialog.getByRole("button", { name: "Auto", exact: true }).click();
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Apply to this image" }).click();
   await expect(dialog).toHaveCount(0);
   await expect.poll(async () => String((await layers(page))[pic.id].properties["media.src"])).not.toBe(String(pic.properties["media.src"]));
@@ -190,6 +192,7 @@ test("a frame's picture fill: a piece cut from it lines up exactly, and text goe
   await page.mouse.down();
   for (const q of corners.slice(1)) await page.mouse.move(q.x, q.y, { steps: 4 });
   await page.mouse.up();
+  await dialog.getByRole("button", { name: "Select", exact: true }).click();
   await dialog.getByRole("button", { name: "Add as new layer" }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -208,3 +211,108 @@ test("a frame's picture fill: a piece cut from it lines up exactly, and text goe
   }, frame.id)).toBe(cut.id);
 });
 
+
+/** Opens the Cut out dialog on a mountain picture on an emptied page. */
+async function openMountain(page: Page) {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await openEditor(page);
+  await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+  for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+    await page.getByText(name, { exact: true }).first().click();
+    await page.keyboard.press("Delete");
+  }
+  await addPicture(page, "mountain-subject.svg");
+  await expect.poll(async () => (await images(page)).length).toBe(1);
+  const mountain = (await images(page))[0];
+  await page.getByText(mountain.name, { exact: true }).first().click();
+  await page.getByRole("button", { name: "Cut out", exact: true }).click();
+  await expect(page.getByTestId("cutout-canvas")).toBeVisible();
+  return { dialog: page.getByTestId("cutout-dialog"), mountain };
+}
+const keptPercent = async (page: Page) => Number((await page.getByTestId("cutout-kept").textContent())?.match(/(\d+)%/)?.[1]);
+
+test("a loose shape drawn around the mountain settles onto its edge with Snap to edges, and does not with it off", async ({ page }) => {
+  test.setTimeout(120_000);
+  const { dialog } = await openMountain(page);
+  await dialog.getByRole("radio", { name: "Draw", exact: true }).click();
+  // about 20px outside the mountain all the way round (the mountain is 46% of the picture), so Reach is widened to cover it
+  const loose: Array<[number, number]> = [[0, 1], [0.29, 0.345], [0.5, 0.1], [0.727, 0.395], [1, 0.96], [1, 1]];
+  await dialog.getByRole("slider", { name: "Reach" }).focus();
+  for (let i = 0; i < 12; i++) await page.keyboard.press("ArrowRight"); // 14 to 26
+  const draw = async () => {
+    const c = (await page.getByTestId("cutout-canvas").boundingBox())!;
+    const at = ([fx, fy]: [number, number]) => ({ x: c.x + c.width * Math.min(0.999, fx), y: c.y + c.height * Math.min(0.999, fy) });
+    await page.mouse.move(at(loose[0]).x, at(loose[0]).y);
+    await page.mouse.down();
+    for (const p of loose.slice(1)) await page.mouse.move(at(p).x, at(p).y, { steps: 5 });
+    await page.mouse.up();
+  };
+
+  // marking comes first: nothing can be applied until the area is selected
+  await expect(dialog.getByRole("button", { name: "Add as new layer" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Select", exact: true })).toBeDisabled();
+  await dialog.getByLabel("Snap to edges").uncheck();
+  await draw();
+  await expect(dialog.getByRole("button", { name: "Select", exact: true })).toBeEnabled();
+  await expect(dialog.getByRole("button", { name: "Add as new layer" }), "still marking").toBeDisabled();
+  await expect.poll(() => keptPercent(page), "as drawn, the shape keeps the strip of sky around the mountain").toBeGreaterThanOrEqual(50);
+
+  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
+  await dialog.getByLabel("Snap to edges").check();
+  await draw();
+  await expect.poll(() => keptPercent(page), "snapped, it keeps the mountain and no more").toBeLessThanOrEqual(49);
+  expect(await keptPercent(page)).toBeGreaterThanOrEqual(43);
+
+  // and the same smartness removes: draw a loose shape round the sky with Cut
+  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
+  await dialog.getByRole("radio", { name: "Cut", exact: true }).click();
+  const sky: Array<[number, number]> = [[0, 0], [1, 0], [1, 0.9], [0.713, 0.41], [0.5, 0.12], [0.303, 0.36], [0, 0.9]];
+  const c = (await page.getByTestId("cutout-canvas").boundingBox())!;
+  const at = ([fx, fy]: [number, number]) => ({ x: c.x + c.width * Math.min(0.999, fx), y: c.y + c.height * Math.max(0.001, Math.min(0.999, fy)) });
+  await page.mouse.move(at(sky[0]).x, at(sky[0]).y);
+  await page.mouse.down();
+  for (const p of sky.slice(1)) await page.mouse.move(at(p).x, at(p).y, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(() => keptPercent(page), "cutting the sky leaves the mountain").toBeLessThanOrEqual(50);
+  expect(await keptPercent(page)).toBeGreaterThanOrEqual(40);
+});
+
+test("Depth: the picture's depth is estimated, shown, picked from, and split into depth layers placed exactly over it", async ({ page }) => {
+  test.setTimeout(180_000);
+  const { dialog, mountain } = await openMountain(page);
+  await dialog.getByLabel("Show depth").check();
+  await expect(dialog.getByText(/estimating/), "the estimate finishes").toHaveCount(0, { timeout: 20_000 });
+
+  // pick everything at about the depth of the foot of the mountain
+  await dialog.getByRole("radio", { name: "Depth", exact: true }).click();
+  const c = (await page.getByTestId("cutout-canvas").boundingBox())!;
+  await page.mouse.click(c.x + c.width * 0.5, c.y + c.height * 0.93);
+  await expect.poll(() => keptPercent(page), "something near is picked, not everything and not nothing").toBeGreaterThan(3);
+  expect(await keptPercent(page)).toBeLessThan(95);
+  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
+
+  // depth layers: the picture stays as the farthest; two nearer ones are added, aligned with it
+  await dialog.getByRole("button", { name: "Make depth layers" }).click();
+  await expect(dialog).toHaveCount(0, { timeout: 30_000 });
+  await expect.poll(async () => (await images(page)).length).toBe(3);
+  const all = await layers(page);
+  const made = Object.values(all).filter((l) => /depth \d of 3/.test(String(l.name))).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  expect(made.map((l) => l.name)).toEqual([`${mountain.name} depth 2 of 3`, `${mountain.name} depth 3 of 3`]);
+  expect(made[0].parentId).toBe(mountain.parentId);
+  // a depth layer sits where its part of the picture is, at the picture's own scale
+  const origin = all[mountain.id].properties;
+  for (const l of made) {
+    expect(Number(l.properties["frame.x"])).toBeGreaterThanOrEqual(Number(origin["frame.x"]) - 1);
+    expect(Number(l.properties["frame.x"]) + Number(l.properties["frame.width"])).toBeLessThanOrEqual(Number(origin["frame.x"]) + Number(origin["frame.width"]) + 1);
+    expect(Number(l.properties["frame.y"]) + Number(l.properties["frame.height"])).toBeLessThanOrEqual(Number(origin["frame.y"]) + Number(origin["frame.height"]) + 1);
+  }
+  // each nearer layer shows less, and the nearest does not show the far sky in its corner
+  const area = (l: L) => Number(l.properties["frame.width"]) * Number(l.properties["frame.height"]);
+  expect(area(made[1])).toBeLessThanOrEqual(area(made[0]));
+  const a = await alphaAt(page, String(made[1].properties["media.src"]), [[0.5, 0.97]]);
+  expect(a.alpha[0], "the nearest layer is solid at the foot of the picture").toBe(255);
+  // the original is untouched and is still the farthest (first) in the parent
+  const parent = all[mountain.parentId as string] as unknown as { children: string[] };
+  expect(parent.children.indexOf(mountain.id)).toBeLessThan(parent.children.indexOf(made[0].id));
+  expect(parent.children.indexOf(made[0].id)).toBeLessThan(parent.children.indexOf(made[1].id));
+});
