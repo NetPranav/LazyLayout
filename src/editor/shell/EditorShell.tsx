@@ -30,7 +30,7 @@ import {
 } from "./persistence";
 import { useEditorActions } from "./useEditorActions";
 import { useShellFx } from "./shellFx";
-import { useMotionModel } from "@/editor/motion-model";
+import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -71,6 +71,9 @@ export function EditorShell({
   // Project persistence, locking and shell commands
   const files = useProjectFiles();
   useProjectLock();
+
+  // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
+  useEffect(() => installDocumentMotionSync(), []);
 
   // A brand-new project gets the sample page; one saved by an earlier version is brought up to date when it loads.
   useEffect(() => {

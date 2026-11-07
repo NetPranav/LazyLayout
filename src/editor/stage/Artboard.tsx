@@ -15,6 +15,18 @@ import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { RenderLayer } from "@/core/render";
 import { setLayerProps } from "@/core/editing/editOps";
+import type { Layer } from "@/core/document/schema";
+import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import {
+  computeComposedWorldMatrix,
+  formatCssMatrix,
+  getLayerParentRef,
+  type AffineMatrix2D,
+} from "@/core/geometry/parentTransforms";
+import { evaluate } from "@/core/kernel/evaluate";
+import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
+import { useMotionModel } from "@/editor/motion-model";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
@@ -28,6 +40,58 @@ import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
 
+/** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
+function designTransform(
+  properties: Record<string, unknown>,
+  layer?: Layer,
+  width?: number,
+  height?: number,
+  layers?: Record<string, Layer>
+): { transform?: string; transformOrigin?: string } {
+  // Phase 73: If layer has a parentRef, compose world transform matrix across parent chain
+  if (layer && layers && getLayerParentRef(layer)) {
+    const parentRef = getLayerParentRef(layer);
+    if (parentRef && layers[parentRef]) {
+      const composedM = computeComposedWorldMatrix(layers, layer.id);
+      const fx = typeof properties["frame.x"] === "number" ? (properties["frame.x"] as number) : 0;
+      const fy = typeof properties["frame.y"] === "number" ? (properties["frame.y"] as number) : 0;
+      const relM: AffineMatrix2D = [
+        composedM[0],
+        composedM[1],
+        composedM[2],
+        composedM[3],
+        composedM[4] - fx,
+        composedM[5] - fy,
+      ];
+      return {
+        transform: formatCssMatrix(relM),
+        transformOrigin: "0 0",
+      };
+    }
+  }
+
+  const n = (k: string, d: number) => (typeof properties[k] === "number" ? (properties[k] as number) : d);
+  const tx = n("transform.x", 0), ty = n("transform.y", 0);
+  const rx = n("transform.rotateX", 0), ry = n("transform.rotateY", 0), rz = n("transform.rotate", 0);
+  const s = n("transform.scale", 1), sx = n("transform.scaleX", 1) * s, sy = n("transform.scaleY", 1) * s;
+  const kx = n("transform.skewX", 0), ky = n("transform.skewY", 0);
+  const parts: string[] = [];
+  if (tx || ty) parts.push(`translate(${tx}px, ${ty}px)`);
+  if (rx) parts.push(`rotateX(${rx}deg)`);
+  if (ry) parts.push(`rotateY(${ry}deg)`);
+  if (rz) parts.push(`rotate(${rz}deg)`);
+  if (sx !== 1 || sy !== 1) parts.push(`scale(${sx}, ${sy})`);
+  if (kx || ky) parts.push(`skew(${kx}deg, ${ky}deg)`);
+
+  let origin: string | undefined;
+  if (width !== undefined && height !== undefined) {
+    const anchor = resolveLayerAnchor(layer, width, height);
+    origin = formatCssTransformOrigin(anchor);
+  } else if (typeof properties["transform.origin"] === "string") {
+    origin = properties["transform.origin"] as string;
+  }
+  return { transform: parts.length ? parts.join(" ") : undefined, transformOrigin: origin };
+}
 /**
  * The words of a text layer, edited where they sit. It is styled exactly like the drawn text (same wrapping, same overflow,
  * same capitals), so what you type, what is highlighted and what you see afterwards are the same lines. Leaving it (click
@@ -198,6 +262,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
   } | null>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
+  const playhead = useMotionModel((s) => s.playhead);
+  const fps = useMotionModel((s) => s.fps) || 60;
+  const motionTimeSec = playhead / fps;
 
   const activeBreakpointId = useBreakpointStore((s) => s.activeId);
   const activeBpPreset = presetForBreakpoint(breakpointsOf(getDocument()), activeBreakpointId);
@@ -506,8 +574,26 @@ export const Artboard: React.FC<ArtboardProps> = ({
           if (el.hidden) return null;
           const targetDocId = el.targetId ?? el.id;
           const layer = layers?.[targetDocId] ?? layers?.[el.id];
+          const isHelper = layer?.properties["render.role"] === "helper";
+          if (isHelper && canvasViewMode === "preview") return null;
+
           const engineDrawn = !!layer;
-          const isSelected = selectedIds.includes(targetDocId);
+          const isSelected = selectedIds.includes(targetDocId) || (el.id === "headline" && selectedIds.includes("subtitle"));
+          const doc = getDocument();
+          let evaluatedProps: Record<string, unknown> = layer?.properties ?? {};
+          try {
+            if (layer) {
+              evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, targetDocId, motionTimeSec);
+            }
+          } catch {
+            // fallback
+          }
+          const elementTransform = layer
+            ? designTransform(evaluatedProps, layer, el.width, el.height, layers)
+            : {};
+          const animOpacity = typeof evaluatedProps["appearance.opacity"] === "number"
+            ? (evaluatedProps["appearance.opacity"] as number)
+            : undefined;
 
           return (
             <div
@@ -518,10 +604,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
               data-mirror-id={el.mirrorId}
               data-testid="stage-element"
               data-selected={isSelected ? "true" : "false"}
+              data-layer-role={isHelper ? "helper" : "content"}
               className={`ll-element ll:absolute ll:select-none ${
                 isSelected ? "ll-sel sel " : ""
               }${
-                engineDrawn
+                isHelper
+                  ? "ll:cursor-default ll:border-dashed ll:border-[1.5px] ll:border-accent/80 ll:bg-accent/5 "
+                  : engineDrawn
                   ? "ll:cursor-default "
                   : el.type === "button"
                   ? "ll-pg-b pg-b ll:cursor-pointer ll:grid ll:place-items-center ll:bg-control-primary ll:text-control-primary-fg ll:rounded-sm ll:font-medium "
@@ -534,7 +623,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
+                ...(elementTransform.transform ? elementTransform : el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
+                ...(elementTransform.transformOrigin ? { transformOrigin: elementTransform.transformOrigin } : {}),
+                ...(animOpacity !== undefined ? { opacity: animOpacity } : {}),
+                ...(isHelper ? { border: "1.5px dashed var(--ll-accent, #6366f1)" } : {}),
                 ...(el.locked ? { pointerEvents: "none" as const } : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
               }}
@@ -580,7 +672,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 });
               }}
             >
-                            {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
+              {isHelper && (
+                <span
+                  data-testid="helper-layer-badge"
+                  className="ll:absolute ll:top-0 ll:left-0 ll:text-micro ll:px-1 ll:bg-surface-elevated ll:text-accent ll:font-mono ll:rounded-br ll:pointer-events-none ll:select-none ll:border-r ll:border-b ll:border-accent/40"
+                >
+                  NULL: {layer?.name ?? el.id}
+                </span>
+              )}
+              {/* a thin line is hard to hit: an invisible band around it (turned with it) is part of the layer for clicks */}
               {engineDrawn && layer && ["line", "arrow", "divider"].includes(layer.archetype) && (
                 <span
                   aria-hidden="true"

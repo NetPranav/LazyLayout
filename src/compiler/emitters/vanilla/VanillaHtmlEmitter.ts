@@ -42,6 +42,11 @@ export class VanillaHtmlEmitter {
     const cssClass = this.toKebabCase(name);
     const get = propReader(element.properties);
 
+    // Phase 73: Helper layers (render.role: helper) never emit in export
+    if (element.properties["render.role"] === "helper") {
+      return { componentName: name, htmlMarkup: "", cssStyles: "", jsScript: "" };
+    }
+
     let htmlMarkup = "";
     let cssStyles = "";
     let jsScript = "";

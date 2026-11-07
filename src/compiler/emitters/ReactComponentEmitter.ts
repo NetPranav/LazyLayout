@@ -115,6 +115,8 @@ export class ReactComponentEmitter {
   ): string {
     const el = elements[elementId];
     if (!el) return "";
+    // Phase 73: Helper layers (render.role: helper) never emit in export
+    if (el.properties["render.role"] === "helper") return "";
 
     const indent = " ".repeat(depth * 2);
     const tag = ReactComponentEmitter.resolveSemanticTag(el);

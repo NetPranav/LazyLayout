@@ -29,7 +29,9 @@ import { breadcrumbs, compositionTabs, nestedRows, type NestedRow } from "@/core
 import { allKeyframeIds } from "@/core/timeline/keyframeOps";
 import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
-import { parentChoices } from "@/core/timeline/timelineOps";
+import { documentCommands } from "@/core/store/useDocumentStore";
+import { transformParentChoices } from "@/core/timeline/timelineOps";
+import { getLayerParentRef } from "@/core/geometry/parentTransforms";
 import type { CompositionLayer } from "@/core/document/compositions";
 import "@/legacy-editor/styles/timeline.css";
 
@@ -59,20 +61,25 @@ interface RowProps {
   onLanePointerDown: (e: React.PointerEvent) => void;
 }
 
-/** The parent picker lists its choices only when it opens (listing them for every row on every edit would be quadratic). */
+/** The parent picker lists its choices only when it opens (Phase 73: pick-whip transform parenting independent of the layer tree). */
 const ParentSelect: React.FC<{ row: TimelineRow }> = ({ row }) => {
   const [choices, setChoices] = useState<Array<{ id: string; name: string }> | null>(null);
-  const doc = useDocument((d) => d.layers[row.id]?.parentId ?? null);
-  const options = choices ?? (row.parentId ? [{ id: row.parentId, name: row.parentName ?? row.parentId }] : []);
+  const currentParentId = useDocument((d) => getLayerParentRef(d.layers[row.id]));
+  const parentName = useDocument((d) => (currentParentId ? d.layers[currentParentId]?.name ?? currentParentId : null));
+  const options = choices ?? (currentParentId ? [{ id: currentParentId, name: parentName ?? currentParentId }] : []);
   return (
     <select
       className="timeline__select"
       aria-label={`Parent of ${row.name}`}
-      value={doc ?? ""}
-      onFocus={() => setChoices(parentChoices(row.id))}
-      onMouseDown={() => setChoices(parentChoices(row.id))}
+      data-testid={`parent-select-${row.id}`}
+      value={currentParentId ?? ""}
+      onFocus={() => setChoices(transformParentChoices(row.id))}
+      onMouseDown={() => setChoices(transformParentChoices(row.id))}
       onPointerDown={(e) => e.stopPropagation()}
-      onChange={(e) => void invokeCommand("layer.move", { ids: [row.id], parentId: e.target.value === "" ? null : e.target.value })}
+      onChange={(e) => {
+        const target = e.target.value === "" ? null : e.target.value;
+        documentCommands.setTransformParent(row.id, target, true);
+      }}
     >
       <option value="">None</option>
       {options.map((o) => (

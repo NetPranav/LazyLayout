@@ -43,6 +43,7 @@ import { type ArchetypeId, type LayerProps, type PropValue } from "../document/r
 import { canonicalizeProps, canonicalizeTrackPath, coercePropertyValue, getPropertyDefinition, resolvePropertyPath } from "../document/properties";
 import { removeLayerDependents } from "../document/migrations";
 import { applyConstraintsToChildren } from "../layout/constrainChildren";
+import { validateParentLink, getLayerParentRef, computeReparentedLocalTransform } from "../geometry/parentTransforms";
 import { appliedBreakpoints, breakpointsOf, isBase, resolveDocumentAt, resolveLayerAt, VISIBLE_KEY } from "../breakpoints/breakpoints";
 import { useBreakpointStore } from "./useBreakpointStore";
 import { useModeStore } from "./useModeStore";
@@ -609,8 +610,8 @@ export const documentCommands = {
       }
       detachChild(draft, layer);
       const doomed = new Set(getSubtreeIds(draft as MotionDocument, layerId));
-      doomed.forEach((id) => delete draft.layers[id]);
       removeLayerDependents(draft as MotionDocument, doomed);
+      doomed.forEach((id) => delete draft.layers[id]);
     });
   },
 
@@ -664,9 +665,19 @@ export const documentCommands = {
         });
         markOverridden(layer as Layer, [...named, ...(Object.keys(routed).length > 0 ? ["overrides"] : [])]);
       }
-      // a property a person edits by hand stops following its variable or style, and keeps the value they gave it (Phase 45)
       detachOnEdit(draft as MotionDocument, layer as Layer, [...Object.keys(defined), ...Object.keys(direct).filter((k) => direct[k] === undefined)]);
       Object.assign(props, canonicalProps(layer.archetype, defined, "updateProps"));
+      // Single source of truth sync: if transform.parent was modified via updateProps, synchronize authoritative parentRef
+      if ("transform.parent" in patch) {
+        const raw = patch["transform.parent"];
+        const nextParent = typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+        layer.parentRef = nextParent;
+        if (nextParent) {
+          props["transform.parent"] = nextParent;
+        } else {
+          delete props["transform.parent"];
+        }
+      }
       if (Object.keys(routed).length > 0) {
         // what a larger breakpoint (or the base) already says: a value equal to it needs no override of its own
         const inherited = resolveLayerAt(layer as Layer, appliedBreakpoints(list, activeId).filter((b) => b.id !== activeId)).properties;
@@ -721,6 +732,51 @@ export const documentCommands = {
         return;
       }
       Object.assign(layer, flags);
+    });
+  },
+
+  /**
+   * Sets a layer's transform parent (Phase 73: pick-whip parenting independent of the layer tree).
+   * If `preserveWorldPose` is true (default), computes compensated local transform so the layer does not visually jump.
+   */
+  setTransformParent(layerId: string, parentRef: string | null, preserveWorldPose = true, label?: string) {
+    const doc = getDocument();
+    const layer = doc.layers[layerId];
+    if (!layer) return;
+
+    const validation = validateParentLink(doc.layers, layerId, parentRef);
+    if (!validation.valid) {
+      throw new Error(validation.reason);
+    }
+
+    const currentParent = getLayerParentRef(layer);
+    const targetParent = parentRef && parentRef.trim().length > 0 ? parentRef.trim() : null;
+    if (currentParent === targetParent) return;
+
+    let patchProps: Record<string, PropValue | undefined> = {
+      "transform.parent": targetParent ?? undefined,
+    };
+
+    if (preserveWorldPose) {
+      const compensated = computeReparentedLocalTransform(layer, targetParent, doc.layers);
+      patchProps = { ...patchProps, ...compensated };
+    }
+
+    const actionLabel = label ?? (targetParent ? `Parent ${layer.name} to ${doc.layers[targetParent]?.name ?? targetParent}` : `Unparent ${layer.name}`);
+
+    commit(actionLabel, (draft) => {
+      const targetLayer = requireLayer(draft, layerId);
+      // Single source of truth: targetLayer.parentRef is authoritative.
+      targetLayer.parentRef = targetParent;
+      if (targetParent) {
+        targetLayer.properties["transform.parent"] = targetParent;
+      } else {
+        delete targetLayer.properties["transform.parent"];
+      }
+      for (const [k, v] of Object.entries(patchProps)) {
+        if (v === undefined) delete targetLayer.properties[k];
+        else targetLayer.properties[k] = v;
+      }
     });
   },
 

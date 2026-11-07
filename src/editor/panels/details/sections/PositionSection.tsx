@@ -112,6 +112,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const translateZ = (getValue?.("transform.translateZ") as number) ?? 0;
   const style3d = (getValue?.("transform.style3d") as string) || "flat";
   const origin = (getValue?.("transform.origin") as string) || "center";
+  const role = (getValue?.("render.role") as string) || "content";
 
   // Offset values when position is relative/absolute/fixed/sticky
   const offTop = (getValue?.("layout.top") as number) ?? 0;
@@ -410,6 +411,20 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         value={origin}
         options={TRANSFORM_ORIGIN_OPTIONS}
         onChange={(val) => onUpdateProp?.("transform.origin", val)}
+      />
+
+      {/* Render Role (Phase 73: Content vs Helper / Null) */}
+      <Select
+        size="sm"
+        label="Role"
+        aria-label="Render role"
+        title="A helper layer is an invisible null driver; drawn dashed in Design mode, never rendered in Preview or export."
+        value={role}
+        options={[
+          { value: "content", label: "Content" },
+          { value: "helper", label: "Helper (Null)" },
+        ]}
+        onChange={(val) => onUpdateProp?.("render.role", val)}
       />
     </div>
   );

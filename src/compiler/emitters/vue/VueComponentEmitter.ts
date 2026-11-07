@@ -45,6 +45,11 @@ export class VueComponentEmitter {
     const styling = options.stylingSystem || "tailwind";
     const get = propReader(element.properties);
 
+    // Phase 73: Helper layers (render.role: helper) never emit in export
+    if (element.properties["render.role"] === "helper") {
+      return { componentName, sfcCode: "", requiredPackages: [] };
+    }
+
     const requiredPackages = ["vue", "gsap"];
 
     // 1. Generate Template

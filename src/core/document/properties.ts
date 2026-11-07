@@ -250,6 +250,12 @@ const DEFS = {
   "transform.origin": str("center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
   "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
+  /**
+   * Transform parent layer ID (Phase 73, After Effects pick-whip parenting independent of the DOM layer tree).
+   * Note: Canonical authoritative storage is `layer.parentRef`. This property entry is maintained
+   * as a derived read-only projection for property inspector / registry compatibility.
+   */
+  "transform.parent": str("", null, "none", VISUAL),
 
   // --- Appearance (CONVENTIONS §4.1 / §4.2) ---------------------------------
   "appearance.opacity": num(1, "opacity", "gpu", VISUAL),

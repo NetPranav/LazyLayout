@@ -4,7 +4,8 @@
  * history, version control, the demo) goes through `loadDocument`.
  */
 
-import { SCHEMA_VERSION, validateMotionDocument, type ExportSettings, type MotionDocument } from "../schema";
+import { SCHEMA_VERSION, validateMotionDocument, type ExportSettings, type MotionDocument, type Layer } from "../schema";
+import { computeReparentedLocalTransform, getLayerParentRef } from "../../geometry/parentTransforms";
 import { migrateElementsToDocument, repairTree } from "./v1-to-v2";
 import { migrateV2ToV3 } from "./v2-to-v3";
 import { migrateV3ToV4 } from "./v3-to-v4";
@@ -132,6 +133,32 @@ export function removeLayerDependents(doc: MotionDocument, layerIds: ReadonlySet
   for (const [key, seq] of Object.entries(doc.sequences)) {
     seq.items = seq.items.filter((i) => !removedClips.has(i.clipId));
     if (seq.items.length === 0) delete doc.sequences[key];
+  }
+  // Layers parented to a removed layer have their parentRef unlinked and world transforms preserved (Phase 73)
+  for (const layer of Object.values(doc.layers)) {
+    if (layerIds.has(layer.id)) continue;
+    const parentRef = getLayerParentRef(layer);
+    if (parentRef && layerIds.has(parentRef)) {
+      // If the parent is still in doc.layers, compute compensated local transform to preserve world pose
+      if (doc.layers[parentRef]) {
+        try {
+          const compensated = computeReparentedLocalTransform(
+            layer as Layer,
+            null,
+            doc.layers as Record<string, Layer>
+          );
+          for (const [k, v] of Object.entries(compensated)) {
+            layer.properties[k] = v;
+          }
+        } catch {
+          // Fallback safely if matrix is singular or parent invalid
+        }
+      }
+      layer.parentRef = null;
+      if (layer.properties["transform.parent"] !== undefined) {
+        delete layer.properties["transform.parent"];
+      }
+    }
   }
 }
 

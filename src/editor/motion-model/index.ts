@@ -7,3 +7,5 @@ export {
 } from "./model";
 export { useMotionModel, motionActions } from "./store";
 export type { MotionState } from "./store";
+export * from "./sync";
+

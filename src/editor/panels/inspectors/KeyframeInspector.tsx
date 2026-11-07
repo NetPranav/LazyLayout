@@ -20,6 +20,7 @@ import {
   type PropId,
 } from "@/editor/motion-model";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { getDocument } from "@/core/store/useDocumentStore";
 import type { KeyframeInspectorProps, CubicBezierCurve } from "./types";
 
 export interface KeyframeActions {
@@ -81,7 +82,18 @@ export const KeyframeInspector: React.FC<KeyframeInspectorProps & KeyframeAction
   const activeLayer = useMemo(() => {
     const targetId = propLayer || docSelectedId;
     if (!targetId) return null;
-    return comp.layers.find((l) => l.id === targetId || layerName(l.id) === targetId) ?? null;
+    let found = comp.layers.find((l) => l.id === targetId || layerName(l.id) === targetId);
+    if (!found) {
+      try {
+        const doc = getDocument();
+        if (doc?.layers && doc.layers[targetId]) {
+          found = motionActions.ensureLayer(targetId);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return found ?? null;
   }, [comp.layers, propLayer, docSelectedId]);
 
   // If controlled props like propBezier or propEasing are directly provided without model selection,
