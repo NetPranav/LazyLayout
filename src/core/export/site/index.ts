@@ -19,6 +19,8 @@ export interface SiteExportOptions {
   projectName?: string;
   /** The bytes of an imported file by its id; null when it is missing. */
   readAsset?: (id: string) => Promise<AssetBytes | null>;
+  /** The project's loading pages (see `PlanOptions.loading`). Only the Next.js target writes them, as `loading.tsx`. */
+  loading?: { rootId: string; toRootId: string | null }[];
 }
 
 export interface SiteExport {
@@ -29,9 +31,13 @@ export interface SiteExport {
 
 export async function buildSiteExport(doc: MotionDocument, options: SiteExportOptions): Promise<SiteExport> {
   const styling: Styling = options.target === "html" ? "css" : options.styling;
-  const plan = buildPlan(doc, { styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html" });
+  const plan = buildPlan(doc, { styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html", loading: options.loading });
   const assets = new Map<string, AssetBytes>();
   const warnings = [...plan.warnings];
+  if (options.target !== "next" && (options.loading?.length ?? 0) > 0) warnings.push("Loading pages are written for the Next.js target only (as loading.tsx); this export leaves them out.");
+  const loadingRoutes = plan.pages.filter((p) => p.kind === "loading").map((p) => p.route);
+  const twice = loadingRoutes.filter((r, i) => loadingRoutes.indexOf(r) !== i);
+  if (twice.length > 0) warnings.push(`More than one loading page leads to ${[...new Set(twice)].join(", ")}; only the last is written.`);
   if (options.target === "html" && options.styling !== "css") warnings.push("Plain HTML is written with one stylesheet; Tailwind and CSS Modules are for the React targets.");
   for (const id of plan.assets) {
     const bytes = options.readAsset ? await options.readAsset(id) : null;
@@ -45,7 +51,7 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
     entries: doc.assets ?? {},
     assets,
   });
-  return { files, warnings, pages: plan.pages.map((p) => ({ route: p.route, title: p.title })) };
+  return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };
 }
 
 /** The files as text, for a viewer (binary files are named, not shown). */

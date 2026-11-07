@@ -9,13 +9,19 @@ import { ZipPacker } from "@/compiler/export/ZipPacker";
 import { getAssetStore } from "../../assets/AssetStore";
 import { getDocument } from "../../store/documentState";
 import { useProjectMetaStore } from "../../store/useProjectMetaStore";
+import { useProjectStore } from "../../store/useProjectStore";
 import { buildSiteExport, type SiteExport, type SiteExportOptions } from "./index";
 import type { SiteFile } from "./targets";
 
 export async function exportCurrentSite(options: Omit<SiteExportOptions, "readAsset" | "projectName"> & { projectName?: string }): Promise<SiteExport> {
   const store = getAssetStore();
+  const pages = useProjectStore.getState().pages;
+  const loading = Object.values(pages)
+    .filter((p) => p.kind === "loading")
+    .map((p) => ({ rootId: p.rootElementId, toRootId: (p.transition?.to ? pages[p.transition.to]?.rootElementId : undefined) ?? null }));
   return buildSiteExport(getDocument(), {
     ...options,
+    loading: options.loading ?? loading,
     projectName: options.projectName ?? useProjectMetaStore.getState().projectName,
     readAsset: async (id) => {
       const r = await store.get(id);

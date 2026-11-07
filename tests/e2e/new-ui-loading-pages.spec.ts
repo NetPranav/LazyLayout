@@ -160,3 +160,22 @@ test("the Pages menu can be hovered when it is reopened straight after a choice"
   await expect(page.getByRole("menu", { name: "Pages" })).toBeVisible();
   await expect.poll(() => page.getByRole("menu", { name: "Pages" }).evaluate((m) => getComputedStyle(m).pointerEvents), "the menu answers the pointer").toBe("auto");
 });
+
+test("the Next.js export writes the loading page as loading.tsx beside the page it leads to, and not as a page", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await twoPages(page);
+  await openMenu(page);
+  await addLoadingBetweenFirstTwo(page);
+  await expect(page.locator("#pagelabel")).toHaveText("Loading");
+  const built = await page.evaluate(async () => {
+    const w = window as unknown as { __LL_EXPORT__: { build: (o: { target: string; styling: string }) => Promise<{ pages: { route: string }[]; warnings: string[]; files: { path: string }[] }> } };
+    const r = await w.__LL_EXPORT__.build({ target: "next", styling: "css" });
+    return { routes: r.pages.map((p) => p.route), paths: r.files.map((f) => f.path), warnings: r.warnings };
+  });
+  const loadingFiles = built.paths.filter((p) => p.endsWith("/loading.tsx") || p === "app/loading.tsx");
+  expect(loadingFiles, "one loading.tsx").toHaveLength(1);
+  const folder = loadingFiles[0].replace(/\/?loading\.tsx$/, "");
+  expect(built.paths, "beside a page that exists").toContain(`${folder}/page.tsx`);
+  expect(built.routes, "the loading page is not a route of its own").toHaveLength(2);
+  expect(built.paths.some((p) => /loading-container/.test(p)), "no page made from the loading frame").toBe(false);
+});

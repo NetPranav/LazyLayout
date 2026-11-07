@@ -34,3 +34,4 @@
 - In the Pages menu, hovering between two pages shows a line with a +. Clicking it adds a thin "Loading" entry there, a page of its own that stands for the screen shown while the page change happens (one undo step).
 - Opening it zooms out to show the page it comes from on the left, the loading page itself, and the page it leads to on the right. Each reference has a dropdown at its top to choose any page, the same one on both sides too, and the choice is saved with the project.
 - The Pages menu no longer stays out of reach of the pointer when it is reopened while it is still closing.
+- The Next.js export writes a loading page as the `loading.tsx` of the folder of the page it leads to (the home page: `app/loading.tsx`), instead of publishing its frame as a page. Plain HTML and Vite exports leave it out and say so; two loading pages for one page write the last and say so.
