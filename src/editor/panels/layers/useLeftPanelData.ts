@@ -255,6 +255,9 @@ export function useLeftPanelData(
           useCanvasViewStore.getState().startRename(id);
           void invokeCommand("layer.rename");
           break;
+        case "split-letters":
+          void invokeCommand("text.splitLetters");
+          break;
         case "select-all":
           void invokeCommand("selection.all");
           break;

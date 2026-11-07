@@ -196,6 +196,12 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
+          onClick={() => onAction("split-letters")}
+        >
+          Split into letters
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
           shortcut="F2"
           onClick={() => onAction("rename")}
         >

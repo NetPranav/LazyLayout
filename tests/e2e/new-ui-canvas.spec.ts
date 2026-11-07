@@ -754,3 +754,49 @@ test.describe("an empty page is empty", () => {
     await expect.poll(async () => (await look()).bg).toBe("rgba(0, 0, 0, 0)");
   });
 });
+
+test.describe("split text into letters", () => {
+  test("one click turns a word into one layer per letter, in place, each controllable on its own", async ({ page }) => {
+    await ready(page);
+    await page.getByRole("button", { name: /^Text/ }).first().click();
+    await drag(page, await art(page, 0.1, 0.2), await art(page, 0.5, 0.3));
+    await page.keyboard.press("Escape");
+    const [text] = await ofKind(page, "text");
+    await setProps(page, text.id, { "content.text": "Porsche", "typography.fontSize": 80, "typography.fontWeight": 800, "typography.color": "#112233", "frame.width": 520, "frame.height": 120 });
+    await page.waitForTimeout(500);
+    const whole = (await drawn(page, text.id).boundingBox())!;
+
+    await page.getByText(text.name, { exact: true }).first().click({ button: "right" });
+    await page.waitForTimeout(300);
+    await page.getByRole("menuitem", { name: /^Layer/ }).hover();
+    await page.getByRole("menuitem", { name: /^Split into letters/ }).click();
+
+    await expect.poll(async () => (await ofKind(page, "text")).length, "seven letters, no layer for the word").toBe(7);
+    const letters = await ofKind(page, "text");
+    expect(letters.map((l) => l.properties["content.text"]).join("")).toBe("Porsche");
+    expect(letters.every((l) => l.properties["typography.color"] === "#112233" && l.properties["typography.fontSize"] === 80), "each keeps the look").toBe(true);
+    const group = (await layers(page))[letters[0].parentId!];
+    expect(group.name).toBe(`${text.name} letters`);
+
+    // together they fill the place the word was
+    await page.waitForTimeout(400);
+    const boxes = await Promise.all(letters.map((l) => drawn(page, l.id).boundingBox()));
+    const left = Math.min(...boxes.map((b) => b!.x));
+    const right = Math.max(...boxes.map((b) => b!.x + b!.width));
+    expect(Math.abs(left - whole.x), "starts where the word started").toBeLessThan(6);
+    expect(right, "and ends no further than the word did").toBeLessThanOrEqual(whole.x + whole.width + 6);
+
+    // one letter on its own: tilt the P
+    const p = letters.find((l) => l.properties["content.text"] === "P")!;
+    await setProps(page, p.id, { "frame.rotation": 20 });
+    await expect.poll(() => drawn(page, p.id).evaluate((e) => getComputedStyle(e).transform)).not.toBe("none");
+    const o = letters.find((l) => l.properties["content.text"] === "o")!;
+    await expect.poll(() => drawn(page, o.id).evaluate((e) => getComputedStyle(e).transform), "the others stay straight").toBe("none");
+
+    // one undo puts the word back
+    await page.locator("[data-stage=artboard]").hover();
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("Control+z");
+    await expect.poll(async () => (await ofKind(page, "text")).length).toBe(1);
+  });
+});

@@ -289,6 +289,9 @@ export const Stage: React.FC<StageProps> = ({
         case "rename":
           invokeCommand("layer.rename");
           break;
+        case "split-letters":
+          invokeCommand("text.splitLetters");
+          break;
         default:
           break;
       }
