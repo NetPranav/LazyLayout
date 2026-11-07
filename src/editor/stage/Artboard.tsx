@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useLayoutEffect, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Link2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
@@ -19,6 +19,8 @@ import {
   SIZES_MAP,
 } from "./constants";
 import { presetForBreakpoint } from "./presetBreakpoints";
+import { deviceOfFrame, DEVICE_SPECS, switchFrameView, type DeviceKind } from "./deviceViews";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
@@ -189,7 +191,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
     coords: { x: number; y: number };
     elementId: string;
   } | null>(null);
-  const sizeButtonRef = useRef<HTMLButtonElement>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
 
@@ -222,23 +223,30 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const drawSheet = !empty && !!references;
   const bare = !drawSheet;
 
+  const topFrames = useMemo(() => {
+    if (!bare || !layers) return [];
+    return Object.values(layers).filter(
+      (l) => (l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId
+    );
+  }, [bare, layers, rootId]);
+
+  const [openSizeMenuFrameId, setOpenSizeMenuFrameId] = useState<string | null>(null);
+  const [sizeMenuAnchorEl, setSizeMenuAnchorEl] = useState<HTMLElement | null>(null);
+
   // Active frame for positioning the frame dropdown / size label
   const activeFrame = useMemo(() => {
     if (!bare) return null;
-    const directFrames = Object.values(elements).filter((el) => {
-      const layer = layers?.[el.id];
-      return layer ? layer.archetype === "container" && (layer.parentId === rootId || layer.parentId === null) : el.type === "container";
-    });
-    if (directFrames.length === 0) return null;
-    const selectedFrame = directFrames.find((f) => selectedIds.includes(f.id));
-    return selectedFrame ?? directFrames[0];
-  }, [bare, elements, layers, rootId, selectedIds]);
+    if (topFrames.length === 0) return null;
+    const selectedFrame = topFrames.find((f) => selectedIds.includes(f.id));
+    return selectedFrame ?? topFrames[0];
+  }, [bare, topFrames, selectedIds]);
 
-  const labelLeft = activeFrame
-    ? activeFrame.x + STAGE_CONSTANTS.sizeLabelOffsetLeft
+  const activeFrameEl = activeFrame ? elements[activeFrame.id] : null;
+  const labelLeft = activeFrameEl
+    ? activeFrameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft
     : STAGE_CONSTANTS.sizeLabelOffsetLeft;
-  const labelTop = activeFrame
-    ? activeFrame.y + STAGE_CONSTANTS.sizeLabelOffsetTop
+  const labelTop = activeFrameEl
+    ? activeFrameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop
     : STAGE_CONSTANTS.sizeLabelOffsetTop;
   const hideLabel = !hasElements || empty;
 
@@ -266,68 +274,151 @@ export const Artboard: React.FC<ArtboardProps> = ({
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
         if (e.target === e.currentTarget) {
+          useSelectionStore.getState().setSelectedMirrorId(null);
           onSelect(null);
         }
       }}
     >
       {/* 1. Canvas Size Label / Dropdown Trigger (.lbl / #albl) */}
-      <button
-        ref={sizeButtonRef}
-        id="albl"
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={isSizeMenuOpen}
-        title="Canvas size"
-        className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-        style={{
-          left: labelLeft,
-          top: labelTop,
-          height: STAGE_CONSTANTS.sizeLabelHeight,
-          ...(hideLabel ? { visibility: "hidden" as const } : {}),
-          paddingLeft: "var(--ll-spacing-1)",
-          paddingRight: "var(--ll-spacing-1)",
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsSizeMenuOpen((prev) => !prev);
-        }}
-      >
-        <span
-          id="albltx"
-          className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+      {topFrames.length === 0 && (
+        <button
+          id="albl"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={isSizeMenuOpen || openSizeMenuFrameId === "fallback"}
+          title="Canvas size"
+          className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          style={{
+            left: labelLeft,
+            top: labelTop,
+            height: STAGE_CONSTANTS.sizeLabelHeight,
+            ...(hideLabel ? { visibility: "hidden" as const } : {}),
+            paddingLeft: "var(--ll-spacing-1)",
+            paddingRight: "var(--ll-spacing-1)",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSizeMenuAnchorEl(e.currentTarget);
+            setOpenSizeMenuFrameId((prev) => (prev ? null : "fallback"));
+            setIsSizeMenuOpen((prev) => !prev);
+          }}
         >
-          {SIZES_MAP[activePresetId] || "Desktop"} ·{" "}
-          <span className="mono ll:font-mono">{activePresetId}</span>
-        </span>
-        <Icon
-          icon={ChevronDown}
-          size={STAGE_CONSTANTS.sizeLabelIconSize}
-          className="ll:shrink-0 ll:text-muted"
-        />
-      </button>
+          <span
+            id="albltx"
+            className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+          >
+            {SIZES_MAP[activePresetId] || "Desktop"} ·{" "}
+            <span className="mono ll:font-mono">{activePresetId}</span>
+          </span>
+          <Icon
+            icon={ChevronDown}
+            size={STAGE_CONSTANTS.sizeLabelIconSize}
+            className="ll:shrink-0 ll:text-muted"
+          />
+        </button>
+      )}
+
+      {topFrames.length > 0 &&
+        topFrames.map((frame) => {
+          const frameEl = elements[frame.id];
+          if (!frameEl) return null;
+          const isMirror = Boolean(frame.properties["frame.mirrorOf"]);
+          const dev = deviceOfFrame(frame);
+          const spec = DEVICE_SPECS[dev];
+          const isPrimary = frame.id === (activeFrame?.id ?? topFrames[0]?.id);
+          const fLeft = frameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft;
+          const fTop = frameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop;
+
+          return (
+            <button
+              key={`frame-label-${frame.id}`}
+              id={isPrimary ? "albl" : undefined}
+              data-testid={isMirror ? "mirror-frame-label" : "frame-size-label"}
+              data-frame-id={frame.id}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={openSizeMenuFrameId === frame.id}
+              title={isMirror ? `${spec.label} linked view` : "Canvas size"}
+              className="ll-lbl lbl ll:absolute ll:flex ll:items-center ll:gap-1 ll:cursor-pointer ll:text-secondary ll:rounded-sm ll:outline-none ll:hover:bg-surface-panel ll:hover:text-primary ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+              style={{
+                left: fLeft,
+                top: fTop,
+                height: STAGE_CONSTANTS.sizeLabelHeight,
+                paddingLeft: "var(--ll-spacing-1)",
+                paddingRight: "var(--ll-spacing-1)",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                useSelectionStore.getState().setSelectedMirrorId(null);
+                onSelect(frame.id);
+                setSizeMenuAnchorEl(e.currentTarget);
+                setOpenSizeMenuFrameId((prev) => (prev === frame.id ? null : frame.id));
+              }}
+            >
+              {isMirror && (
+                <Icon
+                  icon={Link2}
+                  size={STAGE_CONSTANTS.sizeLabelIconSize}
+                  className="ll:shrink-0 ll:text-muted"
+                  aria-label="Linked mirror view"
+                />
+              )}
+              <span
+                id={isPrimary ? "albltx" : undefined}
+                className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
+              >
+                {spec.label} ·{" "}
+                <span className="mono ll:font-mono">{spec.width}</span>
+              </span>
+              <Icon
+                icon={ChevronDown}
+                size={STAGE_CONSTANTS.sizeLabelIconSize}
+                className="ll:shrink-0 ll:text-muted"
+              />
+            </button>
+          );
+        })}
 
       {/* Preset Menu */}
       <Menu
-        open={isSizeMenuOpen}
-        onClose={() => setIsSizeMenuOpen(false)}
-        anchorRef={sizeButtonRef}
+        open={openSizeMenuFrameId !== null || isSizeMenuOpen}
+        onClose={() => {
+          setOpenSizeMenuFrameId(null);
+          setSizeMenuAnchorEl(null);
+          setIsSizeMenuOpen(false);
+        }}
+        anchorEl={sizeMenuAnchorEl}
         width={STAGE_CONSTANTS.sizeDropdownWidth}
         aria-label="Canvas size menu"
       >
-        {STAGE_PRESETS.map((p) => (
-          <MenuItem
-            key={p.id}
-            onClick={() => handleSelectPreset(p.id)}
-            checked={p.id === activePresetId}
-          >
-            <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
-              <span>{p.label}</span>
-              <span className="ll:font-mono ll:text-muted ll:text-micro">
-                {p.width}
-              </span>
-            </div>
-          </MenuItem>
-        ))}
+        {STAGE_PRESETS.map((p) => {
+          const targetDev: DeviceKind = p.id === "375" ? "mobile" : p.id === "768" ? "tablet" : "desktop";
+          const activeDev = openSizeMenuFrameId && openSizeMenuFrameId !== "fallback"
+            ? deviceOfFrame(layers?.[openSizeMenuFrameId])
+            : activePresetId === "375" ? "mobile" : activePresetId === "768" ? "tablet" : "desktop";
+          return (
+            <MenuItem
+              key={p.id}
+              onClick={() => {
+                if (openSizeMenuFrameId && openSizeMenuFrameId !== "fallback") {
+                  switchFrameView(openSizeMenuFrameId, targetDev);
+                } else {
+                  handleSelectPreset(p.id);
+                }
+                setOpenSizeMenuFrameId(null);
+                setIsSizeMenuOpen(false);
+              }}
+              checked={targetDev === activeDev}
+            >
+              <div className="ll:flex ll:items-center ll:justify-between ll:w-full">
+                <span>{p.label}</span>
+                <span className="ll:font-mono ll:text-muted ll:text-micro">
+                  {p.width}
+                </span>
+              </div>
+            </MenuItem>
+          );
+        })}
       </Menu>
 
       {/* 2. Artboard Title Row (.atit / #atit) */}
@@ -401,16 +492,18 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {hasElements &&
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
-          const layer = layers?.[el.id];
+          const targetDocId = el.targetId ?? el.id;
+          const layer = layers?.[targetDocId] ?? layers?.[el.id];
           const engineDrawn = !!layer;
-          const isSelected = selectedIds.includes(el.id);
+          const isSelected = selectedIds.includes(targetDocId);
 
           return (
             <div
               key={el.id}
               id={el.id === "headline" ? "el-text" : el.id === "button" ? "el-button" : el.id === "image" ? "el-image" : `el-${el.id}`}
-              data-sel={el.id}
-              data-element-id={el.id}
+              data-sel={targetDocId}
+              data-element-id={targetDocId}
+              data-mirror-id={el.mirrorId}
               data-testid="stage-element"
               data-selected={isSelected ? "true" : "false"}
               className={`ll-element ll:absolute ll:select-none ${
@@ -442,10 +535,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
               onPointerDown={(e) => {
                 if (editingText === el.id) return;
                 // where the press was, for the click that follows
-                e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(el.id) ? 1 : 0}`;
+                e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(targetDocId) ? 1 : 0}`;
+                if (el.mirrorId) {
+                  useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
+                } else {
+                  useSelectionStore.getState().setSelectedMirrorId(null);
+                }
                 onStartMove?.(el.id, e);
               }}
-              onMouseEnter={() => onHover(el.id)}
+              onMouseEnter={() => onHover(targetDocId)}
               onMouseLeave={() => onHover(null)}
               onClick={(e) => {
                 e.stopPropagation();
@@ -453,17 +551,20 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 const [px, py, added] = (e.currentTarget.dataset.press ?? "").split(",").map(Number);
                 delete e.currentTarget.dataset.press;
                 if (added === 1 || Math.hypot(e.clientX - px, e.clientY - py) > 3) return;
-                onSelect(el.id, e.shiftKey);
+                onSelect(targetDocId, e.shiftKey);
+                // selecting clears the mirror, so say which view the layer was picked in afterwards
+                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!selectedIds.includes(el.id)) {
-                  onSelect(el.id, false);
+                if (!selectedIds.includes(targetDocId)) {
+                  onSelect(targetDocId, false);
                 }
+                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
                 setContextMenu({
                   coords: { x: e.clientX, y: e.clientY },
-                  elementId: el.id,
+                  elementId: targetDocId,
                 });
               }}
             >
@@ -487,7 +588,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
                   onDone={(value) => {
                     setEditingText(null);
                     const key = layer.archetype === "button" ? "content.label" : "content.text";
-                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([el.id], { [key]: value }, "Edit text");
+                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([targetDocId], { [key]: value }, "Edit text");
                   }}
                 />
               )}

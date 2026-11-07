@@ -8,6 +8,8 @@ import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
 import { EffectDefs, effectEntries } from "./effectsRender";
 import { layerBoxStyle } from "./geometry";
+import { breakpointsOf, resolveDocumentAt } from "../breakpoints/breakpoints";
+import { getDocument } from "../store/documentState";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -82,6 +84,23 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
   const reverseZ = resolved.bool("layout.reverseZ", false);
 
+  const mirrorOf = typeof layer.properties["frame.mirrorOf"] === "string" ? (layer.properties["frame.mirrorOf"] as string) : undefined;
+  const isMirror = Boolean(mirrorOf && layers[mirrorOf]);
+  const mainFrame = mirrorOf ? layers[mirrorOf] : undefined;
+
+  let mirrorResolvedLayers: Record<string, Layer> | null = null;
+  if (isMirror && mainFrame) {
+    const doc = getDocument();
+    const bps = breakpointsOf(doc);
+    const devProp = String(layer.properties["frame.device"] ?? (Number(layer.properties["frame.width"] ?? 1440) <= 480 ? "mobile" : "tablet")).toLowerCase();
+    const targetBp = devProp === "mobile"
+      ? bps.find((b) => b.width === 375 || b.name.toLowerCase() === "mobile")
+      : devProp === "tablet"
+      ? bps.find((b) => b.width === 768 || b.name.toLowerCase() === "tablet")
+      : null;
+    mirrorResolvedLayers = resolveDocumentAt(doc, targetBp?.id ?? null).layers;
+  }
+
   if (isMeshed) {
     const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [g.frame.x, g.frame.y]);
     const outerBox = layerBoxStyle(layer, resolved, ctx, { shadow: "none" });
@@ -141,9 +160,21 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
 
   return (
     <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>
-      {childIds.map((childId) => (
-        <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
-      ))}
+      {isMirror && mainFrame && mirrorResolvedLayers ? (
+        mainFrame.children.map((childId) => (
+          <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
+            <RenderLayer
+              layerId={childId}
+              layers={mirrorResolvedLayers}
+              ctx={{ ...childCtx, layers: mirrorResolvedLayers, inMirror: true, mirrorId: layer.id }}
+            />
+          </div>
+        ))
+      ) : (
+        childIds.map((childId) => (
+          <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
+        ))
+      )}
       {(root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />}
     </Definition>
   );

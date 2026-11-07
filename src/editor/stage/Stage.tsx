@@ -116,6 +116,7 @@ export const Stage: React.FC<StageProps> = ({
   useEffect(() => {
     if (lastPreset.current === activePreset) return;
     lastPreset.current = activePreset;
+    if (useSelectionStore.getState().selectedMirrorId) return;
     executeStagePreset(activePreset);
   }, [activePreset]);
 
@@ -215,11 +216,23 @@ export const Stage: React.FC<StageProps> = ({
 
   // The page is as big as its own layer says (the Page block writes it). A size in % (a project that never set one) follows the preset.
   const rootSized = rootId ? storeLayers?.[rootId] : undefined;
+  const maxRight = useMemo(() => {
+    if (!storeLayers) return 0;
+    let r = 0;
+    for (const l of Object.values(storeLayers)) {
+      if ((l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId) {
+        const x = Number(l.properties["frame.x"] ?? 0);
+        const w = Number(l.properties["frame.width"] ?? 0);
+        r = Math.max(r, x + w);
+      }
+    }
+    return r;
+  }, [storeLayers, rootId]);
   const presetDef0 =
     STAGE_PRESETS.find((p) => p.id === activePreset) || STAGE_PRESETS[0];
   const presetDef = {
     ...presetDef0,
-    artboardWidth: pagePixels(rootSized, "width") ?? presetDef0.artboardWidth,
+    artboardWidth: Math.max(pagePixels(rootSized, "width") ?? presetDef0.artboardWidth, maxRight),
     // a page of stacked sections grows with them
     artboardHeight: Math.max(pagePixels(rootSized, "height") ?? presetDef0.artboardHeight, rootSized?.properties["sizing.vertical"] === "hug" ? rootHeight : 0),
   };

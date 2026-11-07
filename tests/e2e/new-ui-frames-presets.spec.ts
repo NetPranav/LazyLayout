@@ -136,9 +136,12 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
   test("empty page + Mobile click creates a frame named Mobile of 375 wide", async ({ page }) => {
     await ready(page);
 
-    // Click the Mobile button in top bar
-    const mobileBtn = page.getByRole("button", { name: "Mobile", exact: true });
-    await expect(mobileBtn).toBeVisible();
+    // Click the Mobile choice in Design pill dropdown (TopBar preset buttons removed in Task I)
+    const designTab = page.getByText("Design", { exact: true });
+    await expect(designTab).toBeVisible({ timeout: 4000 });
+    await designTab.click();
+    const mobileBtn = page.getByRole("menuitem", { name: /Mobile/i });
+    await expect(mobileBtn).toBeVisible({ timeout: 4000 });
     await mobileBtn.click();
 
     // A frame named Mobile is created with width 375
@@ -174,9 +177,9 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     const baseLayers = await layers(page);
     const baseChildX = Number(baseLayers[r.id].properties["frame.x"] ?? 0);
 
-    // Switch to Tablet
-    const tabletBtn = page.getByRole("button", { name: "Tablet", exact: true });
-    await tabletBtn.click();
+    // Switch to Tablet via frame's size label dropdown
+    await page.locator("#albl").click();
+    await page.getByRole("menuitem", { name: /Tablet/i }).click();
     await expect(page.locator("#albltx")).toContainText("Tablet");
 
     // Move the child while Tablet is active
@@ -189,17 +192,18 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
       return l[r.id].overrides ? Object.values(l[r.id].overrides!)[0]?.["frame.x"] : undefined;
     }).toBe(newTabletX);
 
-    // Switch back to Desktop
-    const desktopBtn = page.getByRole("button", { name: "Desktop", exact: true });
-    await desktopBtn.click();
+    // Switch back to Desktop via frame's size label dropdown
+    await page.locator("#albl").click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
     await expect(page.locator("#albltx")).toContainText("Desktop");
 
     // Verify Desktop base value is unchanged
     const desktopLayers = await layers(page);
     expect(Number(desktopLayers[r.id].properties["frame.x"] ?? 0)).toBe(baseChildX);
 
-    // Switch back to Tablet
-    await tabletBtn.click();
+    // Switch back to Tablet via frame's size label dropdown
+    await page.locator("#albl").click();
+    await page.getByRole("menuitem", { name: /Tablet/i }).click();
     await expect(page.locator("#albltx")).toContainText("Tablet");
 
     // Verify override shows again under Tablet

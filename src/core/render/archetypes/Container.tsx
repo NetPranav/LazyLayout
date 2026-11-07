@@ -88,6 +88,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
       ref={nodeRef}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
+      data-mirror-of={layer.properties["frame.mirrorOf"] ? String(layer.properties["frame.mirrorOf"]) : undefined}
       role={layer.archetype === "form" ? "form" : undefined}
       data-frame-kind={kind !== "frame" ? kind : undefined}
       style={{
