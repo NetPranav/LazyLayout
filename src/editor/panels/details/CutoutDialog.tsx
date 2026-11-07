@@ -402,6 +402,7 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
                 "frame.y": piece.where.y,
                 "frame.width": piece.where.width,
                 "frame.height": piece.where.height,
+                "media.cutHome": `${piece.where.x},${piece.where.y}`,
               },
             },
             "Depth layer",
@@ -425,7 +426,9 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
       // the rest of the picture, with the selection taken out of it, is a piece of its own
       let rest: { where: { x: number; y: number; width: number; height: number }; src: string } | null = null;
       if (asNewLayer && withRest && kept) {
-        const rr = resultFor(invertMask(kept));
+        // the rest's hole is a little smaller than the piece, so the two overlap and no seam shows where the piece's edge is soft
+        const overlap = Math.max(4, Math.round(soft * 2 + (snap ? reach * 0.3 : 0)));
+        const rr = picture ? resultFor(invertMask(growMask(kept, picture.pixels.width, picture.pixels.height, -overlap))) : null;
         if (rr) {
           const savedRest = await toFile(rr);
           const [o] = await importFiles([savedRest.file]);
@@ -454,6 +457,7 @@ export const CutoutDialog: React.FC<{ layerId: string; fill?: CutoutFill; onClos
                 "frame.y": at.y,
                 "frame.width": at.width,
                 "frame.height": at.height,
+                "media.cutHome": `${at.x},${at.y}`,
               },
             },
             "Cut out subject",

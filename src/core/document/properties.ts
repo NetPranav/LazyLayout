@@ -461,6 +461,8 @@ const DEFS = {
   "media.src": held(str("", null, "paint", IMAGE)),
   "media.fallbackSrc": str("", null, "none", IMAGE),
   "media.alt": str("", null, "none", IMAGE),
+  /** Where a piece cut from a picture belongs, "x,y" in its parent's px: a piece dragged close to it snaps back there. */
+  "media.cutHome": str("", null, "none", IMAGE),
   "media.objectFit": held(oneOf(["cover", "contain", "fill", "none", "scale-down"], "cover", "object-fit", "paint", IMAGE)),
   "media.objectPosition": str("center", "object-position", "paint", IMAGE),
   "media.aspectRatio": str("auto", "aspect-ratio", "layout", IMAGE),
