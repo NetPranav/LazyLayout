@@ -9,6 +9,7 @@ import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextM
 import { TransformOverlay } from "./TransformOverlay";
 import { MotionPathOverlay } from "./MotionPathOverlay";
 import { ValueHud } from "./ValueHud";
+import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { EngineLayer } from "./EngineLayer";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { ArtboardProps, StagePreset } from "./types";
@@ -277,6 +278,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
           />
         </div>
       )}
+
+      {/* 4a. Onion Skin Overlay (ROADMAP Phase 71: Onion skin - rendered behind live elements) */}
+      <OnionSkinOverlay
+        selectedIds={selectedIds}
+        elements={elements}
+        layers={layers}
+      />
 
       {/* 5. Elements Layer */}
       {hasElements &&

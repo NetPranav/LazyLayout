@@ -13,6 +13,7 @@ import {
   StepForward,
   Repeat,
   RotateCcw,
+  Layers,
   MousePointer2,
   Scissors,
   Maximize2,
@@ -75,6 +76,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
   const recordMode = useTimelineUiStore((s) => s.recordMode);
+  const onionSkin = useTimelineUiStore((s) => s.onionSkin);
 
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
@@ -227,6 +229,22 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
               recordMode ? "ll:bg-control-primary-fg" : "ll:bg-current"
             }`}
           />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => useTimelineUiStore.getState().toggleOnionSkin()}
+          aria-pressed={onionSkin.enabled}
+          aria-label="Toggle onion skin"
+          data-testid="timeline-onion-skin-button"
+          title={onionSkin.enabled ? "Onion skin (ON) - shows ghost frames" : "Onion skin (OFF)"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            onionSkin.enabled
+              ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={Layers} size={14} />
         </button>
       </div>
 

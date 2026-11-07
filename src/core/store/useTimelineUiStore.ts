@@ -4,6 +4,11 @@ import { create } from "zustand";
 
 /** What the timeline panel remembers while the editor is open (none of it is saved in the document). */
 import { clampZoom, ZOOM_LIMITS, type RevealMode } from "../timeline/model";
+import {
+  type OnionSkinConfig,
+  DEFAULT_ONION_SKIN_CONFIG,
+  normalizeOnionSkinConfig,
+} from "../timeline/onionSkinModel";
 
 interface TimelineUiState {
   /** Horizontal zoom: pixels per second of timeline (Phase 63). */
@@ -49,6 +54,10 @@ interface TimelineUiState {
   setTrail: (trail: readonly string[]) => void;
   openPrecomp: (id: string) => void;
   closePrecomp: (id: string) => void;
+  /** Onion skin (Phase 71): ghost frames on stage before and after playhead. */
+  onionSkin: OnionSkinConfig;
+  setOnionSkin: (patch: Partial<OnionSkinConfig>) => void;
+  toggleOnionSkin: () => void;
   /** The graph editor shows values or speed (Phase 67). */
   graphMode: "value" | "speed";
   setGraphMode: (mode: "value" | "speed") => void;
@@ -121,6 +130,15 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
   setTrail: (trail) => set({ trail }),
   openPrecomp: (id) => set((s) => (s.openPrecomps.includes(id) ? s : { openPrecomps: [...s.openPrecomps, id] })),
   closePrecomp: (id) => set((s) => ({ openPrecomps: s.openPrecomps.filter((p) => p !== id) })),
+  onionSkin: DEFAULT_ONION_SKIN_CONFIG,
+  setOnionSkin: (patch) =>
+    set((s) => ({
+      onionSkin: normalizeOnionSkinConfig({ ...s.onionSkin, ...patch }),
+    })),
+  toggleOnionSkin: () =>
+    set((s) => ({
+      onionSkin: { ...s.onionSkin, enabled: !s.onionSkin.enabled },
+    })),
   graphMode: "value",
   setGraphMode: (graphMode) => set({ graphMode }),
   focusLayer: (focusLayerId) => {
