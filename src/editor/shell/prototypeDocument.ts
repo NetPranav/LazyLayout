@@ -3,6 +3,7 @@ import { createLayer } from "@/core/document/factories";
 import { getDefaultProps, type PropValue } from "@/core/document/registry";
 import { documentCommands, getDocument } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
+import { isAutoLayout, isGrid } from "@/core/editing/layoutOps";
 
 /**
  * Checks whether the document is the initial untouched blank project that needs
@@ -28,6 +29,8 @@ export function upgradeSavedProject(): void {
   const layers = getDocument().layers;
   const root = Object.values(layers).find((l) => l.parentId === null);
   if (!root) return;
+  // Only older builds kept the page size in `%`; newer ones write px, so this runs once and never touches later work.
+  if (root.properties["frame.widthUnit"] !== "%" && root.properties["frame.heightUnit"] !== "%") return;
   const patches: Array<[string, Record<string, PropValue>]> = [];
   const w = root.properties["frame.width"];
   const h = root.properties["frame.height"];
@@ -35,6 +38,8 @@ export function upgradeSavedProject(): void {
   if (root.properties["frame.heightUnit"] === "%" && typeof h === "number" && h > 100) patches.push([root.id, { "frame.heightUnit": "px" }]);
   for (const id of ["hero", "features", "footer", "others", "headline", "subtitle", "button", "image", "input", "toggle", "divider", "background", "icon", "shape", "counter"]) {
     const l = layers[id];
+    const parent = l?.parentId ? layers[l.parentId] : null;
+    if (parent && (isAutoLayout(parent) || isGrid(parent))) continue; // the designer chose to lay these out
     if (l && l.properties.positioning !== "absolute" && typeof l.properties["frame.x"] === "number") patches.push([id, { positioning: "absolute" }]);
   }
   if (patches.length === 0) return;

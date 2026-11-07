@@ -17,7 +17,6 @@ import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
 import { isUntouchedSeed, seedPrototypeDocument, upgradeSavedProject } from "./prototypeDocument";
-import { useHistoryStore } from "@/core/store/useHistoryStore";
 import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
 import { FontSync } from "@/legacy-editor/fonts/FontSync";
 import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
@@ -82,7 +81,7 @@ export function EditorShell({
         seedPrototypeDocument();
         return;
       }
-      if (upgradedFor !== doc.layers && useHistoryStore.getState().past.length === 0) {
+      if (upgradedFor !== doc.layers) {
         upgradedFor = doc.layers;
         upgradeSavedProject();
       }

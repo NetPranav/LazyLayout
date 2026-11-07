@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Move,
   Rows,
@@ -33,6 +33,23 @@ import {
 import type { InspectorSectionProps } from "../types";
 import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing } from "@/core/editing/layoutOps";
 import { transaction } from "@/core/editing/editOps";
+
+/** The size a layer is really drawn at, for a W or H the document does not hold (Fill and Hug work it out when drawn). */
+function useDrawnSize(id: string | null | undefined, active: boolean) {
+  const [size, setSize] = useState<{ id: string; w: number; h: number } | null>(null);
+  useEffect(() => {
+    if (!id || !active) return;
+    const node = document.querySelector(`[data-testid="stage-page"] [data-element-id="${CSS.escape(id)}"]`);
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const box = entry.borderBoxSize?.[0];
+      setSize({ id, w: Math.round(box?.inlineSize ?? entry.contentRect.width), h: Math.round(box?.blockSize ?? entry.contentRect.height) });
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [id, active]);
+  return size && size.id === id ? size : null;
+}
 
 export interface LayoutSectionProps extends InspectorSectionProps {
   isFrame?: boolean;
@@ -76,6 +93,12 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const sizingV = (getValue?.("sizing.vertical") as string) || "fixed";
   const isClipped = (getValue?.("layout.overflowX") as string) === "hidden";
   const ids = selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
+  const singleId = ids.length === 1 ? ids[0] : null;
+  const widthIsDrawn = sizingH !== "fixed" || typeof rawW !== "number";
+  const heightIsDrawn = sizingV !== "fixed" || typeof rawH !== "number";
+  const drawnSize = useDrawnSize(singleId, widthIsDrawn || heightIsDrawn);
+  const shownWidth = widthIsDrawn && drawnSize ? drawnSize.w : widthVal;
+  const shownHeight = heightIsDrawn && drawnSize ? drawnSize.h : heightVal;
 
   // Frame layout mode: free, stack, grid
   const layoutMode: "free" | "stack" | "grid" = isGrid(layer) ? "grid" : isAutoLayout(layer) ? "stack" : "free";
@@ -160,9 +183,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           className="ll:*:!text-micro ll:!gap-2"
           label="W"
-          value={widthVal}
+          value={shownWidth}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (sizingH !== "fixed") onUpdateProp?.("sizing.horizontal", "fixed"); // a typed size is a fixed size
             onUpdateProp?.("frame.width", v);
             onUpdateProp?.("width", v);
           }}
@@ -171,9 +195,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           className="ll:*:!text-micro ll:!gap-2"
           label="H"
-          value={heightVal}
+          value={shownHeight}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (sizingV !== "fixed") onUpdateProp?.("sizing.vertical", "fixed"); // a typed size is a fixed size
             onUpdateProp?.("frame.height", v);
             onUpdateProp?.("height", v);
           }}

@@ -39,6 +39,8 @@ const selectPressed = (page: Page) => page.getByRole("button", { name: "Select (
 const inLayersPanel = (page: Page, name: string) =>
   page.evaluate((n) => Array.from(document.querySelectorAll("*")).some((e) => e.children.length === 0 && (e.textContent ?? "").trim() === n && e.getBoundingClientRect().x < 250 && e.getBoundingClientRect().width > 0), name);
 const stageElement = (page: Page, id: string) => page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`);
+/** What the engine drew for a layer (the stage element above it is a transparent click target). */
+const drawn = (page: Page, id: string) => page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`);
 
 async function pickShape(page: Page, name: string) {
   await page.getByRole("button", { name: "Shape", exact: true }).click();
@@ -78,7 +80,7 @@ test.describe("the new editor's drawing tools", () => {
     for (const kind of ["rectangle", "ellipse", "star", "polygon"]) {
       const all = await ofKind(page, kind);
       const l = all[all.length - 1];
-      await expect(stageElement(page, l.id).locator("svg").first(), `a ${kind} is drawn`).toBeVisible();
+      await expect(drawn(page, l.id), `a ${kind} is drawn`).toBeVisible();
     }
   });
 
@@ -141,7 +143,7 @@ test.describe("the new editor's drawing tools", () => {
         return String(fills[0]?.color ?? props["svg.fill"]).toLowerCase();
       })
       .toMatch(/#ff0000|rgb\(255, 0, 0\)/);
-    await expect(stageElement(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
+    await expect(drawn(page, shape.id).locator("rect").first()).toHaveAttribute("fill", "#FF0000");
     // a stroke and an opacity from the inspector land on the shape's own properties
     await page.getByRole("button", { name: "Add stroke" }).first().click();
     await expect.poll(async () => Number((await layers(page))[shape.id].properties["svg.strokeWidth"])).toBeGreaterThan(0);

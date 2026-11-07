@@ -1,7 +1,7 @@
 "use client";
 
 import { getDocument } from "@/core/store/documentState";
-import { duplicateLayers } from "@/core/editing/editOps";
+import { duplicateLayers, reorderLayers } from "@/core/editing/editOps";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import type { PropValue } from "@/core/document/registry";
 import { worldBox } from "@/core/editing/layerBoxes";
@@ -186,6 +186,7 @@ export function useStageTransform({
         // Alt-drag leaves a copy behind: the copy stays where it is and what you hold moves. One undo step with the move.
         if (e.altKey) {
           duplicateLayers(targetIds, { inPlace: true });
+          reorderLayers(targetIds, "forward"); // what you hold stays above the copy it leaves behind
           useSelectionStore.getState().selectMultiple(targetIds, "element");
         }
       } catch {
