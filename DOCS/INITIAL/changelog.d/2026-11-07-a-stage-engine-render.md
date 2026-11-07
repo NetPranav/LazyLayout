@@ -35,3 +35,7 @@
 - Opening it zooms out to show the page it comes from on the left, the loading page itself, and the page it leads to on the right. Each reference has a dropdown at its top to choose any page, the same one on both sides too, and the choice is saved with the project.
 - The Pages menu no longer stays out of reach of the pointer when it is reopened while it is still closing.
 - The Next.js export writes a loading page as the `loading.tsx` of the folder of the page it leads to (the home page: `app/loading.tsx`), instead of publishing its frame as a page. Plain HTML and Vite exports leave it out and say so; two loading pages for one page write the last and say so.
+
+### Drag-select reaches everything
+- A drag across the canvas now selects every element it touches, at any depth (the shapes and text inside frames too), instead of only the top-level layers. A frame is selected only when none of its contents are touched, so a layer and its parent are never both selected. A drag that starts inside a frame still picks only what is in that frame.
+- The Layers list unfolds the frames that hold any selected layer, not only the last one, so a multi-selection from the canvas shows every row selected.

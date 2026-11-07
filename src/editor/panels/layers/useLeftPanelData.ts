@@ -117,10 +117,9 @@ export function useLeftPanelData(
   }, [mode, selectedFileId, selectedIds]);
 
   // 5. Expand ancestors when selection changes externally (e.g. from canvas)
+  // every selected layer, not only the last: a drag across the canvas selects layers inside frames that are folded in the list
   useEffect(() => {
-    const activeId = selectedIds[selectedIds.length - 1];
-    if (!activeId || !layers[activeId]) return;
-    const ancestors = ancestorsOf(layers, activeId);
+    const ancestors = [...new Set(selectedIds.filter((id) => layers[id]).flatMap((id) => ancestorsOf(layers, id)))];
     if (ancestors.length > 0) {
       useLayersUiStore.getState().expandAll(ancestors);
     }

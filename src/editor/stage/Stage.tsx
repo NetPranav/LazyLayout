@@ -25,6 +25,7 @@ import { setLayerProps } from "@/core/editing/editOps";
 import { registerFrameRenderer, type StageRenderer } from "@/core/render/StageRenderer";
 import { measurePage, pageMeasurer } from "./pageMeasure";
 import { activePageRootId } from "./activePage";
+import { marqueeHits } from "./marquee";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useStageOriginStore } from "@/editor/shell/canvas-chrome/stageOrigin";
 
@@ -529,15 +530,8 @@ export const Stage: React.FC<StageProps> = ({
       const y0 = Math.min(g.start.y, at.y);
       const y1 = Math.max(g.start.y, at.y);
       const layersNow = getDocument().layers;
-      // the layers it touches, one level down from where it started (not what is inside them, as a frame moves with what it holds)
-      const inScope = (id: string) => {
-        const parentId = layersNow[id]?.parentId;
-        return !!parentId && (g.scope ? parentId === g.scope : layersNow[parentId]?.parentId === null);
-      };
-      const hit = Object.values(elements)
-        .filter((el) => !el.locked && inScope(el.id))
-        .filter((el) => el.x < x1 && el.x + el.width > x0 && el.y < y1 && el.y + el.height > y0)
-        .map((el) => el.id);
+      // every element it touches, at any depth (a frame only when nothing in it is touched)
+      const hit = marqueeHits(layersNow, Object.values(elements), { x0, y0, x1, y1 }, g.scope);
       useSelectionStore.getState().selectMultiple(g.additive ? [...new Set([...selectedIds, ...hit])] : hit, "element");
       return;
     }

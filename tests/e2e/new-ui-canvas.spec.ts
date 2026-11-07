@@ -189,6 +189,31 @@ test.describe("gestures", () => {
     expect(await selected(page)).not.toContain(c.id);
   });
 
+  test("a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.08, 0.1, 0.5, 0.7);
+    const a = await rectangle(page, 0.12, 0.2, 0.2, 0.3);
+    const b = await rectangle(page, 0.26, 0.2, 0.34, 0.3);
+    expect([a.parentId, b.parentId]).toEqual([f.id, f.id]);
+    const c = await rectangle(page, 0.62, 0.2, 0.7, 0.3);
+    const chosen = () => page.evaluate(() => [...document.querySelectorAll('#p-layers .row[aria-selected="true"]')].map((e) => e.getAttribute("data-sel")));
+
+    // fold the frame in the list, then sweep from empty space across everything
+    await page.locator(`#p-layers .row[data-sel="${f.id}"]`).getByRole("button", { name: "Collapse" }).click();
+    await expect(page.locator(`#p-layers .row[data-sel="${a.id}"]`)).toHaveCount(0);
+    await page.locator("[data-stage=workspace]").click({ position: { x: 8, y: 300 } });
+    await drag(page, await art(page, 0.02, 0.03), await art(page, 0.9, 0.5));
+
+    await expect.poll(async () => (await selected(page)).sort(), "the canvas selects the shapes inside the frame too").toEqual([a.id, b.id, c.id].sort());
+    await expect.poll(async () => (await chosen()).sort(), "and the list shows every one of them selected, the frame unfolded").toEqual([a.id, b.id, c.id].sort());
+    expect(await selected(page), "not the frame as well as what is in it").not.toContain(f.id);
+
+    // sweeping only the frame's empty part (from outside it) picks the frame
+    await page.locator("[data-stage=workspace]").click({ position: { x: 8, y: 300 } });
+    await drag(page, await art(page, 0.56, 0.6), await art(page, 0.45, 0.64));
+    await expect.poll(() => selected(page)).toEqual([f.id]);
+  });
+
   test("Shift-click adds to the selection and takes away from it", async ({ page }) => {
     await ready(page);
     const a = await rectangle(page, 0.2, 0.3, 0.27, 0.38);
