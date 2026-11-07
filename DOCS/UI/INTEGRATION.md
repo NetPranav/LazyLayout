@@ -65,6 +65,12 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What the UI uses:** The motion loop (`src/editor/motion/loop.ts`) coordinates its frame execution using the core engine's `frameScheduler` (`src/core/time/scheduler.ts`).
 - **Status:** done
 
+### Warp mesh rendering and canvas overlay (TASK G)
+- **Area:** engine & stage / inspector
+- **Files:** `src/core/geometry/meshWarp.ts`, `src/core/document/properties.ts`, `src/core/render/geometry.ts`, `src/core/render/RenderLayer.tsx`, `src/editor/stage/WarpMeshOverlay.tsx`, `src/editor/panels/details/sections/PositionSection.tsx`
+- **What changed:** Added `transform.mesh` property ("cols,rows;x,y;..."), shared renderer tile splitting with projective matrix3d, canvas interactive overlay with handle dragging and row shift-dragging, and inspector controls under Position > More.
+- **Status:** done
+
 ## 3. Engine changes requested
 
 None so far. The new editor reuses existing core engine stores, commands, time scheduler, and persistence infrastructure without requiring modifications to `src/core`, `src/compiler`, or `src/runtime`.

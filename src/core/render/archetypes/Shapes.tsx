@@ -103,8 +103,11 @@ export const Line: React.FC<ArchetypeRenderProps> = (p) => {
   const height = Math.max(clampNumber(p.resolved.num("frame.height", 2), 1, MAX_SIDE, 2), strokeWidth);
   const cap = p.resolved.str("svg.strokeLinecap", "round");
   const dash = safeDashArray(p.resolved.str("svg.strokeDasharray", "none"));
-  if (strokeSettings(p.resolved, "#0f172a", 2, true)) {
-    // FigCraft port F3: several strokes, a variable width or arrowheads
+  // A plain line is one <line>; shadows, and a different cap at each end, need the full shape painter below.
+  const hasShadows = String(p.resolved.get("paint.shadows") ?? "").trim() !== "";
+  const endCaps = [p.resolved.get("shape.startCap"), p.resolved.get("shape.endCap")].some((c) => typeof c === "string" && c !== "" && c !== "none");
+  if (strokeSettings(p.resolved, "#0f172a", 2, true) || hasShadows || endCaps) {
+    // FigCraft port F3: several strokes, a variable width or arrowheads (and the shadows a plain line cannot draw)
     const outline = new BezPath().moveTo({ x: 0, y: height / 2 }).lineTo({ x: width, y: height / 2 });
     return (
       <ShapeSvg {...p} width={width} height={height}>

@@ -27,6 +27,9 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
+import { cannotSplit, measureLetters, splitIntoLetters, animateLetters } from "./splitText";
+import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
+import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
 import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage, setStrokes, setStrokeSettings, setEffects } from "../paint/paintOps";
 import { BLEND_MODES } from "../paint/color";
@@ -53,8 +56,19 @@ import {
 const ids = () => useSelectionStore.getState().selectedIds;
 const hasSelection = () => ids().length > 0;
 /** Canvas shortcuts: the canvas has focus, no text field does, something is selected, and no drag is in progress. */
-const onSelection = (ctx: ContextKeys) =>
+const onSelectionStrict = (ctx: ContextKeys) =>
   ctx.canvasFocus && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
+/** Everything else that acts on the selection (delete, copy, paste, duplicate, group...) works with the pointer anywhere but the timeline and the blueprint, not only over the canvas. */
+const onSelection = (ctx: ContextKeys) =>
+  (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
+
+/**
+ * Arrange shortcuts (bring forward, send back and the like) work wherever the pointer is except over the timeline or the
+ * blueprint, so a layer picked on the canvas can still be moved in the stack with the pointer over the inspector or a bar.
+ * They still never fire while a text field has focus.
+ */
+export const onArrange = (ctx: ContextKeys) =>
+  (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
 
 /** The container a paste goes into when exactly one container is selected (and it isn't a top-level frame being copied elsewhere). */
 function pasteTarget(): string | null {
@@ -98,18 +112,18 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.delete", title: "Delete", category, keybinding: ["Delete", "Backspace"], when: (ctx) => onSelection(ctx) && !isEditingPath(), run: () => void deleteLayers(ids()) }));
 
   for (const [name, s] of Object.entries(STEP)) {
-    add(defineCommand({ id: `edit.nudge${name}`, title: `Nudge ${name}`, category, keybinding: `Arrow${name}`, when: onSelection, run: () => nudgeLayers(ids(), s.dx, s.dy) }));
-    add(defineCommand({ id: `edit.nudge${name}10`, title: `Nudge ${name} 10 px`, category, keybinding: `Shift+Arrow${name}`, when: onSelection, run: () => nudgeLayers(ids(), s.dx * 10, s.dy * 10) }));
+    add(defineCommand({ id: `edit.nudge${name}`, title: `Nudge ${name}`, category, keybinding: `Arrow${name}`, when: onSelectionStrict, run: () => nudgeLayers(ids(), s.dx, s.dy) }));
+    add(defineCommand({ id: `edit.nudge${name}10`, title: `Nudge ${name} 10 px`, category, keybinding: `Shift+Arrow${name}`, when: onSelectionStrict, run: () => nudgeLayers(ids(), s.dx * 10, s.dy * 10) }));
   }
   add(defineTypedCommand({ id: "edit.nudgeBy", title: "Nudge By", category, args: z.object({ dx: z.number(), dy: z.number() }), run: ({ dx, dy }) => nudgeLayers(ids(), dx, dy) }));
 
-  const order: [string, string, ZOrderOp, string][] = [
+  const order: [string, string, ZOrderOp, string | string[]][] = [
     ["layer.bringForward", "Bring Forward", "forward", "Ctrl+]"],
     ["layer.sendBackward", "Send Backward", "backward", "Ctrl+["],
-    ["layer.bringToFront", "Bring to Front", "front", "Ctrl+Shift+]"],
-    ["layer.sendToBack", "Send to Back", "back", "Ctrl+Shift+["],
+    ["layer.bringToFront", "Bring to Front", "front", ["Ctrl+Alt+]", "Ctrl+Shift+]"]],
+    ["layer.sendToBack", "Send to Back", "back", ["Ctrl+Alt+[", "Ctrl+Shift+["]],
   ];
-  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onSelection, run: () => void reorderLayers(ids(), op) }));
+  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onArrange, run: () => void reorderLayers(ids(), op) }));
   add(defineTypedCommand({ id: "layer.reorder", title: "Arrange Layers", category: "Layer", args: z.object({ op: z.enum(["forward", "backward", "front", "back"]) }), run: ({ op }) => ({ changed: reorderLayers(ids(), op) }) }));
 
   add(defineCommand({ id: "edit.group", title: "Group Selection", category, keybinding: "Ctrl+G", when: onSelection, run: () => void groupLayers(ids(), "group") }));
@@ -117,6 +131,125 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.frameSelection", title: "Frame Selection", category, keybinding: "Ctrl+Alt+G", when: onSelection, run: () => void groupLayers(ids(), "frame") }));
   add(defineTypedCommand({ id: "edit.groupSelection", title: "Group or Frame the Selection", category, args: z.object({ kind: z.enum(["group", "frame"]).default("group") }), run: ({ kind }) => ({ id: groupLayers(ids(), kind) }) }));
 
+  add(defineTypedCommand({
+    id: "text.splitLetters",
+    title: "Split Text into Letters",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      // one layer per letter, each tilted, moved, coloured or animated on its own
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a text layer to split.");
+        return { groups: [] };
+      }
+      const made: string[] = [];
+      for (const targetId of targets) {
+        const reason = cannotSplit(targetId);
+        if (reason !== null) {
+          showToast(reason);
+          continue;
+        }
+        const boxes = measureLetters(targetId);
+        if (!boxes || boxes.length === 0) {
+          showToast("Text must be visible on the canvas to split into letters.");
+          continue;
+        }
+        const group = splitIntoLetters(targetId, boxes);
+        if (group) made.push(group);
+      }
+      if (made.length > 0) {
+        useLayersUiStore.getState().expandAll(made);
+        useSelectionStore.getState().selectMultiple(made, "element");
+      }
+      return { groups: made };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.animateLetters",
+    title: "Animate Letters",
+    category: "Text",
+    args: z.object({ id: z.string().optional(), stagger: z.number().positive().optional() }).default({}),
+    run: ({ id, stagger }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to animate.");
+        return { clips: 0 };
+      }
+      let totalClips = 0;
+      for (const targetId of targets) {
+        const clips = animateLetters(targetId, stagger ?? 0.04);
+        if (clips && clips.length > 0) totalClips += clips.length;
+      }
+      if (totalClips === 0) {
+        showToast("Select a letters group to animate.");
+      }
+      return { clips: totalClips };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.standLetters",
+    title: "Stand Letters Up",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to stand up.");
+        return { ok: false };
+      }
+      let success = false;
+      for (const targetId of targets) {
+        const res = standLetters(targetId);
+        if (res) success = true;
+      }
+      if (!success) {
+        showToast("Select a letters group to stand up.");
+      }
+      return { ok: success };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.extrudeLetters",
+    title: "Give Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional(), depth: z.number().finite().min(0).max(1000).default(24) }).default({ depth: 24 }),
+    run: ({ id, depth }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to give depth.");
+        return { ok: false, copies: 0 };
+      }
+      let totalCopies = 0;
+      for (const targetId of targets) {
+        const count = extrudeLetters(targetId, depth ?? 24);
+        if (count > 0) totalCopies += count;
+      }
+      if (totalCopies === 0) {
+        showToast("Select a letters group to give depth.");
+      }
+      return { ok: totalCopies > 0, copies: totalCopies };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.removeDepth",
+    title: "Remove Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to remove depth.");
+        return { ok: false, removed: 0 };
+      }
+      let totalRemoved = 0;
+      for (const targetId of targets) {
+        const count = removeDepth(targetId);
+        totalRemoved += count;
+      }
+      return { ok: totalRemoved > 0, removed: totalRemoved };
+    },
+  }));
   add(defineCommand({ id: "layer.toggleLock", title: "Lock / Unlock", category: "Layer", keybinding: "Ctrl+Shift+L", when: onSelection, run: () => void toggleLock(ids()) }));
   add(defineCommand({ id: "layer.unlockAll", title: "Unlock All", category: "Layer", run: () => void unlockAll() }));
   add(defineCommand({ id: "layer.showAll", title: "Show All", category: "Layer", run: () => void showAll() }));

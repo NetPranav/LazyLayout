@@ -222,8 +222,64 @@ export function duplicateLayers(ids: readonly string[], options: { inPlace?: boo
 // Delete
 // ---------------------------------------------------------------------------
 
+function notifyUser(message: string): void {
+  if (typeof document === "undefined") return;
+  let toast = document.getElementById("ll-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "ll-toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("data-testid", "toast-message");
+    Object.assign(toast.style, {
+      position: "fixed",
+      bottom: "24px",
+      left: "50%",
+      transform: "translateX(-50%)",
+      backgroundColor: "var(--ll-surface-tooltip, #18181b)",
+      color: "var(--ll-text-inverse, #ffffff)",
+      padding: "8px 16px",
+      borderRadius: "6px",
+      fontSize: "13px",
+      zIndex: "99999",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+      pointerEvents: "none",
+      transition: "opacity 0.2s ease-in-out",
+    });
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = "1";
+  setTimeout(() => {
+    if (toast) toast.style.opacity = "0";
+  }, 2500);
+}
+
 /** Deletes the selection. A document keeps at least one frame. Returns how many top-level layers went. */
 export function deleteLayers(ids: readonly string[]): number {
+  const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+  if (selectedMirrorId) {
+    const docLayers = layers();
+    const mirror = docLayers[selectedMirrorId];
+    if (mirror && mirror.properties["frame.mirrorOf"]) {
+      const mainFrameId = mirror.properties["frame.mirrorOf"] as string;
+      const mainFrame = docLayers[mainFrameId];
+      const isInsideMain = ids.some((id) => {
+        if (id === selectedMirrorId) return false;
+        if (mainFrame?.children?.includes(id)) return true;
+        let cur = docLayers[id];
+        while (cur && cur.parentId !== null) {
+          if (cur.parentId === mainFrameId) return true;
+          cur = docLayers[cur.parentId];
+        }
+        return false;
+      });
+      if (isInsideMain) {
+        notifyUser("Delete this layer in the main frame.");
+        return 0;
+      }
+    }
+  }
+
   let roots = editableRoots(ids);
   const frameCount = listFrames(layers()).length;
   const frames = roots.filter((id) => layers()[id].parentId === null);

@@ -7,7 +7,7 @@
  * so every section keeps working the way it does and nothing in the sections changes.
  */
 
-import { isPropertyLegalFor, getPropertyDefinition } from "@/core/document/properties";
+import { getLayerGeometry, isPropertyLegalFor, getPropertyDefinition } from "@/core/document/properties";
 import type { Layer } from "@/core/document/schema";
 import type { PropValue } from "@/core/document/registry";
 
@@ -66,6 +66,7 @@ const asHex = (v: string): string => (/^[0-9a-fA-F]{3,8}$/.test(v) ? `#${v}` : v
 export function valueFor(layer: Pick<Layer, "archetype">, key: string, value: PropValue | null): PropValue | null {
   if (typeof value !== "string") return value;
   if (key === "divider.color") return asHex(value); // the field types a hex without its #
+  if (layer.archetype === "line" && key === "divider.orientation") return value === "vertical" ? 90 : 0;
   if (layer.archetype === "line") {
     if (key === "divider.style") return DASH[value] ?? "none";
     if (key === "divider.cap") return value.toLowerCase();
@@ -74,9 +75,6 @@ export function valueFor(layer: Pick<Layer, "archetype">, key: string, value: Pr
   if (isSvgPainted(layer) && key === "appearance.border.style") return DASH[value] ?? "none";
   return value;
 }
-
-/** What a field shows when a layer has not set it: the engine's default for these, never "Mixed" (Mixed means layers differ). */
-const DEFAULTED = new Set(["frame.rotation", "appearance.opacity", "appearance.radius"]);
 
 /** The value a field shows for this layer, or undefined when the layer has none. A colour of "none" or "currentColor" is no colour. */
 export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: string): PropValue | undefined {
@@ -87,7 +85,15 @@ export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: str
     if (key === "divider.style" && typeof v === "string") return v === "none" ? "solid" : v === "1 6" ? "dotted" : "dashed";
     if (key === "divider.cap" && typeof v === "string") return v.charAt(0).toUpperCase() + v.slice(1);
   }
-  if (v === undefined && DEFAULTED.has(key)) v = getPropertyDefinition(key)?.default;
+  // A layer with a width and no sizing of its own is fixed on that axis, however the property's general default reads.
+  if (v === undefined && (real === "sizing.horizontal" || real === "sizing.vertical")) {
+    const parentId = "parentId" in layer ? (layer.parentId as string | null) : ""; // only the page itself has none
+    const sizing = getLayerGeometry({ parentId, properties: layer.properties }).sizing;
+    return real === "sizing.horizontal" ? sizing.horizontal : sizing.vertical;
+  }
+  // Not set on this layer: the engine's default for it, never "Mixed" (Mixed means selected layers differ).
+  // (A size is not guessed: an unset width means the layer sizes itself.)
+  if (v === undefined && real !== "frame.width" && real !== "frame.height") v = getPropertyDefinition(real)?.default;
   if (typeof v === "string" && (real === "svg.fill" || real === "svg.stroke") && (v === "none" || v === "currentColor")) return undefined;
   return v;
 }

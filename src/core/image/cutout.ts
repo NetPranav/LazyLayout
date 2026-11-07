@@ -37,6 +37,10 @@ export function wandSelect(img: Pixels, seeds: ReadonlyArray<{ x: number; y: num
   const { data, width, height } = img;
   const mask = into ?? newMask(width, height);
   const limit = (Math.max(0, Math.min(100, tolerance)) / 100) * 441;
+  // one visited list for all seeds, marked with the seed's number: a border scan has hundreds of seeds on a big picture
+  const seen = new Int32Array(width * height);
+  let generation = 0;
+  const stack: number[] = [];
   for (const seed of seeds) {
     const sx = Math.max(0, Math.min(width - 1, Math.round(seed.x)));
     const sy = Math.max(0, Math.min(height - 1, Math.round(seed.y)));
@@ -45,12 +49,13 @@ export function wandSelect(img: Pixels, seeds: ReadonlyArray<{ x: number; y: num
       for (let i = 0; i < width * height; i++) if (distance(data, ref, i * 4) <= limit) mask[i] = 255;
       continue;
     }
-    const stack: number[] = [sy * width + sx];
-    const seen = new Uint8Array(width * height);
+    generation++;
+    stack.length = 0;
+    stack.push(sy * width + sx);
     while (stack.length > 0) {
       const p = stack.pop() as number;
-      if (seen[p]) continue;
-      seen[p] = 1;
+      if (seen[p] === generation) continue;
+      seen[p] = generation;
       if (distance(data, ref, p * 4) > limit) continue;
       mask[p] = 255;
       const x = p % width;
@@ -68,8 +73,10 @@ export function wandSelect(img: Pixels, seeds: ReadonlyArray<{ x: number; y: num
  * The background, found without a click: the edge of the picture is almost always background, so the wand starts from
  * points all along it. Returns what it reached; "keep the subject" is the inverse of this.
  */
-export function selectBorderBackground(img: Pixels, tolerance: number, sides: "all" | "top" = "all", step = 8): Mask {
+export function selectBorderBackground(img: Pixels, tolerance: number, sides: "all" | "top" = "all", stepAtLeast = 8): Mask {
   const { width, height } = img;
+  // about the same number of seeds at any size: each one is a whole fill
+  const step = Math.max(stepAtLeast, Math.ceil((2 * (width + height)) / 64));
   const seeds: Array<{ x: number; y: number }> = [];
   for (let x = 0; x < width; x += step) {
     seeds.push({ x, y: 0 });
@@ -85,12 +92,77 @@ export function selectBorderBackground(img: Pixels, tolerance: number, sides: "a
  * Finds the subject without a click. It samples the whole edge first; when that leaves almost nothing or almost everything
  * (the subject touches the edge), it samples only the top, where the sky is.
  */
-export function autoSubject(img: Pixels, tolerance: number): { mask: Mask; sides: "all" | "top" } {
-  const total = img.width * img.height;
-  const all = invertMask(selectBorderBackground(img, tolerance, "all"));
-  const area = maskArea(all);
-  if (area > total * 0.04 && area < total * 0.96) return { mask: all, sides: "all" };
-  return { mask: invertMask(selectBorderBackground(img, tolerance, "top")), sides: "top" };
+export function autoSubject(img: Pixels, tolerance: number): { mask: Mask; sides: "all" | "top"; tolerance: number } {
+  // The search is done on a small copy; only the answer is computed at full size, so a big photo takes a moment and not minutes.
+  const small = shrink(img, 360);
+  const total = small.width * small.height;
+  const background = (sides: "all" | "top", tol: number) => selectBorderBackground(small, tol, sides);
+  const plausible = (m: Mask) => {
+    const kept = total - maskArea(m);
+    return kept > total * 0.04 && kept < total * 0.96;
+  };
+  // Which edges are sky: all of them, unless that leaves almost nothing or almost everything (the subject touches the edge)
+  let sides: "all" | "top" = "all";
+  const probe = background("all", Math.min(tolerance, 14));
+  if (!plausible(probe)) sides = "top";
+  // The tolerance is a ceiling. Grow it step by step and stop just before the fill leaks out of the sky into the subject,
+  // which shows as the background suddenly taking a large extra share of the picture.
+  const steps = [6, 10, 14, 18, 22, 26, 30, 36, 42].filter((t) => t < tolerance);
+  steps.push(tolerance);
+  let bestTol = steps[0];
+  let bestArea = maskArea(background(sides, steps[0]));
+  for (const t of steps.slice(1)) {
+    const area = maskArea(background(sides, t));
+    if (area - bestArea > total * 0.15) break; // a leak: stay with the last good one
+    bestTol = t;
+    bestArea = area;
+  }
+  return { mask: invertMask(selectBorderBackground(img, bestTol, sides)), sides, tolerance: bestTol };
+}
+
+/** A smaller copy of a picture (nearest pixel), for searching. */
+function shrink(img: Pixels, longest: number): Pixels {
+  const k = Math.min(1, longest / Math.max(img.width, img.height));
+  if (k === 1) return img;
+  const w = Math.max(1, Math.round(img.width * k));
+  const h = Math.max(1, Math.round(img.height * k));
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const sy = Math.min(img.height - 1, Math.floor(y / k));
+    for (let x = 0; x < w; x++) {
+      const sx = Math.min(img.width - 1, Math.floor(x / k));
+      const from = (sy * img.width + sx) * 4;
+      const to = (y * w + x) * 4;
+      data[to] = img.data[from];
+      data[to + 1] = img.data[from + 1];
+      data[to + 2] = img.data[from + 2];
+      data[to + 3] = img.data[from + 3];
+    }
+  }
+  return { data, width: w, height: h };
+}
+
+/** A closed shape drawn by hand (a lasso), as a mask: 255 inside. `points` are in the picture's own pixels. */
+export function polygonMask(points: ReadonlyArray<{ x: number; y: number }>, width: number, height: number): Mask {
+  const mask = newMask(width, height);
+  if (points.length < 3) return mask;
+  const crossings: number[] = [];
+  for (let y = 0; y < height; y++) {
+    const sy = y + 0.5;
+    crossings.length = 0;
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i];
+      const b = points[(i + 1) % points.length];
+      if (a.y <= sy !== b.y <= sy) crossings.push(a.x + ((sy - a.y) / (b.y - a.y)) * (b.x - a.x));
+    }
+    crossings.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < crossings.length; k += 2) {
+      const from = Math.max(0, Math.ceil(crossings[k] - 0.5));
+      const to = Math.min(width - 1, Math.floor(crossings[k + 1] - 0.5));
+      if (to >= from) mask.fill(255, y * width + from, y * width + to + 1);
+    }
+  }
+  return mask;
 }
 
 export function invertMask(mask: Mask): Mask {
@@ -232,4 +304,37 @@ export function applyMask(img: Pixels, mask: Mask, crop?: { x: number; y: number
     }
   }
   return { data: out, width: box.width, height: box.height };
+}
+
+/** How a picture is drawn in its box: CSS object-fit words, or a paint's crop (fractions of the picture that show). */
+export type PictureFit = "cover" | "contain" | "fill" | "none" | "scale-down" | { x: number; y: number; w: number; h: number };
+
+/**
+ * Where a picture is really drawn inside a box of `boxW` by `boxH`, centred the way CSS centres it. A cover picture runs
+ * past the box. A piece cut from the picture only lines up with the original if it is placed by this.
+ */
+export function pictureBox(fit: PictureFit, boxW: number, boxH: number, picW: number, picH: number): { x: number; y: number; width: number; height: number } {
+  if (typeof fit === "object") {
+    const width = boxW / fit.w;
+    const height = boxH / fit.h;
+    return { x: 0 - fit.x * width, y: 0 - fit.y * height, width, height };
+  }
+  if (fit === "fill") return { x: 0, y: 0, width: boxW, height: boxH };
+  const cover = Math.max(boxW / picW, boxH / picH);
+  const contain = Math.min(boxW / picW, boxH / picH);
+  const k = fit === "cover" ? cover : fit === "contain" ? contain : fit === "none" ? 1 : Math.min(1, contain);
+  const width = picW * k;
+  const height = picH * k;
+  return { x: (boxW - width) / 2, y: (boxH - height) / 2, width, height };
+}
+
+/** The part of a picture (in its own pixels) that shows in the box, given where `pictureBox` drew it. */
+export function visibleWindow(drawn: { x: number; y: number; width: number; height: number }, boxW: number, boxH: number, picW: number, picH: number): { x: number; y: number; width: number; height: number } {
+  const sx = picW / drawn.width;
+  const sy = picH / drawn.height;
+  const x0 = Math.max(0, Math.floor(-drawn.x * sx));
+  const y0 = Math.max(0, Math.floor(-drawn.y * sy));
+  const x1 = Math.min(picW, Math.ceil((boxW - drawn.x) * sx));
+  const y1 = Math.min(picH, Math.ceil((boxH - drawn.y) * sy));
+  return { x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0) };
 }
