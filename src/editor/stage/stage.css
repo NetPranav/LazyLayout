@@ -1,0 +1,140 @@
+/* === Stage Canvas Cursor & Text Format Bar (Lane B4) === */
+
+/* Over the stage only, the system cursor is hidden and #ll-cur is drawn instead (mouse only) */
+.ll-stage-viewport.ll-stage-cursor-active,
+.ll-stage-viewport.ll-stage-cursor-active *,
+.ll-stage-viewport.ll-stage-cursor-active *::before,
+.ll-stage-viewport.ll-stage-cursor-active *::after,
+html.ll-drag,
+html.ll-drag * {
+  cursor: none !important;
+}
+
+#ll-cur {
+  --ll-cur-c: var(--ll-text-secondary);
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ll-dur-cursor-fade) linear;
+  will-change: transform;
+}
+
+#ll-cur.on {
+  opacity: 1;
+}
+
+#ll-cur .ll-cp,
+#ll-cur .ll-cv,
+#ll-cur .ll-cs,
+#ll-cur .ll-cr {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#ll-cur .ll-cp,
+#ll-cur .ll-cv {
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+#ll-cur .ll-cv {
+  will-change: transform;
+}
+
+#ll-cur .ll-cs {
+  width: var(--ll-size-cursor);
+  height: var(--ll-size-cursor);
+  opacity: 0;
+}
+
+#ll-cur .ll-cr {
+  width: var(--ll-size-cursor);
+  height: var(--ll-size-cursor);
+  transform-origin: calc(var(--ll-size-cursor) / 2) calc(var(--ll-size-cursor) / 2);
+}
+
+#ll-cur svg {
+  display: block;
+  width: var(--ll-size-cursor);
+  height: var(--ll-size-cursor);
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: var(--ll-shadow-cursor);
+}
+
+#ll-cur .h {
+  stroke: var(--ll-surface-panel);
+  stroke-width: 3.5;
+}
+
+#ll-cur .l {
+  stroke: var(--ll-cur-c);
+  stroke-width: 1.5;
+}
+
+#ll-cur .wl {
+  stroke: var(--ll-cur-c);
+  stroke-width: 1.5;
+  fill: var(--ll-surface-panel);
+}
+
+#ll-cur .ah {
+  stroke: var(--ll-surface-panel);
+  stroke-width: 3.6;
+  fill: var(--ll-surface-panel);
+}
+
+#ll-cur .ab {
+  stroke: var(--ll-cur-c);
+  stroke-width: 1.6;
+  fill: var(--ll-cur-c);
+}
+
+/* Inline text format bar (.ftxb) */
+.ll-ftxb {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  display: none;
+  align-items: center;
+  gap: var(--ll-gap-formatbar);
+  height: var(--ll-size-formatbar-h);
+  padding: var(--ll-pad-formatbar);
+  background: var(--ll-surface-raised);
+  border: var(--ll-size-formatbar-sep-w) solid var(--ll-border-color);
+  border-radius: var(--ll-radius-md);
+  box-shadow: var(--ll-shadow-soft);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ll-ftxb .ll-ib b,
+.ll-ftxb .ib b {
+  font: var(--ll-font-formatbar-bold);
+}
+
+.ll-ftxb .ll-ftxs,
+.ll-ftxb .ftxs {
+  width: var(--ll-size-formatbar-sep-w);
+  height: var(--ll-size-formatbar-sep-h);
+  background: var(--ll-border-color);
+  margin: var(--ll-margin-formatbar-sep);
+  flex: none;
+}
+
+/* Blank page canvas override */
+.ll-artboard-blank {
+  background: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}

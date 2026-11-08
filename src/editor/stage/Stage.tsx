@@ -2,11 +2,12 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useDocument } from "@/core/store/useDocumentStore";
+import { useDocument, documentCommands, getDocument } from "@/core/store/useDocumentStore";
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { invokeCommand } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
+import { CanvasCursor } from "./CanvasCursor";
 import { useStageTransform } from "./useStageTransform";
 import {
   STAGE_CONSTANTS,
@@ -52,6 +53,22 @@ export const Stage: React.FC<StageProps> = ({
     const cam = useCameraStore.getState();
     if (cam.camera.zoom === 1 && !cam.touched) {
       cam.setCamera({ x: 0, y: 0, zoom: STAGE_CONSTANTS.defaultZoom });
+    }
+
+    if (typeof window !== "undefined") {
+      (window as unknown as { __clearAllLayers?: () => void }).__clearAllLayers = () => {
+        try {
+          const doc = getDocument();
+          if (doc?.layers) {
+            const ids = Object.keys(doc.layers);
+            ids.forEach((id) => {
+              documentCommands.removeLayer(id, "Delete all layers");
+            });
+          }
+        } catch {
+          // ignore
+        }
+      };
     }
   }, []);
 
@@ -357,6 +374,7 @@ export const Stage: React.FC<StageProps> = ({
         }
       }}
     >
+      <CanvasCursor viewportRef={viewportRef} />
       <Artboard
         title={title}
         preset={activePreset}
@@ -376,6 +394,7 @@ export const Stage: React.FC<StageProps> = ({
         onAddFrame={onAddFrame}
         onInsert={onInsert}
         onAskAi={onAskAi}
+        onElementChange={handleElementChange}
         onLayerAction={handleLayerAction}
         onToggleHidden={handleToggleHidden}
         onToggleLocked={handleToggleLocked}

@@ -1,6 +1,8 @@
 export { Stage } from "./Stage";
 export { Artboard } from "./Artboard";
 export { TransformOverlay } from "./TransformOverlay";
+export { CanvasCursor, renderCursorSvg, GLYPHS, type CursorKind } from "./CanvasCursor";
+export { TextFormatBar, type FormatState } from "./TextFormatBar";
 export { useStageTransform } from "./useStageTransform";
 export { SAMPLE_STAGE_ELEMENTS } from "./sampleData";
 export {
