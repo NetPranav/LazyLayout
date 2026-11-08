@@ -166,3 +166,11 @@ Design choices, so workers never have to stop. The user reviews this in batches 
 | 2026-11-05 | Document & Stage | `src/editor/shell/prototypeDocument.ts`: Seeded internal painter's order as `["others", "footer", "features", "hero"]` under root container so that reversing in `buildLayerTree` yields top-to-bottom display: Hero, Features, Footer, Other elements | worker (Antigravity) | pending |
 | 2026-11-05 | Document & Stage | `src/editor/stage/Stage.tsx`: Stage elements exclude structural section containers (`hero`, `features`, `footer`, `others`) from rendering as individual canvas content boxes while preserving all interactive elements (`headline`, `button`, `image`, and newly inserted elements) | worker (Antigravity) | pending |
 | 2026-11-05 | Themes | Warm is the default light theme and Darkroom the default dark theme; the theme button toggles between them | user | approved |
+| 2026-11-07 | Prototype | Canvas: custom cursor on the canvas only; panels, menus and fields keep system cursors | user | approved |
+| 2026-11-07 | Prototype | Code editor: syntax colours (`--syn-*`) are allowed | user | approved |
+| 2026-11-07 | Prototype | Timeline label colours are tuned per theme (8 sets) | user | approved |
+| 2026-11-07 | Prototype | Long lists: edge blur only, no bulge, no shrink or fade | user | approved |
+| 2026-11-07 | Prototype | Inspector options trigger is a sliders icon on the right of the section header | user | approved |
+| 2026-11-07 | Prototype | Options popover floats 8px from the inspector like the colour picker, morphs from its trigger | user | approved |
+| 2026-11-07 | Prototype | Toolbar: Select and Hand are separate buttons; leaner toolbar; Preview lives in the top bar left of Ship | user | approved |
+| 2026-11-07 | Prototype | A blank page shows nothing on the canvas | user | approved |
