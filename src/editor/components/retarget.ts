@@ -5,6 +5,7 @@ import { springEase } from "../motion/ease";
 
 export type OverlayFamily =
   | "menu"
+  | "context-menu"
   | "inspector-options"
   | "color-picker"
   | "font-picker"
@@ -68,9 +69,15 @@ export function registerOverlay(
   } else {
     const record = recordOrFamily;
     activeOverlays.forEach((active, id) => {
-      if (active.family !== record.family && id !== record.id) {
+      // If a context menu opens, close any other open overlay immediately.
+      // If another family opens, close overlays of differing families.
+      const shouldClose =
+        record.family === "context-menu" ||
+        active.family === "context-menu" ||
+        active.family !== record.family;
+      if (shouldClose && id !== record.id) {
         try {
-          active.close(false);
+          active.close(true);
         } catch (_) {}
       }
     });
@@ -80,19 +87,22 @@ export function registerOverlay(
 
 /**
  * Unregister an overlay, recording its last known geometry for same-family retargeting handoff.
+ * Context menus do NOT record handoff history per prototype rules.
  */
 export function unregisterOverlay(id: string): void {
   const existing = activeOverlays.get(id);
   if (existing) {
-    try {
-      const rect = existing.element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        recentHandoffs.set(existing.family, {
-          rect,
-          timestamp: performance.now(),
-        });
-      }
-    } catch (_) {}
+    if (existing.family !== "context-menu") {
+      try {
+        const rect = existing.element.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          recentHandoffs.set(existing.family, {
+            rect,
+            timestamp: performance.now(),
+          });
+        }
+      } catch (_) {}
+    }
     activeOverlays.delete(id);
   }
 }
@@ -101,11 +111,14 @@ export function unregisterOverlay(id: string): void {
  * Look up the handoff geometry for the same overlay family.
  * If another active overlay of the same family is currently open, it captures its live rect
  * and closes it immediately without duplicate exit animation, transferring ownership.
+ * Context menus NEVER accept handoffs (always open fresh).
  */
 export function getFamilyHandoff(
   family: OverlayFamily,
   currentId?: string
 ): DOMRect | null {
+  if (family === "context-menu") return null;
+
   // First check if an overlay of this family is currently open (and not the current one)
   for (const [id, record] of activeOverlays.entries()) {
     if (record.family === family && id !== currentId) {

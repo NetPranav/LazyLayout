@@ -340,7 +340,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     }
 
     function apply(kd: string, a: number) {
-      if (kd !== kind) setKind(kd, a, shown);
+      if (kd !== kind || !shown) setKind(kd, a, true);
       else if (PER[kd]) rotateTo(a);
     }
 
@@ -516,8 +516,11 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
         return;
       }
 
-      // Check context menu presence
-      if (document.querySelector(".menu:not([hidden]),[role=menu]")) {
+      // Check context menu presence: only suppress canvas cursor if an active, non-closing menu is in the DOM
+      const hasActiveMenu = !!document.querySelector(
+        ".menu.ll-open, .menu.open, [role=menu]:not([data-lv])"
+      );
+      if (hasActiveMenu) {
         off();
         return;
       }
@@ -623,6 +626,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     const endDrag = () => {
       lock = null;
       drag = false;
+      held = false;
       document.documentElement.classList.remove("ll-drag");
       press(CURSOR_SCALE_UNPRESSED);
       sched();
@@ -649,6 +653,10 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       mods.alt = e.altKey;
       mods.shift = e.shiftKey;
       const k = e.key;
+      if (k === "Escape") {
+        held = false;
+        sched();
+      }
       const isInput = (e.target as HTMLElement | null)?.matches?.(NAT);
       if ((k === "z" || k === "Z") && !e.ctrlKey && !e.metaKey && !isInput) {
         mods.z = true;
@@ -672,6 +680,20 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       off();
     };
 
+    const onMenuOpen = () => {
+      off();
+    };
+
+    const onMenuClose = () => {
+      held = false;
+      sched();
+    };
+
+    const onWindowFocus = () => {
+      held = false;
+      sched();
+    };
+
     window.addEventListener("pointermove", onPointerMove, true);
     window.addEventListener("pointerdown", onPointerDown, true);
     window.addEventListener("pointerup", endDrag, true);
@@ -682,6 +704,9 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       endDrag();
       off();
     });
+    window.addEventListener("focus", onWindowFocus);
+    window.addEventListener("ll-menu-open", onMenuOpen);
+    window.addEventListener("ll-menu-close", onMenuClose);
     document.documentElement.addEventListener("mouseleave", onMouseLeave);
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("keydown", onKeyDown, true);
@@ -696,6 +721,9 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       window.removeEventListener("pointerup", endDrag, true);
       window.removeEventListener("pointercancel", endDrag, true);
       window.removeEventListener("contextmenu", onContextMenu, true);
+      window.removeEventListener("focus", onWindowFocus);
+      window.removeEventListener("ll-menu-open", onMenuOpen);
+      window.removeEventListener("ll-menu-close", onMenuClose);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
       document.removeEventListener("pointerover", onPointerOver, true);
       document.removeEventListener("keydown", onKeyDown, true);

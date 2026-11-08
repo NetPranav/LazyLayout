@@ -199,6 +199,9 @@ export const Menu: React.FC<MenuProps> = ({
     return () => {
       s.reset();
       unregisterOverlay(menuId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("ll-menu-close"));
+      }
     };
   }, [isRendered, menuId]);
 
@@ -462,10 +465,13 @@ export const Menu: React.FC<MenuProps> = ({
           : defaultMenuW);
       const menuH = m.h || (layRef.current?.offsetHeight ?? MENU_FALLBACKS.defaultMenuHeight);
 
+      const isContextMenu = variant === "context" || !!position;
+      const effectiveFamily: OverlayFamily = isContextMenu ? "context-menu" : family;
+
       if (position) {
         left = Math.max(pad, Math.min(position.x, window.innerWidth - menuW - pad));
         top = Math.max(pad, Math.min(position.y, window.innerHeight - menuH - pad));
-        seed = { ...MENU_FALLBACKS.seedPointer, r: MENU_FALLBACKS.menuRadius };
+        seed = { w: 10, h: 10, r: 5 };
       } else if (targetAnchor) {
         const r = targetAnchor.getBoundingClientRect();
         left = Math.max(pad, Math.min(r.left, window.innerWidth - menuW - pad));
@@ -482,13 +488,12 @@ export const Menu: React.FC<MenuProps> = ({
       }
 
       const isAnchorSwitch =
+        !isContextMenu &&
         prevAnchorOrPosRef.current !== null &&
         s.live() &&
-        (prevAnchorOrPosRef.current.anchor !== targetAnchor ||
-          prevAnchorOrPosRef.current.pos?.x !== position?.x ||
-          prevAnchorOrPosRef.current.pos?.y !== position?.y);
+        prevAnchorOrPosRef.current.anchor !== targetAnchor;
 
-      const handoff = !isAnchorSwitch ? getFamilyHandoff(family, menuId) : null;
+      const handoff = !isContextMenu && !isAnchorSwitch ? getFamilyHandoff(effectiveFamily, menuId) : null;
 
       if (isAnchorSwitch) {
         const oldTop = parseFloat(menuEl.style.top) || 0;
@@ -534,7 +539,7 @@ export const Menu: React.FC<MenuProps> = ({
       prevAnchorOrPosRef.current = { anchor: targetAnchor, pos: position ?? null };
       registerOverlay({
         id: menuId,
-        family,
+        family: effectiveFamily,
         element: menuEl,
         anchor: targetAnchor,
         close: (immediate) => {
@@ -545,6 +550,10 @@ export const Menu: React.FC<MenuProps> = ({
         timestamp: performance.now(),
       });
 
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("ll-menu-open"));
+      }
+
       const unreg = defaultHost.register(() => {
         unreg();
         menuEl.focus();
@@ -552,6 +561,9 @@ export const Menu: React.FC<MenuProps> = ({
     } else {
       prevAnchorOrPosRef.current = null;
       unregisterOverlay(menuId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("ll-menu-close"));
+      }
       if (isImmediateCloseRef.current) {
         isImmediateCloseRef.current = false;
         setIsRendered(false);
@@ -730,17 +742,47 @@ export const Menu: React.FC<MenuProps> = ({
       }
     };
 
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (menuRef.current?.contains(target) || subElRef.current?.contains(target)) return;
+      onClose();
+    };
+
+    const handleResize = () => {
+      onClose();
+    };
+
+    const handleBlur = () => {
+      onClose();
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (menuRef.current?.contains(target) || subElRef.current?.contains(target)) return;
+      isImmediateCloseRef.current = true;
+      onClose();
+    };
+
     const currentMenuEl = menuRef.current;
     document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("contextmenu", handleContextMenu, true);
     document.addEventListener("mouseover", handlePointerOver);
     currentMenuEl?.addEventListener("mouseleave", handleMouseLeaveMenu);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("blur", handleBlur);
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("contextmenu", handleContextMenu, true);
       document.removeEventListener("mouseover", handlePointerOver);
       currentMenuEl?.removeEventListener("mouseleave", handleMouseLeaveMenu);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("blur", handleBlur);
     };
   }, [open, isRendered, onClose, anchorEl, anchorRef, closeSub, hideHighlight, hoverRow, moveHighlight, openSub]);
 
