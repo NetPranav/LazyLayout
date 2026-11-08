@@ -31,3 +31,7 @@ export * from "./PageSwitcher";
 export * from "./AvatarStack";
 export * from "./topbar-constants";
 export * from "./Slider";
+export * from "./ColorPicker";
+export * from "./FontPicker";
+export * from "./FramePresetsPanel";
+export * from "./OptionsPopover";

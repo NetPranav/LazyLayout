@@ -72,6 +72,17 @@
   --color-label-6: var(--ll-label-6);
   --color-label-6-tint: var(--ll-label-6-tint);
 
+  /* Syntax highlight colours */
+  --color-syn-kw: var(--ll-syn-kw);
+  --color-syn-str: var(--ll-syn-str);
+  --color-syn-num: var(--ll-syn-num);
+  --color-syn-fn: var(--ll-syn-fn);
+  --color-syn-tag: var(--ll-syn-tag);
+  --color-syn-attr: var(--ll-syn-attr);
+  --color-syn-type: var(--ll-syn-type);
+  --color-syn-punc: var(--ll-syn-punc);
+  --color-syn-com: var(--ll-syn-com);
+
   /* Semantic hairline border */
   --color-border: var(--ll-border-color);
   --color-border-color: var(--ll-border-color);
@@ -302,6 +313,37 @@
 
   /* === lane: L9 design system === */
   /* === end lane: L9 === */
+
+  /* === lane: B1 pickers === */
+  --width-picker: var(--ll-size-picker-w);
+  --gap-picker-popover: var(--ll-gap-picker-popover);
+  --spacing-picker-gap: var(--ll-gap-picker-popover);
+  /* === end lane: B1 === */
+
+  /* === lane: B2 layers === */
+  /* === end lane: B2 === */
+
+  /* === lane: B3 inspector === */
+  /* === end lane: B3 === */
+
+  /* === lane: B4 canvas === */
+  --width-cursor: var(--ll-size-cursor);
+  --height-cursor: var(--ll-size-cursor);
+  /* === end lane: B4 === */
+
+  /* === lane: B5 chrome === */
+  --width-spotlight: var(--ll-size-spotlight-w);
+  --height-spotlight-row: var(--ll-size-spotlight-row-h);
+  /* === end lane: B5 === */
+
+  /* === lane: B6 code === */
+  /* === end lane: B6 === */
+
+  /* === lane: B7 motion === */
+  /* === end lane: B7 === */
+
+  /* === lane: B8 topbar === */
+  /* === end lane: B8 === */
 }
 
 /* Default border color for new UI hairline boundaries */

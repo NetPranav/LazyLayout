@@ -23,17 +23,17 @@ export interface ThemeOption {
 }
 
 export const LIGHT_THEMES: readonly ThemeOption[] = [
-  { id: "paper", label: "Paper (Default)" },
+  { id: "warm", label: "Warm (Default)" },
+  { id: "paper", label: "Paper" },
   { id: "white", label: "White" },
-  { id: "warm", label: "Warm" },
   { id: "lilac", label: "Lilac" },
 ];
 
 export const DARK_THEMES: readonly ThemeOption[] = [
-  { id: "noir", label: "Noir" },
+  { id: "darkroom", label: "Darkroom (Default)" },
   { id: "dark", label: "Dark" },
   { id: "graphite", label: "Graphite" },
-  { id: "darkroom", label: "Darkroom" },
+  { id: "noir", label: "Noir" },
 ];
 
 export const THEMES: readonly ThemeOption[] = [
@@ -66,17 +66,17 @@ export function subscribeTheme(callback: () => void): () => void {
   };
 }
 
-let cachedTheme: Theme = "paper";
+let cachedTheme: Theme = "warm";
 
 /** Get active theme on client. */
 export function getClientTheme(): Theme {
   if (typeof document !== "undefined") {
     let attr = document.documentElement.getAttribute("data-theme");
     if (attr === "plum") {
-      document.documentElement.setAttribute("data-theme", "dark");
-      attr = "dark";
+      document.documentElement.setAttribute("data-theme", "darkroom");
+      attr = "darkroom";
       try {
-        localStorage.setItem("lazy-layout-theme", "dark");
+        localStorage.setItem("lazy-layout-theme", "darkroom");
       } catch {
         // ignore
       }
@@ -88,8 +88,8 @@ export function getClientTheme(): Theme {
     try {
       let stored = localStorage.getItem("lazy-layout-theme");
       if (stored === "plum") {
-        stored = "dark";
-        localStorage.setItem("lazy-layout-theme", "dark");
+        stored = "darkroom";
+        localStorage.setItem("lazy-layout-theme", "darkroom");
       }
       if (stored && VALID_THEMES.has(stored)) {
         cachedTheme = stored as Theme;
@@ -103,18 +103,25 @@ export function getClientTheme(): Theme {
   return cachedTheme;
 }
 
-/** Server snapshot for theme (defaults to 'paper' on server). */
+/** Server snapshot for theme (defaults to 'warm' on server). */
 export function getServerTheme(): Theme {
-  return "paper";
+  return "warm";
+}
+
+/** Toggle between default light (Warm) and default dark (Darkroom). */
+export function toggleTheme(): void {
+  const current = getClientTheme();
+  const isDark = current === "dark" || current === "graphite" || current === "darkroom" || current === "noir";
+  applyTheme(isDark ? "warm" : "darkroom");
 }
 
 /** Set and persist active theme across DOM, localStorage, and listeners. */
 export function applyTheme(nextTheme: Theme): void {
   if ((nextTheme as string) === "plum") {
-    nextTheme = "dark";
+    nextTheme = "darkroom";
   }
   if (!VALID_THEMES.has(nextTheme)) {
-    nextTheme = "paper";
+    nextTheme = "warm";
   }
   cachedTheme = nextTheme;
   if (typeof document !== "undefined") {
@@ -189,9 +196,8 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
   );
 
   const cycleTheme = useCallback(() => {
-    const currentIndex = THEMES.findIndex((t) => t.id === theme);
-    const nextIndex = (currentIndex + 1) % THEMES.length;
-    selectTheme(THEMES[nextIndex].id);
+    const isDark = theme === "dark" || theme === "graphite" || theme === "darkroom" || theme === "noir";
+    selectTheme(isDark ? "warm" : "darkroom");
   }, [theme, selectTheme]);
 
   const handleClick = useCallback(() => {
@@ -203,7 +209,7 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
   }, [mode, cycleTheme]);
 
   const iconSize = size === "sm" ? 14 : 16;
-  const currentLabel = THEMES.find((t) => t.id === theme)?.label ?? "Paper (Default)";
+  const currentLabel = THEMES.find((t) => t.id === theme)?.label ?? "Warm (Default)";
 
   return (
     <div className="ll:relative ll:inline-flex">

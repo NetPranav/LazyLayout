@@ -405,12 +405,13 @@
 .ll-logo[data-saving="true"] .ll-tfl,
 svg[data-saving="true"] .ll-tfl,
 .ll-saving-on .ll-tfl {
-  animation: ll-trf var(--ll-dur-trace) var(--ll-ease-trace) infinite alternate;
+  opacity: 0;
 }
 
 .ll-logo[data-saving="true"] .ll-tro,
 svg[data-saving="true"] .ll-tro,
 .ll-saving-on .ll-tro {
+  opacity: 1;
   stroke-dasharray: 100;
   animation: ll-tro var(--ll-dur-trace) var(--ll-ease-trace) infinite alternate;
 }
@@ -419,7 +420,7 @@ svg[data-saving="true"] .ll-tro,
   0% {
     stroke-dashoffset: 100;
   }
-  55%, 100% {
+  88%, 100% {
     stroke-dashoffset: 0;
   }
 }
