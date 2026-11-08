@@ -15,6 +15,21 @@ export const CANVAS_CHROME_SIZES = {
   // Menu popup widths
   shapeMenuWidth: 160,
   zoomMenuWidth: 180,
+  easingMenuWidth: 176,
+  exportMenuWidth: 176,
+
+  // Spotlight geometry
+  spotlightWidthMax: 560,
+  spotlightWidthMin: 280,
+  spotlightRowHeight: 32,
+  spotlightRowBigHeight: 44,
+  spotlightMaxHeight: 360,
+  spotlightMinHeight: 120,
+
+  // Floating toolbar positions
+  toolbarStandardBottom: 16,
+  toolbarLiftBottom: 72,
+  zoomBarSlideOffset: 240,
 
   // Ruler tick intervals and bounds
   rulerTickStep: 200,
@@ -53,4 +68,38 @@ export const CANVAS_CHROME_SAMPLE_USERS = [
   { id: "4", initials: "JL", name: "Jun Lee", status: "Viewing" },
   { id: "5", initials: "TO", name: "Tara Osei", status: "Viewing" },
 ] as const;
+
+export const EASING_OPTIONS = [
+  "Linear",
+  "Ease in",
+  "Ease out",
+  "Ease in out",
+  "Back out",
+  "Anticipate",
+] as const;
+
+export type EasingOption = (typeof EASING_OPTIONS)[number];
+
+export const EXPORT_OPTIONS = [
+  "Repo .zip",
+  "Current file",
+  "Copy npm install",
+] as const;
+
+export type ExportOption = (typeof EXPORT_OPTIONS)[number];
+
+export const SPOTLIGHT_PREFIX_MAP = {
+  ">": "cmd",
+  "@": "layer",
+  "#": "page",
+} as const;
+
+export const SPOTLIGHT_NAMES = {
+  cmd: "Commands",
+  layer: "Layers",
+  page: "Pages",
+  asset: "Assets",
+  set: "Settings",
+} as const;
+
 

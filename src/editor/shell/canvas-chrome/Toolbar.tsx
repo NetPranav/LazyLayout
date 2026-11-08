@@ -1,45 +1,50 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   MousePointer2,
   Hand,
-  Frame,
+  Frame as FrameIcon,
   Square,
   Circle,
   Minus,
   ArrowUpRight,
   Hexagon,
   Star,
+  PenTool,
   Type,
-  Image as ImageIcon,
   Plus,
   Play,
-  Pause,
+  Scissors,
+  Spline,
+  Download,
   Undo2,
   Redo2,
   Columns3,
   ChevronDown,
+  Check,
   type LucideIcon,
   type LucideProps,
 } from "lucide-react";
-import { useStore } from "zustand";
-import { transportStore, transport } from "@/core/time/transport";
-import { getCommand, isCommandAvailable, tryRunCommand } from "@/core/commands";
-import { useMotionModel, motionActions } from "@/editor/motion-model";
 import { Icon } from "@/editor/components/Icon";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
 import { Menu, MenuItem } from "@/editor/components/Menu";
-import { CANVAS_CHROME_SIZES } from "./constants";
+import {
+  CANVAS_CHROME_SIZES,
+  EASING_OPTIONS,
+  EXPORT_OPTIONS,
+  type EasingOption,
+  type ExportOption,
+} from "./constants";
 import type { CanvasTool, ShapeTool } from "./types";
 
 export interface ToolbarProps {
   mode?: "design" | "motion" | "code";
-  activeTool?: CanvasTool;
+  activeTool?: CanvasTool | string;
   onSelectTool?: (tool: CanvasTool) => void;
-  activeShape?: ShapeTool;
+  activeShape?: ShapeTool | string;
   onSelectShape?: (shape: ShapeTool) => void;
 
   isInsertOpen?: boolean;
@@ -49,6 +54,12 @@ export interface ToolbarProps {
   isAiBoxOpen?: boolean;
   onToggleAiBox?: () => void;
   aiButtonRef?: React.RefObject<HTMLButtonElement | null>;
+
+  isFramePresetsOpen?: boolean;
+  onToggleFramePresets?: () => void;
+  frameButtonRef?: React.RefObject<HTMLButtonElement | null> | React.RefObject<HTMLElement | null>;
+
+  isSpotlightOpen?: boolean;
 
   zoom?: number;
   onZoomIn?: () => void;
@@ -71,6 +82,13 @@ export interface ToolbarProps {
   isPlaying?: boolean;
   onTogglePlay?: () => void;
   onAddKeyframe?: () => void;
+  activeEasing?: string;
+  onSelectEasing?: (easing: EasingOption) => void;
+  onSplitClip?: () => void;
+
+  // Code-mode toolbar controls
+  onRunCode?: () => void;
+  onExportOption?: (option: ExportOption) => void;
 }
 
 const KeyframeAddSvg: LucideIcon = Object.assign(
@@ -101,7 +119,7 @@ const KeyframeAddSvg: LucideIcon = Object.assign(
 );
 
 const SHAPES: ReadonlyArray<{
-  id: ShapeTool;
+  id: ShapeTool | "pen";
   label: string;
   icon: LucideIcon;
   shortcut: string;
@@ -112,6 +130,7 @@ const SHAPES: ReadonlyArray<{
   { id: "arrow", label: "Arrow", icon: ArrowUpRight, shortcut: "Shift+L" },
   { id: "poly", label: "Polygon", icon: Hexagon, shortcut: "Y" },
   { id: "star", label: "Star", icon: Star, shortcut: "Shift+Y" },
+  { id: "pen", label: "Pen", icon: PenTool, shortcut: "P" },
 ];
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -126,6 +145,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isAiBoxOpen = false,
   onToggleAiBox,
   aiButtonRef,
+  isFramePresetsOpen = false,
+  onToggleFramePresets,
+  frameButtonRef,
+  isSpotlightOpen = false,
   zoom = 0.59,
   onZoomIn,
   onZoomOut,
@@ -142,48 +165,49 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isPlaying,
   onTogglePlay,
   onAddKeyframe,
+  activeEasing = "Ease out",
+  onSelectEasing,
+  onSplitClip,
+  onRunCode,
+  onExportOption,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const zoomBarRef = useRef<HTMLDivElement>(null);
+
   const shapeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const easingButtonRef = useRef<HTMLButtonElement | null>(null);
+  const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const zoomButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
+  const [isEasingMenuOpen, setIsEasingMenuOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
-  // Playback state and keyframe command wiring
-  const storePlaying = useStore(transportStore, (s) => s.playing);
-  const motionModelPlaying = useMotionModel((s) => s.playing);
-  const playingState = isPlaying !== undefined ? isPlaying : (motionModelPlaying || storePlaying);
+  const [isNarrowLifted, setIsNarrowLifted] = useState(false);
+  const [isRunningCode, setIsRunningCode] = useState(false);
 
-  const handleTogglePlay = useCallback(() => {
-    if (onTogglePlay) {
-      onTogglePlay();
-    } else {
-      const current = useMotionModel.getState().playing;
-      motionActions.setPlaying(!current);
-      transport.togglePlay();
-    }
-  }, [onTogglePlay]);
+  // Narrow canvas detection (prototype lift() lines 10582-10589)
+  useEffect(() => {
+    const checkLift = () => {
+      const parent = toolbarRef.current?.parentElement;
+      if (!parent || !toolbarRef.current || !zoomBarRef.current) return;
+      const cw = parent.clientWidth;
+      const bw = toolbarRef.current.offsetWidth;
+      const zw = zoomBarRef.current.offsetWidth;
+      // If (canvasWidth + toolbarWidth)/2 > canvasWidth - zoomWidth - 32, toolbar rides above zoom bar
+      const shouldLift = (cw + bw) / 2 > cw - zw - 32;
+      setIsNarrowLifted(shouldLift);
+    };
 
-  const kfCommand = getCommand("timeline.addKeyframe") || getCommand("keyframe.add");
-  const hasKeyframeCommand = true;
+    checkLift();
+    window.addEventListener("resize", checkLift);
+    return () => window.removeEventListener("resize", checkLift);
+  }, [mode, isSpotlightOpen]);
 
-  const handleAddKeyframe = useCallback(() => {
-    if (onAddKeyframe) {
-      onAddKeyframe();
-    } else {
-      const s = useMotionModel.getState();
-      const firstLayer = s.comp.layers[0];
-      if (firstLayer) {
-        motionActions.addKey(firstLayer.id, "opacity", s.playhead, 1);
-      } else if (kfCommand && isCommandAvailable(kfCommand)) {
-        tryRunCommand(kfCommand.id);
-      }
-    }
-  }, [onAddKeyframe, kfCommand]);
-
-  // WAI-ARIA Toolbar roving arrow-key navigation covering both center and right tool clusters
+  // WAI-ARIA Toolbar roving arrow-key navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (!containerRef.current) return;
@@ -220,6 +244,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     []
   );
 
+  const handleRunCodeClick = () => {
+    if (isRunningCode) return;
+    setIsRunningCode(true);
+    onRunCode?.();
+    setTimeout(() => {
+      setIsRunningCode(false);
+    }, 1200);
+  };
+
   const shapeIcon = (SHAPES.find((sh) => sh.id === activeShape) ?? SHAPES[0]).icon;
   const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
@@ -229,79 +262,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       onKeyDown={handleKeyDown}
       className="ll:contents"
     >
-      {/* Center Floating Toolbar - 16px above bottom edge */}
+      {/* Center Floating Toolbar - 16px above bottom edge, or lifted to 72px when narrow */}
       <div
+        ref={toolbarRef}
         id="tools"
         role="toolbar"
         aria-label="Canvas tools"
         data-toolbar="main"
-        className="ll-fbar ll-ftool ll:absolute ll:bottom-4 ll:left-1/2 ll:-translate-x-1/2 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none"
+        className={`ll-fbar ll-ftool ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none ll:transition-all ll:duration-200 ${
+          isNarrowLifted ? "ll-tb-hi ll:bottom-toolbar-lift" : "ll:bottom-4"
+        } ${isSpotlightOpen ? "ll:opacity-0 ll:pointer-events-none" : ""}`}
       >
-        {mode === "motion" ? (
-          <div className="mtools ll-mtools ll:flex ll:items-center ll:gap-0.5">
-            {/* Select (V) */}
-            <IconButton
-              size="lg"
-              data-tool="select"
-              aria-label="Select (V)"
-              tooltip="Select (V)"
-              pressed={activeTool === "select"}
-              tabIndex={focusedIndex === 0 ? 0 : -1}
-              onFocus={() => setFocusedIndex(0)}
-              onClick={() => onSelectTool?.("select")}
-              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Hand (H) */}
-            <IconButton
-              size="lg"
-              data-tool="hand"
-              aria-label="Hand (H)"
-              tooltip="Hand (H)"
-              pressed={activeTool === "hand"}
-              tabIndex={focusedIndex === 1 ? 0 : -1}
-              onFocus={() => setFocusedIndex(1)}
-              onClick={() => onSelectTool?.("hand")}
-              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Separator */}
-            <span
-              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
-              aria-hidden="true"
-            />
-
-            {/* Add keyframe (K) */}
-            <IconButton
-              size="lg"
-              data-mact="kf"
-              aria-label="Add keyframe (K)"
-              tooltip="Add keyframe (K)"
-              tabIndex={focusedIndex === 2 ? 0 : -1}
-              onFocus={() => setFocusedIndex(2)}
-              onClick={handleAddKeyframe}
-              icon={<Icon icon={KeyframeAddSvg} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Play preview (Space) */}
-            <IconButton
-              size="lg"
-              data-mact="play"
-              aria-label={playingState ? "Pause preview (Space)" : "Play preview (Space)"}
-              tooltip={playingState ? "Pause preview (Space)" : "Play preview (Space)"}
-              pressed={playingState}
-              tabIndex={focusedIndex === 3 ? 0 : -1}
-              onFocus={() => setFocusedIndex(3)}
-              onClick={handleTogglePlay}
-              icon={<Icon icon={playingState ? Pause : Play} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-          </div>
-        ) : (
+        {/* DESIGN MODE TOOLBAR: Select, Hand, Frame, Shape ▾ (Pen inside), Text, Insert, AI */}
+        {mode === "design" && (
           <div className="dtools ll-dtools ll:flex ll:items-center ll:gap-0.5">
             {/* Select (V) */}
             <IconButton
               size="lg"
               data-tool="select"
+              data-tb="vsel"
               aria-label="Select (V)"
               tooltip="Select (V)"
               pressed={activeTool === "select"}
@@ -315,6 +294,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <IconButton
               size="lg"
               data-tool="hand"
+              data-tb="vhand"
               aria-label="Hand (H)"
               tooltip="Hand (H)"
               pressed={activeTool === "hand"}
@@ -324,32 +304,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Separator */}
-            <span
-              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
-              aria-hidden="true"
-            />
-
-            {/* Frame (F) */}
+            {/* Frame (F) - opens FramePresetsPanel */}
             <IconButton
+              ref={frameButtonRef as React.Ref<HTMLButtonElement>}
               size="lg"
               data-tool="frame"
               aria-label="Frame (F)"
               tooltip="Frame (F)"
-              pressed={activeTool === "frame"}
+              aria-haspopup="dialog"
+              aria-expanded={isFramePresetsOpen}
+              pressed={activeTool === "frame" || isFramePresetsOpen}
               tabIndex={focusedIndex === 2 ? 0 : -1}
               onFocus={() => setFocusedIndex(2)}
-              onClick={() => onSelectTool?.("frame")}
-              icon={<Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconLg} />}
+              onClick={() => {
+                onSelectTool?.("frame");
+                onToggleFramePresets?.();
+              }}
+              icon={<Icon icon={FrameIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Shape Picker */}
-            <IconButton
+            {/* Shape ▾ (with Pen inside, caret right of icon) */}
+            <Button
               ref={shapeButtonRef}
-              size="lg"
+              variant={activeTool === "shape" ? "secondary" : "ghost"}
+              size="md"
+              id="shapebtn"
+              data-tool="shape"
               aria-label="Shape"
-              tooltip="Shape"
-              pressed={activeTool === "shape"}
+              title="Shape"
               aria-haspopup="menu"
               aria-expanded={isShapeMenuOpen}
               tabIndex={focusedIndex === 3 ? 0 : -1}
@@ -358,8 +340,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 onSelectTool?.("shape");
                 setIsShapeMenuOpen((prev) => !prev);
               }}
-              icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
+              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+            >
+              <Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />
+              <Icon
+                icon={ChevronDown}
+                size={CANVAS_CHROME_SIZES.iconXs}
+                className="ll:text-muted ll:transition-transform ll:duration-150"
+                style={{ transform: isShapeMenuOpen ? "rotate(180deg)" : "none" }}
+              />
+            </Button>
 
             {/* Text (T) */}
             <IconButton
@@ -374,41 +364,29 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Image */}
-            <IconButton
-              size="lg"
-              data-tool="image"
-              aria-label="Image"
-              tooltip="Image"
-              pressed={activeTool === "image"}
-              tabIndex={focusedIndex === 5 ? 0 : -1}
-              onFocus={() => setFocusedIndex(5)}
-              onClick={() => onSelectTool?.("image")}
-              icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
             {/* Separator */}
             <span
               className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
               aria-hidden="true"
             />
 
-            {/* Insert (+) - Disclosure button (keep aria-expanded, drop pressed) */}
+            {/* Insert (+) */}
             <IconButton
               ref={insertButtonRef}
               size="lg"
               id="plusbtn"
-              aria-label="Insert"
+              aria-label="Add"
               tooltip="Insert (I)"
               aria-haspopup="dialog"
               aria-expanded={isInsertOpen}
-              tabIndex={focusedIndex === 6 ? 0 : -1}
-              onFocus={() => setFocusedIndex(6)}
+              pressed={isInsertOpen}
+              tabIndex={focusedIndex === 5 ? 0 : -1}
+              onFocus={() => setFocusedIndex(5)}
               onClick={onToggleInsert}
               icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Ask AI (/) - Disclosure button (keep aria-expanded, drop pressed) */}
+            {/* Ask AI (/) */}
             <IconButton
               ref={aiButtonRef}
               size="lg"
@@ -416,12 +394,45 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-label="Ask AI (/)"
               tooltip="Ask AI (/)"
               aria-haspopup="dialog"
-              pressed={isAiBoxOpen}
               aria-expanded={isAiBoxOpen}
-              tabIndex={focusedIndex === 7 ? 0 : -1}
-              onFocus={() => setFocusedIndex(7)}
+              pressed={isAiBoxOpen}
+              tabIndex={focusedIndex === 6 ? 0 : -1}
+              onFocus={() => setFocusedIndex(6)}
               onClick={onToggleAiBox}
               icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
+            />
+          </div>
+        )}
+
+        {/* MOTION MODE TOOLBAR: Select, Hand, [gsep], Add keyframe (disabled), Split, Easing ▾ */}
+        {mode === "motion" && (
+          <div className="mtools ll-mtools ll:flex ll:items-center ll:gap-0.5">
+            {/* Select (V) */}
+            <IconButton
+              size="lg"
+              data-tool="select"
+              data-tb="vsel"
+              aria-label="Select (V)"
+              tooltip="Select (V)"
+              pressed={activeTool === "select"}
+              tabIndex={focusedIndex === 0 ? 0 : -1}
+              onFocus={() => setFocusedIndex(0)}
+              onClick={() => onSelectTool?.("select")}
+              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Hand (H) */}
+            <IconButton
+              size="lg"
+              data-tool="hand"
+              data-tb="vhand"
+              aria-label="Hand (H)"
+              tooltip="Hand (H)"
+              pressed={activeTool === "hand"}
+              tabIndex={focusedIndex === 1 ? 0 : -1}
+              onFocus={() => setFocusedIndex(1)}
+              onClick={() => onSelectTool?.("hand")}
+              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Separator */}
@@ -430,30 +441,150 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-hidden="true"
             />
 
-            {/* Preview */}
+            {/* Add keyframe (K) - disabled with reason */}
             <IconButton
               size="lg"
-              aria-label="Preview"
-              tooltip="Preview"
-              tabIndex={focusedIndex === 8 ? 0 : -1}
-              onFocus={() => setFocusedIndex(8)}
-              onClick={onPreview}
+              data-mact="kf"
+              aria-label="Add keyframe (K)"
+              tooltip="Add keyframe (K) - Disabled: no engine command for add keyframe"
+              disabled={true}
+              tabIndex={-1}
+              icon={<Icon icon={KeyframeAddSvg} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Split clip (C) */}
+            <IconButton
+              size="lg"
+              data-tb="split"
+              data-mtool="split"
+              aria-label="Split clip (C)"
+              tooltip="Split clip (C)"
+              pressed={activeTool === "split"}
+              tabIndex={focusedIndex === 2 ? 0 : -1}
+              onFocus={() => setFocusedIndex(2)}
+              onClick={() => {
+                onSplitClip?.();
+              }}
+              icon={<Icon icon={Scissors} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Easing ▾ (caret right of icon) */}
+            <Button
+              ref={easingButtonRef}
+              variant="ghost"
+              size="md"
+              data-tb="ease"
+              aria-label="Easing"
+              title="Easing"
+              aria-haspopup="menu"
+              aria-expanded={isEasingMenuOpen}
+              tabIndex={focusedIndex === 3 ? 0 : -1}
+              onFocus={() => setFocusedIndex(3)}
+              onClick={() => setIsEasingMenuOpen((prev) => !prev)}
+              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+            >
+              <Icon icon={Spline} size={CANVAS_CHROME_SIZES.iconLg} />
+              <Icon
+                icon={ChevronDown}
+                size={CANVAS_CHROME_SIZES.iconXs}
+                className="ll:text-muted ll:transition-transform ll:duration-150"
+                style={{ transform: isEasingMenuOpen ? "rotate(180deg)" : "none" }}
+              />
+            </Button>
+          </div>
+        )}
+
+        {/* CODE MODE TOOLBAR: Inspect, Hand, [gsep], Run, Export ▾ */}
+        {mode === "code" && (
+          <div className="ctools ll-ctools ll:flex ll:items-center ll:gap-0.5">
+            {/* Inspect (V) */}
+            <IconButton
+              size="lg"
+              data-tool="select"
+              data-tb="vsel"
+              aria-label="Inspect (V)"
+              tooltip="Inspect (V)"
+              pressed={activeTool === "select"}
+              tabIndex={focusedIndex === 0 ? 0 : -1}
+              onFocus={() => setFocusedIndex(0)}
+              onClick={() => onSelectTool?.("select")}
+              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Hand (H) */}
+            <IconButton
+              size="lg"
+              data-tool="hand"
+              data-tb="vhand"
+              aria-label="Hand (H)"
+              tooltip="Hand (H)"
+              pressed={activeTool === "hand"}
+              tabIndex={focusedIndex === 1 ? 0 : -1}
+              onFocus={() => setFocusedIndex(1)}
+              onClick={() => onSelectTool?.("hand")}
+              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              aria-hidden="true"
+            />
+
+            {/* Run */}
+            <IconButton
+              size="lg"
+              data-tb="run"
+              aria-label="Run"
+              tooltip="Run"
+              aria-busy={isRunningCode}
+              tabIndex={focusedIndex === 2 ? 0 : -1}
+              onFocus={() => setFocusedIndex(2)}
+              onClick={handleRunCodeClick}
               icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
+
+            {/* Export ▾ (caret right of icon) */}
+            <Button
+              ref={exportButtonRef}
+              variant="ghost"
+              size="md"
+              data-tb="exp"
+              aria-label="Export"
+              title="Export"
+              aria-haspopup="menu"
+              aria-expanded={isExportMenuOpen}
+              tabIndex={focusedIndex === 3 ? 0 : -1}
+              onFocus={() => setFocusedIndex(3)}
+              onClick={() => setIsExportMenuOpen((prev) => !prev)}
+              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+            >
+              <Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />
+              <Icon
+                icon={ChevronDown}
+                size={CANVAS_CHROME_SIZES.iconXs}
+                className="ll:text-muted ll:transition-transform ll:duration-150"
+                style={{ transform: isExportMenuOpen ? "rotate(180deg)" : "none" }}
+              />
+            </Button>
           </div>
         )}
       </div>
 
-      {/* Right Floating Zoom & History Controls */}
+      {/* Right Floating Zoom & History Controls - slides aside when Spotlight is open */}
       <div
+        ref={zoomBarRef}
         role="toolbar"
         aria-label="Zoom and Viewport actions"
         data-toolbar="zoom"
-        className="ll-fbar ll-fzoom ll:absolute ll:bottom-4 ll:right-4 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none"
+        className={`ll-fbar ll-fzoom ll:absolute ll:bottom-4 ll:right-4 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none ll:transition-all ll:duration-200 ${
+          isSpotlightOpen ? "ll:translate-x-60 ll:opacity-0 ll:pointer-events-none" : ""
+        }`}
       >
-        {/* Toggle Panels - State button (pressed={panelsCollapsed} stays pressed) */}
+        {/* Toggle Panels */}
         <IconButton
           size="tall"
+          id="panelbtn"
           aria-label="Show or hide panels (Ctrl+\)"
           tooltip="Show or hide panels (Ctrl+\)"
           pressed={panelsCollapsed}
@@ -466,6 +597,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Undo */}
         <IconButton
           size="md"
+          id="undobtn"
           aria-label="Undo (Ctrl+Z)"
           tooltip="Undo (Ctrl+Z)"
           disabled={!canUndo}
@@ -478,6 +610,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Redo */}
         <IconButton
           size="md"
+          id="redobtn"
           aria-label="Redo (Ctrl+Shift+Z)"
           tooltip="Redo (Ctrl+Shift+Z)"
           disabled={!canRedo}
@@ -493,9 +626,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           aria-hidden="true"
         />
 
-        {/* Zoom Trigger Button using design system Button */}
+        {/* Zoom Trigger Button */}
         <Button
           ref={zoomButtonRef}
+          id="zoombtn"
           variant="ghost"
           size="sm"
           title="Zoom"
@@ -507,11 +641,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
           className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-body ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
         >
-          <span className="ll-mono ll:font-mono">{zoomPercentage}</span>
+          <span className="ll-mono ll:font-mono" id="pct">{zoomPercentage}</span>
         </Button>
       </div>
 
-      {/* Shape Picker Menu */}
+      {/* Shape Picker Menu (Design mode) */}
       <Menu
         open={isShapeMenuOpen}
         onClose={() => setIsShapeMenuOpen(false)}
@@ -524,8 +658,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             key={sh.id}
             icon={<Icon icon={sh.icon} size={CANVAS_CHROME_SIZES.iconMd} />}
             shortcut={sh.shortcut}
+            checked={activeShape === sh.id}
             onClick={() => {
-              onSelectShape?.(sh.id);
+              if (sh.id !== "pen") {
+                onSelectShape?.(sh.id);
+              }
               onSelectTool?.("shape");
               setIsShapeMenuOpen(false);
             }}
@@ -535,7 +672,50 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         ))}
       </Menu>
 
-      {/* Zoom menu: same five items as the prototype's ZOOM_HTML */}
+      {/* Easing Menu (Motion mode) */}
+      <Menu
+        open={isEasingMenuOpen}
+        onClose={() => setIsEasingMenuOpen(false)}
+        anchorRef={easingButtonRef}
+        aria-label="Easing options"
+        width={CANVAS_CHROME_SIZES.easingMenuWidth}
+      >
+        {EASING_OPTIONS.map((opt) => (
+          <MenuItem
+            key={opt}
+            checked={activeEasing === opt}
+            onClick={() => {
+              onSelectEasing?.(opt);
+              setIsEasingMenuOpen(false);
+            }}
+          >
+            {opt}
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Export Menu (Code mode) */}
+      <Menu
+        open={isExportMenuOpen}
+        onClose={() => setIsExportMenuOpen(false)}
+        anchorRef={exportButtonRef}
+        aria-label="Export options"
+        width={CANVAS_CHROME_SIZES.exportMenuWidth}
+      >
+        {EXPORT_OPTIONS.map((opt) => (
+          <MenuItem
+            key={opt}
+            onClick={() => {
+              onExportOption?.(opt);
+              setIsExportMenuOpen(false);
+            }}
+          >
+            {opt}
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Zoom menu */}
       <Menu
         open={isZoomMenuOpen}
         onClose={() => setIsZoomMenuOpen(false)}

@@ -7,6 +7,8 @@ import { InsertBox } from "./InsertBox";
 import { AiBox } from "./AiBox";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import { Spotlight } from "./Spotlight";
+import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
@@ -16,6 +18,7 @@ import "./fpeople.css";
 import type {
   CanvasChromeProps,
   MotionFeel,
+  CanvasTool,
 } from "./types";
 
 /**
@@ -64,6 +67,10 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   isInsertOpen: controlledIsInsertOpen,
   onToggleInsert: controlledOnToggleInsert,
   onInsertItem,
+  isSpotlightOpen: controlledIsSpotlightOpen,
+  onToggleSpotlight: controlledOnToggleSpotlight,
+  isFramePresetsOpen: controlledIsFramePresetsOpen,
+  onToggleFramePresets: controlledOnToggleFramePresets,
   isAiBoxOpen: controlledIsAiBoxOpen,
   onToggleAiBox: controlledOnToggleAiBox,
   onAiSubmit,
@@ -161,6 +168,16 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   const [isViewOptionsOpen, setIsViewOptionsOpen] = useControllable(
     controlledIsViewOptionsOpen,
     controlledOnToggleViewOptions,
+    false
+  );
+  const [isSpotlightOpen, setIsSpotlightOpen] = useControllable(
+    controlledIsSpotlightOpen,
+    controlledOnToggleSpotlight,
+    false
+  );
+  const [isFramePresetsOpen, setIsFramePresetsOpen] = useControllable(
+    controlledIsFramePresetsOpen,
+    controlledOnToggleFramePresets,
     false
   );
 
@@ -326,6 +343,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   // Trigger button references for morph animations
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
   const aiButtonRef = useRef<HTMLButtonElement | null>(null);
+  const frameButtonRef = useRef<HTMLElement | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
   const topAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const handleContextMenu = useCallback(
@@ -355,10 +374,12 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       setIsInsertOpen(false);
       setIsAiBoxOpen(false);
       setIsViewOptionsOpen(false);
+      setIsSpotlightOpen(false);
+      setIsFramePresetsOpen(false);
 
       setContextMenuPos({ x: e.clientX, y: e.clientY });
     },
-    [setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen]
+    [setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsSpotlightOpen, setIsFramePresetsOpen]
   );
 
   // Toggle handlers ensuring mutual exclusivity across floating popovers
@@ -368,10 +389,12 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       if (next) {
         setIsAiBoxOpen(false);
         setIsViewOptionsOpen(false);
+        setIsSpotlightOpen(false);
+        setIsFramePresetsOpen(false);
       }
       return next;
     });
-  }, [setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen]);
+  }, [setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsSpotlightOpen, setIsFramePresetsOpen]);
 
   const handleToggleAiBox = useCallback(() => {
     setIsAiBoxOpen((prev) => {
@@ -379,10 +402,38 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       if (next) {
         setIsInsertOpen(false);
         setIsViewOptionsOpen(false);
+        setIsSpotlightOpen(false);
+        setIsFramePresetsOpen(false);
       }
       return next;
     });
-  }, [setIsAiBoxOpen, setIsInsertOpen, setIsViewOptionsOpen]);
+  }, [setIsAiBoxOpen, setIsInsertOpen, setIsViewOptionsOpen, setIsSpotlightOpen, setIsFramePresetsOpen]);
+
+  const handleToggleSpotlight = useCallback(() => {
+    setIsSpotlightOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsInsertOpen(false);
+        setIsAiBoxOpen(false);
+        setIsViewOptionsOpen(false);
+        setIsFramePresetsOpen(false);
+      }
+      return next;
+    });
+  }, [setIsSpotlightOpen, setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsFramePresetsOpen]);
+
+  const handleToggleFramePresets = useCallback(() => {
+    setIsFramePresetsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsInsertOpen(false);
+        setIsAiBoxOpen(false);
+        setIsViewOptionsOpen(false);
+        setIsSpotlightOpen(false);
+      }
+      return next;
+    });
+  }, [setIsFramePresetsOpen, setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsSpotlightOpen]);
 
   const handleZoomIn = useCallback(() => {
     setZoom((prev) => Math.min(4, prev * 1.25));
@@ -409,6 +460,39 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     controlledOnZoomSelection?.();
   }, [setZoom, controlledOnZoomSelection]);
 
+  // Global keyboard shortcuts for Spotlight (Ctrl+K and / on canvas)
+  useEffect(() => {
+    const handleSpotlightKeys = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement ||
+        activeEl instanceof HTMLSelectElement;
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        handleToggleSpotlight();
+        return;
+      }
+
+      if (e.key === "Escape" && isSpotlightOpen) {
+        e.preventDefault();
+        setIsSpotlightOpen(false);
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleToggleSpotlight();
+      }
+    };
+
+    window.addEventListener("keydown", handleSpotlightKeys);
+    return () => window.removeEventListener("keydown", handleSpotlightKeys);
+  }, [handleToggleSpotlight, isSpotlightOpen, setIsSpotlightOpen]);
+
   // Global keyboard shortcuts for canvas chrome (standalone only: the editor shell owns them when it controls the chrome)
   useEffect(() => {
     if (controlledShowRulers !== undefined) return;
@@ -424,6 +508,14 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         if (isInsertOpen) setIsInsertOpen(false);
         if (isAiBoxOpen) setIsAiBoxOpen(false);
         if (isViewOptionsOpen) setIsViewOptionsOpen(false);
+        if (isSpotlightOpen) setIsSpotlightOpen(false);
+        if (isFramePresetsOpen) setIsFramePresetsOpen(false);
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        handleToggleSpotlight();
         return;
       }
 
@@ -437,7 +529,13 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       } else if (e.key === "/") {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
-          handleToggleAiBox();
+          handleToggleSpotlight();
+        }
+      } else if (e.key === "f" || e.key === "F") {
+        if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+          e.preventDefault();
+          setActiveTool("frame");
+          handleToggleFramePresets();
         }
       } else if (e.key === "R" && e.shiftKey) {
         e.preventDefault();
@@ -451,11 +549,18 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     isInsertOpen,
     isAiBoxOpen,
     isViewOptionsOpen,
+    isSpotlightOpen,
+    isFramePresetsOpen,
     handleToggleInsert,
     handleToggleAiBox,
+    handleToggleSpotlight,
+    handleToggleFramePresets,
+    setActiveTool,
     setIsInsertOpen,
     setIsAiBoxOpen,
     setIsViewOptionsOpen,
+    setIsSpotlightOpen,
+    setIsFramePresetsOpen,
     setShowRulers,
     controlledShowRulers,
     contextMenuPos,
@@ -550,6 +655,10 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         isAiBoxOpen={isAiBoxOpen}
         onToggleAiBox={handleToggleAiBox}
         aiButtonRef={aiButtonRef}
+        isFramePresetsOpen={isFramePresetsOpen}
+        onToggleFramePresets={handleToggleFramePresets}
+        frameButtonRef={frameButtonRef}
+        isSpotlightOpen={isSpotlightOpen}
         zoom={zoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
@@ -564,6 +673,40 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
         onPreview={onPreview}
       />
+
+      {/* Spotlight Command Panel */}
+      <Spotlight
+        open={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        toolbarRef={toolbarRef}
+        theme={theme}
+        onThemeChange={handleThemeChange}
+        motionFeel={motionFeel}
+        onMotionFeelChange={(f) => handleMotionFeelChange(f as MotionFeel)}
+        showRulers={showRulers}
+        onToggleRulers={() => setShowRulers((p) => !p)}
+        pixelGrid={pixelGrid}
+        onTogglePixelGrid={() => setPixelGrid((p) => !p)}
+        snapObjects={snapObjects}
+        onToggleSnapObjects={() => setSnapObjects((p) => !p)}
+        snapGuides={snapGuides}
+        onToggleSnapGuides={() => setSnapGuides((p) => !p)}
+        checkerboard={checkerboard}
+        onToggleCheckerboard={() => setCheckerboard((p) => !p)}
+        onSelectTool={(t) => setActiveTool(t as CanvasTool)}
+        onZoomSelection={handleZoomSelection}
+        onZoomFit={handleZoomFit}
+        onZoom100={handleZoom100}
+      />
+
+      {/* Frame Presets Panel (Wave B1) */}
+      {isFramePresetsOpen && (
+        <FramePresetsPanel
+          open={isFramePresetsOpen}
+          onClose={() => setIsFramePresetsOpen(false)}
+          triggerRef={frameButtonRef}
+        />
+      )}
 
       {/* Collaborator Avatars at canvas top-right (hidden per user decision) */}
 

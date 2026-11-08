@@ -4,6 +4,9 @@ export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image
 
 export type ShapeTool = "box" | "circle" | "line" | "arrow" | "poly" | "star";
 
+export type ExtendedCanvasTool = CanvasTool | "split" | "pen";
+export type ExtendedShapeTool = ShapeTool | "pen";
+
 export type GridStyle = "dots" | "lines" | "none";
 
 export type MotionFeel = "smooth" | "lively" | "bouncy";
@@ -42,6 +45,14 @@ export interface CanvasChromeProps {
   isInsertOpen?: boolean;
   onToggleInsert?: (open?: boolean) => void;
   onInsertItem?: (itemName: string) => void;
+
+  /** Spotlight command panel state */
+  isSpotlightOpen?: boolean;
+  onToggleSpotlight?: (open?: boolean) => void;
+
+  /** Frame presets panel state (Wave B1) */
+  isFramePresetsOpen?: boolean;
+  onToggleFramePresets?: (open?: boolean) => void;
 
   /** AI prompt box overlay state */
   isAiBoxOpen?: boolean;

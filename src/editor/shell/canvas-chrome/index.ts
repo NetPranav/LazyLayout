@@ -1,6 +1,7 @@
 export { CanvasChrome } from "./CanvasChrome";
 export { Rulers, type RulersProps } from "./Rulers";
 export { Toolbar, type ToolbarProps } from "./Toolbar";
+export { Spotlight, type SpotlightProps, type SpotlightItem, type SpotlightSection } from "./Spotlight";
 export { InsertBox, type InsertBoxProps } from "./InsertBox";
 export { AiBox, type AiBoxProps } from "./AiBox";
 export {
