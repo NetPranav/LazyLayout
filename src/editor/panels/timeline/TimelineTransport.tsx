@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Icon } from "@/editor/components/Icon";
 import {
   Play,
@@ -14,7 +14,6 @@ import {
   Repeat,
   RotateCcw,
   MousePointer2,
-  Scissors,
   Maximize2,
   Download,
   MoreHorizontal,
@@ -27,6 +26,9 @@ import {
   timecode,
 } from "@/editor/motion-model";
 import { SPEED_OPTIONS } from "./constants";
+import { SplitIcon, EaseCurveIcon, AddKeyframeIcon } from "./icons";
+import { timelineOpsAdapter } from "./timelineOpsAdapter";
+import { EasingPopover } from "./EasingPopover";
 
 export interface TimelineTransportProps {
   onExport?: () => void;
@@ -71,14 +73,22 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const tool = useMotionModel((s) => s.tool);
+  const selectedKeys = useMotionModel((s) => s.selectedKeys);
+  const hasSelectedKeys = Object.keys(selectedKeys).length > 0;
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
+  const autoKey = useMotionModel((s) => s.autoKey);
 
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [moreAnchor, setMoreAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  const [easingPopoverOpen, setEasingPopoverOpen] = useState(false);
+  const easeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const keyframeStatus = timelineOpsAdapter.canAddKeyframe();
 
   const isFw = fullWidth ?? storeFullWidth;
 
@@ -90,7 +100,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
     <div
       role="toolbar"
       aria-label="Timeline header"
-      className="ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden"
+      className={`ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
+        autoKey ? "ll:outline ll:outline-1 ll:outline-primary ll:-outline-offset-1" : ""
+      }`}
     >
       {/* 1. Left: Timecode and total */}
       <div className="ll-mtc ll:flex ll:items-baseline ll:gap-2 ll:min-w-0">
@@ -246,9 +258,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
 
-        {/* Tools: Select (V) and Split (C) */}
+        {/* Tools: Select (V), Split (C), Add keyframe (K), Easing */}
         <button
           type="button"
+          data-tb="vsel"
+          data-mtool="select"
           onClick={() => motionActions.setTool("select")}
           aria-pressed={tool === "select"}
           aria-label="Select (V)"
@@ -264,7 +278,15 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         <button
           type="button"
-          onClick={() => motionActions.setTool("split")}
+          data-tb="split"
+          data-mtool="split"
+          onClick={() => {
+            if (tool === "split") {
+              timelineOpsAdapter.splitClipAtPlayhead();
+            } else {
+              motionActions.setTool("split");
+            }
+          }}
           aria-pressed={tool === "split"}
           aria-label="Split clip (C)"
           title="Split clip (C)"
@@ -274,7 +296,45 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
               : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={Scissors} size={15} />
+          <Icon icon={SplitIcon} size={15} />
+        </button>
+
+        <button
+          type="button"
+          data-mact="kf"
+          disabled
+          aria-disabled="true"
+          aria-label="Add keyframe (K)"
+          title={keyframeStatus.reason}
+          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:opacity-45 ll:cursor-not-allowed"
+        >
+          <Icon icon={AddKeyframeIcon} size={15} />
+        </button>
+
+        <button
+          type="button"
+          data-tb="ease"
+          ref={easeBtnRef}
+          disabled={!hasSelectedKeys}
+          aria-disabled={!hasSelectedKeys}
+          onClick={() => {
+            if (hasSelectedKeys) {
+              setEasingPopoverOpen(!easingPopoverOpen);
+            }
+          }}
+          aria-haspopup="dialog"
+          aria-expanded={easingPopoverOpen}
+          aria-label="Easing"
+          title={hasSelectedKeys ? "Easing" : "Select a keyframe to edit easing"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            !hasSelectedKeys
+              ? "ll:text-muted ll:opacity-45 ll:cursor-not-allowed"
+              : easingPopoverOpen
+              ? "ll:bg-surface-hover ll:text-primary"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={EaseCurveIcon} size={15} />
         </button>
 
         <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
@@ -398,6 +458,13 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
             </MenuItem>
           </Menu>
         )}
+
+        {/* Easing curve popover */}
+        <EasingPopover
+          open={easingPopoverOpen}
+          onClose={() => setEasingPopoverOpen(false)}
+          anchorRect={easeBtnRef.current?.getBoundingClientRect() ?? null}
+        />
       </div>
     </div>
   );

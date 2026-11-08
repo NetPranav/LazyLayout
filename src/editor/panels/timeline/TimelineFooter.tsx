@@ -19,6 +19,7 @@ import {
   clampN,
 } from "@/editor/motion-model";
 import { FPS_OPTIONS } from "./constants";
+import { AutoKeyIcon, OnionSkinIcon } from "./icons";
 
 export interface TimelineFooterProps {
   trackWidth: number;
@@ -32,6 +33,8 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
   const t0 = useMotionModel((s) => s.t0);
   const wa = useMotionModel((s) => s.wa);
   const snap = useMotionModel((s) => s.snap);
+  const autoKey = useMotionModel((s) => s.autoKey);
+  const onionSkin = useMotionModel((s) => s.onionSkin);
   const frames = useMotionModel((s) => s.frames);
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
 
@@ -193,7 +196,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
                     height: `${rh - 1}px`,
                     left: `${leftPct}%`,
                     width: `${widthPct}%`,
-                    backgroundColor: `var(--ll-label-${lbl})`,
+                    backgroundColor: `color-mix(in srgb, var(--ll-label-${lbl}) 55%, var(--ll-label-${lbl}-tint))`,
                   }}
                   className="ll:absolute ll:rounded-2xs ll:opacity-75"
                 />
@@ -266,6 +269,10 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
       {/* 5. Frame rate dropdown button */}
       <button
         type="button"
+        id="tfps"
+        data-ta="fps"
+        aria-haspopup="listbox"
+        aria-expanded={fpsMenuOpen}
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           setFpsAnchor({ x: rect.left, y: rect.top - 4 });
@@ -299,27 +306,65 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         </Menu>
       )}
 
-      {/* 6. Snapping toggle button */}
+      {/* 6. Auto-key toggle button */}
       <button
         type="button"
+        data-tb="auto"
+        onClick={() => motionActions.toggleAutoKey()}
+        aria-pressed={autoKey}
+        aria-label="Auto-key"
+        title="Auto-key"
+        className={`ll-tbt ll:w-timeline-footer-btn ll:h-timeline-footer-btn ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
+          autoKey
+            ? "ll:text-select-fg ll:bg-select-bg"
+            : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+        }`}
+      >
+        <Icon icon={AutoKeyIcon} size={16} />
+      </button>
+
+      {/* 7. Onion skin toggle button */}
+      <button
+        type="button"
+        data-tb="onion"
+        onClick={() => motionActions.toggleOnionSkin()}
+        aria-pressed={onionSkin}
+        aria-label="Onion skin"
+        title="Onion skin"
+        className={`ll-tbt ll:w-timeline-footer-btn ll:h-timeline-footer-btn ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
+          onionSkin
+            ? "ll:text-select-fg ll:bg-select-bg"
+            : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+        }`}
+      >
+        <Icon icon={OnionSkinIcon} size={16} />
+      </button>
+
+      {/* 8. Snapping toggle button */}
+      <button
+        type="button"
+        id="tsnap"
+        data-ta="snap"
         onClick={() => motionActions.toggleSnap()}
         aria-pressed={snap}
         aria-label={`Snapping ${snap ? "on" : "off"}`}
         title={`Snapping ${snap ? "on" : "off"}`}
         className={`ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
           snap
-            ? "ll:text-control-active ll:bg-surface-hover"
+            ? "ll:text-select-fg ll:bg-select-bg"
             : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
         }`}
       >
         <Icon icon={Magnet} size={13} />
       </button>
 
-      {/* 7. Work area button */}
+      {/* 9. Work area button */}
       <button
         type="button"
+        id="twa"
+        data-ta="wa"
         onClick={() => motionActions.resetWorkArea()}
-        title="Work area length. Click to clear work area."
+        title="Work area length. Click to clear the work area."
         className="ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
         Work area {waStr}

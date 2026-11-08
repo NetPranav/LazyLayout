@@ -36,6 +36,8 @@ export interface MotionState {
   snap: boolean;
   trackWidth: number;
   fullWidth: boolean;
+  autoKey: boolean;
+  onionSkin: boolean;
 }
 
 let clipAnimClipboard: { tr: { p: PropId; keys: Keyframe[] }[] } | null = null;
@@ -63,6 +65,8 @@ export const useMotionModel = create<MotionState>(() => ({
   snap: true,
   trackWidth: 264,
   fullWidth: true,
+  autoKey: false,
+  onionSkin: false,
 }));
 
 function edit(fn: (comp: Composition) => void): void {
@@ -171,6 +175,29 @@ export const motionActions = {
   },
   toggleSnap(): void {
     useMotionModel.setState((s) => ({ snap: !s.snap }));
+  },
+  toggleAutoKey(): void {
+    useMotionModel.setState((s) => ({ autoKey: !s.autoKey }));
+  },
+  setAutoKey(autoKey: boolean): void {
+    useMotionModel.setState({ autoKey });
+  },
+  toggleOnionSkin(): void {
+    useMotionModel.setState((s) => ({ onionSkin: !s.onionSkin }));
+  },
+  setOnionSkin(onionSkin: boolean): void {
+    useMotionModel.setState({ onionSkin });
+  },
+  splitAtPlayhead(layerId?: string): boolean {
+    const s = useMotionModel.getState();
+    const playhead = s.playhead;
+    const targetLayer = layerId
+      ? s.comp.layers.find((x) => x.id === layerId)
+      : s.comp.layers.find((x) => x.clips.some((c) => playhead > c.s && playhead < c.e));
+    if (!targetLayer) return false;
+    const clipIdx = targetLayer.clips.findIndex((c) => playhead > c.s && playhead < c.e);
+    if (clipIdx < 0) return false;
+    return motionActions.splitClip(targetLayer.id, clipIdx, playhead);
   },
   setTrackWidth(w: number): void {
     const hw = clampN(Math.round(w), 200, 420);
@@ -547,6 +574,17 @@ export const motionActions = {
       f.k.ease = ease;
       if (bz) f.k.bz = bz;
       if (spring) f.k.spring = spring;
+    });
+  },
+  setKeysEase(keyIds: string[], ease: EaseName, bz?: Bezier, spring?: SpringParams): void {
+    edit((c) => {
+      for (const id of keyIds) {
+        const f = findKey(c, id);
+        if (!f) continue;
+        f.k.ease = ease;
+        if (bz) f.k.bz = bz;
+        if (spring) f.k.spring = spring;
+      }
     });
   },
   deleteKeys(ids: string[]): void {
