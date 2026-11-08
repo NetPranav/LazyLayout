@@ -63,14 +63,14 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
   if (!targetLayer || targetLayer.tr.length === 0) {
     return (
       <div
-        style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
-        className="ll-gvb ll:grid ll:flex-1 ll:min-h-0 ll:h-full"
+        style={{ gridTemplateColumns: `var(--hw, ${trackWidth}px) minmax(0, 1fr)` }}
+        className="gvb ll-gvb ll:grid ll:flex-1 ll:min-h-0 ll:h-full ll:bg-surface-panel"
       >
-        <div className="ll-gvl ll:border-r ll:border-border ll:bg-surface-panel ll:p-3 ll:text-muted ll:font-sans ll:text-xs">
-          No animated tracks
-        </div>
-        <div className="ll-gvp ll:flex ll:items-center ll:justify-center ll:text-muted ll:font-sans ll:text-xs">
-          Select an animated layer to inspect curves
+        <div className="gvl ll-gvl ll:border-r ll:border-border ll:bg-surface-panel" />
+        <div className="gvp ll-gvp ll:relative ll:h-full ll:w-full ll:overflow-hidden ll:bg-surface-panel">
+          <div className="gve ll-gve ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center ll:text-muted ll:font-sans ll:text-xs">
+            Select an animated layer to see its curves
+          </div>
         </div>
       </div>
     );
@@ -226,17 +226,51 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
 
   return (
     <div
-      style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
-      className="ll-gvb ll:grid ll:flex-1 ll:min-h-0 ll:h-full ll:bg-surface-panel ll:select-none"
+      style={{ gridTemplateColumns: `var(--hw, ${trackWidth}px) minmax(0, 1fr)` }}
+      className="gvb ll-gvb ll:grid ll:flex-1 ll:min-h-0 ll:h-full ll:bg-surface-panel ll:select-none"
     >
+      <style>{`
+        .gvb { flex: 1; min-height: 0; display: grid; }
+        .gvl { min-height: 0; overflow-y: auto; border-bottom: 0; }
+        .gvl .tlrow { display: flex; height: 32px; border-bottom: 1px solid var(--ll-border, var(--border)); }
+        .gvl .tlrow.prp { height: 32px; }
+        .gvl .tlrow .tlhc { height: 100%; width: 100%; display: flex; align-items: center; }
+        .gvl .tlrow.prp .tlhc { padding-left: 24px; padding-right: 12px; justify-content: space-between; }
+        .gvl .tlrow.prp[data-on] .tlhc { background: var(--ll-surface-hover, var(--hover)); box-shadow: inset 2px 0 0 var(--ll-control-primary-bg, var(--ctl)); }
+        .gvp { position: relative; min-width: 0; min-height: 0; overflow: hidden; isolation: isolate; }
+        .gvs { position: absolute; left: 0; top: 0; display: block; }
+        .gvs .g { stroke: var(--ll-border, var(--border)); stroke-width: 1; shape-rendering: crispEdges; }
+        .gvs .c { fill: none; stroke: var(--ll-control-primary-bg, var(--ctl)); stroke-width: 1.5; stroke-linejoin: round; }
+        .gvs .f { fill: none; stroke: var(--ll-text-muted, var(--muted)); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; }
+        .gvs .hn { stroke: var(--ll-text-muted, var(--muted)); stroke-width: 1; }
+        .gvy { position: absolute; left: 8px; font: 400 10px/1 var(--ll-font-mono, monospace); color: var(--ll-text-muted, var(--muted)); pointer-events: none; transform: translateY(calc(-100% - 2px)); }
+        .gk { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+        .gk i { width: 9px; height: 9px; background: var(--ll-text-secondary, var(--text2)); transform: rotate(45deg); pointer-events: none; transition: background 0.12s; }
+        .gk:hover i { background: var(--ll-text-primary, var(--text)); }
+        .gk.sel i { width: 11px; height: 11px; background: var(--ll-control-primary-bg, var(--ctl)); box-shadow: 0 0 0 2px var(--ll-surface-panel, var(--panel)), 0 0 0 3px var(--ll-control-primary-bg, var(--ctl)); }
+        .gh { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+        .gh i { width: 7px; height: 7px; border-radius: 2px; background: var(--ll-surface-panel, var(--panel)); border: 1.5px solid var(--ll-text-primary, var(--text)); pointer-events: none; }
+        .gdot { position: absolute; left: 0; top: 0; width: 7px; height: 7px; margin: -3px 0 0 -3px; border-radius: 2px; background: var(--ll-control-primary-bg, var(--ctl)); box-shadow: 0 0 0 2px var(--ll-surface-panel, var(--panel)); pointer-events: none; }
+        .gve { position: absolute; inset: 0; display: grid; place-items: center; font: 400 12px var(--ll-font-sans, sans-serif); color: var(--ll-text-muted, var(--muted)); }
+      `}</style>
+
       {/* 1. Left property column */}
-      <div className="ll-gvl ll:flex ll:flex-col ll:border-r ll:border-border ll:bg-surface-panel ll:overflow-y-auto">
-        <div className="ll:flex ll:items-center ll:gap-1.5 ll:px-3 ll:h-8 ll:border-b ll:border-border ll:bg-surface-panel ll:font-sans ll:text-xs ll:font-semibold ll:text-primary">
-          <Icon icon={TargetIconComp} size={13} className="ll:text-muted" />
-          <span>{layerName(targetLayer.id)}</span>
+      <div className="gvl ll-gvl ll:flex ll:flex-col ll:border-r ll:border-border ll:bg-surface-panel ll:overflow-y-auto">
+        <div className="tlrow lay ll-tlrow ll:flex ll:items-center ll:h-8 ll:border-b ll:border-border ll:bg-surface-panel" data-l={targetLayer.id}>
+          <div className="tlhc ll-tlhc ll:flex ll:items-center ll:gap-1.5 ll:px-3 ll:h-full ll:w-full ll:font-sans ll:text-xs ll:font-semibold ll:text-primary">
+            <Icon icon={TargetIconComp} size={13} className="lty ll:text-muted ll:mr-1" />
+            <button
+              type="button"
+              className="tlnm ll-tlnm ll:bg-transparent ll:border-0 ll:p-0 ll:text-left ll:cursor-pointer ll:text-inherit"
+              data-la="sel"
+              data-l={targetLayer.id}
+            >
+              {layerName(targetLayer.id)}
+            </button>
+          </div>
         </div>
 
-        {targetLayer.tr.map((t) => {
+        {targetLayer.tr.map((t, j) => {
           const isCurrent = t.p === currentPropId;
           const pSpec = PROPS[t.p];
           const val = valueAt(targetLayer, t.p, playhead);
@@ -244,20 +278,31 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
           return (
             <div
               key={t.p}
+              data-l={targetLayer.id}
+              data-p={t.p}
+              data-on={isCurrent ? "" : undefined}
               onClick={() => {
                 setActiveProp(t.p);
                 motionActions.setSelectedProp(targetLayer.id, t.p);
               }}
-              className={`ll:flex ll:items-center ll:justify-between ll:px-3 ll:h-7 ll:border-b ll:border-border ll:cursor-pointer ll:transition-colors ${
-                isCurrent
-                  ? "ll:bg-surface-hover ll:text-primary ll:font-medium"
-                  : "ll:text-secondary ll:hover:bg-surface-hover"
-              }`}
+              className={`tlrow prp ll-tlrow ${j % 2 === 1 ? "alt" : ""} ${
+                isCurrent ? "ll:bg-surface-hover" : ""
+              } ll:flex ll:items-center ll:h-8 ll:border-b ll:border-border ll:cursor-pointer ll:transition-colors`}
             >
-              <span className="ll:font-sans ll:text-nano">{pSpec.n}</span>
-              <span className="ll:font-mono ll:text-nano ll:text-primary">
-                {formatValue(t.p, val)}
-              </span>
+              <div className="tlhc ll-tlhc ll:flex ll:items-center ll:justify-between ll:px-6 ll:h-full ll:w-full">
+                <button
+                  type="button"
+                  data-pa="sel"
+                  data-l={targetLayer.id}
+                  data-p={t.p}
+                  className="tlnm ll-tlnm ll:font-sans ll:text-nano ll:text-secondary ll:bg-transparent ll:border-0 ll:p-0 ll:text-left ll:cursor-pointer"
+                >
+                  {pSpec.n}
+                </button>
+                <span className="rd ll-rd ll:min-w-10 ll:text-right ll:font-mono ll:text-nano ll:text-primary">
+                  {formatValue(t.p, val)}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -265,13 +310,14 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
 
       {/* 2. Right Canvas: Curve plot */}
       <div
+        id="gvp"
         ref={graphContainerRef}
-        className="ll-gvp ll:relative ll:h-full ll:w-full ll:overflow-hidden ll:bg-surface-panel"
+        className="gvp ll-gvp ll:relative ll:h-full ll:w-full ll:overflow-hidden ll:bg-surface-panel"
       >
         <svg
           style={{ width: `${W}px`, height: `${H}px` }}
           viewBox={`0 0 ${W} ${H}`}
-          className="ll-gvs ll:absolute ll:left-0 ll:top-0"
+          className="gvs ll-gvs ll:absolute ll:left-0 ll:top-0"
         >
           {/* Horizontal value grid lines */}
           {gridLines.map((gl) => (
@@ -279,23 +325,22 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
               key={`gl-${gl.v}`}
               x1={0}
               x2={W}
-              y1={gl.y}
-              y2={gl.y}
-              stroke="var(--ll-color-border)"
-              strokeWidth={1}
+              y1={Math.round(gl.y) + 0.5}
+              y2={Math.round(gl.y) + 0.5}
+              className="g"
             />
           ))}
 
-          {/* Curve Path */}
-          {curvePath && (
+          {/* Boundaries dashed lines */}
+          {ks.length > 0 && (
             <path
-              d={curvePath}
-              fill="none"
-              stroke="var(--ll-color-control-active)"
-              strokeWidth={1.5}
-              strokeLinejoin="round"
+              className="f"
+              d={`M0 ${gY(ks[0].v).toFixed(1)}H${X(ks[0].t, pps, t0, 24, fps).toFixed(1)}M${X(ks[ks.length - 1].t, pps, t0, 24, fps).toFixed(1)} ${gY(ks[ks.length - 1].v).toFixed(1)}H${W}`}
             />
           )}
+
+          {/* Curve Path */}
+          {curvePath && <path d={curvePath} className="c" />}
 
           {/* Tangent handle lines */}
           {ks.map((k, idx) => {
@@ -319,22 +364,8 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
 
             return (
               <React.Fragment key={`tan-${k.id}`}>
-                <line
-                  x1={ax}
-                  y1={ay}
-                  x2={h1x}
-                  y2={h1y}
-                  stroke="var(--ll-color-text-muted)"
-                  strokeWidth={1}
-                />
-                <line
-                  x1={bx}
-                  y1={by}
-                  x2={h2x}
-                  y2={h2y}
-                  stroke="var(--ll-color-text-muted)"
-                  strokeWidth={1}
-                />
+                <line x1={ax} y1={ay} x2={h1x} y2={h1y} className="hn" />
+                <line x1={bx} y1={by} x2={h2x} y2={h2y} className="hn" />
               </React.Fragment>
             );
           })}
@@ -344,8 +375,8 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
         {gridLines.map((gl) => (
           <span
             key={`lbl-${gl.v}`}
-            style={{ left: "8px", top: `${gl.y - 12}px` }}
-            className="ll-gvy ll:absolute ll:font-mono ll:text-nano ll:text-muted ll:pointer-events-none"
+            style={{ left: "8px", top: `${gl.y.toFixed(1)}px` }}
+            className="gvy ll-gvy"
           >
             {numStr(gl.v)}
             {spec.u}
@@ -371,20 +402,24 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
             <React.Fragment key={`knobs-${k.id}`}>
               <div
                 onPointerDown={(e) => handleTangentDrag(e, k, nextK, 1)}
-                style={{ left: `${h1x}px`, top: `${h1y}px` }}
+                style={{ left: `${h1x.toFixed(1)}px`, top: `${h1y.toFixed(1)}px` }}
                 title="Ease out handle"
-                className="ll-gh ll:absolute ll:w-4 ll:h-4 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:flex ll:items-center ll:justify-center ll:cursor-grab ll:z-20"
+                data-gh="1"
+                data-gs={k.id}
+                className="gh ll-gh"
               >
-                <i className="ll:w-2 ll:h-2 ll:rounded-xs ll:bg-surface-panel ll:border ll:border-primary" />
+                <i />
               </div>
 
               <div
                 onPointerDown={(e) => handleTangentDrag(e, k, nextK, 2)}
-                style={{ left: `${h2x}px`, top: `${h2y}px` }}
+                style={{ left: `${h2x.toFixed(1)}px`, top: `${h2y.toFixed(1)}px` }}
                 title="Ease in handle"
-                className="ll-gh ll:absolute ll:w-4 ll:h-4 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:flex ll:items-center ll:justify-center ll:cursor-grab ll:z-20"
+                data-gh="2"
+                data-gs={k.id}
+                className="gh ll-gh"
               >
-                <i className="ll:w-2 ll:h-2 ll:rounded-xs ll:bg-surface-panel ll:border ll:border-primary" />
+                <i />
               </div>
             </React.Fragment>
           );
@@ -399,18 +434,13 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
           return (
             <div
               key={`gk-${k.id}`}
+              data-gk={k.id}
               onPointerDown={(e) => handleKeyDrag(e, k)}
-              style={{ left: `${x}px`, top: `${y}px` }}
+              style={{ left: `${x.toFixed(1)}px`, top: `${y.toFixed(1)}px` }}
               title={`${spec.n} ${k.v}${spec.u} at ${k.t}`}
-              className="ll-gk ll:absolute ll:w-4 ll:h-4 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:flex ll:items-center ll:justify-center ll:cursor-grab ll:z-20"
+              className={`gk ll-gk ${isSel ? "sel" : ""}`}
             >
-              <i
-                className={`ll:w-2.5 ll:h-2.5 ll:rotate-45 ll:transition-transform ${
-                  isSel
-                    ? "ll:bg-control-active ll:scale-125 ll:ring-2 ll:ring-control-active"
-                    : "ll:bg-secondary ll:hover:bg-primary"
-                }`}
-              />
+              <i />
             </div>
           );
         })}
@@ -418,12 +448,13 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
         {/* Value Playhead Dot */}
         {ks.length > 0 && (
           <i
+            id="gdot"
             style={{
               left: `${dotX}px`,
               top: `${dotY}px`,
               display: dotX < 0 || dotX > W ? "none" : "block",
             }}
-            className="ll-gdot ll:absolute ll:w-2 ll:h-2 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:rounded-xs ll:bg-control-active ll:shadow-xs ll:pointer-events-none ll:z-30"
+            className="gdot ll-gdot"
           />
         )}
       </div>

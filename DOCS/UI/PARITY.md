@@ -47,7 +47,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `panels/sequencer` | todo | `src/editor/panels/sequencer/TimelineSequencer.tsx` | 8 | `TimelineSequencer.tsx` (bridge to legacy) |
 | `panels/settings` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/settings/`) | 1 | `ProjectSettings.tsx` |
 | `panels/state` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/state/`) | 1 | `StateMatrixViewer.tsx` |
-| `panels/timeline` | done | `src/editor/panels/timeline/`, `src/editor/motion-model/` | 1 | Rebuilt from prototype; reads real document |
+| panels/timeline | done | src/editor/panels/timeline/, src/editor/motion-model/ | 1 | Rebuilt from prototype; reads real document; F7 timeline full match: #bsplit 6px resize splitter, 32px #vseg tabs, 28px property rows with tree guide hairlines (::before/::after), custom 88px .sld#tzoom slider, 11px mono 600 S solo button, trim handle 2px ticks, polished Graph tab canvas, 16/16 interactive behaviors verified PASS |
 | `panels/versioning` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/versioning/`) | 2 | `VersionControlPanel.tsx` |
 | `stage-lab` | todo | `src/editor/stage-lab/` | 2 | `CanvasLab.tsx`, `StageLab.tsx` (bridges) |
 | `render-gallery` | todo | `src/editor/render-gallery/` | 1 | `RenderGallery.tsx` (bridge) |

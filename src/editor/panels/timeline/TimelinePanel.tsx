@@ -10,6 +10,7 @@ import {
   X,
   Fx,
   snapT,
+  majorOf,
   DUR,
   FPS,
 } from "@/editor/motion-model";
@@ -61,6 +62,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   // Local interaction states
   const [trackWidth, setTrackWidth] = useState<number>(storeTrackWidth || TIMELINE_TRACK_COLUMN_DEFAULT_PX);
   const [containerWidth, setContainerWidth] = useState<number>(1000);
+  const [localHeight, setLocalHeight] = useState<number | string>(height);
+  const [isSplitterDragging, setIsSplitterDragging] = useState(false);
+  const [isHwDragging, setIsHwDragging] = useState(false);
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [hoverFrame, setHoverFrame] = useState<number | null>(null);
   const [snapFlashFrame, setSnapFlashFrame] = useState<number | null>(null);
@@ -168,10 +172,45 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     };
   }, [playing, fps, loop, dir, speed, shuttle]);
 
+  // Panel Height Splitter Drag Handle (#bsplit)
+  const handleSplitterPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    setIsSplitterDragging(true);
+
+    const startY = e.clientY;
+    const initialH = panelRef.current?.offsetHeight ?? 360;
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const deltaY = startY - ev.clientY;
+      const nextH = Math.max(
+        160,
+        Math.min(Math.round(window.innerHeight * 0.7), initialH + deltaY)
+      );
+      setLocalHeight(nextH);
+    };
+
+    const onPointerUp = () => {
+      setIsSplitterDragging(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
+  // Double click on splitter glides back to 40% window height (matching P line 5181)
+  const handleSplitterDoubleClick = () => {
+    const nextH = Math.round(window.innerHeight * 0.4);
+    setLocalHeight(nextH);
+  };
+
   // Track Column Resize Drag Handle
   const handleSeparatorPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
+    setIsHwDragging(true);
 
     const startX = e.clientX;
     const initialW = trackWidth;
@@ -187,6 +226,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     };
 
     const onPointerUp = () => {
+      setIsHwDragging(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
     };
@@ -355,11 +395,26 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       data-testid="bottom-panel"
       onKeyDown={handleKeyDown}
       style={{
-        height,
+        height: localHeight,
+        ["--hw" as any]: `${trackWidth}px`,
         ...style,
       }}
       className={`ll-timeline ll-bottom ll:flex ll:flex-col ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none ll:min-w-0 ll:outline-none ll:relative ${className}`}
     >
+      {/* 0. Top Height Splitter (#bsplit) */}
+      <div
+        id="bsplit"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize timeline"
+        title="Drag to resize, double click to reset"
+        onPointerDown={handleSplitterPointerDown}
+        onDoubleClick={handleSplitterDoubleClick}
+        className={`ll-bsplit ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-1.5 ll:z-30 ll:cursor-row-resize ll:touch-none ${
+          isSplitterDragging ? "on" : ""
+        }`}
+      />
+
       {/* 1. Header Toolbar (44px) */}
       <TimelineTransport
         onExport={onExport}
@@ -369,20 +424,28 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
       {/* 2. Combined Timeline Scroller Area */}
       <div
+        id="tl"
+        role="group"
+        aria-label="Timeline"
+        data-focus={hasSelection ? "" : undefined}
         onWheel={handleWheel}
         onPointerMove={handleLanePointerMove}
         onPointerLeave={handleLanePointerLeave}
-        className="ll-tl ll:flex-1 ll:min-h-0 ll:relative ll:select-none"
+        className={`ll-tl ${view === "graph" ? "gv" : ""} ll:flex-1 ll:min-h-0 ll:relative ll:select-none ${hoverX !== null ? "ll-hv" : ""}`}
       >
         {/* Track Column Resizer Divider Handle */}
         <div
+          id="hwsizer"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize track column"
+          title="Drag to resize, double click to reset"
           onPointerDown={handleSeparatorPointerDown}
           onDoubleClick={handleSeparatorDoubleClick}
           style={{ left: `${trackWidth - 4}px` }}
-          className="ll-hwsizer ll:absolute ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-col-resize ll:z-30 ll:hover:bg-primary/20"
+          className={`ll-hwsizer ll:absolute ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-col-resize ll:z-30 ${
+            isHwDragging ? "drag" : ""
+          }`}
         />
 
         {/* Tracks Scroller (.ll-tls) */}
@@ -391,7 +454,14 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
           className="ll-tls ll:absolute ll:inset-0 ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain"
         >
           {/* Content Container */}
-          <div className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col">
+          <div
+            id="tlc"
+            style={{
+              ["--gp" as any]: `${(majorOf(pps, fps) / fps) * pps}px`,
+              ["--go" as any]: `${X(0, pps, t0, 24, fps)}px`,
+            }}
+            className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col"
+          >
             {/* Sticky Ruler Row (32px) */}
             <TimelineRuler
               laneWidth={laneAvailableWidth}
@@ -423,51 +493,36 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
               <div role="rowgroup" className="ll:flex ll:flex-col">
                 {/* Group: Hero frame track */}
                 {treeLayers.hero && (
-                  <div
-                    style={{
-                      opacity: hasSelection && !selectedIds.includes("hero") ? 0.45 : 1,
-                      transition: "opacity 0.2s ease-out",
-                    }}
-                  >
-                    <TimelineLane
-                      key={treeLayers.hero.id}
-                      layer={treeLayers.hero}
-                      childLayers={treeLayers.children}
-                      trackWidth={trackWidth}
-                      pps={pps}
-                      laneWidth={laneAvailableWidth}
-                      isSelected={selectedIds.includes("hero")}
-                      onSelectLayer={(id) => selectElement(id, "element")}
-                      onOpenContextMenu={(ctx) => setContextMenu(ctx)}
-                    />
-                  </div>
+                  <TimelineLane
+                    key={treeLayers.hero.id}
+                    layer={treeLayers.hero}
+                    childLayers={treeLayers.children}
+                    trackWidth={trackWidth}
+                    pps={pps}
+                    laneWidth={laneAvailableWidth}
+                    isSelected={selectedIds.includes("hero")}
+                    onSelectLayer={(id) => selectElement(id, "element")}
+                    onOpenContextMenu={(ctx) => setContextMenu(ctx)}
+                  />
                 )}
 
                 {/* Children rows (if hero group is expanded) */}
                 {(!treeLayers.hero || treeLayers.hero.gopen) &&
                   treeLayers.children.map((layer) => {
                     const isSelected = selectedIds.includes(layer.id);
-                    const isDimmed = hasSelection && !isSelected;
 
                     return (
-                      <div
+                      <TimelineLane
                         key={layer.id}
-                        style={{
-                          opacity: isDimmed ? 0.45 : 1,
-                          transition: "opacity 0.2s ease-out",
-                        }}
-                      >
-                        <TimelineLane
-                          layer={layer}
-                          isChild={true}
-                          trackWidth={trackWidth}
-                          pps={pps}
-                          laneWidth={laneAvailableWidth}
-                          isSelected={isSelected}
-                          onSelectLayer={(id) => selectElement(id, "element")}
-                          onOpenContextMenu={(ctx) => setContextMenu(ctx)}
-                        />
-                      </div>
+                        layer={layer}
+                        isChild={true}
+                        trackWidth={trackWidth}
+                        pps={pps}
+                        laneWidth={laneAvailableWidth}
+                        isSelected={isSelected}
+                        onSelectLayer={(id) => selectElement(id, "element")}
+                        onOpenContextMenu={(ctx) => setContextMenu(ctx)}
+                      />
                     );
                   })}
 

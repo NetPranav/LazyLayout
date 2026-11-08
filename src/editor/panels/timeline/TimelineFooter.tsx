@@ -41,7 +41,11 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
   const [fpsMenuOpen, setFpsMenuOpen] = useState(false);
   const [fpsAnchor, setFpsAnchor] = useState<{ x: number; y: number } | null>(null);
 
+  const [sliderDragging, setSliderDragging] = useState(false);
+  const [sliderHover, setSliderHover] = useState(false);
+
   const minimapRef = useRef<HTMLDivElement | null>(null);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
 
   // 1. Selection summary text
   const selKeyIds = Object.keys(selectedKeys);
@@ -83,6 +87,38 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
   const windowLeftPct = Math.max(0, (t0 / totalSecs) * 100);
   const windowWidthPct = Math.min(100, (100 / zoom));
   const playheadPct = (playhead / comp.dur) * 100;
+
+  // Zoom slider calculations
+  const logZoom = Math.log2(zoom);
+  const zoomPct = clampN((logZoom / 5) * 100, 0, 100);
+
+  const handleSliderPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 || !sliderRef.current) return;
+    e.preventDefault();
+    setSliderDragging(true);
+
+    const rect = sliderRef.current.getBoundingClientRect();
+    const updateZoom = (clientX: number) => {
+      const frac = clampN((clientX - rect.left) / rect.width, 0, 1);
+      const val = frac * 5;
+      motionActions.setZoom(Math.pow(2, val));
+    };
+
+    updateZoom(e.clientX);
+
+    const onPointerMove = (ev: PointerEvent) => {
+      updateZoom(ev.clientX);
+    };
+
+    const onPointerUp = () => {
+      setSliderDragging(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
 
   // Mini-map pointer down (window drag or edge zoom)
   const handleMinimapPointerDown = (e: React.PointerEvent) => {
@@ -160,12 +196,14 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
 
   return (
     <div
+      id="tlf"
       role="region"
       aria-label="Timeline footer"
-      className="ll-tlf ll:h-7 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:text-muted ll:shrink-0 ll:min-w-0 ll:select-none"
+      className="ll-tlf ll:h-7 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-nano ll:text-muted ll:shrink-0 ll:min-w-0 ll:select-none"
     >
       {/* 1. Selection summary */}
       <span
+        id="tfs"
         style={{ width: `${trackWidth - 24}px` }}
         className="ll-tfs ll:shrink-0 ll:truncate ll:text-muted"
         aria-live="polite"
@@ -175,19 +213,27 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
 
       {/* 2. Mini-map overview */}
       <div
+        id="tmm"
         ref={minimapRef}
         onPointerDown={handleMinimapPointerDown}
-        title="Timeline overview. Drag window to pan, drag edges to zoom."
-        className="ll-tmm ll:relative ll:flex-1 ll:min-w-20 ll:h-5 ll:bg-surface-panel ll:border ll:border-border ll:rounded-xs ll:overflow-hidden ll:cursor-pointer"
+        title="Timeline overview. Drag the window to scroll, drag its edges to zoom."
+        style={{ height: "20px" }}
+        className="ll-tmm ll:relative ll:flex-1 ll:min-w-20 ll:h-5 ll:bg-surface-panel ll:cursor-pointer ll:touch-none"
       >
-        {/* Background clips summary */}
-        <div className="ll-tmc ll:absolute ll:inset-0 ll:pointer-events-none">
+        {/* Background clips summary with 1px grid lines */}
+        <div
+          id="tmc"
+          style={{
+            background: `repeating-linear-gradient(90deg, color-mix(in srgb, var(--ll-text-muted) 22%, transparent) 0 1px, transparent 1px ${(100 / totalSecs).toFixed(2)}%)`,
+          }}
+          className="ll-tmc ll:absolute ll:inset-0 ll:pointer-events-none"
+        >
           {comp.layers.map((l, i) => {
             const rh = Math.max(2, Math.min(4, Math.floor(16 / Math.max(1, comp.layers.length))));
             const lbl = lblOf(l);
             return l.clips.map((c, j) => {
               const leftPct = (c.s / comp.dur) * 100;
-              const widthPct = Math.max(1, ((c.e - c.s) / comp.dur) * 100);
+              const widthPct = Math.max(0.8, ((c.e - c.s) / comp.dur) * 100);
               return (
                 <i
                   key={`mc-${l.id}-${j}`}
@@ -198,7 +244,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
                     width: `${widthPct}%`,
                     backgroundColor: `color-mix(in srgb, var(--ll-label-${lbl}) 55%, var(--ll-label-${lbl}-tint))`,
                   }}
-                  className="ll:absolute ll:rounded-2xs ll:opacity-75"
+                  className="ll:absolute ll:rounded-2xs"
                 />
               );
             });
@@ -207,22 +253,53 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
 
         {/* Draggable viewport window */}
         <div
+          id="tmw"
           style={{
             left: `${windowLeftPct}%`,
             width: `${windowWidthPct}%`,
+            background: "color-mix(in srgb, var(--ll-text-primary) 7%, transparent)",
+            boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--ll-text-primary) 28%, transparent)",
           }}
-          className="ll-tmw ll:absolute ll:top-0 ll:bottom-0 ll:bg-primary/10 ll:border ll:border-primary/30 ll:rounded-2xs ll:cursor-grab ll:active:cursor-grabbing"
+          className="ll-tmw ll:absolute ll:top-0 ll:bottom-0 ll:rounded-sm ll:cursor-grab ll:active:cursor-grabbing"
         >
-          {/* Left handle */}
+          {/* Left handle with center tick */}
           <i
             data-e="l"
-            className="tmh ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-1.5 ll:cursor-ew-resize ll:hover:bg-primary/30"
-          />
-          {/* Right handle */}
+            className="tmh l ll:absolute ll:left--1 ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-ew-resize"
+          >
+            <span
+              style={{
+                content: '""',
+                position: "absolute",
+                top: "5px",
+                bottom: "5px",
+                left: "3px",
+                width: "2px",
+                borderRadius: "1px",
+                background: "var(--ll-text-muted)",
+                opacity: 0.7,
+              }}
+            />
+          </i>
+          {/* Right handle with center tick */}
           <i
             data-e="r"
-            className="tmh ll:absolute ll:right-0 ll:top-0 ll:bottom-0 ll:w-1.5 ll:cursor-ew-resize ll:hover:bg-primary/30"
-          />
+            className="tmh r ll:absolute ll:right--1 ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-ew-resize"
+          >
+            <span
+              style={{
+                content: '""',
+                position: "absolute",
+                top: "5px",
+                bottom: "5px",
+                left: "3px",
+                width: "2px",
+                borderRadius: "1px",
+                background: "var(--ll-text-muted)",
+                opacity: 0.7,
+              }}
+            />
+          </i>
         </div>
 
         {/* Mini-map playhead line */}
@@ -233,36 +310,80 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         />
       </div>
 
-      {/* 3. Zoom Slider */}
-      <div className="ll:flex ll:items-center ll:w-20 ll:shrink-0">
-        <input
-          type="range"
-          min="0"
-          max="5"
-          step="0.01"
-          value={Math.log2(zoom)}
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            motionActions.setZoom(Math.pow(2, val));
-          }}
-          title="Timeline zoom"
-          aria-label="Timeline zoom"
-          className="ll-sld ll:w-full ll:h-1 ll:accent-primary ll:cursor-pointer"
+      {/* 3. Custom Zoom Slider (.sld#tzoom matching P lines 1187-1193, 6582) */}
+      <div
+        ref={sliderRef}
+        id="tzoom"
+        role="slider"
+        tabIndex={0}
+        aria-label="Timeline zoom"
+        title="Timeline zoom"
+        aria-valuemin={0}
+        aria-valuemax={5}
+        aria-valuenow={+logZoom.toFixed(2)}
+        onPointerDown={handleSliderPointerDown}
+        onPointerEnter={() => setSliderHover(true)}
+        onPointerLeave={() => setSliderHover(false)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+            e.preventDefault();
+            motionActions.setZoom(Math.min(32, Math.pow(2, logZoom + 0.1)));
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+            e.preventDefault();
+            motionActions.setZoom(Math.max(1, Math.pow(2, logZoom - 0.1)));
+          }
+        }}
+        style={{ width: "88px", height: "20px" }}
+        className={`ll-sld sld ll:relative ll:flex-none ll:h-5 ll:w-zoom-slider ll:cursor-pointer ll:touch-none ll:select-none ${
+          sliderDragging ? "drag" : ""
+        }`}
+      >
+        {/* Track bar */}
+        <div
+          style={{ background: "color-mix(in srgb, var(--ll-text-primary) 18%, transparent)" }}
+          className="sl-t ll:absolute ll:left-0 ll:right-0 ll:top-2.25 ll:h-0.5"
         />
+        {/* Filled bar */}
+        <div
+          style={{ width: `${zoomPct}%` }}
+          className="sl-f ll:absolute ll:left-0 ll:top-2.25 ll:h-0.5 ll:bg-primary"
+        />
+        {/* Handle knob */}
+        <div
+          style={{
+            left: `${zoomPct}%`,
+            transform: "translateX(-50%)",
+            boxShadow: "0 0 0 2px var(--ll-surface-panel)",
+          }}
+          className="sl-h ll:absolute ll:top-0.75 ll:w-1.5 ll:h-3.5 ll:rounded-xs ll:bg-primary ll:transition-transform"
+        />
+        {/* Value badge tooltip */}
+        {(sliderDragging || sliderHover) && (
+          <div
+            style={{
+              left: `${zoomPct}%`,
+              transform: "translate(-50%, 0)",
+            }}
+            className="sl-g ll:absolute ll:bottom-full ll:mb-0.5 ll:min-w-8 ll:px-1.5 ll:h-5 ll:leading-4.5 ll:text-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:whitespace-nowrap ll:pointer-events-none ll:z-30 ll:shadow-sm"
+          >
+            {zoom.toFixed(1)}×
+          </div>
+        )}
       </div>
 
       {/* 4. Fit Timeline Button */}
       <button
         type="button"
+        data-ta="zfit"
         onClick={() => {
           motionActions.setZoom(1);
           motionActions.setT0(0);
         }}
         aria-label="Fit the timeline"
-        title="Fit the timeline (\\)"
+        title="Fit the timeline"
         className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
-        <Icon icon={Scan} size={13} />
+        <Icon icon={Scan} size={14} />
       </button>
 
       <span className="ll:w-px ll:h-3.5 ll:bg-border ll:mx-0.5" aria-hidden="true" />
@@ -281,10 +402,10 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         }}
         aria-label="Frame rate"
         title="Frame rate"
-        className="ll-tfb ll:h-6 ll:px-1.5 ll:flex ll:items-center ll:gap-1 ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        className="ll-tfb ll:h-6 ll:px-1.5 ll:flex ll:items-center ll:gap-1 ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
         <span>{fps} fps</span>
-        <Icon icon={ChevronDown} size={11} className="ll:text-muted" />
+        <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
       </button>
 
       {fpsMenuOpen && fpsAnchor && (
@@ -356,7 +477,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
             : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
         }`}
       >
-        <Icon icon={Magnet} size={13} />
+        <Icon icon={Magnet} size={14} />
       </button>
 
       {/* 9. Work area button */}
@@ -366,7 +487,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         data-ta="wa"
         onClick={() => motionActions.resetWorkArea()}
         title="Work area length. Click to clear the work area."
-        className="ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        className="ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
         Work area {waStr}
       </button>

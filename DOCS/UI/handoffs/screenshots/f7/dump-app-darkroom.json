@@ -1,0 +1,1360 @@
+{
+  "bottom": {
+    "box": {
+      "x": 0,
+      "y": 540,
+      "width": 1440,
+      "height": 360
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(22, 22, 15)",
+    "border": "1px solid rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "header": {
+    "box": {
+      "x": 0,
+      "y": 541,
+      "width": 1440,
+      "height": 44
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "color(srgb 0.129804 0.129608 0.102745)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 12px 0px 12px",
+    "gap": "8px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "timecode": {
+    "box": {
+      "x": 8,
+      "y": 549,
+      "width": 104,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "20px",
+      "weight": "500",
+      "letterSpacing": "normal",
+      "lineHeight": "28px"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 4px 0px 4px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "totalTime": {
+    "box": {
+      "x": 116,
+      "y": 561,
+      "width": 68,
+      "height": 12
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "transportCenter": {
+    "box": {
+      "x": 490,
+      "y": 549,
+      "width": 238,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "2px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnHome": {
+    "box": {
+      "x": 490,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnPrevKey": {
+    "box": {
+      "x": 520,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnStepBack": {
+    "box": {
+      "x": 550,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnPlay": {
+    "box": {
+      "x": 580,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnStepFwd": {
+    "box": {
+      "x": 610,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnNextKey": {
+    "box": {
+      "x": 640,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnEnd": {
+    "box": {
+      "x": 670,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "btnLoop": {
+    "box": {
+      "x": 700,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "vseg": {
+    "box": {
+      "x": 1033,
+      "y": 547,
+      "width": 144,
+      "height": 32
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "1px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "2px 2px 2px 2px",
+    "gap": "2px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "tabTimeline": {
+    "box": {
+      "x": 1036,
+      "y": 550,
+      "width": 68,
+      "height": 26
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "13px",
+      "weight": "500",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "tabGraph": {
+    "box": {
+      "x": 1106,
+      "y": 550,
+      "width": 68,
+      "height": 26
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "13px",
+      "weight": "500",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "toolSelect": {
+    "box": {
+      "x": 1194,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "toolSplit": {
+    "box": {
+      "x": 1226,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "speedDropdown": {
+    "box": {
+      "x": 1271,
+      "y": 549,
+      "width": 48,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "500",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(189, 188, 179)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "1px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 8px 0px 8px",
+    "gap": "4px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "fullWidthBtn": {
+    "box": {
+      "x": 1323,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(32, 32, 26)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "exportBtn": {
+    "box": {
+      "x": 1368,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "moreBtn": {
+    "box": {
+      "x": 1400,
+      "y": 549,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "16px",
+      "weight": "500",
+      "letterSpacing": "normal",
+      "lineHeight": "16px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "bsplit": {
+    "box": {
+      "x": 0,
+      "y": 541,
+      "width": 1440,
+      "height": 6
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "30"
+  },
+  "hwsizer": {
+    "box": {
+      "x": 260,
+      "y": 585,
+      "width": 8,
+      "height": 287
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "30"
+  },
+  "rulerRow": {
+    "box": {
+      "x": 0,
+      "y": 585,
+      "width": 1440,
+      "height": 32
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "10"
+  },
+  "rulerHeader": {
+    "box": {
+      "x": 0,
+      "y": 585,
+      "width": 264,
+      "height": 31
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 8px 0px 16px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "rulerLane": {
+    "box": {
+      "x": 264,
+      "y": 585,
+      "width": 1176,
+      "height": 31
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "rulerFirstTick": {
+    "box": {
+      "x": 288,
+      "y": 607,
+      "width": 1,
+      "height": 9
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(160, 159, 150)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "rulerFirstLabel": {
+    "box": {
+      "x": 293,
+      "y": 598,
+      "width": 14,
+      "height": 10
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "500",
+      "letterSpacing": "0.8px",
+      "lineHeight": "10px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "workAreaBar": {
+    "box": {
+      "x": 288,
+      "y": 587,
+      "width": 1128,
+      "height": 4
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(189, 188, 179)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "workAreaHandleA": {
+    "box": {
+      "x": 285,
+      "y": 585,
+      "width": 6,
+      "height": 8
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(189, 188, 179)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "10"
+  },
+  "marker": {
+    "box": {
+      "x": 852,
+      "y": 596,
+      "width": 14,
+      "height": 14
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "20"
+  },
+  "firstGroupRow": {
+    "box": {
+      "x": 0,
+      "y": 617,
+      "width": 1440,
+      "height": 32
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "layerHeader": {
+    "box": {
+      "x": 0,
+      "y": 617,
+      "width": 264,
+      "height": 31
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 8px 0px 8px",
+    "gap": "6px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "layerName": {
+    "box": {
+      "x": 8,
+      "y": 621,
+      "width": 20,
+      "height": 24
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "clip": {
+    "box": {
+      "x": 288,
+      "y": 621,
+      "width": 1128,
+      "height": 23
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(68, 59, 42)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "clipTrimHandle": null,
+  "propRow": {
+    "box": {
+      "x": 0,
+      "y": 681,
+      "width": 1440,
+      "height": 28
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "propHeader": {
+    "box": {
+      "x": 0,
+      "y": 681,
+      "width": 264,
+      "height": 27
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 8px 0px 44px",
+    "gap": "2px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "propValue": {
+    "box": {
+      "x": 159,
+      "y": 689,
+      "width": 40,
+      "height": 12
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 4px 0px 4px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "propNav": {
+    "box": {
+      "x": 201,
+      "y": 685,
+      "width": 54,
+      "height": 20
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "keyframe": {
+    "box": {
+      "x": 280,
+      "y": 687,
+      "width": 16,
+      "height": 16
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "10"
+  },
+  "playheadLayer": {
+    "box": {
+      "x": 264,
+      "y": 585,
+      "width": 1176,
+      "height": 287
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "20"
+  },
+  "playheadNeedle": {
+    "box": {
+      "x": 559,
+      "y": 585,
+      "width": 1,
+      "height": 287
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(244, 243, 239)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "playheadKnob": {
+    "box": {
+      "x": 559,
+      "y": 585,
+      "width": 1,
+      "height": 287
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(244, 243, 239)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "footer": {
+    "box": {
+      "x": 0,
+      "y": 872,
+      "width": 1440,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgb(22, 22, 15)",
+    "border": "1px solid rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 12px 0px 12px",
+    "gap": "12px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "footerSummary": {
+    "box": {
+      "x": 12,
+      "y": 881,
+      "width": 240,
+      "height": 12
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "minimap": {
+    "box": {
+      "x": 264,
+      "y": 877,
+      "width": 668,
+      "height": 20
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgb(22, 22, 15)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "minimapWindow": {
+    "box": {
+      "x": 264,
+      "y": 877,
+      "width": 668,
+      "height": 20
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "color(srgb 0.956863 0.952941 0.937255 / 0.07)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "minimapHandle": {
+    "box": {
+      "x": 264,
+      "y": 877,
+      "width": 8,
+      "height": 20
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "minimapPlayhead": {
+    "box": {
+      "x": 424,
+      "y": 877,
+      "width": 1,
+      "height": 20
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgb(244, 243, 239)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "zoomSlider": {
+    "box": {
+      "x": 944,
+      "y": 877,
+      "width": 88,
+      "height": 20
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "fitBtn": {
+    "box": {
+      "x": 1044,
+      "y": 875,
+      "width": 24,
+      "height": 24
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "fpsBtn": {
+    "box": {
+      "x": 1097,
+      "y": 875,
+      "width": 69,
+      "height": 24
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "500",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 6px 0px 6px",
+    "gap": "4px",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "autoKeyBtn": {
+    "box": {
+      "x": 1178,
+      "y": 873,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "onionBtn": {
+    "box": {
+      "x": 1218,
+      "y": 873,
+      "width": 28,
+      "height": 28
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "2px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "snapBtn": {
+    "box": {
+      "x": 1258,
+      "y": 875,
+      "width": 24,
+      "height": 24
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgb(42, 42, 35)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "waFoot": {
+    "box": {
+      "x": 1294,
+      "y": 875,
+      "width": 134,
+      "height": 24
+    },
+    "font": {
+      "family": "\"Geist Mono\", \"Geist Mono Fallback\", \"Geist Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "size": "10px",
+      "weight": "500",
+      "letterSpacing": "0.8px",
+      "lineHeight": "12px"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px solid rgb(52, 52, 44)",
+    "radius": "4px",
+    "padding": "0px 6px 0px 6px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "dropzone": {
+    "box": {
+      "x": 0,
+      "y": 861,
+      "width": 1440,
+      "height": 56
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(244, 243, 239)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(52, 52, 44)",
+    "radius": "0px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  },
+  "dropzoneInner": {
+    "box": {
+      "x": 272,
+      "y": 869,
+      "width": 1160,
+      "height": 40
+    },
+    "font": {
+      "family": "Geist, \"Geist Fallback\", Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "letterSpacing": "normal",
+      "lineHeight": "normal"
+    },
+    "color": "rgb(160, 159, 150)",
+    "background": "rgba(0, 0, 0, 0)",
+    "border": "1px dashed rgb(52, 52, 44)",
+    "radius": "6px",
+    "padding": "0px 0px 0px 0px",
+    "gap": "normal",
+    "opacity": "1",
+    "zIndex": "auto"
+  }
+}
