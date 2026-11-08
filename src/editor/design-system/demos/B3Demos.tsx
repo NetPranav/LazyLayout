@@ -206,38 +206,42 @@ export function B3FloatingSurfacesHairlineDemo() {
   const [selVal, setSelVal] = useState("center");
 
   return (
-    <div className="llm-pop ll:relative ll:block ll:w-70 ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-4 ll:flex ll:flex-col ll:gap-3">
-      <div className="ll:text-micro ll:font-medium ll:text-muted ll:border-b ll:border-border ll:pb-2">
-        Position options (Floating Surface)
+    <div className="llm-pop ppop ll-ppop ll:relative ll:block ll:w-70 ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:flex ll:flex-col">
+      <div className="phead ll-phead ll:flex ll:items-center ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
+        <span className="pt ll-pt ll:flex-1 ll:text-micro ll:font-medium ll:text-muted ll:truncate">
+          Position options (Floating Surface)
+        </span>
       </div>
-      <div className="ll-dmg">
-        <div className="ll-dtrow">
-          <span className="ll-dlbl">Z</span>
-          <div className="ll-dtc">
-            <NumberField
-              size="sm"
-              label=""
-              aria-label="Z-index"
-              value={val}
-              step={1}
-              onChange={(v) => setVal(v)}
-            />
+      <div className="pbody ll-pbody ll:flex-1 ll:px-4 ll:pt-3 ll:pb-4 ll:flex ll:flex-col ll:gap-0">
+        <div className="ll-dmg">
+          <div className="ll-dtrow">
+            <span className="ll-dlbl">Z</span>
+            <div className="ll-dtc">
+              <NumberField
+                size="sm"
+                label=""
+                aria-label="Z-index"
+                value={val}
+                step={1}
+                onChange={(v) => setVal(v)}
+              />
+            </div>
           </div>
-        </div>
-        <div className="ll-dtrow">
-          <span className="ll-dlbl">Origin</span>
-          <div className="ll-dtc">
-            <Select
-              size="sm"
-              aria-label="Origin"
-              value={selVal}
-              options={[
-                { value: "center", label: "Center" },
-                { value: "top-left", label: "Top left" },
-                { value: "bottom-right", label: "Bottom right" },
-              ]}
-              onChange={(v) => setSelVal(v)}
-            />
+          <div className="ll-dtrow">
+            <span className="ll-dlbl">Origin</span>
+            <div className="ll-dtc">
+              <Select
+                size="sm"
+                aria-label="Origin"
+                value={selVal}
+                options={[
+                  { value: "center", label: "Center" },
+                  { value: "top-left", label: "Top left" },
+                  { value: "bottom-right", label: "Bottom right" },
+                ]}
+                onChange={(v) => setSelVal(v)}
+              />
+            </div>
           </div>
         </div>
       </div>

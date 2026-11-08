@@ -246,6 +246,28 @@ const MoreHorizontalSvg = React.forwardRef<SVGSVGElement, IconSvgProps>(
 MoreHorizontalSvg.displayName = "MoreHorizontal";
 
 /** Typed as LucideIcon so they pass through the shared Icon wrapper (1.5 stroke, size). */
+const ChevronDownSvg = React.forwardRef<SVGSVGElement, IconSvgProps>(
+  ({ size = 16, strokeWidth = 1.5, className = "", ...props }, ref) => (
+    <svg
+      ref={ref}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  )
+);
+ChevronDownSvg.displayName = "ChevronDown";
+
+export const ChevronDown = ChevronDownSvg as unknown as LucideIcon;
 export const Pipette = PipetteSvg as unknown as LucideIcon;
 export const Plus = PlusSvg as unknown as LucideIcon;
 export const LinkIcon = LinkIconSvg as unknown as LucideIcon;

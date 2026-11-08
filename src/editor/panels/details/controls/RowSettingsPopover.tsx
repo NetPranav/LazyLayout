@@ -78,10 +78,10 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
             role="dialog"
             aria-label={`${title} settings`}
             style={{ left: -9999, top: -9999 }}
-            className={`ppop ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-62 ll:overflow-auto ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
+            className={`ppop ll-ppop llm-pop ${isOpen ? "ll-open" : ""} ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-62 ll:overflow-hidden ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
           >
-            <div className="phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:pt-2 ll:pr-2 ll:pb-1 ll:pl-4">
-              <span className="pt ll:text-body ll:font-medium ll:text-primary">{title}</span>
+            <div className="phead ll-phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
+              <span className="pt ll-pt ll:text-micro ll:font-medium ll:text-muted ll:truncate">{title}</span>
               <button
                 type="button"
                 aria-label="Close settings"
@@ -92,7 +92,7 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
                 <Icon icon={X} size={14} />
               </button>
             </div>
-            <div className="pbody ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:pt-1 ll:pb-4">{children}</div>
+            <div className="pbody ll-pbody ll:flex ll:flex-col ll:gap-0 ll:px-4 ll:pt-3 ll:pb-4 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none [&_.field]:ll:border [&_.field]:ll:border-border [&_.dfield]:ll:border [&_.dfield]:ll:border-border">{children}</div>
           </div>,
           document.body
         )}

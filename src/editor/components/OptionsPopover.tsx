@@ -256,17 +256,17 @@ export function OptionsPopover({
       aria-label={ariaLabel || `${title} options`}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={`ll:fixed ll:z-60 ll:w-options-popover ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:outline-none ll:flex ll:flex-col ll:overflow-hidden ${className}`}
+      className={`llm-pop ppop ll-ppop ${open ? "ll-open" : ""} ll:fixed ll:z-60 ll:w-options-popover ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:outline-none ll:flex ll:flex-col ll:overflow-hidden ${className}`}
     >
       <div className="ll:flex ll:flex-col ll:flex-1 ll:min-w-0 ll:min-h-0 ll:rounded-inherit ll:overflow-hidden">
         {/* Header (36px) */}
         <div
           ref={headerRef}
-          className="ll:flex ll:items-center ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0"
+          className="phead ll-phead ll:flex ll:items-center ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0"
         >
           <span
             id={titleId}
-            className="ll:flex-1 ll:min-w-0 ll:text-micro ll:font-medium ll:text-muted ll:truncate"
+            className="pt ll-pt ll:flex-1 ll:min-w-0 ll:text-micro ll:font-medium ll:text-muted ll:truncate"
           >
             {title} options
           </span>
@@ -283,7 +283,7 @@ export function OptionsPopover({
         {/* Body content with hairline fields styling */}
         <div
           ref={bodyRef}
-          className="ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:p-3 ll:pt-3 ll:pb-4 ll:flex ll:flex-col ll:gap-3 [&_.field]:ll:border [&_.field]:ll:border-border [&_.dfield]:ll:border [&_.dfield]:ll:border-border"
+          className="pbody ll-pbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:px-4 ll:pt-3 ll:pb-4 ll:flex ll:flex-col ll:gap-0 [&_.field]:ll:border [&_.field]:ll:border-border [&_.dfield]:ll:border [&_.dfield]:ll:border-border"
         >
           {children}
         </div>

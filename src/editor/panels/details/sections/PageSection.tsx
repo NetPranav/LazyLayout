@@ -29,13 +29,6 @@ const SHADOW_OPTIONS = [
 ] as const;
 
 const FIELD_LABEL = "ll:font-mono ll:text-micro ll:tracking-normal ll:text-muted ll:shrink-0";
-const HEX_FIELD =
-  "ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm";
-const HEX_INPUT =
-  "ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none";
-const SWATCH = "ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0";
-const SELECT_ROW =
-  "ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:w-full";
 
 export interface PageSectionProps {
   pageName?: string;
@@ -120,41 +113,43 @@ export const PageBackgroundBody: React.FC<{
   const swatchRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-      <button
-        ref={swatchRef}
-        type="button"
-        aria-label="Background color picker"
-        title="Choose background color"
-        onClick={() => setIsPickerOpen((prev) => !prev)}
-        className={`${SWATCH} ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active`}
-        style={{ backgroundColor: `#${bgHex}` }}
-      />
-      <ColorPicker
-        open={isPickerOpen}
-        value={`#${bgHex}`}
-        anchorRef={swatchRef}
-        onChange={(hex) => {
-          const next = hex.replace(/^#/, "").toUpperCase();
-          setBgHex(next);
-          onChangeBackground?.(next);
-        }}
-        onClose={() => setIsPickerOpen(false)}
-      />
-      <div className={`${HEX_FIELD} ll:w-27`}>
-        <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
-        <input
-          type="text"
-          maxLength={6}
-          aria-label="Background hex"
-          value={bgHex}
-          onChange={(e) => {
-            const next = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+    <div className="drow ll-drow ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center ll:w-full">
+      <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+        <button
+          ref={swatchRef}
+          type="button"
+          aria-label="Background color picker"
+          title="Choose background color"
+          onClick={() => setIsPickerOpen((prev) => !prev)}
+          className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-[var(--ll-swatch-line,var(--ll-border-color))] ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+          style={{ backgroundColor: `#${bgHex}` }}
+        />
+        <ColorPicker
+          open={isPickerOpen}
+          value={`#${bgHex}`}
+          anchorRef={swatchRef}
+          onChange={(hex) => {
+            const next = hex.replace(/^#/, "").toUpperCase();
             setBgHex(next);
             onChangeBackground?.(next);
           }}
-          className={HEX_INPUT}
+          onClose={() => setIsPickerOpen(false)}
         />
+        <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0">
+          <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
+          <input
+            type="text"
+            maxLength={6}
+            aria-label="Background hex"
+            value={bgHex}
+            onChange={(e) => {
+              const next = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+              setBgHex(next);
+              onChangeBackground?.(next);
+            }}
+            className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+          />
+        </div>
       </div>
     </div>
   );
@@ -180,91 +175,101 @@ export const ThemeTokensBody: React.FC = () => {
   return (
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {tokenRows.map((row) => (
-        <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <button
-            ref={(el) => {
-              tokenRefs.current[row.label] = el;
-            }}
-            type="button"
-            aria-label={`${row.label} color picker`}
-            title={`Choose ${row.label.toLowerCase()} color`}
-            onClick={() => setActivePicker(activePicker === row.label ? null : row.label)}
-            className={`${SWATCH} ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active`}
-            style={{ backgroundColor: `#${row.hex}` }}
-          />
-          <ColorPicker
-            open={activePicker === row.label}
-            value={`#${row.hex}`}
-            anchorRef={{ current: tokenRefs.current[row.label] }}
-            onChange={(hex) => row.set(hex.replace(/^#/, "").toUpperCase())}
-            onClose={() => setActivePicker(null)}
-          />
-          <div className={`${HEX_FIELD} ll:w-27`}>
-            <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
-            <input
-              type="text"
-              maxLength={6}
-              aria-label={`${row.label} hex`}
-              value={row.hex}
-              onChange={(e) => row.set(e.target.value.toUpperCase())}
-              className={HEX_INPUT}
+        <div key={row.label} className="drow ll-drow ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center ll:w-full">
+          <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+            <button
+              ref={(el) => {
+                tokenRefs.current[row.label] = el;
+              }}
+              type="button"
+              aria-label={`${row.label} color picker`}
+              title={`Choose ${row.label.toLowerCase()} color`}
+              onClick={() => setActivePicker(activePicker === row.label ? null : row.label)}
+              className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-[var(--ll-swatch-line,var(--ll-border-color))] ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+              style={{ backgroundColor: `#${row.hex}` }}
             />
+            <ColorPicker
+              open={activePicker === row.label}
+              value={`#${row.hex}`}
+              anchorRef={{ current: tokenRefs.current[row.label] }}
+              onChange={(hex) => row.set(hex.replace(/^#/, "").toUpperCase())}
+              onClose={() => setActivePicker(null)}
+            />
+            <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0">
+              <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
+              <input
+                type="text"
+                maxLength={6}
+                aria-label={`${row.label} hex`}
+                value={row.hex}
+                onChange={(e) => row.set(e.target.value.toUpperCase())}
+                className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+              />
+            </div>
           </div>
-          <span className="ll:flex-1 ll:min-w-0 ll:ml-1 ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted">
+          <span className="dsub ll-dsub ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted">
             {row.label}
           </span>
         </div>
       ))}
 
       {/* Default Radius */}
-      <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:w-35 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-        <Icon icon={SquareRoundCorner} size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />
-        <input
-          type="text"
-          inputMode="numeric"
+      <div className="dgrid ll-dgrid ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+        <NumberField
+          size="sm"
+          className="ll:w-full ll:min-w-0"
+          label={<Icon icon={SquareRoundCorner} size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />}
           aria-label="Default radius"
           value={radius}
-          onChange={(e) => {
-            const n = parseFloat(e.target.value);
-            if (!Number.isNaN(n)) setRadius(n);
+          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+          onChange={(r) => {
+            if (typeof r === "number") setRadius(r);
           }}
-          className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
         />
       </div>
 
       {/* Theme Font */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Font</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Font
+        </span>
         <Select
           size="sm"
           aria-label="Theme font"
           value={themeFont}
           options={PAGE_FONT_OPTIONS}
           onChange={(v) => setThemeFont(v)}
+          className="ll:w-full ll-has-prefix-8"
         />
       </div>
 
       {/* Type Scale */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Scale</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Scale
+        </span>
         <Select
           size="sm"
           aria-label="Type scale"
           value={typeScale}
           options={SCALE_OPTIONS}
           onChange={(v) => setTypeScale(v)}
+          className="ll:w-full ll-has-prefix-10"
         />
       </div>
 
       {/* Theme Shadow */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Shadow</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Shadow
+        </span>
         <Select
           size="sm"
           aria-label="Theme shadow"
           value={themeShadow}
           options={SHADOW_OPTIONS}
           onChange={(v) => setThemeShadow(v)}
+          className="ll:w-full ll-has-prefix-14"
         />
       </div>
     </div>

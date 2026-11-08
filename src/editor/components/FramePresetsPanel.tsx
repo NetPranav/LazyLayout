@@ -314,17 +314,17 @@ export function FramePresetsPanel({
       aria-label={ariaLabel || "Frame presets"}
       aria-labelledby={panelId}
       tabIndex={-1}
-      className={`ll:fixed ll:z-60 ll:w-frame-presets ll:h-frame-presets ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-hidden ll:outline-none ${className}`}
+      className={`ins frp ll-frp ll:fixed ll:z-60 ll:w-frame-presets ll:h-frame-presets ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-hidden ll:outline-none ${className}`}
     >
       {/* Header (44px) */}
-      <div className="ll:flex ll:items-center ll:gap-1 ll:h-11 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
+      <div className="frh ll-frh ll:flex ll:items-center ll:gap-1 ll:h-11 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
         <span
           id={panelId}
-          className="ll:text-body ll:font-medium ll:text-primary"
+          className="frt ll-frt ll:text-body ll:font-medium ll:text-primary"
         >
           Frame
         </span>
-        <span className="ll:flex-1" />
+        <span className="sp ll:flex-1" />
 
         {/* Orientation: Portrait */}
         <button
@@ -334,7 +334,7 @@ export function FramePresetsPanel({
           aria-label="Portrait"
           title="Portrait"
           onClick={() => setOrientation((prev) => (prev === "p" ? "" : "p"))}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+          className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
             orientation === "p"
               ? "ll:bg-surface-seg ll:text-primary"
               : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -359,7 +359,7 @@ export function FramePresetsPanel({
           aria-label="Landscape"
           title="Landscape"
           onClick={() => setOrientation((prev) => (prev === "l" ? "" : "l"))}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+          className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
             orientation === "l"
               ? "ll:bg-surface-seg ll:text-primary"
               : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -378,7 +378,7 @@ export function FramePresetsPanel({
       </div>
 
       {/* Search Input (40px) */}
-      <div className="ll:flex ll:items-center ll:gap-2 ll:h-10 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:bg-surface-bar ll:focus-within:border-primary ll:focus-within:ring-1 ll:focus-within:ring-primary">
+      <div className="insq ll-insq ll:flex ll:items-center ll:gap-2.5 ll:h-10 ll:px-4 ll:border-b ll:border-border ll:shrink-0 ll:text-muted">
         <Icon icon={Search} size={16} className="ll:text-muted ll:shrink-0" />
         <input
           ref={searchInputRef}
@@ -392,21 +392,21 @@ export function FramePresetsPanel({
           aria-label="Search presets"
           autoComplete="off"
           spellCheck="false"
-          className="ll:flex-1 ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:text-primary placeholder:ll:text-muted"
+          className="ll:flex-1 ll:min-w-0 ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:text-primary placeholder:ll:text-muted"
         />
       </div>
 
       {/* Custom Size Section */}
-      <div className="ll:flex ll:flex-col ll:gap-2 ll:p-3 ll:px-4 ll:border-b ll:border-border ll:shrink-0">
-        <span className="ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted">
+      <div className="frc ll-frc ll:flex ll:flex-col ll:gap-2 ll:p-3 ll:px-4 ll:border-b ll:border-border ll:shrink-0">
+        <span className="micro ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted">
           Custom
         </span>
-        <div className="ll:flex ll:items-center ll:gap-1.5 ll:min-w-0">
+        <div className="frcr ll-frcr ll:flex ll:items-center ll:gap-1.5 ll:min-w-0">
           {/* W Field */}
-          <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7.5 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary ll:focus-within:ring-1 ll:focus-within:ring-primary">
+          <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary">
             <label
               htmlFor="fr-w"
-              className="ll:text-micro ll:font-mono ll:text-muted ll:select-none"
+              className="pf ll-pf ll:text-micro ll:font-mono ll:text-muted ll:select-none"
             >
               W
             </label>
@@ -428,7 +428,7 @@ export function FramePresetsPanel({
             aria-label="Lock ratio"
             title="Lock ratio"
             onClick={() => setRatioLocked((prev) => !prev)}
-            className={`ll:w-7.5 ll:h-7.5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:border ll:border-border ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+            className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:border ll:border-border ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
               ratioLocked
                 ? "ll:bg-surface-seg ll:text-primary"
                 : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
@@ -438,10 +438,10 @@ export function FramePresetsPanel({
           </button>
 
           {/* H Field */}
-          <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7.5 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary ll:focus-within:ring-1 ll:focus-within:ring-primary">
+          <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary">
             <label
               htmlFor="fr-h"
-              className="ll:text-micro ll:font-mono ll:text-muted ll:select-none"
+              className="pf ll-pf ll:text-micro ll:font-mono ll:text-muted ll:select-none"
             >
               H
             </label>
@@ -461,7 +461,7 @@ export function FramePresetsPanel({
             type="button"
             disabled={customW <= 0 || customH <= 0}
             onClick={handleAddCustom}
-            className="ll:h-7.5 ll:px-3 ll:rounded-sm ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-secondary ll:hover:text-primary ll:text-micro ll:font-medium ll:whitespace-nowrap ll:disabled:opacity-40 ll:disabled:pointer-events-none ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            className="frbtn ll-frbtn ll:h-7 ll:px-3 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:hover:bg-surface-seg ll:text-secondary ll:hover:text-primary ll:text-micro ll:font-medium ll:whitespace-nowrap ll:disabled:opacity-40 ll:disabled:pointer-events-none ll:disabled:border-transparent ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
           >
             Add frame
           </button>
@@ -469,15 +469,15 @@ export function FramePresetsPanel({
       </div>
 
       {/* Preset List */}
-      <div className="ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:p-2">
+      <div className="frl ll-frl ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:p-2">
         {filteredGroups.length === 0 ? (
-          <div className="ll:py-8 ll:text-center ll:text-body ll:text-muted">
+          <div className="frnone ll-frnone ll:py-8 ll:text-center ll:text-body ll:text-muted">
             Nothing found
           </div>
         ) : (
           filteredGroups.map((g) => (
             <div key={g.group} className="ll:flex ll:flex-col">
-              <span className="ll:px-2 ll:pt-3 ll:pb-1 ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+              <span className="frg micro ll:px-2 ll:pt-3 ll:pb-1 ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
                 {g.group}
               </span>
               {g.items.map((item) => {
@@ -498,23 +498,23 @@ export function FramePresetsPanel({
                       onPick?.({ name: item.name, width: w, height: h });
                       onClose?.();
                     }}
-                    className={`ll:flex ll:items-center ll:gap-3 ll:w-full ll:h-8 ll:px-2 ll:rounded-sm ll:text-left ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                    className={`frr ll-frr ll:flex ll:items-center ll:gap-3 ll:w-full ll:h-8 ll:px-2 ll:rounded-sm ll:text-left ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
                       isSelected
-                        ? "ll:bg-surface-hover ll:text-primary"
+                        ? "on ll:bg-surface-hover ll:text-primary"
                         : "ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover"
                     }`}
                   >
                     {/* Proportional Glyph */}
-                    <span className="ll:w-5 ll:h-5 ll:shrink-0 ll:grid ll:place-items-center">
+                    <span className="frgl ll-frgl ll:w-5 ll:h-5 ll:shrink-0 ll:grid ll:place-items-center">
                       <i
                         style={{ width: glyph.width, height: glyph.height }}
                         className="ll:block ll:border ll:border-muted ll:rounded-xs"
                       />
                     </span>
-                    <span className="ll:flex-1 ll:min-w-0 ll:truncate ll:text-body">
+                    <span className="frnm ll-frnm ll:flex-1 ll:min-w-0 ll:truncate ll:text-body">
                       {item.name}
                     </span>
-                    <span className="ll:shrink-0 ll:font-mono ll:text-micro ll:text-muted">
+                    <span className="frsz ll-frsz ll:shrink-0 ll:font-mono ll:text-micro ll:text-muted">
                       {w} × {h}
                     </span>
                   </button>

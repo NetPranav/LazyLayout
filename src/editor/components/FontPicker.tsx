@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Search, Check, Plus } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
 import { useMounted } from "./useMounted";
+import { useSlidingIndicator } from "./useSlidingIndicator";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
 import {
@@ -81,6 +82,19 @@ export function FontPicker({
   const [searchQuery, setSearchQuery] = useState("");
   const [uploadedFonts, setUploadedFonts] = useState<FontEntry[]>([]);
   const [focusedFamily, setFocusedFamily] = useState<string>(value);
+
+  // Sliding indicator for font categories
+  const categoryContainerRef = useRef<HTMLDivElement>(null);
+  const categoryMarkerRef = useRef<HTMLDivElement>(null);
+  const categoryButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const selectedCategoryIndex = FONT_CATEGORIES.indexOf(activeCategory);
+
+  useSlidingIndicator({
+    containerRef: categoryContainerRef,
+    indicatorRef: categoryMarkerRef,
+    itemRefs: categoryButtonRefs,
+    selectedIndex: selectedCategoryIndex >= 0 ? selectedCategoryIndex : 0,
+  });
 
   // Combine project fonts with uploads
   const allProjectFonts = [...uploadedFonts, ...DEFAULT_PROJECT_FONTS];
@@ -367,12 +381,12 @@ export function FontPicker({
       aria-label={ariaLabel || "Font picker"}
       aria-labelledby={pickerId}
       tabIndex={-1}
-      className={`ll:fixed ll:z-60 ll:w-picker ll:bg-surface-float ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-hidden ll:outline-none ${className}`}
+      className={`fp ll-fp ll:fixed ll:z-60 ll:w-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-hidden ll:outline-none ${className}`}
     >
       {/* Header (Search + Categories) */}
-      <div className="ll:p-2 ll:flex ll:flex-col ll:gap-2 ll:shrink-0">
+      <div className="fp-hd ll:p-2 ll:flex ll:flex-col ll:gap-2 ll:shrink-0">
         {/* Search Field (28px) */}
-        <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary ll:focus-within:ring-1 ll:focus-within:ring-primary">
+        <div className="dfield ll-dfield fp-s ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary">
           <Icon icon={Search} size={14} className="ll:text-muted ll:shrink-0" />
           <input
             ref={searchInputRef}
@@ -389,23 +403,32 @@ export function FontPicker({
           />
         </div>
 
-        {/* Categories Segmented Control (24px) */}
+        {/* Categories Segmented Control (24px) with sliding highlight */}
         <div
+          ref={categoryContainerRef}
           role="group"
           aria-label="Font category"
-          className="ll:flex ll:items-center ll:h-6 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ll:gap-0.5"
+          className="seg dseg fill pseg fp-seg ll:relative ll:flex ll:items-center ll:h-6 ll:p-px ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ll:gap-px ll:shrink-0 ll:select-none"
         >
-          {FONT_CATEGORIES.map((cat) => {
+          <div
+            ref={categoryMarkerRef}
+            aria-hidden="true"
+            className="sgh ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-xs ll:pointer-events-none ll:hidden"
+          />
+          {FONT_CATEGORIES.map((cat, idx) => {
             const isSel = activeCategory === cat;
             return (
               <button
                 key={cat}
+                ref={(el) => {
+                  categoryButtonRefs.current[idx] = el;
+                }}
                 type="button"
                 aria-pressed={isSel}
                 onClick={() => setActiveCategory(cat)}
-                className={`ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1.5 ll:rounded-xs ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                className={`ll:relative ll:z-10 ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1.5 ll:rounded-xs ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
                   isSel
-                    ? "ll:bg-surface-seg ll:text-primary ll:shadow-xs"
+                    ? "ll:text-primary"
                     : "ll:text-muted ll:hover:text-primary"
                 }`}
               >

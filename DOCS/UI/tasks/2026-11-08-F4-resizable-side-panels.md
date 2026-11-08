@@ -12,3 +12,9 @@ P: the panel splitter/resizer code (grep `rsz`, `resize`, `--lw`, `--rw`, `lw`, 
 4. All 8 themes, tokens only, no raw requestAnimationFrame (motion loop), shared springs, keep every testid (`left-panel`, `right-panel`, ...). 
 Lane paths: `src/editor/shell/EditorShell.tsx`, top-level `src/editor/shell/*.ts*`, `src/editor/shell/left-panel/**`, `src/editor/shell/right-panel/**`, `src/editor/panels/details/**`, `src/editor/panels/layers/**`, tokens inside lane blocks `B2 layers`, `B3 inspector`.
 Done: screenshots in `DOCS/UI/handoffs/screenshots/f4/` (min, wide, max for left and right, Warm and Darkroom, 1440; a 6-frame strip of the release settle), tsc own files, one handoff `2026-11-08-HHMM-F4.md`. Do not commit.
+
+## Item 0 (do first, small leftovers from F1; F1 is committed so you now own these files too)
+- `src/editor/components/ColorPicker.tsx:759`: `ll:border-white` -> a token colour (no raw white).
+- `src/editor/panels/details/sections/PageSection.tsx:124,188`: replace the arbitrary `ll:border-[var(--ll-swatch-line,...)]` with a token utility (add a token in `B3 inspector` block if needed).
+- `src/editor/shell/canvas-chrome/Toolbar.tsx:323`: replace the raw `requestAnimationFrame` with the motion loop (`defaultHost.register`, one-shot, unregister after run). You may edit this one line.
+- Extra paths you may edit for item 0: `src/editor/components/ColorPicker*`.

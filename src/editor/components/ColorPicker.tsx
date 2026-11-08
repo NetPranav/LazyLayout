@@ -2,9 +2,10 @@
 
 import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Pipette, Plus, LinkIcon, Check } from "./ColorPickerIcons";
+import { Pipette, Plus, LinkIcon, Check, ChevronDown } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
 import { useMounted } from "./useMounted";
+import { useSlidingIndicator } from "./useSlidingIndicator";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
 import {
@@ -94,12 +95,26 @@ export function ColorPicker({
 
   const [mode, setMode] = useState<ColorMode>("Solid");
   const [model, setModel] = useState<ColorModel>("Hex");
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [hsv, setHsv] = useState(initHsv);
   const [alpha, setAlpha] = useState(externalOpacity / 100);
   const [linkedToken, setLinkedToken] = useState<string | null>(null);
   const [imageFit, setImageFit] = useState<ImageFit>("Fill");
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Sliding indicator for Mode Tabs
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const tabsMarkerRef = useRef<HTMLDivElement>(null);
+  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const selectedModeIndex = MODES.indexOf(mode);
+
+  useSlidingIndicator({
+    containerRef: tabsContainerRef,
+    indicatorRef: tabsMarkerRef,
+    itemRefs: tabButtonRefs,
+    selectedIndex: selectedModeIndex >= 0 ? selectedModeIndex : 0,
+  });
 
   // Gradient stops
   const [stops, setStops] = useState<ColorStop[]>([
@@ -559,26 +574,35 @@ export function ColorPicker({
       aria-label={ariaLabel || "Colour picker"}
       aria-labelledby={pickerId}
       tabIndex={-1}
-      className={`ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
+      className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
     >
-      <div className="ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
-        {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) */}
+      <div className="cp-in ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
+        {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */}
         <div
+          ref={tabsContainerRef}
           role="group"
           aria-label="Fill type"
-          className="ll:flex ll:items-center ll:h-7 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ll:gap-0.5 ll:shrink-0"
+          className="seg dseg fill pseg cp-tabs ll:relative ll:flex ll:items-center ll:h-7 ll:p-px ll:bg-surface-bar ll:rounded-md ll:border ll:border-border ll:gap-px ll:shrink-0 ll:select-none"
         >
-          {MODES.map((m) => {
+          <div
+            ref={tabsMarkerRef}
+            aria-hidden="true"
+            className="sgh ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
+          />
+          {MODES.map((m, idx) => {
             const isSel = mode === m;
             return (
               <button
                 key={m}
+                ref={(el) => {
+                  tabButtonRefs.current[idx] = el;
+                }}
                 type="button"
                 aria-pressed={isSel}
                 onClick={() => setMode(m)}
-                className={`ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1 ll:rounded-xs ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                className={`ll:relative ll:z-10 ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1.5 ll:rounded-sm ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
                   isSel
-                    ? "ll:bg-surface-seg ll:text-primary ll:shadow-xs"
+                    ? "ll:text-primary"
                     : "ll:text-muted ll:hover:text-primary"
                 }`}
               >
@@ -594,7 +618,7 @@ export function ColorPicker({
             ref={stopsBarRef}
             onClick={handleStopsBarClick}
             aria-label="Gradient stops. Click to add, drag off to remove."
-            className="ll:relative ll:h-8.5 ll:cursor-copy ll:select-none ll:shrink-0"
+            className="cp-stops ll:relative ll:h-8.5 ll:cursor-copy ll:select-none ll:shrink-0"
           >
             {/* Checkerboard background + gradient fill */}
             <div
@@ -606,7 +630,7 @@ export function ColorPicker({
                   })
                   .join(", ")})`,
               }}
-              className="ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-4 ll:rounded-sm ll:border ll:border-border"
+              className="cp-bar ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-4 ll:rounded-sm ll:border ll:border-border"
             />
             {/* Draggable Stop Markers */}
             {stops.map((stop, i) => {
@@ -619,18 +643,21 @@ export function ColorPicker({
                   onPointerDown={(e) => handleStopMarkerPointerDown(i, e)}
                   aria-pressed={isSelected}
                   aria-label={`Stop ${i + 1} at ${Math.round(stop.p * 100)}%`}
-                  style={{ left: gradientStopLeftCalc(stop.p) }}
-                  className={`ll:absolute ll:top-2.5 ll:w-3 ll:h-5.5 ll:p-0 ll:rounded-xs ll:border-0 ll:cursor-grab ll:shadow-sm ll:transition-transform ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-                    isSelected
-                      ? "ll:scale-110 ll:ring-2 ll:ring-primary ll:z-10"
-                      : "ll:ring-1 ll:ring-border ll:z-1"
+                  style={{
+                    left: gradientStopLeftCalc(stop.p),
+                    boxShadow: isSelected
+                      ? "0 0 0 2px var(--ll-surface-panel), 0 0 0 4px var(--ll-text-primary)"
+                      : "0 0 0 1px var(--ll-text-secondary), 0 1px 3px rgba(0,0,0,0.25)",
+                  }}
+                  className={`cp-mk ll:absolute ll:top-2.5 ll:w-3 ll:h-5.5 ll:p-0 ll:rounded-xs ll:border-0 ll:cursor-grab ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                    isSelected ? "ll:z-10" : "ll:z-1"
                   }`}
                 >
                   <i
                     style={{
                       backgroundColor: `rgba(${stopRgb.join(",")}, ${stop.a})`,
                     }}
-                    className="ll:absolute ll:inset-0.5 ll:rounded-xs ll:block ll:border ll:border-border"
+                    className="ll:absolute ll:inset-0.75 ll:rounded-xs ll:block ll:border ll:border-border"
                   />
                 </button>
               );
@@ -664,7 +691,7 @@ export function ColorPicker({
                   ? IMAGE_TILE_SIZE
                   : "cover",
             }}
-            className="ll:relative ll:h-sb-square ll:border ll:border-dashed ll:border-muted ll:rounded-sm ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2.5 ll:text-muted ll:bg-center ll:bg-no-repeat ll:p-3"
+            className="cp-img ll:relative ll:h-sb-square ll:border ll:border-dashed ll:border-muted ll:rounded-sm ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-2.5 ll:text-muted ll:bg-center ll:bg-no-repeat ll:p-3"
           >
             {!imageSrc && (
               <>
@@ -672,7 +699,7 @@ export function ColorPicker({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="ll:h-7 ll:px-3.5 ll:rounded-sm ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-primary ll:text-small ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                  className="dtxt ll:h-7 ll:px-3.5 ll:rounded-sm ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-primary ll:text-small ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
                 >
                   Upload
                 </button>
@@ -688,12 +715,12 @@ export function ColorPicker({
             />
 
             {/* Image fit select */}
-            <div className="ll:absolute ll:left-2 ll:right-2 ll:bottom-2">
+            <div className="cp-fit ll:absolute ll:left-2 ll:right-2 ll:bottom-2">
               <select
                 value={imageFit}
                 onChange={(e) => setImageFit(e.target.value as ImageFit)}
                 aria-label="Image fit"
-                className="ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:text-micro ll:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                className="dfield ll-dfield ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:text-micro ll:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
               >
                 {FITS.map((fit) => (
                   <option key={fit} value={fit}>
@@ -720,31 +747,32 @@ export function ColorPicker({
                 backgroundImage:
                   "linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)",
               }}
-              className="ll:relative ll:w-full ll:h-sb-square ll:rounded-sm ll:border ll:border-border ll:cursor-crosshair ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+              className="cp-sb ll:relative ll:w-full ll:h-sb-square ll:rounded-sm ll:border ll:border-border ll:cursor-crosshair ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
             >
-              {/* SB Thumb (4px radius, ctl-fg token border) */}
+              {/* Circular SB Thumb matching prototype line 1489 */}
               <i
                 style={{
                   left: `${hsv.s * 100}%`,
                   top: `${(1 - hsv.v) * 100}%`,
+                  boxShadow: "0 0 0 1px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.45)",
                 }}
-                className="ll:absolute ll:w-3.5 ll:h-3.5 ll:-ml-1.75 ll:-mt-1.75 ll:rounded-sm ll:border-2 ll:border-control-primary-fg ll:shadow-sm ll:pointer-events-none"
+                className="cp-th ll:absolute ll:w-3.5 ll:h-3.5 ll:-ml-1.75 ll:-mt-1.75 ll:rounded-full ll:border-2 ll:border-white ll:pointer-events-none"
               />
             </div>
 
             {/* Eyedropper + Sliders (Hue + Opacity) */}
-            <div className="ll:flex ll:items-center ll:gap-2">
+            <div className="cp-r1 ll:flex ll:items-center ll:gap-2">
               <button
                 type="button"
                 onClick={handleEyedropper}
                 aria-label="Pick colour from screen"
                 title="Eyedropper"
-                className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-muted ll:hover:text-primary ll:transition-colors ll:shrink-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                className="ib cp-eye ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors ll:shrink-0 ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
               >
                 <Icon icon={Pipette} size={14} />
               </button>
 
-              <div className="ll:flex ll:flex-col ll:gap-1.5 ll:flex-1 ll:min-w-0">
+              <div className="cp-sls ll:flex ll:flex-col ll:gap-1.5 ll:flex-1 ll:min-w-0">
                 {/* Hue Slider (12px) */}
                 <div
                   ref={hueSliderRef}
@@ -759,11 +787,14 @@ export function ColorPicker({
                     background:
                       "linear-gradient(90deg, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00)",
                   }}
-                  className="ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+                  className="cp-s h ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
                 >
                   <i
-                    style={{ left: `${(hsv.h / 360) * 100}%` }}
-                    className="ll:absolute ll:-top-0.5 ll:w-1.5 ll:h-4 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:border ll:border-surface-panel ll:pointer-events-none"
+                    style={{
+                      left: `${(hsv.h / 360) * 100}%`,
+                      boxShadow: "0 0 0 2px var(--ll-surface-panel)",
+                    }}
+                    className="cp-sh ll:absolute ll:-top-0.75 ll:w-1.5 ll:h-4.5 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:pointer-events-none"
                   />
                 </div>
 
@@ -778,41 +809,73 @@ export function ColorPicker({
                   aria-valuenow={Math.round(alpha * 100)}
                   onPointerDown={handleOpacityPointerDown}
                   style={{
-                    backgroundColor: "var(--ll-panel)",
-                    backgroundImage: `linear-gradient(90deg, transparent, #${hex}), conic-gradient(var(--ll-border) 25%, var(--ll-panel) 0 50%, var(--ll-border) 0 75%, var(--ll-panel) 0)`,
+                    backgroundColor: "var(--ll-surface-panel)",
+                    backgroundImage: `linear-gradient(90deg, transparent, #${hex}), conic-gradient(var(--ll-border-color) 25%, var(--ll-surface-panel) 0 50%, var(--ll-border-color) 0 75%, var(--ll-surface-panel) 0)`,
                     backgroundSize: OPACITY_SLIDER_BG_SIZE,
                   }}
-                  className="ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+                  className="cp-s a ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
                 >
                   <i
-                    style={{ left: `${alpha * 100}%` }}
-                    className="ll:absolute ll:-top-0.5 ll:w-1.5 ll:h-4 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:border ll:border-surface-panel ll:pointer-events-none"
+                    style={{
+                      left: `${alpha * 100}%`,
+                      boxShadow: "0 0 0 2px var(--ll-surface-panel)",
+                    }}
+                    className="cp-sh ll:absolute ll:-top-0.75 ll:w-1.5 ll:h-4.5 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:pointer-events-none"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Model & Input Fields Row */}
-            <div className="ll:flex ll:items-center ll:gap-1.5">
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value as ColorModel)}
-                aria-label="Colour model"
-                className="ll:w-21 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-micro ll:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-              >
-                {MODELS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+            {/* Model & Input Fields Row (cp-r2) */}
+            <div className="cp-r2 ll:flex ll:items-center ll:gap-1.5">
+              {/* Custom Model Dropdown (84px wide) */}
+              <div className="dd ll:relative ll:w-21 ll:h-7 ll:shrink-0">
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={isModelMenuOpen}
+                  aria-label="Colour model"
+                  onClick={() => setIsModelMenuOpen((prev) => !prev)}
+                  className="dfield dd ll-dfield ll:flex ll:items-center ll:justify-between ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-micro ll:font-mono ll:text-primary ll:outline-none ll:hover:border-muted ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:cursor-pointer"
+                >
+                  <span className="ddt">{model}</span>
+                  <Icon icon={ChevronDown} size={12} className="ll:text-muted ll:shrink-0" />
+                </button>
+                {isModelMenuOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Colour models"
+                    className="ll:absolute ll:left-0 ll:top-8 ll:z-70 ll:w-full ll:py-1 ll:rounded-sm ll:border ll:border-border ll:bg-surface-float ll:shadow-soft ll:flex ll:flex-col"
+                  >
+                    {MODELS.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        role="option"
+                        aria-selected={model === m}
+                        onClick={() => {
+                          setModel(m);
+                          setIsModelMenuOpen(false);
+                        }}
+                        className={`ll:flex ll:items-center ll:h-6 ll:px-2 ll:text-micro ll:font-mono ll:text-left ll:transition-colors ll:cursor-pointer ${
+                          model === m
+                            ? "ll:bg-surface-hover ll:text-primary ll:font-medium"
+                            : "ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {/* Hex Mode Inputs */}
+              {/* Hex Mode: Hex input + Opacity input (cp-hexv) */}
               {model === "Hex" ? (
-                <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
+                <div className="cp-hexv ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
                   {/* Hex input */}
-                  <div className="ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary">
-                    <span className="ll:text-micro ll:font-mono ll:text-muted">
+                  <div className="dfield ll-dfield ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary">
+                    <span className="pf ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:select-none">
                       #
                     </span>
                     <input
@@ -820,7 +883,7 @@ export function ColorPicker({
                       maxLength={6}
                       value={hex}
                       onChange={(e) => {
-                        const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "");
+                        const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
                         if (clean.length === 6) {
                           const newRgb = hex2rgb(clean);
                           const nextHsv = rgb2hsv(newRgb[0], newRgb[1], newRgb[2]);
@@ -833,9 +896,9 @@ export function ColorPicker({
                     />
                   </div>
 
-                  {/* Opacity input */}
-                  <div className="ll:flex ll:items-center ll:gap-1 ll:w-16 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary">
-                    <span className="ll:text-micro ll:font-mono ll:text-muted">
+                  {/* Opacity input (64px) */}
+                  <div className="dfield ll-dfield ll:flex ll:items-center ll:gap-1 ll:w-16 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary ll:shrink-0">
+                    <span className="pf ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:select-none">
                       A
                     </span>
                     <input
@@ -852,45 +915,54 @@ export function ColorPicker({
                       aria-label="Opacity"
                       className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:text-right ll:text-primary"
                     />
-                    <span className="ll:text-micro ll:font-mono ll:text-muted">
+                    <span className="sf ll:text-micro ll:font-mono ll:text-muted ll:select-none">
                       %
                     </span>
                   </div>
                 </div>
               ) : (
-                /* RGB / HSL / OKLCH 4-input row */
-                <div className="ll:grid ll:grid-cols-4 ll:gap-1 ll:flex-1 ll:min-w-0">
-                  {renderModelInputs()}
-                </div>
+                /* Non-hex modes: Copy CSS button in Row 2, 4-input row in Row 3 */
+                <button
+                  type="button"
+                  onClick={handleCopyCss}
+                  title="Copy value"
+                  aria-label="Copy colour value"
+                  className="cp-css ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:flex ll:items-center ll:justify-between ll:rounded-sm ll:border ll:border-border ll:hover:border-muted ll:bg-surface-bar ll:font-mono ll:text-micro ll:text-muted ll:hover:text-primary ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                >
+                  <span className="ll:truncate">{cssString}</span>
+                  {copied && (
+                    <Icon
+                      icon={Check}
+                      size={12}
+                      className="ll:text-primary ll:shrink-0 ll:ml-1"
+                    />
+                  )}
+                </button>
               )}
             </div>
 
-            {/* Copy CSS String Button */}
-            <button
-              type="button"
-              onClick={handleCopyCss}
-              title="Copy value"
-              aria-label="Copy colour value"
-              className="ll:w-full ll:h-7 ll:px-2 ll:flex ll:items-center ll:justify-between ll:rounded-sm ll:border ll:border-transparent ll:hover:border-muted ll:bg-surface-bar ll:font-mono ll:text-micro ll:text-muted ll:hover:text-primary ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-            >
-              <span className="ll:truncate">{cssString}</span>
-              {copied && (
-                <Icon
-                  icon={Check}
-                  size={12}
-                  className="ll:text-primary ll:shrink-0 ll:ml-1"
-                />
-              )}
-            </button>
+            {/* Row 3: 4-Channel Grid for RGB, HSL, OKLCH */}
+            {model !== "Hex" && (
+              <div className="cp-r3 ll:grid ll:grid-cols-4 ll:gap-1.5 ll:w-full">
+                {renderModelInputs()}
+              </div>
+            )}
 
             {/* Swatches Section (Document + Tokens) */}
-            <div className="ll:flex ll:flex-col ll:gap-2 ll:pt-2 ll:border-t ll:border-border">
+            <div className="cp-sw ll:flex ll:flex-col ll:gap-2 ll:pt-2.5 ll:border-t ll:border-border">
               {/* Document Swatches */}
               <div className="ll:flex ll:flex-col ll:gap-1.5">
-                <span className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted">
+                <h4 className="ll:font-mono ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted ll:m-0">
                   Document
-                </span>
-                <div className="ll:grid ll:grid-cols-10 ll:gap-1.5">
+                </h4>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(10, 20px)",
+                    justifyContent: "space-between",
+                    rowGap: "5px",
+                  }}
+                >
                   {savedColors.slice(0, 9).map((c) => (
                     <button
                       key={c}
@@ -901,10 +973,13 @@ export function ColorPicker({
                         setHsv(nextHsv);
                         emitColorChange(c, alpha);
                       }}
-                      style={{ backgroundColor: `#${c}` }}
+                      style={{
+                        backgroundColor: `#${c}`,
+                        borderColor: "var(--ll-swatch-line)",
+                      }}
                       title={`#${c}`}
                       aria-label={`Document colour #${c}`}
-                      className="ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-border ll:hover:scale-110 ll:transition-transform ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+                      className="cp-c ll:w-5 ll:h-5 ll:p-0 ll:rounded-sm ll:border ll:hover:scale-105 ll:active:scale-90 ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:cursor-pointer"
                     />
                   ))}
                   {/* Plus button to save current color */}
@@ -917,7 +992,7 @@ export function ColorPicker({
                     }}
                     title="Save current colour"
                     aria-label="Save current colour"
-                    className="ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-dashed ll:border-muted ll:text-muted ll:hover:text-primary ll:hover:border-primary ll:flex ll:items-center ll:justify-center ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+                    className="cp-add ll:w-5 ll:h-5 ll:p-0 ll:rounded-sm ll:border ll:border-dashed ll:border-muted ll:text-muted ll:hover:text-primary ll:hover:border-primary ll:flex ll:items-center ll:justify-center ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:bg-transparent ll:cursor-pointer"
                   >
                     <Icon icon={Plus} size={12} />
                   </button>
@@ -926,10 +1001,17 @@ export function ColorPicker({
 
               {/* Token Swatches */}
               <div className="ll:flex ll:flex-col ll:gap-1.5">
-                <span className="ll:text-micro ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted">
+                <h4 className="ll:font-mono ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted ll:m-0">
                   Tokens
-                </span>
-                <div className="ll:grid ll:grid-cols-10 ll:gap-1.5">
+                </h4>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(10, 20px)",
+                    justifyContent: "space-between",
+                    rowGap: "5px",
+                  }}
+                >
                   {COLOR_TOKENS.map((t) => {
                     const isLinked = linkedToken === t.token;
                     return (
@@ -937,13 +1019,22 @@ export function ColorPicker({
                         key={t.token}
                         type="button"
                         onClick={() => handleTokenSelect(t.token)}
-                        style={{ backgroundColor: `var(--ll-${t.token})` }}
+                        style={{
+                          backgroundColor: `var(--ll-${t.token})`,
+                          borderColor: "var(--ll-swatch-line)",
+                        }}
                         title={`${t.name} (--ll-${t.token})`}
                         aria-label={`Token ${t.name}`}
-                        className="ll:relative ll:w-5 ll:h-5 ll:rounded-sm ll:border ll:border-border ll:hover:scale-110 ll:transition-transform ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
+                        className="cp-c ll:relative ll:w-5 ll:h-5 ll:p-0 ll:rounded-sm ll:border ll:hover:scale-105 ll:active:scale-90 ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:cursor-pointer"
                       >
                         {isLinked && (
-                          <span className="ll:absolute ll:-right-0.5 ll:-bottom-0.5 ll:w-2.5 ll:h-2.5 ll:rounded-xs ll:bg-primary ll:text-surface-panel ll:flex ll:items-center ll:justify-center">
+                          <span
+                            style={{
+                              backgroundColor: "var(--ll-control-primary-bg)",
+                              color: "var(--ll-control-primary-fg)",
+                            }}
+                            className="cp-link ll:absolute ll:-right-1 ll:-bottom-1 ll:w-3 ll:h-3 ll:p-0.5 ll:rounded-xs ll:flex ll:items-center ll:justify-center"
+                          >
                             <Icon icon={LinkIcon} size={8} />
                           </span>
                         )}
@@ -1052,11 +1143,11 @@ export function ColorPicker({
     return (
       <div
         key={prefix}
-        className="ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary"
+        className="dfield ll-dfield ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary"
       >
         <span
           data-scrub
-          className="ll:text-micro ll:font-mono ll:text-muted ll:select-none ll:cursor-ew-resize"
+          className="pf ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:select-none ll:cursor-ew-resize"
         >
           {prefix}
         </span>

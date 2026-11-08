@@ -35,7 +35,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `panels/database` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/database/`) | 10 | Needs design |
 | `panels/dependencies` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/dependencies/`) | 2 | `ReferenceViewerPanel.tsx` |
 | `panels/deployment` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/deployment/`) | 5 | Needs design |
-| `panels/details` | done | `src/editor/panels/details/`, `src/editor/shell/right-panel/` (`DetailsInspector.tsx`, sections, controls) | 46 | Rebuilt from prototype; reads real document |
+| `panels/details` | done | `src/editor/panels/details/`, `src/editor/shell/right-panel/` (`DetailsInspector.tsx`, sections, controls) | 46 | Rebuilt from prototype; reads real document; F1 pickers & options polished to P lines 964-989, 4165-4305 |
 | `panels/execution-trace` | todo | `src/editor` (TraceView built inside code-view; standalone panel not rebuilt) | 1 | `ExecutionTracePanel.tsx` |
 | `panels/global-search` | todo | `src/editor` (no new version yet; `CommandPalette` built in components) | 2 | `GlobalSearchPanel.tsx` |
 | `panels/history` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/history/`) | 2 | `UndoHistoryPanel.tsx` |
