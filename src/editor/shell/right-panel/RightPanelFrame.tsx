@@ -113,7 +113,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
       data-testid="right-panel"
       data-mode={mode}
       data-ai-open={aiOpen ? "true" : undefined}
-      className={`ll-zone ll-right ll:w-panel ll:h-full ll:flex ll:flex-col ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel ll:border-l ll:border-border ${className}`}
+      className={`zone right ll-zone ll-right ll:w-panel ll:h-full ll:flex ll:flex-col ll:min-h-0 ll:overflow-hidden ll:bg-surface-panel ll:border-l ll:border-border ${className}`}
     >
       {/* Expanded AI View: swaps the entire right panel body */}
       {aiOpen ? (
@@ -130,6 +130,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
             <RightPanelHeader
               selectionName={activeSelectionName}
               selectionIcon={activeSelectionIcon}
+              isMulti={inspector.isMulti}
               isLayerHidden={activeIsHidden}
               onToggleHideLayer={activeToggleHide}
               onReset={onReset}

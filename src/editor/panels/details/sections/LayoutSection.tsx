@@ -68,6 +68,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const heightVal = typeof rawH === "number" ? rawH : rawH === null ? null : INSPECTOR_CONSTANTS.DEFAULT_HEIGHT;
 
   // Sizing constraints & clip
+  const isWidthSizingMixed = getValue?.("sizing.horizontal") === null;
+  const isHeightSizingMixed = getValue?.("sizing.vertical") === null;
   const sizingH = (getValue?.("sizing.horizontal") as string) || "fixed";
   const sizingV = (getValue?.("sizing.vertical") as string) || "fixed";
   const isClipped = (getValue?.("layout.overflowX") as string) === "hidden";
@@ -191,15 +193,19 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         <Select
           size="sm"
           aria-label="Width sizing"
-          value={sizingH}
+          value={isWidthSizingMixed ? undefined : sizingH}
+          placeholder={isWidthSizingMixed ? "Mixed" : undefined}
           options={WIDTH_SIZING_OPTIONS}
+          mixed={isWidthSizingMixed}
           onChange={(val) => onUpdateProp?.("sizing.horizontal", val)}
         />
         <Select
           size="sm"
           aria-label="Height sizing"
-          value={sizingV}
+          value={isHeightSizingMixed ? undefined : sizingV}
+          placeholder={isHeightSizingMixed ? "Mixed" : undefined}
           options={HEIGHT_SIZING_OPTIONS}
+          mixed={isHeightSizingMixed}
           onChange={(val) => onUpdateProp?.("sizing.vertical", val)}
         />
         <button
@@ -422,220 +428,246 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
   const flexShrink = (getValue?.("layout.flexShrink") as number) ?? 1;
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* Min/Max Width */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Min W"
-          aria-label="Min width"
-          value={minW}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.minWidth", v)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Max W"
-          aria-label="Max width"
-          value={maxW || null}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.maxWidth", v)}
-        />
-      </div>
-
-      {/* Min/Max Height */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Min H"
-          aria-label="Min height"
-          value={minH}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.minHeight", v)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Max H"
-          aria-label="Max height"
-          value={maxH || null}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.maxHeight", v)}
-        />
-      </div>
-
-      {/* Padding 4-grid */}
-      <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted">
-          Padding
-        </span>
-        <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="T"
-            aria-label="Padding Top"
-            value={padTop}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingTop", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="R"
-            aria-label="Padding Right"
-            value={padRight}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="B"
-            aria-label="Padding Bottom"
-            value={padBottom}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingBottom", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="L"
-            aria-label="Padding Left"
-            value={padLeft}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingLeft", v)}
-          />
-        </div>
-      </div>
-
-      {/* Margin 4-grid */}
-      <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted">
-          Margin
-        </span>
-        <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="T"
-            aria-label="Margin Top"
-            value={marginTop}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginTop", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="R"
-            aria-label="Margin Right"
-            value={marginRight}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="B"
-            aria-label="Margin Bottom"
-            value={marginBottom}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginBottom", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="L"
-            aria-label="Margin Left"
-            value={marginLeft}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginLeft", v)}
-          />
-        </div>
-      </div>
-
-      {/* Overflow X & Y */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Over X"
-          aria-label="Overflow X"
-          value={overflowX}
-          options={OVERFLOW_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
-        />
-        <Select
-          size="sm"
-          label="Over Y"
-          aria-label="Overflow Y"
-          value={overflowY}
-          options={OVERFLOW_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.overflowY", v)}
-        />
-      </div>
-
-      {/* Unit & Box Sizing */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Unit"
-          aria-label="Unit"
-          value={unit}
-          options={UNIT_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.unit", v)}
-        />
-        <Select
-          size="sm"
-          label="Box"
-          aria-label="Box sizing"
-          value={boxSizing}
-          options={BOX_SIZING_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.boxSizing", v)}
-        />
-      </div>
-
-      {/* Frame vs non-frame controls */}
-      {isFrame ? (
-        <Checkbox
-          label="Reverse layout"
-          checked={(getValue?.("layout.reverse") as boolean) || false}
-          onChange={(chk) => onUpdateProp?.("layout.reverse", chk)}
-        />
-      ) : (
-        <div className="ll:flex ll:flex-col ll:gap-2">
-          <Select
-            size="sm"
-            label="Self"
-            aria-label="Align self"
-            value={alignSelf}
-            options={ALIGN_SELF_OPTIONS}
-            onChange={(v) => onUpdateProp?.("layout.alignSelf", v)}
-          />
-          <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+    <div className="ll:flex ll:flex-col ll:w-full">
+      {/* Group 1: Min/Max Width and Height */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Width</span>
+          <div className="ll-dtc">
             <NumberField
               size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="Grow"
-              aria-label="Grow"
-              value={flexGrow}
+              label="Min"
+              aria-label="Min width"
+              value={minW}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(v) => onUpdateProp?.("layout.flexGrow", v)}
+              onChange={(v) => onUpdateProp?.("layout.minWidth", v)}
             />
             <NumberField
               size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="Shrink"
-              aria-label="Shrink"
-              value={flexShrink}
+              label="Max"
+              aria-label="Max width"
+              value={maxW || null}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(v) => onUpdateProp?.("layout.flexShrink", v)}
+              onChange={(v) => onUpdateProp?.("layout.maxWidth", v)}
             />
           </div>
         </div>
-      )}
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Height</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="Min"
+              aria-label="Min height"
+              value={minH}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.minHeight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="Max"
+              aria-label="Max height"
+              value={maxH || null}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.maxHeight", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 2: Padding & Margin */}
+      <div className="ll-dmg">
+        <div className="ll-dgl">
+          <span className="ll-dlbl">Padding</span>
+          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+            <NumberField
+              size="sm"
+              label="T"
+              aria-label="Padding Top"
+              value={padTop}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingTop", v)}
+            />
+            <NumberField
+              size="sm"
+              label="R"
+              aria-label="Padding Right"
+              value={padRight}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="B"
+              aria-label="Padding Bottom"
+              value={padBottom}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingBottom", v)}
+            />
+            <NumberField
+              size="sm"
+              label="L"
+              aria-label="Padding Left"
+              value={padLeft}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingLeft", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dgl">
+          <span className="ll-dlbl">Margin</span>
+          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+            <NumberField
+              size="sm"
+              label="T"
+              aria-label="Margin Top"
+              value={marginTop}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginTop", v)}
+            />
+            <NumberField
+              size="sm"
+              label="R"
+              aria-label="Margin Right"
+              value={marginRight}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="B"
+              aria-label="Margin Bottom"
+              value={marginBottom}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginBottom", v)}
+            />
+            <NumberField
+              size="sm"
+              label="L"
+              aria-label="Margin Left"
+              value={marginLeft}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginLeft", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 3: Overflow, Unit, Box Sizing */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Overflow X</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Overflow X"
+              value={overflowX}
+              options={OVERFLOW_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Overflow Y</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Overflow Y"
+              value={overflowY}
+              options={OVERFLOW_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.overflowY", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Unit</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Unit"
+              value={unit}
+              options={UNIT_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.unit", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Box</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Box sizing"
+              value={boxSizing}
+              options={BOX_SIZING_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.boxSizing", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 4: Frame vs Non-frame controls */}
+      <div className="ll-dmg">
+        {isFrame ? (
+          <div className="ll-dtrow">
+            <span className="ll-dlbl">Reverse</span>
+            <div className="ll-dtc">
+              <Checkbox
+                label=""
+                checked={(getValue?.("layout.reverse") as boolean) || false}
+                onChange={(chk) => onUpdateProp?.("layout.reverse", chk)}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Self</span>
+              <div className="ll-dtc">
+                <Select
+                  size="sm"
+                  aria-label="Align self"
+                  value={alignSelf}
+                  options={ALIGN_SELF_OPTIONS}
+                  onChange={(v) => onUpdateProp?.("layout.alignSelf", v)}
+                />
+              </div>
+            </div>
+
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Grow</span>
+              <div className="ll-dtc">
+                <NumberField
+                  size="sm"
+                  label=""
+                  aria-label="Grow"
+                  value={flexGrow}
+                  step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                  onChange={(v) => onUpdateProp?.("layout.flexGrow", v)}
+                />
+              </div>
+            </div>
+
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Shrink</span>
+              <div className="ll-dtc">
+                <NumberField
+                  size="sm"
+                  label=""
+                  aria-label="Shrink"
+                  value={flexShrink}
+                  step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                  onChange={(v) => onUpdateProp?.("layout.flexShrink", v)}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

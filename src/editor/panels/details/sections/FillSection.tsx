@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { GripVertical, Eye, EyeOff, Minus, Sliders } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
+import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import type { InspectorSectionProps, FillItem } from "../types";
 
@@ -56,6 +57,8 @@ export const FillSection: React.FC<FillSectionProps> = ({
   ]);
 
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
+  const swatchBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const syncPrimaryToStore = (updatedFills: FillItem[]) => {
     const visibleFill = updatedFills.find((f) => !f.hidden);
@@ -140,15 +143,22 @@ export const FillSection: React.FC<FillSectionProps> = ({
               <Icon icon={GripVertical} size={12} />
             </button>
 
-            {/* Lead swatch button */}
+            {/* Lead swatch button: opens ColorPicker */}
             <button
+              ref={(el) => {
+                swatchBtnRefs.current[fill.id] = el;
+              }}
               type="button"
               data-lead
               aria-label={`Fill ${fillNum} settings`}
               aria-haspopup="dialog"
-              aria-expanded={isOpen}
-              title={`Fill ${fillNum} settings`}
-              onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
+              aria-expanded={activeColorPickerId === fill.id || isOpen}
+              title={`Fill ${fillNum} color`}
+              onClick={() =>
+                setActiveColorPickerId(
+                  activeColorPickerId === fill.id ? null : fill.id
+                )
+              }
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
               <span
@@ -156,6 +166,17 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 style={{ backgroundColor: `#${fill.hex}` }}
               />
             </button>
+            <ColorPicker
+              open={activeColorPickerId === fill.id}
+              value={`#${fill.hex}`}
+              anchorRef={{ current: swatchBtnRefs.current[fill.id] }}
+              onChange={(hex) =>
+                handleUpdateFill(fill.id, {
+                  hex: hex.replace(/^#/, "").toUpperCase(),
+                })
+              }
+              onClose={() => setActiveColorPickerId(null)}
+            />
 
             {/* Hex and Opacity Fields */}
             <div className="ll-sum ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0">
@@ -193,6 +214,21 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Row Settings Trigger: opens RowSettingsPopover */}
+            <button
+              type="button"
+              aria-label={`Fill ${fillNum} settings`}
+              aria-haspopup="dialog"
+              aria-expanded={isOpen}
+              title={`Fill ${fillNum} settings`}
+              onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
+              className={`ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none ${
+                isOpen ? "ll:bg-control-secondary-bg ll:text-primary" : ""
+              }`}
+            >
+              <Icon icon={Sliders} size={14} />
+            </button>
 
             {/* Visibility Toggle */}
             <button

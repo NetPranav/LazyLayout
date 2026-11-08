@@ -14,6 +14,7 @@ import {
   Hash,
   type LucideIcon,
 } from "lucide-react";
+import { resolveProps } from "@/core/render/resolve";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayers } from "@/core/store/useDocumentStore";
 import type { Layer } from "@/core/document/schema";
@@ -28,6 +29,11 @@ import {
   type AlignTarget,
 } from "@/core/editing/editOps";
 import type { AlignMode, SpreadAxis } from "@/core/geometry/align";
+
+/**
+ * Multi-layer icon: closest existing glyph (`Frame`); a dedicated multi-layer glyph is requested in the handoff.
+ */
+export const MultiLayerIcon = Frame;
 
 export function getIconForArchetype(archetype?: string): LucideIcon {
   switch (archetype) {
@@ -102,7 +108,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
 
   const selectionIcon = useMemo(() => {
     if (!hasSelection) return Frame;
-    if (isMulti) return Frame;
+    if (isMulti) return MultiLayerIcon;
     return getIconForArchetype(primaryLayer?.archetype);
   }, [hasSelection, isMulti, primaryLayer?.archetype]);
 
@@ -123,16 +129,25 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
     (propKey: string): PropValue | null => {
       if (selectedLayers.length === 0) return null;
 
-      const firstVal = selectedLayers[0].properties?.[propKey] ?? null;
+      const getLayerVal = (layer: Layer) => {
+        if (!layer) return undefined;
+        if (layer.properties?.[propKey] !== undefined) {
+          return layer.properties[propKey];
+        }
+        return resolveProps(layer).get(propKey) ?? undefined;
+      };
+
+      const firstVal = getLayerVal(selectedLayers[0]);
 
       for (let i = 1; i < selectedLayers.length; i++) {
-        const val = selectedLayers[i].properties?.[propKey] ?? null;
-        if (val !== firstVal) {
+        const val = getLayerVal(selectedLayers[i]);
+        if (val !== firstVal && JSON.stringify(val) !== JSON.stringify(firstVal)) {
           return null;
         }
       }
 
-      return firstVal;
+      // Absent everywhere (undefined) is not Mixed: callers fall back to defaults.
+      return firstVal as PropValue | null;
     },
     [selectedLayers]
   );

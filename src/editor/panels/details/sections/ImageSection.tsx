@@ -76,33 +76,42 @@ export const ImageMore: React.FC<InspectorSectionProps> = ({
   const ratio = (getValue?.("image.aspectRatio") as string) || "auto";
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          label="X"
-          aria-label="Focal X"
-          suffix="%"
-          value={focalX}
-          onChange={(v) => onUpdateProp?.("image.focalX", v)}
-        />
-        <NumberField
-          size="sm"
-          label="Y"
-          aria-label="Focal Y"
-          suffix="%"
-          value={focalY}
-          onChange={(v) => onUpdateProp?.("image.focalY", v)}
-        />
+    <div className="ll:flex ll:flex-col ll:w-full">
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Focal</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="X"
+              aria-label="Focal X"
+              suffix="%"
+              value={focalX}
+              onChange={(v) => onUpdateProp?.("image.focalX", v)}
+            />
+            <NumberField
+              size="sm"
+              label="Y"
+              aria-label="Focal Y"
+              suffix="%"
+              value={focalY}
+              onChange={(v) => onUpdateProp?.("image.focalY", v)}
+            />
+          </div>
+        </div>
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Ratio</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Aspect ratio"
+              value={ratio}
+              options={ASPECT_RATIO_OPTIONS}
+              onChange={(v) => onUpdateProp?.("image.aspectRatio", v)}
+            />
+          </div>
+        </div>
       </div>
-      <Select
-        size="sm"
-        label="Ratio"
-        aria-label="Aspect ratio"
-        value={ratio}
-        options={ASPECT_RATIO_OPTIONS}
-        onChange={(v) => onUpdateProp?.("image.aspectRatio", v)}
-      />
     </div>
   );
 };

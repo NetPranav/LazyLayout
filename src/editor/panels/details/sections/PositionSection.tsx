@@ -114,149 +114,172 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const offLeft = (getValue?.("layout.left") as number) ?? 0;
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* Position Type & Z-Index */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Position"
-          aria-label="Position type"
-          value={posType}
-          options={POSITION_TYPE_OPTIONS}
-          onChange={(val) => onUpdateProp?.("layout.position", val)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Z"
-          value={zIndex}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(val) => onUpdateProp?.("layout.zIndex", val)}
-        />
+    <div className="ll:flex ll:flex-col ll:w-full">
+      {/* Group 1: Type, Z */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Type</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Position type"
+              value={posType}
+              options={POSITION_TYPE_OPTIONS}
+              mixed={getValue?.("layout.position") === null}
+              onChange={(val) => onUpdateProp?.("layout.position", val)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Z</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label=""
+              aria-label="Z-index"
+              value={zIndex}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(val) => onUpdateProp?.("layout.zIndex", val)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Offset 4-grid (shown when position type !== 'static') */}
       {posType !== "static" && (
-        <div className="ll:flex ll:flex-col ll:gap-1">
-          <span className="ll:text-small ll:font-sans ll:text-muted">
-            Offset
-          </span>
-          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-            <NumberField
-              size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="T"
-              aria-label="Offset Top"
-              value={offTop}
-              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(val) => onUpdateProp?.("layout.top", val)}
-            />
-            <NumberField
-              size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="R"
-              aria-label="Offset Right"
-              value={offRight}
-              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(val) => onUpdateProp?.("layout.right", val)}
-            />
-            <NumberField
-              size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="B"
-              aria-label="Offset Bottom"
-              value={offBottom}
-              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(val) => onUpdateProp?.("layout.bottom", val)}
-            />
-            <NumberField
-              size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="L"
-              aria-label="Offset Left"
-              value={offLeft}
-              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(val) => onUpdateProp?.("layout.left", val)}
-            />
+        <div className="ll-dmg">
+          <div className="ll-dgl">
+            <span className="ll-dlbl">Offset</span>
+            <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+              <NumberField
+                size="sm"
+                label="T"
+                aria-label="Offset Top"
+                value={offTop}
+                step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                onChange={(val) => onUpdateProp?.("layout.top", val)}
+              />
+              <NumberField
+                size="sm"
+                label="R"
+                aria-label="Offset Right"
+                value={offRight}
+                step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                onChange={(val) => onUpdateProp?.("layout.right", val)}
+              />
+              <NumberField
+                size="sm"
+                label="B"
+                aria-label="Offset Bottom"
+                value={offBottom}
+                step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                onChange={(val) => onUpdateProp?.("layout.bottom", val)}
+              />
+              <NumberField
+                size="sm"
+                label="L"
+                aria-label="Offset Left"
+                value={offLeft}
+                step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                onChange={(val) => onUpdateProp?.("layout.left", val)}
+              />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Scale X & Y */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Scale X"
-          value={scaleX}
-          step={INSPECTOR_CONSTANTS.STEP_FINE}
-          precision={2}
-          onChange={(val) => onUpdateProp?.("transform.scaleX", val)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Scale Y"
-          value={scaleY}
-          step={INSPECTOR_CONSTANTS.STEP_FINE}
-          precision={2}
-          onChange={(val) => onUpdateProp?.("transform.scaleY", val)}
-        />
+      {/* Group 2: Scale, Skew, 3D rotate */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Scale</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="X"
+              aria-label="Scale X"
+              value={scaleX}
+              step={INSPECTOR_CONSTANTS.STEP_FINE}
+              precision={scaleX % 1 === 0 ? 0 : 2}
+              onChange={(val) => onUpdateProp?.("transform.scaleX", val)}
+            />
+            <NumberField
+              size="sm"
+              label="Y"
+              aria-label="Scale Y"
+              value={scaleY}
+              step={INSPECTOR_CONSTANTS.STEP_FINE}
+              precision={scaleY % 1 === 0 ? 0 : 2}
+              onChange={(val) => onUpdateProp?.("transform.scaleY", val)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Skew</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="X"
+              suffix="°"
+              aria-label="Skew X"
+              value={skewX}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(val) => onUpdateProp?.("transform.skewX", val)}
+            />
+            <NumberField
+              size="sm"
+              label="Y"
+              suffix="°"
+              aria-label="Skew Y"
+              value={skewY}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(val) => onUpdateProp?.("transform.skewY", val)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">3D rotate</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="X"
+              suffix="°"
+              aria-label="Rotate X"
+              value={rotX}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(val) => onUpdateProp?.("transform.rotateX", val)}
+            />
+            <NumberField
+              size="sm"
+              label="Y"
+              suffix="°"
+              aria-label="Rotate Y"
+              value={rotY}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(val) => onUpdateProp?.("transform.rotateY", val)}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Skew X & Y */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Skew X"
-          suffix="°"
-          value={skewX}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(val) => onUpdateProp?.("transform.skewX", val)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Skew Y"
-          suffix="°"
-          value={skewY}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(val) => onUpdateProp?.("transform.skewY", val)}
-        />
+      {/* Group 3: Origin */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Origin</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Origin"
+              value={origin}
+              options={TRANSFORM_ORIGIN_OPTIONS}
+              mixed={getValue?.("transform.origin") === null}
+              onChange={(val) => onUpdateProp?.("transform.origin", val)}
+            />
+          </div>
+        </div>
       </div>
-
-      {/* 3D Rotate X & Y */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Rot X"
-          suffix="°"
-          value={rotX}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(val) => onUpdateProp?.("transform.rotateX", val)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Rot Y"
-          suffix="°"
-          value={rotY}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(val) => onUpdateProp?.("transform.rotateY", val)}
-        />
-      </div>
-
-      {/* Transform Origin */}
-      <Select
-        size="sm"
-        label="Origin"
-        aria-label="Transform origin"
-        value={origin}
-        options={TRANSFORM_ORIGIN_OPTIONS}
-        onChange={(val) => onUpdateProp?.("transform.origin", val)}
-      />
     </div>
   );
 };

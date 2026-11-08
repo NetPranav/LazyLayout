@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { SquareRoundCorner } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
+import { ColorPicker } from "@/editor/components/ColorPicker";
 import { INSPECTOR_CONSTANTS } from "../constants";
 
 const PAGE_FONT_OPTIONS = [
@@ -115,10 +116,31 @@ export const PageBackgroundBody: React.FC<{
   onChangeBackground,
 }) => {
   const [bgHex, setBgHex] = useState(backgroundColor.replace(/^#/, "").toUpperCase());
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const swatchRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-      <span className={SWATCH} style={{ backgroundColor: `#${bgHex}` }} />
+      <button
+        ref={swatchRef}
+        type="button"
+        aria-label="Background color picker"
+        title="Choose background color"
+        onClick={() => setIsPickerOpen((prev) => !prev)}
+        className={`${SWATCH} ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active`}
+        style={{ backgroundColor: `#${bgHex}` }}
+      />
+      <ColorPicker
+        open={isPickerOpen}
+        value={`#${bgHex}`}
+        anchorRef={swatchRef}
+        onChange={(hex) => {
+          const next = hex.replace(/^#/, "").toUpperCase();
+          setBgHex(next);
+          onChangeBackground?.(next);
+        }}
+        onClose={() => setIsPickerOpen(false)}
+      />
       <div className={`${HEX_FIELD} ll:w-27`}>
         <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
         <input
@@ -142,6 +164,8 @@ export const ThemeTokensBody: React.FC = () => {
   const [primaryHex, setPrimaryHex] = useState("6C5CE7");
   const [surfaceHex, setSurfaceHex] = useState("F4F3EF");
   const [textHex, setTextHex] = useState("22231E");
+  const [activePicker, setActivePicker] = useState<string | null>(null);
+  const tokenRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [radius, setRadius] = useState(8);
   const [themeFont, setThemeFont] = useState("Geist");
   const [typeScale, setTypeScale] = useState("1.25");
@@ -157,7 +181,24 @@ export const ThemeTokensBody: React.FC = () => {
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {tokenRows.map((row) => (
         <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <span className={SWATCH} style={{ backgroundColor: `#${row.hex}` }} />
+          <button
+            ref={(el) => {
+              tokenRefs.current[row.label] = el;
+            }}
+            type="button"
+            aria-label={`${row.label} color picker`}
+            title={`Choose ${row.label.toLowerCase()} color`}
+            onClick={() => setActivePicker(activePicker === row.label ? null : row.label)}
+            className={`${SWATCH} ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active`}
+            style={{ backgroundColor: `#${row.hex}` }}
+          />
+          <ColorPicker
+            open={activePicker === row.label}
+            value={`#${row.hex}`}
+            anchorRef={{ current: tokenRefs.current[row.label] }}
+            onChange={(hex) => row.set(hex.replace(/^#/, "").toUpperCase())}
+            onClose={() => setActivePicker(null)}
+          />
           <div className={`${HEX_FIELD} ll:w-27`}>
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
             <input
@@ -234,19 +275,25 @@ export const ThemeTokensMore: React.FC = () => {
   const [feedback, setFeedback] = useState("Subtle");
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      <Select
-        size="sm"
-        label="Feedback"
-        aria-label="Interactive feedback"
-        value={feedback}
-        options={[
-          { value: "None", label: "None" },
-          { value: "Subtle", label: "Subtle" },
-          { value: "Strong", label: "Strong" },
-        ]}
-        onChange={(v) => setFeedback(v)}
-      />
+    <div className="ll:flex ll:flex-col ll:w-full">
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Feedback</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Interactive feedback"
+              value={feedback}
+              options={[
+                { value: "None", label: "None" },
+                { value: "Subtle", label: "Subtle" },
+                { value: "Strong", label: "Strong" },
+              ]}
+              onChange={(v) => setFeedback(v)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

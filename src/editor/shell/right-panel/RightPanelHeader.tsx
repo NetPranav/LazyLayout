@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Eye, EyeOff, Frame, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { MENU_DEFAULT_WIDTH } from "@/editor/components/topbar-constants";
+import { getActivePreset, prefersReducedMotion } from "@/editor/motion/feel";
+import { springEase } from "@/editor/motion/ease";
 import type { StatusChip } from "./types";
 
 export interface RightPanelHeaderProps {
   selectionName?: string;
   selectionIcon?: LucideIcon;
+  isMulti?: boolean;
   isLayerHidden?: boolean;
   onToggleHideLayer?: () => void;
   /** More menu, Reset item. */
@@ -25,6 +28,7 @@ export interface RightPanelHeaderProps {
 export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   selectionName = "Headline",
   selectionIcon = Frame,
+  isMulti = false,
   isLayerHidden = false,
   onToggleHideLayer,
   onReset,
@@ -33,8 +37,33 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   onSelectStatusChip,
   className = "",
 }) => {
+  const headRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const [moreAt, setMoreAt] = useState<{ x: number; y: number } | null>(null);
+  const wasMultiRef = useRef(isMulti);
+
+  // Multi-layer glyph pop-in on spring (matches prototype rstackSync)
+  useEffect(() => {
+    if (isMulti && !wasMultiRef.current && headRef.current) {
+      const ico = headRef.current.querySelector(".ll-rico");
+      if (ico && !prefersReducedMotion()) {
+        const preset = getActivePreset();
+        const se = springEase(preset.pop[0], preset.pop[1]);
+        ico.animate(
+          [
+            { transform: "scale(0.6)", opacity: 0 },
+            { transform: "scale(1)", opacity: 1 },
+          ],
+          {
+            duration: se.duration,
+            easing: se.easing,
+            fill: "backwards",
+          }
+        );
+      }
+    }
+    wasMultiRef.current = isMulti;
+  }, [isMulti]);
 
   // The prototype opens this menu right-aligned under the button
   const openMore = () => {
@@ -44,14 +73,19 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   };
 
   return (
-    <div className={`ll-rhead ll:shrink-0 ll:flex ll:flex-col ${className}`}>
+    <div ref={headRef} className={`ll-rhead ll:shrink-0 ll:flex ll:flex-col ${className}`}>
       {/* Top row: icon, name, hide-layer toggle, more options */}
       <div className="ll-rtop ll:h-header ll:px-4 ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:border-b ll:border-border ll:shrink-0">
-        <Icon
-          icon={selectionIcon}
-          size={16}
-          className="ll-rico ll:text-muted ll:shrink-0"
-        />
+        <span
+          data-m={isMulti ? "1" : undefined}
+          className="ll:inline-flex ll:items-center ll:justify-center ll:shrink-0"
+        >
+          <Icon
+            icon={selectionIcon}
+            size={16}
+            className="ll-rico ll:text-muted ll:shrink-0"
+          />
+        </span>
         <span className="ll-rname ll:text-heading ll:font-semibold ll:text-primary ll:truncate ll:min-w-0">
           {selectionName}
         </span>
