@@ -167,17 +167,6 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 style={{ backgroundColor: `#${fill.hex}` }}
               />
             </button>
-            <ColorPicker
-              open={activeColorPickerId === fill.id}
-              value={`#${fill.hex}`}
-              anchorRef={{ current: swatchBtnRefs.current[fill.id] }}
-              onChange={(hex) =>
-                handleUpdateFill(fill.id, {
-                  hex: hex.replace(/^#/, "").toUpperCase(),
-                })
-              }
-              onClose={() => setActiveColorPickerId(null)}
-            />
 
             {/* Hex and Opacity Fields */}
             <div className="ll-sum ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0">
@@ -307,6 +296,24 @@ export const FillSection: React.FC<FillSectionProps> = ({
           </div>
         );
       })}
+
+      {(() => {
+        const activeFill = fills.find((f) => f.id === activeColorPickerId);
+        if (!activeFill) return null;
+        return (
+          <ColorPicker
+            open={Boolean(activeColorPickerId)}
+            value={`#${activeFill.hex}`}
+            anchorRef={{ current: swatchBtnRefs.current[activeFill.id] }}
+            onChange={(hex) =>
+              handleUpdateFill(activeFill.id, {
+                hex: hex.replace(/^#/, "").toUpperCase(),
+              })
+            }
+            onClose={() => setActiveColorPickerId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };

@@ -21,6 +21,12 @@ import {
   type Surf,
 } from "../motion/surface";
 import { Icon } from "./Icon";
+import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+} from "./retarget";
 
 export interface SelectOption {
   value: string;
@@ -274,10 +280,12 @@ export const Select: React.FC<SelectProps> = ({
 
     return () => {
       s.reset();
+      unregisterOverlay(selectId);
     };
-  }, [isRendered, getMotion]);
+  }, [isRendered, getMotion, selectId]);
 
   const closeDropdown = useCallback((focusTrigger = true) => {
+    unregisterOverlay(selectId);
     setIsOpen(false);
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     if (typeAheadTimerRef.current) clearTimeout(typeAheadTimerRef.current);
@@ -358,16 +366,34 @@ export const Select: React.FC<SelectProps> = ({
         window.innerWidth - MENU_FALLBACKS.viewportPadding - (menuEl.offsetWidth || box.width)
       );
 
+      const toW = menuEl.offsetWidth || box.width;
+      const toRect = new DOMRect(left, top, toW, H);
+      const handoff = getFamilyHandoff("select", selectId);
+
       menuEl.style.left = `${left}px`;
       menuEl.style.top = `${top}px`;
       menuEl.style.minWidth = `${box.width}px`;
 
-      const y0 = box.top - top;
-      const fldRadius = parseFloat(getComputedStyle(fld).borderRadius) || MENU_FALLBACKS.edgeGap;
+      if (handoff) {
+        animateRetarget(menuEl, handoff, toRect, ddi);
+      } else {
+        const y0 = box.top - top;
+        const fldRadius = parseFloat(getComputedStyle(fld).borderRadius) || MENU_FALLBACKS.edgeGap;
 
-      s.open({
-        from: { w: box.width, h: box.height, r: fldRadius },
-        y0,
+        s.open({
+          from: { w: box.width, h: box.height, r: fldRadius },
+          y0,
+        });
+      }
+
+      registerOverlay({
+        id: selectId,
+        family: "select",
+        element: menuEl,
+        anchor: fld,
+        close: () => closeDropdown(false),
+        rect: toRect,
+        timestamp: performance.now(),
       });
 
       cancelAll(ddl);

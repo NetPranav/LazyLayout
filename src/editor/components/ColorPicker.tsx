@@ -21,6 +21,12 @@ import {
   OPACITY_SLIDER_BG_SIZE,
 } from "./ColorPickerMotion";
 import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+} from "./retarget";
+import {
   COLOR_TOKENS,
   clamp,
   hsv2rgb,
@@ -80,7 +86,10 @@ export function ColorPicker({
   const opacitySliderRef = useRef<HTMLDivElement>(null);
   const stopsBarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevAnchorRef = useRef<HTMLElement | null>(null);
+  const isImmediateCloseRef = useRef(false);
   const pickerId = useId();
+  const pickerUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
   const [prevOpen, setPrevOpen] = useState(open);
@@ -176,7 +185,7 @@ export function ColorPicker({
     el.style.maxHeight = `${maxHeight}px`;
   }, [anchorRef, anchorEl]);
 
-  // Open & Close animations
+  // Open & Close animations with retargeting
   useEffect(() => {
     if (!isRendered) return;
     const el = pickerRef.current;
@@ -186,15 +195,26 @@ export function ColorPicker({
 
     const reduced = prefersReducedMotion();
     const preset = getActivePreset();
-    const anchor = anchorRef?.current ?? triggerRef?.current ?? anchorEl;
+    const anchor = (anchorRef?.current ?? triggerRef?.current ?? anchorEl) as HTMLElement | null;
 
     if (open) {
+      const toRect = el.getBoundingClientRect();
+      const isAnchorSwitch =
+        prevAnchorRef.current !== null &&
+        prevAnchorRef.current !== anchor;
+      const handoff = !isAnchorSwitch ? getFamilyHandoff("color-picker", pickerUniqueId) : null;
+
       if (reduced) {
         el.animate([{ opacity: 0 }, { opacity: 1 }], {
           duration: REDUCED_DURATION,
           easing: "ease-out",
           fill: "backwards",
         });
+      } else if (isAnchorSwitch && prevAnchorRef.current) {
+        const oldRect = prevAnchorRef.current.getBoundingClientRect();
+        animateRetarget(el, oldRect, toRect, el.firstElementChild as HTMLElement | null);
+      } else if (handoff) {
+        animateRetarget(el, handoff, toRect, el.firstElementChild as HTMLElement | null);
       } else if (anchor) {
         const s = anchor.getBoundingClientRect();
         const r = el.getBoundingClientRect();
@@ -218,7 +238,28 @@ export function ColorPicker({
           }
         );
       }
+
+      prevAnchorRef.current = anchor;
+      registerOverlay({
+        id: pickerUniqueId,
+        family: "color-picker",
+        element: el,
+        anchor,
+        close: (immediate) => {
+          if (immediate) isImmediateCloseRef.current = true;
+          onClose?.();
+        },
+        rect: toRect,
+        timestamp: performance.now(),
+      });
     } else {
+      prevAnchorRef.current = null;
+      unregisterOverlay(pickerUniqueId);
+      if (isImmediateCloseRef.current) {
+        isImmediateCloseRef.current = false;
+        setIsRendered(false);
+        return;
+      }
       let anim: Animation;
       if (reduced || !anchor) {
         anim = el.animate([{ opacity: 1 }, { opacity: 0 }], {
@@ -250,7 +291,13 @@ export function ColorPicker({
         setIsRendered(false);
       };
     }
-  }, [open, isRendered, anchorRef, anchorEl, updatePosition]);
+  }, [open, isRendered, anchorRef, anchorEl, triggerRef, updatePosition, pickerUniqueId, onClose]);
+
+  useEffect(() => {
+    return () => {
+      unregisterOverlay(pickerUniqueId);
+    };
+  }, [pickerUniqueId]);
 
   // Outside pointerdown and Escape
   useEffect(() => {

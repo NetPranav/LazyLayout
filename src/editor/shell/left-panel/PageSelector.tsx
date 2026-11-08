@@ -7,6 +7,7 @@ import { Icon } from "@/editor/components/Icon";
 import { useMounted } from "@/editor/components/useMounted";
 import { getMotion, prefersReducedMotion } from "@/editor/motion/feel";
 import { springEase } from "@/editor/motion/ease";
+import { registerOverlay } from "@/editor/components/retarget";
 import {
   PAGE_POPOVER_WIDTH_PX,
   PAGE_FLYOUT_WIDTH_PX,
@@ -126,6 +127,11 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
     setFlyoutState(null);
     setEditingPageName(null);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    return registerOverlay("page-selector", popRef.current, () => closePopover());
+  }, [isOpen, closePopover]);
 
   // WAAPI animation on open
   useEffect(() => {

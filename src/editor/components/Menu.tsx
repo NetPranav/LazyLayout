@@ -14,7 +14,7 @@ import { createPortal, flushSync } from "react-dom";
 import { ChevronRight, Check } from "lucide-react";
 import { defaultHost } from "../motion/loop";
 import { MOT, MENU_FALLBACKS } from "../motion/presets";
-import { prefersReducedMotion } from "../motion/feel";
+import { prefersReducedMotion, getActivePreset } from "../motion/feel";
 import {
   surf,
   pressEl,
@@ -29,6 +29,13 @@ import {
 } from "../motion/surface";
 import { useMounted } from "./useMounted";
 import { Icon } from "./Icon";
+import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+  type OverlayFamily,
+} from "./retarget";
 
 // Pointer tracking for safe triangle submenu hover protection
 const mousePos = { x: 0, y: 0, prevX: 0, prevY: 0, t: 0 };
@@ -108,6 +115,7 @@ export interface MenuProps {
   variant?: "default" | "context" | "wide";
   id?: string;
   testId?: string;
+  family?: OverlayFamily;
 }
 
 export const Menu: React.FC<MenuProps> = ({
@@ -123,12 +131,18 @@ export const Menu: React.FC<MenuProps> = ({
   variant = "default",
   id,
   testId,
+  family = "menu",
 }) => {
   const autoId = useId();
+  const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
+  const subSurfaceId = `ll-sub-${autoId.replace(/:/g, "")}`;
+
   const mounted = useMounted();
   const menuRef = useRef<HTMLDivElement>(null);
   const layRef = useRef<HTMLDivElement>(null);
   const surfRef = useRef<Surf | null>(null);
+  const prevAnchorOrPosRef = useRef<{ anchor: HTMLElement | null; pos: { x: number; y: number } | null } | null>(null);
+  const isImmediateCloseRef = useRef(false);
 
   // Single shared flyout submenu surface for all submenus
   const subElRef = useRef<HTMLDivElement>(null);
@@ -184,8 +198,9 @@ export const Menu: React.FC<MenuProps> = ({
 
     return () => {
       s.reset();
+      unregisterOverlay(menuId);
     };
-  }, [isRendered]);
+  }, [isRendered, menuId]);
 
   useEffect(() => {
     if (!isRendered || !subElRef.current) return;
@@ -394,13 +409,9 @@ export const Menu: React.FC<MenuProps> = ({
     const menuEl = menuRef.current;
     if (!s || !menuEl) return;
 
-    const targetAnchor = anchorRef?.current ?? anchorEl;
+    const targetAnchor = (anchorRef?.current ?? anchorEl) as HTMLElement | null;
 
     if (open) {
-      // Reopening while the previous close is still animating (right-click again on the canvas): drop that
-      // close's fade animation and reset timer first, or they hide the new menu after it has opened.
-      s.reset();
-      subSurfRef.current?.reset();
       if (!menuEl.contains(document.activeElement)) {
         prevActiveElementRef.current = document.activeElement as HTMLElement | null;
       }
@@ -470,19 +481,68 @@ export const Menu: React.FC<MenuProps> = ({
         };
       }
 
-      menuEl.style.left = `${Math.max(pad, left)}px`;
-      menuEl.style.top = `${Math.max(pad, top)}px`;
+      const isAnchorSwitch =
+        prevAnchorOrPosRef.current !== null &&
+        s.live() &&
+        (prevAnchorOrPosRef.current.anchor !== targetAnchor ||
+          prevAnchorOrPosRef.current.pos?.x !== position?.x ||
+          prevAnchorOrPosRef.current.pos?.y !== position?.y);
 
-      const y0 = position
-        ? 0
-        : targetAnchor
-        ? (up ? 1 : -1) * (targetAnchor.getBoundingClientRect().height + gap)
-        : 0;
+      const handoff = !isAnchorSwitch ? getFamilyHandoff(family, menuId) : null;
 
-      s.open({
-        from: seed,
-        y0,
-        up,
+      if (isAnchorSwitch) {
+        const oldTop = parseFloat(menuEl.style.top) || 0;
+        const oldLeft = parseFloat(menuEl.style.left) || 0;
+        menuEl.style.left = `${Math.max(pad, left)}px`;
+        menuEl.style.top = `${Math.max(pad, top)}px`;
+        s.wake();
+        s.Y.x += oldTop - top;
+        s.G.x += oldLeft - left;
+        s.Y.to = 0;
+        s.G.to = 0;
+        s.shapeTo({ w: menuW, h: menuH }, m.r);
+        const p = getActivePreset();
+        s.feel(1000, p.glideW, p.glideH);
+        s.paint();
+        s.settleOrRun();
+        if (layRef.current) {
+          swapIn(layRef.current, top >= oldTop ? 1 : -1);
+        }
+      } else if (handoff) {
+        menuEl.style.left = `${Math.max(pad, left)}px`;
+        menuEl.style.top = `${Math.max(pad, top)}px`;
+        animateRetarget(menuEl, handoff, new DOMRect(left, top, menuW, menuH), layRef.current);
+      } else {
+        s.reset();
+        subSurfRef.current?.reset();
+        menuEl.style.left = `${Math.max(pad, left)}px`;
+        menuEl.style.top = `${Math.max(pad, top)}px`;
+
+        const y0 = position
+          ? 0
+          : targetAnchor
+          ? (up ? 1 : -1) * (targetAnchor.getBoundingClientRect().height + gap)
+          : 0;
+
+        s.open({
+          from: seed,
+          y0,
+          up,
+        });
+      }
+
+      prevAnchorOrPosRef.current = { anchor: targetAnchor, pos: position ?? null };
+      registerOverlay({
+        id: menuId,
+        family,
+        element: menuEl,
+        anchor: targetAnchor,
+        close: (immediate) => {
+          if (immediate) isImmediateCloseRef.current = true;
+          onClose();
+        },
+        rect: new DOMRect(left, top, menuW, menuH),
+        timestamp: performance.now(),
       });
 
       const unreg = defaultHost.register(() => {
@@ -490,6 +550,13 @@ export const Menu: React.FC<MenuProps> = ({
         menuEl.focus();
       });
     } else {
+      prevAnchorOrPosRef.current = null;
+      unregisterOverlay(menuId);
+      if (isImmediateCloseRef.current) {
+        isImmediateCloseRef.current = false;
+        setIsRendered(false);
+        return;
+      }
       if (subTimerRef.current) {
         clearTimeout(subTimerRef.current);
         subTimerRef.current = null;
@@ -513,7 +580,7 @@ export const Menu: React.FC<MenuProps> = ({
       }, exitDuration);
       return () => clearTimeout(t);
     }
-  }, [open, isRendered, anchorEl, anchorRef, position, variant, hideHighlight, closeSub]);
+  }, [open, isRendered, anchorEl, anchorRef, position, variant, hideHighlight, closeSub, family, menuId, onClose]);
 
   // Outside click & global mousemove/pointerdown handling
   useEffect(() => {
@@ -746,8 +813,6 @@ export const Menu: React.FC<MenuProps> = ({
     variant === "wide" ? "ll:w-menu-wide" : variant === "context" ? "ll:w-menu-ctx" : "";
 
   const activeSubData = activeSubId ? subMenus[activeSubId] : null;
-  const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
-  const subSurfaceId = `ll-sub-${autoId.replace(/:/g, "")}`;
 
   return createPortal(
     <>

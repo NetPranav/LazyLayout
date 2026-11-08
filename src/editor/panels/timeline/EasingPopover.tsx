@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { Icon } from "@/editor/components/Icon";
 import { CloseIcon } from "./icons";
 import { EasingEditor } from "@/editor/panels/inspectors/EasingEditor";
+import { registerOverlay, retargetPosition, getFamilyHandoff } from "@/editor/components/retarget";
 import {
   useMotionModel,
   motionActions,
@@ -65,6 +66,84 @@ export const EasingPopover: React.FC<EasingPopoverProps> = ({
 
   const hasSelectedKeys = selectedKeyIds.length > 0;
 
+  // Determine popover position: prefer anchored above or below
+  let left = 240;
+  let top = 120;
+  if (typeof window !== "undefined") {
+    if (anchorPos) {
+      left = Math.max(POP_PAD, Math.min(window.innerWidth - POP_W, anchorPos.x - POP_HALF));
+      top = Math.max(POP_PAD, anchorPos.y - POP_H);
+    } else if (anchorRect) {
+      left = Math.max(POP_PAD, Math.min(window.innerWidth - POP_W, anchorRect.left + anchorRect.width / 2 - POP_HALF));
+      if (anchorRect.top > POP_H) {
+        top = anchorRect.top - POP_H;
+      } else {
+        top = anchorRect.bottom + POP_GAP;
+      }
+    }
+  }
+
+  const prevPosRef = useRef<{ left: number; top: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      prevPosRef.current = null;
+      return;
+    }
+    return registerOverlay("timeline-easing", popoverRef.current, onClose);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || !popoverRef.current) return;
+    const current = { left, top };
+    if (prevPosRef.current && (prevPosRef.current.left !== left || prevPosRef.current.top !== top)) {
+      const el = popoverRef.current;
+      const rect = el.getBoundingClientRect();
+      const prevRect: DOMRect = {
+        left: prevPosRef.current.left,
+        top: prevPosRef.current.top,
+        width: rect.width,
+        height: rect.height,
+        right: prevPosRef.current.left + rect.width,
+        bottom: prevPosRef.current.top + rect.height,
+        x: prevPosRef.current.left,
+        y: prevPosRef.current.top,
+        toJSON: () => ({}),
+      };
+      const newRect: DOMRect = {
+        left,
+        top,
+        width: rect.width,
+        height: rect.height,
+        right: left + rect.width,
+        bottom: top + rect.height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      };
+      retargetPosition(el, prevRect, newRect);
+    } else if (!prevPosRef.current) {
+      const handoff = getFamilyHandoff("timeline-easing");
+      if (handoff && popoverRef.current) {
+        const el = popoverRef.current;
+        const rect = el.getBoundingClientRect();
+        const newRect: DOMRect = {
+          left,
+          top,
+          width: rect.width,
+          height: rect.height,
+          right: left + rect.width,
+          bottom: top + rect.height,
+          x: left,
+          y: top,
+          toJSON: () => ({}),
+        };
+        retargetPosition(el, handoff, newRect);
+      }
+    }
+    prevPosRef.current = current;
+  }, [open, left, top]);
+
   // Dismiss on Escape and click outside
   useEffect(() => {
     if (!open) return;
@@ -101,23 +180,6 @@ export const EasingPopover: React.FC<EasingPopoverProps> = ({
 
     motionActions.setKeysEase(selectedKeyIds, nextEase, nextBz, nextSpring);
   };
-
-  // Determine popover position: prefer anchored above or below
-  let left = 240;
-  let top = 120;
-
-  if (anchorPos) {
-    left = Math.max(POP_PAD, Math.min(window.innerWidth - POP_W, anchorPos.x - POP_HALF));
-    top = Math.max(POP_PAD, anchorPos.y - POP_H);
-  } else if (anchorRect) {
-    left = Math.max(POP_PAD, Math.min(window.innerWidth - POP_W, anchorRect.left + anchorRect.width / 2 - POP_HALF));
-    // Pop upwards from bottom timeline toolbar, or downwards if tight
-    if (anchorRect.top > POP_H) {
-      top = anchorRect.top - POP_H;
-    } else {
-      top = anchorRect.bottom + POP_GAP;
-    }
-  }
 
   return (
     <div

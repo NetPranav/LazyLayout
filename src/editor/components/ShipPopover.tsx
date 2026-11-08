@@ -9,6 +9,12 @@ import { prefersReducedMotion } from "../motion/feel";
 import { Icon } from "./Icon";
 import { useMounted } from "./useMounted";
 import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+} from "./retarget";
+import {
   SHIP_POPOVER_WIDTH,
   VIEWPORT_EDGE_PAD,
   TRIGGER_GAP_Y,
@@ -99,20 +105,38 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
 
       const left = Math.max(pad, Math.min(r.right - popW, window.innerWidth - popW - pad));
       const top = r.bottom + TRIGGER_GAP_Y;
+      const popH = popEl.offsetHeight || 340;
+      const toRect = new DOMRect(left, top, popW, popH);
+      const handoff = getFamilyHandoff("ship", popoverId) || getFamilyHandoff("menu", popoverId);
 
       popEl.style.left = `${left}px`;
       popEl.style.top = `${top}px`;
 
-      s.open({
-        from: {
-          w: Math.round(r.width),
-          h: Math.round(r.height),
-          r: RADIUS_MD,
-        },
-        y0: -(r.height + TRIGGER_GAP_Y),
-        right: true,
+      if (handoff) {
+        animateRetarget(popEl, handoff, toRect, layRef.current);
+      } else {
+        s.open({
+          from: {
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            r: RADIUS_MD,
+          },
+          y0: -(r.height + TRIGGER_GAP_Y),
+          right: true,
+        });
+      }
+
+      registerOverlay({
+        id: popoverId,
+        family: "ship",
+        element: popEl,
+        anchor: triggerEl,
+        close: closePopover,
+        rect: toRect,
+        timestamp: performance.now(),
       });
     } else {
+      unregisterOverlay(popoverId);
       s.leave();
       const duration = prefersReducedMotion()
         ? POPUP_LEAVE_REDUCED_DURATION_MS

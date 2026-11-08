@@ -18,6 +18,12 @@ import {
   REDUCED_DURATION,
   CLOSE_DURATION,
 } from "./ColorPickerMotion";
+import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+} from "./retarget";
 
 export interface OptionsPopoverProps {
   open: boolean;
@@ -50,7 +56,10 @@ export function OptionsPopover({
   const popRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const prevAnchorRef = useRef<HTMLElement | null>(null);
+  const isImmediateCloseRef = useRef(false);
   const titleId = useId();
+  const optionsUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
   const [prevOpen, setPrevOpen] = useState(open);
@@ -67,7 +76,7 @@ export function OptionsPopover({
     const pop = popRef.current;
     if (!pop) return;
 
-    const anchor = anchorRef?.current ?? triggerRef?.current;
+    const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
     const rightZone = document.querySelector(".zone.right");
     const rightRect = rightZone
       ? rightZone.getBoundingClientRect()
@@ -97,13 +106,13 @@ export function OptionsPopover({
     pop.style.left = `${left}px`;
     pop.style.top = `${fittedTop}px`;
     pop.style.maxHeight = `${maxHeight}px`;
-  }, [anchorRef]);
+  }, [anchorRef, triggerRef]);
 
-  // Open & Close animations
+  // Open & Close animations with retargeting
   useEffect(() => {
     if (!isRendered) return;
     const pop = popRef.current;
-    const anchor = anchorRef?.current ?? triggerRef?.current;
+    const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
     if (!pop) return;
 
     const reduced = prefersReducedMotion();
@@ -112,12 +121,23 @@ export function OptionsPopover({
     if (open) {
       updatePosition();
 
+      const toRect = pop.getBoundingClientRect();
+      const isAnchorSwitch =
+        prevAnchorRef.current !== null &&
+        prevAnchorRef.current !== anchor;
+      const handoff = !isAnchorSwitch ? getFamilyHandoff("inspector-options", optionsUniqueId) : null;
+
       if (reduced) {
         pop.animate([{ opacity: 0 }, { opacity: 1 }], {
           duration: REDUCED_DURATION,
           easing: "ease-out",
           fill: "backwards",
         });
+      } else if (isAnchorSwitch && prevAnchorRef.current) {
+        const oldRect = prevAnchorRef.current.getBoundingClientRect();
+        animateRetarget(pop, oldRect, toRect, bodyRef.current);
+      } else if (handoff) {
+        animateRetarget(pop, handoff, toRect, bodyRef.current);
       } else if (anchor) {
         const s = anchor.getBoundingClientRect();
         const r = pop.getBoundingClientRect();
@@ -175,7 +195,28 @@ export function OptionsPopover({
           );
         });
       }
+
+      prevAnchorRef.current = anchor;
+      registerOverlay({
+        id: optionsUniqueId,
+        family: "inspector-options",
+        element: pop,
+        anchor,
+        close: (immediate) => {
+          if (immediate) isImmediateCloseRef.current = true;
+          onClose();
+        },
+        rect: toRect,
+        timestamp: performance.now(),
+      });
     } else {
+      prevAnchorRef.current = null;
+      unregisterOverlay(optionsUniqueId);
+      if (isImmediateCloseRef.current) {
+        isImmediateCloseRef.current = false;
+        setIsRendered(false);
+        return;
+      }
       let anim: Animation;
       if (reduced || !anchor) {
         anim = pop.animate([{ opacity: 1 }, { opacity: 0 }], {

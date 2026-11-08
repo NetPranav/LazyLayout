@@ -188,13 +188,6 @@ export const ThemeTokensBody: React.FC = () => {
               className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
             />
-            <ColorPicker
-              open={activePicker === row.label}
-              value={`#${row.hex}`}
-              anchorRef={{ current: tokenRefs.current[row.label] }}
-              onChange={(hex) => row.set(hex.replace(/^#/, "").toUpperCase())}
-              onClose={() => setActivePicker(null)}
-            />
             <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0">
               <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
               <input
@@ -212,6 +205,20 @@ export const ThemeTokensBody: React.FC = () => {
           </span>
         </div>
       ))}
+
+      {(() => {
+        const activeRow = tokenRows.find((r) => r.label === activePicker);
+        if (!activeRow) return null;
+        return (
+          <ColorPicker
+            open={Boolean(activePicker)}
+            value={`#${activeRow.hex}`}
+            anchorRef={{ current: tokenRefs.current[activeRow.label] }}
+            onChange={(hex) => activeRow.set(hex.replace(/^#/, "").toUpperCase())}
+            onClose={() => setActivePicker(null)}
+          />
+        );
+      })()}
 
       {/* Default Radius */}
       <div className="dgrid ll-dgrid ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">

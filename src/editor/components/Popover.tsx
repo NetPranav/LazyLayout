@@ -10,6 +10,13 @@ import { defaultHost } from "../motion/loop";
 import { IconButton } from "./IconButton";
 import { Icon } from "./Icon";
 import { useMounted } from "./useMounted";
+import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+  type OverlayFamily,
+} from "./retarget";
 
 export interface PopoverProps {
   open: boolean;
@@ -22,6 +29,7 @@ export interface PopoverProps {
   children: React.ReactNode;
   className?: string;
   "aria-label"?: string;
+  family?: OverlayFamily;
 }
 
 export const Popover: React.FC<PopoverProps> = ({
@@ -35,13 +43,17 @@ export const Popover: React.FC<PopoverProps> = ({
   children,
   className = "",
   "aria-label": ariaLabel,
+  family = "menu",
 }) => {
   const mounted = useMounted();
   const popRef = useRef<HTMLDivElement>(null);
   const layRef = useRef<HTMLDivElement>(null);
   const surfRef = useRef<Surf | null>(null);
   const prevActiveElementRef = useRef<HTMLElement | null>(null);
+  const prevAnchorRef = useRef<HTMLElement | null>(null);
+  const isImmediateCloseRef = useRef(false);
   const titleId = useId();
+  const popoverUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
   const [prevOpen, setPrevOpen] = useState(open);
@@ -61,17 +73,18 @@ export const Popover: React.FC<PopoverProps> = ({
 
     return () => {
       s.reset();
+      unregisterOverlay(popoverUniqueId);
     };
-  }, [isRendered]);
+  }, [isRendered, popoverUniqueId]);
 
-  // Open & Close with Surf physics
+  // Open & Close with Surf physics & retargeting
   useEffect(() => {
     if (!isRendered) return;
     const s = surfRef.current;
     const popEl = popRef.current;
     if (!s || !popEl) return;
 
-    const targetAnchor = anchorRef?.current ?? anchorEl;
+    const targetAnchor = (anchorRef?.current ?? anchorEl) as HTMLElement | null;
 
     if (open) {
       prevActiveElementRef.current = document.activeElement as HTMLElement | null;
@@ -92,6 +105,13 @@ export const Popover: React.FC<PopoverProps> = ({
       let top = pad;
       let seed: { w: number; h: number; r: number } = { ...MENU_FALLBACKS.seedDefault, r: MENU_FALLBACKS.popoverRadius };
 
+      const m = s.measure();
+      const popW =
+        m.w ||
+        (typeof width === "number" ? width : MENU_FALLBACKS.menuWidthContext);
+      const popH =
+        m.h || (layRef.current?.offsetHeight ?? MENU_FALLBACKS.defaultMenuHeight);
+
       if (targetAnchor) {
         const r = targetAnchor.getBoundingClientRect();
         seed = {
@@ -101,13 +121,6 @@ export const Popover: React.FC<PopoverProps> = ({
             parseFloat(getComputedStyle(targetAnchor).borderRadius) ||
             MENU_FALLBACKS.menuRadius,
         };
-
-        const m = s.measure();
-        const popW =
-          m.w ||
-          (typeof width === "number" ? width : MENU_FALLBACKS.menuWidthContext);
-        const popH =
-          m.h || (layRef.current?.offsetHeight ?? MENU_FALLBACKS.defaultMenuHeight);
 
         if (side === "left") {
           left = r.left - popW - pad;
@@ -128,15 +141,43 @@ export const Popover: React.FC<PopoverProps> = ({
         top = Math.max(pad, Math.min(top, window.innerHeight - popH - pad));
       }
 
+      const toRect = new DOMRect(left, top, popW, popH);
+      const isAnchorSwitch =
+        prevAnchorRef.current !== null &&
+        prevAnchorRef.current !== targetAnchor &&
+        s.live();
+      const handoff = !isAnchorSwitch ? getFamilyHandoff(family, popoverUniqueId) : null;
+
       popEl.style.left = `${left}px`;
       popEl.style.top = `${top}px`;
 
-      const y0 = targetAnchor ? targetAnchor.getBoundingClientRect().top - top : 0;
-      s.open({
-        from: seed,
-        y0,
-        up: side === "top",
-        right: side === "left",
+      if (isAnchorSwitch) {
+        const oldRect = popEl.getBoundingClientRect();
+        animateRetarget(popEl, oldRect, toRect, layRef.current);
+      } else if (handoff) {
+        animateRetarget(popEl, handoff, toRect, layRef.current);
+      } else {
+        const y0 = targetAnchor ? targetAnchor.getBoundingClientRect().top - top : 0;
+        s.open({
+          from: seed,
+          y0,
+          up: side === "top",
+          right: side === "left",
+        });
+      }
+
+      prevAnchorRef.current = targetAnchor;
+      registerOverlay({
+        id: popoverUniqueId,
+        family,
+        element: popEl,
+        anchor: targetAnchor,
+        close: (immediate) => {
+          if (immediate) isImmediateCloseRef.current = true;
+          onClose();
+        },
+        rect: toRect,
+        timestamp: performance.now(),
       });
 
       const unreg = defaultHost.register(() => {
@@ -144,6 +185,13 @@ export const Popover: React.FC<PopoverProps> = ({
         popEl.focus();
       });
     } else {
+      prevAnchorRef.current = null;
+      unregisterOverlay(popoverUniqueId);
+      if (isImmediateCloseRef.current) {
+        isImmediateCloseRef.current = false;
+        setIsRendered(false);
+        return;
+      }
       s.leave();
       const exitDuration = prefersReducedMotion() ? MENU_FALLBACKS.reducedMotionDuration : MOT.exitDelay + MOT.exitMs;
       const t = setTimeout(() => {
@@ -154,7 +202,7 @@ export const Popover: React.FC<PopoverProps> = ({
       }, exitDuration);
       return () => clearTimeout(t);
     }
-  }, [open, isRendered, anchorEl, anchorRef, side, width]);
+  }, [open, isRendered, anchorEl, anchorRef, side, width, family, popoverUniqueId, onClose]);
 
   // Outside click & Escape handler
   useEffect(() => {

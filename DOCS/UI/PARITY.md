@@ -18,7 +18,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `foundations` (tokens, type and spacing scales, base components) | done | `src/editor/styles/` (`tokens.css`, `tailwind.css`, `animations.css`), `src/editor/motion/` | new | Eight official themes, label colours, token blocks, Nook spring engine |
 | `design-system` (the `/design-system` page, shows every component and its states) | done | `src/editor/design-system/`, `src/app/design-system/` | new | 94 interactive sections wired |
 | `shell` | done | `src/editor/shell/` (`EditorShell.tsx`), `src/editor/components/TopBar.tsx` | 38 | `DetachedPanelShell.tsx` (bridge kept) |
-| `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`) | 4 | Rebuilt with Nook motion engine |
+| `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`, `retarget.ts`) | 5 | Rebuilt with Nook motion engine; F6 menu & popover retargeting gliding across same-family triggers with 160ms blur-crossfade |
 | `canvas` | done | `src/editor/shell/canvas-chrome/` (`Toolbar.tsx`, `Rulers.tsx`, `AiBox.tsx`, `InsertPanel.tsx`, `ViewOptionsPopover.tsx`, `ZoomControls.tsx`) | 20 | Rebuilt from prototype |
 | `stage` | done | `src/editor/stage/` (`Stage.tsx`, `StageViewport.tsx`, `SelectionOverlay.tsx`, `TransformHandles.tsx`, `HoverOutline.tsx`, `SnapGuides.tsx`) | 2 | Reads/writes real document (d7df6af) |
 | `runtime` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/runtime/`) | 3 | - |
