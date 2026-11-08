@@ -24,7 +24,16 @@ import {
   FileDropOverlay,
 } from "./persistence";
 import { useEditorActions } from "./useEditorActions";
-import { useShellFx } from "./shellFx";
+import {
+  useShellFx,
+  LEFT_PANEL_MIN,
+  LEFT_PANEL_DEFAULT,
+  LEFT_PANEL_MAX,
+  RIGHT_PANEL_MIN,
+  RIGHT_PANEL_DEFAULT,
+  RIGHT_PANEL_DEFAULT_COMPACT,
+  RIGHT_PANEL_MAX,
+} from "./shellFx";
 import { useMotionModel } from "@/editor/motion-model";
 
 export interface EditorShellProps {
@@ -47,7 +56,52 @@ export function EditorShell({
 
   // Core shell actions and keyboard shortcut layer
   const [aiPanelOpen, setAiPanelOpen] = React.useState(false);
-  const { bindRoot, captureMode, sync, onSplitDown, onSplitDouble } = useShellFx();
+  const [leftWidth, setLeftWidth] = React.useState(LEFT_PANEL_DEFAULT);
+  const [rightWidth, setRightWidth] = React.useState(
+    typeof window !== "undefined" && window.innerWidth <= 1200
+      ? RIGHT_PANEL_DEFAULT_COMPACT
+      : RIGHT_PANEL_DEFAULT
+  );
+  const {
+    bindRoot,
+    captureMode,
+    sync,
+    onSplitDown,
+    onSplitDouble,
+    onLeftSplitDown,
+    onLeftSplitDouble,
+    onLeftSplitKeyDown,
+    onRightSplitDown,
+    onRightSplitDouble,
+    onRightSplitKeyDown,
+    setTargetWidth,
+  } = useShellFx();
+
+  // Hydration-safe restore of user-persisted panel widths
+  useEffect(() => {
+    try {
+      const savedL = localStorage.getItem("ll-lw");
+      if (savedL) {
+        const n = parseFloat(savedL);
+        if (!isNaN(n) && n >= LEFT_PANEL_MIN && n <= LEFT_PANEL_MAX) {
+          setLeftWidth(n);
+          setTargetWidth("left", n);
+        }
+      }
+      const savedR = localStorage.getItem("ll-rw");
+      if (savedR) {
+        const n = parseFloat(savedR);
+        if (!isNaN(n) && n >= RIGHT_PANEL_MIN && n <= RIGHT_PANEL_MAX) {
+          setRightWidth(n);
+          setTargetWidth("right", n);
+        }
+      } else if (window.innerWidth <= 1200) {
+        setRightWidth(RIGHT_PANEL_DEFAULT_COMPACT);
+        setTargetWidth("right", RIGHT_PANEL_DEFAULT_COMPACT);
+      }
+    } catch (_) {}
+  }, [setTargetWidth]);
+
   const actions = useEditorActions({
     initialMode: "design",
     initialLeftCollapsed: false,
@@ -60,8 +114,20 @@ export function EditorShell({
 
   // Panel springs, mode-switch content transitions: runs before paint, after the new attributes are in the DOM.
   useLayoutEffect(() => {
-    sync(actions.mode);
-  }, [sync, actions.mode, actions.isLeftCollapsed, actions.isRightCollapsed, actions.isZen, fullWidth]);
+    sync(
+      actions.mode,
+      actions.isLeftCollapsed,
+      actions.isRightCollapsed,
+      actions.isZen
+    );
+  }, [
+    sync,
+    actions.mode,
+    actions.isLeftCollapsed,
+    actions.isRightCollapsed,
+    actions.isZen,
+    fullWidth,
+  ]);
 
   // Project persistence, locking and shell commands
   const files = useProjectFiles();
@@ -207,11 +273,25 @@ export function EditorShell({
       </div>
 
       {/* 2. Left panel slot in "left" grid area */}
-      <div
-        className="ll-shell-left"
-      >
+      <div className="ll-shell-left">
         {left ?? (
           <LeftPanelConnected mode={actions.mode} />
+        )}
+        {!actions.isLeftCollapsed && !actions.isZen && (
+          <div
+            className="ll-shell-lsplit"
+            role="separator"
+            tabIndex={0}
+            aria-orientation="vertical"
+            aria-label="Resize left panel"
+            aria-valuenow={Math.round(leftWidth)}
+            aria-valuemin={LEFT_PANEL_MIN}
+            aria-valuemax={LEFT_PANEL_MAX}
+            title="Drag to resize, double click to reset"
+            onPointerDown={(e) => onLeftSplitDown(e, setLeftWidth)}
+            onDoubleClick={() => onLeftSplitDouble(() => setLeftWidth(LEFT_PANEL_DEFAULT))}
+            onKeyDown={(e) => onLeftSplitKeyDown(e, setLeftWidth)}
+          />
         )}
       </div>
 
@@ -268,10 +348,38 @@ export function EditorShell({
       </div>
 
       {/* 4. Right panel slot in "right" grid area */}
-      <div
-        className="ll-shell-right"
-      >
-        {right ?? <RightPanelConnected mode={actions.mode} aiOpen={aiPanelOpen} onAiClose={() => setAiPanelOpen(false)} />}
+      <div className="ll-shell-right">
+        {!actions.isRightCollapsed && !actions.isZen && (
+          <div
+            className="ll-shell-rsplit"
+            role="separator"
+            tabIndex={0}
+            aria-orientation="vertical"
+            aria-label="Resize right panel"
+            aria-valuenow={Math.round(rightWidth)}
+            aria-valuemin={RIGHT_PANEL_MIN}
+            aria-valuemax={RIGHT_PANEL_MAX}
+            title="Drag to resize, double click to reset"
+            onPointerDown={(e) => onRightSplitDown(e, setRightWidth)}
+            onDoubleClick={() =>
+              onRightSplitDouble(() =>
+                setRightWidth(
+                  typeof window !== "undefined" && window.innerWidth <= 1200
+                    ? RIGHT_PANEL_DEFAULT_COMPACT
+                    : RIGHT_PANEL_DEFAULT
+                )
+              )
+            }
+            onKeyDown={(e) => onRightSplitKeyDown(e, setRightWidth)}
+          />
+        )}
+        {right ?? (
+          <RightPanelConnected
+            mode={actions.mode}
+            aiOpen={aiPanelOpen}
+            onAiClose={() => setAiPanelOpen(false)}
+          />
+        )}
       </div>
 
       {/* 5. Bottom area in "bottom" grid area (motion / code modes). The cell stays mounted so its row can spring open and closed. */}

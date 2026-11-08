@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import {
   Spring,
   simAdd,
@@ -45,6 +49,16 @@ const BOTTOM_MAX_RATIO = 0.7;
 const BOTTOM_DEFAULT_RATIO = 0.4;
 /** A layout change smaller than this (CSS px) is not animated. */
 const MIN_CHANGE = 0.5;
+
+/** Side panel clamps: min, default and max in CSS px. */
+export const LEFT_PANEL_MIN = 240;
+export const LEFT_PANEL_DEFAULT = 248;
+export const LEFT_PANEL_MAX = 440;
+
+export const RIGHT_PANEL_MIN = 280;
+export const RIGHT_PANEL_DEFAULT = 320;
+export const RIGHT_PANEL_DEFAULT_COMPACT = 296;
+export const RIGHT_PANEL_MAX = 520;
 
 const MODE_ORDER: readonly EditorMode[] = ["design", "motion", "code"];
 
@@ -124,6 +138,8 @@ export class ShellFx {
   private last: LayoutVals | null = null;
   private live = false;
   private pending: PendingMode | null = null;
+  private targetLw = LEFT_PANEL_DEFAULT;
+  private targetRw = RIGHT_PANEL_DEFAULT;
 
   private readonly lw = new Spring(0, PANEL_SPRING_SEED);
   private readonly rw = new Spring(0, PANEL_SPRING_SEED);
@@ -149,10 +165,55 @@ export class ShellFx {
     this.root = el;
     if (el) {
       window.addEventListener("resize", this.onResize);
+      this.initSavedWidths();
+      el.style.setProperty("--lw", `${this.targetLw}px`);
+      el.style.setProperty("--rw", `${this.targetRw}px`);
+      this.lw.jump(this.targetLw);
+      this.rw.jump(this.targetRw);
     } else {
       simRemove(this.sim);
       simRemove(this.mbhSim);
       this.live = false;
+    }
+  };
+
+  private initSavedWidths(): void {
+    if (typeof window === "undefined") return;
+    try {
+      const savedL = localStorage.getItem("ll-lw");
+      if (savedL) {
+        const n = parseFloat(savedL);
+        if (!isNaN(n) && n >= LEFT_PANEL_MIN && n <= LEFT_PANEL_MAX) {
+          this.targetLw = n;
+        }
+      }
+      const savedR = localStorage.getItem("ll-rw");
+      if (savedR) {
+        const n = parseFloat(savedR);
+        if (!isNaN(n) && n >= RIGHT_PANEL_MIN && n <= RIGHT_PANEL_MAX) {
+          this.targetRw = n;
+        }
+      } else if (window.innerWidth <= 1200) {
+        this.targetRw = RIGHT_PANEL_DEFAULT_COMPACT;
+      }
+    } catch (_) {}
+  }
+
+  readonly setTargetWidth = (side: "left" | "right", width: number): void => {
+    if (side === "left") {
+      this.targetLw = width;
+      if (!this.live && this.root) {
+        this.root.style.setProperty("--lw", `${width}px`);
+        this.lw.jump(width);
+        window.dispatchEvent(new Event("resize"));
+      }
+    } else {
+      this.targetRw = width;
+      if (!this.live && this.root) {
+        this.root.style.setProperty("--rw", `${width}px`);
+        this.rw.jump(width);
+        window.dispatchEvent(new Event("resize"));
+      }
     }
   };
 
@@ -167,12 +228,13 @@ export class ShellFx {
     root.style.setProperty("--rw", `${Math.max(0, this.rw.x).toFixed(2)}px`);
     root.style.setProperty("--bh", `${Math.max(0, this.bh.x).toFixed(2)}px`);
     root.style.setProperty("--fw", this.fw.x.toFixed(4));
+    window.dispatchEvent(new Event("resize"));
   }
 
   private clearVars(): void {
     const root = this.root;
     if (!root) return;
-    ["--lw", "--rw", "--bh", "--fw"].forEach((p) => root.style.removeProperty(p));
+    ["--bh", "--fw"].forEach((p) => root.style.removeProperty(p));
   }
 
   private end(): void {
@@ -181,7 +243,15 @@ export class ShellFx {
     this.live = false;
     this.clearVars();
     root.removeAttribute("data-pfx");
-    this.last = measure(root);
+    root.style.setProperty("--lw", `${Math.max(0, this.lw.to).toFixed(2)}px`);
+    root.style.setProperty("--rw", `${Math.max(0, this.rw.to).toFixed(2)}px`);
+    this.last = {
+      lw: this.lw.to,
+      rw: this.rw.to,
+      bh: this.bh.to,
+      fw: this.fw.to,
+    };
+    window.dispatchEvent(new Event("resize"));
   }
 
   /** Called synchronously before the mode state changes: copies the old panel content. */
@@ -207,7 +277,12 @@ export class ShellFx {
    * Runs in a layout effect after every commit that can change the layout. The attributes are
    * already new, so the grid is measured at its target, then the springs start from the old values.
    */
-  sync(mode: EditorMode): void {
+  sync(
+    mode: EditorMode,
+    isLeftCollapsed = false,
+    isRightCollapsed = false,
+    isZen = false,
+  ): void {
     const root = this.root;
     if (!root) return;
     const pending = this.pending;
@@ -223,10 +298,21 @@ export class ShellFx {
     } else {
       a = this.last;
     }
+
+    const targetLw = isZen || isLeftCollapsed ? 0 : this.targetLw;
+    const targetRw = isZen || isRightCollapsed ? 0 : this.targetRw;
+
+    root.style.setProperty("--lw", `${targetLw}px`);
+    root.style.setProperty("--rw", `${targetRw}px`);
+
     const b = measure(root);
+    b.lw = targetLw;
+    b.rw = targetRw;
 
     if (!a) {
       this.last = b;
+      this.lw.jump(targetLw);
+      this.rw.jump(targetRw);
       return;
     }
 
@@ -240,7 +326,12 @@ export class ShellFx {
         simRemove(this.sim);
         root.removeAttribute("data-pfx");
       }
+      this.lw.jump(b.lw);
+      this.rw.jump(b.rw);
+      this.bh.jump(b.bh);
+      this.fw.jump(b.fw);
       this.last = b;
+      window.dispatchEvent(new Event("resize"));
     } else {
       const spec = modeChanged && pending ? MODE_SPRING : getActivePreset().shape;
       [this.lw, this.rw, this.bh, this.fw].forEach((s) => s.tune(spec));
@@ -261,6 +352,13 @@ export class ShellFx {
       root.setAttribute("data-pfx", "");
       this.applyVars();
       simAdd(this.sim);
+
+      if (Math.abs(a.lw - b.lw) >= MIN_CHANGE) {
+        this.playContentBlur("left");
+      }
+      if (Math.abs(a.rw - b.rw) >= MIN_CHANGE) {
+        this.playContentBlur("right");
+      }
     }
 
     if (modeChanged && pending) this.playModeFx(root, pending);
@@ -374,14 +472,323 @@ export class ShellFx {
     this.mbh.to = h;
     simAdd(this.mbhSim);
   };
+
+  private playContentBlur(side: "left" | "right"): void {
+    const root = this.root;
+    if (!root || prefersReducedMotion()) return;
+    const selector = side === "left" ? ".ll-shell-left .ll-zone" : ".ll-shell-right .ll-zone";
+    const zone = root.querySelector<HTMLElement>(selector) || root.querySelector<HTMLElement>(side === "left" ? ".ll-shell-left" : ".ll-shell-right");
+    if (!zone) return;
+    const body = zone.querySelector<HTMLElement>(".ll-zbody") || zone;
+    springAnim(
+      body,
+      [
+        { filter: "blur(2.5px)" },
+        { filter: "blur(0px)" },
+      ],
+      0.22,
+      0.6
+    );
+  }
+
+  private settle(side: "left" | "right", targetW: number, velocity: number): void {
+    const root = this.root;
+    if (!root) return;
+    const reduced = prefersReducedMotion();
+    if (reduced) {
+      if (side === "left") {
+        this.targetLw = targetW;
+        this.lw.jump(targetW);
+        root.style.setProperty("--lw", `${targetW}px`);
+      } else {
+        this.targetRw = targetW;
+        this.rw.jump(targetW);
+        root.style.setProperty("--rw", `${targetW}px`);
+      }
+      window.dispatchEvent(new Event("resize"));
+      return;
+    }
+
+    const preset = getActivePreset();
+    if (side === "left") {
+      this.targetLw = targetW;
+      this.lw.tune(preset.shape);
+      this.lw.jump(targetW);
+      this.lw.v = Math.abs(velocity) > 20 ? clamp(velocity, -200, 200) : 15;
+      this.lw.to = targetW;
+    } else {
+      this.targetRw = targetW;
+      this.rw.tune(preset.shape);
+      this.rw.jump(targetW);
+      this.rw.v = Math.abs(velocity) > 20 ? clamp(velocity, -200, 200) : 15;
+      this.rw.to = targetW;
+    }
+
+    this.live = true;
+    root.setAttribute("data-pfx", "");
+    this.applyVars();
+    simAdd(this.sim);
+
+    this.playContentBlur(side);
+  }
+
+  /** Left side panel splitter: drag to resize. */
+  readonly onLeftSplitDown = (
+    e: ReactPointerEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ): void => {
+    const root = this.root;
+    if (!root) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setAttribute("data-on", "");
+    handle.setPointerCapture(e.pointerId);
+
+    const x0 = e.clientX;
+    const w0 = this.targetLw;
+    let currentW = w0;
+    let lastTime = performance.now();
+    let velocity = 0;
+
+    this.lw.jump(w0);
+
+    const move = (ev: PointerEvent): void => {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTime);
+      const rawW = w0 + (ev.clientX - x0);
+      const maxW = Math.min(LEFT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
+      const w = clamp(rawW, LEFT_PANEL_MIN, maxW);
+      velocity = ((w - currentW) / dt) * 1000;
+      lastTime = now;
+      currentW = w;
+      this.targetLw = w;
+      this.lw.jump(w);
+      root.style.setProperty("--lw", `${w}px`);
+      handle.setAttribute("aria-valuenow", String(Math.round(w)));
+      window.dispatchEvent(new Event("resize"));
+      onWidthChange?.(w);
+    };
+
+    const up = (): void => {
+      handle.removeAttribute("data-on");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+
+      try {
+        localStorage.setItem("ll-lw", String(Math.round(currentW)));
+      } catch (_) {}
+
+      this.settle("left", currentW, velocity);
+    };
+
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  };
+
+  /** Left side panel splitter: double click resets to default. */
+  readonly onLeftSplitDouble = (onReset?: () => void): void => {
+    const root = this.root;
+    if (!root) return;
+    const target = LEFT_PANEL_DEFAULT;
+    this.targetLw = target;
+    try {
+      localStorage.setItem("ll-lw", String(target));
+    } catch (_) {}
+    onReset?.();
+    if (prefersReducedMotion()) {
+      this.lw.jump(target);
+      root.style.setProperty("--lw", `${target}px`);
+      window.dispatchEvent(new Event("resize"));
+      return;
+    }
+    this.lw.tune(getActivePreset().shape);
+    this.lw.to = target;
+    this.live = true;
+    root.setAttribute("data-pfx", "");
+    this.applyVars();
+    simAdd(this.sim);
+    this.playContentBlur("left");
+  };
+
+  /** Left side panel splitter: keyboard arrows and home/end. */
+  readonly onLeftSplitKeyDown = (
+    e: ReactKeyboardEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ): void => {
+    let delta = 0;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") delta = 8;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") delta = -8;
+    else if (e.key === "Home") {
+      delta = LEFT_PANEL_MIN - this.targetLw;
+    } else if (e.key === "End") {
+      delta = LEFT_PANEL_MAX - this.targetLw;
+    } else if (e.key === "Enter" || e.key === " ") {
+      delta = LEFT_PANEL_DEFAULT - this.targetLw;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    const maxW = Math.min(LEFT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
+    const nextW = clamp(this.targetLw + delta, LEFT_PANEL_MIN, maxW);
+    this.targetLw = nextW;
+    e.currentTarget.setAttribute("aria-valuenow", String(Math.round(nextW)));
+    try {
+      localStorage.setItem("ll-lw", String(Math.round(nextW)));
+    } catch (_) {}
+    onWidthChange?.(nextW);
+    this.settle("left", nextW, 0);
+  };
+
+  /** Right side panel splitter: drag to resize. */
+  readonly onRightSplitDown = (
+    e: ReactPointerEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ): void => {
+    const root = this.root;
+    if (!root) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setAttribute("data-on", "");
+    handle.setPointerCapture(e.pointerId);
+
+    const x0 = e.clientX;
+    const w0 = this.targetRw;
+    let currentW = w0;
+    let lastTime = performance.now();
+    let velocity = 0;
+
+    this.rw.jump(w0);
+
+    const move = (ev: PointerEvent): void => {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTime);
+      const rawW = w0 - (ev.clientX - x0);
+      const maxW = Math.min(RIGHT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
+      const w = clamp(rawW, RIGHT_PANEL_MIN, maxW);
+      velocity = ((w - currentW) / dt) * 1000;
+      lastTime = now;
+      currentW = w;
+      this.targetRw = w;
+      this.rw.jump(w);
+      root.style.setProperty("--rw", `${w}px`);
+      handle.setAttribute("aria-valuenow", String(Math.round(w)));
+      window.dispatchEvent(new Event("resize"));
+      onWidthChange?.(w);
+    };
+
+    const up = (): void => {
+      handle.removeAttribute("data-on");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+
+      try {
+        localStorage.setItem("ll-rw", String(Math.round(currentW)));
+      } catch (_) {}
+
+      this.settle("right", currentW, velocity);
+    };
+
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  };
+
+  /** Right side panel splitter: double click resets to default. */
+  readonly onRightSplitDouble = (onReset?: () => void): void => {
+    const root = this.root;
+    if (!root) return;
+    const target =
+      typeof window !== "undefined" && window.innerWidth <= 1200
+        ? RIGHT_PANEL_DEFAULT_COMPACT
+        : RIGHT_PANEL_DEFAULT;
+    this.targetRw = target;
+    try {
+      localStorage.setItem("ll-rw", String(target));
+    } catch (_) {}
+    onReset?.();
+    if (prefersReducedMotion()) {
+      this.rw.jump(target);
+      root.style.setProperty("--rw", `${target}px`);
+      window.dispatchEvent(new Event("resize"));
+      return;
+    }
+    this.rw.tune(getActivePreset().shape);
+    this.rw.to = target;
+    this.live = true;
+    root.setAttribute("data-pfx", "");
+    this.applyVars();
+    simAdd(this.sim);
+    this.playContentBlur("right");
+  };
+
+  /** Right side panel splitter: keyboard arrows and home/end. */
+  readonly onRightSplitKeyDown = (
+    e: ReactKeyboardEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ): void => {
+    let delta = 0;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") delta = 8;
+    else if (e.key === "ArrowRight" || e.key === "ArrowDown") delta = -8;
+    else if (e.key === "Home") {
+      delta = RIGHT_PANEL_MIN - this.targetRw;
+    } else if (e.key === "End") {
+      delta = RIGHT_PANEL_MAX - this.targetRw;
+    } else if (e.key === "Enter" || e.key === " ") {
+      delta =
+        (typeof window !== "undefined" && window.innerWidth <= 1200
+          ? RIGHT_PANEL_DEFAULT_COMPACT
+          : RIGHT_PANEL_DEFAULT) - this.targetRw;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    const maxW = Math.min(RIGHT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
+    const nextW = clamp(this.targetRw + delta, RIGHT_PANEL_MIN, maxW);
+    this.targetRw = nextW;
+    e.currentTarget.setAttribute("aria-valuenow", String(Math.round(nextW)));
+    try {
+      localStorage.setItem("ll-rw", String(Math.round(nextW)));
+    } catch (_) {}
+    onWidthChange?.(nextW);
+    this.settle("right", nextW, 0);
+  };
 }
 
 export interface ShellFxApi {
   bindRoot: (el: HTMLElement | null) => void;
   captureMode: (next: EditorMode) => void;
-  sync: (mode: EditorMode) => void;
+  sync: (
+    mode: EditorMode,
+    isLeftCollapsed?: boolean,
+    isRightCollapsed?: boolean,
+    isZen?: boolean
+  ) => void;
   onSplitDown: (e: ReactPointerEvent<HTMLElement>) => void;
   onSplitDouble: (e: ReactMouseEvent<HTMLElement>) => void;
+  onLeftSplitDown: (
+    e: ReactPointerEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ) => void;
+  onLeftSplitDouble: (onReset?: () => void) => void;
+  onLeftSplitKeyDown: (
+    e: ReactKeyboardEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ) => void;
+  onRightSplitDown: (
+    e: ReactPointerEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ) => void;
+  onRightSplitDouble: (onReset?: () => void) => void;
+  onRightSplitKeyDown: (
+    e: ReactKeyboardEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void
+  ) => void;
+  setTargetWidth: (side: "left" | "right", width: number) => void;
 }
 
 /** One ShellFx per shell, created once. */
@@ -391,9 +798,17 @@ export function useShellFx(): ShellFxApi {
     return {
       bindRoot: fx.attach,
       captureMode: fx.captureMode,
-      sync: (mode) => fx.sync(mode),
+      sync: (mode, isLeftCollapsed, isRightCollapsed, isZen) =>
+        fx.sync(mode, isLeftCollapsed, isRightCollapsed, isZen),
       onSplitDown: fx.onSplitDown,
       onSplitDouble: fx.onSplitDouble,
+      onLeftSplitDown: fx.onLeftSplitDown,
+      onLeftSplitDouble: fx.onLeftSplitDouble,
+      onLeftSplitKeyDown: fx.onLeftSplitKeyDown,
+      onRightSplitDown: fx.onRightSplitDown,
+      onRightSplitDouble: fx.onRightSplitDouble,
+      onRightSplitKeyDown: fx.onRightSplitKeyDown,
+      setTargetWidth: fx.setTargetWidth,
     };
   });
   return api;

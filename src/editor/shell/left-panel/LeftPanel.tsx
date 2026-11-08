@@ -223,7 +223,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
       ref={containerRef}
       aria-label={isCode ? "Files" : "Layers"}
       data-testid="left-panel"
-      className={`zone left ll-zone ll-left ll:flex ll:flex-col ll:w-panel-left ll:h-full ll:bg-surface-panel ll:border-r ll:border-border ll:select-none ll:overflow-hidden ll:min-h-0 ll:min-w-0 ${className}`}
+      className={`zone left ll-zone ll-left ll:flex ll:flex-col ll:w-full ll:h-full ll:bg-surface-panel ll:border-r ll:border-border ll:select-none ll:overflow-hidden ll:min-h-0 ll:min-w-0 ${className}`}
     >
       {/* Zone Header + Search Bar */}
       <LeftPanelHeader

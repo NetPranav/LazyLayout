@@ -71,9 +71,21 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
 
         <div className="ll:flex-1" />
 
-        {/* Section Actions: Sliders icon button for options, and Add button ("+") */}
+        {/* Section Actions: Add button ("+") and Sliders icon button for options */}
         <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
           {headerAction}
+
+          {onAdd && (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              aria-label={`Add ${title.toLowerCase()}`}
+              tooltip="Add"
+              onClick={onAdd}
+              icon={<Icon icon={Plus} size={14} />}
+              className={`ll-dic ll-add ${!hasMore ? "ll:-mr-1" : ""}`}
+            />
+          )}
 
           {hasMore && (
             <IconButton
@@ -91,19 +103,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
                 setIsPopoverOpen((prev) => !prev);
               }}
               icon={<Icon icon={Sliders} size={14} />}
-              className={`ll-dic ll-more ${!onAdd ? "ll:-mr-1" : ""}`}
-            />
-          )}
-
-          {onAdd && (
-            <IconButton
-              size="sm"
-              variant="ghost"
-              aria-label={`Add ${title.toLowerCase()}`}
-              tooltip="Add"
-              onClick={onAdd}
-              icon={<Icon icon={Plus} size={14} />}
-              className="ll-dic ll-add ll:-mr-1"
+              className="ll-dic ll-more ll:-mr-1"
             />
           )}
         </div>
