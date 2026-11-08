@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { LeftPanel } from "@/editor/shell/left-panel";
-import { PageSwitcher } from "@/editor/components/PageSwitcher";
+import { LeftPanel, PageSelector } from "@/editor/shell/left-panel";
 import { useLeftPanelData } from "./useLeftPanelData";
 import { usePagesData } from "./usePagesData";
 import type { LeftPanelConnectedProps } from "./types";
@@ -21,7 +20,7 @@ export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
     headerStart !== undefined
       ? headerStart
       : mode === "design" || mode === "motion"
-      ? <PageSwitcher {...pagesData} />
+      ? <PageSelector {...pagesData} />
       : undefined;
 
   return (

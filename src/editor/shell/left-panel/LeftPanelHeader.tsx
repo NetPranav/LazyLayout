@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
+import { getMotion, prefersReducedMotion } from "@/editor/motion/feel";
+import { springEase } from "@/editor/motion/ease";
+import { SEARCH_BOX_HEIGHT_PX } from "./constants";
 import type { LeftPanelMode } from "./types";
 
 export interface LeftPanelHeaderProps {
@@ -26,11 +29,78 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
   matchCount,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchBtnRef = useRef<HTMLButtonElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
 
+  // Focus input when search opens
   useEffect(() => {
     if (searchOpen) {
       inputRef.current?.focus();
     }
+  }, [searchOpen]);
+
+  // WAAPI spring morph animation matching prototype openSearch(o)
+  useEffect(() => {
+    if (!searchOpen || !boxRef.current || !fieldRef.current || !searchBtnRef.current) return;
+    const box = boxRef.current;
+    const field = fieldRef.current;
+    const btn = searchBtnRef.current;
+    const input = inputRef.current;
+
+    if (prefersReducedMotion()) {
+      box.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 120,
+        easing: "ease-out",
+        fill: "backwards",
+      });
+      return;
+    }
+
+    const b = btn.getBoundingClientRect();
+    const f = field.getBoundingClientRect();
+    const full = f.width;
+    const p = getMotion().current();
+    const s = springEase(p.shape[0], p.shape[1]);
+
+    if (input) input.style.caretColor = "transparent";
+
+    const anim = field.animate(
+      [
+        {
+          width: `${b.width}px`,
+          marginLeft: `${full - b.width}px`,
+          height: `${b.height}px`,
+          transform: `translateY(${b.top - f.top}px)`,
+        },
+        {
+          width: `${full}px`,
+          marginLeft: "0px",
+          height: `${f.height || SEARCH_BOX_HEIGHT_PX}px`,
+          transform: "none",
+        },
+      ],
+      {
+        duration: s.duration,
+        easing: s.easing,
+        fill: "backwards",
+      }
+    );
+
+    // Fade inside elements with stagger
+    const innerIcons = field.querySelectorAll("svg, input, button");
+    innerIcons.forEach((c) => {
+      c.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 160,
+        easing: "ease-out",
+        delay: s.duration * 0.45,
+        fill: "backwards",
+      });
+    });
+
+    anim.onfinish = () => {
+      if (input) input.style.caretColor = "";
+    };
   }, [searchOpen]);
 
   const isCode = mode === "code";
@@ -66,22 +136,31 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
 
         <span className="sp ll-sp ll:flex-1" />
 
-        <IconButton
-          id="lsearchbtn"
-          size="md"
-          variant="ghost"
-          pressed={searchOpen}
-          aria-label={searchLabel}
-          title={searchLabel}
-          icon={<Icon icon={Search} size={14} />}
-          onClick={onToggleSearch}
-        />
+        <div ref={searchBtnRef as unknown as React.RefObject<HTMLDivElement>} className="ll:flex-none">
+          <IconButton
+            id="lsearchbtn"
+            size="md"
+            variant="ghost"
+            pressed={searchOpen}
+            aria-label={searchLabel}
+            title={searchLabel}
+            icon={<Icon icon={Search} size={14} />}
+            onClick={onToggleSearch}
+          />
+        </div>
       </div>
 
       {/* Search box if toggled (lsbox) */}
       {searchOpen && (
-        <div id="lfilter" className="lsbox ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-b ll:border-border ll:shrink-0">
-          <div className="lsfield ll-lsfield ll:flex ll:items-center ll:gap-2 ll:h-8 ll:px-2 ll:bg-surface-canvas ll:border ll:border-border ll:rounded-sm ll:text-muted ll:focus-within:border-primary">
+        <div
+          ref={boxRef}
+          id="lfilter"
+          className="lsbox ll-lsbox ll:flex ll:flex-col ll:p-3 ll:border-b ll:border-border ll:shrink-0"
+        >
+          <div
+            ref={fieldRef}
+            className="lsfield ll-lsfield ll:flex ll:items-center ll:gap-2 ll:h-8 ll:px-2 ll:bg-surface-canvas ll:border ll:border-border ll:rounded-sm ll:text-muted ll:focus-within:border-primary"
+          >
             <Icon icon={Search} size={14} className="ll:text-muted ll:shrink-0" />
             <input
               ref={inputRef}
