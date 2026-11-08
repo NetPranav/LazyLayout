@@ -43,3 +43,9 @@ export const DEFAULT_SHIP_ISSUES = [
   { id: "alt", title: "Hero image has no alt text" },
   { id: "contrast", title: "Button contrast is 3.9:1" },
 ] as const;
+
+/** One save = 3.2 s: 1.6 s draw + 1.6 s undraw (--ll-dur-trace with animation-direction: alternate in animations.css) */
+export const SAVE_DURATION_MS = 3200;
+
+/** Disabled reason tooltip for the preview button */
+export const PREVIEW_DISABLED_REASON = "Preview is not designed yet";

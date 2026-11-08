@@ -67,7 +67,7 @@ import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
-import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
+import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
@@ -111,6 +111,32 @@ export interface TopBarProps {
   onPreview?: () => void;
   onShare?: () => void;
 }
+
+/** Preview button left of Ship. Stays focusable and hoverable when disabled so the reason tooltip shows. */
+export const PreviewButton: React.FC<{ onPreview?: () => void; id?: string; "data-testid"?: string; className?: string }> = ({
+  onPreview,
+  id = "previewbtn",
+  "data-testid": dataTestId = "preview-button",
+  className = "",
+}) => (
+  <Tooltip content={onPreview ? "Preview" : PREVIEW_DISABLED_REASON} side="bottom">
+    <button
+      type="button"
+      id={id}
+      data-testid={dataTestId}
+      aria-label={onPreview ? "Preview" : `Preview (${PREVIEW_DISABLED_REASON})`}
+      aria-disabled={!onPreview}
+      onClick={onPreview}
+      className={`themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+        onPreview
+          ? "ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:cursor-pointer"
+          : "ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"
+      } ${className}`}
+    >
+      <Icon icon={Play} size={ACTION_ICON_SIZE} />
+    </button>
+  </Tooltip>
+);
 
 export const TopBar: React.FC<TopBarProps> = ({
   projectName = "Visual Web App",
@@ -276,7 +302,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     <header
       role="banner"
       data-testid="top-bar"
-      className={`top ll-top ll:text-body ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
+      className={`top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
     >
       {/* =====================================================================
           1. LEFT COLUMN: Logo, 1px divider, Project Name
@@ -295,8 +321,8 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-haspopup="menu"
           aria-expanded={logoMenuOpen}
           onClick={() => setLogoMenuOpen((prev) => !prev)}
-          className={`logo ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:[&_svg]:opacity-70 ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-            isSaving ? "saving-on ll-saving-on" : ""
+          className={`logo ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+            isSaving ? "ll-saving-on" : ""
           }`}
         >
           <LogoMark saving={isSaving} size={LOGO_ICON_SIZE} />
@@ -506,7 +532,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* =====================================================================
           3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
           ===================================================================== */}
-      <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
+      <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4 ll:max-sm:pr-2">
         {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
         <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
           <button
@@ -567,12 +593,16 @@ export const TopBar: React.FC<TopBarProps> = ({
           ))}
         </Menu>
 
+        {/* Preview button (left of Ship, 32x32 size and 4px radius matching P) */}
+        <PreviewButton onPreview={onPreview} className="ll:max-sm:hidden" />
+
         {/* Ship Button & Popover */}
         <ShipPopover
           issues={issues}
           onFixIssue={onFixIssue}
           onPublish={onPublish}
-          onPreview={onPreview ?? (() => onMenuAction?.("view.previewMode"))}
+          onPreview={onPreview}
+          className="ll:max-sm:hidden"
           onShare={onShare ?? (() => onMenuAction?.("file.copyLink"))}
         />
 

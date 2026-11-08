@@ -17,6 +17,7 @@ import {
   POPUP_LEAVE_REDUCED_DURATION_MS,
   MENU_ICON_SIZE,
   DEFAULT_SHIP_ISSUES,
+  PREVIEW_DISABLED_REASON,
 } from "./topbar-constants";
 
 export interface ShipIssue {
@@ -212,7 +213,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
             : "ll:bg-ship-bg ll:text-ship-fg"
         } ${dataState === "hover" ? "ll:opacity-90 " : ""}${
           dataState === "focus" ? "ll:ring-2 ll:ring-primary " : ""
-        }${disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""} ${className}`}
+        }${disabled ? "ll:opacity-disabled ll:cursor-not-allowed" : ""} ${className}`}
       >
         <span>Ship</span>
 
@@ -271,11 +272,14 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
               <button
                 type="button"
                 role="menuitem"
+                aria-disabled={!onPreview}
+                title={onPreview ? undefined : PREVIEW_DISABLED_REASON}
                 onClick={() => {
-                  onPreview?.();
+                  if (!onPreview) return;
+                  onPreview();
                   closePopover();
                 }}
-                className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
+                className={`ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-left ll:outline-none ${onPreview ? "ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer" : "ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"} ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover`}
               >
                 Preview link
               </button>
