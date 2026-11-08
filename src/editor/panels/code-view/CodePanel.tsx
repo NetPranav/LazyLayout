@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
-  FileCode,
+  Code,
   Zap,
   Layers,
   FileText,
@@ -14,12 +14,16 @@ import {
   MoreHorizontal,
   Check,
   X,
+  Search,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { ZipPacker } from "@/compiler/export/ZipPacker";
 import { useMotionModel, motionActions } from "@/editor/motion-model";
+import { consoleStore, useConsoleLogs } from "@/editor/panels/console/consoleStore";
 import { SyntaxHighlighter } from "./SyntaxHighlighter";
 import { useCodeModels } from "./useCodeModels";
 import { ConsoleView } from "./ConsoleView";
@@ -67,6 +71,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   onLineClick,
   onCopy,
   onExport,
+  onRun,
   className = "",
   style,
 }) => {
@@ -79,6 +84,17 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     else setInternalTab(t);
   };
 
+  // Run (toolbar onRunCode -> runCode()): reveal the Console when the build line lands
+  const runHandlerRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    runHandlerRef.current = () => {
+      if (onTabChange) onTabChange("console");
+      else setInternalTab("console");
+      onRun?.();
+    };
+  });
+  useEffect(() => consoleStore.subscribeRun(() => runHandlerRef.current()), []);
+
   // Generator & Files state
   const [codeState] = useState<CodeGeneratorState>(DEFAULT_CODE_STATE);
   const [openTabs, setOpenTabs] = useState<string[]>(["hero"]);
@@ -90,8 +106,23 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const [curCol, setCurCol] = useState<number>(0);
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
   const [changedRanges, setChangedRanges] = useState<Record<number, [number, number]> | null>(null);
-  const [errorCount] = useState<number>(2); // Console error count badge
   const isFullWidth = useMotionModel((s) => s.fullWidth);
+
+  const consoleLogs = useConsoleLogs();
+  const errorCount = useMemo(
+    () => consoleLogs.filter((l) => l.lvl === "error").length,
+    [consoleLogs]
+  );
+  const warnCount = useMemo(
+    () => consoleLogs.filter((l) => l.lvl === "warn").length,
+    [consoleLogs]
+  );
+
+  // Find in code state (.tbfind)
+  const [isFindOpen, setIsFindOpen] = useState<boolean>(false);
+  const [findQuery, setFindQuery] = useState<string>("");
+  const [activeMatchIndex, setActiveMatchIndex] = useState<number>(0);
+  const findInputRef = useRef<HTMLInputElement>(null);
 
   const activeFileId = controlledFileId ?? internalActiveFile;
 
@@ -134,6 +165,78 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   const displayFileName = propFileName ?? fName(activeFileId, codeState);
   const displayFilePath = fPath(activeFileId, codeState);
+
+  // Compute all matches in displayLines for find bar (.tbfind)
+  const matches = useMemo(() => {
+    const q = findQuery.trim().toLowerCase();
+    if (!q) return [];
+    const list: Array<{ lineIndex: number; colIndex: number }> = [];
+    displayLines.forEach((line, lineIdx) => {
+      const lower = line.t.toLowerCase();
+      let pos = 0;
+      while ((pos = lower.indexOf(q, pos)) !== -1) {
+        list.push({ lineIndex: lineIdx, colIndex: pos });
+        pos += q.length;
+      }
+    });
+    return list;
+  }, [displayLines, findQuery]);
+
+  const goToMatch = useCallback(
+    (index: number) => {
+      if (!matches.length) return;
+      const safeIndex = (index + matches.length) % matches.length;
+      setActiveMatchIndex(safeIndex);
+      const targetMatch = matches[safeIndex];
+      if (targetMatch) {
+        setCurLine(targetMatch.lineIndex);
+        setCurCol(targetMatch.colIndex);
+      }
+    },
+    [matches]
+  );
+
+  // Focus find input when opened
+  useEffect(() => {
+    if (isFindOpen && findInputRef.current) {
+      findInputRef.current.focus({ preventScroll: true });
+      findInputRef.current.select();
+    }
+  }, [isFindOpen]);
+
+  // Global keydown for Ctrl+F and Esc
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+      if (isCmdOrCtrl && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setIsFindOpen(true);
+        if (activeTab !== "code") {
+          handleTabSwitch("code");
+        }
+      } else if (e.key === "Escape" && isFindOpen) {
+        e.preventDefault();
+        setIsFindOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFindOpen, activeTab]);
+
+  const handleFindInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        goToMatch(activeMatchIndex - 1);
+      } else {
+        goToMatch(activeMatchIndex + 1);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setIsFindOpen(false);
+    }
+  };
 
   // Open the tab, active file and line of the selected canvas element (adjusted during render)
   const selectedShort = selectedElementId ? selectedElementId.replace(/^el_/, "") : null;
@@ -364,7 +467,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           <div
             role="tablist"
             aria-label="Open files"
-            className="ll-ctabs ll:flex-1 ll:min-w-0 ll:flex ll:items-stretch ll:self-stretch ll:overflow-x-auto"
+            className="ll-ctabs ctabs ll:flex-1 ll:min-w-0 ll:flex ll:items-stretch ll:self-stretch ll:overflow-x-auto"
           >
             {openTabs.map((tabId) => {
               const isSelected = activeFileId === tabId;
@@ -379,8 +482,14 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                   data-tab={tabId}
                   aria-selected={isSelected}
                   onClick={() => handleOpenTab(tabId)}
+                  onAuxClick={(e) => {
+                    if (e.button === 1) {
+                      e.preventDefault();
+                      handleCloseTab(e, tabId);
+                    }
+                  }}
                   title={fPath(tabId, codeState)}
-                  className={`ll-ctab ll:group ll:relative ll:flex ll:items-center ll:gap-1.5 ll:shrink-0 ll:h-full ll:pl-3 ll:pr-1 ll:font-sans ll:text-small ll:font-medium ll:whitespace-nowrap ll:cursor-pointer ll:select-none ll:transition-colors ${
+                  className={`ll-ctab ctab ll:group ll:relative ll:flex ll:items-center ll:gap-1.5 ll:shrink-0 ll:h-full ll:pl-3 ll:pr-1 ll:font-sans ll:text-small ll:font-medium ll:whitespace-nowrap ll:cursor-pointer ll:select-none ll:transition-colors ${
                     isSelected
                       ? "ll:text-primary ll:after:absolute ll:after:left-0 ll:after:right-0 ll:after:bottom-0 ll:after:h-0.5 ll:after:bg-primary"
                       : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -394,7 +503,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                         ? FileText
                         : fileIconKey === "fvue"
                         ? Zap
-                        : FileCode
+                        : Code
                     }
                     size={14}
                     className="ll:shrink-0"
@@ -405,10 +514,12 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                   <button
                     type="button"
                     tabIndex={-1}
+                    data-ca="closetab"
+                    data-id={tabId}
                     aria-label={`Close ${fileNameStr}`}
                     title="Close"
                     onClick={(e) => handleCloseTab(e, tabId)}
-                    className={`ll-cx ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ${isSelected ? "ll:opacity-100" : "ll:opacity-0"} ll:group-hover:opacity-100 ll:hover:bg-surface-bar ll:hover:text-primary ll:border-0 ll:bg-transparent ll:cursor-pointer ll:p-0`}
+                    className={`ll-cx cx ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ${isSelected ? "ll:opacity-100" : "ll:opacity-0"} ll:group-hover:opacity-100 ll:hover:bg-surface-bar ll:hover:text-primary ll:border-0 ll:bg-transparent ll:cursor-pointer ll:p-0`}
                   >
                     <Icon icon={X} size={12} />
                   </button>
@@ -421,9 +532,26 @@ export const CodePanel: React.FC<CodePanelProps> = ({
         )}
 
         {/* Right Tools (.chr in prototype) */}
-        <div className="ll-chr ll:flex ll:items-center ll:gap-0.5 ll:shrink-0">
+        <div className="ll-chr chr ll:flex ll:items-center ll:gap-0.5 ll:shrink-0">
           {activeTab === "code" && (
             <>
+              {/* Find toggle button */}
+              <button
+                type="button"
+                data-ca="find"
+                aria-pressed={isFindOpen}
+                aria-label="Find in code (Ctrl+F)"
+                title="Find in code (Ctrl+F)"
+                onClick={() => setIsFindOpen((prev) => !prev)}
+                className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:border-0 ll:cursor-pointer ll:transition-colors ${
+                  isFindOpen
+                    ? "ll:bg-control-active ll:text-primary"
+                    : "ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar"
+                }`}
+              >
+                <Icon icon={Search} size={14} />
+              </button>
+
               {/* Word wrap toggle */}
               <button
                 type="button"
@@ -540,26 +668,87 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                   setCurLine(stickyScope.line);
                 }
               }}
-              className="ll-cstick ll:h-6 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:pl-6 ll:pr-4 ll:bg-surface-panel ll:border-b ll:border-border ll:font-mono ll:text-micro ll:font-medium ll:text-secondary ll:hover:text-primary ll:text-left ll:cursor-pointer"
+              className="ll-cstick cstick ll:h-6 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:pl-6 ll:pr-4 ll:bg-surface-panel ll:border-b ll:border-border ll:font-mono ll:text-micro ll:font-medium ll:text-secondary ll:hover:text-primary ll:text-left ll:cursor-pointer"
             >
-              <span className="ll-csk ll:truncate">
+              <span className="ll-csk csk ll:truncate">
                 {stickyScope ? stickyScope.label : "Top level"}
               </span>
               {stickyScope && (
-                <span className="ll-csl ll:font-normal ll:text-muted ll:ml-auto">
+                <span className="ll-csl csl ll:font-normal ll:text-muted ll:ml-auto">
                   Line {stickyScope.line + 1}
                 </span>
               )}
             </button>
 
+            {/* Find in code bar (.tbfind per prototype lines 822-824) */}
+            {isFindOpen && (
+              <div
+                role="search"
+                className="ll-tbfind tbfind ll:absolute ll:top-find-top ll:right-find-right ll:z-30 ll:flex ll:items-center ll:gap-1 ll:p-1 ll:pl-2 ll:bg-surface-float ll:border ll:border-border ll:rounded-md ll:shadow-floating"
+              >
+                <Icon icon={Search} size={13} className="ll:text-muted ll:shrink-0" />
+                <input
+                  ref={findInputRef}
+                  type="text"
+                  value={findQuery}
+                  onChange={(e) => {
+                    setFindQuery(e.target.value);
+                    setActiveMatchIndex(0);
+                  }}
+                  onKeyDown={handleFindInputKeyDown}
+                  placeholder="Find in code"
+                  aria-label="Find in code"
+                  spellCheck={false}
+                  autoComplete="off"
+                  className="ll:w-find-input ll:h-8 ll:px-2 ll:bg-surface-panel ll:border ll:border-border ll:focus:border-primary ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:placeholder:text-muted ll:outline-none"
+                />
+                <span
+                  className="ll-tbn tbn mono ll:min-w-6 ll:text-right ll:font-mono ll:text-micro ll:text-muted ll:px-1 ll:select-none"
+                  aria-live="polite"
+                >
+                  {matches.length === 0 ? "0" : `${activeMatchIndex + 1}/${matches.length}`}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Previous match"
+                  title="Previous match (Shift+Enter)"
+                  onClick={() => goToMatch(activeMatchIndex - 1)}
+                  disabled={matches.length === 0}
+                  className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:disabled:opacity-30 ll:cursor-pointer"
+                >
+                  <Icon icon={ChevronUp} size={14} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next match"
+                  title="Next match (Enter)"
+                  onClick={() => goToMatch(activeMatchIndex + 1)}
+                  disabled={matches.length === 0}
+                  className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:disabled:opacity-30 ll:cursor-pointer"
+                >
+                  <Icon icon={ChevronDown} size={14} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Close find"
+                  title="Close (Esc)"
+                  onClick={() => setIsFindOpen(false)}
+                  className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer"
+                >
+                  <Icon icon={X} size={13} />
+                </button>
+              </div>
+            )}
+
             {/* Code Editor Body (.cedit / .cscroll) */}
-            <div className="ll-cedit ll:flex-1 ll:min-h-0 ll:relative ll:overflow-hidden">
+            <div className="ll-cedit cedit ll:flex-1 ll:min-h-0 ll:relative ll:overflow-hidden">
               <SyntaxHighlighter
                 lines={displayLines}
                 language={fLang(activeFileId, codeState)}
                 highlightedLine={propHighlightedLine ?? curLine}
                 highlightedRanges={highlightedRanges}
                 changedLines={changedRanges}
+                searchQuery={isFindOpen ? findQuery : undefined}
                 wrap={wrap}
                 folds={folds}
                 onToggleFold={toggleFold}
@@ -576,7 +765,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
       {/* 3. Footer Area (.tlf.cft in prototype: height 28px, 11px mono, muted) */}
       <div
         id="cfoot"
-        className="ll-tlf ll-cft ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:text-muted ll:select-none"
+        className="ll-tlf tlf cft ll-cft ll:h-7 ll:shrink-0 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:text-muted ll:select-none"
       >
         {activeTab === "code" ? (
           <>
@@ -597,7 +786,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             <button
               type="button"
               onClick={handleFormat}
-              className={`ll-cfmt ${TFB} ll:bg-transparent ll:border-0 ll:text-secondary ll:cursor-default`}
+              className={`ll-cfmt cfmt ${TFB} ll:bg-transparent ll:border-0 ll:text-secondary ll:cursor-default`}
             >
               <Icon icon={Check} size={12} className="ll:text-muted" />
               <span>{isFormatting ? "Formatting..." : "Formatted"}</span>
@@ -605,9 +794,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           </>
         ) : activeTab === "console" ? (
           <>
-            <span className={TFB}>2 errors</span>
-            <span className={TFB}>3 warnings</span>
-            <span className={TFB}>12 messages</span>
+            <span className={TFB}>{errorCount} error{errorCount === 1 ? "" : "s"}</span>
+            <span className={TFB}>{warnCount} warning{warnCount === 1 ? "" : "s"}</span>
+            <span className={TFB}>{consoleLogs.length} messages</span>
             <div className="ll:flex-1" />
             <span className={TFB}>Type help for commands</span>
           </>

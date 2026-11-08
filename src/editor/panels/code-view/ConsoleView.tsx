@@ -13,19 +13,14 @@ import {
   CornerDownLeft,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { DiagnosticBus } from "@/core/engine/DiagnosticBus";
-import type { DiagnosticEvent } from "@/core/types/diagnostics";
+import {
+  useConsoleLogs,
+  consoleStore,
+  type ConsoleLogItem,
+} from "@/editor/panels/console/consoleStore";
 import type { ConsoleViewProps } from "./types";
 
-export interface LogItem {
-  id: string;
-  t: string;
-  lvl: "info" | "warn" | "error" | "debug" | "cmd";
-  src: string;
-  msg: string;
-  f?: string;
-  ln?: number;
-}
+export type LogItem = ConsoleLogItem;
 
 const DEFAULT_LOGS: LogItem[] = [
   { id: "l1", t: "14:02:09.118", lvl: "info", src: "compiler", msg: "Compiling 6 files" },
@@ -87,7 +82,10 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
   className = "",
   style,
 }) => {
-  const [logs, setLogs] = useState<LogItem[]>(initialLogs || DEFAULT_LOGS);
+  const storeLogs = useConsoleLogs();
+  const [localLogs, setLocalLogs] = useState<LogItem[] | null>(initialLogs ?? null);
+  const logs = localLogs ?? storeLogs;
+
   const [filter, setFilter] = useState<string>("All");
   const [query, setQuery] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
@@ -96,31 +94,6 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
   const [historyIdx, setHistoryIdx] = useState<number>(-1);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Subscribe to central DiagnosticBus for live events
-  useEffect(() => {
-    const unsub = DiagnosticBus.subscribe((evt: DiagnosticEvent) => {
-      const lvl: LogItem["lvl"] =
-        evt.severity === "error" ? "error" : evt.severity === "warning" ? "warn" : "info";
-      const src =
-        evt.channel.includes("API")
-          ? "api"
-          : evt.channel.includes("DB")
-          ? "database"
-          : "compiler";
-
-      const newItem: LogItem = {
-        id: `diag-${evt.id}`,
-        t: nowTime(),
-        lvl,
-        src,
-        msg: evt.message + (evt.suggestion ? ` (${evt.suggestion})` : ""),
-      };
-
-      setLogs((prev) => [...prev, newItem]);
-    });
-    return unsub;
-  }, []);
 
   // Filtered logs
   const filteredLogs = useMemo(() => {
@@ -147,8 +120,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
   }, [filteredLogs.length]);
 
   const handleClear = useCallback(() => {
-    setLogs([]);
-  }, []);
+    if (localLogs) setLocalLogs([]);
+    consoleStore.clear();
+  }, [localLogs]);
 
   const handleCopyAll = useCallback(() => {
     const text = filteredLogs
@@ -168,14 +142,10 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
     setHistory((prev) => [...prev, trimmed]);
     setHistoryIdx(-1);
 
-    const userEntry: LogItem = {
-      id: `cmd-${Date.now()}`,
-      t: nowTime(),
-      lvl: "cmd",
-      src: "you",
-      msg: trimmed,
-    };
-    setLogs((prev) => [...prev, userEntry]);
+    const userEntry = consoleStore.appendLog("cmd", "you", trimmed);
+    if (localLogs) {
+      setLocalLogs((prev) => [...(prev || []), userEntry]);
+    }
     onCommand?.(trimmed);
 
     const k = trimmed.split(/\s+/)[0].toLowerCase();
@@ -188,25 +158,19 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
       ];
       helps.forEach((h, i) => {
         setTimeout(() => {
-          setLogs((prev) => [
-            ...prev,
-            { id: `h-${Date.now()}-${i}`, t: nowTime(), lvl: "info", src: "console", msg: h },
-          ]);
+          const item = consoleStore.appendLog("info", "console", h);
+          if (localLogs) setLocalLogs((prev) => [...(prev || []), item]);
         }, 60 + i * 60);
       });
     } else if (k === "clear") {
-      setLogs([]);
+      handleClear();
     } else if (k === "version") {
-      setLogs((prev) => [
-        ...prev,
-        {
-          id: `ver-${Date.now()}`,
-          t: nowTime(),
-          lvl: "info",
-          src: "console",
-          msg: "Lazy Layout 0.9.2 · compiler 0.9.2 · Next.js · Tailwind",
-        },
-      ]);
+      const item = consoleStore.appendLog(
+        "info",
+        "console",
+        "Lazy Layout 0.9.2 · compiler 0.9.2 · Next.js · Tailwind"
+      );
+      if (localLogs) setLocalLogs((prev) => [...(prev || []), item]);
     } else if (k === "build") {
       const seq = [
         "Building for production (Next.js, Tailwind)",
@@ -217,24 +181,50 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
       ];
       seq.forEach((msg, i) => {
         setTimeout(() => {
-          setLogs((prev) => [
-            ...prev,
-            { id: `b-${Date.now()}-${i}`, t: nowTime(), lvl: "info", src: "compiler", msg },
-          ]);
+          const item = consoleStore.appendLog("info", "compiler", msg);
+          if (localLogs) setLocalLogs((prev) => [...(prev || []), item]);
         }, 80 + i * 110);
       });
     } else {
-      setLogs((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          t: nowTime(),
-          lvl: "error",
-          src: "console",
-          msg: `Command not found: ${k}. Type help for the list.`,
-        },
-      ]);
+      const item = consoleStore.appendLog(
+        "error",
+        "console",
+        `Command not found: ${k}. Type help for the list.`
+      );
+      if (localLogs) setLocalLogs((prev) => [...(prev || []), item]);
     }
+  };
+
+  const renderHighlightedMessage = (msg: string, qStr: string) => {
+    const q = qStr.trim().toLowerCase();
+    if (!q || !msg.toLowerCase().includes(q)) {
+      return msg;
+    }
+    const parts: React.ReactNode[] = [];
+    let lastIdx = 0;
+    const lower = msg.toLowerCase();
+    let matchIdx = lower.indexOf(q);
+    let pieceId = 0;
+
+    while (matchIdx !== -1) {
+      if (matchIdx > lastIdx) {
+        parts.push(msg.slice(lastIdx, matchIdx));
+      }
+      parts.push(
+        <span
+          key={`hit-${pieceId++}`}
+          className="hit ll:bg-control-active ll:text-primary ll:font-medium ll:rounded-xs"
+        >
+          {msg.slice(matchIdx, matchIdx + q.length)}
+        </span>
+      );
+      lastIdx = matchIdx + q.length;
+      matchIdx = lower.indexOf(q, lastIdx);
+    }
+    if (lastIdx < msg.length) {
+      parts.push(msg.slice(lastIdx));
+    }
+    return parts;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -265,11 +255,11 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
   const renderLevelIcon = (lvl: LogItem["lvl"]) => {
     switch (lvl) {
       case "error":
-        return <Icon icon={AlertCircle} size={14} className="ll:text-primary" />;
+        return <Icon icon={AlertCircle} size={14} className="ll:text-syn-tag" />;
       case "warn":
-        return <Icon icon={AlertTriangle} size={14} className="ll:text-secondary" />;
+        return <Icon icon={AlertTriangle} size={14} className="ll:text-syn-attr" />;
       case "info":
-        return <Icon icon={Info} size={14} className="ll:text-muted" />;
+        return <Icon icon={Info} size={14} className="ll:text-syn-fn" />;
       case "debug":
         return <Icon icon={Circle} size={10} className="ll:text-muted" />;
       case "cmd":
@@ -279,16 +269,17 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
 
   return (
     <div
-      className={`ll-v-console ll:flex ll:flex-col ll:h-full ll:w-full ll:bg-surface-panel ll:overflow-hidden ${className}`}
+      className={`ll-v-console v-console ll:flex ll:flex-col ll:h-full ll:w-full ll:bg-surface-panel ll:overflow-hidden ${className}`}
       style={style}
     >
       {/* 1. Toolbar (44px, matching prototype .ctool) */}
-      <div className="ll-ctool ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:select-none">
-        {/* Segmented Filter Control */}
+      <div className="ll-ctool ctool ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:select-none">
+        {/* Segmented Filter Control (#cfseg with fixed button widths per P) */}
         <div
+          id="cfseg"
           role="group"
           aria-label="Filter the log"
-          className="ll-seg ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm"
+          className="ll-seg ll-pseg ll-dseg seg pseg dseg ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:shrink-0 ll:w-auto"
         >
           {FILTERS.map((f) => {
             const isSelected = filter === f.id;
@@ -296,9 +287,10 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
               <button
                 key={f.id}
                 type="button"
+                data-cf={f.id}
                 aria-pressed={isSelected}
                 onClick={() => setFilter(f.id)}
-                className={`ll:h-6 ll:px-2.5 ll:rounded-xs ll:font-sans ll:text-small ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ${
+                className={`ll:shrink-0 ll:h-6 ll:px-3 ll:whitespace-nowrap ll:rounded-xs ll:font-sans ll:text-small ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ${
                   isSelected
                     ? "ll:bg-control-active ll:text-primary"
                     : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
@@ -311,9 +303,10 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
         </div>
 
         {/* Search Input (240px width, matching prototype .cfs) */}
-        <div className="ll-cfs ll:flex ll:items-center ll:gap-2 ll:w-60 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:focus-within:border-primary ll:rounded-sm">
+        <div className="ll-cfs cfs ll:flex ll:items-center ll:gap-2 ll:w-60 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:focus-within:border-primary ll:rounded-sm ll:shrink-0">
           <Icon icon={Search} size={13} className="ll:text-muted ll:shrink-0" />
           <input
+            id="cq"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -330,8 +323,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
         <div className="ll:flex ll:items-center ll:gap-1.5">
           <button
             type="button"
+            data-ca="conclear"
             onClick={handleClear}
-            className="ll-btn ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
+            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
           >
             <Icon icon={Trash2} size={13} className="ll:text-muted" />
             <span>Clear</span>
@@ -339,8 +333,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
 
           <button
             type="button"
+            data-ca="concopy"
             onClick={handleCopyAll}
-            className="ll-btn ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
+            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
           >
             <Icon icon={Copy} size={13} className="ll:text-muted" />
             <span>{copied ? "Copied" : "Copy all"}</span>
@@ -350,68 +345,80 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
 
       {/* 2. Log Stream (.clog in prototype) */}
       <div
+        id="clog"
         ref={scrollRef}
         role="log"
         aria-live="polite"
         aria-label="Log"
-        className="ll-clog ll:flex-1 ll:min-h-0 ll:overflow-auto ll:py-1 ll:font-mono ll:text-small ll:leading-relaxed ll:flex ll:flex-col"
+        className="ll-clog clog ll:flex-1 ll:min-h-0 ll:overflow-auto ll:py-1 ll:font-mono ll:text-small ll:leading-relaxed ll:flex ll:flex-col"
       >
         {filteredLogs.length === 0 ? (
-          <div className="ll-cempty ll:flex-1 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-1 ll:text-muted ll:p-6 ll:text-center ll:select-none">
+          <div className="ll-cempty cempty ll:flex-1 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-1 ll:text-muted ll:p-6 ll:text-center ll:select-none">
             <Icon icon={Terminal} size={20} className="ll:text-muted ll:mb-1" />
             <span className="ll:text-body ll:text-secondary">
               {logs.length ? "Nothing matches the filter" : "The log is empty"}
             </span>
-            <span className="ll:text-small ll:text-muted">
+            <span className="cemh ll:text-small ll:text-muted">
               {logs.length ? "Try another filter or clear the search" : "Type build or help in the command line"}
             </span>
           </div>
         ) : (
           filteredLogs.map((l) => {
             const locText = l.f && l.ln ? `${l.f}.tsx:${l.ln}` : "";
+            const isErr = l.lvl === "error";
+            const isWarn = l.lvl === "warn";
+            const isInfo = l.lvl === "info";
+            const isCmd = l.lvl === "cmd";
+            const isDebug = l.lvl === "debug";
+
+            const rowClass = isErr
+              ? "l-error ll-l-error ll:shadow-log-error"
+              : isWarn
+              ? "l-warn ll-l-warn ll:shadow-log-warn"
+              : isInfo
+              ? "l-info ll-l-info"
+              : isCmd
+              ? "l-cmd ll-l-cmd"
+              : "l-debug ll-l-debug";
+
             return (
               <div
                 key={l.id}
+                data-id={l.id}
                 role={locText ? "button" : undefined}
                 tabIndex={locText ? 0 : undefined}
                 onClick={() => l.f && l.ln && onJumpToFile?.(l.f, l.ln - 1)}
-                className={`ll-lr ll:grid ll:grid-cols-console-row ll:gap-3 ll:items-start ll:px-4 ll:py-1 ll:text-secondary ll:relative ${
+                className={`ll-lr lr ll:grid ll:grid-cols-console-row ll:gap-3 ll:items-start ll:px-4 ll:py-1 ll:text-secondary ll:relative ${
                   locText ? "ll:cursor-pointer ll:hover:bg-surface-hover" : ""
-                } ${
-                  l.lvl === "error"
-                    ? "ll:shadow-indicator-active"
-                    : l.lvl === "warn"
-                    ? "ll:shadow-indicator-muted"
-                    : ""
-                }`}
+                } ${rowClass}`}
               >
                 {/* Timestamp */}
-                <span className="ll-lt ll:text-muted ll:whitespace-nowrap">{l.t}</span>
+                <span className="ll-lt lt ll:text-muted ll:whitespace-nowrap">{l.t}</span>
 
                 {/* Level Icon */}
-                <span className="ll-li ll:inline-flex ll:items-center ll:justify-center ll:mt-0.5">
+                <span className="ll-li li ll:inline-flex ll:items-center ll:justify-center ll:mt-0.5">
                   {renderLevelIcon(l.lvl)}
                 </span>
 
                 {/* Source Tag */}
-                <span className="ll-ls ll:text-muted ll:truncate">{l.src}</span>
+                <span className="ll-ls ls ll:text-muted ll:truncate">{l.src}</span>
 
                 {/* Message */}
                 <span
-                  className={`ll-lm ll:whitespace-pre-wrap ll:break-words ll:min-w-0 ${
-                    l.lvl === "error" || l.lvl === "cmd"
+                  className={`ll-lm lm ll:whitespace-pre-wrap ll:break-words ll:min-w-0 ${
+                    isErr || isCmd
                       ? "ll:text-primary ll:font-medium"
-                      : l.lvl === "debug"
+                      : isDebug
                       ? "ll:text-muted"
                       : "ll:text-secondary"
                   }`}
                 >
-                  {l.msg}
+                  {renderHighlightedMessage(l.msg, query)}
                 </span>
 
                 {/* Location Link */}
                 {locText ? (
-                  <span className="ll-lloc ll:text-secondary ll:underline ll:underline-offset-2 ll:whitespace-nowrap">
+                  <span className="ll-lloc lloc ll:text-secondary ll:underline ll:underline-offset-2 ll:whitespace-nowrap">
                     {locText}
                   </span>
                 ) : (
@@ -424,9 +431,10 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
       </div>
 
       {/* 3. Command Line Prompt (40px, matching prototype .cprompt) */}
-      <div className="ll-cprompt ll:h-10 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-4 ll:border-t ll:border-border ll:bg-surface-panel ll:focus-within:shadow-[inset_0_1px_0_var(--ll-text-primary)]">
-        <Icon icon={CornerDownLeft} size={14} className="ll:text-primary ll:shrink-0" />
+      <div className="ll-cprompt cprompt ll:h-10 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-4 ll:border-t ll:border-border ll:bg-surface-panel ll:focus-within:shadow-prompt-focus">
+        <Icon icon={CornerDownLeft} size={14} className="ll-cpr cpr ll:text-primary ll:shrink-0" />
         <input
+          id="ccmd"
           type="text"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}

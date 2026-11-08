@@ -12,6 +12,7 @@ export interface SyntaxHighlighterProps {
   highlightedLine?: number | null;
   highlightedRanges?: Array<[number, number]>;
   changedLines?: Record<number, [number, number]> | null;
+  searchQuery?: string;
   onLineClick?: (lineIndex: number, lineText: string, ref?: string | null) => void;
   onLineHover?: (ref: string | null) => void;
   wrap?: boolean;
@@ -34,7 +35,7 @@ const JSNR =
 
 interface Token {
   t: string;
-  c: "c" | "s" | "k" | "a" | "n" | "t" | "p" | "";
+  c: "c" | "s" | "k" | "a" | "n" | "t" | "p" | "f" | "y" | "";
 }
 
 function tokLine(s: string, lang: string): Token[] {
@@ -69,7 +70,7 @@ function tokLine(s: string, lang: string): Token[] {
     while ((m = re.exec(s))) {
       raw(s.slice(last, m.index));
       if (m[1]) {
-        out.push({ t: m[1], c: m[2] ? "k" : "s" });
+        out.push({ t: m[1], c: m[2] ? "a" : "s" });
         if (m[2]) out.push({ t: m[2], c: "p" });
       } else {
         out.push({ t: m[0], c: m[3] ? "n" : m[4] ? "k" : "p" });
@@ -90,7 +91,16 @@ function tokLine(s: string, lang: string): Token[] {
       } else if (m[5]) {
         out.push({ t: m[5], c: "a" });
       } else if (m[6]) {
-        out.push({ t: m[6], c: KWR.test(m[6]) ? "k" : "" });
+        out.push({
+          t: m[6],
+          c: KWR.test(m[6])
+            ? "k"
+            : s.charAt(re.lastIndex) === "("
+            ? "f"
+            : /^[A-Z]/.test(m[6])
+            ? "y"
+            : "",
+        });
       } else if (m[7]) {
         out.push({ t: m[7], c: "n" });
       } else {
@@ -156,13 +166,15 @@ export function scopeList(
 }
 
 const TOKEN_CLASS: Record<string, string> = {
-  k: "ll:text-primary ll:font-medium", // Keyword
-  t: "ll:text-primary ll:font-medium", // Tag
-  s: "ll:text-secondary",              // String
-  a: "ll:text-secondary",              // Attribute
-  n: "ll:text-secondary",              // Number
-  c: "ll:text-muted ll:italic",        // Comment
-  p: "ll:text-muted",                  // Delimiter / punctuation
+  k: "xk ll:text-syn-kw ll:font-medium", // Keyword: --ll-syn-kw
+  s: "xs ll:text-syn-str",              // String: --ll-syn-str
+  n: "xn ll:text-syn-num",              // Number: --ll-syn-num
+  f: "xf ll:text-syn-fn",               // Function: --ll-syn-fn
+  t: "xt ll:text-syn-tag",              // Tag: --ll-syn-tag
+  a: "xa ll:text-syn-attr",             // Attribute: --ll-syn-attr
+  y: "xy ll:text-syn-type",             // Type: --ll-syn-type
+  p: "xp ll:text-syn-punc",             // Punctuation: --ll-syn-punc
+  c: "xc ll:text-syn-com ll:italic",    // Comment: --ll-syn-com
   "": "ll:text-primary",
 };
 
@@ -173,6 +185,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
   highlightedLine,
   highlightedRanges = [],
   changedLines,
+  searchQuery,
   onLineClick,
   onLineHover,
   wrap = false,
@@ -250,17 +263,60 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
     }
   }, [selStart, scrollRef]);
 
-  // Render tokens for a line, supporting flash diff highlight
+  // Render tokens for a line, supporting flash diff highlight and search match highlights
   const renderLineTokens = (text: string, lineIdx: number, lang: string) => {
     const tokens = tokLine(text, lang);
     const mark = changedLines?.[lineIdx];
+    const q = searchQuery?.trim().toLowerCase();
+
+    const highlightSearch = (content: string, keyPrefix: string, tokenCls: string) => {
+      if (!q || !content.toLowerCase().includes(q)) {
+        return (
+          <span key={keyPrefix} className={tokenCls}>
+            {content}
+          </span>
+        );
+      }
+      const parts: React.ReactNode[] = [];
+      let lastIdx = 0;
+      const lower = content.toLowerCase();
+      let matchIdx = lower.indexOf(q);
+      let pieceId = 0;
+
+      while (matchIdx !== -1) {
+        if (matchIdx > lastIdx) {
+          parts.push(
+            <span key={`${keyPrefix}-p-${pieceId++}`} className={tokenCls}>
+              {content.slice(lastIdx, matchIdx)}
+            </span>
+          );
+        }
+        parts.push(
+          <span
+            key={`${keyPrefix}-m-${pieceId++}`}
+            className="hit ll:bg-control-active ll:text-primary ll:font-medium ll:rounded-xs"
+          >
+            {content.slice(matchIdx, matchIdx + q.length)}
+          </span>
+        );
+        lastIdx = matchIdx + q.length;
+        matchIdx = lower.indexOf(q, lastIdx);
+      }
+      if (lastIdx < content.length) {
+        parts.push(
+          <span key={`${keyPrefix}-p-${pieceId++}`} className={tokenCls}>
+            {content.slice(lastIdx)}
+          </span>
+        );
+      }
+      return parts;
+    };
 
     if (!mark) {
-      return tokens.map((tk, i) => (
-        <span key={i} className={TOKEN_CLASS[tk.c] || "ll:text-primary"}>
-          {tk.t}
-        </span>
-      ));
+      return tokens.map((tk, i) => {
+        const tokenCls = TOKEN_CLASS[tk.c] || "ll:text-primary";
+        return highlightSearch(tk.t, `tk-${i}`, tokenCls);
+      });
     }
 
     // Split tokens around marked diff range
@@ -270,13 +326,10 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
       const a = pos;
       const b = pos + tk.t.length;
       pos = b;
+      const tokenCls = TOKEN_CLASS[tk.c] || "ll:text-primary";
 
       if (b <= mark[0] || a >= mark[1]) {
-        parts.push(
-          <span key={idx} className={TOKEN_CLASS[tk.c] || "ll:text-primary"}>
-            {tk.t}
-          </span>
-        );
+        parts.push(highlightSearch(tk.t, `tk-${idx}`, tokenCls));
       } else {
         const i0 = Math.max(a, mark[0]) - a;
         const i1 = Math.min(b, mark[1]) - a;
@@ -286,13 +339,13 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
 
         parts.push(
           <React.Fragment key={idx}>
-            {before && <span className={TOKEN_CLASS[tk.c] || "ll:text-primary"}>{before}</span>}
+            {before && highlightSearch(before, `tk-${idx}-b`, tokenCls)}
             {mid && (
-              <span className={`ll:rounded-xs ll:bg-select-bg ll:text-select-fg ${TOKEN_CLASS[tk.c] || ""}`}>
+              <span className={`chg ll-chg ll:rounded-xs ll:bg-select-bg ll:text-select-fg ${tokenCls}`}>
                 {mid}
               </span>
             )}
-            {after && <span className={TOKEN_CLASS[tk.c] || "ll:text-primary"}>{after}</span>}
+            {after && highlightSearch(after, `tk-${idx}-a`, tokenCls)}
           </React.Fragment>
         );
       }
@@ -329,18 +382,18 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
             data-ref={line.ref || undefined}
             onClick={() => onLineClick?.(idx, line.t, line.ref)}
             onMouseEnter={() => line.ref && onLineHover?.(line.ref)}
-            className={`ll-cl ll:flex ll:min-h-5 ll:min-w-max ll:transition-colors ${
+            className={`ll-cl cl ll:flex ll:min-h-5 ll:min-w-max ll:transition-colors ${
               wrap ? "ll:min-w-0" : ""
             } ${
               isSelected
-                ? "ll:bg-select-bg ll:shadow-indicator-active"
+                ? "ll-sel sel ll:bg-select-bg ll:shadow-indicator-active"
                 : isCurrent
-                ? "ll:bg-surface-hover"
+                ? "ll-cur cur ll:bg-surface-hover"
                 : ""
             }`}
           >
             {/* Gutter with fold chevron (width 24px) */}
-            <span className="ll-cg ll:w-6 ll:h-5 ll:shrink-0 ll:grid ll:place-items-center ll:items-center ll:justify-center ll:select-none">
+            <span className="ll-cg cg ll:w-6 ll:h-5 ll:shrink-0 ll:grid ll:place-items-center ll:items-center ll:justify-center ll:select-none">
               {canFold ? (
                 <button
                   type="button"
@@ -351,7 +404,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
                     e.stopPropagation();
                     onToggleFold?.(idx);
                   }}
-                  className="ll-cf ll:w-5 ll:h-5 ll:inline-flex ll:items-center ll:justify-center ll:rounded-xs ll:border-0 ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer ll:p-0"
+                  className="ll-cf cf ll:w-5 ll:h-5 ll:inline-flex ll:items-center ll:justify-center ll:rounded-xs ll:border-0 ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer ll:p-0"
                 >
                   <Icon
                     icon={ChevronRight}
@@ -368,7 +421,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
             {showLineNumbers && (
               <span
                 aria-hidden="true"
-                className={`ll-cn ll:w-9 ll:shrink-0 ll:text-right ll:pr-4 ll:select-none ${
+                className={`ll-cn cn ll:w-9 ll:shrink-0 ll:text-right ll:pr-4 ll:select-none ${
                   isCurrent || isSelected
                     ? "ll:text-primary ll:font-medium"
                     : "ll:text-muted"
@@ -379,7 +432,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
             )}
 
             {/* Code text */}
-            <span className="ll-ct ll:flex-1 ll:pr-6 ll:font-mono ll:text-small ll:leading-5">
+            <span className="ll-ct ct ll:flex-1 ll:pr-6 ll:font-mono ll:text-small ll:leading-5">
               {renderLineTokens(line.t, idx, language)}
             </span>
 
@@ -394,7 +447,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
                   e.stopPropagation();
                   onToggleFold?.(idx);
                 }}
-                className="ll-cfd ll:self-center ll:h-4 ll:ml-1 ll:px-1.5 ll:border ll:border-border ll:rounded-xs ll:font-mono ll:text-micro ll:leading-none ll:text-muted ll:hover:text-primary ll:hover:border-muted ll:bg-surface-bar ll:cursor-pointer"
+                className="ll-cfd cfd ll:self-center ll:h-4 ll:ml-1 ll:px-1.5 ll:border ll:border-border ll:rounded-xs ll:font-mono ll:text-micro ll:leading-none ll:text-muted ll:hover:text-primary ll:hover:border-muted ll:bg-surface-bar ll:cursor-pointer"
               >
                 …
               </button>
