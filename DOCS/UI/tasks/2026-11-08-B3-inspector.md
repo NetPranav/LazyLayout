@@ -28,3 +28,8 @@ P: `dsec()` in the main script (grep `function dsec`), `typoSec`, `renderIns`, `
 6. Remove the unused `selectedCount` prop (`RightPanelHeader.tsx:32`, `RightPanelFrame.tsx:134`).
 7. `RightPanelSection.tsx:56-67`: remove the `preventDefault` on Alt+pointerdown (it blocks Alt-drag scrub); rely on the click handler.
 8. `tokens.css` B3 block (~1497-1507): narrow the hairline selector (drop `[role="dialog"]`) and the `[data-mixed="true"] > button` shimmer selector to the popover and field scopes of this lane. Do NOT edit INTEGRATION/PARITY/DECISIONS/DesignSystemPage/ViewOptionsPopover. Rerun `npx tsc --noEmit`. Do not commit.
+
+## Retry 2 (watcher FAIL, only this; Retry 1 items are done)
+1. Options popover rows must match P (`screenshots/b3/proto-options-popover-warm-1440.png`; P `<script id="ll-more">` 2232-2661 and `.llm-*` CSS 553-564): rows are `label | field` with a 72px label column (Type, Z, Scale, Skew, 3D rotate, Origin for Position; the equivalent for Typography, Layout, Appearance), the title is sans 11px/500 muted on a hairline-divided 36px header (not mono), hairline dividers between groups, no stray rows that P does not have (remove "Rot X/Y" unless P has them). Edit the `moreContent` definitions in the section files and `RightPanelSection.tsx`; do NOT edit `components/OptionsPopover.tsx` (B1 owns it). Re-shoot Position and Typography popovers in Warm and Darkroom next to P and look at them.
+2. `tokens.css` B3 block (~1636-1645): remove `.vpop`, `[aria-label="View options"]` and `.ppop` from the hairline selector (those are B5's); replace the inline `0.9s`/`ease-out` in the shimmer with `--ll-dur-*`/`--ll-ease-*` tokens.
+3. Update the handoff (one file). Rerun `npx tsc --noEmit`. Edit only B3 lane paths. Do not commit.
