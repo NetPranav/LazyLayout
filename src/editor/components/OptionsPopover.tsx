@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
+import { IconButton } from "./IconButton";
 import { useMounted } from "./useMounted";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
@@ -270,14 +271,14 @@ export function OptionsPopover({
           >
             {title} options
           </span>
-          <button
-            type="button"
+          <IconButton
+            size="sm"
+            variant="ghost"
             onClick={onClose}
             aria-label="Close options"
-            className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-          >
-            <Icon icon={X} size={14} />
-          </button>
+            tooltip="Close options"
+            icon={<Icon icon={X} size={14} />}
+          />
         </div>
 
         {/* Body content with hairline fields styling */}

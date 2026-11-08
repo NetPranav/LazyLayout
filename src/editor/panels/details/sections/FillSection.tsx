@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GripVertical, Eye, EyeOff, Minus, Sliders } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { IconButton } from "@/editor/components/IconButton";
 import { Select } from "@/editor/components/Select";
 import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
@@ -216,43 +217,42 @@ export const FillSection: React.FC<FillSectionProps> = ({
             </div>
 
             {/* Row Settings Trigger: opens RowSettingsPopover */}
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
+              pressed={isOpen}
               aria-label={`Fill ${fillNum} settings`}
+              tooltip={`Fill ${fillNum} settings`}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
-              title={`Fill ${fillNum} settings`}
+              icon={<Icon icon={Sliders} size={14} />}
               onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
-              className={`ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none ${
-                isOpen ? "ll:bg-control-secondary-bg ll:text-primary" : ""
-              }`}
-            >
-              <Icon icon={Sliders} size={14} />
-            </button>
+              className="ll-ib"
+            />
 
             {/* Visibility Toggle */}
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
               data-eye
               aria-label={fill.hidden ? `Show fill ${fillNum}` : `Hide fill ${fillNum}`}
-              title={fill.hidden ? `Show fill ${fillNum}` : `Hide fill ${fillNum}`}
+              tooltip={fill.hidden ? `Show fill ${fillNum}` : `Hide fill ${fillNum}`}
+              icon={<Icon icon={fill.hidden ? EyeOff : Eye} size={14} />}
               onClick={() => handleToggleHide(fill.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
-            >
-              <Icon icon={fill.hidden ? EyeOff : Eye} size={14} />
-            </button>
+              className="ll-ib"
+            />
 
             {/* Remove Button */}
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
               data-rm
               aria-label={`Remove fill ${fillNum}`}
-              title={`Remove fill ${fillNum}`}
+              tooltip={`Remove fill ${fillNum}`}
+              icon={<Icon icon={Minus} size={14} />}
               onClick={() => handleRemoveFill(fill.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
-            >
-              <Icon icon={Minus} size={14} />
-            </button>
+              className="ll-ib"
+            />
 
             {/* Settings Popover */}
             <RowSettingsPopover isOpen={isOpen} title="Fill" onClose={() => setActivePopoverId(null)}>

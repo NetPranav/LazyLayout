@@ -37,6 +37,7 @@ export interface SelectProps {
   label?: string;
   disabled?: boolean;
   size?: "sm" | "md";
+  variant?: "default" | "floating";
   className?: string;
   width?: number | string;
   "aria-label"?: string;
@@ -129,7 +130,8 @@ export const Select: React.FC<SelectProps> = ({
   placeholder = "Select...",
   label,
   disabled = false,
-  size: _size = "md",
+  size = "md",
+  variant = "default",
   className = "",
   width,
   "aria-label": ariaLabel,
@@ -816,9 +818,17 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}
-          className={`ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ${
-            isOpen ? "ll:border-primary" : "ll:border-transparent ll:hover:border-muted"
-          } ll:bg-surface-bar ll:text-left ll:select-none ll:outline-none ll:focus-visible:border-primary`}
+          className={`ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ${
+            size === "sm" ? "ll:h-7" : "ll:h-8"
+          } ll:px-2 ll:rounded-sm ll:border ll:border-solid ${
+            variant === "floating"
+              ? isOpen
+                ? "ll:border-primary ll:bg-surface-bar"
+                : "ll:border-border ll:hover:border-muted ll:bg-surface-bar"
+              : isOpen
+              ? "ll:border-primary ll:bg-surface-bar"
+              : "ll:border-transparent ll:hover:border-muted ll:bg-surface-bar"
+          } ll:text-left ll:select-none ll:outline-none ll:appearance-none ll:focus-visible:border-primary`}
         >
           <span
             ref={labelRef}

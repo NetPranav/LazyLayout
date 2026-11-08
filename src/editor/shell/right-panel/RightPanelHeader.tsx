@@ -92,32 +92,33 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
 
         <div className="ll:flex-1" />
 
-        <button
-          type="button"
+        <IconButton
+          size="sm"
+          variant="ghost"
           aria-label={isLayerHidden ? "Show layer" : "Hide layer"}
-          title={isLayerHidden ? "Show layer" : "Hide layer"}
-          aria-pressed={isLayerHidden}
+          tooltip={isLayerHidden ? "Show layer" : "Hide layer"}
+          pressed={isLayerHidden}
           onClick={onToggleHideLayer}
-          className="ll-ib ll-rhide ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors"
-        >
-          <Icon icon={isLayerHidden ? EyeOff : Eye} size={14} />
-        </button>
-        <button
+          icon={<Icon icon={isLayerHidden ? EyeOff : Eye} size={14} />}
+          className="ll-ib ll-rhide"
+        />
+        <IconButton
           ref={moreRef}
-          type="button"
+          size="sm"
+          variant="ghost"
           aria-label="More"
-          title="More"
+          tooltip="More"
           aria-haspopup="menu"
           aria-expanded={moreAt !== null}
+          pressed={moreAt !== null}
           onClick={() => (moreAt ? setMoreAt(null) : openMore())}
-          className={`ll-ib ll-rmore ll-more ll:-mr-1.25 ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-wider ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-            moreAt !== null ? "ll:bg-control-secondary-bg ll:text-primary" : ""
-          }`}
-        >
-          <span className="ll:inline-block ll:leading-none ll:-translate-y-0.5" aria-hidden="true">
-            ...
-          </span>
-        </button>
+          icon={
+            <span className="ll:inline-block ll:leading-none ll:-translate-y-0.5" aria-hidden="true">
+              ...
+            </span>
+          }
+          className="ll-ib ll-rmore ll-more ll:-mr-1"
+        />
         <Menu
           open={moreAt !== null}
           onClose={() => setMoreAt(null)}

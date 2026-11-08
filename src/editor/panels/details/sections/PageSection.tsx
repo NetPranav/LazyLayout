@@ -121,7 +121,7 @@ export const PageBackgroundBody: React.FC<{
           aria-label="Background color picker"
           title="Choose background color"
           onClick={() => setIsPickerOpen((prev) => !prev)}
-          className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-[var(--ll-swatch-line,var(--ll-border-color))] ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+          className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
           style={{ backgroundColor: `#${bgHex}` }}
         />
         <ColorPicker
@@ -185,7 +185,7 @@ export const ThemeTokensBody: React.FC = () => {
               aria-label={`${row.label} color picker`}
               title={`Choose ${row.label.toLowerCase()} color`}
               onClick={() => setActivePicker(activePicker === row.label ? null : row.label)}
-              className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-[var(--ll-swatch-line,var(--ll-border-color))] ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+              className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
             />
             <ColorPicker
@@ -235,6 +235,7 @@ export const ThemeTokensBody: React.FC = () => {
         </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Theme font"
           value={themeFont}
           options={PAGE_FONT_OPTIONS}
@@ -250,6 +251,7 @@ export const ThemeTokensBody: React.FC = () => {
         </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Type scale"
           value={typeScale}
           options={SCALE_OPTIONS}
@@ -265,6 +267,7 @@ export const ThemeTokensBody: React.FC = () => {
         </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Theme shadow"
           value={themeShadow}
           options={SHADOW_OPTIONS}

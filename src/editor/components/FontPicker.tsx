@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Search, Check, Plus } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
+import { SegmentedControl } from "./SegmentedControl";
+import { Button } from "./Button";
 import { useMounted } from "./useMounted";
 import { useSlidingIndicator } from "./useSlidingIndicator";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
@@ -82,19 +84,6 @@ export function FontPicker({
   const [searchQuery, setSearchQuery] = useState("");
   const [uploadedFonts, setUploadedFonts] = useState<FontEntry[]>([]);
   const [focusedFamily, setFocusedFamily] = useState<string>(value);
-
-  // Sliding indicator for font categories
-  const categoryContainerRef = useRef<HTMLDivElement>(null);
-  const categoryMarkerRef = useRef<HTMLDivElement>(null);
-  const categoryButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const selectedCategoryIndex = FONT_CATEGORIES.indexOf(activeCategory);
-
-  useSlidingIndicator({
-    containerRef: categoryContainerRef,
-    indicatorRef: categoryMarkerRef,
-    itemRefs: categoryButtonRefs,
-    selectedIndex: selectedCategoryIndex >= 0 ? selectedCategoryIndex : 0,
-  });
 
   // Combine project fonts with uploads
   const allProjectFonts = [...uploadedFonts, ...DEFAULT_PROJECT_FONTS];
@@ -404,39 +393,14 @@ export function FontPicker({
         </div>
 
         {/* Categories Segmented Control (24px) with sliding highlight */}
-        <div
-          ref={categoryContainerRef}
-          role="group"
-          aria-label="Font category"
-          className="seg dseg fill pseg fp-seg ll:relative ll:flex ll:items-center ll:h-6 ll:p-px ll:bg-surface-bar ll:rounded-sm ll:border ll:border-border ll:gap-px ll:shrink-0 ll:select-none"
-        >
-          <div
-            ref={categoryMarkerRef}
-            aria-hidden="true"
-            className="sgh ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-xs ll:pointer-events-none ll:hidden"
-          />
-          {FONT_CATEGORIES.map((cat, idx) => {
-            const isSel = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                ref={(el) => {
-                  categoryButtonRefs.current[idx] = el;
-                }}
-                type="button"
-                aria-pressed={isSel}
-                onClick={() => setActiveCategory(cat)}
-                className={`ll:relative ll:z-10 ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1.5 ll:rounded-xs ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-                  isSel
-                    ? "ll:text-primary"
-                    : "ll:text-muted ll:hover:text-primary"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl<FontCategory>
+          size="compact"
+          options={FONT_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+          value={activeCategory}
+          onChange={(cat) => setActiveCategory(cat)}
+          ariaLabel="Font category"
+          className="fp-seg"
+        />
       </div>
 
       <div className="ll:h-px ll:bg-border ll:shrink-0" />
@@ -500,22 +464,26 @@ export function FontPicker({
 
       {/* Footer (Upload Font & Google Fonts buttons) */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:p-2 ll:shrink-0">
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="default"
           onClick={() => fileInputRef.current?.click()}
-          className="ll:flex-1 ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:rounded-sm ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-secondary ll:hover:text-primary ll:text-small ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          leftIcon={<Icon icon={Plus} size={14} />}
+          className="ll:flex-1"
         >
-          <Icon icon={Plus} size={14} className="ll:text-muted" />
           Upload font…
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="default"
           onClick={handleGoogleFontsClick}
-          className="ll:flex-1 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:bg-surface-bar ll:hover:bg-surface-seg ll:text-secondary ll:hover:text-primary ll:text-small ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+          className="ll:flex-1"
         >
           Google Fonts
-        </button>
+        </Button>
 
         <input
           ref={fileInputRef}

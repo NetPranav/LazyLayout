@@ -359,7 +359,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
         ref={triggerRef}
         type="button"
         id="pagebtn"
-        className={`pagebtn ${className}`}
+        className={`pagebtn ll:appearance-none ll:border-0 ll:bg-transparent ll:cursor-pointer ${className}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         title="Switch page"
@@ -478,7 +478,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
                       {!isRenaming && (
                         <button
                           type="button"
-                          className="llp-dots"
+                          className="llp-dots ll:appearance-none ll:border-0 ll:bg-transparent ll:cursor-pointer"
                           tabIndex={-1}
                           aria-label={`Actions for ${page.name}`}
                           aria-haspopup="menu"
@@ -502,7 +502,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
             <div className="llp-f">
               <button
                 type="button"
-                className="llp-new"
+                className="llp-new ll:appearance-none ll:border-0 ll:cursor-pointer"
                 onClick={handleNewPage}
               >
                 <Icon icon={Plus} size={16} />
@@ -531,6 +531,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
             <button
               type="button"
               role="menuitem"
+              className="ll:appearance-none ll:border-0 ll:bg-transparent ll:cursor-pointer"
               onClick={() => handleStartRename(flyoutState.pageName)}
             >
               Rename
@@ -538,6 +539,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
             <button
               type="button"
               role="menuitem"
+              className="ll:appearance-none ll:border-0 ll:bg-transparent ll:cursor-pointer"
               onClick={() => handleDuplicate(flyoutState.pageName)}
             >
               Duplicate
@@ -545,6 +547,7 @@ export const PageSelector: React.FC<PageSelectorProps> = ({
             <button
               type="button"
               role="menuitem"
+              className="ll:appearance-none ll:border-0 ll:bg-transparent ll:cursor-pointer"
               disabled={pages.length < 2}
               onClick={() => handleDelete(flyoutState.pageName)}
             >

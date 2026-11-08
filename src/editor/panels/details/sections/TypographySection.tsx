@@ -19,6 +19,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { FontPicker } from "@/editor/components/FontPicker";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
+import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
 import {
   INSPECTOR_CONSTANTS,
@@ -276,25 +277,21 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
                 ]}
               />
             </div>
-            <button
-              type="button"
-              aria-pressed={isItalic}
+            <IconButton
+              size="md"
+              variant={isItalic ? "subtle" : "ghost"}
+              pressed={isItalic}
               aria-label="Italic"
-              title="Italic"
+              tooltip="Italic"
               onClick={() =>
                 onUpdateProp?.(
                   "typography.fontStyle",
                   isItalic ? "normal" : "italic"
                 )
               }
-              className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-                isItalic
-                  ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-                  : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-              }`}
-            >
-              <Icon icon={Italic} size={14} />
-            </button>
+              icon={<Icon icon={Italic} size={14} />}
+              className="ll:border ll:border-border"
+            />
           </div>
         </div>
 

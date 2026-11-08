@@ -32,6 +32,7 @@ import { Button } from "@/editor/components/Button";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { getActivePreset } from "@/editor/motion/feel";
 import { springAnim } from "@/editor/motion/ease";
+import { defaultHost } from "@/editor/motion/loop";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import {
   CANVAS_CHROME_SIZES,
@@ -320,7 +321,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     prevModeRef.current = mode;
 
     // Pop in new buttons and spring width
-    requestAnimationFrame(() => {
+    let unregToolbarTask: (() => void) | null = null;
+    unregToolbarTask = defaultHost.register(() => {
+      unregToolbarTask?.();
       if (!bar) return;
       const w1 = bar.offsetWidth;
       const preset = getActivePreset();

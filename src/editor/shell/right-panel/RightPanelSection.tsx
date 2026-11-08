@@ -3,6 +3,7 @@
 import React, { useState, useRef, useId } from "react";
 import { Plus, Sliders } from "@/editor/components/ColorPickerIcons";
 import { Icon } from "@/editor/components/Icon";
+import { IconButton } from "@/editor/components/IconButton";
 import { OptionsPopover } from "@/editor/components/OptionsPopover";
 
 export interface RightPanelSectionProps {
@@ -75,36 +76,35 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
           {headerAction}
 
           {hasMore && (
-            <button
+            <IconButton
               ref={moreBtnRef}
-              type="button"
-              data-more
+              size="sm"
+              variant="ghost"
+              pressed={isPopoverOpen}
               aria-expanded={isPopoverOpen}
               aria-controls={moreId}
               aria-label={`${title} options`}
-              title={`${title} options`}
+              tooltip={`${title} options`}
+              data-more
               onClick={(e) => {
                 e.stopPropagation();
                 setIsPopoverOpen((prev) => !prev);
               }}
-              className={`ll-ib ll-dic ll-more ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-                isPopoverOpen ? "ll:bg-control-secondary-bg ll:text-primary" : ""
-              } ${!onAdd ? "ll:-mr-1" : ""}`}
-            >
-              <Icon icon={Sliders} size={14} />
-            </button>
+              icon={<Icon icon={Sliders} size={14} />}
+              className={`ll-dic ll-more ${!onAdd ? "ll:-mr-1" : ""}`}
+            />
           )}
 
           {onAdd && (
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              variant="ghost"
               aria-label={`Add ${title.toLowerCase()}`}
-              title="Add"
+              tooltip="Add"
               onClick={onAdd}
-              className="ll-ib ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:-mr-1.25 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors"
-            >
-              <Icon icon={Plus} size={14} />
-            </button>
+              icon={<Icon icon={Plus} size={14} />}
+              className="ll-dic ll-add ll:-mr-1"
+            />
           )}
         </div>
       </div>

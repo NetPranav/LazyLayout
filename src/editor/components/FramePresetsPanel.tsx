@@ -4,6 +4,9 @@ import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Search, LinkIcon } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
+import { SegmentedControl } from "./SegmentedControl";
+import { IconButton } from "./IconButton";
+import { Button } from "./Button";
 import { useMounted } from "./useMounted";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
@@ -326,55 +329,49 @@ export function FramePresetsPanel({
         </span>
         <span className="sp ll:flex-1" />
 
-        {/* Orientation: Portrait */}
-        <button
-          type="button"
-          data-ori="p"
-          aria-pressed={orientation === "p"}
-          aria-label="Portrait"
-          title="Portrait"
-          onClick={() => setOrientation((prev) => (prev === "p" ? "" : "p"))}
-          className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-            orientation === "p"
-              ? "ll:bg-surface-seg ll:text-primary"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="ll:w-4 ll:h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <rect x="7" y="4" width="10" height="16" rx="1" />
-          </svg>
-        </button>
-
-        {/* Orientation: Landscape */}
-        <button
-          type="button"
-          data-ori="l"
-          aria-pressed={orientation === "l"}
-          aria-label="Landscape"
-          title="Landscape"
-          onClick={() => setOrientation((prev) => (prev === "l" ? "" : "l"))}
-          className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-            orientation === "l"
-              ? "ll:bg-surface-seg ll:text-primary"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="ll:w-4 ll:h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <rect x="4" y="7" width="16" height="10" rx="1" />
-          </svg>
-        </button>
+        {/* Orientation: Portrait / Landscape SegmentedControl */}
+        <div className="ll:w-18 ll:shrink-0">
+          <SegmentedControl<string>
+            size="compact"
+            options={[
+              {
+                value: "p",
+                icon: (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="ll:w-3.5 ll:h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <rect x="7" y="4" width="10" height="16" rx="1" />
+                  </svg>
+                ),
+                ariaLabel: "Portrait",
+                title: "Portrait",
+              },
+              {
+                value: "l",
+                icon: (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="ll:w-3.5 ll:h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <rect x="4" y="7" width="16" height="10" rx="1" />
+                  </svg>
+                ),
+                ariaLabel: "Landscape",
+                title: "Landscape",
+              },
+            ]}
+            value={orientation}
+            onChange={(val) => setOrientation(val as "p" | "l")}
+            ariaLabel="Orientation"
+          />
+        </div>
       </div>
 
       {/* Search Input (40px) */}
@@ -422,20 +419,16 @@ export function FramePresetsPanel({
           </div>
 
           {/* Ratio Lock */}
-          <button
-            type="button"
-            aria-pressed={ratioLocked}
+          <IconButton
+            size="md"
+            variant={ratioLocked ? "subtle" : "ghost"}
+            pressed={ratioLocked}
             aria-label="Lock ratio"
-            title="Lock ratio"
+            tooltip="Lock ratio"
+            icon={<Icon icon={LinkIcon} size={14} />}
             onClick={() => setRatioLocked((prev) => !prev)}
-            className={`ib ll-ib ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:border ll:border-border ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-              ratioLocked
-                ? "ll:bg-surface-seg ll:text-primary"
-                : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-            }`}
-          >
-            <Icon icon={LinkIcon} size={14} />
-          </button>
+            className="ib ll-ib ll:border ll:border-border"
+          />
 
           {/* H Field */}
           <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:focus-within:border-primary">
@@ -457,14 +450,15 @@ export function FramePresetsPanel({
           </div>
 
           {/* Add Frame Button */}
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="default"
             disabled={customW <= 0 || customH <= 0}
             onClick={handleAddCustom}
-            className="frbtn ll-frbtn ll:h-7 ll:px-3 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:hover:bg-surface-seg ll:text-secondary ll:hover:text-primary ll:text-micro ll:font-medium ll:whitespace-nowrap ll:disabled:opacity-40 ll:disabled:pointer-events-none ll:disabled:border-transparent ll:transition-colors ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            className="frbtn ll-frbtn ll:h-7 ll:px-3"
           >
             Add frame
-          </button>
+          </Button>
         </div>
       </div>
 

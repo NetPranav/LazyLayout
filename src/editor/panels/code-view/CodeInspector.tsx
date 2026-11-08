@@ -15,6 +15,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { Select } from "@/editor/components/Select";
+import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
@@ -450,18 +452,24 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
               {/* Export Type select */}
               <div className="ll:flex ll:items-center ll:gap-2">
                 <span className="ll:font-sans ll:text-small ll:text-muted ll:w-16">Export</span>
-                <select
-                  value={currentExp}
-                  onChange={(e) => {
-                    const next = e.target.value as "Named" | "Default";
-                    setExpTypes((prev) => ({ ...prev, [selectedFileId]: next }));
-                    onExportTypeChange?.(next.toLowerCase() as "named" | "default");
-                  }}
-                  className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-                >
-                  <option value="Named">Named</option>
-                  <option value="Default">Default</option>
-                </select>
+                <div className="ll:flex-1">
+                  <Select
+                    size="sm"
+                    variant="floating"
+                    aria-label="Export type"
+                    value={currentExp}
+                    options={[
+                      { value: "Named", label: "Named" },
+                      { value: "Default", label: "Default" },
+                    ]}
+                    onChange={(next) => {
+                      const exp = next as "Named" | "Default";
+                      setExpTypes((prev) => ({ ...prev, [selectedFileId]: exp }));
+                      onExportTypeChange?.(exp.toLowerCase() as "named" | "default");
+                    }}
+                    className="ll:w-full"
+                  />
+                </div>
               </div>
             </div>
           </section>
@@ -530,24 +538,29 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
                       className="ll:w-full ll:bg-transparent ll:border-0 ll:outline-none ll:font-mono ll:text-micro ll:text-primary ll:p-0"
                     />
                   </div>
-                  <select
-                    value={p.type}
-                    onChange={(e) => {
-                      const nextType = e.target.value;
-                      setCompProps((prev) => ({
-                        ...prev,
-                        [selectedFileId]: (prev[selectedFileId] || []).map((x) =>
-                          x.id === p.id ? { ...x, type: nextType } : x
-                        ),
-                      }));
-                    }}
-                    className="ll:w-24 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-                  >
-                    <option value="string">string</option>
-                    <option value="number">number</option>
-                    <option value="boolean">boolean</option>
-                    <option value="node">node</option>
-                  </select>
+                  <div className="ll:w-24">
+                    <Select
+                      size="sm"
+                      variant="floating"
+                      aria-label="Prop type"
+                      value={p.type}
+                      options={[
+                        { value: "string", label: "string" },
+                        { value: "number", label: "number" },
+                        { value: "boolean", label: "boolean" },
+                        { value: "node", label: "node" },
+                      ]}
+                      onChange={(nextType) => {
+                        setCompProps((prev) => ({
+                          ...prev,
+                          [selectedFileId]: (prev[selectedFileId] || []).map((x) =>
+                            x.id === p.id ? { ...x, type: nextType } : x
+                          ),
+                        }));
+                      }}
+                      className="ll:w-full"
+                    />
+                  </div>
                   <button
                     type="button"
                     aria-label="Remove prop"
@@ -671,78 +684,75 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
           {/* Target Format: React / HTML / Vue */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Output</span>
-            <div
-              role="group"
-              aria-label="Output format"
-              className="ll-seg ll:flex-1 ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm"
-            >
-              {TARGET_OPTIONS.map((t) => {
-                const isSelected = currentTargetLib === t;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => handleTargetChange(t)}
-                    className={`ll:flex-1 ll:h-6 ll:rounded-xs ll:font-sans ll:text-micro ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ${
-                      isSelected
-                        ? "ll:bg-control-active ll:text-primary"
-                        : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                );
-              })}
+            <div className="ll:flex-1">
+              <SegmentedControl<(typeof TARGET_OPTIONS)[number]>
+                size="compact"
+                options={TARGET_OPTIONS.map((t) => ({ value: t, label: t }))}
+                value={currentTargetLib}
+                onChange={handleTargetChange}
+                ariaLabel="Output format"
+              />
             </div>
           </div>
 
           {/* Framework dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Framework</span>
-            <select
-              value={fw}
-              onChange={(e) => setFw(e.target.value as FrameworkKey)}
-              aria-label="Framework"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              {FWS_BY_TARGET[currentTargetLib].map((k) => (
-                <option key={k} value={k}>
-                  {FRAMEWORKS[k].n}
-                </option>
-              ))}
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Framework"
+                value={fw}
+                options={FWS_BY_TARGET[currentTargetLib].map((k) => ({
+                  value: k,
+                  label: FRAMEWORKS[k].n,
+                }))}
+                onChange={(next) => setFw(next as FrameworkKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* Styling dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Styling</span>
-            <select
-              value={sty}
-              onChange={(e) => handleStyleChange(e.target.value as StylingKey)}
-              aria-label="Styling"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              <option value="tw">{STYLINGS.tw}</option>
-              <option value="mod">{STYLINGS.mod}</option>
-              <option value="inline">{STYLINGS.inline}</option>
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Styling"
+                value={sty}
+                options={[
+                  { value: "tw", label: STYLINGS.tw },
+                  { value: "mod", label: STYLINGS.mod },
+                  { value: "inline", label: STYLINGS.inline },
+                ]}
+                onChange={(next) => handleStyleChange(next as StylingKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* Animation dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Animation</span>
-            <select
-              value={anim}
-              onChange={(e) => setAnim(e.target.value as AnimationKey)}
-              aria-label="Animation engine"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              <option value="none">{ANIMATIONS.none}</option>
-              <option value="css">{ANIMATIONS.css}</option>
-              {currentTargetLib === "React" && <option value="fm">{ANIMATIONS.fm}</option>}
-              <option value="gsap">{ANIMATIONS.gsap}</option>
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Animation engine"
+                value={anim}
+                options={[
+                  { value: "none", label: ANIMATIONS.none },
+                  { value: "css", label: ANIMATIONS.css },
+                  ...(currentTargetLib === "React" ? [{ value: "fm", label: ANIMATIONS.fm }] : []),
+                  { value: "gsap", label: ANIMATIONS.gsap },
+                ]}
+                onChange={(next) => setAnim(next as AnimationKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* TypeScript checkbox */}

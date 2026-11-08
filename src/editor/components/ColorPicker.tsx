@@ -4,6 +4,9 @@ import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Pipette, Plus, LinkIcon, Check, ChevronDown } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
+import { SegmentedControl } from "./SegmentedControl";
+import { IconButton } from "./IconButton";
+import { Select } from "./Select";
 import { useMounted } from "./useMounted";
 import { useSlidingIndicator } from "./useSlidingIndicator";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
@@ -95,26 +98,12 @@ export function ColorPicker({
 
   const [mode, setMode] = useState<ColorMode>("Solid");
   const [model, setModel] = useState<ColorModel>("Hex");
-  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const [hsv, setHsv] = useState(initHsv);
   const [alpha, setAlpha] = useState(externalOpacity / 100);
   const [linkedToken, setLinkedToken] = useState<string | null>(null);
   const [imageFit, setImageFit] = useState<ImageFit>("Fill");
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // Sliding indicator for Mode Tabs
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const tabsMarkerRef = useRef<HTMLDivElement>(null);
-  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const selectedModeIndex = MODES.indexOf(mode);
-
-  useSlidingIndicator({
-    containerRef: tabsContainerRef,
-    indicatorRef: tabsMarkerRef,
-    itemRefs: tabButtonRefs,
-    selectedIndex: selectedModeIndex >= 0 ? selectedModeIndex : 0,
-  });
 
   // Gradient stops
   const [stops, setStops] = useState<ColorStop[]>([
@@ -578,39 +567,14 @@ export function ColorPicker({
     >
       <div className="cp-in ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
         {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */}
-        <div
-          ref={tabsContainerRef}
-          role="group"
-          aria-label="Fill type"
-          className="seg dseg fill pseg cp-tabs ll:relative ll:flex ll:items-center ll:h-7 ll:p-px ll:bg-surface-bar ll:rounded-md ll:border ll:border-border ll:gap-px ll:shrink-0 ll:select-none"
-        >
-          <div
-            ref={tabsMarkerRef}
-            aria-hidden="true"
-            className="sgh ll:absolute ll:top-px ll:bottom-px ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
-          />
-          {MODES.map((m, idx) => {
-            const isSel = mode === m;
-            return (
-              <button
-                key={m}
-                ref={(el) => {
-                  tabButtonRefs.current[idx] = el;
-                }}
-                type="button"
-                aria-pressed={isSel}
-                onClick={() => setMode(m)}
-                className={`ll:relative ll:z-10 ll:flex-1 ll:h-full ll:flex ll:items-center ll:justify-center ll:px-1.5 ll:rounded-sm ll:text-micro ll:font-medium ll:transition-colors ll:select-none ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-                  isSel
-                    ? "ll:text-primary"
-                    : "ll:text-muted ll:hover:text-primary"
-                }`}
-              >
-                {m}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl<ColorMode>
+          size="compact"
+          options={MODES.map((m) => ({ value: m, label: m }))}
+          value={mode}
+          onChange={(m) => setMode(m)}
+          ariaLabel="Fill type"
+          className="cp-tabs"
+        />
 
         {/* Gradient Stops Bar (shown for Linear, Radial, Conic) */}
         {(mode === "Linear" || mode === "Radial" || mode === "Conic") && (
@@ -716,18 +680,15 @@ export function ColorPicker({
 
             {/* Image fit select */}
             <div className="cp-fit ll:absolute ll:left-2 ll:right-2 ll:bottom-2">
-              <select
+              <Select
+                size="sm"
+                variant="floating"
                 value={imageFit}
-                onChange={(e) => setImageFit(e.target.value as ImageFit)}
+                onChange={(v) => setImageFit(v as ImageFit)}
                 aria-label="Image fit"
-                className="dfield ll-dfield ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:text-micro ll:text-primary ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-              >
-                {FITS.map((fit) => (
-                  <option key={fit} value={fit}>
-                    {fit}
-                  </option>
-                ))}
-              </select>
+                options={FITS.map((fit) => ({ value: fit, label: fit }))}
+                className="ll:w-full"
+              />
             </div>
           </div>
         ) : (
@@ -756,21 +717,21 @@ export function ColorPicker({
                   top: `${(1 - hsv.v) * 100}%`,
                   boxShadow: "0 0 0 1px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.45)",
                 }}
-                className="cp-th ll:absolute ll:w-3.5 ll:h-3.5 ll:-ml-1.75 ll:-mt-1.75 ll:rounded-full ll:border-2 ll:border-white ll:pointer-events-none"
+                className="cp-th ll:absolute ll:w-3.5 ll:h-3.5 ll:-ml-1.75 ll:-mt-1.75 ll:rounded-full ll:border-2 ll:border-board-bg ll:pointer-events-none"
               />
             </div>
 
             {/* Eyedropper + Sliders (Hue + Opacity) */}
             <div className="cp-r1 ll:flex ll:items-center ll:gap-2">
-              <button
-                type="button"
-                onClick={handleEyedropper}
+              <IconButton
+                size="md"
+                variant="ghost"
                 aria-label="Pick colour from screen"
-                title="Eyedropper"
-                className="ib cp-eye ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors ll:shrink-0 ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-              >
-                <Icon icon={Pipette} size={14} />
-              </button>
+                tooltip="Eyedropper"
+                icon={<Icon icon={Pipette} size={14} />}
+                onClick={handleEyedropper}
+                className="cp-eye"
+              />
 
               <div className="cp-sls ll:flex ll:flex-col ll:gap-1.5 ll:flex-1 ll:min-w-0">
                 {/* Hue Slider (12px) */}
@@ -828,46 +789,17 @@ export function ColorPicker({
 
             {/* Model & Input Fields Row (cp-r2) */}
             <div className="cp-r2 ll:flex ll:items-center ll:gap-1.5">
-              {/* Custom Model Dropdown (84px wide) */}
-              <div className="dd ll:relative ll:w-21 ll:h-7 ll:shrink-0">
-                <button
-                  type="button"
-                  role="combobox"
-                  aria-expanded={isModelMenuOpen}
+              {/* Model Dropdown (Select) */}
+              <div className="dd ll:w-21 ll:shrink-0">
+                <Select
+                  size="sm"
+                  variant="floating"
                   aria-label="Colour model"
-                  onClick={() => setIsModelMenuOpen((prev) => !prev)}
-                  className="dfield dd ll-dfield ll:flex ll:items-center ll:justify-between ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-micro ll:font-mono ll:text-primary ll:outline-none ll:hover:border-muted ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:cursor-pointer"
-                >
-                  <span className="ddt">{model}</span>
-                  <Icon icon={ChevronDown} size={12} className="ll:text-muted ll:shrink-0" />
-                </button>
-                {isModelMenuOpen && (
-                  <div
-                    role="listbox"
-                    aria-label="Colour models"
-                    className="ll:absolute ll:left-0 ll:top-8 ll:z-70 ll:w-full ll:py-1 ll:rounded-sm ll:border ll:border-border ll:bg-surface-float ll:shadow-soft ll:flex ll:flex-col"
-                  >
-                    {MODELS.map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        role="option"
-                        aria-selected={model === m}
-                        onClick={() => {
-                          setModel(m);
-                          setIsModelMenuOpen(false);
-                        }}
-                        className={`ll:flex ll:items-center ll:h-6 ll:px-2 ll:text-micro ll:font-mono ll:text-left ll:transition-colors ll:cursor-pointer ${
-                          model === m
-                            ? "ll:bg-surface-hover ll:text-primary ll:font-medium"
-                            : "ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary"
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  value={model}
+                  options={MODELS.map((m) => ({ value: m, label: m }))}
+                  onChange={(m) => setModel(m as ColorModel)}
+                  className="ll:w-full"
+                />
               </div>
 
               {/* Hex Mode: Hex input + Opacity input (cp-hexv) */}
