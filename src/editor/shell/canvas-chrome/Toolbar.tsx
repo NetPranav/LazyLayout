@@ -32,7 +32,6 @@ import { Button } from "@/editor/components/Button";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { getActivePreset } from "@/editor/motion/feel";
 import { springAnim } from "@/editor/motion/ease";
-import { defaultHost } from "@/editor/motion/loop";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import {
   CANVAS_CHROME_SIZES,
@@ -266,6 +265,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   useEffect(() => {
     snapLeaves();
+    window.addEventListener("pointerdown", snapLeaves, true);
+    window.addEventListener("keydown", snapLeaves, true);
+    return () => {
+      window.removeEventListener("pointerdown", snapLeaves, true);
+      window.removeEventListener("keydown", snapLeaves, true);
+    };
   }, [snapLeaves]);
 
   useLayoutEffect(() => {
@@ -277,10 +282,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const bar = resolvedToolbarRef.current;
     if (!bar) return;
 
-    // Close any open popovers
+    // Close any open popovers immediately (P closePop())
     setIsShapeMenuOpen(false);
     setIsEasingMenuOpen(false);
     setIsExportMenuOpen(false);
+    setIsZoomMenuOpen(false);
+    document.querySelectorAll(".tbpop").forEach((p) => p.remove());
 
     if (prefersReducedMotion()) {
       prevModeRef.current = mode;
@@ -291,11 +298,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const w0 = lastWidthRef.current || bar.offsetWidth;
     const oldSnap = snapKidsRef.current;
 
-    // Clean up any existing ghost
+    // Clean up any existing ghost and width animation (P kill())
     if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current);
     bar.querySelectorAll(".tbghost, .ll-tbghost").forEach((g) => g.remove());
+    bar.style.width = "";
+    bar.style.overflow = "";
 
-    // Create ghost with old buttons fading out
+    // Create ghost with old buttons fading out (P fadeOut)
     if (oldSnap.length > 0) {
       const gh = document.createElement("div");
       gh.className = "tbghost ll-tbghost";
@@ -320,15 +329,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
     prevModeRef.current = mode;
 
-    // Pop in new buttons and spring width
-    let unregToolbarTask: (() => void) | null = null;
-    unregToolbarTask = defaultHost.register(() => {
-      unregToolbarTask?.();
-      if (!bar) return;
-      const w1 = bar.offsetWidth;
-      const preset = getActivePreset();
+    // Measure new natural width immediately in layout effect
+    const w1 = bar.offsetWidth;
+    const preset = getActivePreset();
 
-      // Animate width
+    // Animate width (P springW)
+    if (Math.abs(w0 - w1) >= 1) {
       bar.style.overflow = "hidden";
       const wAnim = springAnim(
         bar,
@@ -337,37 +343,37 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         preset.shape[1]
       );
       if (wAnim) {
-        wAnim.onfinish = () => {
+        const done = () => {
           bar.style.overflow = "";
+          bar.style.width = "";
         };
-        wAnim.oncancel = () => {
-          bar.style.overflow = "";
-        };
+        wAnim.onfinish = done;
+        wAnim.oncancel = done;
       }
+    }
 
-      // Pop in new buttons
-      const newToolContainer = bar.querySelector(
-        ".dtools, .mtools, .ctools, .ll-dtools, .ll-mtools, .ll-ctools"
-      );
-      if (newToolContainer) {
-        const newButtons = Array.from(newToolContainer.children) as HTMLElement[];
-        newButtons.forEach((k, i) => {
-          springAnim(
-            k,
-            [
-              { opacity: 0, scale: "0.6", filter: "blur(4px)" },
-              { opacity: 1, scale: "1", filter: "blur(0px)" },
-            ],
-            preset.pop[0],
-            preset.pop[1],
-            { delay: 60 + i * 14, fill: "backwards" }
-          );
-        });
-      }
+    // Pop in new buttons (P popIn)
+    const newToolContainer = bar.querySelector(
+      ".dtools, .mtools, .ctools, .ll-dtools, .ll-mtools, .ll-ctools"
+    );
+    if (newToolContainer) {
+      const newButtons = Array.from(newToolContainer.children) as HTMLElement[];
+      newButtons.forEach((k, i) => {
+        springAnim(
+          k,
+          [
+            { opacity: 0, scale: "0.6", filter: "blur(4px)" },
+            { opacity: 1, scale: "1", filter: "blur(0px)" },
+          ],
+          preset.pop[0],
+          preset.pop[1],
+          { delay: 60 + i * 14, fill: "backwards" }
+        );
+      });
+    }
 
-      checkLift();
-      setTimeout(snapLeaves, 700);
-    });
+    checkLift();
+    setTimeout(snapLeaves, 500);
   }, [mode, checkLift, snapLeaves, resolvedToolbarRef]);
 
   // WAI-ARIA Toolbar roving arrow-key navigation
@@ -486,34 +492,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={FrameIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Shape ▾ (with Pen inside, caret right of icon) */}
-            <Button
+            {/* Shape (with Pen inside) - Item 2: no caret */}
+            <IconButton
               ref={shapeButtonRef}
-              variant={activeTool === "shape" ? "secondary" : "ghost"}
-              size="md"
+              size="lg"
               id="shapebtn"
               data-tool="shape"
               aria-label="Shape"
-              title="Shape"
+              tooltip="Shape"
               aria-haspopup="menu"
               aria-expanded={isShapeMenuOpen}
-              aria-pressed={activeTool === "shape"}
+              pressed={activeTool === "shape" || isShapeMenuOpen}
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => {
                 onSelectTool?.("shape");
                 setIsShapeMenuOpen((prev) => !prev);
               }}
-              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
-            >
-              <Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />
-              <Icon
-                icon={ChevronDown}
-                size={CANVAS_CHROME_SIZES.iconXs}
-                className="ll:text-muted ll:transition-transform ll:duration-150"
-                style={{ transform: isShapeMenuOpen ? "rotate(180deg)" : "none" }}
-              />
-            </Button>
+              icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
 
             {/* Text (T) */}
             <IconButton
@@ -632,29 +629,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Scissors} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Easing ▾ (caret right of icon) */}
-            <Button
+            {/* Easing - Item 2: no caret */}
+            <IconButton
               ref={easingButtonRef}
-              variant="ghost"
-              size="md"
+              id="easingbtn"
+              size="lg"
               data-tb="ease"
               aria-label="Easing"
-              title="Easing"
+              tooltip="Easing"
               aria-haspopup="menu"
               aria-expanded={isEasingMenuOpen}
+              pressed={isEasingMenuOpen}
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => setIsEasingMenuOpen((prev) => !prev)}
-              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
-            >
-              <Icon icon={Spline} size={CANVAS_CHROME_SIZES.iconLg} />
-              <Icon
-                icon={ChevronDown}
-                size={CANVAS_CHROME_SIZES.iconXs}
-                className="ll:text-muted ll:transition-transform ll:duration-150"
-                style={{ transform: isEasingMenuOpen ? "rotate(180deg)" : "none" }}
-              />
-            </Button>
+              icon={<Icon icon={Spline} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
           </div>
         )}
 
@@ -708,29 +698,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Play} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Export ▾ (caret right of icon) */}
-            <Button
+            {/* Export - Item 2: no caret */}
+            <IconButton
               ref={exportButtonRef}
-              variant="ghost"
-              size="md"
+              id="exportbtn"
+              size="lg"
               data-tb="exp"
               aria-label="Export"
-              title="Export"
+              tooltip="Export"
               aria-haspopup="menu"
               aria-expanded={isExportMenuOpen}
+              pressed={isExportMenuOpen}
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => setIsExportMenuOpen((prev) => !prev)}
-              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
-            >
-              <Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />
-              <Icon
-                icon={ChevronDown}
-                size={CANVAS_CHROME_SIZES.iconXs}
-                className="ll:text-muted ll:transition-transform ll:duration-150"
-                style={{ transform: isExportMenuOpen ? "rotate(180deg)" : "none" }}
-              />
-            </Button>
+              icon={<Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
           </div>
         )}
       </div>

@@ -238,6 +238,10 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       shown = true;
       cur?.classList.add("on");
       viewport?.classList.add("ll-stage-cursor-active");
+      const c = document.getElementById("center");
+      if (c) c.classList.add("ll-on");
+      const sw = document.querySelector(".ll-stagewrap, .stagewrap");
+      if (sw) sw.classList.add("ll-stage-cursor-active");
     }
 
     function off() {
@@ -245,6 +249,10 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       shown = false;
       cur?.classList.remove("on");
       viewport?.classList.remove("ll-stage-cursor-active");
+      const c = document.getElementById("center");
+      if (c) c.classList.remove("ll-on");
+      const sw = document.querySelector(".ll-stagewrap, .stagewrap");
+      if (sw) sw.classList.remove("ll-stage-cursor-active");
     }
 
     function setKind(kd: string, a: number, fade: boolean) {
@@ -457,10 +465,15 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
 
     function inRegion(t: EventTarget | null): boolean {
       if (!t || !(t instanceof Element)) return false;
-      if (!viewport.contains(t)) return false;
       const nat = t.closest(NAT);
       // Native elements outside stage elements stay native
-      return !(nat && !nat.closest("[data-element-id],[data-sel]"));
+      if (nat && !nat.closest("[data-element-id],[data-sel]")) {
+        return false;
+      }
+      if (viewport && viewport.contains(t)) return true;
+      return !!t.closest(
+        ".ll-stagewrap, .stagewrap, .ll-stage-viewport, [data-stage='workspace'], [data-stage='canvas'], [data-stage='artboard']"
+      );
     }
 
     function getHandleInfo(h: Element): { kind: string; angle: number } {
@@ -510,19 +523,26 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
         off();
         return;
       }
-      const t = e.target as Element | null;
-      if (held) {
-        off();
-        return;
-      }
 
-      // Check context menu presence: only suppress canvas cursor if an active, non-closing menu is in the DOM
+      // Check context menu / popover presence: only suppress canvas cursor if an active, non-closing menu is in the DOM
       const hasActiveMenu = !!document.querySelector(
-        ".menu.ll-open, .menu.open, [role=menu]:not([data-lv])"
+        ".ll-menu.ll-open, .menu.ll-open, .menu.open, .tbpop.ll-open, .tbpop.open, [data-popover-open='true']"
       );
       if (hasActiveMenu) {
         off();
         return;
+      }
+
+      // If held from context menu or blur, release if no active menu is open
+      if (held) {
+        held = false;
+      }
+
+      // Check element under pointer. If the target is disconnected or belonged to a closed menu, probe current DOM element
+      let t = e.target as Element | null;
+      if (!t || !t.isConnected || t.closest(NAT)) {
+        const probed = document.elementFromPoint(e.clientX, e.clientY);
+        if (probed) t = probed;
       }
 
       if (!drag && !inRegion(t)) {
@@ -640,6 +660,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
 
     const onPointerOver = (e: PointerEvent) => {
       if (e.pointerType !== "mouse" || e.buttons) return;
+      last = e;
       const target = e.target as Element | null;
       if (!target || !inRegion(target)) return;
       const h = target.closest(HOV);
@@ -647,6 +668,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
         pop(h.closest("[data-element-id],[data-sel]") ? 0.06 : 0.12);
       }
       hoverN = h;
+      sched();
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -656,6 +678,8 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       if (k === "Escape") {
         held = false;
         sched();
+        setTimeout(sched, 100);
+        setTimeout(sched, 300);
       }
       const isInput = (e.target as HTMLElement | null)?.matches?.(NAT);
       if ((k === "z" || k === "Z") && !e.ctrlKey && !e.metaKey && !isInput) {
@@ -687,6 +711,8 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     const onMenuClose = () => {
       held = false;
       sched();
+      setTimeout(sched, 100);
+      setTimeout(sched, 300);
     };
 
     const onWindowFocus = () => {
@@ -712,6 +738,19 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     document.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("keyup", onKeyUp, true);
 
+    // React to tool changes immediately
+    const unsubTool = useToolStore.subscribe(() => {
+      sched();
+    });
+
+    // React to mode switches immediately
+    const modeEl = document.querySelector("[data-mode]") || document.documentElement;
+    const modeObserver = new MutationObserver(() => {
+      held = false;
+      sched();
+    });
+    modeObserver.observe(modeEl, { attributes: true, attributeFilter: ["data-mode", "class"] });
+
     // Initial cursor setup
     setKind("sel", 0, false);
 
@@ -728,6 +767,8 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       document.removeEventListener("pointerover", onPointerOver, true);
       document.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("keyup", onKeyUp, true);
+      unsubTool();
+      modeObserver.disconnect();
       document.documentElement.classList.remove("ll-drag");
       viewport?.classList.remove("ll-stage-cursor-active");
       if (unregisterSched) {

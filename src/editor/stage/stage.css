@@ -1,6 +1,16 @@
 /* === Stage Canvas Cursor & Text Format Bar (Lane B4) === */
 
 /* Over the stage only, the system cursor is hidden and #ll-cur is drawn instead (mouse only) */
+.ll-center.ll-on .ll-stagewrap,
+.ll-center.ll-on .ll-stagewrap *,
+.ll-center.ll-on .ll-stagewrap *::before,
+.ll-center.ll-on .ll-stagewrap *::after,
+body .center.ll-on .stagewrap,
+body .center.ll-on .stagewrap *,
+body .center.ll-on .stagewrap *::before,
+body .center.ll-on .stagewrap *::after,
+.ll-stagewrap.ll-stage-cursor-active,
+.ll-stagewrap.ll-stage-cursor-active *,
 .ll-stage-viewport.ll-stage-cursor-active,
 .ll-stage-viewport.ll-stage-cursor-active *,
 .ll-stage-viewport.ll-stage-cursor-active *::before,

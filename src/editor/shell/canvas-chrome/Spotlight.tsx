@@ -4,6 +4,7 @@ import React, {
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useId,
@@ -758,6 +759,57 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     });
   }, []);
 
+  const hAnimRef = useRef<Animation | null>(null);
+
+  // Dynamic height adjustment following content up to maxH, growing upward from field (P sizeTo lines 10222-10231)
+  const sizeTo = useCallback((first: boolean) => {
+    const res = resRef.current;
+    const sc = scrollRef.current;
+    const list = listRef.current;
+    const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;
+    if (!res || !sc || !bar) return;
+
+    const host =
+      (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+      (bar.offsetParent as HTMLElement | null) ??
+      document.body);
+
+    const isLifted = bar.classList.contains("tb-hi") || bar.classList.contains("ll-tb-hi");
+    const baseBottom = isLifted ? 72 : 16;
+    const bottomVal = baseBottom + bar.offsetHeight + 8;
+    res.style.bottom = `${bottomVal}px`;
+
+    const maxH = Math.max(120, Math.min(360, host.clientHeight - bottomVal - 16));
+    sc.style.maxHeight = `${maxH}px`;
+
+    const contentH = list ? list.offsetHeight : sc.scrollHeight;
+    const targetScH = Math.min(maxH, contentH);
+    const H = targetScH + 2;
+
+    const cur = res.getBoundingClientRect().height;
+    if (hAnimRef.current) {
+      hAnimRef.current.cancel();
+      hAnimRef.current = null;
+    }
+
+    res.style.height = `${H}px`;
+    if (first || Math.abs(cur - H) < 1 || prefersReducedMotion()) return;
+
+    const preset = getActivePreset();
+    hAnimRef.current = springAnim(
+      res,
+      [{ height: `${cur}px` }, { height: `${H}px` }],
+      preset.shape[0],
+      preset.shape[1]
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) {
+      sizeTo(false);
+    }
+  }, [open, sections, flatItems, query, prefixMode, sizeTo]);
+
   // Morph open and close transitions on #tools
   const runOpen = useCallback(() => {
     const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;
@@ -793,7 +845,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         resRef.current.style.bottom = `${baseBottom + bar.offsetHeight + 8}px`;
         resRef.current.style.width = `${W}px`;
         resRef.current.hidden = false;
-        resRef.current.style.height = "auto";
+        sizeTo(true);
       }
       inputRef.current?.focus();
       return;
@@ -847,13 +899,8 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       res.style.width = `${W}px`;
       res.hidden = false;
 
-      const sc = scrollRef.current;
-      const maxH = Math.max(120, Math.min(360, host.clientHeight - (baseBottom + bar.offsetHeight + 8) - 16));
-      if (sc) {
-        sc.style.maxHeight = `${maxH}px`;
-      }
-      const H = sc ? sc.offsetHeight + 2 : 280;
-      res.style.height = `${H}px`;
+      sizeTo(true);
+      const H = res.getBoundingClientRect().height;
 
       springAnim(
         res,
@@ -879,7 +926,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     later(() => {
       inputRef.current?.classList.add("car");
     }, reduced ? 100 : 350);
-  }, [clearTimers, later]);
+  }, [clearTimers, later, sizeTo]);
 
   const runClose = useCallback(() => {
     const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;

@@ -50,15 +50,15 @@
   pointer-events: none;
 }
 
-/* Dropdown buttons in toolbar (caret right of icon) */
+/* Dropdown buttons in toolbar (item 2: no extra caret/arrow indicator) */
 .ll-ftool .ll-dd,
 .ftool .dd {
-  width: auto;
-  padding: 0 var(--ll-b5-space-2-5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ll-spacing-1);
+  width: var(--ll-size-icon-btn-lg, var(--ll-spacing-10));
+  height: var(--ll-size-icon-btn-lg, var(--ll-spacing-10));
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  gap: 0;
 }
 
 /* Separator between tool clusters */
@@ -410,8 +410,11 @@
   white-space: nowrap;
 }
 
-.ll-sp-bar:focus-within {
-  box-shadow: var(--ll-shadow-spotlight-focus), var(--ll-shadow-soft);
+/* Insert box (Item 4): fixed 520x400 in all states and tabs */
+.ll-ins,
+.ins {
+  width: var(--ll-size-insert-w, 520px) !important;
+  height: var(--ll-size-insert-h, 400px) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

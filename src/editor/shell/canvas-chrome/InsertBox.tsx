@@ -74,6 +74,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
         };
       }
 
+      // Enforce P's fixed 520x400 size in all states
+      s.size = { w: 520, h: 400 };
       s.open({
         from: seed,
         up: true,
@@ -165,10 +167,9 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
       aria-label="Insert"
       tabIndex={-1}
       style={{
-        width: "calc(var(--ll-size-menu-wide-w) + var(--ll-size-menu-w))",
-        height: "calc(var(--ll-size-menu-w) * 2)",
-        bottom:
-          "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
+        width: "var(--ll-size-insert-w, 520px)",
+        height: "var(--ll-size-insert-h, 400px)",
+        bottom: "var(--ll-bottom-floating, 74px)",
       }}
       className="ll-ins ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:outline-none"
     >
