@@ -124,6 +124,9 @@ export interface CanvasChromeProps {
   onTogglePanels?: () => void;
   onPreview?: () => void;
 
+  /** Run generated code (Code mode toolbar action) */
+  onRunCode?: () => void;
+
   /** Collaborator avatars stack (.fbar.fpeople) shown when entries exist */
   users?: readonly CollabUser[];
 }

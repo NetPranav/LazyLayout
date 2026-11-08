@@ -189,11 +189,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
   const [query, setQuery] = useState("");
   const [prefixMode, setPrefixMode] = useState<SpotlightCategory | "">("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [recentItems, setRecentItems] = useState<string[]>([
-    "Zoom to fit",
-    "Duplicate",
-    "Insert",
-  ]);
+  const [recentItems, setRecentItems] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -356,8 +352,12 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       },
     ];
 
+    const normalizeTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+
     for (const pi of pItems) {
-      if (!items.some((it) => it.label.toLowerCase() === pi.name.toLowerCase())) {
+      const piNorm = normalizeTitle(pi.name);
+      // Skip hand-written rows when a registry command has the same title (Item 8: no duplicate "Zoom to Selection")
+      if (!items.some((it) => normalizeTitle(it.label) === piNorm)) {
         items.push({
           key: `c:p:${pi.name}`,
           type: "cmd",

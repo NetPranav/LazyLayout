@@ -117,7 +117,7 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
         data-state={dataState}
         onKeyDown={handleKeyDown}
         className={`modes ll-modes ll:relative ll:flex ll:items-center ll:gap-0.5 ll:h-8 ll:p-0.5 ll:border ll:border-border ll:rounded-md ll:self-center ll:box-border ${
-          disabled ? "ll:opacity-40 ll:pointer-events-none" : ""
+          disabled ? "ll:opacity-disabled ll:pointer-events-none" : ""
         } ${className}`}
       >
         {/* Sliding spring highlight (.mhl) */}

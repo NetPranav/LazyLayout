@@ -123,6 +123,18 @@ import { MenuHeadingDemo, ThemeSwatchDemo } from "./demos/MenuPartsDemos";
 // Panel & inspector demos
 import { InspectorControlsDemo } from "./demos/PanelDemos";
 
+// Wave B and F Rebuild Demos
+import { B1Demos } from "./demos/B1Demos";
+import { B2Demos } from "./demos/B2Demos";
+import { B3Demos } from "./demos/B3Demos";
+import { B4Demos } from "./demos/B4Demos";
+import { B5Demos } from "./demos/B5Demos";
+import { B6Demos } from "./demos/B6Demos";
+import { B7Demos } from "./demos/B7Demos";
+import { B8Demos } from "./demos/B8Demos";
+import { F5Demos } from "./demos/F5Demos";
+import { F6Demos } from "./demos/F6Demos";
+
 import { Menu as MenuIcon } from "lucide-react";
 
 type NavSectionId =
@@ -226,7 +238,18 @@ type NavSectionId =
   | "code-inspector-file"
   | "code-inspector-layer"
   | "logic-shell"
-  | "data-shell";
+  | "data-shell"
+  // Rebuild (Wave B & F)
+  | "b1-pickers"
+  | "b2-layers"
+  | "b3-inspector"
+  | "b4-stage"
+  | "b5-toolbar"
+  | "b6-code"
+  | "b7-motion"
+  | "b8-topbar"
+  | "f5-controls"
+  | "f6-menus";
 
 interface NavItem {
   id: NavSectionId;
@@ -348,7 +371,21 @@ const CODE_NAV: readonly NavItem[] = [
   { id: "data-shell", label: "Data Shell" },
 ];
 
+const REBUILD_NAV: readonly NavItem[] = [
+  { id: "b1-pickers", label: "B1: Pickers & Presets" },
+  { id: "b2-layers", label: "B2: Layers & Search" },
+  { id: "b3-inspector", label: "B3: Inspector & Hairlines" },
+  { id: "b4-stage", label: "B4: Stage & Artboard" },
+  { id: "b5-toolbar", label: "B5: Toolbar & Canvas Chrome" },
+  { id: "b6-code", label: "B6: Code Panels" },
+  { id: "b7-motion", label: "B7: Motion Timeline" },
+  { id: "b8-topbar", label: "B8: TopBar & Modes" },
+  { id: "f5-controls", label: "F5: Native Controls" },
+  { id: "f6-menus", label: "F6: Menu Retargeting" },
+];
+
 const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
+  { title: "Rebuild (Wave B & F)", items: REBUILD_NAV },
   { title: "Foundations", items: FOUNDATIONS_NAV },
   { title: "Components", items: COMPONENTS_NAV },
   { title: "Shell", items: SHELL_NAV },
@@ -359,6 +396,7 @@ const NAV_GROUPS: readonly { title: string; items: readonly NavItem[] }[] = [
 ];
 
 const ALL_NAV = [
+  ...REBUILD_NAV,
   ...FOUNDATIONS_NAV,
   ...COMPONENTS_NAV,
   ...SHELL_NAV,
@@ -655,6 +693,41 @@ function getServerLiveTokensSnapshot() {
   return EMPTY_LIVE_TOKENS;
 }
 
+interface SyntaxTokenSpec {
+  name: string;
+  token: string;
+  role: string;
+  sample: string;
+}
+
+const SYNTAX_TOKENS: readonly SyntaxTokenSpec[] = [
+  { name: "Keyword", token: "--ll-syn-kw", role: "import, export, const, return, function", sample: "const" },
+  { name: "String", token: "--ll-syn-str", role: "String literals and template strings", sample: '"button"' },
+  { name: "Number", token: "--ll-syn-num", role: "Numeric literals and unit suffixes", sample: "42px" },
+  { name: "Function", token: "--ll-syn-fn", role: "Function calls and methods", sample: "useMotion()" },
+  { name: "Tag", token: "--ll-syn-tag", role: "JSX and HTML element tags", sample: "<Canvas>" },
+  { name: "Attribute", token: "--ll-syn-attr", role: "Props and JSX attributes", sample: "className=" },
+  { name: "Type", token: "--ll-syn-type", role: "TypeScript types and interfaces", sample: "LayerProps" },
+  { name: "Punctuation", token: "--ll-syn-punc", role: "Brackets, colons, commas, dots", sample: "{ ... }" },
+  { name: "Comment", token: "--ll-syn-com", role: "Code comments and documentation", sample: "// note" },
+];
+
+interface LabelColorSpec {
+  name: string;
+  token: string;
+  tintToken: string;
+  role: string;
+}
+
+const LABEL_COLOR_SPECS: readonly LabelColorSpec[] = [
+  { name: "Label 1 (Slate)", token: "--ll-label-1", tintToken: "--ll-label-1-tint", role: "Timeline track strip & clip tint (Text)" },
+  { name: "Label 2 (Sage)", token: "--ll-label-2", tintToken: "--ll-label-2-tint", role: "Timeline track strip & clip tint (Button)" },
+  { name: "Label 3 (Sand)", token: "--ll-label-3", tintToken: "--ll-label-3-tint", role: "Timeline track strip & clip tint (Frame, group)" },
+  { name: "Label 4 (Clay)", token: "--ll-label-4", tintToken: "--ll-label-4-tint", role: "Timeline track strip & clip tint (Image)" },
+  { name: "Label 5 (Rose)", token: "--ll-label-5", tintToken: "--ll-label-5-tint", role: "Timeline track strip & clip tint (Shape)" },
+  { name: "Label 6 (Lavender)", token: "--ll-label-6", tintToken: "--ll-label-6-tint", role: "Timeline track strip & clip tint (Other)" },
+];
+
 function computeLiveTokensClient(): Record<Theme, Record<string, string>> {
   if (typeof document === "undefined") {
     return EMPTY_LIVE_TOKENS;
@@ -684,6 +757,14 @@ function computeLiveTokensClient(): Record<Theme, Record<string, string>> {
     for (const spec of SEMANTIC_ROLES) {
       const val = style.getPropertyValue(spec.token).trim();
       themeMap[spec.token] = rgbToHex(val);
+    }
+    for (const syn of SYNTAX_TOKENS) {
+      const val = style.getPropertyValue(syn.token).trim();
+      themeMap[syn.token] = rgbToHex(val);
+    }
+    for (const lbl of LABEL_COLOR_SPECS) {
+      themeMap[lbl.token] = rgbToHex(style.getPropertyValue(lbl.token).trim());
+      themeMap[lbl.tintToken] = rgbToHex(style.getPropertyValue(lbl.tintToken).trim());
     }
     result[t.id] = themeMap;
   }
@@ -944,7 +1025,7 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Colors</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Semantic Color Tokens across 5 Official Themes
+                    Semantic Color Tokens across 8 Official Themes
                   </span>
                 </div>
                 <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
@@ -986,6 +1067,125 @@ export function DesignSystemPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Syntax Color Tokens (--ll-syn-*) across 8 Themes */}
+                <div className="ll:flex ll:flex-col ll:gap-4 ll:mt-4">
+                  <div>
+                    <h2 className="ll:text-lead ll:font-semibold ll:text-primary ll:font-sans">Syntax Highlighting Tokens</h2>
+                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                      Code Syntax Highlighting across 8 Official Themes
+                    </span>
+                  </div>
+                  <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                    <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                      <thead>
+                        <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Token</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Syntax Role</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Preview</th>
+                          {THEME_LIST.map((theme) => (
+                            <th
+                              key={theme.id}
+                              className={`ll:p-3 ll:font-medium ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                            >
+                              {theme.id.charAt(0).toUpperCase() + theme.id.slice(1)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                        {SYNTAX_TOKENS.map((syn) => (
+                          <tr key={syn.token} className="ll:hover:bg-surface-hover">
+                            <td className="ll:p-3 ll:font-mono ll:text-micro ll:text-secondary">{syn.token}</td>
+                            <td className="ll:p-3 ll:font-medium ll:text-primary">{syn.role}</td>
+                            <td className="ll:p-3">
+                              <span
+                                style={{ color: `var(${syn.token})` }}
+                                className="ll:font-mono ll:text-small ll:font-semibold"
+                              >
+                                {syn.sample}
+                              </span>
+                            </td>
+                            {THEME_LIST.map((theme) => (
+                              <td
+                                key={theme.id}
+                                className={`ll:p-3 ll:font-mono ll:text-micro ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                              >
+                                {liveTokens[theme.id]?.[syn.token] || "—"}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Timeline Label Colours across 8 Themes */}
+                <div className="ll:flex ll:flex-col ll:gap-4 ll:mt-4">
+                  <div>
+                    <h2 className="ll:text-lead ll:font-semibold ll:text-primary ll:font-sans">Timeline Label Colours</h2>
+                    <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
+                      Track Strips and Clip Tints across 8 Official Themes
+                    </span>
+                  </div>
+                  <div className="ll:rounded-md ll:border ll:border-border ll:overflow-hidden">
+                    <table className="ll:w-full ll:text-left ll:border-collapse ll:text-small">
+                      <thead>
+                        <tr className="ll:border-b ll:border-border ll:bg-surface-bar">
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Role</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Strip / Tint</th>
+                          <th className="ll:p-3 ll:font-medium ll:text-secondary">Preview</th>
+                          {THEME_LIST.map((theme) => (
+                            <th
+                              key={theme.id}
+                              className={`ll:p-3 ll:font-medium ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                            >
+                              {theme.id.charAt(0).toUpperCase() + theme.id.slice(1)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="ll:divide-y ll:divide-border ll:bg-surface-panel">
+                        {LABEL_COLOR_SPECS.map((lbl) => (
+                          <tr key={lbl.token} className="ll:hover:bg-surface-hover">
+                            <td className="ll:p-3 ll:font-medium ll:text-primary">
+                              <div>{lbl.name}</div>
+                              <div className="ll:text-nano ll:text-muted">{lbl.role}</div>
+                            </td>
+                            <td className="ll:p-3 ll:font-mono ll:text-nano ll:text-secondary">
+                              <div>{lbl.token}</div>
+                              <div>{lbl.tintToken}</div>
+                            </td>
+                            <td className="ll:p-3">
+                              <div className="ll:flex ll:items-center ll:gap-2">
+                                <span
+                                  title="Track Strip (solid 3px)"
+                                  style={{ backgroundColor: `var(${lbl.token})` }}
+                                  className="ll:w-3 ll:h-6 ll:rounded-xs ll:border ll:border-border"
+                                />
+                                <span
+                                  title="Clip Tint (translucent fill)"
+                                  style={{ backgroundColor: `var(${lbl.tintToken})` }}
+                                  className="ll:w-8 ll:h-6 ll:rounded-xs ll:border ll:border-border"
+                                />
+                              </div>
+                            </td>
+                            {THEME_LIST.map((theme) => (
+                              <td
+                                key={theme.id}
+                                className={`ll:p-3 ll:font-mono ll:text-nano ${theme.id === activeTheme ? "ll:text-primary" : "ll:text-secondary"}`}
+                              >
+                                <div>{liveTokens[theme.id]?.[lbl.token] || "—"}</div>
+                                <div className="ll:text-muted">{liveTokens[theme.id]?.[lbl.tintToken] || "—"}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -1379,6 +1579,58 @@ export function DesignSystemPage() {
             {activeSection === "data-shell" && (
               <Titled title="Data Shell" note="Coming soon placeholder.">
                 <DataComingSoonDemo />
+              </Titled>
+            )}
+
+            {/* Wave B & F Rebuild Demos */}
+            {activeSection === "b1-pickers" && (
+              <Titled title="B1: Pickers & Popovers" note="ColorPicker, FontPicker, FramePresetsPanel, OptionsPopover.">
+                <B1Demos />
+              </Titled>
+            )}
+            {activeSection === "b2-layers" && (
+              <Titled title="B2: Layers & Search" note="Layers tree, multi-page selector, search filter highlights.">
+                <B2Demos />
+              </Titled>
+            )}
+            {activeSection === "b3-inspector" && (
+              <Titled title="B3: Inspector & Hairlines" note="Single selection, multi-selection, options popover, hairlines.">
+                <B3Demos />
+              </Titled>
+            )}
+            {activeSection === "b4-stage" && (
+              <Titled title="B4: Stage & Artboard" note="Stage selection handles, artboard, guides, rulers.">
+                <B4Demos />
+              </Titled>
+            )}
+            {activeSection === "b5-toolbar" && (
+              <Titled title="B5: Toolbar & Canvas Chrome" note="Floating toolbar, Spotlight, View options popover, Zoom bar.">
+                <B5Demos />
+              </Titled>
+            )}
+            {activeSection === "b6-code" && (
+              <Titled title="B6: Code Panels" note="Code panel, Console, Execution trace, Find bar, Syntax highlighter.">
+                <B6Demos />
+              </Titled>
+            )}
+            {activeSection === "b7-motion" && (
+              <Titled title="B7: Motion Timeline" note="Motion timeline, transport, footer, easing curve popover, label colours.">
+                <B7Demos />
+              </Titled>
+            )}
+            {activeSection === "b8-topbar" && (
+              <Titled title="B8: TopBar & Mode Tabs" note="TopBar, Mode tabs, Logo mark saving trace, Page switcher, Ship popover.">
+                <B8Demos />
+              </Titled>
+            )}
+            {activeSection === "f5-controls" && (
+              <Titled title="F5: Native Controls Replacement" note="Replacement of raw browser inputs/selects with editor controls.">
+                <F5Demos />
+              </Titled>
+            )}
+            {activeSection === "f6-menus" && (
+              <Titled title="F6: Menu Retargeting" note="Popover and menu pointer handoff and retargeting.">
+                <F6Demos />
               </Titled>
             )}
           </div>

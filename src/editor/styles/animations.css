@@ -492,22 +492,18 @@ button[aria-expanded="true"] > .ll-chevron-flip {
   }
 }
 
-/* Top bar grid layout (1fr auto 1fr) */
-.ll-top {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-}
-
-/* Hairline vertical divider between logo and project name */
-.ll-tdiv {
-  display: block;
-  width: 1px;
-  height: var(--ll-size-divider-h, 20px);
-  background-color: var(--ll-border-color);
-  margin-left: 4px;
-  margin-right: 4px;
-  flex-shrink: 0;
-  align-self: center;
+@layer components {
+  /* Hairline vertical divider between logo and project name */
+  .ll-tdiv {
+    display: block;
+    width: 1px;
+    height: var(--ll-size-divider-h, 20px);
+    background-color: var(--ll-border-color);
+    margin-left: 4px;
+    margin-right: 4px;
+    flex-shrink: 0;
+    align-self: center;
+  }
 }
 
 /* Lab frame for 1440x900 viewport verification */
@@ -611,33 +607,20 @@ button[aria-expanded="true"] > .ll-chevron-flip {
   min-width: 0;
   overflow: hidden;
   background: var(--ll-surface-panel);
+  border-top: 1px solid var(--ll-border-color);
   margin: 0 calc(var(--rw) * var(--fw) * -1) 0 calc(var(--lw) * var(--fw) * -1);
 }
 
 .ll-shell[data-pfx] .ll-shell-bottom {
-  box-shadow: var(--ll-shadow-soft);
+  box-shadow: none;
 }
 
+/* Side panels and bottom panel meet on ONE hairline without 6px gradient shadows (Item 7) */
 .ll-shell[data-mode="motion"] .ll-shell-bottom::before,
 .ll-shell[data-mode="motion"] .ll-shell-bottom::after,
 .ll-shell[data-mode="code"] .ll-shell-bottom::before,
 .ll-shell[data-mode="code"] .ll-shell-bottom::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 0;
-  width: calc(var(--lw) * var(--fw));
-  height: var(--ll-size-panel-edge-h);
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(to bottom, color-mix(in srgb, black var(--ll-panel-shade), transparent), transparent);
-}
-
-.ll-shell[data-mode="motion"] .ll-shell-bottom::before,
-.ll-shell[data-mode="code"] .ll-shell-bottom::before {
-  left: auto;
-  right: 0;
-  width: calc(var(--rw) * var(--fw));
+  display: none !important;
 }
 
 /* Header band of the bottom panel */
@@ -694,3 +677,78 @@ button[aria-expanded="true"] > .ll-chevron-flip {
   }
 }
 /* === end lane: L8 === */
+
+/* === lane: B9 wiring & responsive shell === */
+/* Floating toolbar narrow lifted state (prototype line 411: .ftool.tb-hi { bottom: 72px }) */
+.ftool.tb-hi,
+.ll-ftool.ll-tb-hi,
+.ftool.ll-tb-hi {
+  bottom: 72px !important;
+}
+
+/* 390px responsive shell: panels collapse and full canvas is exposed (Item 4) */
+@media (max-width: 768px) {
+  .ll-editor-root {
+    --lw: 0px !important;
+    --rw: 0px !important;
+    grid-template-columns: 0px minmax(0, 1fr) 0px !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  .ll-shell-left,
+  .ll-shell-right,
+  .ll-shell-lsplit,
+  .ll-shell-rsplit {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* Blank page chrome matching prototype P (.app.blank[data-mode=design] lines 1085-1088) */
+.app.blank[data-mode=design] .artboard [data-sel],
+.app.blank[data-mode=design] #p-layers .row,
+.ll-editor-root.blank[data-mode="design"] .artboard [data-sel],
+.ll-editor-root.blank[data-mode="design"] #p-layers .row,
+.ll-editor-root[data-blank="1"][data-mode="design"] .artboard [data-sel],
+.ll-editor-root[data-blank="1"][data-mode="design"] #p-layers .row {
+  display: none !important;
+}
+
+.app.blank[data-mode=design] .artboard,
+.ll-editor-root.blank[data-mode="design"] .artboard,
+.ll-editor-root[data-blank="1"][data-mode="design"] .artboard {
+  background: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.app.blank[data-mode=design] .artboard > .lbl,
+.app.blank[data-mode=design] .artboard > .atit,
+.app.blank[data-mode=design] .sov,
+.app.blank[data-mode=design] #p-layers .lyhl,
+.app.blank[data-mode=design] #p-layers .lyline,
+.app.blank[data-mode=design] .ruler,
+.app.blank[data-mode=design] .ug,
+.app.blank[data-mode=design] [data-testid="ruler-horizontal"],
+.app.blank[data-mode=design] [data-testid="ruler-vertical"],
+.ll-editor-root.blank[data-mode="design"] .artboard > .lbl,
+.ll-editor-root.blank[data-mode="design"] .artboard > .atit,
+.ll-editor-root.blank[data-mode="design"] .sov,
+.ll-editor-root.blank[data-mode="design"] #p-layers .lyhl,
+.ll-editor-root.blank[data-mode="design"] #p-layers .lyline,
+.ll-editor-root.blank[data-mode="design"] .ruler,
+.ll-editor-root.blank[data-mode="design"] .ug,
+.ll-editor-root.blank[data-mode="design"] [data-testid="ruler-horizontal"],
+.ll-editor-root.blank[data-mode="design"] [data-testid="ruler-vertical"],
+.ll-editor-root[data-blank="1"][data-mode="design"] .artboard > .lbl,
+.ll-editor-root[data-blank="1"][data-mode="design"] .artboard > .atit,
+.ll-editor-root[data-blank="1"][data-mode="design"] .sov,
+.ll-editor-root[data-blank="1"][data-mode="design"] #p-layers .lyhl,
+.ll-editor-root[data-blank="1"][data-mode="design"] #p-layers .lyline,
+.ll-editor-root[data-blank="1"][data-mode="design"] .ruler,
+.ll-editor-root[data-blank="1"][data-mode="design"] .ug,
+.ll-editor-root[data-blank="1"][data-mode="design"] [data-testid="ruler-horizontal"],
+.ll-editor-root[data-blank="1"][data-mode="design"] [data-testid="ruler-vertical"] {
+  display: none !important;
+}
+/* === end lane: B9 === */

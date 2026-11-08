@@ -183,3 +183,45 @@ export function B7MotionIconsDemo() {
     </div>
   );
 }
+
+export function B7Demos() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-10 ll:p-6 ll:max-w-4xl ll:mx-auto">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary">
+          B7 Motion Timeline
+        </h1>
+        <p className="ll:text-body ll:text-muted ll:mt-1">
+          Motion timeline, transport header, footer controls, easing popover, and label colours.
+        </p>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-8">
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Full Motion Timeline</h2>
+          <B7MotionTimelineDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Timeline Footer (Auto-Key &amp; Onion Skin)</h2>
+          <B7TimelineFooterDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Easing Curve Popover</h2>
+          <B7EasingPopoverDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Label Colours &amp; Tints</h2>
+          <B7LabelColorsDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Timeline Control Glyphs</h2>
+          <B7MotionIconsDemo />
+        </div>
+      </div>
+    </div>
+  );
+}

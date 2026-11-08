@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import { CodePanel } from "@/editor/panels/code-view/CodePanel";
-import { ConsoleView } from "@/editor/panels/code-view/ConsoleView";
-import { TraceView } from "@/editor/panels/code-view/TraceView";
 import { CodeInspector } from "@/editor/panels/code-view/CodeInspector";
 import { OutputConsole } from "@/editor/panels/console/OutputConsole";
 import { SyntaxHighlighter } from "@/editor/panels/code-view/SyntaxHighlighter";
@@ -183,6 +181,58 @@ export const B6CodeInspectorDemo: React.FC = () => {
   return (
     <div className="ll:w-80 ll:border ll:border-border ll:rounded-sm ll:overflow-hidden ll:bg-surface-panel">
       <CodeInspector componentName="Hero" exportType="named" targetLib="React" styleType="Tailwind" />
+    </div>
+  );
+};
+
+export const B6Demos: React.FC = () => {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-10 ll:p-6 ll:max-w-4xl ll:mx-auto">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary">
+          B6 Code Mode &amp; Panels
+        </h1>
+        <p className="ll:text-body ll:text-muted ll:mt-1">
+          Code Panel, Console, Execution Trace, Find Bar, Syntax Highlighting, Output Console, and Code Inspector.
+        </p>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-8">
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Code Editor View</h2>
+          <B6CodePanelCodeDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Console View</h2>
+          <B6CodePanelConsoleDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Execution Trace View</h2>
+          <B6CodePanelTraceDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Find Bar (Ctrl+F)</h2>
+          <B6FindBarDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Syntax Highlighting</h2>
+          <B6SyntaxHighlightingDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Output Console</h2>
+          <B6OutputConsoleDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Code Inspector</h2>
+          <B6CodeInspectorDemo />
+        </div>
+      </div>
     </div>
   );
 };

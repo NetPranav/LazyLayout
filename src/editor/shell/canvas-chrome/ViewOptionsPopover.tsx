@@ -132,6 +132,9 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
 }) => {
   const [isRendered, setIsRendered] = useState<boolean>(open);
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [panMethod, setPanMethod] = useState<"space" | "middle" | "blank">("space");
+  const [zoomSpeed, setZoomSpeed] = useState<"normal" | "fast">("normal");
 
   const popRef = useRef<HTMLDivElement>(null);
   const surfRef = useRef<Surf | null>(null);
@@ -143,6 +146,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
     setPrevOpen(open);
     if (open) {
       setIsRendered(true);
+      setIsAnimating(true);
     }
   }
 
@@ -165,6 +169,9 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
     if (!s || !popEl) return;
 
     if (open) {
+      // Reopen at the top (Item 5: reopens at the top)
+      popEl.scrollTop = 0;
+
       const triggerEl = triggerRef?.current;
       let seed = { ...MENU_FALLBACKS.surfaceSeedDefault };
       if (triggerEl) {
@@ -182,6 +189,14 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
         from: seed,
         up: false,
       });
+
+      // After open spring settles, restore normal scrolling (Item 5: no scroll jump while it springs open)
+      const animTimer = setTimeout(() => {
+        setIsAnimating(false);
+        if (popRef.current) popRef.current.scrollTop = 0;
+      }, 260);
+
+      return () => clearTimeout(animTimer);
     } else {
       s.leave();
       const exitDuration = prefersReducedMotion()
@@ -189,6 +204,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
         : MOT.exitMs;
       const t = setTimeout(() => {
         setIsRendered(false);
+        setIsAnimating(false);
       }, exitDuration);
       return () => clearTimeout(t);
     }
@@ -230,52 +246,55 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   return (
     <div
       ref={popRef}
+      id="vpop"
       role="dialog"
       aria-label="View options"
       tabIndex={-1}
       style={{
-        width: "var(--ll-size-vpop-w, 280px)",
+        width: "320px",
         top: "var(--ll-spacing-2)",
         left: "var(--ll-spacing-2)",
         maxHeight: "calc(100% - var(--ll-spacing-6))",
+        overflowY: isAnimating ? "hidden" : "auto",
       }}
-      className="ll-vpop ll:absolute ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overflow-y-auto ll:overscroll-contain ll:outline-none"
+      className="vpop ll-vpop ll:absolute ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-md ll:shadow-soft ll:py-1 ll:overscroll-contain ll:outline-none"
     >
       <div className="ll-lay ll:flex ll:flex-col ll:w-full">
-        {/* Quick Actions using design system Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={<Icon icon={Focus} size={CANVAS_CHROME_SIZES.iconMd} />}
-          onClick={() => {
-            onFocusSelection?.();
-            onClose();
-          }}
-          className="ll-vact ll:w-full ll:justify-start ll:h-8 ll:px-3 ll:text-small"
-        >
-          Focus selection
-        </Button>
+        {/* Quick Actions matching prototype lines 1843-1844 */}
+        <div className="vact-grp ll:flex ll:flex-col ll:gap-0.5 ll:px-2 ll:pt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<Icon icon={Focus} size={CANVAS_CHROME_SIZES.iconMd} />}
+            onClick={() => {
+              onFocusSelection?.();
+              onClose();
+            }}
+            className="vact ll-vact ll:w-full ll:justify-start ll:h-8 ll:px-2.5 ll:text-small"
+          >
+            Focus selection
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={<Icon icon={Globe} size={CANVAS_CHROME_SIZES.iconMd} />}
-          onClick={() => {
-            onOpenWorldEnvironment?.();
-            onClose();
-          }}
-          className="ll-vact ll:w-full ll:justify-start ll:h-8 ll:px-3 ll:text-small"
-        >
-          World environment
-        </Button>
-
-        <div className="ll:h-px ll:bg-border ll:my-1" aria-hidden="true" />
-
-        {/* Grid Style */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Grid style
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<Icon icon={Globe} size={CANVAS_CHROME_SIZES.iconMd} />}
+            onClick={() => {
+              onOpenWorldEnvironment?.();
+              onClose();
+            }}
+            className="vact ll-vact ll:w-full ll:justify-start ll:h-8 ll:px-2.5 ll:text-small"
+          >
+            World environment
+          </Button>
         </div>
-        <div className="ll:px-3 ll:pb-2">
+
+        {/* Group 1: Grid (lines 1846-1851) */}
+        <div className="hl ll:h-px ll:bg-border ll:my-2" aria-hidden="true" />
+        <div className="vgrp micro ll:px-4 ll:pt-1 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          Grid
+        </div>
+        <div className="vsub ll:px-4 ll:pb-2">
           <SegmentedControl
             size="sm"
             value={gridStyle}
@@ -288,16 +307,15 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           />
         </div>
 
-        {/* Grid Size Slider */}
-        <div className="ll:px-3 ll:pb-2 ll:flex ll:flex-col ll:gap-1">
-          <div className="ll:flex ll:items-center ll:justify-between ll:text-nano ll:font-mono ll:text-muted">
+        <div className="vsub gsz ll:px-4 ll:pb-2 ll:flex ll:flex-col ll:gap-1">
+          <div className="gsrow ll:flex ll:items-center ll:justify-between ll:text-nano ll:font-mono ll:text-muted">
             <label
               htmlFor={gridSizeId}
-              className="ll:uppercase ll:tracking-wider ll:cursor-pointer"
+              className="micro ll:uppercase ll:tracking-wider ll:cursor-pointer"
             >
               Grid size
             </label>
-            <span className="ll:text-primary">{gridSize}px</span>
+            <span className="mono ll:text-primary" id="gsval">{gridSize}px</span>
           </div>
           <input
             type="range"
@@ -309,58 +327,188 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
             onChange={(e) => onGridSizeChange?.(Number(e.target.value))}
             aria-label="Grid size"
             style={{ accentColor: "var(--ll-control-primary-bg)" }}
-            className="ll:w-full ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+            className="sld ll:w-full ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
           />
         </div>
 
-        {/* View Toggles */}
-        <div className="ll:flex ll:flex-col ll:gap-0.5 ll:py-1">
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
+        <div className="ll:flex ll:flex-col ll:gap-0.5 ll:px-4 ll:pb-1">
+          <Toggle
+            size="sm"
+            label="Pixel grid"
+            checked={pixelGrid}
+            onChange={(c) => onTogglePixelGrid?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Checkerboard"
+            checked={checkerboard}
+            onChange={(c) => onToggleCheckerboard?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Rulers"
+            checked={showRulers}
+            onChange={(c) => onToggleRulers?.(c)}
+          />
+        </div>
+
+        {/* Group 2: Snapping (lines 1853-1858) */}
+        <div className="hl ll:h-px ll:bg-border ll:my-2" aria-hidden="true" />
+        <div className="vgrp micro ll:px-4 ll:pt-1 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          Snapping
+        </div>
+        <div className="ll:flex ll:flex-col ll:gap-0.5 ll:px-4 ll:pb-1">
+          <Toggle
+            size="sm"
+            label="Snap objects"
+            checked={snapObjects}
+            onChange={(c) => onToggleSnapObjects?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Snap guides"
+            checked={snapGuides}
+            onChange={(c) => onToggleSnapGuides?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Snap to grid"
+            checked={snapToGrid}
+            onChange={(c) => onToggleSnapToGrid?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Smart guides"
+            checked={smartGuides}
+            onChange={(c) => onToggleSmartGuides?.(c)}
+          />
+        </div>
+        <div className="vrow ll:flex ll:items-center ll:justify-between ll:gap-3 ll:px-4 ll:py-1">
+          <span className="ll:text-small ll:text-secondary">Snap threshold</span>
+          <div className="field ll:w-20 ll:shrink-0">
+            <TextField
               size="sm"
-              label="Snap objects"
-              checked={snapObjects}
-              onChange={(c) => onToggleSnapObjects?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Snap guides"
-              checked={snapGuides}
-              onChange={(c) => onToggleSnapGuides?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Rulers"
-              checked={showRulers}
-              onChange={(c) => onToggleRulers?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Pixel grid"
-              checked={pixelGrid}
-              onChange={(c) => onTogglePixelGrid?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Checkerboard"
-              checked={checkerboard}
-              onChange={(c) => onToggleCheckerboard?.(c)}
+              prefixLabel="PX"
+              mono
+              type="number"
+              value={snapThreshold}
+              onChange={(e) => onSnapThresholdChange?.(Number(e.target.value))}
+              aria-label="Snap threshold in pixels"
             />
           </div>
         </div>
 
-        <div className="ll:h-px ll:bg-border ll:my-1" aria-hidden="true" />
+        {/* Group 3: Canvas (lines 1860-1866) */}
+        <div className="hl ll:h-px ll:bg-border ll:my-2" aria-hidden="true" />
+        <div className="vgrp micro ll:px-4 ll:pt-1 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          Canvas
+        </div>
+        <div className="ll:flex ll:flex-col ll:gap-1.5 ll:px-4 ll:pb-1">
+          <Toggle
+            size="sm"
+            label="Canvas pan"
+            checked={canvasPan}
+            onChange={(c) => onToggleCanvasPan?.(c)}
+          />
+          <div className="vsub ll:pl-1">
+            <SegmentedControl
+              size="sm"
+              value={panMethod}
+              onChange={setPanMethod}
+              options={[
+                { value: "space", label: "Space + drag" },
+                { value: "middle", label: "Middle mouse" },
+                { value: "blank", label: "Any blank" },
+              ]}
+            />
+          </div>
+          <Toggle
+            size="sm"
+            label="Canvas zoom"
+            checked={canvasZoom}
+            onChange={(c) => onToggleCanvasZoom?.(c)}
+          />
+          <div className="vsub ll:pl-1">
+            <SegmentedControl
+              size="sm"
+              value={zoomSpeed}
+              onChange={setZoomSpeed}
+              options={[
+                { value: "normal", label: "Normal" },
+                { value: "fast", label: "Fast (2x)" },
+              ]}
+            />
+          </div>
+          <Toggle
+            size="sm"
+            label="World axes"
+            checked={worldAxes}
+            onChange={(c) => onToggleWorldAxes?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Inspect mode"
+            checked={inspectMode}
+            onChange={(c) => onToggleInspectMode?.(c)}
+          />
+        </div>
 
-        {/* Appearance (All eight themes from PALETTE.md: Light and Dark) */}
-        <div className="thgrp ll:px-3 ll:pt-2 ll:pb-2 ll:flex ll:flex-col ll:gap-1.5" id="themeseg">
+        {/* Group 4: Behaviour (lines 1868-1872) */}
+        <div className="hl ll:h-px ll:bg-border ll:my-2" aria-hidden="true" />
+        <div className="vgrp micro ll:px-4 ll:pt-1 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          Behaviour
+        </div>
+        <div className="ll:flex ll:flex-col ll:gap-1.5 ll:px-4 ll:pb-1">
+          <Toggle
+            size="sm"
+            label="Dragging"
+            checked={elementDragging}
+            onChange={(c) => onToggleElementDragging?.(c)}
+          />
+          <Toggle
+            size="sm"
+            label="Reparenting"
+            checked={reparenting}
+            onChange={(c) => onToggleReparenting?.(c)}
+          />
+          <div className="vrow ll:flex ll:items-center ll:justify-between ll:gap-3 ll:py-1">
+            <span className="ll:text-small ll:text-secondary">Collision</span>
+            <div className="seg ll:shrink-0">
+              <SegmentedControl
+                size="sm"
+                value={collisionMode}
+                onChange={(v) => onCollisionModeChange?.(v as "pass" | "push")}
+                options={[
+                  { value: "pass", label: "Pass through" },
+                  { value: "push", label: "Push" },
+                ]}
+              />
+            </div>
+          </div>
+          <div className="vrow ll:flex ll:items-center ll:justify-between ll:gap-3 ll:py-1">
+            <span className="ll:text-small ll:text-secondary">Marquee</span>
+            <div className="seg ll:shrink-0">
+              <SegmentedControl
+                size="sm"
+                value={marqueeMode}
+                onChange={(v) =>
+                  onMarqueeModeChange?.(v as "intersects" | "encloses")
+                }
+                options={[
+                  { value: "intersects", label: "Intersects" },
+                  { value: "encloses", label: "Encloses" },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Group 5: Appearance (lines 1874-1877) */}
+        <div className="hl ll:h-px ll:bg-border ll:my-2" aria-hidden="true" />
+        <div className="vgrp micro ll:px-4 ll:pt-1 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          Appearance
+        </div>
+        <div className="thgrp ll:px-4 ll:pb-2 ll:flex ll:flex-col ll:gap-1.5" id="themeseg">
           <div className="vgrp micro ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
             Light
           </div>
@@ -375,7 +523,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
               { value: "lilac", label: "Lilac" },
             ]}
           />
-          <div className="vgrp micro ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
+          <div className="vgrp micro ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none ll:mt-1">
             Dark
           </div>
           <SegmentedControl
@@ -391,11 +539,8 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           />
         </div>
 
-        {/* Motion Feel */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Motion feel
-        </div>
-        <div className="ll:px-3 ll:pb-2">
+        <div className="vsub ll:px-4 ll:pb-2 ll:flex ll:flex-col ll:gap-1">
+          <div className="vrow vrow-c ll:text-small ll:text-secondary">Motion feel</div>
           <SegmentedControl
             size="sm"
             value={motionFeel}
@@ -408,16 +553,15 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           />
         </div>
 
-        {/* Dropdown Bulge Slider */}
-        <div className="ll:px-3 ll:pb-2 ll:flex ll:flex-col ll:gap-1">
-          <div className="ll:flex ll:items-center ll:justify-between ll:text-nano ll:font-mono ll:text-muted">
+        <div className="vsub gsz vbul ll:px-4 ll:pb-3 ll:flex ll:flex-col ll:gap-1">
+          <div className="gsrow ll:flex ll:items-center ll:justify-between ll:text-nano ll:font-mono ll:text-muted">
             <label
               htmlFor={dropdownBulgeId}
               className="ll:uppercase ll:tracking-wider ll:cursor-pointer"
             >
-              Dropdown bulge
+              List edge blur
             </label>
-            <span className="ll:text-primary">{dropdownBulge}%</span>
+            <span className="mono ll:text-primary" id="bgval">{dropdownBulge}%</span>
           </div>
           <input
             type="range"
@@ -427,135 +571,10 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
             step={5}
             value={dropdownBulge}
             onChange={(e) => onDropdownBulgeChange?.(Number(e.target.value))}
-            aria-label="Dropdown bulge strength"
+            aria-label="List edge blur strength"
             style={{ accentColor: "var(--ll-control-primary-bg)" }}
-            className="ll:w-full ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+            className="sld ll:w-full ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
           />
-        </div>
-
-        <div className="ll:h-px ll:bg-border ll:my-1" aria-hidden="true" />
-
-        {/* Canvas Section */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Canvas
-        </div>
-        <div className="ll:flex ll:flex-col ll:gap-0.5 ll:py-1">
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Inspect mode"
-              checked={inspectMode}
-              onChange={(c) => onToggleInspectMode?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Canvas pan"
-              checked={canvasPan}
-              onChange={(c) => onToggleCanvasPan?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Canvas zoom"
-              checked={canvasZoom}
-              onChange={(c) => onToggleCanvasZoom?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="World axes"
-              checked={worldAxes}
-              onChange={(c) => onToggleWorldAxes?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Dragging"
-              checked={elementDragging}
-              onChange={(c) => onToggleElementDragging?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Reparenting"
-              checked={reparenting}
-              onChange={(c) => onToggleReparenting?.(c)}
-            />
-          </div>
-        </div>
-
-        {/* Collision */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Collision
-        </div>
-        <div className="ll:px-3 ll:pb-2">
-          <SegmentedControl
-            size="sm"
-            value={collisionMode}
-            onChange={(v) => onCollisionModeChange?.(v as "pass" | "push")}
-            options={[
-              { value: "pass", label: "Pass Through" },
-              { value: "push", label: "Smart Push" },
-            ]}
-          />
-        </div>
-
-        {/* Marquee */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Marquee
-        </div>
-        <div className="ll:px-3 ll:pb-2">
-          <SegmentedControl
-            size="sm"
-            value={marqueeMode}
-            onChange={(v) =>
-              onMarqueeModeChange?.(v as "intersects" | "encloses")
-            }
-            options={[
-              { value: "intersects", label: "Intersects" },
-              { value: "encloses", label: "Encloses" },
-            ]}
-          />
-        </div>
-
-        {/* Snapping */}
-        <div className="ll:px-3 ll:pt-2 ll:pb-1 ll:text-nano ll:font-mono ll:uppercase ll:tracking-wider ll:text-muted ll:select-none">
-          Snapping
-        </div>
-        <div className="ll:flex ll:flex-col ll:gap-0.5 ll:py-1">
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Snap to grid"
-              checked={snapToGrid}
-              onChange={(c) => onToggleSnapToGrid?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:py-1">
-            <Toggle
-              size="sm"
-              label="Smart guides"
-              checked={smartGuides}
-              onChange={(c) => onToggleSmartGuides?.(c)}
-            />
-          </div>
-          <div className="ll:px-3 ll:pt-1.5 ll:pb-2">
-            <TextField
-              size="sm"
-              prefixLabel="PX"
-              mono
-              type="number"
-              value={snapThreshold}
-              onChange={(e) => onSnapThresholdChange?.(Number(e.target.value))}
-              aria-label="Snap threshold"
-            />
-          </div>
         </div>
       </div>
     </div>

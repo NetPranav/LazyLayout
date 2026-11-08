@@ -132,6 +132,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   panelsCollapsed: controlledPanelsCollapsed,
   onTogglePanels: controlledOnTogglePanels,
   onPreview,
+  onRunCode,
   users: _users,
 }) => {
   // Controllable state pairs managed by useControllable helper
@@ -663,6 +664,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         panelsCollapsed={panelsCollapsed}
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
         onPreview={onPreview}
+        onRunCode={onRunCode}
       />
 
       {/* Spotlight Command Panel */}

@@ -8,7 +8,8 @@ import { LeftPanelConnected } from "@/editor/panels/layers";
 import { Stage } from "@/editor/stage";
 import { TimelinePanel } from "@/editor/panels/timeline";
 import { CodePanel } from "@/editor/panels/code-view";
-import { documentStore } from "@/core/store/useDocumentStore";
+import { documentStore, useLayers } from "@/core/store/useDocumentStore";
+import { runCode } from "@/editor/panels/console";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import type { CollabUser } from "@/editor/components/AvatarStack";
@@ -84,28 +85,34 @@ export function EditorShell({
       if (savedL) {
         const n = parseFloat(savedL);
         if (!isNaN(n) && n >= LEFT_PANEL_MIN && n <= LEFT_PANEL_MAX) {
-          setLeftWidth(n);
-          setTargetWidth("left", n);
+          queueMicrotask(() => {
+            setLeftWidth(n);
+            setTargetWidth("left", n);
+          });
         }
       }
       const savedR = localStorage.getItem("ll-rw");
       if (savedR) {
         const n = parseFloat(savedR);
         if (!isNaN(n) && n >= RIGHT_PANEL_MIN && n <= RIGHT_PANEL_MAX) {
-          setRightWidth(n);
-          setTargetWidth("right", n);
+          queueMicrotask(() => {
+            setRightWidth(n);
+            setTargetWidth("right", n);
+          });
         }
       } else if (window.innerWidth <= 1200) {
-        setRightWidth(RIGHT_PANEL_DEFAULT_COMPACT);
-        setTargetWidth("right", RIGHT_PANEL_DEFAULT_COMPACT);
+        queueMicrotask(() => {
+          setRightWidth(RIGHT_PANEL_DEFAULT_COMPACT);
+          setTargetWidth("right", RIGHT_PANEL_DEFAULT_COMPACT);
+        });
       }
     } catch (_) {}
   }, [setTargetWidth]);
 
   const actions = useEditorActions({
     initialMode: "design",
-    initialLeftCollapsed: false,
-    initialRightCollapsed: false,
+    initialLeftCollapsed: typeof window !== "undefined" && window.innerWidth <= 768,
+    initialRightCollapsed: typeof window !== "undefined" && window.innerWidth <= 768,
     onBeforeModeChange: captureMode,
   });
   const timelineFullWidth = useMotionModel((s) => s.fullWidth);
@@ -133,22 +140,43 @@ export function EditorShell({
   const files = useProjectFiles();
   useProjectLock();
 
-  // Seed the prototype document if the project is brand new and untouched
+  // Seed the prototype document once if the project is brand new and untouched (Item 3)
+  const hasSeededRef = React.useRef(false);
   useEffect(() => {
-    const checkAndSeed = () => {
-      const layers = documentStore.getState().document.layers;
-      if (isUntouchedSeed(layers)) {
-        seedPrototypeDocument();
+    if (hasSeededRef.current) return;
+    const layers = documentStore.getState().document.layers;
+    if (isUntouchedSeed(layers)) {
+      hasSeededRef.current = true;
+      seedPrototypeDocument();
+    }
+  }, []);
+
+  // Reactive blank page detection (Item 3: when page has no layers, hide rulers and guides)
+  const docLayers = useLayers();
+  const isBlankPage = React.useMemo(() => {
+    const layerEntries = Object.values(docLayers);
+    if (layerEntries.length === 0) return true;
+    if (
+      layerEntries.length === 1 &&
+      (layerEntries[0].id === "elem_canvas_root" || layerEntries[0].id === "el_root_container")
+    ) {
+      return layerEntries[0].children.length === 0;
+    }
+    return false;
+  }, [docLayers]);
+
+  // Responsive shell auto-collapse on narrow viewports <= 768px (Item 4)
+  const { togglePanel } = actions;
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined" && window.innerWidth <= 768) {
+        togglePanel("lc", false);
+        togglePanel("rc", false);
       }
     };
-    checkAndSeed();
-    const unsub = documentStore.subscribe((state) => {
-      if (isUntouchedSeed(state.document.layers)) {
-        seedPrototypeDocument();
-      }
-    });
-    return unsub;
-  }, []);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [togglePanel]);
 
   useShellCommands({
     toggleCommandPalette: actions.handleSearch,
@@ -216,7 +244,8 @@ export function EditorShell({
       data-rc={actions.isRightCollapsed ? "" : undefined}
       data-zen={actions.isZen ? "" : undefined}
       data-fw={fullWidth ? "1" : "0"}
-      className={`ll-editor-root editor-root ll-shell ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
+      data-blank={isBlankPage ? "1" : undefined}
+      className={`ll-editor-root editor-root app ${isBlankPage ? "blank ll-blank" : ""} ll-shell ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
     >
       {/* Persistence overlays & banners */}
       {files.recovery && (
@@ -313,7 +342,7 @@ export function EditorShell({
             onZoom100={actions.zoom100}
             onZoomFit={actions.zoomFit}
             onZoomSelection={actions.zoomSelection}
-            showRulers={actions.showRulers}
+            showRulers={!isBlankPage && actions.showRulers}
             onToggleRulers={actions.toggleRulers}
             snapObjects={actions.snapObjects}
             onToggleSnapObjects={actions.toggleSnapObjects}
@@ -336,6 +365,12 @@ export function EditorShell({
             onPreview={() =>
               actions.setMode(actions.mode === "design" ? "motion" : "design")
             }
+            onRunCode={() => {
+              if (actions.mode !== "code") {
+                actions.setMode("code");
+              }
+              void runCode();
+            }}
             users={collabUsers}
           >
             <Stage

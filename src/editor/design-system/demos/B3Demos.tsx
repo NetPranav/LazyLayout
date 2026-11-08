@@ -3,14 +3,11 @@
 import React, { useState } from "react";
 import { RightPanelHeader } from "@/editor/shell/right-panel/RightPanelHeader";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
-import { RightPanelFrame } from "@/editor/shell/right-panel/RightPanelFrame";
 import { MultiLayerIcon } from "@/editor/panels/details/hooks/useSelectionInspector";
 import { PositionSection, PositionMore } from "@/editor/panels/details/sections/PositionSection";
 import { LayoutSection, LayoutMore } from "@/editor/panels/details/sections/LayoutSection";
 import { AppearanceSection, AppearanceMore } from "@/editor/panels/details/sections/AppearanceSection";
 import { TypographySection, TypographyMore } from "@/editor/panels/details/sections/TypographySection";
-import { FillSection } from "@/editor/panels/details/sections/FillSection";
-import { OptionsPopover } from "@/editor/components/OptionsPopover";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import type { PropValue } from "@/core/document/registry";
@@ -243,6 +240,38 @@ export function B3FloatingSurfacesHairlineDemo() {
               />
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function B3Demos() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-10 ll:p-6 ll:max-w-4xl ll:mx-auto">
+      <div>
+        <h1 className="ll:text-title ll:font-semibold ll:text-primary">
+          B3 Inspector &amp; Hairlines
+        </h1>
+        <p className="ll:text-body ll:text-muted ll:mt-1">
+          Inspector single selection, multi-selection, options popover sliders, and floating surface hairlines.
+        </p>
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-8">
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Single Selection &amp; Options Popover</h2>
+          <B3InspectorSingleDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Multi-Selection &amp; Mixed Values</h2>
+          <B3InspectorMultiDemo />
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-3">
+          <h2 className="ll:text-body ll:font-medium ll:text-primary">Floating Surface Hairlines</h2>
+          <B3FloatingSurfacesHairlineDemo />
         </div>
       </div>
     </div>

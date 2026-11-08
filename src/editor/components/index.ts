@@ -35,3 +35,5 @@ export * from "./ColorPicker";
 export * from "./FontPicker";
 export * from "./FramePresetsPanel";
 export * from "./OptionsPopover";
+export * from "./FramePresetsData";
+export * from "./FontPickerData";
