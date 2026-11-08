@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import {
   useMotionModel,
   X,
@@ -51,7 +51,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
 
   // Damped spring instance for playhead gliding (matching P: M.ph = new Spring(M.T, mo().hl))
   const phSpringRef = useRef<Spring | null>(null);
-  if (!phSpringRef.current) {
+  if (phSpringRef.current == null) {
     const feel = getFeel();
     phSpringRef.current = new Spring(playhead, MOTION_PRESETS[feel].hl);
   }
@@ -61,7 +61,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   const endX = X(dur, pps, t0, 24, fps);
 
   // Direct DOM update function avoiding React re-render overhead at 60fps (Rule 4)
-  const updateNeedle = (f: number) => {
+  const updateNeedle = useCallback((f: number) => {
     const x = X(f, pps, t0, 24, fps);
     if (needleRef.current) {
       needleRef.current.style.transform = `translateX(${x.toFixed(2)}px)`;
@@ -87,7 +87,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
     if (miniNeedle && dur > 0) {
       miniNeedle.style.left = `${((f / dur) * 100).toFixed(2)}%`;
     }
-  };
+  }, [pps, t0, fps, laneWidth, dur]);
 
   useEffect(() => {
     const sp = phSpringRef.current;
@@ -117,7 +117,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       sp.jump(playhead);
       updateNeedle(playhead);
     }
-  }, [playhead, playheadGlide, pps, t0, fps, laneWidth, dur]);
+  }, [playhead, playheadGlide, updateNeedle]);
 
   const initX = X(playhead, pps, t0, 24, fps);
   const isPhVisible = initX >= -6 && initX <= laneWidth + 6;

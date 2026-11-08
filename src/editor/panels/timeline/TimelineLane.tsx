@@ -472,11 +472,13 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
         data-l={layer.id}
         data-selected={isSelected ? "true" : "false"}
         data-on={isSelected ? "" : undefined}
-        style={{
-          ["--lc" as any]: `var(--ll-label-${labelNum})`,
-          ["--lt" as any]: `var(--ll-label-${labelNum}-tint)`,
-          gridTemplateColumns: `var(--hw, ${trackWidth}px) minmax(0, 1fr)`,
-        }}
+        style={
+          {
+            "--lc": `var(--ll-label-${labelNum})`,
+            "--lt": `var(--ll-label-${labelNum}-tint)`,
+            gridTemplateColumns: `var(--hw, ${trackWidth}px) minmax(0, 1fr)`,
+          } as React.CSSProperties
+        }
         className={`tlrow lay ${isGroup ? "grp ll-grp" : ""} ${isChild ? "kid ll-kid" : ""} ${
           layer.mute ? "muted ll-muted ll:opacity-50" : ""
         } ${layer.lock ? "locked" : ""} ll-tlrow ll:relative ll:grid ll:h-8 ll:border-b ll:border-border ll:shrink-0 ll:transition-colors ${

@@ -79,10 +79,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const [internalTab, setInternalTab] = useState<CodeTab>("code");
   const activeTab = controlledTab ?? internalTab;
 
-  const handleTabSwitch = (t: CodeTab) => {
+  const handleTabSwitch = useCallback((t: CodeTab) => {
     if (onTabChange) onTabChange(t);
     else setInternalTab(t);
-  };
+  }, [onTabChange]);
 
   // Run (toolbar onRunCode -> runCode()): reveal the Console when the build line lands
   const runHandlerRef = useRef<() => void>(() => {});
@@ -222,7 +222,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFindOpen, activeTab]);
+  }, [isFindOpen, activeTab, handleTabSwitch]);
 
   const handleFindInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {

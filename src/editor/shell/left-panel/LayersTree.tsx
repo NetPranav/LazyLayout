@@ -183,13 +183,13 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   const hovSpringRef = useRef<Spring | null>(null);
   const bumpSpringRef = useRef<Spring | null>(null);
 
-  if (!selSpringRef.current) {
+  if (selSpringRef.current == null) {
     selSpringRef.current = new Spring(0, [0.26, 0.6]);
   }
-  if (!hovSpringRef.current) {
+  if (hovSpringRef.current == null) {
     hovSpringRef.current = new Spring(0, [0.22, 0.75]);
   }
-  if (!bumpSpringRef.current) {
+  if (bumpSpringRef.current == null) {
     bumpSpringRef.current = new Spring(0, [0.26, 0.5]);
   }
 

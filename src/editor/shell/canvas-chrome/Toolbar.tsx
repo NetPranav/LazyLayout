@@ -201,7 +201,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
   // Narrow canvas detection (prototype lift() lines 10582-10589)
   const checkLift = useCallback(() => {
-    const bar = resolvedToolbarRef.current;
+    const bar = externalToolbarRef?.current ?? internalToolbarRef.current;
     if (!bar) return;
     if (bar.classList.contains("sp-on") || bar.classList.contains("ll-sp-on") || isSpotlightOpen) {
       setIsNarrowLifted(false);
@@ -210,17 +210,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const host =
       bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
       (bar.offsetParent as HTMLElement | null);
-    const zoomEl = resolvedZoomBarRef.current ?? host?.querySelector<HTMLElement>(".ll-fzoom, .fzoom");
+    const zoomEl = externalZoomBarRef?.current ?? internalZoomBarRef.current ?? host?.querySelector<HTMLElement>(".ll-fzoom, .fzoom");
     const cw = host ? host.clientWidth : window.innerWidth;
     const zw = zoomEl && zoomEl.offsetParent !== null ? zoomEl.offsetWidth : 0;
     const bw = bar.offsetWidth;
     const shouldLift = (cw + bw) / 2 > cw - zw - 32;
     setIsNarrowLifted(shouldLift);
-  }, [isSpotlightOpen, resolvedToolbarRef, resolvedZoomBarRef]);
+  }, [isSpotlightOpen, externalToolbarRef, externalZoomBarRef]);
 
   useEffect(() => {
     checkLift();
-    const bar = resolvedToolbarRef.current;
+    const bar = externalToolbarRef?.current ?? internalToolbarRef.current;
     const host = bar?.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center');
 
     window.addEventListener("resize", checkLift);
@@ -233,7 +233,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       window.removeEventListener("resize", checkLift);
       ro?.disconnect();
     };
-  }, [checkLift, mode, resolvedToolbarRef]);
+  }, [checkLift, mode, externalToolbarRef]);
 
   // Mode switch morph animation matching P (lines 10613-10629)
   const prevModeRef = useRef<string>(mode);
@@ -242,7 +242,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const ghostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const snapLeaves = useCallback(() => {
-    const bar = resolvedToolbarRef.current;
+    const bar = externalToolbarRef?.current ?? internalToolbarRef.current;
     if (!bar || bar.classList.contains("sp-on") || bar.classList.contains("ll-sp-on")) return;
     const currentToolContainer = bar.querySelector(
       ".dtools, .mtools, .ctools, .ll-dtools, .ll-mtools, .ll-ctools"
@@ -262,7 +262,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       return clone;
     });
     lastWidthRef.current = bar.offsetWidth;
-  }, [resolvedToolbarRef]);
+  }, [externalToolbarRef]);
 
   useEffect(() => {
     snapLeaves();

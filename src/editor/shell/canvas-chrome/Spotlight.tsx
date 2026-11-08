@@ -34,7 +34,7 @@ import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
 import { applyFeel, getActivePreset } from "@/editor/motion/feel";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import { springAnim, cancelAll } from "@/editor/motion/ease";
-import { defaultHost } from "@/editor/motion/loop";
+import { useMounted } from "@/editor/components/useMounted";
 import {
   CANVAS_CHROME_SIZES,
   SPOTLIGHT_PREFIX_MAP,
@@ -164,8 +164,8 @@ function renderHighlighted(label: string, matchIndices?: number[]): React.ReactN
 export const Spotlight: React.FC<SpotlightProps> = ({
   open,
   onClose,
-  toolbarRef,
-  containerRef,
+  toolbarRef: _toolbarRef,
+  containerRef: _containerRef,
   theme = "paper",
   onThemeChange,
   motionFeel = "bouncy",
@@ -190,7 +190,17 @@ export const Spotlight: React.FC<SpotlightProps> = ({
   const [prefixMode, setPrefixMode] = useState<SpotlightCategory | "">("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentItems, setRecentItems] = useState<string[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useMounted();
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setQuery("");
+      setPrefixMode("");
+      setSelectedIndex(0);
+    }
+  }
 
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -219,7 +229,6 @@ export const Spotlight: React.FC<SpotlightProps> = ({
   }, []);
 
   useEffect(() => {
-    setIsMounted(true);
     return () => {
       clearTimers();
     };
@@ -387,6 +396,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
   // Layers from store
   const layerPool: SpotlightItem[] = useMemo(() => {
+    if (!open) return [];
     try {
       const doc = getDocument();
       const layers = doc?.layers ? Object.values(doc.layers) : [];
@@ -409,6 +419,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
   // Pages from store
   const pagePool: SpotlightItem[] = useMemo(() => {
+    if (!open) return [];
     try {
       const pagesObj = useProjectStore.getState().pages;
       const pages = pagesObj ? Object.values(pagesObj) : [];
@@ -660,18 +671,14 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     return sections.flatMap((sec) => sec.items);
   }, [sections]);
 
-  // Clamp selected index
-  useEffect(() => {
-    if (selectedIndex >= flatItems.length) {
-      setSelectedIndex(Math.max(0, flatItems.length - 1));
-    }
-  }, [flatItems.length, selectedIndex]);
+  // Clamped selected index derived from state
+  const safeSelectedIndex = flatItems.length > 0 ? Math.min(selectedIndex, flatItems.length - 1) : 0;
 
   // Update sliding highlight position with spring and stretch from preset table
   useEffect(() => {
     if (!open || !listRef.current || !highlightRef.current) return;
     const itemEls = listRef.current.querySelectorAll<HTMLElement>(".ll-sp-r, .sp-r");
-    const activeEl = itemEls[selectedIndex];
+    const activeEl = itemEls[safeSelectedIndex];
     const hl = highlightRef.current;
 
     if (!activeEl) {
@@ -713,7 +720,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         sc.scrollTop = y + h - sc.clientHeight + 6;
       }
     }
-  }, [open, selectedIndex, flatItems]);
+  }, [open, safeSelectedIndex, flatItems]);
 
   // Edge blur simulation on list scroll (exact algorithm from prototype bulge())
   const handleScroll = useCallback(() => {
@@ -753,7 +760,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
   // Morph open and close transitions on #tools
   const runOpen = useCallback(() => {
-    const bar = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+    const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;
     if (!bar) return;
 
     clearTimers();
@@ -762,12 +769,8 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     if (fldRef.current) cancelAll(fldRef.current);
 
     prevFocusRef.current = document.activeElement as HTMLElement | null;
-    setQuery("");
-    setPrefixMode("");
-    setSelectedIndex(0);
 
     const host =
-      containerRef?.current ??
       (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
       (bar.offsetParent as HTMLElement | null) ??
       document.body);
@@ -876,17 +879,16 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     later(() => {
       inputRef.current?.classList.add("car");
     }, reduced ? 100 : 350);
-  }, [toolbarRef, containerRef, clearTimers, later]);
+  }, [clearTimers, later]);
 
   const runClose = useCallback(() => {
-    const bar = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+    const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;
     if (!bar) return;
 
     clearTimers();
     inputRef.current?.classList.remove("car");
 
     const host =
-      containerRef?.current ??
       (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
       (bar.offsetParent as HTMLElement | null) ??
       document.body);
@@ -972,7 +974,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         prevFocusRef.current.focus();
       }
     }, Math.min(900, 420 + nk * preset.stagger));
-  }, [toolbarRef, containerRef, clearTimers, later]);
+  }, [clearTimers, later]);
 
   const prevOpenRef = useRef<boolean>(open);
   useEffect(() => {
@@ -990,10 +992,9 @@ export const Spotlight: React.FC<SpotlightProps> = ({
   useEffect(() => {
     if (!open) return;
     const handleResize = () => {
-      const bar = toolbarRef?.current ?? document.getElementById("tools");
+      const bar = typeof document !== "undefined" ? document.getElementById("tools") : null;
       if (!bar) return;
       const host =
-        containerRef?.current ??
         (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
         (bar.offsetParent as HTMLElement | null) ??
         document.body);
@@ -1008,7 +1009,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [open, toolbarRef, containerRef]);
+  }, [open]);
 
   // Execute selected item
   const handleRun = useCallback(
@@ -1043,7 +1044,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const current = flatItems[selectedIndex];
+      const current = flatItems[safeSelectedIndex];
       if (current) {
         handleRun(current);
       }
@@ -1054,7 +1055,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       let currentSectionIdx = 0;
       let accum = 0;
       for (let s = 0; s < sections.length; s++) {
-        if (selectedIndex >= accum && selectedIndex < accum + sections[s].items.length) {
+        if (safeSelectedIndex >= accum && safeSelectedIndex < accum + sections[s].items.length) {
           currentSectionIdx = s;
           break;
         }
@@ -1106,12 +1107,11 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     ? `Search ${SPOTLIGHT_NAMES[prefixMode]?.toLowerCase() || prefixMode}`
     : "Search or run a command";
 
-  const toolbarEl = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+  const toolbarEl = typeof document !== "undefined" ? document.getElementById("tools") : null;
   const hostEl =
-    containerRef?.current ??
-    (toolbarEl?.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+    toolbarEl?.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
     (toolbarEl?.offsetParent as HTMLElement | null) ??
-    (typeof document !== "undefined" ? document.body : null));
+    (typeof document !== "undefined" ? document.body : null);
 
   const isLifted = toolbarEl?.classList.contains("tb-hi") || toolbarEl?.classList.contains("ll-tb-hi");
   const baseBottom = isLifted ? 72 : 16;
@@ -1209,7 +1209,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
                     {section.items.map((item, itemOffset) => {
                       const absoluteIdx = sectionStartIdx + itemOffset;
-                      const isSelected = absoluteIdx === selectedIndex;
+                      const isSelected = absoluteIdx === safeSelectedIndex;
                       const isBig = Boolean(section.big);
 
                       return (
@@ -1221,7 +1221,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
                           aria-disabled={item.disabled}
                           onClick={() => handleRun(item)}
                           onPointerMove={() => {
-                            if (selectedIndex !== absoluteIdx) {
+                            if (safeSelectedIndex !== absoluteIdx) {
                               setSelectedIndex(absoluteIdx);
                             }
                           }}

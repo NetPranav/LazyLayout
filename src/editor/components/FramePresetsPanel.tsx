@@ -123,7 +123,7 @@ export function FramePresetsPanel({
 
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-  }, [anchorRef, anchorEl]);
+  }, [anchorRef, anchorEl, triggerRef]);
 
   // Open & Close animations
   useEffect(() => {
@@ -225,7 +225,7 @@ export function FramePresetsPanel({
         setIsRendered(false);
       };
     }
-  }, [open, isRendered, anchorRef, anchorEl, updatePosition]);
+  }, [open, isRendered, anchorRef, anchorEl, triggerRef, updatePosition]);
 
   // Outside click & Escape
   useEffect(() => {
@@ -281,7 +281,7 @@ export function FramePresetsPanel({
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, isRendered, onClose, onPick, anchorRef, anchorEl, activePresetIndex, visiblePresets, updatePosition]);
+  }, [open, isRendered, onClose, onPick, anchorRef, anchorEl, triggerRef, activePresetIndex, visiblePresets, updatePosition]);
 
   const handleCustomWChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value.replace(/\D/g, ""), 10) || 0;

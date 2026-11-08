@@ -59,7 +59,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
 
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
-  const swatchBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
 
   const syncPrimaryToStore = (updatedFills: FillItem[]) => {
     const visibleFill = updatedFills.find((f) => !f.hidden);
@@ -146,20 +146,17 @@ export const FillSection: React.FC<FillSectionProps> = ({
 
             {/* Lead swatch button: opens ColorPicker */}
             <button
-              ref={(el) => {
-                swatchBtnRefs.current[fill.id] = el;
-              }}
               type="button"
               data-lead
               aria-label={`Fill ${fillNum} settings`}
               aria-haspopup="dialog"
               aria-expanded={activeColorPickerId === fill.id || isOpen}
               title={`Fill ${fillNum} color`}
-              onClick={() =>
-                setActiveColorPickerId(
-                  activeColorPickerId === fill.id ? null : fill.id
-                )
-              }
+              onClick={(e) => {
+                const isClosing = activeColorPickerId === fill.id;
+                setActiveColorPickerId(isClosing ? null : fill.id);
+                setActiveColorPickerEl(isClosing ? null : e.currentTarget);
+              }}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
               <span
@@ -304,13 +301,16 @@ export const FillSection: React.FC<FillSectionProps> = ({
           <ColorPicker
             open={Boolean(activeColorPickerId)}
             value={`#${activeFill.hex}`}
-            anchorRef={{ current: swatchBtnRefs.current[activeFill.id] }}
+            anchorEl={activeColorPickerEl}
             onChange={(hex) =>
               handleUpdateFill(activeFill.id, {
                 hex: hex.replace(/^#/, "").toUpperCase(),
               })
             }
-            onClose={() => setActiveColorPickerId(null)}
+            onClose={() => {
+              setActiveColorPickerId(null);
+              setActiveColorPickerEl(null);
+            }}
           />
         );
       })()}

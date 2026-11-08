@@ -108,6 +108,14 @@ export function ColorPicker({
   const [mode, setMode] = useState<ColorMode>("Solid");
   const [model, setModel] = useState<ColorModel>("Hex");
   const [hsv, setHsv] = useState(initHsv);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    const parsed = parseCssColor(value);
+    if (parsed) {
+      setHsv(rgb2hsv(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]));
+    }
+  }
   const [alpha, setAlpha] = useState(externalOpacity / 100);
   const [linkedToken, setLinkedToken] = useState<string | null>(null);
   const [imageFit, setImageFit] = useState<ImageFit>("Fill");
@@ -136,14 +144,6 @@ export function ColorPicker({
   const rgb = hsv2rgb(hsv.h, hsv.s, hsv.v);
   const hex = rgb2hex(rgb);
 
-  // Sync external changes
-  useEffect(() => {
-    const parsed = parseCssColor(value);
-    if (parsed) {
-      const nextHsv = rgb2hsv(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]);
-      setHsv(nextHsv);
-    }
-  }, [value]);
 
   // Positioning
   const updatePosition = useCallback(() => {
@@ -183,7 +183,7 @@ export function ColorPicker({
     el.style.left = `${left}px`;
     el.style.top = `${fittedTop}px`;
     el.style.maxHeight = `${maxHeight}px`;
-  }, [anchorRef, anchorEl]);
+  }, [anchorRef, anchorEl, triggerRef]);
 
   // Open & Close animations with retargeting
   useEffect(() => {
@@ -336,7 +336,7 @@ export function ColorPicker({
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, isRendered, onClose, anchorRef, anchorEl, updatePosition]);
+  }, [open, isRendered, onClose, anchorRef, anchorEl, triggerRef, updatePosition]);
 
   // Emit color change
   const emitColorChange = useCallback(
@@ -346,7 +346,7 @@ export function ColorPicker({
       onChange?.(cleanHex);
       onChangeOpacity?.(Math.round(newAlpha * 100));
     },
-    [onChange, onChangeOpacity]
+    [onChange, onChangeOpacity, setLinkedToken]
   );
 
   // Saturation & Brightness Dragging

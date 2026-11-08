@@ -146,7 +146,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
       }, duration);
       return () => clearTimeout(t);
     }
-  }, [isOpen, isRendered]);
+  }, [closePopover, isOpen, isRendered, popoverId]);
 
   // Focus the first control in the dialog when it opens (Item 9)
   useEffect(() => {

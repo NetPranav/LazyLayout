@@ -143,12 +143,12 @@ export function F6Demos() {
         <Menu
           open={activeMenu !== null}
           onClose={() => setActiveMenu(null)}
-          anchorEl={
+          anchorRef={
             activeMenu === "file"
-              ? fileBtnRef.current
+              ? fileBtnRef
               : activeMenu === "edit"
-              ? editBtnRef.current
-              : viewBtnRef.current
+              ? editBtnRef
+              : viewBtnRef
           }
         >
           {activeMenu === "file" && (
@@ -282,12 +282,12 @@ export function F6Demos() {
         <OptionsPopover
           open={activeOptionsSection !== null}
           onClose={() => setActiveOptionsSection(null)}
-          anchorEl={
+          anchorRef={
             activeOptionsSection === "fill"
-              ? fillBtnRef.current
+              ? fillBtnRef
               : activeOptionsSection === "stroke"
-              ? strokeBtnRef.current
-              : effectsBtnRef.current
+              ? strokeBtnRef
+              : effectsBtnRef
           }
           title={
             activeOptionsSection === "fill"
@@ -372,7 +372,7 @@ export function F6Demos() {
               });
             }}
             onClose={() => setActiveColorIndex(null)}
-            anchorEl={swatchRefs[activeColorIndex]?.current}
+            anchorRef={swatchRefs[activeColorIndex]}
           />
         )}
       </section>

@@ -160,7 +160,7 @@ export const ThemeTokensBody: React.FC = () => {
   const [surfaceHex, setSurfaceHex] = useState("F4F3EF");
   const [textHex, setTextHex] = useState("22231E");
   const [activePicker, setActivePicker] = useState<string | null>(null);
-  const tokenRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [activePickerEl, setActivePickerEl] = useState<HTMLElement | null>(null);
   const [radius, setRadius] = useState(8);
   const [themeFont, setThemeFont] = useState("Geist");
   const [typeScale, setTypeScale] = useState("1.25");
@@ -178,13 +178,14 @@ export const ThemeTokensBody: React.FC = () => {
         <div key={row.label} className="drow ll-drow ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center ll:w-full">
           <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
             <button
-              ref={(el) => {
-                tokenRefs.current[row.label] = el;
-              }}
               type="button"
               aria-label={`${row.label} color picker`}
               title={`Choose ${row.label.toLowerCase()} color`}
-              onClick={() => setActivePicker(activePicker === row.label ? null : row.label)}
+              onClick={(e) => {
+                const isClosing = activePicker === row.label;
+                setActivePicker(isClosing ? null : row.label);
+                setActivePickerEl(isClosing ? null : e.currentTarget);
+              }}
               className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
             />
@@ -213,9 +214,12 @@ export const ThemeTokensBody: React.FC = () => {
           <ColorPicker
             open={Boolean(activePicker)}
             value={`#${activeRow.hex}`}
-            anchorRef={{ current: tokenRefs.current[activeRow.label] }}
+            anchorEl={activePickerEl}
             onChange={(hex) => activeRow.set(hex.replace(/^#/, "").toUpperCase())}
-            onClose={() => setActivePicker(null)}
+            onClose={() => {
+              setActivePicker(null);
+              setActivePickerEl(null);
+            }}
           />
         );
       })()}

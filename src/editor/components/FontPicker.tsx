@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useId, useCallback } from "react";
+import React, { useRef, useEffect, useState, useId, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Search, Check, Plus } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
@@ -94,24 +94,28 @@ export function FontPicker({
   const [uploadedFonts, setUploadedFonts] = useState<FontEntry[]>([]);
   const [focusedFamily, setFocusedFamily] = useState<string>(value);
 
-  // Combine project fonts with uploads
-  const allProjectFonts = [...uploadedFonts, ...DEFAULT_PROJECT_FONTS];
-
   // Filter groups
   const q = searchQuery.trim().toLowerCase();
-  const filterEntry = (entry: FontEntry): boolean => {
-    if (activeCategory !== "All" && entry.category !== activeCategory) {
-      return false;
-    }
-    if (!q) return true;
-    return matchHighlight(entry.name, q) !== null;
-  };
 
-  const projectGroup = allProjectFonts.filter(filterEntry);
-  const systemGroup = SYSTEM_FONTS.filter(filterEntry);
-  const libraryGroup = LIBRARY_FONTS.filter(filterEntry);
-
-  const flatVisible = [...projectGroup, ...systemGroup, ...libraryGroup];
+  const { projectGroup, systemGroup, libraryGroup, flatVisible } = useMemo(() => {
+    const filterEntry = (entry: FontEntry): boolean => {
+      if (activeCategory !== "All" && entry.category !== activeCategory) {
+        return false;
+      }
+      if (!q) return true;
+      return matchHighlight(entry.name, q) !== null;
+    };
+    const allProj = [...uploadedFonts, ...DEFAULT_PROJECT_FONTS];
+    const proj = allProj.filter(filterEntry);
+    const sys = SYSTEM_FONTS.filter(filterEntry);
+    const lib = LIBRARY_FONTS.filter(filterEntry);
+    return {
+      projectGroup: proj,
+      systemGroup: sys,
+      libraryGroup: lib,
+      flatVisible: [...proj, ...sys, ...lib],
+    };
+  }, [activeCategory, q, uploadedFonts]);
 
   // Position calculation
   const updatePosition = useCallback(() => {
@@ -151,7 +155,7 @@ export function FontPicker({
     el.style.left = `${left}px`;
     el.style.top = `${fittedTop}px`;
     el.style.maxHeight = `${maxHeight}px`;
-  }, [anchorRef, anchorEl]);
+  }, [anchorRef, anchorEl, triggerRef]);
 
   // Open & Close animations with retargeting
   useEffect(() => {
@@ -365,7 +369,7 @@ export function FontPicker({
       document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, isRendered, onClose, onPreview, onChange, focusedFamily, flatVisible, anchorRef, anchorEl, updatePosition]);
+  }, [open, isRendered, onClose, onPreview, onChange, focusedFamily, flatVisible, anchorRef, anchorEl, triggerRef, updatePosition]);
 
   // File upload handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

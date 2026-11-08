@@ -303,7 +303,7 @@ export const Select: React.FC<SelectProps> = ({
         triggerRef.current.focus({ preventScroll: true });
       }
     }, exitDuration);
-  }, []);
+  }, [selectId]);
 
   const openDropdown = useCallback((kb = false) => {
     if (disabled || isOpen) return;
@@ -444,10 +444,12 @@ export const Select: React.FC<SelectProps> = ({
       }
     });
   }, [
+    closeDropdown,
     disabled,
     isOpen,
     isSearchEnabled,
     selectedIndex,
+    selectId,
     applyBulge,
     getMotion,
   ]);

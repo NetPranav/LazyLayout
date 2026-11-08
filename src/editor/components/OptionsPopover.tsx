@@ -249,7 +249,7 @@ export function OptionsPopover({
         setIsRendered(false);
       };
     }
-  }, [open, isRendered, anchorRef, updatePosition]);
+  }, [open, isRendered, anchorRef, triggerRef, onClose, optionsUniqueId, updatePosition]);
 
   // Outside pointerdown and Escape handler
   useEffect(() => {
@@ -287,7 +287,7 @@ export function OptionsPopover({
       document.removeEventListener("keydown", handleKeyDown, true);
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, isRendered, onClose, anchorRef, updatePosition]);
+  }, [open, isRendered, onClose, anchorRef, triggerRef, updatePosition]);
 
   if (!mounted || !isRendered) return null;
 

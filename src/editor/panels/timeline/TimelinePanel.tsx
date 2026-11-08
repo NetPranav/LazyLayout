@@ -170,7 +170,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     return () => {
       unregister();
     };
-  }, [playing, fps, loop, dir, speed, shuttle]);
+  }, [playing, fps, loop, dir, speed, shuttle, laneAvailableWidth, pps, t0]);
 
   // Panel Height Splitter Drag Handle (#bsplit)
   const handleSplitterPointerDown = (e: React.PointerEvent) => {
@@ -394,11 +394,13 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       aria-label="Motion Timeline"
       data-testid="bottom-panel"
       onKeyDown={handleKeyDown}
-      style={{
-        height: localHeight,
-        ["--hw" as any]: `${trackWidth}px`,
-        ...style,
-      }}
+      style={
+        {
+          height: localHeight,
+          "--hw": `${trackWidth}px`,
+          ...style,
+        } as React.CSSProperties
+      }
       className={`ll-timeline ll-bottom ll:flex ll:flex-col ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none ll:min-w-0 ll:outline-none ll:relative ${className}`}
     >
       {/* 0. Top Height Splitter (#bsplit) */}
@@ -456,10 +458,12 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
           {/* Content Container */}
           <div
             id="tlc"
-            style={{
-              ["--gp" as any]: `${(majorOf(pps, fps) / fps) * pps}px`,
-              ["--go" as any]: `${X(0, pps, t0, 24, fps)}px`,
-            }}
+            style={
+              {
+                "--gp": `${(majorOf(pps, fps) / fps) * pps}px`,
+                "--go": `${X(0, pps, t0, 24, fps)}px`,
+              } as React.CSSProperties
+            }
             className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col"
           >
             {/* Sticky Ruler Row (32px) */}
