@@ -7,6 +7,7 @@ import {
   useMotionModel,
   motionActions,
   isGrp,
+  X,
   Fx,
   snapT,
   DUR,
@@ -150,6 +151,16 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       }
 
       motionActions.setPlayhead(nextT);
+
+      // Auto-scroll when zoomed during playback (matching P line 4788)
+      const currentZoom = useMotionModel.getState().zoom;
+      if (currentZoom > 1) {
+        const x = X(nextT, pps, t0, 24, fps);
+        if (x > laneAvailableWidth - 24 || x < 24) {
+          const newT0 = nextT / fps - 0.1 * ((laneAvailableWidth - 48) / pps);
+          motionActions.setT0(newT0);
+        }
+      }
     });
 
     return () => {
@@ -244,10 +255,10 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         motionActions.setPlaying(!useMotionModel.getState().playing);
       } else if (key === "Home") {
         e.preventDefault();
-        motionActions.setPlayhead(wa.a);
+        motionActions.seek(wa.a, true);
       } else if (key === "End") {
         e.preventDefault();
-        motionActions.setPlayhead(wa.b);
+        motionActions.seek(wa.b, true);
       } else if (key === "ArrowLeft") {
         e.preventDefault();
         if (e.altKey) motionActions.jumpKey(-1);
@@ -358,11 +369,10 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
       {/* 2. Combined Timeline Scroller Area */}
       <div
-        ref={scrollRef}
         onWheel={handleWheel}
         onPointerMove={handleLanePointerMove}
         onPointerLeave={handleLanePointerLeave}
-        className="ll-tl ll:flex-1 ll:min-h-0 ll:relative ll:overflow-y-auto ll:overflow-x-hidden"
+        className="ll-tl ll:flex-1 ll:min-h-0 ll:relative ll:select-none"
       >
         {/* Track Column Resizer Divider Handle */}
         <div
@@ -375,126 +385,136 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
           className="ll-hwsizer ll:absolute ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-col-resize ll:z-30 ll:hover:bg-primary/20"
         />
 
-        {/* Content Container */}
-        <div className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col">
-          {/* Sticky Ruler Row (32px) */}
-          <TimelineRuler
-            laneWidth={laneAvailableWidth}
-            pps={pps}
-            trackWidth={trackWidth}
-            onContextMenu={(e, frame) => {
-              setContextMenu({
-                kind: "ruler",
-                x: e.clientX,
-                y: e.clientY,
-                frame,
-              });
-            }}
-          />
-
-          {/* Main Content: Graph View or Tracks View */}
-          {view === "graph" ? (
-            <TimelineCurveGraph
-              trackWidth={trackWidth}
+        {/* Tracks Scroller (.ll-tls) */}
+        <div
+          ref={scrollRef}
+          className="ll-tls ll:absolute ll:inset-0 ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain"
+        >
+          {/* Content Container */}
+          <div className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col">
+            {/* Sticky Ruler Row (32px) */}
+            <TimelineRuler
               laneWidth={laneAvailableWidth}
               pps={pps}
-              selectedLayerId={selectedIds[0]}
+              trackWidth={trackWidth}
+              onSnapFlash={(f) => {
+                setSnapFlashFrame(f);
+                setTimeout(() => setSnapFlashFrame(null), 600);
+              }}
+              onContextMenu={(e, frame) => {
+                setContextMenu({
+                  kind: "ruler",
+                  x: e.clientX,
+                  y: e.clientY,
+                  frame,
+                });
+              }}
             />
-          ) : (
-            <div role="rowgroup" className="ll:flex ll:flex-col">
-              {/* Group: Hero frame track */}
-              {treeLayers.hero && (
+
+            {/* Main Content: Graph View or Tracks View */}
+            {view === "graph" ? (
+              <TimelineCurveGraph
+                trackWidth={trackWidth}
+                laneWidth={laneAvailableWidth}
+                pps={pps}
+                selectedLayerId={selectedIds[0]}
+              />
+            ) : (
+              <div role="rowgroup" className="ll:flex ll:flex-col">
+                {/* Group: Hero frame track */}
+                {treeLayers.hero && (
+                  <div
+                    style={{
+                      opacity: hasSelection && !selectedIds.includes("hero") ? 0.45 : 1,
+                      transition: "opacity 0.2s ease-out",
+                    }}
+                  >
+                    <TimelineLane
+                      key={treeLayers.hero.id}
+                      layer={treeLayers.hero}
+                      childLayers={treeLayers.children}
+                      trackWidth={trackWidth}
+                      pps={pps}
+                      laneWidth={laneAvailableWidth}
+                      isSelected={selectedIds.includes("hero")}
+                      onSelectLayer={(id) => selectElement(id, "element")}
+                      onOpenContextMenu={(ctx) => setContextMenu(ctx)}
+                    />
+                  </div>
+                )}
+
+                {/* Children rows (if hero group is expanded) */}
+                {(!treeLayers.hero || treeLayers.hero.gopen) &&
+                  treeLayers.children.map((layer) => {
+                    const isSelected = selectedIds.includes(layer.id);
+                    const isDimmed = hasSelection && !isSelected;
+
+                    return (
+                      <div
+                        key={layer.id}
+                        style={{
+                          opacity: isDimmed ? 0.45 : 1,
+                          transition: "opacity 0.2s ease-out",
+                        }}
+                      >
+                        <TimelineLane
+                          layer={layer}
+                          isChild={true}
+                          trackWidth={trackWidth}
+                          pps={pps}
+                          laneWidth={laneAvailableWidth}
+                          isSelected={isSelected}
+                          onSelectLayer={(id) => selectElement(id, "element")}
+                          onOpenContextMenu={(ctx) => setContextMenu(ctx)}
+                        />
+                      </div>
+                    );
+                  })}
+
+                {/* Drop Zone: Drag a layer here to animate it */}
                 <div
-                  style={{
-                    opacity: hasSelection && !selectedIds.includes("hero") ? 0.45 : 1,
-                    transition: "opacity 0.2s ease-out",
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDropOver(true);
                   }}
+                  onDragLeave={() => setIsDropOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDropOver(false);
+                    const layerId = e.dataTransfer.getData("text/plain");
+                    if (layerId) {
+                      motionActions.addProperty(layerId, "opacity");
+                      selectElement(layerId, "element");
+                    }
+                  }}
+                  style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
+                  className="ll-tldz ll:grid ll:min-h-14 ll:shrink-0"
                 >
-                  <TimelineLane
-                    key={treeLayers.hero.id}
-                    layer={treeLayers.hero}
-                    childLayers={treeLayers.children}
-                    trackWidth={trackWidth}
-                    pps={pps}
-                    laneWidth={laneAvailableWidth}
-                    isSelected={selectedIds.includes("hero")}
-                    onSelectLayer={(id) => selectElement(id, "element")}
-                    onOpenContextMenu={(ctx) => setContextMenu(ctx)}
-                  />
-                </div>
-              )}
-
-              {/* Children rows (if hero group is expanded) */}
-              {(!treeLayers.hero || treeLayers.hero.gopen) &&
-                treeLayers.children.map((layer) => {
-                  const isSelected = selectedIds.includes(layer.id);
-                  const isDimmed = hasSelection && !isSelected;
-
-                  return (
-                    <div
-                      key={layer.id}
-                      style={{
-                        opacity: isDimmed ? 0.45 : 1,
-                        transition: "opacity 0.2s ease-out",
-                      }}
-                    >
-                      <TimelineLane
-                        layer={layer}
-                        isChild={true}
-                        trackWidth={trackWidth}
-                        pps={pps}
-                        laneWidth={laneAvailableWidth}
-                        isSelected={isSelected}
-                        onSelectLayer={(id) => selectElement(id, "element")}
-                        onOpenContextMenu={(ctx) => setContextMenu(ctx)}
-                      />
-                    </div>
-                  );
-                })}
-
-              {/* Drop Zone: Drag a layer here to animate it */}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDropOver(true);
-                }}
-                onDragLeave={() => setIsDropOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDropOver(false);
-                  const layerId = e.dataTransfer.getData("text/plain");
-                  if (layerId) {
-                    motionActions.addProperty(layerId, "opacity");
-                    selectElement(layerId, "element");
-                  }
-                }}
-                style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
-                className="ll-tldz ll:grid ll:min-h-14 ll:shrink-0"
-              >
-                <div />
-                <div
-                  className={`ll-dzr ll:m-2 ll:flex ll:items-center ll:justify-center ll:border ll:border-dashed ll:rounded-md ll:font-sans ll:text-xs ll:transition-colors ${
-                    isDropOver
-                      ? "ll:border-primary ll:bg-surface-hover ll:text-primary"
-                      : "ll:border-transparent ll:text-muted"
-                  }`}
-                >
-                  Drag a layer here to animate it
+                  <div />
+                  <div
+                    className={`ll-dzr ll:m-2 ll:flex ll:items-center ll:justify-center ll:border ll:border-dashed ll:rounded-md ll:font-sans ll:text-xs ll:transition-colors ${
+                      isDropOver
+                        ? "ll:border-primary ll:bg-surface-hover ll:text-primary"
+                        : "ll:border-transparent ll:text-muted"
+                    }`}
+                  >
+                    Drag a layer here to animate it
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Spring-Driven Playhead and Needle Overlay */}
-          <TimelinePlayhead
-            laneWidth={laneAvailableWidth}
-            trackWidth={trackWidth}
-            pps={pps}
-            hoverX={hoverX}
-            hoverFrame={hoverFrame}
-            snapFlashFrame={snapFlashFrame}
-          />
+            )}
+          </div>
         </div>
+
+        {/* Spring-Driven Playhead and Needle Overlay (Direct sibling of .ll-tls, sticky across vertical scrolling) */}
+        <TimelinePlayhead
+          laneWidth={laneAvailableWidth}
+          trackWidth={trackWidth}
+          pps={pps}
+          hoverX={hoverX}
+          hoverFrame={hoverFrame}
+          snapFlashFrame={snapFlashFrame}
+        />
       </div>
 
       {/* 3. Footer (28px) */}

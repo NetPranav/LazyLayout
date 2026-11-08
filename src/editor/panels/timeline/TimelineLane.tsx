@@ -256,7 +256,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     window.addEventListener("pointerup", onPointerUp);
   };
 
-  // Keyframe drag handler
+  // Keyframe drag handler (supports single and multi-selection drag with snapping)
   const handleKeyframePointerDown = (
     e: React.PointerEvent,
     keyframe: Keyframe,
@@ -266,26 +266,148 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
-    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+    const mod = e.shiftKey || e.metaKey || e.ctrlKey;
+    const currentSelected = useMotionModel.getState().selectedKeys;
+    const wasSelected = !!currentSelected[keyframe.id];
+
+    if (mod) {
       motionActions.selectKeys([keyframe.id], true);
-    } else {
+    } else if (!wasSelected) {
       motionActions.selectKeys([keyframe.id], false);
     }
 
     const startX = e.clientX;
+    let didMove = false;
+
+    // Gather all selected keys across all comp layers
+    const selMap = useMotionModel.getState().selectedKeys;
+    const allSelectedList: { id: string; t: number }[] = [];
+    comp.layers.forEach((l) => {
+      if (l.lock) return;
+      l.tr.forEach((t) => {
+        t.keys.forEach((k) => {
+          if (selMap[k.id]) {
+            allSelectedList.push({ id: k.id, t: k.t });
+          }
+        });
+      });
+    });
+
+    const isMulti = allSelectedList.length > 1;
+    const baseTimes = new Map<string, number>(allSelectedList.map((item) => [item.id, item.t]));
     const initialT = keyframe.t;
+    const minBaseT = Math.min(...allSelectedList.map((item) => item.t));
+    const maxBaseT = Math.max(...allSelectedList.map((item) => item.t));
 
     const onPointerMove = (ev: PointerEvent) => {
       const deltaPx = ev.clientX - startX;
+      if (Math.abs(deltaPx) > 2) didMove = true;
+
       const deltaF = Math.round((deltaPx / pps) * fps);
-      const rawT = initialT + deltaF;
-      const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, playhead);
-      motionActions.setKeyTime(keyframe.id, res.snapped);
+
+      if (isMulti) {
+        const rawT = initialT + deltaF;
+        const res = snapT(rawT, comp, snap, pps, fps, selMap, undefined, false, playhead);
+        let effectiveDelta = res.snapped - initialT;
+        // Clamp so no key goes < 0 or > comp.dur
+        effectiveDelta = Math.max(-minBaseT, Math.min(comp.dur - maxBaseT, effectiveDelta));
+
+        allSelectedList.forEach((item) => {
+          const orig = baseTimes.get(item.id) ?? item.t;
+          motionActions.setKeyTime(item.id, orig + effectiveDelta);
+        });
+      } else {
+        const rawT = initialT + deltaF;
+        const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, playhead);
+        motionActions.setKeyTime(keyframe.id, Math.max(0, Math.min(comp.dur, res.snapped)));
+      }
     };
 
     const onPointerUp = () => {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+
+      if (!didMove && !mod && allSelectedList.length > 1) {
+        motionActions.selectKeys([keyframe.id], false);
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
+  // Marquee drag handler on property lane
+  const handleLanePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest(".ll-kfb")) return;
+    e.preventDefault();
+
+    const mod = e.shiftKey || e.metaKey || e.ctrlKey;
+    const baseSelected = mod ? { ...useMotionModel.getState().selectedKeys } : {};
+
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+
+    let mqEl: HTMLDivElement | null = null;
+    let didMove = false;
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const x = Math.min(startClientX, ev.clientX);
+      const y = Math.min(startClientY, ev.clientY);
+      const w = Math.abs(ev.clientX - startClientX);
+      const h = Math.abs(ev.clientY - startClientY);
+
+      if (w > 3 || h > 3) didMove = true;
+      if (!didMove) return;
+
+      if (!mqEl) {
+        mqEl = document.createElement("div");
+        mqEl.className = "mq";
+        mqEl.style.position = "fixed";
+        mqEl.style.zIndex = "40";
+        mqEl.style.pointerEvents = "none";
+        mqEl.style.border = "1px solid var(--ll-border-strong, var(--ll-border-primary))";
+        mqEl.style.backgroundColor = "var(--ll-surface-hover)";
+        mqEl.style.opacity = "0.75";
+        document.body.appendChild(mqEl);
+      }
+
+      mqEl.style.left = `${x}px`;
+      mqEl.style.top = `${y}px`;
+      mqEl.style.width = `${w}px`;
+      mqEl.style.height = `${h}px`;
+
+      const allKfElements = document.querySelectorAll<HTMLElement>(".ll-kfb");
+      const nextSelected: Record<string, boolean> = { ...baseSelected };
+
+      allKfElements.forEach((kEl) => {
+        const kId = kEl.dataset.keyId;
+        if (!kId) return;
+        const rect = kEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const hit = cx >= x && cx <= x + w && cy >= y && cy <= y + h;
+        if (hit) {
+          nextSelected[kId] = true;
+        } else if (!mod) {
+          delete nextSelected[kId];
+        }
+      });
+
+      motionActions.selectKeys(Object.keys(nextSelected), false);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+
+      if (mqEl) {
+        mqEl.remove();
+        mqEl = null;
+      }
+
+      if (!didMove && !mod) {
+        motionActions.clearKeySelection();
+      }
     };
 
     window.addEventListener("pointermove", onPointerMove);
@@ -670,8 +792,9 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                 </div>
               </div>
 
-              {/* Property Lane Column with Keyframes and segments */}
+              {/* Property Lane Column with Keyframes, segments, and marquee selection */}
               <div
+                onPointerDown={handleLanePointerDown}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -741,14 +864,20 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                         left: `${x}px`,
                       }}
                       title={`${spec.n} at ${k.t}`}
-                      className={`ll-kfb ll:absolute ll:top-1/2 ll:w-4 ll:h-4 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:flex ll:items-center ll:justify-center ll:cursor-grab ll:active:cursor-grabbing ll:z-10`}
+                      className={`ll-kfb ${isKeySelected ? "sel" : ""} ll:absolute ll:top-1/2 ll:w-4 ll:h-4 ll:-translate-x-1/2 ll:-translate-y-1/2 ll:flex ll:items-center ll:justify-center ll:cursor-grab ll:active:cursor-grabbing ll:z-10`}
                     >
                       <i
-                        className={`ll:w-2 ll:h-2 ll:rotate-45 ll:rounded-2xs ll:transition-transform ${
-                          isKeySelected
-                            ? "ll:bg-control-active ll:scale-125 ll:ring-2 ll:ring-control-active"
-                            : "ll:bg-secondary ll:hover:bg-primary"
-                        }`}
+                        style={{
+                          width: isKeySelected ? "11px" : "9px",
+                          height: isKeySelected ? "11px" : "9px",
+                          backgroundColor: isKeySelected
+                            ? "var(--ll-control-primary-bg)"
+                            : "var(--ll-text-secondary)",
+                          boxShadow: isKeySelected
+                            ? "0 0 0 2px var(--ll-surface-panel), 0 0 0 3px var(--ll-control-primary-bg)"
+                            : "none",
+                        }}
+                        className="ll:rotate-45 ll:pointer-events-none ll:transition-colors hover:ll:bg-primary"
                       />
                     </div>
                   );

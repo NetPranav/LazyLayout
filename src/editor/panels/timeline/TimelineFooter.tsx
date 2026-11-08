@@ -227,6 +227,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
 
         {/* Mini-map playhead line */}
         <i
+          id="tmp"
           style={{ left: `${playheadPct}%` }}
           className="ll-tmp ll:absolute ll:top-0 ll:bottom-0 ll:w-px ll:bg-primary ll:pointer-events-none"
         />

@@ -17,6 +17,7 @@ import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, Spri
 export interface MotionState {
   comp: Composition;
   playhead: number;
+  playheadGlide: boolean;
   playing: boolean;
   selectedKeys: Record<string, true>;
   selectedClip: number;
@@ -46,6 +47,7 @@ let keyClipboard: { p: PropId; k: Keyframe }[] | null = null;
 export const useMotionModel = create<MotionState>(() => ({
   comp: defaultComposition(),
   playhead: 72,
+  playheadGlide: false,
   playing: false,
   selectedKeys: {},
   selectedClip: 0,
@@ -98,9 +100,16 @@ function ensureLayer(comp: Composition, id: string): MotionLayer {
 }
 
 export const motionActions = {
-  setPlayhead(t: number): void {
+  setPlayhead(t: number, glide = false): void {
     useMotionModel.setState((s) => ({
       playhead: clampN(Math.round(t), 0, s.comp.dur),
+      playheadGlide: glide,
+    }));
+  },
+  seek(t: number, glide = false): void {
+    useMotionModel.setState((s) => ({
+      playhead: clampN(Math.round(t), 0, s.comp.dur),
+      playheadGlide: glide,
     }));
   },
   setPlaying(playing: boolean): void {
@@ -496,6 +505,7 @@ export const motionActions = {
   stepFrame(delta: number): void {
     useMotionModel.setState((s) => ({
       playhead: clampN(s.playhead + delta, 0, s.comp.dur),
+      playheadGlide: true,
       playing: false,
       shuttle: 0,
     }));
@@ -516,7 +526,7 @@ export const motionActions = {
       }
     }
     if (best !== null) {
-      useMotionModel.setState({ playhead: best, playing: false, shuttle: 0 });
+      useMotionModel.setState({ playhead: best, playheadGlide: true, playing: false, shuttle: 0 });
     }
   },
   shuttle(dir: 1 | -1): void {
