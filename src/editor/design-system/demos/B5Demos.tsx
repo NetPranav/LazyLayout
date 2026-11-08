@@ -148,9 +148,7 @@ export function B5Demos() {
           <div className="ll:p-2 ll:text-micro ll:font-mono ll:text-muted">
             Narrow container (384px wide)
           </div>
-          <div className="ll-fbar ll-ftool ll:absolute ll:bottom-toolbar-lift ll:left-1/2 ll:-translate-x-1/2 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft">
-            <Toolbar mode="design" activeTool="select" />
-          </div>
+          <Toolbar mode="design" activeTool="select" />
         </div>
       </div>
     </div>

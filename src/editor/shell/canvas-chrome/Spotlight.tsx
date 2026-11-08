@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useId,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   CommandGlyph as CommandIcon,
@@ -30,8 +31,9 @@ import { getDocument } from "@/core/store/documentState";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
-import { applyFeel } from "@/editor/motion/feel";
+import { applyFeel, getActivePreset } from "@/editor/motion/feel";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
+import { springAnim, cancelAll } from "@/editor/motion/ease";
 import { defaultHost } from "@/editor/motion/loop";
 import {
   CANVAS_CHROME_SIZES,
@@ -192,33 +194,40 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     "Duplicate",
     "Insert",
   ]);
+  const [isMounted, setIsMounted] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLElement>(null);
+  const fldRef = useRef<HTMLDivElement>(null);
+  const resRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
+  const prevHlTopRef = useRef<number>(0);
+  const prevHlHRef = useRef<number>(32);
+  const animTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const inputId = useId();
 
-  // Reset query and focus on open
-  useEffect(() => {
-    if (open) {
-      prevFocusRef.current = document.activeElement as HTMLElement | null;
-      setQuery("");
-      setPrefixMode("");
-      setSelectedIndex(0);
+  const clearTimers = useCallback(() => {
+    animTimersRef.current.forEach(clearTimeout);
+    animTimersRef.current = [];
+  }, []);
 
-      const unreg = defaultHost.register(() => {
-        unreg();
-        inputRef.current?.focus();
-      });
-      return () => unreg();
-    } else {
-      if (prevFocusRef.current && document.contains(prevFocusRef.current)) {
-        prevFocusRef.current.focus();
-      }
-    }
-  }, [open]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const t = setTimeout(() => {
+      animTimersRef.current = animTimersRef.current.filter((x) => x !== t);
+      fn();
+    }, ms);
+    animTimersRef.current.push(t);
+    return t;
+  }, []);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      clearTimers();
+    };
+  }, [clearTimers]);
 
   // Global keydown listeners for Ctrl+K, Cmd+K, and Escape
   useEffect(() => {
@@ -658,27 +667,46 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     }
   }, [flatItems.length, selectedIndex]);
 
-  // Update sliding highlight position
+  // Update sliding highlight position with spring and stretch from preset table
   useEffect(() => {
     if (!open || !listRef.current || !highlightRef.current) return;
-    const itemEls = listRef.current.querySelectorAll<HTMLElement>(".ll-sp-r");
+    const itemEls = listRef.current.querySelectorAll<HTMLElement>(".ll-sp-r, .sp-r");
     const activeEl = itemEls[selectedIndex];
     const hl = highlightRef.current;
 
     if (!activeEl) {
-      hl.style.opacity = "0";
+      hl.classList.remove("show");
       return;
     }
 
-    hl.style.opacity = "1";
-    hl.style.height = `${activeEl.offsetHeight}px`;
-    hl.style.transform = `translateY(${activeEl.offsetTop}px)`;
+    const y = activeEl.offsetTop;
+    const h = activeEl.offsetHeight;
+
+    hl.style.height = `${h}px`;
+    hl.style.transform = `translateY(${y}px)`;
+
+    const preset = getActivePreset();
+    if (!prefersReducedMotion() && hl.classList.contains("show")) {
+      const dy = prevHlTopRef.current - y;
+      const dist = Math.abs(dy);
+      if (dist > 0.5 || prevHlHRef.current !== h) {
+        springAnim(hl, [{ translate: `0 ${dy}px` }, { translate: "0 0" }], preset.hl[0], preset.hl[1]);
+        springAnim(
+          hl,
+          [{ scale: `1 ${1 + Math.min(0.35, dist * preset.stretch * 0.12)}` }, { scale: "1 1" }],
+          preset.hl[0],
+          preset.hl[1]
+        );
+      }
+    }
+
+    hl.classList.add("show");
+    prevHlTopRef.current = y;
+    prevHlHRef.current = h;
 
     // Scroll container to keep active row in view
     if (scrollRef.current) {
       const sc = scrollRef.current;
-      const y = activeEl.offsetTop;
-      const h = activeEl.offsetHeight;
       if (y < sc.scrollTop) {
         sc.scrollTop = y - 6;
       } else if (y + h > sc.scrollTop + sc.clientHeight) {
@@ -697,7 +725,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     const st = sc.scrollTop;
     const max = sc.scrollHeight - h;
     const c = st + h / 2;
-    const rows = listRef.current.querySelectorAll<HTMLElement>(".ll-sp-r");
+    const rows = listRef.current.querySelectorAll<HTMLElement>(".ll-sp-r, .sp-r");
 
     if (max <= 2) {
       rows.forEach((r) => {
@@ -722,6 +750,265 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       r.style.filter = blurAmount > 0.05 ? `blur(${blurAmount.toFixed(2)}px)` : "";
     });
   }, []);
+
+  // Morph open and close transitions on #tools
+  const runOpen = useCallback(() => {
+    const bar = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+    if (!bar) return;
+
+    clearTimers();
+    cancelAll(bar);
+    if (resRef.current) cancelAll(resRef.current);
+    if (fldRef.current) cancelAll(fldRef.current);
+
+    prevFocusRef.current = document.activeElement as HTMLElement | null;
+    setQuery("");
+    setPrefixMode("");
+    setSelectedIndex(0);
+
+    const host =
+      containerRef?.current ??
+      (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+      (bar.offsetParent as HTMLElement | null) ??
+      document.body);
+
+    const w0 = bar.offsetWidth;
+    const hostWidth = host ? host.clientWidth : window.innerWidth;
+    const W = Math.max(280, Math.min(560, hostWidth - 32));
+
+    bar.classList.add("sp-on", "ll-sp-on");
+    bar.style.width = `${W}px`;
+
+    const preset = getActivePreset();
+    const reduced = prefersReducedMotion();
+
+    if (reduced) {
+      bar.classList.add("sp-f", "ll-sp-f");
+      if (resRef.current) {
+        const isLifted = bar.classList.contains("tb-hi") || bar.classList.contains("ll-tb-hi");
+        const baseBottom = isLifted ? 72 : 16;
+        resRef.current.style.bottom = `${baseBottom + bar.offsetHeight + 8}px`;
+        resRef.current.style.width = `${W}px`;
+        resRef.current.hidden = false;
+        resRef.current.style.height = "auto";
+      }
+      inputRef.current?.focus();
+      return;
+    }
+
+    springAnim(bar, [{ width: `${w0}px` }, { width: `${W}px` }], preset.shape[0], preset.shape[1]);
+
+    const kids = Array.from(bar.querySelectorAll<HTMLElement>("button, .gsep, .ll-gsep")).filter(
+      (el) => !el.closest(".sp-fld, .ll-sp-fld")
+    );
+    const n = kids.length;
+    kids.forEach((k, i) => {
+      cancelAll(k);
+      k.animate(
+        [
+          { opacity: 1, scale: "1", filter: "blur(0px)" },
+          { opacity: 0, scale: "0.7", filter: "blur(4px)" },
+        ],
+        { duration: 140, delay: i * 12, fill: "forwards", easing: "ease-out" }
+      );
+    });
+
+    const zoom = host.querySelector<HTMLElement>(".fzoom, .ll-fzoom");
+    if (zoom) {
+      const dx = zoom.offsetWidth + 40;
+      cancelAll(zoom);
+      zoom.style.pointerEvents = "none";
+      springAnim(
+        zoom,
+        [{ translate: "0 0", opacity: 1 }, { translate: `${dx}px 0`, opacity: 0 }],
+        preset.shape[0],
+        preset.shape[1],
+        { fill: "forwards" }
+      );
+    }
+
+    later(() => {
+      bar.classList.add("sp-f", "ll-sp-f");
+      if (fldRef.current) {
+        fldRef.current.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: "ease-out" });
+      }
+      inputRef.current?.focus();
+    }, reduced ? 60 : Math.min(260, 150 + n * 10));
+
+    later(() => {
+      if (!resRef.current) return;
+      const res = resRef.current;
+      const isLifted = bar.classList.contains("tb-hi") || bar.classList.contains("ll-tb-hi");
+      const baseBottom = isLifted ? 72 : 16;
+      res.style.bottom = `${baseBottom + bar.offsetHeight + 8}px`;
+      res.style.width = `${W}px`;
+      res.hidden = false;
+
+      const sc = scrollRef.current;
+      const maxH = Math.max(120, Math.min(360, host.clientHeight - (baseBottom + bar.offsetHeight + 8) - 16));
+      if (sc) {
+        sc.style.maxHeight = `${maxH}px`;
+      }
+      const H = sc ? sc.offsetHeight + 2 : 280;
+      res.style.height = `${H}px`;
+
+      springAnim(
+        res,
+        [{ opacity: 0, scale: "0.94", translate: "0 10px" }, { opacity: 1, scale: "1", translate: "0 0" }],
+        preset.shape[0],
+        preset.shape[1],
+        { fill: "backwards" }
+      );
+      springAnim(res, [{ height: "0px" }, { height: `${H}px` }], preset.shape[0], preset.shape[1]);
+
+      const rows = res.querySelectorAll<HTMLElement>(".ll-sp-r, .sp-r");
+      rows.forEach((r, i) => {
+        springAnim(
+          r,
+          [{ opacity: 0, scale: String(preset.rowScale), translate: "0 6px" }, { opacity: 1, scale: "1", translate: "0 0" }],
+          preset.rows[0],
+          preset.rows[1],
+          { delay: Math.min(i, 10) * preset.stagger, fill: "backwards" }
+        );
+      });
+    }, reduced ? 60 : 90);
+
+    later(() => {
+      inputRef.current?.classList.add("car");
+    }, reduced ? 100 : 350);
+  }, [toolbarRef, containerRef, clearTimers, later]);
+
+  const runClose = useCallback(() => {
+    const bar = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+    if (!bar) return;
+
+    clearTimers();
+    inputRef.current?.classList.remove("car");
+
+    const host =
+      containerRef?.current ??
+      (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+      (bar.offsetParent as HTMLElement | null) ??
+      document.body);
+
+    const preset = getActivePreset();
+    const reduced = prefersReducedMotion();
+
+    if (reduced) {
+      if (resRef.current) resRef.current.hidden = true;
+      bar.classList.remove("sp-on", "ll-sp-on", "sp-f", "ll-sp-f", "sp-clo", "ll-sp-clo");
+      bar.style.width = "";
+      if (prevFocusRef.current && document.contains(prevFocusRef.current)) {
+        prevFocusRef.current.focus();
+      }
+      return;
+    }
+
+    if (resRef.current) {
+      resRef.current.animate(
+        [{ opacity: 1, scale: "1", translate: "0 0" }, { opacity: 0, scale: "0.97", translate: "0 6px" }],
+        { duration: 150, easing: "ease-out", fill: "forwards" }
+      );
+    }
+
+    bar.classList.add("sp-clo", "ll-sp-clo");
+    bar.classList.remove("sp-f", "ll-sp-f");
+
+    if (fldRef.current) {
+      fldRef.current.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" });
+    }
+
+    const cur = bar.offsetWidth;
+    bar.style.width = "";
+    const wN = bar.offsetWidth;
+    bar.style.width = `${wN}px`;
+
+    springAnim(bar, [{ width: `${cur}px` }, { width: `${wN}px` }], 0.3, 1);
+
+    const kids = Array.from(bar.querySelectorAll<HTMLElement>("button, .gsep, .ll-gsep")).filter(
+      (el) => !el.closest(".sp-fld, .ll-sp-fld")
+    );
+    const nk = kids.length;
+    kids.forEach((k, i) => {
+      cancelAll(k);
+      springAnim(
+        k,
+        [{ opacity: 0, scale: "0.7" }, { opacity: 1, scale: "1" }],
+        preset.pop[0],
+        preset.pop[1],
+        { delay: 70 + i * preset.stagger, fill: "backwards" }
+      );
+      k.animate(
+        [{ filter: "blur(4px)" }, { filter: "blur(0px)" }],
+        { duration: 180, delay: 70 + i * preset.stagger, easing: "ease-out", fill: "backwards" }
+      );
+    });
+
+    const zoom = host.querySelector<HTMLElement>(".fzoom, .ll-fzoom");
+    if (zoom) {
+      cancelAll(zoom);
+      zoom.style.pointerEvents = "";
+      const dx = zoom.offsetWidth + 40;
+      springAnim(zoom, [{ translate: `${dx}px 0`, opacity: 0 }, { translate: "0 0", opacity: 1 }], preset.shape[0], preset.shape[1]);
+    }
+
+    later(() => {
+      bar.classList.remove("sp-clo", "ll-sp-clo");
+      if (fldRef.current) cancelAll(fldRef.current);
+    }, 120);
+
+    later(() => {
+      if (resRef.current) {
+        resRef.current.hidden = true;
+        cancelAll(resRef.current);
+      }
+    }, 170);
+
+    later(() => {
+      bar.classList.remove("sp-on", "ll-sp-on");
+      bar.style.width = "";
+      cancelAll(bar);
+      if (prevFocusRef.current && document.contains(prevFocusRef.current)) {
+        prevFocusRef.current.focus();
+      }
+    }, Math.min(900, 420 + nk * preset.stagger));
+  }, [toolbarRef, containerRef, clearTimers, later]);
+
+  const prevOpenRef = useRef<boolean>(open);
+  useEffect(() => {
+    if (open !== prevOpenRef.current) {
+      if (open) {
+        runOpen();
+      } else {
+        runClose();
+      }
+      prevOpenRef.current = open;
+    }
+  }, [open, runOpen, runClose]);
+
+  // Window resize handler while open
+  useEffect(() => {
+    if (!open) return;
+    const handleResize = () => {
+      const bar = toolbarRef?.current ?? document.getElementById("tools");
+      if (!bar) return;
+      const host =
+        containerRef?.current ??
+        (bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+        (bar.offsetParent as HTMLElement | null) ??
+        document.body);
+      const W = Math.max(280, Math.min(560, host.clientWidth - 32));
+      bar.style.width = `${W}px`;
+      if (resRef.current) {
+        resRef.current.style.width = `${W}px`;
+        const isLifted = bar.classList.contains("tb-hi") || bar.classList.contains("ll-tb-hi");
+        const baseBottom = isLifted ? 72 : 16;
+        resRef.current.style.bottom = `${baseBottom + bar.offsetHeight + 8}px`;
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [open, toolbarRef, containerRef]);
 
   // Execute selected item
   const handleRun = useCallback(
@@ -764,7 +1051,6 @@ export const Spotlight: React.FC<SpotlightProps> = ({
       e.preventDefault();
       if (sections.length <= 1) return;
 
-      // Jump to next/prev section header
       let currentSectionIdx = 0;
       let accum = 0;
       for (let s = 0; s < sections.length; s++) {
@@ -814,33 +1100,78 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     setSelectedIndex(0);
   };
 
-  if (!open) return null;
+  if (!isMounted) return null;
 
   const currentPlaceholder = prefixMode
     ? `Search ${SPOTLIGHT_NAMES[prefixMode]?.toLowerCase() || prefixMode}`
     : "Search or run a command";
 
-  // Calculate position: above toolbar or centered
-  const toolbarEl = toolbarRef?.current;
-  const bottomOffset = toolbarEl ? toolbarEl.offsetHeight + 24 : 76;
+  const toolbarEl = toolbarRef?.current ?? (typeof document !== "undefined" ? document.getElementById("tools") : null);
+  const hostEl =
+    containerRef?.current ??
+    (toolbarEl?.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+    (toolbarEl?.offsetParent as HTMLElement | null) ??
+    (typeof document !== "undefined" ? document.body : null));
+
+  const isLifted = toolbarEl?.classList.contains("tb-hi") || toolbarEl?.classList.contains("ll-tb-hi");
+  const baseBottom = isLifted ? 72 : 16;
+  const bottomOffset = toolbarEl ? baseBottom + toolbarEl.offsetHeight + 8 : 74;
   const spotlightWidth = typeof window !== "undefined"
     ? Math.max(CANVAS_CHROME_SIZES.spotlightWidthMin, Math.min(CANVAS_CHROME_SIZES.spotlightWidthMax, window.innerWidth - 32))
     : CANVAS_CHROME_SIZES.spotlightWidthMax;
 
-  return (
+  // The Search Field is portaled directly into the toolbar element (#tools), morphing it!
+  const searchFieldContent = (
+    <div ref={fldRef} className="sp-fld ll-sp-fld">
+      <Icon icon={Search} size={CANVAS_CHROME_SIZES.iconMd} className="ll:text-muted" />
+
+      {prefixMode && (
+        <span className="sp-chip ll-sp-chip">
+          {SPOTLIGHT_NAMES[prefixMode] || prefixMode}
+        </span>
+      )}
+
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="text"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls="splist"
+        aria-autocomplete="list"
+        aria-haspopup="listbox"
+        aria-label="Search commands, layers, pages"
+        placeholder={currentPlaceholder}
+        autoComplete="off"
+        spellCheck={false}
+        value={query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+      />
+
+      <kbd>esc</kbd>
+    </div>
+  );
+
+  // The Results panel is placed in the host canvas directly above #tools
+  const resultsContent = (
     <>
       {/* Background click-away handler */}
-      <div
-        className="ll:fixed ll:inset-0 ll:z-20 ll:bg-transparent ll:cursor-default"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {open && (
+        <div
+          className="ll:fixed ll:inset-0 ll:z-20 ll:bg-transparent ll:cursor-default"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Results popover (.ll-sp-res) positioned above the toolbar */}
       <div
-        className="ll-sp-res"
+        ref={resRef}
+        className="sp-res ll-sp-res"
         role="dialog"
         aria-label="Spotlight search results"
+        hidden={!open}
         style={{
           bottom: `${bottomOffset}px`,
           width: `${spotlightWidth}px`,
@@ -849,7 +1180,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="ll-sp-sc"
+          className="sp-sc ll-sp-sc"
           style={{ maxHeight: `${CANVAS_CHROME_SIZES.spotlightMaxHeight}px` }}
         >
           <div
@@ -857,10 +1188,10 @@ export const Spotlight: React.FC<SpotlightProps> = ({
             id="splist"
             role="listbox"
             aria-label="Results"
-            className="ll-sp-in"
+            className="sp-in ll-sp-in"
           >
             {/* Sliding highlight */}
-            <i ref={highlightRef} className="ll-sp-hl" aria-hidden="true" />
+            <i ref={highlightRef} className="sp-hl ll-sp-hl" aria-hidden="true" />
 
             {/* Sections & Rows */}
             {sections.length > 0 && flatItems.length > 0 ? (
@@ -872,7 +1203,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
                 return (
                   <div key={section.name} role="presentation">
-                    <div className="ll-sp-h" role="presentation">
+                    <div className="sp-h ll-sp-h" role="presentation">
                       {section.name}
                     </div>
 
@@ -894,24 +1225,24 @@ export const Spotlight: React.FC<SpotlightProps> = ({
                               setSelectedIndex(absoluteIdx);
                             }
                           }}
-                          className={`ll-sp-r ${isBig ? "big" : ""} ${
+                          className={`sp-r ll-sp-r ${isBig ? "big" : ""} ${
                             isSelected ? "on" : ""
                           } ${item.disabled ? "disabled" : ""}`}
                         >
-                          <span className="ll-sp-ic">
+                          <span className="sp-ic ll-sp-ic">
                             <Icon
                               icon={item.icon}
                               size={isBig ? CANVAS_CHROME_SIZES.iconLg : CANVAS_CHROME_SIZES.iconMd}
                             />
                           </span>
 
-                          <span className="ll-sp-l">
+                          <span className="sp-l ll-sp-l">
                             {renderHighlighted(item.label, item.matchIndices)}
                           </span>
 
-                          <span className="ll-sp-m">
+                          <span className="sp-m ll-sp-m">
                             {item.disabledReason ? (
-                              <span className="ll-sp-reason" title={item.disabledReason}>
+                              <span className="sp-reason ll-sp-reason" title={item.disabledReason}>
                                 Not available
                               </span>
                             ) : item.shortcut ? (
@@ -927,7 +1258,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
                 );
               })
             ) : (
-              <div className="ll-sp-none" role="status">
+              <div className="sp-none ll-sp-none" role="status">
                 No results for “{query}”
                 <span>Try &gt; for commands, @ for layers, # for pages</span>
               </div>
@@ -935,42 +1266,13 @@ export const Spotlight: React.FC<SpotlightProps> = ({
           </div>
         </div>
       </div>
+    </>
+  );
 
-      {/* Floating Spotlight Search Field placed inside or over the center toolbar */}
-      <div
-        className="ll-fbar ll-ftool ll-sp-bar ll:absolute ll:bottom-4 ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:items-center ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft"
-        style={{ width: `${spotlightWidth}px` }}
-      >
-        <div className="ll-sp-fld">
-          <Icon icon={Search} size={CANVAS_CHROME_SIZES.iconMd} className="ll:text-muted" />
-
-          {prefixMode && (
-            <span className="ll-sp-chip">
-              {SPOTLIGHT_NAMES[prefixMode] || prefixMode}
-            </span>
-          )}
-
-          <input
-            ref={inputRef}
-            id={inputId}
-            type="text"
-            role="combobox"
-            aria-expanded={true}
-            aria-controls="splist"
-            aria-autocomplete="list"
-            aria-haspopup="listbox"
-            aria-label="Search commands, layers, pages"
-            placeholder={currentPlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-            value={query}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-          />
-
-          <kbd>esc</kbd>
-        </div>
-      </div>
+  return (
+    <>
+      {toolbarEl && createPortal(searchFieldContent, toolbarEl)}
+      {hostEl ? createPortal(resultsContent, hostEl) : resultsContent}
     </>
   );
 };

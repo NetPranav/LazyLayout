@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import {
   MousePointer2,
   Hand,
@@ -22,7 +22,6 @@ import {
   Redo2,
   Columns3,
   ChevronDown,
-  Check,
   type LucideIcon,
   type LucideProps,
 } from "lucide-react";
@@ -31,6 +30,9 @@ import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { getActivePreset } from "@/editor/motion/feel";
+import { springAnim } from "@/editor/motion/ease";
+import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import {
   CANVAS_CHROME_SIZES,
   EASING_OPTIONS,
@@ -42,6 +44,8 @@ import type { CanvasTool, ShapeTool } from "./types";
 
 export interface ToolbarProps {
   mode?: "design" | "motion" | "code";
+  toolbarRef?: React.RefObject<HTMLDivElement | null>;
+  zoomBarRef?: React.RefObject<HTMLDivElement | null>;
   activeTool?: CanvasTool | string;
   onSelectTool?: (tool: CanvasTool) => void;
   activeShape?: ShapeTool | string;
@@ -135,6 +139,8 @@ const SHAPES: ReadonlyArray<{
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   mode = "design",
+  toolbarRef: externalToolbarRef,
+  zoomBarRef: externalZoomBarRef,
   activeTool = "select",
   onSelectTool,
   activeShape = "box",
@@ -161,10 +167,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRedo,
   panelsCollapsed = false,
   onTogglePanels,
-  onPreview,
-  isPlaying,
-  onTogglePlay,
-  onAddKeyframe,
+  onPreview: _onPreview,
+  isPlaying: _isPlaying,
+  onTogglePlay: _onTogglePlay,
+  onAddKeyframe: _onAddKeyframe,
   activeEasing = "Ease out",
   onSelectEasing,
   onSplitClip,
@@ -172,8 +178,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onExportOption,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const zoomBarRef = useRef<HTMLDivElement>(null);
+  const internalToolbarRef = useRef<HTMLDivElement>(null);
+  const resolvedToolbarRef = externalToolbarRef ?? internalToolbarRef;
+
+  const internalZoomBarRef = useRef<HTMLDivElement>(null);
+  const resolvedZoomBarRef = externalZoomBarRef ?? internalZoomBarRef;
 
   const shapeButtonRef = useRef<HTMLButtonElement | null>(null);
   const easingButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -190,22 +199,173 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const [isRunningCode, setIsRunningCode] = useState(false);
 
   // Narrow canvas detection (prototype lift() lines 10582-10589)
-  useEffect(() => {
-    const checkLift = () => {
-      const parent = toolbarRef.current?.parentElement;
-      if (!parent || !toolbarRef.current || !zoomBarRef.current) return;
-      const cw = parent.clientWidth;
-      const bw = toolbarRef.current.offsetWidth;
-      const zw = zoomBarRef.current.offsetWidth;
-      // If (canvasWidth + toolbarWidth)/2 > canvasWidth - zoomWidth - 32, toolbar rides above zoom bar
-      const shouldLift = (cw + bw) / 2 > cw - zw - 32;
-      setIsNarrowLifted(shouldLift);
-    };
+  const checkLift = useCallback(() => {
+    const bar = resolvedToolbarRef.current;
+    if (!bar) return;
+    if (bar.classList.contains("sp-on") || bar.classList.contains("ll-sp-on") || isSpotlightOpen) {
+      setIsNarrowLifted(false);
+      return;
+    }
+    const host =
+      bar.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center') ??
+      (bar.offsetParent as HTMLElement | null);
+    const zoomEl = resolvedZoomBarRef.current ?? host?.querySelector<HTMLElement>(".ll-fzoom, .fzoom");
+    const cw = host ? host.clientWidth : window.innerWidth;
+    const zw = zoomEl && zoomEl.offsetParent !== null ? zoomEl.offsetWidth : 0;
+    const bw = bar.offsetWidth;
+    const shouldLift = (cw + bw) / 2 > cw - zw - 32;
+    setIsNarrowLifted(shouldLift);
+  }, [isSpotlightOpen, resolvedToolbarRef, resolvedZoomBarRef]);
 
+  useEffect(() => {
     checkLift();
+    const bar = resolvedToolbarRef.current;
+    const host = bar?.closest<HTMLElement>('[data-center="true"], main[role="main"], #center, .ll-center');
+
     window.addEventListener("resize", checkLift);
-    return () => window.removeEventListener("resize", checkLift);
-  }, [mode, isSpotlightOpen]);
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && host) {
+      ro = new ResizeObserver(() => checkLift());
+      ro.observe(host);
+    }
+    return () => {
+      window.removeEventListener("resize", checkLift);
+      ro?.disconnect();
+    };
+  }, [checkLift, mode, resolvedToolbarRef]);
+
+  // Mode switch morph animation matching P (lines 10613-10629)
+  const prevModeRef = useRef<string>(mode);
+  const lastWidthRef = useRef<number>(0);
+  const snapKidsRef = useRef<HTMLElement[]>([]);
+  const ghostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const snapLeaves = useCallback(() => {
+    const bar = resolvedToolbarRef.current;
+    if (!bar || bar.classList.contains("sp-on") || bar.classList.contains("ll-sp-on")) return;
+    const currentToolContainer = bar.querySelector(
+      ".dtools, .mtools, .ctools, .ll-dtools, .ll-mtools, .ll-ctools"
+    );
+    if (!currentToolContainer) return;
+    const buttons = Array.from(currentToolContainer.children) as HTMLElement[];
+    snapKidsRef.current = buttons.map((k) => {
+      const clone = k.cloneNode(true) as HTMLElement;
+      clone.removeAttribute("id");
+      clone.removeAttribute("title");
+      clone.removeAttribute("aria-label");
+      Array.from(clone.querySelectorAll("*")).forEach((n) => {
+        n.removeAttribute("id");
+        n.removeAttribute("title");
+        n.removeAttribute("aria-label");
+      });
+      return clone;
+    });
+    lastWidthRef.current = bar.offsetWidth;
+  }, [resolvedToolbarRef]);
+
+  useEffect(() => {
+    snapLeaves();
+  }, [snapLeaves]);
+
+  useLayoutEffect(() => {
+    if (prevModeRef.current === mode) {
+      lastWidthRef.current = resolvedToolbarRef.current?.offsetWidth ?? 0;
+      return;
+    }
+
+    const bar = resolvedToolbarRef.current;
+    if (!bar) return;
+
+    // Close any open popovers
+    setIsShapeMenuOpen(false);
+    setIsEasingMenuOpen(false);
+    setIsExportMenuOpen(false);
+
+    if (prefersReducedMotion()) {
+      prevModeRef.current = mode;
+      checkLift();
+      return;
+    }
+
+    const w0 = lastWidthRef.current || bar.offsetWidth;
+    const oldSnap = snapKidsRef.current;
+
+    // Clean up any existing ghost
+    if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current);
+    bar.querySelectorAll(".tbghost, .ll-tbghost").forEach((g) => g.remove());
+
+    // Create ghost with old buttons fading out
+    if (oldSnap.length > 0) {
+      const gh = document.createElement("div");
+      gh.className = "tbghost ll-tbghost";
+      gh.setAttribute("aria-hidden", "true");
+      oldSnap.forEach((c) => gh.appendChild(c));
+      bar.appendChild(gh);
+
+      Array.from(gh.children).forEach((c, i) => {
+        (c as HTMLElement).animate(
+          [
+            { opacity: 1, scale: "1", filter: "blur(0px)" },
+            { opacity: 0, scale: "0.7", filter: "blur(4px)" },
+          ],
+          { duration: 130, delay: i * 10, easing: "ease-out", fill: "forwards" }
+        );
+      });
+
+      ghostTimerRef.current = setTimeout(() => {
+        gh.remove();
+      }, 130 + oldSnap.length * 10 + 40);
+    }
+
+    prevModeRef.current = mode;
+
+    // Pop in new buttons and spring width
+    requestAnimationFrame(() => {
+      if (!bar) return;
+      const w1 = bar.offsetWidth;
+      const preset = getActivePreset();
+
+      // Animate width
+      bar.style.overflow = "hidden";
+      const wAnim = springAnim(
+        bar,
+        [{ width: `${w0}px` }, { width: `${w1}px` }],
+        preset.shape[0],
+        preset.shape[1]
+      );
+      if (wAnim) {
+        wAnim.onfinish = () => {
+          bar.style.overflow = "";
+        };
+        wAnim.oncancel = () => {
+          bar.style.overflow = "";
+        };
+      }
+
+      // Pop in new buttons
+      const newToolContainer = bar.querySelector(
+        ".dtools, .mtools, .ctools, .ll-dtools, .ll-mtools, .ll-ctools"
+      );
+      if (newToolContainer) {
+        const newButtons = Array.from(newToolContainer.children) as HTMLElement[];
+        newButtons.forEach((k, i) => {
+          springAnim(
+            k,
+            [
+              { opacity: 0, scale: "0.6", filter: "blur(4px)" },
+              { opacity: 1, scale: "1", filter: "blur(0px)" },
+            ],
+            preset.pop[0],
+            preset.pop[1],
+            { delay: 60 + i * 14, fill: "backwards" }
+          );
+        });
+      }
+
+      checkLift();
+      setTimeout(snapLeaves, 700);
+    });
+  }, [mode, checkLift, snapLeaves, resolvedToolbarRef]);
 
   // WAI-ARIA Toolbar roving arrow-key navigation
   const handleKeyDown = useCallback(
@@ -264,14 +424,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     >
       {/* Center Floating Toolbar - 16px above bottom edge, or lifted to 72px when narrow */}
       <div
-        ref={toolbarRef}
+        ref={resolvedToolbarRef}
         id="tools"
         role="toolbar"
         aria-label="Canvas tools"
         data-toolbar="main"
-        className={`ll-fbar ll-ftool ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none ll:transition-all ll:duration-200 ${
-          isNarrowLifted ? "ll-tb-hi ll:bottom-toolbar-lift" : "ll:bottom-4"
-        } ${isSpotlightOpen ? "ll:opacity-0 ll:pointer-events-none" : ""}`}
+        className={`ll-fbar fbar ll-ftool ftool ${
+          isNarrowLifted ? "ll-tb-hi tb-hi" : ""
+        }`}
       >
         {/* DESIGN MODE TOOLBAR: Select, Hand, Frame, Shape ▾ (Pen inside), Text, Insert, AI */}
         {mode === "design" && (
@@ -334,13 +494,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               title="Shape"
               aria-haspopup="menu"
               aria-expanded={isShapeMenuOpen}
+              aria-pressed={activeTool === "shape"}
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => {
                 onSelectTool?.("shape");
                 setIsShapeMenuOpen((prev) => !prev);
               }}
-              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
             >
               <Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />
               <Icon
@@ -366,7 +527,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
             {/* Separator */}
             <span
-              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              className="ll-gsep gsep"
               aria-hidden="true"
             />
 
@@ -437,7 +598,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
             {/* Separator */}
             <span
-              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              className="ll-gsep gsep"
               aria-hidden="true"
             />
 
@@ -481,7 +642,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => setIsEasingMenuOpen((prev) => !prev)}
-              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
             >
               <Icon icon={Spline} size={CANVAS_CHROME_SIZES.iconLg} />
               <Icon
@@ -527,7 +688,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
             {/* Separator */}
             <span
-              className="ll-gsep gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+              className="ll-gsep gsep"
               aria-hidden="true"
             />
 
@@ -557,7 +718,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={() => setIsExportMenuOpen((prev) => !prev)}
-              className="ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
+              className="ib dd ll-dd ll:h-10 ll:px-2 ll:flex ll:items-center ll:gap-1"
             >
               <Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />
               <Icon
@@ -571,15 +732,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         )}
       </div>
 
-      {/* Right Floating Zoom & History Controls - slides aside when Spotlight is open */}
+      {/* Right Floating Zoom & History Controls - slides aside when Spotlight is open via spring */}
       <div
-        ref={zoomBarRef}
+        ref={resolvedZoomBarRef}
         role="toolbar"
         aria-label="Zoom and Viewport actions"
         data-toolbar="zoom"
-        className={`ll-fbar ll-fzoom ll:absolute ll:bottom-4 ll:right-4 ll:z-20 ll:flex ll:items-center ll:gap-0.5 ll:p-1 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:select-none ll:transition-all ll:duration-200 ${
-          isSpotlightOpen ? "ll:translate-x-60 ll:opacity-0 ll:pointer-events-none" : ""
-        }`}
+        className="ll-fbar fbar ll-fzoom fzoom"
       >
         {/* Toggle Panels */}
         <IconButton
@@ -622,7 +781,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Separator */}
         <span
-          className="ll-gsep ll:w-px ll:h-5 ll:mx-2 ll:bg-border ll:shrink-0"
+          className="ll-gsep gsep"
           aria-hidden="true"
         />
 

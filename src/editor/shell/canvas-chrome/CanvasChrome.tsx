@@ -513,23 +513,12 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
-        e.preventDefault();
-        handleToggleSpotlight();
-        return;
-      }
-
       if (isInput) return;
 
       if (e.key === "i" || e.key === "I") {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
           handleToggleInsert();
-        }
-      } else if (e.key === "/") {
-        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-          e.preventDefault();
-          handleToggleSpotlight();
         }
       } else if (e.key === "f" || e.key === "F") {
         if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
@@ -595,13 +584,14 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
   return (
     <main
+      id="center"
       role="main"
       aria-label="Canvas"
       data-center="true"
       data-testid="canvas-chrome"
       onContextMenu={handleContextMenu}
-      className={`ll-center ll:relative ll:overflow-hidden ll:w-full ll:h-full ll:bg-surface-canvas ll:select-none ${
-        !showRulers ? "ll-noruler" : ""
+      className={`ll-center center ll:relative ll:overflow-hidden ll:w-full ll:h-full ll:bg-surface-canvas ll:select-none ${
+        !showRulers ? "ll-noruler noruler" : ""
       }`}
     >
       <div className="ll-cv ll:relative ll:w-full ll:h-full ll:overflow-hidden">
@@ -610,7 +600,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
         {/* Stage wrapper containing stage and artboard slot */}
         <div
-          className={`ll-stagewrap ll:absolute ll:overflow-hidden ${
+          className={`ll-stagewrap stagewrap ll:absolute ll:overflow-hidden ${
             showRulers
               ? "ll:left-ruler ll:top-ruler ll:right-0 ll:bottom-0"
               : "ll:inset-0"
@@ -620,13 +610,13 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
           <div
             data-stage="canvas"
             data-inspect={inspectMode ? "true" : undefined}
-            className={`ll-stage ll:absolute ll:inset-0 ${inspectMode ? "ll-inspect" : ""}`}
+            className={`ll-stage stage ll:absolute ll:inset-0 ${inspectMode ? "ll-inspect" : ""}`}
             style={stageBackgroundStyle}
           >
             {/* Pixel Grid Overlay (.ll-pxgrid) */}
             {pixelGrid && (
               <div
-                className="ll-pxgrid ll:absolute ll:inset-0 ll:pointer-events-none ll:opacity-25"
+                className="ll-pxgrid pxgrid ll:absolute ll:inset-0 ll:pointer-events-none ll:opacity-25"
                 style={{
                   backgroundImage:
                     "linear-gradient(var(--ll-border-color) var(--ll-spacing-px), transparent var(--ll-spacing-px)), linear-gradient(90deg, var(--ll-border-color) var(--ll-spacing-px), transparent var(--ll-spacing-px))",
@@ -644,6 +634,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
       {/* Floating Toolbar & Zoom Bar */}
       <Toolbar
+        toolbarRef={toolbarRef}
         mode={mode}
         activeTool={activeTool}
         onSelectTool={setActiveTool}

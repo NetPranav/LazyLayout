@@ -1,6 +1,121 @@
-/* === lane: B5 chrome - Spotlight styles === */
+/* === lane: B5 chrome - Toolbar and Spotlight morph styles === */
 
-.ll-sp-fld {
+/* Floating toolbars base (Apple-level layout, solid neutrals, hairline borders, soft shadow) */
+.ll-fbar,
+.fbar {
+  position: absolute;
+  bottom: var(--ll-spacing-4);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--ll-b5-space-toolbar-gap);
+  padding: var(--ll-spacing-1);
+  background: var(--ll-surface-raised);
+  border: var(--ll-spacing-px) solid var(--ll-border-color);
+  border-radius: var(--ll-radius-lg);
+  box-shadow: var(--ll-shadow-soft);
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.ll-ftool,
+.ftool {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ll-fzoom,
+.fzoom {
+  right: var(--ll-spacing-4);
+}
+
+/* Narrow canvas lift: sits 72px above canvas bottom, riding 8px above zoom bar */
+.ll-ftool.ll-tb-hi,
+.ll-ftool.tb-hi,
+.ftool.ll-tb-hi,
+.ftool.tb-hi {
+  bottom: var(--ll-size-toolbar-lift-bottom);
+}
+
+/* Mode switch ghost container (holds fading-out buttons during mode switch morph) */
+.ll-tbghost,
+.tbghost {
+  position: absolute;
+  left: var(--ll-spacing-1);
+  top: var(--ll-spacing-1);
+  bottom: var(--ll-spacing-1);
+  display: flex;
+  align-items: center;
+  gap: var(--ll-b5-space-toolbar-gap);
+  pointer-events: none;
+}
+
+/* Dropdown buttons in toolbar (caret right of icon) */
+.ll-ftool .ll-dd,
+.ftool .dd {
+  width: auto;
+  padding: 0 var(--ll-b5-space-2-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ll-spacing-1);
+}
+
+/* Separator between tool clusters */
+.ll-gsep,
+.gsep {
+  width: var(--ll-spacing-px);
+  height: var(--ll-spacing-5);
+  margin: 0 var(--ll-spacing-2);
+  background: var(--ll-border-color);
+  flex: none;
+}
+
+/* Spotlight command panel: the canvas toolbar morphs into a search field, results stack above it */
+#tools.ll-sp-on,
+#tools.sp-on {
+  overflow: hidden;
+  justify-content: center;
+}
+
+#tools.ll-sp-on > *,
+#tools.sp-on > * {
+  pointer-events: none;
+}
+
+#tools.ll-sp-on > :is(.ll-sp-fld, .sp-fld),
+#tools.sp-on > :is(.ll-sp-fld, .sp-fld) {
+  pointer-events: auto;
+}
+
+#tools.ll-sp-f > :not(.ll-sp-fld, .sp-fld),
+#tools.sp-f > :not(.ll-sp-fld, .sp-fld) {
+  display: none !important;
+}
+
+#tools:not(.ll-sp-f, .sp-f) > :is(.ll-sp-fld, .sp-fld) {
+  display: none;
+}
+
+#tools.ll-sp-f > :is(.ll-sp-fld, .sp-fld),
+#tools.sp-f > :is(.ll-sp-fld, .sp-fld) {
+  display: flex !important;
+}
+
+#tools.ll-sp-clo > :is(.ll-sp-fld, .sp-fld),
+#tools.sp-clo > :is(.ll-sp-fld, .sp-fld) {
+  display: flex !important;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#tools:is(.ll-sp-f, .sp-f):focus-within {
+  border-color: var(--ll-text-primary);
+}
+
+.ll-sp-fld,
+.sp-fld {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -10,14 +125,16 @@
   padding: 0 var(--ll-b5-space-2-5);
 }
 
-.ll-sp-fld > svg {
+.ll-sp-fld > svg,
+.sp-fld > svg {
   width: var(--ll-size-spotlight-glyph);
   height: var(--ll-size-spotlight-glyph);
   flex: none;
   color: var(--ll-text-muted);
 }
 
-.ll-sp-fld input {
+.ll-sp-fld input,
+.sp-fld input {
   flex: 1;
   min-width: 0;
   height: 100%;
@@ -30,15 +147,23 @@
   font-size: var(--ll-text-spotlight-input);
   font-family: var(--ll-font-sans);
   color: var(--ll-text-primary);
+  caret-color: transparent;
+}
+
+.ll-sp-fld input.car,
+.sp-fld input.car {
   caret-color: var(--ll-text-primary);
 }
 
-.ll-sp-fld input::placeholder {
+.ll-sp-fld input::placeholder,
+.sp-fld input::placeholder {
   color: var(--ll-text-muted);
 }
 
 .ll-sp-fld kbd,
-.ll-sp-m kbd {
+.sp-fld kbd,
+.ll-sp-m kbd,
+.sp-m kbd {
   font-family: var(--ll-font-mono);
   font-size: var(--ll-text-micro-size);
   font-weight: 500;
@@ -53,7 +178,8 @@
   flex: none;
 }
 
-.ll-sp-chip {
+.ll-sp-chip,
+.sp-chip {
   flex: none;
   height: var(--ll-size-keycap-h);
   padding: 0 var(--ll-b5-space-1-5);
@@ -68,11 +194,13 @@
   border-radius: var(--ll-radius-sm);
 }
 
-.ll-sp-chip[hidden] {
+.ll-sp-chip[hidden],
+.sp-chip[hidden] {
   display: none;
 }
 
-.ll-sp-res {
+.ll-sp-res,
+.sp-res {
   position: absolute;
   left: 50%;
   z-index: 25;
@@ -86,28 +214,50 @@
   transform-origin: 50% 100%;
 }
 
-.ll-sp-res[hidden] {
+.ll-sp-res[hidden],
+.sp-res[hidden] {
   display: none;
 }
 
-.ll-sp-sc {
-  position: relative;
+.ll-sp-sc,
+.sp-sc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
-.ll-sp-sc::-webkit-scrollbar {
+.ll-sp-sc::-webkit-scrollbar,
+.sp-sc::-webkit-scrollbar {
   display: none;
 }
 
-.ll-sp-in {
+.ll-sp-in,
+.sp-in {
   position: relative;
   isolation: isolate;
   padding: var(--ll-spacing-1);
 }
 
-.ll-sp-h {
+.ll-sp-gh,
+.sp-gh {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ll-sp-gh .ll-sp-r,
+.sp-gh .sp-r {
+  position: absolute;
+  left: var(--ll-spacing-1);
+  right: var(--ll-spacing-1);
+}
+
+.ll-sp-h,
+.sp-h {
   padding: var(--ll-b5-space-2-5) var(--ll-spacing-2) var(--ll-spacing-1);
   margin-top: var(--ll-spacing-1);
   border-top: var(--ll-spacing-px) solid var(--ll-border-color);
@@ -119,13 +269,15 @@
   color: var(--ll-text-muted);
 }
 
-.ll-sp-h:first-child {
+.ll-sp-h:first-child,
+.sp-h:first-child {
   margin-top: 0;
   border-top: 0;
   padding-top: var(--ll-b5-space-1-5);
 }
 
-.ll-sp-r {
+.ll-sp-r,
+.sp-r {
   position: relative;
   display: flex;
   align-items: center;
@@ -138,24 +290,29 @@
   font-family: var(--ll-font-sans);
   font-size: var(--ll-text-body-size);
   user-select: none;
+  transform-origin: 0 50%;
 }
 
-.ll-sp-r.big {
+.ll-sp-r.big,
+.sp-r.big {
   height: var(--ll-size-spotlight-row-big-h);
   padding: 0 var(--ll-b5-space-2-5);
   font-size: var(--ll-text-title-size);
 }
 
-.ll-sp-r.on {
+.ll-sp-r.on,
+.sp-r.on {
   color: var(--ll-text-primary);
 }
 
-.ll-sp-r.disabled {
+.ll-sp-r.disabled,
+.sp-r.disabled {
   opacity: var(--ll-opacity-disabled);
   cursor: not-allowed;
 }
 
-.ll-sp-ic {
+.ll-sp-ic,
+.sp-ic {
   display: flex;
   flex: none;
   align-items: center;
@@ -163,21 +320,25 @@
   color: var(--ll-text-muted);
 }
 
-.ll-sp-ic svg {
+.ll-sp-ic svg,
+.sp-ic svg {
   width: var(--ll-size-spotlight-glyph);
   height: var(--ll-size-spotlight-glyph);
 }
 
-.ll-sp-r.big .ll-sp-ic svg {
+.ll-sp-r.big .ll-sp-ic svg,
+.sp-r.big .sp-ic svg {
   width: var(--ll-size-spotlight-glyph-big);
   height: var(--ll-size-spotlight-glyph-big);
 }
 
-.ll-sp-r.on .ll-sp-ic {
+.ll-sp-r.on .ll-sp-ic,
+.sp-r.on .sp-ic {
   color: var(--ll-text-primary);
 }
 
-.ll-sp-l {
+.ll-sp-l,
+.sp-l {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -185,12 +346,14 @@
   white-space: nowrap;
 }
 
-.ll-sp-l b {
+.ll-sp-l b,
+.sp-l b {
   font-weight: 600;
   color: var(--ll-text-primary);
 }
 
-.ll-sp-m {
+.ll-sp-m,
+.sp-m {
   display: flex;
   gap: var(--ll-b5-space-0-75);
   align-items: center;
@@ -204,7 +367,8 @@
   color: var(--ll-text-muted);
 }
 
-.ll-sp-none {
+.ll-sp-none,
+.sp-none {
   padding: var(--ll-spacing-5) var(--ll-spacing-4) var(--ll-spacing-4);
   text-align: left;
   font-family: var(--ll-font-sans);
@@ -212,14 +376,16 @@
   color: var(--ll-text-primary);
 }
 
-.ll-sp-none span {
+.ll-sp-none span,
+.sp-none span {
   display: block;
   margin-top: var(--ll-spacing-1);
   color: var(--ll-text-muted);
   font-size: var(--ll-text-small-size);
 }
 
-.ll-sp-hl {
+.ll-sp-hl,
+.sp-hl {
   position: absolute;
   left: var(--ll-spacing-1);
   right: var(--ll-spacing-1);
@@ -227,10 +393,13 @@
   border-radius: var(--ll-radius-sm);
   background: var(--ll-surface-hover);
   pointer-events: none;
-  transition:
-    transform var(--ll-dur-spotlight-hl) var(--ll-ease-spotlight-hl),
-    height var(--ll-dur-spotlight-hl) var(--ll-ease-pop),
-    opacity var(--ll-dur-spotlight-hl-fade) var(--ll-ease-pop);
+  opacity: 0;
+  transition: opacity var(--ll-dur-spotlight-hl-fade) var(--ll-ease-pop);
+}
+
+.ll-sp-hl.show,
+.sp-hl.show {
+  opacity: 1;
 }
 
 .ll-sp-reason {
@@ -246,11 +415,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ll-sp-hl {
+  .ll-sp-hl,
+  .sp-hl {
     transition: opacity var(--ll-dur-fade) linear;
   }
 
-  .ll-sp-r {
+  .ll-sp-r,
+  .sp-r {
     filter: none !important;
   }
 }
