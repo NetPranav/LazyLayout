@@ -105,12 +105,20 @@ export const useMotionModel = create<MotionState>(() => ({
   fullWidth: true,
 }));
 
-export const getOverlayFrame = (): number => useMotionModel.getState().overlayFrame;
-export const getOverlayTime = (): number => useMotionModel.getState().overlayTime;
-export const useOverlayFrame = (): number => useMotionModel((s) => s.overlayFrame);
-export const useOverlayTime = (): number => useMotionModel((s) => s.overlayTime);
+export const getOverlayFrame = (): number => {
+  const s = useMotionModel.getState();
+  return s.playing ? s.overlayFrame : Math.round(getTransport().time * (getTransport().fps || 60));
+};
 
-function syncTransportToMotion(t: TransportState, syncOverlay = false): void {
+export const getOverlayTime = (): number => {
+  const s = useMotionModel.getState();
+  return s.playing ? s.overlayTime : getTransport().time;
+};
+
+export const useOverlayFrame = (): number => useMotionModel((s) => (s.playing ? s.overlayFrame : s.playhead));
+export const useOverlayTime = (): number => useMotionModel((s) => (s.playing ? s.overlayTime : s.time));
+
+function syncTransportToMotion(t: TransportState): void {
   const fps = t.fps || 60;
   const frame = Math.round(t.time * fps);
   const loopNum: 0 | 1 | 2 = t.loop === "off" ? 0 : t.loop === "loop" ? 1 : 2;
@@ -124,7 +132,8 @@ function syncTransportToMotion(t: TransportState, syncOverlay = false): void {
     playhead: frame,
     subhead: t.time * fps,
     readoutPlayhead: frame,
-    ...(syncOverlay ? { overlayFrame: frame, overlayTime: t.time } : {}),
+    // Rule: while NOT playing, every time change (seek, step, scrub, pause) updates overlayFrame and overlayTime immediately
+    ...(!t.playing ? { overlayFrame: frame, overlayTime: t.time } : {}),
     playing: t.playing,
     fps,
     loop: loopNum,
@@ -161,7 +170,7 @@ function syncOverlayFromTransport(t: TransportState): void {
 frameScheduler.register("apply", () => {
   const t = getTransport();
   if (t.playing) {
-    syncTransportToMotion(t, false);
+    syncTransportToMotion(t);
   }
 });
 
@@ -177,7 +186,7 @@ frameScheduler.register("overlay", () => {
 // During playback, time and playhead are copied in the "apply" phase above, not from raw subscription.
 subscribeTransport((state, prev) => {
   if (!state.playing) {
-    syncTransportToMotion(state, true);
+    syncTransportToMotion(state);
   } else {
     // Sync non-time playback flags immediately (loop, speed, direction, playing)
     const loopNum: 0 | 1 | 2 = state.loop === "off" ? 0 : state.loop === "loop" ? 1 : 2;
@@ -1006,3 +1015,18 @@ export const motionActions = {
     });
   },
 };
+
+/**
+ * Test seam: with `window.__LL_TEST__` set, `window.__LL_MOTION__` gives browser tests direct access
+ * to the Motion store state.
+ */
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "__LL_MOTION__", {
+    configurable: true,
+    get: () => {
+      const w = window as unknown as { __LL_TEST__?: boolean };
+      return w.__LL_TEST__ ? () => useMotionModel.getState() : undefined;
+    },
+  });
+}
+

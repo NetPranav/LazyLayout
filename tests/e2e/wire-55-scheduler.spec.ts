@@ -87,15 +87,40 @@ test("Phase 55: frame scheduler deterministic stepping synchronizes transport, M
     expect(drawnOpacity, `Drawn headline opacity at frame ${frame}`).toBeCloseTo(expectedOpacity, 1);
   }
 
-  // 6. Pause playback: seeking while paused applies immediately without needing a step
+  // 6. Pause playback: seeking / stepping while paused applies immediately without needing a step
   await bar.getByRole("button", { name: "Pause (Space)", exact: true }).click();
   await expect(bar.getByRole("button", { name: "Play (Space)", exact: true })).toBeVisible();
 
-  // Step forward button while paused applies immediately
+  // ValueHud is hidden when paused without active gesturing/scrubbing (per Phase 70 HUD contract in auto-key-hud.spec.ts)
+  await expect(hud).toBeHidden();
+
+  // Step forward button while paused applies immediately to transport, playhead and stage
   await bar.getByRole("button", { name: "Step forward (Right)" }).click();
+
   const steppedPlayheadFrame = Number(await playheadEl.getAttribute("data-frame"));
   expect(steppedPlayheadFrame, "Playhead stepped immediately while paused").toBe(11);
 
-  const steppedHudFrame = Number(await hud.getAttribute("data-frame"));
-  expect(steppedHudFrame, "HUD updated immediately while paused").toBe(11);
+  const stagePageFrame = Number(await page.locator('[data-testid="stage-page"]').getAttribute("data-frame"));
+  expect(stagePageFrame, "Stage page data-frame stepped immediately while paused").toBe(11);
+
+  // Check the overlay frame in the store via window.__LL_TEST__ (Rule #2: updated immediately with playhead while paused)
+  const motionState = await page.evaluate(() => {
+    const m = (window as unknown as { __LL_MOTION__?: () => { playhead: number; overlayFrame: number; overlayTime: number } }).__LL_MOTION__;
+    return m ? m() : null;
+  });
+  expect(motionState).not.toBeNull();
+  expect(motionState?.playhead, "Motion store playhead stepped immediately to frame 11").toBe(11);
+  expect(motionState?.overlayFrame, "Overlay frame in store stepped immediately to frame 11 (Rule #2)").toBe(11);
+});
+
+test("Design draws the design itself; Motion draws the animated frame at the playhead", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await openEditor(page);
+  const opacity = () => page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="stage-page"] [data-archetype][data-element-id="headline"]')!).opacity);
+  await expect.poll(opacity, "the editor opens with the headline at rest").toBe("1");
+  await page.getByRole("tab", { name: "Motion" }).click();
+  await page.getByRole("button", { name: "Go to start (Home)" }).click();
+  await expect.poll(opacity, "in Motion, frame 0 is the first frame of the headline's fade-in").toBe("0");
+  await page.getByRole("tab", { name: "Design" }).click();
+  await expect.poll(opacity, "back in Design, the headline is visible to design, whatever the playhead").toBe("1");
 });

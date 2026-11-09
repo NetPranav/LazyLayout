@@ -29,10 +29,11 @@ import {
   getLayerParentRef,
   type AffineMatrix2D,
 } from "@/core/geometry/parentTransforms";
-import { evaluate } from "@/core/kernel/evaluate";
+import { evaluate, type ResolvedProps } from "@/core/kernel/evaluate";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useMotionModel } from "@/editor/motion-model";
 import type { ArtboardProps, StagePreset } from "./types";
+import type { PropValue } from "@/core/document/registry";
 import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
@@ -280,8 +281,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
   // ROADMAP Phase 55: Evaluated layers at the current motion playhead time
   // so the drawn page tree in [data-testid="stage-page"] animates in lockstep with evaluate()
+  // In Design the canvas draws the design itself (an element that fades in stays visible whatever the playhead); the
+  // animated frame is drawn in Motion and Preview, and while playing.
+  const playingNow = useMotionModel((s) => s.playing);
+  const showAnimated = canvasViewMode !== "design" || playingNow;
   const animatedLayers = useMemo(() => {
-    if (!layers) return layers;
+    if (!layers || !showAnimated) return layers;
     const doc = getDocument();
     if (!doc.clips || Object.keys(doc.clips).length === 0) return layers;
 
@@ -296,7 +301,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
     const out: Record<string, Layer> = {};
     for (const [id, layer] of Object.entries(layers)) {
-      let evaluatedProps: Record<string, unknown> = {};
+      let evaluatedProps: Record<string, PropValue> | undefined;
       try {
         evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, id, motionTimeSec);
       } catch {
@@ -309,7 +314,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       }
     }
     return out;
-  }, [layers, motionTimeSec]);
+  }, [layers, motionTimeSec, showAnimated]);
 
   const activeBreakpointId = useBreakpointStore((s) => s.activeId);
   const mirrorViews = useMirrorViews(rootId ?? null);
@@ -676,7 +681,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
-        <div ref={pageRef} data-testid="stage-page" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
+        <div ref={pageRef} data-testid="stage-page" data-frame={playhead} style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
           {bare && (
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>

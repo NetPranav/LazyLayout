@@ -28,9 +28,11 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   const storeScrubbing = useTimelineUiStore((s) => s.isScrubbing);
   const isScrubbing = storeScrubbing || useTimelineUiStore.getState().isScrubbing;
   // ROADMAP Phase 55: Value HUD reads the frame and time published in the "overlay" phase
-  // so it stays in lockstep with the stage canvas
+  // during playback, and current time when paused/scrubbing, so it stays in lockstep with the stage canvas.
   const overlayFrame = useOverlayFrame();
   const overlayTime = useOverlayTime();
+  const currentFrame = isPlaying ? overlayFrame : Math.round(getTransport().time * (getTransport().fps || 60));
+  const currentTime = isPlaying ? overlayTime : getTransport().time;
 
   const shouldShow = forceVisible || ((isScrubbing || isGesturing || isPlaying) && selectedIds.length > 0);
   if (!shouldShow || selectedIds.length === 0) return null;
@@ -44,7 +46,7 @@ export const ValueHud: React.FC<ValueHudProps> = ({
 
   let evaluated: Record<string, unknown> = {};
   try {
-    evaluated = evaluate(doc, compId, activeId, overlayTime);
+    evaluated = evaluate(doc, compId, activeId, currentTime);
   } catch {
     // Evaluation fallback
   }
@@ -79,7 +81,7 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   return (
     <div
       data-testid="stage-value-hud"
-      data-frame={overlayFrame}
+      data-frame={currentFrame}
       data-x={valX}
       data-y={valY}
       data-rotation={valRot}
