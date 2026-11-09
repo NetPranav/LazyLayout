@@ -18,6 +18,10 @@ import {
 } from "./constants";
 import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types";
 import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, type CreationSpec } from "./createFromDrag";
+import { useDraftPathStore } from "@/core/store/useDraftPathStore";
+import { EMPTY_PEN, penClose, penDrag, penFinishable, penNearFirst, penPress, penUndo, type PenState } from "@/core/paths/penModel";
+import { fitStroke, type Sample } from "@/core/paths/pathFit";
+import { createPathLayer, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
@@ -439,7 +443,76 @@ export const Stage: React.FC<StageProps> = ({
   const syntheticMenu = useRef(false);
   const rightDownAt = useRef<{ target: EventTarget | null; x: number; y: number } | null>(null);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
-  const toolCursor = activeTool === "hand" ? "grab" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
+  const toolCursor = activeTool === "hand" ? "grab" : activeTool === "pen" || activeTool === "pencil" ? "crosshair" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
+
+  // Vector Pen & Pencil tool state
+  const penStateRef = useRef<PenState>(EMPTY_PEN);
+  const penParentRef = useRef<{ id: string; origin: { x: number; y: number } } | null>(null);
+  const penDownRef = useRef<{ x: number; y: number } | null>(null);
+  const pencilSamplesRef = useRef<Sample[]>([]);
+  const pencilParentRef = useRef<{ id: string; origin: { x: number; y: number } } | null>(null);
+  const pencilT0Ref = useRef<number>(0);
+
+  const finishPen = useCallback(() => {
+    const state = penStateRef.current;
+    const parent = penParentRef.current;
+    penStateRef.current = EMPTY_PEN;
+    penParentRef.current = null;
+    penDownRef.current = null;
+    useDraftPathStore.getState().clear();
+    if (penFinishable(state) && parent) {
+      const newId = createPathLayer(state.nodes, state.closed, parent, PEN_STYLE, "Path");
+      if (newId) selectStore(newId, "element");
+    }
+    onToolDone?.();
+  }, [onToolDone, selectStore]);
+
+  const cancelPen = useCallback(() => {
+    penStateRef.current = EMPTY_PEN;
+    penParentRef.current = null;
+    penDownRef.current = null;
+    useDraftPathStore.getState().clear();
+    onToolDone?.();
+  }, [onToolDone]);
+
+  // Clean up draft path on tool change
+  useEffect(() => {
+    if (activeTool !== "pen" && activeTool !== "pencil") {
+      penStateRef.current = EMPTY_PEN;
+      penParentRef.current = null;
+      penDownRef.current = null;
+      pencilSamplesRef.current = [];
+      pencilParentRef.current = null;
+      useDraftPathStore.getState().clear();
+    }
+  }, [activeTool]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (activeTool !== "pen") return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        finishPen();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelPen();
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        e.stopPropagation();
+        const next = penUndo(penStateRef.current);
+        penStateRef.current = next;
+        if (next.nodes.length === 0) {
+          cancelPen();
+        } else {
+          useDraftPathStore.getState().setPen(next.nodes, next.closed, null);
+        }
+      }
+    },
+    [activeTool, finishPen, cancelPen]
+  );
 
   /** A screen point in the artboard's own pixels, and how many screen px one artboard px is. */
   const toArtboard = useCallback((clientX: number, clientY: number) => {
@@ -465,6 +538,47 @@ export const Stage: React.FC<StageProps> = ({
     if (e.button !== 0) return;
     if (activeTool === "hand") {
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (activeTool === "pencil") {
+      const at = toArtboard(e.clientX, e.clientY);
+      if (!at) return;
+      const inside = frameAt({ x: at.x, y: at.y }, undefined, elements);
+      const parentId = inside?.id ?? activePageRootId();
+      const parentOrigin = inside ? { x: inside.x, y: inside.y } : { x: 0, y: 0 };
+      pencilParentRef.current = parentId ? { id: parentId, origin: parentOrigin } : null;
+      pencilT0Ref.current = Date.now();
+      pencilSamplesRef.current = [{ x: at.x, y: at.y, t: 0, p: e.pressure || 0.5 }];
+      useDraftPathStore.getState().setPencil([{ x: at.x, y: at.y }]);
+      e.currentTarget.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (activeTool === "pen") {
+      const at = toArtboard(e.clientX, e.clientY);
+      if (!at) return;
+      let s = penStateRef.current;
+      if (s.nodes.length === 0) {
+        const inside = frameAt({ x: at.x, y: at.y }, undefined, elements);
+        const parentId = inside?.id ?? activePageRootId();
+        const parentOrigin = inside ? { x: inside.x, y: inside.y } : { x: 0, y: 0 };
+        penParentRef.current = parentId ? { id: parentId, origin: parentOrigin } : null;
+      }
+      if (penNearFirst(s, at, 12 / at.scale)) {
+        penStateRef.current = penClose(s);
+        finishPen();
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      s = penPress(s, at, Date.now(), e.pressure || 0.5);
+      penStateRef.current = s;
+      penDownRef.current = { x: at.x, y: at.y };
+      useDraftPathStore.getState().setPen(s.nodes, s.closed, at);
       e.currentTarget.setPointerCapture(e.pointerId);
       e.preventDefault();
       e.stopPropagation();
@@ -502,6 +616,29 @@ export const Stage: React.FC<StageProps> = ({
   };
 
   const handleToolPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (activeTool === "pencil") {
+      if (pencilSamplesRef.current.length > 0) {
+        const at = toArtboard(e.clientX, e.clientY);
+        if (at) {
+          pencilSamplesRef.current.push({ x: at.x, y: at.y, t: Date.now() - pencilT0Ref.current, p: e.pressure || 0.5 });
+          useDraftPathStore.getState().setPencil(pencilSamplesRef.current.map((pt) => ({ x: pt.x, y: pt.y })));
+        }
+      }
+      return;
+    }
+    if (activeTool === "pen") {
+      const at = toArtboard(e.clientX, e.clientY);
+      if (at) {
+        if (penDownRef.current) {
+          const s = penDrag(penStateRef.current, at, e.altKey);
+          penStateRef.current = s;
+          useDraftPathStore.getState().setPen(s.nodes, s.closed, at);
+        } else if (penStateRef.current.nodes.length > 0) {
+          useDraftPathStore.getState().setPen(penStateRef.current.nodes, penStateRef.current.closed, at);
+        }
+      }
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
     if (g.kind === "pan") {
@@ -523,6 +660,28 @@ export const Stage: React.FC<StageProps> = ({
   };
 
   const handleToolPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (activeTool === "pencil") {
+      const samples = pencilSamplesRef.current;
+      const parent = pencilParentRef.current;
+      pencilSamplesRef.current = [];
+      pencilParentRef.current = null;
+      useDraftPathStore.getState().clear();
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      if (samples.length >= 2 && parent) {
+        const at = toArtboard(e.clientX, e.clientY);
+        const scale = at?.scale ?? 1;
+        const { nodes, closed } = fitStroke(samples, {}, 8 / scale);
+        const newId = createPathLayer(nodes, closed, parent, PENCIL_STYLE, "Pencil");
+        if (newId) selectStore(newId, "element");
+      }
+      onToolDone?.();
+      return;
+    }
+    if (activeTool === "pen") {
+      penDownRef.current = null;
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      return;
+    }
     const g = gesture.current;
     gesture.current = null;
     if (!g) return;
@@ -624,6 +783,14 @@ export const Stage: React.FC<StageProps> = ({
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
+      onKeyDown={handleKeyDown}
+      onDoubleClick={(e) => {
+        if (activeTool === "pen" && penStateRef.current.nodes.length >= 2) {
+          e.preventDefault();
+          e.stopPropagation();
+          finishPen();
+        }
+      }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes("Files")) e.preventDefault();
       }}

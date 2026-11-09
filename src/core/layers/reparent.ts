@@ -92,8 +92,11 @@ export function moveLayers(ids: readonly string[], parentId: string | null, inde
   const moving = topmost(layers, ids.filter((id) => layers[id])).sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0));
   if (parentId === null && moving.every((id) => layers[id].parentId === null)) return { ok: false, reason: "Frames are ordered by where they sit on the canvas." };
 
-  // where each absolute layer is now, so it can stay there
-  const keep = moving.filter((id) => layers[id].properties.positioning === "absolute" || layers[id].parentId === null);
+  const targetParent = parentId ? layers[parentId] : null;
+  const targetFlows = !!targetParent && targetParent.archetype === "container" && (targetParent.properties["layout.auto"] === true || targetParent.properties["layout.display"] === "grid");
+
+  // where each absolute layer is now, so it can stay there (only when parent is a free frame or canvas)
+  const keep = targetFlows ? [] : moving.filter((id) => layers[id].properties.positioning === "absolute" || layers[id].parentId === null);
   const boxes = new Map<string, Box>();
   for (const id of keep) {
     const b = worldBox(id);
@@ -102,10 +105,27 @@ export function moveLayers(ids: readonly string[], parentId: string | null, inde
   const tx = documentCommands.begin("Move layers");
   try {
     moving.forEach((id, i) => documentCommands.moveLayer(id, parentId, parentId === null || index === undefined ? undefined : index + i));
-    const placed = keep.filter((id) => boxes.has(id));
-    if (placed.length > 0) {
-      // positions are relative to the new parent's top-left (a top-level frame's parent is the canvas)
-      writeBoxes(placed, placed.map((id) => boxes.get(id)!), parentId === null ? { x: 0, y: 0 } : undefined);
+    if (targetFlows) {
+      for (const id of moving) {
+        documentCommands.updateProps(id, {
+          positioning: "flow",
+          "sizing.horizontal": "fixed",
+          "sizing.vertical": "fixed",
+        });
+      }
+    } else {
+      for (const id of moving) {
+        if (layers[id]?.properties.positioning === "flow") {
+          documentCommands.updateProps(id, {
+            positioning: "absolute",
+          });
+        }
+      }
+      const placed = keep.filter((id) => boxes.has(id));
+      if (placed.length > 0) {
+        // positions are relative to the new parent's top-left (a top-level frame's parent is the canvas)
+        writeBoxes(placed, placed.map((id) => boxes.get(id)!), parentId === null ? { x: 0, y: 0 } : undefined);
+      }
     }
     tx.commit();
   } catch (error) {
