@@ -2,10 +2,110 @@
 
 import { documentStore, getDocument } from "@/core/store/useDocumentStore";
 import type { MotionDocument, Layer } from "@/core/document/schema";
+import type { Trigger as CanonicalTrigger, ClipType } from "@/core/document/motion";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useMotionModel } from "./store";
 import { makeLayer, PROPS, sortTracks } from "./model";
-import type { Composition, EaseName, Keyframe, MotionLayer, PropId, PropTrack } from "./types";
+import type { Composition, EaseName, Keyframe, MotionLayer, PropId, PropTrack, Trigger as UiTrigger, ClipCategory } from "./types";
+
+/** Maps canonical document trigger to UI trigger name */
+export const CANONICAL_TO_UI_TRIGGER: Record<CanonicalTrigger, UiTrigger> = {
+  mount: "On load",
+  hover: "On hover",
+  press: "On press",
+  focus: "On focus",
+  inView: "On scroll into view",
+  scrollProgress: "While scrolling",
+  pointerMove: "Follow the pointer",
+  drag: "While dragged",
+  time: "On a timer",
+  unmount: "On leave",
+  layoutChange: "When its layout changes",
+  custom: "Custom",
+};
+
+/** Maps UI trigger name (including legacy aliases) to canonical document trigger */
+export const UI_TO_CANONICAL_TRIGGER: Record<UiTrigger, CanonicalTrigger> = {
+  "On load": "mount",
+  "On hover": "hover",
+  "On press": "press",
+  "On click": "press", // legacy UI alias mapped to press
+  "On focus": "focus",
+  "On scroll into view": "inView",
+  "While scrolling": "scrollProgress",
+  "Follow the pointer": "pointerMove",
+  "While dragged": "drag",
+  "On a timer": "time",
+  "On leave": "unmount",
+  "When its layout changes": "layoutChange",
+  Custom: "custom",
+};
+
+/** Maps canonical document clip type to UI category name */
+export const CANONICAL_TO_UI_CLIP_TYPE: Record<ClipType, ClipCategory> = {
+  entrance: "Entrance",
+  hover: "Hover",
+  tap: "Tap",
+  scroll: "Scroll",
+  loop: "Loop",
+  morph: "Morph",
+  exit: "Exit",
+  focus: "Focus",
+  stagger: "Stagger",
+  layout: "Layout",
+};
+
+/** Maps UI category name to canonical document clip type */
+export const UI_TO_CANONICAL_CLIP_TYPE: Record<ClipCategory, ClipType> = {
+  Entrance: "entrance",
+  Hover: "hover",
+  Tap: "tap",
+  Scroll: "scroll",
+  Loop: "loop",
+  Morph: "morph",
+  Exit: "exit",
+  Focus: "focus",
+  Stagger: "stagger",
+  Layout: "layout",
+};
+
+/** Default trigger assigned when choosing a category */
+export const CATEGORY_DEFAULT_TRIGGERS: Record<ClipCategory, UiTrigger> = {
+  Exit: "On leave",
+  Focus: "On focus",
+  Layout: "When its layout changes",
+  Hover: "On hover",
+  Tap: "On press",
+  Scroll: "While scrolling",
+  Entrance: "On load",
+  Loop: "On load",
+  Morph: "On load",
+  Stagger: "On load",
+};
+
+export function canonicalTriggerToUi(trigger?: CanonicalTrigger | string): UiTrigger {
+  if (!trigger) return "On load";
+  if (Object.prototype.hasOwnProperty.call(CANONICAL_TO_UI_TRIGGER, trigger)) {
+    return CANONICAL_TO_UI_TRIGGER[trigger as CanonicalTrigger];
+  }
+  return "On load";
+}
+
+export function uiTriggerToCanonical(trigger: UiTrigger): CanonicalTrigger {
+  return UI_TO_CANONICAL_TRIGGER[trigger] ?? "mount";
+}
+
+export function canonicalClipTypeToUi(type?: ClipType | string): ClipCategory {
+  if (!type) return "Entrance";
+  if (Object.prototype.hasOwnProperty.call(CANONICAL_TO_UI_CLIP_TYPE, type)) {
+    return CANONICAL_TO_UI_CLIP_TYPE[type as ClipType];
+  }
+  return "Entrance";
+}
+
+export function uiClipTypeToCanonical(category: ClipCategory): ClipType {
+  return UI_TO_CANONICAL_CLIP_TYPE[category] ?? "entrance";
+}
 
 /** Maps UI property id to canonical MDM property path */
 export const UI_TO_CANONICAL_PATH: Record<PropId, string> = {
@@ -149,6 +249,14 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
       keys: keys.sort((a, b) => a.t - b.t),
     }));
 
+    const primaryClip = layerClips[0];
+    const category: ClipCategory = primaryClip
+      ? canonicalClipTypeToUi(primaryClip.type)
+      : (prevLayer?.category ?? "Entrance");
+    const trig: UiTrigger = primaryClip
+      ? canonicalTriggerToUi(primaryClip.trigger)
+      : (prevLayer?.trig ? (prevLayer.trig === "On click" ? "On press" : prevLayer.trig) : "On load");
+
     const motionLayer: MotionLayer = {
       id: docLayer.id,
       lbl: prevLayer?.lbl ?? 0,
@@ -158,18 +266,19 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
       mute: prevLayer?.mute ?? false,
       lock: prevLayer?.lock ?? false,
       solo: prevLayer?.solo ?? false,
-      trig: prevLayer?.trig ?? "On load",
-      ease: prevLayer?.ease ?? "Ease out",
-      rep: prevLayer?.rep ?? "Once",
-      rn: prevLayer?.rn ?? 3,
-      yoyo: prevLayer?.yoyo ?? false,
-      ss: prevLayer?.ss ?? "top 80%",
-      se: prevLayer?.se ?? "bottom 20%",
-      scrub: prevLayer?.scrub ?? false,
-      pin: prevLayer?.pin ?? false,
+      category,
+      trig,
+      ease: prevLayer?.ease ?? (primaryClip ? canonicalEaseToUi(primaryClip.easing) : "Ease out"),
+      rep: prevLayer?.rep ?? (primaryClip?.repeat === -1 ? "Forever" : (primaryClip?.repeat && primaryClip.repeat > 0) ? "Number" : "Once"),
+      rn: prevLayer?.rn ?? (primaryClip?.repeat && primaryClip.repeat > 0 ? primaryClip.repeat : 3),
+      yoyo: prevLayer?.yoyo ?? (primaryClip?.direction === "alternate"),
+      ss: prevLayer?.ss ?? (primaryClip?.scrollTrigger?.start ?? "top 80%"),
+      se: prevLayer?.se ?? (primaryClip?.scrollTrigger?.end ?? "bottom 20%"),
+      scrub: prevLayer?.scrub ?? (Boolean(primaryClip?.scrollTrigger?.scrub) || trig === "While scrolling"),
+      pin: prevLayer?.pin ?? Boolean(primaryClip?.scrollTrigger?.pin),
       sprev: prevLayer?.sprev ?? 0,
-      stag: prevLayer?.stag ?? 60,
-      sfrom: prevLayer?.sfrom ?? "Start",
+      stag: prevLayer?.stag ?? (primaryClip?.stagger?.each ? Math.round(primaryClip.stagger.each * 1000) : 60),
+      sfrom: prevLayer?.sfrom ?? (typeof primaryClip?.stagger?.from === "string" ? (primaryClip.stagger.from === "center" ? "Center" : primaryClip.stagger.from === "end" ? "End" : "Start") : "Start"),
       tr,
     };
     sortTracks(motionLayer);

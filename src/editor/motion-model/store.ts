@@ -11,7 +11,7 @@ import {
   sortTracks,
   valueAt,
 } from "./model";
-import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams } from "./types";
+import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams, ClipCategory, Trigger } from "./types";
 import { transport } from "@/core/time/transport";
 import {
   setKeyframeAt,
@@ -19,8 +19,11 @@ import {
   ensureTrack,
   locateKeyframes,
   placementsOf,
+  KEYFRAMES_CLIP_NAME,
 } from "@/core/timeline/keyframeOps";
 import { transaction } from "@/core/editing/editOps";
+import { createId } from "@/core/ids";
+import type { Clip, ClipTemplate } from "@/core/document/schema";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
 import {
@@ -28,6 +31,9 @@ import {
   CANONICAL_TO_UI_PATH,
   uiToCanonicalValue,
   uiEaseToCanonical,
+  uiClipTypeToCanonical,
+  uiTriggerToCanonical,
+  CATEGORY_DEFAULT_TRIGGERS,
 } from "./sync";
 
 export interface MotionState {
@@ -692,11 +698,103 @@ export const motionActions = {
   clearKeySelection(): void {
     useMotionModel.setState({ selectedKeys: {} });
   },
+  setClipSettings(
+    layerId: string,
+    settings: { category?: ClipCategory; trigger?: Trigger; clipIndex?: number }
+  ): void {
+    const s = useMotionModel.getState();
+    const l = s.comp.layers.find((x) => x.id === layerId);
+    const clipIdx = settings.clipIndex ?? s.selectedClip ?? 0;
+
+    const newCategory = settings.category ?? l?.category ?? "Entrance";
+    let newTrigger = settings.trigger ?? l?.trig ?? "On load";
+
+    if (settings.category && !settings.trigger) {
+      newTrigger = CATEGORY_DEFAULT_TRIGGERS[settings.category] ?? "On load";
+    }
+
+    const canonicalType = uiClipTypeToCanonical(newCategory);
+    const canonicalTrigger = uiTriggerToCanonical(newTrigger);
+
+    edit((c) => {
+      const target = c.layers.find((x) => x.id === layerId);
+      if (target) {
+        target.category = newCategory;
+        target.trig = newTrigger;
+        if (newTrigger === "While scrolling") {
+          target.scrub = true;
+        }
+      }
+    });
+
+    try {
+      const doc = getDocument();
+      if (!doc || !doc.layers[layerId]) return;
+
+      const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+      const existingClip =
+        placed[clipIdx]?.clip ??
+        placed[0]?.clip ??
+        Object.values(doc.clips).find((c) => c.layerId === layerId && c.enabled);
+
+      if (existingClip) {
+        transaction("Update animation", () => {
+          const patch: Partial<Omit<Clip, "id" | "layerId" | "tracks">> = {
+            type: canonicalType,
+            trigger: canonicalTrigger,
+          };
+          if (canonicalType === "stagger" && !existingClip.stagger) {
+            patch.stagger = { each: 0.05, from: "start" };
+          }
+          if (canonicalTrigger !== "custom" && existingClip.event !== undefined) {
+            patch.event = undefined;
+          }
+          documentCommands.updateClip(existingClip.id, patch);
+        });
+      } else {
+        transaction("Add animation", () => {
+          const comp = doc.compositions[MAIN_COMPOSITION_ID] ?? Object.values(doc.compositions)[0];
+          const template: ClipTemplate = {
+            id: createId("clip"),
+            name: KEYFRAMES_CLIP_NAME,
+            type: canonicalType,
+            trigger: canonicalTrigger,
+            duration: comp ? comp.duration : 5,
+            easing: "power2.out",
+            enabled: true,
+            tracks: [],
+            ...(canonicalType === "stagger" ? { stagger: { each: 0.05, from: "start" } } : {}),
+          };
+          documentCommands.addClip(layerId, template, undefined, {
+            compositionId: comp?.id ?? MAIN_COMPOSITION_ID,
+          });
+        });
+      }
+    } catch {
+      // Standalone or test fallback
+    }
+  },
+
+  setClipCategory(layerId: string, category: ClipCategory): void {
+    motionActions.setClipSettings(layerId, { category });
+  },
+
+  setClipTrigger(layerId: string, trigger: Trigger): void {
+    motionActions.setClipSettings(layerId, { trigger });
+  },
+
   setLayer(layerId: string, patch: Partial<MotionLayer>): void {
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) Object.assign(l, patch);
     });
+
+    if (patch.category !== undefined || patch.trig !== undefined) {
+      motionActions.setClipSettings(layerId, {
+        category: patch.category,
+        trigger: patch.trig,
+      });
+    }
   },
   addProperty(layerId: string, p: PropId): void {
     edit((c) => {

@@ -32,16 +32,36 @@ import {
   type MotionLayer,
   type PropId,
   type Trigger,
+  type ClipCategory,
   type RepeatMode,
   type EaseName,
 } from "@/editor/motion-model";
 
-const TRIGGERS = [
+export const CATEGORY_OPTIONS: { value: ClipCategory; label: string }[] = [
+  { value: "Entrance", label: "Entrance" },
+  { value: "Hover", label: "Hover" },
+  { value: "Tap", label: "Tap" },
+  { value: "Scroll", label: "Scroll" },
+  { value: "Loop", label: "Loop" },
+  { value: "Morph", label: "Morph" },
+  { value: "Exit", label: "Exit" },
+  { value: "Focus", label: "Focus" },
+  { value: "Stagger", label: "Stagger" },
+  { value: "Layout", label: "Layout" },
+];
+
+export const TRIGGER_OPTIONS: { value: Trigger; label: string }[] = [
   { value: "On load", label: "On load" },
   { value: "On hover", label: "On hover" },
-  { value: "On click", label: "On click" },
+  { value: "On press", label: "On press" },
+  { value: "On focus", label: "On focus" },
   { value: "On scroll into view", label: "On scroll into view" },
   { value: "While scrolling", label: "While scrolling" },
+  { value: "Follow the pointer", label: "Follow the pointer" },
+  { value: "While dragged", label: "While dragged" },
+  { value: "On a timer", label: "On a timer" },
+  { value: "On leave", label: "On leave" },
+  { value: "When its layout changes", label: "When its layout changes" },
 ];
 
 const REPEAT_OPTIONS = [
@@ -104,12 +124,20 @@ export const LayerInspector: React.FC<LayerInspectorProps> = ({ layer, className
   const availableProps = PORD.filter((p) => !existingProps.has(p));
 
   // Handlers for Layer changes
-  const handleTriggerChange = (val: string) => {
-    motionActions.setLayer(layer.id, {
-      trig: val as Trigger,
-      scrub: val === "While scrolling" ? true : layer.scrub,
-    });
+  const handleCategoryChange = (val: string) => {
+    motionActions.setClipCategory(layer.id, val as ClipCategory);
   };
+
+  const handleTriggerChange = (val: string) => {
+    motionActions.setClipTrigger(layer.id, val as Trigger);
+  };
+
+  const triggerOptions = React.useMemo(() => {
+    if (layer.trig === "On click") {
+      return [...TRIGGER_OPTIONS, { value: "On click" as Trigger, label: "On click" }];
+    }
+    return TRIGGER_OPTIONS;
+  }, [layer.trig]);
 
   const handleClipDelayBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const f = parseTime(e.target.value, comp.fps);
@@ -238,6 +266,22 @@ export const LayerInspector: React.FC<LayerInspectorProps> = ({ layer, className
           <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Trigger</h3>
         </div>
         <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
+          {/* Category Select */}
+          <div className="ll-dtrow ll:flex ll:items-center ll:gap-2">
+            <span className="ll-dlbl ll:w-20 ll:shrink-0 ll:text-micro ll:font-medium ll:text-muted">
+              Category
+            </span>
+            <div className="ll:flex-1 ll:min-w-0">
+              <Select
+                size="sm"
+                aria-label="Category"
+                value={layer.category ?? "Entrance"}
+                onChange={handleCategoryChange}
+                options={CATEGORY_OPTIONS}
+              />
+            </div>
+          </div>
+
           <div className="ll-dtrow ll:flex ll:items-center ll:gap-2">
             <span className="ll-dlbl ll:w-20 ll:shrink-0 ll:text-micro ll:font-medium ll:text-muted">
               Trigger
@@ -248,7 +292,7 @@ export const LayerInspector: React.FC<LayerInspectorProps> = ({ layer, className
                 aria-label="Trigger"
                 value={layer.trig}
                 onChange={handleTriggerChange}
-                options={TRIGGERS}
+                options={triggerOptions}
               />
             </div>
           </div>
@@ -338,10 +382,10 @@ export const LayerInspector: React.FC<LayerInspectorProps> = ({ layer, className
             </>
           )}
 
-          {/* Hover / Click helper note */}
-          {(layer.trig === "On hover" || layer.trig === "On click") && (
+          {/* Hover / Click / Press helper note */}
+          {(layer.trig === "On hover" || layer.trig === "On click" || layer.trig === "On press") && (
             <div className="ll:text-micro ll:text-muted ll:py-1">
-              Preview: {layer.trig === "On hover" ? "hover" : "click"} the element on the canvas.
+              Preview: {layer.trig === "On hover" ? "hover" : "press"} the element on the canvas.
             </div>
           )}
         </div>
@@ -478,8 +522,8 @@ export const LayerInspector: React.FC<LayerInspectorProps> = ({ layer, className
         </div>
       </section>
 
-      {/* 4. Stagger Section (if frame) */}
-      {isFrame && (
+      {/* 4. Stagger Section (if frame or stagger category) */}
+      {(isFrame || layer.category === "Stagger") && (
         <section className="ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-t ll:border-border">
           <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6">
             <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Stagger</h3>
