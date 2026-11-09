@@ -3,6 +3,7 @@
 import React from "react";
 import {
   useMotionModel,
+  useOverlayFrame,
   X,
   timecode,
 } from "@/editor/motion-model";
@@ -34,7 +35,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
   const wa = useMotionModel((s) => s.wa);
-  const playhead = useMotionModel((s) => s.playhead);
+  const playhead = useOverlayFrame();
   const markers = useMotionModel((s) => s.comp.markers);
   const frames = useMotionModel((s) => s.frames);
 
@@ -54,6 +55,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
         style={{ left: `${trackWidth}px` }}
         data-testid="timeline-playhead-layer"
         data-time={Math.round(playhead)}
+        data-frame={Math.round(playhead)}
         className="ll-tlhd ll:absolute ll:right-0 ll:top-0 ll:bottom-0 ll:pointer-events-none ll:overflow-hidden ll:z-20"
       >
         {/* Work area dimming left */}
@@ -98,6 +100,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
             }}
             data-testid="timeline-playhead"
             data-time={Math.round(playhead)}
+            data-frame={Math.round(playhead)}
             className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
           >
             {/* Playhead Knob on ruler */}

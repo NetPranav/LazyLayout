@@ -6,7 +6,7 @@ import type { Layer, Clip, Composition, SpatialMode } from "@/core/document/sche
 import { clipTimeInComposition, MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useDocument, documentCommands, type DocumentTransaction } from "@/core/store/useDocumentStore";
-import { useTransportTime } from "@/core/time/useTransportTime";
+import { useOverlayTime } from "@/editor/motion-model";
 import { getSpatialTrajectory } from "@/core/kernel/evaluate";
 import { extractClipWaypoints, type ResolvedWaypoint } from "@/core/timeline/keyframeOps";
 
@@ -121,7 +121,7 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   const storeLayers = useDocument((d) => d.layers);
   const storeClips = useDocument((d) => d.clips);
   const storeCompositions = useDocument((d) => d.compositions);
-  const storeCurrentTime = useTransportTime({ maxHz: 30 });
+  const storeCurrentTime = useOverlayTime();
 
   const selectedIds = controlledSelectedIds ?? storeSelectedIds;
   const layers = controlledLayers ?? storeLayers;
@@ -431,6 +431,7 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
   return (
     <svg
       data-testid="motion-path-overlay"
+      data-frame={Math.round(currentTime * fps)}
       className={`ll-motion-path-overlay ll:absolute ll:inset-0 ll:w-full ll:h-full ll:pointer-events-none ll:overflow-visible ${className}`}
       style={{
         zIndex: 25,

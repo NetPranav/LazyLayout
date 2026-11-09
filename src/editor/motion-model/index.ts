@@ -5,7 +5,14 @@ export {
   newKeyId, makeLayer, layerName, layerType, isGrp, lblDef, lblOf, majorOf, minorOf, X, Fx, copyKey, snapT,
   LABEL_COLORS,
 } from "./model";
-export { useMotionModel, motionActions } from "./store";
+export {
+  useMotionModel,
+  motionActions,
+  getOverlayFrame,
+  getOverlayTime,
+  useOverlayFrame,
+  useOverlayTime,
+} from "./store";
 export type { MotionState } from "./store";
 export * from "./sync";
 
