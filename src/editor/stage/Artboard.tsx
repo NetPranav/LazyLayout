@@ -13,6 +13,7 @@ import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
+import { DraftPath } from "./DraftPath";
 import { RenderLayer } from "@/core/render";
 import { useMirrorViews } from "./useMirrorViews";
 import { exactDeviceOfFrame, frameSizeLabel, frameViewportHeight, mirrorSourceId, pageFrameOf } from "@/core/frames/devices";
@@ -869,6 +870,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
           <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} />
         </div>
       )}
+
+      {/* 5c. Vector Pen & Pencil live path overlay */}
+      <DraftPath />
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
       {/* The scroll of previewed frames: the page is drawn under the canvas's click layer, so this scrolls it */}

@@ -20,7 +20,7 @@ export function applyConstraintsToChildren(doc: MotionDocument, parentId: string
     const child = doc.layers[childId];
     if (!child) continue;
     const p = child.properties;
-    if (p.positioning !== "absolute") continue;
+    if (p.positioning === "flow") continue;
     const h = readHorizontal(p["constraints.horizontal"]);
     const v = readVertical(p["constraints.vertical"]);
     if (h === "start" && v === "start") continue;
