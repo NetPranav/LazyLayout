@@ -9,3 +9,6 @@
 - A frame's size menu now views the frame at a narrower device instead of overwriting its Desktop width.
 - Tablet and Mobile views of one frame open side by side, not on top of each other.
 - Frame labels stay readable when the canvas is zoomed out.
+
+### Fixed
+- Double-clicking a text to edit it no longer closes the editor by itself, and Escape in a colour picker no longer deselects the layer. A closing menu or popover used to pull focus back after its fade, even when focus had already moved on.
