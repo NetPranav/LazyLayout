@@ -958,7 +958,11 @@ export const documentCommands = {
 
   updateClip(clipId: string, patch: Partial<Omit<Clip, "id" | "layerId" | "tracks">>, label?: string) {
     commit(label, (draft) => {
-      Object.assign(requireClip(draft, clipId), patch);
+      const clip = requireClip(draft, clipId);
+      Object.assign(clip, patch);
+      if (patch.trigger && patch.trigger !== "custom" && clip.event) {
+        delete clip.event;
+      }
     });
   },
 
