@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
 import { useDocument, useDocumentAt } from "@/core/store/useDocumentStore";
 import { framesOfPage } from "@/core/frames/devices";
+import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom } from "@/core/viewport/camera";
@@ -141,6 +142,8 @@ export const Stage: React.FC<StageProps> = ({
   const [measured, setMeasured] = useState<Record<string, StageElement>>({});
   const [rootHeight, setRootHeight] = useState(0);
   const storeLayersRef = useRef(storeLayers);
+  // a frame previewed or not changes its drawn size with no document change: this render re-measures (below)
+  useFramePreviewStore((p) => p.previewing);
   const remeasure = useCallback(() => {
     const page = pageRef.current;
     if (!page || !storeLayersRef.current) return;
@@ -416,6 +419,8 @@ export const Stage: React.FC<StageProps> = ({
     const el = viewportRef.current;
     if (!el) return undefined;
     const onWheel = (e: WheelEvent) => {
+      // over a previewed frame the wheel scrolls that frame (with Ctrl/Cmd it still zooms the canvas)
+      if (!e.ctrlKey && !e.metaKey && (e.target as Element | null)?.closest?.('[data-testid="frame-preview-scroller"]')) return;
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         const { camera, setCamera } = useCameraStore.getState();

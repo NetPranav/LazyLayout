@@ -89,7 +89,16 @@ export function planDeviceChoiceAction(params: {
   const selX = Number(selectedFrame.properties["frame.x"] ?? 0);
   const selY = Number(selectedFrame.properties["frame.y"] ?? 0);
   const selW = Number(selectedFrame.properties["frame.width"] ?? 1440);
-  const placement = { x: Math.round(selX + selW + FRAME_GAP), y: Math.round(selY) };
+  // to its right, and past any frame already there (Tablet and Mobile views of one frame sit side by side)
+  const selH = Number(selectedFrame.properties["frame.height"] ?? spec.height);
+  const across = frames
+    .filter((f) => f.id !== selectedFrame.id)
+    .map((f) => ({ x: Number(f.properties["frame.x"] ?? 0), y: Number(f.properties["frame.y"] ?? 0), w: Number(f.properties["frame.width"] ?? 0), h: Number(f.properties["frame.height"] ?? 0) }))
+    .filter((f) => f.y < selY + Math.max(selH, spec.height) && f.y + f.h > selY)
+    .sort((a, b) => a.x - b.x);
+  let nextX = selX + selW + FRAME_GAP;
+  for (const f of across) if (f.x < nextX + spec.width && f.x + f.w > nextX) nextX = f.x + f.w + FRAME_GAP;
+  const placement = { x: Math.round(nextX), y: Math.round(selY) };
 
   if (currentDevice !== device) {
     // 2(b) Selected frame is a DIFFERENT device: open a LIVE LINKED VIEW (mirror frame) to its right
@@ -159,9 +168,10 @@ export function executeDeviceChoice(deviceKindInput: string): string {
 
   if (action.kind === "create_mirror") {
     // 2(b) Create a live linked mirror frame
+    // the frame now has narrower views: it follows them, and what is in it reflows by itself
     const mainFrame = doc.layers[action.mainFrameId];
-    if (mainFrame && mainFrame.properties["breakpoints.responsive"] !== true) {
-      documentCommands.updateProps(mainFrame.id, { "breakpoints.responsive": true }, "Make frame responsive");
+    if (mainFrame && (mainFrame.properties["breakpoints.responsive"] !== true || mainFrame.properties["breakpoints.adapt"] !== true)) {
+      documentCommands.updateProps(mainFrame.id, { "breakpoints.responsive": true, "breakpoints.adapt": true }, "Make frame responsive");
     }
     const mirrorId = documentCommands.addLayer(
       {
@@ -234,23 +244,17 @@ export function switchFrameView(frameId: string, targetDevice: DeviceKind): void
     return;
   }
 
-  // Regular frame. Write the frame's own size and device on the base, not into
-  // the active breakpoint's overrides, so leave any breakpoint view first.
+  // A regular frame shown at a narrower device: its design stays as it is, and it is viewed at that breakpoint, where
+  // what is in it reflows. A device wider than the frame was designed at can't be a view of it (breakpoints only narrow),
+  // so that resizes the frame's own design.
   setActiveBreakpoint(null);
-  documentCommands.updateProps(
-    frameId,
-    {
-      "frame.device": spec.id,
-      "frame.width": spec.width,
-      "frame.height": spec.height,
-      "breakpoints.responsive": true,
-    },
-    `Switch frame to ${spec.label}`
-  );
-
-  if (targetDevice === "desktop") {
-    setActiveBreakpoint(null);
-  } else {
+  const baseWidth = Number(layer.properties["frame.width"] ?? 0);
+  if (spec.width > baseWidth) {
+    documentCommands.updateProps(frameId, { "frame.device": spec.id, "frame.width": spec.width, "frame.height": Math.max(spec.height, Number(layer.properties["frame.height"] ?? 0)) }, `Switch frame to ${spec.label}`);
+    return;
+  }
+  documentCommands.updateProps(frameId, { "breakpoints.responsive": true, "breakpoints.adapt": true }, `View frame at ${spec.label}`);
+  if (spec.width < baseWidth) {
     const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
     if (bp) setActiveBreakpoint(bp.id);
   }

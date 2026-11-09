@@ -34,6 +34,8 @@ export interface RenderContext {
   inMeshTile?: boolean;
   /** The layers each mirror frame shows (its source frame resolved at the mirror's breakpoint), by mirror id. Editor only. */
   mirrorViews?: Readonly<Record<string, Record<string, import("../document/schema").Layer>>>;
+  /** Frames shown as the device's screen (Preview on the canvas): each one's screen height, by frame id. Editor only. */
+  screenFrames?: Readonly<Record<string, number>>;
   /** The container layer ID of the mirror frame enclosing this layer. */
   mirrorId?: string;
 }

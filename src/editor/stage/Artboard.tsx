@@ -16,7 +16,9 @@ import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { DraftPath } from "./DraftPath";
 import { RenderLayer } from "@/core/render";
 import { useMirrorViews } from "./useMirrorViews";
-import { exactDeviceOfFrame, frameSizeLabel, pageFrameOf } from "@/core/frames/devices";
+import { exactDeviceOfFrame, frameSizeLabel, frameViewportHeight, mirrorSourceId, pageFrameOf } from "@/core/frames/devices";
+import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
+import { Checkbox } from "@/editor/components/Checkbox";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
@@ -221,6 +223,12 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
 
 const ENGINE_CTX = { frameAtOrigin: true };
 
+/** Scrolls a previewed frame as drawn by the engine. */
+function scrollDrawnFrame(frameId: string, top: number): void {
+  const node = document.querySelector<HTMLElement>(`[data-testid="stage-page"] [data-archetype][data-element-id="${frameId}"]`);
+  if (node) node.scrollTop = top;
+}
+
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
   title = "LazyLayout",
@@ -277,7 +285,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const selectedMirror = useSelectionStore((s) => s.selectedMirrorId);
   const editingFrameId = selectedMirror ?? (layers && rootId ? pageFrameOf(layers, rootId, selectedIds[0]) : null);
   const editingName = editBp ? breakpointsOf(getDocument()).find((b) => b.id === editBp)?.name ?? null : null;
-  const engineCtx = useMemo(() => (mirrorViews ? { ...ENGINE_CTX, mirrorViews } : ENGINE_CTX), [mirrorViews]);
+  const previewing = useFramePreviewStore((p) => p.previewing);
   const activeBpPreset = presetForBreakpoint(breakpointsOf(getDocument()), activeBreakpointId);
   const activePresetId = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? activeBpPreset : internalPreset);
   const currentPresetDef =
@@ -290,6 +298,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
   // Scale computation: prototype uses `zoom / .59 * .9`
   const zoomScale = zoom > 0 ? zoom : 1;
+  const labelKeep = zoomScale < 1 ? 1 / zoomScale : 1;
 
   const handleSelectPreset = (newPreset: StagePreset) => {
     setInternalPreset(newPreset);
@@ -312,6 +321,26 @@ export const Artboard: React.FC<ArtboardProps> = ({
       (l) => l.parentId === rootId && l.archetype === "container" && l.id !== rootId
     );
   }, [bare, layers, rootId]);
+
+  // frames being previewed are drawn as the device's screen; only a frame of a device has one
+  const screenFrames = useMemo(() => {
+    let out: Record<string, number> | undefined;
+    for (const id of Object.keys(previewing)) {
+      const height = frameViewportHeight(layers?.[id]);
+      if (height !== null) (out ??= {})[id] = height;
+    }
+    return out;
+  }, [previewing, layers]);
+  const engineCtx = useMemo(
+    () => (mirrorViews || screenFrames ? { ...ENGINE_CTX, ...(mirrorViews ? { mirrorViews } : {}), ...(screenFrames ? { screenFrames } : {}) } : ENGINE_CTX),
+    [mirrorViews, screenFrames],
+  );
+  /** How tall a frame is with everything in it: a linked view is as tall as what it shows at its breakpoint. */
+  const fullHeightOf = (frame: Layer): number => {
+    const own = Number(frame.properties["frame.height"] ?? 0);
+    const source = mirrorSourceId(frame);
+    return source ? Math.max(own, Number(mirrorViews?.[frame.id]?.[source]?.properties["frame.height"] ?? 0)) : own;
+  };
 
   const [openSizeMenuFrameId, setOpenSizeMenuFrameId] = useState<string | null>(null);
   const [sizeMenuAnchorEl, setSizeMenuAnchorEl] = useState<HTMLElement | null>(null);
@@ -412,7 +441,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
           const fLeft = frameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft;
           const fTop = frameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop;
 
+          const screenHeight = frameViewportHeight(frame);
+          const isPreviewing = screenFrames?.[frame.id] !== undefined;
+          const fullHeight = fullHeightOf(frame);
+
           return (
+            <React.Fragment key={`frame-label-${frame.id}`}>
             <button
               key={`frame-label-${frame.id}`}
               id={isPrimary ? "albl" : undefined}
@@ -429,6 +463,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 height: STAGE_CONSTANTS.sizeLabelHeight,
                 paddingLeft: "var(--ll-spacing-1)",
                 paddingRight: "var(--ll-spacing-1)",
+                // stays readable however far the canvas is zoomed out
+                transform: `scale(${labelKeep})`,
+                transformOrigin: "left bottom",
               }}
               onClick={(e) => {
                 e.stopPropagation();
@@ -468,6 +505,53 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 className="ll:shrink-0 ll:text-muted"
               />
             </button>
+            {screenHeight !== null && (
+              // Preview: right here, the frame becomes the device's screen and scrolls; off, it is full height
+              <div
+                data-testid="frame-preview-toggle"
+                data-frame-id={frame.id}
+                className="ll:absolute ll:flex ll:items-center ll:whitespace-nowrap ll:text-small ll:text-secondary"
+                style={{
+                  left: frameEl.x + frameEl.width,
+                  // on a frame too narrow on screen for both, it sits a row above the size label
+                  top: frameEl.y - 2 - (frameEl.width * zoomScale < 220 ? 22 * labelKeep : 0),
+                  transform: `translate(-100%, -100%) scale(${labelKeep})`,
+                  transformOrigin: "right bottom",
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Checkbox
+                  checked={isPreviewing}
+                  label="Preview"
+                  aria-label={`Preview ${frame.name} as a ${sizeLabel.label} screen`}
+                  onChange={(on) => {
+                    // the frame is looked at, not edited, while previewed: nothing inside it stays selected
+                    if (on && !selectedIds.includes(frame.id) && (selectedMirror === frame.id || pageFrameOf(layers ?? {}, rootId ?? null, selectedIds[0]) === frame.id)) onSelect(frame.id);
+                    if (!on) scrollDrawnFrame(frame.id, 0);
+                    useFramePreviewStore.getState().setPreview(frame.id, on);
+                  }}
+                />
+              </div>
+            )}
+            {screenHeight !== null && !isPreviewing && fullHeight > screenHeight && (
+              // How much shows on the device's screen: below this line, the page scrolls
+              <div
+                data-testid="frame-fold-line"
+                data-frame-id={frame.id}
+                aria-hidden="true"
+                className="ll:absolute ll:pointer-events-none"
+                style={{ left: frameEl.x, top: frameEl.y + screenHeight, width: frameEl.width, borderTop: `${labelKeep}px dashed var(--ll-accent, #6366f1)`, zIndex: 20 }}
+              >
+                <span
+                  className="ll:absolute ll:right-0 ll:whitespace-nowrap ll:rounded-sm ll:px-1 ll:text-micro ll:text-secondary ll:bg-surface-panel"
+                  style={{ top: 2 * labelKeep, transform: `scale(${labelKeep})`, transformOrigin: "right top" }}
+                >
+                  Fold · {screenHeight}
+                </span>
+              </div>
+            )}
+            </React.Fragment>
           );
         })}
 
@@ -592,6 +676,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
         Object.values(elements).map((el) => {
           if (el.hidden) return null;
           const targetDocId = el.targetId ?? el.id;
+          // a previewed frame is looked at, not edited: what is inside it can't be picked until Preview is off
+          const inFrame = el.mirrorId ?? (layers && rootId ? pageFrameOf(layers, rootId, targetDocId) : null);
+          if (inFrame && inFrame !== targetDocId && screenFrames?.[inFrame] !== undefined) return null;
           const layer = layers?.[targetDocId] ?? layers?.[el.id];
           const isHelper = layer?.properties["render.role"] === "helper";
           if (isHelper && canvasViewMode === "preview") return null;
@@ -788,6 +875,26 @@ export const Artboard: React.FC<ArtboardProps> = ({
       <DraftPath />
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
+      {/* The scroll of previewed frames: the page is drawn under the canvas's click layer, so this scrolls it */}
+      {topFrames.map((frame) => {
+        const el = elements[frame.id];
+        if (!el || screenFrames?.[frame.id] === undefined) return null;
+        return (
+          <div
+            key={`frame-preview-${frame.id}`}
+            data-testid="frame-preview-scroller"
+            data-frame-id={frame.id}
+            className="ll:absolute"
+            style={{ left: el.x, top: el.y, width: el.width, height: el.height, overflowX: "hidden", overflowY: "auto", overscrollBehavior: "contain" }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onScroll={(e) => scrollDrawnFrame(frame.id, e.currentTarget.scrollTop)}
+          >
+            <div style={{ height: fullHeightOf(frame) }} />
+          </div>
+        );
+      })}
+
       <TransformOverlay
         selectedIds={selectedIds}
         hoveredId={hoveredId}

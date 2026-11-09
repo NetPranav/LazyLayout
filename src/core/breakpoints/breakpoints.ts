@@ -15,6 +15,7 @@ import type { Layer, MotionDocument } from "../document/schema";
 import type { PropValue } from "../document/registry";
 import { constrainSpan, readHorizontal, readVertical } from "../layout/constraints";
 import { hasTokens, inheritedModes, resolveLayerTokens } from "../tokens/tokens";
+import { adaptFrame } from "./adaptLayout";
 
 export interface Breakpoint {
   id: string;
@@ -131,7 +132,55 @@ function constrainFrame(layers: Record<string, Layer>, frameId: string, from: { 
   }
 }
 
+/** Does a frame reflow by itself at narrower breakpoints: opened through a device view, or shown by a linked view. */
+function adaptsAtBreakpoints(layer: Layer, mirrored: ReadonlySet<string>): boolean {
+  return layer.properties["breakpoints.adapt"] === true || mirrored.has(layer.id);
+}
+
+/** The frames that linked views show. */
+function mirroredFrames(layers: Record<string, Layer>): Set<string> {
+  const out = new Set<string>();
+  for (const l of Object.values(layers)) {
+    const m = l.properties["frame.mirrorOf"];
+    if (typeof m === "string" && m !== "") out.add(m);
+  }
+  return out;
+}
+
+/**
+ * A frame opened as a device is a page: it is as tall as what is in it, however tall it was made, so nothing falls out
+ * of it (how much shows on the device's screen is the fold, drawn on the canvas). Returns the layers that changed.
+ */
+function stretchDeviceFrames(layers: Record<string, Layer>): Record<string, Layer> | null {
+  let changed: Record<string, Layer> | null = null;
+  for (const frame of Object.values(layers)) {
+    const device = frame.properties["frame.device"];
+    if (typeof device !== "string" || device === "" || frame.children.length === 0) continue;
+    const mirrorOf = frame.properties["frame.mirrorOf"];
+    if (typeof mirrorOf === "string" && mirrorOf !== "") continue; // it shows another frame's layers, and is drawn to fit them
+    const height = num(frame.properties["frame.height"]);
+    if (height === undefined) continue;
+    let bottom = height;
+    for (const id of frame.children) {
+      const c = layers[id];
+      if (!c || c.visible === false || c.properties.positioning !== "absolute" || c.properties["render.role"] === "helper") continue;
+      const y = num(c.properties["frame.y"]);
+      const h = num(c.properties["frame.height"]);
+      if (y !== undefined && h !== undefined) bottom = Math.max(bottom, y + h);
+    }
+    if (bottom > height) (changed ??= {})[frame.id] = { ...frame, properties: { ...frame.properties, "frame.height": Math.ceil(bottom) } };
+  }
+  return changed;
+}
+
+const withStretch = (doc: MotionDocument): MotionDocument => {
+  const stretched = stretchDeviceFrames(doc.layers);
+  return stretched ? { ...doc, layers: { ...doc.layers, ...stretched } } : doc;
+};
+
 const cache = new WeakMap<object, Map<string, MotionDocument>>();
+/** The document at the base with no tokens, by far the most asked for: read on every store change, so kept quick. */
+const baseCache = new WeakMap<object, MotionDocument>();
 
 /** The document with every layer's tokens applied in a mode: the document itself when it has none. */
 function withTokens(doc: MotionDocument, modeId: string | null | undefined): MotionDocument {
@@ -155,7 +204,11 @@ function withTokens(doc: MotionDocument, modeId: string | null | undefined): Mot
 export function resolveDocumentAt(doc: MotionDocument, activeId: string | null | undefined, modeId?: string | null): MotionDocument {
   const list = breakpointsOf(doc);
   const base = isBase(list, activeId);
-  if (base && !hasTokens(doc)) return doc;
+  if (base && !hasTokens(doc)) {
+    let seen = baseCache.get(doc);
+    if (!seen) baseCache.set(doc, (seen = withStretch(doc)));
+    return seen;
+  }
   const key = `${base ? "" : activeId}|${modeId ?? ""}|${list.map((b) => `${b.id}:${b.width}`).join(",")}`;
   let perDoc = cache.get(doc);
   if (!perDoc) cache.set(doc, (perDoc = new Map()));
@@ -163,14 +216,20 @@ export function resolveDocumentAt(doc: MotionDocument, activeId: string | null |
   if (hit) return hit;
   const src = withTokens(doc, modeId);
   if (base) {
-    perDoc.set(key, src);
-    return src;
+    // (the same object when there is nothing to apply, so nothing re-renders)
+    const seen = withStretch(src);
+    perDoc.set(key, seen);
+    return seen;
   }
 
   const applied = appliedBreakpoints(list, activeId);
   const active = list.find((b) => b.id === activeId)!;
   const layers = src.layers;
   const changed: Record<string, Layer> = {};
+
+  // what the designer placed at this breakpoint (or one above it) keeps its place when a frame adapts
+  const pinnedHere = (l: Layer) => applied.some((b) => l.overrides?.[b.id]?.["frame.x"] !== undefined || l.overrides?.[b.id]?.["frame.y"] !== undefined);
+  const mirrored = mirroredFrames(layers);
 
   // 1. responsive frames take the breakpoint's width, and their free children follow their constraints
   for (const layer of Object.values(layers)) {
@@ -180,6 +239,11 @@ export function resolveDocumentAt(doc: MotionDocument, activeId: string | null |
     if (baseW === undefined) continue;
     changed[layer.id] = { ...layer, properties: { ...layer.properties, "frame.width": active.width } };
     constrainFrame(layers, layer.id, { width: baseW, height: baseH ?? 0 }, { width: active.width, height: baseH ?? 0 }, changed);
+    if (adaptsAtBreakpoints(layer, mirrored) && active.width < baseW) {
+      const height = adaptFrame(layers, layer.id, baseW, active.width, changed, pinnedHere);
+      const frame = changed[layer.id];
+      changed[layer.id] = { ...frame, properties: { ...frame.properties, "frame.height": height } };
+    }
   }
   // 2. then every layer's overrides on top (a frame's own width override beats the breakpoint's width)
   for (const layer of Object.values(layers)) {
@@ -187,7 +251,7 @@ export function resolveDocumentAt(doc: MotionDocument, activeId: string | null |
     const resolved = resolveLayerAt(b, applied);
     if (resolved !== layer) changed[layer.id] = resolved;
   }
-  const result: MotionDocument = Object.keys(changed).length > 0 ? { ...src, layers: { ...layers, ...changed } } : src;
+  const result = withStretch(Object.keys(changed).length > 0 ? { ...src, layers: { ...layers, ...changed } } : src);
   perDoc.set(key, result);
   return result;
 }

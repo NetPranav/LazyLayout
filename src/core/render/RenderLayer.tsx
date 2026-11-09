@@ -70,9 +70,22 @@ interface RenderLayerProps {
 export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx = {}, plan, root }) => {
   const own = useMemo(() => (plan ? null : selectRenderable(layers, [layerId])), [plan, layers, layerId]);
   const permitted = plan ?? own!;
-  const layer = layers[layerId];
+  const stored = layers[layerId];
   const childIds = permitted.get(layerId);
-  if (!layer || !childIds) return null;
+  if (!stored || !childIds) return null;
+
+  // A linked view is as tall as what it shows at its breakpoint (never shorter than it was made). A frame shown as the
+  // device's screen is that tall instead, and what is below scrolls.
+  const sourceOf = mirrorSourceId(stored);
+  const shownLayers = sourceOf ? (ctx.mirrorViews?.[stored.id] ?? layers) : null;
+  const shown = sourceOf && shownLayers ? shownLayers[sourceOf] : undefined;
+  const screen = ctx.screenFrames?.[stored.id];
+  const layer: Layer =
+    screen !== undefined
+      ? { ...stored, properties: { ...stored.properties, "frame.height": screen, "layout.overflowX": "hidden", "layout.overflowY": "hidden" } }
+      : shown
+        ? { ...stored, properties: { ...stored.properties, "frame.height": Math.max(Number(stored.properties["frame.height"] ?? 0), Number(shown.properties["frame.height"] ?? 0)) } }
+        : stored;
   if (isEditorOnlyLayer(layer) && (ctx.mode === "preview" || ctx.mode === "export")) return null;
 
   const resolved = resolveProps(layer);
@@ -85,12 +98,6 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
   const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
   const reverseZ = resolved.bool("layout.reverseZ", false);
-
-  // A linked view (mirror frame) draws its source frame's layers as seen at its own breakpoint. Those layers come
-  // from whoever draws the canvas (`ctx.mirrorViews`); without them (a thumbnail, a preview) it draws them as they are.
-  const mirrorOf = mirrorSourceId(layer);
-  const mirrorLayers = mirrorOf ? (ctx.mirrorViews?.[layer.id] ?? layers) : null;
-  const mainFrame = mirrorOf && mirrorLayers ? mirrorLayers[mirrorOf] : undefined;
 
   if (isMeshed) {
     const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [0, 0]);
@@ -151,13 +158,13 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
 
   return (
     <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>
-      {mainFrame && mirrorLayers ? (
-        mainFrame.children.map((childId) => (
+      {shown && shownLayers ? (
+        shown.children.map((childId) => (
           <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
             <RenderLayer
               layerId={childId}
-              layers={mirrorLayers}
-              ctx={{ ...childCtx, layers: mirrorLayers, mirrorId: layer.id }}
+              layers={shownLayers}
+              ctx={{ ...childCtx, layers: shownLayers, mirrorId: layer.id }}
             />
           </div>
         ))
