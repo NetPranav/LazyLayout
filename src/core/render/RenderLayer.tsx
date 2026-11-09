@@ -1,15 +1,15 @@
 import React, { useMemo } from "react";
 import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
-import { isMeshConvex, meshTiles, parseMesh } from "../geometry/meshWarp";
+import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
 import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
 import { EffectDefs, effectEntries } from "./effectsRender";
 import { layerBoxStyle } from "./geometry";
-import { breakpointsOf, resolveDocumentAt } from "../breakpoints/breakpoints";
-import { getDocument } from "../store/documentState";
+import { mirrorSourceId } from "../frames/devices";
+import { isEditorOnlyLayer } from "../document/editorOnly";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -44,7 +44,7 @@ export function selectRenderable(layers: Record<string, Layer>, rootIds: readonl
   const visit = (id: string, depth: number, path: ReadonlySet<string>): boolean => {
     const layer = layers[id];
     if (!layer || layer.visible === false || (keep && !keep.has(id))) return false;
-    if (previewOrExport && layer.properties["render.role"] === "helper") return false;
+    if (previewOrExport && isEditorOnlyLayer(layer)) return false;
     if (depth > MAX_TREE_DEPTH || path.has(id) || plan.has(id) || plan.size >= MAX_RENDERED_LAYERS) return false;
     const kept: string[] = [];
     plan.set(id, kept);
@@ -73,11 +73,11 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const layer = layers[layerId];
   const childIds = permitted.get(layerId);
   if (!layer || !childIds) return null;
-  if (layer.properties["render.role"] === "helper" && (ctx.mode === "preview" || ctx.mode === "export")) return null;
+  if (isEditorOnlyLayer(layer) && (ctx.mode === "preview" || ctx.mode === "export")) return null;
 
   const resolved = resolveProps(layer);
-  const mesh = parseMesh(resolved.get("transform.mesh"));
   const g = getLayerGeometry(layer);
+  const mesh = meshInLayer(resolved.get("transform.mesh"), [g.frame.x, g.frame.y]);
   const isMeshed = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0 && !ctx.inMeshTile;
 
   const Definition = RENDER_DEFINITIONS[layer.archetype];
@@ -86,25 +86,14 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
   const reverseZ = resolved.bool("layout.reverseZ", false);
 
-  const mirrorOf = typeof layer.properties["frame.mirrorOf"] === "string" ? (layer.properties["frame.mirrorOf"] as string) : undefined;
-  const isMirror = Boolean(mirrorOf && layers[mirrorOf]);
-  const mainFrame = mirrorOf ? layers[mirrorOf] : undefined;
-
-  let mirrorResolvedLayers: Record<string, Layer> | null = null;
-  if (isMirror && mainFrame) {
-    const doc = getDocument();
-    const bps = breakpointsOf(doc);
-    const devProp = String(layer.properties["frame.device"] ?? (Number(layer.properties["frame.width"] ?? 1440) <= 480 ? "mobile" : "tablet")).toLowerCase();
-    const targetBp = devProp === "mobile"
-      ? bps.find((b) => b.width === 375 || b.name.toLowerCase() === "mobile")
-      : devProp === "tablet"
-      ? bps.find((b) => b.width === 768 || b.name.toLowerCase() === "tablet")
-      : null;
-    mirrorResolvedLayers = resolveDocumentAt(doc, targetBp?.id ?? null).layers;
-  }
+  // A linked view (mirror frame) draws its source frame's layers as seen at its own breakpoint. Those layers come
+  // from whoever draws the canvas (`ctx.mirrorViews`); without them (a thumbnail, a preview) it draws them as they are.
+  const mirrorOf = mirrorSourceId(layer);
+  const mirrorLayers = mirrorOf ? (ctx.mirrorViews?.[layer.id] ?? layers) : null;
+  const mainFrame = mirrorOf && mirrorLayers ? mirrorLayers[mirrorOf] : undefined;
 
   if (isMeshed) {
-    const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [g.frame.x, g.frame.y]);
+    const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [0, 0]);
     const outerBox = layerBoxStyle(layer, resolved, ctx, { shadow: "none" });
     delete outerBox.transform;
     delete outerBox.transformOrigin;
@@ -162,13 +151,13 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
 
   return (
     <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>
-      {isMirror && mainFrame && mirrorResolvedLayers ? (
+      {mainFrame && mirrorLayers ? (
         mainFrame.children.map((childId) => (
           <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
             <RenderLayer
               layerId={childId}
-              layers={mirrorResolvedLayers}
-              ctx={{ ...childCtx, layers: mirrorResolvedLayers, inMirror: true, mirrorId: layer.id }}
+              layers={mirrorLayers}
+              ctx={{ ...childCtx, layers: mirrorLayers, mirrorId: layer.id }}
             />
           </div>
         ))
@@ -197,7 +186,8 @@ function subtreeOf(plan: RenderPlan, rootId: string): string[] {
 /** Draws every top-level layer of a document, within one layer budget. */
 export const RenderTree: React.FC<{ layers: Record<string, Layer>; rootIds?: string[]; ctx?: RenderContext }> = ({ layers, rootIds, ctx }) => {
   const roots = useMemo(() => rootIds ?? Object.values(layers).filter((l) => l.parentId === null).map((l) => l.id), [layers, rootIds]);
-  const plan = useMemo(() => selectRenderable(layers, roots), [layers, roots]);
+  const shipping = ctx?.mode === "preview" || ctx?.mode === "export";
+  const plan = useMemo(() => selectRenderable(layers, roots, shipping), [layers, roots, shipping]);
   return (
     <>
       {roots.map((id) => (

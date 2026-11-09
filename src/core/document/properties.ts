@@ -290,6 +290,8 @@ const DEFS = {
    * never rendered in Preview or export, never focused or announced (grammar 6.17).
    */
   "render.role": typed(oneOf(["content", "helper"], "content", null, "none", VISUAL)),
+  /** What a group was made for, so commands find it by this mark rather than by its name: `letters` (a text split into letters). */
+  "group.role": oneOf(["none", "letters"], "none", null, "none", only("container")),
   "filter.blur": px(0, "filter", "paint", VISUAL),
 
   // --- Typography (CONVENTIONS §4.2) ----------------------------------------
@@ -355,6 +357,14 @@ const DEFS = {
   /** Styled runs over `content.text` (bold, italic, underline, strike, colour) as JSON; ignored unless they spell the text exactly (Phase 31). */
   "content.runs": typed(str("", null, "layout", only("text"))),
   /** How a text layer's box follows its text: auto-width (one line, grows), auto-height (fixed width, grows down) or fixed (Phase 31). */
+  /** Extruded depth (standing letters): copies of the text drawn behind it, `text.depth` px deep. 0: none. Drawn by the renderer, so they follow the text's edits and animations. */
+  "text.depth": ranged(px(0, null, "paint", only("text")), { min: 0, max: 400 }),
+  /** How many copies make the depth (more: smoother sides). */
+  "text.depthSteps": ranged(num(8, null, "paint", only("text"), false), { min: 1, max: 24 }),
+  /** The colour of the depth; empty: the text colour, darkened. */
+  "text.depthColor": str("", null, "paint", only("text")),
+  /** A fill laid out on a larger box than the layer (a split letter keeps its part of the word's gradient): "x,y,w,h", the layer's offset inside that box and its size. */
+  "paint.fillBox": str("", null, "paint", only("text")),
   "text.sizing": typed(oneOf(["fixed", "autoWidth", "autoHeight"], "fixed", null, "layout", only("text"))),
   // The FAB's label shows when it expands on hover (`button.expandOnHover`).
   "content.label": str("", null, "layout", only("button", "badge", "toggle", "fab")),

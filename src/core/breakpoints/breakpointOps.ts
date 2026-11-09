@@ -10,14 +10,17 @@ import { useBreakpointStore } from "../store/useBreakpointStore";
 import { useCanvasViewStore } from "../store/useCanvasViewStore";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { frameIdOf } from "../frames/frames";
-import { MAX_BREAKPOINTS, breakpointsOf, isBase, type Breakpoint } from "./breakpoints";
+import { MAX_BREAKPOINTS, breakpointsOf, isBase, isTopLevelFrame, type Breakpoint } from "./breakpoints";
+import { activePageRootId } from "../frames/pageRoots";
 
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "bp";
 
 /** The frame the breakpoint bar acts on: the selection's frame, else the active one. */
 export function targetFrameId(): string | null {
   const layers = getDocument().layers;
-  const root = Object.values(layers).find((l) => l.parentId === null);
+  // this page's root: other pages' roots have no parent either, and are not where the bar acts
+  const pageRoot = activePageRootId();
+  const root = pageRoot ? layers[pageRoot] : undefined;
   const selected = useSelectionStore.getState().selectedIds[0];
   if (selected && layers[selected]) {
     let cur: (typeof layers)[string] | undefined = layers[selected];
@@ -90,8 +93,9 @@ export function removeBreakpoint(id: string): boolean {
 }
 
 export function setResponsive(frameId: string, on: boolean): boolean {
-  const layer = getDocument().layers[frameId];
-  if (!layer || layer.parentId !== null) return false;
+  const layers = getDocument().layers;
+  const layer = layers[frameId];
+  if (!layer || !isTopLevelFrame(layer, layers)) return false;
   const active = useBreakpointStore.getState().activeId;
   useBreakpointStore.getState().setActive(null); // the flag belongs to the base
   documentCommands.updateProps(frameId, { "breakpoints.responsive": on ? true : undefined }, on ? "Make frame responsive" : "Make frame fixed");

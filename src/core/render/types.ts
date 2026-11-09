@@ -32,8 +32,8 @@ export interface RenderContext {
   mode?: "design" | "preview" | "export";
   /** When drawn as a tile of a warp mesh, child content sits at tile origin without outer layer transform. */
   inMeshTile?: boolean;
-  /** When drawn inside a live linked mirror frame (Task I), marks child rendering as part of that mirror. */
-  inMirror?: boolean;
+  /** The layers each mirror frame shows (its source frame resolved at the mirror's breakpoint), by mirror id. Editor only. */
+  mirrorViews?: Readonly<Record<string, Record<string, import("../document/schema").Layer>>>;
   /** The container layer ID of the mirror frame enclosing this layer. */
   mirrorId?: string;
 }

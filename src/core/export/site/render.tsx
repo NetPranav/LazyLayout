@@ -20,7 +20,7 @@ export function renderLayerMarkup(layers: Record<string, Layer>, rootId: string,
   const resolve = (src: string) => (isAssetSrc(src) ? options.assetUrl(src.slice(ASSET_SCHEME.length)) : src);
   return renderToStaticMarkup(
     <AssetUrlContext.Provider value={resolve}>
-      <RenderTree layers={layers} rootIds={[rootId]} ctx={{ frameAtOrigin }} />
+      <RenderTree layers={layers} rootIds={[rootId]} ctx={{ frameAtOrigin, mode: "export" }} />
     </AssetUrlContext.Provider>,
   );
 }

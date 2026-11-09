@@ -13,6 +13,7 @@ import {
 } from "@/core/geometry/pins";
 import { compensateTransformForAnchorChange } from "@/core/geometry/transforms";
 import { setLayerProps } from "@/core/editing/editOps";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 
 interface AnchorOverlayProps {
   selectedIds: string[];
@@ -52,6 +53,31 @@ export const AnchorOverlay: React.FC<AnchorOverlayProps> = ({
   zoom = 1,
   onUpdateAnchor,
 }) => {
+  // The middle of a layer belongs to the layer: clicking selects it and dragging moves it (in Motion, that drag is how
+  // keys are recorded). So the anchor is a marker, and is dragged with Ctrl (Cmd on a Mac) held, the way After
+  // Effects keeps it on its own tool. It also waits for the press that selected the layer to be over, so that press's
+  // release still lands on the layer.
+  const [armedFor, setArmedFor] = useState<string | null>(null);
+  const [modifier, setModifier] = useState(false);
+  useEffect(() => {
+    const track = (e: PointerEvent) => setModifier(e.ctrlKey || e.metaKey);
+    window.addEventListener("pointermove", track);
+    window.addEventListener("pointerdown", track, true);
+    return () => {
+      window.removeEventListener("pointermove", track);
+      window.removeEventListener("pointerdown", track, true);
+    };
+  }, []);
+  useEffect(() => {
+    // read the store, not props: a click selects inside its own handler, before this listener runs
+    const settle = () => setArmedFor(useSelectionStore.getState().selectedIds[0] ?? null);
+    window.addEventListener("pointerup", settle);
+    window.addEventListener("click", settle);
+    return () => {
+      window.removeEventListener("pointerup", settle);
+      window.removeEventListener("click", settle);
+    };
+  }, []);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
 
@@ -174,6 +200,12 @@ export const AnchorOverlay: React.FC<AnchorOverlayProps> = ({
   const layer = layers ? layers[targetId] : undefined;
   if (!el) return null;
 
+  // A centred anchor is the default and needs no mark: it is shown once it has been moved, while Ctrl/Cmd is held to
+  // grab it, and during a drag. (Otherwise it would sit on top of the middle of every selected layer.)
+  const origin = layer?.properties?.["transform.origin"];
+  const offCentre = typeof origin === "string" && origin !== "" && origin !== "center";
+  if (!offCentre && !modifier && !dragState) return null;
+
   const width = el.width;
   const height = el.height;
 
@@ -283,7 +315,8 @@ export const AnchorOverlay: React.FC<AnchorOverlayProps> = ({
         data-anchor-x={Math.round(currentAnchor[0])}
         data-anchor-y={Math.round(currentAnchor[1])}
         data-anchor-preset={dragState?.snappedPreset || (typeof layer?.properties?.["transform.origin"] === "string" ? layer.properties["transform.origin"] : "center")}
-        className="ll:absolute ll:pointer-events-auto ll:cursor-grab active:ll:cursor-grabbing ll:group ll:select-none"
+        data-interactive={modifier && armedFor === selectedIds[0] ? "true" : "false"}
+        className={`ll:absolute ll:group ll:select-none ${modifier && armedFor === selectedIds[0] ? "ll:pointer-events-auto ll:cursor-grab active:ll:cursor-grabbing" : "ll:pointer-events-none"}`}
         style={{
           left: anchorCanvasX,
           top: anchorCanvasY,

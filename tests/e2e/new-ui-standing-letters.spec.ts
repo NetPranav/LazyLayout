@@ -127,6 +127,7 @@ test.describe("Task F: 3D standing letters with thickness", () => {
     }
 
     // 5. Extrude letters (give depth)
+    const docBeforeExtrude = await layers(page);
     const extrudeBtn = page.getByRole("button", { name: "Give letters depth" });
     if (await extrudeBtn.isVisible().catch(() => false)) {
       await extrudeBtn.click();
@@ -137,29 +138,20 @@ test.describe("Task F: 3D standing letters with thickness", () => {
       }, lettersGroup.id);
     }
 
-    // Check that every letter has 8 depth copies at distinct translateZ
+    // Depth is a property of each letter, drawn by the letter itself: 8 copies behind its glyphs, at distinct depths,
+    // and no extra layers (so the depth follows the letter's edits and animations)
     await expect.poll(async () => {
       const doc = await layers(page);
-      const allCopies = Object.values(doc).filter((l) => l.name.includes(" depth ") && l.archetype === "text");
-      return allCopies.length;
-    }, "8 depth copies per letter created").toBe(letterChildren.length * 8);
-
-    const docAfterExtrude = await layers(page);
+      return letterChildren.every((l) => doc[l.id]?.properties["text.depth"] === 24);
+    }, "every letter has 24px of depth").toBe(true);
+    expect(Object.keys(await layers(page)).length, "no copies are added as layers").toBe(Object.keys(docBeforeExtrude).length);
     for (const letter of letterChildren) {
-      const copies = Object.values(docAfterExtrude).filter(
-        (l) => l.name.startsWith(`${letter.name} depth `) && l.archetype === "text"
+      const zs = await drawn(page, letter.id).evaluate((el) =>
+        [...el.querySelectorAll<HTMLElement>("[data-depth-copy]")].map((c) => c.style.transform),
       );
-      // FERRARI has two R's: copies are matched by name, so each repeated letter owns 8 per occurrence
-      const occurrences = letterChildren.filter((l) => l.name === letter.name).length;
-      expect(copies, `letter ${letter.name} must have 8 copies per occurrence`).toHaveLength(8 * occurrences);
-
-      const tzValues = copies.map((c) => Number(c.properties["transform.translateZ"]));
-      const uniqueTz = new Set(tzValues);
-      expect(uniqueTz.size, `distinct translateZ for letter ${letter.name}`).toBe(8);
-
-      for (const tz of tzValues) {
-        expect(tz, "depth translateZ is negative").toBeLessThan(0);
-      }
+      expect(zs, `letter ${letter.name} draws 8 copies`).toHaveLength(8);
+      expect(new Set(zs).size, `distinct translateZ for letter ${letter.name}`).toBe(8);
+      for (const z of zs) expect(z, "depth goes back").toMatch(/translateZ\(-/);
     }
 
     // 6. Remove depth restores the clean letters group
@@ -175,9 +167,9 @@ test.describe("Task F: 3D standing letters with thickness", () => {
 
     await expect.poll(async () => {
       const doc = await layers(page);
-      const remainingDepth = Object.values(doc).filter((l) => l.name.includes(" depth"));
-      return remainingDepth.length;
-    }, "depth copies removed").toBe(0);
+      return letterChildren.filter((l) => Number(doc[l.id]?.properties["text.depth"] ?? 0) > 0).length;
+    }, "depth removed from every letter").toBe(0);
+    await expect.poll(() => drawn(page, letterChildren[0].id).evaluate((el) => el.querySelectorAll("[data-depth-copy]").length)).toBe(0);
 
     const docAfterRemove = await layers(page);
     const restoredGroup = docAfterRemove[lettersGroup.id];

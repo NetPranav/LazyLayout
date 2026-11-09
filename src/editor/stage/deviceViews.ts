@@ -23,87 +23,38 @@
 import type { Layer } from "@/core/document/schema";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { addBreakpoint, setActiveBreakpoint } from "@/core/breakpoints/breakpointOps";
-import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "./activePage";
+import { FRAME_GAP, frameInfo, nextFramePosition, uniqueFrameName } from "@/core/frames/frames";
 import {
-  FRAME_GAP,
-  frameInfo,
-  nextFramePosition,
-  uniqueFrameName,
-  type FrameInfo,
-} from "@/core/frames/frames";
+  DEVICE_SPECS,
+  deviceOfFrame,
+  framesOfPage,
+  isMirrorFrame,
+  mirrorSourceId,
+  normalizeDeviceKind,
+  pageFrameOf,
+  type DeviceKind,
+  type DeviceSpec,
+} from "@/core/frames/devices";
 
-export type DeviceKind = "desktop" | "tablet" | "mobile";
+export { DEVICE_SPECS, deviceOfFrame, isMirrorFrame, normalizeDeviceKind, type DeviceKind, type DeviceSpec };
 
-export interface DeviceSpec {
-  id: DeviceKind;
-  label: "Desktop" | "Tablet" | "Mobile";
-  width: number;
-  height: number;
-}
+/** Returns the ID of the frame a mirror shows, or null. */
+export const getMirroredFrameId = mirrorSourceId;
 
-export const DEVICE_SPECS: Record<DeviceKind, DeviceSpec> = {
-  desktop: { id: "desktop", label: "Desktop", width: 1440, height: 900 },
-  tablet: { id: "tablet", label: "Tablet", width: 768, height: 1024 },
-  mobile: { id: "mobile", label: "Mobile", width: 375, height: 812 },
-};
+/** The frames of the page under `rootId` (other pages' roots are not frames of this page). */
+export const listTopLevelFrames = framesOfPage;
 
-/** Normalizes any device string to "desktop" | "tablet" | "mobile". */
-export function normalizeDeviceKind(device: string): DeviceKind {
-  const d = device.toLowerCase().trim();
-  if (d === "mobile" || d === "375") return "mobile";
-  if (d === "tablet" || d === "768") return "tablet";
-  return "desktop";
-}
-
-/** Determines the device classification of a frame layer. */
-export function deviceOfFrame(layer?: { properties?: Record<string, unknown> } | null): DeviceKind {
-  if (!layer || !layer.properties) return "desktop";
-  const dev = layer.properties["frame.device"];
-  if (dev === "mobile" || dev === "tablet" || dev === "desktop") return dev;
-  const w = Number(layer.properties["frame.width"] ?? 1440);
-  if (w <= 480) return "mobile";
-  if (w <= 1024) return "tablet";
-  return "desktop";
-}
-
-/** Checks whether a frame layer is a live linked mirror of another frame. */
-export function isMirrorFrame(layer?: { properties?: Record<string, unknown> } | null): boolean {
-  return Boolean(layer?.properties?.["frame.mirrorOf"]);
-}
-
-/** Returns the ID of the main frame that this mirror links to. */
-export function getMirroredFrameId(layer?: { properties?: Record<string, unknown> } | null): string | null {
-  return (layer?.properties?.["frame.mirrorOf"] as string) ?? null;
-}
-
-/** Lists all top-level container frames under the given root. */
-export function listTopLevelFrames(layers: Record<string, Layer>, rootId: string | null): Layer[] {
-  return Object.values(layers).filter(
-    (l) => (l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId
-  );
-}
-
-/** Finds the selected frame (either selected directly or ancestor frame of selected layer). */
+/** The page frame holding the first selected layer (the layer itself when it is a frame), or null. */
 export function getSelectedFrameId(
   layers: Record<string, Layer>,
   rootId: string | null,
   selectedIds: readonly string[]
 ): string | null {
-  if (selectedIds.length === 0) return null;
-  const sel = selectedIds[0];
-  let cur: Layer | undefined = layers[sel];
-  while (cur) {
-    if (cur.parentId === null || cur.parentId === rootId) {
-      if (cur.archetype === "container" && cur.id !== rootId) return cur.id;
-      return null;
-    }
-    cur = cur.parentId ? layers[cur.parentId] : undefined;
-  }
-  return null;
+  return selectedIds.length === 0 ? null : pageFrameOf(layers, rootId, selectedIds[0]);
 }
 
 export type DeviceChoiceAction =
@@ -132,7 +83,7 @@ export function planDeviceChoiceAction(params: {
   }
 
   const selectedFrame = layers[selectedFrameId];
-  const targetMainFrameId = (selectedFrame.properties["frame.mirrorOf"] as string) ?? selectedFrame.id;
+  const targetMainFrameId = mirrorSourceId(selectedFrame) ?? selectedFrame.id;
   const currentDevice = deviceOfFrame(selectedFrame);
 
   const selX = Number(selectedFrame.properties["frame.x"] ?? 0);
@@ -178,7 +129,7 @@ export function executeDeviceChoice(deviceKindInput: string): string {
 
   ensureBreakpointForDevice(spec);
 
-  const effectiveRootId = rootId ?? (Object.values(doc.layers).find((l) => l.parentId === null)?.id ?? null);
+  const effectiveRootId = rootId;
   const frames = listTopLevelFrames(doc.layers, rootId);
 
   if (action.kind === "create_frame") {
@@ -200,12 +151,9 @@ export function executeDeviceChoice(deviceKindInput: string): string {
       `Create ${spec.label} frame`
     );
     useSelectionStore.getState().select(frameId, "element");
-    if (device !== "desktop") {
-      const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
-      if (bp) setActiveBreakpoint(bp.id);
-    } else {
-      setActiveBreakpoint(null);
-    }
+    // A frame made at a device size is a design of its own: it is edited and exported as it is (the base), so the
+    // view goes back to the base rather than leaving its edits in a breakpoint's overrides.
+    setActiveBreakpoint(null);
     return frameId;
   }
 
@@ -272,7 +220,7 @@ export function switchFrameView(frameId: string, targetDevice: DeviceKind): void
 
   ensureBreakpointForDevice(spec);
 
-  const isMirror = Boolean(layer.properties["frame.mirrorOf"]);
+  const isMirror = isMirrorFrame(layer);
   if (isMirror) {
     documentCommands.updateProps(
       frameId,

@@ -11,7 +11,6 @@ import { documentCommands } from "../store/useDocumentStore";
 import { deleteLayers, groupLayers, renameLayer, transaction } from "./editOps";
 import { useLayersUiStore } from "../store/useLayersUiStore";
 import { useSelectionStore } from "../store/useSelectionStore";
-import { parseRuns } from "../text/runs";
 import { hydrateClip } from "../document/factories";
 import type { Layer } from "../document/schema";
 import type { PropValue } from "../document/registry";
@@ -30,7 +29,8 @@ export interface LetterBox {
   color?: string;
 }
 
-function splitGraphemes(value: string): { at: number; char: string }[] {
+/** The letters (grapheme clusters: an emoji or an accented letter is one) of a string, with where each starts. */
+export function splitGraphemes(value: string): { at: number; char: string }[] {
   if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
     const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
     return Array.from(segmenter.segment(value), (s) => ({ at: s.index, char: s.segment }));
@@ -44,99 +44,24 @@ function splitGraphemes(value: string): { at: number; char: string }[] {
   return pieces;
 }
 
-/** The letters of a drawn text layer, with their boxes, or null when the layer is not on screen. */
-export function measureLetters(id: string): LetterBox[] | null {
-  if (typeof document === "undefined") return null;
-  const node = document.querySelector<HTMLElement>(`[data-testid="stage-page"] [data-archetype="text"][data-element-id="${id}"]`);
-  if (!node) return null;
+/** What the canvas measured of a drawn text: each letter's box, and the size the text is drawn at. */
+export interface LetterMeasure {
+  boxes: LetterBox[];
+  width: number;
+  height: number;
+}
 
-  // Temporarily reset transform so range boxes are measured in unrotated space
-  const prevTransform = node.style.transform;
-  node.style.transform = "none";
-
-  try {
-    const box = node.getBoundingClientRect();
-    const scale = node.offsetWidth > 0 ? box.width / node.offsetWidth : 1;
-    const out: LetterBox[] = [];
-
-    const layer = getDocument().layers[id];
-    const rawText = layer ? (typeof layer.properties["content.text"] === "string" ? layer.properties["content.text"] : layer.name) : "";
-    const runs = layer ? parseRuns(layer.properties["content.runs"], rawText) : null;
-
-    const charStyles: { bold?: boolean; italic?: boolean; underline?: boolean; strike?: boolean; color?: string }[] = [];
-    if (runs) {
-      for (const run of runs) {
-        for (let i = 0; i < run.text.length; i++) {
-          charStyles.push({
-            bold: run.bold,
-            italic: run.italic,
-            underline: run.underline,
-            strike: run.strike,
-            color: run.color,
-          });
-        }
-      }
-    }
-
-    let globalCharOffset = 0;
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-    for (let text = walker.nextNode() as Text | null; text; text = walker.nextNode() as Text | null) {
-      const value = text.data;
-      const pieces = splitGraphemes(value);
-
-      const el = text.parentElement;
-      let elBold: boolean | undefined = undefined;
-      let elItalic: boolean | undefined = undefined;
-      let elUnderline: boolean | undefined = undefined;
-      let elStrike: boolean | undefined = undefined;
-      let elColor: string | undefined = undefined;
-
-      if (el && el !== node) {
-        const fw = el.style.fontWeight;
-        if (fw === "700" || fw === "bold" || Number(fw) >= 700) elBold = true;
-        if (el.style.fontStyle === "italic") elItalic = true;
-        const deco = el.style.textDecoration || "";
-        if (deco.includes("underline")) elUnderline = true;
-        if (deco.includes("line-through")) elStrike = true;
-        if (el.style.color) elColor = el.style.color;
-      }
-
-      for (const { at, char } of pieces) {
-        const charIdx = globalCharOffset + at;
-        if (char.trim() === "") continue;
-
-        const range = document.createRange();
-        range.setStart(text, at);
-        range.setEnd(text, at + char.length);
-        const r = range.getBoundingClientRect();
-        if (r.width === 0 && r.height === 0) continue;
-
-        const runStyle = charStyles[charIdx];
-        const bold = runStyle?.bold ?? elBold;
-        const italic = runStyle?.italic ?? elItalic;
-        const underline = runStyle?.underline ?? elUnderline;
-        const strike = runStyle?.strike ?? elStrike;
-        const color = runStyle?.color ?? elColor;
-
-        out.push({
-          char,
-          x: (r.left - box.left) / scale,
-          y: (r.top - box.top) / scale,
-          width: r.width / scale,
-          height: r.height / scale,
-          ...(bold !== undefined ? { bold } : {}),
-          ...(italic !== undefined ? { italic } : {}),
-          ...(underline !== undefined ? { underline } : {}),
-          ...(strike !== undefined ? { strike } : {}),
-          ...(color ? { color } : {}),
-        });
-      }
-      globalCharOffset += value.length;
-    }
-    return out;
-  } finally {
-    node.style.transform = prevTransform;
-  }
+/**
+ * Measuring letters needs the drawn page, which only the editor has. It registers how (see
+ * `src/editor/stage/measureLetters.ts`); core stays free of the DOM, and a test can register its own.
+ */
+let letterMeasurer: ((id: string) => LetterMeasure | null) | null = null;
+export function registerLetterMeasurer(fn: ((id: string) => LetterMeasure | null) | null): void {
+  letterMeasurer = fn;
+}
+/** The letters of a drawn text layer, or null when nothing can measure it (it isn't on screen). */
+export function measureLettersOf(id: string): LetterMeasure | null {
+  return letterMeasurer ? letterMeasurer(id) : null;
 }
 
 const num = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
@@ -155,7 +80,7 @@ export function cannotSplit(id: string): string | null {
 }
 
 /** Replaces the text with a group of one layer per letter. Returns the group's id, or null when it cannot be done. */
-export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): string | null {
+export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?: { width: number; height: number }): string | null {
   if (cannotSplit(id) !== null || boxes.length === 0) return null;
   const src = getDocument().layers[id];
   const p = src.properties;
@@ -165,11 +90,8 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): strin
   let w0 = num(p["frame.width"]);
   let h0 = num(p["frame.height"]);
 
-  if (typeof document !== "undefined") {
-    const node = document.querySelector<HTMLElement>(`[data-testid="stage-page"] [data-archetype="text"][data-element-id="${id}"]`);
-    if (node && node.offsetWidth > 0) w0 = node.offsetWidth;
-    if (node && node.offsetHeight > 0) h0 = node.offsetHeight;
-  }
+  if (drawn && drawn.width > 0) w0 = drawn.width;
+  if (drawn && drawn.height > 0) h0 = drawn.height;
   if (w0 === 0 && boxes.length > 0) {
     w0 = Math.max(...boxes.map((b) => b.x + b.width));
   }
@@ -193,7 +115,15 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): strin
     "layout.paddingLeft": 0,
     "layout.padding": 0,
     "frame.rotation": 0,
+    // a letter is sized in px, whatever unit the text's own box used (a % of the parent would stretch each letter)
+    "frame.widthUnit": "px",
+    "frame.heightUnit": "px",
+    // a word's depth and the mark of being split are the word's, set again on the letters by their own commands
+    "text.depth": 0,
   } as typeof p;
+  // a gradient or picture fill keeps running across the word: each letter shows its own part of the word's fill
+  const fills = typeof p["paint.fills"] === "string" ? p["paint.fills"] : "";
+  const sharedFill = fills !== "" && /"type"\s*:\s*"(?!solid)/.test(fills);
 
   let group: string | null = null;
   transaction("Split into letters", () => {
@@ -210,6 +140,10 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): strin
       }
       if (b.color) {
         specificProps["typography.color"] = b.color;
+      }
+      if (sharedFill) {
+        const r = (n: number) => Math.round(n * 100) / 100;
+        specificProps["paint.fillBox"] = `${r(b.x)},${r(b.y - (lineHeightPx - b.height) / 2)},${r(w0)},${r(h0)}`;
       }
       if (b.underline || b.strike) {
         specificProps["typography.textDecoration"] = [b.underline ? "underline" : "", b.strike ? "line-through" : ""].filter(Boolean).join(" ");
@@ -238,6 +172,8 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): strin
     group = groupLayers(made, "group");
     if (group) {
       renameLayer(group, `${src.name} letters`);
+      // the group is found again by this mark, not by its name (which the user may change)
+      documentCommands.updateProps(group, { "group.role": "letters" });
       if (rot !== 0) {
         const groupLayer = getDocument().layers[group];
         const gp = groupLayer.properties;
@@ -280,22 +216,34 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[]): strin
   return group;
 }
 
-/** Whether a layer is a group of split letters. */
+/**
+ * Whether a layer is a group of split letters: marked `group.role: "letters"` by Split into letters. A group made
+ * before the mark existed counts only if it still looks exactly like one: named "... letters", holding one-letter texts
+ * (and the depth groups older documents kept beside them). Any other group of texts is not taken for one.
+ */
 export function isLettersGroup(layer: Layer | null | undefined, allLayers: Record<string, Layer>): boolean {
-  if (!layer) return false;
-  if (layer.archetype !== "container") return false;
-  if (!layer.children || layer.children.length === 0) return false;
-  const hasLettersName = layer.name.endsWith(" letters");
-  const textChildren = layer.children.filter((childId) => allLayers[childId]?.archetype === "text");
-  if (textChildren.length === 0) return false;
-  const allValidChildren = layer.children.every((childId) => {
+  if (!layer || layer.archetype !== "container") return false;
+  if (layer.properties["group.role"] === "letters") return true;
+  if (!layer.name.endsWith(" letters") || layer.children.length === 0) return false;
+  let letters = 0;
+  for (const childId of layer.children) {
     const child = allLayers[childId];
     if (!child) return false;
-    if (child.archetype === "text") return true;
-    if (child.archetype === "container" && child.name.endsWith(" depth")) return true;
-    return false;
-  });
-  return allValidChildren && (hasLettersName || textChildren.length > 0);
+    if (child.archetype === "text") {
+      const t = child.properties["content.text"];
+      if (typeof t !== "string" || splitGraphemes(t).length !== 1) return false;
+      letters++;
+    } else if (!(child.archetype === "container" && child.name.endsWith(" depth"))) return false;
+  }
+  return letters > 0;
+}
+
+/** Is a clip the entrance Animate letters makes: on mount, sliding up 20px while fading in, and nothing else. */
+function isLetterEntrance(clip: { type: string; trigger: unknown; tracks: { property: string; keyframes: { value: unknown }[] }[] }): boolean {
+  if (clip.type !== "entrance" || clip.trigger !== "mount" || clip.tracks.length !== 2) return false;
+  const y = clip.tracks.find((t) => t.property === "transform.y");
+  const o = clip.tracks.find((t) => t.property === "appearance.opacity");
+  return !!y && !!o && y.keyframes[0]?.value === 20 && o.keyframes[0]?.value === 0;
 }
 
 /** Gives the letters of a letters group a staggered entrance (fade and slide up, 40ms stagger). */
@@ -316,6 +264,10 @@ export function animateLetters(targetId: string, stagger = 0.04): string[] | nul
 
   const clipIds: string[] = [];
   transaction("Animate letters", () => {
+    // run again, it replaces the entrance it made before rather than stacking a second one on each letter
+    for (const clip of Object.values(getDocument().clips)) {
+      if (letterIds.includes(clip.layerId) && isLetterEntrance(clip)) documentCommands.removeClip(clip.id, "Animate letters");
+    }
     letterIds.forEach((letterId, i) => {
       const delay = Math.round(i * stagger * 1000) / 1000;
       const template = hydrateClip({

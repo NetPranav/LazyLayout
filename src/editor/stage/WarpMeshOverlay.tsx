@@ -9,9 +9,9 @@
 import React, { useRef } from "react";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import {
-  formatMesh,
+  formatMeshInLayer,
   isMeshConvex,
-  parseMesh,
+  meshInParent,
   subdivideMeshCol,
   subdivideMeshRow,
   type Point,
@@ -41,7 +41,8 @@ export const WarpMeshOverlay: React.FC<Props> = ({ selectedIds, elements, layers
   const id = selectedIds.length === 1 ? selectedIds[0] : null;
   const layer = id && layers ? layers[id] : undefined;
   const el = id ? elements[id] : undefined;
-  const mesh = parseMesh(layer?.properties["transform.mesh"]);
+  const origin: [number, number] = [Number(layer?.properties["frame.x"] ?? 0), Number(layer?.properties["frame.y"] ?? 0)];
+  const mesh = meshInParent(layer?.properties["transform.mesh"], origin);
 
   if (!id || !layer || !el || !mesh) return null;
 
@@ -110,7 +111,7 @@ export const WarpMeshOverlay: React.FC<Props> = ({ selectedIds, elements, layers
     };
 
     if (isMeshConvex(nextMesh)) {
-      documentCommands.updateProps(id, { "transform.mesh": formatMesh(nextMesh) });
+      documentCommands.updateProps(id, { "transform.mesh": formatMeshInLayer(nextMesh, origin) });
     }
   };
 
@@ -125,14 +126,14 @@ export const WarpMeshOverlay: React.FC<Props> = ({ selectedIds, elements, layers
   const handleSubdivideRow = (r: number) => {
     const next = subdivideMeshRow(mesh, r);
     if (next && isMeshConvex(next)) {
-      documentCommands.updateProps(id, { "transform.mesh": formatMesh(next) });
+      documentCommands.updateProps(id, { "transform.mesh": formatMeshInLayer(next, origin) });
     }
   };
 
   const handleSubdivideCol = (c: number) => {
     const next = subdivideMeshCol(mesh, c);
     if (next && isMeshConvex(next)) {
-      documentCommands.updateProps(id, { "transform.mesh": formatMesh(next) });
+      documentCommands.updateProps(id, { "transform.mesh": formatMeshInLayer(next, origin) });
     }
   };
 

@@ -327,4 +327,33 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     const curLayers = await layers(page);
     expect(curLayers[rect.id]).toBeDefined();
   });
+
+  test("9) picking a layer in the mirror never leaves the main frame in Tablet: it keeps its width and edits go to Desktop", async ({ page }) => {
+    await ready(page);
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    const desktop = (await ofKind(page, "container"))[0];
+    const rect = await rectangle(page, 0.1, 0.1, 0.25, 0.25);
+    await page.locator(`[data-testid="layer-row"][data-layer-id="${desktop.id}"]`).click();
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Tablet/i }).click();
+    const mirror = (await ofKind(page, "container")).find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
+
+    // pick the rectangle inside the mirror: the mirror says it is editing Tablet, the main frame keeps its width
+    await page.locator(`[data-testid="stage-element"][data-mirror-id="${mirror.id}"][data-element-id="${rect.id}"]`).click();
+    await expect(page.locator(`[data-testid="frame-editing-badge"]`)).toContainText("Editing Tablet");
+    const mainWidth = () =>
+      page.evaluate((id) => (document.querySelector(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`) as HTMLElement).offsetWidth, desktop.id);
+    expect(await mainWidth()).toBe(1440);
+
+    // now drag the same rectangle in the main frame: the Desktop value changes and no Tablet override is written
+    const before = (await layers(page))[rect.id];
+    const main = page.locator(`[data-testid="stage-element"]:not([data-mirror-id])[data-element-id="${rect.id}"]`);
+    const b = (await main.boundingBox())!;
+    await drag(page, { x: b.x + 5, y: b.y + 5 }, { x: b.x + 65, y: b.y + 5 });
+    await expect.poll(async () => (await layers(page))[rect.id].properties["frame.x"]).not.toBe(before.properties["frame.x"]);
+    expect((await layers(page))[rect.id].overrides).toBeUndefined();
+    await expect(page.locator(`[data-testid="frame-editing-badge"]`)).toHaveCount(0);
+    expect(await mainWidth()).toBe(1440);
+  });
 });

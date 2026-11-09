@@ -7,7 +7,7 @@
 
 import React, { useRef } from "react";
 import { documentCommands } from "@/core/store/useDocumentStore";
-import { formatPin, isConvex, mapUnit, parsePin, type Quad } from "@/core/geometry/cornerPin";
+import { formatPinInLayer, isConvex, mapUnit, pinInParent, type Quad } from "@/core/geometry/cornerPin";
 import { parseMesh } from "@/core/geometry/meshWarp";
 import type { Layer } from "@/core/document/schema";
 import type { StageElement } from "./types";
@@ -27,7 +27,8 @@ export const CornerPinOverlay: React.FC<Props> = ({ selectedIds, elements, layer
   const id = selectedIds.length === 1 ? selectedIds[0] : null;
   const layer = id && layers ? layers[id] : undefined;
   const el = id ? elements[id] : undefined;
-  const pin = parsePin(layer?.properties["transform.pin"]);
+  const origin: [number, number] = [Number(layer?.properties["frame.x"] ?? 0), Number(layer?.properties["frame.y"] ?? 0)];
+  const pin = pinInParent(layer?.properties["transform.pin"], origin);
   const mesh = parseMesh(layer?.properties["transform.mesh"]);
   if (!id || !layer || !el || !pin || mesh) return null;
   const ox = el.ox ?? 0;
@@ -48,7 +49,7 @@ export const CornerPinOverlay: React.FC<Props> = ({ selectedIds, elements, layer
     if (!d) return;
     const next = d.quad.map((p) => [...p]) as Quad;
     next[d.index] = [d.quad[d.index][0] + (e.clientX - d.startX) / zoom, d.quad[d.index][1] + (e.clientY - d.startY) / zoom];
-    if (isConvex(next)) documentCommands.updateProps(id, { "transform.pin": formatPin(next) });
+    if (isConvex(next)) documentCommands.updateProps(id, { "transform.pin": formatPinInLayer(next, origin) });
   };
   const end = (e: React.PointerEvent) => {
     const d = drag.current;

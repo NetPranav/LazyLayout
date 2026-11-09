@@ -45,7 +45,10 @@ import { removeLayerDependents } from "../document/migrations";
 import { applyConstraintsToChildren } from "../layout/constrainChildren";
 import { validateParentLink, getLayerParentRef, computeReparentedLocalTransform } from "../geometry/parentTransforms";
 import { appliedBreakpoints, breakpointsOf, isBase, resolveDocumentAt, resolveLayerAt, VISIBLE_KEY } from "../breakpoints/breakpoints";
-import { useBreakpointStore } from "./useBreakpointStore";
+import { editBreakpointId, useBreakpointStore, useEditBreakpointId } from "./useBreakpointStore";
+import { relativizeLegacyPoints } from "../geometry/cornerPin";
+
+const pick = (o: Record<string, unknown>, keys: readonly string[]): Record<string, PropValue> => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k] as PropValue]));
 import { useModeStore } from "./useModeStore";
 import { STYLE_SLOTS, slotProps, slotTriggers, type StyleSlot } from "../tokens/tokens";
 import { lockedByInstance, markOverridden, syncInstances } from "../components/instances";
@@ -631,7 +634,7 @@ export const documentCommands = {
       const layer = requireLayer(draft, layerId);
       const props = layer.properties;
       const list = breakpointsOf(draft);
-      const activeId = useBreakpointStore.getState().activeId;
+      const activeId = editBreakpointId();
       const routed: Record<string, PropValue | undefined> = {};
       // a layer inside an instance can't be moved or rotated: the main places it (FigCraft port F9)
       if (layer.instance && !layer.instance.root) patch = Object.fromEntries(Object.entries(patch).filter(([k]) => !lockedByInstance(layer as Layer, resolvePropertyPath(k, layer.archetype).ok ? (resolvePropertyPath(k, layer.archetype) as { path: string }).path : k)));
@@ -657,6 +660,8 @@ export const documentCommands = {
         delete props[res.ok ? res.path : key];
       }
       const before = { width: props["frame.width"], height: props["frame.height"] };
+      // a pin or mesh in the old absolute form is rewritten relative to where the layer was, before it moves
+      if ("frame.x" in defined || "frame.y" in defined) Object.assign(defined, relativizeLegacyPoints(props), pick(defined, ["transform.pin", "transform.mesh"]));
       // an instance's own change is an override: the main no longer overwrites it (Phase 46)
       if (layer.instance) {
         const named = [...Object.keys(direct)].map((k) => {
@@ -717,7 +722,7 @@ export const documentCommands = {
       if ("visible" in flags) markOverridden(layer as Layer, ["visible"]);
       // showing or hiding a layer by hand lets go of a boolean variable bound to its visibility (FigCraft port F10)
       if ("visible" in flags && layer.tokens?.visible && !layer.tokens.visible.detached) layer.tokens.visible.detached = true;
-      const activeId = useBreakpointStore.getState().activeId;
+      const activeId = editBreakpointId();
       // at a smaller breakpoint, showing or hiding a layer is that breakpoint's override (Phase 43)
       if ("visible" in flags && !isBase(breakpointsOf(draft), activeId)) {
         const { visible, ...rest } = flags;
@@ -1302,22 +1307,26 @@ export type DocumentCommands = typeof documentCommands;
 // React hooks
 // ---------------------------------------------------------------------------
 
-/** Subscribe to a slice of the document. The selector must return a stable value (not a new array/object). */
+/**
+ * Subscribe to a slice of the document, as seen where edits go (the edit target: the view, or the breakpoint of the
+ * mirror a layer was picked in). The canvas draws the view instead (`useDocumentAt(selector, undefined)`).
+ * The selector must return a stable value (not a new array/object).
+ */
 export function useDocument<T>(selector: (document: MotionDocument) => T): T {
-  const activeId = useBreakpointStore((s) => s.activeId);
+  const activeId = useEditBreakpointId();
   const mode = useModeStore((s) => s.activeModeId);
   // the document as seen at the breakpoint and in the mode being edited (the document itself when neither changes anything)
   return documentStore((state) => selector(resolveDocumentAt(state.document, activeId, mode)));
 }
 
 export function useLayer(layerId: string | null | undefined): Layer | undefined {
-  const activeId = useBreakpointStore((s) => s.activeId);
+  const activeId = useEditBreakpointId();
   const mode = useModeStore((s) => s.activeModeId);
   return documentStore((state) => (layerId ? resolveDocumentAt(state.document, activeId, mode).layers[layerId] : undefined));
 }
 
 export function useLayers(): Record<string, Layer> {
-  const activeId = useBreakpointStore((s) => s.activeId);
+  const activeId = useEditBreakpointId();
   const mode = useModeStore((s) => s.activeModeId);
   return documentStore((state) => resolveDocumentAt(state.document, activeId, mode).layers);
 }

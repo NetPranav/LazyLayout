@@ -27,7 +27,7 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
-import { cannotSplit, measureLetters, splitIntoLetters, animateLetters } from "./splitText";
+import { cannotSplit, measureLettersOf, splitIntoLetters, animateLetters } from "./splitText";
 import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
 import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
@@ -150,12 +150,12 @@ export function registerEditingCommands(): () => void {
           showToast(reason);
           continue;
         }
-        const boxes = measureLetters(targetId);
-        if (!boxes || boxes.length === 0) {
+        const measured = measureLettersOf(targetId);
+        if (!measured || measured.boxes.length === 0) {
           showToast("Text must be visible on the canvas to split into letters.");
           continue;
         }
-        const group = splitIntoLetters(targetId, boxes);
+        const group = splitIntoLetters(targetId, measured.boxes, measured);
         if (group) made.push(group);
       }
       if (made.length > 0) {

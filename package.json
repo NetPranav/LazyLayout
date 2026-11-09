@@ -17,13 +17,17 @@
     "test:unit": "tsx --test \"src/**/__tests__/*.test.ts\"",
     "test:unit:full-edition": "NEXT_PUBLIC_EDITION=full tsx --test \"src/**/__tests__/*.test.ts\"",
     "test:e2e": "playwright test",
+    "test:canvas-contract": "playwright test tests/e2e/new-ui-canvas.spec.ts tests/e2e/new-ui-device-views.spec.ts tests/e2e/anchor-points.spec.ts --project=chromium --workers=1",
+    "verify": "tsx scripts/verify.mts",
+    "verify:full": "tsx scripts/verify.mts --e2e",
     "export-harness": "tsx tests/export-harness/build.mts",
     "check:bundle-scope": "tsx scripts/check-bundle-scope.mts",
     "check:doc-links": "tsx scripts/check-doc-links.mts",
     "check:no-adhoc-compat": "tsx scripts/check-no-adhoc-compat.mts",
     "mcp": "tsx bin/lazylayout-mcp.ts",
     "check:roadmap-order": "tsx scripts/check-roadmap-order.mts",
-    "changelog:fold": "tsx scripts/fold-changelog.mts"
+    "changelog:fold": "tsx scripts/fold-changelog.mts",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

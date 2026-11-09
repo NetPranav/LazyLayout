@@ -97,8 +97,8 @@ test.describe("the canvas draws the real tree", () => {
     const a = await rectangle(page, 0.15, 0.2, 0.25, 0.3);
     const b = await rectangle(page, 0.3, 0.2, 0.4, 0.3);
     await page.getByText(f.name, { exact: true }).first().click();
-    await page.getByRole("radio", { name: "Stack layout" }).click();
-    await page.getByRole("radio", { name: "Horizontal direction" }).click();
+    await page.getByRole("radio", { name: "Auto Layout stack" }).click();
+    await page.getByRole("radio", { name: "Horizontal stack (row)" }).click();
     const gap = page.getByLabel("Gap", { exact: true }).first();
     await gap.fill("30");
     await gap.press("Enter");
@@ -582,7 +582,13 @@ test.describe("corner pin: lay a layer on a surface", () => {
     const overlay = page.getByTestId("corner-pin-overlay");
     await expect(overlay).toBeVisible();
     await expect(overlay.getByRole("button")).toHaveCount(4);
-    const pin = async () => String((await layers(page))[r.id].properties["transform.pin"]).split(",").map(Number);
+    // the pin in the parent's px: a stored "rel:" pin is relative to the layer's own top left
+    const pin = async () => {
+      const q = (await layers(page))[r.id].properties;
+      const raw = String(q["transform.pin"]);
+      const n = raw.replace(/^rel:/, "").split(",").map(Number);
+      return raw.startsWith("rel:") ? n.map((v, i) => v + Number(i % 2 === 0 ? q["frame.x"] : q["frame.y"])) : n;
+    };
     const before = await pin();
 
     // drag the top right corner up and in: the far edge of a surface
@@ -601,6 +607,18 @@ test.describe("corner pin: lay a layer on a surface", () => {
     await page.locator("[data-stage=artboard]").hover();
     await page.keyboard.press("Control+z");
     await expect.poll(pin, "one undo step takes the whole drag back").toEqual(before);
+
+    // a pinned layer is moved like any other: the drawing goes with it, and the pin with the drawing
+    const drawnX = () => drawn(page, r.id).evaluate((e) => Math.round(e.getBoundingClientRect().x));
+    const x0 = await drawnX();
+    const hit = (await page.locator(`[data-testid="stage-element"][data-element-id="${r.id}"]`).boundingBox())!;
+    await page.mouse.move(hit.x + hit.width / 2, hit.y + hit.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(hit.x + hit.width / 2 + 30, hit.y + hit.height / 2, { steps: 4 });
+    await page.mouse.move(hit.x + hit.width / 2 + 60, hit.y + hit.height / 2, { steps: 4 });
+    await page.mouse.up();
+    await expect.poll(drawnX, "the drawing moved with the layer").toBeGreaterThan(x0 + 20);
+    await page.keyboard.press("Control+z");
 
     // removing the pin puts it back to a plain layer
     await setProps(page, r.id, { "transform.pin": "" });

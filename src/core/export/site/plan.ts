@@ -302,8 +302,8 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         const key = keyOf.get(n)!;
         const attrs = { ...n.attrs };
         const layerId = attrs["data-element-id"];
-        delete attrs["data-element-id"];
-        delete attrs["data-archetype"];
+        // the editor's own attributes never reach shipped code
+        for (const name of EDITOR_ONLY_ATTRIBUTES) delete attrs[name];
         const cls = classOf.get(key);
         let out: ENode = { ...n, attrs, style: [], children: finalize(n.children), ...(layerId ? { layerId } : {}) };
         if (cls) out.attrs.class = cls;
@@ -398,6 +398,7 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 }
 
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
+import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";

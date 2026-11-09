@@ -14,6 +14,8 @@ import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { RenderLayer } from "@/core/render";
+import { useMirrorViews } from "./useMirrorViews";
+import { exactDeviceOfFrame, frameSizeLabel, pageFrameOf } from "@/core/frames/devices";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
@@ -36,7 +38,7 @@ import {
 import { presetForBreakpoint } from "./presetBreakpoints";
 import { deviceOfFrame, DEVICE_SPECS, switchFrameView, type DeviceKind } from "./deviceViews";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { useBreakpointStore, useEditBreakpointId } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
 
@@ -268,6 +270,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const motionTimeSec = playhead / fps;
 
   const activeBreakpointId = useBreakpointStore((s) => s.activeId);
+  const mirrorViews = useMirrorViews(rootId ?? null);
+  // the frame the selection is being edited in, and the breakpoint its edits go to (none: the base)
+  const editBp = useEditBreakpointId();
+  const selectedMirror = useSelectionStore((s) => s.selectedMirrorId);
+  const editingFrameId = selectedMirror ?? (layers && rootId ? pageFrameOf(layers, rootId, selectedIds[0]) : null);
+  const editingName = editBp ? breakpointsOf(getDocument()).find((b) => b.id === editBp)?.name ?? null : null;
+  const engineCtx = useMemo(() => (mirrorViews ? { ...ENGINE_CTX, mirrorViews } : ENGINE_CTX), [mirrorViews]);
   const activeBpPreset = presetForBreakpoint(breakpointsOf(getDocument()), activeBreakpointId);
   const activePresetId = controlledPreset !== undefined ? controlledPreset : (activeBreakpointId !== null ? activeBpPreset : internalPreset);
   const currentPresetDef =
@@ -299,7 +308,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const topFrames = useMemo(() => {
     if (!bare || !layers) return [];
     return Object.values(layers).filter(
-      (l) => (l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId
+      (l) => l.parentId === rootId && l.archetype === "container" && l.id !== rootId
     );
   }, [bare, layers, rootId]);
 
@@ -347,7 +356,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
         if (e.target === e.currentTarget) {
-          useSelectionStore.getState().setSelectedMirrorId(null);
           onSelect(null);
         }
       }}
@@ -398,6 +406,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
           const isMirror = Boolean(frame.properties["frame.mirrorOf"]);
           const dev = deviceOfFrame(frame);
           const spec = DEVICE_SPECS[dev];
+          const sizeLabel = frameSizeLabel(frame);
           const isPrimary = frame.id === (activeFrame?.id ?? topFrames[0]?.id);
           const fLeft = frameEl.x + STAGE_CONSTANTS.sizeLabelOffsetLeft;
           const fTop = frameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop;
@@ -422,7 +431,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                useSelectionStore.getState().setSelectedMirrorId(null);
                 onSelect(frame.id);
                 setSizeMenuAnchorEl(e.currentTarget);
                 setOpenSizeMenuFrameId((prev) => (prev === frame.id ? null : frame.id));
@@ -440,9 +448,19 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 id={isPrimary ? "albltx" : undefined}
                 className="ll:flex ll:items-center ll:gap-1 ll:whitespace-nowrap ll:text-small ll:font-normal"
               >
-                {spec.label} ·{" "}
-                <span className="mono ll:font-mono">{spec.width}</span>
+                {sizeLabel.label} ·{" "}
+                <span className="mono ll:font-mono">{sizeLabel.width}</span>
               </span>
+              {editingFrameId === frame.id && editingName && (
+                // where edits go is never hidden: a frame edited at a breakpoint says so
+                <span
+                  data-testid="frame-editing-badge"
+                  title={`Changes here are saved for ${editingName} only`}
+                  className="ll:whitespace-nowrap ll:rounded-full ll:px-1.5 ll:text-micro ll:font-medium ll:bg-control-active ll:text-primary"
+                >
+                  Editing {editingName}
+                </span>
+              )}
               <Icon
                 icon={ChevronDown}
                 size={STAGE_CONSTANTS.sizeLabelIconSize}
@@ -467,7 +485,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         {STAGE_PRESETS.map((p) => {
           const targetDev: DeviceKind = p.id === "375" ? "mobile" : p.id === "768" ? "tablet" : "desktop";
           const activeDev = openSizeMenuFrameId && openSizeMenuFrameId !== "fallback"
-            ? deviceOfFrame(layers?.[openSizeMenuFrameId])
+            ? exactDeviceOfFrame(layers?.[openSizeMenuFrameId])
             : activePresetId === "375" ? "mobile" : activePresetId === "768" ? "tablet" : "desktop";
           return (
             <MenuItem
@@ -545,7 +563,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
           )}
-          <RenderLayer layerId={rootId} layers={layers} ctx={ENGINE_CTX} root />
+          <RenderLayer layerId={rootId} layers={layers} ctx={engineCtx} root />
         </div>
       )}
 
@@ -640,11 +658,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 if (editingText === el.id) return;
                 // where the press was, for the click that follows
                 e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(targetDocId) ? 1 : 0}`;
-                if (el.mirrorId) {
-                  useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
-                } else {
-                  useSelectionStore.getState().setSelectedMirrorId(null);
-                }
                 onStartMove?.(el.id, e);
               }}
               onMouseEnter={() => onHover(targetDocId)}
@@ -655,17 +668,15 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 const [px, py, added] = (e.currentTarget.dataset.press ?? "").split(",").map(Number);
                 delete e.currentTarget.dataset.press;
                 if (added === 1 || Math.hypot(e.clientX - px, e.clientY - py) > 3) return;
-                onSelect(targetDocId, e.shiftKey);
-                // selecting clears the mirror, so say which view the layer was picked in afterwards
-                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
+                onSelect(targetDocId, e.shiftKey, { mirrorId: el.mirrorId ?? null });
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!selectedIds.includes(targetDocId)) {
-                  onSelect(targetDocId, false);
+                const view = { mirrorId: el.mirrorId ?? null };
+                if (!selectedIds.includes(targetDocId) || (useSelectionStore.getState().selectedMirrorId ?? null) !== view.mirrorId) {
+                  onSelect(targetDocId, false, view);
                 }
-                useSelectionStore.getState().setSelectedMirrorId(el.mirrorId ?? null);
                 setContextMenu({
                   coords: { x: e.clientX, y: e.clientY },
                   elementId: targetDocId,

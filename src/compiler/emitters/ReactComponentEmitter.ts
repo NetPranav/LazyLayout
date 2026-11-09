@@ -15,6 +15,7 @@ import { ComponentEmitterOptions, EmittedFile } from "@/core/types/compiler";
 import { StyleEmitter } from "./StyleEmitter";
 import type { Layer } from "@/core/document/schema";
 import { propReader } from "@/core/document/properties";
+import { isEditorOnlyLayer } from "@/core/document/editorOnly";
 
 export class ReactComponentEmitter {
   /**
@@ -115,8 +116,8 @@ export class ReactComponentEmitter {
   ): string {
     const el = elements[elementId];
     if (!el) return "";
-    // Phase 73: Helper layers (render.role: helper) never emit in export
-    if (el.properties["render.role"] === "helper") return "";
+    // Phase 73: editor-only layers (helpers, linked views) never emit in export
+    if (isEditorOnlyLayer(el)) return "";
 
     const indent = " ".repeat(depth * 2);
     const tag = ReactComponentEmitter.resolveSemanticTag(el);
