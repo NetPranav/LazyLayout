@@ -6,7 +6,7 @@ import type { Layer, Composition } from "@/core/document/schema";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { getDocument } from "@/core/store/documentState";
-import { useTransportTime } from "@/core/time/useTransportTime";
+import { useOverlayTime } from "@/editor/motion-model";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import type { MotionDocument } from "@/core/document/schema";
 import {
@@ -70,7 +70,7 @@ export const OnionSkinOverlay: React.FC<OnionSkinOverlayProps> = ({
   const storeConfig = useTimelineUiStore((s) => s.onionSkin);
   const config = controlledConfig ?? storeConfig;
 
-  const storeTime = useTransportTime();
+  const storeTime = useOverlayTime();
   const currentTime = controlledCurrentTime ?? storeTime;
 
   const effectiveDoc = useMemo(() => {
@@ -116,6 +116,7 @@ export const OnionSkinOverlay: React.FC<OnionSkinOverlayProps> = ({
   return (
     <div
       data-testid="onion-skin-overlay"
+      data-frame={Math.round(currentTime * fps)}
       className={`ll:pointer-events-none ll:absolute ll:inset-0 ll:overflow-visible ${className}`}
       style={{ zIndex: 12, ...style }}
     >

@@ -13,6 +13,7 @@ import {
 } from "./model";
 import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams, ClipCategory, Trigger } from "./types";
 import { transport, getTransport, subscribeTransport, type TransportState, type LoopMode } from "@/core/time/transport";
+import { frameScheduler } from "@/core/time/scheduler";
 import {
   setKeyframeAt,
   deleteKeyframes,
@@ -42,6 +43,8 @@ export interface MotionState {
   playhead: number;
   subhead: number;
   readoutPlayhead: number;
+  overlayFrame: number;
+  overlayTime: number;
   playing: boolean;
   selectedKeys: Record<string, true>;
   selectedClip: number;
@@ -76,6 +79,8 @@ export const useMotionModel = create<MotionState>(() => ({
   playhead: initFrame,
   subhead: initTransport.time * initFps,
   readoutPlayhead: initFrame,
+  overlayFrame: initFrame,
+  overlayTime: initTransport.time,
   playing: initTransport.playing,
   selectedKeys: {},
   selectedClip: 0,
@@ -100,7 +105,12 @@ export const useMotionModel = create<MotionState>(() => ({
   fullWidth: true,
 }));
 
-function syncTransportToMotion(t: TransportState): void {
+export const getOverlayFrame = (): number => useMotionModel.getState().overlayFrame;
+export const getOverlayTime = (): number => useMotionModel.getState().overlayTime;
+export const useOverlayFrame = (): number => useMotionModel((s) => s.overlayFrame);
+export const useOverlayTime = (): number => useMotionModel((s) => s.overlayTime);
+
+function syncTransportToMotion(t: TransportState, syncOverlay = false): void {
   const fps = t.fps || 60;
   const frame = Math.round(t.time * fps);
   const loopNum: 0 | 1 | 2 = t.loop === "off" ? 0 : t.loop === "loop" ? 1 : 2;
@@ -114,6 +124,7 @@ function syncTransportToMotion(t: TransportState): void {
     playhead: frame,
     subhead: t.time * fps,
     readoutPlayhead: frame,
+    ...(syncOverlay ? { overlayFrame: frame, overlayTime: t.time } : {}),
     playing: t.playing,
     fps,
     loop: loopNum,
@@ -128,8 +139,72 @@ function syncTransportToMotion(t: TransportState): void {
   });
 }
 
-// Single subscription: core transport is the ONE clock. Motion model is a direct mirror.
-subscribeTransport(syncTransportToMotion);
+function syncOverlayFromTransport(t: TransportState): void {
+  const fps = t.fps || 60;
+  const frame = Math.round(t.time * fps);
+  const cur = useMotionModel.getState();
+  if (cur.overlayFrame !== frame || cur.overlayTime !== t.time) {
+    useMotionModel.setState({
+      overlayFrame: frame,
+      overlayTime: t.time,
+    });
+  }
+}
+
+// ROADMAP Phase 55: Frame scheduler integration
+// Ordered phases: input → evaluate → apply → render → overlay → stats
+// During playback:
+// 1. evaluate advances transport (see installTransportDriver in src/core/time/transportDriver.ts)
+// 2. apply copies transport time into the Motion store once per frame
+// 3. render redraws the stage / timeline
+// 4. overlay updates published overlay frame/time so overlays follow the canvas in lockstep
+frameScheduler.register("apply", () => {
+  const t = getTransport();
+  if (t.playing) {
+    syncTransportToMotion(t, false);
+  }
+});
+
+frameScheduler.register("overlay", () => {
+  const t = getTransport();
+  if (t.playing) {
+    syncOverlayFromTransport(t);
+  }
+});
+
+// Single subscription: core transport is the ONE clock.
+// When NOT playing (seek, step, scrub, pause, reset), apply at once so editing stays immediate.
+// During playback, time and playhead are copied in the "apply" phase above, not from raw subscription.
+subscribeTransport((state, prev) => {
+  if (!state.playing) {
+    syncTransportToMotion(state, true);
+  } else {
+    // Sync non-time playback flags immediately (loop, speed, direction, playing)
+    const loopNum: 0 | 1 | 2 = state.loop === "off" ? 0 : state.loop === "loop" ? 1 : 2;
+    const shuttleVal = state.rate !== 1 ? state.rate : 0;
+    const fps = state.fps || 60;
+    const curComp = useMotionModel.getState().comp;
+    const compDurFrames = Math.round(state.duration * fps);
+    const durChanged = curComp.dur !== compDurFrames || curComp.fps !== fps;
+
+    useMotionModel.setState({
+      playing: true,
+      fps,
+      loop: loopNum,
+      dir: (state.rate >= 0 ? 1 : -1) as 1 | -1,
+      shuttle: shuttleVal,
+      speed: Math.abs(state.rate) || 1,
+      wa: {
+        a: Math.round(state.workArea.start * fps),
+        b: Math.round(state.workArea.end * fps),
+      },
+      ...(durChanged ? { comp: { ...curComp, dur: compDurFrames, fps } } : {}),
+    });
+    if (!prev.playing) {
+      frameScheduler.wake();
+    }
+  }
+});
 
 function edit(fn: (comp: Composition) => void): void {
   useMotionModel.setState((s) => {

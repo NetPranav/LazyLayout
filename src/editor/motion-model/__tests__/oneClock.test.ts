@@ -1,10 +1,13 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { transport, getTransport, transportStore } from "../../../core/time/transport";
+import { installTransportDriver } from "../../../core/time/transportDriver";
+import { frameScheduler } from "../../../core/time/scheduler";
 import { useMotionModel, motionActions } from "../store";
 
 describe("Phase 54: One clock - transportStore is single source of truth for motion model", () => {
   beforeEach(() => {
+    frameScheduler.setDeterministic(false);
     transport.reset();
     transport.setComposition({ id: "comp_main", fps: 60, duration: 5 });
   });
@@ -24,15 +27,19 @@ describe("Phase 54: One clock - transportStore is single source of truth for mot
     assert.equal(useMotionModel.getState().playhead, 91);
 
     // 3. Play + advance
+    const cleanupDriver = installTransportDriver(frameScheduler);
+    frameScheduler.setDeterministic(true);
     transport.play();
     assert.equal(transportStore.getState().playing, true);
     assert.equal(useMotionModel.getState().playing, true);
 
-    transport.tick(0.05); // Advance 50ms (3 frames at 60fps)
+    frameScheduler.step(0.05); // Advance 50ms (3 frames at 60fps)
     const advancedTime = getTransport().time;
     assert.equal(useMotionModel.getState().time, advancedTime);
     assert.equal(useMotionModel.getState().playhead, Math.round(advancedTime * 60));
     assert.equal(useMotionModel.getState().playing, true);
+    cleanupDriver();
+    frameScheduler.setDeterministic(false);
 
     // 4. Pause
     transport.pause();

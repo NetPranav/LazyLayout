@@ -278,6 +278,39 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const fps = useMotionModel((s) => s.fps) || 60;
   const motionTimeSec = playhead / fps;
 
+  // ROADMAP Phase 55: Evaluated layers at the current motion playhead time
+  // so the drawn page tree in [data-testid="stage-page"] animates in lockstep with evaluate()
+  const animatedLayers = useMemo(() => {
+    if (!layers) return layers;
+    const doc = getDocument();
+    if (!doc.clips || Object.keys(doc.clips).length === 0) return layers;
+
+    let hasAnyClips = false;
+    for (const c of Object.values(doc.clips)) {
+      if (layers[c.layerId]) {
+        hasAnyClips = true;
+        break;
+      }
+    }
+    if (!hasAnyClips) return layers;
+
+    const out: Record<string, Layer> = {};
+    for (const [id, layer] of Object.entries(layers)) {
+      let evaluatedProps: Record<string, unknown> = {};
+      try {
+        evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, id, motionTimeSec);
+      } catch {
+        // fallback
+      }
+      if (evaluatedProps && Object.keys(evaluatedProps).length > 0) {
+        out[id] = { ...layer, properties: { ...layer.properties, ...evaluatedProps } };
+      } else {
+        out[id] = layer;
+      }
+    }
+    return out;
+  }, [layers, motionTimeSec]);
+
   const activeBreakpointId = useBreakpointStore((s) => s.activeId);
   const mirrorViews = useMirrorViews(rootId ?? null);
   // the frame the selection is being edited in, and the breakpoint its edits go to (none: the base)
@@ -648,7 +681,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
           )}
-          <RenderLayer layerId={rootId} layers={layers} ctx={engineCtx} root />
+          <RenderLayer layerId={rootId} layers={animatedLayers ?? layers} ctx={engineCtx} root />
         </div>
       )}
 

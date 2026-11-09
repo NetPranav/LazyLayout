@@ -4,11 +4,10 @@ import React from "react";
 import type { StageElement } from "./types";
 import type { Layer } from "@/core/document/schema";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
-import { useTransportTime } from "@/core/time/useTransportTime";
 import { getTransport } from "@/core/time/transport";
 import { getDocument } from "@/core/store/documentState";
 import { evaluate } from "@/core/kernel/evaluate";
-import { useMotionModel } from "@/editor/motion-model";
+import { useMotionModel, useOverlayFrame, useOverlayTime } from "@/editor/motion-model";
 
 export interface ValueHudProps {
   selectedIds: string[];
@@ -25,27 +24,27 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   isGesturing = false,
   forceVisible = false,
 }) => {
+  const isPlaying = useMotionModel((s) => s.playing);
   const storeScrubbing = useTimelineUiStore((s) => s.isScrubbing);
   const isScrubbing = storeScrubbing || useTimelineUiStore.getState().isScrubbing;
-  // Re-render when transport time updates during scrubbing
-  useTransportTime({ maxHz: 60 });
-  // Also track motion model playhead changes
-  useMotionModel((s) => s.playhead);
+  // ROADMAP Phase 55: Value HUD reads the frame and time published in the "overlay" phase
+  // so it stays in lockstep with the stage canvas
+  const overlayFrame = useOverlayFrame();
+  const overlayTime = useOverlayTime();
 
-  const shouldShow = forceVisible || ((isScrubbing || isGesturing) && selectedIds.length > 0);
+  const shouldShow = forceVisible || ((isScrubbing || isGesturing || isPlaying) && selectedIds.length > 0);
   if (!shouldShow || selectedIds.length === 0) return null;
 
   const activeId = selectedIds[0] === "subtitle" ? "headline" : selectedIds[0];
   const el = elements[activeId];
   if (!el) return null;
 
-  const t = getTransport().time;
   const compId = getTransport().compositionId;
   const doc = getDocument();
 
   let evaluated: Record<string, unknown> = {};
   try {
-    evaluated = evaluate(doc, compId, activeId, t);
+    evaluated = evaluate(doc, compId, activeId, overlayTime);
   } catch {
     // Evaluation fallback
   }
@@ -80,6 +79,7 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   return (
     <div
       data-testid="stage-value-hud"
+      data-frame={overlayFrame}
       data-x={valX}
       data-y={valY}
       data-rotation={valRot}
