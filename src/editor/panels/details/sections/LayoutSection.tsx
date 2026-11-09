@@ -167,7 +167,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             },
             {
               value: "stack",
-              label: "Auto Layout",
+              label: "Auto",
               icon: <Icon icon={Rows} size={13} />,
               ariaLabel: "Auto Layout stack",
               title: "Auto Layout (flexbox stack)",

@@ -13,6 +13,7 @@ import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { worldBox } from "@/core/editing/layerBoxes";
+import { placesChildren } from "@/core/editing/layoutOps";
 import { activePageRootId } from "./activePage";
 import { getDefaultProps, type ArchetypeId, type PropValue } from "@/core/document/registry";
 import { dragBox, type DragBox, type DragDefaults, type DragKind, type DragModifiers } from "@/core/geometry/shapeDrag";
@@ -42,8 +43,6 @@ export function creationSpecFor(tool: CanvasTool, shape: ShapeTool): CreationSpe
   if (tool === "frame") return { archetype: "container", label: "Frame", kind: "box" };
   if (tool === "text") return { archetype: "text", label: "Text", kind: "box" };
   if (tool === "shape") return SHAPES[shape] ?? SHAPES.box;
-  if (tool === "pen") return { archetype: "svgPath", label: "Path", kind: "box" };
-  if (tool === "pencil") return { archetype: "svgPath", label: "Pencil", kind: "box" };
   return null;
 }
 
@@ -143,12 +142,22 @@ export function createLayerFromBox(spec: CreationSpec, box: DragBox, drawn?: Rec
   // Drawn inside a frame, it belongs to that frame (and is placed from the frame's corner); on bare page it belongs to the page.
   const inside = frameAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 }, undefined, drawn);
   const parentId = inside?.id ?? activePageRootId();
+  const parentLayer = parentId ? getDocument().layers[parentId] : undefined;
+  const flowsInParent = placesChildren(parentLayer);
+
   const props: Record<string, PropValue> = {
     ...getDefaultProps(spec.archetype),
-    positioning: "absolute",
-    "frame.x": Math.round((box.x - (inside?.x ?? 0)) * 100) / 100,
-    "frame.y": Math.round((box.y - (inside?.y ?? 0)) * 100) / 100,
+    positioning: flowsInParent ? "flow" : "absolute",
+    "frame.x": flowsInParent ? 0 : Math.round((box.x - (inside?.x ?? 0)) * 100) / 100,
+    "frame.y": flowsInParent ? 0 : Math.round((box.y - (inside?.y ?? 0)) * 100) / 100,
   };
+  if (flowsInParent) {
+    props["sizing.horizontal"] = "fixed";
+    props["sizing.vertical"] = "fixed";
+  } else {
+    props["constraints.horizontal"] = "left";
+    props["constraints.vertical"] = "top";
+  }
   if (spec.archetype === "text") {
     // A click makes auto-width text; a drag makes a text box of the dragged size. It has words from the start, so it shows at once.
     if (!box.click) {
@@ -157,6 +166,9 @@ export function createLayerFromBox(spec: CreationSpec, box: DragBox, drawn?: Rec
     }
     props["content.text"] = "Text";
     props["text.sizing"] = box.click ? "autoWidth" : "fixed";
+    if (flowsInParent && box.click) {
+      props["sizing.horizontal"] = "hug";
+    }
   } else {
     props["frame.width"] = box.width;
     props["frame.height"] = box.height;

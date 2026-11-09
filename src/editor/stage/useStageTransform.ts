@@ -511,6 +511,28 @@ export function useStageTransform({
             "frame.width": nextWidth,
             "frame.height": nextHeight,
           });
+
+          // Synchronize constrained children interactive bounds on stage in real-time
+          const currentLayers = getDocument().layers;
+          const parentLayer = currentLayers[targetId];
+          if (parentLayer && parentLayer.properties["layout.auto"] !== true && parentLayer.children.length > 0) {
+            for (const childId of parentLayer.children) {
+              const childLayer = currentLayers[childId];
+              const childEl = elements[childId];
+              if (childLayer && childEl) {
+                const childRelX = (childLayer.properties["frame.x"] as number) ?? 0;
+                const childRelY = (childLayer.properties["frame.y"] as number) ?? 0;
+                const childW = (childLayer.properties["frame.width"] as number) ?? childEl.width;
+                const childH = (childLayer.properties["frame.height"] as number) ?? childEl.height;
+                onElementChange?.(childId, {
+                  x: Math.round(nextX + childRelX),
+                  y: Math.round(nextY + childRelY),
+                  width: Math.round(childW),
+                  height: Math.round(childH),
+                });
+              }
+            }
+          }
         } catch {
           // Document store update fallback
         }
