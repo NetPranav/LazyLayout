@@ -261,3 +261,18 @@ export const transport = {
     transportStore.setState({ ...DEFAULT_TRANSPORT, workArea: { ...DEFAULT_TRANSPORT.workArea } });
   },
 };
+
+/**
+ * Test seam: with `window.__LL_TEST__` set before or during load, `window.__LL_TRANSPORT__` gives browser tests direct access
+ * to the transport store state.
+ */
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "__LL_TRANSPORT__", {
+    configurable: true,
+    get: () => {
+      const w = window as unknown as { __LL_TEST__?: boolean };
+      return w.__LL_TEST__ ? () => transportStore.getState() : undefined;
+    },
+  });
+}
+

@@ -32,6 +32,12 @@ import {
 import { useEditorActions } from "./useEditorActions";
 import { useShellFx } from "./shellFx";
 import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
+import { installTransportCommands } from "@/core/time/transportCommands";
+import { installTransportDriver } from "@/core/time/transportDriver";
+import { transport, transportStore } from "@/core/time/transport";
+
+/** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
+const OPENING_FRAME = 72;
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -75,6 +81,16 @@ export function EditorShell({
 
   // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
   useEffect(() => installDocumentMotionSync(), []);
+
+  // One-clock transport command bindings and master driver
+  useEffect(() => installTransportCommands(), []);
+  useEffect(() => installTransportDriver(), []);
+  // The editor opens with the playhead where the Motion panel always put it (frame 72, past the sample entrances), so
+  // the canvas shows layers at rest rather than at the first frame of their entrance. Only on a fresh, untouched clock.
+  useEffect(() => {
+    const t = transportStore.getState();
+    if (t.time === 0 && !t.playing) transport.seek(OPENING_FRAME / (t.fps || 60));
+  }, []);
 
   // A brand-new project gets the sample page; one saved by an earlier version is brought up to date when it loads.
   useEffect(() => {

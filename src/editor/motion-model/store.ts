@@ -12,7 +12,7 @@ import {
   valueAt,
 } from "./model";
 import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams, ClipCategory, Trigger } from "./types";
-import { transport } from "@/core/time/transport";
+import { transport, getTransport, subscribeTransport, type TransportState, type LoopMode } from "@/core/time/transport";
 import {
   setKeyframeAt,
   deleteKeyframes,
@@ -38,6 +38,7 @@ import {
 
 export interface MotionState {
   comp: Composition;
+  time: number;
   playhead: number;
   subhead: number;
   readoutPlayhead: number;
@@ -65,23 +66,31 @@ export interface MotionState {
 let clipAnimClipboard: { tr: { p: PropId; keys: Keyframe[] }[] } | null = null;
 let keyClipboard: { p: PropId; k: Keyframe }[] | null = null;
 
+const initTransport = getTransport();
+const initFps = initTransport.fps || 60;
+const initFrame = Math.round(initTransport.time * initFps);
+
 export const useMotionModel = create<MotionState>(() => ({
   comp: defaultComposition(),
-  playhead: 72,
-  subhead: 72,
-  readoutPlayhead: 72,
-  playing: false,
+  time: initTransport.time,
+  playhead: initFrame,
+  subhead: initTransport.time * initFps,
+  readoutPlayhead: initFrame,
+  playing: initTransport.playing,
   selectedKeys: {},
   selectedClip: 0,
-  fps: 60,
-  speed: 1,
-  loop: 0,
-  dir: 1,
-  shuttle: 0,
+  fps: initFps,
+  speed: Math.abs(initTransport.rate) || 1,
+  loop: initTransport.loop === "off" ? 0 : initTransport.loop === "loop" ? 1 : 2,
+  dir: (initTransport.rate >= 0 ? 1 : -1) as 1 | -1,
+  shuttle: initTransport.playing && initTransport.rate !== 1 ? initTransport.rate : 0,
   frames: false,
   zoom: 1,
   t0: 0,
-  wa: { a: 0, b: DUR },
+  wa: {
+    a: Math.round(initTransport.workArea.start * initFps),
+    b: Math.round(initTransport.workArea.end * initFps),
+  },
   selectedProp: null,
   tool: "select",
   view: "timeline",
@@ -90,6 +99,37 @@ export const useMotionModel = create<MotionState>(() => ({
   trackWidth: 264,
   fullWidth: true,
 }));
+
+function syncTransportToMotion(t: TransportState): void {
+  const fps = t.fps || 60;
+  const frame = Math.round(t.time * fps);
+  const loopNum: 0 | 1 | 2 = t.loop === "off" ? 0 : t.loop === "loop" ? 1 : 2;
+  const shuttleVal = t.playing && t.rate !== 1 ? t.rate : 0;
+  const curComp = useMotionModel.getState().comp;
+  const compDurFrames = Math.round(t.duration * fps);
+  const durChanged = curComp.dur !== compDurFrames || curComp.fps !== fps;
+
+  useMotionModel.setState({
+    time: t.time,
+    playhead: frame,
+    subhead: t.time * fps,
+    readoutPlayhead: frame,
+    playing: t.playing,
+    fps,
+    loop: loopNum,
+    dir: (t.rate >= 0 ? 1 : -1) as 1 | -1,
+    shuttle: shuttleVal,
+    speed: Math.abs(t.rate) || 1,
+    wa: {
+      a: Math.round(t.workArea.start * fps),
+      b: Math.round(t.workArea.end * fps),
+    },
+    ...(durChanged ? { comp: { ...curComp, dur: compDurFrames, fps } } : {}),
+  });
+}
+
+// Single subscription: core transport is the ONE clock. Motion model is a direct mirror.
+subscribeTransport(syncTransportToMotion);
 
 function edit(fn: (comp: Composition) => void): void {
   useMotionModel.setState((s) => {
@@ -120,42 +160,32 @@ function ensureLayer(comp: Composition, id: string): MotionLayer {
 }
 
 export const motionActions = {
-  setPlayhead(t: number, options?: { updateReadout?: boolean }): void {
-    useMotionModel.setState((s) => {
-      const clamped = clampN(t, 0, s.comp.dur);
-      const intFrame = clampN(Math.round(clamped), 0, s.comp.dur);
-      const updateReadout = options?.updateReadout ?? !s.playing;
-      try {
-        transport.seek(intFrame / (s.fps || 60));
-      } catch {
-        // Fallback for tests or standalone
-      }
-      return {
-        playhead: intFrame,
-        subhead: clamped,
-        ...(updateReadout ? { readoutPlayhead: intFrame } : {}),
-      };
-    });
+  setPlayhead(t: number, _options?: { updateReadout?: boolean }): void {
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    const clampedFrame = clampN(t, 0, s.comp.dur);
+    transport.seek(clampedFrame / fps);
   },
   setReadoutPlayhead(frame: number): void {
     useMotionModel.setState({ readoutPlayhead: Math.round(frame) });
   },
   setPlaying(playing: boolean): void {
-    useMotionModel.setState((s) => ({
-      playing,
-      shuttle: 0,
-      subhead: s.playhead,
-      readoutPlayhead: s.playhead,
-    }));
+    if (playing) {
+      transport.play();
+    } else {
+      transport.pause();
+    }
   },
   setSpeed(speed: number): void {
-    useMotionModel.setState({ speed });
+    transport.setRate(speed);
   },
-  setLoop(loop: 0 | 1 | 2): void {
-    useMotionModel.setState({ loop });
+  setLoop(loop: 0 | 1 | 2 | LoopMode): void {
+    if (loop === 0 || loop === "off") transport.setLoop("off");
+    else if (loop === 1 || loop === "loop") transport.setLoop("loop");
+    else if (loop === 2 || loop === "ping-pong") transport.setLoop("ping-pong");
   },
   toggleLoop(): void {
-    useMotionModel.setState((s) => ({ loop: ((s.loop + 1) % 3) as 0 | 1 | 2 }));
+    transport.cycleLoop();
   },
   setFrames(frames: boolean): void {
     useMotionModel.setState({ frames });
@@ -186,17 +216,15 @@ export const motionActions = {
     });
   },
   setWorkArea(a: number, b: number): void {
-    useMotionModel.setState((s) => ({
-      wa: {
-        a: clampN(Math.round(a), 0, s.comp.dur - 1),
-        b: clampN(Math.round(b), 1, s.comp.dur),
-      },
-    }));
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    transport.setWorkArea({
+      start: clampN(a, 0, s.comp.dur - 1) / fps,
+      end: clampN(b, 1, s.comp.dur) / fps,
+    });
   },
   resetWorkArea(): void {
-    useMotionModel.setState((s) => ({
-      wa: { a: 0, b: s.comp.dur },
-    }));
+    transport.setWorkArea({ start: 0, end: getTransport().duration });
   },
   setSelectedProp(layerId: string | null, p: PropId | null): void {
     useMotionModel.setState({
@@ -273,7 +301,17 @@ export const motionActions = {
   },
   setComp(patch: Partial<Pick<Composition, "fps" | "dur" | "markers">>): void {
     edit((c) => Object.assign(c, patch));
-    if (patch.fps) useMotionModel.setState({ fps: patch.fps });
+    const current = getTransport();
+    const fps = patch.fps ?? current.fps;
+    const durSec = patch.dur !== undefined ? patch.dur / fps : current.duration;
+    if (patch.fps !== undefined || patch.dur !== undefined) {
+      transport.setComposition({
+        id: current.compositionId,
+        fps,
+        duration: durSec,
+        workArea: current.workArea,
+      });
+    }
   },
   setClip(layerId: string, index: number, s: number, e: number): void {
     edit((c) => {
@@ -513,16 +551,7 @@ export const motionActions = {
     });
   },
   stepFrame(delta: number): void {
-    useMotionModel.setState((s) => {
-      const nextF = clampN(s.playhead + delta, 0, s.comp.dur);
-      return {
-        playhead: nextF,
-        subhead: nextF,
-        readoutPlayhead: nextF,
-        playing: false,
-        shuttle: 0,
-      };
-    });
+    transport.stepFrame(delta);
   },
   jumpKey(dir: 1 | -1): void {
     const s = useMotionModel.getState();
@@ -540,25 +569,17 @@ export const motionActions = {
       }
     }
     if (best !== null) {
-      useMotionModel.setState({
-        playhead: best,
-        subhead: best,
-        readoutPlayhead: best,
-        playing: false,
-        shuttle: 0,
-      });
+      const fps = s.fps || 60;
+      transport.seek(best / fps);
+      transport.pause();
     }
   },
-  shuttle(dir: 1 | -1): void {
-    useMotionModel.setState((s) => {
-      const q = s.shuttle;
-      const nextShut = q * dir > 0 ? clampN(q * 2, -8, 8) : dir;
-      return {
-        shuttle: nextShut,
-        playing: true,
-        dir: (nextShut >= 0 ? 1 : -1) as 1 | -1,
-      };
-    });
+  shuttle(dir: 1 | -1 | "forward" | "reverse"): void {
+    if (dir === 1 || dir === "forward") {
+      transport.shuttle("forward");
+    } else {
+      transport.shuttle("reverse");
+    }
   },
   ensureLayer(layerId: string): MotionLayer {
     let l = useMotionModel.getState().comp.layers.find((x) => x.id === layerId);

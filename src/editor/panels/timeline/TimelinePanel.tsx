@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { frameScheduler } from "@/core/time/scheduler";
+import { useFocusScope } from "@/core/commands/useFocusScope";
+import { transport, transportStore, getTransport } from "@/core/time/transport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import {
   useMotionModel,
@@ -39,9 +40,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const playhead = useMotionModel((s) => s.playhead);
   const playing = useMotionModel((s) => s.playing);
   const speed = useMotionModel((s) => s.speed);
-  const loop = useMotionModel((s) => s.loop);
-  const dir = useMotionModel((s) => s.dir);
-  const shuttle = useMotionModel((s) => s.shuttle);
   const fps = useMotionModel((s) => s.fps);
   const zoom = useMotionModel((s) => s.zoom);
   const t0 = useMotionModel((s) => s.t0);
@@ -65,6 +63,8 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useFocusScope("timeline", panelRef);
 
   // Synchronize track width with localStorage on mount (hydration-safe)
   useEffect(() => {
@@ -102,67 +102,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   // Calculate pixels per second (pps)
   const laneAvailableWidth = Math.max(300, containerWidth - trackWidth);
   const pps = ((laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps)) * zoom;
-
-  // 60fps Playback Engine via frameScheduler
-  useEffect(() => {
-    if (!playing) return;
-
-    let lastReadout = performance.now();
-
-    const unregister = frameScheduler.register("evaluate", (info) => {
-      const dt = Math.min(0.1, Math.max(0, info.dt));
-
-      const s = useMotionModel.getState();
-      const currentSub = s.subhead;
-      const currentWa = s.wa;
-      const currentSpeed = s.speed;
-      const currentDir = s.dir;
-      const currentShuttle = s.shuttle;
-      const currentLoop = s.loop;
-
-      const effectiveSpeed = currentShuttle !== 0 ? Math.abs(currentShuttle) * currentSpeed : currentSpeed;
-      const effectiveDir = currentShuttle !== 0 ? (currentShuttle < 0 ? -1 : 1) : currentDir;
-
-      let nextT = currentSub + dt * fps * effectiveSpeed * effectiveDir;
-
-      if (effectiveDir > 0 && nextT >= currentWa.b) {
-        if (currentLoop === 1) {
-          const span = Math.max(1, currentWa.b - currentWa.a);
-          nextT = currentWa.a + ((nextT - currentWa.b) % span);
-        } else if (currentLoop === 2) {
-          nextT = Math.max(currentWa.a, currentWa.b - (nextT - currentWa.b));
-          useMotionModel.setState({ dir: -1 });
-        } else {
-          motionActions.setPlayhead(currentWa.b, { updateReadout: true });
-          motionActions.setPlaying(false);
-          return;
-        }
-      } else if (effectiveDir < 0 && nextT <= currentWa.a) {
-        if (currentLoop === 1) {
-          const span = Math.max(1, currentWa.b - currentWa.a);
-          nextT = currentWa.b - ((currentWa.a - nextT) % span);
-        } else if (currentLoop === 2) {
-          nextT = Math.min(currentWa.b, currentWa.a + (currentWa.a - nextT));
-          useMotionModel.setState({ dir: 1 });
-        } else {
-          motionActions.setPlayhead(currentWa.a, { updateReadout: true });
-          motionActions.setPlaying(false);
-          return;
-        }
-      }
-
-      const now = performance.now();
-      const updateReadout = now - lastReadout >= 100;
-      if (updateReadout) {
-        lastReadout = now;
-      }
-      motionActions.setPlayhead(nextT, { updateReadout });
-    });
-
-    return () => {
-      unregister();
-    };
-  }, [playing, fps, loop, dir, speed, shuttle]);
 
   // Track Column Resize Drag Handle
   const handleSeparatorPointerDown = (e: React.PointerEvent) => {
@@ -248,47 +187,46 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
       if (key === " ") {
         e.preventDefault();
-        motionActions.setPlaying(!useMotionModel.getState().playing);
+        transport.togglePlay();
       } else if (key === "Home") {
         e.preventDefault();
-        motionActions.setPlayhead(wa.a);
+        transport.seek(getTransport().workArea.start);
       } else if (key === "End") {
         e.preventDefault();
-        motionActions.setPlayhead(wa.b);
+        transport.seek(getTransport().workArea.end);
       } else if (key === "ArrowLeft") {
         e.preventDefault();
         if (e.altKey) motionActions.jumpKey(-1);
-        else motionActions.stepFrame(e.shiftKey ? -10 : -1);
+        else transport.stepFrame(e.shiftKey ? -10 : -1);
       } else if (key === "ArrowRight") {
         e.preventDefault();
         if (e.altKey) motionActions.jumpKey(1);
-        else motionActions.stepFrame(e.shiftKey ? 10 : 1);
+        else transport.stepFrame(e.shiftKey ? 10 : 1);
       } else if (mod && (key === "d" || key === "D")) {
         e.preventDefault();
         motionActions.duplicateKeys();
       } else if (key === "k" || key === "K") {
         e.preventDefault();
-        const isCurrentlyPlaying = useMotionModel.getState().playing;
+        const isCurrentlyPlaying = transportStore.getState().playing;
         if (isCurrentlyPlaying) {
-          motionActions.setPlaying(false);
+          transport.pause();
         } else {
-          const firstLayer = comp.layers.find((l) => !isGrp(l));
-          if (firstLayer) {
-            motionActions.addKey(firstLayer.id, firstLayer.tr[0]?.p ?? "opacity", playhead);
-          }
+          transport.stopShuttle();
         }
       } else if (key === "j" || key === "J") {
         e.preventDefault();
-        motionActions.shuttle(-1);
+        transport.shuttle("reverse");
       } else if (key === "l" || key === "L") {
         e.preventDefault();
-        motionActions.shuttle(1);
+        transport.shuttle("forward");
       } else if (key === "i" || key === "I") {
         e.preventDefault();
-        motionActions.setWorkArea(playhead, wa.b);
+        const curTime = getTransport().time;
+        transport.setWorkArea({ start: curTime, end: getTransport().workArea.end });
       } else if (key === "o" || key === "O") {
         e.preventDefault();
-        motionActions.setWorkArea(wa.a, playhead);
+        const curTime = getTransport().time;
+        transport.setWorkArea({ start: getTransport().workArea.start, end: curTime });
       } else if (key === "u" || key === "U") {
         e.preventDefault();
         const nonGroupLayers = comp.layers.filter((l) => !isGrp(l));
@@ -324,7 +262,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, laneAvailableWidth, playhead, pps, wa]
+    [clearSelection, comp.layers, laneAvailableWidth, playhead, pps]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)
