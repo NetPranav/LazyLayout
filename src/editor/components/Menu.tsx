@@ -540,8 +540,12 @@ export const Menu: React.FC<MenuProps> = ({
         ? MENU_FALLBACKS.reducedMotionDuration
         : MOT.exitDelay + MOT.exitMs;
       const t = setTimeout(() => {
+        // Focus goes back only if nothing else has taken it during the fade: otherwise a closing menu would pull it
+        // out of whatever came next (a text being edited closes itself, a colour picker stops hearing Escape).
+        const active = document.activeElement;
+        const untaken = !active || active === document.body || menuEl.contains(active);
         setIsRendered(false);
-        if (prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
+        if (untaken && prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
           prevActiveElementRef.current.focus();
         }
       }, exitDuration);

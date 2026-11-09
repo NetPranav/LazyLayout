@@ -645,7 +645,7 @@ export const documentCommands = {
           const res = resolvePropertyPath(key, layer.archetype);
           const path = res.ok ? res.path : key;
           // the canvas position of a top-level frame, and the responsive flag, are the document's, not a breakpoint's
-          const global = path === "breakpoints.responsive" || (layer.parentId === null && (path === "frame.x" || path === "frame.y" || path === "positioning"));
+          const global = path === "breakpoints.responsive" || path === "breakpoints.adapt" || (layer.parentId === null && (path === "frame.x" || path === "frame.y" || path === "positioning"));
           if (global) direct[key] = value;
           else routed[path] = value;
         }

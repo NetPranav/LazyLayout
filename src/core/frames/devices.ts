@@ -47,12 +47,19 @@ export function deviceOfFrame(layer: PropsHolder): DeviceKind {
   return "desktop";
 }
 
-/** The device a frame really is: its stored `frame.device`, or a width that is exactly a device's. Null for any other size. */
+/** The device a frame is being shown as: a width that is exactly a device's, else its stored `frame.device`. Null for any other size. */
 export function exactDeviceOfFrame(layer: PropsHolder): DeviceKind | null {
-  const dev = layer?.properties?.["frame.device"];
-  if (dev === "mobile" || dev === "tablet" || dev === "desktop") return dev;
   const w = Number(layer?.properties?.["frame.width"]);
-  return (Object.values(DEVICE_SPECS).find((d) => d.width === w)?.id as DeviceKind | undefined) ?? null;
+  const byWidth = Object.values(DEVICE_SPECS).find((d) => d.width === w)?.id;
+  if (byWidth) return byWidth;
+  const dev = layer?.properties?.["frame.device"];
+  return dev === "mobile" || dev === "tablet" || dev === "desktop" ? dev : null;
+}
+
+/** How tall the screen of the frame's device is (what shows above the fold), or null for a frame of no device. */
+export function frameViewportHeight(layer: PropsHolder): number | null {
+  const device = exactDeviceOfFrame(layer);
+  return device ? DEVICE_SPECS[device].height : null;
 }
 
 /** What a frame's size label says: its device (or "Custom") and its own width, never a device's width it doesn't have. */
