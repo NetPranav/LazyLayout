@@ -32,6 +32,7 @@ function mkt(p: PropId, keys: Keyframe[]): PropTrack { return { p, keys }; }
 export function makeLayer(id: string, s: number, tr: PropTrack[]): MotionLayer {
   return {
     id, lbl: 0, gopen: true, clips: [{ s, e: DUR }], open: false, mute: false, lock: false, solo: false,
+    category: "Entrance",
     trig: "On load", ease: "Ease out", rep: "Once", rn: 3, yoyo: false, ss: "top 80%", se: "bottom 20%",
     scrub: false, pin: false, sprev: 0, stag: 60, sfrom: "Start", tr,
   };
