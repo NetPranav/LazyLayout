@@ -32,6 +32,8 @@ import {
 import { useEditorActions } from "./useEditorActions";
 import { useShellFx } from "./shellFx";
 import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
+import { installTransportCommands } from "@/core/time/transportCommands";
+import { installTransportDriver } from "@/core/time/transportDriver";
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -75,6 +77,10 @@ export function EditorShell({
 
   // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
   useEffect(() => installDocumentMotionSync(), []);
+
+  // One-clock transport command bindings and master driver
+  useEffect(() => installTransportCommands(), []);
+  useEffect(() => installTransportDriver(), []);
 
   // A brand-new project gets the sample page; one saved by an earlier version is brought up to date when it loads.
   useEffect(() => {

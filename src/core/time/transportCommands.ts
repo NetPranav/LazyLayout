@@ -11,6 +11,7 @@ import { subscribeTransport, transport } from "./transport";
  * (Phase 24), and J, K and L are one set.
  */
 const timelineOnly = (ctx: ContextKeys) => !ctx.textEditing && ctx.timelineFocus;
+const stopWhenPlayingOrTimeline = (ctx: ContextKeys) => !ctx.textEditing && (ctx.timelineFocus || ctx["transport.playing"]);
 
 /**
  * Registers the transport commands and mirrors `playing` into the
@@ -21,7 +22,7 @@ const timelineOnly = (ctx: ContextKeys) => !ctx.textEditing && ctx.timelineFocus
  */
 export function installTransportCommands(): () => void {
   const unregisters = [
-    defineCommand({ id: "transport.togglePlay", title: "Play / Pause", category: "Transport", keybinding: "Space", when: timelineOnly, run: () => transport.togglePlay() }),
+    defineCommand({ id: "transport.togglePlay", title: "Play / Pause", category: "Transport", keybinding: "Space", when: stopWhenPlayingOrTimeline, run: () => transport.togglePlay() }),
     defineCommand({ id: "transport.seekStart", title: "Go to Start", category: "Transport", keybinding: "Home", when: timelineOnly, run: () => transport.seek(0) }),
     defineCommand({ id: "transport.seekEnd", title: "Go to End", category: "Transport", keybinding: "End", when: timelineOnly, run: () => transport.seek(Number.POSITIVE_INFINITY) }),
     defineCommand({ id: "transport.play", title: "Play", category: "Transport", run: () => transport.play() }),
@@ -30,7 +31,7 @@ export function installTransportCommands(): () => void {
     defineCommand({ id: "transport.stepForward", title: "Step Forward One Frame", category: "Transport", keybinding: "ArrowRight", when: timelineOnly, run: () => transport.stepFrame(1) }),
     defineCommand({ id: "transport.stepBack", title: "Step Back One Frame", category: "Transport", keybinding: "ArrowLeft", when: timelineOnly, run: () => transport.stepFrame(-1) }),
     defineCommand({ id: "transport.shuttleReverse", title: "Shuttle Reverse (J)", category: "Transport", keybinding: "J", when: timelineOnly, run: () => transport.shuttle("reverse") }),
-    defineCommand({ id: "transport.shuttleStop", title: "Stop Shuttle (K)", category: "Transport", keybinding: "K", when: timelineOnly, run: () => transport.stopShuttle() }),
+    defineCommand({ id: "transport.shuttleStop", title: "Stop Shuttle (K)", category: "Transport", keybinding: "K", when: stopWhenPlayingOrTimeline, run: () => transport.stopShuttle() }),
     defineCommand({ id: "transport.shuttleForward", title: "Shuttle Forward (L)", category: "Transport", keybinding: "L", when: timelineOnly, run: () => transport.shuttle("forward") }),
     defineCommand({ id: "transport.cycleLoop", title: "Cycle Loop Mode", category: "Transport", run: () => transport.cycleLoop() }),
   ];

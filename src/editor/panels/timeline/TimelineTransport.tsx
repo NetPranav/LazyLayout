@@ -23,6 +23,13 @@ import {
 } from "lucide-react";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
+import { useStore } from "zustand";
+import {
+  transport,
+  transportStore,
+  getTransport,
+} from "@/core/time/transport";
+import { useTransportTime } from "@/core/time/useTransportTime";
 import {
   useMotionModel,
   motionActions,
@@ -59,19 +66,20 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   isPlaying: legacyPlaying,
   currentTimeFormatted: legacyCurrentTime,
   durationFormatted: legacyDuration,
-  onTogglePlay: legacyTogglePlay,
-  onStepBack: legacyStepBack,
-  onStepForward: legacyStepForward,
-  onToggleLoop: legacyToggleLoop,
-  onToggleGraph: legacyToggleGraph,
+  onTogglePlay: _legacyTogglePlay,
+  onStepBack: _legacyStepBack,
+  onStepForward: _legacyStepForward,
+  onToggleLoop: _legacyToggleLoop,
+  onToggleGraph: _legacyToggleGraph,
 }) => {
-  const readoutPlayhead = useMotionModel((s) => s.readoutPlayhead);
-  const playing = useMotionModel((s) => s.playing);
-  const speed = useMotionModel((s) => s.speed);
-  const loop = useMotionModel((s) => s.loop);
+  const currentTransportTime = useTransportTime({ maxHz: 10 });
+  const playing = useStore(transportStore, (s) => s.playing);
+  const loop = useStore(transportStore, (s) => s.loop);
+  const speed = useStore(transportStore, (s) => Math.abs(s.rate) || 1);
+  const fps = useStore(transportStore, (s) => s.fps || 60);
+  const dur = useStore(transportStore, (s) => s.duration || 5);
+
   const frames = useMotionModel((s) => s.frames);
-  const dur = useMotionModel((s) => s.comp.dur);
-  const fps = useMotionModel((s) => s.fps);
   const tool = useMotionModel((s) => s.tool);
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
@@ -86,9 +94,13 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
   const isFw = fullWidth ?? storeFullWidth;
 
-  const _effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
-  const formattedTime = legacyCurrentTime ?? (frames ? String(readoutPlayhead) : timecode(readoutPlayhead, fps));
-  const formattedTotal = legacyDuration ?? (frames ? String(dur) : timecode(dur, fps));
+  const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
+  const currentFrame = Math.round(currentTransportTime * fps);
+  const durFrames = Math.round(dur * fps);
+  const formattedTime = legacyCurrentTime ?? (frames ? String(currentFrame) : timecode(currentFrame, fps));
+  const formattedTotal = legacyDuration ?? (frames ? String(durFrames) : timecode(durFrames, fps));
+
+  const loopLabel = loop === "off" ? "Off" : loop === "loop" ? "Loop" : "Ping-pong";
 
   return (
     <div
@@ -118,8 +130,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
         <button
           type="button"
           onClick={() => {
-            const wa = useMotionModel.getState().wa;
-            motionActions.setPlayhead(wa.a);
+            const wa = getTransport().workArea;
+            transport.seek(wa.start);
           }}
           aria-label="Go to start (Home)"
           title="Go to start (Home)"
@@ -140,7 +152,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         <button
           type="button"
-          onClick={() => motionActions.stepFrame(-1)}
+          onClick={() => transport.stepFrame(-1)}
           aria-label="Step back (Left)"
           title="Step back (Left)"
           className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
@@ -150,22 +162,22 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         <button
           type="button"
-          onClick={() => motionActions.setPlaying(!playing)}
-          aria-pressed={playing}
-          aria-label={playing ? "Pause (Space)" : "Play (Space)"}
-          title={playing ? "Pause (Space)" : "Play (Space)"}
+          onClick={() => transport.togglePlay()}
+          aria-pressed={effectivePlaying}
+          aria-label={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
+          title={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
           className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            playing
+            effectivePlaying
               ? "ll:bg-control-active ll:text-control-active-fg"
               : "ll:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={playing ? Pause : Play} size={15} />
+          <Icon icon={effectivePlaying ? Pause : Play} size={15} />
         </button>
 
         <button
           type="button"
-          onClick={() => motionActions.stepFrame(1)}
+          onClick={() => transport.stepFrame(1)}
           aria-label="Step forward (Right)"
           title="Step forward (Right)"
           className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
@@ -186,8 +198,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
         <button
           type="button"
           onClick={() => {
-            const wa = useMotionModel.getState().wa;
-            motionActions.setPlayhead(wa.b);
+            const wa = getTransport().workArea;
+            transport.seek(wa.end);
           }}
           aria-label="Go to end (End)"
           title="Go to end (End)"
@@ -198,17 +210,17 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         <button
           type="button"
-          onClick={() => motionActions.toggleLoop()}
-          aria-pressed={loop > 0}
-          aria-label={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
-          title={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
+          onClick={() => transport.cycleLoop()}
+          aria-pressed={loop !== "off"}
+          aria-label={`Loop: ${loopLabel}`}
+          title={`Loop: ${loopLabel}`}
           className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            loop > 0
+            loop !== "off"
               ? "ll:text-control-active ll:bg-surface-hover"
               : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={loop === 2 ? RotateCcw : Repeat} size={14} />
+          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={14} />
         </button>
 
         <button
@@ -347,7 +359,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
               <MenuItem
                 key={opt}
                 onClick={() => {
-                  motionActions.setSpeed(opt);
+                  transport.setRate(opt);
                   setSpeedMenuOpen(false);
                 }}
               >
