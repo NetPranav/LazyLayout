@@ -420,6 +420,8 @@ const DEFS = {
   /** How a free layer follows its frame when the frame is resized (Phase 42); the editor applies it at the resize. */
   /** A top-level frame whose width follows the breakpoint being viewed (Phase 43). */
   "breakpoints.responsive": typed(flag(false, "layout", only("container"))),
+  /** The frame's free layers reflow by themselves at narrower breakpoints (a frame opened through a device view). See core/breakpoints/adaptLayout.ts. */
+  "breakpoints.adapt": flag(false, "layout", only("container")),
   "constraints.horizontal": typed(oneOf(["left", "right", "leftRight", "center", "scale"], "left", null, "layout", LAYOUT)),
   "constraints.vertical": typed(oneOf(["top", "bottom", "topBottom", "center", "scale"], "top", null, "layout", LAYOUT)),
   /** A child's cell in a grid container (Phase 42): 1-based start (0 = auto) and how many tracks it spans. */
