@@ -15,7 +15,8 @@
 - [ ] Every phase in "Needs" is ✅ on `main`
 - [ ] Shared hot spots touched (COLLABORATION §3): none, **or** listed here: …
 - [ ] Schema version / decision record / new AUD ID claimed in `DOCS/TEAM/CLAIMS.md` (if any)
-- [ ] `npm test`, `npm run lint`, `npm run build` and `npm run test:e2e` pass locally
+- [ ] `npm test`, `npm run lint`, `npm run build` and `npm run test:e2e` pass locally (`npm run verify` runs the first three on every push)
+- [ ] Draws on or over the canvas? `npm run test:canvas-contract` passes (COLLABORATION §10)
 - [ ] Changelog fragment added in `DOCS/INITIAL/changelog.d/` (`CHANGELOG.md` not edited)
 - [ ] ROADMAP rows and entries for this phase updated; AUDIT rows updated if this closes any
 - [ ] Phase marked ✅ only if its gate passes in CI

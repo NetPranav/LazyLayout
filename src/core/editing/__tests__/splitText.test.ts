@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cannotSplit, isLettersGroup, splitIntoLetters, animateLetters, type LetterBox } from "../splitText";
 import { setDocument, getDocument } from "../../store/documentState";
@@ -87,26 +87,29 @@ describe("splitText: cannotSplit", () => {
 });
 
 describe("splitText: isLettersGroup", () => {
-  it("identifies a container with text children as a letters group", () => {
+  it("a group marked as letters is one, whatever it is called", () => {
     const { root, text } = setupDoc();
     const doc = getDocument();
-    assert.equal(isLettersGroup(doc.layers[root.id], doc.layers), true);
     assert.equal(isLettersGroup(doc.layers[text.id], doc.layers), false);
+    assert.equal(isLettersGroup(doc.layers[root.id], doc.layers), false, "a frame holding a text is not a letters group");
+    const marked = { ...doc.layers[root.id], name: "Anything", properties: { ...doc.layers[root.id].properties, "group.role": "letters" } };
+    assert.equal(isLettersGroup(marked, doc.layers), true);
   });
 
-  it("identifies a group ending with ' letters' as a letters group", () => {
+  it("an unmarked group counts only if it still looks like split letters (one-letter texts, named '... letters')", () => {
     setupDoc();
     const doc = getDocument();
-    const lettersGroup = createLayer({
-      id: "group_letters",
-      archetype: "container",
-      name: "Title letters",
-      parentId: "frame_root",
-      children: ["text_hello"],
-    });
-    doc.layers[lettersGroup.id] = lettersGroup;
+    const make = (id: string, name: string, children: string[]) => createLayer({ id, archetype: "container", name, parentId: "frame_root", children });
+    const letter = createLayer({ id: "letter_h", archetype: "text", name: "H", parentId: "g1", properties: { "content.text": "H" } });
+    doc.layers[letter.id] = letter;
+    const old = make("g1", "Title letters", ["letter_h"]);
+    const wordy = make("g2", "Title letters", ["text_hello"]); // "Hello" is a word, not a letter
+    const named = make("g3", "My group", ["letter_h"]);
+    for (const l of [old, wordy, named]) doc.layers[l.id] = l;
     setDocument(doc);
-    assert.equal(isLettersGroup(lettersGroup, doc.layers), true);
+    assert.equal(isLettersGroup(old, doc.layers), true);
+    assert.equal(isLettersGroup(wordy, doc.layers), false);
+    assert.equal(isLettersGroup(named, doc.layers), false);
   });
 });
 
@@ -242,5 +245,58 @@ describe("splitText: animateLetters", () => {
 
     historyCommands.undo();
     assert.equal(Object.keys(getDocument().clips).length, 0, "clips reverted in one undo step");
+  });
+});
+
+describe("splitText: reliability", () => {
+  const boxes: LetterBox[] = [
+    { char: "A", x: 0, y: 4, width: 20, height: 32 },
+    { char: "B", x: 25, y: 4, width: 20, height: 32 },
+  ];
+
+  it("the group is marked as letters, so renaming it keeps it a letters group", () => {
+    setupDoc();
+    const groupId = splitIntoLetters("text_hello", boxes)!;
+    const doc = getDocument();
+    assert.equal(doc.layers[groupId].properties["group.role"], "letters");
+    assert.equal(isLettersGroup({ ...doc.layers[groupId], name: "Renamed" }, doc.layers), true);
+  });
+
+  it("Animate letters run twice gives each letter one entrance, not two", () => {
+    setupDoc();
+    const groupId = splitIntoLetters("text_hello", boxes)!;
+    animateLetters(groupId);
+    animateLetters(groupId);
+    const doc = getDocument();
+    for (const letterId of doc.layers[groupId].children) {
+      assert.equal(Object.values(doc.clips).filter((c) => c.layerId === letterId).length, 1);
+    }
+  });
+
+  it("a text sized in % gives letters sized in px", () => {
+    setupDoc({ "frame.widthUnit": "%", "frame.heightUnit": "%" });
+    const groupId = splitIntoLetters("text_hello", boxes)!;
+    const doc = getDocument();
+    for (const id of doc.layers[groupId].children) {
+      assert.equal(doc.layers[id].properties["frame.widthUnit"], "px");
+      assert.equal(doc.layers[id].properties["frame.heightUnit"], "px");
+    }
+  });
+
+  it("a gradient fill keeps running across the word: each letter carries its offset in the word's box", () => {
+    const gradient = JSON.stringify([{ type: "linear", from: { x: 0, y: 0 }, to: { x: 1, y: 0 }, stops: [{ at: 0, color: "#ff0000" }, { at: 1, color: "#0000ff" }], opacity: 1, visible: true }]);
+    setupDoc({ "paint.fills": gradient });
+    const groupId = splitIntoLetters("text_hello", boxes, { width: 200, height: 48 })!;
+    const doc = getDocument();
+    const [a, b] = doc.layers[groupId].children.map((id) => String(doc.layers[id].properties["paint.fillBox"]).split(",").map(Number));
+    assert.deepEqual([a[0], a[2], a[3]], [0, 200, 48]);
+    assert.deepEqual([b[0], b[2], b[3]], [25, 200, 48]);
+  });
+
+  it("a solid-only text gets no fill box", () => {
+    setupDoc();
+    const groupId = splitIntoLetters("text_hello", boxes)!;
+    const doc = getDocument();
+    assert.equal(doc.layers[doc.layers[groupId].children[0]].properties["paint.fillBox"], undefined);
   });
 });

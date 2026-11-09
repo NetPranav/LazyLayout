@@ -86,9 +86,19 @@ export function overrideSource(layer: Layer, applied: readonly Breakpoint[], key
 
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
-/** Is a frame responsive: its width follows the breakpoint being viewed. */
-export const isResponsiveFrame = (layer: Layer): boolean =>
-  (layer.parentId === null || layer.archetype === "container") && layer.properties["breakpoints.responsive"] === true;
+/**
+ * Is a layer a frame at the top of a page: a page root itself, or a container placed directly on one. Only these can
+ * be responsive; a frame nested inside another follows its parent through constraints instead.
+ */
+export function isTopLevelFrame(layer: Layer, layers?: Record<string, Layer>): boolean {
+  if (layer.parentId === null) return true;
+  if (layer.archetype !== "container" || !layers) return false;
+  return layers[layer.parentId]?.parentId === null;
+}
+
+/** Is a frame responsive: its width follows the breakpoint being viewed. Pass `layers` so frames on a page count. */
+export const isResponsiveFrame = (layer: Layer, layers?: Record<string, Layer>): boolean =>
+  isTopLevelFrame(layer, layers) && layer.properties["breakpoints.responsive"] === true;
 
 /**
  * Constraints at a breakpoint: a free layer inside a frame that is wider or narrower here than at the base is put
@@ -164,7 +174,7 @@ export function resolveDocumentAt(doc: MotionDocument, activeId: string | null |
 
   // 1. responsive frames take the breakpoint's width, and their free children follow their constraints
   for (const layer of Object.values(layers)) {
-    if (!isResponsiveFrame(layer)) continue;
+    if (!isResponsiveFrame(layer, layers)) continue;
     const baseW = num(layer.properties["frame.width"]);
     const baseH = num(layer.properties["frame.height"]);
     if (baseW === undefined) continue;

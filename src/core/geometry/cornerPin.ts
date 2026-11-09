@@ -7,15 +7,41 @@
 /** Top left, top right, bottom right, bottom left. */
 export type Quad = [[number, number], [number, number], [number, number], [number, number]];
 
-/** "x0,y0,x1,y1,x2,y2,x3,y3" as a quad, or null when it is not four finite points. */
+/**
+ * Stored points are relative to the layer's own top left, marked "rel:", so moving a layer moves its pin and mesh with
+ * it. Values written before that (no marker) are in the parent's px; they are still read, and rewritten relative on the
+ * next edit.
+ */
+export const REL_PREFIX = "rel:";
+export const isRelativePoints = (text: unknown): boolean => typeof text === "string" && text.startsWith(REL_PREFIX);
+export const stripRel = (text: string): string => (text.startsWith(REL_PREFIX) ? text.slice(REL_PREFIX.length) : text);
+export type Origin = readonly [number, number];
+const shiftQuad = (q: Quad, dx: number, dy: number): Quad => q.map(([x, y]) => [x + dx, y + dy]) as Quad;
+
+/** "x0,y0,x1,y1,x2,y2,x3,y3" (optionally "rel:"-marked) as a quad, as stored, or null when it is not four finite points. */
 export function parsePin(text: unknown): Quad | null {
   if (typeof text !== "string" || text === "") return null;
-  const n = text.split(",").map(Number);
+  const n = stripRel(text).split(",").map(Number);
   if (n.length !== 8 || !n.every(Number.isFinite)) return null;
   return [[n[0], n[1]], [n[2], n[3]], [n[4], n[5]], [n[6], n[7]]];
 }
 
 export const formatPin = (q: Quad): string => q.map(([x, y]) => `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`).join(",");
+
+/** The pin in the layer's own px (0,0 is its top left), for a layer whose top left sits at `origin` in its parent. */
+export function pinInLayer(text: unknown, origin: Origin): Quad | null {
+  const q = parsePin(text);
+  return q && (isRelativePoints(text) ? q : shiftQuad(q, -origin[0], -origin[1]));
+}
+
+/** The pin in the parent's px (where the canvas overlays work). */
+export function pinInParent(text: unknown, origin: Origin): Quad | null {
+  const q = parsePin(text);
+  return q && (isRelativePoints(text) ? shiftQuad(q, origin[0], origin[1]) : q);
+}
+
+/** Stores a pin given in the parent's px, relative to the layer at `origin`. */
+export const formatPinInLayer = (parentQuad: Quad, origin: Origin): string => REL_PREFIX + formatPin(shiftQuad(parentQuad, -origin[0], -origin[1]));
 
 /** The projective map of the unit square onto `q` (Heckbert): x = (a u + b v + c) / (g u + h v + 1), y = (d u + e v + f) / (g u + h v + 1). */
 export function squareToQuad(q: Quad) {
@@ -54,4 +80,28 @@ export function pinMatrix3d(width: number, height: number, q: Quad): string {
   const m = squareToQuad(q);
   const v = [m.a / width, m.d / width, 0, m.g / width, m.b / height, m.e / height, 0, m.h / height, 0, 0, 1, 0, m.c, m.f, 0, 1];
   return `matrix3d(${v.map((n) => (Math.abs(n) < 1e-12 ? 0 : Number(n.toPrecision(9)))).join(",")})`;
+}
+
+/**
+ * A pin or mesh written before points were relative (parent px, no marker) is tied to where the layer was. When the
+ * layer moves, that value is rewritten relative to where the layer *was*, so the drawing goes with it. Returns the
+ * rewritten values, or an empty object when nothing needs rewriting.
+ */
+export function relativizeLegacyPoints(props: Record<string, unknown>): Record<string, string> {
+  const origin: Origin = [Number(props["frame.x"] ?? 0), Number(props["frame.y"] ?? 0)];
+  const out: Record<string, string> = {};
+  const pin = props["transform.pin"];
+  if (typeof pin === "string" && pin !== "" && !isRelativePoints(pin)) {
+    const q = parsePin(pin);
+    if (q) out["transform.pin"] = formatPinInLayer(q, origin);
+  }
+  const mesh = props["transform.mesh"];
+  if (typeof mesh === "string" && mesh.trim() !== "" && !isRelativePoints(mesh)) {
+    const parts = mesh.split(";");
+    const pts = parts.slice(1).map((pt) => pt.split(",").map(Number));
+    if (pts.every((xy) => xy.length === 2 && xy.every(Number.isFinite))) {
+      out["transform.mesh"] = REL_PREFIX + [parts[0], ...pts.map(([x, y]) => `${Math.round((x - origin[0]) * 100) / 100},${Math.round((y - origin[1]) * 100) / 100}`)].join(";");
+    }
+  }
+  return out;
 }

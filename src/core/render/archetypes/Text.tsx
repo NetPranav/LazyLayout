@@ -4,6 +4,7 @@ import { clampText } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
 import { textTypography } from "./textStyle";
 import { useTextFillStyle } from "../paintStyle";
+import { mixWithBlack } from "../../paint/shade";
 import { runsOf, type TextRun } from "../../text/runs";
 import { parseShadows, textShadowCss } from "../../paint/paints";
 import { listGutter, listMarkers, paragraphLists, paragraphsOf, parseTextPath, runsByParagraph, textPathD, type TextPath } from "../../text/textFeatures";
@@ -49,6 +50,12 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const chosenSpace = layer.properties["typography.whiteSpace"];
   const space = chosenSpace === "nowrap" || chosenSpace === "pre" || chosenSpace === "normal" ? chosenSpace : null;
   const ellipsis = layer.properties["typography.textOverflow"] === "ellipsis";
+  const content = paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!, Boolean(textFill)) : text;
+  // Extruded depth: copies of the words behind them, each a step further back. Part of the text itself, so they move,
+  // recolour and animate with it (and a word with depth is still one layer).
+  const depth = ctx.inMeshTile ? 0 : resolved.num("text.depth", 0);
+  const steps = Math.max(1, Math.min(24, Math.round(resolved.num("text.depthSteps", 8))));
+  const depthColor = resolved.str("text.depthColor", "") || mixWithBlack(resolved.str("typography.color", "#0f172a"), 0.35);
   return (
     <div
       ref={nodeRef}
@@ -68,9 +75,26 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         ...(maxLines > 0 ? { display: "-webkit-box", WebkitLineClamp: Math.min(1000, maxLines), WebkitBoxOrient: "vertical", overflow: "hidden" } : {}),
         ...(maxLines <= 0 && (valign === "middle" || valign === "bottom") ? { alignContent: valign === "middle" ? "center" : "end" } : {}),
         ...(textFill ?? {}),
+        ...(depth > 0 ? { transformStyle: "preserve-3d" as const } : {}),
       }}
     >
-      {paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!, Boolean(textFill)) : text}
+      {depth > 0 ? (
+        <>
+          {Array.from({ length: steps }, (_, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              data-depth-copy=""
+              style={{ position: "absolute", inset: 0, padding: "inherit", pointerEvents: "none", color: depthColor, WebkitTextFillColor: depthColor, background: "none", transform: `translateZ(${-Math.round(((i + 1) * depth * 100) / steps) / 100}px)` }}
+            >
+              {text}
+            </span>
+          ))}
+          <span style={{ position: "relative" }}>{content}</span>
+        </>
+      ) : (
+        content
+      )}
     </div>
   );
 };

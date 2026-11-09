@@ -1,7 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computeDepthOffsets, mixWithBlack, standLetters, extrudeLetters, removeDepth } from "../standingLetters";
-import { createLayer } from "../../document/factories";
+import { computeDepthOffsets, mixWithBlack, standLetters, extrudeLetters, removeDepth, getLettersDepth } from "../standingLetters";
 import { getDefaultProps } from "../../document/registry";
 import { documentCommands, getDocument } from "../../store/useDocumentStore";
 import { isLettersGroup } from "../splitText";
@@ -176,51 +175,40 @@ describe("standing letters: command operations", () => {
       },
     }, "Add letter T");
 
-    // Extrude with depth = 24
-    const totalCopies = extrudeLetters(groupId, 24, 8);
-    assert.equal(totalCopies, 8);
+    // Extrude with depth = 24: a property of the letter, drawn by the renderer (no extra layers)
+    const letters = extrudeLetters(groupId, 24, 8);
+    assert.equal(letters, 1);
+    let doc = getDocument();
+    assert.equal(doc.layers[groupId].children.length, 1, "no copies are added as layers");
+    assert.equal(doc.layers[letterT].properties["text.depth"], 24);
+    assert.equal(doc.layers[letterT].properties["text.depthSteps"], 8);
+    assert.equal(getLettersDepth(groupId), 24);
 
-    const doc = getDocument();
-    const group = doc.layers[groupId];
+    // again with another depth: replaced, not stacked
+    extrudeLetters(groupId, 40, 8);
+    assert.equal(getDocument().layers[letterT].properties["text.depth"], 40);
 
-    // Find the depth sub-group
-    const depthGroupId = group.children.find((cid) => {
-      const child = doc.layers[cid];
-      return child && child.name === "T depth" && child.archetype === "container";
-    });
-    assert.ok(depthGroupId, "T depth sub-group must exist");
-
-    const depthGroup = doc.layers[depthGroupId!];
-    assert.equal(depthGroup.children.length, 8);
-    assert.equal(depthGroup.properties["transform.style3d"], "preserve3d");
-
-    // In group.children, depth group is placed before letter T so letter T paints on top
-    const dgIndex = group.children.indexOf(depthGroupId!);
-    const tIndex = group.children.indexOf(letterT);
-    assert.ok(dgIndex < tIndex, "depth group must precede letter so letter stays on top");
-
-    // Verify copies
-    const copy1 = doc.layers[depthGroup.children[0]];
-    assert.equal(copy1.name, "T depth 1");
-    assert.equal(copy1.properties["transform.translateZ"], -3);
-    assert.equal(copy1.properties["typography.color"], "#A6A6A6");
-
-    const copy8 = doc.layers[depthGroup.children[7]];
-    assert.equal(copy8.name, "T depth 8");
-    assert.equal(copy8.properties["transform.translateZ"], -24);
-
-    // Group is still considered a letters group even with depth sub-groups
-    assert.ok(isLettersGroup(doc.layers[groupId], doc.layers));
-
-    // Remove depth restores clean letter layers
+    // Remove depth restores a plain letter
     const removed = removeDepth(groupId);
-    assert.ok(removed > 0);
+    assert.equal(removed, 1);
+    doc = getDocument();
+    assert.equal(doc.layers[letterT].properties["text.depth"] ?? 0, 0);
+    assert.equal(getLettersDepth(groupId), null);
+  });
 
-    const afterDoc = getDocument();
-    const afterGroup = afterDoc.layers[groupId];
-    const remainingDepth = afterGroup.children.filter((cid) => afterDoc.layers[cid]?.name.endsWith(" depth"));
-    assert.equal(remainingDepth.length, 0);
-    assert.equal(afterGroup.children.length, 1);
-    assert.equal(afterGroup.children[0], letterT);
+  it("depth groups from older documents are recognised by their structure and removed; a user's '... depth' group is kept", () => {
+    const rootId = Object.values(getDocument().layers).find((l) => l.parentId === null)?.id ?? null;
+    const groupId = documentCommands.addLayer({ archetype: "container", parentId: rootId, name: "OLD letters", properties: { ...getDefaultProps("container"), "group.role": "letters" } }, "g");
+    const letter = documentCommands.addLayer({ archetype: "text", parentId: groupId, name: "O", properties: { ...getDefaultProps("text"), "content.text": "O" } }, "l");
+    const legacy = documentCommands.addLayer({ archetype: "container", parentId: groupId, name: "O depth", properties: getDefaultProps("container") }, "d");
+    documentCommands.addLayer({ archetype: "text", parentId: legacy, name: "O depth 1", properties: { ...getDefaultProps("text"), "content.text": "O", "transform.translateZ": -3, "appearance.pointerEvents": "none" } }, "c");
+    const mine = documentCommands.addLayer({ archetype: "container", parentId: groupId, name: "Sky depth", properties: getDefaultProps("container") }, "u");
+    documentCommands.addLayer({ archetype: "text", parentId: mine, name: "cloud", properties: { ...getDefaultProps("text"), "content.text": "cloud" } }, "u2");
+    assert.equal(getLettersDepth(groupId), 3);
+    removeDepth(groupId);
+    const doc = getDocument();
+    assert.equal(doc.layers[legacy], undefined, "the old depth group is gone");
+    assert.ok(doc.layers[mine], "the user's own group is kept");
+    assert.ok(doc.layers[letter]);
   });
 });

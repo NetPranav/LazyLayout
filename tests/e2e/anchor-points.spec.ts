@@ -41,8 +41,12 @@ test.describe("Phase 72 · Anchor points & pins", () => {
     // Ensure selection overlay is active
     await expect(page.locator('[data-testid="selection-box"]')).toBeVisible({ timeout: 10_000 });
 
-    // Verify Anchor handle is rendered
+    // A centred anchor shows no mark until Ctrl (Cmd on a Mac) is held to grab it
     const anchorHandle = page.locator('[data-testid="anchor-point-handle"]');
+    await expect(anchorHandle).toHaveCount(0);
+    await page.keyboard.down("Control");
+    await page.mouse.move(5, 5);
+    await page.mouse.move(8, 8);
     await expect(anchorHandle).toBeVisible({ timeout: 10_000 });
 
     // Initial default anchor is center
@@ -52,8 +56,9 @@ test.describe("Phase 72 · Anchor points & pins", () => {
     const handleBox = (await anchorHandle.boundingBox())!;
     const btnBox = (await buttonElement.boundingBox())!;
 
-    // Drag anchor handle towards top-right corner of the button
+    // Ctrl-drag (Cmd on a Mac) the anchor handle towards the top-right corner of the button
     await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+    await expect(anchorHandle).toHaveAttribute("data-interactive", "true");
     await page.mouse.down();
 
     // Move near top-right corner (btnBox.x + btnBox.width, btnBox.y)
@@ -65,6 +70,7 @@ test.describe("Phase 72 · Anchor points & pins", () => {
 
     // Release mouse
     await page.mouse.up();
+    await page.keyboard.up("Control");
 
     // Verify anchor handle is now snapped/updated to topRight
     await expect(anchorHandle).toHaveAttribute("data-anchor-preset", "topRight");
@@ -84,19 +90,20 @@ test.describe("Phase 72 · Anchor points & pins", () => {
 
     await expect(page.locator('[data-testid="selection-box"]')).toBeVisible({ timeout: 10_000 });
 
+    // A centred anchor shows no mark
     const anchorHandle = page.locator('[data-testid="anchor-point-handle"]');
-    await expect(anchorHandle).toBeVisible();
+    await expect(anchorHandle).toHaveCount(0);
 
     // Change origin via inspector to "Bottom Left"
+    await page.getByRole("button", { name: "More Position options" }).click();
     const originCombobox = page.locator('button[role="combobox"][aria-label="Transform origin"]');
-    if (await originCombobox.isVisible()) {
-      await originCombobox.click();
-      const opt = page.locator('[role="option"]:has-text("Bottom Left")').first();
-      await expect(opt).toBeVisible();
-      await opt.click();
+    await originCombobox.click();
+    const opt = page.locator('[role="option"]:has-text("Bottom Left")').first();
+    await expect(opt).toBeVisible();
+    await opt.click();
 
-      // Verify anchor handle reflects the change
-      await expect(anchorHandle).toHaveAttribute("data-anchor-preset", "bottomLeft");
-    }
+    // An anchor moved off centre is marked on the canvas, where the inspector put it
+    await expect(anchorHandle).toBeVisible();
+    await expect(anchorHandle).toHaveAttribute("data-anchor-preset", "bottomLeft");
   });
 });

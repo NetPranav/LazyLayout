@@ -2,8 +2,10 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
-import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useDocument } from "@/core/store/useDocumentStore";
+import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
+import { useDocument, useDocumentAt } from "@/core/store/useDocumentStore";
+import { framesOfPage } from "@/core/frames/devices";
+import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom } from "@/core/viewport/camera";
 import { invokeCommand, useFocusScope } from "@/core/commands";
@@ -121,7 +123,8 @@ export const Stage: React.FC<StageProps> = ({
   }, [activePreset]);
 
   // Document store layers mapping directly from engine document
-  const storeLayers = useDocument((d) => d.layers);
+  // the canvas draws the breakpoint being viewed; a mirror frame draws its own (see useMirrorViews)
+  const storeLayers = useDocumentAt((d) => d.layers, undefined);
 
   const pageRef = useRef<HTMLDivElement>(null);
   const activePageRoot = useProjectStore((p) => p.pages[p.activePageId]?.rootElementId);
@@ -197,7 +200,7 @@ export const Stage: React.FC<StageProps> = ({
   );
 
   const handleSelect = useCallback(
-    (id: string | null, multi = false) => {
+    (id: string | null, multi = false, view?: SelectionView) => {
       if (controlledOnSelect) {
         controlledOnSelect(id, multi);
         return;
@@ -206,9 +209,9 @@ export const Stage: React.FC<StageProps> = ({
       if (!id) {
         clearStore();
       } else if (multi) {
-        toggleStore(id, "element");
+        toggleStore(id, "element", view);
       } else {
-        selectStore(id, "element");
+        selectStore(id, "element", view);
       }
     },
     [controlledOnSelect, clearStore, toggleStore, selectStore]
@@ -219,12 +222,11 @@ export const Stage: React.FC<StageProps> = ({
   const maxRight = useMemo(() => {
     if (!storeLayers) return 0;
     let r = 0;
-    for (const l of Object.values(storeLayers)) {
-      if ((l.parentId === rootId || l.parentId === null) && l.archetype === "container" && l.id !== rootId) {
-        const x = Number(l.properties["frame.x"] ?? 0);
-        const w = Number(l.properties["frame.width"] ?? 0);
-        r = Math.max(r, x + w);
-      }
+    // only this page's frames: other pages' roots also have no parent, and are not on this canvas
+    for (const l of framesOfPage(storeLayers, rootId)) {
+      const x = Number(l.properties["frame.x"] ?? 0);
+      const w = Number(l.properties["frame.width"] ?? 0);
+      r = Math.max(r, x + w);
     }
     return r;
   }, [storeLayers, rootId]);

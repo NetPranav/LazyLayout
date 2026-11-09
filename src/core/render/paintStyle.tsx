@@ -77,8 +77,26 @@ export function useTextFillStyle(layer: Layer, resolved: ResolvedProps): CSSProp
   if (!hasNonSolid) return undefined;
 
   const g = getLayerGeometry(layer);
-  const w = g.frame.width > 0 ? g.frame.width : 100;
-  const h = g.frame.height > 0 ? g.frame.height : 100;
+  // A text that sizes itself has no width stored: estimate the box from its words and size rather than a fixed
+  // 100px square, so a gradient's angle and stops land across the actual text.
+  const estimate = () => {
+    const raw = resolved.get("content.text");
+    const lines = (typeof raw === "string" ? raw : layer.name).split("\n");
+    const size = resolved.num("typography.fontSize", 16);
+    const longest = Math.max(1, ...lines.map((l) => l.length));
+    return { w: longest * size * 0.55, h: lines.length * size * resolved.num("typography.lineHeight", 1.2) };
+  };
+  const sized = g.frame.width > 0 && g.frame.height > 0 ? null : estimate();
+  let w = g.frame.width > 0 ? g.frame.width : sized!.w;
+  let h = g.frame.height > 0 ? g.frame.height : sized!.h;
+  // A split letter carries its word's box: the fill is laid out on the word and this letter shows its own part of it.
+  const fillBox = String(resolved.get("paint.fillBox") ?? "").split(",").map(Number);
+  const shared = fillBox.length === 4 && fillBox.every(Number.isFinite) && fillBox[2] > 0 && fillBox[3] > 0;
+  if (shared) {
+    w = fillBox[2];
+    h = fillBox[3];
+  }
+  const offset = shared ? `${-fillBox[0]}px ${-fillBox[1]}px` : null;
 
   const images: string[] = [];
   const sizes: string[] = [];
@@ -92,7 +110,8 @@ export function useTextFillStyle(layer: Layer, resolved: ResolvedProps): CSSProp
       for (const q of diamondCss(p, w, h)) {
         images.push(q.image);
         sizes.push(q.size);
-        positions.push(q.position);
+        const [qx, qy] = q.position.split(/\s+/).map((v) => parseFloat(v) || 0);
+        positions.push(shared ? `${qx - fillBox[0]}px ${qy - fillBox[1]}px` : q.position);
         repeats.push("no-repeat");
         blends.push(paintBlendCss(p));
       }
@@ -102,9 +121,10 @@ export function useTextFillStyle(layer: Layer, resolved: ResolvedProps): CSSProp
     if (!css) continue;
     images.push(css);
     const l = p.type === "image" ? imageLayout(p) : { size: "auto", position: "0 0", repeat: "no-repeat" };
-    sizes.push(l.size);
-    positions.push(l.position);
-    repeats.push(l.repeat);
+    // laid out on the word's box: the picture or gradient is the word's size, moved so this letter shows its part
+    sizes.push(shared ? `${w}px ${h}px` : l.size);
+    positions.push(offset ?? l.position);
+    repeats.push(shared ? "no-repeat" : l.repeat);
     blends.push(paintBlendCss(p));
   }
 

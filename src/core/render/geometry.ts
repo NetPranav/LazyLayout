@@ -4,7 +4,7 @@ import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
 import { boxShadowCss, parseShadows } from "../paint/paints";
 import { blurOf, effectFilterId, glassCss, maxRadius, needsFilter, parseEffects } from "../paint/effects";
-import { isConvex, parsePin, pinMatrix3d, type Quad } from "../geometry/cornerPin";
+import { isConvex, pinInLayer, pinMatrix3d } from "../geometry/cornerPin";
 import { isMeshConvex, parseMesh } from "../geometry/meshWarp";
 import type { RenderContext, ResolvedProps } from "./types";
 
@@ -194,9 +194,8 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     delete style.transformOrigin;
   } else {
     // Corner pin: the layer's corners are dragged onto a surface, and it is drawn in perspective to fit it
-    const pin = parsePin(resolved.get("transform.pin"));
-    if (pin && g.positioning === "absolute" && g.frame.width > 0 && g.frame.height > 0 && isConvex(pin)) {
-      const relative = pin.map(([x, y]) => [x - g.frame.x, y - g.frame.y]) as Quad;
+    const relative = pinInLayer(resolved.get("transform.pin"), [g.frame.x, g.frame.y]);
+    if (relative && g.positioning === "absolute" && g.frame.width > 0 && g.frame.height > 0 && isConvex(relative)) {
       style.transform = pinMatrix3d(g.frame.width, g.frame.height, relative);
       style.transformOrigin = "0 0";
     }

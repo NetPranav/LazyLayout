@@ -11,6 +11,7 @@ import { getDocument } from "../store/documentState";
 import { simplePaths } from "../inspector/simpleControls";
 import { safeImageSrc } from "../render/limits";
 import { parseEffect, parseEffects, serializeEffects, type Effect } from "./effects";
+import { withOpacity } from "./colorMath";
 import { DASH_PRESETS, effectiveFills, parseShadows, safeDashArray, serializeFills, serializeShadows, type Paint, type Shadow } from "./paints";
 
 const layers = () => getDocument().layers;
@@ -67,7 +68,8 @@ export function setFills(ids: readonly string[], fills: readonly Paint[]): numbe
     } else {
       const solid = fills.find((p) => p.type === "solid");
       const props: Record<string, string> = { "paint.fills": "" };
-      if (solid) props["typography.color"] = solid.color;
+      // a solid fill on text is its colour, opacity included
+      if (solid) props["typography.color"] = solid.opacity < 1 ? withOpacity(solid.color, solid.opacity) : solid.color;
       changed += setLayerProps(textIds, props, "Fill");
     }
   }

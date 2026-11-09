@@ -2,10 +2,7 @@
 
 import { getDocument } from "@/core/store/documentState";
 import { duplicateLayers, reorderLayers } from "@/core/editing/editOps";
-import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useBreakpointStore } from "@/core/store/useBreakpointStore";
-import { breakpointsOf } from "@/core/breakpoints/breakpoints";
-import { deviceOfFrame, DEVICE_SPECS } from "./deviceViews";
+import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
 import type { PropValue } from "@/core/document/registry";
 import { worldBox } from "@/core/editing/layerBoxes";
 import { subtreeIds } from "@/core/editing/cloneLayers";
@@ -43,7 +40,7 @@ interface UseStageTransformOptions {
   smartGuides?: boolean;
   snapThreshold?: number;
   onElementChange?: (id: string, patch: Partial<StageElement>) => void;
-  onSelect?: (id: string | null, multi?: boolean) => void;
+  onSelect?: (id: string | null, multi?: boolean, view?: SelectionView) => void;
 }
 
 /** A layer placed by its stack comes out of the stack when it is dragged: it keeps the size it was drawn at. */
@@ -155,32 +152,20 @@ export function useStageTransform({
       const el = elements[elementId];
       const targetDocId = el?.targetId ?? elementId;
 
-      if (el?.mirrorId) {
-        useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
-        const mirrorLayer = getDocument().layers[el.mirrorId];
-        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
-        if (dev && dev !== "desktop") {
-          const spec = DEVICE_SPECS[dev];
-          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
-          if (bp) useBreakpointStore.getState().setActive(bp.id);
-        }
-      } else {
-        useSelectionStore.getState().setSelectedMirrorId(null);
-      }
-
-      const isSelected = selectedIds.includes(targetDocId);
+      // Where the layer was picked (its own frame or a linked view): part of the selection, so the edit target follows.
+      const view = { mirrorId: el?.mirrorId ?? null };
+      const sameView = (useSelectionStore.getState().selectedMirrorId ?? null) === view.mirrorId;
+      const isSelected = selectedIds.includes(targetDocId) && sameView;
       let targetIds = selectedIds;
 
       if (!isSelected) {
-        if (e.shiftKey) {
+        if (e.shiftKey && sameView) {
           targetIds = [...selectedIds, targetDocId];
-          onSelect?.(targetDocId, true);
+          onSelect?.(targetDocId, true, view);
         } else {
           targetIds = [targetDocId];
-          onSelect?.(targetDocId, false);
+          onSelect?.(targetDocId, false, view);
         }
-        // Selecting clears the mirror a layer was picked in; put it back.
-        if (el?.mirrorId) useSelectionStore.getState().setSelectedMirrorId(el.mirrorId);
       }
 
       const initialBoxes: Record<
@@ -241,15 +226,6 @@ export function useStageTransform({
       const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[activeId];
       if (!el) return;
 
-      if (el.mirrorId) {
-        const mirrorLayer = getDocument().layers[el.mirrorId];
-        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
-        if (dev && dev !== "desktop") {
-          const spec = DEVICE_SPECS[dev];
-          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
-          if (bp) useBreakpointStore.getState().setActive(bp.id);
-        }
-      }
 
       const initialBoxes: Record<
         string,
@@ -638,15 +614,6 @@ export function useStageTransform({
       e.preventDefault();
 
       const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
-      if (selectedMirrorId) {
-        const mirrorLayer = getDocument().layers[selectedMirrorId];
-        const dev = mirrorLayer ? deviceOfFrame(mirrorLayer) : null;
-        if (dev && dev !== "desktop") {
-          const spec = DEVICE_SPECS[dev];
-          const bp = breakpointsOf(getDocument()).find((b) => b.width === spec.width);
-          if (bp) useBreakpointStore.getState().setActive(bp.id);
-        }
-      }
 
       selectedIds.forEach((id) => {
         const key = selectedMirrorId && elements[`${selectedMirrorId}::${id}`] ? `${selectedMirrorId}::${id}` : id;

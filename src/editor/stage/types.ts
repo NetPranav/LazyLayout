@@ -1,3 +1,4 @@
+import type { SelectionView } from "@/core/store/useSelectionStore";
 import type React from "react";
 import type { CanvasTool, GridStyle, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import type { Layer } from "@/core/document/schema";
@@ -68,7 +69,7 @@ export interface StageProps {
   selectedIds?: string[];
 
   /** Selection callback */
-  onSelect?: (id: string | null, multi?: boolean) => void;
+  onSelect?: (id: string | null, multi?: boolean, view?: SelectionView) => void;
 
   /** Frames on canvas (override for tests/labs; otherwise reads from store) */
   frames?: StageFrameInfo[];
@@ -135,7 +136,7 @@ export interface ArtboardProps {
   elements: Record<string, StageElement>;
   selectedIds: string[];
   hoveredId: string | null;
-  onSelect: (id: string | null, multi?: boolean) => void;
+  onSelect: (id: string | null, multi?: boolean, view?: SelectionView) => void;
   onHover: (id: string | null) => void;
   activeTool?: CanvasTool;
   /** The document's layers: a layer the prototype elements don't cover is drawn through the engine's render definition. */

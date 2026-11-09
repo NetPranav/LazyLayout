@@ -133,10 +133,12 @@ test.describe("Lane A issue fixes", () => {
     await num(page, "Scale X", 2);
     await num(page, "Skew X", 20);
     await page.getByRole("combobox", { name: "Transform origin" }).click();
-    await page.getByRole("option", { name: "Top left" }).click();
-    await expect(page.getByRole("combobox", { name: "Transform origin" })).toContainText("Top left");
+    await page.getByRole("option", { name: "Top Left", exact: true }).click();
+    await expect(page.getByRole("combobox", { name: "Transform origin" })).toContainText("Top Left");
     await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transform)).not.toBe("none");
-    expect((await layers(page))[r.id].properties["transform.origin"]).toBe("top left");
+    expect((await layers(page))[r.id].properties["transform.origin"]).toBe("topLeft");
+    // the pin name reaches the drawing as a real point: the top left corner of the layer
+    await expect.poll(() => drawn(page, r.id).evaluate((e) => getComputedStyle(e).transformOrigin)).toBe("0px 0px");
   });
 
   test("LA-024: a stroke on one side only is written for that side", async ({ page }) => {

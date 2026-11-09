@@ -131,3 +131,15 @@ Git can't catch everything, so message the other person when:
 - you finish a phase that's in the §2 table;
 - a daily merge broke something and you're fixing it forward.
 
+
+## 10. The canvas contract (both lanes)
+
+Both lanes draw on the same canvas: Lane A's frames, handles and device views, Lane B's anchor points, onion skin, motion paths and value HUD. One overlay that takes the pointer in the wrong place breaks clicking for everyone (the anchor handle did, on 2026-11-07). So anything that draws on the canvas keeps these rules:
+
+1. **Clicking a layer selects it, and dragging it moves it.** An overlay may not take the pointer from the middle of a layer in the Design workspace. A handle that must sit there (an anchor point) is a marker, dragged only with a modifier (Ctrl, Cmd on a Mac) and only once the press that selected the layer is over. In Motion, dragging the middle of a layer records keys, so it belongs to the layer there too.
+2. **Shift-click adds and removes, Alt-drag copies, Backspace/Delete deletes, the arrange shortcuts arrange**, with the pointer anywhere over the canvas.
+3. **Where edits go is never hidden.** The edit target is derived from the selection (a layer picked in a mirror edits that mirror's breakpoint; anything else edits the breakpoint being viewed). No gesture sets the breakpoint as a side effect. A frame edited at a breakpoint shows "Editing <name>".
+4. **Editor-only things never ship.** A design-time layer (helper, mirror frame) is marked by `isEditorOnlyLayer` (`src/core/document/editorOnly.ts`); editor attributes are listed in `EDITOR_ONLY_ATTRIBUTES`. The exporter and every code emitter use those, and the export tests fail if one leaks.
+5. **Core stays pure.** Code in `src/core/{editing,document,frames,geometry,paint,breakpoints,text,store}` does not read or build the page (lint enforces it). The editor measures and hands the result in.
+
+Before merging a PR that changes anything drawn on or over the canvas, run `npm run test:canvas-contract` (the canvas, device-view and anchor suites, Chromium) and say in the PR that it passed. `npm run verify` (types, lint, unit tests: all of them, even when one fails) runs on every push through `.githooks/pre-push`; `npm install` turns the hook on.

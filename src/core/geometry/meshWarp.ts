@@ -5,7 +5,7 @@
  * rectangle onto the deformed quad.
  */
 
-import { isConvex, squareToQuad, type Quad } from "./cornerPin";
+import { isConvex, isRelativePoints, REL_PREFIX, squareToQuad, stripRel, type Origin, type Quad } from "./cornerPin";
 
 export type Point = [number, number];
 
@@ -32,7 +32,7 @@ export interface MeshTile {
 /** Parses "cols,rows;x,y;x,y;..." into a WarpMesh, or null when invalid. */
 export function parseMesh(text: unknown): WarpMesh | null {
   if (typeof text !== "string" || text.trim() === "") return null;
-  const parts = text.split(";");
+  const parts = stripRel(text).split(";");
   if (parts.length < 2) return null;
   const dims = parts[0].split(",").map(Number);
   if (dims.length !== 2 || !dims.every(Number.isInteger)) return null;
@@ -209,3 +209,20 @@ export function subdivideMeshRow(mesh: WarpMesh, row: number): WarpMesh | null {
   }
   return { cols: mesh.cols, rows: newRows, points: newPoints };
 }
+
+const shiftMesh = (m: WarpMesh, dx: number, dy: number): WarpMesh => ({ ...m, points: m.points.map(([x, y]) => [x + dx, y + dy] as Point) });
+
+/** The mesh in the layer's own px (0,0 is its top left), for a layer whose top left sits at `origin` in its parent. */
+export function meshInLayer(text: unknown, origin: Origin): WarpMesh | null {
+  const m = parseMesh(text);
+  return m && (isRelativePoints(text) ? m : shiftMesh(m, -origin[0], -origin[1]));
+}
+
+/** The mesh in the parent's px (where the canvas overlays work). */
+export function meshInParent(text: unknown, origin: Origin): WarpMesh | null {
+  const m = parseMesh(text);
+  return m && (isRelativePoints(text) ? shiftMesh(m, origin[0], origin[1]) : m);
+}
+
+/** Stores a mesh given in the parent's px, relative to the layer at `origin`. */
+export const formatMeshInLayer = (parentMesh: WarpMesh, origin: Origin): string => REL_PREFIX + formatMesh(shiftMesh(parentMesh, -origin[0], -origin[1]));

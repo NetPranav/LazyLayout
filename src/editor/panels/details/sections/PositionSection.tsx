@@ -6,8 +6,8 @@ import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { Button } from "@/editor/components/Button";
-import { formatPin } from "@/core/geometry/cornerPin";
-import { defaultMesh, formatMesh, parseMesh } from "@/core/geometry/meshWarp";
+import { formatPinInLayer } from "@/core/geometry/cornerPin";
+import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshWarp";
 import { AlignBar } from "../controls/AlignBar";
 import {
   INSPECTOR_CONSTANTS,
@@ -352,7 +352,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         const y = Number(getValue?.("frame.y") ?? 0);
         const w = Number(getValue?.("frame.width") ?? 0);
         const h = Number(getValue?.("frame.height") ?? 0);
-        const flat = formatPin([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]);
+        const flat = formatPinInLayer([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], [x, y]);
         return (
           <div className="ll:flex ll:flex-col ll:gap-1">
             <div className="ll:flex ll:gap-1">
@@ -403,7 +403,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
                 options={gridOptions}
                 onChange={(val) => {
                   const [c, r] = val.split("x").map(Number);
-                  onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, c, r)));
+                  onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
                 }}
               />
               <div className="ll:flex ll:gap-1">
@@ -415,7 +415,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
                     title="Creates a multi-point mesh grid across the layer to bend it along curves and surfaces."
                     onClick={() => {
                       const [c, r] = currentGrid.split("x").map(Number);
-                      onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, c, r)));
+                      onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
                     }}
                   >
                     Warp mesh
@@ -426,7 +426,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
                       size="sm"
                       aria-label="Reset warp mesh"
                       title="Resets mesh control points to a flat grid."
-                      onClick={() => onUpdateProp?.("transform.mesh", formatMesh(defaultMesh(x, y, w, h, mesh.cols, mesh.rows)))}
+                      onClick={() => onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, mesh.cols, mesh.rows), [x, y]))}
                     >
                       Reset mesh
                     </Button>

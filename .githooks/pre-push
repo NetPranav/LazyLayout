@@ -1,0 +1,5 @@
+#!/bin/sh
+# Runs the checks a push must pass (scripts/verify.mts): types, lint and unit tests, all of them even if one fails.
+# Installed by `npm install` (the "prepare" script sets core.hooksPath to .githooks).
+# Skip once with `git push --no-verify`, and say so in the PR.
+npm run -s verify
