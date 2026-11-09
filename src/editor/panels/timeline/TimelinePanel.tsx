@@ -40,9 +40,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const playhead = useMotionModel((s) => s.playhead);
   const playing = useMotionModel((s) => s.playing);
   const speed = useMotionModel((s) => s.speed);
-  const loop = useMotionModel((s) => s.loop);
-  const dir = useMotionModel((s) => s.dir);
-  const shuttle = useMotionModel((s) => s.shuttle);
   const fps = useMotionModel((s) => s.fps);
   const zoom = useMotionModel((s) => s.zoom);
   const t0 = useMotionModel((s) => s.t0);
@@ -265,7 +262,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, laneAvailableWidth, playhead, pps, wa]
+    [clearSelection, comp.layers, laneAvailableWidth, playhead, pps]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)
