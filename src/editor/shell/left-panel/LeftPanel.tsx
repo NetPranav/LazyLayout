@@ -84,7 +84,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const { visibleNodes: visibleFileNodes, matchCount: fileMatchCount } = useMemo(() => {
     if (!isCode) return { visibleNodes: [], matchCount: 0 };
     const all = flattenFiles(files, expandedSet, selectedSet);
-    return filterTreeNodes(all, searchQuery);
+    return filterTreeNodes(all, searchQuery, { keepCollapsed: true });
   }, [isCode, files, expandedSet, selectedSet, searchQuery]);
 
   const matchCount = isCode ? fileMatchCount : layerMatchCount;
