@@ -21,6 +21,8 @@ export interface FramePresetsPanelProps {
   onPick?: (preset: FramePresetItem) => void;
   anchorRef?: React.RefObject<HTMLElement | null>;
   triggerRef?: React.RefObject<HTMLElement | null>;
+  /** Element whose horizontal centre the panel uses (the floating toolbar). Falls back to the trigger/anchor. */
+  centreRef?: React.RefObject<HTMLElement | null>;
   anchorEl?: HTMLElement | null;
   className?: string;
   "aria-label"?: string;
@@ -49,6 +51,7 @@ export function FramePresetsPanel({
   onPick,
   anchorRef,
   triggerRef,
+  centreRef,
   anchorEl,
   className = "",
   "aria-label": ariaLabel,
@@ -93,20 +96,31 @@ export function FramePresetsPanel({
     [anchorRef, triggerRef, anchorEl]
   );
 
-  // Centre on the Frame button, clamped inside the chrome with an 8px edge gap
+  // Centre on the floating toolbar (centreRef), clamped inside the viewport with an 8px edge gap
   const updatePosition = useCallback(() => {
     const el = panelRef.current;
-    const anchor = getAnchor();
+    const centre = centreRef?.current ?? getAnchor();
     const parent = el?.offsetParent as HTMLElement | null;
     if (!el || !parent) return;
     const m = parent.getBoundingClientRect();
     const w = el.offsetWidth;
-    const a = anchor?.getBoundingClientRect();
-    const x = a ? a.left + a.width / 2 - m.left : m.width / 2;
+    const c = centre?.getBoundingClientRect();
+    const viewW = document.documentElement.clientWidth;
+    const centreX = c ? c.left + c.width / 2 : m.left + m.width / 2;
     const min = w / 2 + EDGE_GAP;
-    const max = Math.max(min, m.width - w / 2 - EDGE_GAP);
-    el.style.left = `${Math.max(min, Math.min(x, max))}px`;
-  }, [getAnchor]);
+    const max = Math.max(min, viewW - w / 2 - EDGE_GAP);
+    const x = Math.max(min, Math.min(centreX, max));
+    el.style.left = `${x - m.left - parent.clientLeft}px`;
+  }, [centreRef, getAnchor]);
+
+  // Keep centred when the toolbar changes width (mode switch, collapsed panels)
+  useEffect(() => {
+    const target = centreRef?.current;
+    if (!open || !isRendered || !target || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => updatePosition());
+    ro.observe(target);
+    return () => ro.disconnect();
+  }, [open, isRendered, centreRef, updatePosition]);
 
   useEffect(() => {
     if (!isRendered || !panelRef.current) return;
