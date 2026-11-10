@@ -26,6 +26,11 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { ProtoIcon, type ProtoName } from "@/editor/components/icons/ProtoIcon";
+import { invokeCommand } from "@/core/commands";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { motionActions, useMotionModel } from "@/editor/motion-model";
+import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
@@ -137,6 +142,18 @@ const SHAPES: ReadonlyArray<{
   { id: "pen", label: "Pen", icon: PenTool, shortcut: "P" },
 ];
 
+/** Align menu: the align.* / distribute.* commands (core/editing/editCommands.ts), with their shortcuts. */
+const ALIGN_ITEMS: ReadonlyArray<{ command: string; label: string; icon: ProtoName; shortcut: string }> = [
+  { command: "align.left", label: "Align left", icon: "al", shortcut: "Alt+A" },
+  { command: "align.hcenter", label: "Align horizontal centers", icon: "ac", shortcut: "Alt+H" },
+  { command: "align.right", label: "Align right", icon: "ar", shortcut: "Alt+D" },
+  { command: "align.top", label: "Align top", icon: "at", shortcut: "Alt+W" },
+  { command: "align.vcenter", label: "Align vertical centers", icon: "am", shortcut: "Alt+V" },
+  { command: "align.bottom", label: "Align bottom", icon: "ab", shortcut: "Alt+S" },
+  { command: "distribute.horizontal", label: "Distribute horizontally", icon: "dist", shortcut: "Ctrl+Alt+H" },
+  { command: "distribute.vertical", label: "Distribute vertically", icon: "distv", shortcut: "Ctrl+Alt+V" },
+];
+
 export const Toolbar: React.FC<ToolbarProps> = ({
   mode = "design",
   toolbarRef: externalToolbarRef,
@@ -188,15 +205,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const easingButtonRef = useRef<HTMLButtonElement | null>(null);
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const zoomButtonRef = useRef<HTMLButtonElement | null>(null);
+  const alignButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isEasingMenuOpen, setIsEasingMenuOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
+  const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const [isNarrowLifted, setIsNarrowLifted] = useState(false);
   const [isRunningCode, setIsRunningCode] = useState(false);
+
+  // Design: arrange tools need a selection. Motion: duplicating keys needs selected keys. Code: clearing needs log lines.
+  const selectionCount = useSelectionStore((st) => st.selectedIds.length);
+  const selectedKeyCount = useMotionModel((st) => Object.keys(st.selectedKeys).length);
+  const consoleLineCount = useConsoleLogs().length;
 
   // Narrow canvas detection (prototype lift() lines 10582-10589)
   const checkLift = useCallback(() => {
@@ -544,6 +568,55 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-hidden="true"
             />
 
+            {/* Group (Ctrl+G) -> edit.group */}
+            <IconButton
+              size="lg"
+              data-tb="group"
+              aria-label="Group (Ctrl+G)"
+              tooltip="Group (Ctrl+G)"
+              disabled={selectionCount === 0}
+              tabIndex={focusedIndex === 20 ? 0 : -1}
+              onFocus={() => setFocusedIndex(20)}
+              onClick={() => invokeCommand("edit.group")}
+              icon={<ProtoIcon name="grp" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Ungroup (Ctrl+Shift+G) -> edit.ungroup */}
+            <IconButton
+              size="lg"
+              data-tb="ungroup"
+              aria-label="Ungroup (Ctrl+Shift+G)"
+              tooltip="Ungroup (Ctrl+Shift+G)"
+              disabled={selectionCount === 0}
+              tabIndex={focusedIndex === 21 ? 0 : -1}
+              onFocus={() => setFocusedIndex(21)}
+              onClick={() => invokeCommand("edit.ungroup")}
+              icon={<ProtoIcon name="ungrp" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Align menu -> align.* / distribute.* */}
+            <IconButton
+              ref={alignButtonRef}
+              size="lg"
+              data-tb="align"
+              aria-label="Align and distribute"
+              tooltip="Align and distribute"
+              aria-haspopup="menu"
+              aria-expanded={isAlignMenuOpen}
+              disabled={selectionCount === 0}
+              pressed={isAlignMenuOpen}
+              tabIndex={focusedIndex === 22 ? 0 : -1}
+              onFocus={() => setFocusedIndex(22)}
+              onClick={() => setIsAlignMenuOpen((prev) => !prev)}
+              icon={<ProtoIcon name="ac" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep"
+              aria-hidden="true"
+            />
+
             {/* Insert (+) */}
             <IconButton
               ref={insertButtonRef}
@@ -658,6 +731,67 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onClick={() => setIsEasingMenuOpen((prev) => !prev)}
               icon={<Icon icon={Spline} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
+
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep"
+              aria-hidden="true"
+            />
+
+            {/* Add marker at the playhead (M) -> motionActions.addMarker */}
+            <IconButton
+              size="lg"
+              data-mact="marker"
+              aria-label="Add marker (M)"
+              tooltip="Add marker (M)"
+              tabIndex={focusedIndex === 20 ? 0 : -1}
+              onFocus={() => setFocusedIndex(20)}
+              onClick={() => motionActions.addMarker(useMotionModel.getState().playhead)}
+              icon={<ProtoIcon name="flag" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Work area starts here (I) -> motionActions.setWorkArea */}
+            <IconButton
+              size="lg"
+              data-mact="wa-in"
+              aria-label="Work area in at playhead (I)"
+              tooltip="Work area in at playhead (I)"
+              tabIndex={focusedIndex === 21 ? 0 : -1}
+              onFocus={() => setFocusedIndex(21)}
+              onClick={() => {
+                const st = useMotionModel.getState();
+                motionActions.setWorkArea(Math.min(st.playhead, st.wa.b - 1), st.wa.b);
+              }}
+              icon={<ProtoIcon name="wain" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Work area ends here (O) -> motionActions.setWorkArea */}
+            <IconButton
+              size="lg"
+              data-mact="wa-out"
+              aria-label="Work area out at playhead (O)"
+              tooltip="Work area out at playhead (O)"
+              tabIndex={focusedIndex === 22 ? 0 : -1}
+              onFocus={() => setFocusedIndex(22)}
+              onClick={() => {
+                const st = useMotionModel.getState();
+                motionActions.setWorkArea(st.wa.a, Math.max(st.playhead, st.wa.a + 1));
+              }}
+              icon={<ProtoIcon name="waout" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Duplicate the selected keyframes (Ctrl+D) -> motionActions.duplicateKeys */}
+            <IconButton
+              size="lg"
+              data-mact="dupkeys"
+              aria-label="Duplicate keyframes (Ctrl+D)"
+              tooltip="Duplicate keyframes (Ctrl+D)"
+              disabled={selectedKeyCount === 0}
+              tabIndex={focusedIndex === 23 ? 0 : -1}
+              onFocus={() => setFocusedIndex(23)}
+              onClick={() => motionActions.duplicateKeys()}
+              icon={<ProtoIcon name="dup" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
           </div>
         )}
 
@@ -726,6 +860,37 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onFocus={() => setFocusedIndex(3)}
               onClick={() => setIsExportMenuOpen((prev) => !prev)}
               icon={<Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Separator */}
+            <span
+              className="ll-gsep gsep"
+              aria-hidden="true"
+            />
+
+            {/* Fit to screen (Shift+1) -> the canvas zoom-to-fit */}
+            <IconButton
+              size="lg"
+              data-tb="fit"
+              aria-label="Fit to screen (Shift+1)"
+              tooltip="Fit to screen (Shift+1)"
+              tabIndex={focusedIndex === 20 ? 0 : -1}
+              onFocus={() => setFocusedIndex(20)}
+              onClick={onZoomFit}
+              icon={<ProtoIcon name="fit" size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
+            {/* Clear console -> consoleStore.clear */}
+            <IconButton
+              size="lg"
+              data-tb="clearlog"
+              aria-label="Clear console"
+              tooltip="Clear console"
+              disabled={consoleLineCount === 0}
+              tabIndex={focusedIndex === 21 ? 0 : -1}
+              onFocus={() => setFocusedIndex(21)}
+              onClick={() => consoleStore.clear()}
+              icon={<ProtoIcon name="trash" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
           </div>
         )}
@@ -828,6 +993,29 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             }}
           >
             {sh.label}
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Align Menu (Design mode) */}
+      <Menu
+        open={isAlignMenuOpen}
+        onClose={() => setIsAlignMenuOpen(false)}
+        anchorRef={alignButtonRef}
+        aria-label="Align options"
+        width={248}
+      >
+        {ALIGN_ITEMS.map((it) => (
+          <MenuItem
+            key={it.command}
+            icon={<ProtoIcon name={it.icon} size={CANVAS_CHROME_SIZES.iconMd} />}
+            shortcut={it.shortcut}
+            onClick={() => {
+              invokeCommand(it.command);
+              setIsAlignMenuOpen(false);
+            }}
+          >
+            {it.label}
           </MenuItem>
         ))}
       </Menu>

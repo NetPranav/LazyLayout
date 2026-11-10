@@ -26,6 +26,11 @@ export const PROTO_GLYPHS = {
   chevl: { n: [["path",{d:"m15 6-6 6 6 6"}]] },
   eye: { n: [["path",{d:"M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"}], ["circle",{cx:"12",cy:"12",r:"3"}]] },
   lock: { n: [["rect",{x:"5",y:"11",width:"14",height:"9",rx:"1"}], ["path",{d:"M8 11V8a4 4 0 0 1 8 0v3"}]] },
+  unlock: { n: [["rect",{x:"5",y:"11",width:"14",height:"9",rx:"1"}], ["path",{d:"M8 11V7a4 4 0 0 1 8 0"}]] },
+  tal: { n: [["path",{d:"M4 6h16M4 10h10M4 14h14M4 18h8"}]] },
+  tac: { n: [["path",{d:"M4 6h16M7 10h10M5 14h14M8 18h8"}]] },
+  tar: { n: [["path",{d:"M4 6h16M10 10h10M6 14h14M12 18h8"}]] },
+  taj: { n: [["path",{d:"M4 6h16M4 10h16M4 14h16M4 18h16"}]] },
   frame: { n: [["path",{d:"M7 3v18M17 3v18M3 7h18M3 17h18"}]] },
   txt: { n: [["path",{d:"M5 6V4h14v2M12 4v16M9 20h6"}]] },
   "si-sliders": { n: [["path",{d:"M4 7h16M4 17h16"}], ["rect",{x:"8",y:"4.5",width:"4",height:"5"}], ["rect",{x:"13",y:"14.5",width:"4",height:"5"}]] },
@@ -167,6 +172,10 @@ export const PROTO_GLYPHS = {
   "tb-onion": { n: [["path",{d:"M8 8h12v12H8Z"}], ["path",{d:"M4 16V4h12"}]] },
   "tb-ease": { n: [["path",{d:"M3 20C10 20 14 4 21 4"}]] },
   "tb-auto": { n: [["path",{d:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z"}], ["path",{d:"M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"}]] },
+  grp: { n: [["path",{d:"M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"}], ["rect",{x:"8",y:"8",width:"8",height:"8",rx:"1"}]] },
+  ungrp: { n: [["rect",{x:"4",y:"4",width:"8",height:"8",rx:"1"}], ["rect",{x:"12",y:"12",width:"8",height:"8",rx:"1"}]] },
+  wain: { n: [["path",{d:"M9 4H5v16h4M12 12h8M17 8l4 4-4 4"}]] },
+  waout: { n: [["path",{d:"M15 4h4v16h-4M12 12H4M7 8l-4 4 4 4"}]] },
 } as const satisfies Record<string, ProtoGlyph>;
 
 export type ProtoName = keyof typeof PROTO_GLYPHS;
