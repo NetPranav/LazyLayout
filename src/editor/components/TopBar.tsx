@@ -43,8 +43,6 @@ import {
   Info,
   Play,
   Star,
-  Sun,
-  Moon,
   Palette,
   Check,
   AlignStartVertical,
@@ -69,7 +67,6 @@ import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
-import { useExportUiStore } from "@/core/store/useExportUiStore";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
@@ -143,6 +140,53 @@ export const PreviewButton: React.FC<{ onPreview?: () => void; id?: string; "dat
   </Tooltip>
 );
 
+const PEOPLE_MAX = 4;
+
+function personInitials(u: CollabUser): string {
+  return (
+    u.initials ||
+    u.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+  );
+}
+
+/** Overlapping circular avatars (image, else initials). Names in tooltips only; no counts. */
+const TopBarPeople: React.FC<{ users: readonly CollabUser[] }> = ({ users }) => {
+  if (!users || users.length === 0) return null;
+  return (
+    <div
+      role="group"
+      aria-label="Collaborators"
+      data-testid="top-bar-people"
+      className="ll-people ll:flex ll:items-center ll:pr-1 ll:max-sm:hidden"
+    >
+      {users.slice(0, PEOPLE_MAX).map((u, i) => (
+        <Tooltip key={u.id} content={u.name} side="bottom">
+          <span
+            role="img"
+            aria-label={u.name}
+            style={{ ...(!u.src && u.color ? { backgroundColor: u.color } : null), ...(i > 0 ? { marginLeft: -3 } : null) }}
+            className={`ll-av ll:relative ll:w-7 ll:h-7 ll:rounded-full ll:grid ll:place-items-center ll:overflow-hidden ll:shrink-0 ll:ring-2 ll:ring-surface-panel ll:bg-avatar-bg ll:text-avatar-fg ll:text-nano ll:font-medium ll:font-sans ll:select-none ${
+              ""
+            }`}
+          >
+            {u.src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={u.src} alt="" className="ll:w-full ll:h-full ll:object-cover" />
+            ) : (
+              personInitials(u)
+            )}
+          </span>
+        </Tooltip>
+      ))}
+    </div>
+  );
+};
+
 export const TopBar: React.FC<TopBarProps> = ({
   projectName = "Visual Web App",
   saving = false,
@@ -164,7 +208,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   showRulers = false,
   isZen = false,
   onPreview,
-  onExport,
   onShare,
   viewportPreset: propViewportPreset,
   onSelectPreset,
@@ -208,18 +251,6 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   // Theme integration
   const [theme, selectTheme] = useTheme();
-  const isDark =
-    theme === "dark" ||
-    theme === "noir" ||
-    theme === "graphite" ||
-    theme === "darkroom";
-
-  const themeBtnRef = useRef<HTMLButtonElement>(null);
-  const [themePickerOpen, setThemePickerOpen] = useState(false);
-
-  const handleThemeToggle = useCallback(() => {
-    selectTheme(isDark ? "warm" : "graphite");
-  }, [isDark, selectTheme]);
 
   const handleOpenSearch = useCallback(() => {
     if (onSearch) {
@@ -540,89 +571,13 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* =====================================================================
-          3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
+          3. RIGHT COLUMN: Avatars, Preview (Play), Ship Button & Popover
           ===================================================================== */}
       <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4 ll:max-sm:pr-2">
-        {/* Code export button */}
-        <Tooltip content="Export Code (Next.js, Vite, HTML, React, Vue)">
-          <button
-            type="button"
-            aria-label="Export Code"
-            onClick={() => {
-              if (onExport) {
-                onExport();
-              } else {
-                useExportUiStore.getState().open();
-              }
-            }}
-            className="ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:max-sm:hidden"
-          >
-            <Icon icon={Download} size={14} />
-            <span>Export</span>
-          </button>
-        </Tooltip>
+        {/* Collaborators: circular avatars, no counts */}
+        <TopBarPeople users={_users} />
 
-        {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
-        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
-          <button
-            ref={themeBtnRef}
-            type="button"
-            id="themebtn"
-            onClick={handleThemeToggle}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setThemePickerOpen((prev) => !prev);
-            }}
-            aria-label={isDark ? "Switch to Paper" : "Switch to Noir"}
-            title={isDark ? "Switch to Paper" : "Switch to Noir"}
-            aria-haspopup="menu"
-            aria-expanded={themePickerOpen}
-            className="themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-          >
-            <Icon icon={isDark ? Sun : Moon} size={ACTION_ICON_SIZE} />
-          </button>
-        </Tooltip>
-
-        <Menu
-          open={themePickerOpen}
-          onClose={() => setThemePickerOpen(false)}
-          anchorRef={themeBtnRef}
-          width={200}
-          aria-label="Theme picker"
-        >
-          <MenuHeading>Light</MenuHeading>
-          {LIGHT_THEMES.map((id) => (
-            <MenuItem
-              key={id}
-              role="menuitemradio"
-              checked={theme === id}
-              onClick={() => {
-                selectTheme(id);
-                setThemePickerOpen(false);
-              }}
-              icon={<ThemeSwatch theme={id} />}
-            >
-              {id.charAt(0).toUpperCase() + id.slice(1)}
-            </MenuItem>
-          ))}
-          <MenuHeading>Dark</MenuHeading>
-          {DARK_THEMES.map((id) => (
-            <MenuItem
-              key={id}
-              role="menuitemradio"
-              checked={theme === id}
-              onClick={() => {
-                selectTheme(id);
-                setThemePickerOpen(false);
-              }}
-              icon={<ThemeSwatch theme={id} />}
-            >
-              {id.charAt(0).toUpperCase() + id.slice(1)}
-            </MenuItem>
-          ))}
-        </Menu>
-
-        {/* Preview button (left of Ship, 32x32 size and 4px radius matching P) */}
+        {/* Preview button (32x32, 4px radius) in the old theme-toggle slot, right before Ship */}
         <PreviewButton onPreview={onPreview ?? (() => useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview"))} className="ll:max-sm:hidden" />
 
         {/* Ship Button & Popover */}

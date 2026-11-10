@@ -225,25 +225,22 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         data-state={dataState}
+        data-ship={isReady ? "ready" : "error"}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? popoverId : undefined}
         aria-label={isReady ? "Ship, ready" : `Ship, ${issueCount} to fix`}
         className={`ship ll-ship ${
           isReady ? "ready ll-ready" : ""
-        } ll:inline-flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:border-0 ll:font-sans ll:text-body ll:font-medium ll:cursor-pointer ll:select-none ll:shrink-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+        } ll:inline-flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:text-body ll:font-medium ll:cursor-pointer ll:select-none ll:shrink-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
           isReady
-            ? "ll:bg-control-primary ll:text-control-primary-fg"
-            : "ll:bg-ship-bg ll:text-ship-fg"
+            ? "ll:border-0 ll:bg-control-primary ll:text-control-primary-fg"
+            : "ll:border ll:border-solid ll:border-syn-tag ll:bg-ship-bg ll:text-syn-tag"
         } ${dataState === "hover" ? "ll:opacity-90 " : ""}${
           dataState === "focus" ? "ll:ring-2 ll:ring-primary " : ""
         }${disabled ? "ll:opacity-disabled ll:cursor-not-allowed" : ""} ${className}`}
       >
         <span>Ship</span>
-
-        <span id="shipc" className="shipc ll-shipc ll:font-sans ll:text-body ll:font-medium ll:tabular-nums">
-          {isReady ? "Ready" : issueCount}
-        </span>
 
         <Icon
           icon={ChevronDown}
