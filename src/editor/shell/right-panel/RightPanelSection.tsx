@@ -20,6 +20,9 @@ export interface RightPanelSectionProps {
   className?: string;
 }
 
+/** Which "More" blocks the designer has opened, by section id: they stay open while they work, whatever they select next. */
+const openMore = new Set<string>();
+
 export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   id: propId,
   title,
@@ -37,6 +40,17 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const autoId = useId();
   const sectionId = propId ?? autoId;
+  const [showMore, setShowMoreState] = useState(() => (propId ? openMore.has(propId) : false));
+  const setShowMore = (update: (prev: boolean) => boolean) => {
+    setShowMoreState((prev) => {
+      const next = update(prev);
+      if (propId) {
+        if (next) openMore.add(propId);
+        else openMore.delete(propId);
+      }
+      return next;
+    });
+  };
   const bodyId = `${autoId}-body`;
   const moreId = `${autoId}-more`;
 

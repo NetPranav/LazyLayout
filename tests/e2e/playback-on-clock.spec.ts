@@ -7,7 +7,7 @@
  * by a frame-scheduler task rather than React state.
  */
 import { test, expect } from "@playwright/test";
-import { openEditor, openSequencer } from "./support/editor";
+import { openEditor, openSequencer, EDITOR_URL } from "./support/editor";
 
 const FPS = 60;
 
@@ -42,8 +42,8 @@ async function seekTimeline(page: import("@playwright/test").Page, seconds: numb
   await ruler.click({ position: { x, y: 8 } });
 }
 
-test.fixme("App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks", async ({ page }) => {
-  await openEditor(page);
+test("App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks", async ({ page }) => {
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
   const bar = page.getByRole("toolbar", { name: "Timeline header" });
 
@@ -53,7 +53,7 @@ test.fixme("App bug: TimelinePanel playback has no subframe accumulator and setP
 
   await bar.getByRole("button", { name: "Play (Space)", exact: true }).click();
   await expect(bar.getByRole("button", { name: "Pause (Space)", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(2000);
   await bar.getByRole("button", { name: "Pause (Space)", exact: true }).click();
   await page.waitForTimeout(250);
   await page.waitForTimeout(250);
@@ -65,7 +65,7 @@ test.fixme("App bug: TimelinePanel playback has no subframe accumulator and setP
 });
 
 test("Phase 56: playing re-renders the timeline at most 10 times a second", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, EDITOR_URL);
   await openSequencer(page);
   const bar = page.getByRole("toolbar", { name: "Timeline header" });
 

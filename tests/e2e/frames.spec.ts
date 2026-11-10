@@ -4,7 +4,7 @@
  * frames survive a reload; the backdrop can be light, dark or a checkerboard.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const FRAME = ".canvas-frame";
 
@@ -29,7 +29,7 @@ const frames = (page: Page) =>
     })), FRAME);
 
 test.fixme("Phase 21: Desktop, Tablet and Mobile are three frames, each its own stage, and they survive a reload (new editor lacks multi-frame stage canvas)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
   expect(await frames(page)).toHaveLength(1);
 
@@ -59,7 +59,7 @@ test.fixme("Phase 21: Desktop, Tablet and Mobile are three frames, each its own 
 });
 
 test.fixme("Phase 21: add a custom frame, rename, resize, duplicate, reorder and delete (new editor lacks multi-frame stage canvas and custom frame management)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
 
   await page.getByRole("button", { name: "Frame", exact: true }).click();
@@ -106,7 +106,7 @@ test.fixme("Phase 21: add a custom frame, rename, resize, duplicate, reorder and
 });
 
 test.fixme("Phase 21: the backdrop can be light, dark or a checkerboard (new editor lacks Canvas backdrop selector)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
   const stage = page.locator(".whiteboard-stage");
   for (const [label, value] of [["Dark", "dark"], ["Checkerboard", "checker"], ["Light", "light"]] as const) {
@@ -116,7 +116,7 @@ test.fixme("Phase 21: the backdrop can be light, dark or a checkerboard (new edi
 });
 
 test.fixme("Phase 21: the header switch and the frames own the active frame (new editor lacks Device Preview Target multi-frame switcher)", async ({ page }) => {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await mountDemo(page);
   await device(page, "Mobile").click();
   await expect(page.locator(FRAME)).toHaveCount(2);

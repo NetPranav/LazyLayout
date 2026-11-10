@@ -1,0 +1,2 @@
+### Fixed
+- New editor: Ctrl+K and the search button open a real command palette (every command that can run now); the Page block's Name, Width, Height and Background write the document and the page follows them; choosing Desktop / Tablet / Mobile resizes the page; the snap toggles reach the canvas; fill and effect grips can be dragged to reorder (LA-006); shadow field labels have tooltips (LA-027).

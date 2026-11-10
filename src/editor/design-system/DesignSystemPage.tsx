@@ -8,14 +8,14 @@ import { Icon } from "../components/Icon";
 import { ThemeToggle, type Theme, useTheme } from "../components/ThemeToggle";
 import { MotionDemo } from "./MotionDemo";
 
-// Kept imported components
+// Own Cursor & ScrollFade components (replacing third-party unverified components)
 import {
   Cursor,
   CursorContainer,
   CursorFollow,
   CursorProvider,
-} from "../components/imported/cursor";
-import { ScrollFade as ImportedScrollFade } from "../components/imported/scroll-fade";
+} from "../components/Cursor";
+import { ScrollFade } from "../components/ScrollFade";
 
 // Core components demos
 import {
@@ -63,6 +63,7 @@ import {
   ViewOptionsPopoverDemo,
   ContextMenusDemo,
   StageAndArtboardDemo,
+  MotionPathOverlayDemo,
 } from "./demos/CanvasDemos2";
 import {
   TopBarDemo,
@@ -201,6 +202,7 @@ type NavSectionId =
   | "view-options"
   | "rulers"
   | "stage-selection"
+  | "motion-paths"
   // Panels
   | "panel-section"
   | "property-row"
@@ -325,6 +327,7 @@ const CANVAS_NAV: readonly NavItem[] = [
   { id: "view-options", label: "ViewOptionsPopover" },
   { id: "rulers", label: "Rulers" },
   { id: "stage-selection", label: "Stage & Selection Handles" },
+  { id: "motion-paths", label: "Motion Path Overlay" },
 ];
 
 const PANELS_NAV: readonly NavItem[] = [
@@ -835,42 +838,180 @@ function Titled({ title, note, children }: { title: string; note: string; childr
 }
 
 function CursorDemo() {
+  const [role, setRole] = useState<"Designer" | "Engineer" | "Reviewer">("Designer");
+
   return (
-    <div className="ll:relative ll:h-72 ll:w-full ll:border ll:border-dashed ll:border-border ll:flex ll:items-center ll:justify-center">
-      <CursorProvider>
-        <CursorContainer>
-          <Cursor>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M0 0 L16 6 L9 9 L6 16 Z" />
-            </svg>
-          </Cursor>
-          <CursorFollow side="bottom" align="end">
-            <span className="ll:text-micro ll:bg-control-primary ll:text-control-primary-fg ll:px-2 ll:py-0.5 ll:rounded-sm">
-              Designer
-            </span>
-          </CursorFollow>
-          <span className="ll:text-small ll:text-secondary">Move cursor within this area</span>
-        </CursorContainer>
-      </CursorProvider>
+    <div className="ll:flex ll:flex-col ll:gap-6 ll:w-full">
+      {/* 1. Interactive Sandbox */}
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <div className="ll:flex ll:items-center ll:justify-between">
+          <span className="ll:text-small ll:font-medium ll:text-primary">Interactive Workspace</span>
+          <div className="ll:flex ll:items-center ll:gap-2">
+            {(["Designer", "Engineer", "Reviewer"] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRole(r)}
+                className={`ll:px-2.5 ll:h-7 ll:rounded-sm ll:text-micro ll:font-medium ll:border ll:transition-colors ${
+                  role === r
+                    ? "ll:bg-control-primary ll:text-control-primary-fg ll:border-transparent"
+                    : "ll:bg-surface-panel ll:text-secondary ll:border-border ll:hover:text-primary ll:hover:bg-surface-hover"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="ll:relative ll:h-64 ll:w-full ll:rounded-md ll:border ll:border-dashed ll:border-border ll:bg-surface-canvas ll:flex ll:items-center ll:justify-center ll:select-none">
+          <CursorProvider>
+            <CursorContainer className="ll:h-full ll:w-full ll:flex ll:items-center ll:justify-center">
+              <Cursor>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M0 0 L16 6 L9 9 L6 16 Z" />
+                </svg>
+              </Cursor>
+              <CursorFollow side="bottom" align="end">
+                <span className="ll:text-micro ll:bg-control-primary ll:text-control-primary-fg ll:px-2 ll:py-0.5 ll:rounded-sm ll:font-medium">
+                  {role}
+                </span>
+              </CursorFollow>
+              <span className="ll:text-small ll:text-secondary">Move cursor within this area</span>
+            </CursorContainer>
+          </CursorProvider>
+        </div>
+      </div>
+
+      {/* 2. Static Presence States & Alignment Variants */}
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <span className="ll:text-small ll:font-medium ll:text-primary">Collaborator Variants & Alignments</span>
+        <div className="ll:grid ll:grid-cols-1 ll:md:grid-cols-3 ll:gap-4">
+          {/* Variant 1: Bottom / End (Lead Designer) */}
+          <div className="ll:relative ll:h-40 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:justify-between">
+            <span className="ll:text-micro ll:text-muted ll:font-mono">{'side="bottom" align="end"'}</span>
+            <div className="ll:relative ll:h-20 ll:w-full">
+              <div
+                className="ll:absolute ll:left-6 ll:top-2 ll:z-10 ll:text-primary"
+                aria-hidden="true"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M0 0 L16 6 L9 9 L6 16 Z" />
+                </svg>
+                <div className="ll:absolute ll:top-4 ll:left-3 ll:whitespace-nowrap">
+                  <span className="ll:text-micro ll:bg-control-primary ll:text-control-primary-fg ll:px-2 ll:py-0.5 ll:rounded-sm ll:font-medium">
+                    Adarsh (Lead)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span className="ll:text-micro ll:text-secondary">Default Lilac Accent</span>
+          </div>
+
+          {/* Variant 2: Top / Start (Motion Engineer) */}
+          <div className="ll:relative ll:h-40 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:justify-between">
+            <span className="ll:text-micro ll:text-muted ll:font-mono">{'side="top" align="start"'}</span>
+            <div className="ll:relative ll:h-20 ll:w-full">
+              <div
+                className="ll:absolute ll:left-12 ll:top-10 ll:z-10 ll:text-primary"
+                aria-hidden="true"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M0 0 L16 6 L9 9 L6 16 Z" />
+                </svg>
+                <div className="ll:absolute ll:-top-6 ll:-left-3 ll:whitespace-nowrap">
+                  <span className="ll:text-micro ll:bg-surface-raised ll:text-primary ll:border ll:border-border ll:px-2 ll:py-0.5 ll:rounded-sm ll:font-medium">
+                    Alex (Motion)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span className="ll:text-micro ll:text-secondary">Surface Raised Badge</span>
+          </div>
+
+          {/* Variant 3: Right / Center (Copywriter) */}
+          <div className="ll:relative ll:h-40 ll:rounded-md ll:border ll:border-border ll:bg-surface-bar ll:p-4 ll:flex ll:flex-col ll:justify-between">
+            <span className="ll:text-micro ll:text-muted ll:font-mono">{'side="right" align="center"'}</span>
+            <div className="ll:relative ll:h-20 ll:w-full">
+              <div
+                className="ll:absolute ll:left-6 ll:top-6 ll:z-10 ll:text-primary"
+                aria-hidden="true"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M0 0 L16 6 L9 9 L6 16 Z" />
+                </svg>
+                <div className="ll:absolute ll:top-0 ll:left-5 ll:whitespace-nowrap">
+                  <span className="ll:text-micro ll:bg-surface-panel ll:text-secondary ll:border ll:border-border ll:px-2 ll:py-0.5 ll:rounded-sm ll:font-medium">
+                    Sarah (Copy)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span className="ll:text-micro ll:text-secondary">Neutral Surface Panel</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ScrollFadeDemo() {
+  const [fadeEnabled, setFadeEnabled] = useState(true);
+
   return (
-    <div className="ll:relative ll:h-64 ll:w-full ll:border ll:border-border ll:rounded-md ll:bg-surface-bar ll:overflow-hidden">
-      <ImportedScrollFade className="ll:h-full ll:p-4">
-        <div className="ll:flex ll:flex-col ll:gap-4">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <div
-              key={i}
-              className="ll:p-3 ll:rounded-md ll:bg-surface-panel ll:border ll:border-border ll:text-small ll:text-secondary"
-            >
-              Scroll Fade Row Item #{i + 1}
-            </div>
-          ))}
+    <div className="ll:flex ll:flex-col ll:gap-6 ll:w-full">
+      {/* 1. Vertical Scroll Fade */}
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <div className="ll:flex ll:items-center ll:justify-between">
+          <span className="ll:text-small ll:font-medium ll:text-primary">Vertical Edge Fade</span>
+          <button
+            type="button"
+            onClick={() => setFadeEnabled((v) => !v)}
+            className={`ll:px-2.5 ll:h-7 ll:rounded-sm ll:text-micro ll:font-medium ll:border ll:transition-colors ${
+              fadeEnabled
+                ? "ll:bg-control-primary ll:text-control-primary-fg ll:border-transparent"
+                : "ll:bg-surface-panel ll:text-secondary ll:border-border ll:hover:text-primary ll:hover:bg-surface-hover"
+            }`}
+          >
+            {fadeEnabled ? "Fade Enabled" : "Fade Disabled"}
+          </button>
         </div>
-      </ImportedScrollFade>
+
+        <div className="ll:relative ll:h-64 ll:w-full ll:border ll:border-border ll:rounded-md ll:bg-surface-bar ll:overflow-hidden">
+          <ScrollFade enabled={fadeEnabled} className="ll:h-full ll:p-4">
+            <div className="ll:flex ll:flex-col ll:gap-3">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="ll:p-3 ll:rounded-md ll:bg-surface-panel ll:border ll:border-border ll:text-small ll:text-secondary ll:flex ll:items-center ll:justify-between"
+                >
+                  <span>Scroll Fade Row Item #{i + 1}</span>
+                  <span className="ll:text-micro ll:text-muted ll:font-mono">row-{i + 1}</span>
+                </div>
+              ))}
+            </div>
+          </ScrollFade>
+        </div>
+      </div>
+
+      {/* 2. Horizontal Scroll Fade */}
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <span className="ll:text-small ll:font-medium ll:text-primary">Horizontal Edge Fade</span>
+        <div className="ll:relative ll:w-full ll:border ll:border-border ll:rounded-md ll:bg-surface-bar ll:p-4 ll:overflow-hidden">
+          <ScrollFade orientation="horizontal" className="ll:w-full">
+            <div className="ll:flex ll:items-center ll:gap-3 ll:w-max ll:py-1">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="ll:px-4 ll:py-2.5 ll:rounded-sm ll:bg-surface-panel ll:border ll:border-border ll:text-small ll:text-secondary ll:whitespace-nowrap ll:shrink-0"
+                >
+                  Layer Asset Card {i + 1}
+                </div>
+              ))}
+            </div>
+          </ScrollFade>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1416,7 +1557,7 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Cursor</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported Collaborative Cursor Component (Token-Styled)
+                    Collaborative Cursor Component (Token-Styled)
                   </span>
                 </div>
                 <CursorDemo />
@@ -1427,7 +1568,7 @@ export function DesignSystemPage() {
                 <div>
                   <h1 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">Scroll Fade</h1>
                   <span className="ll:text-micro ll:font-semibold ll:uppercase ll:tracking-wider ll:text-secondary">
-                    Imported Scroll Fade Component (Token-Styled)
+                    Scroll Edge Fade Component (Token-Styled)
                   </span>
                 </div>
                 <ScrollFadeDemo />
@@ -1464,6 +1605,7 @@ export function DesignSystemPage() {
             {activeSection === "view-options" && <ViewOptionsPopoverDemo />}
             {activeSection === "rulers" && <RulersDemo />}
             {activeSection === "stage-selection" && <StageSelectionDemo />}
+            {activeSection === "motion-paths" && <MotionPathOverlayDemo />}
 
             {/* 5. Panels & Details */}
             {activeSection === "panel-section" && <PanelSectionDemo />}

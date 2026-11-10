@@ -17,7 +17,13 @@ import { useProjectFiles } from "@/legacy-editor/shell/hooks/useProjectFiles";
 import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
-import { isUntouchedSeed, seedPrototypeDocument } from "./prototypeDocument";
+import { isUntouchedSeed, seedPrototypeDocument, upgradeSavedProject } from "./prototypeDocument";
+import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
+import { FontSync } from "@/legacy-editor/fonts/FontSync";
+import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
+import { ExportDialog } from "@/legacy-editor/shell/ExportDialog";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
+import { AgentDialog } from "@/legacy-editor/shell/AgentDialog";
 import {
   RecoveryPrompt,
   SaveErrorBanner,
@@ -35,7 +41,13 @@ import {
   RIGHT_PANEL_DEFAULT_COMPACT,
   RIGHT_PANEL_MAX,
 } from "./shellFx";
-import { useMotionModel } from "@/editor/motion-model";
+import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
+import { installTransportCommands } from "@/core/time/transportCommands";
+import { installTransportDriver } from "@/core/time/transportDriver";
+import { transport, transportStore } from "@/core/time/transport";
+
+/** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
+const OPENING_FRAME = 72;
 
 export interface EditorShellProps {
   left?: React.ReactNode;
@@ -140,15 +152,35 @@ export function EditorShell({
   const files = useProjectFiles();
   useProjectLock();
 
-  // Seed the prototype document once if the project is brand new and untouched (Item 3)
-  const hasSeededRef = React.useRef(false);
+  // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
+  useEffect(() => installDocumentMotionSync(), []);
+
+  // One-clock transport command bindings and master driver
+  useEffect(() => installTransportCommands(), []);
+  useEffect(() => installTransportDriver(), []);
+  // The editor opens with the playhead where the Motion panel always put it (frame 72, past the sample entrances), so
+  // the canvas shows layers at rest rather than at the first frame of their entrance. Only on a fresh, untouched clock.
   useEffect(() => {
-    if (hasSeededRef.current) return;
-    const layers = documentStore.getState().document.layers;
-    if (isUntouchedSeed(layers)) {
-      hasSeededRef.current = true;
-      seedPrototypeDocument();
-    }
+    const t = transportStore.getState();
+    if (t.time === 0 && !t.playing) transport.seek(OPENING_FRAME / (t.fps || 60));
+  }, []);
+
+  // A brand-new project gets the sample page; one saved by an earlier version is brought up to date when it loads.
+  useEffect(() => {
+    let upgradedFor: unknown = null;
+    const check = () => {
+      const doc = documentStore.getState().document;
+      if (isUntouchedSeed(doc.layers)) {
+        seedPrototypeDocument();
+        return;
+      }
+      if (upgradedFor !== doc.layers) {
+        upgradedFor = doc.layers;
+        upgradeSavedProject();
+      }
+    };
+    check();
+    return documentStore.subscribe(check);
   }, []);
 
   // Reactive blank page detection (Item 3: when page has no layers, hide rulers and guides)
@@ -297,9 +329,17 @@ export function EditorShell({
           showRulers={actions.showRulers}
           isZen={actions.isZen}
           users={collabUsers}
+          viewportPreset={actions.viewportPreset}
+          onSelectPreset={actions.setViewportPreset}
+          onExport={() => useExportUiStore.getState().open()}
         />
         <ReadOnlyBanner />
       </div>
+
+      <ConnectedCommandPalette />
+      <FontSync />
+      <ExportDialog />
+      <AgentDialog />
 
       {/* 2. Left panel slot in "left" grid area */}
       <div className="ll-shell-left">
@@ -375,6 +415,16 @@ export function EditorShell({
           >
             <Stage
               zoom={actions.zoom}
+              activeTool={actions.activeTool}
+              activeShape={actions.activeShape}
+              onToolDone={() => actions.setActiveTool("select")}
+              onAddFrame={() => {
+                insertCatalogItem("Frame");
+              }}
+              onInsert={actions.toggleInsert}
+              onAskAi={actions.toggleAiBox}
+              snapObjects={actions.snapObjects}
+              snapGuides={actions.snapGuides}
               preset={actions.viewportPreset}
               onPresetChange={(p) => actions.setViewportPreset(p as "1440" | "768" | "375")}
             />

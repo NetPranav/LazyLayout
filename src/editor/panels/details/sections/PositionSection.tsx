@@ -4,6 +4,9 @@ import React from "react";
 import { PhosphorMotionIcon } from "@/editor/components/icons/PhosphorIcon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
+import { Button } from "@/editor/components/Button";
+import { formatPinInLayer } from "@/core/geometry/cornerPin";
+import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshWarp";
 import { AlignBar } from "../controls/AlignBar";
 import {
   INSPECTOR_CONSTANTS,
@@ -18,6 +21,22 @@ export interface PositionSectionProps extends InspectorSectionProps {
   onDistribute?: (axis: SpreadAxis) => void;
   onTidy?: () => void;
 }
+
+export const CONSTRAINT_HORIZONTAL_OPTIONS = [
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "leftRight", label: "Left & Right" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
+
+export const CONSTRAINT_VERTICAL_OPTIONS = [
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "topBottom", label: "Top & Bottom" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
 
 export const PositionSection: React.FC<PositionSectionProps> = ({
   isMulti = false,
@@ -36,6 +55,10 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
   const xVal = typeof rawX === "number" ? rawX : rawX === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_X;
   const yVal = typeof rawY === "number" ? rawY : rawY === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_Y;
   const rotVal = typeof rawRot === "number" ? rawRot : rawRot === null ? null : INSPECTOR_CONSTANTS.DEFAULT_ROTATION;
+
+  // Read constraints
+  const rawConstraintH = (getValue?.("constraints.horizontal") as string) || "left";
+  const rawConstraintV = (getValue?.("constraints.vertical") as string) || "top";
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
@@ -87,6 +110,33 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
           }}
         />
       </div>
+
+      {/* Constraints Subsection */}
+      <div className="ll:flex ll:flex-col ll:gap-1.5 ll:pt-2 ll:border-t ll:border-border">
+        <div className="ll:flex ll:items-center ll:justify-between">
+          <span className="ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted">
+            Constraints
+          </span>
+        </div>
+        <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+          <Select
+            size="sm"
+            label="H"
+            aria-label="Horizontal constraint"
+            value={rawConstraintH}
+            options={CONSTRAINT_HORIZONTAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.horizontal", val)}
+          />
+          <Select
+            size="sm"
+            label="V"
+            aria-label="Vertical constraint"
+            value={rawConstraintV}
+            options={CONSTRAINT_VERTICAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.vertical", val)}
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -104,7 +154,11 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
   const skewY = (getValue?.("transform.skewY") as number) ?? 0;
   const rotX = (getValue?.("transform.rotateX") as number) ?? 0;
   const rotY = (getValue?.("transform.rotateY") as number) ?? 0;
+  const perspective = (getValue?.("transform.perspective") as number) ?? 0;
+  const translateZ = (getValue?.("transform.translateZ") as number) ?? 0;
+  const style3d = (getValue?.("transform.style3d") as string) || "flat";
   const origin = (getValue?.("transform.origin") as string) || "center";
+  const role = (getValue?.("render.role") as string) || "content";
 
   // Offset values when position is relative/absolute/fixed/sticky
   const offTop = (getValue?.("layout.top") as number) ?? 0;
@@ -197,6 +251,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
               size="sm"
               label="X"
               aria-label="Scale X"
+              title="Scale X: stretches the layer sideways. 1 is normal size, 2 is twice as wide."
               value={scaleX}
               step={INSPECTOR_CONSTANTS.STEP_FINE}
               precision={scaleX % 1 === 0 ? 0 : 2}
@@ -206,6 +261,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
               size="sm"
               label="Y"
               aria-label="Scale Y"
+              title="Scale Y: stretches the layer up and down. 1 is normal size."
               value={scaleY}
               step={INSPECTOR_CONSTANTS.STEP_FINE}
               precision={scaleY % 1 === 0 ? 0 : 2}
@@ -222,6 +278,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
               label="X"
               suffix="°"
               aria-label="Skew X"
+              title="Skew X: slants the layer sideways, like italics."
               value={skewX}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
               onChange={(val) => onUpdateProp?.("transform.skewX", val)}
@@ -231,6 +288,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
               label="Y"
               suffix="°"
               aria-label="Skew Y"
+              title="Skew Y: slants the layer up and down."
               value={skewY}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
               onChange={(val) => onUpdateProp?.("transform.skewY", val)}
@@ -263,6 +321,149 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
         </div>
       </div>
 
+      <NumberField
+        size="sm"
+        className="ll:*:!text-micro ll:!gap-2"
+        label="Perspective"
+        aria-label="Perspective"
+        title="3D depth in px. Set it (try 600), then tilt with Rot X: the layer recedes and shrinks into the distance like text lying on a road. Rotation then turns it along the road. 0 is flat."
+        suffix="px"
+        value={perspective}
+        step={50}
+        onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
+      />
+
+      {/* 3D Depth & Space */}
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+        <NumberField
+          size="sm"
+          className="ll:*:!text-micro ll:!gap-2"
+          label="Translate Z"
+          aria-label="Translate Z"
+          title="Distance along the Z axis in px. Negative moves back into depth."
+          suffix="px"
+          value={translateZ}
+          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+          onChange={(val) => onUpdateProp?.("transform.translateZ", val)}
+        />
+        <Select
+          size="sm"
+          label="3D Space"
+          aria-label="3D Space"
+          title="Preserve 3D keeps children in the same shared 3D perspective context."
+          value={style3d}
+          options={[
+            { value: "flat", label: "Flat" },
+            { value: "preserve3d", label: "Preserve 3D" },
+          ]}
+          onChange={(val) => onUpdateProp?.("transform.style3d", val)}
+        />
+      </div>
+
+      {/* Corner pin: lay the layer on a surface (a road, a wall) by dragging its four corners */}
+      {(() => {
+        const pinned = typeof getValue?.("transform.pin") === "string" && getValue?.("transform.pin") !== "";
+        const x = Number(getValue?.("frame.x") ?? 0);
+        const y = Number(getValue?.("frame.y") ?? 0);
+        const w = Number(getValue?.("frame.width") ?? 0);
+        const h = Number(getValue?.("frame.height") ?? 0);
+        const flat = formatPinInLayer([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], [x, y]);
+        return (
+          <div className="ll:flex ll:flex-col ll:gap-1">
+            <div className="ll:flex ll:gap-1">
+              <Button
+                size="sm"
+                aria-label={pinned ? "Reset corner pin" : "Pin corners"}
+                disabled={w <= 0 || h <= 0}
+                title="Puts four handles on the layer's corners and a grid on the surface. Drag each handle onto a corner of the road, wall or screen the layer should lie on."
+                onClick={() => onUpdateProp?.("transform.pin", flat)}
+              >
+                {pinned ? "Reset pin" : "Pin corners"}
+              </Button>
+              {pinned && (
+                <Button size="sm" aria-label="Remove corner pin" onClick={() => onUpdateProp?.("transform.pin", "")}>
+                  Remove pin
+                </Button>
+              )}
+            </div>
+            <span className="ll:text-micro ll:font-sans ll:text-muted">Lay it on a surface: drag the four handles onto its corners.</span>
+          </div>
+        );
+      })()}
+
+      {/* Warp mesh: multi-point grid for bending text and images along a curve or surface */}
+      {(() => {
+        const meshVal = getValue?.("transform.mesh");
+        const mesh = parseMesh(meshVal);
+        const hasMesh = mesh !== null;
+        const x = Number(getValue?.("frame.x") ?? 0);
+        const y = Number(getValue?.("frame.y") ?? 0);
+        const w = Number(getValue?.("frame.width") ?? 0);
+        const h = Number(getValue?.("frame.height") ?? 0);
+        const currentGrid = mesh ? `${mesh.cols}x${mesh.rows}` : "3x3";
+        const gridOptions = [
+          { value: "3x3", label: "3×3" },
+          { value: "4x4", label: "4×4" },
+          { value: "5x5", label: "5×5" },
+        ];
+
+        return (
+          <div className="ll:flex ll:flex-col ll:gap-1">
+            <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-end">
+              <Select
+                size="sm"
+                label="Mesh grid"
+                aria-label="Mesh grid size"
+                value={currentGrid}
+                options={gridOptions}
+                onChange={(val) => {
+                  const [c, r] = val.split("x").map(Number);
+                  onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
+                }}
+              />
+              <div className="ll:flex ll:gap-1">
+                {!hasMesh ? (
+                  <Button
+                    size="sm"
+                    aria-label="Warp mesh"
+                    disabled={w <= 0 || h <= 0}
+                    title="Creates a multi-point mesh grid across the layer to bend it along curves and surfaces."
+                    onClick={() => {
+                      const [c, r] = currentGrid.split("x").map(Number);
+                      onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
+                    }}
+                  >
+                    Warp mesh
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      aria-label="Reset warp mesh"
+                      title="Resets mesh control points to a flat grid."
+                      onClick={() => onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, mesh.cols, mesh.rows), [x, y]))}
+                    >
+                      Reset mesh
+                    </Button>
+                    <Button
+                      size="sm"
+                      aria-label="Remove warp mesh"
+                      title="Removes the warp mesh and restores the plain layer."
+                      onClick={() => onUpdateProp?.("transform.mesh", "")}
+                    >
+                      Remove mesh
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            <span className="ll:text-micro ll:font-sans ll:text-muted">
+              Bend along a curve: drag control points to warp. Shift-drag moves row.
+            </span>
+          </div>
+        );
+      })()}
+
       {/* Group 3: Origin */}
       <div className="ll-dmg">
         <div className="ll-dtrow">
@@ -271,6 +472,7 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Origin"
+              title="The point rotation, scale and skew turn around."
               value={origin}
               options={TRANSFORM_ORIGIN_OPTIONS}
               mixed={getValue?.("transform.origin") === null}
@@ -279,6 +481,20 @@ export const PositionMore: React.FC<InspectorSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Render Role (Phase 73: Content vs Helper / Null) */}
+      <Select
+        size="sm"
+        label="Role"
+        aria-label="Render role"
+        title="A helper layer is an invisible null driver; drawn dashed in Design mode, never rendered in Preview or export."
+        value={role}
+        options={[
+          { value: "content", label: "Content" },
+          { value: "helper", label: "Helper (Null)" },
+        ]}
+        onChange={(val) => onUpdateProp?.("render.role", val)}
+      />
     </div>
   );
 };

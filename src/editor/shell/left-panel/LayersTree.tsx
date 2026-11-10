@@ -39,6 +39,7 @@ import {
   EYE_BLINK_SCALE_Y,
   BAND_STRETCH_FACTOR,
 } from "./constants";
+import { useLayersUiStore } from "@/core/store/useLayersUiStore";
 
 export interface LayersTreeProps {
   layers: LayerItem[];
@@ -50,7 +51,8 @@ export interface LayersTreeProps {
   onToggleExpand?: (id: string) => void;
   onToggleHidden?: (id: string) => void;
   onToggleLocked?: (id: string) => void;
-  onMoveLayer?: (ids: string[], parentId: string | null, index?: number) => void;
+  /** Returns why the move was refused, if it was. */
+  onMoveLayer?: (ids: string[], parentId: string | null, index?: number) => string | void;
   onRename?: (id: string, newName: string) => void;
   onLayerAction?: (action: LayerMenuAction, id: string) => void;
   /** Show the motion badge on animated layers (design mode only). */
@@ -136,21 +138,29 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState<string>("");
+  const storeToastMsg = useLayersUiStore((s) => s.toastMsg);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Drag and drop state
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
+  /** A drag that selects: started on empty space in the list or on a row that is not selected (a selected row drags to reorder). */
+  const bandRef = useRef<{ startY: number; active: boolean; lastKey: string } | null>(null);
+  const [band, setBand] = useState<{ top: number; height: number } | null>(null);
+  const bandJustEnded = useRef(false);
   useEffect(() => {
     dragStateRef.current = dragState;
   }, [dragState]);
 
   const showToast = useCallback((msg: string) => {
+    useLayersUiStore.getState().showToast(msg);
     setToastMsg(msg);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToastMsg(null), TOAST_DURATION_MS);
   }, []);
+
+  const currentToast = storeToastMsg ?? toastMsg;
 
   // Derive visible nodes through shared pure filter function if not provided by parent
   const { visibleNodes } = useMemo(() => {
@@ -646,6 +656,58 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     }
     onToggleLocked?.(id);
   };
+  // Dragging across rows selects them (the rows the dragged box touches), so a run of layers can be picked with the mouse and deleted.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const b = bandRef.current;
+      const tree = treeRef.current;
+      if (!b || !tree) return;
+      if (!b.active) {
+        if (Math.abs(e.clientY - b.startY) < 4) return;
+        b.active = true;
+      }
+      const box = tree.getBoundingClientRect();
+      // near the top or bottom edge the list scrolls under the drag
+      if (e.clientY < box.top + 24) tree.scrollTop -= 12;
+      else if (e.clientY > box.bottom - 24) tree.scrollTop += 12;
+      const y0 = Math.min(b.startY, e.clientY);
+      const y1 = Math.max(b.startY, e.clientY);
+      setBand({ top: y0 - box.top + tree.scrollTop, height: y1 - y0 });
+      const hits = [...tree.querySelectorAll<HTMLElement>(".row[data-sel]")]
+        .filter((row) => {
+          const r = row.getBoundingClientRect();
+          return r.bottom > y0 && r.top < y1;
+        })
+        .map((row) => row.getAttribute("data-sel") as string);
+      if (hits.length === 0) return;
+      const key = `${hits[0]}|${hits[hits.length - 1]}`;
+      if (key === b.lastKey) return;
+      b.lastKey = key;
+      onSelect?.(hits[0]);
+      if (hits.length > 1) onSelect?.(hits[hits.length - 1], { shiftKey: true } as React.MouseEvent);
+    };
+    const onUp = () => {
+      const b = bandRef.current;
+      bandRef.current = null;
+      if (!b) return;
+      setBand(null);
+      if (b.active) {
+        bandJustEnded.current = true; // the click that follows a drag must not pick one row again
+        window.setTimeout(() => {
+          bandJustEnded.current = false; // (no click follows when the drag ends on another row)
+        }, 60);
+      }
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [onSelect]);
+
+  /** A row that is part of the selection drags the whole selection. */
+  const movingIds = useCallback((id: string): string[] => (selectedIds.includes(id) ? [...selectedIds] : [id]), [selectedIds]);
 
   // Global pointer move & up listeners for drag-to-reorder and drag-to-timeline
   useEffect(() => {
@@ -659,22 +721,19 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       }
 
       const el = document.elementFromPoint(e.clientX, e.clientY);
-      const targetEl = el?.closest("#p-layers .row[data-sel]");
+      const moving = movingIds(current.id);
+      const blocked = new Set(moving.flatMap((id) => [...getSubtreeIds(id)]));
+
+      const targetEl = el?.closest('#p-layers .row[data-sel]');
       if (!targetEl) {
-        setDragState({ ...current, targetId: null, pos: null });
+        // below the last row: the bottom of the page's own list
+        const last = el?.closest("#p-layers") ? [...visibleNodes].reverse().find((n) => n.level === 0 && !blocked.has(n.id)) : undefined;
+        setDragState({ ...current, targetId: last?.id ?? null, pos: last ? "after" : null });
         if (dropLineRef.current) dropLineRef.current.style.display = "none";
         return;
       }
-
       const targetId = targetEl.getAttribute("data-sel");
-      if (!targetId || targetId === current.id) {
-        setDragState({ ...current, targetId: null, pos: null });
-        if (dropLineRef.current) dropLineRef.current.style.display = "none";
-        return;
-      }
-
-      const subtree = getSubtreeIds(current.id);
-      if (subtree.has(targetId)) {
+      if (!targetId || blocked.has(targetId)) {
         setDragState({ ...current, targetId: null, pos: null });
         if (dropLineRef.current) dropLineRef.current.style.display = "none";
         return;
@@ -683,9 +742,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       const b = targetEl.getBoundingClientRect();
       const f = (e.clientY - b.top) / b.height;
       const targetNode = visibleNodes.find((n) => n.id === targetId);
-      const isFrame = targetNode?.item.type === "frame" || targetNode?.item.type === "container";
-
-      const pos = isFrame ? (f < 0.25 ? "before" : f > 0.75 ? "after" : "in") : f < 0.5 ? "before" : "after";
+      // Only a frame can take layers inside it. On any other row the drop goes beside it (so into the frame that row is in).
+      const holds = targetNode?.item.type === "frame" || targetNode?.item.type === "container";
+      const pos = !targetNode?.parentId ? "in" : holds ? (f < 0.25 ? "before" : f > 0.75 ? "after" : "in") : f < 0.5 ? "before" : "after";
 
       setDragState({
         ...current,
@@ -717,26 +776,23 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       const targetNode = visibleNodes.find((n) => n.id === current.targetId);
       if (!targetNode) return;
 
-      if (current.pos === "in") {
-        if (targetNode.item.type !== "frame" && targetNode.item.type !== "container") {
-          showToast("Only frames can hold layers");
-          return;
-        }
-        onMoveLayer?.([current.id], current.targetId, 0);
-        if (!expandedSet.has(current.targetId)) {
+      const moving = movingIds(current.id);
+      let refused: string | void;
+      if (current.pos === "in" || !targetNode.parentId) {
+        // no index: on top of what the frame already holds, as it would be if it had just been drawn there
+        refused = onMoveLayer?.(moving, current.targetId);
+        if (!refused && !expandedSet.has(current.targetId)) {
           onToggleExpand?.(current.targetId);
         }
-      } else if (current.pos === "before") {
-        const parentId = targetNode.parentId;
-        const siblings = visibleNodes.filter((n) => n.parentId === parentId);
-        const targetIdx = siblings.findIndex((n) => n.id === current.targetId);
-        onMoveLayer?.([current.id], parentId, Math.max(0, targetIdx));
       } else {
+        // The list runs front to back and `children` runs back to front, and the index counts after the moved layers have left.
         const parentId = targetNode.parentId;
-        const siblings = visibleNodes.filter((n) => n.parentId === parentId);
-        const targetIdx = siblings.findIndex((n) => n.id === current.targetId);
-        onMoveLayer?.([current.id], parentId, targetIdx + 1);
+        const siblings = visibleNodes.filter((n) => n.parentId === parentId && !moving.includes(n.id));
+        const shownAt = siblings.findIndex((n) => n.id === current.targetId);
+        const index = current.pos === "before" ? siblings.length - shownAt : siblings.length - 1 - shownAt;
+        refused = onMoveLayer?.(moving, parentId, Math.max(0, index));
       }
+      if (refused) showToast(refused);
     };
 
     window.addEventListener("pointermove", handleGlobalPointerMove);
@@ -745,7 +801,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       window.removeEventListener("pointermove", handleGlobalPointerMove);
       window.removeEventListener("pointerup", handleGlobalPointerUp);
     };
-  }, [visibleNodes, getSubtreeIds, onMoveLayer, expandedSet, onToggleExpand, showToast]);
+  }, [visibleNodes, getSubtreeIds, movingIds, onMoveLayer, onSelect, expandedSet, onToggleExpand, showToast]);
 
   const hasSearch = searchQuery.trim().length > 0;
 
@@ -758,6 +814,10 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       tabIndex={visibleNodes.length === 0 ? 0 : -1}
       aria-label="Layers"
       onKeyDown={handleTreeKeyDown}
+      onPointerDown={(e) => {
+        // empty space in the list: a drag from here selects the rows it touches
+        if (e.button === 0 && e.target === e.currentTarget) bandRef.current = { startY: e.clientY, active: false, lastKey: "" };
+      }}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       onWheel={handleWheel}
@@ -770,12 +830,19 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       {/* Drop indicator line */}
       <div ref={dropLineRef} className="lyline ll-lyline" style={{ display: "none" }} />
 
+      {band && (
+        <div
+          aria-hidden="true"
+          data-testid="layers-band"
+          style={{ position: "absolute", left: 0, right: 0, top: band.top, height: band.height, zIndex: 5, pointerEvents: "none", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--ll-text-primary) 45%, transparent)" }}
+        />
+      )}
       {visibleNodes.length > 0 ? (
         visibleNodes.map((node) => {
           const isSelected = selectedSet.has(node.id);
           const isAncestor = !isSelected && ancestorIds.has(node.id);
           const targetIds = isSelected ? selectedIds : [node.id];
-          const isBeingDragged = dragState?.active && dragState?.id === node.id;
+          const isBeingDragged = dragState?.active && (selectedSet.has(dragState.id) ? isSelected : dragState.id === node.id);
           const isDropTarget = dragState?.active && dragState?.targetId === node.id;
           const dropPos = isDropTarget ? dragState?.pos : null;
 
@@ -820,6 +887,11 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                     if (e.button !== 0) return;
                     const target = e.target as HTMLElement;
                     if (target.closest(".mb, .act, input, button:not([role=treeitem])")) return;
+                    if (!isSelected) {
+                      // a row that is not selected: dragging from it selects the rows it sweeps over
+                      bandRef.current = { startY: e.clientY, active: false, lastKey: "" };
+                      return;
+                    }
                     setDragState({
                       id: node.id,
                       startY: e.clientY,
@@ -829,6 +901,10 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                     });
                   }}
                   onClick={(e) => {
+                    if (bandJustEnded.current) {
+                      bandJustEnded.current = false;
+                      return;
+                    }
                     onSelect?.(node.id, e);
                   }}
                   onDoubleClick={(e) => {
@@ -886,7 +962,9 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                         aria-label="Rename layer"
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={(e) => handleCommitRename(node.id, node.name, e.currentTarget.parentElement)}
+                        onKeyUp={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
+                          e.stopPropagation(); // Space and the arrows belong to the name being typed, not to the row
                           if (e.key === "Enter") {
                             handleCommitRename(node.id, node.name, e.currentTarget.parentElement);
                           }
@@ -977,8 +1055,8 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       )}
 
       {/* Floating status toast message (e.g. "Only frames can hold layers") */}
-      <div id="lmsg" role="status" className={`lmsg ll-lmsg ${toastMsg ? "on" : ""}`}>
-        {toastMsg}
+      <div id="lmsg" role="status" className={`lmsg ll-lmsg ${currentToast ? "on" : ""}`}>
+        {currentToast}
       </div>
     </div>
   );

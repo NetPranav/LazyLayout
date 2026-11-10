@@ -18,7 +18,10 @@ import { ChevronLeft, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import { invokeCommand } from "@/core/commands";
 import { FRAME_PRESETS } from "@/core/frames/frames";
 import { useSnapStore } from "@/core/store/useSnapStore";
+import { usePreviewStore } from "@/core/store/usePreviewStore";
 import { useCanvasViewStore, BACKDROPS, type Backdrop } from "@/core/store/useCanvasViewStore";
+import { useDocument } from "@/core/store/useDocumentStore";
+import { getStageRendererForFrame } from "@/core/render/StageRenderer";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
 import type { CanvasFrame } from "./useFrames";
 
@@ -138,36 +141,75 @@ function FrameTitle({ frame, index, count, active }: { frame: CanvasFrame; index
  * The frames that are drawn: all of them. (A lone empty frame used to be hidden so a new project looked blank, but
  * then no shape tool could draw anywhere: they need a frame under the pointer.)
  */
-export function visibleFrames(frames: CanvasFrame[]): CanvasFrame[] {
+export function visibleFrames(frames: CanvasFrame[], previewFrameId: string | null = null): CanvasFrame[] {
+  // Preview shows one page at a time, the way a site is seen (Phase 48)
+  if (previewFrameId && frames.some((f) => f.id === previewFrameId)) return frames.filter((f) => f.id === previewFrameId);
   return frames;
 }
 
+/**
+ * The height a frame is drawn at. A frame that hugs its content (a page of stacked sections, Phase 51) is drawn as tall
+ * as its content measures, so nothing is clipped; any other frame keeps the height it was given.
+ */
+function useDrawnHeight(frame: CanvasFrame): number {
+  const hugs = useDocument((d) => d.layers[frame.id]?.properties["sizing.vertical"] === "hug");
+  const [measured, setMeasured] = useState<number | null>(null);
+  useEffect(() => {
+    if (!hugs) return undefined;
+    let live = true;
+    let off: (() => void) | null = null;
+    const attach = (): boolean => {
+      const renderer = getStageRendererForFrame(frame.id);
+      if (!renderer) return false;
+      const read = () =>
+        void renderer.measure([frame.id]).then(([m]) => {
+          if (live && m && m.height >= 1) setMeasured(Math.round(m.height));
+        });
+      read();
+      off = renderer.onLayout(read);
+      return true;
+    };
+    // the frame's renderer registers once its stage has mounted
+    const timer = attach() ? null : setInterval(() => attach() && timer && clearInterval(timer), 100);
+    return () => {
+      live = false;
+      if (timer) clearInterval(timer);
+      off?.();
+    };
+  }, [hugs, frame.id]);
+  return hugs && measured ? measured : frame.height;
+}
+
+const CanvasFrameBox: React.FC<{ frame: CanvasFrame; frames: CanvasFrame[]; active: boolean; toolCapturesPointer: boolean; onElementClick?: (layerId: string) => void }> = ({ frame, frames, active, toolCapturesPointer, onElementClick }) => {
+  const height = useDrawnHeight(frame);
+  return (
+    <div className={`canvas-frame ${active ? "canvas-frame--active" : ""}`} data-frame-id={frame.id} style={{ left: frame.x, top: frame.y, width: frame.width, height }}>
+      <FrameTitle frame={{ ...frame, height }} index={frames.indexOf(frame)} count={frames.length} active={active} />
+      <div className="canvas-frame__surface">
+        <StageHost
+          frameId={frame.id}
+          title={frames.length === 1 ? "Stage" : `Stage: ${frame.name}`}
+          width="100%"
+          height="100%"
+          style={{ pointerEvents: toolCapturesPointer ? "none" : undefined }}
+          onElementClick={onElementClick}
+        />
+      </div>
+    </div>
+  );
+};
+
 export const CanvasFrames: React.FC<CanvasFramesProps> = ({ frames, toolCapturesPointer, onElementClick }) => {
   const activeFrameId = useCanvasViewStore((s) => s.activeFrameId);
-  const shown = visibleFrames(frames);
+  const mode = useCanvasViewStore((s) => s.mode);
+  const previewFrame = usePreviewStore((s) => (mode === "preview" ? (s.entries[s.index]?.frameId ?? null) : null));
+  const shown = visibleFrames(frames, previewFrame);
   const active = activeFrameId && frames.some((f) => f.id === activeFrameId) ? activeFrameId : frames[0]?.id;
 
   return (
     <>
       {shown.map((frame) => (
-        <div
-          key={frame.id}
-          className={`canvas-frame ${frame.id === active ? "canvas-frame--active" : ""}`}
-          data-frame-id={frame.id}
-          style={{ left: frame.x, top: frame.y, width: frame.width, height: frame.height }}
-        >
-          <FrameTitle frame={frame} index={frames.indexOf(frame)} count={frames.length} active={frame.id === active} />
-          <div className="canvas-frame__surface">
-            <StageHost
-              frameId={frame.id}
-              title={frames.length === 1 ? "Stage" : `Stage: ${frame.name}`}
-              width="100%"
-              height="100%"
-              style={{ pointerEvents: toolCapturesPointer ? "none" : undefined }}
-              onElementClick={onElementClick}
-            />
-          </div>
-        </div>
+        <CanvasFrameBox key={frame.id} frame={frame} frames={frames} active={frame.id === active} toolCapturesPointer={toolCapturesPointer} onElementClick={onElementClick} />
       ))}
     </>
   );

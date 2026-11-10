@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback } from "react";
+import { useFocusScope } from "@/core/commands";
 import type { LeftPanelProps, LayerItem, FileItem, TrackItem, AssetItem } from "./types";
 import { LeftPanelHeader } from "./LeftPanelHeader";
 import { LayersTree } from "./LayersTree";
@@ -204,6 +205,9 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     },
     [onAssetsHeightChange]
   );
+
+  // Layer shortcuts (Delete, Duplicate, Group, Select all) work while the pointer is over the Layers list, as they do over the canvas.
+  useFocusScope("canvas", containerRef);
 
   return (
     <aside

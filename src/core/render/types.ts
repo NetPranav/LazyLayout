@@ -15,12 +15,29 @@ export interface RenderContext {
   /** Replaces `{{name}}` references in text; the identity when omitted. */
   interpolate?: (text: string) => string;
   /** The parent's main axis; `fill` on that axis grows, on the other it stretches. */
-  parentDirection?: "row" | "column";
+  parentDirection?: "row" | "column" | "grid";
   /**
    * The stage is one frame's own frame element (Phase 21): its position on the canvas is the element's,
    * so the top-level layer is drawn at the element's origin instead of at its own `frame.x` / `frame.y`.
    */
   frameAtOrigin?: boolean;
+  /**
+   * Every layer, when the tree is drawn from a map rather than the live store (the exporter, the gallery, tests): a
+   * boolean group reads its operands from here (FigCraft port F5). On the stage the group subscribes to the store.
+   */
+  layers?: Readonly<Record<string, import("../document/schema").Layer>>;
+  /** This layer's z-index, set by a parent whose first child paints on top (`layout.reverseZ`, FigCraft port F6). */
+  stackZ?: number;
+  /** Rendering mode: design, preview, or export (Phase 73: helpers excluded in preview/export). */
+  mode?: "design" | "preview" | "export";
+  /** When drawn as a tile of a warp mesh, child content sits at tile origin without outer layer transform. */
+  inMeshTile?: boolean;
+  /** The layers each mirror frame shows (its source frame resolved at the mirror's breakpoint), by mirror id. Editor only. */
+  mirrorViews?: Readonly<Record<string, Record<string, import("../document/schema").Layer>>>;
+  /** Frames shown as the device's screen (Preview on the canvas): each one's screen height, by frame id. Editor only. */
+  screenFrames?: Readonly<Record<string, number>>;
+  /** The container layer ID of the mirror frame enclosing this layer. */
+  mirrorId?: string;
 }
 
 /** Every render definition has this shape: draw `layer` from its resolved props (Phase 17, Law 11). */

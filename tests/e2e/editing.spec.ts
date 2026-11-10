@@ -4,7 +4,7 @@
  * select all and nudge) asserting the exact result after each step; and a copy in one tab pastes into another.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
 const CANVAS = ".whiteboard-stage";
@@ -12,11 +12,11 @@ const CANVAS = ".whiteboard-stage";
 async function openShapesLab(page: Page) {
   await page.addInitScript(() => { (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true; });
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
+  await waitHydrated(page);
   await expect(async () => {
     await page.getByRole("button", { name: "Load one frame with shapes" }).click();
     await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>(".canvas-frame iframe")?.contentDocument?.querySelector('[data-element-id="m_poly"]'), null, { timeout: 8_000 });
   }).toPass({ timeout: 55_000 });
-
   await page.waitForTimeout(600);
 }
 
@@ -228,11 +228,11 @@ test("Phase 29: a 25-step editing journey with the exact result after each step"
   expect((await info(page, pasted)).left).toBe(e4.left - 1);
 });
 
-test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks Mount Showcase Demo and stage iframe copy/paste)", async ({ browser }) => {
+test("Phase 29: a copy in one tab pastes into another", async ({ browser }) => {
   const context = await browser.newContext();
   const a = await context.newPage();
   const b = await context.newPage();
-  await openEditor(a);
+  await openEditor(a, LEGACY_EDITOR_URL);
   await a.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await a.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector('[data-archetype="button"]'));
   await waitSaved(a);
@@ -255,7 +255,7 @@ test.fixme("Phase 29: a copy in one tab pastes into another (new editor lacks Mo
   await a.keyboard.press(`${MOD}+c`);
 
   // tab B: a blank project; paste with the pointer over its canvas
-  await openEditor(b);
+  await openEditor(b, LEGACY_EDITOR_URL);
   const box = (await b.locator(CANVAS).boundingBox())!;
   await b.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   expect(await b.evaluate(() => document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelectorAll('[data-archetype="button"]').length ?? 0)).toBe(0);

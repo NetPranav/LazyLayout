@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useLayers } from "@/core/store/useDocumentStore";
+import { activePageRootId } from "@/editor/stage/activePage";
+import { setLayerProps } from "@/core/editing/editOps";
+import { useProjectStore } from "@/core/store/useProjectStore";
 import { SquareRoundCorner } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
@@ -342,5 +346,54 @@ export const PageSection: React.FC<PageSectionProps> = (props) => {
       <PageBackgroundBody backgroundColor={props.backgroundColor} onChangeBackground={props.onChangeBackground} />
       <ThemeTokensBody />
     </div>
+  );
+};
+
+const pageRoot = (layers: ReturnType<typeof useLayers>) => {
+  const id = activePageRootId();
+  return id ? layers[id] : undefined;
+};
+
+/** The Page block with nothing selected, reading and writing the page's own layer: its size and background are the document's. */
+export const ConnectedPageSection: React.FC<{ pageName?: string }> = ({ pageName }) => {
+  const layers = useLayers();
+  const root = pageRoot(layers);
+  // a size in % is a project that never set one: it shows as the Desktop page
+  const px = (side: "width" | "height", fallback: number) => {
+    const v = root?.properties[`frame.${side}`];
+    return typeof v === "number" && !(root?.properties[`frame.${side}Unit`] === "%" && v <= 100) ? v : fallback;
+  };
+  const w = px("width", 1440);
+  const h = px("height", 900);
+  return (
+    <PageSectionBody
+      key={`${root?.id}-${w}-${h}`}
+      pageName={pageName}
+      width={w}
+      height={h}
+      onChangeDimensions={(nw, nh) => {
+        if (root && nw > 0 && nh > 0) setLayerProps([root.id], { "frame.width": nw, "frame.widthUnit": "px", "frame.height": nh, "frame.heightUnit": "px" }, "Page size");
+      }}
+      onChangePageName={(name) => {
+        const st = useProjectStore.getState();
+        const page = st.pages[st.activePageId];
+        if (page && name.trim()) useProjectStore.setState({ pages: { ...st.pages, [st.activePageId]: { ...page, name } } });
+      }}
+    />
+  );
+};
+
+export const ConnectedPageBackground: React.FC = () => {
+  const layers = useLayers();
+  const root = pageRoot(layers);
+  const color = root?.properties["appearance.background.color"];
+  return (
+    <PageBackgroundBody
+      key={root?.id}
+      backgroundColor={typeof color === "string" && /^#?[0-9a-fA-F]{6}$/.test(color) ? color : "FFFFFF"}
+      onChangeBackground={(hex) => {
+        if (root && hex.length === 6) setLayerProps([root.id], { "appearance.background.color": `#${hex}` }, "Page background");
+      }}
+    />
   );
 };

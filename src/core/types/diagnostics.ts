@@ -53,7 +53,8 @@ export type DiagnosticChannel =
   | "CIRCULAR_REF_ERR"         // Circular reference loop detected in project dependencies
   | "COLLAB_SYNC_ERR"          // Multiplayer delta sync desynchronization or corrupted CRDT packet
   | "PEER_DISCONNECTED"        // Peer heartbeat timed out or abnormal disconnect
-  | "COMMENT_ORPHAN_WARN";     // Comment thread anchored to missing or deleted AST element/node
+  | "COMMENT_ORPHAN_WARN"      // Comment thread anchored to missing or deleted AST element/node
+  | "SPATIAL_TRAJECTORY_WARN"; // Spatial motion path numerical subdivision limit or curvature anomaly
 
 export type DiagnosticSeverity = "error" | "warning" | "info";
 

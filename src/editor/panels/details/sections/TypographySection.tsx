@@ -21,6 +21,12 @@ import { FontPicker } from "@/editor/components/FontPicker";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
+import { Button } from "@/editor/components/Button";
+import { Slider } from "@/editor/components/Slider";
+import { invokeCommand } from "@/core/commands";
+import { getDocument } from "@/core/store/documentState";
+import { isLettersGroup } from "@/core/editing/splitText";
+import { getLettersDepth } from "@/core/editing/standingLetters";
 import {
   INSPECTOR_CONSTANTS,
   FONT_FAMILY_OPTIONS,
@@ -71,9 +77,108 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
   const [isFontPickerOpen, setIsFontPickerOpen] = useState(false);
   const fontAnchorRef = useRef<HTMLDivElement>(null);
 
+  const isSingleText = layer?.archetype === "text";
+  const docLayers = getDocument().layers;
+  const isLettersDirect = isLettersGroup(layer, docLayers);
+  const parentIsLetters = Boolean(layer?.parentId && isLettersGroup(docLayers[layer.parentId], docLayers));
+  const lettersGroupId = isLettersDirect ? layer?.id : parentIsLetters ? layer?.parentId : null;
+  const isLetters = Boolean(lettersGroupId);
+
+  const currentDepth = lettersGroupId ? getLettersDepth(lettersGroupId) : null;
+  const [depthInput, setDepthInput] = React.useState<number>(24);
+  const depthValue = currentDepth ?? depthInput;
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
+      {/* Split into letters & Animate / Stand / Depth controls */}
+      {(isSingleText || isLetters) && (
+        <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
+          <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ll:flex-1"
+              disabled={!isSingleText}
+              onClick={() => void invokeCommand("text.splitLetters")}
+              title={isSingleText ? "Split text into one layer per letter" : "Already split into letters"}
+            >
+              Split into letters
+            </Button>
+            {isLetters && (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="ll:flex-1"
+                  onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
+                  title="Animate letters with staggered entrance"
+                >
+                  Animate letters
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="ll:flex-1"
+                  onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
+                  title="Stand letters up in 3D on a ground plane"
+                >
+                  Stand letters up
+                </Button>
+              </>
+            )}
+          </div>
+          {isLetters && (
+            <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="ll:flex-1"
+                onClick={() => void invokeCommand("text.extrudeLetters", { id: lettersGroupId ?? undefined, depth: depthValue || 24 })}
+                title="Give letters 3D depth"
+              >
+                Give letters depth
+              </Button>
+              {currentDepth !== null && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void invokeCommand("text.removeDepth", { id: lettersGroupId ?? undefined })}
+                  title="Remove 3D depth"
+                >
+                  Remove depth
+                </Button>
+              )}
+            </div>
+          )}
+          {isLetters && (
+            <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
+              <span className="ll:text-micro ll:text-muted ll:w-10">Depth</span>
+              <div className="ll:flex-1">
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={depthValue}
+                  unit="px"
+                  label="Depth"
+                  ariaLabel="Letters depth"
+                  onChange={(val) => {
+                    setDepthInput(val);
+                    if (lettersGroupId) {
+                      if (val === 0) {
+                        void invokeCommand("text.removeDepth", { id: lettersGroupId });
+                      } else {
+                        void invokeCommand("text.extrudeLetters", { id: lettersGroupId, depth: val });
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Content text field: plain clean textarea matching prototype */}
       {isTextOrButton && (
         <div className="ll:w-full">
@@ -344,6 +449,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Text overflow"
+              title="What happens to text that does not fit: Clip cuts it off, Ellipsis ends it with three dots (on one line)."
               value={textOverflow}
               options={TEXT_OVERFLOW_OPTIONS}
               onChange={(v) => onUpdateProp?.("typography.textOverflow", v)}
@@ -357,6 +463,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="White space"
+              title="Normal wraps at the box edge; No wrap keeps one line and lets it run past the box; Pre keeps your spaces and line breaks."
               value={whiteSpace}
               options={WHITE_SPACE_OPTIONS}
               onChange={(v) => onUpdateProp?.("typography.whiteSpace", v)}
@@ -373,6 +480,7 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Font loading"
+              title="How the text shows while its font downloads: Swap shows a stand-in at once, Block waits, Fallback waits briefly, Optional may skip the font."
               value={fontLoading}
               options={FONT_LOADING_OPTIONS}
               onChange={(v) => onUpdateProp?.("typography.fontLoading", v)}

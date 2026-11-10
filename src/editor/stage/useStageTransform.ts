@@ -1,5 +1,14 @@
 "use client";
 
+import { getDocument } from "@/core/store/documentState";
+import { duplicateLayers, reorderLayers } from "@/core/editing/editOps";
+import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
+import type { PropValue } from "@/core/document/registry";
+import { worldBox } from "@/core/editing/layerBoxes";
+import { subtreeIds } from "@/core/editing/cloneLayers";
+import { moveLayers } from "@/core/layers/reparent";
+import { frameAt } from "./createFromDrag";
+import { activePageRootId } from "./activePage";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
 import {
@@ -31,7 +40,45 @@ interface UseStageTransformOptions {
   smartGuides?: boolean;
   snapThreshold?: number;
   onElementChange?: (id: string, patch: Partial<StageElement>) => void;
-  onSelect?: (id: string | null, multi?: boolean) => void;
+  onSelect?: (id: string | null, multi?: boolean, view?: SelectionView) => void;
+}
+
+/** A layer placed by its stack comes out of the stack when it is dragged: it keeps the size it was drawn at. */
+function freePlacement(id: string, box: { width: number; height: number }): Record<string, PropValue> {
+  const layer = getDocument().layers[id];
+  if (!layer || layer.properties.positioning === "absolute") return {};
+  return { positioning: "absolute", "frame.width": box.width, "frame.height": box.height, "sizing.horizontal": "fixed", "sizing.vertical": "fixed" };
+}
+
+/** Dragging a size means that size: a layer that hugged or filled becomes fixed, and auto-width text becomes a box. */
+function sizedByHand(id: string): Record<string, PropValue> {
+  const layer = getDocument().layers[id];
+  if (!layer) return {};
+  const out: Record<string, PropValue> = {};
+  const p = layer.properties;
+  if (p["sizing.horizontal"] === "hug" || p["sizing.horizontal"] === "fill") out["sizing.horizontal"] = "fixed";
+  if (p["sizing.vertical"] === "hug" || p["sizing.vertical"] === "fill") out["sizing.vertical"] = "fixed";
+  if (layer.archetype === "text" && p["text.sizing"] === "autoWidth") out["text.sizing"] = "fixed";
+  return out;
+}
+
+/**
+ * Puts what was dragged under the frame it was dropped on (or back on the page when dropped on none). One undo step per
+ * move; each keeps its place on the canvas. Layers go by where the pointer let go, so a picture bigger than the frame still
+ * lands in it. A frame goes by where its middle lands, so grabbing a big section near its edge does not nest it.
+ */
+function reparentOnDrop(ids: readonly string[], pointer: { x: number; y: number } | null, drawn: Record<string, StageElement>): void {
+  const layers = getDocument().layers;
+  const moving = ids.filter((id) => layers[id] && layers[id].parentId !== null && !layers[id].locked);
+  if (moving.length === 0) return;
+  const box = worldBox(moving[0]);
+  const byMiddle = !pointer || moving.some((id) => layers[id].archetype === "container");
+  const point = byMiddle ? (box ? { x: box.cx, y: box.cy } : null) : pointer;
+  if (!point) return;
+  const exclude = new Set(moving.flatMap((id) => subtreeIds(layers, id)));
+  const parentId = frameAt(point, exclude, drawn)?.id ?? activePageRootId();
+  const going = moving.filter((id) => layers[id].parentId !== parentId);
+  if (parentId && going.length > 0) moveLayers(going, parentId);
 }
 
 export function useStageTransform({
@@ -51,6 +98,10 @@ export function useStageTransform({
   const [spacingMarks, setSpacingMarks] = useState<SpacingMark[]>([]);
   const [isGesturing, setIsGesturing] = useState(false);
   const txRef = useRef<DocumentTransaction | null>(null);
+  const latestElements = useRef(elements);
+  useEffect(() => {
+    latestElements.current = elements;
+  });
 
   const gestureRef = useRef<{
     type: "move" | "resize";
@@ -58,6 +109,8 @@ export function useStageTransform({
     startClientX: number;
     startClientY: number;
     activeId: string;
+    /** Where the drop point is measured from (move gestures). */
+    artboard?: HTMLElement | null;
     targetIds: string[];
     initialBoxes: Record<string, { x: number; y: number; width: number; height: number }>;
     aspectRatio?: number;
@@ -96,16 +149,22 @@ export function useStageTransform({
   const startMove = useCallback(
     (elementId: string, e: React.PointerEvent) => {
       e.stopPropagation();
-      const isSelected = selectedIds.includes(elementId);
+      const el = elements[elementId];
+      const targetDocId = el?.targetId ?? elementId;
+
+      // Where the layer was picked (its own frame or a linked view): part of the selection, so the edit target follows.
+      const view = { mirrorId: el?.mirrorId ?? null };
+      const sameView = (useSelectionStore.getState().selectedMirrorId ?? null) === view.mirrorId;
+      const isSelected = selectedIds.includes(targetDocId) && sameView;
       let targetIds = selectedIds;
 
       if (!isSelected) {
-        if (e.shiftKey) {
-          targetIds = [...selectedIds, elementId];
-          onSelect?.(elementId, true);
+        if (e.shiftKey && sameView) {
+          targetIds = [...selectedIds, targetDocId];
+          onSelect?.(targetDocId, true, view);
         } else {
-          targetIds = [elementId];
-          onSelect?.(elementId, false);
+          targetIds = [targetDocId];
+          onSelect?.(targetDocId, false, view);
         }
       }
 
@@ -115,13 +174,14 @@ export function useStageTransform({
       > = {};
 
       targetIds.forEach((id) => {
-        const el = elements[id];
-        if (el) {
+        const key = el?.mirrorId && elements[`${el.mirrorId}::${id}`] ? `${el.mirrorId}::${id}` : id;
+        const targetEl = elements[key] ?? elements[id];
+        if (targetEl) {
           initialBoxes[id] = {
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
+            x: targetEl.x,
+            y: targetEl.y,
+            width: targetEl.width,
+            height: targetEl.height,
           };
         }
       });
@@ -134,10 +194,17 @@ export function useStageTransform({
         targetIds,
         initialBoxes,
         hasMoved: false,
+        artboard: (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-stage="artboard"]'),
       };
 
       try {
         txRef.current = documentCommands.begin("Move layer");
+        // Alt-drag leaves a copy behind: the copy stays where it is and what you hold moves. One undo step with the move.
+        if (e.altKey) {
+          duplicateLayers(targetIds, { inPlace: true });
+          reorderLayers(targetIds, "forward"); // what you hold stays above the copy it leaves behind
+          useSelectionStore.getState().selectMultiple(targetIds, "element");
+        }
       } catch {
         // Document command transaction fallback for tests / standalone
       }
@@ -154,8 +221,11 @@ export function useStageTransform({
       if (selectedIds.length === 0) return;
 
       const activeId = selectedIds[0];
-      const el = elements[activeId];
+      const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+      const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${activeId}` : null;
+      const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[activeId];
       if (!el) return;
+
 
       const initialBoxes: Record<
         string,
@@ -174,7 +244,7 @@ export function useStageTransform({
         handle,
         startClientX: e.clientX,
         startClientY: e.clientY,
-        activeId,
+        activeId: el.id,
         targetIds: [activeId],
         initialBoxes,
         aspectRatio: el.width > 0 && el.height > 0 ? el.width / el.height : 1,
@@ -198,13 +268,16 @@ export function useStageTransform({
       const gesture = gestureRef.current;
       if (!gesture) return;
 
-      const scale = zoom > 0 ? (zoom / STAGE_CONSTANTS.defaultZoom) * 0.9 : 1;
+      const scale = zoom > 0 ? zoom : 1;
       const rawDx = (e.clientX - gesture.startClientX) / (scale > 0 ? scale : 1);
       const rawDy = (e.clientY - gesture.startClientY) / (scale > 0 ? scale : 1);
 
       if (Math.abs(rawDx) > 1 || Math.abs(rawDy) > 1) {
         gesture.hasMoved = true;
       }
+
+      const activeGestureEl = elements[gesture.activeId];
+      const activeMirrorId = activeGestureEl?.mirrorId ?? useSelectionStore.getState().selectedMirrorId;
 
       if (gesture.type === "move") {
         let dx = rawDx;
@@ -219,7 +292,7 @@ export function useStageTransform({
           }
         }
 
-        const primaryBox = gesture.initialBoxes[gesture.activeId];
+        const primaryBox = gesture.initialBoxes[gesture.activeId] ?? gesture.initialBoxes[gesture.targetIds[0]];
         if (!primaryBox) return;
 
         const candidateRect: Rect = {
@@ -232,7 +305,7 @@ export function useStageTransform({
         // Collect other element rects for snapping
         const otherRects: Rect[] = [];
         Object.values(elements).forEach((other) => {
-          if (!gesture.targetIds.includes(other.id)) {
+          if (!gesture.targetIds.includes(other.id) && !other.mirrorId) {
             otherRects.push({
               x: other.x,
               y: other.y,
@@ -292,15 +365,29 @@ export function useStageTransform({
         gesture.targetIds.forEach((id) => {
           const init = gesture.initialBoxes[id];
           if (!init) return;
-          const nextX = init.x + finalDx;
-          const nextY = init.y + finalDy;
+          let nextX = init.x + finalDx;
+          let nextY = init.y + finalDy;
+          const key = activeMirrorId && elements[`${activeMirrorId}::${id}`] ? `${activeMirrorId}::${id}` : id;
+          const targetEl = elements[key] ?? elements[id];
+          // a piece cut from a picture snaps back to where it belongs when it is brought close enough
+          const home = String(getDocument().layers[id]?.properties["media.cutHome"] ?? "").split(",").map(Number);
+          if (home.length === 2 && home.every(Number.isFinite)) {
+            const near = Math.max(effectiveThreshold, 8 / (zoom > 0 ? zoom : 1));
+            const hx = home[0] + (targetEl?.ox ?? 0);
+            const hy = home[1] + (targetEl?.oy ?? 0);
+            if (Math.abs(nextX - hx) <= near && Math.abs(nextY - hy) <= near) {
+              nextX = hx;
+              nextY = hy;
+            }
+          }
 
-          onElementChange?.(id, { x: nextX, y: nextY });
+          onElementChange?.(key, { x: nextX, y: nextY });
 
           try {
             documentCommands.updateProps(id, {
-              "frame.x": nextX,
-              "frame.y": nextY,
+              ...freePlacement(id, init),
+              "frame.x": nextX - (targetEl?.ox ?? 0),
+              "frame.y": nextY - (targetEl?.oy ?? 0),
             });
           } catch {
             // Document store update fallback
@@ -404,7 +491,11 @@ export function useStageTransform({
         nextWidth = Math.round(nextWidth);
         nextHeight = Math.round(nextHeight);
 
-        onElementChange?.(gesture.activeId, {
+        const targetId = gesture.targetIds[0];
+        const key = activeMirrorId && elements[`${activeMirrorId}::${targetId}`] ? `${activeMirrorId}::${targetId}` : targetId;
+        const targetEl = elements[key] ?? elements[targetId];
+
+        onElementChange?.(key, {
           x: nextX,
           y: nextY,
           width: nextWidth,
@@ -412,26 +503,66 @@ export function useStageTransform({
         });
 
         try {
-          documentCommands.updateProps(gesture.activeId, {
-            "frame.x": nextX,
-            "frame.y": nextY,
+          documentCommands.updateProps(targetId, {
+            ...sizedByHand(targetId),
+            ...freePlacement(targetId, init),
+            "frame.x": nextX - (targetEl?.ox ?? 0),
+            "frame.y": nextY - (targetEl?.oy ?? 0),
             "frame.width": nextWidth,
             "frame.height": nextHeight,
           });
+
+          // Synchronize constrained children interactive bounds on stage in real-time
+          const currentLayers = getDocument().layers;
+          const parentLayer = currentLayers[targetId];
+          if (parentLayer && parentLayer.properties["layout.auto"] !== true && parentLayer.children.length > 0) {
+            for (const childId of parentLayer.children) {
+              const childLayer = currentLayers[childId];
+              const childEl = elements[childId];
+              if (childLayer && childEl) {
+                const childRelX = (childLayer.properties["frame.x"] as number) ?? 0;
+                const childRelY = (childLayer.properties["frame.y"] as number) ?? 0;
+                const childW = (childLayer.properties["frame.width"] as number) ?? childEl.width;
+                const childH = (childLayer.properties["frame.height"] as number) ?? childEl.height;
+                onElementChange?.(childId, {
+                  x: Math.round(nextX + childRelX),
+                  y: Math.round(nextY + childRelY),
+                  width: Math.round(childW),
+                  height: Math.round(childH),
+                });
+              }
+            }
+          }
         } catch {
           // Document store update fallback
         }
       }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       if (gestureRef.current) {
+        const done = gestureRef.current;
         try {
           // Commit transform transaction
           txRef.current?.commit();
           txRef.current = null;
         } catch {
           // Commit fallback
+        }
+        // Layers dropped on a frame go into it, and ones dragged out of their frame go back to the page.
+        if (done.type === "move" && done.hasMoved) {
+          try {
+            const activeEl = latestElements.current[done.activeId];
+            if (!activeEl?.mirrorId) {
+              const art = done.artboard;
+              const r = art?.getBoundingClientRect();
+              const scale = art && r && art.offsetWidth > 0 ? r.width / art.offsetWidth : 1;
+              const pointer = art && r ? { x: (e.clientX - r.left) / scale - art.clientLeft, y: (e.clientY - r.top) / scale - art.clientTop } : null;
+              reparentOnDrop(done.targetIds, pointer, latestElements.current);
+            }
+          } catch {
+            // a drop that cannot be made leaves the layers where they are
+          }
         }
         gestureRef.current = null;
         setSnapLines([]);
@@ -442,10 +573,12 @@ export function useStageTransform({
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
     };
   }, [
     zoom,
@@ -502,18 +635,21 @@ export function useStageTransform({
 
       e.preventDefault();
 
+      const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+
       selectedIds.forEach((id) => {
-        const el = elements[id];
+        const key = selectedMirrorId && elements[`${selectedMirrorId}::${id}`] ? `${selectedMirrorId}::${id}` : id;
+        const el = elements[key] ?? elements[id];
         if (!el) return;
         const nextX = el.x + dx;
         const nextY = el.y + dy;
 
-        onElementChange?.(id, { x: nextX, y: nextY });
+        onElementChange?.(key, { x: nextX, y: nextY });
 
         try {
           documentCommands.updateProps(id, {
-            "frame.x": nextX,
-            "frame.y": nextY,
+            "frame.x": nextX - (el.ox ?? 0),
+            "frame.y": nextY - (el.oy ?? 0),
           });
         } catch {
           // Document update fallback

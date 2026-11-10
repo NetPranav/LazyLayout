@@ -5,11 +5,41 @@
  * the context menu and agents.
  */
 
+import { parseBrush, sanitizeBrush } from "../paths/brush";
+import { importSvgDesign } from "./svgImportOps";
+import { registerDevCommands } from "../devmode/devCommands";
+import { getResolvedDocument } from "../store/useDocumentStore";
+import { DEFAULT_EXPORT, downloadBlob, exportFile, layerSvg, parseExportSettings, serializeExportSettings } from "../export/layerExport";
+import { convertToFrame, convertToGroup, convertToSection, resizeToFit } from "../frames/containerOps";
+import { worldBox, writeBoxes } from "./layerBoxes";
+import { transaction } from "./editOps";
+import { editRotationOrigin, originPoint, setRotationOrigin } from "./rotationOrigin";
+import { rotateBoxes, unionBox } from "../geometry/transform";
+import { anchorName, anchorOf, scaleAnchor, scaleSelection, setScaleAnchor } from "./scaleLayers";
+import { renameLayers, reorderSelection, selectionColors, selectWithColor, setSelectionPaint, setSelectionSpacing } from "./selectionTools";
+import { isEditingPath } from "../store/useVectorEditStore";
 import { z } from "zod";
 import { registerTextCommands } from "../text/textCommands";
+import { registerLayoutCommands } from "./layoutCommands";
+import { registerBreakpointCommands } from "../breakpoints/breakpointCommands";
+import { registerTokenCommands } from "../tokens/tokenCommands";
+import { registerComponentCommands } from "../components/componentCommands";
+import { registerPageCommands } from "../pages/pageCommands";
+import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
+import { cannotSplit, measureLettersOf, splitIntoLetters, animateLetters } from "./splitText";
+import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
+import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
-import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage } from "../paint/paintOps";
+import { setFills, setShadows, setBlur, setStrokeStyle, replaceImage, setStrokes, setStrokeSettings, setEffects } from "../paint/paintOps";
+import { BLEND_MODES } from "../paint/color";
+import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
+import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
+import { outlineStrokes } from "./outlineStroke";
+import { registerAgentCommands } from "../agent/agentCommands";
+import { registerTemplateCommands } from "../templates/templateCommands";
+import { arrangement, buildShapes } from "./shapeBuilder";
+import type { Paint } from "../paint/paints";
 import { setFill, setFrame, setOpacity, setRadius, setSimpleText, setStroke } from "../inspector/simpleOps";
 import { ALIGN_MODES, type AlignMode } from "../geometry/align";
 import { defineCommand, defineTypedCommand, getContextKeys, type ContextKeys } from "../commands";
@@ -26,8 +56,19 @@ import {
 const ids = () => useSelectionStore.getState().selectedIds;
 const hasSelection = () => ids().length > 0;
 /** Canvas shortcuts: the canvas has focus, no text field does, something is selected, and no drag is in progress. */
-const onSelection = (ctx: ContextKeys) =>
+const onSelectionStrict = (ctx: ContextKeys) =>
   ctx.canvasFocus && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
+/** Everything else that acts on the selection (delete, copy, paste, duplicate, group...) works with the pointer anywhere but the timeline and the blueprint, not only over the canvas. */
+const onSelection = (ctx: ContextKeys) =>
+  (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
+
+/**
+ * Arrange shortcuts (bring forward, send back and the like) work wherever the pointer is except over the timeline or the
+ * blueprint, so a layer picked on the canvas can still be moved in the stack with the pointer over the inspector or a bar.
+ * They still never fire while a text field has focus.
+ */
+export const onArrange = (ctx: ContextKeys) =>
+  (ctx.canvasFocus || (!ctx.timelineFocus && !ctx.blueprintFocus)) && !ctx.textEditing && hasSelection() && !useToolStore.getState().gesturing && useCanvasViewStore.getState().mode === "design";
 
 /** The container a paste goes into when exactly one container is selected (and it isn't a top-level frame being copied elsewhere). */
 function pasteTarget(): string | null {
@@ -68,21 +109,21 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.paste", title: "Paste", category, run: () => void clipboardText().then((t) => pasteText(t, { into: pasteTarget() })) }));
   add(defineCommand({ id: "edit.pasteInPlace", title: "Paste in Place", category, run: () => void clipboardText().then((t) => pasteText(t, { into: pasteTarget(), inPlace: true })) }));
   add(defineCommand({ id: "edit.duplicate", title: "Duplicate", category, keybinding: "Ctrl+D", when: onSelection, run: () => void duplicateLayers(ids()) }));
-  add(defineCommand({ id: "edit.delete", title: "Delete", category, keybinding: ["Delete", "Backspace"], when: onSelection, run: () => void deleteLayers(ids()) }));
+  add(defineCommand({ id: "edit.delete", title: "Delete", category, keybinding: ["Delete", "Backspace"], when: (ctx) => onSelection(ctx) && !isEditingPath(), run: () => void deleteLayers(ids()) }));
 
   for (const [name, s] of Object.entries(STEP)) {
-    add(defineCommand({ id: `edit.nudge${name}`, title: `Nudge ${name}`, category, keybinding: `Arrow${name}`, when: onSelection, run: () => nudgeLayers(ids(), s.dx, s.dy) }));
-    add(defineCommand({ id: `edit.nudge${name}10`, title: `Nudge ${name} 10 px`, category, keybinding: `Shift+Arrow${name}`, when: onSelection, run: () => nudgeLayers(ids(), s.dx * 10, s.dy * 10) }));
+    add(defineCommand({ id: `edit.nudge${name}`, title: `Nudge ${name}`, category, keybinding: `Arrow${name}`, when: onSelectionStrict, run: () => nudgeLayers(ids(), s.dx, s.dy) }));
+    add(defineCommand({ id: `edit.nudge${name}10`, title: `Nudge ${name} 10 px`, category, keybinding: `Shift+Arrow${name}`, when: onSelectionStrict, run: () => nudgeLayers(ids(), s.dx * 10, s.dy * 10) }));
   }
   add(defineTypedCommand({ id: "edit.nudgeBy", title: "Nudge By", category, args: z.object({ dx: z.number(), dy: z.number() }), run: ({ dx, dy }) => nudgeLayers(ids(), dx, dy) }));
 
-  const order: [string, string, ZOrderOp, string][] = [
+  const order: [string, string, ZOrderOp, string | string[]][] = [
     ["layer.bringForward", "Bring Forward", "forward", "Ctrl+]"],
     ["layer.sendBackward", "Send Backward", "backward", "Ctrl+["],
-    ["layer.bringToFront", "Bring to Front", "front", "Ctrl+Shift+]"],
-    ["layer.sendToBack", "Send to Back", "back", "Ctrl+Shift+["],
+    ["layer.bringToFront", "Bring to Front", "front", ["Ctrl+Alt+]", "Ctrl+Shift+]"]],
+    ["layer.sendToBack", "Send to Back", "back", ["Ctrl+Alt+[", "Ctrl+Shift+["]],
   ];
-  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onSelection, run: () => void reorderLayers(ids(), op) }));
+  for (const [id, title, op, key] of order) add(defineCommand({ id, title, category: "Layer", keybinding: key, when: onArrange, run: () => void reorderLayers(ids(), op) }));
   add(defineTypedCommand({ id: "layer.reorder", title: "Arrange Layers", category: "Layer", args: z.object({ op: z.enum(["forward", "backward", "front", "back"]) }), run: ({ op }) => ({ changed: reorderLayers(ids(), op) }) }));
 
   add(defineCommand({ id: "edit.group", title: "Group Selection", category, keybinding: "Ctrl+G", when: onSelection, run: () => void groupLayers(ids(), "group") }));
@@ -90,6 +131,125 @@ export function registerEditingCommands(): () => void {
   add(defineCommand({ id: "edit.frameSelection", title: "Frame Selection", category, keybinding: "Ctrl+Alt+G", when: onSelection, run: () => void groupLayers(ids(), "frame") }));
   add(defineTypedCommand({ id: "edit.groupSelection", title: "Group or Frame the Selection", category, args: z.object({ kind: z.enum(["group", "frame"]).default("group") }), run: ({ kind }) => ({ id: groupLayers(ids(), kind) }) }));
 
+  add(defineTypedCommand({
+    id: "text.splitLetters",
+    title: "Split Text into Letters",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      // one layer per letter, each tilted, moved, coloured or animated on its own
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a text layer to split.");
+        return { groups: [] };
+      }
+      const made: string[] = [];
+      for (const targetId of targets) {
+        const reason = cannotSplit(targetId);
+        if (reason !== null) {
+          showToast(reason);
+          continue;
+        }
+        const measured = measureLettersOf(targetId);
+        if (!measured || measured.boxes.length === 0) {
+          showToast("Text must be visible on the canvas to split into letters.");
+          continue;
+        }
+        const group = splitIntoLetters(targetId, measured.boxes, measured);
+        if (group) made.push(group);
+      }
+      if (made.length > 0) {
+        useLayersUiStore.getState().expandAll(made);
+        useSelectionStore.getState().selectMultiple(made, "element");
+      }
+      return { groups: made };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.animateLetters",
+    title: "Animate Letters",
+    category: "Text",
+    args: z.object({ id: z.string().optional(), stagger: z.number().positive().optional() }).default({}),
+    run: ({ id, stagger }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to animate.");
+        return { clips: 0 };
+      }
+      let totalClips = 0;
+      for (const targetId of targets) {
+        const clips = animateLetters(targetId, stagger ?? 0.04);
+        if (clips && clips.length > 0) totalClips += clips.length;
+      }
+      if (totalClips === 0) {
+        showToast("Select a letters group to animate.");
+      }
+      return { clips: totalClips };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.standLetters",
+    title: "Stand Letters Up",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to stand up.");
+        return { ok: false };
+      }
+      let success = false;
+      for (const targetId of targets) {
+        const res = standLetters(targetId);
+        if (res) success = true;
+      }
+      if (!success) {
+        showToast("Select a letters group to stand up.");
+      }
+      return { ok: success };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.extrudeLetters",
+    title: "Give Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional(), depth: z.number().finite().min(0).max(1000).default(24) }).default({ depth: 24 }),
+    run: ({ id, depth }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to give depth.");
+        return { ok: false, copies: 0 };
+      }
+      let totalCopies = 0;
+      for (const targetId of targets) {
+        const count = extrudeLetters(targetId, depth ?? 24);
+        if (count > 0) totalCopies += count;
+      }
+      if (totalCopies === 0) {
+        showToast("Select a letters group to give depth.");
+      }
+      return { ok: totalCopies > 0, copies: totalCopies };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "text.removeDepth",
+    title: "Remove Letters Depth",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const targets = id ? [id] : ids();
+      if (targets.length === 0) {
+        showToast("Select a letters group to remove depth.");
+        return { ok: false, removed: 0 };
+      }
+      let totalRemoved = 0;
+      for (const targetId of targets) {
+        const count = removeDepth(targetId);
+        totalRemoved += count;
+      }
+      return { ok: totalRemoved > 0, removed: totalRemoved };
+    },
+  }));
   add(defineCommand({ id: "layer.toggleLock", title: "Lock / Unlock", category: "Layer", keybinding: "Ctrl+Shift+L", when: onSelection, run: () => void toggleLock(ids()) }));
   add(defineCommand({ id: "layer.unlockAll", title: "Unlock All", category: "Layer", run: () => void unlockAll() }));
   add(defineCommand({ id: "layer.showAll", title: "Show All", category: "Layer", run: () => void showAll() }));
@@ -140,26 +300,220 @@ export function registerEditingCommands(): () => void {
   // Phase 35: paint and effects as typed commands (agents get the same list the panels edit).
   const stop = z.object({ at: z.number(), color: z.string() });
   const pt = z.object({ x: z.number(), y: z.number() });
-  const paintBase = { opacity: z.number().min(0).max(1).default(1), visible: z.boolean().default(true) };
+  // FigCraft port F2: every paint may carry a blend mode; images take the seven adjustments; diamond is a gradient type
+  const paintBase = { opacity: z.number().min(0).max(1).default(1), visible: z.boolean().default(true), blend: z.enum(BLEND_MODES).optional() };
+  const adjust = z.object({ exposure: z.number(), contrast: z.number(), saturation: z.number(), temperature: z.number(), tint: z.number(), highlights: z.number(), shadows: z.number() }).partial().optional();
   const paintSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("solid"), color: z.string(), ...paintBase }),
     z.object({ type: z.literal("linear"), stops: z.array(stop).min(2).max(32), from: pt, to: pt, ...paintBase }),
     z.object({ type: z.literal("radial"), stops: z.array(stop).min(2).max(32), center: pt, radius: pt, ...paintBase }),
     z.object({ type: z.literal("conic"), stops: z.array(stop).min(2).max(32), center: pt, angle: z.number(), ...paintBase }),
+    z.object({ type: z.literal("diamond"), stops: z.array(stop).min(2).max(32), center: pt, radius: pt, ...paintBase }),
     z.object({
       type: z.literal("image"), src: z.string().max(200_000), mode: z.enum(["fill", "fit", "crop", "tile"]).default("fill"),
       crop: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).default({ x: 0, y: 0, w: 1, h: 1 }), scale: z.number().default(1),
-      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), ...paintBase,
+      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, ...paintBase,
     }),
   ]);
-  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), fills) }) }));
+  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), fills as Paint[]) }) }));
+  // FigCraft port F3: several stroke paints, and the stroke's alignment, per-side weights, width profile, caps and miter limit
+  add(defineTypedCommand({ id: "paint.setStrokes", title: "Set Strokes", category: "Layer", args: z.object({ ids: targets, strokes: z.array(paintSchema).max(16) }), run: ({ ids: t, strokes }) => ({ changed: setStrokes(t ?? ids(), strokes as Paint[]) }) }));
+  const cap = z.enum(["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled"]);
+  add(defineTypedCommand({
+    id: "stroke.set",
+    title: "Set Stroke Settings",
+    category: "Layer",
+    args: z.object({
+      ids: targets,
+      align: z.enum(["inside", "center", "outside"]).nullable().optional(),
+      sides: z.tuple([z.number().min(0), z.number().min(0), z.number().min(0), z.number().min(0)]).nullable().optional(),
+      widthProfile: z.array(z.object({ t: z.number(), scale: z.number(), bias: z.number().optional() })).max(64).nullable().optional(),
+      capStart: cap.optional(),
+      capEnd: cap.optional(),
+      miterLimit: z.number().min(1).max(100).optional(),
+    }),
+    run: ({ ids: t, ...patch }) => ({ changed: setStrokeSettings(t ?? ids(), patch) }),
+  }));
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
+  // FigCraft port F4: vector networks on path layers
+  add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "vector.makeNetwork", title: "Make Vector Network", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: makeNetwork(t ?? ids()) }) }));
+  add(defineTypedCommand({
+    id: "vector.paintBucket",
+    title: "Fill or Unfill Area",
+    category: "Layer",
+    args: z.object({ id: z.string(), x: z.number().finite(), y: z.number().finite(), want: z.boolean().optional() }),
+    run: ({ id, x, y, want }) => ({ filled: paintBucket(id, { x, y }, want) }),
+  }));
+  add(defineTypedCommand({
+    id: "vector.setPoint",
+    title: "Set Point Style",
+    category: "Layer",
+    args: z.object({
+      id: z.string(),
+      index: z.number().int().min(0),
+      radius: z.number().min(0).optional(),
+      mirror: z.enum(["none", "angle", "angleAndLength"]).nullable().optional(),
+      cap: z.enum(["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled"]).nullable().optional(),
+      join: z.enum(["miter", "round", "bevel"]).nullable().optional(),
+    }),
+    run: ({ id, index, ...patch }) => ({ changed: setNetworkPoint(id, index, patch) }),
+  }));
+  // FigCraft port F5: live boolean groups and the Shape Builder
+  const boolOp = z.enum(["union", "subtract", "intersect", "exclude"]);
+  add(defineTypedCommand({ id: "boolean.makeGroup", title: "Make Live Boolean Group", category: "Layer", args: z.object({ ids: targets, operation: boolOp.default("union") }).default({ operation: "union" }), run: ({ ids: t, operation }) => ({ id: makeBooleanGroup(t ?? ids(), operation) }) }));
+  add(defineTypedCommand({ id: "boolean.setOperation", title: "Set Boolean Operation", category: "Layer", args: z.object({ ids: targets, operation: boolOp }), run: ({ ids: t, operation }) => ({ result: setBooleanOperation(t ?? ids(), operation) }) }));
+  add(defineTypedCommand({ id: "boolean.flattenGroup", title: "Flatten Boolean Group", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: flattenBooleanGroups(t ?? ids()) }) }));
+  add(defineTypedCommand({
+    id: "shapeBuilder.regions",
+    title: "Shape Builder Regions",
+    category: "Layer",
+    args: z.object({ ids: targets }).default({}),
+    run: ({ ids: t }) => {
+      const a = arrangement(t ?? ids());
+      return { sources: a.sources, regions: a.regions.map((r, index) => ({ index, path: r.path.toSvg(2), sources: r.sources, parts: r.parts, bounds: [r.bounds.x0, r.bounds.y0, r.bounds.x1 - r.bounds.x0, r.bounds.y1 - r.bounds.y0], point: r.point ? [r.point.x, r.point.y] : null })) };
+    },
+  }));
+  const picks = z.object({ ids: targets, regions: z.array(z.number().int().min(0)).max(10_000).optional(), points: z.array(z.tuple([z.number().finite(), z.number().finite()])).max(10_000).optional() });
+  const toPick = (p: z.infer<typeof picks>) => ({ regions: p.regions, points: p.points?.map(([x, y]) => ({ x, y })) });
+  add(defineTypedCommand({ id: "shapeBuilder.merge", title: "Merge Regions", category: "Layer", args: picks, run: (p) => buildShapes(p.ids ?? ids(), toPick(p), true) }));
+  add(defineTypedCommand({ id: "shapeBuilder.remove", title: "Remove Regions", category: "Layer", args: picks, run: (p) => buildShapes(p.ids ?? ids(), toPick(p), false) }));
   add(defineTypedCommand({ id: "paint.setShadows", title: "Set Shadows", category: "Layer", args: z.object({ ids: targets, shadows: z.array(shadowSchema).max(16) }), run: ({ ids: t, shadows }) => ({ changed: setShadows(t ?? ids(), shadows) }) }));
+  // FigCraft port F12: working on a whole selection
+  add(defineTypedCommand({
+    id: "selection.rename",
+    title: "Rename Layers",
+    category: "Layer",
+    args: z.object({ ids: targets, find: z.string().max(1000).optional(), regex: z.boolean().optional(), replace: z.string().max(1000).optional(), pattern: z.string().max(1000).optional(), start: z.number().optional() }),
+    run: ({ ids: t, ...settings }) => renameLayers(t ?? ids(), settings),
+  }));
+  add(defineTypedCommand({
+    id: "arrange.spacing",
+    title: "Set Selection Spacing",
+    category: "Layer",
+    args: z.object({ ids: targets, horizontal: z.number().finite().optional(), vertical: z.number().finite().optional() }),
+    run: ({ ids: t, horizontal, vertical }) => ({ ok: setSelectionSpacing(t ?? ids(), { horizontal, vertical }) }),
+  }));
+  add(defineTypedCommand({ id: "transform.scale", title: "Scale Layers", category: "Layer", args: z.object({ ids: targets, factor: z.number().positive().max(1000), anchor: z.string().optional() }), run: ({ ids: t, factor, anchor }) => ({ changed: scaleSelection(t ?? ids(), factor, anchor ? (anchorOf(anchor) ?? undefined) : undefined) }) }));
+  add(defineTypedCommand({
+    id: "tool.scaleAnchor",
+    title: "Scale Tool Anchor",
+    category: "Layer",
+    args: z.object({ anchor: z.string().optional() }).default({}),
+    run: ({ anchor }) => {
+      if (anchor !== undefined) {
+        const a = anchorOf(anchor);
+        if (!a) throw new Error(`unknown anchor "${anchor}" (tl, t, tr, l, c, r, bl, b, br)`);
+        setScaleAnchor(a);
+      }
+      return { anchor: anchorName(scaleAnchor()) };
+    },
+  }));
+  // FigCraft port F12: the rotation origin, and turning the selection about it
+  const selFrame = (t: readonly string[]) => {
+    const boxes = t.map((i) => worldBox(i)).filter((b): b is NonNullable<typeof b> => !!b);
+    return boxes.length === 0 ? null : { frame: boxes.length === 1 ? boxes[0] : unionBox(boxes)!, first: boxes[0], boxes };
+  };
+  add(defineCommand({ id: "transform.rotationOrigin", title: "Show Rotation Origin", category: "Layer", keybinding: "Alt+R", when: onSelection, run: () => void editRotationOrigin(ids()) }));
+  add(defineTypedCommand({
+    id: "transform.setRotationOrigin",
+    title: "Set Rotation Origin",
+    category: "Layer",
+    args: z.object({ x: z.number().finite().optional(), y: z.number().finite().optional(), editing: z.boolean().optional() }).default({}),
+    run: ({ x, y, editing }) => {
+      const t = ids();
+      const f = selFrame(t);
+      if (!f) return { ok: false };
+      if (editing !== undefined) editRotationOrigin(t, editing);
+      if (x !== undefined && y !== undefined) setRotationOrigin(t, { x, y }, f.first);
+      else if (editing === undefined) setRotationOrigin(t, null, f.first);
+      return { ok: true, origin: originPoint(t, f.frame, f.first) };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "transform.rotate",
+    title: "Rotate Selection",
+    category: "Layer",
+    args: z.object({ ids: targets, degrees: z.number().finite().min(-3600).max(3600) }),
+    run: ({ ids: t0, degrees }) => {
+      const t = (t0 ?? ids()).filter((i) => getDocument().layers[i] && getDocument().layers[i].locked !== true);
+      const f = selFrame(t);
+      if (!f) return { changed: 0 };
+      const pivot = originPoint(t, f.frame, f.first);
+      transaction("Rotate", () => writeBoxes(t, rotateBoxes(f.boxes, pivot, degrees)));
+      return { changed: t.length };
+    },
+  }));
+  // FigCraft port F11: frames, groups and sections
+  add(defineTypedCommand({ id: "object.resizeToFit", title: "Resize to Fit", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: resizeToFit(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "object.convertToGroup", title: "Convert to Group", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: convertToGroup(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "object.convertToFrame", title: "Convert to Frame", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => convertToFrame(t ?? ids()) }));
+  add(defineTypedCommand({ id: "object.convertToSection", title: "Convert to Section", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => convertToSection(t ?? ids()) }));
+  const exportSetting = z.object({ format: z.enum(["png", "jpg", "svg"]), scale: z.number().min(0.5).max(4), suffix: z.string().max(40) });
+  add(defineTypedCommand({ id: "export.setSettings", title: "Set Export Settings", category: "Layer", args: z.object({ ids: targets, settings: z.array(exportSetting).max(16) }), run: ({ ids: t, settings }) => ({ changed: setLayerProps(t ?? ids(), { "export.settings": serializeExportSettings(settings) || null }, "Export settings") }) }));
+  add(defineTypedCommand({
+    id: "export.layerSvg",
+    title: "Layer as SVG",
+    category: "Layer",
+    args: z.object({ id: z.string().optional(), scale: z.number().min(0.5).max(4).optional() }).default({}),
+    run: ({ id, scale }) => {
+      const target = id ?? ids()[0];
+      const box = target ? worldBox(target) : null;
+      return { svg: target && box ? layerSvg(getResolvedDocument().layers, target, box.w, box.h, scale ?? 1) : "" };
+    },
+  }));
+  add(defineTypedCommand({
+    id: "export.layer",
+    title: "Export Layer",
+    category: "Layer",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const target = id ?? ids()[0];
+      const box = target ? worldBox(target) : null;
+      if (!target || !box) return { files: 0 };
+      const layers = getResolvedDocument().layers;
+      const settings = parseExportSettings(layers[target].properties["export.settings"]);
+      const list = settings.length > 0 ? settings : [DEFAULT_EXPORT];
+      void Promise.all(list.map((st) => exportFile(layers, target, box, st).then((f) => downloadBlob(f.name, f.blob))));
+      return { files: list.length };
+    },
+  }));
+  // FigCraft port F14: an SVG as an editable design
+  add(defineTypedCommand({
+    id: "svg.import",
+    title: "Import SVG as Design",
+    category: "Layer",
+    args: z.object({ text: z.string().max(5_000_000), name: z.string().max(120).optional(), parentId: z.string().nullable().optional(), x: z.number().finite().optional(), y: z.number().finite().optional(), scale: z.number().positive().max(100).optional() }),
+    run: ({ text, name, parentId, x, y, scale }) => importSvgDesign(text, parentId === undefined ? (getDocument().layers[ids()[0] ?? ""]?.parentId ?? Object.values(getDocument().layers).find((l) => l.parentId === null)?.id ?? null) : parentId, { x: x ?? 0, y: y ?? 0 }, scale ?? 1, name ?? "SVG"),
+  }));
+  add(defineTypedCommand({
+    id: "stroke.setBrush",
+    title: "Set Stroke Brush",
+    category: "Layer",
+    args: z.object({ ids: targets, brush: z.object({ preset: z.string(), spacing: z.number().optional(), sizeJitter: z.number().optional(), rotationJitter: z.number().optional(), scatter: z.number().optional(), seed: z.number().optional() }).nullable() }),
+    run: ({ ids: t, brush }) => ({ changed: setLayerProps(t ?? ids(), { "stroke.brush": brush && parseBrush(JSON.stringify(brush)) ? JSON.stringify(sanitizeBrush(brush)) : null }, "Brush") }),
+  }));
+  add(defineTypedCommand({ id: "arrange.reorder", title: "Reorder Selection", category: "Layer", args: z.object({ ids: targets, source: z.string(), target: z.string(), swap: z.boolean().optional() }), run: ({ ids: t, source, target, swap }) => ({ ok: reorderSelection(t ?? ids(), source, target, swap) }) }));
+  const paintTarget = z.object({ id: z.string(), prop: z.string(), index: z.number().int().min(0).optional() });
+  add(defineTypedCommand({ id: "selection.colors", title: "Selection Colours", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ colors: selectionColors(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "selection.setPaint", title: "Change Selection Colour", category: "Layer", args: z.object({ targets: z.array(paintTarget).max(10_000), paint: paintSchema }), run: ({ targets: t, paint }) => ({ changed: setSelectionPaint(t, paint as Paint) }) }));
+  add(defineTypedCommand({ id: "selection.selectColor", title: "Select Layers with Colour", category: "Layer", args: z.object({ targets: z.array(paintTarget).max(10_000) }), run: ({ targets: t }) => ({ ids: selectWithColor(t) }) }));
+  // FigCraft port F7: blurs (uniform or progressive), noise, texture and glass; each effect is checked and repaired by `parseEffect`
+  add(defineTypedCommand({ id: "paint.setEffects", title: "Set Effects", category: "Layer", args: z.object({ ids: targets, effects: z.array(z.record(z.string(), z.unknown())).max(16) }), run: ({ ids: t, effects }) => ({ changed: setEffects(t ?? ids(), effects) }) }));
   add(defineTypedCommand({ id: "paint.setStrokeStyle", title: "Set Stroke Style", category: "Layer", args: z.object({ ids: targets, style: z.enum(["solid", "dashed", "dotted"]) }), run: ({ ids: t, style }) => ({ changed: setStrokeStyle(t ?? ids(), style) }) }));
   add(defineTypedCommand({ id: "paint.replaceImage", title: "Replace Image", category: "Layer", args: z.object({ ids: targets, src: z.string(), natural: z.object({ w: z.number().positive(), h: z.number().positive() }).optional(), index: z.number().int().min(0).optional() }), run: ({ ids: t, src, natural, index }) => ({ changed: replaceImage(t ?? ids(), src, natural, index) }) }));
   add(defineTypedCommand({ id: "paint.setBlur", title: "Set Blur", category: "Layer", args: z.object({ ids: targets, layer: z.number().optional(), background: z.number().optional() }), run: ({ ids: t, layer, background }) => ({ changed: setBlur(t ?? ids(), { layer, background }) }) }));
   add(defineTypedCommand({ id: "fonts.setDisplay", title: "Set Font Loading", category: "Text", args: z.object({ display: z.enum(["swap", "block", "fallback", "optional", "auto"]) }), run: ({ display }) => { documentCommands.setFontDisplay(display); return { ok: true }; } }));
   add(registerTextCommands());
+  add(registerLayoutCommands());
+  add(registerBreakpointCommands());
+  add(registerTokenCommands());
+  add(registerDevCommands());
+  add(registerComponentCommands());
+  add(registerPageCommands());
+  add(registerExportCommands());
+  add(registerAgentCommands());
+  add(registerTemplateCommands());
   add(installClipboardEvents(window));
   return () => offs.forEach((off) => off());
 }

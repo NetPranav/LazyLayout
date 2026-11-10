@@ -10,7 +10,7 @@
  * demo created natively in v3, and be the same document.
  */
 import { test, expect } from "@playwright/test";
-import { canonical, diffPixels, exportProject, openEditor, stageShot, waitSaved } from "./support/editor";
+import { canonical, diffPixels, exportProject, openEditor, stageShot, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const FIXTURE = "tests/e2e/fixtures/showcase-v2.lazy.json";
 
@@ -18,7 +18,7 @@ test.fixme("Phase 42: a v2 project migrates to v3 and renders identically to the
   const outDir = testInfo.outputPath();
 
   // Native v3: mount the showcase demo in a fresh project.
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: /Mount Showcase Demo/ }).click();
   await waitSaved(page);
   const native = await exportProject(page, outDir, "native-v3");

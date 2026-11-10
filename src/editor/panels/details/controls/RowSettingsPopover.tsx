@@ -83,6 +83,8 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
     const handlePointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
       if (popRef.current?.contains(target)) return;
+      // a dropdown opened from inside the popover draws its list outside it: choosing there is not "outside"
+      if ((target as Element).closest?.('[role="listbox"], [role="menu"], [data-color-picker]')) return;
       if (anchorRef.current?.closest(".ll-rr")?.contains(target)) return;
       onClose();
     };

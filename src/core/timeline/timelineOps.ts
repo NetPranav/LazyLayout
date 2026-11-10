@@ -4,11 +4,13 @@ import type { PropValue } from "../document/registry";
 import { evaluate } from "../kernel/evaluate";
 import { createId } from "../ids";
 import { canReparent } from "../layers/reparent";
+import { validateParentLink } from "../geometry/parentTransforms";
 import { getDocument } from "../store/documentState";
 import { documentCommands } from "../store/useDocumentStore";
 import { transaction } from "../editing/editOps";
 import { getTransport } from "../time/transport";
 import { clampWorkArea, slideBar, snapTime, trimIn, trimOut } from "./model";
+import { KEYFRAMES_CLIP_NAME, clipTemplateFor } from "./keyframeOps";
 
 /**
  * Timeline operations (ROADMAP Phase 61): every edit the timeline panel makes, as a function the commands in
@@ -117,6 +119,20 @@ export function parentChoices(layerId: string): Array<{ id: string; name: string
     .map((l) => ({ id: l.id, name: l.name }));
 }
 
+/** Layers a layer may have as transform parent (Phase 73 pick-whip choices): valid DAG links, helpers labeled. */
+export function transformParentChoices(layerId: string): Array<{ id: string; name: string }> {
+  const layers = getDocument().layers;
+  return Object.values(layers)
+    .filter((l) => validateParentLink(layers, layerId, l.id).valid)
+    .map((l) => {
+      const isHelper = l.properties["render.role"] === "helper";
+      return {
+        id: l.id,
+        name: isHelper ? `⊞ ${l.name} (Helper)` : l.name,
+      };
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Stopwatches (ROADMAP Phase 62)
 // ---------------------------------------------------------------------------
@@ -178,7 +194,7 @@ export function setStopwatch(layerId: string, path: string, on: boolean, time = 
   transaction("Turn on stopwatch", () => {
     let clipId = placed?.clip.id;
     if (!clipId) {
-      clipId = documentCommands.addClip(layerId, { id: createId("clip"), name: KEYFRAMES_CLIP, type: "entrance", trigger: "mount", duration: Math.max(comp.duration, local), easing: "power2.out", enabled: true, tracks: [] });
+      clipId = documentCommands.addClip(layerId, clipTemplateFor(comp, local), "Add keyframes", { compositionId });
     } else if (local > placed!.clip.duration) {
       documentCommands.updateClip(clipId, { duration: local });
     }
@@ -188,4 +204,4 @@ export function setStopwatch(layerId: string, path: string, on: boolean, time = 
 }
 
 /** The clip a stopwatch makes when the layer has none. */
-export const KEYFRAMES_CLIP = "Keyframes";
+export const KEYFRAMES_CLIP = KEYFRAMES_CLIP_NAME;

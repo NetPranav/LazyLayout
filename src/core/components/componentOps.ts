@@ -1,0 +1,226 @@
+/**
+ * Component operations (ROADMAP Phase 46): make a component from a layer, insert instances, reset an instance's
+ * overrides, swap it for another component, detach it, go to the main component, rename and delete. Each is one undo
+ * step; the instances follow their main in the same step as any edit to it (see `instances.ts`).
+ */
+
+import { defaultVariantMain } from "./componentExtras";
+import { frameIdOf, listFrames } from "../frames/frames";
+import { groupLayers, transaction } from "../editing/editOps";
+import { getDocument } from "../store/documentState";
+import { documentCommands } from "../store/useDocumentStore";
+import { useCanvasViewStore } from "../store/useCanvasViewStore";
+import { useSelectionStore } from "../store/useSelectionStore";
+import { createId } from "../ids";
+import { containedComponents, detachComponent, detachInstance, instanceRootOf, instantiate, mainsOf, subtreeIds, syncInstanceLayer } from "./instances";
+import { holdsMain, innerMainOf, mainAround, swapInPlace } from "./componentExtras";
+import { findVariant } from "./variantOps";
+
+const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+const select = (ids: string[]) => useSelectionStore.getState().selectMultiple(ids, "element");
+
+/**
+ * Makes the selected container the main component. Anything else (several layers, a shape) is first wrapped in a
+ * frame. A layer that already holds an instance or another component is refused: components don't nest in this version.
+ * Returns the component's id, or null.
+ */
+export function createComponent(ids: readonly string[], name?: string): string | null {
+  const layers = getDocument().layers;
+  const roots = ids.filter((id) => layers[id] && layers[id].locked !== true);
+  if (roots.length === 0) return null;
+  // instances inside are fine (components nest, FigCraft port F9); a main inside, or an instance itself, isn't
+  if (roots.some((id) => holdsMain(layers, id) || layers[id].instance || layers[id].componentMain)) return null;
+  let id: string | null = null;
+  transaction("Create component", () => {
+    let mainId: string | null;
+    if (roots.length === 1 && layers[roots[0]].archetype === "container") mainId = roots[0];
+    else mainId = roots.every((r) => layers[r].parentId !== null) ? groupLayers(roots, "frame") : null;
+    if (!mainId) return;
+    const main = getDocument().layers[mainId];
+    const cid = createId("cmp");
+    documentCommands.mutate("Create component", (d) => {
+      (d.designComponents ??= {})[cid] = { id: cid, name: (name ?? main.name ?? "Component").slice(0, 120), mainId };
+      d.layers[mainId!].componentMain = cid;
+    });
+    select([mainId]);
+    id = cid;
+  });
+  return id;
+}
+
+/**
+ * Puts an instance of a component in a frame (the one being worked in, or `parentId`), at the middle of it or at `at`
+ * (canvas space inside the parent). Returns the instance's id, selected. Not inside the main component itself.
+ */
+export function insertInstance(componentId: string, options: { parentId?: string | null; at?: { x: number; y: number }; variant?: Record<string, string>; index?: number; flow?: boolean } = {}): string | null {
+  const doc = getDocument();
+  const comp = doc.designComponents?.[componentId];
+  // the variant asked for, or the default one: the top-left (FigCraft port F9)
+  const topLeft = comp?.variants?.length ? defaultVariantMain(componentId) : null;
+  const chosen = comp && options.variant ? findVariant(comp, options.variant) : topLeft ? comp?.variants?.find((v) => v.mainId === topLeft) : undefined;
+  const sourceMain = chosen?.mainId ?? comp?.mainId;
+  const main = sourceMain ? doc.layers[sourceMain] : undefined;
+  if (!comp || !main || !sourceMain) return null;
+  const frames = listFrames(doc.layers);
+  const activeId = useCanvasViewStore.getState().activeFrameId;
+  let parentId: string | null = options.parentId ?? (frames.find((f) => f.id === activeId) ?? frames[0])?.id ?? null;
+  if (!parentId || !doc.layers[parentId]) return null;
+  // not into the main itself (a component can't contain its own instance): into the frame the main is in, or another frame
+  // nor into a main it contains, however deep (a component can't contain itself, FigCraft port F9)
+  const around = mainAround(doc.layers, parentId);
+  if (mainsOf(comp).some((m) => subtreeIds(doc.layers, m).includes(parentId!)) || (around && (around === componentId || containedComponents(doc, componentId).has(around)))) {
+    const outer = frameIdOf(doc.layers, comp.mainId);
+    parentId = outer && !mainsOf(comp).includes(outer) ? outer : (frames.find((f) => !mainsOf(comp).includes(f.id))?.id ?? null);
+  }
+  if (!parentId || doc.layers[parentId].instance) return null;
+  const target: string = parentId;
+  const w = num(main.properties["frame.width"], 100);
+  const h = num(main.properties["frame.height"], 100);
+  const parent = doc.layers[target];
+  const pw = num(parent.properties["frame.width"], 800);
+  const ph = num(parent.properties["frame.height"], 600);
+  const x = options.at?.x ?? Math.max(0, Math.round((pw - w) / 2));
+  const y = options.at?.y ?? Math.max(0, Math.round((ph - h) / 2));
+  let out: string | null = null;
+  documentCommands.mutate("Insert instance", (d) => {
+    const id = instantiate(d, componentId, sourceMain, target, options.index, true);
+    const root = d.layers[id];
+    // an instance of a variant set remembers its choice for each property
+    if (comp.variantProps) root.instance!.variant = Object.fromEntries(comp.variantProps.map((p) => [p.name, chosen?.values[p.name] ?? comp.variants?.[0]?.values[p.name] ?? p.values[0]]));
+    // a flow instance (a shared section in a page's stack) is placed by its parent's layout; any other sits at x, y
+    if (!options.flow) {
+      root.properties.positioning = "absolute";
+      root.properties["frame.x"] = x;
+      root.properties["frame.y"] = y;
+    }
+    out = id;
+  });
+  if (out) select([out]);
+  return out;
+}
+
+/** The instance roots the given layers belong to. */
+function rootsOf(ids: readonly string[]): string[] {
+  const layers = getDocument().layers;
+  const out = new Set<string>();
+  for (const id of ids) {
+    const r = instanceRootOf(layers, id);
+    if (r) out.add(r);
+  }
+  return [...out];
+}
+
+/**
+ * Resets overrides: the selected layers (all of an instance when its root is selected) go back to what the main says,
+ * for `keys` or for everything they changed. Returns how many layers had overrides.
+ */
+export function resetOverrides(ids: readonly string[], keys?: readonly string[]): number {
+  const layers = getDocument().layers;
+  const targets = new Set<string>();
+  for (const id of ids) {
+    const l = layers[id];
+    if (!l?.instance) continue;
+    if (l.instance.root) for (const x of subtreeIds(layers, id)) targets.add(x);
+    else targets.add(id);
+  }
+  const touched = [...targets].filter((id) => (layers[id].instance?.overridden?.length ?? 0) > 0);
+  if (touched.length === 0) return 0;
+  documentCommands.mutate("Reset overrides", (d) => {
+    for (const id of touched) {
+      const meta = d.layers[id].instance!;
+      if (keys) {
+        meta.overridden = (meta.overridden ?? []).filter((k) => !keys.includes(k));
+        if (meta.overridden.length === 0) delete meta.overridden;
+      } else delete meta.overridden;
+    }
+    for (const r of new Set(touched.map((id) => instanceRootOf(d.layers, id)))) if (r) syncInstanceLayer(d, r);
+  });
+  return touched.length;
+}
+
+/** Detaches instances: they become plain layers and no longer follow the component. Returns how many. */
+export function detachInstances(ids: readonly string[]): number {
+  const roots = rootsOf(ids);
+  if (roots.length === 0) return 0;
+  documentCommands.mutate("Detach instance", (d) => roots.forEach((r) => detachInstance(d, r)));
+  return roots.length;
+}
+
+/** Swaps an instance for an instance of another component, in the same place with the same position and size. */
+export function swapInstance(id: string, componentId: string): string | null {
+  const doc = getDocument();
+  // a nested instance (inside another instance, or inside a main) swaps in place, so overrides on it carry over (FigCraft port F9)
+  const nested = swapInPlace(id, componentId);
+  if (nested !== undefined) {
+    if (nested) select([nested]);
+    return nested;
+  }
+  const root = instanceRootOf(doc.layers, id);
+  const old = root ? doc.layers[root] : undefined;
+  const comp = doc.designComponents?.[componentId];
+  if (!old || !comp || !doc.layers[comp.mainId] || old.instance!.component === componentId || old.parentId === null) return null;
+  let out: string | null = null;
+  documentCommands.mutate("Swap instance", (d) => {
+    const parent = d.layers[old.parentId!];
+    const index = parent.children.indexOf(old.id);
+    const placed = {
+      positioning: old.properties.positioning,
+      "frame.x": old.properties["frame.x"],
+      "frame.y": old.properties["frame.y"],
+      "frame.rotation": old.properties["frame.rotation"],
+    };
+    const nid = instantiate(d, componentId, comp.mainId, old.parentId, index, true);
+    if (comp.variantProps) d.layers[nid].instance!.variant = Object.fromEntries(comp.variantProps.map((p) => [p.name, comp.variants?.[0]?.values[p.name] ?? p.values[0]]));
+    for (const [k, v] of Object.entries(placed)) if (v !== undefined) d.layers[nid].properties[k] = v;
+    for (const x of subtreeIds(d.layers, old.id)) delete d.layers[x];
+    parent.children = parent.children.filter((c) => c !== old.id);
+    out = nid;
+  });
+  if (out) select([out]);
+  return out;
+}
+
+/** Selects the main component of an instance (or the layer itself if it is a main), and makes its frame the one being worked in. */
+export function goToMain(id: string): string | null {
+  const doc = getDocument();
+  const layer = doc.layers[id];
+  const componentId = layer?.componentMain ?? layer?.instance?.component;
+  // an instance goes to the main of the variant it shows; a nested instance to its own component's main (FigCraft port F9)
+  const root = layer?.instance ? instanceRootOf(doc.layers, layer.id) : null;
+  const inner = layer ? innerMainOf(doc, layer.id) : null;
+  const mainId = layer?.componentMain ? layer.id : inner ?? (root ? doc.layers[root].instance!.source : componentId ? doc.designComponents?.[componentId]?.mainId : undefined);
+  if (!mainId || !doc.layers[mainId]) return null;
+  select([mainId]);
+  const frame = frameIdOf(doc.layers, mainId);
+  if (frame) useCanvasViewStore.getState().setActiveFrame(frame);
+  return mainId;
+}
+
+export function renameComponent(componentId: string, name: string): boolean {
+  const comp = getDocument().designComponents?.[componentId];
+  const trimmed = name.trim().slice(0, 120);
+  if (!comp || !trimmed) return false;
+  documentCommands.mutate("Rename component", (d) => {
+    d.designComponents![componentId].name = trimmed;
+    if (d.layers[comp.mainId]) d.layers[comp.mainId].name = trimmed;
+  });
+  return true;
+}
+
+/** Deletes the component: its instances become plain layers, the main stays as an ordinary frame. */
+export function deleteComponent(componentId: string): boolean {
+  const comp = getDocument().designComponents?.[componentId];
+  if (!comp) return false;
+  documentCommands.mutate("Delete component", (d) => {
+    detachComponent(d, componentId);
+    for (const m of mainsOf(comp)) if (d.layers[m]) delete d.layers[m].componentMain;
+    delete d.designComponents![componentId];
+    if (Object.keys(d.designComponents!).length === 0) delete d.designComponents;
+  });
+  return true;
+}
+
+/** How many instances a component has. */
+export function instanceCount(componentId: string): number {
+  return Object.values(getDocument().layers).filter((l) => l.instance?.component === componentId && l.instance.root).length;
+}

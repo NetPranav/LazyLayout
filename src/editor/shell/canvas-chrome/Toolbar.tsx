@@ -516,9 +516,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <IconButton
               size="lg"
               data-tool="pen"
-              aria-label="Pen (P)"
-              tooltip="Pen (P)"
-              pressed={activeTool === "pen"}
+              aria-label="Pen (P) / Pencil (Shift+P)"
+              tooltip="Pen (P) / Pencil (Shift+P)"
+              pressed={activeTool === "pen" || activeTool === "pencil"}
               tabIndex={focusedIndex === 4 ? 0 : -1}
               onFocus={() => setFocusedIndex(4)}
               onClick={() => onSelectTool?.("pen")}

@@ -3,7 +3,7 @@
  * document after every step, through the real timeline panel in the Animate workspace.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { focusApp, openEditor } from "./support/editor";
+import { focusApp, openEditor, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const PPS = 120; // pixels per second in the timeline panel
@@ -20,7 +20,7 @@ async function openTimeline(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("tab", { name: /Animate/ }).click();
   await page.locator(".timeline").waitFor({ state: "visible", timeout: 15_000 });
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();

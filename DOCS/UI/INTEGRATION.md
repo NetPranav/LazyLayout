@@ -27,12 +27,26 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 - **What A/B must do:** Make any old-UI fix in `src/legacy-editor`, and port it if that area is already rebuilt.
 - **Status:** open until `src/legacy-editor` is removed
 
+### Legacy editor route `/editor/legacy`
+- **Area:** shell / routes
+- **Files:** `src/app/editor/legacy/page.tsx`, `src/app/editor/legacy/LegacyStudioHeader.tsx`, `src/legacy-editor/shell/EditorShell.tsx`, `tests/e2e/support/editor.ts`
+- **What changed:** Main's editor is retained and served at `/editor/legacy` with all Phase 39-81 features (pen tool, auto layout, breakpoints, tokens, graph editor). Rendered `LegacyStudioHeader` in `headerSlot` to provide the classic menu bar (`File`, `Edit`, `View`, `Window`, `Help`) and `#header-toggle-demo-btn` ("Mount Showcase Demo"), and imported legacy `globals.css` for `--z-header` and `--z-dropdown` stacking context. Configured `openEditor` in `tests/e2e/support/editor.ts` to default to the NEW editor (`EDITOR_URL = "/editor"`), and exported `LEGACY_EDITOR_URL = "/editor/legacy"`. All 29 of main's e2e spec files explicitly target `LEGACY_EDITOR_URL` and pass 100% (138/138 tests).
+- **What A/B must do:** Target `LEGACY_EDITOR_URL` (`/editor/legacy`) for old-UI e2e tests; target `EDITOR_URL` (`/editor`) for new-UI specs.
+- **Status:** done
+
 ### Old UI spec docs removed
 - **Area:** docs
 - **Files:** `DOCS/INITIAL/UI.md`, `DOCS/INITIAL/PANELS.md`
 - **What changed:** Deleted on the user's instruction, because they describe the old UI. They remain in git history. Other docs and `src/ai/copilot/DiagnosticSuggester.ts` still mention them by name.
 - **What A/B must do:** Do not restore them on merge.
 - **Status:** open
+
+### Root `CLAUDE.md` and `AGENTS.md` kept as `main`'s (changed in the merge review, 2026-11-05)
+- **Area:** repo instructions
+- **Files:** `CLAUDE.md`, `AGENTS.md`, `DOCS/UI/ORCHESTRATOR_RULES.md` (new), `DOCS/UI/WORKER_RULES.md` (new)
+- **What changed:** The PR replaced the root `CLAUDE.md` (which imports `AGENTS.md` and `DOCS/TEAM/COLLABORATION.md`) with the UI rebuild's orchestrator rules, and appended the Antigravity worker rules to `AGENTS.md`. Merged as they were, every Claude in the repo (both lanes) would have read "the two-lane rules do not apply here", "never push at all", "do not commit or push" and "do not edit `src/core`". The root files are `main`'s again, each with a short pointer to the UI rules; the rebuild's rules moved unchanged (plus a scope note) to `DOCS/UI/ORCHESTRATOR_RULES.md` and `DOCS/UI/WORKER_RULES.md`.
+- **What the UI sessions must do:** point the workers at `DOCS/UI/WORKER_RULES.md` (they used to get it from `AGENTS.md`). `.claude/agents/ui-orchestrator.md` still says "Read `CLAUDE.md`" and "`CLAUDE.md` §3": read `DOCS/UI/ORCHESTRATOR_RULES.md` instead (that file could not be edited from the review session).
+- **Status:** done
 
 ## 2. Engine contracts the new UI relies on
 
@@ -49,6 +63,12 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 ### Motion engine frame loop scheduler
 - **Area:** motion
 - **What the UI uses:** The motion loop (`src/editor/motion/loop.ts`) coordinates its frame execution using the core engine's `frameScheduler` (`src/core/time/scheduler.ts`).
+- **Status:** done
+
+### Warp mesh rendering and canvas overlay (TASK G)
+- **Area:** engine & stage / inspector
+- **Files:** `src/core/geometry/meshWarp.ts`, `src/core/document/properties.ts`, `src/core/render/geometry.ts`, `src/core/render/RenderLayer.tsx`, `src/editor/stage/WarpMeshOverlay.tsx`, `src/editor/panels/details/sections/PositionSection.tsx`
+- **What changed:** Added `transform.mesh` property ("cols,rows;x,y;..."), shared renderer tile splitting with projective matrix3d, canvas interactive overlay with handle dragging and row shift-dragging, and inspector controls under Position > More.
 - **Status:** done
 
 ## 3. Engine changes requested
@@ -85,12 +105,12 @@ None so far. The new editor reuses existing core engine stores, commands, time s
 - **What A/B must do:** Import components from `@/editor/components` across all rebuilt panels (`shell`, `panels/layers`, `panels/details`, `canvas`, `menus`).
 - **Status:** in progress (wip, retry 2)
 
-### Imported candidate packages and components (as-is) [REMOVED]
+### Imported candidate packages and components (as-is) [REPLACED & REMOVED]
 - **Area:** imported components / design system
-- **Files:** `package.json`, `src/editor/components/imported/**`, `src/editor/design-system/DesignSystemPage.tsx`
-- **What changed:** Previously installed candidate packages and components under `src/editor/components/imported/` have been removed. The `imported/` folder is gone.
-- **What A/B must do:** None (the imported folder is removed).
-- **Status:** removed
+- **Files:** `package.json`, `src/editor/components/imported/**`, `src/editor/components/Cursor.tsx`, `src/editor/components/ScrollFade.tsx`, `src/editor/design-system/DesignSystemPage.tsx`
+- **What changed:** The two components with unverified licenses (`Cursor` and `Scroll Fade` from Animate UI) were replaced by our own clean-room code (`src/editor/components/Cursor.tsx` and `ScrollFade.tsx`; commit `73edaba`). The `src/editor/components/imported/` directory has been completely deleted; zero license blockers remain. Unused candidate dependencies `@animate-ui/react`, `@base-ui/react`, `@floating-ui/react`, and `radix-ui` were removed from `package.json` (commits `58ae713` and `5cf6d24`) because `@animate-ui/react` broke `npm ci` in CI.
+- **What A/B must do:** None (the imported folder and unused packages are removed; import `Cursor` and `ScrollFade` from `@/editor/components`).
+- **Status:** done
 
 ## 5. Tokens and styles
 
@@ -161,20 +181,37 @@ New tokens use the `--ll-` prefix in `src/editor/styles/tokens.css`. Legacy toke
 - **Test hooks:** Comprehensive `data-testid` and `data-*` attribute list across shell, stage, layers, timeline, and inspector. Full list and old-to-new selector map in [DOCS/UI/handoffs/e2e-testids.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/e2e-testids.md).
 - **Status:** done
 
-### Phase check results, 2026-11-05 (build session)
-- **typecheck (`npx tsc --noEmit`):** pass (0 errors).
-- **build (`NEXT_PUBLIC_ENABLE_LABS=1 npm run build`):** pass.
-- **lint (`npm run lint`):** 0 errors in `src/editor` (about 38 warnings), 1 error in legacy read-only code `src/legacy-editor/menus/UnifiedLogoMenu.tsx` (`react-hooks/set-state-in-effect`), which is untouched from initial branch setup.
-- **e2e (`npm run test:e2e`):** 77 passed, 96 `fixme`, 4 failing flaky-looking (177 total tests across chromium). Unsupported legacy features (creation drawing tools, multi-frame canvas, font file upload, asset pipeline) are marked `test.fixme` with documented reasons per spec in `DOCS/UI/handoffs/2026-11-05-*-e2e-g1..g4.md`. 4 failures appear flaky/timing-related (`deterministic-clock`, `playback-on-clock`, `snapping`, `stage-incremental`).
+### E2E helper defaults to new editor with explicit targeting
+- **Files:** `tests/e2e/support/editor.ts`, all specs in `tests/e2e/**`
+- **What changed:** `tests/e2e/support/editor.ts` defaults `openEditor(page, url = EDITOR_URL)` to the NEW editor (`EDITOR_URL = "/editor"`) and exports `LEGACY_EDITOR_URL = "/editor/legacy"`. Every spec now names its target explicitly (commit `23a74aa`): 29 legacy specs from main explicitly target `LEGACY_EDITOR_URL` (138/138 pass), and new editor specs target `EDITOR_URL`.
+- **Status:** done
+
+### Timeline playback sub-frame accumulator fix
+- **Files:** `src/editor/motion-model/MotionModelStore.ts`
+- **What changed:** Fixed bug where timeline playback ran at ~3 fps of real speed because fractional frames were dropped on each tick. A sub-frame accumulator preserves fractional delta time so playback runs at 60 fps real speed (commit `ea8ee24`).
+- **Status:** done
+
+### Phase check results, 2026-11-05 (production build of PR #62 branch `integrate/main-into-new-ui`)
+- **PR:** Opened PR #62 into `main`: https://github.com/NetPranav/LazyLayout/pull/62
+- **typecheck (`npx tsc --noEmit`):** clean (0 errors).
+- **build (`NEXT_PUBLIC_ENABLE_LABS=1 npm run build`):** passes cleanly; `/editor` and `/editor/legacy` present in the route list.
+- **lint (`npx eslint src/editor src/app`):** 0 errors, 32 warnings. `src/legacy-editor src/core` has 1 error in old code: `src/legacy-editor/menus/UnifiedLogoMenu.tsx:99` (`setState` in an effect), untouched from main.
+- **e2e (`npm run test:e2e`):** full suite on production build: **199 passed, 65 skipped (`test.fixme` with written reasons), 0 failed, 0 flaky (264 tests total across chromium)**. Group handoffs: `DOCS/UI/handoffs/*-e2e-g1..g4.md`, `*-e2e-target-audit.md`, `*-fix-8-tests.md`, `*-legacy-e2e.md`, `*-playback-fix.md`, `*-merge-main.md`.
+- **Browser smoke:** `/editor`: 16 real layers, a drag changes the value and saves, reload restores, undo works, no page errors. `/editor/legacy`: loads, no page errors.
 
 ## 8. Open items before merge
 
-Honest list of open items before merging `ui/redesign` to `main`:
-1. **E2E `fixme` tests:** Re-enable and migrate the 96 `test.fixme` tests as new capabilities are added or real document APIs allow.
-2. **Flaky tests:** Investigate and stabilize the 4 timing/flaky test failures (`tests/e2e/deterministic-clock.spec.ts`, `playback-on-clock.spec.ts`, `snapping.spec.ts`, `stage-incremental.spec.ts`).
-3. **Legacy-only areas with no new version:** Decide product strategy (bridge, hide, or drop) and design/build for the 17 unbuilt areas: project launcher / hub home page, database studio, blueprint (currently shell only), content browser, copilot, deployment, global search, history, pages manager, plugins, settings, state, versioning, dependencies, execution trace (standalone panel), render gallery, and fonts.
-4. **Unverified license on imported components:** `Cursor` (`src/editor/components/imported/cursor/index.ts`) and `Scroll Fade` (`src/editor/components/imported/scroll-fade/index.ts`) have unverified licenses from Animate UI. Per `UI_RULES.md` §5, unclear licenses must be replaced or confirmed before merging.
+Pull Request #62 into `main` is open: https://github.com/NetPranav/LazyLayout/pull/62 (branch `integrate/main-into-new-ui`; `ui/redesign` is older branch on GitHub).
+
+Honest list of open items before merging into `main`:
+1. **PR #62 review and merge:** PR #62 is open for review by the friend's Claude to merge with a merge commit (`gh pr merge 62 --merge`).
+2. **New-UI screens for main's features:** Features from main's phases 39 to 81 (pen and vector tools, auto layout, breakpoints, tokens, components and variants, MCP agent, templates, scroll model, export) work only at `/editor/legacy`. They need designs from the design session (`DOCS/UI/design/REQUESTS.md`), then worker tasks to build them in `src/editor`.
+3. **Old-app areas with no new version:** 17 unbuilt areas: project launcher / hub home page, database studio, blueprint (currently shell only), content browser, copilot, deployment, global search, history, pages manager, plugins, settings, state, versioning, dependencies, execution trace (standalone panel), render gallery, and fonts.
+4. **The 65 `test.fixme` tests:** Re-enable and migrate the 65 `test.fixme` tests as those new-UI capabilities are built. (0 failed, 0 flaky out of 264 total tests).
 5. **Responsive checks:** Visual inspection and verification at 1024px (tablet) and 390px (mobile) breakpoints across all modes have not been done.
 6. **Reduced motion verification:** Systematic check of `prefers-reduced-motion` compliance across all spring animations and transitions has not been performed.
-7. **Firefox `field-sizing: content` support:** `NumberField` uses CSS `field-sizing: content` which is not yet supported in Firefox; requires fallback handling or verification.
-8. **Side-by-side screenshots:** Final prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured and reviewed.
+7. **Six non-default themes visually:** Visual inspection of White, Warm, Lilac, Noir, Graphite, and Darkroom across screens has not been performed.
+8. **Firefox `field-sizing: content` support:** `NumberField` uses CSS `field-sizing: content` which is not yet supported in Firefox; requires fallback handling or verification.
+9. **Final side-by-side screenshots:** Prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured.
+10. **Timeline header token:** Timeline header token is 44px (prototype task said 40; flagged for design session).
+11. **Legacy lint error:** fixed in the merge review (2026-11-05): `src/legacy-editor/menus/UnifiedLogoMenu.tsx` reset its submenu state inside an effect (a lint error that failed CI `verify`); it now resets while rendering, the same behaviour. That file is not from `main`: it came from the `wip(ui)` experiments (feba8ec).

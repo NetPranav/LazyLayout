@@ -18,6 +18,8 @@ export interface NumberFieldProps {
   className?: string;
   id?: string;
   "aria-label"?: string;
+  /** What the field is, in a sentence: shown before the scrub hint when the pointer rests on its label. */
+  title?: string;
 }
 
 export const NumberField: React.FC<NumberFieldProps> = ({
@@ -36,6 +38,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   className = "",
   id: propId,
   "aria-label": ariaLabel,
+  title,
 }) => {
   const generatedId = useId();
   const inputId = propId ?? generatedId;
@@ -99,6 +102,8 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   const handleLabelPointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (disabled || e.button !== 0) return;
     e.preventDefault();
+    // A focused field shows what is being typed; leave it first so the scrub's value is the one on screen (and is not overwritten on blur).
+    if (document.activeElement === inputRef.current) inputRef.current?.blur();
 
     const targetEl = e.currentTarget;
     startXRef.current = e.clientX;
@@ -247,7 +252,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
         <span
           role="presentation"
           data-scrub
-          title="Drag horizontally to scrub value (Shift: x10, Alt: x0.1)"
+          title={`${title ? `${title} ` : ""}Drag horizontally to scrub value (Shift: x10, Alt: x0.1)`}
           onPointerDown={handleLabelPointerDown}
           className={`ll-pf ${
             typeof label !== "string"

@@ -2,7 +2,13 @@ import React from "react";
 import { layerBoxStyle } from "../geometry";
 import { clampNumber } from "../limits";
 import { safeDashArray } from "../../paint/paints";
-import { ShapePaint } from "../shapePaint";
+import { ShapePaint, type Geometry } from "../shapePaint";
+import { strokeSettings } from "../strokePaint";
+import { ellipse as ellipseOutline, polygonPoints, smoothedPolygon, starPoints, roundedRect } from "../../geometry/shapes";
+import { BezPath } from "../../geometry/bezpath";
+
+/** Whether the layer sets its stroke's alignment (FigCraft port F3): then a rectangle or ellipse is drawn at its full box and the stroke placed by the alignment. */
+const alignsStroke = (resolved: ResolvedProps) => ["inside", "center", "outside"].includes(String(resolved.get("stroke.align")));
 import type { ArchetypeRenderProps, ResolvedProps } from "../types";
 
 /** Largest side of a drawn shape, in px. */
@@ -38,16 +44,32 @@ const ShapeSvg: React.FC<FrameProps> = ({ layer, resolved, ctx, width, height, c
   </svg>
 );
 
+/** A rectangle's four corner radii, `[tl, tr, br, bl]`: each corner's own value when it has one, else the shared radius. */
+export function rectangleRadii(resolved: ResolvedProps): [number, number, number, number] {
+  const shared = Math.max(0, resolved.num("shape.cornerRadius", 0));
+  const corner = (name: string) => Math.max(0, resolved.num(`shape.cornerRadius.${name}`, shared));
+  return [corner("topLeft"), corner("topRight"), corner("bottomRight"), corner("bottomLeft")];
+}
+
 export const Rectangle: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 160, 120);
-  const strokeWidth = strokeOf(p.resolved, 0);
-  const radius = clampNumber(p.resolved.num("shape.cornerRadius", 0), 0, Math.min(width, height) / 2, 0);
+  const strokeWidth = alignsStroke(p.resolved) ? 0 : strokeOf(p.resolved, 0);
   const inset = strokeWidth / 2;
+  const w = Math.max(0, width - strokeWidth);
+  const h = Math.max(0, height - strokeWidth);
+  const radii = rectangleRadii(p.resolved);
+  const smoothing = clampNumber(p.resolved.num("shape.cornerSmoothing", 0), 0, 1, 0);
+  const uniform = radii.every((r) => r === radii[0]);
+  // a plain `<rect>` when it can say it (one radius, no smoothing); otherwise the outline from the shape geometry
+  const d = uniform && smoothing === 0 ? null : roundedRect(w, h, radii, smoothing).map((q) => ({ x: q.x + inset, y: q.y + inset })).toSvg();
+  const radius = Math.min(radii[0], Math.min(w, h) / 2);
   return (
     <ShapeSvg {...p} width={width} height={height}>
       <ShapePaint
         layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0}
-        geometry={(a) => <rect {...a} x={inset} y={inset} width={Math.max(0, width - strokeWidth)} height={Math.max(0, height - strokeWidth)} rx={radius} />}
+        geometry={(a) => (d ? <path {...a} d={d} /> : <rect {...a} x={inset} y={inset} width={w} height={h} rx={radius} />)}
+        outline={roundedRect(w, h, radii, smoothing).map((q) => ({ x: q.x + inset, y: q.y + inset }))}
+        rect={{ radii, smoothing }}
       />
     </ShapeSvg>
   );
@@ -55,12 +77,21 @@ export const Rectangle: React.FC<ArchetypeRenderProps> = (p) => {
 
 export const Ellipse: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 120, 120);
-  const strokeWidth = strokeOf(p.resolved, 0);
+  const strokeWidth = alignsStroke(p.resolved) ? 0 : strokeOf(p.resolved, 0);
+  const sweep = clampNumber(p.resolved.num("shape.arcSweep", 360), -360, 360, 360);
+  const start = clampNumber(p.resolved.num("shape.arcStart", 0), -360, 360, 0);
+  const inner = clampNumber(p.resolved.num("shape.arcInnerRatio", 0), 0, 1, 0);
+  const inset = strokeWidth / 2;
+  const w = Math.max(0, width - strokeWidth);
+  const h = Math.max(0, height - strokeWidth);
+  // a whole ellipse is an `<ellipse>`; an arc, a pie or a ring is the outline from the shape geometry
+  const d = Math.abs(sweep) >= 360 && inner === 0 ? null : ellipseOutline(w, h, (start * Math.PI) / 180, (sweep * Math.PI) / 180, inner).map((q) => ({ x: q.x + inset, y: q.y + inset })).toSvg();
   return (
     <ShapeSvg {...p} width={width} height={height}>
       <ShapePaint
         layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0}
-        geometry={(a) => <ellipse {...a} cx={width / 2} cy={height / 2} rx={Math.max(0, (width - strokeWidth) / 2)} ry={Math.max(0, (height - strokeWidth) / 2)} />}
+        geometry={(a) => (d ? <path {...a} d={d} fillRule="evenodd" /> : <ellipse {...a} cx={width / 2} cy={height / 2} rx={w / 2} ry={h / 2} />)}
+        outline={ellipseOutline(w, h, (start * Math.PI) / 180, (sweep * Math.PI) / 180, inner).map((q) => ({ x: q.x + inset, y: q.y + inset }))}
       />
     </ShapeSvg>
   );
@@ -72,6 +103,21 @@ export const Line: React.FC<ArchetypeRenderProps> = (p) => {
   const height = Math.max(clampNumber(p.resolved.num("frame.height", 2), 1, MAX_SIDE, 2), strokeWidth);
   const cap = p.resolved.str("svg.strokeLinecap", "round");
   const dash = safeDashArray(p.resolved.str("svg.strokeDasharray", "none"));
+  // A plain line is one <line>; shadows, and a different cap at each end, need the full shape painter below.
+  const hasShadows = String(p.resolved.get("paint.shadows") ?? "").trim() !== "";
+  const endCaps = [p.resolved.get("shape.startCap"), p.resolved.get("shape.endCap")].some((c) => typeof c === "string" && c !== "" && c !== "none");
+  if (strokeSettings(p.resolved, "#0f172a", 2, true) || hasShadows || endCaps) {
+    // FigCraft port F3: several strokes, a variable width or arrowheads (and the shadows a plain line cannot draw)
+    const outline = new BezPath().moveTo({ x: 0, y: height / 2 }).lineTo({ x: width, y: height / 2 });
+    return (
+      <ShapeSvg {...p} width={width} height={height}>
+        <ShapePaint
+          layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="none" defaultStroke="#0f172a" defaultStrokeWidth={2} fillable={false} closed={false} outline={outline}
+          geometry={(a) => <line {...a} x1={0} y1={height / 2} x2={width} y2={height / 2} />}
+        />
+      </ShapeSvg>
+    );
+  }
   return (
     <ShapeSvg {...p} width={width} height={height}>
       <line x1={0} y1={height / 2} x2={width} y2={height / 2} stroke={p.resolved.str("svg.stroke", "#0f172a")} strokeWidth={strokeWidth} strokeLinecap={cap === "butt" || cap === "square" ? cap : "round"} {...(dash ? { strokeDasharray: dash } : {})} />
@@ -79,18 +125,35 @@ export const Line: React.FC<ArchetypeRenderProps> = (p) => {
   );
 };
 
+/** A polygon or star outline: plain points when it has no rounding, else the rounded (and smoothed) path. */
+function vertexGeometry(points: { x: number; y: number }[], resolved: ResolvedProps): Geometry {
+  const radius = Math.max(0, resolved.num("shape.vertexRadius", 0));
+  const smoothing = clampNumber(resolved.num("shape.cornerSmoothing", 0), 0, 1, 0);
+  if (radius === 0) {
+    const pts = points.map((q) => `${q.x.toFixed(2)},${q.y.toFixed(2)}`).join(" ");
+    return function polygonOutline(a) {
+      return <polygon {...a} points={pts} />;
+    };
+  }
+  const d = smoothedPolygon(points, radius, smoothing).toSvg();
+  return function roundedOutline(a) {
+    return <path {...a} d={d} />;
+  };
+}
+
+/** A polygon or star's outline as a path (its rounded and smoothed vertices included). */
+function vertexOutline(points: { x: number; y: number }[], resolved: ResolvedProps): BezPath {
+  return smoothedPolygon(points, Math.max(0, resolved.num("shape.vertexRadius", 0)), clampNumber(resolved.num("shape.cornerSmoothing", 0), 0, 1, 0));
+}
+
 export const Polygon: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 120, 120);
   const sides = Math.round(clampNumber(p.resolved.num("shape.sides", 6), 3, 64, 6));
-  const cx = width / 2;
-  const cy = height / 2;
-  const points = Array.from({ length: sides }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
-    return `${(cx + cx * Math.cos(angle)).toFixed(2)},${(cy + cy * Math.sin(angle)).toFixed(2)}`;
-  }).join(" ");
+  const points = polygonPoints(width, height, sides);
+  const geometry = vertexGeometry(points, p.resolved);
   return (
     <ShapeSvg {...p} width={width} height={height}>
-      <ShapePaint layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0} geometry={(a) => <polygon {...a} points={points} />} />
+      <ShapePaint layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0} geometry={geometry} outline={vertexOutline(points, p.resolved)} />
     </ShapeSvg>
   );
 };
@@ -99,18 +162,11 @@ export const Star: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 120, 120);
   const count = Math.round(clampNumber(p.resolved.num("shape.points", 5), 3, 64, 5));
   const inner = clampNumber(p.resolved.num("shape.innerRadius", 0.5), 0.05, 1, 0.5);
-  const cx = width / 2;
-  const cy = height / 2;
-  const vertices: string[] = [];
-  for (let i = 0; i < count * 2; i++) {
-    const angle = (Math.PI * i) / count - Math.PI / 2;
-    const scale = i % 2 === 0 ? 1 : inner;
-    vertices.push(`${(cx + cx * scale * Math.cos(angle)).toFixed(2)},${(cy + cy * scale * Math.sin(angle)).toFixed(2)}`);
-  }
-  const points = vertices.join(" ");
+  const points = starPoints(width, height, count, inner);
+  const geometry = vertexGeometry(points, p.resolved);
   return (
     <ShapeSvg {...p} width={width} height={height}>
-      <ShapePaint layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0} geometry={(a) => <polygon {...a} points={points} />} />
+      <ShapePaint layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0} geometry={geometry} outline={vertexOutline(points, p.resolved)} />
     </ShapeSvg>
   );
 };

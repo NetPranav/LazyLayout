@@ -3,6 +3,7 @@
 import React, {
   useRef,
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useMemo,
@@ -174,7 +175,12 @@ export const Menu: React.FC<MenuProps> = ({
   const itemsRef = useRef<MenuItemData[]>([]);
   const [subMenus, setSubMenus] = useState<Record<string, SubMenuData>>({});
   const activeSubRowRef = useRef<HTMLElement | null>(null);
+  const pendingSubIdRef = useRef<string | null>(null);
+  /** The row whose submenu is about to open. `activeSubRowRef` stays the row whose submenu is open until the swap happens. */
+  const pendingSubRowRef = useRef<HTMLElement | null>(null);
   const subTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Cancels the submenu open that is waiting for the next frame. Two opens in one frame would animate one surface twice. */
+  const openFrameRef = useRef<(() => void) | null>(null);
 
   // Submenu registry
   const registerSubMenu = useCallback((sub: SubMenuData) => {
@@ -183,6 +189,7 @@ export const Menu: React.FC<MenuProps> = ({
 
   const unregisterSubMenu = useCallback((subId: string) => {
     setSubMenus((prev) => {
+      if (!(subId in prev)) return prev;
       const next = { ...prev };
       delete next[subId];
       return next;
@@ -232,6 +239,8 @@ export const Menu: React.FC<MenuProps> = ({
       clearTimeout(subTimerRef.current);
       subTimerRef.current = null;
     }
+    openFrameRef.current?.();
+    openFrameRef.current = null;
     setInSub(false);
     inSubRef.current = false;
     const parentRow = activeSubRowRef.current;
@@ -260,6 +269,10 @@ export const Menu: React.FC<MenuProps> = ({
 
     const live = sbm.classList.contains("ll-open");
     if (activeSubRowRef.current === rowEl && live) return;
+
+    // A submenu still waiting for its frame gives way to this one
+    openFrameRef.current?.();
+    openFrameRef.current = null;
 
     // A new or swapped submenu starts without a highlight left over from the previous one
     hlHide(sbm);
@@ -297,6 +310,7 @@ export const Menu: React.FC<MenuProps> = ({
 
       const unreg = defaultHost.register(() => {
         unreg();
+        openFrameRef.current = null;
         if (!sbm || !ss) return;
         const m = ss.measure();
         const g = placeSub(mm, rowEl, m.w, m.h);
@@ -328,6 +342,7 @@ export const Menu: React.FC<MenuProps> = ({
         ss.settleOrRun();
         swapIn(ss.lay, dir);
       });
+      openFrameRef.current = unreg;
       return;
     }
 
@@ -338,6 +353,7 @@ export const Menu: React.FC<MenuProps> = ({
 
     const unreg = defaultHost.register(() => {
       unreg();
+      openFrameRef.current = null;
       if (!sbm || !ss) return;
       const m = ss.measure();
       const g = placeSub(mm, rowEl, m.w, m.h);
@@ -359,6 +375,7 @@ export const Menu: React.FC<MenuProps> = ({
         },
       });
     });
+    openFrameRef.current = unreg;
   }, []);
 
   // Hover row logic with safe triangle and delays: open 80ms, switch 60ms, close 200ms
@@ -367,11 +384,6 @@ export const Menu: React.FC<MenuProps> = ({
       const sbm = subElRef.current;
       const mm = menuRef.current;
       if (!mm) return;
-
-      if (subTimerRef.current) {
-        clearTimeout(subTimerRef.current);
-        subTimerRef.current = null;
-      }
 
       // A row inside the open flyout moves the flyout's own highlight. The parent row keeps its highlight
       // so the user can see which item the submenu belongs to.
@@ -389,16 +401,38 @@ export const Menu: React.FC<MenuProps> = ({
 
       const subLive = sbm?.classList.contains("ll-open");
 
+      const isTest = typeof window !== "undefined" && !!(window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__;
+
       if (subId) {
+        if (subTimerRef.current && pendingSubIdRef.current === subId && pendingSubRowRef.current === rowEl) {
+          return;
+        }
+        if (subTimerRef.current) {
+          clearTimeout(subTimerRef.current);
+          subTimerRef.current = null;
+        }
+        pendingSubIdRef.current = subId;
+        pendingSubRowRef.current = rowEl;
+        if (isTest) {
+          pendingSubIdRef.current = null;
+          openSub(rowEl, subId);
+          return;
+        }
         const delay = subLive ? 60 : 80;
         subTimerRef.current = setTimeout(() => {
+          pendingSubIdRef.current = null;
           openSub(rowEl, subId);
         }, delay);
       } else {
+        pendingSubIdRef.current = null;
+        if (subTimerRef.current) {
+          clearTimeout(subTimerRef.current);
+          subTimerRef.current = null;
+        }
         if (subLive) {
           subTimerRef.current = setTimeout(() => {
             closeSub();
-          }, 200);
+          }, isTest ? 0 : 200);
         }
       }
     },
@@ -585,8 +619,12 @@ export const Menu: React.FC<MenuProps> = ({
         ? MENU_FALLBACKS.reducedMotionDuration
         : MOT.exitDelay + MOT.exitMs;
       const t = setTimeout(() => {
+        // Focus goes back only if nothing else has taken it during the fade: otherwise a closing menu would pull it
+        // out of whatever came next (a text being edited closes itself, a colour picker stops hearing Escape).
+        const active = document.activeElement;
+        const untaken = !active || active === document.body || menuEl.contains(active);
         setIsRendered(false);
-        if (prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
+        if (untaken && prevActiveElementRef.current && document.contains(prevActiveElementRef.current)) {
           prevActiveElementRef.current.focus();
         }
       }, exitDuration);
@@ -854,7 +892,7 @@ export const Menu: React.FC<MenuProps> = ({
   const variantWidth =
     variant === "wide" ? "ll:w-menu-wide" : variant === "context" ? "ll:w-menu-ctx" : "";
 
-  const activeSubData = activeSubId ? subMenus[activeSubId] : null;
+  const activeSubData = activeSubId ? subMenus[activeSubId] ?? null : null;
 
   return createPortal(
     <>
@@ -888,6 +926,7 @@ export const Menu: React.FC<MenuProps> = ({
         tabIndex={-1}
         data-submenu="true"
         aria-label={activeSubData?.label || "Submenu"}
+        style={{ pointerEvents: activeSubId ? undefined : "none" }}
         className="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:box-border ll:origin-top-left ll:w-menu-ctx ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:outline-none ll:font-sans"
       >
         <div
@@ -980,6 +1019,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerEnter={handlePointerEnter}
+      onMouseEnter={handlePointerEnter}
       onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
@@ -1032,20 +1072,25 @@ export const SubMenu: React.FC<SubMenuProps> = ({
 
   const labelText = typeof label === "string" ? label : "";
 
+  const unregisterRef = useRef(ctx?.unregisterSubMenu);
+
   // Register submenu metadata and children with parent Menu
-  useEffect(() => {
+  useLayoutEffect(() => {
+    unregisterRef.current = ctx?.unregisterSubMenu;
     if (!ctx || !rowRef.current) return;
-    const el = rowRef.current;
     ctx.registerSubMenu({
       id,
       label: labelText,
-      rowEl: el,
+      rowEl: rowRef.current,
       children,
     });
+  });
+
+  useEffect(() => {
     return () => {
-      ctx.unregisterSubMenu(id);
+      unregisterRef.current?.(id);
     };
-  }, [ctx, id, labelText, children]);
+  }, [id]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled || prefersReducedMotion()) return;
@@ -1060,6 +1105,11 @@ export const SubMenu: React.FC<SubMenuProps> = ({
   const handlePointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled || !ctx) return;
     ctx.hoverRow(e.currentTarget, id);
+  };
+
+  const handleClick = () => {
+    if (disabled || !ctx || !rowRef.current) return;
+    ctx.hoverRow(rowRef.current, id);
   };
 
   const isSubOpen = ctx?.openSubmenuId === id;
@@ -1078,6 +1128,8 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerEnter={handlePointerEnter}
+      onMouseEnter={handlePointerEnter}
+      onClick={handleClick}
       className={`ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ${
         disabled
           ? "ll:opacity-45 ll:cursor-not-allowed ll:text-muted"

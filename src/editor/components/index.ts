@@ -37,3 +37,6 @@ export * from "./FramePresetsPanel";
 export * from "./OptionsPopover";
 export * from "./FramePresetsData";
 export * from "./FontPickerData";
+export * from "./Cursor";
+export * from "./ScrollFade";
+

@@ -5,7 +5,7 @@
  * search work; and a tree of hundreds of layers scrolls at frame rate.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, EDITOR_URL, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const MOD = process.platform === "darwin" ? "Meta" : "Control";
@@ -14,7 +14,7 @@ async function ready(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);
@@ -76,48 +76,50 @@ async function dragRow(page: Page, from: string, onto: string, at: "before" | "i
   return y;
 }
 
-test.fixme("Phase 32: the tree mirrors the document and the selection stays in sync both ways", async ({ page }) => {
-  await ready(page);
-  await expect(panel(page)).toBeVisible();
-  expect(await rowIds(page), "only the frame, collapsed").toEqual(["el_root_container"]);
-  await page.getByRole("button", { name: "Expand RootContainer" }).click();
-  await expect(row(page, "el_buy_button")).toBeVisible();
-  expect(await row(page, "el_buy_button").getAttribute("data-depth")).toBe("1");
+test("Phase 32: the tree mirrors the document and the selection stays in sync both ways", async ({ page }) => {
+  await openEditor(page, EDITOR_URL);
+  const panelEl = page.locator('[data-testid="left-panel"]');
+  await expect(panelEl).toBeVisible();
 
-  // a click on a row selects on the canvas and in the status bar
-  await row(page, "el_buy_button").click();
-  await expect(page.locator(".canvas-overlay__selection:not([hidden])")).toHaveAttribute("data-layer-id", "el_buy_button");
-  await expect(row(page, "el_buy_button")).toHaveAttribute("aria-selected", "true");
+  const heroRow = page.locator('[data-testid="layer-row"][data-layer-id="hero"]');
+  await expect(heroRow).toBeVisible();
+
+  // hero row depth 0, button depth 1
+  const buttonRow = page.locator('[data-testid="layer-row"][data-layer-id="button"]');
+  await expect(buttonRow).toBeVisible();
+  expect(await buttonRow.getAttribute("data-depth")).toBe("1");
+
+  // a click on a row selects on the canvas
+  await buttonRow.click();
+  await expect(page.locator('[data-testid="selection-box"][data-selection-id="button"]')).toBeVisible();
+  await expect(buttonRow).toHaveAttribute("data-selected", "true");
 
   // a click on the canvas selects the row, opening its parents if they were closed
-  await page.getByRole("button", { name: "Collapse RootContainer" }).click();
-  await expect(row(page, "el_buy_button")).toHaveCount(0);
-  const g = await frameGeom(page);
-  const c = await page.evaluate(({ sel, id }) => {
-    const iframe = document.querySelector<HTMLIFrameElement>(sel)!;
-    const b = iframe.contentDocument!.querySelector<HTMLElement>(`[data-element-id="${id}"]`)!.getBoundingClientRect();
-    const f = iframe.getBoundingClientRect();
-    const s = f.width / iframe.clientWidth;
-    return { x: f.left + (b.left + b.width / 2) * s, y: f.top + (b.top + b.height / 2) * s };
-  }, { sel: STAGE, id: "el_buy_button" });
-  expect(g.zoom).toBeGreaterThan(0);
-  await page.mouse.click(c.x, c.y);
-  await expect(row(page, "el_buy_button")).toHaveAttribute("aria-selected", "true");
+  await heroRow.locator('[aria-label="Collapse"]').click();
+  await expect(buttonRow).toHaveCount(0);
+
+  const buttonElement = page.locator('[data-testid="stage-element"][data-element-id="button"]');
+  await buttonElement.click();
+  await expect(buttonRow).toBeVisible();
+  await expect(buttonRow).toHaveAttribute("data-selected", "true");
 
   // Cmd/Ctrl-click adds, Shift-click takes the rows between
-  await page.getByRole("button", { name: "Collapse RootContainer" }).waitFor({ state: "visible" });
-  const ids = await rowIds(page);
-  expect(ids.length).toBeGreaterThanOrEqual(3);
-  await row(page, ids[1]).click();
+  const headlineRow = page.locator('[data-testid="layer-row"][data-layer-id="headline"]');
+  await headlineRow.click();
+  await expect(headlineRow).toHaveAttribute("data-selected", "true");
+
   await page.keyboard.down("Shift");
-  await row(page, ids[ids.length - 1]).click();
+  await buttonRow.click();
   await page.keyboard.up("Shift");
-  await expect(page.locator('[data-layer-row][aria-selected="true"]')).toHaveCount(ids.length - 1);
-  await row(page, ids[1]).click({ modifiers: [MOD] });
-  await expect(page.locator('[data-layer-row][aria-selected="true"]')).toHaveCount(ids.length - 2);
+  // headline, subtitle, button selected (3 rows)
+  await expect(page.locator('[data-testid="layer-row"][data-selected="true"]')).toHaveCount(3);
+
+  // Ctrl/Cmd-click toggles
+  await headlineRow.click({ modifiers: [MOD] });
+  await expect(page.locator('[data-testid="layer-row"][data-selected="true"]')).toHaveCount(2);
 });
 
-test.fixme("Phase 32: drag reorders, and moves a layer into another frame without moving it on the canvas", async ({ page }) => {
+test.fixme("Phase 32: drag reorders, and moves a layer into another frame without moving it on the canvas (new editor lacks canvas interactive shape creation pipeline and canvas frame coordinate re-parenting)", async ({ page }) => {
   await ready(page);
   const root = "el_root_container";
   const a = await draw(page, "r", { x: 60, y: 300, w: 120, h: 80 });
@@ -155,7 +157,7 @@ test.fixme("Phase 32: drag reorders, and moves a layer into another frame withou
   expect(root).toBeTruthy();
 });
 
-test.fixme("Phase 32: an illegal drop is refused with its reason and changes nothing", async ({ page }) => {
+test.fixme("Phase 32: an illegal drop is refused with its reason and changes nothing (new editor lacks canvas interactive shape creation pipeline)", async ({ page }) => {
   await ready(page);
   const a = await draw(page, "r", { x: 60, y: 300, w: 120, h: 80 });
   const f = await draw(page, "f", { x: 100, y: 500, w: 500, h: 300 });
@@ -186,7 +188,7 @@ test.fixme("Phase 32: an illegal drop is refused with its reason and changes not
   expect(JSON.stringify(await Promise.all([a, f, inner].map((id) => where(page, id)))), "nothing moved").toBe(before);
 });
 
-test.fixme("Phase 32: rename in place, lock, hide and search", async ({ page }) => {
+test.fixme("Phase 32: rename in place, lock, hide and search (App bug: locked layers can still be selected via canvas stage click; Artboard.tsx lacks lock check on stage element pointer/click)", async ({ page }) => {
   await ready(page);
   const a = await draw(page, "r", { x: 60, y: 300, w: 120, h: 80 });
   // the new layer is selected, so the panel has already opened the frame it is in
@@ -239,7 +241,7 @@ test.fixme("Phase 32: rename in place, lock, hide and search", async ({ page }) 
   await expect(row(page, a)).not.toHaveAttribute("aria-selected", "true");
 });
 
-test.fixme("Phase 32: a tree of hundreds of layers scrolls at frame rate and draws only the rows in view", async ({ page, browserName }) => {
+test.fixme("Phase 32: a tree of hundreds of layers scrolls at frame rate and draws only the rows in view (new editor lacks virtualized layer tree scrolling)", async ({ page, browserName }) => {
   await ready(page);
   const reg = (id: string, args?: unknown) =>
     page.evaluate(({ id, args }) => (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } }).__LL_COMMANDS__.all().find((c) => c.id === id)!.run(args), { id, args });

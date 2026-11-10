@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { Icon } from "@/editor/components/Icon";
 import { X as CloseIcon } from "lucide-react";
 import {
@@ -100,6 +101,8 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     if ((e.target as HTMLElement).closest(".wah") || (e.target as HTMLElement).closest(".mk")) return;
     e.preventDefault();
 
+    useTimelineUiStore.getState().setIsScrubbing(true);
+
     // Pause playback immediately if playing (matching P line 4962)
     if (useMotionModel.getState().playing) {
       motionActions.setPlaying(false);
@@ -134,12 +137,15 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     };
 
     const onPointerUp = () => {
+      useTimelineUiStore.getState().setIsScrubbing(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   };
 
   // Work area handle drag

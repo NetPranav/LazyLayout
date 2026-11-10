@@ -3,32 +3,62 @@ import { createLayer } from "@/core/document/factories";
 import { getDefaultProps, type PropValue } from "@/core/document/registry";
 import { documentCommands, getDocument } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
+import { setKeyframeAt } from "@/core/timeline/keyframeOps";
+import { isAutoLayout, isGrid } from "@/core/editing/layoutOps";
 
 /**
  * Checks whether the document is the initial untouched blank project that needs
  * prototype page seeding.
  */
 export function isUntouchedSeed(layers: Record<string, Layer> | undefined | null): boolean {
-  if (!layers || Object.keys(layers).length === 0) return true;
-  // If headline already exists, the project has already been seeded or edited
-  if (layers["headline"]) return false;
-
+  if (!layers) return true;
   const entries = Object.values(layers);
-  // If only root container exists with 0 children
-  if (entries.length === 1 && (entries[0].id === "elem_canvas_root" || entries[0].id === "el_root_container")) {
-    return entries[0].children.length === 0;
-  }
-
-  // Check if any layer is positioned
-  let hasPositioned = false;
-  entries.forEach((l) => {
-    if (typeof l.properties["frame.x"] === "number" || typeof l.properties["frame.y"] === "number") {
-      hasPositioned = true;
-    }
-  });
-
-  return !hasPositioned;
+  if (entries.length === 0) return true;
+  // Only a brand-new project: nothing but a page that has never been given a size. A seeded page has one in pixels, so a
+  // page the designer emptied stays empty, after a reload too.
+  if (entries.length !== 1) return false;
+  const root = entries[0];
+  return root.parentId === null && root.children.length === 0 && root.properties["frame.widthUnit"] === "%" && root.properties["frame.width"] === 100;
 }
+
+/**
+ * A project saved by an earlier version: its page size may read 1440% (the size was written without its unit), and the
+ * sample page's layers were placed by x and y without saying so, which the old stage assumed. Puts both right so the page
+ * draws as it was designed. Does nothing to a project that is already right.
+ */
+export function upgradeSavedProject(): void {
+  const layers = getDocument().layers;
+  const root = Object.values(layers).find((l) => l.parentId === null);
+  if (!root) return;
+  // Only older builds kept the page size in `%`; newer ones write px, so this runs once and never touches later work.
+  if (root.properties["frame.widthUnit"] !== "%" && root.properties["frame.heightUnit"] !== "%") return;
+  const patches: Array<[string, Record<string, PropValue>]> = [];
+  const w = root.properties["frame.width"];
+  const h = root.properties["frame.height"];
+  if (root.properties["frame.widthUnit"] === "%" && typeof w === "number" && w > 100) patches.push([root.id, { "frame.widthUnit": "px" }]);
+  if (root.properties["frame.heightUnit"] === "%" && typeof h === "number" && h > 100) patches.push([root.id, { "frame.heightUnit": "px" }]);
+  for (const id of ["hero", "features", "footer", "others", "headline", "subtitle", "button", "image", "input", "toggle", "divider", "background", "icon", "shape", "counter"]) {
+    const l = layers[id];
+    const parent = l?.parentId ? layers[l.parentId] : null;
+    if (parent && (isAutoLayout(parent) || isGrid(parent))) continue; // the designer chose to lay these out
+    if (l && l.properties.positioning !== "absolute" && typeof l.properties["frame.x"] === "number") patches.push([id, { positioning: "absolute" }]);
+  }
+  if (patches.length === 0) return;
+  const tx = documentCommands.begin("Upgrade project");
+  for (const [id, props] of patches) documentCommands.updateProps(id, props);
+  tx.commit();
+}
+
+/** The sample page at the size of a real page, in the editor's light look. */
+const SAMPLE_PAGE: Record<string, Record<string, PropValue>> = {
+  hero: { "frame.width": 1440, "frame.height": 560, "appearance.background.color": "#FFFFFF" },
+  features: { "frame.y": 560, "frame.width": 1440, "frame.height": 220, "appearance.background.color": "#F4F3EF" },
+  footer: { "frame.y": 780, "frame.width": 1440, "frame.height": 120, "appearance.background.color": "#E7E6E1" },
+  headline: { "frame.x": 120, "frame.y": 130, "frame.width": 720, "frame.height": 150, "typography.fontSize": 64, "typography.lineHeight": 1.1, "typography.color": "#22231E" },
+  subtitle: { "frame.x": 120, "frame.y": 300, "frame.width": 640, "frame.height": 36, "typography.fontSize": 20, "typography.color": "#55554F" },
+  button: { "frame.x": 120, "frame.y": 370, "frame.width": 180, "frame.height": 52, "appearance.background.color": "#22231E", "typography.color": "#FFFFFF", "typography.fontSize": 16 },
+  image: { "frame.x": 900, "frame.y": 100, "frame.width": 420, "frame.height": 360, "appearance.background.color": "#E7E6E1", "appearance.radius": 8 },
+};
 
 /**
  * Returns the prototype page's 16 real layers matching the prototype names, order and values:
@@ -324,8 +354,8 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
     },
   ];
 
-  return seedDef.map((def) =>
-    createLayer({
+  return seedDef.map((def) => {
+    const layer = createLayer({
       id: def.id,
       archetype: def.archetype,
       name: def.name,
@@ -334,9 +364,13 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       properties: {
         ...getDefaultProps(def.archetype),
         ...def.properties,
+        ...(typeof def.properties["frame.x"] === "number" ? { positioning: "absolute" as const } : {}),
+        ...(SAMPLE_PAGE[def.id] ?? {}),
       },
-    })
-  );
+    });
+    // the catalog of other elements stays in the Layers panel, out of the sample page
+    return def.id === "others" ? { ...layer, visible: false } : layer;
+  });
 }
 
 /**
@@ -354,6 +388,8 @@ export function seedPrototypeDocument(): void {
 
   // Insert complete layers in one command transaction
   documentCommands.insertLayers(seedLayers, [], "Seed prototype document");
+  // The page is as big as the desktop artboard, so aligning a layer to its page (centre, edges) means the page the designer sees.
+  if (rootId) documentCommands.updateProps(rootId, { "frame.width": 1440, "frame.widthUnit": "px", "frame.height": 900, "frame.heightUnit": "px", "appearance.background.color": "#FFFFFF" });
 
   // Also ensure the active page rootElementId points to root container or hero
   const projectState = useProjectStore.getState();
@@ -368,5 +404,32 @@ export function seedPrototypeDocument(): void {
         },
       },
     }));
+  }
+
+  // Seed canonical initial keyframes for prototype elements
+  try {
+    setKeyframeAt("headline", "appearance.opacity", 0, { value: 0 });
+    setKeyframeAt("headline", "appearance.opacity", 0.6, { value: 1 });
+    setKeyframeAt("headline", "transform.y", 0, { value: 24 });
+    setKeyframeAt("headline", "transform.y", 0.6, { value: 0 });
+
+    setKeyframeAt("subtitle", "appearance.opacity", 0.3, { value: 0 });
+    setKeyframeAt("subtitle", "appearance.opacity", 1.0, { value: 1 });
+    setKeyframeAt("subtitle", "transform.y", 0.3, { value: 16 });
+    setKeyframeAt("subtitle", "transform.y", 1.0, { value: 0 });
+
+    setKeyframeAt("button", "appearance.opacity", 0.8, { value: 0 });
+    setKeyframeAt("button", "appearance.opacity", 1.2, { value: 1 });
+    setKeyframeAt("button", "transform.scale", 0.8, { value: 0.86, ease: "back-out" });
+    setKeyframeAt("button", "transform.scale", 1.4, { value: 1.0 });
+
+    setKeyframeAt("image", "appearance.opacity", 0.2, { value: 0 });
+    setKeyframeAt("image", "appearance.opacity", 1.0, { value: 1 });
+    setKeyframeAt("image", "transform.x", 0.2, { value: 40 });
+    setKeyframeAt("image", "transform.x", 1.1, { value: 0 });
+    setKeyframeAt("image", "transform.rotate", 0.2, { value: 4 });
+    setKeyframeAt("image", "transform.rotate", 1.1, { value: 0 });
+  } catch {
+    // ignore
   }
 }

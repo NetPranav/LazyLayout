@@ -36,7 +36,8 @@ Those are the only kinds of branches. Anything else on GitHub is old and can be 
 
 - **Inside a lane, the phase number is still the order** (Law 18). Take the lowest phase in your lane that isn't ✅.
 - A phase may start only when **every phase in its "Needs" line is ✅ on `main`**. This is ROADMAP §0 rule 7, and it's the only thing that links the two lanes. §2 lists every place where it matters.
-- Stage 3 onward (103+) isn't assigned yet. Agree on it before either of you starts it.
+- **Stage 3, Design depth (Phases 103–131, added in ROADMAP v4.1 on 2026-10-21), is proposed for Lane A** after Phase 52, with branch prefix `a/`. Every phase in it needs only Stage 1, so it never waits on Lane B. It becomes Lane A's once Lane B agrees, in the v4.1 PR or in a message.
+- Stage 4 onward (132+) isn't assigned yet. Agree on it before either of you starts it. v4.1 renumbered every phase from 103 on; Phases 1–102 kept their numbers, and the old-to-new table is at the end of ROADMAP §7.
 - Laws 1–20 and the Definition of Done (ROADMAP §3, §4) apply to both lanes. Nothing in this file relaxes them.
 
 ## 2. Where Lane B waits on Lane A
@@ -130,3 +131,15 @@ Git can't catch everything, so message the other person when:
 - you finish a phase that's in the §2 table;
 - a daily merge broke something and you're fixing it forward.
 
+
+## 10. The canvas contract (both lanes)
+
+Both lanes draw on the same canvas: Lane A's frames, handles and device views, Lane B's anchor points, onion skin, motion paths and value HUD. One overlay that takes the pointer in the wrong place breaks clicking for everyone (the anchor handle did, on 2026-11-07). So anything that draws on the canvas keeps these rules:
+
+1. **Clicking a layer selects it, and dragging it moves it.** An overlay may not take the pointer from the middle of a layer in the Design workspace. A handle that must sit there (an anchor point) is a marker, dragged only with a modifier (Ctrl, Cmd on a Mac) and only once the press that selected the layer is over. In Motion, dragging the middle of a layer records keys, so it belongs to the layer there too.
+2. **Shift-click adds and removes, Alt-drag copies, Backspace/Delete deletes, the arrange shortcuts arrange**, with the pointer anywhere over the canvas.
+3. **Where edits go is never hidden.** The edit target is derived from the selection (a layer picked in a mirror edits that mirror's breakpoint; anything else edits the breakpoint being viewed). No gesture sets the breakpoint as a side effect. A frame edited at a breakpoint shows "Editing <name>".
+4. **Editor-only things never ship.** A design-time layer (helper, mirror frame) is marked by `isEditorOnlyLayer` (`src/core/document/editorOnly.ts`); editor attributes are listed in `EDITOR_ONLY_ATTRIBUTES`. The exporter and every code emitter use those, and the export tests fail if one leaks.
+5. **Core stays pure.** Code in `src/core/{editing,document,frames,geometry,paint,breakpoints,text,store}` does not read or build the page (lint enforces it). The editor measures and hands the result in.
+
+Before merging a PR that changes anything drawn on or over the canvas, run `npm run test:canvas-contract` (the canvas, device-view and anchor suites, Chromium) and say in the PR that it passed. `npm run verify` (types, lint, unit tests: all of them, even when one fails) runs on every push through `.githooks/pre-push`; `npm install` turns the hook on.

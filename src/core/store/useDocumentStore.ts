@@ -42,6 +42,16 @@ import { attachClip, createLayer, getLayerClips, getSubtreeIds, type NewLayerInp
 import { type ArchetypeId, type LayerProps, type PropValue } from "../document/registry";
 import { canonicalizeProps, canonicalizeTrackPath, coercePropertyValue, getPropertyDefinition, resolvePropertyPath } from "../document/properties";
 import { removeLayerDependents } from "../document/migrations";
+import { applyConstraintsToChildren } from "../layout/constrainChildren";
+import { validateParentLink, getLayerParentRef, computeReparentedLocalTransform } from "../geometry/parentTransforms";
+import { appliedBreakpoints, breakpointsOf, isBase, resolveDocumentAt, resolveLayerAt, VISIBLE_KEY } from "../breakpoints/breakpoints";
+import { editBreakpointId, useBreakpointStore, useEditBreakpointId } from "./useBreakpointStore";
+import { relativizeLegacyPoints } from "../geometry/cornerPin";
+
+const pick = (o: Record<string, unknown>, keys: readonly string[]): Record<string, PropValue> => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k] as PropValue]));
+import { useModeStore } from "./useModeStore";
+import { STYLE_SLOTS, slotProps, slotTriggers, type StyleSlot } from "../tokens/tokens";
+import { lockedByInstance, markOverridden, syncInstances } from "../components/instances";
 import { syncCompositions, type CompositionLayer, type Marker } from "../document/compositions";
 import {
   validateMotionDocument,
@@ -55,6 +65,7 @@ import {
   type LayerState,
   type MotionDocument,
   type Track,
+  type SpatialMode,
 } from "../document/schema";
 
 enablePatches();
@@ -180,6 +191,17 @@ function recordCommandChange(label: string, before: MotionDocument, after: Motio
 }
 
 /**
+ * A hook that runs inside every command's recipe, after it, so what it changes lands in the same undo step (Phase 66:
+ * auto-key turns a property edit into a keyframe). It gets the draft and the document as it was before the command.
+ * At most one hook; `setCommitHook(null)` removes it.
+ */
+export type CommitHook = (draft: Draft<MotionDocument>, before: MotionDocument) => void;
+let commitHook: CommitHook | null = null;
+export function setCommitHook(hook: CommitHook | null): void {
+  commitHook = hook;
+}
+
+/**
  * Runs `recipe` against the document and commits the result: recorded in
  * history and emitted as durable, unless a transaction is open, in which case
  * it is applied and emitted as transient.
@@ -190,7 +212,10 @@ function commit(label: string | undefined, recipe: (draft: Draft<MotionDocument>
   // Phase 46: every write leaves clips placed in compositions (the legacy editor writes clips only).
   const [next, patches, inversePatches] = produceWithPatches(before, (draft) => {
     recipe(draft);
+    commitHook?.(draft, before);
     syncCompositions(draft as MotionDocument);
+    // an edited main component brings its instances in line, in this same change (Phase 46)
+    syncInstances(draft as MotionDocument, before);
   });
   const resolvedLabel = label ?? DEFAULT_LABEL;
   if (patches.length === 0) return { label: resolvedLabel, patches, inversePatches };
@@ -505,6 +530,31 @@ function canonicalClip<T extends { duration: number; tracks: Track[] }>(archetyp
   return coverKeyframes({ ...clip, tracks: canonicalTracks(archetype, clip.tracks, where) });
 }
 
+/**
+ * Before a hand edit lands on `paths` of `layer`: a property bound to a variable is marked detached (the edit is its new
+ * literal value), and a text or effect style that owns an edited property is let go after its values are copied into
+ * the layer, so the rest of the style's look stays where it was.
+ */
+function detachOnEdit(doc: MotionDocument, layer: Layer, paths: readonly string[]) {
+  if (layer.tokens) {
+    for (const key of paths) {
+      const res = resolvePropertyPath(key, layer.archetype);
+      const b = layer.tokens[res.ok ? res.path : key];
+      if (b && !b.detached) b.detached = true;
+    }
+  }
+  if (layer.styleRefs) {
+    // editing what a style gives the layer lets go of the style, keeping its values (text and effect: Phase 45; fill, stroke and grid: FigCraft port F10)
+    const refs = layer.styleRefs as Partial<Record<StyleSlot, string>>;
+    for (const slot of STYLE_SLOTS) {
+      if (!refs[slot] || !paths.some((p) => slotTriggers(slot, layer.archetype).includes(p))) continue;
+      Object.assign(layer.properties, slotProps(doc, layer, slot));
+      delete refs[slot];
+    }
+    if (STYLE_SLOTS.every((s) => !refs[s])) delete layer.styleRefs;
+  }
+}
+
 export const documentCommands = {
   /** Opens a transaction for a gesture (see the file header). Nested calls join the open one. */
   begin(label: string): DocumentTransaction {
@@ -555,10 +605,16 @@ export const documentCommands = {
     commit(label, (draft) => {
       const layer = draft.layers[layerId];
       if (!layer) return;
+      // a layer inside an instance mirrors the main one: deleting it hides it (the instance's own change), it isn't gone (Phase 46)
+      if (layer.instance && !layer.instance.root) {
+        layer.visible = false;
+        markOverridden(layer as Layer, ["visible"]);
+        return;
+      }
       detachChild(draft, layer);
       const doomed = new Set(getSubtreeIds(draft as MotionDocument, layerId));
-      doomed.forEach((id) => delete draft.layers[id]);
       removeLayerDependents(draft as MotionDocument, doomed);
+      doomed.forEach((id) => delete draft.layers[id]);
     });
   },
 
@@ -568,13 +624,34 @@ export const documentCommands = {
     });
   },
 
-  /** Shallow-merges `patch` into the layer's props. An `undefined` value deletes that prop. */
+  /**
+   * Shallow-merges `patch` into the layer's props. An `undefined` value deletes that prop. While a smaller breakpoint
+   * is active (Phase 43) the changes go to the layer's overrides for it instead, so the base is untouched; a change
+   * to the value the layer already has there writes nothing, and a change back to the base value drops the override.
+   */
   updateProps(layerId: string, patch: Record<string, PropValue | undefined>, label?: string) {
     commit(label, (draft) => {
       const layer = requireLayer(draft, layerId);
       const props = layer.properties;
+      const list = breakpointsOf(draft);
+      const activeId = editBreakpointId();
+      const routed: Record<string, PropValue | undefined> = {};
+      // a layer inside an instance can't be moved or rotated: the main places it (FigCraft port F9)
+      if (layer.instance && !layer.instance.root) patch = Object.fromEntries(Object.entries(patch).filter(([k]) => !lockedByInstance(layer as Layer, resolvePropertyPath(k, layer.archetype).ok ? (resolvePropertyPath(k, layer.archetype) as { path: string }).path : k)));
+      let direct = patch;
+      if (!isBase(list, activeId)) {
+        direct = {};
+        for (const [key, value] of Object.entries(patch)) {
+          const res = resolvePropertyPath(key, layer.archetype);
+          const path = res.ok ? res.path : key;
+          // the canvas position of a top-level frame, and the responsive flag, are the document's, not a breakpoint's
+          const global = path === "breakpoints.responsive" || path === "breakpoints.adapt" || (layer.parentId === null && (path === "frame.x" || path === "frame.y" || path === "positioning"));
+          if (global) direct[key] = value;
+          else routed[path] = value;
+        }
+      }
       const defined: LayerProps = {};
-      for (const [key, value] of Object.entries(patch)) {
+      for (const [key, value] of Object.entries(direct)) {
         if (value !== undefined) {
           defined[key] = value;
           continue;
@@ -582,7 +659,52 @@ export const documentCommands = {
         const res = resolvePropertyPath(key, layer.archetype);
         delete props[res.ok ? res.path : key];
       }
+      const before = { width: props["frame.width"], height: props["frame.height"] };
+      // a pin or mesh in the old absolute form is rewritten relative to where the layer was, before it moves
+      if ("frame.x" in defined || "frame.y" in defined) Object.assign(defined, relativizeLegacyPoints(props), pick(defined, ["transform.pin", "transform.mesh"]));
+      // an instance's own change is an override: the main no longer overwrites it (Phase 46)
+      if (layer.instance) {
+        const named = [...Object.keys(direct)].map((k) => {
+          const res = resolvePropertyPath(k, layer.archetype);
+          return res.ok ? res.path : k;
+        });
+        markOverridden(layer as Layer, [...named, ...(Object.keys(routed).length > 0 ? ["overrides"] : [])]);
+      }
+      detachOnEdit(draft as MotionDocument, layer as Layer, [...Object.keys(defined), ...Object.keys(direct).filter((k) => direct[k] === undefined)]);
       Object.assign(props, canonicalProps(layer.archetype, defined, "updateProps"));
+      // Single source of truth sync: if transform.parent was modified via updateProps, synchronize authoritative parentRef
+      if ("transform.parent" in patch) {
+        const raw = patch["transform.parent"];
+        const nextParent = typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+        layer.parentRef = nextParent;
+        if (nextParent) {
+          props["transform.parent"] = nextParent;
+        } else {
+          delete props["transform.parent"];
+        }
+      }
+      if (Object.keys(routed).length > 0) {
+        // what a larger breakpoint (or the base) already says: a value equal to it needs no override of its own
+        const inherited = resolveLayerAt(layer as Layer, appliedBreakpoints(list, activeId).filter((b) => b.id !== activeId)).properties;
+        const slot = ((layer.overrides ??= {})[activeId!] ??= {});
+        for (const [path, value] of Object.entries(routed)) {
+          if (value === undefined) {
+            delete slot[path];
+            continue;
+          }
+          const canon = canonicalProps(layer.archetype, { [path]: value }, "updateProps")[path];
+          if (canon === undefined) continue;
+          if (JSON.stringify(canon) === JSON.stringify(inherited[path])) delete slot[path];
+          else slot[path] = canon;
+        }
+        if (Object.keys(slot).length === 0) delete layer.overrides![activeId!];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+      }
+      // a frame that changed size: the layers pinned to it follow, in this same change (Phase 42)
+      const after = { width: props["frame.width"], height: props["frame.height"] };
+      if (typeof before.width === "number" && typeof before.height === "number" && typeof after.width === "number" && typeof after.height === "number" && (before.width !== after.width || before.height !== after.height)) {
+        applyConstraintsToChildren(draft as MotionDocument, layerId, { width: before.width, height: before.height }, { width: after.width, height: after.height });
+      }
     });
   },
 
@@ -596,7 +718,129 @@ export const documentCommands = {
 
   setLayerFlags(layerId: string, flags: Partial<Pick<Layer, "visible" | "locked" | "solo" | "shy" | "motionBlur">>, label?: string) {
     commit(label, (draft) => {
-      Object.assign(requireLayer(draft, layerId), flags);
+      const layer = requireLayer(draft, layerId);
+      if ("visible" in flags) markOverridden(layer as Layer, ["visible"]);
+      // showing or hiding a layer by hand lets go of a boolean variable bound to its visibility (FigCraft port F10)
+      if ("visible" in flags && layer.tokens?.visible && !layer.tokens.visible.detached) layer.tokens.visible.detached = true;
+      const activeId = editBreakpointId();
+      // at a smaller breakpoint, showing or hiding a layer is that breakpoint's override (Phase 43)
+      if ("visible" in flags && !isBase(breakpointsOf(draft), activeId)) {
+        const { visible, ...rest } = flags;
+        Object.assign(layer, rest);
+        // visible or hidden as the larger breakpoints (or the base) have it: no override; otherwise this breakpoint says so
+        const above = resolveLayerAt(layer as Layer, appliedBreakpoints(breakpointsOf(draft), activeId).filter((b) => b.id !== activeId));
+        const slot = ((layer.overrides ??= {})[activeId!] ??= {});
+        if ((visible !== false) === (above.visible !== false)) delete slot[VISIBLE_KEY];
+        else slot[VISIBLE_KEY] = visible !== false;
+        if (Object.keys(slot).length === 0) delete layer.overrides![activeId!];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+        return;
+      }
+      Object.assign(layer, flags);
+    });
+  },
+
+  /**
+   * Sets a layer's transform parent (Phase 73: pick-whip parenting independent of the layer tree).
+   * If `preserveWorldPose` is true (default), computes compensated local transform so the layer does not visually jump.
+   */
+  setTransformParent(layerId: string, parentRef: string | null, preserveWorldPose = true, label?: string) {
+    const doc = getDocument();
+    const layer = doc.layers[layerId];
+    if (!layer) return;
+
+    const validation = validateParentLink(doc.layers, layerId, parentRef);
+    if (!validation.valid) {
+      throw new Error(validation.reason);
+    }
+
+    const currentParent = getLayerParentRef(layer);
+    const targetParent = parentRef && parentRef.trim().length > 0 ? parentRef.trim() : null;
+    if (currentParent === targetParent) return;
+
+    let patchProps: Record<string, PropValue | undefined> = {
+      "transform.parent": targetParent ?? undefined,
+    };
+
+    if (preserveWorldPose) {
+      const compensated = computeReparentedLocalTransform(layer, targetParent, doc.layers);
+      patchProps = { ...patchProps, ...compensated };
+    }
+
+    const actionLabel = label ?? (targetParent ? `Parent ${layer.name} to ${doc.layers[targetParent]?.name ?? targetParent}` : `Unparent ${layer.name}`);
+
+    commit(actionLabel, (draft) => {
+      const targetLayer = requireLayer(draft, layerId);
+      // Single source of truth: targetLayer.parentRef is authoritative.
+      targetLayer.parentRef = targetParent;
+      if (targetParent) {
+        targetLayer.properties["transform.parent"] = targetParent;
+      } else {
+        delete targetLayer.properties["transform.parent"];
+      }
+      for (const [k, v] of Object.entries(patchProps)) {
+        if (v === undefined) delete targetLayer.properties[k];
+        else targetLayer.properties[k] = v;
+      }
+    });
+  },
+
+  /**
+   * Changes the document in one undo step with a recipe over the draft. The token operations (variables, styles,
+   * modes, bindings; Phase 45) are written this way: they touch layers and document fields together.
+   */
+  mutate(label: string, recipe: (draft: MotionDocument) => void) {
+    commit(label, (draft) => recipe(draft as MotionDocument));
+  },
+
+  /** Replaces the document's breakpoints (widest first is the base). Overrides of breakpoints that are gone are dropped. */
+  setBreakpoints(list: { id: string; name: string; width: number }[], label = "Change breakpoints") {
+    commit(label, (draft) => {
+      const sorted = [...list].sort((a, b) => b.width - a.width);
+      draft.breakpoints = sorted;
+      const keep = new Set(sorted.map((b) => b.id));
+      for (const layer of Object.values(draft.layers)) {
+        if (!layer.overrides) continue;
+        for (const id of Object.keys(layer.overrides)) if (!keep.has(id)) delete layer.overrides[id];
+        if (Object.keys(layer.overrides).length === 0) delete layer.overrides;
+      }
+    });
+  },
+
+  /** Removes a breakpoint's overrides from layers (all of them, or just `keys`): a layer goes back to what it inherits there. */
+  resetOverrides(layerIds: readonly string[], breakpointId: string, keys?: readonly string[], label = "Reset overrides") {
+    commit(label, (draft) => {
+      for (const id of layerIds) {
+        const layer = draft.layers[id];
+        const slot = layer?.overrides?.[breakpointId];
+        if (!layer || !slot) continue;
+        if (keys) for (const k of keys) delete slot[k];
+        else delete layer.overrides![breakpointId];
+        if (layer.overrides![breakpointId] && Object.keys(slot).length === 0) delete layer.overrides![breakpointId];
+        if (Object.keys(layer.overrides!).length === 0) delete layer.overrides;
+      }
+    });
+  },
+
+  /** Sets how fonts show while loading (the project's `font-display`). */
+  setFontDisplay(display: "swap" | "block" | "fallback" | "optional" | "auto", label = "Font loading") {
+    commit(label, (draft) => {
+      if (display === "swap") delete draft.fontDisplay;
+      else draft.fontDisplay = display;
+    });
+  },
+
+  /** Records an imported file in the document's asset manifest (Phase 36). The bytes are in the asset store. */
+  addAsset(entry: AssetEntry, label = "Import asset") {
+    commit(label, (draft) => {
+      (draft.assets ??= {})[entry.id] = entry;
+    });
+  },
+
+  /** Removes a file from the manifest (the bytes stay in the store until nothing refers to them). */
+  removeAsset(id: string, label = "Remove asset") {
+    commit(label, (draft) => {
+      if (draft.assets) delete draft.assets[id];
     });
   },
 
@@ -654,28 +898,6 @@ export const documentCommands = {
     });
   },
 
-  /** Sets how fonts show while loading (the project's `font-display`). */
-  setFontDisplay(display: "swap" | "block" | "fallback" | "optional" | "auto", label = "Font loading") {
-    commit(label, (draft) => {
-      if (display === "swap") delete draft.fontDisplay;
-      else draft.fontDisplay = display;
-    });
-  },
-
-  /** Records an imported file in the document's asset manifest (Phase 36). The bytes are in the asset store. */
-  addAsset(entry: AssetEntry, label = "Import asset") {
-    commit(label, (draft) => {
-      (draft.assets ??= {})[entry.id] = entry;
-    });
-  },
-
-  /** Removes a file from the manifest (the bytes stay in the store until nothing refers to them). */
-  removeAsset(id: string, label = "Remove asset") {
-    commit(label, (draft) => {
-      if (draft.assets) delete draft.assets[id];
-    });
-  },
-
   /** Moves a layer under `parentId` (null for root) at `index`. Refuses to create a cycle. */
   moveLayer(layerId: string, parentId: string | null, index?: number, label = "Move layer") {
     commit(label, (draft) => {
@@ -691,18 +913,56 @@ export const documentCommands = {
 
   // ----------------------------------------------------------------- clips
 
-  addClip(layerId: string, template: ClipTemplate, label = "Add animation"): string {
+  /**
+   * Adds a clip to a layer. With `placement` it goes into that composition (a precomp or an interaction composition the
+   * timeline has open) in the same step, instead of wherever its trigger would put it.
+   */
+  addClip(layerId: string, template: ClipTemplate, label = "Add animation", placement?: { compositionId: string; offset?: number }): string {
     const clip = attachClip(template, layerId);
     commit(label, (draft) => {
       const layer = requireLayer(draft, layerId);
       draft.clips[clip.id] = canonicalClip(layer.archetype, clip, "addClip");
+      const target = placement ? draft.compositions[placement.compositionId] : undefined;
+      if (target) target.clips.push({ clipId: clip.id, offset: placement?.offset ?? 0 });
     });
     return clip.id;
   },
 
+  /**
+   * Makes a new precomp and places it in `parentId` (Phase 65): a composition other compositions can play, opened from
+   * its bar in the timeline. Returns both ids.
+   */
+  addPrecomp(parentId: string, options: { name?: string; duration?: number } = {}, label = "Add precomp"): { compositionId: string; nestedId: string } {
+    const compositionId = createId("comp");
+    const nestedId = createId("nest");
+    commit(label, (draft) => {
+      const parent = draft.compositions[parentId];
+      if (!parent) throw new Error(`No composition "${parentId}".`);
+      const duration = Math.max(1 / parent.fps, options.duration ?? Math.min(parent.duration, 2));
+      const count = Object.values(draft.compositions).filter((c) => c.kind === "precomp").length + 1;
+      const name = options.name?.trim() || `Precomp ${count}`;
+      draft.compositions[compositionId] = { id: compositionId, name, kind: "precomp", duration, fps: parent.fps, workArea: { start: 0, end: duration }, markers: [], layers: {}, clips: [], nested: [] };
+      parent.nested.push({ id: nestedId, compositionId, name, start: 0, in: 0, out: Math.min(duration, parent.duration), stretch: 1 });
+    });
+    return { compositionId, nestedId };
+  },
+
+  /** Takes a precomp's placement out of a composition. The precomp itself stays in the document. */
+  removeNested(compositionId: string, nestedId: string, label = "Remove precomp placement") {
+    commit(label, (draft) => {
+      const comp = draft.compositions[compositionId];
+      if (!comp) throw new Error(`No composition "${compositionId}".`);
+      comp.nested = comp.nested.filter((n) => n.id !== nestedId);
+    });
+  },
+
   updateClip(clipId: string, patch: Partial<Omit<Clip, "id" | "layerId" | "tracks">>, label?: string) {
     commit(label, (draft) => {
-      Object.assign(requireClip(draft, clipId), patch);
+      const clip = requireClip(draft, clipId);
+      Object.assign(clip, patch);
+      if (patch.trigger && patch.trigger !== "custom" && clip.event) {
+        delete clip.event;
+      }
     });
   },
 
@@ -784,6 +1044,216 @@ export const documentCommands = {
     });
   },
 
+  // ---------------------------------------------------------------- motion paths & spatial waypoints
+
+  /**
+   * Updates a spatial motion path waypoint's position in 2D space.
+   * Modifies the underlying transform.x and transform.y tracks at the waypoint's timestamp.
+   */
+  updateWaypointPosition(
+    clipId: string,
+    waypointId: string,
+    pos: { x: number; y: number },
+    label = "Move motion path waypoint"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      let trackX = clip.tracks.find((t) => t.property === "transform.x");
+      let trackY = clip.tracks.find((t) => t.property === "transform.y");
+
+      const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+      const kfY = trackY?.keyframes.find((k) => k.id === waypointId);
+
+      if (kfX && kfY) {
+        kfX.value = pos.x;
+        kfY.value = pos.y;
+      } else if (kfX) {
+        kfX.value = pos.x;
+        if (trackY) {
+          const matchingY = trackY.keyframes.find((k) => Math.abs(k.time - kfX.time) < 1e-4);
+          if (matchingY) {
+            matchingY.value = pos.y;
+          } else {
+            trackY.keyframes.push({ id: createId("kf"), time: kfX.time, value: pos.y });
+            trackY.keyframes.sort((a, b) => a.time - b.time);
+          }
+        } else {
+          clip.tracks.push({
+            id: createId("trk"),
+            property: "transform.y",
+            keyframes: [{ id: createId("kf"), time: kfX.time, value: pos.y }],
+          });
+        }
+      } else if (kfY) {
+        kfY.value = pos.y;
+        if (trackX) {
+          const matchingX = trackX.keyframes.find((k) => Math.abs(k.time - kfY.time) < 1e-4);
+          if (matchingX) {
+            matchingX.value = pos.x;
+          } else {
+            trackX.keyframes.push({ id: createId("kf"), time: kfY.time, value: pos.x });
+            trackX.keyframes.sort((a, b) => a.time - b.time);
+          }
+        } else {
+          clip.tracks.push({
+            id: createId("trk"),
+            property: "transform.x",
+            keyframes: [{ id: createId("kf"), time: kfY.time, value: pos.x }],
+          });
+        }
+      } else {
+        // Fallback: match by spatial trajectory waypoint id
+        const spWp = clip.spatialTrajectories?.transform?.waypoints.find((w) => w.id === waypointId);
+        if (spWp) {
+          const tW = spWp.time;
+          if (!trackX) {
+            trackX = { id: createId("trk"), property: "transform.x", keyframes: [] };
+            clip.tracks.push(trackX);
+          }
+          const matchingX = trackX.keyframes.find((k) => Math.abs(k.time - tW) < 1e-4);
+          if (matchingX) matchingX.value = pos.x;
+          else {
+            trackX.keyframes.push({ id: waypointId, time: tW, value: pos.x });
+            trackX.keyframes.sort((a, b) => a.time - b.time);
+          }
+
+          if (!trackY) {
+            trackY = { id: createId("trk"), property: "transform.y", keyframes: [] };
+            clip.tracks.push(trackY);
+          }
+          const matchingY = trackY.keyframes.find((k) => Math.abs(k.time - tW) < 1e-4);
+          if (matchingY) matchingY.value = pos.y;
+          else {
+            trackY.keyframes.push({ id: createId("kf"), time: tW, value: pos.y });
+            trackY.keyframes.sort((a, b) => a.time - b.time);
+          }
+        }
+      }
+    });
+  },
+
+  /**
+   * Updates or sets tangent control handles (spatialIn / spatialOut), interpolation mode,
+   * or handleStyle for a motion path waypoint.
+   */
+  updateWaypointTangents(
+    clipId: string,
+    waypointId: string,
+    patch: {
+      spatialIn?: { x: number; y: number };
+      spatialOut?: { x: number; y: number };
+      mode?: SpatialMode;
+      handleStyle?: "symmetric" | "aligned" | "broken";
+    },
+    label = "Edit motion path tangent"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      if (!clip.spatialTrajectories) {
+        clip.spatialTrajectories = {};
+      }
+      if (!clip.spatialTrajectories.transform) {
+        clip.spatialTrajectories.transform = {
+          id: createId("st"),
+          propertyGroup: "transform",
+          enabled: true,
+          waypoints: [],
+        };
+      }
+      const st = clip.spatialTrajectories.transform;
+      let wp = st.waypoints.find((w) => w.id === waypointId);
+      if (!wp) {
+        const trackX = clip.tracks.find((t) => t.property === "transform.x");
+        const trackY = clip.tracks.find((t) => t.property === "transform.y");
+        const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+        const kfY = trackY?.keyframes.find((k) => k.id === waypointId);
+        const time = kfX?.time ?? kfY?.time ?? 0;
+
+        wp = {
+          id: waypointId,
+          time,
+          mode: patch.mode ?? "bezier",
+          handleStyle: patch.handleStyle ?? "aligned",
+        };
+        st.waypoints.push(wp);
+        st.waypoints.sort((a, b) => a.time - b.time);
+      }
+
+      if (patch.mode !== undefined) wp.mode = patch.mode;
+      if (patch.handleStyle !== undefined) wp.handleStyle = patch.handleStyle;
+      if (patch.spatialIn !== undefined) wp.spatialIn = patch.spatialIn;
+      if (patch.spatialOut !== undefined) wp.spatialOut = patch.spatialOut;
+    });
+  },
+
+  /**
+   * Sets the interpolation mode of a spatial waypoint ("linear", "bezier", "continuous", "auto").
+   */
+  setWaypointMode(
+    clipId: string,
+    waypointId: string,
+    mode: SpatialMode,
+    label = "Change waypoint mode"
+  ) {
+    documentCommands.updateWaypointTangents(clipId, waypointId, { mode }, label);
+  },
+
+  /**
+   * Retimes a spatial motion path waypoint and its corresponding X and Y keyframes atomically in time.
+   * Keeps timeline keyframes and spatial metadata strictly in lockstep without drift.
+   */
+  retimeWaypoint(
+    clipId: string,
+    waypointId: string,
+    newTime: number,
+    label = "Retime motion path waypoint"
+  ) {
+    commit(label, (draft) => {
+      const clip = requireClip(draft, clipId);
+      const trackX = clip.tracks.find((t) => t.property === "transform.x");
+      const trackY = clip.tracks.find((t) => t.property === "transform.y");
+      let targetTime = Math.max(0, newTime);
+
+      const kfX = trackX?.keyframes.find((k) => k.id === waypointId);
+      const oldTime = kfX?.time;
+      const kfY = trackY?.keyframes.find(
+        (k) => k.id === waypointId || (oldTime !== undefined && Math.abs(k.time - oldTime) < 1e-4)
+      );
+
+      const targetOldTime = oldTime ?? kfY?.time;
+
+      // Guard against exact keyframe timestamp collision with neighboring keyframes
+      if (trackX && kfX) {
+        const collision = trackX.keyframes.find(
+          (k) => k.id !== kfX.id && Math.abs(k.time - targetTime) < 1e-4
+        );
+        if (collision) {
+          targetTime = collision.time + 1e-4;
+        }
+      }
+
+      if (kfX) kfX.time = targetTime;
+      if (kfY) kfY.time = targetTime;
+
+      if (trackX) trackX.keyframes.sort((a, b) => a.time - b.time);
+      if (trackY) trackY.keyframes.sort((a, b) => a.time - b.time);
+
+      // Sync spatial trajectory waypoint timestamp
+      const st = clip.spatialTrajectories?.transform;
+      if (st && st.waypoints) {
+        const wp = st.waypoints.find(
+          (w) => w.id === waypointId || (targetOldTime !== undefined && Math.abs(w.time - targetOldTime) < 1e-4)
+        );
+        if (wp) {
+          wp.time = targetTime;
+          st.waypoints.sort((a, b) => a.time - b.time);
+        }
+      }
+
+      clip.duration = coverKeyframes(clip).duration;
+    });
+  },
+
   // ---------------------------------------------------------------- states
 
   addState(layerId: string, name: string, props: LayerProps = {}, label = "Add state"): string {
@@ -841,17 +1311,49 @@ export type DocumentCommands = typeof documentCommands;
 // React hooks
 // ---------------------------------------------------------------------------
 
-/** Subscribe to a slice of the document. The selector must return a stable value (not a new array/object). */
+/**
+ * Subscribe to a slice of the document, as seen where edits go (the edit target: the view, or the breakpoint of the
+ * mirror a layer was picked in). The canvas draws the view instead (`useDocumentAt(selector, undefined)`).
+ * The selector must return a stable value (not a new array/object).
+ */
 export function useDocument<T>(selector: (document: MotionDocument) => T): T {
-  return documentStore((state) => selector(state.document));
+  const activeId = useEditBreakpointId();
+  const mode = useModeStore((s) => s.activeModeId);
+  // the document as seen at the breakpoint and in the mode being edited (the document itself when neither changes anything)
+  return documentStore((state) => selector(resolveDocumentAt(state.document, activeId, mode)));
 }
 
 export function useLayer(layerId: string | null | undefined): Layer | undefined {
-  return documentStore((state) => (layerId ? state.document.layers[layerId] : undefined));
+  const activeId = useEditBreakpointId();
+  const mode = useModeStore((s) => s.activeModeId);
+  return documentStore((state) => (layerId ? resolveDocumentAt(state.document, activeId, mode).layers[layerId] : undefined));
 }
 
 export function useLayers(): Record<string, Layer> {
-  return documentStore((state) => state.document.layers);
+  const activeId = useEditBreakpointId();
+  const mode = useModeStore((s) => s.activeModeId);
+  return documentStore((state) => resolveDocumentAt(state.document, activeId, mode).layers);
+}
+
+/** `useLayer`, at a given breakpoint rather than the one being edited (a stage drawing a breakpoint of its own, Phase 44). `undefined` follows the one being edited. */
+export function useLayerAt(layerId: string | null | undefined, breakpointId: string | null | undefined): Layer | undefined {
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  const at = breakpointId === undefined ? activeId : breakpointId;
+  return documentStore((state) => (layerId ? resolveDocumentAt(state.document, at, mode).layers[layerId] : undefined));
+}
+
+/** `useDocument`, at a given breakpoint (`undefined`: the one being edited). */
+export function useDocumentAt<T>(selector: (document: MotionDocument) => T, breakpointId: string | null | undefined): T {
+  const activeId = useBreakpointStore((s) => s.activeId);
+  const mode = useModeStore((s) => s.activeModeId);
+  const at = breakpointId === undefined ? activeId : breakpointId;
+  return documentStore((state) => selector(resolveDocumentAt(state.document, at, mode)));
+}
+
+/** The document as seen at the breakpoint being edited, for reads outside React that need what is drawn (hit testing, measuring). */
+export function getResolvedDocument(): MotionDocument {
+  return resolveDocumentAt(documentStore.getState().document, useBreakpointStore.getState().activeId, useModeStore.getState().activeModeId);
 }
 
 /** The layer's clips in stack order; stable between renders while clips are unchanged. */
@@ -868,4 +1370,12 @@ export function useClip(clipId: string | null | undefined): Clip | undefined {
 /** Sub-Phase 41.3: a per-entity selector — re-renders only when this composition's own object reference changes. */
 export function useComposition(compositionId: string | null | undefined): Composition | undefined {
   return documentStore((state) => (compositionId ? state.document.compositions[compositionId] : undefined));
+}
+
+/**
+ * Test seam: with `window.__LL_TEST__` set before load, `window.__LL_DOC__` gives a browser test the real document
+ * commands and the current document, to build fixtures a person would build by hand (nested stacks, many components).
+ */
+if (typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__) {
+  (window as unknown as Record<string, unknown>).__LL_DOC__ = { commands: documentCommands, get: () => documentStore.getState().document };
 }

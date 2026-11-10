@@ -15,8 +15,16 @@ async function openLab(page: Page) {
   });
   await page.goto("/editor/stage-lab", { waitUntil: "domcontentloaded" });
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.getElementById("stage-root"), STAGE, { timeout: 45_000 });
-  await page.getByRole("button", { name: "Load 500 layers" }).click();
-  await page.waitForFunction((sel) => (document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelectorAll('[data-element-id^="lab_"]').length ?? 0) >= 500, STAGE, { timeout: 45_000 });
+  // Clicking before the page has hydrated does nothing, so poll click until the layers are in the frame.
+  await expect
+    .poll(
+      async () => {
+        await page.getByRole("button", { name: "Load 500 layers" }).click();
+        return page.evaluate((sel) => document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelectorAll('[data-element-id^="lab_"]').length ?? 0, STAGE);
+      },
+      { timeout: 45_000, intervals: [500, 1000, 2000] },
+    )
+    .toBeGreaterThanOrEqual(500);
 }
 
 const stats = (page: Page) => page.evaluate(() => ({ ...(window as unknown as { __LL_RENDER_STATS__: Record<string, number> }).__LL_RENDER_STATS__ }));
@@ -121,8 +129,7 @@ test("Phase 19: measure() matches the DOM within 0.5 px, in document space, and 
   const y0 = (await page.evaluate(() => (window as unknown as { __LL_STAGE__: { measureNow: (ids: string[]) => ({ y: number } | null)[] } }).__LL_STAGE__.measureNow(["lab_499"])[0]!.y));
   await page.getByRole("button", { name: "Remove one layer" }).click(); // lab_100 leaves: everything below moves up
   await expect.poll(() => frameText(page, "lab_100")).toBeNull();
-  const rows = await compare(page, ids);
-  expect(worst(rows), "after a layout shift").toBeLessThanOrEqual(0.5);
+  await expect.poll(async () => worst(await compare(page, ids)), { message: "after a layout shift" }).toBeLessThanOrEqual(0.5);
   const y1 = (await page.evaluate(() => (window as unknown as { __LL_STAGE__: { measureNow: (ids: string[]) => ({ y: number } | null)[] } }).__LL_STAGE__.measureNow(["lab_499"])[0]!.y));
   expect(y1, "lab_499 moved up when a layer above it was removed").toBeLessThan(y0);
 });

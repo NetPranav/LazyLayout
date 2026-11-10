@@ -170,3 +170,18 @@ export class FrameScheduler {
 
 /** The studio's scheduler. Tests make their own with `new FrameScheduler(env)`. */
 export const frameScheduler = new FrameScheduler();
+
+/**
+ * Test seam: with `window.__LL_TEST__` set before or during load, `window.__LL_SCHEDULER__` gives browser tests direct access
+ * to the frame scheduler instance for deterministic testing.
+ */
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "__LL_SCHEDULER__", {
+    configurable: true,
+    get: () => {
+      const w = window as unknown as { __LL_TEST__?: boolean };
+      return w.__LL_TEST__ ? frameScheduler : undefined;
+    },
+  });
+}
+

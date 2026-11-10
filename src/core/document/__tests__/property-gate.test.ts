@@ -117,7 +117,7 @@ describe("Phase 42 gate: no property path outside the registry", () => {
     };
     walk(join(process.cwd(), "src/compiler/emitters"));
     walk(join(process.cwd(), "src/core/render")); // the stage renderer (Phase 17)
-    files.push(join(process.cwd(), "src/editor/runtime/SandboxHost.tsx"));
+    files.push(join(process.cwd(), "src/legacy-editor/runtime/SandboxHost.tsx"));
     for (const file of files) {
       const source = readFileSync(file, "utf8");
       const propsIsRawBag = /\bprops\s*=\s*[^;\n]*\.properties\b/.test(source);

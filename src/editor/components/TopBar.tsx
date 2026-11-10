@@ -68,6 +68,8 @@ import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
@@ -109,7 +111,10 @@ export interface TopBarProps {
   showRulers?: boolean;
   isZen?: boolean;
   onPreview?: () => void;
+  onExport?: () => void;
   onShare?: () => void;
+  viewportPreset?: "1440" | "768" | "375";
+  onSelectPreset?: (preset: "1440" | "768" | "375") => void;
 }
 
 /** Preview button left of Ship. Stays focusable and hoverable when disabled so the reason tooltip shows. */
@@ -159,8 +164,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   showRulers = false,
   isZen = false,
   onPreview,
+  onExport,
   onShare,
+  viewportPreset: propViewportPreset,
+  onSelectPreset,
 }) => {
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Save status resolution
   const sessionSaveState = useSaveStatus((s) => s.state);
   const resolvedState: "saved" | "dirty" | "saving" | "error" =
@@ -368,7 +377,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E", undefined, undefined, true, "Code generation pipeline coming in Phase 49")}
+            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.connectAgent", "Connect an agent", Download)}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}
@@ -525,7 +535,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* =====================================================================
           2. CENTER COLUMN: Mode Tabs (Design, Motion, Code)
           ===================================================================== */}
-      <div className="ll:flex ll:items-center ll:justify-center">
+      <div className="ll:flex ll:items-center ll:justify-center ll:gap-2">
         <ModeTabs mode={activeMode} onChange={handleModeChange} />
       </div>
 
@@ -533,6 +543,25 @@ export const TopBar: React.FC<TopBarProps> = ({
           3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
           ===================================================================== */}
       <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4 ll:max-sm:pr-2">
+        {/* Code export button */}
+        <Tooltip content="Export Code (Next.js, Vite, HTML, React, Vue)">
+          <button
+            type="button"
+            aria-label="Export Code"
+            onClick={() => {
+              if (onExport) {
+                onExport();
+              } else {
+                useExportUiStore.getState().open();
+              }
+            }}
+            className="ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:max-sm:hidden"
+          >
+            <Icon icon={Download} size={14} />
+            <span>Export</span>
+          </button>
+        </Tooltip>
+
         {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
         <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
           <button
@@ -594,7 +623,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </Menu>
 
         {/* Preview button (left of Ship, 32x32 size and 4px radius matching P) */}
-        <PreviewButton onPreview={onPreview} className="ll:max-sm:hidden" />
+        <PreviewButton onPreview={onPreview ?? (() => useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview"))} className="ll:max-sm:hidden" />
 
         {/* Ship Button & Popover */}
         <ShipPopover

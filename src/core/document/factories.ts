@@ -13,6 +13,8 @@ export interface NewLayerInput {
   name?: string;
   parentId?: string | null;
   children?: string[];
+  /** Transform parent (Phase 73: pick-whip parenting independent of the layer tree). */
+  parentRef?: string | null;
   /** Replaces the archetype defaults when given. */
   properties?: LayerProps;
 }
@@ -26,6 +28,7 @@ export function createLayer(input: NewLayerInput): Layer {
     archetype: input.archetype,
     parentId: input.parentId ?? null,
     children: input.children ?? [],
+    parentRef: input.parentRef ?? null,
     properties: input.properties ?? getDefaultProps(input.archetype),
   };
 }

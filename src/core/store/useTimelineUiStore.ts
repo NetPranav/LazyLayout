@@ -4,6 +4,11 @@ import { create } from "zustand";
 
 /** What the timeline panel remembers while the editor is open (none of it is saved in the document). */
 import { clampZoom, ZOOM_LIMITS, type RevealMode } from "../timeline/model";
+import {
+  type OnionSkinConfig,
+  DEFAULT_ONION_SKIN_CONFIG,
+  normalizeOnionSkinConfig,
+} from "../timeline/onionSkinModel";
 
 interface TimelineUiState {
   /** Horizontal zoom: pixels per second of timeline (Phase 63). */
@@ -32,6 +37,30 @@ interface TimelineUiState {
   setHideShy: (hide: boolean) => void;
   setRulerMode: (mode: "timecode" | "frames") => void;
   focusLayer: (id: string | null) => void;
+  /** Keyframes picked in the lanes (Phase 66), by id. Ids that stop existing are dropped when the timeline next reads them. */
+  selectedKeys: ReadonlySet<string>;
+  selectKeys: (ids: readonly string[], mode?: "replace" | "add" | "toggle") => void;
+  clearKeys: () => void;
+  /** Auto-key (Phase 66): property edits become keyframes at the playhead. */
+  recordMode: boolean;
+  setRecordMode: (on: boolean) => void;
+  /** Timeline playhead / time readout scrubbing active (Phase 70). */
+  isScrubbing: boolean;
+  setIsScrubbing: (on: boolean) => void;
+  /** The compositions opened from the bars (Phase 65): the path from the top one to the one showing, as composition ids. */
+  trail: readonly string[];
+  /** Precomps the person has opened, shown as tabs next to Main and the interaction compositions. */
+  openPrecomps: readonly string[];
+  setTrail: (trail: readonly string[]) => void;
+  openPrecomp: (id: string) => void;
+  closePrecomp: (id: string) => void;
+  /** Onion skin (Phase 71): ghost frames on stage before and after playhead. */
+  onionSkin: OnionSkinConfig;
+  setOnionSkin: (patch: Partial<OnionSkinConfig>) => void;
+  toggleOnionSkin: () => void;
+  /** The graph editor shows values or speed (Phase 67). */
+  graphMode: "value" | "speed";
+  setGraphMode: (mode: "value" | "speed") => void;
 }
 
 let lastReveal = { at: 0, key: "" };
@@ -81,6 +110,37 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
   focusLayerId: null,
   setHideShy: (hideShy) => set({ hideShy }),
   setRulerMode: (rulerMode) => set({ rulerMode }),
+  selectedKeys: new Set<string>(),
+  selectKeys: (ids, mode = "replace") =>
+    set((s) => {
+      const next = mode === "replace" ? new Set<string>() : new Set(s.selectedKeys);
+      for (const id of ids) {
+        if (mode === "toggle" && next.has(id)) next.delete(id);
+        else next.add(id);
+      }
+      return { selectedKeys: next };
+    }),
+  clearKeys: () => set((s) => (s.selectedKeys.size === 0 ? s : { selectedKeys: new Set<string>() })),
+  recordMode: false,
+  setRecordMode: (recordMode) => set({ recordMode }),
+  isScrubbing: false,
+  setIsScrubbing: (isScrubbing) => set({ isScrubbing }),
+  trail: [],
+  openPrecomps: [],
+  setTrail: (trail) => set({ trail }),
+  openPrecomp: (id) => set((s) => (s.openPrecomps.includes(id) ? s : { openPrecomps: [...s.openPrecomps, id] })),
+  closePrecomp: (id) => set((s) => ({ openPrecomps: s.openPrecomps.filter((p) => p !== id) })),
+  onionSkin: DEFAULT_ONION_SKIN_CONFIG,
+  setOnionSkin: (patch) =>
+    set((s) => ({
+      onionSkin: normalizeOnionSkinConfig({ ...s.onionSkin, ...patch }),
+    })),
+  toggleOnionSkin: () =>
+    set((s) => ({
+      onionSkin: { ...s.onionSkin, enabled: !s.onionSkin.enabled },
+    })),
+  graphMode: "value",
+  setGraphMode: (graphMode) => set({ graphMode }),
   focusLayer: (focusLayerId) => {
     set({ focusLayerId });
     // The row flashes for a moment, then the request is spent.

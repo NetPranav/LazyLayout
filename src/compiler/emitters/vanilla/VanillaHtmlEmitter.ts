@@ -12,6 +12,7 @@
 
 import type { Layer } from "@/core/document/schema";
 import { propReader } from "@/core/document/properties";
+import { isEditorOnlyLayer } from "@/core/document/editorOnly";
 
 
 export interface VanillaEmitterOptions {
@@ -41,6 +42,11 @@ export class VanillaHtmlEmitter {
     const name = options.componentName || element.name || "element";
     const cssClass = this.toKebabCase(name);
     const get = propReader(element.properties);
+
+    // Phase 73: editor-only layers (helpers, linked views) never emit in export
+    if (isEditorOnlyLayer(element)) {
+      return { componentName: name, htmlMarkup: "", cssStyles: "", jsScript: "" };
+    }
 
     let htmlMarkup = "";
     let cssStyles = "";

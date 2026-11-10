@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Plus, Search } from "lucide-react";
 import { surf, pressEl, type Surf } from "../motion/surface";
 import { prefersReducedMotion } from "../motion/feel";
 import { Icon } from "./Icon";
@@ -24,6 +24,10 @@ export interface PageSwitcherProps {
   onRenamePage?: (page: string, newName: string) => void;
   onDuplicatePage?: (page: string) => void;
   onDeletePage?: (page: string) => void;
+  /** Which listed pages are loading pages: thin rows that sit between two pages. */
+  pageKinds?: Record<string, "page" | "loading">;
+  /** Called by the + that shows between two pages: adds a loading page between them. */
+  onAddLoading?: (fromPage: string, toPage: string) => void;
   className?: string;
   disabled?: boolean;
   dataState?: "hover" | "focus";
@@ -62,6 +66,8 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
   onRenamePage,
   onDuplicatePage,
   onDeletePage,
+  pageKinds,
+  onAddLoading,
   className = "",
   disabled = false,
   dataState,
@@ -86,8 +92,14 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
   const renameDoneRef = useRef(false);
   const typeAheadRef = useRef("");
   const rowRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const listRef = useRef<HTMLDivElement>(null);
+  /** The boundary between two pages the pointer is on (index of the page above it): a line with a + shows there. */
+  const [gapAfter, setGapAfter] = useState<number | null>(null);
+  const [gapTop, setGapTop] = useState(0);
 
-  const canDelete = pages.length > 1;
+  const kindOf = (name: string) => pageKinds?.[name] ?? "page";
+  // a project keeps one real page; loading pages do not count
+  const canDelete = pages.filter((p) => kindOf(p) !== "loading").length > 1 || kindOf(activePage) === "loading";
 
   // Filtered pages
   const filteredPages = searchQuery.trim()
@@ -139,6 +151,30 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
     const next = draftName.trim();
     setRenaming(false);
     if (commit && next && next !== activePage) onRenamePage?.(activePage, next);
+  };
+
+  /** Finds the boundary between two pages (neither a loading page) that the pointer is on, if any. */
+  const findGap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const list = listRef.current;
+    if (!list) return;
+    const listTop = list.getBoundingClientRect().top;
+    const names = filteredPagesRef.current;
+    let hit: number | null = null;
+    let top = 0;
+    for (let i = 0; i < names.length - 1; i++) {
+      if (kindOf(names[i]) === "loading" || kindOf(names[i + 1]) === "loading") continue;
+      const below = rowRefs.current[i + 1];
+      if (!below) continue;
+      const y = below.getBoundingClientRect().top;
+      if (Math.abs(e.clientY - y) <= 4) {
+        hit = i;
+        top = y - listTop + list.scrollTop;
+        break;
+      }
+    }
+    // already showing and the pointer is still on the line: keep it
+    setGapAfter((cur) => (hit === null && cur !== null && e.target instanceof Element && e.target.closest("[data-testid=add-loading-between]") ? cur : hit));
+    if (hit !== null) setGapTop(top);
   };
 
   const runAction = (key: ActionKey) => {
@@ -224,6 +260,8 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
       menuEl.style.left = `${left}px`;
       menuEl.style.top = `${top}px`;
 
+      // Reopening while the last close is still animating: drop that close first, or the menu stays out of reach of the pointer.
+      s.reset();
       s.open({
         from: {
           w: Math.round(r.width),
@@ -442,9 +480,12 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
 
               {/* Pages list */}
               <div
+                ref={listRef}
                 role="listbox"
                 aria-label="Pages list"
-                className="ddl ll-ddl ll:max-h-75 ll:overflow-y-auto ll:overscroll-contain"
+                className="ddl ll-ddl ll:relative ll:max-h-75 ll:overflow-y-auto ll:overscroll-contain"
+                onMouseMove={onAddLoading ? findGap : undefined}
+                onMouseLeave={() => setGapAfter(null)}
               >
                 {filteredPages.length > 0 ? (
                   filteredPages.map((page, index) => {
@@ -461,7 +502,9 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                         aria-selected={isSelected}
                         onClick={() => selectPage(page)}
                         onMouseEnter={() => setActiveIndex(index)}
-                        className={`dd-o ll-dd-o ll:relative ll:flex ll:items-center ll:w-full ll:h-7 ll:pl-8 ll:pr-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-small ll:outline-none ${
+                        data-kind={kindOf(page)}
+                        style={kindOf(page) === "loading" ? { height: 20 } : undefined}
+                        className={`dd-o ll-dd-o ll:relative ll:flex ll:items-center ll:w-full ${kindOf(page) === "loading" ? "ll:h-5 ll:text-micro ll:italic" : "ll:h-7"} ll:pl-8 ll:pr-3 ll:text-left ll:border-0 ll:cursor-pointer ll:text-small ll:outline-none ${
                           isSelected ? "on cur ll:text-primary" : "ll:text-secondary"
                         } ${
                           isFocused ? "ll:bg-surface-hover ll:text-primary" : "ll:bg-transparent"
@@ -482,6 +525,30 @@ export const PageSwitcher: React.FC<PageSwitcherProps> = ({
                   <div className="ll-dd-none ll:flex ll:items-center ll:justify-center ll:h-14 ll:text-small ll:text-muted">
                     No results
                   </div>
+                )}
+                {onAddLoading && gapAfter !== null && filteredPages[gapAfter] !== undefined && filteredPages[gapAfter + 1] !== undefined && (
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    data-testid="add-loading-between"
+                    aria-label={`Add a loading page between ${filteredPages[gapAfter]} and ${filteredPages[gapAfter + 1]}`}
+                    title="Add a loading page between these two"
+                    onClick={() => {
+                      const from = filteredPages[gapAfter];
+                      const to = filteredPages[gapAfter + 1];
+                      setGapAfter(null);
+                      closeDropdown();
+                      triggerRef.current?.focus();
+                      onAddLoading(from, to);
+                    }}
+                    style={{ top: gapTop - 6, height: 12 }}
+                    className="ll:absolute ll:left-0 ll:right-0 ll:z-10 ll:flex ll:items-center ll:justify-center ll:p-0 ll:border-0 ll:bg-transparent ll:cursor-pointer ll:group"
+                  >
+                    <span aria-hidden="true" className="ll:absolute ll:left-2 ll:right-2 ll:top-1/2 ll:h-px ll:bg-primary" />
+                    <span aria-hidden="true" className="ll:relative ll:grid ll:place-items-center ll:w-4 ll:h-4 ll:rounded-full ll:bg-primary ll:text-surface-raised">
+                      <Icon icon={Plus} size={10} />
+                    </span>
+                  </button>
                 )}
               </div>
 

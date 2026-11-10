@@ -11,6 +11,8 @@ import { subscribeTransport, transport } from "./transport";
  * (Phase 24), and J, K and L are one set.
  */
 const timelineOnly = (ctx: ContextKeys) => !ctx.textEditing && ctx.timelineFocus;
+/** Space: play and pause from anywhere while playing (nothing else on the canvas answers Space). K stays on the timeline: on the canvas it is the Scale tool. */
+const stopWhenPlayingOrTimeline = (ctx: ContextKeys) => !ctx.textEditing && (ctx.timelineFocus || ctx["transport.playing"]);
 
 /**
  * Registers the transport commands and mirrors `playing` into the
@@ -21,7 +23,7 @@ const timelineOnly = (ctx: ContextKeys) => !ctx.textEditing && ctx.timelineFocus
  */
 export function installTransportCommands(): () => void {
   const unregisters = [
-    defineCommand({ id: "transport.togglePlay", title: "Play / Pause", category: "Transport", keybinding: "Space", when: timelineOnly, run: () => transport.togglePlay() }),
+    defineCommand({ id: "transport.togglePlay", title: "Play / Pause", category: "Transport", keybinding: "Space", when: stopWhenPlayingOrTimeline, run: () => transport.togglePlay() }),
     defineCommand({ id: "transport.seekStart", title: "Go to Start", category: "Transport", keybinding: "Home", when: timelineOnly, run: () => transport.seek(0) }),
     defineCommand({ id: "transport.seekEnd", title: "Go to End", category: "Transport", keybinding: "End", when: timelineOnly, run: () => transport.seek(Number.POSITIVE_INFINITY) }),
     defineCommand({ id: "transport.play", title: "Play", category: "Transport", run: () => transport.play() }),

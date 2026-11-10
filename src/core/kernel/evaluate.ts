@@ -34,6 +34,16 @@ import { parseEasing } from "../document/motion";
 import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
+import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
+import { resolveLayerAnchor } from "../geometry/pins";
+import {
+  createLayerLocalMatrix,
+  multiplyAffineMatrices,
+  formatCssMatrix,
+  getLayerParentRef,
+  MAX_PARENT_CHAIN_DEPTH,
+  type AffineMatrix2D,
+} from "../geometry/parentTransforms";
 
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
@@ -43,6 +53,23 @@ export interface EvaluateInputs {
   pointer?: { x: number; y: number } | null;
   /** A virtual scroll progress, 0-1 — reserved the same way. */
   scrollProgress?: number;
+  /**
+   * Phase 81: the clip-local time (seconds) the scroll driver says each scroll-driven clip is at. A scrubbed clip's is
+   * progress × duration; a triggered clip's is the seconds since it was entered. A clip listed here plays at that time
+   * wherever it is placed and whatever the composition's time; it is how scroll reaches the kernel without the kernel
+   * knowing about scrolling.
+   */
+  scrollClipTime?: Record<string, number>;
+  /**
+   * Optional diagnostics sink for external consumers who wish to collect non-fatal spatial
+   * diagnostics during evaluation without introducing global side-effects to DiagnosticBus.
+   */
+  diagnosticsSink?: SpatialDiagnostic[];
+  /**
+   * Optional spatial tolerance (px) for arc-length root inversion.
+   * Defaults to 0.015 px.
+   */
+  spatialTolerance?: number;
 }
 
 export type ResolvedProps = Record<string, PropValue>;
@@ -64,7 +91,7 @@ function findActiveState(doc: MotionDocument, layerId: string, stateName: string
 }
 
 /** Finds the keyframe pair surrounding `time` and the eased, interpolated value between them. */
-function sampleTrack(track: Track, time: number): PropValue | undefined {
+export function sampleTrack(track: Track, time: number): PropValue | undefined {
   const keyframes = track.keyframes;
   if (keyframes.length === 0) return undefined;
   if (keyframes.length === 1 || time <= keyframes[0].time) return keyframes[0].value;
@@ -94,13 +121,159 @@ interface CategorizedSample {
   props: ResolvedProps;
 }
 
-function sampleClip(clip: Clip, time: number): ResolvedProps {
+/**
+ * Collision-safe, type-preserving serialization for fallbackProps.
+ * Distinguishes numeric 1 from string "1", and absent coordinates from literal "none".
+ */
+function getFallbackSignature(fallbackProps?: Record<string, PropValue>): string {
+  if (!fallbackProps) return "absent";
+  const hasX = Object.prototype.hasOwnProperty.call(fallbackProps, "transform.x");
+  const hasY = Object.prototype.hasOwnProperty.call(fallbackProps, "transform.y");
+  const x = hasX ? fallbackProps["transform.x"] : undefined;
+  const y = hasY ? fallbackProps["transform.y"] : undefined;
+  return JSON.stringify([typeof x, x, typeof y, y]);
+}
+
+/** Maximum cached fallback coordinate variations allowed per clip before FIFO eviction */
+export const MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP = 8;
+
+/**
+ * Cache for compiled spatial trajectory geometry keyed by Clip reference and fallback coordinates.
+ * - Keyed primarily on `Clip` object reference via `WeakMap` for automatic garbage collection when clips mutate or are removed.
+ * - Secondary lookup keyed on collision-safe fallback coordinate signature, ensuring geometry is never stale when fallback layer properties change.
+ * - Bounded to MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP per clip to prevent unbounded memory growth under dynamic fallbacks.
+ */
+const spatialTrajectoryCache = new WeakMap<Clip, Map<string, SpatialTrajectoryGeometry | null>>();
+
+/** Test inspection helper returning current number of cached fallback variants for a clip */
+export function getSpatialTrajectoryCacheSize(clip: Clip): number {
+  return spatialTrajectoryCache.get(clip)?.size ?? 0;
+}
+
+/**
+ * Retrieves or builds the compiled SpatialTrajectoryGeometry for a clip if spatial trajectory
+ * metadata exists with at least 2 waypoints. Returns null for purely scalar clips.
+ * Cache is validated against both clip identity and relevant fallback coordinates.
+ */
+export function getSpatialTrajectory(
+  clip: Clip,
+  fallbackProps?: Record<string, PropValue>
+): SpatialTrajectoryGeometry | null {
+  let clipMap = spatialTrajectoryCache.get(clip);
+  if (!clipMap) {
+    clipMap = new Map<string, SpatialTrajectoryGeometry | null>();
+    spatialTrajectoryCache.set(clip, clipMap);
+  }
+
+  const spatialTrajectory = clip.spatialTrajectories?.transform;
+  if (
+    !spatialTrajectory ||
+    spatialTrajectory.enabled === false ||
+    !spatialTrajectory.waypoints ||
+    spatialTrajectory.waypoints.length < 2
+  ) {
+    clipMap.set("*", null);
+    return null;
+  }
+
+  if (clipMap.has("*")) {
+    return clipMap.get("*")!;
+  }
+
+  const fallbackKey = getFallbackSignature(fallbackProps);
+  if (clipMap.has(fallbackKey)) {
+    return clipMap.get(fallbackKey)!;
+  }
+
+  const geom = createSpatialPath(clip, fallbackProps);
+  if (clipMap.size >= MAX_FALLBACK_CACHE_ENTRIES_PER_CLIP) {
+    const oldestKey = clipMap.keys().next().value;
+    if (oldestKey !== undefined) clipMap.delete(oldestKey);
+  }
+  clipMap.set(fallbackKey, geom);
+  return geom;
+}
+
+export interface SpeedGraphSample {
+  time: number;
+  speed: number;
+  distance: number;
+  normalizedProgress: number;
+  point: { x: number; y: number };
+}
+
+/**
+ * Computes a deterministic speed graph sampling for a clip with a 2D spatial trajectory.
+ * Returns instantaneous speed (px/sec), cumulative distance along trajectory, and normalized progress.
+ * Returns null for scalar-only clips.
+ */
+export function computeSpatialSpeedGraph(
+  clip: Clip,
+  fallbackProps?: Record<string, PropValue>,
+  sampleCount = 100
+): SpeedGraphSample[] | null {
+  const geom = getSpatialTrajectory(clip, fallbackProps);
+  if (!geom) return null;
+  return geom.computeSpeedGraph(sampleCount);
+}
+
+/**
+ * Samples a clip at clip-local time `time`.
+ * Preserves 100% scalar backward compatibility for clips without spatial metadata.
+ * For clips with spatial trajectories, evaluates the 2D spatial path and maps to transform.x / transform.y.
+ * Optionally forwards diagnostics to an external sink without introducing global event-bus side effects.
+ */
+export function sampleClip(
+  clip: Clip,
+  time: number,
+  fallbackProps?: Record<string, PropValue>,
+  diagnosticsSink?: SpatialDiagnostic[],
+  spatialTolerance = 0.015
+): ResolvedProps {
   const props: ResolvedProps = {};
   for (const track of clip.tracks) {
     if (track.muted) continue;
     const value = sampleTrack(track, time);
     if (value !== undefined) props[track.property] = value;
   }
+
+  // Phase 69 Milestone 3: Single evaluation authority for 2D spatial motion paths
+  const spatialTrajectory = clip.spatialTrajectories?.transform;
+  if (
+    spatialTrajectory &&
+    spatialTrajectory.enabled !== false &&
+    spatialTrajectory.waypoints &&
+    spatialTrajectory.waypoints.length >= 2
+  ) {
+    const trackX = clip.tracks.find((t) => t.property === "transform.x");
+    const trackY = clip.tracks.find((t) => t.property === "transform.y");
+    const xMuted = trackX?.muted ?? false;
+    const yMuted = trackY?.muted ?? false;
+
+    if (!xMuted || !yMuted) {
+      const geom = getSpatialTrajectory(clip, fallbackProps);
+      if (geom) {
+        if (diagnosticsSink && geom.diagnostics.length > 0) {
+          diagnosticsSink.push(...geom.diagnostics);
+        }
+        if (diagnosticsSink) {
+          const detail = geom.evaluateDetailedAtTime(time, spatialTolerance);
+          if (detail.diagnostic) diagnosticsSink.push(detail.diagnostic);
+          if (detail.point !== null) {
+            if (!xMuted) props["transform.x"] = detail.point.x;
+            if (!yMuted) props["transform.y"] = detail.point.y;
+          }
+        } else {
+          const point = geom.evaluateAtTime(time);
+          if (point !== null) {
+            if (!xMuted) props["transform.x"] = point.x;
+            if (!yMuted) props["transform.y"] = point.y;
+          }
+        }
+      }
+    }
+  }
+
   return props;
 }
 
@@ -151,12 +324,42 @@ function synthesizeTransform(props: ResolvedProps): ResolvedProps {
   return { ...props, transform: synthesizeSingleTransformMatrix(components) };
 }
 
+/** Converts resolved properties of a layer into its local 2D affine matrix */
+function propsToLocalMatrix(layer: import("../document/schema").Layer, props: ResolvedProps): AffineMatrix2D {
+  const n = (k: string, d: number) => (typeof props[k] === "number" ? (props[k] as number) : d);
+  const fx = n("frame.x", 0);
+  const fy = n("frame.y", 0);
+  const tx = n("transform.x", 0);
+  const ty = n("transform.y", 0);
+  const deg = n("transform.rotate", 0);
+  const s = n("transform.scale", 1);
+  const sx = n("transform.scaleX", 1) * s;
+  const sy = n("transform.scaleY", 1) * s;
+
+  const w = n("frame.width", 100);
+  const h = n("frame.height", 100);
+  const anchor = resolveLayerAnchor(layer, w, h);
+
+  return createLayerLocalMatrix({
+    frameOrigin: [fx, fy],
+    anchor,
+    rotationDeg: deg,
+    scaleX: sx,
+    scaleY: sy,
+    transformOffset: [tx, ty],
+  });
+}
+
 /**
- * The evaluation kernel. Pure: the same `(doc, compositionId, layerId, t,
- * inputs)` always produces the same `ResolvedProps` (fuzz-tested for this in
- * `__tests__/evaluate.test.ts`).
+ * Evaluates the local properties of a single layer without parent transform composition.
  */
-export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
+export function evaluateLocalProps(
+  doc: MotionDocument,
+  compositionId: string,
+  layerId: string,
+  t: number,
+  inputs: EvaluateInputs = {}
+): ResolvedProps {
   const layer = doc.layers[layerId];
   if (!layer) return {};
 
@@ -173,9 +376,32 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
     const samples: CategorizedSample[] = [];
     for (const clip of Object.values(doc.clips)) {
       if (clip.layerId !== layerId || !clip.enabled) continue;
+      const driven = inputs.scrollClipTime?.[clip.id];
+      if (driven !== undefined) {
+        samples.push({
+          category: CLIP_TYPE_TO_CATEGORY[clip.type],
+          props: sampleClip(
+            clip,
+            Math.min(clip.duration, Math.max(0, driven)),
+            layer.properties,
+            inputs.diagnosticsSink,
+            inputs.spatialTolerance
+          ),
+        });
+        continue;
+      }
       const timing = clipTimeInComposition(comp, clip, t);
       if (!timing) continue;
-      samples.push({ category: CLIP_TYPE_TO_CATEGORY[clip.type], props: sampleClip(clip, timing.time) });
+      samples.push({
+        category: CLIP_TYPE_TO_CATEGORY[clip.type],
+        props: sampleClip(
+          clip,
+          timing.time,
+          layer.properties,
+          inputs.diagnosticsSink,
+          inputs.spatialTolerance
+        ),
+      });
     }
     resolved = mergeByPriority(resolved, samples);
   }
@@ -183,8 +409,61 @@ export function evaluate(doc: MotionDocument, compositionId: string, layerId: st
   // 4. Behaviours (composition slot — see KERNEL_GAPS for what's deferred to Phase 12).
   resolved = applyLoopBehaviours(doc, layerId, t, resolved);
 
-  // 5. Single Transform Authority synthesis.
-  resolved = synthesizeTransform(resolved);
+  return resolved;
+}
+
+/**
+ * The evaluation kernel. Pure: the same `(doc, compositionId, layerId, t,
+ * inputs)` always produces the same `ResolvedProps` (fuzz-tested for this in
+ * `__tests__/evaluate.test.ts`).
+ */
+export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
+  const layer = doc.layers[layerId];
+  if (!layer) return {};
+
+  let resolved = evaluateLocalProps(doc, compositionId, layerId, t, inputs);
+
+  // Phase 73: Transform composition across independent parent chain
+  const parentRef = getLayerParentRef(layer);
+  if (parentRef && doc.layers[parentRef]) {
+    // Collect ancestor chain: Child -> Parent -> Grandparent
+    const chain: Array<{ layer: import("../document/schema").Layer; props: ResolvedProps }> = [
+      { layer, props: resolved },
+    ];
+    const visited = new Set<string>([layerId]);
+    let currentId: string | null | undefined = parentRef;
+    let depth = 0;
+
+    while (currentId && depth++ < MAX_PARENT_CHAIN_DEPTH) {
+      if (visited.has(currentId)) break;
+      visited.add(currentId);
+      const parentLayer = doc.layers[currentId];
+      if (!parentLayer) break;
+      const parentProps = evaluateLocalProps(doc, compositionId, currentId, t, inputs);
+      chain.push({ layer: parentLayer, props: parentProps });
+      currentId = getLayerParentRef(parentLayer);
+    }
+
+    // Multiply from root ancestor down to child: M_world = M_root · ... · M_child
+    let composedM = propsToLocalMatrix(chain[chain.length - 1].layer, chain[chain.length - 1].props);
+    for (let i = chain.length - 2; i >= 0; i--) {
+      const nextM = propsToLocalMatrix(chain[i].layer, chain[i].props);
+      composedM = multiplyAffineMatrices(composedM, nextM);
+    }
+
+    resolved = {
+      ...resolved,
+      transform: formatCssMatrix(composedM),
+      "transform.worldMatrix": composedM as unknown as PropValue,
+    };
+  } else {
+    // Unparented layer
+    const localM = propsToLocalMatrix(layer, resolved);
+    resolved = {
+      ...synthesizeTransform(resolved),
+      "transform.worldMatrix": localM as unknown as PropValue,
+    };
+  }
 
   return resolved;
 }

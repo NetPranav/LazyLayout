@@ -18,6 +18,36 @@ const html = (layers: Record<string, Layer>, id: string) => renderToStaticMarkup
 const layer = (archetype: Layer["archetype"], properties: Layer["properties"] = {}, extra: Partial<Layer> = {}) =>
   createLayer({ id: "l", archetype, properties, ...extra }) as Layer;
 
+describe("layerBoxStyle: design properties reach the drawn box (and so the export)", () => {
+  const box = (properties: Layer["properties"]) => {
+    const l = layer("container", properties);
+    return layerBoxStyle(l, resolveProps(l), {});
+  };
+  it("scale, skew and origin are in the transform", () => {
+    const s = box({ "transform.scale": 1.5, "transform.skewX": 10, "transform.origin": "top left" });
+    assert.match(String(s.transform), /scale\(1\.5\)|scale\(1\.5, ?1\.5\)/);
+    assert.match(String(s.transform), /skew/);
+    assert.equal(s.transformOrigin, "top left");
+  });
+  it("the Z field becomes a z-index, and zero leaves the order alone", () => {
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": 7 }).zIndex, 7);
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": -2 }).zIndex, -2);
+    assert.equal(box({ positioning: "absolute", "layout.zIndex": 0 }).zIndex, undefined);
+    assert.equal(box({ positioning: "absolute" }).zIndex, undefined);
+  });
+  it("perspective tilts into the distance first and then turns on that plane", () => {
+    const t = String(box({ "transform.perspective": 600, "transform.rotateX": 60, "frame.rotation": 20 }).transform);
+    assert.ok(t.startsWith("perspective(600px) rotateX(60deg)"), t);
+    assert.ok(t.indexOf("rotateX") < t.indexOf("rotate(20deg)"), "Rotation turns on the tilted plane");
+    assert.doesNotMatch(String(box({ "transform.rotateX": 60 }).transform), /perspective/, "no perspective unless set");
+  });
+  it("overflow and margins are applied", () => {
+    const s = box({ positioning: "flow", "layout.overflowX": "hidden", "layout.overflowY": "visible", "layout.marginLeft": 12 });
+    assert.equal(s.overflowX, "hidden");
+    assert.equal(s.marginLeft, 12);
+  });
+});
+
 describe("Phase 17: render definitions", () => {
   it("every archetype has a render definition, and the gallery has a case for each", () => {
     for (const id of ARCHETYPE_IDS) assert.equal(typeof RENDER_DEFINITIONS[id], "function", id);

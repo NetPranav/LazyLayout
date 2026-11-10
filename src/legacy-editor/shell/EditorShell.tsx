@@ -33,6 +33,9 @@ import { useAiDock } from "./hooks/useAiDock";
 import { useProjectFiles } from "./hooks/useProjectFiles";
 import { useProjectLock } from "./hooks/useProjectLock";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
+import { ExportDialog } from "./ExportDialog";
+import { AgentDialog } from "./AgentDialog";
+import { SectionsGallery } from "./SectionsGallery";
 import { FontSync } from "../fonts/FontSync";
 import { useFullPageDock } from "./hooks/useFullPageDock";
 import { useShellCommands } from "./hooks/useShellCommands";
@@ -308,7 +311,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({ headerSlot, rightPanel
             onStartDragAI={ai.handleStartDragAI}
             onToggleAI={ai.toggleAiCoPilot}
             isAIOpen={ai.isAiCoPilotOpen}
-            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           />
         )}
         <WorkspaceTabStrip
@@ -321,6 +323,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({ headerSlot, rightPanel
       </div>
 
       <ReadOnlyBanner />
+      <ExportDialog />
+      <AgentDialog />
+      <SectionsGallery />
       <FontSync />
       <DockTree
         ws={ws}

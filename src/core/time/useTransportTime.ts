@@ -29,6 +29,14 @@ export function useTransportTime({ maxHz = 10 }: UseTransportTimeOptions = {}): 
     publish();
     const unsubscribe = subscribeTransport((state, prev) => {
       if (state.time === prev.time) return;
+      if (!state.playing) {
+        if (trailing !== undefined) {
+          clearTimeout(trailing);
+          trailing = undefined;
+        }
+        publish();
+        return;
+      }
       const elapsed = performance.now() - last;
       // A clock that went backwards (a test clock replacing the real one) publishes at once instead of waiting out a phantom gap.
       const wait = elapsed < 0 ? 0 : interval - elapsed;

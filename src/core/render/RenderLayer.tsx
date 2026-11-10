@@ -1,9 +1,15 @@
 import React, { useMemo } from "react";
 import type { Layer } from "../document/schema";
+import { getLayerGeometry } from "../document/properties";
+import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
 import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
+import { EffectDefs, effectEntries } from "./effectsRender";
+import { layerBoxStyle } from "./geometry";
+import { mirrorSourceId } from "../frames/devices";
+import { isEditorOnlyLayer } from "../document/editorOnly";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -32,12 +38,13 @@ function soloKeep(layers: Record<string, Layer>): Set<string> | null {
   return keep;
 }
 
-export function selectRenderable(layers: Record<string, Layer>, rootIds: readonly string[]): RenderPlan {
+export function selectRenderable(layers: Record<string, Layer>, rootIds: readonly string[], previewOrExport = false): RenderPlan {
   const plan = new Map<string, string[]>();
   const keep = soloKeep(layers);
   const visit = (id: string, depth: number, path: ReadonlySet<string>): boolean => {
     const layer = layers[id];
     if (!layer || layer.visible === false || (keep && !keep.has(id))) return false;
+    if (previewOrExport && isEditorOnlyLayer(layer)) return false;
     if (depth > MAX_TREE_DEPTH || path.has(id) || plan.has(id) || plan.size >= MAX_RENDERED_LAYERS) return false;
     const kept: string[] = [];
     plan.set(id, kept);
@@ -55,39 +62,143 @@ interface RenderLayerProps {
   ctx?: RenderContext;
   /** From `RenderTree`; when omitted the layer and its descendants are planned here. */
   plan?: RenderPlan;
+  /** A root of the drawing: it defines the effect filters of everything it draws (FigCraft port F7), as its last child. */
+  root?: boolean;
 }
 
 /** Draws one layer and its children through the archetype's render definition. */
-export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx = {}, plan }) => {
+export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx = {}, plan, root }) => {
   const own = useMemo(() => (plan ? null : selectRenderable(layers, [layerId])), [plan, layers, layerId]);
   const permitted = plan ?? own!;
-  const layer = layers[layerId];
+  const stored = layers[layerId];
   const childIds = permitted.get(layerId);
-  if (!layer || !childIds) return null;
+  if (!stored || !childIds) return null;
+
+  // A linked view is as tall as what it shows at its breakpoint (never shorter than it was made). A frame shown as the
+  // device's screen is that tall instead, and what is below scrolls.
+  const sourceOf = mirrorSourceId(stored);
+  const shownLayers = sourceOf ? (ctx.mirrorViews?.[stored.id] ?? layers) : null;
+  const shown = sourceOf && shownLayers ? shownLayers[sourceOf] : undefined;
+  const screen = ctx.screenFrames?.[stored.id];
+  const layer: Layer =
+    screen !== undefined
+      ? { ...stored, properties: { ...stored.properties, "frame.height": screen, "layout.overflowX": "hidden", "layout.overflowY": "hidden" } }
+      : shown
+        ? { ...stored, properties: { ...stored.properties, "frame.height": Math.max(Number(stored.properties["frame.height"] ?? 0), Number(shown.properties["frame.height"] ?? 0)) } }
+        : stored;
+  if (isEditorOnlyLayer(layer) && (ctx.mode === "preview" || ctx.mode === "export")) return null;
 
   const resolved = resolveProps(layer);
+  const g = getLayerGeometry(layer);
+  const mesh = meshInLayer(resolved.get("transform.mesh"), [g.frame.x, g.frame.y]);
+  const isMeshed = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0 && !ctx.inMeshTile;
+
   const Definition = RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
-  const childDirection = isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
-  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection };
+  const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
+  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
+  const reverseZ = resolved.bool("layout.reverseZ", false);
+
+  if (isMeshed) {
+    const tiles = meshTiles(g.frame.width, g.frame.height, mesh, [0, 0]);
+    const outerBox = layerBoxStyle(layer, resolved, ctx, { shadow: "none" });
+    delete outerBox.transform;
+    delete outerBox.transformOrigin;
+    const tileCtx: RenderContext = { ...(ctx.layers ? ctx : { ...ctx, layers }), inMeshTile: true };
+    const numCols = mesh.cols - 1;
+    const numRows = mesh.rows - 1;
+
+    return (
+      <div
+        data-element-id={layer.id}
+        data-archetype={layer.archetype}
+        data-mesh-warped="true"
+        style={{
+          ...outerBox,
+          overflow: "visible",
+        }}
+      >
+        {tiles.map((tile) => {
+          const [srcX0, srcY0, srcW, srcH] = tile.srcRect;
+          const x0 = tile.col > 0 ? Math.max(0, srcX0 - 0.5) : srcX0;
+          const y0 = tile.row > 0 ? Math.max(0, srcY0 - 0.5) : srcY0;
+          const x1 = tile.col < numCols - 1 ? Math.min(g.frame.width, srcX0 + srcW + 0.5) : srcX0 + srcW;
+          const y1 = tile.row < numRows - 1 ? Math.min(g.frame.height, srcY0 + srcH + 0.5) : srcY0 + srcH;
+
+          return (
+            <div
+              key={`mesh-tile-${tile.col}-${tile.row}`}
+              data-mesh-tile="true"
+              data-tile-col={tile.col}
+              data-tile-row={tile.row}
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                width: g.frame.width,
+                height: g.frame.height,
+                clipPath: `polygon(${x0}px ${y0}px, ${x1}px ${y0}px, ${x1}px ${y1}px, ${x0}px ${y1}px)`,
+                transform: tile.matrix3d,
+                transformOrigin: "0 0",
+                pointerEvents: "none",
+              }}
+            >
+              <Definition layer={layer} resolved={resolved} ctx={tileCtx}>
+                {childIds.map((childId) => (
+                  <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
+                ))}
+              </Definition>
+            </div>
+          );
+        })}
+        {(root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />}
+      </div>
+    );
+  }
 
   return (
-    <Definition layer={layer} resolved={resolved} ctx={ctx}>
-      {childIds.map((childId) => (
-        <RenderLayer key={childId} layerId={childId} layers={layers} ctx={childCtx} plan={permitted} />
-      ))}
+    <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>
+      {shown && shownLayers ? (
+        shown.children.map((childId) => (
+          <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
+            <RenderLayer
+              layerId={childId}
+              layers={shownLayers}
+              ctx={{ ...childCtx, layers: shownLayers, mirrorId: layer.id }}
+            />
+          </div>
+        ))
+      ) : (
+        childIds.map((childId) => (
+          <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
+        ))
+      )}
+      {(root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />}
     </Definition>
   );
 };
 
+/** Every layer the plan draws under `rootId`, the root included. */
+function subtreeOf(plan: RenderPlan, rootId: string): string[] {
+  const out: string[] = [];
+  const stack = [rootId];
+  while (stack.length > 0 && out.length < MAX_RENDERED_LAYERS) {
+    const id = stack.pop()!;
+    out.push(id);
+    for (const k of plan.get(id) ?? []) stack.push(k);
+  }
+  return out;
+}
+
 /** Draws every top-level layer of a document, within one layer budget. */
 export const RenderTree: React.FC<{ layers: Record<string, Layer>; rootIds?: string[]; ctx?: RenderContext }> = ({ layers, rootIds, ctx }) => {
   const roots = useMemo(() => rootIds ?? Object.values(layers).filter((l) => l.parentId === null).map((l) => l.id), [layers, rootIds]);
-  const plan = useMemo(() => selectRenderable(layers, roots), [layers, roots]);
+  const shipping = ctx?.mode === "preview" || ctx?.mode === "export";
+  const plan = useMemo(() => selectRenderable(layers, roots, shipping), [layers, roots, shipping]);
   return (
     <>
       {roots.map((id) => (
-        <RenderLayer key={id} layerId={id} layers={layers} ctx={ctx} plan={plan} />
+        <RenderLayer key={id} layerId={id} layers={layers} ctx={ctx} plan={plan} root />
       ))}
     </>
   );

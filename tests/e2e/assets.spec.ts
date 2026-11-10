@@ -5,7 +5,7 @@
  * second tab of the same project opens read-only.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { exportProject, openEditor, waitSaved } from "./support/editor";
+import { exportProject, openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
@@ -14,7 +14,7 @@ async function ready(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);
@@ -144,7 +144,7 @@ test.fixme("Phase 36: a project file carries its pictures into a fresh browser (
   await other.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(other);
+  await openEditor(other, LEGACY_EDITOR_URL);
   expect((await other.evaluate(() => (window as unknown as { __LL_ASSETS__: { list: () => Promise<unknown[]> } }).__LL_ASSETS__.list())).length, "a fresh browser has no assets").toBe(0);
   await other.getByRole("button", { name: "File", exact: true }).click();
   const [chooser] = await Promise.all([other.waitForEvent("filechooser"), other.getByText("Import Project File...").click()]);

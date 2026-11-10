@@ -65,10 +65,12 @@ export function registerBuiltInPanels(): void {
   // ---- left ----
   registerPanel({ id: "layers", title: "Layers", zone: "left", edition: "initial", focusScope: "canvas", component: LayersPanel });
   registerPanel({ id: "assets", title: "Assets", zone: "left", edition: "initial", component: AssetsPanel });
+  registerPanel({ id: "pages", title: "Pages", zone: "left", edition: "initial", load: async () => (await import("@/legacy-editor/panels/pages/PagesPanel")).PagesPanel });
 
   // ---- right ----
   // The inspector's tabs (Phase 15): Design · Motion · Code, and Debug in the full edition.
   registerPanel({ id: "design", title: "Design", zone: "right", edition: "initial", component: DetailsInspector, props: detailsProps });
+  registerPanel({ id: "tokens", title: "Tokens", zone: "right", edition: "initial", load: async () => (await import("@/legacy-editor/panels/tokens/TokenManager")).TokenManager });
   registerPanel({
     id: "motion",
     title: "Motion",
@@ -81,7 +83,7 @@ export function registerBuiltInPanels(): void {
       onOpenTimeline: () => c.showBottomTab("sequencer"),
     }),
   });
-  registerPanel({ id: "code", title: "Code", zone: "right", edition: "initial", load: async () => (await import("@/legacy-editor/panels/code-view")).LiveCodeInspector });
+  registerPanel({ id: "code", title: "Code", zone: "right", edition: "initial", load: async () => (await import("@/legacy-editor/panels/export/ExportCodePanel")).ExportCodePanel });
   registerPanel({ id: "debug", title: "Debug", zone: "right", edition: "full", load: async () => (await import("@/legacy-editor/panels/console/OutputConsole")).OutputConsole });
   // The Output Log drawer renders the console on its own.
   registerPanel({ id: "console", title: "Output Log", zone: "right", edition: "initial", load: async () => (await import("@/legacy-editor/panels/console/OutputConsole")).OutputConsole });
@@ -106,7 +108,7 @@ export function registerBuiltInPanels(): void {
   });
   registerPanel({ id: "trace", title: "Execution Trace (Debug)", zone: "bottom", edition: "full", component: ExecutionTracePanel, props: traceProps });
   registerPanel({ id: "blueprint", title: "Logic Blueprint", zone: "bottom", edition: "full", focusScope: "blueprint", component: BlueprintCanvas, props: (c: PanelContext) => ({ focusedNodeId: c.focusedBlueprintNodeId, onBackToViewport: c.collapseBottom }) });
-  registerPanel({ id: "curves", title: "Curve Editor", zone: "bottom", edition: "initial", load: async () => (await import("@/legacy-editor/panels/curves/CurveEditor")).CurveEditor });
+  registerPanel({ id: "curves", title: "Graph Editor", zone: "bottom", edition: "initial", focusScope: "timeline", load: async () => (await import("@/legacy-editor/panels/graph/GraphEditorPanel")).GraphEditorPanel });
   // Phase 61: the layer timeline (rows, bars, work area, markers). The Motion Sequencer stays until Phase 68 retires it.
   registerPanel({ id: "timeline", title: "Layer Timeline", zone: "bottom", edition: "initial", focusScope: "timeline", load: async () => (await import("@/legacy-editor/panels/timeline/TimelinePanel")).TimelinePanel });
   registerPanel({ id: "sequencer", title: "Motion Sequencer", zone: "bottom", edition: "initial", focusScope: "timeline", load: async () => (await import("@/legacy-editor/panels/sequencer/TimelineSequencer")).TimelineSequencer });
@@ -126,7 +128,7 @@ export function registerBuiltInPanels(): void {
   });
   registerPanel({ id: "trace", title: "Execution Trace", zone: "fullpage", edition: "full", component: ExecutionTracePanel, props: traceProps });
   registerPanel({ id: "copilot", title: "LazyLayout AI", zone: "fullpage", edition: "initial", load: async () => (await import("@/legacy-editor/panels/copilot/AiPromptBar")).AiPromptBar });
-  registerPanel({ id: "curves", title: "Curve Editor", zone: "fullpage", edition: "initial", load: async () => (await import("@/legacy-editor/panels/curves/CurveEditor")).CurveEditor });
+  registerPanel({ id: "curves", title: "Graph Editor", zone: "fullpage", edition: "initial", focusScope: "timeline", load: async () => (await import("@/legacy-editor/panels/graph/GraphEditorPanel")).GraphEditorPanel });
   registerPanel({
     id: "sequencer",
     title: "Timeline Sequencer",

@@ -13,6 +13,7 @@
 import { AnimationSample } from "@/core/types/animations";
 import type { Layer } from "@/core/document/schema";
 import { propReader } from "@/core/document/properties";
+import { isEditorOnlyLayer } from "@/core/document/editorOnly";
 
 export interface VueEmitterOptions {
   stylingSystem?: "tailwind" | "vanilla-css" | "scoped-css";
@@ -44,6 +45,11 @@ export class VueComponentEmitter {
     const componentName = options.componentName || this.toPascalCase(element.name);
     const styling = options.stylingSystem || "tailwind";
     const get = propReader(element.properties);
+
+    // Phase 73: editor-only layers (helpers, linked views) never emit in export
+    if (isEditorOnlyLayer(element)) {
+      return { componentName, sfcCode: "", requiredPackages: [] };
+    }
 
     const requiredPackages = ["vue", "gsap"];
 

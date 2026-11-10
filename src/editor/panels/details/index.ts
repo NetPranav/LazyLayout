@@ -1,4 +1,4 @@
-export { DetailsInspector, getInspectorDesignSections } from "./DetailsInspector";
+export { DetailsInspector, getInspectorDesignSections, InspectorExtras } from "./DetailsInspector";
 
 // Individual section components per section id used by RightPanelFrame
 export { PositionSection, PositionMore } from "./sections/PositionSection";

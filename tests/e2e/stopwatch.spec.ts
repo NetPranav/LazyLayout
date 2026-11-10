@@ -3,7 +3,7 @@
  * Layer Timeline in the Animate workspace: twirl a layer open, open a group, click a stopwatch.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { focusApp, openEditor, waitSaved } from "./support/editor";
+import { focusApp, openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const STAGE = 'iframe[title="Stage"]';
 const PPS = 120;
@@ -18,7 +18,7 @@ async function openTimeline(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await prepare(page, true);
 }
 
@@ -47,12 +47,19 @@ const undo = async (page: Page) => {
 };
 
 test("Phase 62: twirl a layer open, open a group, and its properties have stopwatches that are off", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   for (const group of ["Transform", "Appearance", "Effects", "States", "Behaviours", "Links"]) {
-    await expect(page.locator('[data-timeline-row="el_hero_heading"]').locator("xpath=following::*[@data-timeline-group][1]")).toBeVisible();
-    await expect(page.locator(`[data-timeline-group^="el_hero_heading|"]`).filter({ hasText: group }).first()).toBeVisible();
+    // Phase 64: rows are built only for what is in view, so scroll the list until the group's row exists.
+    await expect
+      .poll(async () => {
+        const built = await page.locator(`[data-timeline-group^="el_hero_heading|"]`).filter({ hasText: group }).count();
+        if (built === 0) await page.locator(".timeline__scroll").evaluate((el) => el.scrollBy(0, 120));
+        return built;
+      })
+      .toBeGreaterThan(0);
+    await expect(page.locator(`[data-timeline-group^="el_hero_heading|"]`).filter({ hasText: group }).first()).toBeAttached();
   }
+  await page.locator(".timeline__scroll").evaluate((el) => el.scrollTo(0, 0));
   const x = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   await expect(x).toBeVisible();
   await expect(x.getByRole("button", { name: /^Animate Position X of/ })).toHaveAttribute("aria-pressed", "false");
@@ -60,7 +67,6 @@ test("Phase 62: twirl a layer open, open a group, and its properties have stopwa
 });
 
 test("Phase 62: a stopwatch on and off round-trips through undo and save", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   const x = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   const button = x.getByRole("button", { name: /^Animate Position X of/ });
@@ -75,13 +81,13 @@ test("Phase 62: a stopwatch on and off round-trips through undo and save", async
   expect(track.clip).toBe("Keyframes");
   expect(track.keyframes).toHaveLength(1);
   expect(track.keyframes[0].time).toBeCloseTo(1, 1);
-  await expect(x.locator("[data-keyframe]")).toHaveCount(1);
+  await expect(x.locator(".timeline__lane")).toHaveAttribute("data-key-count", "1");
 
   // Undo turns it off in one step; redo turns it back on.
   await undo(page);
   await expect(button).toHaveAttribute("aria-pressed", "false");
   expect(await tracksOf(page, "el_hero_heading")).toEqual([]);
-  await expect(x.locator("[data-keyframe]")).toHaveCount(0);
+  await expect(x.locator(".timeline__lane")).toHaveAttribute("data-key-count", "0");
   await page.keyboard.press("Control+Shift+z");
   await expect(button).toHaveAttribute("aria-pressed", "true");
   expect(await tracksOf(page, "el_hero_heading")).toHaveLength(1);
@@ -93,7 +99,7 @@ test("Phase 62: a stopwatch on and off round-trips through undo and save", async
   await prepare(page, false);
   const again = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   await expect(again.getByRole("button", { name: /^Animate Position X of/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(again.locator("[data-keyframe]")).toHaveCount(1);
+  await expect(again.locator(".timeline__lane")).toHaveAttribute("data-key-count", "1");
   const [saved] = await tracksOf(page, "el_hero_heading");
   expect(saved.keyframes[0].time).toBeCloseTo(1, 1);
 
@@ -106,17 +112,15 @@ test("Phase 62: a stopwatch on and off round-trips through undo and save", async
 });
 
 test("Phase 62: the value at the playhead follows an animated property", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy timeline property groups, showcase demo mounting, and window.__LL_ENGINE__");
   await openTimeline(page);
   const x = page.locator('[data-timeline-property="el_hero_heading|transform.x"]');
   await seekTo(page, 0.5);
   await x.getByRole("button", { name: /^Animate Position X of/ }).click();
   await expect(x.getByLabel("Position X value")).toHaveText("0");
-  await expect(x.locator("[data-keyframe]")).toHaveCount(1);
+  await expect(x.locator(".timeline__lane")).toHaveAttribute("data-key-count", "1");
 });
 
 test("Phase 62: U reveals the animated properties, and U twice the modified ones", async ({ page }) => {
-  test.fixme(true, "New editor lacks U shortcut, command bus context, and legacy property groups");
   await openTimeline(page);
   await seekTo(page, 1);
   await page.locator('[data-timeline-property="el_hero_heading|transform.x"]').getByRole("button", { name: /^Animate Position X of/ }).click();

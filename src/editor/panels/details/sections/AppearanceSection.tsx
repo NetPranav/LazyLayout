@@ -142,6 +142,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Blend mode"
+              title="How this layer mixes with what is under it: Multiply darkens, Screen lightens, Overlay boosts contrast, Normal just covers."
               value={blendMode}
               mixed={getValue?.("appearance.blendMode") === null}
               options={BLEND_MODE_OPTIONS}
@@ -156,6 +157,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Cursor"
+              title="The mouse cursor shown over this layer in the finished page (Pointer for links, Text for text, Move for draggable things)."
               value={cursor}
               mixed={getValue?.("appearance.cursor") === null}
               options={CURSOR_OPTIONS}
@@ -170,6 +172,7 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
             <Select
               size="sm"
               aria-label="Pointer events"
+              title="Auto lets the layer take clicks; None lets clicks pass through it to what is underneath."
               value={pointerEvents}
               mixed={getValue?.("appearance.pointerEvents") === null}
               options={POINTER_EVENTS_OPTIONS}

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Move,
   Rows,
@@ -31,6 +31,25 @@ import {
   ALIGN_SELF_OPTIONS,
 } from "../constants";
 import type { InspectorSectionProps } from "../types";
+import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing } from "@/core/editing/layoutOps";
+import { transaction } from "@/core/editing/editOps";
+
+/** The size a layer is really drawn at, for a W or H the document does not hold (Fill and Hug work it out when drawn). */
+function useDrawnSize(id: string | null | undefined, active: boolean) {
+  const [size, setSize] = useState<{ id: string; w: number; h: number } | null>(null);
+  useEffect(() => {
+    if (!id || !active) return;
+    const node = document.querySelector(`[data-testid="stage-page"] [data-element-id="${CSS.escape(id)}"]`);
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const box = entry.borderBoxSize?.[0];
+      setSize({ id, w: Math.round(box?.inlineSize ?? entry.contentRect.width), h: Math.round(box?.blockSize ?? entry.contentRect.height) });
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [id, active]);
+  return size && size.id === id ? size : null;
+}
 
 export interface LayoutSectionProps extends InspectorSectionProps {
   isFrame?: boolean;
@@ -49,6 +68,8 @@ const HEIGHT_SIZING_OPTIONS = [
 ] as const;
 
 export const LayoutSection: React.FC<LayoutSectionProps> = ({
+  selectedId,
+  selectedIds,
   layer,
   isFrame: propIsFrame,
   getValue,
@@ -73,12 +94,16 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const sizingH = (getValue?.("sizing.horizontal") as string) || "fixed";
   const sizingV = (getValue?.("sizing.vertical") as string) || "fixed";
   const isClipped = (getValue?.("layout.overflowX") as string) === "hidden";
+  const ids = selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
+  const singleId = ids.length === 1 ? ids[0] : null;
+  const widthIsDrawn = sizingH !== "fixed" || typeof rawW !== "number";
+  const heightIsDrawn = sizingV !== "fixed" || typeof rawH !== "number";
+  const drawnSize = useDrawnSize(singleId, widthIsDrawn || heightIsDrawn);
+  const shownWidth = widthIsDrawn && drawnSize ? drawnSize.w : widthVal;
+  const shownHeight = heightIsDrawn && drawnSize ? drawnSize.h : heightVal;
 
   // Frame layout mode: free, stack, grid
-  const rawDisplay = (getValue?.("layout.display") as string) || "flex";
-  const rawMode = (getValue?.("layout.mode") as string) || (rawDisplay === "grid" ? "grid" : "stack");
-  const layoutMode: "free" | "stack" | "grid" =
-    rawMode === "grid" ? "grid" : rawMode === "stack" ? "stack" : "free";
+  const layoutMode: "free" | "stack" | "grid" = isGrid(layer) ? "grid" : isAutoLayout(layer) ? "stack" : "free";
 
   // Flex Direction & Distribution (frame only)
   const flexDir = (getValue?.("layout.flexDirection") as string) || "column";
@@ -93,8 +118,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
 
   // Spacing values (frame only)
   const gap = (getValue?.("layout.gap") as number) ?? 24;
-  const paddingX = (getValue?.("layout.paddingX") as number) ?? 0;
-  const paddingY = (getValue?.("layout.paddingY") as number) ?? 0;
+  const paddingX = (getValue?.("layout.paddingLeft") as number) ?? (getValue?.("layout.paddingX") as number) ?? 0;
+  const paddingY = (getValue?.("layout.paddingTop") as number) ?? (getValue?.("layout.paddingY") as number) ?? 0;
 
   // Grid rows & cols (frame only)
   const gridCols = (getValue?.("layout.gridColumns") as number) ?? 2;
@@ -102,23 +127,15 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const colGap = (getValue?.("layout.columnGap") as number) ?? 16;
   const rowGap = (getValue?.("layout.rowGap") as number) ?? 16;
 
+  // The real auto layout: a stack or grid places its children; going back to Free leaves each child where it is.
   const handleLayoutModeChange = (mode: "free" | "stack" | "grid") => {
-    if (mode === "grid") {
-      onUpdateProps?.({
-        "layout.mode": "grid",
-        "layout.display": "grid",
-      });
-    } else if (mode === "stack") {
-      onUpdateProps?.({
-        "layout.mode": "stack",
-        "layout.display": "flex",
-      });
-    } else {
-      onUpdateProps?.({
-        "layout.mode": "free",
-        "layout.display": "block",
-      });
-    }
+    if (layoutMode === mode) return;
+    transaction("Change layout", () => {
+      if (layoutMode === "stack") removeAutoLayout(ids);
+      if (layoutMode === "grid") removeGridLayout(ids);
+      if (mode === "stack") addAutoLayout(ids);
+      if (mode === "grid") addGridLayout(ids);
+    });
   };
 
   const handleMatrixChange = (
@@ -145,18 +162,24 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           options={[
             {
               value: "free",
-              icon: <Icon icon={Move} size={14} />,
+              label: "Free",
+              icon: <Icon icon={Move} size={13} />,
               ariaLabel: "Free layout",
+              title: "Free layout (absolute placement)",
             },
             {
               value: "stack",
-              icon: <Icon icon={Rows} size={14} />,
-              ariaLabel: "Stack layout",
+              label: "Auto",
+              icon: <Icon icon={Rows} size={13} />,
+              ariaLabel: "Auto Layout stack",
+              title: "Auto Layout (flexbox stack)",
             },
             {
               value: "grid",
-              icon: <Icon icon={LayoutGrid} size={14} />,
+              label: "Grid",
+              icon: <Icon icon={LayoutGrid} size={13} />,
               ariaLabel: "Grid layout",
+              title: "CSS Grid layout",
             },
           ]}
         />
@@ -168,9 +191,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           className="ll:*:!text-micro ll:!gap-2"
           label="W"
-          value={widthVal}
+          value={shownWidth}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (sizingH !== "fixed") onUpdateProp?.("sizing.horizontal", "fixed"); // a typed size is a fixed size
             onUpdateProp?.("frame.width", v);
             onUpdateProp?.("width", v);
           }}
@@ -179,9 +203,10 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           className="ll:*:!text-micro ll:!gap-2"
           label="H"
-          value={heightVal}
+          value={shownHeight}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (sizingV !== "fixed") onUpdateProp?.("sizing.vertical", "fixed"); // a typed size is a fixed size
             onUpdateProp?.("frame.height", v);
             onUpdateProp?.("height", v);
           }}
@@ -193,29 +218,32 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         <Select
           size="sm"
           aria-label="Width sizing"
+          title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
           value={isWidthSizingMixed ? undefined : sizingH}
           placeholder={isWidthSizingMixed ? "Mixed" : undefined}
           options={WIDTH_SIZING_OPTIONS}
           mixed={isWidthSizingMixed}
-          onChange={(val) => onUpdateProp?.("sizing.horizontal", val)}
+          onChange={(val) => setChildSizing(ids, { horizontal: val as "fixed" | "hug" | "fill" })}
         />
         <Select
           size="sm"
           aria-label="Height sizing"
+          title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
           value={isHeightSizingMixed ? undefined : sizingV}
           placeholder={isHeightSizingMixed ? "Mixed" : undefined}
           options={HEIGHT_SIZING_OPTIONS}
           mixed={isHeightSizingMixed}
-          onChange={(val) => onUpdateProp?.("sizing.vertical", val)}
+          onChange={(val) => setChildSizing(ids, { vertical: val as "fixed" | "hug" | "fill" })}
         />
         <button
           type="button"
           aria-pressed={isClipped}
           aria-label="Clip content"
-          title="Clip content"
-          onClick={() =>
-            onUpdateProp?.("layout.overflowX", isClipped ? "visible" : "hidden")
-          }
+          title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
+          onClick={() => {
+            const v = isClipped ? "visible" : "hidden";
+            onUpdateProps?.({ "layout.overflowX": v, "layout.overflowY": v });
+          }}
           className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
             isClipped
               ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
@@ -245,13 +273,15 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 options={[
                   {
                     value: "vertical",
-                    icon: <Icon icon={ArrowDown} size={14} />,
-                    ariaLabel: "Vertical direction",
+                    label: "Vertical",
+                    icon: <Icon icon={ArrowDown} size={13} />,
+                    ariaLabel: "Vertical stack (column)",
                   },
                   {
                     value: "horizontal",
-                    icon: <Icon icon={ArrowRight} size={14} />,
-                    ariaLabel: "Horizontal direction",
+                    label: "Horizontal",
+                    icon: <Icon icon={ArrowRight} size={13} />,
+                    ariaLabel: "Horizontal stack (row)",
                   },
                 ]}
               />
@@ -296,7 +326,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 aria-label="Padding horizontal"
                 value={paddingX}
                 step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-                onChange={(v) => onUpdateProp?.("layout.paddingX", v)}
+                onChange={(v) => onUpdateProps?.({ "layout.paddingLeft": v, "layout.paddingRight": v })}
               />
               <NumberField
                 size="sm"
@@ -305,7 +335,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 aria-label="Padding vertical"
                 value={paddingY}
                 step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-                onChange={(v) => onUpdateProp?.("layout.paddingY", v)}
+                onChange={(v) => onUpdateProps?.({ "layout.paddingTop": v, "layout.paddingBottom": v })}
               />
             </div>
           </div>
@@ -479,7 +509,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
       {/* Group 2: Padding & Margin */}
       <div className="ll-dmg">
         <div className="ll-dgl">
-          <span className="ll-dlbl">Padding</span>
+          <span className="ll-dlbl" title="Space between a frame's edge and what is inside it. It shows on frames and text; a plain shape has no inside.">Padding</span>
           <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
             <NumberField
               size="sm"
@@ -517,7 +547,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
         </div>
 
         <div className="ll-dgl">
-          <span className="ll-dlbl">Margin</span>
+          <span className="ll-dlbl" title="Space around a layer. It moves a layer only inside an auto-layout frame; a layer placed by X and Y ignores it.">Margin</span>
           <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
             <NumberField
               size="sm"
@@ -563,6 +593,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
             <Select
               size="sm"
               aria-label="Overflow X"
+              title="What happens to content wider than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
               value={overflowX}
               options={OVERFLOW_OPTIONS}
               onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
@@ -576,6 +607,7 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
             <Select
               size="sm"
               aria-label="Overflow Y"
+              title="What happens to content taller than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
               value={overflowY}
               options={OVERFLOW_OPTIONS}
               onChange={(v) => onUpdateProp?.("layout.overflowY", v)}

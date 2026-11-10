@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useMemo } from "react";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { Icon } from "@/editor/components/Icon";
 import {
   ChevronDown,
@@ -420,6 +421,8 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    useTimelineUiStore.getState().setIsScrubbing(true);
+
     const initialVal = valueAt(layer, p, playhead);
     const startX = e.clientX;
 
@@ -431,12 +434,15 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     };
 
     const onPointerUp = () => {
+      useTimelineUiStore.getState().setIsScrubbing(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   };
 
   const isLayerOpen = isGroup ? layer.gopen : layer.open;

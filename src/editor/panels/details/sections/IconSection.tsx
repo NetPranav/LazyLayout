@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import { PenTool } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { TextField } from "@/editor/components/TextField";
@@ -63,10 +64,7 @@ export const IconSection: React.FC<InspectorSectionProps> = ({
       {/* Stroke Color */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
         <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${strokeColor}` }}
-          />
+          <ColorSwatch label="Stroke colour picker" hex={strokeColor} onChange={(h) => onUpdateProp?.("icon.strokeColor", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
           <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
             <input

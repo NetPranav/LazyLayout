@@ -5,12 +5,13 @@
  * each with 10 groups of 20 text layers.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, waitHydrated, LEGACY_EDITOR_URL } from "./support/editor";
 
 const DEEP = process.platform === "darwin" ? "Meta" : "Control";
 
 async function openLab(page: Page) {
   await page.goto("/editor/canvas-lab", { waitUntil: "domcontentloaded" });
+  await waitHydrated(page);
   await page.getByRole("button", { name: "Load 5 frames × 200 layers" }).click();
   await page.waitForFunction(() => {
     const frames = Array.from(document.querySelectorAll<HTMLIFrameElement>(".canvas-frame iframe"));
@@ -131,8 +132,8 @@ test("Phase 26: a 15-step selection journey asserts the exact selection after ea
   await expectSelection(page, [], "17. Escape clears");
 });
 
-test.fixme("Phase 26: the selection stays in sync across the canvas, the inspector and the status bar — New UI lacks Mount Showcase Demo, stage iframe, and canvas hit-testing / status bar selection sync on /editor", async ({ page }) => {
-  await openEditor(page);
+test("Phase 26: the selection stays in sync across the canvas, the inspector and the status bar", async ({ page }) => {
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction(() => !!document.querySelector<HTMLIFrameElement>('iframe[title="Stage"]')?.contentDocument?.querySelector("[data-element-id]"));
   await waitSaved(page);

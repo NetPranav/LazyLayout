@@ -4,7 +4,6 @@ import {
   copyKey,
   defaultComposition,
   DUR,
-  FPS,
   makeLayer,
   newKeyId,
   PROPS,
@@ -12,12 +11,41 @@ import {
   sortTracks,
   valueAt,
 } from "./model";
-import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams } from "./types";
+import type { Bezier, Composition, EaseName, Keyframe, MotionLayer, PropId, SpringParams, ClipCategory, Trigger } from "./types";
+import { transport, getTransport, subscribeTransport, type TransportState, type LoopMode } from "@/core/time/transport";
+import { frameScheduler } from "@/core/time/scheduler";
+import {
+  setKeyframeAt,
+  deleteKeyframes,
+  ensureTrack,
+  locateKeyframes,
+  placementsOf,
+  KEYFRAMES_CLIP_NAME,
+} from "@/core/timeline/keyframeOps";
+import { transaction } from "@/core/editing/editOps";
+import { createId } from "@/core/ids";
+import type { Clip, ClipTemplate } from "@/core/document/schema";
+import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
+import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
+import {
+  UI_TO_CANONICAL_PATH,
+  CANONICAL_TO_UI_PATH,
+  uiToCanonicalValue,
+  uiEaseToCanonical,
+  uiClipTypeToCanonical,
+  uiTriggerToCanonical,
+  CATEGORY_DEFAULT_TRIGGERS,
+} from "./sync";
 
 export interface MotionState {
   comp: Composition;
+  time: number;
   playhead: number;
   playheadGlide: boolean;
+  subhead: number;
+  readoutPlayhead: number;
+  overlayFrame: number;
+  overlayTime: number;
   playing: boolean;
   selectedKeys: Record<string, true>;
   selectedClip: number;
@@ -44,22 +72,34 @@ export interface MotionState {
 let clipAnimClipboard: { tr: { p: PropId; keys: Keyframe[] }[] } | null = null;
 let keyClipboard: { p: PropId; k: Keyframe }[] | null = null;
 
+const initTransport = getTransport();
+const initFps = initTransport.fps || 60;
+const initFrame = Math.round(initTransport.time * initFps);
+
 export const useMotionModel = create<MotionState>(() => ({
   comp: defaultComposition(),
-  playhead: 72,
+  time: initTransport.time,
+  playhead: initFrame,
   playheadGlide: false,
-  playing: false,
+  subhead: initTransport.time * initFps,
+  readoutPlayhead: initFrame,
+  overlayFrame: initFrame,
+  overlayTime: initTransport.time,
+  playing: initTransport.playing,
   selectedKeys: {},
   selectedClip: 0,
-  fps: 60,
-  speed: 1,
-  loop: 0,
-  dir: 1,
-  shuttle: 0,
+  fps: initFps,
+  speed: Math.abs(initTransport.rate) || 1,
+  loop: initTransport.loop === "off" ? 0 : initTransport.loop === "loop" ? 1 : 2,
+  dir: (initTransport.rate >= 0 ? 1 : -1) as 1 | -1,
+  shuttle: initTransport.playing && initTransport.rate !== 1 ? initTransport.rate : 0,
   frames: false,
   zoom: 1,
   t0: 0,
-  wa: { a: 0, b: DUR },
+  wa: {
+    a: Math.round(initTransport.workArea.start * initFps),
+    b: Math.round(initTransport.workArea.end * initFps),
+  },
   selectedProp: null,
   tool: "select",
   view: "timeline",
@@ -70,6 +110,116 @@ export const useMotionModel = create<MotionState>(() => ({
   autoKey: false,
   onionSkin: false,
 }));
+
+export const getOverlayFrame = (): number => {
+  const s = useMotionModel.getState();
+  return s.playing ? s.overlayFrame : Math.round(getTransport().time * (getTransport().fps || 60));
+};
+
+export const getOverlayTime = (): number => {
+  const s = useMotionModel.getState();
+  return s.playing ? s.overlayTime : getTransport().time;
+};
+
+export const useOverlayFrame = (): number => useMotionModel((s) => (s.playing ? s.overlayFrame : s.playhead));
+export const useOverlayTime = (): number => useMotionModel((s) => (s.playing ? s.overlayTime : s.time));
+
+function syncTransportToMotion(t: TransportState): void {
+  const fps = t.fps || 60;
+  const frame = Math.round(t.time * fps);
+  const loopNum: 0 | 1 | 2 = t.loop === "off" ? 0 : t.loop === "loop" ? 1 : 2;
+  const shuttleVal = t.playing && t.rate !== 1 ? t.rate : 0;
+  const curComp = useMotionModel.getState().comp;
+  const compDurFrames = Math.round(t.duration * fps);
+  const durChanged = curComp.dur !== compDurFrames || curComp.fps !== fps;
+
+  useMotionModel.setState({
+    time: t.time,
+    playhead: frame,
+    subhead: t.time * fps,
+    readoutPlayhead: frame,
+    // Rule: while NOT playing, every time change (seek, step, scrub, pause) updates overlayFrame and overlayTime immediately
+    ...(!t.playing ? { overlayFrame: frame, overlayTime: t.time } : {}),
+    playing: t.playing,
+    fps,
+    loop: loopNum,
+    dir: (t.rate >= 0 ? 1 : -1) as 1 | -1,
+    shuttle: shuttleVal,
+    speed: Math.abs(t.rate) || 1,
+    wa: {
+      a: Math.round(t.workArea.start * fps),
+      b: Math.round(t.workArea.end * fps),
+    },
+    ...(durChanged ? { comp: { ...curComp, dur: compDurFrames, fps } } : {}),
+  });
+}
+
+function syncOverlayFromTransport(t: TransportState): void {
+  const fps = t.fps || 60;
+  const frame = Math.round(t.time * fps);
+  const cur = useMotionModel.getState();
+  if (cur.overlayFrame !== frame || cur.overlayTime !== t.time) {
+    useMotionModel.setState({
+      overlayFrame: frame,
+      overlayTime: t.time,
+    });
+  }
+}
+
+// ROADMAP Phase 55: Frame scheduler integration
+// Ordered phases: input → evaluate → apply → render → overlay → stats
+// During playback:
+// 1. evaluate advances transport (see installTransportDriver in src/core/time/transportDriver.ts)
+// 2. apply copies transport time into the Motion store once per frame
+// 3. render redraws the stage / timeline
+// 4. overlay updates published overlay frame/time so overlays follow the canvas in lockstep
+frameScheduler.register("apply", () => {
+  const t = getTransport();
+  if (t.playing) {
+    syncTransportToMotion(t);
+  }
+});
+
+frameScheduler.register("overlay", () => {
+  const t = getTransport();
+  if (t.playing) {
+    syncOverlayFromTransport(t);
+  }
+});
+
+// Single subscription: core transport is the ONE clock.
+// When NOT playing (seek, step, scrub, pause, reset), apply at once so editing stays immediate.
+// During playback, time and playhead are copied in the "apply" phase above, not from raw subscription.
+subscribeTransport((state, prev) => {
+  if (!state.playing) {
+    syncTransportToMotion(state);
+  } else {
+    // Sync non-time playback flags immediately (loop, speed, direction, playing)
+    const loopNum: 0 | 1 | 2 = state.loop === "off" ? 0 : state.loop === "loop" ? 1 : 2;
+    const shuttleVal = state.rate !== 1 ? state.rate : 0;
+    const fps = state.fps || 60;
+    const curComp = useMotionModel.getState().comp;
+    const compDurFrames = Math.round(state.duration * fps);
+    const durChanged = curComp.dur !== compDurFrames || curComp.fps !== fps;
+
+    useMotionModel.setState({
+      playing: true,
+      fps,
+      loop: loopNum,
+      dir: (state.rate >= 0 ? 1 : -1) as 1 | -1,
+      shuttle: shuttleVal,
+      speed: Math.abs(state.rate) || 1,
+      wa: {
+        a: Math.round(state.workArea.start * fps),
+        b: Math.round(state.workArea.end * fps),
+      },
+      ...(durChanged ? { comp: { ...curComp, dur: compDurFrames, fps } } : {}),
+    });
+    if (!prev.playing) {
+      frameScheduler.wake();
+    }
+  }
+});
 
 function edit(fn: (comp: Composition) => void): void {
   useMotionModel.setState((s) => {
@@ -100,29 +250,41 @@ function ensureLayer(comp: Composition, id: string): MotionLayer {
 }
 
 export const motionActions = {
-  setPlayhead(t: number, glide = false): void {
-    useMotionModel.setState((s) => ({
-      playhead: clampN(Math.round(t), 0, s.comp.dur),
-      playheadGlide: glide,
-    }));
+  setPlayhead(t: number, glideOrOptions?: boolean | { updateReadout?: boolean }): void {
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    const clampedFrame = clampN(t, 0, s.comp.dur);
+    const glide = glideOrOptions === true;
+    if (s.playheadGlide !== glide) useMotionModel.setState({ playheadGlide: glide });
+    transport.seek(clampedFrame / fps);
   },
   seek(t: number, glide = false): void {
-    useMotionModel.setState((s) => ({
-      playhead: clampN(Math.round(t), 0, s.comp.dur),
-      playheadGlide: glide,
-    }));
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    const clampedFrame = clampN(Math.round(t), 0, s.comp.dur);
+    useMotionModel.setState({ playheadGlide: glide });
+    transport.seek(clampedFrame / fps);
+  },
+  setReadoutPlayhead(frame: number): void {
+    useMotionModel.setState({ readoutPlayhead: Math.round(frame) });
   },
   setPlaying(playing: boolean): void {
-    useMotionModel.setState({ playing, shuttle: 0 });
+    if (playing) {
+      transport.play();
+    } else {
+      transport.pause();
+    }
   },
   setSpeed(speed: number): void {
-    useMotionModel.setState({ speed });
+    transport.setRate(speed);
   },
-  setLoop(loop: 0 | 1 | 2): void {
-    useMotionModel.setState({ loop });
+  setLoop(loop: 0 | 1 | 2 | LoopMode): void {
+    if (loop === 0 || loop === "off") transport.setLoop("off");
+    else if (loop === 1 || loop === "loop") transport.setLoop("loop");
+    else if (loop === 2 || loop === "ping-pong") transport.setLoop("ping-pong");
   },
   toggleLoop(): void {
-    useMotionModel.setState((s) => ({ loop: ((s.loop + 1) % 3) as 0 | 1 | 2 }));
+    transport.cycleLoop();
   },
   setFrames(frames: boolean): void {
     useMotionModel.setState({ frames });
@@ -153,17 +315,15 @@ export const motionActions = {
     });
   },
   setWorkArea(a: number, b: number): void {
-    useMotionModel.setState((s) => ({
-      wa: {
-        a: clampN(Math.round(a), 0, s.comp.dur - 1),
-        b: clampN(Math.round(b), 1, s.comp.dur),
-      },
-    }));
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    transport.setWorkArea({
+      start: clampN(a, 0, s.comp.dur - 1) / fps,
+      end: clampN(b, 1, s.comp.dur) / fps,
+    });
   },
   resetWorkArea(): void {
-    useMotionModel.setState((s) => ({
-      wa: { a: 0, b: s.comp.dur },
-    }));
+    transport.setWorkArea({ start: 0, end: getTransport().duration });
   },
   setSelectedProp(layerId: string | null, p: PropId | null): void {
     useMotionModel.setState({
@@ -263,7 +423,17 @@ export const motionActions = {
   },
   setComp(patch: Partial<Pick<Composition, "fps" | "dur" | "markers">>): void {
     edit((c) => Object.assign(c, patch));
-    if (patch.fps) useMotionModel.setState({ fps: patch.fps });
+    const current = getTransport();
+    const fps = patch.fps ?? current.fps;
+    const durSec = patch.dur !== undefined ? patch.dur / fps : current.duration;
+    if (patch.fps !== undefined || patch.dur !== undefined) {
+      transport.setComposition({
+        id: current.compositionId,
+        fps,
+        duration: durSec,
+        workArea: current.workArea,
+      });
+    }
   },
   setClip(layerId: string, index: number, s: number, e: number): void {
     edit((c) => {
@@ -503,12 +673,8 @@ export const motionActions = {
     });
   },
   stepFrame(delta: number): void {
-    useMotionModel.setState((s) => ({
-      playhead: clampN(s.playhead + delta, 0, s.comp.dur),
-      playheadGlide: true,
-      playing: false,
-      shuttle: 0,
-    }));
+    useMotionModel.setState({ playheadGlide: true });
+    transport.stepFrame(delta);
   },
   jumpKey(dir: 1 | -1): void {
     const s = useMotionModel.getState();
@@ -526,19 +692,27 @@ export const motionActions = {
       }
     }
     if (best !== null) {
-      useMotionModel.setState({ playhead: best, playheadGlide: true, playing: false, shuttle: 0 });
+      const fps = s.fps || 60;
+      useMotionModel.setState({ playheadGlide: true });
+      transport.seek(best / fps);
+      transport.pause();
     }
   },
-  shuttle(dir: 1 | -1): void {
-    useMotionModel.setState((s) => {
-      const q = s.shuttle;
-      const nextShut = q * dir > 0 ? clampN(q * 2, -8, 8) : dir;
-      return {
-        shuttle: nextShut,
-        playing: true,
-        dir: (nextShut >= 0 ? 1 : -1) as 1 | -1,
-      };
-    });
+  shuttle(dir: 1 | -1 | "forward" | "reverse"): void {
+    if (dir === 1 || dir === "forward") {
+      transport.shuttle("forward");
+    } else {
+      transport.shuttle("reverse");
+    }
+  },
+  ensureLayer(layerId: string): MotionLayer {
+    let l = useMotionModel.getState().comp.layers.find((x) => x.id === layerId);
+    if (!l) {
+      edit((c) => {
+        l = ensureLayer(c, layerId);
+      });
+    }
+    return l ?? makeLayer(layerId, 0, []);
   },
   addKey(layerId: string, p: PropId, t: number, v?: number): string {
     let id = newKeyId();
@@ -560,6 +734,21 @@ export const motionActions = {
       }
       sortKeys(tr);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        const fps = useMotionModel.getState().fps || 60;
+        const tSec = t / fps;
+        const val = clampN(v ?? (useMotionModel.getState().comp.layers.find(x => x.id === layerId)?.tr.find(tr => tr.p === p)?.keys.find(k => k.t === t)?.v ?? PROPS[p].d), PROPS[p].lo, PROPS[p].hi);
+        const canonicalVal = uiToCanonicalValue(p, val);
+        const kfId = setKeyframeAt(layerId, canonicalPath, tSec, { value: canonicalVal });
+        if (kfId) id = kfId;
+      }
+    } catch {
+      // Test or standalone fallback
+    }
+
     return id;
   },
   setKeyValue(keyId: string, v: number): void {
@@ -567,6 +756,19 @@ export const motionActions = {
       const f = findKey(c, keyId);
       if (f) f.k.v = clampN(v, PROPS[f.tr.p].lo, PROPS[f.tr.p].hi);
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        const propId = CANONICAL_TO_UI_PATH[loc.property];
+        const canonicalVal = propId ? uiToCanonicalValue(propId, v) : v;
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, value: canonicalVal });
+      }
+    } catch {
+      // fallback
+    }
   },
   setKeyTime(keyId: string, t: number): void {
     edit((c) => {
@@ -576,6 +778,19 @@ export const motionActions = {
         sortKeys(f.tr);
       }
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        const fps = useMotionModel.getState().fps || 60;
+        const tSec = t / fps;
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, time: tSec });
+      }
+    } catch {
+      // fallback
+    }
   },
   setKeyEase(keyId: string, ease: EaseName, bz?: Bezier, spring?: SpringParams): void {
     edit((c) => {
@@ -585,6 +800,17 @@ export const motionActions = {
       if (bz) f.k.bz = bz;
       if (spring) f.k.spring = spring;
     });
+
+    try {
+      const doc = getDocument();
+      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      if (locs.length > 0) {
+        const loc = locs[0];
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+      }
+    } catch {
+      // fallback
+    }
   },
   setKeysEase(keyIds: string[], ease: EaseName, bz?: Bezier, spring?: SpringParams): void {
     edit((c) => {
@@ -611,6 +837,12 @@ export const motionActions = {
       for (const id of ids) delete selectedKeys[id];
       return { selectedKeys };
     });
+
+    try {
+      deleteKeyframes(ids);
+    } catch {
+      // fallback
+    }
   },
   selectKeys(ids: string[], additive?: boolean): void {
     useMotionModel.setState((s) => {
@@ -622,11 +854,103 @@ export const motionActions = {
   clearKeySelection(): void {
     useMotionModel.setState({ selectedKeys: {} });
   },
+  setClipSettings(
+    layerId: string,
+    settings: { category?: ClipCategory; trigger?: Trigger; clipIndex?: number }
+  ): void {
+    const s = useMotionModel.getState();
+    const l = s.comp.layers.find((x) => x.id === layerId);
+    const clipIdx = settings.clipIndex ?? s.selectedClip ?? 0;
+
+    const newCategory = settings.category ?? l?.category ?? "Entrance";
+    let newTrigger = settings.trigger ?? l?.trig ?? "On load";
+
+    if (settings.category && !settings.trigger) {
+      newTrigger = CATEGORY_DEFAULT_TRIGGERS[settings.category] ?? "On load";
+    }
+
+    const canonicalType = uiClipTypeToCanonical(newCategory);
+    const canonicalTrigger = uiTriggerToCanonical(newTrigger);
+
+    edit((c) => {
+      const target = c.layers.find((x) => x.id === layerId);
+      if (target) {
+        target.category = newCategory;
+        target.trig = newTrigger;
+        if (newTrigger === "While scrolling") {
+          target.scrub = true;
+        }
+      }
+    });
+
+    try {
+      const doc = getDocument();
+      if (!doc || !doc.layers[layerId]) return;
+
+      const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+      const existingClip =
+        placed[clipIdx]?.clip ??
+        placed[0]?.clip ??
+        Object.values(doc.clips).find((c) => c.layerId === layerId && c.enabled);
+
+      if (existingClip) {
+        transaction("Update animation", () => {
+          const patch: Partial<Omit<Clip, "id" | "layerId" | "tracks">> = {
+            type: canonicalType,
+            trigger: canonicalTrigger,
+          };
+          if (canonicalType === "stagger" && !existingClip.stagger) {
+            patch.stagger = { each: 0.05, from: "start" };
+          }
+          if (canonicalTrigger !== "custom" && existingClip.event !== undefined) {
+            patch.event = undefined;
+          }
+          documentCommands.updateClip(existingClip.id, patch);
+        });
+      } else {
+        transaction("Add animation", () => {
+          const comp = doc.compositions[MAIN_COMPOSITION_ID] ?? Object.values(doc.compositions)[0];
+          const template: ClipTemplate = {
+            id: createId("clip"),
+            name: KEYFRAMES_CLIP_NAME,
+            type: canonicalType,
+            trigger: canonicalTrigger,
+            duration: comp ? comp.duration : 5,
+            easing: "power2.out",
+            enabled: true,
+            tracks: [],
+            ...(canonicalType === "stagger" ? { stagger: { each: 0.05, from: "start" } } : {}),
+          };
+          documentCommands.addClip(layerId, template, undefined, {
+            compositionId: comp?.id ?? MAIN_COMPOSITION_ID,
+          });
+        });
+      }
+    } catch {
+      // Standalone or test fallback
+    }
+  },
+
+  setClipCategory(layerId: string, category: ClipCategory): void {
+    motionActions.setClipSettings(layerId, { category });
+  },
+
+  setClipTrigger(layerId: string, trigger: Trigger): void {
+    motionActions.setClipSettings(layerId, { trigger });
+  },
+
   setLayer(layerId: string, patch: Partial<MotionLayer>): void {
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) Object.assign(l, patch);
     });
+
+    if (patch.category !== undefined || patch.trig !== undefined) {
+      motionActions.setClipSettings(layerId, {
+        category: patch.category,
+        trigger: patch.trig,
+      });
+    }
   },
   addProperty(layerId: string, p: PropId): void {
     edit((c) => {
@@ -635,12 +959,39 @@ export const motionActions = {
       l.tr.push({ p, keys: [] });
       sortTracks(l);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        transaction("Add track", () => {
+          ensureTrack(layerId, canonicalPath);
+        });
+      }
+    } catch {
+      // fallback
+    }
   },
   removeProperty(layerId: string, p: PropId): void {
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) l.tr = l.tr.filter((t) => t.p !== p);
     });
+
+    try {
+      const canonicalPath = UI_TO_CANONICAL_PATH[p];
+      if (canonicalPath) {
+        const doc = getDocument();
+        const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+        for (const pl of placed) {
+          const tr = pl.clip.tracks.find((t) => t.property === canonicalPath);
+          if (tr) {
+            documentCommands.removeTrack(pl.clip.id, tr.id);
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
   },
   applyPreset(layerId: string, preset: string): void {
     edit((c) => {
@@ -670,6 +1021,32 @@ export const motionActions = {
       }
       sortTracks(l);
     });
+
+    try {
+      const s = useMotionModel.getState();
+      const fps = s.fps || 60;
+      const motionLayer = s.comp.layers.find(l => l.id === layerId);
+      const startFrame = motionLayer ? Math.min(...motionLayer.clips.map(c => c.s)) : 0;
+      const sSec = startFrame / fps;
+      transaction("Apply preset", () => {
+        if (preset === "Fade in") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 36 / fps, { value: 1 });
+        } else if (preset === "Slide up") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 36 / fps, { value: 1 });
+          setKeyframeAt(layerId, "transform.y", sSec, { value: 24 });
+          setKeyframeAt(layerId, "transform.y", sSec + 36 / fps, { value: 0 });
+        } else if (preset === "Pop") {
+          setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
+          setKeyframeAt(layerId, "appearance.opacity", sSec + 24 / fps, { value: 1 });
+          setKeyframeAt(layerId, "transform.scale", sSec, { value: 0.86, ease: "back-out" });
+          setKeyframeAt(layerId, "transform.scale", sSec + 36 / fps, { value: 1 });
+        }
+      });
+    } catch {
+      // fallback
+    }
   },
   addMarker(t: number, name?: string): void {
     edit((c) => {
@@ -689,3 +1066,18 @@ export const motionActions = {
     });
   },
 };
+
+/**
+ * Test seam: with `window.__LL_TEST__` set, `window.__LL_MOTION__` gives browser tests direct access
+ * to the Motion store state.
+ */
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "__LL_MOTION__", {
+    configurable: true,
+    get: () => {
+      const w = window as unknown as { __LL_TEST__?: boolean };
+      return w.__LL_TEST__ ? () => useMotionModel.getState() : undefined;
+    },
+  });
+}
+

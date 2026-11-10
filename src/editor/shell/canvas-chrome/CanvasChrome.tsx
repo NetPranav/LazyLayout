@@ -9,6 +9,7 @@ import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { Spotlight } from "./Spotlight";
 import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
 import { addFrame } from "@/core/frames/frameCommands";
@@ -137,6 +138,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   onRunCode,
   users: _users,
 }) => {
+  const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Controllable state pairs managed by useControllable helper
   const [showRulers, setShowRulers] = useControllable(
     controlledShowRulers,
@@ -156,7 +158,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   const [zoom, setZoom] = useControllable(
     controlledZoom,
     onZoomChange,
-    0.59
+    0.5
   );
   const [isInsertOpen, setIsInsertOpen] = useControllable(
     controlledIsInsertOpen,
@@ -455,7 +457,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   }, [setZoom, controlledOnZoom100]);
 
   const handleZoomFit = useCallback(() => {
-    setZoom(0.59);
+    setZoom(0.5);
     controlledOnZoomFit?.();
   }, [setZoom, controlledOnZoomFit]);
 

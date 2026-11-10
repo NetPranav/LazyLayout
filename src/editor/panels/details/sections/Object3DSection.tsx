@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ColorSwatch } from "../controls/ColorSwatch";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { Checkbox } from "@/editor/components/Checkbox";
@@ -47,10 +48,7 @@ export const Object3DSection: React.FC<InspectorSectionProps> = ({
       {/* Material Color */}
       <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
         <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-          <span
-            className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-            style={{ backgroundColor: `#${materialColor}` }}
-          />
+          <ColorSwatch label="Material colour picker" hex={materialColor} onChange={(h) => onUpdateProp?.("object3d.materialColor", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
           <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
             <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
             <input
@@ -234,10 +232,7 @@ export const Object3DMore: React.FC<InspectorSectionProps> = ({
       <div className="ll:pt-2 ll:border-t ll:border-border ll:flex ll:flex-col ll:gap-2">
         <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
           <div className="ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
-            <span
-              className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0"
-              style={{ backgroundColor: `#${emissiveHex}` }}
-            />
+            <ColorSwatch label="Emissive colour picker" hex={emissiveHex} onChange={(h) => onUpdateProp?.("object3d.emissive", h)} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
             <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
               <span className="ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
               <input

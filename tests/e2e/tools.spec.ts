@@ -5,7 +5,7 @@
  * whatever tool is active.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, LEGACY_EDITOR_URL } from "./support/editor";
 
 const CANVAS = ".whiteboard-stage";
 const DEEP = process.platform === "darwin" ? "Meta" : "Control";
@@ -22,7 +22,7 @@ const count = (page: Page, archetype: string) =>
   page.evaluate(({ sel, a }) => document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelectorAll(`[data-archetype="${a}"]`).length ?? 0, { sel: STAGE, a: archetype });
 
 async function ready(page: Page) {
-  await openEditor(page);
+  await openEditor(page, LEGACY_EDITOR_URL);
   await page.getByRole("button", { name: "Mount Showcase Demo" }).click();
   await page.waitForFunction((sel) => !!document.querySelector<HTMLIFrameElement>(sel)?.contentDocument?.querySelector("[data-element-id]"), STAGE);
   await waitSaved(page);
@@ -35,12 +35,11 @@ async function ready(page: Page) {
 }
 
 test("Phase 24: the dock shows only the tools that exist, and a button switches the tool", async ({ page }) => {
-  test.fixme(true, "New editor replaces legacy Whiteboard tools dock with Canvas floating tools");
   await ready(page);
   const dock = page.getByRole("toolbar", { name: "Confluence Whiteboard Tools" });
   const names = await dock.getByRole("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
-  expect(names).toEqual(["Select Tool", "Hand Tool (Pan)", "Frame Tool", "Rectangle Tool", "Ellipse Tool", "Line Tool", "Arrow Tool", "Polygon Tool", "Star Tool", "Text Tool"]);
-  for (const hidden of ["Pen Tool", "Pencil Tool", "Comment", "Add Node / Asset"]) {
+  expect(names).toEqual(["Select Tool", "Hand Tool (Pan)", "Frame Tool", "Rectangle Tool", "Ellipse Tool", "Line Tool", "Arrow Tool", "Polygon Tool", "Star Tool", "Text Tool", "Pen Tool", "Pencil Tool", "Paint Bucket", "Shape Builder", "Scale Tool"]);
+  for (const hidden of ["Comment", "Add Node / Asset"]) {
     await expect(dock.getByRole("button", { name: hidden }), `${hidden} isn't built yet, so it has no button`).toHaveCount(0);
   }
 
@@ -52,19 +51,20 @@ test("Phase 24: the dock shows only the tools that exist, and a button switches 
 });
 
 test("Phase 24: a shortcut switches the tool", async ({ page }) => {
-  test.fixme(true, "New editor lacks whiteboard stage data-tool attribute reflection");
   await ready(page);
-  for (const [key, id] of [["h", "pan"], ["r", "rectangle"], ["o", "ellipse"], ["l", "line"], ["f", "frame"], ["t", "text"], ["v", "select"]] as const) {
+  for (const [key, id] of [["h", "pan"], ["r", "rectangle"], ["o", "ellipse"], ["l", "line"], ["f", "frame"], ["t", "text"], ["b", "paintBucket"], ["v", "select"]] as const) {
     await page.keyboard.press(key);
     await expectTool(page, id, `key ${key}`);
   }
-  // a tool that isn't built has no shortcut: P (Pen) does nothing
   await page.keyboard.press("p");
+  await expectTool(page, "pen");
+  await page.keyboard.press("Shift+P");
+  await expectTool(page, "pencil");
+  await page.keyboard.press("v");
   await expectTool(page, "select");
 });
 
 test("Phase 24: holding Space gives the Hand and releasing returns to the previous tool", async ({ page }) => {
-  test.fixme(true, "New editor lacks spring-loaded hand tool on whiteboard stage");
   await ready(page);
   await page.keyboard.press("r");
   await expectTool(page, "rectangle");
@@ -85,7 +85,6 @@ test("Phase 24: holding Space gives the Hand and releasing returns to the previo
 });
 
 test("Phase 24: holding Cmd/Ctrl gives deep select and releasing returns", async ({ page }) => {
-  test.fixme(true, "New editor lacks deepSelect spring-loaded tool");
   await ready(page);
   await page.keyboard.press("l");
   await page.keyboard.down(DEEP);
@@ -95,7 +94,6 @@ test("Phase 24: holding Cmd/Ctrl gives deep select and releasing returns", async
 });
 
 test("Phase 24: losing the window's focus can't leave a spring stuck on", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy whiteboard stage blur handling");
   await ready(page);
   await page.keyboard.down("Space");
   await expectTool(page, "pan");
@@ -105,7 +103,6 @@ test("Phase 24: losing the window's focus can't leave a spring stuck on", async 
 });
 
 test("Phase 24: the Rectangle tool draws, returns to Select, and undo takes the shape back", async ({ page }) => {
-  test.fixme(true, "New editor canvas does not support direct drag-drawing of shapes");
   const mid = await ready(page);
   const before = await count(page, "rectangle");
   await page.keyboard.press("r");
@@ -121,7 +118,6 @@ test("Phase 24: the Rectangle tool draws, returns to Select, and undo takes the 
 });
 
 test("Phase 24: Space-drag and the middle button pan whatever tool is active, and draw nothing", async ({ page }) => {
-  test.fixme(true, "New editor lacks legacy canvas camera pan CSS properties");
   const mid = await ready(page);
   await page.keyboard.press("r");
   const before = await count(page, "rectangle");

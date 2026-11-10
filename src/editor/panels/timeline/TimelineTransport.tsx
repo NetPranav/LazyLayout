@@ -13,12 +13,21 @@ import {
   StepForward,
   Repeat,
   RotateCcw,
+  Layers,
   MousePointer2,
   Maximize2,
   Download,
   ChevronDown,
 } from "lucide-react";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
+import { useStore } from "zustand";
+import {
+  transport,
+  transportStore,
+  getTransport,
+} from "@/core/time/transport";
+import { useTransportTime } from "@/core/time/useTransportTime";
 import {
   useMotionModel,
   motionActions,
@@ -57,23 +66,26 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   isPlaying: legacyPlaying,
   currentTimeFormatted: legacyCurrentTime,
   durationFormatted: legacyDuration,
-  onTogglePlay: legacyTogglePlay,
-  onStepBack: legacyStepBack,
-  onStepForward: legacyStepForward,
-  onToggleLoop: legacyToggleLoop,
-  onToggleGraph: legacyToggleGraph,
+  onTogglePlay: _legacyTogglePlay,
+  onStepBack: _legacyStepBack,
+  onStepForward: _legacyStepForward,
+  onToggleLoop: _legacyToggleLoop,
+  onToggleGraph: _legacyToggleGraph,
 }) => {
-  const playhead = useMotionModel((s) => s.playhead);
-  const playing = useMotionModel((s) => s.playing);
-  const speed = useMotionModel((s) => s.speed);
-  const loop = useMotionModel((s) => s.loop);
+  const currentTransportTime = useTransportTime({ maxHz: 10 });
+  const playing = useStore(transportStore, (s) => s.playing);
+  const loop = useStore(transportStore, (s) => s.loop);
+  const speed = useStore(transportStore, (s) => Math.abs(s.rate) || 1);
+  const fps = useStore(transportStore, (s) => s.fps || 60);
+  const dur = useStore(transportStore, (s) => s.duration || 5);
+
   const frames = useMotionModel((s) => s.frames);
-  const dur = useMotionModel((s) => s.comp.dur);
-  const fps = useMotionModel((s) => s.fps);
   const tool = useMotionModel((s) => s.tool);
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
   const autoKey = useMotionModel((s) => s.autoKey);
+  const recordMode = useTimelineUiStore((s) => s.recordMode);
+  const onionSkin = useTimelineUiStore((s) => s.onionSkin);
 
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
@@ -84,8 +96,12 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const isFw = fullWidth ?? storeFullWidth;
 
   const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
-  const formattedTime = legacyCurrentTime ?? (frames ? String(playhead) : timecode(playhead, fps));
-  const formattedTotal = legacyDuration ?? (frames ? String(dur) : timecode(dur, fps));
+  const currentFrame = Math.round(currentTransportTime * fps);
+  const durFrames = Math.round(dur * fps);
+  const formattedTime = legacyCurrentTime ?? (frames ? String(currentFrame) : timecode(currentFrame, fps));
+  const formattedTotal = legacyDuration ?? (frames ? String(durFrames) : timecode(durFrames, fps));
+
+  const loopLabel = loop === "off" ? "Off" : loop === "loop" ? "Loop" : "Ping-pong";
 
   return (
     <div
@@ -123,8 +139,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           type="button"
           data-ta="start"
           onClick={() => {
-            const wa = useMotionModel.getState().wa;
-            motionActions.setPlayhead(wa.a, true);
+            const wa = getTransport().workArea;
+            motionActions.seek(wa.start * fps, true);
           }}
           aria-label="Go to start (Home)"
           title="Go to start (Home)"
@@ -159,7 +175,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           type="button"
           id="tplay"
           data-ta="play"
-          onClick={() => motionActions.setPlaying(!effectivePlaying)}
+          onClick={() => transport.togglePlay()}
           aria-pressed={effectivePlaying}
           aria-label={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
           title={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
@@ -198,8 +214,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           type="button"
           data-ta="end"
           onClick={() => {
-            const wa = useMotionModel.getState().wa;
-            motionActions.setPlayhead(wa.b, true);
+            const wa = getTransport().workArea;
+            motionActions.seek(wa.end * fps, true);
           }}
           aria-label="Go to end (End)"
           title="Go to end (End)"
@@ -212,17 +228,53 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           type="button"
           id="tloop"
           data-ta="loop"
-          onClick={() => motionActions.toggleLoop()}
-          aria-pressed={loop > 0}
-          aria-label={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
-          title={`Loop: ${loop === 0 ? "Off" : loop === 1 ? "Loop" : "Ping-pong"}`}
+          onClick={() => transport.cycleLoop()}
+          aria-pressed={loop !== "off"}
+          aria-label={`Loop: ${loopLabel}`}
+          title={`Loop: ${loopLabel}`}
           className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            loop > 0
+            loop !== "off"
               ? "ll:text-control-active ll:bg-surface-hover"
               : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={loop === 2 ? RotateCcw : Repeat} size={14} />
+          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={14} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => useTimelineUiStore.getState().setRecordMode(!recordMode)}
+          aria-pressed={recordMode}
+          aria-label="Auto-key record mode"
+          data-testid="timeline-record-button"
+          title={recordMode ? "Auto-key record mode (ON) - changes create keyframes" : "Auto-key record mode (OFF)"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            recordMode
+              ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <div
+            className={`ll:w-2.5 ll:h-2.5 ll:rounded-full ${
+              recordMode ? "ll:bg-control-primary-fg" : "ll:bg-current"
+            }`}
+          />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => useTimelineUiStore.getState().toggleOnionSkin()}
+          aria-pressed={onionSkin.enabled}
+          aria-label="Toggle onion skin"
+          data-testid="timeline-onion-skin-button"
+          title={onionSkin.enabled ? "Onion skin (ON) - shows ghost frames" : "Onion skin (OFF)"}
+          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+            onionSkin.enabled
+              ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
+              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+          }`}
+        >
+          <Icon icon={Layers} size={14} />
         </button>
       </div>
 
@@ -342,7 +394,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
               <MenuItem
                 key={opt}
                 onClick={() => {
-                  motionActions.setSpeed(opt);
+                  transport.setRate(opt);
                   setSpeedMenuOpen(false);
                 }}
               >

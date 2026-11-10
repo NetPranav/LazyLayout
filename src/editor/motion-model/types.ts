@@ -5,10 +5,35 @@ export interface SpringParams { response: number; damping: number }
 export interface Keyframe { id: string; t: number; v: number; ease: EaseName; bz?: Bezier; spring?: SpringParams }
 export interface PropTrack { p: PropId; keys: Keyframe[] }
 export interface Clip { s: number; e: number }
-export type Trigger = "On load" | "On hover" | "On click" | "On scroll into view" | "While scrolling";
+export type ClipCategory =
+  | "Entrance"
+  | "Hover"
+  | "Tap"
+  | "Scroll"
+  | "Loop"
+  | "Morph"
+  | "Exit"
+  | "Focus"
+  | "Stagger"
+  | "Layout";
+export type Trigger =
+  | "On load"
+  | "On hover"
+  | "On press"
+  | "On click"
+  | "On focus"
+  | "On scroll into view"
+  | "While scrolling"
+  | "Follow the pointer"
+  | "While dragged"
+  | "On a timer"
+  | "On leave"
+  | "When its layout changes"
+  | "Custom";
 export type RepeatMode = "Once" | "Number" | "Forever";
 export interface MotionLayer {
   id: string; lbl: number; gopen: boolean; clips: Clip[]; open: boolean; mute: boolean; lock: boolean; solo: boolean;
+  category?: ClipCategory;
   trig: Trigger; ease: EaseName; rep: RepeatMode; rn: number; yoyo: boolean; ss: string; se: string;
   scrub: boolean; pin: boolean; sprev: number; stag: number; sfrom: "Start" | "End" | "Center"; tr: PropTrack[];
 }

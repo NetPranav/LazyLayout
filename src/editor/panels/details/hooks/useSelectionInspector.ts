@@ -14,12 +14,12 @@ import {
   Hash,
   type LucideIcon,
 } from "lucide-react";
-import { resolveProps } from "@/core/render/resolve";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayers } from "@/core/store/useDocumentStore";
 import type { Layer } from "@/core/document/schema";
 import type { PropValue } from "@/core/document/registry";
 import {
+  transaction,
   setLayerProps,
   alignLayers,
   distributeLayers,
@@ -29,6 +29,7 @@ import {
   type AlignTarget,
 } from "@/core/editing/editOps";
 import type { AlignMode, SpreadAxis } from "@/core/geometry/align";
+import { isRemapped, propertyFor, readFor, valueFor } from "./shapeProps";
 
 /**
  * Multi-layer icon: closest existing glyph (`Frame`); a dedicated multi-layer glyph is requested in the handoff.
@@ -129,19 +130,12 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
     (propKey: string): PropValue | null => {
       if (selectedLayers.length === 0) return null;
 
-      const getLayerVal = (layer: Layer) => {
-        if (!layer) return undefined;
-        if (layer.properties?.[propKey] !== undefined) {
-          return layer.properties[propKey];
-        }
-        return resolveProps(layer).get(propKey) ?? undefined;
-      };
-
-      const firstVal = getLayerVal(selectedLayers[0]);
+      // Each layer's own property for this field (a shape is painted by svg.fill, a box by its background); "Mixed" only when layers differ.
+      const firstVal = readFor(selectedLayers[0], propKey) ?? null;
 
       for (let i = 1; i < selectedLayers.length; i++) {
-        const val = getLayerVal(selectedLayers[i]);
-        if (val !== firstVal && JSON.stringify(val) !== JSON.stringify(firstVal)) {
+        const val = readFor(selectedLayers[i], propKey) ?? null;
+        if (val !== firstVal) {
           return null;
         }
       }
@@ -158,9 +152,15 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
       if (selectedIds.length === 0) return;
 
       const realIds = selectedIds.filter((id) => Boolean(layers[id]));
-      if (realIds.length > 0) {
+      if (realIds.length === 0) return;
+      if (!realIds.some((id) => isRemapped(layers[id]))) {
         setLayerProps(realIds, { [propKey]: value }, `Change ${propKey}`);
+        return;
       }
+      // a shape takes the property it is painted by; one undo step for the whole selection
+      transaction(`Change ${propKey}`, () => {
+        for (const id of realIds) setLayerProps([id], { [propertyFor(layers[id], propKey)]: valueFor(layers[id], propKey, value) }, `Change ${propKey}`);
+      });
     },
     [selectedIds, layers]
   );
@@ -171,9 +171,18 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
       if (selectedIds.length === 0) return;
 
       const realIds = selectedIds.filter((id) => Boolean(layers[id]));
-      if (realIds.length > 0) {
+      if (realIds.length === 0) return;
+      if (!realIds.some((id) => isRemapped(layers[id]))) {
         setLayerProps(realIds, patch, "Change properties");
+        return;
       }
+      transaction("Change properties", () => {
+        for (const id of realIds) {
+          const own: Record<string, PropValue | null> = {};
+          for (const [key, value] of Object.entries(patch)) own[propertyFor(layers[id], key)] = valueFor(layers[id], key, value);
+          setLayerProps([id], own, "Change properties");
+        }
+      });
     },
     [selectedIds, layers]
   );

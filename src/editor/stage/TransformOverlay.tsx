@@ -9,6 +9,7 @@ import {
   type ResizeHandleName,
 } from "./constants";
 import type { SnapLine, SpacingMark } from "@/core/geometry/snap";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 
 interface TransformOverlayProps {
   selectedIds: string[];
@@ -18,6 +19,8 @@ interface TransformOverlayProps {
   spacingMarks?: SpacingMark[];
   onStartMove?: (elementId: string, e: React.PointerEvent) => void;
   onStartResize?: (handle: ResizeHandleName, e: React.PointerEvent) => void;
+  /** How much the artboard is scaled on screen; the handles are drawn against it so they stay a grabbable size. */
+  zoom?: number;
 }
 
 export const TransformOverlay: React.FC<TransformOverlayProps> = ({
@@ -28,7 +31,10 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
   spacingMarks = [],
   onStartMove: _onStartMove,
   onStartResize,
+  zoom = 1,
 }) => {
+  const keep = zoom > 0 && zoom < 1 ? 1 / zoom : 1; // the page is drawn smaller than life, so grow the handles back
+  const selectedMirrorId = useSelectionStore((s) => s.selectedMirrorId);
   return (
     <div
       data-testid="selection-overlay"
@@ -38,8 +44,10 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
       {/* 1. Hover Outlines for non-selected hovered element */}
       {(() => {
         const targetHover = hoveredId === "subtitle" ? "headline" : hoveredId;
-        if (!targetHover || selectedIds.includes(targetHover) || !elements[targetHover]) return null;
-        const el = elements[targetHover];
+        if (!targetHover || selectedIds.includes(targetHover)) return null;
+        const compoundHover = selectedMirrorId ? `${selectedMirrorId}::${targetHover}` : null;
+        const el = (compoundHover && elements[compoundHover]) ? elements[compoundHover] : elements[targetHover];
+        if (!el) return null;
         return (
           <div
             data-testid="hover-outline"
@@ -57,7 +65,8 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
       {/* 2. Selection Boxes & 8 Resize Handles */}
       {selectedIds.map((id) => {
         const targetId = id === "subtitle" ? "headline" : id;
-        const el = elements[targetId];
+        const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${targetId}` : null;
+        const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[targetId];
         if (!el) return null;
 
         return (
@@ -72,6 +81,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
               width: el.width - STAGE_CONSTANTS.selectionBoxOffset * 2,
               height: el.height - STAGE_CONSTANTS.selectionBoxOffset * 2,
               border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
+              ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
             }}
           >
             {/* 8 Resize Handles around the bounding frame */}
@@ -137,7 +147,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                   key={name}
                   data-handle={name}
                   data-testid="selection-handle"
-                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10 ll:transition-transform ll:duration-swap"
+                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10"
                   style={{
                     left: leftStyle,
                     top: topStyle,
@@ -146,19 +156,22 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
                     backgroundColor: "var(--ll-surface-canvas)",
                     border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
                     cursor: RESIZE_HANDLE_CURSORS[name],
-                    transform: transformStyle,
+                    transform: `${transformStyle === "none" ? "" : transformStyle} scale(${keep})`.trim(),
                   }}
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     onStartResize?.(name, e);
                   }}
-                />
+                >
+                  {/* a larger invisible target around the dot, so the handle is easy to hit and the cursor changes at once */}
+                  <span aria-hidden="true" className="ll:absolute" style={{ inset: -5.5, cursor: RESIZE_HANDLE_CURSORS[name] }} />
+                </div>
               );
             })}
 
             {/* Dimension Badge (.dim): e.g. "340 × 82" */}
             <div
-              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none"
+              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none ll:pointer-events-none"
               style={{
                 left: 0,
                 top: "calc(100% + var(--ll-spacing-0-5))",
@@ -218,7 +231,7 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
             }}
           >
             <span
-              className="ll:absolute ll:font-mono ll:px-1 ll:rounded-xs ll:bg-surface-panel ll:text-primary ll:border ll:border-border"
+              className="ll:absolute ll:font-mono ll:px-1 ll:rounded-xs ll:bg-surface-panel ll:text-primary ll:border ll:border-border ll:pointer-events-none"
               style={{
                 left: isX ? mid - mark.from : 4,
                 top: isX ? -16 : mid - mark.from - 8,

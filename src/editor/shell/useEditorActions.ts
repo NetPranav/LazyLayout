@@ -19,7 +19,10 @@ import {
   tryRunCommand,
 } from "@/core/commands";
 import { transport, transportStore } from "@/core/time/transport";
-import { isTextEditingTarget } from "@/core/commands/normalize";
+import { isTextEditingTarget, normalizeShortcut } from "@/core/commands/normalize";
+import { getAllCommands, getContextKeys } from "@/core/commands";
+import { useExportUiStore } from "@/core/store/useExportUiStore";
+import { useAgentUiStore } from "@/core/store/useAgentUiStore";
 import { listFrames } from "@/core/frames/frames";
 import { motionActions, useMotionModel } from "@/editor/motion-model";
 import { getDocument } from "@/core/store/documentState";
@@ -29,6 +32,9 @@ import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDataba
 import { embedAssets, restoreAssets } from "@/core/assets/embed";
 import { getAssetStore } from "@/core/assets/AssetStore";
 import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/lazyFile";
+import { executeStagePreset, presetForBreakpoint } from "@/editor/stage/presetBreakpoints";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 
 export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
@@ -104,6 +110,16 @@ export interface UseEditorActionsReturn {
   handleMenuAction: (id: string) => void;
 }
 
+/** Whether a command currently runs for this normalized key. */
+function shortcutHasCommand(shortcut: string): boolean {
+  const ctx = getContextKeys();
+  return getAllCommands().some((c) => {
+    if (!c.keybinding) return false;
+    const keys = Array.isArray(c.keybinding) ? c.keybinding : [c.keybinding];
+    return keys.includes(shortcut) && (!c.when || c.when(ctx));
+  });
+}
+
 export function useEditorActions(
   options: UseEditorActionsOptions = {}
 ): UseEditorActionsReturn {
@@ -128,8 +144,18 @@ export function useEditorActions(
   // Viewport preset (Desktop: 1440, Tablet: 768, Mobile: 375)
   const [viewportPreset, setViewportPresetState] = useState<"1440" | "768" | "375">("1440");
 
+  // Keep viewportPresetState in sync when breakpoint is changed elsewhere (e.g. artboard dropdown)
+  useEffect(() => {
+    return useBreakpointStore.subscribe((state) => {
+      const doc = getDocument();
+      const p = presetForBreakpoint(breakpointsOf(doc), state.activeId);
+      setViewportPresetState(p);
+    });
+  }, []);
+
   const setViewportPreset = useCallback((preset: "1440" | "768" | "375") => {
     setViewportPresetState(preset);
+    executeStagePreset(preset);
     const SIZES: Record<string, { width: number; height: number }> = {
       "1440": { width: 1440, height: 900 },
       "768": { width: 768, height: 1024 },
@@ -254,6 +280,7 @@ export function useEditorActions(
       text: "text",
       image: "select",
       pen: "pen",
+      pencil: "pencil",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
   }, []);
@@ -463,9 +490,11 @@ export function useEditorActions(
           break;
         }
         case "file.exportCode": {
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("antigravity:export_code"));
-          }
+          useExportUiStore.getState().open();
+          break;
+        }
+        case "file.connectAgent": {
+          useAgentUiStore.getState().open();
           break;
         }
         case "file.copyLink": {
@@ -947,14 +976,24 @@ export function useEditorActions(
       if (isTextEditingTarget(e.target)) {
         return;
       }
+      // 2. A key the command bus answers is its alone (it has its own listener): running it here too made Undo undo two
+      // steps and Duplicate make two copies. Copy and paste are the browser's own events (installClipboardEvents).
+      const shortcut = normalizeShortcut(e);
+      if (e.defaultPrevented || (shortcut && shortcutHasCommand(shortcut))) return;
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "v" || e.key.toLowerCase() === "x")) return;
 
       const key = e.key.toLowerCase();
       const isCtrl = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
       const isAlt = e.altKey;
 
-      // Escape closes overlays
+      // Escape closes overlays and exits preview
       if (e.key === "Escape") {
+        if (useCanvasViewStore.getState().mode === "preview") {
+          useCanvasViewStore.getState().setMode("design");
+          e.preventDefault();
+          return;
+        }
         if (isInsertOpen) {
           setIsInsertOpen(false);
           e.preventDefault();
@@ -1254,7 +1293,11 @@ export function useEditorActions(
         }
         if (key === "p") {
           e.preventDefault();
-          setActiveTool("pen");
+          if (e.shiftKey) {
+            setActiveTool("pencil");
+          } else {
+            setActiveTool("pen");
+          }
           return;
         }
         if (key === "r") {
@@ -1292,6 +1335,7 @@ export function useEditorActions(
           return;
         }
         if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
           invokeCommand("edit.delete");
           return;
         }

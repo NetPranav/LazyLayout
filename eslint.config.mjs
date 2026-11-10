@@ -49,6 +49,39 @@ const eslintConfig = defineConfig([
     ],
     rules: { "no-restricted-globals": "off", "no-restricted-properties": "off" },
   },
+  // Core logic stays pure (no reading or building the page), so it runs the same in the editor, in tests, in the
+  // export and on a server. Whatever needs the drawn page lives in src/editor and is handed in (see
+  // registerLetterMeasurer in src/core/editing/splitText.ts); user feedback goes through a store (showToast).
+  // The animation-frame rule above is repeated: a later block replaces a rule of the same name for its files.
+  {
+    files: [
+      "src/core/editing/**/*.{ts,tsx}",
+      "src/core/document/**/*.{ts,tsx}",
+      "src/core/frames/**/*.{ts,tsx}",
+      "src/core/geometry/**/*.{ts,tsx}",
+      "src/core/paint/**/*.{ts,tsx}",
+      "src/core/breakpoints/**/*.{ts,tsx}",
+      "src/core/text/**/*.{ts,tsx}",
+      "src/core/store/**/*.{ts,tsx}",
+    ],
+    ignores: ["**/__tests__/**"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        { object: "window", property: "requestAnimationFrame", message: "Register a task with frameScheduler (src/core/time/scheduler.ts) instead." },
+        { object: "window", property: "cancelAnimationFrame", message: "Unregister the frameScheduler task instead." },
+        { object: "document", property: "querySelector", message: "Core is pure: measure the page in src/editor and pass the result in." },
+        { object: "document", property: "querySelectorAll", message: "Core is pure: measure the page in src/editor and pass the result in." },
+        { object: "document", property: "getElementById", message: "Core is pure: measure the page in src/editor and pass the result in." },
+        { object: "document", property: "createElement", message: "Core is pure: draw UI in src/editor (for a message, use showToast)." },
+        { object: "document", property: "createTreeWalker", message: "Core is pure: measure the page in src/editor and pass the result in." },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        { selector: "CallExpression[callee.property.name='getBoundingClientRect']", message: "Core is pure: measure the page in src/editor and pass the result in." },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
