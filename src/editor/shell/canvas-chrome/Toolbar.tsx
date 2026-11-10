@@ -2,8 +2,6 @@
 
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import {
-  MousePointer2,
-  Hand,
   Frame as FrameIcon,
   Square,
   Circle,
@@ -11,8 +9,8 @@ import {
   ArrowUpRight,
   Hexagon,
   Star,
-  PenTool,
   Type,
+  Image as ImageIcon,
   Plus,
   Play,
   Scissors,
@@ -32,7 +30,7 @@ import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
-import { Menu, MenuItem } from "@/editor/components/Menu";
+import { Menu, MenuItem, MenuSeparator } from "@/editor/components/Menu";
 import { getActivePreset } from "@/editor/motion/feel";
 import { springAnim } from "@/editor/motion/ease";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
@@ -125,6 +123,13 @@ const KeyframeAddSvg: LucideIcon = Object.assign(
   { displayName: "KeyframeAddSvg" }
 );
 
+const ToolbarPenNib: LucideIcon = Object.assign(
+  React.forwardRef<SVGSVGElement, LucideProps>(function ToolbarPenNib({ size = 20, className = "" }, _ref) {
+    return <ProtoIcon name="pen2" size={size} className={className} />;
+  }),
+  { displayName: "ToolbarPenNib" }
+);
+
 const SHAPES: ReadonlyArray<{
   id: ShapeTool | "pen";
   label: string;
@@ -137,8 +142,11 @@ const SHAPES: ReadonlyArray<{
   { id: "arrow", label: "Arrow", icon: ArrowUpRight, shortcut: "Shift+L" },
   { id: "poly", label: "Polygon", icon: Hexagon, shortcut: "Y" },
   { id: "star", label: "Star", icon: Star, shortcut: "Shift+Y" },
-  { id: "pen", label: "Pen", icon: PenTool, shortcut: "P" },
+  { id: "pen", label: "Pen", icon: ToolbarPenNib, shortcut: "P" },
 ];
+
+/** Visual groups of the Shape menu: basic shapes, line and arrow, polygons, pen. */
+const SHAPE_GROUP: Record<string, number> = { box: 0, circle: 0, line: 1, arrow: 1, poly: 2, star: 2, pen: 3 };
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   mode = "design",
@@ -445,7 +453,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         role="toolbar"
         aria-label="Canvas tools"
         data-toolbar="main"
-        className={`ll-fbar fbar ll-ftool ftool ${
+        className={`ll-fbar fbar ll-ftool ftool ll:[&_.ll-ib[aria-pressed=true]]:bg-(--ll-control-primary-bg)! ll:[&_.ll-ib[aria-pressed=true]]:text-(--ll-control-primary-fg)! ${
           isNarrowLifted ? "ll-tb-hi tb-hi" : ""
         }`}
       >
@@ -463,7 +471,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
               onClick={() => onSelectTool?.("select")}
-              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="cursor2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Hand (H) */}
@@ -477,7 +485,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
               onClick={() => onSelectTool?.("hand")}
-              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="hand2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Frame (F) - opens FramePresetsPanel */}
@@ -529,7 +537,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 4 ? 0 : -1}
               onFocus={() => setFocusedIndex(4)}
               onClick={() => onSelectTool?.("pen")}
-              icon={<Icon icon={PenTool} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="pen2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Text (T) */}
@@ -545,6 +553,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
+            {/* Image */}
+            <IconButton
+              size="lg"
+              data-tool="image"
+              aria-label="Image"
+              tooltip="Image"
+              pressed={activeTool === "image"}
+              tabIndex={focusedIndex === 6 ? 0 : -1}
+              onFocus={() => setFocusedIndex(6)}
+              onClick={() => onSelectTool?.("image")}
+              icon={<Icon icon={ImageIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
             {/* Separator */}
             <span
               className="ll-gsep gsep"
@@ -556,13 +577,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               ref={insertButtonRef}
               size="lg"
               id="plusbtn"
-              aria-label="Add"
+              data-testid="toolbar-insert"
+              aria-label="Insert"
               tooltip="Insert (I)"
               aria-haspopup="dialog"
               aria-expanded={isInsertOpen}
               pressed={isInsertOpen}
-              tabIndex={focusedIndex === 6 ? 0 : -1}
-              onFocus={() => setFocusedIndex(6)}
+              tabIndex={focusedIndex === 7 ? 0 : -1}
+              onFocus={() => setFocusedIndex(7)}
               onClick={onToggleInsert}
               icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
@@ -577,8 +599,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-haspopup="dialog"
               aria-expanded={isAiBoxOpen}
               pressed={isAiBoxOpen}
-              tabIndex={focusedIndex === 7 ? 0 : -1}
-              onFocus={() => setFocusedIndex(7)}
+              tabIndex={focusedIndex === 8 ? 0 : -1}
+              onFocus={() => setFocusedIndex(8)}
               onClick={onToggleAiBox}
               icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
             />
@@ -599,7 +621,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
               onClick={() => onSelectTool?.("select")}
-              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="cursor2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Hand (H) */}
@@ -613,7 +635,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
               onClick={() => onSelectTool?.("hand")}
-              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="hand2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Separator */}
@@ -743,7 +765,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
               onClick={() => onSelectTool?.("select")}
-              icon={<Icon icon={MousePointer2} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="cursor2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Hand (H) */}
@@ -757,7 +779,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
               onClick={() => onSelectTool?.("hand")}
-              icon={<Icon icon={Hand} size={CANVAS_CHROME_SIZES.iconLg} />}
+              icon={<ProtoIcon name="hand2" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Separator */}
@@ -910,25 +932,40 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         aria-label="Shape options"
         width={CANVAS_CHROME_SIZES.shapeMenuWidth}
       >
-        {SHAPES.map((sh) => (
-          <MenuItem
-            key={sh.id}
-            icon={<Icon icon={sh.icon} size={CANVAS_CHROME_SIZES.iconMd} />}
-            shortcut={sh.shortcut}
-            checked={activeShape === sh.id}
-            onClick={() => {
-              if (sh.id === "pen") {
-                onSelectTool?.("pen");
-              } else {
-                onSelectShape?.(sh.id);
-                onSelectTool?.("shape");
-              }
-              setIsShapeMenuOpen(false);
-            }}
-          >
-            {sh.label}
-          </MenuItem>
-        ))}
+        {SHAPES.map((sh, i) => {
+          const isCurrent = activeShape === sh.id && (activeTool === "shape" || sh.id !== "pen");
+          const groupStart = i > 0 && SHAPE_GROUP[sh.id] !== SHAPE_GROUP[SHAPES[i - 1].id];
+          return (
+            <React.Fragment key={sh.id}>
+              {groupStart && <MenuSeparator className="ll:mx-2" />}
+              <MenuItem
+                icon={
+                  <span className={isCurrent ? "ll:text-primary" : "ll:text-secondary"}>
+                    <Icon icon={sh.icon} size={CANVAS_CHROME_SIZES.iconMd} />
+                  </span>
+                }
+                shortcut={sh.shortcut}
+                checked={activeShape === sh.id}
+                className={
+                  isCurrent
+                    ? "ll:bg-[color-mix(in_srgb,var(--ll-text-primary)_12%,transparent)] ll:text-primary ll:font-medium"
+                    : ""
+                }
+                onClick={() => {
+                  if (sh.id === "pen") {
+                    onSelectTool?.("pen");
+                  } else {
+                    onSelectShape?.(sh.id);
+                    onSelectTool?.("shape");
+                  }
+                  setIsShapeMenuOpen(false);
+                }}
+              >
+                {sh.label}
+              </MenuItem>
+            </React.Fragment>
+          );
+        })}
       </Menu>
 
       {/* Easing Menu (Motion mode) */}

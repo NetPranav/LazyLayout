@@ -11,6 +11,7 @@ export interface ProtoMapEntry {
 
 export const LUCIDE_TO_PROTO: Readonly<Record<string, ProtoMapEntry>> = {
   AddKeyframeIcon: { id: "kfadd" },
+  AlignCenter: { id: "tac" },
   AlignCenterHorizontal: { id: "am" },
   AlignCenterVertical: { id: "ac" },
   AlignEndHorizontal: { id: "ab" },
@@ -19,6 +20,9 @@ export const LUCIDE_TO_PROTO: Readonly<Record<string, ProtoMapEntry>> = {
   AlignHorizontalJustifyCenter: { id: "ac" },
   AlignHorizontalJustifyEnd: { id: "ar" },
   AlignHorizontalJustifyStart: { id: "al" },
+  AlignJustify: { id: "taj" },
+  AlignLeft: { id: "tal" },
+  AlignRight: { id: "tar" },
   AlignStartHorizontal: { id: "at" },
   AlignStartVertical: { id: "al" },
   AlignVerticalDistributeCenter: { id: "distv" },
@@ -86,6 +90,7 @@ export const LUCIDE_TO_PROTO: Readonly<Record<string, ProtoMapEntry>> = {
   LinkIcon: { id: "link" },
   ListTree: { id: "tree" },
   Lock: { id: "lock" },
+  LockOpen: { id: "unlock" },
   Magnet: { id: "magnet" },
   Maximize: { id: "fit" },
   Minus: { id: "minus" },
@@ -102,6 +107,7 @@ export const LUCIDE_TO_PROTO: Readonly<Record<string, ProtoMapEntry>> = {
   Pause: { id: "pause" },
   Pen: { id: "tb-pen" },
   PenTool: { id: "tb-pen" },
+  ToolbarPenNib: { id: "pen2" },
   Play: { id: "play" },
   Plus: { id: "plus" },
   RectangleHorizontal: { id: "box" },
@@ -139,6 +145,7 @@ export const LUCIDE_TO_PROTO: Readonly<Record<string, ProtoMapEntry>> = {
   Type: { id: "txt" },
   Underline: { id: "ul" },
   Undo2: { id: "undo" },
+  Unlock: { id: "unlock" },
   Workflow: { id: "flow" },
   X: { id: "x" },
 };
@@ -166,4 +173,10 @@ export const PHOSPHOR_TO_PROTO: Readonly<Record<string, ProtoName>> = {
   textUnderline: "ul",
   textStrikethrough: "strike",
   link: "link",
+  lockOpen: "unlock",
+  lockSimpleOpen: "unlock",
+  textAlignLeft: "tal",
+  textAlignCenter: "tac",
+  textAlignRight: "tar",
+  textAlignJustify: "taj",
 };

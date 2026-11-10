@@ -44,6 +44,10 @@ export const PROTO_GLYPHS = {
   cursor: { n: [["path",{d:"m5 3 14 7-6 2-2 6L5 3Z"}]] },
   hand: { n: [["path",{d:"M8 13V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-4a1.5 1.5 0 0 1 2.5-1.5L8 15"}]] },
   plus: { n: [["path",{d:"M12 5v14M5 12h14"}]] },
+  // Toolbar refinements: bigger pointer arrow with a tail notch, pen nib with the anchor circle, recentred hand.
+  cursor2: { n: [["path",{d:"M4.5 3.5 19.5 9.8l-6.4 2.4-2.4 6.6L4.5 3.5Z"}], ["path",{d:"m13.6 13.6 4.4 4.9"}]] },
+  pen2: { n: [["path",{d:"M12 21.5 5 12.5l2-6.5h10l2 6.5-7 9Z"}], ["path",{d:"M9 3h6M12 14v7.5"}], ["circle",{cx:"12",cy:"11.5",r:"1.6"}]] },
+  hand2: { n: [["g",{transform:"translate(1.6 0)"},[["path",{d:"M8 13V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-4a1.5 1.5 0 0 1 2.5-1.5L8 15"}]]]] },
   minus: { n: [["path",{d:"M5 12h14"}]] },
   fullw: { n: [["rect",{x:"3",y:"4",width:"18",height:"16",rx:"1"}], ["path",{d:"M3 14h18M8 4v10M16 4v10"}]] },
   fit: { n: [["path",{d:"M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"}]] },
@@ -176,6 +180,10 @@ export const PROTO_GLYPHS = {
   ungrp: { n: [["rect",{x:"4",y:"4",width:"8",height:"8",rx:"1"}], ["rect",{x:"12",y:"12",width:"8",height:"8",rx:"1"}]] },
   wain: { n: [["path",{d:"M9 4H5v16h4M12 12h8M17 8l4 4-4 4"}]] },
   waout: { n: [["path",{d:"M15 4h4v16h-4M12 12H4M7 8l-4 4 4 4"}]] },
+  tlview: { n: [["rect",{x:"3",y:"5",width:"10",height:"4",rx:"1"}], ["rect",{x:"9",y:"10",width:"12",height:"4",rx:"1"}], ["rect",{x:"5",y:"15",width:"9",height:"4",rx:"1"}]] },
+  graphview: { n: [["path",{d:"M4 4v16h16"}], ["path",{d:"M7 16C11 16 11 8 17 8"}], ["circle",{cx:"7",cy:"16",r:"1.25"}], ["circle",{cx:"17",cy:"8",r:"1.25"}]] },
+  expandw: { n: [["path",{d:"M3 6v12M21 6v12"}], ["path",{d:"M11 12H6.5M9.5 9l-3 3 3 3M13 12h4.5M14.5 9l3 3-3 3"}]] },
+  collapseb: { n: [["path",{d:"m7 8 5 5 5-5"}], ["path",{d:"M5 18h14"}]] },
 } as const satisfies Record<string, ProtoGlyph>;
 
 export type ProtoName = keyof typeof PROTO_GLYPHS;
