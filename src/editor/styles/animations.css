@@ -532,6 +532,11 @@ button[aria-expanded="true"] > .ll-chevron-flip {
   --bh: clamp(var(--ll-size-bottom-min-h), var(--mbh, var(--ll-size-bottom-default-h)), var(--ll-size-bottom-max-h));
 }
 
+/* Collapsed bottom panel: just the 44px header strip plus the 1px top hairline */
+.ll-shell[data-bc] {
+  --bh: var(--ll-size-bottom-collapsed-h);
+}
+
 .ll-shell[data-lc] {
   --lw: 0px;
 }

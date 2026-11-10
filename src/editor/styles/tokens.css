@@ -690,13 +690,16 @@ svg {
   animation: ll-tl-flash 0.9s ease-out;
 }
 
-/* Playhead: 1px line with a faint panel-coloured halo so it stays readable over clips and gridlines */
+/* Playhead: an exact 1px line (no halo, so it never reads thicker), snapped to device pixels in TimelinePlayhead.tsx */
 .ll-phl {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ll-surface-panel) 55%, transparent);
+  box-shadow: none;
 }
-/* Pentagon head: flat top, point on the frame */
+/* Pentagon head: flat top flush with the top of the ruler, point on the centre of the line, same colour as the line.
+   Positioned here, not with utilities: Tailwind has no top/left namespace for these tokens. */
 .ll-phl-knob {
-  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+  top: var(--ll-size-playhead-knob-top);
+  left: var(--ll-size-playhead-knob-left);
+  clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%);
   transform-origin: 50% 0;
 }
 .ll-phl-time {
@@ -1040,6 +1043,7 @@ svg {
 
 /* === lane: L8 shell === */
 :root {
+  --ll-size-bottom-collapsed-h: 45px;
   --ll-size-bottom-min-h: 180px;
   --ll-size-bottom-max-h: 70vh;
   --ll-size-bottom-default-h: 40vh;
@@ -2160,8 +2164,9 @@ svg {
   --ll-size-timeline-footer-btn: 28px;
   --ll-size-popover-min-w: 176px;
   --ll-size-playhead-knob-w: 11px;
-  --ll-size-playhead-knob-h: 14px;
-  --ll-size-playhead-knob-top: 7px;
+  --ll-size-playhead-knob-h: 12px;
+  --ll-size-playhead-knob-top: 0px;
+  /* (knob width - 1px line) / 2, so the point lands on the line's centre */
   --ll-size-playhead-knob-left: -5px;
   --ll-radius-playhead-knob: 1px;
   --ll-size-bsplit-h: 6px;

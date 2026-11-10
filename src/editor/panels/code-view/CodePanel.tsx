@@ -18,6 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { BottomCollapseButton } from "@/editor/shell/BottomCollapseButton";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { ZipPacker } from "@/compiler/export/ZipPacker";
@@ -609,6 +610,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           >
             <Icon icon={MoreHorizontal} size={14} />
           </button>
+
+          <i className="ll-tdiv ll:w-px ll:h-5 ll:bg-border ll:mx-1 ll:shrink-0" aria-hidden="true" />
+          <BottomCollapseButton mode="code" />
         </div>
       </div>
 

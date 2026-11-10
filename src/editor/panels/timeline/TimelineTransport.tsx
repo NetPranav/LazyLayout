@@ -15,12 +15,10 @@ import {
   RotateCcw,
   Layers,
   MousePointer2,
-  Maximize2,
   Download,
   ChevronDown,
-  Rows2,
-  Spline,
 } from "lucide-react";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { useStore } from "zustand";
@@ -38,6 +36,7 @@ import {
 import { SPEED_OPTIONS } from "./constants";
 import { SplitIcon } from "./icons";
 import { timelineOpsAdapter } from "./timelineOpsAdapter";
+import { BottomCollapseButton } from "@/editor/shell/BottomCollapseButton";
 
 export interface TimelineTransportProps {
   onExport?: () => void;
@@ -60,6 +59,14 @@ export interface TimelineTransportProps {
   onToggleGraph?: () => void;
   onAddKeyframe?: () => void;
 }
+
+/** One control: 32px square, 4px radius. Idle colours are added per button. */
+const BTN = "ll:w-8 ll:h-8 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:flex-none ll:transition-colors";
+const BTN_IDLE = "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover";
+/** 1px hairline between groups, with 6px of margin on each side (the flex gap adds 8px more). */
+const Sep: React.FC = () => (
+  <i className="tdiv ll:w-px ll:h-5 ll:bg-border ll:mx-1.5 ll:flex-none" aria-hidden="true" />
+);
 
 export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   onExport,
@@ -110,34 +117,12 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
       role="toolbar"
       aria-label="Timeline header"
       style={{ background: "color-mix(in srgb, var(--ll-surface-panel) 95%, var(--ll-text-primary))" }}
-      className={`ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
+      className={`ll-ph ll-mh ll:@container ll:h-11 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
         autoKey ? "ll:outline ll:outline-1 ll:outline-primary ll:-outline-offset-1" : ""
       }`}
     >
-      {/* 1. Left: Timecode and total */}
-      <div className="ll-mtc ll:flex ll:items-baseline ll:gap-2 ll:min-w-0">
-        <button
-          type="button"
-          id="tc"
-          data-ta="tc"
-          onClick={() => motionActions.toggleFrames()}
-          aria-label="Playhead time"
-          title="Click to switch between timecode and frames"
-          style={{ fontSize: "20px", lineHeight: "28px" }}
-          className="ll-tc ll:font-mono ll:font-medium ll:h-7 ll:rounded-sm ll:px-1 ll:-ml-1 ll:text-primary ll:hover:bg-surface-hover ll:transition-colors"
-        >
-          {formattedTime}
-        </button>
-        <span
-          id="tt"
-          className="ll-tt ll:font-mono ll:font-normal ll:text-micro ll:text-muted ll:whitespace-nowrap ll:-ml-1"
-        >
-          / {formattedTotal}
-        </span>
-      </div>
-
-      {/* 2. Center: Transport Controls */}
-      <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:justify-self-center">
+      {/* Left: transport, then playhead time / total */}
+      <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:flex-none">
         <button
           type="button"
           data-ta="start"
@@ -147,9 +132,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           }}
           aria-label="Go to start (Home)"
           title="Go to start (Home)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={SkipBack} size={14} />
+          <Icon icon={SkipBack} size={16} />
         </button>
 
         <button
@@ -158,9 +143,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           onClick={() => motionActions.jumpKey(-1)}
           aria-label="Previous keyframe (Alt+Left)"
           title="Previous keyframe (Alt+Left)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE} ll:@max-[820px]:hidden`}
         >
-          <Icon icon={StepBack} size={14} />
+          <Icon icon={StepBack} size={16} />
         </button>
 
         <button
@@ -169,9 +154,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           onClick={() => motionActions.stepFrame(-1)}
           aria-label="Step back (Left)"
           title="Step back (Left)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={ChevronLeft} size={15} />
+          <Icon icon={ChevronLeft} size={16} />
         </button>
 
         <button
@@ -182,13 +167,13 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={effectivePlaying}
           aria-label={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
           title={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ${
             effectivePlaying
               ? "ll:bg-control-active ll:text-control-active-fg"
               : "ll:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={effectivePlaying ? Pause : Play} size={14} />
+          <Icon icon={effectivePlaying ? Pause : Play} size={16} />
         </button>
 
         <button
@@ -197,9 +182,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           onClick={() => motionActions.stepFrame(1)}
           aria-label="Step forward (Right)"
           title="Step forward (Right)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={ChevronRight} size={15} />
+          <Icon icon={ChevronRight} size={16} />
         </button>
 
         <button
@@ -208,9 +193,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           onClick={() => motionActions.jumpKey(1)}
           aria-label="Next keyframe (Alt+Right)"
           title="Next keyframe (Alt+Right)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE} ll:@max-[820px]:hidden`}
         >
-          <Icon icon={StepForward} size={14} />
+          <Icon icon={StepForward} size={16} />
         </button>
 
         <button
@@ -222,10 +207,12 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           }}
           aria-label="Go to end (End)"
           title="Go to end (End)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={SkipForward} size={14} />
+          <Icon icon={SkipForward} size={16} />
         </button>
+
+        <Sep />
 
         <button
           type="button"
@@ -235,13 +222,13 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={loop !== "off"}
           aria-label={`Loop: ${loopLabel}`}
           title={`Loop: ${loopLabel}`}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ${
             loop !== "off"
               ? "ll:text-control-active ll:bg-surface-hover"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
-          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={14} />
+          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={16} />
         </button>
 
         <button
@@ -251,10 +238,10 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-label="Auto-key record mode"
           data-testid="timeline-record-button"
           title={recordMode ? "Auto-key record mode (ON) - changes create keyframes" : "Auto-key record mode (OFF)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ll:@max-[980px]:hidden ${
             recordMode
               ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
           <div
@@ -271,24 +258,49 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-label="Toggle onion skin"
           data-testid="timeline-onion-skin-button"
           title={onionSkin.enabled ? "Onion skin (ON) - shows ghost frames" : "Onion skin (OFF)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ll:@max-[980px]:hidden ${
             onionSkin.enabled
               ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
-          <Icon icon={Layers} size={14} />
+          <Icon icon={Layers} size={16} />
         </button>
       </div>
 
-      {/* 3. Right: View tabs, Tools, Speed, Full Width, Export, More */}
-      <div className="ll-mrt ll:flex ll:items-center ll:gap-1 ll:justify-end ll:min-w-0">
-        {/* Segmented view switch (Timeline / Graph) */}
+      <Sep />
+
+      <div className="ll-mtc ll:flex ll:items-baseline ll:gap-1.5 ll:min-w-0 ll:flex-none">
+        <button
+          type="button"
+          id="tc"
+          data-ta="tc"
+          onClick={() => motionActions.toggleFrames()}
+          aria-label="Playhead time"
+          title="Click to switch between timecode and frames"
+          style={{ fontSize: "18px", lineHeight: "32px" }}
+          className="ll-tc ll:font-mono ll:font-medium ll:tabular-nums ll:h-8 ll:rounded-sm ll:px-1.5 ll:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          {formattedTime}
+        </button>
+        <span
+          id="tt"
+          className="ll-tt ll:font-mono ll:font-normal ll:tabular-nums ll:text-micro ll:text-muted ll:whitespace-nowrap"
+        >
+          / {formattedTotal}
+        </span>
+      </div>
+
+      <div className="ll:flex-1 ll:min-w-0" aria-hidden="true" />
+
+      {/* Right: view switch, tools, speed, expand width, export, more */}
+      <div className="ll-mrt ll:flex ll:items-center ll:gap-0.5 ll:justify-end ll:flex-none">
+        {/* Segmented view switch (Timeline / Graph), icon only */}
         <div
           id="vseg"
           role="tablist"
           aria-label="Timeline view"
-          className="seg vseg ll-vseg ll:flex ll:items-center ll:h-8 ll:p-0.5 ll:gap-0.5 ll:border ll:border-border ll:rounded-sm ll:flex-none ll:w-40"
+          className="seg vseg ll-vseg ll:flex ll:items-center ll:h-8 ll:p-px ll:gap-px ll:border ll:border-border ll:rounded-sm ll:flex-none"
         >
           <button
             type="button"
@@ -296,16 +308,16 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
             data-view="timeline"
             aria-selected={view === "timeline"}
             aria-pressed={view === "timeline"}
+            aria-label="Timeline"
+            title="Timeline"
             onClick={() => motionActions.setView("timeline")}
-            style={{ fontSize: "13px" }}
-            className={`ll:flex-1 ll:h-6.5 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:font-sans ll:font-medium ll:transition-colors ${
+            className={`ll:w-9 ll:h-full ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
               view === "timeline"
                 ? "ll:bg-surface-segmented ll:text-primary"
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
-            <Icon icon={Rows2} size={14} className="ll:mr-1.5 ll:shrink-0" />
-            Timeline
+            <ProtoIcon name="tlview" size={20} />
           </button>
           <button
             type="button"
@@ -313,20 +325,20 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
             data-view="graph"
             aria-selected={view === "graph"}
             aria-pressed={view === "graph"}
+            aria-label="Graph"
+            title="Graph"
             onClick={() => motionActions.setView("graph")}
-            style={{ fontSize: "13px" }}
-            className={`ll:flex-1 ll:h-6.5 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:font-sans ll:font-medium ll:transition-colors ${
+            className={`ll:w-9 ll:h-full ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
               view === "graph"
                 ? "ll:bg-surface-segmented ll:text-primary"
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
-            <Icon icon={Spline} size={14} className="ll:mr-1.5 ll:shrink-0" />
-            Graph
+            <ProtoIcon name="graphview" size={20} />
           </button>
         </div>
 
-        <i className="tdiv ll:w-px ll:h-4 ll:bg-border ll:mx-1 ll:flex-none" aria-hidden="true" />
+        <Sep />
 
         {/* Tools: Select (V), Split (C) */}
         <button
@@ -336,13 +348,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={tool === "select"}
           aria-label="Select (V)"
           title="Select (V)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            tool === "select"
-              ? "ll:bg-selection ll:text-selection-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${tool === "select" ? "ll:bg-selection ll:text-selection-fg" : BTN_IDLE}`}
         >
-          <Icon icon={MousePointer2} size={15} />
+          <Icon icon={MousePointer2} size={16} />
         </button>
 
         <button
@@ -358,16 +366,12 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={tool === "split"}
           aria-label="Split clip (C)"
           title="Split clip (C)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            tool === "split"
-              ? "ll:bg-selection ll:text-selection-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${tool === "split" ? "ll:bg-selection ll:text-selection-fg" : BTN_IDLE}`}
         >
-          <Icon icon={SplitIcon} size={15} />
+          <Icon icon={SplitIcon} size={16} />
         </button>
 
-        <i className="tdiv ll:w-px ll:h-4 ll:bg-border ll:mx-1 ll:flex-none" aria-hidden="true" />
+        <Sep />
 
         {/* Speed dropdown */}
         <button
@@ -383,7 +387,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-expanded={speedMenuOpen}
           aria-label="Playback speed"
           title="Playback speed"
-          className="ll-mdd ll:h-7 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors ll:flex-none"
+          className="ll-mdd ll:h-8 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:tabular-nums ll:text-micro ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors ll:flex-none"
         >
           <span className="ddt">{speed}×</span>
           <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
@@ -409,7 +413,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           </Menu>
         )}
 
-        {/* Full width button (Shift+T) */}
+        {/* Expand width button (Shift+T) */}
         <button
           type="button"
           id="tfw"
@@ -422,16 +426,12 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={isFw}
           aria-label="Full width (Shift+T)"
           title="Full width (Shift+T)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            isFw
-              ? "ll:bg-surface-hover ll:text-primary"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${isFw ? "ll:bg-surface-hover ll:text-primary" : BTN_IDLE}`}
         >
-          <Icon icon={Maximize2} size={15} />
+          <ProtoIcon name="expandw" size={18} />
         </button>
 
-        <i className="tdiv ll:w-px ll:h-4 ll:bg-border ll:mx-1 ll:flex-none" aria-hidden="true" />
+        <Sep />
 
         {/* Export animation */}
         <button
@@ -441,9 +441,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           onClick={onExport}
           aria-label="Export animation"
           title="Export animation"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={Download} size={15} />
+          <Icon icon={Download} size={16} />
         </button>
 
         {/* More options menu */}
@@ -460,7 +460,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-expanded={moreMenuOpen}
           aria-label="More timeline options"
           title="More"
-          className="ll-more ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors ll:font-mono ll:text-sm ll:font-medium ll:leading-none"
+          className={`ll-more ${BTN} ${BTN_IDLE} ll:font-mono ll:text-sm ll:font-medium ll:leading-none`}
         >
           ...
         </button>
@@ -498,6 +498,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
             </MenuItem>
           </Menu>
         )}
+
+        <Sep />
+
+        {/* Collapse the timeline to this header strip */}
+        <BottomCollapseButton mode="motion" />
       </div>
     </div>
   );

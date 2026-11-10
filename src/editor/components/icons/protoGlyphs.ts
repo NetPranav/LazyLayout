@@ -184,6 +184,7 @@ export const PROTO_GLYPHS = {
   graphview: { n: [["path",{d:"M4 4v16h16"}], ["path",{d:"M7 16C11 16 11 8 17 8"}], ["circle",{cx:"7",cy:"16",r:"1.25"}], ["circle",{cx:"17",cy:"8",r:"1.25"}]] },
   expandw: { n: [["path",{d:"M3 6v12M21 6v12"}], ["path",{d:"M11 12H6.5M9.5 9l-3 3 3 3M13 12h4.5M14.5 9l3 3-3 3"}]] },
   collapseb: { n: [["path",{d:"m7 8 5 5 5-5"}], ["path",{d:"M5 18h14"}]] },
+  frameprev: { n: [["rect",{x:"6",y:"2.5",width:"12",height:"19",rx:"2"}], ["path",{d:"M10.5 9.5v5l4-2.5-4-2.5Z"}]] },
 } as const satisfies Record<string, ProtoGlyph>;
 
 export type ProtoName = keyof typeof PROTO_GLYPHS;

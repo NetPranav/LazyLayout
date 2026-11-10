@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -847,4 +847,52 @@ export function useShellFx(): ShellFxApi {
     };
   });
   return api;
+}
+
+/*
+ * Collapsed bottom panel, per mode. A collapsed panel shrinks to its header strip; the shell root gets
+ * data-bc and the CSS turns that into the row height (animations.css), which the spring engine then plays.
+ * Persisted as localStorage `ll-bc-motion` / `ll-bc-code`.
+ */
+type BottomMode = "motion" | "code";
+const bcState: Record<BottomMode, boolean> = { motion: false, code: false };
+const bcListeners = new Set<() => void>();
+let bcLoaded = false;
+
+function loadBc(): void {
+  if (bcLoaded || typeof window === "undefined") return;
+  bcLoaded = true;
+  (["motion", "code"] as const).forEach((m) => {
+    try {
+      bcState[m] = localStorage.getItem(`ll-bc-${m}`) === "1";
+    } catch (_) {}
+  });
+}
+
+function subscribeBc(fn: () => void): () => void {
+  bcListeners.add(fn);
+  return () => {
+    bcListeners.delete(fn);
+  };
+}
+
+export function toggleBottomCollapsed(mode: BottomMode): void {
+  loadBc();
+  bcState[mode] = !bcState[mode];
+  try {
+    localStorage.setItem(`ll-bc-${mode}`, bcState[mode] ? "1" : "0");
+  } catch (_) {}
+  bcListeners.forEach((fn) => fn());
+}
+
+/** Whether the bottom panel of `mode` is collapsed to its header (always false on the server). */
+export function useBottomCollapsed(mode: BottomMode): boolean {
+  return useSyncExternalStore(
+    subscribeBc,
+    () => {
+      loadBc();
+      return bcState[mode];
+    },
+    () => false,
+  );
 }

@@ -28,6 +28,12 @@ export interface TimelinePlayheadProps {
   onSeek?: (timeSec: number) => void;
 }
 
+/** Round a CSS px position to a whole device pixel so the 1px line is crisp (never straddles two pixels). */
+function snapToDevicePx(x: number): number {
+  const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  return Math.round(x * dpr) / dpr;
+}
+
 export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   laneWidth = 600,
   trackWidth = 264,
@@ -70,7 +76,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   const updateNeedle = useCallback((f: number) => {
     const x = X(f, pps, t0, 24, fps);
     if (needleRef.current) {
-      needleRef.current.style.transform = `translateX(${x.toFixed(2)}px)`;
+      needleRef.current.style.transform = `translateX(${snapToDevicePx(x)}px)`;
       needleRef.current.style.visibility = x < -6 || x > laneWidth + 6 ? "hidden" : "visible";
       needleRef.current.setAttribute("data-time", String(Math.round(f)));
       // Flip the scrub label to the left of the line near the right edge of the lanes
@@ -194,7 +200,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
           id="tlph"
           ref={needleRef}
           style={{
-            transform: `translateX(${initX.toFixed(2)}px)`,
+            transform: `translateX(${snapToDevicePx(initX)}px)`,
             visibility: isPhVisible ? "visible" : "hidden",
           }}
           data-testid="timeline-playhead"
@@ -206,7 +212,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
           {/* Playhead head on ruler: a flag that points at the exact frame */}
           <div
             ref={knobRef}
-            className="ll-phl-knob ll:absolute ll:top-playhead-knob ll:left-playhead-knob ll:w-playhead-knob ll:h-playhead-knob ll:bg-control-primary-bg"
+            className="ll-phl-knob ll:absolute ll:w-playhead-knob ll:h-playhead-knob ll:bg-control-primary-bg"
           />
           {/* Current time, tight to the head while scrubbing */}
           <span
