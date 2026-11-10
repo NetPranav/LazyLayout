@@ -1,5 +1,5 @@
 /**
- * Phosphor Icons, Light weight (https://github.com/phosphor-icons/core, MIT, (c) 2023 Phosphor Icons).
+ * Phosphor Icons, Light weight (fallback set; the prototype set in protoGlyphs.ts wins where it has a twin) (https://github.com/phosphor-icons/core, MIT, (c) 2023 Phosphor Icons).
  * Glyph data lives in phosphorGlyphs.ts. viewBox 0 0 256 256, filled with currentColor.
  *
  * Optical scale: Phosphor glyphs sit inside more padding and use a thinner stroke than the lucide glyphs they
@@ -10,6 +10,8 @@
  */
 import React from "react";
 import { GLYPHS, type PhosphorName } from "./phosphorGlyphs";
+import { ProtoIcon } from "./ProtoIcon";
+import { PHOSPHOR_TO_PROTO } from "./protoMap";
 
 export type { PhosphorName };
 
@@ -20,7 +22,8 @@ export interface PhosphorIconProps extends Omit<React.SVGProps<SVGSVGElement>, "
   flipX?: boolean;
 }
 
-export const PhosphorIcon: React.FC<PhosphorIconProps> = ({ name, size = 16, flipX = false, className = "", style, ...props }) => {
+/** Raw Phosphor glyph, used by Icon as the fallback for icons the prototype set has no twin for. */
+export const PhosphorGlyph: React.FC<PhosphorIconProps> = ({ name, size = 16, flipX = false, className = "", style, ...props }) => {
   const glyph: { d: string; s: number; x?: { d: string; t: string } } = GLYPHS[name];
   const box = 256 / glyph.s;
   const origin = (256 - box) / 2;
@@ -41,6 +44,16 @@ export const PhosphorIcon: React.FC<PhosphorIconProps> = ({ name, size = 16, fli
       {glyph.x ? <path d={glyph.x.d} transform={glyph.x.t} /> : null}
     </svg>
   );
+};
+
+/** Phosphor name in, prototype twin out when one exists (PHOSPHOR_TO_PROTO); otherwise the Phosphor glyph. */
+export const PhosphorIcon: React.FC<PhosphorIconProps> = (props) => {
+  const proto = PHOSPHOR_TO_PROTO[props.name];
+  if (proto) {
+    const { name: _name, flipX: _flipX, ...rest } = props;
+    return <ProtoIcon name={proto} {...rest} />;
+  }
+  return <PhosphorGlyph {...props} />;
 };
 
 export type PhosphorMotion = "rotate" | "left" | "right" | "up" | "down" | "spread-h" | "spread-v" | "lift";
