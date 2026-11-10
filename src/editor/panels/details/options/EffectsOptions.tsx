@@ -63,15 +63,9 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
   const currentBlend = (getValue?.("appearance.blendMode") as string) || propBlend;
 
   const [shadows, setShadows] = useState<ShadowItem[]>(propShadows);
-  const [blur, setBlur] = useState(currentBlur);
-  const [bgBlur, setBgBlur] = useState(currentBgBlur);
-  const [blend, setBlend] = useState(currentBlend);
-
-  React.useEffect(() => {
-    setBlur(currentBlur);
-    setBgBlur(currentBgBlur);
-    setBlend(currentBlend);
-  }, [currentBlur, currentBgBlur, currentBlend]);
+  const blur = currentBlur;
+  const bgBlur = currentBgBlur;
+  const blend = currentBlend;
 
   const syncShadows = (next: ShadowItem[]) => {
     const css = next
@@ -227,7 +221,6 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             value={blur}
             min={0}
             onChange={(b) => {
-              setBlur(b);
               onUpdateProp?.("filter.blur", b);
               onChangeBlur?.(b);
             }}
@@ -242,7 +235,6 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             value={bgBlur}
             min={0}
             onChange={(bb) => {
-              setBgBlur(bb);
               onUpdateProp?.("paint.backgroundBlur", bb);
               onChangeBackgroundBlur?.(bb);
             }}
@@ -260,7 +252,6 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             value={blend}
             options={BLEND_OPTIONS}
             onChange={(bl) => {
-              setBlend(bl);
               onUpdateProp?.("appearance.blendMode", bl);
               onChangeBlend?.(bl);
             }}

@@ -290,7 +290,6 @@ export function useEditorActions(
   const [activeTool, setActiveToolState] = useState<CanvasTool>("select");
   const [activeShape, setActiveShapeState] = useState<ShapeTool>("box");
   const activeShapeRef = useRef<ShapeTool>(activeShape);
-  activeShapeRef.current = activeShape;
 
   // Floating overlays
   const [isInsertOpen, setIsInsertOpen] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { CornerUpLeft, CornerUpRight, CornerDownRight, CornerDownLeft } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { OptionGroup, OptionRow, OptionGrid4, OptionGridLabel } from "./OptionRow";
@@ -83,23 +83,13 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
   const currentCursor = (getValue?.("appearance.cursor") as typeof propCursor) ?? propCursor;
   const currentPe = (getValue?.("appearance.pointerEvents") as typeof propPe) ?? propPe;
 
-  const [tl, setTl] = useState(currentTl);
-  const [tr, setTr] = useState(currentTr);
-  const [br, setBr] = useState(currentBr);
-  const [bl, setBl] = useState(currentBl);
-  const [blend, setBlend] = useState(currentBlend);
-  const [cursor, setCursor] = useState(currentCursor);
-  const [pointerEvents, setPointerEvents] = useState(currentPe);
-
-  React.useEffect(() => {
-    setTl(currentTl);
-    setTr(currentTr);
-    setBr(currentBr);
-    setBl(currentBl);
-    setBlend(currentBlend);
-    setCursor(currentCursor);
-    setPointerEvents(currentPe);
-  }, [currentTl, currentTr, currentBr, currentBl, currentBlend, currentCursor, currentPe]);
+  const tl = currentTl;
+  const tr = currentTr;
+  const br = currentBr;
+  const bl = currentBl;
+  const blend = currentBlend;
+  const cursor = currentCursor;
+  const pointerEvents = currentPe;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -114,7 +104,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               value={tl}
               min={0}
               onChange={(v) => {
-                setTl(v);
                 onUpdateProp?.("shape.cornerRadius.topLeft", v);
                 onChangeCornerRadius?.("tl", v);
               }}
@@ -126,7 +115,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               value={tr}
               min={0}
               onChange={(v) => {
-                setTr(v);
                 onUpdateProp?.("shape.cornerRadius.topRight", v);
                 onChangeCornerRadius?.("tr", v);
               }}
@@ -138,7 +126,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               value={br}
               min={0}
               onChange={(v) => {
-                setBr(v);
                 onUpdateProp?.("shape.cornerRadius.bottomRight", v);
                 onChangeCornerRadius?.("br", v);
               }}
@@ -150,7 +137,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               value={bl}
               min={0}
               onChange={(v) => {
-                setBl(v);
                 onUpdateProp?.("shape.cornerRadius.bottomLeft", v);
                 onChangeCornerRadius?.("bl", v);
               }}
@@ -168,7 +154,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             value={blend}
             options={BLEND_OPTIONS}
             onChange={(b) => {
-              setBlend(b);
               onUpdateProp?.("appearance.blendMode", b);
               onChangeBlend?.(b);
             }}
@@ -184,7 +169,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             options={CURSOR_OPTIONS}
             onChange={(c) => {
               const next = c as typeof cursor;
-              setCursor(next);
               onUpdateProp?.("appearance.cursor", next);
               onChangeCursor?.(next);
             }}
@@ -200,7 +184,6 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             options={POINTER_EVENTS_OPTIONS}
             onChange={(pe) => {
               const next = pe as typeof pointerEvents;
-              setPointerEvents(next);
               onUpdateProp?.("appearance.pointerEvents", next);
               onChangePointerEvents?.(next);
             }}

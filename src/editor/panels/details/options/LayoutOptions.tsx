@@ -138,73 +138,28 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
   const currentRev = typeof getValue?.("layout.reverseZ") === "boolean" ? (getValue?.("layout.reverseZ") as boolean) : propRev;
   const currentGt = (getValue?.("layout.gridTemplateColumns") as string) || propGt;
 
-  const [minWidth, setMinWidth] = useState(currentMinWidth);
-  const [maxWidth, setMaxWidth] = useState(currentMaxWidth);
-  const [minHeight, setMinHeight] = useState(currentMinHeight);
-  const [maxHeight, setMaxHeight] = useState(currentMaxHeight);
-  const [padTop, setPadTop] = useState(currentPadTop);
-  const [padRight, setPadRight] = useState(currentPadRight);
-  const [padBottom, setPadBottom] = useState(currentPadBottom);
-  const [padLeft, setPadLeft] = useState(currentPadLeft);
-  const [marTop, setMarTop] = useState(currentMarTop);
-  const [marRight, setMarRight] = useState(currentMarRight);
-  const [marBottom, setMarBottom] = useState(currentMarBottom);
-  const [marLeft, setMarLeft] = useState(currentMarLeft);
-  const [overflowX, setOverflowX] = useState(currentOx);
-  const [overflowY, setOverflowY] = useState(currentOy);
-  const [unit, setUnit] = useState(currentUnit);
-  const [boxSizing, setBoxSizing] = useState(currentBs);
-  const [alignSelf, setAlignSelf] = useState(currentAs);
-  const [grow, setGrow] = useState(currentGrow);
-  const [shrink, setShrink] = useState(currentShrink);
-  const [reverse, setReverse] = useState(currentRev);
-  const [gridTemplate, setGridTemplate] = useState(currentGt);
-
-  React.useEffect(() => {
-    setMinWidth(currentMinWidth);
-    setMaxWidth(currentMaxWidth);
-    setMinHeight(currentMinHeight);
-    setMaxHeight(currentMaxHeight);
-    setPadTop(currentPadTop);
-    setPadRight(currentPadRight);
-    setPadBottom(currentPadBottom);
-    setPadLeft(currentPadLeft);
-    setMarTop(currentMarTop);
-    setMarRight(currentMarRight);
-    setMarBottom(currentMarBottom);
-    setMarLeft(currentMarLeft);
-    setOverflowX(currentOx);
-    setOverflowY(currentOy);
-    setUnit(currentUnit);
-    setBoxSizing(currentBs);
-    setAlignSelf(currentAs);
-    setGrow(currentGrow);
-    setShrink(currentShrink);
-    setReverse(currentRev);
-    setGridTemplate(currentGt);
-  }, [
-    currentMinWidth,
-    currentMaxWidth,
-    currentMinHeight,
-    currentMaxHeight,
-    currentPadTop,
-    currentPadRight,
-    currentPadBottom,
-    currentPadLeft,
-    currentMarTop,
-    currentMarRight,
-    currentMarBottom,
-    currentMarLeft,
-    currentOx,
-    currentOy,
-    currentUnit,
-    currentBs,
-    currentAs,
-    currentGrow,
-    currentShrink,
-    currentRev,
-    currentGt,
-  ]);
+  const minWidth = currentMinWidth;
+  const maxWidth = currentMaxWidth;
+  const minHeight = currentMinHeight;
+  const maxHeight = currentMaxHeight;
+  const padTop = currentPadTop;
+  const padRight = currentPadRight;
+  const padBottom = currentPadBottom;
+  const padLeft = currentPadLeft;
+  const marTop = currentMarTop;
+  const marRight = currentMarRight;
+  const marBottom = currentMarBottom;
+  const marLeft = currentMarLeft;
+  const overflowX = currentOx;
+  const overflowY = currentOy;
+  const unit = currentUnit;
+  const boxSizing = currentBs;
+  const alignSelf = currentAs;
+  const grow = currentGrow;
+  const shrink = currentShrink;
+  const reverse = currentRev;
+  const [typingGridTemplate, setTypingGridTemplate] = useState<string | null>(null);
+  const gridTemplate = typingGridTemplate ?? currentGt;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -218,7 +173,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={minWidth}
               min={0}
               onChange={(w) => {
-                setMinWidth(w);
                 onUpdateProp?.("layout.minWidth", w);
                 onChangeMinWidth?.(w);
               }}
@@ -231,7 +185,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               min={0}
               placeholder="none"
               onChange={(w) => {
-                setMaxWidth(w);
                 onUpdateProp?.("layout.maxWidth", w);
                 onChangeMaxWidth?.(w);
               }}
@@ -248,7 +201,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={minHeight}
               min={0}
               onChange={(h) => {
-                setMinHeight(h);
                 onUpdateProp?.("layout.minHeight", h);
                 onChangeMinHeight?.(h);
               }}
@@ -261,7 +213,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               min={0}
               placeholder="none"
               onChange={(h) => {
-                setMaxHeight(h);
                 onUpdateProp?.("layout.maxHeight", h);
                 onChangeMaxHeight?.(h);
               }}
@@ -282,7 +233,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={padTop}
               min={0}
               onChange={(v) => {
-                setPadTop(v);
                 onUpdateProp?.("layout.paddingTop", v);
                 onChangePadding?.("top", v);
               }}
@@ -294,7 +244,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={padRight}
               min={0}
               onChange={(v) => {
-                setPadRight(v);
                 onUpdateProp?.("layout.paddingRight", v);
                 onChangePadding?.("right", v);
               }}
@@ -306,7 +255,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={padBottom}
               min={0}
               onChange={(v) => {
-                setPadBottom(v);
                 onUpdateProp?.("layout.paddingBottom", v);
                 onChangePadding?.("bottom", v);
               }}
@@ -318,7 +266,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               value={padLeft}
               min={0}
               onChange={(v) => {
-                setPadLeft(v);
                 onUpdateProp?.("layout.paddingLeft", v);
                 onChangePadding?.("left", v);
               }}
@@ -334,7 +281,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               label={<Icon icon={ArrowUp} size={11} className="ll:text-muted" />}
               value={marTop}
               onChange={(v) => {
-                setMarTop(v);
                 onUpdateProp?.("layout.marginTop", v);
                 onChangeMargin?.("top", v);
               }}
@@ -345,7 +291,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               label={<Icon icon={ArrowRight} size={11} className="ll:text-muted" />}
               value={marRight}
               onChange={(v) => {
-                setMarRight(v);
                 onUpdateProp?.("layout.marginRight", v);
                 onChangeMargin?.("right", v);
               }}
@@ -356,7 +301,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               label={<Icon icon={ArrowDown} size={11} className="ll:text-muted" />}
               value={marBottom}
               onChange={(v) => {
-                setMarBottom(v);
                 onUpdateProp?.("layout.marginBottom", v);
                 onChangeMargin?.("bottom", v);
               }}
@@ -367,7 +311,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               label={<Icon icon={ArrowLeft} size={11} className="ll:text-muted" />}
               value={marLeft}
               onChange={(v) => {
-                setMarLeft(v);
                 onUpdateProp?.("layout.marginLeft", v);
                 onChangeMargin?.("left", v);
               }}
@@ -386,7 +329,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
             options={OVERFLOW_OPTIONS}
             onChange={(ox) => {
               const next = ox as typeof overflowX;
-              setOverflowX(next);
               onUpdateProp?.("layout.overflowX", next);
               onChangeOverflowX?.(next);
             }}
@@ -402,7 +344,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
             options={OVERFLOW_OPTIONS}
             onChange={(oy) => {
               const next = oy as typeof overflowY;
-              setOverflowY(next);
               onUpdateProp?.("layout.overflowY", next);
               onChangeOverflowY?.(next);
             }}
@@ -418,7 +359,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
             options={UNIT_OPTIONS}
             onChange={(u) => {
               const next = u as typeof unit;
-              setUnit(next);
               onUpdateProp?.("frame.widthUnit", next);
               onUpdateProp?.("frame.heightUnit", next);
               onChangeUnit?.(next);
@@ -435,7 +375,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
             options={BOX_SIZING_OPTIONS}
             onChange={(bs) => {
               const next = bs as typeof boxSizing;
-              setBoxSizing(next);
               onUpdateProp?.("layout.boxSizing", next);
               onChangeBoxSizing?.(next);
             }}
@@ -455,7 +394,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
                   checked={reverse}
                   aria-label="Reverse direction"
                   onChange={(e) => {
-                    setReverse(e.target.checked);
                     onUpdateProp?.("layout.reverseZ", e.target.checked);
                     onChangeReverse?.(e.target.checked);
                   }}
@@ -472,10 +410,11 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
                   value={gridTemplate}
                   aria-label="Grid template"
                   onChange={(e) => {
-                    setGridTemplate(e.target.value);
+                    setTypingGridTemplate(e.target.value);
                     onUpdateProp?.("layout.gridTemplateColumns", e.target.value);
                     onChangeGridTemplate?.(e.target.value);
                   }}
+                  onBlur={() => setTypingGridTemplate(null)}
                   className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
                 />
               </div>
@@ -491,7 +430,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
                 options={ALIGN_SELF_OPTIONS}
                 onChange={(as) => {
                   const next = as as typeof alignSelf;
-                  setAlignSelf(next);
                   onUpdateProp?.("layout.alignSelf", next);
                   onChangeAlignSelf?.(next);
                 }}
@@ -507,7 +445,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
                 min={0}
                 step={1}
                 onChange={(g) => {
-                  setGrow(g);
                   onUpdateProp?.("layout.flexGrow", g);
                   onChangeGrow?.(g);
                 }}
@@ -523,7 +460,6 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
                 min={0}
                 step={1}
                 onChange={(s) => {
-                  setShrink(s);
                   onUpdateProp?.("layout.flexShrink", s);
                   onChangeShrink?.(s);
                 }}

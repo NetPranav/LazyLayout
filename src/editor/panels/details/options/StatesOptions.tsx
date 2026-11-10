@@ -59,24 +59,16 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
   const currentRippleDuration = typeof getValue?.("button.rippleDuration") === "number" ? (getValue?.("button.rippleDuration") as number) : propRd;
 
   const [size, setSize] = useState(propSz);
-  const [type, setType] = useState(currentType);
-  const [focusRingHex, setFocusRingHex] = useState(currentFocus);
-  const [ringWidth, setRingWidth] = useState(currentRingWidth);
-  const [disabledOpacity, setDisabledOpacity] = useState(currentDisabled);
-  const [loadingLabel, setLoadingLabel] = useState(currentLoadingLabel);
+  const type = currentType || propTy;
+  const [typingFocus, setTypingFocus] = useState<string | null>(null);
+  const focusRingHex = typingFocus ?? currentFocus;
+  const ringWidth = currentRingWidth;
+  const disabledOpacity = currentDisabled;
+  const [typingLabel, setTypingLabel] = useState<string | null>(null);
+  const loadingLabel = typingLabel ?? currentLoadingLabel;
   const [spinner, setSpinner] = useState(propSp);
-  const [ripple, setRipple] = useState(currentRipple);
-  const [rippleDuration, setRippleDuration] = useState(currentRippleDuration);
-
-  React.useEffect(() => {
-    setType(currentType);
-    setFocusRingHex(currentFocus);
-    setRingWidth(currentRingWidth);
-    setDisabledOpacity(currentDisabled);
-    setLoadingLabel(currentLoadingLabel);
-    setRipple(currentRipple);
-    setRippleDuration(currentRippleDuration);
-  }, [currentType, currentFocus, currentRingWidth, currentDisabled, currentLoadingLabel, currentRipple, currentRippleDuration]);
+  const ripple = currentRipple;
+  const rippleDuration = currentRippleDuration;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -106,7 +98,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             options={TYPE_OPTIONS}
             onChange={(t) => {
               const next = t as typeof type;
-              setType(next);
               onUpdateProp?.("button.type", next.toLowerCase());
             }}
             className="ll:w-full"
@@ -131,11 +122,13 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
                 aria-label="Focus ring hex"
                 onChange={(e) => {
                   const hex = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
-                  setFocusRingHex(hex);
+                  setTypingFocus(hex);
                   if (hex.length === 6) {
                     onUpdateProp?.("button.focusRingColor", `#${hex}`);
+                    setTypingFocus(null);
                   }
                 }}
+                onBlur={() => setTypingFocus(null)}
                 className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
               />
             </div>
@@ -148,7 +141,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             value={ringWidth}
             min={0}
             onChange={(w) => {
-              setRingWidth(w);
               onUpdateProp?.("button.focusRingWidth", w);
             }}
             aria-label="Ring width"
@@ -164,7 +156,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             min={0}
             max={100}
             onChange={(op) => {
-              setDisabledOpacity(op);
               onUpdateProp?.("button.disabledOpacity", op / 100);
             }}
             aria-label="Disabled opacity"
@@ -182,9 +173,10 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
               value={loadingLabel}
               aria-label="Loading label"
               onChange={(e) => {
-                setLoadingLabel(e.target.value);
+                setTypingLabel(e.target.value);
                 onUpdateProp?.("button.loadingLabel", e.target.value);
               }}
+              onBlur={() => setTypingLabel(null)}
               className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
             />
           </div>
@@ -215,7 +207,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
               checked={ripple}
               aria-label="Enable ripple effect"
               onChange={(e) => {
-                setRipple(e.target.checked);
                 onUpdateProp?.("button.rippleEnabled", e.target.checked);
               }}
               className="ll:rounded-xs ll:border-border ll:text-primary ll:focus:ring-primary"
@@ -232,7 +223,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             value={rippleDuration}
             min={0.1}
             onChange={(d) => {
-              setRippleDuration(d);
               onUpdateProp?.("button.rippleDuration", d);
             }}
             aria-label="Ripple duration"

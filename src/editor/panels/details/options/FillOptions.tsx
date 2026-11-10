@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
@@ -118,19 +118,13 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
       }))
     : propStops;
 
-  const [paintType, setPaintType] = useState(derivedType);
-  const [opacity, setOpacity] = useState(derivedOpacity);
-  const [blend, setBlend] = useState(derivedBlend);
+  const paintType = derivedType;
+  const opacity = derivedOpacity;
+  const blend = derivedBlend;
   const [angle, setAngle] = useState(propAngle);
-  const [stops, setStops] = useState<GradientStopItem[]>(derivedStops);
+  const [localStops, setLocalStops] = useState<GradientStopItem[] | null>(null);
+  const stops = primaryPaint && "stops" in primaryPaint ? derivedStops : (localStops ?? propStops);
   const [imageFit, setImageFit] = useState(propImageFit);
-
-  useEffect(() => {
-    setPaintType(derivedType);
-    setOpacity(derivedOpacity);
-    setBlend(derivedBlend);
-    if (derivedStops.length > 0) setStops(derivedStops);
-  }, [derivedType, derivedOpacity, derivedBlend, primaryPaint]);
 
   const syncPaints = (nextPaint: Paint) => {
     if (layer && selectedId && hasFills(layer.archetype)) {
@@ -145,9 +139,9 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
   const handleAddStop = () => {
     const next: GradientStopItem[] = [
       ...stops,
-      { id: `st-${Date.now()}`, hex: "FFFFFF", position: 50 },
+      { id: `st-${stops.length + 1}`, hex: "FFFFFF", position: 50 },
     ];
-    setStops(next);
+    setLocalStops(next);
     onChangeStops?.(next);
     if (primaryPaint && "stops" in primaryPaint) {
       const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
@@ -158,7 +152,7 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
   const handleRemoveStop = (id: string) => {
     if (stops.length <= 2) return;
     const next = stops.filter((s) => s.id !== id);
-    setStops(next);
+    setLocalStops(next);
     onChangeStops?.(next);
     if (primaryPaint && "stops" in primaryPaint) {
       const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
@@ -168,7 +162,7 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
 
   const handleUpdateStop = (id: string, patch: Partial<GradientStopItem>) => {
     const next = stops.map((s) => (s.id === id ? { ...s, ...patch } : s));
-    setStops(next);
+    setLocalStops(next);
     onChangeStops?.(next);
     if (primaryPaint && "stops" in primaryPaint) {
       const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
@@ -188,7 +182,6 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             options={PAINT_TYPE_OPTIONS}
             onChange={(v) => {
               const next = v as typeof paintType;
-              setPaintType(next);
               if (primaryPaint) {
                 const targetType: PaintType =
                   next === "Linear"
@@ -218,7 +211,6 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             step={1}
             unit="%"
             onChange={(op) => {
-              setOpacity(op);
               if (primaryPaint) {
                 syncPaints({ ...primaryPaint, opacity: op / 100 });
               } else {
@@ -237,7 +229,6 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             value={blend}
             options={BLEND_OPTIONS}
             onChange={(b) => {
-              setBlend(b);
               onUpdateProp?.("appearance.blendMode", b.toLowerCase());
               onChangeBlend?.(b);
             }}

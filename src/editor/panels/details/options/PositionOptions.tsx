@@ -84,49 +84,19 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
   const currentRotateY = typeof getValue?.("transform.rotateY") === "number" ? (getValue?.("transform.rotateY") as number) : propRotateY;
   const currentOrigin = (getValue?.("transform.origin") as typeof propOrigin) ?? propOrigin;
 
-  const [type, setType] = useState(currentType);
-  const [zIndex, setZIndex] = useState(currentZIndex);
-  const [offsetTop, setOffsetTop] = useState(currentOffsetTop);
-  const [offsetRight, setOffsetRight] = useState(currentOffsetRight);
-  const [offsetBottom, setOffsetBottom] = useState(currentOffsetBottom);
-  const [offsetLeft, setOffsetLeft] = useState(currentOffsetLeft);
-  const [scaleX, setScaleX] = useState(currentScaleX);
-  const [scaleY, setScaleY] = useState(currentScaleY);
-  const [skewX, setSkewX] = useState(currentSkewX);
-  const [skewY, setSkewY] = useState(currentSkewY);
-  const [rotateX, setRotateX] = useState(currentRotateX);
-  const [rotateY, setRotateY] = useState(currentRotateY);
-  const [origin, setOrigin] = useState(currentOrigin);
-
-  React.useEffect(() => {
-    setType(currentType);
-    setZIndex(currentZIndex);
-    setOffsetTop(currentOffsetTop);
-    setOffsetRight(currentOffsetRight);
-    setOffsetBottom(currentOffsetBottom);
-    setOffsetLeft(currentOffsetLeft);
-    setScaleX(currentScaleX);
-    setScaleY(currentScaleY);
-    setSkewX(currentSkewX);
-    setSkewY(currentSkewY);
-    setRotateX(currentRotateX);
-    setRotateY(currentRotateY);
-    setOrigin(currentOrigin);
-  }, [
-    currentType,
-    currentZIndex,
-    currentOffsetTop,
-    currentOffsetRight,
-    currentOffsetBottom,
-    currentOffsetLeft,
-    currentScaleX,
-    currentScaleY,
-    currentSkewX,
-    currentSkewY,
-    currentRotateX,
-    currentRotateY,
-    currentOrigin,
-  ]);
+  const type = currentType;
+  const zIndex = currentZIndex;
+  const offsetTop = currentOffsetTop;
+  const offsetRight = currentOffsetRight;
+  const offsetBottom = currentOffsetBottom;
+  const offsetLeft = currentOffsetLeft;
+  const scaleX = currentScaleX;
+  const scaleY = currentScaleY;
+  const skewX = currentSkewX;
+  const skewY = currentSkewY;
+  const rotateX = currentRotateX;
+  const rotateY = currentRotateY;
+  const origin = currentOrigin;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -140,7 +110,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
             options={TYPE_OPTIONS}
             onChange={(v) => {
               const next = v as typeof type;
-              setType(next);
               onUpdateProp?.("layout.position", next);
               onChangeType?.(next);
             }}
@@ -155,7 +124,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
             value={zIndex}
             step={1}
             onChange={(z) => {
-              setZIndex(z);
               onUpdateProp?.("layout.zIndex", z);
               onChangeZIndex?.(z);
             }}
@@ -175,7 +143,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               label={<PhosphorMotionIcon name="arrowUp" motion="up" size={12} className="ll:text-muted" />}
               value={offsetTop}
               onChange={(v) => {
-                setOffsetTop(v);
                 onUpdateProp?.("layout.top", v);
                 onChangeOffset?.("top", v);
               }}
@@ -187,7 +154,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               label={<PhosphorMotionIcon name="arrowRight" motion="right" size={12} className="ll:text-muted" />}
               value={offsetRight}
               onChange={(v) => {
-                setOffsetRight(v);
                 onUpdateProp?.("layout.right", v);
                 onChangeOffset?.("right", v);
               }}
@@ -199,7 +165,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               label={<PhosphorMotionIcon name="arrowDown" motion="down" size={12} className="ll:text-muted" />}
               value={offsetBottom}
               onChange={(v) => {
-                setOffsetBottom(v);
                 onUpdateProp?.("layout.bottom", v);
                 onChangeOffset?.("bottom", v);
               }}
@@ -211,7 +176,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               label={<PhosphorMotionIcon name="arrowLeft" motion="left" size={12} className="ll:text-muted" />}
               value={offsetLeft}
               onChange={(v) => {
-                setOffsetLeft(v);
                 onUpdateProp?.("layout.left", v);
                 onChangeOffset?.("left", v);
               }}
@@ -230,7 +194,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={scaleX}
               step={0.1}
               onChange={(x) => {
-                setScaleX(x);
                 onUpdateProp?.("transform.scaleX", x);
                 onChangeScale?.("x", x);
               }}
@@ -242,7 +205,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={scaleY}
               step={0.1}
               onChange={(y) => {
-                setScaleY(y);
                 onUpdateProp?.("transform.scaleY", y);
                 onChangeScale?.("y", y);
               }}
@@ -259,7 +221,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={skewX}
               unit="°"
               onChange={(x) => {
-                setSkewX(x);
                 onUpdateProp?.("transform.skewX", x);
                 onChangeSkew?.("x", x);
               }}
@@ -271,7 +232,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={skewY}
               unit="°"
               onChange={(y) => {
-                setSkewY(y);
                 onUpdateProp?.("transform.skewY", y);
                 onChangeSkew?.("y", y);
               }}
@@ -288,7 +248,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={rotateX}
               unit="°"
               onChange={(x) => {
-                setRotateX(x);
                 onUpdateProp?.("transform.rotateX", x);
                 onChangeRotate3D?.("x", x);
               }}
@@ -300,7 +259,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               value={rotateY}
               unit="°"
               onChange={(y) => {
-                setRotateY(y);
                 onUpdateProp?.("transform.rotateY", y);
                 onChangeRotate3D?.("y", y);
               }}
@@ -320,7 +278,6 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
             options={ORIGIN_OPTIONS}
             onChange={(o) => {
               const next = o as typeof origin;
-              setOrigin(next);
               onUpdateProp?.("transform.origin", next);
               onChangeOrigin?.(next);
             }}

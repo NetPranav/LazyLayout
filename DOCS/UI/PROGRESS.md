@@ -2,15 +2,15 @@
 
 Updated by the worker after each finished phase (not each step) and by Claude when it checks the work. If a figure here disagrees with the code, the code wins: fix the figure and say so.
 
-Last updated: 2026-11-10, by Claude (initial state, before task W2). HEAD `7016686`.
+Last updated: 2026-11-10 22:07, by Antigravity worker (task W2). HEAD `7016686`.
 
 ## Overall
 
 | Stream | Items done / total | Percent |
 |---|---|---|
-| A. Styling parity with the prototype (Design page) | 24 / 28 | 86% |
-| B. Wiring to the engine (task W1) | 10 / 10 coded, 0 / 10 verified in a browser | 50% (coded 100%, proven 0%) |
-| C. PR readiness (task W2, phases P1 to P6) | 0 / 6 | 0% |
+| A. Styling parity with the prototype (Design page) | 25 / 28 | 89% |
+| B. Wiring to the engine (task W1) | 10 / 10 coded, 4 / 10 verified in a browser | 70% (coded 100%, proven 40%) |
+| C. PR readiness (task W2, phases P1 to P6) | 3 / 6 | 50% |
 | D. New screens that main added (needs design) | 0 / 10 | 0% |
 
 Rule for the percentages: items done divided by items total, coded and verified counted equally for B. Not a time estimate.
@@ -27,12 +27,12 @@ Open: Pen tool is `available:false` in core (engine request, needs the user's go
 
 | Phase | What | Items done / total | Status | Updated | Notes |
 |---|---|---|---|---|---|
-| P1 | Lint errors to zero | 0 / 9 files | not started | | known ~9 errors in `options/*.tsx` |
-| P2 | Prove wiring in the browser | 0 / 19 controls | not started | | table goes in `handoffs/2026-11-10-W2-verify.md` |
+| P1 | Lint errors to zero | 9 / 9 files | done | 2026-11-10 21:58 | 18 errors fixed across options/*.tsx and useEditorActions; 0 errors remain |
+| P2 | Prove wiring in the browser | 4 / 19 controls | in progress | 2026-11-10 22:05 | Frame presets, Position & options popover, Insert, Canvas settings verified in verify.md; 15 controls remaining |
 | P3 | e2e passing | 0 / ? spec files | deferred | | not in the first W2 run (time box 22:12); count unknown until the first run |
 | P4 | Production build | 0 / 1 | deferred | | not in the first W2 run (time box 22:12); stop dev server first, restart after |
-| P5 | Two leftover icons in prototype style | 0 / 2 | not started | | open lock, text align |
-| P6 | Handoff and typecheck | 0 / 1 | not started | | |
+| P5 | Two leftover icons in prototype style | 2 / 2 | done | 2026-11-10 22:02 | 5 prototype glyphs added (unlock, tal, tac, tar, taj); screenshots in Paper and Graphite |
+| P6 | Handoff and typecheck | 1 / 1 | done | 2026-11-10 22:07 | Handoff written, tsc --noEmit 0 errors |
 
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).

@@ -99,23 +99,15 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
   const currentJoin = (getValue?.("svg.strokeLinejoin") as typeof propJoin) ?? propJoin;
   const currentDash = (getValue?.("svg.strokeDasharray") as string) || propDash;
 
-  const [position, setPosition] = useState(currentPos);
-  const [width, setWidth] = useState(currentWidth);
-  const [style, setStyle] = useState(currentStyle);
+  const position = currentPos;
+  const width = currentWidth;
+  const style = currentStyle;
   const [sides, setSides] = useState(propSides);
-  const [cap, setCap] = useState(currentCap);
-  const [join, setJoin] = useState(currentJoin);
+  const cap = currentCap;
+  const join = currentJoin;
   const [miter, setMiter] = useState(propMiter);
-  const [dash, setDash] = useState(currentDash);
-
-  React.useEffect(() => {
-    setPosition(currentPos);
-    setWidth(currentWidth);
-    setStyle(currentStyle);
-    setCap(currentCap);
-    setJoin(currentJoin);
-    setDash(currentDash);
-  }, [currentPos, currentWidth, currentStyle, currentCap, currentJoin, currentDash]);
+  const [typingDash, setTypingDash] = useState<string | null>(null);
+  const dash = typingDash ?? currentDash;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -129,7 +121,6 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             options={POSITION_OPTIONS}
             onChange={(val) => {
               const next = val as "inside" | "center" | "outside";
-              setPosition(next);
               onUpdateProp?.("stroke.align", next);
               onChangePosition?.(next);
             }}
@@ -145,7 +136,6 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             min={0}
             step={1}
             onChange={(w) => {
-              setWidth(w);
               onUpdateProp?.("appearance.border.width", w);
               onUpdateProp?.("svg.strokeWidth", w);
               onChangeWidth?.(w);
@@ -164,7 +154,6 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             options={STYLE_OPTIONS}
             value={style}
             onChange={(s) => {
-              setStyle(s);
               onUpdateProp?.("appearance.border.style", s);
               onChangeStyle?.(s);
             }}
@@ -197,7 +186,6 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             options={CAP_OPTIONS}
             onChange={(c) => {
               const next = c as "butt" | "round" | "square";
-              setCap(next);
               onUpdateProp?.("svg.strokeLinecap", next);
               onChangeCap?.(next);
             }}
@@ -213,7 +201,6 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             options={JOIN_OPTIONS}
             onChange={(j) => {
               const next = j as "miter" | "round" | "bevel";
-              setJoin(next);
               onUpdateProp?.("svg.strokeLinejoin", next);
               onChangeJoin?.(next);
             }}
@@ -245,10 +232,11 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
               placeholder="e.g. 4 2"
               value={dash}
               onChange={(e) => {
-                setDash(e.target.value);
+                setTypingDash(e.target.value);
                 onUpdateProp?.("svg.strokeDasharray", e.target.value);
                 onChangeDash?.(e.target.value);
               }}
+              onBlur={() => setTypingDash(null)}
               className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
             />
           </div>
