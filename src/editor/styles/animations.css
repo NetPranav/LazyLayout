@@ -593,11 +593,6 @@ button[aria-expanded="true"] > .ll-chevron-flip {
   transition: opacity var(--ll-dur-pop) var(--ll-ease-pop);
 }
 
-/* Cross-panel focus: the canvas settles back while the bottom panel has focus */
-.ll-shell:has(.ll-shell-bottom:focus-within) .ll-shell-canvas {
-  opacity: var(--ll-dim-canvas);
-}
-
 /* Bottom block: motion timeline or code preview. In full-width mode it reaches under both side panels. */
 .ll-shell-bottom {
   grid-column: 2;

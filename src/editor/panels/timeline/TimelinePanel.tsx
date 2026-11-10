@@ -347,8 +347,8 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       }
       className={`ll-timeline ll-bottom ll:flex ll:flex-col ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none ll:min-w-0 ll:outline-none ll:relative ${className}`}
     >
-      {/* 0. Top Height Splitter (#bsplit) */}
-      <div
+      {/* 0. Top Height Splitter (#bsplit). Hosts that size the panel at 100% (the editor shell) own the resize, so it is skipped there. */}
+      {height !== "100%" && <div
         id="bsplit"
         role="separator"
         aria-orientation="horizontal"
@@ -359,7 +359,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         className={`ll-bsplit ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-1.5 ll:z-30 ll:cursor-row-resize ll:touch-none ${
           isSplitterDragging ? "on" : ""
         }`}
-      />
+      />}
 
       {/* 1. Header Toolbar (44px) */}
       <TimelineTransport
@@ -438,7 +438,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                 selectedLayerId={selectedIds[0]}
               />
             ) : (
-              <div role="rowgroup" className="ll:flex ll:flex-col">
+              <div role="rowgroup" className="ll:flex ll:flex-col ll:flex-1">
                 {/* Group: Hero frame track */}
                 {treeLayers.hero && (
                   <TimelineLane
@@ -477,7 +477,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                     );
                   })}
 
-                {/* Drop Zone: Drag a layer here to animate it */}
+                {/* Drop zone: empty target that fills the rest of the panel height */}
                 <div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -494,7 +494,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                     }
                   }}
                   style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
-                  className="ll-tldz ll:grid ll:min-h-14 ll:shrink-0"
+                  className="ll-tldz ll:grid ll:min-h-14 ll:flex-1"
                 >
                   <div />
                   <div
@@ -503,9 +503,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                         ? "ll:border-primary ll:bg-surface-hover ll:text-primary"
                         : "ll:border-transparent ll:text-muted"
                     }`}
-                  >
-                    Drag a layer here to animate it
-                  </div>
+                  />
                 </div>
               </div>
             )}
