@@ -23,7 +23,19 @@ export function mapArchetypeToLayerType(archetype: string): LayerItem["type"] {
     case "polygon":
       return "poly";
     case "star":
+    case "icon":
       return "star";
+    case "svgPath":
+    case "svgGroup":
+    case "svgUse":
+    case "effectSurface":
+      return "shape";
+    case "object3D":
+    case "camera3D":
+    case "light3D":
+      return "object3d";
+    case "badge":
+      return "button";
     case "line":
     case "arrow":
     case "divider":

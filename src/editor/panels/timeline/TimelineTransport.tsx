@@ -18,6 +18,8 @@ import {
   Maximize2,
   Download,
   ChevronDown,
+  Rows2,
+  Spline,
 } from "lucide-react";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
@@ -285,7 +287,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           id="vseg"
           role="tablist"
           aria-label="Timeline view"
-          className="seg vseg ll-vseg ll:flex ll:items-center ll:h-8 ll:p-0.5 ll:gap-0.5 ll:border ll:border-border ll:rounded-sm ll:flex-none ll:w-36"
+          className="seg vseg ll-vseg ll:flex ll:items-center ll:h-8 ll:p-0.5 ll:gap-0.5 ll:border ll:border-border ll:rounded-sm ll:flex-none ll:w-40"
         >
           <button
             type="button"
@@ -301,6 +303,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
+            <Icon icon={Rows2} size={14} className="ll:mr-1.5 ll:shrink-0" />
             Timeline
           </button>
           <button
@@ -317,6 +320,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
+            <Icon icon={Spline} size={14} className="ll:mr-1.5 ll:shrink-0" />
             Graph
           </button>
         </div>

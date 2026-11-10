@@ -75,7 +75,10 @@ export function registerOverlay(
         record.family === "context-menu" ||
         active.family === "context-menu" ||
         active.family !== record.family;
-      if (shouldClose && id !== record.id) {
+      // An overlay opened from a control inside another overlay (a dropdown or colour picker inside an
+      // options popover) is nested in it: the parent stays open.
+      const isNested = !!record.anchor && active.element.contains(record.anchor);
+      if (shouldClose && !isNested && id !== record.id) {
         try {
           active.close(true);
         } catch (_) {}

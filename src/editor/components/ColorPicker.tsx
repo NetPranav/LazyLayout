@@ -27,6 +27,7 @@ import {
 } from "./retarget";
 import {
   COLOR_TOKENS,
+  tokenCssVar,
   clamp,
   hsv2rgb,
   rgb2hsv,
@@ -87,7 +88,6 @@ export function ColorPicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevAnchorRef = useRef<HTMLElement | null>(null);
   const isImmediateCloseRef = useRef(false);
-  const pickerId = useId();
   const pickerUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
@@ -116,7 +116,15 @@ export function ColorPicker({
     }
   }
   const [alpha, setAlpha] = useState(externalOpacity / 100);
+  const [prevOpacity, setPrevOpacity] = useState(externalOpacity);
+  if (externalOpacity !== prevOpacity) {
+    setPrevOpacity(externalOpacity);
+    setAlpha(externalOpacity / 100);
+  }
   const [linkedToken, setLinkedToken] = useState<string | null>(null);
+  // text being typed in the hex / opacity fields: kept locally so partial input is not overwritten until it is valid
+  const [hexDraft, setHexDraft] = useState<string | null>(null);
+  const [alphaDraft, setAlphaDraft] = useState<string | null>(null);
   const [imageFit, setImageFit] = useState<ImageFit>("Fill");
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -150,7 +158,10 @@ export function ColorPicker({
     if (!el) return;
 
     const anchor = anchorRef?.current ?? triggerRef?.current ?? anchorEl;
-    const rightZone = document.querySelector(".zone.right, [data-testid='right-panel'], .ll-shell-right, aside");
+    const RIGHT_ZONE = ".zone.right, [data-testid='right-panel'], .ll-shell-right";
+    // Opened from inside an options popover: sit beside that popover so it stays visible; otherwise beside the inspector.
+    const rightZone =
+      anchor?.closest(".ll-ppop") ?? anchor?.closest(RIGHT_ZONE) ?? document.querySelector(RIGHT_ZONE);
     const rightRect = rightZone
       ? rightZone.getBoundingClientRect()
       : anchor
@@ -163,7 +174,7 @@ export function ColorPicker({
 
     if (anchor && rightRect) {
       const s = anchor.getBoundingClientRect();
-      left = rightRect.left - PICKER_WIDTH - PICKER_GAP;
+      left = rightRect.left - (el.offsetWidth || PICKER_WIDTH) - PICKER_GAP;
       if (left < PICKER_GAP) {
         left = Math.max(
           PICKER_GAP,
@@ -298,6 +309,15 @@ export function ColorPicker({
     };
   }, [pickerUniqueId]);
 
+  // A mode or colour model change makes the picker taller: keep it inside the window.
+  useEffect(() => {
+    const el = pickerRef.current;
+    if (!open || !isRendered || !el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => updatePosition());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, isRendered, updatePosition]);
+
   // Outside pointerdown and Escape
   useEffect(() => {
     if (!open || !isRendered) return;
@@ -309,12 +329,18 @@ export function ColorPicker({
 
       if (el && target && !el.contains(target)) {
         if (anchor && anchor.contains(target)) return;
+        // lists and menus opened from inside the picker (the colour model dropdown) draw outside it
+        if ((target as Element).closest?.("[role='listbox'], [role='menu']")) return;
         onClose?.();
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        const list = Array.from(document.querySelectorAll("[role='listbox'], [role='menu']")).find(
+          (n) => n.getBoundingClientRect().width > 0 && getComputedStyle(n).visibility !== "hidden"
+        );
+        if (list) return;
         e.stopPropagation();
         onClose?.();
         const anchor = anchorRef?.current ?? triggerRef?.current ?? anchorEl;
@@ -369,9 +395,10 @@ export function ColorPicker({
       setLinkedToken(null);
       const cleanHex = newHex.startsWith("#") ? newHex : `#${newHex}`;
       onChange?.(cleanHex);
-      onChangeOpacity?.(Math.round(newAlpha * 100));
+      // only when it really changed: a colour edit must not write the opacity back over the same row
+      if (Math.round(newAlpha * 100) !== Math.round(externalOpacity)) onChangeOpacity?.(Math.round(newAlpha * 100));
     },
-    [onChange, onChangeOpacity, setLinkedToken]
+    [onChange, onChangeOpacity, externalOpacity, setLinkedToken]
   );
 
   // Saturation & Brightness Dragging
@@ -607,10 +634,13 @@ export function ColorPicker({
 
   // Token swatch selection
   const handleTokenSelect = (token: string) => {
+    // The token is resolved to its real colour: the host stores a hex, the picker keeps the token highlighted.
+    const raw = pickerRef.current ? getComputedStyle(pickerRef.current).getPropertyValue(tokenCssVar(token)).trim() : "";
+    const parsed = parseCssColor(raw);
+    if (!parsed) return;
+    setHsv(rgb2hsv(parsed.rgb[0], parsed.rgb[1], parsed.rgb[2]));
     setLinkedToken(token);
-    // Find computed color of token if available
-    const tokenVal = `var(--ll-${token})`;
-    onChange?.(tokenVal);
+    onChange?.(`#${rgb2hex(parsed.rgb)}`);
   };
 
   // Image upload
@@ -633,9 +663,9 @@ export function ColorPicker({
       ref={pickerRef}
       role="dialog"
       aria-label={ariaLabel || "Colour picker"}
-      aria-labelledby={pickerId}
+      data-color-picker=""
       tabIndex={-1}
-      className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
+      className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
     >
       <div className="cp-in ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
         {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */}
@@ -878,16 +908,21 @@ export function ColorPicker({
               {model === "Hex" ? (
                 <div className="cp-hexv ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0">
                   {/* Hex input */}
-                  <div className="dfield ll-dfield ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary">
+                  <div className="dfield ll-dfield ll:box-border ll:flex ll:items-center ll:gap-1.5 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary">
                     <span className="pf ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:select-none">
                       #
                     </span>
                     <input
                       type="text"
                       maxLength={6}
-                      value={hex}
+                      value={hexDraft ?? hex}
+                      onBlur={() => setHexDraft(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setHexDraft(null);
+                      }}
                       onChange={(e) => {
                         const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+                        setHexDraft(clean);
                         if (clean.length === 6) {
                           const newRgb = hex2rgb(clean);
                           const nextHsv = rgb2hsv(newRgb[0], newRgb[1], newRgb[2]);
@@ -901,15 +936,21 @@ export function ColorPicker({
                   </div>
 
                   {/* Opacity input (64px) */}
-                  <div className="dfield ll-dfield ll:flex ll:items-center ll:gap-1 ll:w-16 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary ll:shrink-0">
+                  <div className="dfield ll-dfield ll:box-border ll:flex ll:items-center ll:gap-1 ll:w-16 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary ll:shrink-0">
                     <span className="pf ll:text-micro ll:font-mono ll:font-medium ll:text-muted ll:select-none">
                       A
                     </span>
                     <input
                       type="text"
-                      value={Math.round(alpha * 100)}
+                      value={alphaDraft ?? Math.round(alpha * 100)}
+                      onBlur={() => setAlphaDraft(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setAlphaDraft(null);
+                      }}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
+                        setAlphaDraft(digits);
+                        const val = parseInt(digits, 10);
                         if (!isNaN(val)) {
                           const a = clamp(val, 0, 100) / 100;
                           setAlpha(a);
@@ -1024,10 +1065,10 @@ export function ColorPicker({
                         type="button"
                         onClick={() => handleTokenSelect(t.token)}
                         style={{
-                          backgroundColor: `var(--ll-${t.token})`,
+                          backgroundColor: `var(${tokenCssVar(t.token)})`,
                           borderColor: "var(--ll-swatch-line)",
                         }}
-                        title={`${t.name} (--ll-${t.token})`}
+                        title={`${t.name} (${tokenCssVar(t.token)})`}
                         aria-label={`Token ${t.name}`}
                         className="cp-c ll:relative ll:w-5 ll:h-5 ll:p-0 ll:rounded-sm ll:border ll:hover:scale-105 ll:active:scale-90 ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:cursor-pointer"
                       >
@@ -1147,7 +1188,7 @@ export function ColorPicker({
     return (
       <div
         key={prefix}
-        className="dfield ll-dfield ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary"
+        className="dfield ll-dfield ll:box-border ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary"
       >
         <span
           data-scrub

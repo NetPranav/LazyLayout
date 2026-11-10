@@ -527,6 +527,8 @@ export const FillSection: React.FC<FillSectionProps> = ({
           <ColorPicker
             open={Boolean(activeColorPickerId)}
             value={`#${activeFill.hex}`}
+            opacity={activeFill.opacity}
+            onChangeOpacity={(opacity) => handleUpdateFill(activeFill.id, { opacity })}
             anchorEl={activeColorPickerEl}
             onChange={(hex) =>
               handleUpdateFill(activeFill.id, {

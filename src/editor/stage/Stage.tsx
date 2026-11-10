@@ -462,10 +462,6 @@ export const Stage: React.FC<StageProps> = ({
     | null
   >(null);
   const justDragged = useRef(false);
-  const rightPan = useRef(false);
-  const rightMoved = useRef(false);
-  const syntheticMenu = useRef(false);
-  const rightDownAt = useRef<{ target: EventTarget | null; x: number; y: number } | null>(null);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const toolCursor = activeTool === "hand" ? "grab" : activeTool === "pen" || activeTool === "pencil" ? "crosshair" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
@@ -549,17 +545,7 @@ export const Stage: React.FC<StageProps> = ({
 
   const handleToolPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     justDragged.current = false;
-    rightMoved.current = false;
-    if (e.button === 2) {
-      // Right button on empty canvas drags the canvas; a plain right-click (no drag) still opens the menu.
-      if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
-      gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
-      rightPan.current = true;
-      rightDownAt.current = { target: e.target, x: e.clientX, y: e.clientY };
-      e.currentTarget.setPointerCapture(e.pointerId);
-      return;
-    }
-    if (e.button !== 0) return;
+    if (e.button !== 0) return; // the right button only opens the canvas menu: it never pans or switches tools
     if (activeTool === "hand") {
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -666,7 +652,6 @@ export const Stage: React.FC<StageProps> = ({
     const g = gesture.current;
     if (!g) return;
     if (g.kind === "pan") {
-      if (rightPan.current && Math.hypot(e.clientX - g.startX, e.clientY - g.startY) > 3) rightMoved.current = true;
       setDragPan({ x: g.from.x + e.clientX - g.startX, y: g.from.y + e.clientY - g.startY });
       return;
     }
@@ -712,18 +697,7 @@ export const Stage: React.FC<StageProps> = ({
     if (g.kind === "marquee" && !g.moved) return; // a plain click: the click handler deselects
     justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    if (g.kind === "pan") {
-      if (rightPan.current && !rightMoved.current && rightDownAt.current?.target instanceof Element) {
-        // a right-click that did not drag: open the canvas menu now
-        const at = rightDownAt.current;
-        syntheticMenu.current = true;
-        (at.target as Element).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, button: 2 }));
-        syntheticMenu.current = false;
-      }
-      rightPan.current = false;
-      rightMoved.current = false;
-      return;
-    }
+    if (g.kind === "pan") return;
     setDrawPreview(null);
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
@@ -819,14 +793,6 @@ export const Stage: React.FC<StageProps> = ({
         if (e.dataTransfer.types.includes("Files")) e.preventDefault();
       }}
       onDrop={(e) => void dropPictures(e)}
-      onContextMenu={(e) => {
-        // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
-        // right-click opens it. Layers keep their own menu, opened at once.
-        if (syntheticMenu.current) return;
-        if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
-        e.preventDefault();
-        e.stopPropagation();
-      }}
       onClick={(e) => {
         if (justDragged.current) {
           justDragged.current = false;

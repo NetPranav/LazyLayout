@@ -19,7 +19,7 @@ import {
   CopyPlus,
   Trash2,
   Box,
-  Frame,
+  Split,
   Scan,
   Maximize,
   Square,
@@ -401,7 +401,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("edit.duplicate", "Duplicate", CopyPlus, "Ctrl+D")}
             {entry("edit.delete", "Delete", Trash2, "Del")}
             {entry("edit.group", "Group", Box, "Ctrl+G")}
-            {entry("edit.ungroup", "Ungroup", Frame, "Ctrl+Shift+G")}
+            {entry("edit.ungroup", "Ungroup", Split, "Ctrl+Shift+G")}
             <MenuSeparator />
             {entry("align.left", "Align left", AlignStartVertical)}
             {entry("align.center", "Align center", AlignCenterVertical)}

@@ -38,13 +38,23 @@ const STYLE_OPTIONS = [
   { value: "dotted", label: "Dotted" },
 ] as const;
 
-const SIDES_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "top", label: "Top" },
-  { value: "right", label: "Right" },
-  { value: "bottom", label: "Bottom" },
-  { value: "left", label: "Left" },
-] as const;
+/** Which sides of the box carry the stroke: the whole outline, or one edge drawn on a faint box. */
+function SideGlyph({ side }: { side: "all" | "top" | "right" | "bottom" | "left" }) {
+  const edge = { top: "M4 4h16", right: "M20 4v16", bottom: "M4 20h16", left: "M4 4v16" }[side as "top"];
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="1" opacity={side === "all" ? 1 : 0.35} />
+      {side !== "all" && <path d={edge} />}
+    </svg>
+  );
+}
+
+const SIDES_OPTIONS = (["all", "top", "right", "bottom", "left"] as const).map((value) => ({
+  value,
+  icon: <SideGlyph side={value} />,
+  ariaLabel: value === "all" ? "All sides" : `${value[0].toUpperCase()}${value.slice(1)} side`,
+  title: value === "all" ? "All sides" : `${value[0].toUpperCase()}${value.slice(1)} side`,
+}));
 
 const CAP_OPTIONS = [
   { value: "butt", label: "Butt" },

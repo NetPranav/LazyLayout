@@ -42,6 +42,7 @@ const STAGGER_BASE = 50;
 const STAGGER_MS = 18;
 const CLOSE_MS = 190;
 const MAX_CASCADE = 14;
+const STAGE_AREA = ".ll-stagewrap, [data-stage='canvas']";
 const RIGHT_ZONE = ".zone.right, [data-testid='right-panel'], .ll-shell-right";
 
 export function OptionsPopover({
@@ -274,23 +275,23 @@ export function OptionsPopover({
   useEffect(() => {
     if (!open || !isRendered) return;
 
+    // The popover closes only when the user presses on the canvas stage. Everything else (its own
+    // children, nested portal UIs such as dropdown lists, pickers and tooltips, other panels) is not "outside".
     const handlePointerDown = (e: PointerEvent) => {
-      const pop = popRef.current;
-      const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
       const target = e.target as HTMLElement | null;
-
-      if (pop && target && !pop.contains(target)) {
-        if (anchor && anchor.contains(target)) return;
-        // Don't close if clicking inside ColorPicker or dropdown select
-        if (target.closest?.(".cp, .ll-cp, .dd, .ll-select, [data-more]")) return;
-        onCloseRef.current();
-      }
+      if (!target?.closest) return;
+      if (popRef.current?.contains(target)) return;
+      if (!target.closest(STAGE_AREA)) return;
+      onCloseRef.current();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        const cp = document.querySelector(".cp.ll-open, .cp[data-open]");
-        if (cp && cp.getClientRects().length > 0) return;
+        // a nested popover (colour picker, dropdown list, menu) closes first; it handles its own Escape
+        const nested = Array.from(
+          document.querySelectorAll("[data-color-picker], [role='listbox'], [role='menu']")
+        ).find((el) => !popRef.current?.contains(el) && el.getBoundingClientRect().width > 0 && getComputedStyle(el).visibility !== "hidden");
+        if (nested) return;
         e.stopPropagation();
         onCloseRef.current();
         const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;

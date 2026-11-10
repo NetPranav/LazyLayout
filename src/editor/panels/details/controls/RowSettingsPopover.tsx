@@ -80,12 +80,11 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
         onClose();
       }
     };
+    // Closes only on a press on the canvas stage: nested portal UIs (lists, pickers, tooltips) and other panels are not "outside".
     const handlePointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (popRef.current?.contains(target)) return;
-      // a dropdown opened from inside the popover draws its list outside it: choosing there is not "outside"
-      if ((target as Element).closest?.('[role="listbox"], [role="menu"], [data-color-picker]')) return;
-      if (anchorRef.current?.closest(".ll-rr")?.contains(target)) return;
+      const target = e.target as Element | null;
+      if (!target?.closest || popRef.current?.contains(target)) return;
+      if (!target.closest(".ll-stagewrap, [data-stage='canvas']")) return;
       onClose();
     };
 
@@ -107,7 +106,7 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
             role="dialog"
             aria-label={`${title} settings`}
             style={{ left: -9999, top: -9999 }}
-            className={`ppop ll-ppop llm-pop ${isOpen ? "ll-open" : ""} ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-70 ll:overflow-hidden ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
+            className={`ppop ll-ppop llm-pop ${isOpen ? "ll-open" : ""} ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-70 ll:overflow-hidden ll-rowpop ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ${className}`}
           >
             <div className="phead ll-phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
               <span className="pt ll-pt ll:text-micro ll:font-medium ll:text-muted ll:truncate">{title}</span>

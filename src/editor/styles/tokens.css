@@ -2342,3 +2342,12 @@ svg {
 .ll-frp .ll-frr:hover, .ll-frp .ll-frr.ll-on { color: var(--ll-text-primary); }
 .ll-frp .ll-frr:focus-visible { outline: 1px solid var(--ll-text-primary); outline-offset: -1px; }
 /* ===== end Frame presets panel block ===== */
+
+/* ===== Colour picker, row settings popover, dropdown list and menu surfaces (ColorPicker.tsx, RowSettingsPopover.tsx, Select.tsx, Menu.tsx). The Tailwind shadow alias is self-referencing, so they read the theme shadow token directly. ===== */
+.ll-cp,
+.ll-rowpop,
+.ll-dd,
+.ll-menu {
+  box-shadow: var(--ll-optpop-shadow);
+}
+/* ===== end Colour picker, row settings popover, dropdown list and menu surfaces ===== */

@@ -36,6 +36,25 @@ export const COLOR_TOKENS: readonly TokenItem[] = [
   { token: "label-6", name: "Label 6" },
 ];
 
+/** The real CSS custom property behind a picker token (the picker's short names map onto the theme tokens). */
+const TOKEN_VARS: Record<string, string> = {
+  canvas: "surface-canvas",
+  panel: "surface-panel",
+  bar: "surface-bar",
+  seg: "control-active",
+  border: "border-color",
+  swline: "swatch-line",
+  text: "text-primary",
+  text2: "text-secondary",
+  muted: "text-muted",
+  ctl: "control-primary-bg",
+  sel: "select-bg",
+};
+
+export function tokenCssVar(token: string): string {
+  return `--ll-${TOKEN_VARS[token] ?? token}`;
+}
+
 export function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
@@ -186,7 +205,7 @@ export function formatCssString(
   alpha: number,
   linkedToken: string | null
 ): string {
-  if (linkedToken) return `var(--ll-${linkedToken})`;
+  if (linkedToken) return `var(${tokenCssVar(linkedToken)})`;
   const aStr = alpha < 1 ? ` / ${Math.round(alpha * 100)}%` : "";
   if (model === "RGB") return `rgb(${rgb.join(" ")}${aStr})`;
   if (model === "HSL") {
