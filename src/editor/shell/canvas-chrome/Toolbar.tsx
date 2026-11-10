@@ -26,9 +26,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { ProtoIcon, type ProtoName } from "@/editor/components/icons/ProtoIcon";
-import { invokeCommand } from "@/core/commands";
-import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { motionActions, useMotionModel } from "@/editor/motion-model";
 import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
@@ -142,18 +140,6 @@ const SHAPES: ReadonlyArray<{
   { id: "pen", label: "Pen", icon: PenTool, shortcut: "P" },
 ];
 
-/** Align menu: the align.* / distribute.* commands (core/editing/editCommands.ts), with their shortcuts. */
-const ALIGN_ITEMS: ReadonlyArray<{ command: string; label: string; icon: ProtoName; shortcut: string }> = [
-  { command: "align.left", label: "Align left", icon: "al", shortcut: "Alt+A" },
-  { command: "align.hcenter", label: "Align horizontal centers", icon: "ac", shortcut: "Alt+H" },
-  { command: "align.right", label: "Align right", icon: "ar", shortcut: "Alt+D" },
-  { command: "align.top", label: "Align top", icon: "at", shortcut: "Alt+W" },
-  { command: "align.vcenter", label: "Align vertical centers", icon: "am", shortcut: "Alt+V" },
-  { command: "align.bottom", label: "Align bottom", icon: "ab", shortcut: "Alt+S" },
-  { command: "distribute.horizontal", label: "Distribute horizontally", icon: "dist", shortcut: "Ctrl+Alt+H" },
-  { command: "distribute.vertical", label: "Distribute vertically", icon: "distv", shortcut: "Ctrl+Alt+V" },
-];
-
 export const Toolbar: React.FC<ToolbarProps> = ({
   mode = "design",
   toolbarRef: externalToolbarRef,
@@ -205,20 +191,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const easingButtonRef = useRef<HTMLButtonElement | null>(null);
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const zoomButtonRef = useRef<HTMLButtonElement | null>(null);
-  const alignButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
   const [isEasingMenuOpen, setIsEasingMenuOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
-  const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const [isNarrowLifted, setIsNarrowLifted] = useState(false);
   const [isRunningCode, setIsRunningCode] = useState(false);
 
   // Design: arrange tools need a selection. Motion: duplicating keys needs selected keys. Code: clearing needs log lines.
-  const selectionCount = useSelectionStore((st) => st.selectedIds.length);
   const selectedKeyCount = useMotionModel((st) => Object.keys(st.selectedKeys).length);
   const consoleLineCount = useConsoleLogs().length;
 
@@ -560,55 +543,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onFocus={() => setFocusedIndex(5)}
               onClick={() => onSelectTool?.("text")}
               icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Separator */}
-            <span
-              className="ll-gsep gsep"
-              aria-hidden="true"
-            />
-
-            {/* Group (Ctrl+G) -> edit.group */}
-            <IconButton
-              size="lg"
-              data-tb="group"
-              aria-label="Group (Ctrl+G)"
-              tooltip="Group (Ctrl+G)"
-              disabled={selectionCount === 0}
-              tabIndex={focusedIndex === 20 ? 0 : -1}
-              onFocus={() => setFocusedIndex(20)}
-              onClick={() => invokeCommand("edit.group")}
-              icon={<ProtoIcon name="grp" size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Ungroup (Ctrl+Shift+G) -> edit.ungroup */}
-            <IconButton
-              size="lg"
-              data-tb="ungroup"
-              aria-label="Ungroup (Ctrl+Shift+G)"
-              tooltip="Ungroup (Ctrl+Shift+G)"
-              disabled={selectionCount === 0}
-              tabIndex={focusedIndex === 21 ? 0 : -1}
-              onFocus={() => setFocusedIndex(21)}
-              onClick={() => invokeCommand("edit.ungroup")}
-              icon={<ProtoIcon name="ungrp" size={CANVAS_CHROME_SIZES.iconLg} />}
-            />
-
-            {/* Align menu -> align.* / distribute.* */}
-            <IconButton
-              ref={alignButtonRef}
-              size="lg"
-              data-tb="align"
-              aria-label="Align and distribute"
-              tooltip="Align and distribute"
-              aria-haspopup="menu"
-              aria-expanded={isAlignMenuOpen}
-              disabled={selectionCount === 0}
-              pressed={isAlignMenuOpen}
-              tabIndex={focusedIndex === 22 ? 0 : -1}
-              onFocus={() => setFocusedIndex(22)}
-              onClick={() => setIsAlignMenuOpen((prev) => !prev)}
-              icon={<ProtoIcon name="ac" size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Separator */}
@@ -993,29 +927,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             }}
           >
             {sh.label}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      {/* Align Menu (Design mode) */}
-      <Menu
-        open={isAlignMenuOpen}
-        onClose={() => setIsAlignMenuOpen(false)}
-        anchorRef={alignButtonRef}
-        aria-label="Align options"
-        width={248}
-      >
-        {ALIGN_ITEMS.map((it) => (
-          <MenuItem
-            key={it.command}
-            icon={<ProtoIcon name={it.icon} size={CANVAS_CHROME_SIZES.iconMd} />}
-            shortcut={it.shortcut}
-            onClick={() => {
-              invokeCommand(it.command);
-              setIsAlignMenuOpen(false);
-            }}
-          >
-            {it.label}
           </MenuItem>
         ))}
       </Menu>
