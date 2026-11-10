@@ -73,7 +73,12 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 3. Engine changes requested
 
-None so far. The new editor reuses existing core engine stores, commands, time scheduler, and persistence infrastructure without requiring modifications to `src/core`, `src/compiler`, or `src/runtime`.
+### Vector Pen tool support in core engine
+- **Area:** tools / engine
+- **Files:** `src/core/tools/toolDefs.ts`, `src/core/paths/penModel.ts`
+- **What changed:** Toolbar and Stage wire Pen tool selection (`P`) and vector path node placement. Core engine tool definitions and vector network commands should be verified and fully activated in tool registry.
+- **What A/B must do:** Ensure core tool machine and stage overlays provide full bezier control point dragging and path completion integration.
+- **Status:** open
 
 ## 4. New shared UI pieces
 

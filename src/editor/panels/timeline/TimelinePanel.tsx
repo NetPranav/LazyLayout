@@ -457,7 +457,10 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                 {/* Children rows (if hero group is expanded) */}
                 {(!treeLayers.hero || treeLayers.hero.gopen) &&
                   treeLayers.children.map((layer) => {
-                    const isSelected = selectedIds.includes(layer.id);
+                    const isSelected =
+                      selectedIds.includes(layer.id) ||
+                      (layer.id === "button" && selectedIds.includes("el_buy_button")) ||
+                      (layer.id === "el_buy_button" && selectedIds.includes("button"));
 
                     return (
                       <TimelineLane

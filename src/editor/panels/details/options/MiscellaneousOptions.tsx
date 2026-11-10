@@ -7,9 +7,18 @@ import { NumberField } from "@/editor/components/NumberField";
 import type { InspectorSectionProps } from "../types";
 
 // ==================== Divider Options ====================
-export const DividerOptions: React.FC<InspectorSectionProps> = () => {
-  const [cap, setCap] = useState("Butt");
-  const [dash, setDash] = useState(0);
+export const DividerOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const rawCap = (getValue?.("svg.strokeLinecap") as string) || "butt";
+  const currentCap = rawCap.charAt(0).toUpperCase() + rawCap.slice(1).toLowerCase();
+  const currentDash = typeof getValue?.("svg.strokeDashoffset") === "number" ? (getValue?.("svg.strokeDashoffset") as number) : 0;
+
+  const [cap, setCap] = useState(currentCap);
+  const [dash, setDash] = useState(currentDash);
+
+  React.useEffect(() => {
+    setCap(currentCap);
+    setDash(currentDash);
+  }, [currentCap, currentDash]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -23,7 +32,10 @@ export const DividerOptions: React.FC<InspectorSectionProps> = () => {
               { value: "Round", label: "Round" },
               { value: "Square", label: "Square" },
             ]}
-            onChange={setCap}
+            onChange={(c) => {
+              setCap(c);
+              onUpdateProp?.("svg.strokeLinecap", c.toLowerCase());
+            }}
             aria-label="Line cap"
             className="ll:w-full"
           />
@@ -34,7 +46,10 @@ export const DividerOptions: React.FC<InspectorSectionProps> = () => {
             size="sm"
             value={dash}
             min={0}
-            onChange={setDash}
+            onChange={(d) => {
+              setDash(d);
+              onUpdateProp?.("svg.strokeDashoffset", d);
+            }}
             aria-label="Dash offset"
             className="ll:w-full"
           />
@@ -45,12 +60,27 @@ export const DividerOptions: React.FC<InspectorSectionProps> = () => {
 };
 
 // ==================== Background Options ====================
-export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
-  const [angle, setAngle] = useState(180);
-  const [noise, setNoise] = useState(10);
-  const [pattern, setPattern] = useState("None");
-  const [parallax, setParallax] = useState(0);
-  const [blend, setBlend] = useState("Normal");
+export const BackgroundOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const currentAngle = typeof getValue?.("paint.angle") === "number" ? (getValue?.("paint.angle") as number) : 180;
+  const currentNoise = typeof getValue?.("paint.noise") === "number" ? (getValue?.("paint.noise") as number) : 10;
+  const currentPattern = (getValue?.("paint.pattern") as string) || "None";
+  const currentParallax = typeof getValue?.("paint.parallax") === "number" ? (getValue?.("paint.parallax") as number) : 0;
+  const rawBlend = (getValue?.("appearance.blendMode") as string) || "normal";
+  const currentBlend = rawBlend.charAt(0).toUpperCase() + rawBlend.slice(1).toLowerCase();
+
+  const [angle, setAngle] = useState(currentAngle);
+  const [noise, setNoise] = useState(currentNoise);
+  const [pattern, setPattern] = useState(currentPattern);
+  const [parallax, setParallax] = useState(currentParallax);
+  const [blend, setBlend] = useState(currentBlend);
+
+  React.useEffect(() => {
+    setAngle(currentAngle);
+    setNoise(currentNoise);
+    setPattern(currentPattern);
+    setParallax(currentParallax);
+    setBlend(currentBlend);
+  }, [currentAngle, currentNoise, currentPattern, currentParallax, currentBlend]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -60,7 +90,10 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
             size="sm"
             unit="°"
             value={angle}
-            onChange={setAngle}
+            onChange={(a) => {
+              setAngle(a);
+              onUpdateProp?.("paint.angle", a);
+            }}
             aria-label="Gradient angle"
             className="ll:w-full"
           />
@@ -72,7 +105,10 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
             value={noise}
             min={0}
             max={100}
-            onChange={setNoise}
+            onChange={(n) => {
+              setNoise(n);
+              onUpdateProp?.("paint.noise", n);
+            }}
             aria-label="Noise opacity"
             className="ll:w-full"
           />
@@ -90,7 +126,10 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
               { value: "Grid", label: "Grid" },
               { value: "Lines", label: "Lines" },
             ]}
-            onChange={setPattern}
+            onChange={(p) => {
+              setPattern(p);
+              onUpdateProp?.("paint.pattern", p);
+            }}
             aria-label="Background pattern"
             className="ll:w-full"
           />
@@ -100,7 +139,10 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
             size="sm"
             value={parallax}
             step={0.1}
-            onChange={setParallax}
+            onChange={(px) => {
+              setParallax(px);
+              onUpdateProp?.("paint.parallax", px);
+            }}
             aria-label="Parallax speed"
             className="ll:w-full"
           />
@@ -115,7 +157,10 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
               { value: "Screen", label: "Screen" },
               { value: "Overlay", label: "Overlay" },
             ]}
-            onChange={setBlend}
+            onChange={(b) => {
+              setBlend(b);
+              onUpdateProp?.("appearance.blendMode", b.toLowerCase());
+            }}
             aria-label="Background blend"
             className="ll:w-full"
           />
@@ -126,11 +171,25 @@ export const BackgroundOptions: React.FC<InspectorSectionProps> = () => {
 };
 
 // ==================== Icon Options ====================
-export const IconOptions: React.FC<InspectorSectionProps> = () => {
-  const [viewBox, setViewBox] = useState("0 0 24 24");
-  const [cap, setCap] = useState("Round");
-  const [join, setJoin] = useState("Round");
-  const [dash, setDash] = useState("");
+export const IconOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const currentViewBox = (getValue?.("svg.viewBox") as string) || "0 0 24 24";
+  const rawCap = (getValue?.("svg.strokeLinecap") as string) || "round";
+  const currentCap = rawCap.charAt(0).toUpperCase() + rawCap.slice(1).toLowerCase();
+  const rawJoin = (getValue?.("svg.strokeLinejoin") as string) || "round";
+  const currentJoin = rawJoin.charAt(0).toUpperCase() + rawJoin.slice(1).toLowerCase();
+  const currentDash = (getValue?.("svg.strokeDasharray") as string) || "";
+
+  const [viewBox, setViewBox] = useState(currentViewBox);
+  const [cap, setCap] = useState(currentCap);
+  const [join, setJoin] = useState(currentJoin);
+  const [dash, setDash] = useState(currentDash);
+
+  React.useEffect(() => {
+    setViewBox(currentViewBox);
+    setCap(currentCap);
+    setJoin(currentJoin);
+    setDash(currentDash);
+  }, [currentViewBox, currentCap, currentJoin, currentDash]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -140,7 +199,10 @@ export const IconOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="text"
               value={viewBox}
-              onChange={(e) => setViewBox(e.target.value)}
+              onChange={(e) => {
+                setViewBox(e.target.value);
+                onUpdateProp?.("svg.viewBox", e.target.value);
+              }}
               aria-label="View box"
               className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
             />
@@ -158,7 +220,10 @@ export const IconOptions: React.FC<InspectorSectionProps> = () => {
               { value: "Butt", label: "Butt" },
               { value: "Square", label: "Square" },
             ]}
-            onChange={setCap}
+            onChange={(c) => {
+              setCap(c);
+              onUpdateProp?.("svg.strokeLinecap", c.toLowerCase());
+            }}
             aria-label="Line cap"
             className="ll:w-full"
           />
@@ -172,7 +237,10 @@ export const IconOptions: React.FC<InspectorSectionProps> = () => {
               { value: "Miter", label: "Miter" },
               { value: "Bevel", label: "Bevel" },
             ]}
-            onChange={setJoin}
+            onChange={(j) => {
+              setJoin(j);
+              onUpdateProp?.("svg.strokeLinejoin", j.toLowerCase());
+            }}
             aria-label="Line join"
             className="ll:w-full"
           />
@@ -182,7 +250,10 @@ export const IconOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="text"
               value={dash}
-              onChange={(e) => setDash(e.target.value)}
+              onChange={(e) => {
+                setDash(e.target.value);
+                onUpdateProp?.("svg.strokeDasharray", e.target.value);
+              }}
               aria-label="Dash array"
               className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
             />
@@ -194,8 +265,13 @@ export const IconOptions: React.FC<InspectorSectionProps> = () => {
 };
 
 // ==================== Shape Options ====================
-export const ShapeOptions: React.FC<InspectorSectionProps> = () => {
-  const [vertexRadius, setVertexRadius] = useState(0);
+export const ShapeOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const currentRadius = typeof getValue?.("shape.cornerRadius") === "number" ? (getValue?.("shape.cornerRadius") as number) : 0;
+  const [vertexRadius, setVertexRadius] = useState(currentRadius);
+
+  React.useEffect(() => {
+    setVertexRadius(currentRadius);
+  }, [currentRadius]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -205,7 +281,10 @@ export const ShapeOptions: React.FC<InspectorSectionProps> = () => {
             size="sm"
             value={vertexRadius}
             min={0}
-            onChange={setVertexRadius}
+            onChange={(r) => {
+              setVertexRadius(r);
+              onUpdateProp?.("shape.cornerRadius", r);
+            }}
             aria-label="Vertex radius"
             className="ll:w-full"
           />
@@ -216,9 +295,17 @@ export const ShapeOptions: React.FC<InspectorSectionProps> = () => {
 };
 
 // ==================== Counter Options ====================
-export const CounterOptions: React.FC<InspectorSectionProps> = () => {
-  const [decimals, setDecimals] = useState(0);
-  const [duration, setDuration] = useState(1.5);
+export const CounterOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const currentDecimals = typeof getValue?.("content.counter.decimals") === "number" ? (getValue?.("content.counter.decimals") as number) : 0;
+  const currentDuration = typeof getValue?.("content.counter.duration") === "number" ? (getValue?.("content.counter.duration") as number) : 1.5;
+
+  const [decimals, setDecimals] = useState(currentDecimals);
+  const [duration, setDuration] = useState(currentDuration);
+
+  React.useEffect(() => {
+    setDecimals(currentDecimals);
+    setDuration(currentDuration);
+  }, [currentDecimals, currentDuration]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -229,7 +316,10 @@ export const CounterOptions: React.FC<InspectorSectionProps> = () => {
             value={decimals}
             min={0}
             max={6}
-            onChange={setDecimals}
+            onChange={(d) => {
+              setDecimals(d);
+              onUpdateProp?.("content.counter.decimals", d);
+            }}
             aria-label="Decimal places"
             className="ll:w-full"
           />
@@ -241,7 +331,10 @@ export const CounterOptions: React.FC<InspectorSectionProps> = () => {
             value={duration}
             step={0.1}
             min={0.1}
-            onChange={setDuration}
+            onChange={(du) => {
+              setDuration(du);
+              onUpdateProp?.("content.counter.duration", du);
+            }}
             aria-label="Count duration"
             className="ll:w-full"
           />
@@ -252,11 +345,23 @@ export const CounterOptions: React.FC<InspectorSectionProps> = () => {
 };
 
 // ==================== Object3D Options ====================
-export const Object3DOptions: React.FC<InspectorSectionProps> = () => {
-  const [wireframe, setWireframe] = useState(false);
-  const [transparent, setTransparent] = useState(false);
-  const [castShadow, setCastShadow] = useState(true);
-  const [receiveShadow, setReceiveShadow] = useState(true);
+export const Object3DOptions: React.FC<InspectorSectionProps> = ({ getValue, onUpdateProp }) => {
+  const currentWireframe = Boolean(getValue?.("object3d.wireframe"));
+  const currentTransparent = Boolean(getValue?.("object3d.transparent"));
+  const currentCastShadow = getValue?.("object3d.castShadow") !== false;
+  const currentReceiveShadow = getValue?.("object3d.receiveShadow") !== false;
+
+  const [wireframe, setWireframe] = useState(currentWireframe);
+  const [transparent, setTransparent] = useState(currentTransparent);
+  const [castShadow, setCastShadow] = useState(currentCastShadow);
+  const [receiveShadow, setReceiveShadow] = useState(currentReceiveShadow);
+
+  React.useEffect(() => {
+    setWireframe(currentWireframe);
+    setTransparent(currentTransparent);
+    setCastShadow(currentCastShadow);
+    setReceiveShadow(currentReceiveShadow);
+  }, [currentWireframe, currentTransparent, currentCastShadow, currentReceiveShadow]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -266,7 +371,10 @@ export const Object3DOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="checkbox"
               checked={wireframe}
-              onChange={(e) => setWireframe(e.target.checked)}
+              onChange={(e) => {
+                setWireframe(e.target.checked);
+                onUpdateProp?.("object3d.wireframe", e.target.checked);
+              }}
               className="ll:rounded-xs ll:border-border ll:text-primary ll:focus:ring-primary"
             />
             <span className="ll:text-small ll:text-muted">Enabled</span>
@@ -277,7 +385,10 @@ export const Object3DOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="checkbox"
               checked={transparent}
-              onChange={(e) => setTransparent(e.target.checked)}
+              onChange={(e) => {
+                setTransparent(e.target.checked);
+                onUpdateProp?.("object3d.transparent", e.target.checked);
+              }}
               className="ll:rounded-xs ll:border-border ll:text-primary ll:focus:ring-primary"
             />
             <span className="ll:text-small ll:text-muted">Enabled</span>
@@ -288,7 +399,10 @@ export const Object3DOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="checkbox"
               checked={castShadow}
-              onChange={(e) => setCastShadow(e.target.checked)}
+              onChange={(e) => {
+                setCastShadow(e.target.checked);
+                onUpdateProp?.("object3d.castShadow", e.target.checked);
+              }}
               className="ll:rounded-xs ll:border-border ll:text-primary ll:focus:ring-primary"
             />
             <span className="ll:text-small ll:text-muted">Enabled</span>
@@ -299,7 +413,10 @@ export const Object3DOptions: React.FC<InspectorSectionProps> = () => {
             <input
               type="checkbox"
               checked={receiveShadow}
-              onChange={(e) => setReceiveShadow(e.target.checked)}
+              onChange={(e) => {
+                setReceiveShadow(e.target.checked);
+                onUpdateProp?.("object3d.receiveShadow", e.target.checked);
+              }}
               className="ll:rounded-xs ll:border-border ll:text-primary ll:focus:ring-primary"
             />
             <span className="ll:text-small ll:text-muted">Enabled</span>

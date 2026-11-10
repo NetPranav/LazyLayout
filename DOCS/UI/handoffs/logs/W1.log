@@ -1,0 +1,40 @@
+All 10 items in [`DOCS/UI/tasks/2026-11-10-W1-design-engine-wiring.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-10-W1-design-engine-wiring.md) have been executed strictly in order within the permitted lane, with visual styling frozen and `npx tsc --noEmit` passing with 0 errors.
+
+### Summary of Completed Work
+
+1. **Audit Report**:
+   - Completed and saved to [`DOCS/UI/handoffs/2026-11-10-W1-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-10-W1-audit.md), cataloguing every control group on the Design page.
+2. **Option Popovers Writeback**:
+   - Connected all 11 option popovers in [`src/editor/panels/details/options/`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/options/) (`PositionOptions`, `LayoutOptions`, `AppearanceOptions`, `TypographyOptions`, `FillOptions`, `StrokeOptions`, `EffectsOptions`, `StatesOptions`, `ImageOptions`, `MiscellaneousOptions`, `ThemeTokensOptions`) to read and write canonical layer properties via `useSelectionInspector`, `fillsOf`, and `setEngineFills`. Popovers maintain open state on writes without remounting.
+3. **Font Picker Wiring**:
+   - In [`TypographySection.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/TypographySection.tsx), wired `FontPicker`'s `onPreview` callback to apply transient font family previews on hover and revert on cancel/escape, committing canonical `typography.fontFamily` to the engine on selection.
+4. **Canvas Settings Popover**:
+   - Created persistent [`canvasSettingsStore.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvasSettingsStore.ts) (`STORAGE_KEY = "lazylayout:canvas-settings"`) with prototype snap defaults (`snapGuides: false`, `snapToGrid: true`, `snapObjects: true`). Wired all settings through [`useEditorActions.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/useEditorActions.ts) and [`Stage.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/Stage.tsx), rendering checkerboard, pixel grid, and grid styles live on the stage workspace.
+5. **Insert Box & Frame Panel**:
+   - Extended [`insertCommands.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/insertCommands.ts) to map `3D object`, `Counter`, `Form`, `Card`, `Modal`, `Tabs`, and `Accordion` with archetype defaults. Frame presets and custom dimensions invoke `addFrame` and select the new frame.
+6. **Toolbar & Tool Machine Sync**:
+   - Wired active tool and active shape synchronization in [`useEditorActions.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/useEditorActions.ts) with `useToolStore`.
+   - Logged the vector pen core engine request in [`DOCS/UI/INTEGRATION.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/INTEGRATION.md) under §3.
+7. **Layers Panel & Motion Track Column Sync**:
+   - In [`model.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion-model/model.ts), [`sync.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion-model/sync.ts), and [`TimelinePanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePanel.tsx), resolved the `el_buy_button` vs `button` mismatch as "Get started". Layer selection remains in sync across canvas, layers tree, inspector, and timeline track column.
+8. **Text Editing & Text Format Bar**:
+   - In [`Artboard.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/Artboard.tsx), restored `Ctrl+B`, `Ctrl+I`, `Ctrl+U`, and `Ctrl+Shift+X` shortcuts inside `InlineTextEditor`.
+   - In [`TextFormatBar.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/TextFormatBar.tsx), added `onPointerDown={(e) => e.preventDefault()}` on all format buttons to prevent blur and keep the text-editing context focused.
+9. **Position Section Constraints Block**:
+   - Verified [`PositionSection.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/PositionSection.tsx) reading and writing `constraints.horizontal` and `constraints.vertical` directly through `documentCommands.updateProps`.
+10. **E2E Selectors**:
+    - Checked E2E selectors across `tests/e2e/**` (including `[data-stage=artboard]`, `[data-testid="stage-element"]`, `[data-testid="stage-page"]`, and `#p-layers .row[data-sel]`), verifying full compatibility without modifying product behavior.
+
+### Deliverables & Artifacts
+- **Handoff Report**: [`DOCS/UI/handoffs/2026-11-10-2102-W1.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-10-2102-W1.md)
+- **Audit Report**: [`DOCS/UI/handoffs/2026-11-10-W1-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-10-W1-audit.md)
+- **Integration Notes**: [`DOCS/UI/INTEGRATION.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/INTEGRATION.md) §3 updated
+- **Decisions Log**: [`DOCS/UI/DECISIONS.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/DECISIONS.md) updated
+- **1440px Verification Screenshots**:
+  - [`w1-01-editor-overview-1440.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-01-editor-overview-1440.png)
+  - [`w1-02-canvas-settings-popover.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-02-canvas-settings-popover.png)
+  - [`w1-03-insert-box-open.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-03-insert-box-open.png)
+  - [`w1-04-frame-presets-panel.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-04-frame-presets-panel.png)
+  - [`w1-05-options-popovers.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-05-options-popovers.png)
+  - [`w1-06-motion-timeline-sync.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/w1/w1-06-motion-timeline-sync.png)
+- **Typecheck**: `npx tsc --noEmit` passed with 0 errors. No git commit or push was performed.

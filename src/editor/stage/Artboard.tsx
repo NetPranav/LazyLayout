@@ -149,6 +149,34 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
       spellCheck={false}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
+        const isMod = e.ctrlKey || e.metaKey;
+        if (isMod && !e.altKey) {
+          const k = e.key.toLowerCase();
+          if (k === "b") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("bold");
+            return;
+          }
+          if (k === "i") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("italic");
+            return;
+          }
+          if (k === "u") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("underline");
+            return;
+          }
+          if (k === "x" && e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("strikeThrough");
+            return;
+          }
+        }
         e.stopPropagation();
         if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
       }}

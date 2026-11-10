@@ -45,6 +45,8 @@ const SHADOW_TYPE_OPTIONS = [
 ] as const;
 
 export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
+  getValue,
+  onUpdateProp,
   shadows: propShadows = [
     { id: "s1", type: "drop", hex: "000000", x: 0, y: 4, blur: 16, spread: 0 },
   ],
@@ -56,10 +58,27 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
   onChangeBackgroundBlur,
   onChangeBlend,
 }) => {
+  const currentBlur = typeof getValue?.("filter.blur") === "number" ? (getValue?.("filter.blur") as number) : propBlur;
+  const currentBgBlur = typeof getValue?.("paint.backgroundBlur") === "number" ? (getValue?.("paint.backgroundBlur") as number) : propBgBlur;
+  const currentBlend = (getValue?.("appearance.blendMode") as string) || propBlend;
+
   const [shadows, setShadows] = useState<ShadowItem[]>(propShadows);
-  const [blur, setBlur] = useState(propBlur);
-  const [bgBlur, setBgBlur] = useState(propBgBlur);
-  const [blend, setBlend] = useState(propBlend);
+  const [blur, setBlur] = useState(currentBlur);
+  const [bgBlur, setBgBlur] = useState(currentBgBlur);
+  const [blend, setBlend] = useState(currentBlend);
+
+  React.useEffect(() => {
+    setBlur(currentBlur);
+    setBgBlur(currentBgBlur);
+    setBlend(currentBlend);
+  }, [currentBlur, currentBgBlur, currentBlend]);
+
+  const syncShadows = (next: ShadowItem[]) => {
+    const css = next
+      .map((s) => `${s.type === "inner" ? "inset " : ""}${s.x}px ${s.y}px ${s.blur}px ${s.spread}px #${s.hex}`)
+      .join(", ");
+    onUpdateProp?.("paint.shadows", css);
+  };
 
   const handleAddShadow = () => {
     const next: ShadowItem[] = [
@@ -75,18 +94,21 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
       },
     ];
     setShadows(next);
+    syncShadows(next);
     onChangeShadows?.(next);
   };
 
   const handleRemoveShadow = (id: string) => {
     const next = shadows.filter((s) => s.id !== id);
     setShadows(next);
+    syncShadows(next);
     onChangeShadows?.(next);
   };
 
   const handleUpdateShadow = (id: string, patch: Partial<ShadowItem>) => {
     const next = shadows.map((s) => (s.id === id ? { ...s, ...patch } : s));
     setShadows(next);
+    syncShadows(next);
     onChangeShadows?.(next);
   };
 
@@ -206,6 +228,7 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             min={0}
             onChange={(b) => {
               setBlur(b);
+              onUpdateProp?.("filter.blur", b);
               onChangeBlur?.(b);
             }}
             className="ll:w-full"
@@ -220,6 +243,7 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             min={0}
             onChange={(bb) => {
               setBgBlur(bb);
+              onUpdateProp?.("paint.backgroundBlur", bb);
               onChangeBackgroundBlur?.(bb);
             }}
             className="ll:w-full"
@@ -237,6 +261,7 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
             options={BLEND_OPTIONS}
             onChange={(bl) => {
               setBlend(bl);
+              onUpdateProp?.("appearance.blendMode", bl);
               onChangeBlend?.(bl);
             }}
             className="ll:w-full"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   AlignLeft,
   AlignCenter,
@@ -76,6 +76,13 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
 
   const [isFontPickerOpen, setIsFontPickerOpen] = useState(false);
   const fontAnchorRef = useRef<HTMLDivElement>(null);
+  const committedFontRef = useRef(fontFamily);
+
+  useEffect(() => {
+    if (!isFontPickerOpen) {
+      committedFontRef.current = fontFamily;
+    }
+  }, [fontFamily, isFontPickerOpen]);
 
   const isSingleText = layer?.archetype === "text";
   const docLayers = getDocument().layers;
@@ -214,16 +221,39 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
           value={fontFamily}
           options={FONT_FAMILY_OPTIONS}
           mixed={isFamilyMixed}
-          onChange={(val) => onUpdateProp?.("typography.fontFamily", val)}
+          onChange={(val) => {
+            committedFontRef.current = val;
+            onUpdateProps?.({
+              "typography.fontFamily": val,
+              fontFamily: val,
+            });
+          }}
         />
         <FontPicker
           open={isFontPickerOpen}
           value={fontFamily}
           anchorRef={fontAnchorRef}
-          onChange={(family: string) => {
-            onUpdateProp?.("typography.fontFamily", family);
+          onPreview={(previewFamily) => {
+            const target = previewFamily || committedFontRef.current;
+            onUpdateProps?.({
+              "typography.fontFamily": target,
+              fontFamily: target,
+            });
           }}
-          onClose={() => setIsFontPickerOpen(false)}
+          onChange={(family: string) => {
+            committedFontRef.current = family;
+            onUpdateProps?.({
+              "typography.fontFamily": family,
+              fontFamily: family,
+            });
+          }}
+          onClose={() => {
+            setIsFontPickerOpen(false);
+            onUpdateProps?.({
+              "typography.fontFamily": committedFontRef.current,
+              fontFamily: committedFontRef.current,
+            });
+          }}
         />
       </div>
 

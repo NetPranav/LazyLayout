@@ -193,6 +193,15 @@ export function isEligibleMotionLayer(layer: Layer): boolean {
   if (!layer) return false;
   // Canvas root containers are not animatable elements
   if (layer.id === "elem_canvas_root" || layer.id === "el_root_container") return false;
+  // If the document has both "button" and "el_buy_button", skip the legacy duplicate
+  if (layer.id === "el_buy_button") {
+    try {
+      const doc = getDocument();
+      if (doc?.layers?.["button"]) return false;
+    } catch {
+      // ignore
+    }
+  }
   // Non-root layers with parentId or valid archetypes
   return true;
 }

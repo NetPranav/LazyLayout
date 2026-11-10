@@ -300,6 +300,7 @@ export const TextFormatBar: React.FC<TextFormatBarProps> = ({
         aria-pressed={activeFormats.bold ? "true" : "false"}
         aria-label="Bold"
         title="Bold (Ctrl+B)"
+        onPointerDown={(e) => e.preventDefault()}
         className={`ll-ib ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ${buttonFocusRing} ${
           activeFormats.bold
             ? "ll:bg-control-active ll:text-primary"
@@ -316,6 +317,7 @@ export const TextFormatBar: React.FC<TextFormatBarProps> = ({
         aria-pressed={activeFormats.italic ? "true" : "false"}
         aria-label="Italic"
         title="Italic (Ctrl+I)"
+        onPointerDown={(e) => e.preventDefault()}
         className={`ll-ib ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ${buttonFocusRing} ${
           activeFormats.italic
             ? "ll:bg-control-active ll:text-primary"
@@ -332,6 +334,7 @@ export const TextFormatBar: React.FC<TextFormatBarProps> = ({
         aria-pressed={activeFormats.underline ? "true" : "false"}
         aria-label="Underline"
         title="Underline (Ctrl+U)"
+        onPointerDown={(e) => e.preventDefault()}
         className={`ll-ib ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ${buttonFocusRing} ${
           activeFormats.underline
             ? "ll:bg-control-active ll:text-primary"
@@ -348,6 +351,7 @@ export const TextFormatBar: React.FC<TextFormatBarProps> = ({
         aria-pressed={activeFormats.strike ? "true" : "false"}
         aria-label="Strikethrough"
         title="Strikethrough (Ctrl+Shift+X)"
+        onPointerDown={(e) => e.preventDefault()}
         className={`ll-ib ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ${buttonFocusRing} ${
           activeFormats.strike
             ? "ll:bg-control-active ll:text-primary"
@@ -366,6 +370,7 @@ export const TextFormatBar: React.FC<TextFormatBarProps> = ({
         aria-pressed={activeFormats.link ? "true" : "false"}
         aria-label="Link"
         title="Link"
+        onPointerDown={(e) => e.preventDefault()}
         className={`ll-ib ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ${buttonFocusRing} ${
           activeFormats.link
             ? "ll:bg-control-active ll:text-primary"

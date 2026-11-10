@@ -41,6 +41,8 @@ const BLEND_OPTIONS = [
 ] as const;
 
 export const ImageOptions: React.FC<ImageOptionsProps> = ({
+  getValue,
+  onUpdateProp,
   focalX: propFx = 50,
   focalY: propFy = 50,
   aspectRatio: propAr = "Auto",
@@ -54,18 +56,48 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
   overlayOpacity: propOo = 0,
   overlayBlend: propOb = "Normal",
 }) => {
-  const [focalX, setFocalX] = useState(propFx);
-  const [focalY, setFocalY] = useState(propFy);
-  const [aspectRatio, setAspectRatio] = useState(propAr);
-  const [loading, setLoading] = useState(propLd);
-  const [brightness, setBrightness] = useState(propBr);
-  const [contrast, setContrast] = useState(propCt);
-  const [saturation, setSaturation] = useState(propSt);
-  const [grayscale, setGrayscale] = useState(propGs);
-  const [blur, setBlur] = useState(propBl);
-  const [overlayHex, setOverlayHex] = useState(propOh);
-  const [overlayOpacity, setOverlayOpacity] = useState(propOo);
-  const [overlayBlend, setOverlayBlend] = useState(propOb);
+  const currentFx = typeof getValue?.("media.focalPoint.x") === "number" ? (getValue?.("media.focalPoint.x") as number) : propFx;
+  const currentFy = typeof getValue?.("media.focalPoint.y") === "number" ? (getValue?.("media.focalPoint.y") as number) : propFy;
+  const currentAr = (getValue?.("media.aspectRatio") as string) || propAr;
+  const rawLd = (getValue?.("media.loadingMode") as string) || "lazy";
+  const currentLd = rawLd === "eager" ? "Eager" : "Lazy";
+  const currentBr = typeof getValue?.("media.filter.brightness") === "number" ? Math.round((getValue?.("media.filter.brightness") as number) * 100) : propBr;
+  const currentCt = typeof getValue?.("media.filter.contrast") === "number" ? Math.round((getValue?.("media.filter.contrast") as number) * 100) : propCt;
+  const currentSt = typeof getValue?.("media.filter.saturate") === "number" ? Math.round((getValue?.("media.filter.saturate") as number) * 100) : propSt;
+  const currentGs = typeof getValue?.("media.filter.grayscale") === "number" ? Math.round((getValue?.("media.filter.grayscale") as number) * 100) : propGs;
+  const currentBl = typeof getValue?.("media.filter.blur") === "number" ? (getValue?.("media.filter.blur") as number) : propBl;
+  const rawOverlayHex = (getValue?.("media.overlay.color") as string) || propOh;
+  const currentOh = rawOverlayHex.replace(/^#/, "");
+  const currentOo = typeof getValue?.("media.overlay.opacity") === "number" ? Math.round((getValue?.("media.overlay.opacity") as number) * 100) : propOo;
+  const currentOb = (getValue?.("media.overlay.blendMode") as string) || propOb;
+
+  const [focalX, setFocalX] = useState(currentFx);
+  const [focalY, setFocalY] = useState(currentFy);
+  const [aspectRatio, setAspectRatio] = useState(currentAr);
+  const [loading, setLoading] = useState<"Lazy" | "Eager">(currentLd);
+  const [brightness, setBrightness] = useState(currentBr);
+  const [contrast, setContrast] = useState(currentCt);
+  const [saturation, setSaturation] = useState(currentSt);
+  const [grayscale, setGrayscale] = useState(currentGs);
+  const [blur, setBlur] = useState(currentBl);
+  const [overlayHex, setOverlayHex] = useState(currentOh);
+  const [overlayOpacity, setOverlayOpacity] = useState(currentOo);
+  const [overlayBlend, setOverlayBlend] = useState(currentOb);
+
+  React.useEffect(() => {
+    setFocalX(currentFx);
+    setFocalY(currentFy);
+    setAspectRatio(currentAr);
+    setLoading(currentLd);
+    setBrightness(currentBr);
+    setContrast(currentCt);
+    setSaturation(currentSt);
+    setGrayscale(currentGs);
+    setBlur(currentBl);
+    setOverlayHex(currentOh);
+    setOverlayOpacity(currentOo);
+    setOverlayBlend(currentOb);
+  }, [currentFx, currentFy, currentAr, currentLd, currentBr, currentCt, currentSt, currentGs, currentBl, currentOh, currentOo, currentOb]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -78,7 +110,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
               label="X"
               unit="%"
               value={focalX}
-              onChange={setFocalX}
+              onChange={(x) => {
+                setFocalX(x);
+                onUpdateProp?.("media.focalPoint.x", x);
+              }}
               aria-label="Focal X"
             />
             <NumberField
@@ -86,7 +121,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
               label="Y"
               unit="%"
               value={focalY}
-              onChange={setFocalY}
+              onChange={(y) => {
+                setFocalY(y);
+                onUpdateProp?.("media.focalPoint.y", y);
+              }}
               aria-label="Focal Y"
             />
           </OptionTwo>
@@ -98,7 +136,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             aria-label="Aspect ratio"
             value={aspectRatio}
             options={RATIO_OPTIONS}
-            onChange={setAspectRatio}
+            onChange={(ar) => {
+              setAspectRatio(ar);
+              onUpdateProp?.("media.aspectRatio", ar);
+            }}
             className="ll:w-full"
           />
         </OptionRow>
@@ -112,7 +153,11 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             aria-label="Loading strategy"
             value={loading}
             options={LOADING_OPTIONS}
-            onChange={(v) => setLoading(v as "Lazy" | "Eager")}
+            onChange={(v) => {
+              const next = v as "Lazy" | "Eager";
+              setLoading(next);
+              onUpdateProp?.("media.loadingMode", next.toLowerCase());
+            }}
             className="ll:w-full"
           />
         </OptionRow>
@@ -125,7 +170,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             size="sm"
             unit="%"
             value={brightness}
-            onChange={setBrightness}
+            onChange={(b) => {
+              setBrightness(b);
+              onUpdateProp?.("media.filter.brightness", b / 100);
+            }}
             aria-label="Brightness"
             className="ll:w-full"
           />
@@ -136,7 +184,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             size="sm"
             unit="%"
             value={contrast}
-            onChange={setContrast}
+            onChange={(c) => {
+              setContrast(c);
+              onUpdateProp?.("media.filter.contrast", c / 100);
+            }}
             aria-label="Contrast"
             className="ll:w-full"
           />
@@ -147,7 +198,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             size="sm"
             unit="%"
             value={saturation}
-            onChange={setSaturation}
+            onChange={(s) => {
+              setSaturation(s);
+              onUpdateProp?.("media.filter.saturate", s / 100);
+            }}
             aria-label="Saturation"
             className="ll:w-full"
           />
@@ -158,7 +212,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             size="sm"
             unit="%"
             value={grayscale}
-            onChange={setGrayscale}
+            onChange={(g) => {
+              setGrayscale(g);
+              onUpdateProp?.("media.filter.grayscale", g / 100);
+            }}
             aria-label="Grayscale"
             className="ll:w-full"
           />
@@ -169,7 +226,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             size="sm"
             value={blur}
             min={0}
-            onChange={setBlur}
+            onChange={(bl) => {
+              setBlur(bl);
+              onUpdateProp?.("media.filter.blur", bl);
+            }}
             aria-label="Blur"
             className="ll:w-full"
           />
@@ -191,7 +251,13 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
                 maxLength={6}
                 value={overlayHex}
                 aria-label="Overlay hex"
-                onChange={(e) => setOverlayHex(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const hex = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+                  setOverlayHex(hex);
+                  if (hex.length === 6) {
+                    onUpdateProp?.("media.overlay.color", `#${hex}`);
+                  }
+                }}
                 className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
               />
             </div>
@@ -205,7 +271,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             value={overlayOpacity}
             min={0}
             max={100}
-            onChange={setOverlayOpacity}
+            onChange={(op) => {
+              setOverlayOpacity(op);
+              onUpdateProp?.("media.overlay.opacity", op / 100);
+            }}
             aria-label="Overlay opacity"
             className="ll:w-full"
           />
@@ -217,7 +286,10 @@ export const ImageOptions: React.FC<ImageOptionsProps> = ({
             aria-label="Overlay blend"
             value={overlayBlend}
             options={BLEND_OPTIONS}
-            onChange={setOverlayBlend}
+            onChange={(bl) => {
+              setOverlayBlend(bl);
+              onUpdateProp?.("media.overlay.blendMode", bl.toLowerCase());
+            }}
             className="ll:w-full"
           />
         </OptionRow>

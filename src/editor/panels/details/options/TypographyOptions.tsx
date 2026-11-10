@@ -61,6 +61,8 @@ const FONT_LOADING_OPTIONS = [
 ] as const;
 
 export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
+  getValue,
+  onUpdateProp,
   textCase: propCase = "none",
   italic: propItalic = false,
   decoration: propDeco = "none",
@@ -78,14 +80,36 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
   onChangeFontLoading,
   onChangeWeightAxis,
 }) => {
-  const [textCase, setTextCase] = useState(propCase);
-  const [italic, setItalic] = useState(propItalic);
-  const [decoration, setDecoration] = useState(propDeco);
-  const [wordSpacing, setWordSpacing] = useState(propWs);
-  const [textOverflow, setTextOverflow] = useState(propTo);
-  const [whiteSpace, setWhiteSpace] = useState(propWh);
-  const [fontLoading, setFontLoading] = useState(propFl);
-  const [weightAxis, setWeightAxis] = useState(propWa);
+  const rawTransform = (getValue?.("typography.textTransform") as string) || "none";
+  const currentCase = rawTransform === "capitalize" ? "titlecase" : (rawTransform as typeof propCase);
+  const currentItalic = getValue?.("typography.fontStyle") === "italic" || Boolean(getValue?.("typography.format.italic")) || propItalic;
+  const currentDeco = (getValue?.("typography.textDecoration") as typeof propDeco) ?? propDeco;
+  const currentWs = typeof getValue?.("typography.wordSpacing") === "number" ? (getValue?.("typography.wordSpacing") as number) : propWs;
+  const currentTo = (getValue?.("typography.textOverflow") as typeof propTo) ?? propTo;
+  const currentWh = (getValue?.("typography.whiteSpace") as typeof propWh) ?? propWh;
+  const currentFl = (getValue?.("typography.fontLoading") as typeof propFl) ?? propFl;
+  const rawWeight = getValue?.("typography.fontWeight");
+  const currentWa = typeof rawWeight === "number" ? rawWeight : typeof rawWeight === "string" && !isNaN(Number(rawWeight)) ? Number(rawWeight) : propWa;
+
+  const [textCase, setTextCase] = useState(currentCase);
+  const [italic, setItalic] = useState(currentItalic);
+  const [decoration, setDecoration] = useState(currentDeco);
+  const [wordSpacing, setWordSpacing] = useState(currentWs);
+  const [textOverflow, setTextOverflow] = useState(currentTo);
+  const [whiteSpace, setWhiteSpace] = useState(currentWh);
+  const [fontLoading, setFontLoading] = useState(currentFl);
+  const [weightAxis, setWeightAxis] = useState(currentWa);
+
+  React.useEffect(() => {
+    setTextCase(currentCase);
+    setItalic(currentItalic);
+    setDecoration(currentDeco);
+    setWordSpacing(currentWs);
+    setTextOverflow(currentTo);
+    setWhiteSpace(currentWh);
+    setFontLoading(currentFl);
+    setWeightAxis(currentWa);
+  }, [currentCase, currentItalic, currentDeco, currentWs, currentTo, currentWh, currentFl, currentWa]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -101,6 +125,8 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
                 value={textCase}
                 onChange={(c) => {
                   setTextCase(c);
+                  const mapped = c === "titlecase" ? "capitalize" : c;
+                  onUpdateProp?.("typography.textTransform", mapped);
                   onChangeTextCase?.(c);
                 }}
                 className="ll:w-full"
@@ -115,6 +141,8 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
               onClick={() => {
                 const next = !italic;
                 setItalic(next);
+                onUpdateProp?.("typography.fontStyle", next ? "italic" : "normal");
+                onUpdateProp?.("typography.format.italic", next);
                 onChangeItalic?.(next);
               }}
               icon={<Icon icon={Italic} size={14} />}
@@ -131,6 +159,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             value={decoration}
             onChange={(d) => {
               setDecoration(d);
+              onUpdateProp?.("typography.textDecoration", d);
               onChangeDecoration?.(d);
             }}
             className="ll:w-full"
@@ -148,6 +177,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             step={1}
             onChange={(ws) => {
               setWordSpacing(ws);
+              onUpdateProp?.("typography.wordSpacing", ws);
               onChangeWordSpacing?.(ws);
             }}
             className="ll:w-full"
@@ -163,6 +193,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             onChange={(to) => {
               const next = to as typeof textOverflow;
               setTextOverflow(next);
+              onUpdateProp?.("typography.textOverflow", next);
               onChangeTextOverflow?.(next);
             }}
             className="ll:w-full"
@@ -178,6 +209,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             onChange={(wh) => {
               const next = wh as typeof whiteSpace;
               setWhiteSpace(next);
+              onUpdateProp?.("typography.whiteSpace", next);
               onChangeWhiteSpace?.(next);
             }}
             className="ll:w-full"
@@ -196,6 +228,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             onChange={(fl) => {
               const next = fl as typeof fontLoading;
               setFontLoading(next);
+              onUpdateProp?.("typography.fontLoading", next);
               onChangeFontLoading?.(next);
             }}
             className="ll:w-full"
@@ -222,6 +255,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
               onChange={(e) => {
                 const w = Number(e.target.value);
                 setWeightAxis(w);
+                onUpdateProp?.("typography.fontWeight", String(w));
                 onChangeWeightAxis?.(w);
               }}
               className="ll:w-full ll:accent-primary ll:cursor-pointer"

@@ -79,6 +79,10 @@ export const Stage: React.FC<StageProps> = ({
   onInsert,
   onAskAi,
   mode = "design",
+  checkerboard = false,
+  pixelGrid = false,
+  gridStyle = "dots",
+  gridSize = 24,
   className = "",
 }) => {
   // Store-backed selection
@@ -775,8 +779,19 @@ export const Stage: React.FC<StageProps> = ({
       ref={viewportRef}
       data-stage="workspace"
       data-testid="stage-viewport"
+      data-checkerboard={checkerboard ? "true" : undefined}
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
-      style={{ cursor: toolCursor }}
+      style={{
+        cursor: toolCursor,
+        ...(checkerboard
+          ? {
+              backgroundImage:
+                "linear-gradient(45deg, var(--ll-border-color) 25%, transparent 25%), linear-gradient(-45deg, var(--ll-border-color) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--ll-border-color) 75%), linear-gradient(-45deg, transparent 75%, var(--ll-border-color) 75%)",
+              backgroundSize: "20px 20px",
+              backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0",
+            }
+          : {}),
+      }}
       onPointerDownCapture={handleToolPointerDown}
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}

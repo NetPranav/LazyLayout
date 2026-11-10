@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
@@ -35,6 +35,8 @@ import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/l
 import { executeStagePreset, presetForBreakpoint } from "@/editor/stage/presetBreakpoints";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
+import { useCanvasSettingsStore, initPrototypeSnapDefaults } from "./canvasSettingsStore";
+import type { GridStyle, MotionFeel } from "./canvas-chrome/types";
 
 export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
@@ -94,6 +96,40 @@ export interface UseEditorActionsReturn {
   toggleSnapGuides: () => void;
   snapToGrid: boolean;
   toggleSnapToGrid: () => void;
+
+  // Canvas visual settings & preferences
+  gridStyle: GridStyle;
+  setGridStyle: (style: GridStyle) => void;
+  gridSize: number;
+  setGridSize: (size: number) => void;
+  pixelGrid: boolean;
+  togglePixelGrid: () => void;
+  checkerboard: boolean;
+  toggleCheckerboard: () => void;
+  theme: string;
+  setTheme: (theme: string) => void;
+  motionFeel: MotionFeel;
+  setMotionFeel: (feel: MotionFeel) => void;
+  dropdownBulge: number;
+  setDropdownBulge: (bulge: number) => void;
+  inspectMode: boolean;
+  toggleInspectMode: () => void;
+  canvasPan: boolean;
+  toggleCanvasPan: () => void;
+  canvasZoom: boolean;
+  toggleCanvasZoom: () => void;
+  worldAxes: boolean;
+  toggleWorldAxes: () => void;
+  elementDragging: boolean;
+  toggleElementDragging: () => void;
+  reparenting: boolean;
+  toggleReparenting: () => void;
+  collisionMode: "pass" | "push";
+  setCollisionMode: (mode: "pass" | "push") => void;
+  marqueeMode: "intersects" | "encloses";
+  setMarqueeMode: (mode: "intersects" | "encloses") => void;
+  snapThreshold: number;
+  setSnapThreshold: (threshold: number) => void;
 
   // File import / export
   exportProjectFile: () => Promise<void>;
@@ -168,7 +204,11 @@ export function useEditorActions(
     );
   }, []);
 
-  // Snapping store bindings
+  // Snapping store bindings & prototype defaults enforcement
+  useEffect(() => {
+    initPrototypeSnapDefaults();
+  }, []);
+
   const snapObjects = useSnapStore((s) => s.objects);
   const snapGuides = useSnapStore((s) => s.guides);
   const snapToGrid = useSnapStore((s) => s.grid);
@@ -184,6 +224,9 @@ export function useEditorActions(
   const toggleSnapToGrid = useCallback(() => {
     useSnapStore.getState().toggle("grid");
   }, []);
+
+  // Canvas visual settings store bindings
+  const canvasSettings = useCanvasSettingsStore();
 
   // Real Project Export (.lazy.json download)
   const exportProjectFile = useCallback(async () => {
@@ -246,6 +289,8 @@ export function useEditorActions(
   // Active tool and shape
   const [activeTool, setActiveToolState] = useState<CanvasTool>("select");
   const [activeShape, setActiveShapeState] = useState<ShapeTool>("box");
+  const activeShapeRef = useRef<ShapeTool>(activeShape);
+  activeShapeRef.current = activeShape;
 
   // Floating overlays
   const [isInsertOpen, setIsInsertOpen] = useState(false);
@@ -272,11 +317,19 @@ export function useEditorActions(
   // Sync tool selection with core tool store
   const setActiveTool = useCallback((tool: CanvasTool) => {
     setActiveToolState(tool);
+    const shapeMap: Record<ShapeTool, string> = {
+      box: "rectangle",
+      circle: "ellipse",
+      line: "line",
+      arrow: "arrow",
+      poly: "polygon",
+      star: "star",
+    };
     const toolMap: Record<CanvasTool, string> = {
       select: "select",
       hand: "pan",
       frame: "frame",
-      shape: "rectangle",
+      shape: shapeMap[activeShapeRef.current as ShapeTool] ?? "rectangle",
       text: "text",
       image: "select",
       pen: "pen",
@@ -287,6 +340,7 @@ export function useEditorActions(
 
   // Sync shape selection with core tool store
   const setActiveShape = useCallback((shape: ShapeTool) => {
+    activeShapeRef.current = shape;
     setActiveShapeState(shape);
     const shapeMap: Record<ShapeTool, string> = {
       box: "rectangle",
@@ -1414,6 +1468,38 @@ export function useEditorActions(
       toggleSnapGuides,
       snapToGrid,
       toggleSnapToGrid,
+      gridStyle: canvasSettings.gridStyle,
+      setGridStyle: canvasSettings.setGridStyle,
+      gridSize: canvasSettings.gridSize,
+      setGridSize: canvasSettings.setGridSize,
+      pixelGrid: canvasSettings.pixelGrid,
+      togglePixelGrid: canvasSettings.togglePixelGrid,
+      checkerboard: canvasSettings.checkerboard,
+      toggleCheckerboard: canvasSettings.toggleCheckerboard,
+      theme: canvasSettings.theme,
+      setTheme: canvasSettings.setTheme,
+      motionFeel: canvasSettings.motionFeel,
+      setMotionFeel: canvasSettings.setMotionFeel,
+      dropdownBulge: canvasSettings.dropdownBulge,
+      setDropdownBulge: canvasSettings.setDropdownBulge,
+      inspectMode: canvasSettings.inspectMode,
+      toggleInspectMode: canvasSettings.toggleInspectMode,
+      canvasPan: canvasSettings.canvasPan,
+      toggleCanvasPan: canvasSettings.toggleCanvasPan,
+      canvasZoom: canvasSettings.canvasZoom,
+      toggleCanvasZoom: canvasSettings.toggleCanvasZoom,
+      worldAxes: canvasSettings.worldAxes,
+      toggleWorldAxes: canvasSettings.toggleWorldAxes,
+      elementDragging: canvasSettings.elementDragging,
+      toggleElementDragging: canvasSettings.toggleElementDragging,
+      reparenting: canvasSettings.reparenting,
+      toggleReparenting: canvasSettings.toggleReparenting,
+      collisionMode: canvasSettings.collisionMode,
+      setCollisionMode: canvasSettings.setCollisionMode,
+      marqueeMode: canvasSettings.marqueeMode,
+      setMarqueeMode: canvasSettings.setMarqueeMode,
+      snapThreshold: canvasSettings.snapThreshold,
+      setSnapThreshold: canvasSettings.setSnapThreshold,
       exportProjectFile,
       importProjectFile,
     }),
@@ -1458,6 +1544,7 @@ export function useEditorActions(
       toggleSnapGuides,
       snapToGrid,
       toggleSnapToGrid,
+      canvasSettings,
       exportProjectFile,
       importProjectFile,
     ]

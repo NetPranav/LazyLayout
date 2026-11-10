@@ -45,6 +45,8 @@ const POINTER_EVENTS_OPTIONS = [
 ] as const;
 
 export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
+  getValue,
+  onUpdateProp,
   radiusTopLeft: propTl = 0,
   radiusTopRight: propTr = 0,
   radiusBottomRight: propBr = 0,
@@ -57,13 +59,47 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
   onChangeCursor,
   onChangePointerEvents,
 }) => {
-  const [tl, setTl] = useState(propTl);
-  const [tr, setTr] = useState(propTr);
-  const [br, setBr] = useState(propBr);
-  const [bl, setBl] = useState(propBl);
-  const [blend, setBlend] = useState(propBlend);
-  const [cursor, setCursor] = useState(propCursor);
-  const [pointerEvents, setPointerEvents] = useState(propPe);
+  const currentTl = typeof getValue?.("shape.cornerRadius.topLeft") === "number"
+    ? (getValue?.("shape.cornerRadius.topLeft") as number)
+    : typeof getValue?.("appearance.radius") === "number"
+    ? (getValue?.("appearance.radius") as number)
+    : propTl;
+  const currentTr = typeof getValue?.("shape.cornerRadius.topRight") === "number"
+    ? (getValue?.("shape.cornerRadius.topRight") as number)
+    : typeof getValue?.("appearance.radius") === "number"
+    ? (getValue?.("appearance.radius") as number)
+    : propTr;
+  const currentBr = typeof getValue?.("shape.cornerRadius.bottomRight") === "number"
+    ? (getValue?.("shape.cornerRadius.bottomRight") as number)
+    : typeof getValue?.("appearance.radius") === "number"
+    ? (getValue?.("appearance.radius") as number)
+    : propBr;
+  const currentBl = typeof getValue?.("shape.cornerRadius.bottomLeft") === "number"
+    ? (getValue?.("shape.cornerRadius.bottomLeft") as number)
+    : typeof getValue?.("appearance.radius") === "number"
+    ? (getValue?.("appearance.radius") as number)
+    : propBl;
+  const currentBlend = (getValue?.("appearance.blendMode") as string) || propBlend;
+  const currentCursor = (getValue?.("appearance.cursor") as typeof propCursor) ?? propCursor;
+  const currentPe = (getValue?.("appearance.pointerEvents") as typeof propPe) ?? propPe;
+
+  const [tl, setTl] = useState(currentTl);
+  const [tr, setTr] = useState(currentTr);
+  const [br, setBr] = useState(currentBr);
+  const [bl, setBl] = useState(currentBl);
+  const [blend, setBlend] = useState(currentBlend);
+  const [cursor, setCursor] = useState(currentCursor);
+  const [pointerEvents, setPointerEvents] = useState(currentPe);
+
+  React.useEffect(() => {
+    setTl(currentTl);
+    setTr(currentTr);
+    setBr(currentBr);
+    setBl(currentBl);
+    setBlend(currentBlend);
+    setCursor(currentCursor);
+    setPointerEvents(currentPe);
+  }, [currentTl, currentTr, currentBr, currentBl, currentBlend, currentCursor, currentPe]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -79,6 +115,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               min={0}
               onChange={(v) => {
                 setTl(v);
+                onUpdateProp?.("shape.cornerRadius.topLeft", v);
                 onChangeCornerRadius?.("tl", v);
               }}
             />
@@ -90,6 +127,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               min={0}
               onChange={(v) => {
                 setTr(v);
+                onUpdateProp?.("shape.cornerRadius.topRight", v);
                 onChangeCornerRadius?.("tr", v);
               }}
             />
@@ -101,6 +139,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               min={0}
               onChange={(v) => {
                 setBr(v);
+                onUpdateProp?.("shape.cornerRadius.bottomRight", v);
                 onChangeCornerRadius?.("br", v);
               }}
             />
@@ -112,6 +151,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               min={0}
               onChange={(v) => {
                 setBl(v);
+                onUpdateProp?.("shape.cornerRadius.bottomLeft", v);
                 onChangeCornerRadius?.("bl", v);
               }}
             />
@@ -129,6 +169,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             options={BLEND_OPTIONS}
             onChange={(b) => {
               setBlend(b);
+              onUpdateProp?.("appearance.blendMode", b);
               onChangeBlend?.(b);
             }}
             className="ll:w-full"
@@ -144,6 +185,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             onChange={(c) => {
               const next = c as typeof cursor;
               setCursor(next);
+              onUpdateProp?.("appearance.cursor", next);
               onChangeCursor?.(next);
             }}
             className="ll:w-full"
@@ -159,6 +201,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             onChange={(pe) => {
               const next = pe as typeof pointerEvents;
               setPointerEvents(next);
+              onUpdateProp?.("appearance.pointerEvents", next);
               onChangePointerEvents?.(next);
             }}
             className="ll:w-full"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
@@ -8,6 +8,10 @@ import { OptionGroup, OptionRow } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import type { InspectorSectionProps } from "../types";
+import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
+import { changeType, paintColor, updatePaint } from "@/core/paint/paintEdits";
+import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
+import type { Paint, PaintType } from "@/core/paint/paints";
 
 export interface GradientStopItem {
   id: string;
@@ -54,7 +58,16 @@ const IMAGE_FIT_OPTIONS = [
   { value: "Tile", label: "Tile" },
 ] as const;
 
+const hexOf = (css: string): string => {
+  const c = parseCss(css);
+  return c ? toHex(c).replace(/^#/, "").slice(0, 6).toUpperCase() : "FFFFFF";
+};
+
 export const FillOptions: React.FC<FillOptionsProps> = ({
+  layer,
+  selectedId,
+  getValue,
+  onUpdateProp,
   paintType: propPaintType = "Solid",
   opacity: propOpacity = 100,
   blend: propBlend = "Normal",
@@ -71,12 +84,60 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
   onChangeStops,
   onChangeImageFit,
 }) => {
-  const [paintType, setPaintType] = useState(propPaintType);
-  const [opacity, setOpacity] = useState(propOpacity);
-  const [blend, setBlend] = useState(propBlend);
+  const enginePaints = selectedId && layer && hasFills(layer.archetype) ? fillsOf(selectedId) : [];
+  const primaryPaint = enginePaints[0];
+
+  const derivedType: typeof propPaintType = primaryPaint
+    ? primaryPaint.type === "linear"
+      ? "Linear"
+      : primaryPaint.type === "radial" || primaryPaint.type === "diamond"
+      ? "Radial"
+      : primaryPaint.type === "conic"
+      ? "Conic"
+      : primaryPaint.type === "image"
+      ? "Image"
+      : "Solid"
+    : propPaintType;
+
+  const derivedOpacity = primaryPaint
+    ? Math.round(primaryPaint.opacity * 100)
+    : typeof getValue?.("appearance.opacity") === "number"
+    ? Math.round((getValue?.("appearance.opacity") as number) * 100)
+    : propOpacity;
+
+  const derivedBlend = (getValue?.("appearance.blendMode") as string)
+    ? ((getValue?.("appearance.blendMode") as string).charAt(0).toUpperCase() +
+        (getValue?.("appearance.blendMode") as string).slice(1).toLowerCase())
+    : propBlend;
+
+  const derivedStops: GradientStopItem[] = primaryPaint && "stops" in primaryPaint
+    ? primaryPaint.stops.map((s, idx) => ({
+        id: `s-${idx}`,
+        hex: hexOf(s.color),
+        position: Math.round(s.at * 100),
+      }))
+    : propStops;
+
+  const [paintType, setPaintType] = useState(derivedType);
+  const [opacity, setOpacity] = useState(derivedOpacity);
+  const [blend, setBlend] = useState(derivedBlend);
   const [angle, setAngle] = useState(propAngle);
-  const [stops, setStops] = useState<GradientStopItem[]>(propStops);
+  const [stops, setStops] = useState<GradientStopItem[]>(derivedStops);
   const [imageFit, setImageFit] = useState(propImageFit);
+
+  useEffect(() => {
+    setPaintType(derivedType);
+    setOpacity(derivedOpacity);
+    setBlend(derivedBlend);
+    if (derivedStops.length > 0) setStops(derivedStops);
+  }, [derivedType, derivedOpacity, derivedBlend, primaryPaint]);
+
+  const syncPaints = (nextPaint: Paint) => {
+    if (layer && selectedId && hasFills(layer.archetype)) {
+      const rest = enginePaints.slice(1);
+      setEngineFills([selectedId], [nextPaint, ...rest]);
+    }
+  };
 
   const isGradient = paintType === "Linear" || paintType === "Radial" || paintType === "Conic";
   const isImage = paintType === "Image";
@@ -88,6 +149,10 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
     ];
     setStops(next);
     onChangeStops?.(next);
+    if (primaryPaint && "stops" in primaryPaint) {
+      const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
+      syncPaints({ ...primaryPaint, stops: updatedStops } as Paint);
+    }
   };
 
   const handleRemoveStop = (id: string) => {
@@ -95,12 +160,20 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
     const next = stops.filter((s) => s.id !== id);
     setStops(next);
     onChangeStops?.(next);
+    if (primaryPaint && "stops" in primaryPaint) {
+      const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
+      syncPaints({ ...primaryPaint, stops: updatedStops } as Paint);
+    }
   };
 
   const handleUpdateStop = (id: string, patch: Partial<GradientStopItem>) => {
     const next = stops.map((s) => (s.id === id ? { ...s, ...patch } : s));
     setStops(next);
     onChangeStops?.(next);
+    if (primaryPaint && "stops" in primaryPaint) {
+      const updatedStops = next.map((s) => ({ color: `#${s.hex}`, at: s.position / 100 }));
+      syncPaints({ ...primaryPaint, stops: updatedStops } as Paint);
+    }
   };
 
   return (
@@ -116,6 +189,19 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             onChange={(v) => {
               const next = v as typeof paintType;
               setPaintType(next);
+              if (primaryPaint) {
+                const targetType: PaintType =
+                  next === "Linear"
+                    ? "linear"
+                    : next === "Radial"
+                    ? "radial"
+                    : next === "Conic"
+                    ? "conic"
+                    : next === "Image"
+                    ? "image"
+                    : "solid";
+                syncPaints(changeType(primaryPaint, targetType));
+              }
               onChangePaintType?.(next);
             }}
             className="ll:w-full"
@@ -133,6 +219,11 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             unit="%"
             onChange={(op) => {
               setOpacity(op);
+              if (primaryPaint) {
+                syncPaints({ ...primaryPaint, opacity: op / 100 });
+              } else {
+                onUpdateProp?.("appearance.opacity", op / 100);
+              }
               onChangeOpacity?.(op);
             }}
             className="ll:w-full"
@@ -147,6 +238,7 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
             options={BLEND_OPTIONS}
             onChange={(b) => {
               setBlend(b);
+              onUpdateProp?.("appearance.blendMode", b.toLowerCase());
               onChangeBlend?.(b);
             }}
             className="ll:w-full"
@@ -261,6 +353,7 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
               onChange={(fit) => {
                 const next = fit as typeof imageFit;
                 setImageFit(next);
+                onUpdateProp?.("media.objectFit", next.toLowerCase());
                 onChangeImageFit?.(next);
               }}
               className="ll:w-full"

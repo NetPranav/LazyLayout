@@ -69,6 +69,8 @@ const JOIN_OPTIONS = [
 ] as const;
 
 export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
+  getValue,
+  onUpdateProp,
   position: propPosition = "inside",
   width: propWidth = 1,
   style: propStyle = "solid",
@@ -86,14 +88,34 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
   onChangeMiter,
   onChangeDash,
 }) => {
-  const [position, setPosition] = useState(propPosition);
-  const [width, setWidth] = useState(propWidth);
-  const [style, setStyle] = useState(propStyle);
+  const currentPos = (getValue?.("stroke.align") as typeof propPosition) ?? propPosition;
+  const currentWidth = typeof getValue?.("appearance.border.width") === "number"
+    ? (getValue?.("appearance.border.width") as number)
+    : typeof getValue?.("svg.strokeWidth") === "number"
+    ? (getValue?.("svg.strokeWidth") as number)
+    : propWidth;
+  const currentStyle = (getValue?.("appearance.border.style") as typeof propStyle) ?? propStyle;
+  const currentCap = (getValue?.("svg.strokeLinecap") as typeof propCap) ?? propCap;
+  const currentJoin = (getValue?.("svg.strokeLinejoin") as typeof propJoin) ?? propJoin;
+  const currentDash = (getValue?.("svg.strokeDasharray") as string) || propDash;
+
+  const [position, setPosition] = useState(currentPos);
+  const [width, setWidth] = useState(currentWidth);
+  const [style, setStyle] = useState(currentStyle);
   const [sides, setSides] = useState(propSides);
-  const [cap, setCap] = useState(propCap);
-  const [join, setJoin] = useState(propJoin);
+  const [cap, setCap] = useState(currentCap);
+  const [join, setJoin] = useState(currentJoin);
   const [miter, setMiter] = useState(propMiter);
-  const [dash, setDash] = useState(propDash);
+  const [dash, setDash] = useState(currentDash);
+
+  React.useEffect(() => {
+    setPosition(currentPos);
+    setWidth(currentWidth);
+    setStyle(currentStyle);
+    setCap(currentCap);
+    setJoin(currentJoin);
+    setDash(currentDash);
+  }, [currentPos, currentWidth, currentStyle, currentCap, currentJoin, currentDash]);
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -108,6 +130,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             onChange={(val) => {
               const next = val as "inside" | "center" | "outside";
               setPosition(next);
+              onUpdateProp?.("stroke.align", next);
               onChangePosition?.(next);
             }}
             className="ll:w-full"
@@ -123,6 +146,8 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             step={1}
             onChange={(w) => {
               setWidth(w);
+              onUpdateProp?.("appearance.border.width", w);
+              onUpdateProp?.("svg.strokeWidth", w);
               onChangeWidth?.(w);
             }}
             className="ll:w-full"
@@ -140,6 +165,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             value={style}
             onChange={(s) => {
               setStyle(s);
+              onUpdateProp?.("appearance.border.style", s);
               onChangeStyle?.(s);
             }}
             className="ll:w-full"
@@ -172,6 +198,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             onChange={(c) => {
               const next = c as "butt" | "round" | "square";
               setCap(next);
+              onUpdateProp?.("svg.strokeLinecap", next);
               onChangeCap?.(next);
             }}
             className="ll:w-full"
@@ -187,6 +214,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             onChange={(j) => {
               const next = j as "miter" | "round" | "bevel";
               setJoin(next);
+              onUpdateProp?.("svg.strokeLinejoin", next);
               onChangeJoin?.(next);
             }}
             className="ll:w-full"
@@ -218,6 +246,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
               value={dash}
               onChange={(e) => {
                 setDash(e.target.value);
+                onUpdateProp?.("svg.strokeDasharray", e.target.value);
                 onChangeDash?.(e.target.value);
               }}
               className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
