@@ -229,14 +229,14 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
       {/* Left: Main Steps List */}
       <div className="ll-trmain trmain ll:flex ll:flex-col ll:min-w-0 ll:h-full ll:overflow-hidden">
         {/* Trace Bar (44px, matching prototype .trbar) */}
-        <div className="ll-trbar trbar ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:select-none">
+        <div className="ll-trbar trbar ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-1 ll:pl-3 ll:pr-4 ll:border-b ll:border-border ll:select-none">
           <button
             type="button"
             data-ca="trback"
             aria-label="Step back"
             title="Step back"
             onClick={stepBack}
-            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer"
+            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer"
           >
             <Icon icon={SkipBack} size={14} />
           </button>
@@ -248,7 +248,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
             aria-label={playing ? "Pause" : "Play"}
             title={playing ? "Pause" : "Play"}
             onClick={togglePlay}
-            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-primary ll:hover:bg-surface-bar ll:cursor-pointer"
+            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer"
           >
             <Icon icon={playing ? Pause : Play} size={14} />
           </button>
@@ -259,7 +259,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
             aria-label="Step forward"
             title="Step forward"
             onClick={stepForward}
-            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer"
+            className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer"
           >
             <Icon icon={SkipForward} size={14} />
           </button>
@@ -277,16 +277,16 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
               setCur(+e.target.value);
             }}
             aria-label="Scrub the run"
-            className="ll:flex-1 ll:max-w-sm ll:mx-3 ll:accent-primary ll:cursor-pointer"
+            className="ll:flex-1 ll:max-w-[360px] ll:mx-3 ll:accent-primary ll:cursor-pointer"
           />
 
-          <span id="trinfo" className="ll-trinfo trinfo mono ll:font-mono ll:text-micro ll:text-muted ll:truncate ll:whitespace-nowrap">
+          <span id="trinfo" className="ll-trinfo trinfo mono ll:font-mono ll:text-micro ll:tracking-normal ll:leading-[1.4] ll:text-muted ll:truncate ll:whitespace-nowrap">
             {currentStep.node.replace(/\s+/g, " ")} · {stepEnd(cur)} ms
           </span>
         </div>
 
         {/* Trace Table Header (28px, matching prototype .trhead) */}
-        <div className="ll-trhead trhead ll:h-7 ll:shrink-0 ll:grid ll:grid-cols-trace-row ll:gap-3 ll:items-center ll:px-4 ll:border-b ll:border-border ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:select-none">
+        <div className="ll-trhead trhead ll:h-7 ll:shrink-0 ll:grid ll:grid-cols-trace-row ll:gap-3 ll:items-center ll:pl-2 ll:pr-4 ll:border-b ll:border-border ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:text-muted ll:select-none">
           <span />
           <span>Step</span>
           <span>Waterfall</span>
@@ -318,11 +318,11 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                   pause();
                   setCur(idx);
                 }}
-                className={`ll-trr trr ${s.hot ? "hot " : ""}${isRun ? "cur " : isDone ? "done " : "wait "}ll:h-8 ll:grid ll:grid-cols-trace-row ll:gap-3 ll:items-center ll:px-4 ll:cursor-pointer ll:transition-colors ${
+                className={`ll-trr trr ${s.hot ? "hot " : ""}${isRun ? "cur " : isDone ? "done " : "wait "}ll:group/trr ll:h-8 ll:grid ll:grid-cols-trace-row ll:gap-3 ll:items-center ll:pl-2 ll:pr-4 ll:cursor-pointer ${
                   isRun
                     ? "ll:bg-select-bg ll:text-select-fg"
                     : isDone
-                    ? "ll:text-primary ll:hover:bg-surface-hover"
+                    ? "ll:text-secondary ll:hover:bg-surface-hover"
                     : "ll:text-muted ll:hover:bg-surface-hover"
                 }`}
               >
@@ -337,15 +337,15 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                     e.stopPropagation();
                     toggleBreakpoint(s.id);
                   }}
-                  className={`ll-trb trb ${bp ? (bp.on ? "on " : "off ") : ""}ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0`}
+                  className={`ll-trb trb ${bp ? (bp.on ? "on " : "off ") : ""}ll:w-7 ll:h-7 ll:-ml-2 ll:grid ll:place-items-center ll:bg-transparent ll:border-0 ll:cursor-pointer ll:px-1.5 ll:py-px`}
                 >
                   <span
-                    className={`ll:w-2 ll:h-2 ll:rounded-xs ll:border ll:border-muted ll:transition-colors ${
+                    className={`ll:w-2 ll:h-2 ll:rounded-full ll:border-[1.5px] ll:border-muted! ${
                       bp
                         ? bp.on
-                          ? "ll:bg-primary ll:border-primary"
-                          : "ll:border-primary ll:bg-transparent"
-                        : "ll:opacity-0 ll:hover:opacity-100"
+                          ? "ll:bg-primary ll:border-primary!"
+                          : "ll:border-primary! ll:bg-transparent"
+                        : "ll:opacity-0 ll:group-hover/trr:opacity-100"
                     }`}
                   />
                 </button>
@@ -359,7 +359,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                     {s.node}
                   </span>
                   {s.hot && (
-                    <span className="ll-trh trh ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:tracking-wider ll:border ll:border-syn-num ll:rounded-xs ll:px-1 ll:text-syn-num ll:leading-3.5 ll:ml-1">
+                    <span className="ll-trh trh ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:tracking-[0.06em] ll:border ll:border-syn-num! ll:rounded-sm ll:px-1 ll:text-syn-num ll:leading-3.5 ll:ml-1">
                       hot
                     </span>
                   )}
@@ -368,7 +368,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                 {/* Waterfall Bar */}
                 <span className="ll-trw trw ll:relative ll:h-full ll:flex ll:items-center">
                   <span
-                    className={`ll-trf trf ll:absolute ll:rounded-xs ${
+                    className={`ll-trf trf ll:absolute ll:rounded-[1px] ${
                       s.hot
                         ? `ll:h-2.5 ll:bg-syn-num ll:opacity-100 ${
                             isRun
@@ -387,11 +387,10 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                 </span>
 
                 {/* Status */}
-                <span className="ll-trs ll:flex ll:items-center ll:gap-1 ll:text-micro ll:text-muted">
+                <span className={`ll-trs ll:flex ll:items-center ll:gap-1 ll:text-micro ll:tracking-normal ${isRun ? "ll:text-primary" : "ll:text-muted"}`}>
                   <Icon
                     icon={isDone ? Check : isRun ? Play : Circle}
-                    size={11}
-                    className={isRun ? "ll:text-primary" : ""}
+                    size={12}
                   />
                   <span>{isDone ? "ok" : isRun ? "now" : ""}</span>
                 </span>
@@ -407,9 +406,9 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
         className="ll-trside trside ll:border-l ll:border-border ll:overflow-auto ll:flex ll:flex-col ll:bg-surface-panel"
       >
         {/* Section 1: Breakpoints */}
-        <section id="trbps" className="ll-trsec trsec ll:p-3 ll:border-b ll:border-border">
-          <div className="ll-trsh trsh ll:h-7 ll:flex ll:items-center ll:justify-between ll:mb-2">
-            <span className="ll:font-mono ll:text-micro ll:font-medium ll:text-muted">
+        <section id="trbps" className="ll-trsec trsec ll:pl-4 ll:pr-3 ll:pb-3">
+          <div className="ll-trsh trsh ll:h-10 ll:flex ll:items-center ll:justify-between ll:gap-2">
+            <span className="ll:font-mono ll:text-micro ll:font-medium ll:uppercase ll:text-muted">
               Breakpoints
             </span>
             <button
@@ -423,15 +422,15 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                 if (free) toggleBreakpoint(free.id);
               }}
               disabled={breakpoints.length >= TRACE_STEPS.length}
-              className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:disabled:opacity-40"
+              className="ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer ll:px-1.5 ll:py-px ll:disabled:opacity-40"
             >
-              <Icon icon={Plus} size={12} />
+              <Icon icon={Plus} size={14} />
             </button>
           </div>
 
-          <div className="ll:flex ll:flex-col ll:gap-1">
+          <div className="ll:flex ll:flex-col">
             {breakpoints.length === 0 ? (
-              <div className="ll-trnone trnone ll:font-sans ll:text-micro ll:text-muted ll:py-1">
+              <div className="ll-trnone trnone ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted ll:pt-0.5 ll:pb-1">
                 No breakpoints. Click the gutter of a step.
               </div>
             ) : (
@@ -441,7 +440,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                   <div
                     key={bp.id}
                     data-id={bp.id}
-                    className="ll-trbi trbi ll:flex ll:items-center ll:justify-between ll:gap-2 ll:h-7"
+                    className="ll-trbi trbi ll:flex ll:items-center ll:gap-1 ll:min-h-7 ll:font-sans ll:text-micro ll:tracking-normal ll:leading-[1.4]"
                   >
                     <label className="dcheck ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:flex-1 ll:cursor-pointer">
                       <input
@@ -452,7 +451,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                         onChange={() => toggleBreakpointActive(bp.id)}
                         className="ll:accent-primary ll:cursor-pointer"
                       />
-                      <span className="mono ll:font-mono ll:text-micro ll:text-primary ll:truncate">
+                      <span className="mono ll:font-mono ll:text-micro ll:tracking-normal ll:leading-[1.4] ll:text-secondary ll:truncate">
                         {s?.node}
                       </span>
                     </label>
@@ -463,9 +462,9 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                       aria-label="Remove breakpoint"
                       title="Remove"
                       onClick={() => removeBreakpoint(bp.id)}
-                      className="ll:w-5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:cursor-pointer"
+                      className="ll:w-6 ll:h-6 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer ll:px-1.5 ll:py-px"
                     >
-                      <Icon icon={X} size={11} />
+                      <Icon icon={X} size={12} />
                     </button>
                   </div>
                 );
@@ -475,9 +474,9 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
         </section>
 
         {/* Section 2: Watch Expressions */}
-        <section id="trwatch" className="ll-trsec trsec ll:p-3">
-          <div className="ll-trsh trsh ll:h-7 ll:flex ll:items-center ll:justify-between ll:mb-2">
-            <span className="ll:font-mono ll:text-micro ll:font-medium ll:text-muted">
+        <section id="trwatch" className="ll-trsec trsec ll:pl-4 ll:pr-3 ll:pb-3 ll:border-t ll:border-border">
+          <div className="ll-trsh trsh ll:h-10 ll:flex ll:items-center ll:justify-between ll:gap-2">
+            <span className="ll:font-mono ll:text-micro ll:font-medium ll:uppercase ll:text-muted">
               Watch
             </span>
             <button
@@ -486,15 +485,15 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
               aria-label="Add watch expression"
               title="Add expression"
               onClick={addWatch}
-              className="ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:text-muted ll:hover:text-primary ll:cursor-pointer"
+              className="ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer ll:px-1.5 ll:py-px"
             >
-              <Icon icon={Plus} size={12} />
+              <Icon icon={Plus} size={14} />
             </button>
           </div>
 
-          <div className="ll:flex ll:flex-col ll:gap-1.5">
+          <div className="ll:flex ll:flex-col">
             {watchList.length === 0 ? (
-              <div className="ll-trnone trnone ll:font-sans ll:text-micro ll:text-muted ll:py-1">
+              <div className="ll-trnone trnone ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted ll:pt-0.5 ll:pb-1">
                 Nothing watched. Add an expression such as elapsed.
               </div>
             ) : (
@@ -504,7 +503,7 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                   <div
                     key={idx}
                     data-i={idx}
-                    className="ll-trwi trwi ll:flex ll:items-center ll:gap-1.5 ll:min-h-6"
+                    className="ll-trwi trwi ll:flex ll:items-center ll:gap-1 ll:min-h-7 ll:font-sans ll:text-micro ll:tracking-normal ll:leading-[1.4]"
                   >
                     <input
                       type="text"
@@ -514,10 +513,10 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                       aria-label="Watch expression"
                       spellCheck={false}
                       autoComplete="off"
-                      className="ll-wex wex mono ll:flex-1 ll:min-w-0 ll:h-6 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-border ll:focus:border-primary ll:rounded-xs ll:font-mono ll:text-micro ll:text-primary ll:placeholder:text-muted ll:outline-none"
+                      className="ll-wex wex mono ll:flex-1 ll:min-w-0 ll:h-6 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent! ll:focus:border-primary! ll:rounded-sm ll:font-mono ll:text-micro ll:tracking-normal ll:text-primary ll:placeholder:text-muted ll:outline-none"
                     />
                     <span
-                      className={`ll-wv wv mono ll:font-mono ll:text-micro ll:max-w-24 ll:truncate ll:text-right ${
+                      className={`ll-wv wv mono ll:font-mono ll:text-micro ll:tracking-normal ll:leading-[1.4] ll:max-w-[90px] ll:truncate ll:text-right ${
                         evaluated.e ? "mt ll:text-muted ll:italic" : "ll:text-primary"
                       }`}
                     >
@@ -530,9 +529,9 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
                       aria-label="Remove expression"
                       title="Remove"
                       onClick={() => removeWatch(idx)}
-                      className="ll:w-5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:bg-transparent ll:border-0 ll:text-muted ll:hover:text-primary ll:cursor-pointer"
+                      className="ll:w-6 ll:h-6 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:bg-transparent ll:border-0 ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:cursor-pointer ll:px-1.5 ll:py-px"
                     >
-                      <Icon icon={X} size={11} />
+                      <Icon icon={X} size={12} />
                     </button>
                   </div>
                 );

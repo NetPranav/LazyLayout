@@ -1,23 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import {
-  Search,
-  Trash2,
-  Copy,
-  Terminal,
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  Circle,
-  CornerDownLeft,
-} from "lucide-react";
+import { Search, Trash2, Copy } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import {
   useConsoleLogs,
   consoleStore,
   type ConsoleLogItem,
 } from "@/editor/panels/console/consoleStore";
+import { fName, DEFAULT_CODE_STATE } from "./codeGenerator";
 import type { ConsoleViewProps } from "./types";
 
 export type LogItem = ConsoleLogItem;
@@ -255,15 +247,15 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
   const renderLevelIcon = (lvl: LogItem["lvl"]) => {
     switch (lvl) {
       case "error":
-        return <Icon icon={AlertCircle} size={14} className="ll:text-syn-tag" />;
+        return <ProtoIcon name="errc" size={14} className="ll-li li ll:mt-0.5 ll:text-syn-tag" />;
       case "warn":
-        return <Icon icon={AlertTriangle} size={14} className="ll:text-syn-attr" />;
+        return <ProtoIcon name="warn" size={14} className="ll-li li ll:mt-0.5 ll:text-syn-attr" />;
       case "info":
-        return <Icon icon={Info} size={14} className="ll:text-syn-fn" />;
+        return <ProtoIcon name="infoc" size={14} className="ll-li li ll:mt-0.5 ll:text-syn-fn" />;
       case "debug":
-        return <Icon icon={Circle} size={10} className="ll:text-muted" />;
+        return <ProtoIcon name="dot" size={14} className="ll-li li ll:mt-0.5 ll:text-muted" />;
       case "cmd":
-        return <Icon icon={Terminal} size={14} className="ll:text-primary" />;
+        return <ProtoIcon name="prompt" size={14} className="ll-li li ll:mt-0.5 ll:text-primary" />;
     }
   };
 
@@ -273,13 +265,13 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
       style={style}
     >
       {/* 1. Toolbar (44px, matching prototype .ctool) */}
-      <div className="ll-ctool ctool ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:select-none">
+      <div className="ll-ctool ctool ll:h-11 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:pl-4 ll:pr-3 ll:border-b ll:border-border ll:select-none">
         {/* Segmented Filter Control (#cfseg with fixed button widths per P) */}
         <div
           id="cfseg"
           role="group"
           aria-label="Filter the log"
-          className="ll-seg ll-pseg ll-dseg seg pseg dseg ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:shrink-0 ll:w-auto"
+          className="ll-seg ll-pseg ll-dseg seg pseg dseg ll:flex ll:items-center ll:gap-px ll:p-px ll:h-7 ll:border ll:border-border ll:rounded-md ll:shrink-0 ll:w-auto"
         >
           {FILTERS.map((f) => {
             const isSelected = filter === f.id;
@@ -290,7 +282,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
                 data-cf={f.id}
                 aria-pressed={isSelected}
                 onClick={() => setFilter(f.id)}
-                className={`ll:shrink-0 ll:h-6 ll:px-3 ll:whitespace-nowrap ll:rounded-xs ll:font-sans ll:text-small ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ${
+                className={`ll:shrink-0 ll:h-6 ll:px-3 ll:whitespace-nowrap ll:rounded-sm ll:flex ll:items-center ll:gap-1.5 ll:font-sans ll:text-micro ll:tracking-normal ll:leading-[1.4] ll:font-normal ll:border-0 ll:cursor-pointer ${
                   isSelected
                     ? "ll:bg-control-active ll:text-primary"
                     : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
@@ -303,8 +295,8 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
         </div>
 
         {/* Search Input (240px width, matching prototype .cfs) */}
-        <div className="ll-cfs cfs ll:flex ll:items-center ll:gap-2 ll:w-60 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:focus-within:border-primary ll:rounded-sm ll:shrink-0">
-          <Icon icon={Search} size={13} className="ll:text-muted ll:shrink-0" />
+        <div className="ll-cfs cfs ll:flex ll:items-center ll:gap-2 ll:w-60 ll:h-7 ll:px-2 ll:bg-surface-canvas ll:border ll:border-border ll:focus-within:border-primary! ll:rounded-sm ll:text-muted ll:shrink-0">
+          <Icon icon={Search} size={16} className="ll:shrink-0" />
           <input
             id="cq"
             type="text"
@@ -320,14 +312,14 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
         <div className="ll:flex-1" />
 
         {/* Action Buttons: Clear, Copy All */}
-        <div className="ll:flex ll:items-center ll:gap-1.5">
+        <div className="ll:flex ll:items-center ll:gap-2">
           <button
             type="button"
             data-ca="conclear"
             onClick={handleClear}
-            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
+            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-transparent ll:border ll:border-border ll:hover:bg-surface-hover ll:rounded-md ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
           >
-            <Icon icon={Trash2} size={13} className="ll:text-muted" />
+            <Icon icon={Trash2} size={14} />
             <span>Clear</span>
           </button>
 
@@ -335,9 +327,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
             type="button"
             data-ca="concopy"
             onClick={handleCopyAll}
-            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer ll:transition-colors"
+            className="ll-btn btn sm ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-transparent ll:border ll:border-border ll:hover:bg-surface-hover ll:rounded-md ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
           >
-            <Icon icon={Copy} size={13} className="ll:text-muted" />
+            <Icon icon={Copy} size={14} />
             <span>{copied ? "Copied" : "Copy all"}</span>
           </button>
         </div>
@@ -350,11 +342,11 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
         role="log"
         aria-live="polite"
         aria-label="Log"
-        className="ll-clog clog ll:flex-1 ll:min-h-0 ll:overflow-auto ll:py-1 ll:font-mono ll:text-small ll:leading-relaxed ll:flex ll:flex-col"
+        className="ll-clog clog ll:flex-1 ll:min-h-0 ll:overflow-auto ll:py-1 ll:font-mono ll:text-small ll:leading-[18px] ll:flex ll:flex-col"
       >
         {filteredLogs.length === 0 ? (
           <div className="ll-cempty cempty ll:flex-1 ll:flex ll:flex-col ll:items-center ll:justify-center ll:gap-1 ll:text-muted ll:p-6 ll:text-center ll:select-none">
-            <Icon icon={Terminal} size={20} className="ll:text-muted ll:mb-1" />
+            <ProtoIcon name="prompt" size={20} className="ll:text-muted ll:mb-1" />
             <span className="ll:text-body ll:text-secondary">
               {logs.length ? "Nothing matches the filter" : "The log is empty"}
             </span>
@@ -364,7 +356,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
           </div>
         ) : (
           filteredLogs.map((l) => {
-            const locText = l.f && l.ln ? `${l.f}.tsx:${l.ln}` : "";
+            const locText = l.f && l.ln ? `${fName(l.f, DEFAULT_CODE_STATE)}:${l.ln}` : "";
             const isErr = l.lvl === "error";
             const isWarn = l.lvl === "warn";
             const isInfo = l.lvl === "info";
@@ -372,9 +364,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
             const isDebug = l.lvl === "debug";
 
             const rowClass = isErr
-              ? "l-error ll-l-error ll:shadow-log-error"
+              ? "l-error ll-l-error ll:shadow-[inset_2px_0_0_var(--ll-syn-tag)]"
               : isWarn
-              ? "l-warn ll-l-warn ll:shadow-log-warn"
+              ? "l-warn ll-l-warn ll:shadow-[inset_2px_0_0_var(--ll-syn-attr)]"
               : isInfo
               ? "l-info ll-l-info"
               : isCmd
@@ -396,9 +388,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
                 <span className="ll-lt lt ll:text-muted ll:whitespace-nowrap">{l.t}</span>
 
                 {/* Level Icon */}
-                <span className="ll-li li ll:inline-flex ll:items-center ll:justify-center ll:mt-0.5">
-                  {renderLevelIcon(l.lvl)}
-                </span>
+                {renderLevelIcon(l.lvl)}
 
                 {/* Source Tag */}
                 <span className="ll-ls ls ll:text-muted ll:truncate">{l.src}</span>
@@ -431,8 +421,8 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({
       </div>
 
       {/* 3. Command Line Prompt (40px, matching prototype .cprompt) */}
-      <div className="ll-cprompt cprompt ll:h-10 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-4 ll:border-t ll:border-border ll:bg-surface-panel ll:focus-within:shadow-prompt-focus">
-        <Icon icon={CornerDownLeft} size={14} className="ll-cpr cpr ll:text-primary ll:shrink-0" />
+      <div className="ll-cprompt cprompt ll:h-10 ll:shrink-0 ll:flex ll:items-center ll:gap-2 ll:px-4 ll:border-t ll:border-border ll:bg-surface-panel ll:text-secondary ll:cursor-text ll:focus-within:shadow-[inset_0_1px_0_var(--ll-text-primary)]">
+        <ProtoIcon name="prompt" size={14} className="ll-cpr cpr ll:text-primary ll:shrink-0" />
         <input
           id="ccmd"
           type="text"

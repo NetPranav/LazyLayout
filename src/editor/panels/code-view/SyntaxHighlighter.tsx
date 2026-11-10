@@ -362,7 +362,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
       aria-readonly="true"
       aria-multiline="true"
       aria-label="Code viewer"
-      className={`ll-cscroll ll:relative ll:h-full ll:w-full ll:overflow-auto ll:pt-2 ll:pb-3 ll:px-0 ll:font-mono ll:text-small ll:leading-5 ll:text-primary ll:outline-none ${
+      className={`ll-cscroll ll:group/cs ll:relative ll:h-full ll:w-full ll:overflow-auto ll:pt-2 ll:pb-3 ll:px-0 ll:font-mono ll:text-small ll:leading-5 ll:[tab-size:2] ll:cursor-text ll:text-primary ll:outline-none ${
         wrap ? "ll:whitespace-pre-wrap ll:break-words" : "ll:whitespace-pre"
       } ${className}`}
       onMouseLeave={() => onLineHover?.(null)}
@@ -382,13 +382,13 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
             data-ref={line.ref || undefined}
             onClick={() => onLineClick?.(idx, line.t, line.ref)}
             onMouseEnter={() => line.ref && onLineHover?.(line.ref)}
-            className={`ll-cl cl ll:flex ll:min-h-5 ll:min-w-max ll:transition-colors ${
+            className={`ll-cl cl ll:relative ll:flex ll:min-h-5 ll:min-w-max ${
               wrap ? "ll:min-w-0" : ""
             } ${
               isSelected
-                ? "ll-sel sel ll:bg-select-bg ll:shadow-indicator-active"
+                ? "ll-sel sel ll:bg-[color-mix(in_srgb,var(--ll-text-primary)_10%,transparent)] ll:shadow-[inset_2px_0_0_var(--ll-text-primary)]"
                 : isCurrent
-                ? "ll-cur cur ll:bg-surface-hover"
+                ? "ll-cur cur ll:bg-[color-mix(in_srgb,var(--ll-text-primary)_5%,transparent)]"
                 : ""
             }`}
           >
@@ -404,14 +404,12 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
                     e.stopPropagation();
                     onToggleFold?.(idx);
                   }}
-                  className="ll-cf cf ll:w-5 ll:h-5 ll:inline-flex ll:items-center ll:justify-center ll:rounded-xs ll:border-0 ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar ll:cursor-pointer ll:p-0"
+                  className={`ll-cf cf ll:w-5 ll:h-5 ll:grid ll:place-items-center ll:rounded-sm ll:border-0 ll:bg-transparent ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:px-1.5 ll:py-px ${isFolded ? "ll:opacity-100" : "ll:opacity-0 ll:group-hover/cs:opacity-100"}`}
                 >
                   <Icon
                     icon={ChevronRight}
                     size={12}
-                    className={`ll:transition-transform ll:duration-150 ${
-                      !isFolded ? "ll:rotate-90" : ""
-                    }`}
+                    className={!isFolded ? "ll:rotate-90" : ""}
                   />
                 </button>
               ) : null}
@@ -423,7 +421,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
                 aria-hidden="true"
                 className={`ll-cn cn ll:w-9 ll:shrink-0 ll:text-right ll:pr-4 ll:select-none ${
                   isCurrent || isSelected
-                    ? "ll:text-primary ll:font-medium"
+                    ? "ll:text-primary"
                     : "ll:text-muted"
                 }`}
               >
@@ -447,7 +445,7 @@ export const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({
                   e.stopPropagation();
                   onToggleFold?.(idx);
                 }}
-                className="ll-cfd cfd ll:self-center ll:h-4 ll:ml-1 ll:px-1.5 ll:border ll:border-border ll:rounded-xs ll:font-mono ll:text-micro ll:leading-none ll:text-muted ll:hover:text-primary ll:hover:border-muted ll:bg-surface-bar ll:cursor-pointer"
+                className="ll-cfd cfd ll:self-center ll:h-4 ll:ml-1 ll:px-1.5 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:leading-3.5 ll:tracking-normal ll:text-muted ll:hover:text-primary ll:hover:border-muted! ll:bg-transparent ll:cursor-pointer"
               >
                 …
               </button>
