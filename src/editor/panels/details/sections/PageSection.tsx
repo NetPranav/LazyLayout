@@ -173,6 +173,9 @@ export const ThemeTokensBody: React.FC = () => {
   const [textHex, setTextHex] = useState("22231E");
   const [activePicker, setActivePicker] = useState<string | null>(null);
   const [activePickerEl, setActivePickerEl] = useState<HTMLElement | null>(null);
+  // the picker stays mounted after it closes so its exit animation can play
+  const [shownPicker, setShownPicker] = useState<string | null>(null);
+  if (activePicker && activePicker !== shownPicker) setShownPicker(activePicker);
   const [radius, setRadius] = useState(8);
   const [themeFont, setThemeFont] = useState("Geist");
   const [typeScale, setTypeScale] = useState("1.25");
@@ -198,7 +201,7 @@ export const ThemeTokensBody: React.FC = () => {
               onClick={(e) => {
                 const isClosing = activePicker === row.label;
                 setActivePicker(isClosing ? null : row.label);
-                setActivePickerEl(isClosing ? null : e.currentTarget);
+                setActivePickerEl(e.currentTarget);
               }}
               className="dsw ll-dsw ll:relative ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
@@ -245,7 +248,7 @@ export const ThemeTokensBody: React.FC = () => {
       ))}
 
       {(() => {
-        const activeRow = tokenRows.find((r) => r.label === activePicker);
+        const activeRow = tokenRows.find((r) => r.label === shownPicker);
         if (!activeRow) return null;
         return (
           <ColorPicker
@@ -257,7 +260,6 @@ export const ThemeTokensBody: React.FC = () => {
             onChange={(hex) => activeRow.set(hex.replace(/^#/, "").toUpperCase())}
             onClose={() => {
               setActivePicker(null);
-              setActivePickerEl(null);
             }}
           />
         );

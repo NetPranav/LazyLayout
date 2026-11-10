@@ -58,6 +58,9 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
   const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
+  // the picker stays mounted after it closes so its exit animation can play
+  const [shownPickerId, setShownPickerId] = useState<string | null>(null);
+  if (activeColorPickerId && activeColorPickerId !== shownPickerId) setShownPickerId(activeColorPickerId);
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
     const visible = updatedStrokes.find((s) => !s.hidden);
@@ -164,7 +167,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
               onClick={(e) => {
                 const isClosing = activeColorPickerId === stroke.id;
                 setActiveColorPickerId(isClosing ? null : stroke.id);
-                setActiveColorPickerEl(isClosing ? null : e.currentTarget);
+                setActiveColorPickerEl(e.currentTarget);
               }}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
@@ -317,7 +320,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
       })}
 
       {(() => {
-        const activeStroke = strokes.find((s) => s.id === activeColorPickerId);
+        const activeStroke = strokes.find((s) => s.id === shownPickerId);
         if (!activeStroke) return null;
         return (
           <ColorPicker
@@ -331,7 +334,6 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             }
             onClose={() => {
               setActiveColorPickerId(null);
-              setActiveColorPickerEl(null);
             }}
           />
         );

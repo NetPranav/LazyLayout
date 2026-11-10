@@ -121,6 +121,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
   const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
+  // the picker stays mounted after it closes so its exit animation can play
+  const [shownPickerId, setShownPickerId] = useState<string | null>(null);
+  if (activeColorPickerId && activeColorPickerId !== shownPickerId) setShownPickerId(activeColorPickerId);
   // The hex field keeps what is typed until it has six digits; only then does it write the colour.
   const [hexDraft, setHexDraft] = useState<{ id: string; value: string } | null>(null);
   // The row of a layer without a fill list (text, buttons) is local; a different layer starts again from its own colour.
@@ -330,14 +333,14 @@ export const FillSection: React.FC<FillSectionProps> = ({
             <button
               type="button"
               data-lead
-              aria-label={`Fill ${fillNum} settings`}
+              aria-label={`Fill ${fillNum} color`}
               aria-haspopup="dialog"
               aria-expanded={activeColorPickerId === fill.id || isOpen}
               title={`Fill ${fillNum} color`}
               onClick={(e) => {
                 const isClosing = activeColorPickerId === fill.id;
                 setActiveColorPickerId(isClosing ? null : fill.id);
-                setActiveColorPickerEl(isClosing ? null : e.currentTarget);
+                setActiveColorPickerEl(e.currentTarget);
               }}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
@@ -527,7 +530,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
       })}
 
       {(() => {
-        const activeFill = fills.find((f) => f.id === activeColorPickerId);
+        const activeFill = fills.find((f) => f.id === shownPickerId);
         if (!activeFill) return null;
         return (
           <ColorPicker
@@ -543,7 +546,6 @@ export const FillSection: React.FC<FillSectionProps> = ({
             }
             onClose={() => {
               setActiveColorPickerId(null);
-              setActiveColorPickerEl(null);
             }}
           />
         );

@@ -75,7 +75,7 @@ export function ColorPicker({
   onChange,
   opacity: externalOpacity = 100,
   onChangeOpacity,
-  onClose,
+  onClose: onCloseIn,
   anchorRef,
   triggerRef,
   anchorEl,
@@ -93,6 +93,15 @@ export function ColorPicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevAnchorRef = useRef<HTMLElement | null>(null);
   const isImmediateCloseRef = useRef(false);
+  // the open animation plays once per opening: a re-run of the effect (dev StrictMode, a dependency change) must not restart or retarget it
+  const openAnimatedRef = useRef(false);
+  // parents pass inline onClose callbacks: read through a ref so effects do not re-run (and re-animate) on every parent render
+  const onCloseProp = onCloseIn;
+  const onCloseRef = useRef(onCloseProp);
+  useEffect(() => {
+    onCloseRef.current = onCloseProp;
+  });
+  const onClose = useCallback(() => onCloseRef.current?.(), []);
   const pickerUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
@@ -221,12 +230,16 @@ export function ColorPicker({
 
     if (open) {
       const toRect = el.getBoundingClientRect();
+      const alreadyAnimated = openAnimatedRef.current;
+      openAnimatedRef.current = true;
       const isAnchorSwitch =
         prevAnchorRef.current !== null &&
         prevAnchorRef.current !== anchor;
       const handoff = !isAnchorSwitch ? getFamilyHandoff("color-picker", pickerUniqueId) : null;
 
-      if (reduced) {
+      if (alreadyAnimated && !isAnchorSwitch) {
+        // keep the running animation
+      } else if (reduced) {
         el.animate([{ opacity: 0 }, { opacity: 1 }], {
           duration: REDUCED_DURATION,
           easing: "ease-out",
@@ -276,6 +289,7 @@ export function ColorPicker({
       });
     } else {
       prevAnchorRef.current = null;
+      openAnimatedRef.current = false;
       unregisterOverlay(pickerUniqueId);
       if (isImmediateCloseRef.current) {
         isImmediateCloseRef.current = false;
