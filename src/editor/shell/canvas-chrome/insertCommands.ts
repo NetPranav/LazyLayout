@@ -1,4 +1,5 @@
 import { activePageRootId } from "@/editor/stage/activePage";
+import { NEW_FRAME_FILL } from "@/editor/stage/frameFill";
 import { insertSection } from "@/core/templates/templateOps";
 import { getDocument } from "@/core/store/documentState";
 import { documentCommands } from "@/core/store/useDocumentStore";
@@ -67,7 +68,7 @@ export function insertCatalogItem(name: string): void {
           "frame.y": Math.round((px(root?.properties["frame.height"], 900) - 400) / 2),
           "frame.width": 640,
           "frame.height": 400,
-          "appearance.background.color": "#ffffff",
+          "appearance.background.color": NEW_FRAME_FILL,
         },
       },
       "Insert frame",

@@ -22,6 +22,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "./activePage";
+import { NEW_FRAME_FILL } from "./frameFill";
 import type { StagePreset } from "./types";
 import { setLayerProps } from "@/core/editing/editOps";
 
@@ -236,7 +237,7 @@ export function executeStagePreset(
           "frame.y": 0,
           "frame.width": def.width,
           "frame.height": def.height,
-          "appearance.background.color": "#ffffff",
+          "appearance.background.color": NEW_FRAME_FILL,
         },
       },
       `Create ${def.label} frame`
