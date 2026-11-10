@@ -2,20 +2,20 @@
 
 import React from "react";
 import { useSelectionInspector } from "./hooks/useSelectionInspector";
-import { PositionSection, PositionMore } from "./sections/PositionSection";
-import { LayoutSection, LayoutMore } from "./sections/LayoutSection";
-import { AppearanceSection, AppearanceMore } from "./sections/AppearanceSection";
-import { TypographySection, TypographyMore } from "./sections/TypographySection";
-import { StatesSection, StatesMore } from "./sections/StatesSection";
-import { ImageSection, ImageMore } from "./sections/ImageSection";
+import { PositionSection } from "./sections/PositionSection";
+import { LayoutSection } from "./sections/LayoutSection";
+import { AppearanceSection } from "./sections/AppearanceSection";
+import { TypographySection } from "./sections/TypographySection";
+import { StatesSection } from "./sections/StatesSection";
+import { ImageSection } from "./sections/ImageSection";
 import { InputSection, InputMore } from "./sections/InputSection";
 import { ToggleSection } from "./sections/ToggleSection";
-import { DividerSection, DividerMore } from "./sections/DividerSection";
-import { BackgroundSection, BackgroundMore } from "./sections/BackgroundSection";
-import { IconSection, IconMore } from "./sections/IconSection";
-import { ShapeSection, ShapeMore } from "./sections/ShapeSection";
-import { CounterSection, CounterMore } from "./sections/CounterSection";
-import { Object3DSection, Object3DMore } from "./sections/Object3DSection";
+import { DividerSection } from "./sections/DividerSection";
+import { BackgroundSection } from "./sections/BackgroundSection";
+import { IconSection } from "./sections/IconSection";
+import { ShapeSection } from "./sections/ShapeSection";
+import { CounterSection } from "./sections/CounterSection";
+import { Object3DSection } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
 import { StrokeSection } from "./sections/StrokeSection";
 import { EffectsSection } from "./sections/EffectsSection";
@@ -27,8 +27,25 @@ import {
   PageSectionBody,
   PageBackgroundBody,
   ThemeTokensBody,
-  ThemeTokensMore,
 } from "./sections/PageSection";
+import {
+  StrokeOptions,
+  EffectsOptions,
+  FillOptions,
+  PositionOptions,
+  LayoutOptions,
+  AppearanceOptions,
+  TypographyOptions,
+  ThemeTokensOptions,
+  ImageOptions,
+  StatesOptions,
+  DividerOptions,
+  BackgroundOptions,
+  IconOptions,
+  ShapeOptions,
+  CounterOptions,
+  Object3DOptions,
+} from "./options";
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
@@ -68,7 +85,7 @@ export function getInspectorDesignSections(
         id: "theme-tokens",
         title: "Theme & Tokens",
         children: <ThemeTokensBody />,
-        moreContent: <ThemeTokensMore />,
+        moreContent: <ThemeTokensOptions />,
       },
     ];
   }
@@ -118,19 +135,19 @@ export function getInspectorDesignSections(
           onTidy={inspector.onTidy}
         />
       ),
-      moreContent: <PositionMore {...sectionProps} />,
+      moreContent: <PositionOptions {...sectionProps} />,
     },
     {
       id: "layout",
       title: "Layout",
       children: <LayoutSection {...sectionProps} isFrame={isFrame} />,
-      moreContent: <LayoutMore {...sectionProps} isFrame={isFrame} />,
+      moreContent: <LayoutOptions {...sectionProps} isFrame={isFrame} />,
     },
     {
       id: "appearance",
       title: "Appearance",
       children: <AppearanceSection {...sectionProps} />,
-      moreContent: <AppearanceMore {...sectionProps} />,
+      moreContent: <AppearanceOptions {...sectionProps} />,
     },
     ...(isInput
       ? [
@@ -157,7 +174,7 @@ export function getInspectorDesignSections(
             id: "divider",
             title: "Divider",
             children: <DividerSection {...sectionProps} />,
-            moreContent: <DividerMore {...sectionProps} />,
+            moreContent: <DividerOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -167,7 +184,7 @@ export function getInspectorDesignSections(
             id: "background",
             title: "Background",
             children: <BackgroundSection {...sectionProps} />,
-            moreContent: <BackgroundMore {...sectionProps} />,
+            moreContent: <BackgroundOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -177,7 +194,7 @@ export function getInspectorDesignSections(
             id: "icon",
             title: "Icon",
             children: <IconSection {...sectionProps} />,
-            moreContent: <IconMore {...sectionProps} />,
+            moreContent: <IconOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -187,7 +204,7 @@ export function getInspectorDesignSections(
             id: "shape",
             title: "Shape",
             children: <ShapeSection {...sectionProps} />,
-            moreContent: <ShapeMore {...sectionProps} />,
+            moreContent: <ShapeOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -197,7 +214,7 @@ export function getInspectorDesignSections(
             id: "counter",
             title: "Counter",
             children: <CounterSection {...sectionProps} />,
-            moreContent: <CounterMore {...sectionProps} />,
+            moreContent: <CounterOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -207,7 +224,7 @@ export function getInspectorDesignSections(
             id: "object3d",
             title: "3D",
             children: <Object3DSection {...sectionProps} />,
-            moreContent: <Object3DMore {...sectionProps} />,
+            moreContent: <Object3DOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -217,7 +234,7 @@ export function getInspectorDesignSections(
             id: "typography",
             title: "Typography",
             children: <TypographySection {...sectionProps} />,
-            moreContent: <TypographyMore {...sectionProps} />,
+            moreContent: <TypographyOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -227,7 +244,7 @@ export function getInspectorDesignSections(
             id: "states",
             title: "States",
             children: <StatesSection {...sectionProps} />,
-            moreContent: <StatesMore {...sectionProps} />,
+            moreContent: <StatesOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -237,7 +254,7 @@ export function getInspectorDesignSections(
             id: "image",
             title: "Image",
             children: <ImageSection {...sectionProps} />,
-            moreContent: <ImageMore {...sectionProps} />,
+            moreContent: <ImageOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -248,6 +265,7 @@ export function getInspectorDesignSections(
             title: "Fill",
             onAdd: () => fillAddRef.current?.(),
             children: <FillSection {...sectionProps} onAddFillRef={fillAddRef} />,
+            moreContent: <FillOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -258,6 +276,7 @@ export function getInspectorDesignSections(
             title: "Stroke",
             onAdd: () => strokeAddRef.current?.(),
             children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
+            moreContent: <StrokeOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -266,6 +285,7 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+      moreContent: <EffectsOptions {...sectionProps} />,
     },
     {
       id: "animation",

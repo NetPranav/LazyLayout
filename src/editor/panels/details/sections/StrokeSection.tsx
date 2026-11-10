@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import type { InspectorSectionProps, StrokeItem } from "../types";
 
@@ -25,6 +26,8 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 }) => {
   const [strokes, setStrokes] = useState<StrokeItem[]>([]);
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
+  const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
     const visible = updatedStrokes.find((s) => !s.hidden);
@@ -109,11 +112,15 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             <button
               type="button"
               data-lead
-              aria-label={`Stroke ${strokeNum} settings`}
+              aria-label={`Stroke ${strokeNum} color`}
               aria-haspopup="dialog"
-              aria-expanded={isOpen}
-              title={`Stroke ${strokeNum} settings`}
-              onClick={() => setActivePopoverId(isOpen ? null : stroke.id)}
+              aria-expanded={activeColorPickerId === stroke.id || isOpen}
+              title={`Stroke ${strokeNum} color`}
+              onClick={(e) => {
+                const isClosing = activeColorPickerId === stroke.id;
+                setActiveColorPickerId(isClosing ? null : stroke.id);
+                setActiveColorPickerEl(isClosing ? null : e.currentTarget);
+              }}
               className="ll-lead ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:shrink-0 ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
             >
               <span
@@ -124,12 +131,23 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
             {/* Hex and Width fields */}
             <div className="ll-sum ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0">
-              <div className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+              <div
+                className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:cursor-pointer"
+                onClick={(e) => {
+                  setActiveColorPickerId(stroke.id);
+                  setActiveColorPickerEl(e.currentTarget);
+                }}
+              >
                 <input
                   type="text"
                   maxLength={6}
                   aria-label="Stroke hex"
                   value={stroke.hex}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveColorPickerId(stroke.id);
+                    setActiveColorPickerEl(e.currentTarget);
+                  }}
                   onChange={(e) =>
                     handleUpdateStroke(stroke.id, {
                       hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
@@ -255,6 +273,27 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
           </div>
         );
       })}
+
+      {(() => {
+        const activeStroke = strokes.find((s) => s.id === activeColorPickerId);
+        if (!activeStroke) return null;
+        return (
+          <ColorPicker
+            open={Boolean(activeColorPickerId)}
+            value={`#${activeStroke.hex}`}
+            anchorEl={activeColorPickerEl}
+            onChange={(hex) =>
+              handleUpdateStroke(activeStroke.id, {
+                hex: hex.replace(/^#/, "").toUpperCase(),
+              })
+            }
+            onClose={() => {
+              setActiveColorPickerId(null);
+              setActiveColorPickerEl(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };

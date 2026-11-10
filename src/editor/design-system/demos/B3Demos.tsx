@@ -4,10 +4,22 @@ import React, { useState } from "react";
 import { RightPanelHeader } from "@/editor/shell/right-panel/RightPanelHeader";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
 import { MultiLayerIcon } from "@/editor/panels/details/hooks/useSelectionInspector";
-import { PositionSection, PositionMore } from "@/editor/panels/details/sections/PositionSection";
-import { LayoutSection, LayoutMore } from "@/editor/panels/details/sections/LayoutSection";
-import { AppearanceSection, AppearanceMore } from "@/editor/panels/details/sections/AppearanceSection";
-import { TypographySection, TypographyMore } from "@/editor/panels/details/sections/TypographySection";
+import { PositionSection } from "@/editor/panels/details/sections/PositionSection";
+import { LayoutSection } from "@/editor/panels/details/sections/LayoutSection";
+import { AppearanceSection } from "@/editor/panels/details/sections/AppearanceSection";
+import { TypographySection } from "@/editor/panels/details/sections/TypographySection";
+import { FillSection } from "@/editor/panels/details/sections/FillSection";
+import { StrokeSection } from "@/editor/panels/details/sections/StrokeSection";
+import { EffectsSection } from "@/editor/panels/details/sections/EffectsSection";
+import {
+  PositionOptions,
+  LayoutOptions,
+  AppearanceOptions,
+  TypographyOptions,
+  FillOptions,
+  StrokeOptions,
+  EffectsOptions,
+} from "@/editor/panels/details/options";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import type { PropValue } from "@/core/document/registry";
@@ -68,11 +80,11 @@ export function B3InspectorSingleDemo() {
         selectionName="Hero Heading"
         isMulti={false}
       />
-      <div className="ll:flex ll:flex-col ll:overflow-y-auto ll:max-h-120">
+      <div className="ll:flex ll:flex-col ll:overflow-y-auto ll:max-h-140">
         <RightPanelSection
           id="position"
           title="Position"
-          moreContent={<PositionMore {...sectionProps} />}
+          moreContent={<PositionOptions {...sectionProps} />}
         >
           <PositionSection {...sectionProps} />
         </RightPanelSection>
@@ -80,7 +92,7 @@ export function B3InspectorSingleDemo() {
         <RightPanelSection
           id="layout"
           title="Layout"
-          moreContent={<LayoutMore {...sectionProps} isFrame={false} />}
+          moreContent={<LayoutOptions {...sectionProps} isFrame={false} />}
         >
           <LayoutSection {...sectionProps} isFrame={false} />
         </RightPanelSection>
@@ -88,7 +100,7 @@ export function B3InspectorSingleDemo() {
         <RightPanelSection
           id="appearance"
           title="Appearance"
-          moreContent={<AppearanceMore {...sectionProps} />}
+          moreContent={<AppearanceOptions {...sectionProps} />}
         >
           <AppearanceSection {...sectionProps} />
         </RightPanelSection>
@@ -96,9 +108,33 @@ export function B3InspectorSingleDemo() {
         <RightPanelSection
           id="typography"
           title="Typography"
-          moreContent={<TypographyMore {...sectionProps} />}
+          moreContent={<TypographyOptions {...sectionProps} />}
         >
           <TypographySection {...sectionProps} />
+        </RightPanelSection>
+
+        <RightPanelSection
+          id="fill"
+          title="Fill"
+          moreContent={<FillOptions {...sectionProps} />}
+        >
+          <FillSection {...sectionProps} />
+        </RightPanelSection>
+
+        <RightPanelSection
+          id="stroke"
+          title="Stroke"
+          moreContent={<StrokeOptions {...sectionProps} />}
+        >
+          <StrokeSection {...sectionProps} />
+        </RightPanelSection>
+
+        <RightPanelSection
+          id="effects"
+          title="Effects"
+          moreContent={<EffectsOptions {...sectionProps} />}
+        >
+          <EffectsSection {...sectionProps} />
         </RightPanelSection>
       </div>
     </div>
@@ -168,7 +204,7 @@ export function B3InspectorMultiDemo() {
         <RightPanelSection
           id="position"
           title="Position"
-          moreContent={<PositionMore {...sectionProps} />}
+          moreContent={<PositionOptions {...sectionProps} />}
         >
           <PositionSection {...sectionProps} />
         </RightPanelSection>
@@ -176,7 +212,7 @@ export function B3InspectorMultiDemo() {
         <RightPanelSection
           id="layout"
           title="Layout"
-          moreContent={<LayoutMore {...sectionProps} isFrame={false} />}
+          moreContent={<LayoutOptions {...sectionProps} isFrame={false} />}
         >
           <LayoutSection {...sectionProps} isFrame={false} />
         </RightPanelSection>
@@ -184,7 +220,7 @@ export function B3InspectorMultiDemo() {
         <RightPanelSection
           id="appearance"
           title="Appearance"
-          moreContent={<AppearanceMore {...sectionProps} />}
+          moreContent={<AppearanceOptions {...sectionProps} />}
         >
           <AppearanceSection {...sectionProps} />
         </RightPanelSection>

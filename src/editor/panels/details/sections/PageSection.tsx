@@ -135,13 +135,20 @@ export const PageBackgroundBody: React.FC<{
           }}
           onClose={() => setIsPickerOpen(false)}
         />
-        <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0">
+        <div
+          className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0 ll:cursor-pointer"
+          onClick={() => setIsPickerOpen(true)}
+        >
           <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
           <input
             type="text"
             maxLength={6}
             aria-label="Background hex"
             value={bgHex}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPickerOpen(true);
+            }}
             onChange={(e) => {
               const next = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
               setBgHex(next);
@@ -189,13 +196,24 @@ export const ThemeTokensBody: React.FC = () => {
               className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
             />
-            <div className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0">
+            <div
+              className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0 ll:cursor-pointer"
+              onClick={(e) => {
+                setActivePicker(row.label);
+                setActivePickerEl(e.currentTarget);
+              }}
+            >
               <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
               <input
                 type="text"
                 maxLength={6}
                 aria-label={`${row.label} hex`}
                 value={row.hex}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActivePicker(row.label);
+                  setActivePickerEl(e.currentTarget);
+                }}
                 onChange={(e) => row.set(e.target.value.toUpperCase())}
                 className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
               />

@@ -247,6 +247,7 @@ export function ViewOptionsPopoverDemo() {
       <div className="ll:relative ll:h-144 ll:w-full ll:bg-surface-canvas ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
         <ViewOptionsPopover
           open={open}
+          inline={true}
           onClose={() => setOpen(false)}
           triggerRef={triggerRef}
           theme={theme}

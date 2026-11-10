@@ -19,12 +19,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   headerStart,
   layers = EMPTY_LAYERS,
   files = EMPTY_FILES,
-  tracks = EMPTY_TRACKS,
+  tracks: _tracks = EMPTY_TRACKS,
   assets = EMPTY_ASSETS,
   selectedIds: controlledSelectedIds,
   onSelect: controlledOnSelect,
-  selectedTrackId: controlledSelectedTrackId,
-  onSelectTrack: controlledOnSelectTrack,
+  selectedTrackId: _controlledSelectedTrackId,
+  onSelectTrack: _controlledOnSelectTrack,
   expandedIds: controlledExpandedIds,
   onToggleExpand: controlledOnToggleExpand,
   onToggleHidden: controlledOnToggleHidden,
@@ -43,7 +43,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onAssetsOpenChange,
   assetsHeight: controlledAssetsHeight,
   onAssetsHeightChange,
-  tracksHeight,
+  tracksHeight: _tracksHeight,
   className = "",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const [internalExpandedIds, setInternalExpandedIds] = useState<string[]>([]);
   const [internalHiddenIds, setInternalHiddenIds] = useState<string[]>([]);
   const [internalLockedIds, setInternalLockedIds] = useState<string[]>([]);
-  const [internalSelectedTrackId, setInternalSelectedTrackId] = useState<string>("");
   const [internalSearchOpen, setInternalSearchOpen] = useState(false);
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const [internalAssetsOpen, setInternalAssetsOpen] = useState(false);
@@ -61,14 +60,12 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
 
   const selectedIds = controlledSelectedIds ?? internalSelectedIds;
   const expandedIds = controlledExpandedIds ?? internalExpandedIds;
-  const selectedTrackId = controlledSelectedTrackId ?? internalSelectedTrackId;
   const searchOpen = controlledSearchOpen ?? internalSearchOpen;
   const searchQuery = controlledSearchQuery ?? internalSearchQuery;
   const assetsOpen = controlledAssetsOpen ?? internalAssetsOpen;
   const assetsHeight = controlledAssetsHeight ?? internalAssetsHeight;
 
   const isCode = mode === "code";
-  const isMotion = mode === "motion";
   const isDesign = mode === "design";
 
   // Pure filtering and match count derivation during render (no setState in useEffect)
@@ -80,7 +77,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   const { visibleNodes: visibleLayerNodes, matchCount: layerMatchCount } = useMemo(() => {
     if (isCode) return { visibleNodes: [], matchCount: 0 };
     const all = flattenLayers(layers, expandedSet, selectedSet, hiddenSet, lockedSet);
-    return filterTreeNodes(all, searchQuery);
+    return filterTreeNodes(all, searchQuery, { keepCollapsed: true });
   }, [isCode, layers, expandedSet, selectedSet, hiddenSet, lockedSet, searchQuery]);
 
   const { visibleNodes: visibleFileNodes, matchCount: fileMatchCount } = useMemo(() => {
@@ -121,16 +118,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
     [controlledOnSelect, isCode, visibleFileNodes, visibleLayerNodes, internalSelectedIds]
   );
 
-  const handleSelectTrack = useCallback(
-    (id: string) => {
-      if (controlledOnSelectTrack) {
-        controlledOnSelectTrack(id);
-      } else {
-        setInternalSelectedTrackId(id);
-      }
-    },
-    [controlledOnSelectTrack]
-  );
 
   const handleToggleExpand = useCallback(
     (id: string) => {

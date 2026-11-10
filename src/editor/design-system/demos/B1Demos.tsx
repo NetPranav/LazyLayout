@@ -8,8 +8,19 @@ import { OptionsPopover } from "@/editor/components/OptionsPopover";
 import { Button } from "@/editor/components/Button";
 import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
-import { MoreHorizontal, Sliders, Type, Frame } from "@/editor/components/ColorPickerIcons";
+import { MoreHorizontal, Type, Frame } from "@/editor/components/ColorPickerIcons";
 import type { FramePresetItem } from "@/editor/components/FramePresetsData";
+import {
+  StrokeOptions,
+  EffectsOptions,
+  FillOptions,
+  PositionOptions,
+  LayoutOptions,
+  AppearanceOptions,
+  TypographyOptions,
+  ThemeTokensOptions,
+} from "@/editor/panels/details/options";
+import type { PropValue } from "@/core/document/registry";
 
 export function B1Demos() {
   // ColorPicker demo state
@@ -35,9 +46,45 @@ export function B1Demos() {
 
   // OptionsPopover demo state
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<
+    "Stroke" | "Effects" | "Fill" | "Position" | "Layout" | "Appearance" | "Typography" | "Theme Tokens"
+  >("Stroke");
+  const [demoProps, setDemoProps] = useState<Record<string, PropValue | null>>({
+    "stroke.position": "inside",
+    "stroke.width": 1,
+    "stroke.dash": "solid",
+    "stroke.cap": "round",
+    "stroke.join": "round",
+    "stroke.miter": 4,
+    "appearance.opacity": 1,
+    "appearance.radius": 8,
+    "typography.fontFamily": "Inter",
+    "typography.fontSize": 14,
+    "layout.position": "static",
+    "layout.zIndex": 0,
+  });
   const optionsAnchorRef = useRef<HTMLButtonElement>(null);
-  const [layoutAlign, setLayoutAlign] = useState("start");
-  const [clipContent, setClipContent] = useState(true);
+
+  const getDemoValue = (k: string) => demoProps[k] ?? null;
+  const updateDemoProp = (k: string, v: PropValue | null) => {
+    setDemoProps((prev) => ({ ...prev, [k]: v }));
+  };
+  const updateDemoProps = (patch: Record<string, PropValue | null>) => {
+    setDemoProps((prev) => ({ ...prev, ...patch }));
+  };
+
+  const optionSections: Array<
+    "Stroke" | "Effects" | "Fill" | "Position" | "Layout" | "Appearance" | "Typography" | "Theme Tokens"
+  > = [
+    "Stroke",
+    "Effects",
+    "Fill",
+    "Position",
+    "Layout",
+    "Appearance",
+    "Typography",
+    "Theme Tokens",
+  ];
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-10 ll:p-6 ll:max-w-4xl ll:mx-auto">
@@ -188,12 +235,14 @@ export function B1Demos() {
             </Button>
           </div>
 
-          <FramePresetsPanel
-            open={frameOpen}
-            onPick={(p) => setChosenFrame(p)}
-            onClose={() => setFrameOpen(false)}
-            anchorRef={frameAnchorRef}
-          />
+          <div className="ll:fixed ll:inset-0 ll:z-30 ll:pointer-events-none">
+            <FramePresetsPanel
+              open={frameOpen}
+              onPick={(p) => setChosenFrame(p)}
+              onClose={() => setFrameOpen(false)}
+              anchorRef={frameAnchorRef}
+            />
+          </div>
         </div>
 
         {/* 4. OptionsPopover Demo */}
@@ -201,25 +250,43 @@ export function B1Demos() {
           <div className="ll:flex ll:items-center ll:justify-between">
             <div>
               <h2 className="ll:text-body ll:font-medium ll:text-primary">
-                OptionsPopover
+                OptionsPopover (Section Options)
               </h2>
               <span className="ll:text-micro ll:text-muted">
-                Side popover, morph animation &amp; cascading rows
+                280px floating surface, 36px header, 72px label column, hairlines
               </span>
             </div>
             <span className="ll:font-mono ll:text-micro ll:text-muted">280px</span>
           </div>
 
+          {/* Section Selector */}
+          <div className="ll:flex ll:flex-wrap ll:gap-1.5 ll:pt-1">
+            {optionSections.map((sec) => (
+              <button
+                key={sec}
+                type="button"
+                onClick={() => setSelectedSection(sec)}
+                className={`ll:px-2.5 ll:py-1 ll:text-micro ll:rounded-sm ll:border ll:transition-colors ${
+                  selectedSection === sec
+                    ? "ll:bg-surface-seg ll:border-border ll:text-primary ll:font-medium"
+                    : "ll:bg-surface-bar ll:border-border-subtle ll:text-muted ll:hover:text-primary"
+                }`}
+              >
+                {sec}
+              </button>
+            ))}
+          </div>
+
           <div className="ll:flex ll:items-center ll:gap-3 ll:pt-2">
-            <span className="ll:text-body ll:font-medium ll:text-primary">
-              Section Options Trigger
+            <span className="ll:text-small ll:font-medium ll:text-primary">
+              {selectedSection} options
             </span>
             <span className="ll:flex-1" />
             <IconButton
               ref={optionsAnchorRef}
               variant="secondary"
               size="sm"
-              aria-label="Section options"
+              aria-label={`${selectedSection} options`}
               onClick={() => setOptionsOpen((prev) => !prev)}
               icon={<Icon icon={MoreHorizontal} size={14} />}
             />
@@ -227,43 +294,61 @@ export function B1Demos() {
 
           <OptionsPopover
             open={optionsOpen}
-            title="Layout"
+            title={selectedSection}
             anchorRef={optionsAnchorRef}
             onClose={() => setOptionsOpen(false)}
           >
-            {/* Popover Row 1: Alignment */}
-            <div className="ll:flex ll:flex-col ll:gap-1">
-              <span className="ll:text-micro ll:font-medium ll:text-muted">
-                Alignment
-              </span>
-              <div className="ll:flex ll:items-center ll:gap-1">
-                {["start", "center", "end"].map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => setLayoutAlign(a)}
-                    className={`ll:flex-1 ll:h-7 ll:rounded-sm ll:text-micro ll:font-medium ll:transition-colors ${
-                      layoutAlign === a
-                        ? "ll:bg-surface-seg ll:text-primary"
-                        : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Popover Row 2: Overflow clipping */}
-            <div className="ll:flex ll:items-center ll:justify-between ll:py-1">
-              <span className="ll:text-small ll:text-secondary">Clip content</span>
-              <input
-                type="checkbox"
-                checked={clipContent}
-                onChange={(e) => setClipContent(e.target.checked)}
-                className="ll:rounded-xs ll:border-border ll:text-primary"
+            {selectedSection === "Stroke" && (
+              <StrokeOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
               />
-            </div>
+            )}
+            {selectedSection === "Effects" && (
+              <EffectsOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Fill" && (
+              <FillOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Position" && (
+              <PositionOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Layout" && (
+              <LayoutOptions
+                isFrame={true}
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Appearance" && (
+              <AppearanceOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Typography" && (
+              <TypographyOptions
+                getValue={getDemoValue}
+                onUpdateProp={updateDemoProp}
+                onUpdateProps={updateDemoProps}
+              />
+            )}
+            {selectedSection === "Theme Tokens" && <ThemeTokensOptions />}
           </OptionsPopover>
         </div>
       </div>

@@ -133,7 +133,7 @@ export function SegmentedControl<T extends string = string>({
             aria-label={option.ariaLabel}
             onClick={() => !isItemDisabled && onChange(option.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-colors ll:duration-100 ll:cursor-pointer ll:p-0 ll:appearance-none ll:border-0 ll:bg-transparent ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
+            className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:whitespace-nowrap ll:transition-colors ll:duration-100 ll:cursor-pointer ll:p-0 ll:appearance-none ll:border-0 ll:bg-transparent ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
               isSelected
                 ? "ll:text-primary ll:font-medium"
                 : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar"

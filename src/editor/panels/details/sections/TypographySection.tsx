@@ -117,7 +117,6 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
           anchorRef={fontAnchorRef}
           onChange={(family: string) => {
             onUpdateProp?.("typography.fontFamily", family);
-            setIsFontPickerOpen(false);
           }}
           onClose={() => setIsFontPickerOpen(false)}
         />

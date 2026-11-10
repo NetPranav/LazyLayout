@@ -11,6 +11,8 @@ import { Spotlight } from "./Spotlight";
 import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
+import { addFrame } from "@/core/frames/frameCommands";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
 import { applyFeel } from "@/editor/motion/feel";
 import { type MotionPresetKey } from "@/editor/motion/presets";
@@ -306,6 +308,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
   // Canvas right-click context menu position state
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [viewOptionsPos, setViewOptionsPos] = useState<{ x: number; y: number } | null>(null);
 
   // Collaborator users resolution from prop or real src/core store
   const connectedPeers = useCollabStore((s) => s.connectedPeers);
@@ -693,13 +696,13 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       />
 
       {/* Frame Presets Panel (Wave B1) */}
-      {isFramePresetsOpen && (
-        <FramePresetsPanel
-          open={isFramePresetsOpen}
-          onClose={() => setIsFramePresetsOpen(false)}
-          triggerRef={frameButtonRef}
-        />
-      )}
+      <FramePresetsPanel
+        open={isFramePresetsOpen}
+        onClose={() => setIsFramePresetsOpen(false)}
+        triggerRef={frameButtonRef}
+        onPick={(p) => useSelectionStore.getState().select(addFrame({ name: p.name, width: p.width, height: p.height }), "element")}
+      />
+
 
       {/* Collaborator Avatars at canvas top-right (hidden per user decision) */}
 
@@ -737,7 +740,11 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       {/* View Options Popover */}
       <ViewOptionsPopover
         open={isViewOptionsOpen}
-        onClose={() => setIsViewOptionsOpen(false)}
+        onClose={() => {
+          setIsViewOptionsOpen(false);
+          setViewOptionsPos(null);
+        }}
+        position={viewOptionsPos}
         triggerRef={topAnchorRef}
         gridStyle={gridStyle}
         onGridStyleChange={setGridStyle}
@@ -825,6 +832,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         theme={theme}
         onThemeChange={handleThemeChange}
         onOpenCanvasSettings={() => {
+          setViewOptionsPos(contextMenuPos);
           setIsViewOptionsOpen(true);
           setContextMenuPos(null);
         }}

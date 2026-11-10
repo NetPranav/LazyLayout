@@ -23,24 +23,51 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
   const anchorRef = useRef<HTMLSpanElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
-  // Places the popover like the design: floating left of the right panel, top aligned to its row.
+  // Places the popover like the design: floating 8px left of the right panel, top aligned to its row.
   useLayoutEffect(() => {
     if (!isOpen) return;
-    const place = () => {
-      const row = anchorRef.current?.closest(".ll-rr");
-      const zone = anchorRef.current?.closest(".ll-zbody") ?? row;
-      const pop = popRef.current;
-      if (!row || !zone || !pop) return;
-      const r = row.getBoundingClientRect();
-      const z = zone.getBoundingClientRect();
-      const h = pop.offsetHeight;
-      const w = pop.offsetWidth;
-      pop.style.left = `${Math.max(8, z.left - w - 8)}px`;
-      pop.style.top = `${Math.max(8, Math.min(r.top, window.innerHeight - 8 - h))}px`;
+    const findRightPanel = () => {
+      return (
+        document.querySelector(".zone.right") ||
+        document.querySelector("[data-testid='right-panel']") ||
+        document.querySelector(".ll-shell-right") ||
+        anchorRef.current?.closest("aside")
+      ) as HTMLElement | null;
     };
+
+    const place = () => {
+      const row = anchorRef.current?.closest(".ll-rr") as HTMLElement | null;
+      const zone = findRightPanel();
+      const pop = popRef.current;
+      if (!pop) return;
+
+      const rightPanelRect = zone?.getBoundingClientRect();
+      const rowRect = row?.getBoundingClientRect();
+
+      const h = pop.offsetHeight || 280;
+      const w = pop.offsetWidth || 280;
+
+      // Position horizontally: 8px to the left of the right panel
+      const targetLeft = rightPanelRect ? rightPanelRect.left - w - 8 : window.innerWidth - 320 - w - 8;
+      const left = Math.max(8, Math.min(targetLeft, window.innerWidth - w - 8));
+
+      // Position vertically: align with row top, clamped inside viewport
+      const anchorTop = rowRect ? rowRect.top : window.innerHeight / 2 - h / 2;
+      const top = Math.max(8, Math.min(anchorTop, window.innerHeight - h - 8));
+
+      pop.style.left = `${left}px`;
+      pop.style.top = `${top}px`;
+    };
+
     place();
     window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
+    const scrollContainer = document.querySelector(".ll-zbody") || window;
+    scrollContainer.addEventListener("scroll", place, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", place);
+      scrollContainer.removeEventListener("scroll", place);
+    };
   }, [isOpen, children]);
 
   // Escape and outside pointer-down close the popover. Clicks on the owning row keep their own toggle.
@@ -78,7 +105,7 @@ export const RowSettingsPopover: React.FC<RowSettingsPopoverProps> = ({
             role="dialog"
             aria-label={`${title} settings`}
             style={{ left: -9999, top: -9999 }}
-            className={`ppop ll-ppop llm-pop ${isOpen ? "ll-open" : ""} ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-62 ll:overflow-hidden ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
+            className={`ppop ll-ppop llm-pop ${isOpen ? "ll-open" : ""} ll:fixed ll:z-60 ll:flex ll:flex-col ll:box-border ll:w-70 ll:overflow-hidden ll:bg-surface-float ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ${className}`}
           >
             <div className="phead ll-phead ll:flex ll:items-center ll:justify-between ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0">
               <span className="pt ll-pt ll:text-micro ll:font-medium ll:text-muted ll:truncate">{title}</span>

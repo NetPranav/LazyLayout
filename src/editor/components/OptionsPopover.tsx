@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useId, useCallback } from "react";
+import React, { useRef, useEffect, useLayoutEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
@@ -16,7 +16,6 @@ import {
   ROW_CASCADE_BLUR_ENTER,
   ROW_CASCADE_BLUR_SETTLE,
   REDUCED_DURATION,
-  CLOSE_DURATION,
 } from "./ColorPickerMotion";
 import {
   registerOverlay,
@@ -41,6 +40,9 @@ const POPOVER_WIDTH = 280;
 const POPOVER_GAP = 8;
 const STAGGER_BASE = 50;
 const STAGGER_MS = 18;
+const CLOSE_MS = 190;
+const MAX_CASCADE = 14;
+const RIGHT_ZONE = ".zone.right, [data-testid='right-panel'], .ll-shell-right";
 
 export function OptionsPopover({
   open,
@@ -58,6 +60,12 @@ export function OptionsPopover({
   const headerRef = useRef<HTMLDivElement>(null);
   const prevAnchorRef = useRef<HTMLElement | null>(null);
   const isImmediateCloseRef = useRef(false);
+  const closeAnimRef = useRef<Animation | null>(null);
+  // Parents pass a fresh onClose every render; the effects must not restart the morph because of it.
+  const onCloseRef = useRef(onClose);
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+  });
   const titleId = useId();
   const optionsUniqueId = useId();
 
@@ -77,7 +85,7 @@ export function OptionsPopover({
     if (!pop) return;
 
     const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
-    const rightZone = document.querySelector(".zone.right");
+    const rightZone = anchor?.closest(RIGHT_ZONE) ?? document.querySelector(RIGHT_ZONE);
     const rightRect = rightZone
       ? rightZone.getBoundingClientRect()
       : anchor
@@ -108,8 +116,8 @@ export function OptionsPopover({
     pop.style.maxHeight = `${maxHeight}px`;
   }, [anchorRef, triggerRef]);
 
-  // Open & Close animations with retargeting
-  useEffect(() => {
+  // Open & Close animations with retargeting. A layout effect, so the first painted frame is already the morph start.
+  useLayoutEffect(() => {
     if (!isRendered) return;
     const pop = popRef.current;
     const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
@@ -119,6 +127,12 @@ export function OptionsPopover({
     const preset = getActivePreset();
 
     if (open) {
+      const wasClosing = closeAnimRef.current !== null;
+      if (closeAnimRef.current) {
+        closeAnimRef.current.onfinish = null;
+        closeAnimRef.current = null;
+      }
+      pop.getAnimations().forEach((a) => a.cancel());
       updatePosition();
 
       const toRect = pop.getBoundingClientRect();
@@ -126,6 +140,7 @@ export function OptionsPopover({
         prevAnchorRef.current !== null &&
         prevAnchorRef.current !== anchor;
       const handoff = !isAnchorSwitch ? getFamilyHandoff("inspector-options", optionsUniqueId) : null;
+      const swap = wasClosing ? null : handoff;
 
       if (reduced) {
         pop.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -135,9 +150,9 @@ export function OptionsPopover({
         });
       } else if (isAnchorSwitch && prevAnchorRef.current) {
         const oldRect = prevAnchorRef.current.getBoundingClientRect();
-        animateRetarget(pop, oldRect, toRect, bodyRef.current);
-      } else if (handoff) {
-        animateRetarget(pop, handoff, toRect, bodyRef.current);
+        animateRetarget(pop, oldRect, toRect, bodyRef.current, { blur: false });
+      } else if (swap) {
+        animateRetarget(pop, swap, toRect, bodyRef.current, { blur: false });
       } else if (anchor) {
         const s = anchor.getBoundingClientRect();
         const r = pop.getBoundingClientRect();
@@ -167,8 +182,9 @@ export function OptionsPopover({
         const childElements: HTMLElement[] = [];
         if (headerEl) childElements.push(headerEl);
         if (bodyEl) {
-          const directKids = Array.from(bodyEl.children) as HTMLElement[];
-          childElements.push(...directKids.slice(0, 14));
+          const rows = Array.from(bodyEl.querySelectorAll<HTMLElement>(".dmg > *"));
+          const kids = rows.length ? rows : (Array.from(bodyEl.children) as HTMLElement[]);
+          childElements.push(...kids.slice(0, MAX_CASCADE));
         }
 
         const rowSe = springEase(preset.rows[0], preset.rows[1]);
@@ -204,7 +220,7 @@ export function OptionsPopover({
         anchor,
         close: (immediate) => {
           if (immediate) isImmediateCloseRef.current = true;
-          onClose();
+          onCloseRef.current();
         },
         rect: toRect,
         timestamp: performance.now(),
@@ -212,6 +228,7 @@ export function OptionsPopover({
     } else {
       prevAnchorRef.current = null;
       unregisterOverlay(optionsUniqueId);
+      pop.getAnimations().forEach((a) => a.cancel());
       if (isImmediateCloseRef.current) {
         isImmediateCloseRef.current = false;
         setIsRendered(false);
@@ -238,45 +255,75 @@ export function OptionsPopover({
             { clipPath: morphTarget, transform: "scale(0.86)", opacity: 0 },
           ],
           {
-            duration: CLOSE_DURATION,
+            duration: CLOSE_MS,
             easing: "cubic-bezier(0.4, 0, 0.2, 1)",
             fill: "forwards",
           }
         );
       }
 
+      closeAnimRef.current = anim;
       anim.onfinish = () => {
+        closeAnimRef.current = null;
         setIsRendered(false);
       };
     }
-  }, [open, isRendered, anchorRef, triggerRef, onClose, optionsUniqueId, updatePosition]);
+  }, [open, isRendered, anchorRef, triggerRef, optionsUniqueId, updatePosition]);
 
-  // Outside pointerdown and Escape handler
+  // Outside pointerdown, Escape handler and scroll tracking
   useEffect(() => {
     if (!open || !isRendered) return;
 
     const handlePointerDown = (e: PointerEvent) => {
       const pop = popRef.current;
-      const anchor = anchorRef?.current ?? triggerRef?.current;
-      const target = e.target as Node | null;
+      const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
+      const target = e.target as HTMLElement | null;
 
       if (pop && target && !pop.contains(target)) {
         if (anchor && anchor.contains(target)) return;
-        onClose();
+        // Don't close if clicking inside ColorPicker or dropdown select
+        if (target.closest?.(".cp, .ll-cp, .dd, .ll-select, [data-more]")) return;
+        onCloseRef.current();
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        const cp = document.querySelector(".cp.ll-open, .cp[data-open]");
+        if (cp && cp.getClientRects().length > 0) return;
         e.stopPropagation();
-        onClose();
-        anchorRef?.current?.focus();
+        onCloseRef.current();
+        const anchor = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
+        anchor?.focus();
       }
     };
 
     const handleResize = () => {
+      isImmediateCloseRef.current = true;
+      onCloseRef.current();
+    };
+
+    const handleScroll = () => {
+      const anchorNode = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
+      if (!anchorNode) return;
+      const scrollParent = anchorNode.closest(".ll-zbody") || document.querySelector(".ll-shell-right .ll-zbody");
+      if (scrollParent) {
+        const cRect = scrollParent.getBoundingClientRect();
+        const aRect = anchorNode.getBoundingClientRect();
+        if (aRect.bottom < cRect.top + 20 || aRect.top > cRect.bottom - 20) {
+          onCloseRef.current();
+          return;
+        }
+      }
       updatePosition();
     };
+
+    const anchorNode = (anchorRef?.current ?? triggerRef?.current) as HTMLElement | null;
+    const scrollParent = anchorNode?.closest(".ll-zbody") || document.querySelector(".ll-shell-right .ll-zbody");
+    if (scrollParent) {
+      scrollParent.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     document.addEventListener("pointerdown", handlePointerDown, true);
     document.addEventListener("keydown", handleKeyDown, true);
@@ -285,9 +332,13 @@ export function OptionsPopover({
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown, true);
       document.removeEventListener("keydown", handleKeyDown, true);
+      if (scrollParent) {
+        scrollParent.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, isRendered, onClose, anchorRef, triggerRef, updatePosition]);
+  }, [open, isRendered, anchorRef, triggerRef, updatePosition]);
 
   if (!mounted || !isRendered) return null;
 
@@ -298,19 +349,20 @@ export function OptionsPopover({
       aria-label={ariaLabel || `${title} options`}
       aria-labelledby={titleId}
       tabIndex={-1}
-      className={`llm-pop ppop ll-ppop ${open ? "ll-open" : ""} ll:fixed ll:z-60 ll:w-options-popover ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:text-primary ll:outline-none ll:flex ll:flex-col ll:overflow-hidden ${className}`}
+      style={open ? undefined : { pointerEvents: "none" }}
+      className={`llm-pop ppop ll-ppop ll-open ll-optpop ll:fixed ll:z-60 ll:box-border ll:w-options-popover ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:outline-none ll:flex ll:flex-col ll:overflow-hidden ${className}`}
     >
       <div className="ll:flex ll:flex-col ll:flex-1 ll:min-w-0 ll:min-h-0 ll:rounded-inherit ll:overflow-hidden">
         {/* Header (36px) */}
         <div
           ref={headerRef}
-          className="phead ll-phead ll:flex ll:items-center ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0"
+          className="phead ll-phead ll:box-border ll:flex ll:items-center ll:gap-2 ll:h-9 ll:pl-4 ll:pr-2 ll:border-b ll:border-border ll:shrink-0"
         >
           <span
             id={titleId}
             className="pt ll-pt ll:flex-1 ll:min-w-0 ll:text-micro ll:font-medium ll:text-muted ll:truncate"
           >
-            {title} options
+            {title.toLowerCase().endsWith("options") ? title : `${title} options`}
           </span>
           <IconButton
             size="sm"

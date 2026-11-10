@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { RotateCw } from "lucide-react";
-import { Icon } from "@/editor/components/Icon";
+import { PhosphorMotionIcon } from "@/editor/components/icons/PhosphorIcon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { AlignBar } from "../controls/AlignBar";
@@ -76,8 +75,8 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
         <NumberField
           size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label={<Icon icon={RotateCw} size={14} />}
+          className="ll-pi-host ll:*:!text-micro ll:!gap-2"
+          label={<PhosphorMotionIcon name="arrowClockwise" motion="rotate" size={14} />}
           aria-label="Rotation"
           value={rotVal}
           suffix="°"

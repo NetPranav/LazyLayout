@@ -1046,6 +1046,170 @@ svg {
 :is(.cp, .ll-cp, .fp, .ll-fp, .frp, .ll-frp, .ins, .ppop) :is(.dfield, .ll-dfield, [data-testid="inspector-field"], .field):focus-within {
   border-color: var(--ll-text-primary);
 }
+/* ===== Font picker prototype parity (FontPicker.tsx), ported from the prototype's ll-fpick block. Own block: the Tailwind alias for the soft shadow is self-referencing, so the popover carries its own shadow token. ===== */
+.ll-fp { --ll-fp-shadow: var(--ll-shadow-soft); }
+.ll-fp,
+.ll-fp * { box-sizing: border-box; }
+.ll-fp {
+  position: fixed;
+  z-index: 70;
+  width: var(--ll-size-picker-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--ll-surface-raised);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-md);
+  box-shadow: var(--ll-fp-shadow);
+  color: var(--ll-text-primary);
+  overflow: hidden;
+  max-height: calc(100vh - 16px);
+  font-family: var(--ll-font-sans);
+  font-size: var(--ll-text-body-size);
+  line-height: var(--ll-text-body-line-height);
+  letter-spacing: normal;
+}
+.ll-fp:focus { outline: none; }
+.ll-fp .fp-hd { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+.ll-fp .fp-s {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--ll-surface-bar);
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  color: var(--ll-text-muted);
+}
+.ll-fp .fp-s:hover { border-color: var(--ll-text-muted); }
+.ll-fp .fp-s:focus-within { border-color: var(--ll-text-primary); }
+.ll-fp .fp-s svg { flex: none; }
+.ll-fp .fp-s input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ll-text-primary);
+  font: 400 var(--ll-text-micro-size) var(--ll-font-mono);
+  letter-spacing: normal;
+}
+.ll-fp .fp-s input::placeholder { color: var(--ll-text-muted); opacity: 1; }
+.ll-fp .fp-seg { flex: none; height: 28px; padding: 1px; }
+.ll-fp .fp-seg > [aria-hidden="true"] { top: 1px; bottom: 1px; }
+.ll-fp .fp-seg button { height: 100%; padding: 0 6px; font-weight: 400; letter-spacing: normal; white-space: nowrap; }
+.ll-fp .fp-hr { flex: none; height: 1px; background: var(--ll-border-color); }
+.ll-fp .fp-list {
+  position: relative;
+  isolation: isolate;
+  flex: 1 1 auto;
+  min-height: 96px;
+  max-height: 50vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 4px 8px;
+  scrollbar-width: none;
+  outline: none;
+}
+.ll-fp .fp-list::-webkit-scrollbar { display: none; }
+.ll-fp .fp-hl {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  z-index: -1;
+  width: calc(100% - 8px);
+  height: 32px;
+  border-radius: var(--ll-radius-sm);
+  background: var(--ll-surface-hover);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition: opacity var(--ll-dur-fade) ease-out;
+}
+.ll-fp .fp-hl.show { opacity: 1; }
+.ll-fp.kb .fp-hl { outline: 2px solid var(--ll-text-primary); outline-offset: -2px; }
+.ll-fp .fp-g[hidden],
+.ll-fp .fp-r[hidden],
+.ll-fp .fp-empty[hidden] { display: none; }
+.ll-fp .fp-gh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 4px;
+  font: 500 var(--ll-text-micro-size) var(--ll-font-mono);
+  letter-spacing: .08em;
+  line-height: normal;
+  text-transform: uppercase;
+  color: var(--ll-text-muted);
+  user-select: none;
+}
+.ll-fp .fp-gh .fp-gl { flex: 1; height: 1px; background: var(--ll-border-color); }
+.ll-fp .fp-r {
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--ll-radius-sm);
+  cursor: pointer;
+  user-select: none;
+  transform-origin: 0 50%;
+  outline: none;
+}
+.ll-fp .fp-ck { width: 14px; height: 14px; flex: none; opacity: 0; color: var(--ll-text-primary); }
+.ll-fp .fp-r[aria-selected="true"] .fp-ck { opacity: 1; }
+.ll-fp .fp-n {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform-origin: 0 50%;
+  color: var(--ll-text-primary);
+}
+.ll-fp .fp-n em {
+  font-style: normal;
+  background: var(--ll-control-active);
+  border-radius: var(--ll-radius-xs);
+  box-shadow: 0 0 0 1px var(--ll-control-active);
+}
+.ll-fp .fp-m { flex: none; font: 400 var(--ll-text-micro-size) var(--ll-font-mono); letter-spacing: normal; line-height: normal; color: var(--ll-text-muted); }
+.ll-fp .fp-empty { padding: 28px 12px; text-align: center; color: var(--ll-text-muted); font-size: var(--ll-text-small-size); }
+.ll-fp .fp-ft { flex: none; display: flex; gap: 8px; padding: 8px; }
+.ll-fp .fp-ft button {
+  flex: 1;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  background: transparent;
+  color: var(--ll-text-secondary);
+  font: 500 var(--ll-text-small-size) var(--ll-font-sans);
+  letter-spacing: normal;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background var(--ll-dur-fade) ease-out, color var(--ll-dur-fade) ease-out;
+}
+.ll-fp .fp-ft button:hover { background: var(--ll-control-active); color: var(--ll-text-primary); }
+.ll-fp .fp-ft button:active { scale: .97; }
+.ll-fp .fp-ft button:focus-visible,
+.ll-fp .fp-seg button:focus-visible { outline: 2px solid var(--ll-text-primary); outline-offset: -2px; }
+.ll-fp .fp-ft button svg { width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .ll-fp .fp-hl { transition: none; }
+}
+/* ===== end Font picker block ===== */
+
 /* === end lane: B1 === */
 
 /* === lane: B2 layers === */
@@ -1113,6 +1277,16 @@ svg {
               color var(--ll-b2-dur-fast) var(--ll-b2-ease-out),
               scale var(--ll-dur-pop) var(--ll-ease-pop),
               opacity var(--ll-dur-fade) var(--ll-b2-ease-out);
+}
+.app.blank[data-mode="design"] #p-layers .row:not(.lcl),
+.ll-editor-root.blank[data-mode="design"] #p-layers .row:not(.lcl),
+.ll-editor-root[data-blank="1"][data-mode="design"] #p-layers .row:not(.lcl) {
+  display: flex !important;
+}
+.app.blank[data-mode="design"] #p-layers .row.lcl,
+.ll-editor-root.blank[data-mode="design"] #p-layers .row.lcl,
+.ll-editor-root[data-blank="1"][data-mode="design"] #p-layers .row.lcl {
+  display: none !important;
 }
 #p-layers .row::before {
   content: "";
@@ -1701,6 +1875,18 @@ svg {
   letter-spacing: normal;
 }
 
+/* ===== Inspector options popover surface (OptionsPopover.tsx). The Tailwind shadow alias is self-referencing, so the surface reads the theme shadow token directly. ===== */
+:root { --ll-optpop-shadow: 0 4px 16px rgba(16,16,16,.08); }
+[data-theme="paper"], [data-theme="lilac"] { --ll-optpop-shadow: 0 4px 16px rgba(34,35,30,.1); }
+[data-theme="dark"], [data-theme="graphite"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.5); }
+[data-theme="darkroom"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.6); }
+[data-theme="noir"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.7); }
+[data-theme="white"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.ll-optpop { box-shadow: var(--ll-optpop-shadow); }
+/* The prototype stacks groups in a column with an 8px gap, plus the 8px group margin. */
+.ll-optpop .ll-dmg + .ll-dmg { margin-top: calc(var(--ll-spacing-2) * 2); }
+/* ===== end inspector options popover surface ===== */
+
 /* Options popover body padding & no outer gap */
 :is(.llm-pop, [role="group"][aria-label*="options"]) > div > div:last-child {
   padding: 12px 16px 16px;
@@ -1973,3 +2159,186 @@ svg {
   --ll-context-seed-radius: 5px;
 }
 /* === end lane: F8 sweep === */
+
+/* === lane: vpop prototype parity (Canvas settings popover, ported from the HTML prototype) === */
+#vpop {
+  --ll-size-vpop-seg: 184px;
+  --ll-size-dfield-w: 107.5px;
+}
+#vpop .vgrp,
+#vpop .gsrow > .micro,
+#vpop .thgrp .vgrp {
+  font-family: var(--ll-font-mono);
+  font-size: var(--ll-text-micro-size);
+  font-weight: var(--ll-text-micro-weight);
+  line-height: normal;
+  letter-spacing: var(--ll-text-micro-letter-spacing);
+  text-transform: uppercase;
+  color: var(--ll-text-muted);
+}
+#vpop .gsrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--ll-text-body-size);
+  line-height: var(--ll-text-body-line-height);
+}
+#vpop .gsrow > .mono {
+  font-family: var(--ll-font-mono);
+  font-size: var(--ll-text-body-size);
+  font-weight: 400;
+  color: var(--ll-text-primary);
+}
+#vpop .vbul .gsrow > span:first-child {
+  font-family: var(--ll-font-sans);
+  font-size: var(--ll-text-body-size);
+  color: var(--ll-text-secondary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+#vpop .thgrp .vgrp {
+  padding: 4px 0 0;
+}
+#vpop .ll-hl {
+  border-radius: 0;
+}
+#vpop .vi i > span {
+  border-radius: 1px;
+}
+#vpop .vrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 16px;
+  color: var(--ll-text-secondary);
+}
+#vpop .vrow-c {
+  min-height: 28px;
+}
+/* segmented controls: 32px frame, 2px padding and gap, 26px cells */
+#vpop [role="radiogroup"],
+#vpop .thgrp [role="group"] {
+  box-sizing: border-box;
+  height: auto;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-md);
+}
+#vpop [role="radiogroup"] > button,
+#vpop .thgrp [role="group"] > button {
+  height: 26px;
+  min-width: auto;
+  padding: 0 10px;
+  border-radius: var(--ll-radius-sm);
+  font-family: var(--ll-font-sans);
+  font-size: var(--ll-text-body-size);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
+}
+#vpop .vrow [role="radiogroup"] {
+  display: flex;
+  width: var(--ll-size-vpop-seg);
+  flex: none;
+}
+#vpop .vrow [role="radiogroup"] > button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 4px;
+}
+#vpop .hl {
+  margin-left: 4px;
+  margin-right: 4px;
+}
+#vpop .vrow [role="radiogroup"] > button,
+#vpop .thgrp [role="group"] > button {
+  padding: 0 8px;
+  font-size: 12px;
+}
+#vpop .thgrp [role="group"] > button {
+  padding: 0 4px;
+}
+#vpop [role="radiogroup"] > button[aria-checked="false"]:hover,
+#vpop .thgrp [role="group"] > button[aria-pressed="false"]:hover {
+  background: var(--ll-surface-bar);
+  color: var(--ll-text-primary);
+}
+/* number field: 30px, 10px inset, canvas fill */
+#vpop .vfield {
+  width: var(--ll-size-dfield-w);
+  flex: none;
+}
+#vpop .vfield > div {
+  height: 30px;
+  padding: 0 10px;
+  gap: 8px;
+  background: var(--ll-surface-canvas);
+}
+#vpop .vfield input {
+  font-size: var(--ll-text-body-size);
+  font-weight: 500;
+}
+#vpop .vfield input ~ span {
+  margin-left: 0;
+  font-size: var(--ll-text-micro-size);
+  letter-spacing: 0;
+}
+/* === end lane: vpop prototype parity === */
+
+/* ===== Insert box prototype parity (InsertBox.tsx). Own block: the Tailwind shadow alias --ll-shadow-soft is self-referencing, so the box carries its own shadow token. ===== */
+:root { --ll-ins-shadow: 0 4px 16px rgba(16,16,16,.08); }
+[data-theme="paper"], [data-theme="lilac"] { --ll-ins-shadow: 0 4px 16px rgba(34,35,30,.1); }
+[data-theme="dark"], [data-theme="graphite"] { --ll-ins-shadow: 0 4px 16px rgba(0,0,0,.5); }
+[data-theme="darkroom"] { --ll-ins-shadow: 0 4px 16px rgba(0,0,0,.6); }
+[data-theme="noir"] { --ll-ins-shadow: 0 4px 16px rgba(0,0,0,.7); }
+[data-theme="white"] { --ll-ins-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.ll-ins {
+  box-shadow: var(--ll-ins-shadow);
+  font-size: var(--ll-text-body-size);
+  line-height: var(--ll-text-body-line-height);
+}
+.ll-ins .ll-insq input { line-height: normal; }
+.ll-ins .ll-insl button { font-weight: 400; font-family: inherit; }
+.ll-ins .ll-card { padding: 1px 6px; }
+.ll-ins .ll-cname {
+  font-size: var(--ll-text-micro-size);
+  line-height: var(--ll-text-body-line-height);
+  letter-spacing: normal;
+}
+.ll-ins { --ll-ins-big-size: 18px; }
+.ll-ins .ll-big { font-size: var(--ll-ins-big-size); line-height: 1.15; }
+/* ===== end Insert box block ===== */
+
+/* ===== Frame presets panel prototype parity (FramePresetsPanel.tsx). Own block: the Insert box surface, narrower. It does not use .ll-ins, whose fixed 520x400 size (spotlight.css) would stop the open and close morph. ===== */
+.ll-frp {
+  width: min(var(--ll-size-insert-w), calc(100% - 2 * var(--ll-spacing-2)));
+  height: min(var(--ll-size-frame-presets-h), calc(100% - var(--ll-bottom-floating, 74px) - var(--ll-spacing-2)));
+  bottom: var(--ll-bottom-floating, 74px);
+  box-shadow: var(--ll-ins-shadow);
+  font-size: var(--ll-text-body-size);
+  line-height: var(--ll-text-body-line-height);
+  visibility: hidden;
+  pointer-events: none;
+}
+.ll-frp.ll-open { visibility: visible; pointer-events: auto; }
+.ll-frp[data-lv] { visibility: visible; }
+.ll-frp[data-mv] { overflow: hidden !important; max-height: none !important; min-width: 0 !important; }
+.ll-frp > .ll-lay { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.ll-frp .ll-insq input { line-height: normal; }
+.ll-frp { --ll-frp-control-h: 30px; }
+.ll-frp .ll-frfield { height: var(--ll-frp-control-h); padding: 0 10px; gap: var(--ll-spacing-2); background: var(--ll-surface-canvas); }
+.ll-frp .ll-frfield .ll-pf { font-size: var(--ll-text-micro-size); font-weight: 500; }
+.ll-frp .ll-frfield input { font-size: var(--ll-text-body-size); font-weight: 500; line-height: normal; }
+.ll-frp .ll-frbtn { height: var(--ll-frp-control-h); }
+.ll-frp .ll-frbtn { background: var(--ll-surface-bar); color: var(--ll-text-secondary); font-size: var(--ll-text-micro-size); font-weight: 500; }
+.ll-frp .ll-frbtn:hover:not(:disabled) { background: var(--ll-surface-hover); color: var(--ll-text-primary); }
+.ll-frp .ll-frbtn:disabled { background: transparent; color: var(--ll-text-muted); }
+.ll-frp .ll-frr { position: relative; }
+.ll-frp .ll-frgl i { border: 1px solid var(--ll-text-muted); border-radius: 1px; box-sizing: border-box; }
+.ll-frp .ll-frr:hover, .ll-frp .ll-frr.ll-on { color: var(--ll-text-primary); }
+.ll-frp .ll-frr:focus-visible { outline: 1px solid var(--ll-text-primary); outline-offset: -1px; }
+/* ===== end Frame presets panel block ===== */

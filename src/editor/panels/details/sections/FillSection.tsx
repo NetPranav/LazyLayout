@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Minus, Sliders } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
@@ -167,12 +167,23 @@ export const FillSection: React.FC<FillSectionProps> = ({
 
             {/* Hex and Opacity Fields */}
             <div className="ll-sum ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0">
-              <div className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+              <div
+                className="ll-dfield ll:flex ll:items-center ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:cursor-pointer"
+                onClick={(e) => {
+                  setActiveColorPickerId(fill.id);
+                  setActiveColorPickerEl(e.currentTarget);
+                }}
+              >
                 <input
                   type="text"
                   maxLength={6}
                   aria-label="Fill hex"
                   value={fill.hex}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveColorPickerId(fill.id);
+                    setActiveColorPickerEl(e.currentTarget);
+                  }}
                   onChange={(e) =>
                     handleUpdateFill(fill.id, {
                       hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),

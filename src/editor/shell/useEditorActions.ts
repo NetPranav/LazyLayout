@@ -253,6 +253,7 @@ export function useEditorActions(
       shape: "rectangle",
       text: "text",
       image: "select",
+      pen: "pen",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
   }, []);
@@ -1249,6 +1250,11 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           setActiveTool("text");
+          return;
+        }
+        if (key === "p") {
+          e.preventDefault();
+          setActiveTool("pen");
           return;
         }
         if (key === "r") {

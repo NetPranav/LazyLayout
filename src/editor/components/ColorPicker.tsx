@@ -2,13 +2,12 @@
 
 import React, { useRef, useEffect, useState, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Pipette, Plus, LinkIcon, Check, ChevronDown } from "./ColorPickerIcons";
+import { Pipette, Plus, LinkIcon, Check } from "./ColorPickerIcons";
 import { Icon } from "./Icon";
 import { SegmentedControl } from "./SegmentedControl";
 import { IconButton } from "./IconButton";
 import { Select } from "./Select";
 import { useMounted } from "./useMounted";
-import { useSlidingIndicator } from "./useSlidingIndicator";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
 import {
@@ -151,7 +150,7 @@ export function ColorPicker({
     if (!el) return;
 
     const anchor = anchorRef?.current ?? triggerRef?.current ?? anchorEl;
-    const rightZone = document.querySelector(".zone.right");
+    const rightZone = document.querySelector(".zone.right, [data-testid='right-panel'], .ll-shell-right, aside");
     const rightRect = rightZone
       ? rightZone.getBoundingClientRect()
       : anchor
@@ -327,6 +326,28 @@ export function ColorPicker({
       updatePosition();
     };
 
+    const handleScroll = () => {
+      const anchorNode = (anchorRef?.current ?? triggerRef?.current ?? anchorEl) as HTMLElement | null;
+      if (!anchorNode) return;
+      const scrollParent = anchorNode.closest(".ll-zbody") || document.querySelector(".ll-shell-right .ll-zbody");
+      if (scrollParent) {
+        const cRect = scrollParent.getBoundingClientRect();
+        const aRect = anchorNode.getBoundingClientRect();
+        if (aRect.bottom < cRect.top + 20 || aRect.top > cRect.bottom - 20) {
+          onClose?.();
+          return;
+        }
+      }
+      updatePosition();
+    };
+
+    const anchorNode = (anchorRef?.current ?? triggerRef?.current ?? anchorEl) as HTMLElement | null;
+    const scrollParent = anchorNode?.closest(".ll-zbody") || document.querySelector(".ll-shell-right .ll-zbody");
+    if (scrollParent) {
+      scrollParent.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     document.addEventListener("pointerdown", handlePointerDown, true);
     document.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", handleResize);
@@ -334,6 +355,10 @@ export function ColorPicker({
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown, true);
       document.removeEventListener("keydown", handleKeyDown);
+      if (scrollParent) {
+        scrollParent.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
   }, [open, isRendered, onClose, anchorRef, anchorEl, triggerRef, updatePosition]);

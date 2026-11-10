@@ -442,7 +442,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           isNarrowLifted ? "ll-tb-hi tb-hi" : ""
         }`}
       >
-        {/* DESIGN MODE TOOLBAR: Select, Hand, Frame, Shape ▾ (Pen inside), Text, Insert, AI */}
+        {/* DESIGN MODE TOOLBAR: Select, Hand, Frame, Shape ▾ (Pen inside), Pen, Text, Insert, AI */}
         {mode === "design" && (
           <div className="dtools ll-dtools ll:flex ll:items-center ll:gap-0.5">
             {/* Select (V) */}
@@ -512,6 +512,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
+            {/* Pen (P) */}
+            <IconButton
+              size="lg"
+              data-tool="pen"
+              aria-label="Pen (P)"
+              tooltip="Pen (P)"
+              pressed={activeTool === "pen"}
+              tabIndex={focusedIndex === 4 ? 0 : -1}
+              onFocus={() => setFocusedIndex(4)}
+              onClick={() => onSelectTool?.("pen")}
+              icon={<Icon icon={PenTool} size={CANVAS_CHROME_SIZES.iconLg} />}
+            />
+
             {/* Text (T) */}
             <IconButton
               size="lg"
@@ -519,8 +532,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-label="Text (T)"
               tooltip="Text (T)"
               pressed={activeTool === "text"}
-              tabIndex={focusedIndex === 4 ? 0 : -1}
-              onFocus={() => setFocusedIndex(4)}
+              tabIndex={focusedIndex === 5 ? 0 : -1}
+              onFocus={() => setFocusedIndex(5)}
               onClick={() => onSelectTool?.("text")}
               icon={<Icon icon={Type} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
@@ -541,8 +554,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-haspopup="dialog"
               aria-expanded={isInsertOpen}
               pressed={isInsertOpen}
-              tabIndex={focusedIndex === 5 ? 0 : -1}
-              onFocus={() => setFocusedIndex(5)}
+              tabIndex={focusedIndex === 6 ? 0 : -1}
+              onFocus={() => setFocusedIndex(6)}
               onClick={onToggleInsert}
               icon={<Icon icon={Plus} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
@@ -557,8 +570,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-haspopup="dialog"
               aria-expanded={isAiBoxOpen}
               pressed={isAiBoxOpen}
-              tabIndex={focusedIndex === 6 ? 0 : -1}
-              onFocus={() => setFocusedIndex(6)}
+              tabIndex={focusedIndex === 7 ? 0 : -1}
+              onFocus={() => setFocusedIndex(7)}
               onClick={onToggleAiBox}
               icon={<span className="ll-logo"><LogoMark size={CANVAS_CHROME_SIZES.iconAi} /></span>}
             />
@@ -805,10 +818,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             shortcut={sh.shortcut}
             checked={activeShape === sh.id}
             onClick={() => {
-              if (sh.id !== "pen") {
+              if (sh.id === "pen") {
+                onSelectTool?.("pen");
+              } else {
                 onSelectShape?.(sh.id);
+                onSelectTool?.("shape");
               }
-              onSelectTool?.("shape");
               setIsShapeMenuOpen(false);
             }}
           >

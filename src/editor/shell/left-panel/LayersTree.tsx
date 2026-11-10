@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import React, { useMemo, useRef, useEffect, useLayoutEffect, useState, useCallback } from "react";
 import {
   Frame,
   Type,
@@ -24,7 +24,7 @@ import type { LayerItem, LayerMenuAction } from "./types";
 import { flattenLayers, filterTreeNodes, type FlatLayerNode } from "./treeFilter";
 import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
 import { getMotion, prefersReducedMotion } from "@/editor/motion/feel";
-import { springEase } from "@/editor/motion/ease";
+import { springEase, springAnim } from "@/editor/motion/ease";
 import { Spring } from "@/editor/motion/spring";
 import { simAdd, type Sim } from "@/editor/motion/loop";
 import {
@@ -35,7 +35,6 @@ import {
   CHEVRON_SIZE_PX,
   DRAG_THRESHOLD_PX,
   TOAST_DURATION_MS,
-  HOVER_EXPAND_DELAY_MS,
   LOCK_DROP_OFFSET_PX,
   EYE_BLINK_SCALE_Y,
   BAND_STRETCH_FACTOR,
@@ -159,7 +158,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       return { visibleNodes: propVisibleNodes };
     }
     const all = flattenLayers(layers, expandedSet, selectedSet);
-    return filterTreeNodes(all, searchQuery);
+    return filterTreeNodes(all, searchQuery, { keepCollapsed: true });
   }, [propVisibleNodes, layers, expandedSet, selectedSet, searchQuery]);
 
   // Compute Ancestor IDs for ancestor tint (.anc)
@@ -357,14 +356,41 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     });
   }, [activeId, visibleNodes]);
 
-  // Shared roving keyboard navigation
+  // Shared roving keyboard navigation over visible (non-collapsed) rows
+  const navigableNodes = useMemo(
+    () => visibleNodes.filter((n) => !n.isCollapsed),
+    [visibleNodes]
+  );
+
   const baseKeyNav = useTreeKeyboardNav({
-    visibleNodes,
+    visibleNodes: navigableNodes,
     selectedIds,
     containerRef: treeRef,
     onSelect,
     onToggleExpand,
   });
+
+  // Cascade rows on layer data / page change (matching prototype cascade line 6098 / 11413)
+  useEffect(() => {
+    const tree = treeRef.current;
+    if (!tree || prefersReducedMotion()) return;
+    const p = getMotion().current();
+    const rows = Array.from(tree.querySelectorAll<HTMLElement>(".row:not(.lcl)"));
+    const rs = String(1 - (1 - Number(p.rowScale)) * 0.5);
+
+    rows.slice(0, 16).forEach((r, i) => {
+      springAnim(
+        r,
+        [
+          { opacity: 0, scale: rs, translate: "0 6px" },
+          { opacity: 1, scale: "1", translate: "0 0" },
+        ],
+        p.rows[0],
+        p.rows[1],
+        { delay: Math.min(i, 14) * (p.stagger || 18), fill: "backwards" }
+      );
+    });
+  }, [layers]);
 
   const handleTreeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "F2") {
@@ -421,12 +447,166 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
     [visibleNodes]
   );
 
-  // Chevron click with spring rotation
+  // React rewrites the row className on every fold (adding "lcl" at once, dropping "lan"), which
+  // would hide a collapsing row before its spring runs. Re-assert the animation classes after commit.
+  useLayoutEffect(() => {
+    const tree = treeRef.current;
+    if (!tree) return;
+    tree.querySelectorAll<HTMLElement>(".row").forEach((el) => {
+      const s = el as unknown as { _an?: Animation | null };
+      if (!s._an) return;
+      el.classList.add("lan");
+      el.classList.remove("lcl");
+    });
+  });
+
+  // Chevron click with spring rotation and staggered child rows (matching P lyFold lines 5987-6006)
   const handleChevronClick = (e: React.MouseEvent, id: string, hasKids: boolean) => {
     e.stopPropagation();
     if (!hasKids) return;
 
-    // Chevron rotation is a CSS spring transition on .c driven by [data-open].
+    const tree = treeRef.current;
+    if (!tree) {
+      onToggleExpand?.(id);
+      return;
+    }
+
+    const clickedRow = tree.querySelector<HTMLElement>(`.row[data-sel="${id}"]`);
+    const isCurrentlyOpen = expandedSet.has(id);
+    const willOpen = !isCurrentlyOpen;
+    const p = getMotion().current();
+    const reduced = prefersReducedMotion();
+
+    // 1. Chevron rotation spring
+    const chev = clickedRow?.querySelector<HTMLElement>(".c svg") || clickedRow?.querySelector<HTMLElement>(".c");
+    if (chev && !reduced) {
+      springAnim(
+        chev,
+        [
+          { rotate: willOpen ? "0deg" : "90deg" },
+          { rotate: willOpen ? "90deg" : "0deg" },
+        ],
+        p.pop[0],
+        Math.max(0.42, p.pop[1])
+      );
+    }
+
+    // 2. Identify descendant rows for staggered animation
+    const getDescendants = (rootId: string): FlatLayerNode[] => {
+      const descendants: FlatLayerNode[] = [];
+      const parentIds = new Set<string>([rootId]);
+      for (const node of visibleNodes) {
+        if (node.parentId && parentIds.has(node.parentId)) {
+          descendants.push(node);
+          if (node.hasChildren && (willOpen ? expandedSet.has(node.id) : true)) {
+            parentIds.add(node.id);
+          }
+        }
+      }
+      return descendants;
+    };
+
+    const targetDescendants = getDescendants(id);
+    const rs = String(1 - (1 - Number(p.rowScale)) * 0.5);
+    const bl = `blur(${((1 - Number(p.rowScale)) * 30).toFixed(1)}px)`;
+
+    targetDescendants.forEach((desc, i) => {
+      const rowEl = tree.querySelector<HTMLElement>(`.row[data-sel="${desc.id}"]`);
+      if (!rowEl) return;
+
+      const anyEl = rowEl as unknown as { _an?: Animation | null; _bl?: Animation | null; _lk?: number };
+      const tok = (anyEl._lk = (anyEl._lk || 0) + 1);
+
+      if (anyEl._an) {
+        anyEl._an.cancel();
+        anyEl._an = null;
+      }
+      if (anyEl._bl) {
+        anyEl._bl.cancel();
+        anyEl._bl = null;
+      }
+
+      if (reduced) {
+        rowEl.classList.toggle("lcl", !willOpen);
+        rowEl.classList.remove("lan");
+        return;
+      }
+
+      const d = willOpen
+        ? Math.min(i, 8) * (p.stagger || 18)
+        : Math.min(targetDescendants.length - 1 - i, 6) * (p.stagger || 18) * 0.3;
+
+      rowEl.classList.add("lan");
+      rowEl.style.transformOrigin = "0 50%";
+
+      if (willOpen) {
+        rowEl.classList.remove("lcl");
+        const a = springAnim(
+          rowEl,
+          [
+            { height: "0px", opacity: 0, scale: rs, translate: "0 -8px" },
+            { height: "32px", opacity: desc.hidden ? 0.45 : 1, scale: "1", translate: "0 0" },
+          ],
+          p.rows[0],
+          Math.max(0.6, p.rows[1]),
+          { delay: d, fill: "backwards" }
+        );
+
+        if (Number(p.rowScale) < 1 && rowEl.animate) {
+          anyEl._bl = rowEl.animate(
+            [{ filter: bl }, { filter: "blur(0px)" }],
+            { duration: 200, delay: d, easing: "ease-out", fill: "backwards" }
+          );
+        }
+
+        const end = () => {
+          if (anyEl._lk !== tok) return;
+          anyEl._an = null;
+          rowEl.classList.remove("lan");
+          rowEl.style.transformOrigin = "";
+          if (a) a.cancel();
+          if (anyEl._bl) {
+            anyEl._bl.cancel();
+            anyEl._bl = null;
+          }
+        };
+
+        if (a) {
+          anyEl._an = a;
+          a.onfinish = end;
+        } else {
+          end();
+        }
+      } else {
+        const a = springAnim(
+          rowEl,
+          [
+            { height: "32px", opacity: desc.hidden ? 0.45 : 1, translate: "0 0" },
+            { height: "0px", opacity: 0, translate: "0 -8px" },
+          ],
+          0.22,
+          1,
+          { delay: d, fill: "forwards" }
+        );
+
+        const end = () => {
+          if (anyEl._lk !== tok) return;
+          anyEl._an = null;
+          rowEl.classList.add("lcl");
+          rowEl.classList.remove("lan");
+          rowEl.style.transformOrigin = "";
+          if (a) a.cancel();
+        };
+
+        if (a) {
+          anyEl._an = a;
+          a.onfinish = end;
+        } else {
+          end();
+        }
+      }
+    });
+
     onToggleExpand?.(id);
   };
 
@@ -668,7 +848,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                       : dropPos === "in"
                       ? "ldi"
                       : ""
-                  } ${node.hidden ? "ll:opacity-40" : ""}`}
+                  } ${node.hidden ? "ll:opacity-40" : ""} ${node.isCollapsed ? "lcl" : ""}`}
                 >
                   {/* Chevron: rotated 90deg on expanded, empty 12px span on leaf node */}
                   {node.hasChildren ? (

@@ -185,7 +185,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     >
       {/* 1. Header Column (sticky top-left) */}
       <div className="ll-tlhc ll-tlhh ll:flex ll:items-center ll:pl-4 ll:pr-2 ll:bg-surface-panel ll:text-muted">
-        <span className="ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:tracking-wider">
+        <span className="ll:font-mono ll:text-micro ll:font-micro ll:uppercase">
           {view === "graph" ? "Properties" : "Layers"}
         </span>
       </div>

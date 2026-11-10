@@ -4,6 +4,7 @@
  * palette is removed, so only the approved colors exist as utilities. All values reference tokens from tokens.css.
  */
 @import "./tokens.css";
+@import "./phosphor-hover.css";
 @import "tailwindcss/theme.css" prefix(ll);
 @import "tailwindcss/utilities.css" source(none);
 @source "../**/*.{ts,tsx}";

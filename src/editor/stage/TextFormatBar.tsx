@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { PhosphorIcon } from "@/editor/components/icons/PhosphorIcon";
 import { useMounted } from "@/editor/components/useMounted";
 import { springAnim, cancelAll } from "@/editor/motion/ease";
 import { getActivePreset, prefersReducedMotion } from "@/editor/motion/feel";
@@ -19,80 +20,10 @@ const FORMAT_BAR_POP_OFFSET_Y_PX = 6;
 const FORMAT_BAR_HIDE_DURATION_MS = 110;
 const FORMAT_BAR_GLYPH_SIZE_PX = 14;
 
-// Inline SVG Glyphs conforming to 1.5 stroke-width icon system rules
-const ItalicIcon: React.FC = () => (
-  <svg
-    width={FORMAT_BAR_GLYPH_SIZE_PX}
-    height={FORMAT_BAR_GLYPH_SIZE_PX}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="ll:shrink-0"
-    aria-hidden="true"
-  >
-    <line x1="19" y1="4" x2="10" y2="4" />
-    <line x1="14" y1="20" x2="5" y2="20" />
-    <line x1="15" y1="4" x2="9" y2="20" />
-  </svg>
-);
-
-const UnderlineIcon: React.FC = () => (
-  <svg
-    width={FORMAT_BAR_GLYPH_SIZE_PX}
-    height={FORMAT_BAR_GLYPH_SIZE_PX}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="ll:shrink-0"
-    aria-hidden="true"
-  >
-    <path d="M6 4v6a6 6 0 0 0 12 0V4" />
-    <line x1="4" y1="20" x2="20" y2="20" />
-  </svg>
-);
-
-const StrikeIcon: React.FC = () => (
-  <svg
-    width={FORMAT_BAR_GLYPH_SIZE_PX}
-    height={FORMAT_BAR_GLYPH_SIZE_PX}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="ll:shrink-0"
-    aria-hidden="true"
-  >
-    <path d="M16 4H9a3 3 0 0 0-2.83 4" />
-    <path d="M14 12a4 4 0 0 1 0 8H6" />
-    <line x1="4" y1="12" x2="20" y2="12" />
-  </svg>
-);
-
-const LinkIconSvg: React.FC = () => (
-  <svg
-    width={FORMAT_BAR_GLYPH_SIZE_PX}
-    height={FORMAT_BAR_GLYPH_SIZE_PX}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="ll:shrink-0"
-    aria-hidden="true"
-  >
-    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
-    <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
-  </svg>
-);
+const ItalicIcon: React.FC = () => <PhosphorIcon name="textItalic" size={FORMAT_BAR_GLYPH_SIZE_PX} />;
+const UnderlineIcon: React.FC = () => <PhosphorIcon name="textUnderline" size={FORMAT_BAR_GLYPH_SIZE_PX} />;
+const StrikeIcon: React.FC = () => <PhosphorIcon name="textStrikethrough" size={FORMAT_BAR_GLYPH_SIZE_PX} />;
+const LinkIconSvg: React.FC = () => <PhosphorIcon name="link" size={FORMAT_BAR_GLYPH_SIZE_PX} />;
 
 export interface FormatState {
   bold: boolean;

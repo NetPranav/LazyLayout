@@ -168,8 +168,10 @@ export function animateRetarget(
   element: HTMLElement,
   fromRect: DOMRect,
   toRect: DOMRect,
-  contentElement?: HTMLElement | null
+  contentElement?: HTMLElement | null,
+  options: { blur?: boolean } = {}
 ): Animation | null {
+  const blur = options.blur ?? true;
   const reduced = prefersReducedMotion();
 
   if (reduced) {
@@ -227,8 +229,8 @@ export function animateRetarget(
   if (contentElement && typeof contentElement.animate === "function") {
     contentElement.animate(
       [
-        { opacity: 0, filter: "blur(4px)" },
-        { opacity: 1, filter: "blur(0px)" },
+        blur ? { opacity: 0, filter: "blur(4px)" } : { opacity: 0 },
+        blur ? { opacity: 1, filter: "blur(0px)" } : { opacity: 1 },
       ],
       {
         duration: CROSSFADE_DURATION_MS,

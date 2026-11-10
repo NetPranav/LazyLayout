@@ -2,6 +2,8 @@
 
 import React from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
+import { PhosphorIcon } from "./icons/PhosphorIcon";
+import { LUCIDE_TO_PHOSPHOR } from "./icons/phosphorMap";
 
 /**
  * Dedicated Multi-layer glyph matching prototype P (<symbol id="multi"> line 1615):
@@ -57,20 +59,45 @@ export interface IconProps extends Omit<LucideProps, "ref" | "icon"> {
   glyph?: React.ReactNode;
 }
 
+const warned = new Set<string>();
+
+function nameOf(icon: unknown): string {
+  const c = icon as { displayName?: string; name?: string };
+  return c.displayName || c.name || "";
+}
+
 /**
- * Shared Lucide & Custom SVG Icon wrapper enforcing single 1.5 stroke-width across Lazy Layout.
- * Supports Lucide icons, custom forwardRef SVG components, named registry glyphs, and ReactNode glyphs.
+ * Shared icon wrapper. Every icon renders as Phosphor Light: the passed component (a lucide icon or a local
+ * forwardRef glyph) is looked up by displayName in LUCIDE_TO_PHOSPHOR, so call sites keep their imports.
+ * An unmapped component falls back to its own glyph and logs a warning in development.
+ * Also supports named registry glyphs and ReactNode glyphs.
  */
 export const Icon: React.FC<IconProps> = ({
   icon,
   glyph,
   size = 16,
   strokeWidth = 1.5,
+  absoluteStrokeWidth: _absoluteStrokeWidth,
   className = "",
   ...props
 }) => {
   if (glyph) {
     return <span className={`ll:inline-flex ll:items-center ll:justify-center ll:shrink-0 ${className}`}>{glyph}</span>;
+  }
+
+  const resolved = typeof icon === "string" ? ICON_REGISTRY[icon] : icon;
+  if (resolved) {
+    const mapped = LUCIDE_TO_PHOSPHOR[nameOf(resolved)];
+    if (mapped) {
+      return <PhosphorIcon {...(props as React.SVGProps<SVGSVGElement>)} name={mapped.name} flipX={mapped.flipX} size={size} className={className} />;
+    }
+    if (process.env.NODE_ENV !== "production") {
+      const key = nameOf(resolved) || "(anonymous)";
+      if (!warned.has(key)) {
+        warned.add(key);
+        console.warn(`[Icon] unmapped icon "${key}": add it to icons/phosphorMap.ts`);
+      }
+    }
   }
 
   if (typeof icon === "string") {

@@ -1,0 +1,29 @@
+/* Position section Phosphor trial: hover motion per icon kind. Transform only, uses existing motion tokens. */
+.ll-pi {
+  display: inline-flex;
+  transition: transform var(--ll-dur-pop) var(--ll-ease-pop);
+}
+.ll-pi-host:hover .ll-pi--rotate { transform: rotate(45deg); }
+.ll-pi-host:hover .ll-pi--left { transform: translateX(-2px); }
+.ll-pi-host:hover .ll-pi--right { transform: translateX(2px); }
+.ll-pi-host:hover .ll-pi--up { transform: translateY(-2px); }
+.ll-pi-host:hover .ll-pi--down { transform: translateY(2px); }
+.ll-pi-host:hover .ll-pi--spread-h { transform: scaleX(1.12); }
+.ll-pi-host:hover .ll-pi--spread-v { transform: scaleY(1.12); }
+.ll-pi-host:hover .ll-pi--lift { transform: translateY(-1px) scale(1.08); }
+@media (prefers-reduced-motion: reduce) {
+  .ll-pi { transition: none; }
+  .ll-pi-host:hover .ll-pi { transform: none; }
+}
+
+/* Generic icon-only button hover: the glyph grows 6%. Transform only, existing motion tokens. */
+.ll-ib > svg {
+  transition: transform var(--ll-dur-pop) var(--ll-ease-pop);
+}
+.ll-ib:not(:disabled):hover > svg {
+  transform: scale(1.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ll-ib > svg { transition: none; }
+  .ll-ib:not(:disabled):hover > svg { transform: none; }
+}
