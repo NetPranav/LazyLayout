@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useSyncExternalStore } from "react";
 import {
   ChevronLeft,
   Search,
@@ -53,6 +53,7 @@ import {
   AlignEndHorizontal,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { LogoMark } from "./LogoMark";
@@ -61,6 +62,7 @@ import { ShipPopover, type ShipIssue } from "./ShipPopover";
 import type { CollabUser } from "./AvatarStack";
 import { Menu, MenuItem, SubMenu, MenuSeparator, MenuHeading, ThemeSwatch } from "./Menu";
 import { useTheme, type Theme } from "./ThemeToggle";
+import { isUserMotionOff, setUserMotionOff, subscribeUserMotionOff } from "../motion/reducedMotion";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 import { invokeCommand } from "@/core/commands";
@@ -251,6 +253,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   // Theme integration
   const [theme, selectTheme] = useTheme();
+  const animationsOff = useSyncExternalStore(subscribeUserMotionOff, isUserMotionOff, () => false);
 
   const handleOpenSearch = useCallback(() => {
     if (onSearch) {
@@ -547,6 +550,15 @@ export const TopBar: React.FC<TopBarProps> = ({
             <MenuHeading>Dark</MenuHeading>
             {DARK_THEMES.map((id) => themeEntry(id))}
           </SubMenu>
+
+          <MenuItem
+            role="menuitemcheckbox"
+            icon={<Icon icon={Zap} size={MENU_ICON_SIZE} />}
+            checked={animationsOff}
+            onClick={() => setUserMotionOff(!animationsOff)}
+          >
+            Disable animations
+          </MenuItem>
 
           {entry("app.settings", "Settings", Settings, "Ctrl+,", undefined, undefined, true, "Settings panel coming in Phase 45")}
 

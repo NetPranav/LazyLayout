@@ -1,5 +1,7 @@
 // Spring engine presets and constants ported from Nook (the owner's own product) & prototype
 
+import { isUserMotionOff } from "./reducedMotion";
+
 export type MotionPresetKey = "smooth" | "lively" | "bouncy";
 
 export interface MotionPreset {
@@ -140,7 +142,10 @@ export const MENU_FALLBACKS = {
   menuWidthDefault: 200,      // --ll-size-menu-w
   menuWidthContext: 248,      // --ll-size-menu-ctx-w
   menuWidthWide: 320,         // --ll-size-menu-wide-w
-  reducedMotionDuration: 120, // MOT / reduced motion standard
+  /** MOT / reduced motion standard (120 ms fade); 0 when the user disabled animations. */
+  get reducedMotionDuration(): number {
+    return isUserMotionOff() ? 0 : 120;
+  },
   defaultMenuHeight: 240,
   seedDefault: { w: 32, h: 32 },
   seedPointer: { w: 16, h: 16 },

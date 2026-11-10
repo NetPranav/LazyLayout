@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useSyncExternalStore } from "react";
 import { Palette } from "lucide-react";
+import { isMotionOff } from "../motion/reducedMotion";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { Tooltip } from "./Tooltip";
@@ -127,7 +128,7 @@ export function applyTheme(nextTheme: Theme): void {
   if (typeof document !== "undefined") {
     const root = document.documentElement;
     const commit = () => root.setAttribute("data-theme", nextTheme);
-    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = isMotionOff();
     const withTransition = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
     if (withTransition && !reduced && root.getAttribute("data-theme") !== nextTheme) {
       // The whole screen cross-fades from the old theme to the new one (styled in tokens.css).
