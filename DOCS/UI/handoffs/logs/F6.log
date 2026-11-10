@@ -1,0 +1,36 @@
+I have completed **Task F6: Menu & Popover Retargeting** according to all specifications and constraints in `DOCS/UI/tasks/2026-11-08-F6-menu-retarget.md`.
+
+### Phase 1: Audit
+- Conducted an exhaustive audit of `DOCS/UI/design/editor-design-mode-blocks-dark.html` (P) covering all 17 overlay/dropdown/menu families, trigger sources, placements, spring parameters, line numbers, crossfade durations, same-family retarget rules, and inter-family exclusion rules.
+- Documented in [`DOCS/UI/handoffs/2026-11-08-menu-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-menu-audit.md).
+
+### Phase 2: Implementation
+- **Tokens**: Added `/* === lane: F6 menus === */` in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css) (`--ll-retarget-crossfade-ms: 160ms`, `--ll-retarget-blur: 4px`) and theme utility mapping in [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+- **Retarget Coordinator**: Created [`src/editor/components/retarget.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/retarget.ts):
+  - Manages active overlay registry and inter-family exclusion (opening a trigger of another family closes the active overlay cleanly).
+  - Detects same-family handoffs via `getFamilyHandoff`, silently closing outgoing siblings without duplicate exit animations and transferring geometry.
+  - Spring-assisted morphing (`glideW` / `glideH` presets) with 160ms 4px blur-crossfade.
+  - Fallback to 120ms opacity crossfade on `prefers-reduced-motion`.
+- **Component Integrations**:
+  - [`Menu.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Menu.tsx): In-place anchor retargeting with continuous momentum preservation matching P lines 3196–3308, and `swapIn` directional row stagger.
+  - [`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx): Same-family retargeting across inspector sections with content blur-crossfade matching P lines 2433–2436.
+  - [`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx): Swatch-to-swatch gliding and sibling handoffs.
+  - [`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx), [`Popover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Popover.tsx), [`Select.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Select.tsx), [`ShipPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ShipPopover.tsx), [`EasingPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/EasingPopover.tsx), [`PageSelector.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/left-panel/PageSelector.tsx).
+  - Inspector details [`FillSection.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/FillSection.tsx) & [`PageSection.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/PageSection.tsx): Swatches share a single active ColorPicker instance for seamless in-place gliding.
+- **Design System Demos**: Created [`src/editor/design-system/demos/F6Demos.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/F6Demos.tsx) demonstrating top-bar menu swap, options popover swap, color swatch gliding, and select dropdown morphing.
+
+### Verification & Artifacts
+- **TypeScript Check**: `npx tsc --noEmit` passed with 0 errors in all lane files.
+- **Playwright Headless Screenshots**: Captured in Warm & Darkroom at 1440px viewport, including 6-frame progressive transition strips (`t = 0ms` to `t = 300ms`) and side-by-side App vs P comparisons in [`DOCS/UI/handoffs/screenshots/f6/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f6/):
+  - `strip-menu-app-warm.png` / `strip-menu-app-darkroom.png` vs P
+  - `strip-options-app-warm.png` / `strip-options-app-darkroom.png` vs P
+  - `strip-colorpicker-app-warm.png` / `strip-colorpicker-app-darkroom.png` vs P
+  - `compare-menu-warm.png` / `compare-menu-darkroom.png`
+  - `compare-options-warm.png` / `compare-options-darkroom.png`
+  - `compare-colorpicker-warm.png` / `compare-colorpicker-darkroom.png`
+  - `editor-warm-1440-overview.png` / `editor-darkroom-1440-overview.png`
+- **Documentation**:
+  - Handoff file created at [`DOCS/UI/handoffs/2026-11-08-0855-F6.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0855-F6.md).
+  - Logged all architectural choices in [`DOCS/UI/DECISIONS.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/DECISIONS.md).
+  - Updated parity row in [`DOCS/UI/PARITY.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/PARITY.md).
+- No commits or pushes performed (ready for Claude's review).

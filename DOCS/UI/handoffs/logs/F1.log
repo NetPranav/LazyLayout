@@ -1,0 +1,39 @@
+root agent idle; waiting for 2 background task(s) to finish
+Capturing Playwright screenshots for ColorPicker, Theme & Tokens, OptionsPopover, and FramePresetsPanel across Warm and Darkroom themes side-by-side with the prototype...
+Capturing all screenshots across Darkroom and Warm themes...
+Capturing all screenshots across Darkroom and Warm themes...
+Re-capturing final screenshots across all themes...
+Completed **F1: Pickers & Options Polish** per [`DOCS/UI/tasks/2026-11-08-F1-pickers-options-polish.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-F1-pickers-options-polish.md).
+
+### Summary of Polish
+
+1. **ColorPicker ([`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx)):**
+   - **Mode Tabs:** 24px segmented control with sliding highlight tile (`useSlidingIndicator`), 500 font weight, muted when unselected.
+   - **Model Select:** Custom 84px × 28px hairline outline dropdown replacing the boxy select.
+   - **Inputs:** `#` hex and `A %` fields styled to 28px hairline outline with prefixes inside the fields.
+   - **Thumb & Sliders:** Saturation/brightness thumb is a 14px circular ring with dual shadows; hue and opacity sliders are 12px height with 6px × 18px thumbs and panel shadows.
+   - **Swatches:** 10-column spaced grid with `--ll-swatch-line` hairline borders and dashed add button.
+   - **Surface:** Solid neutral `--ll-surface-raised` background (strictly banning glass/translucency).
+
+2. **Every "More Options" Popover ([`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx) & [`RowSettingsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/controls/RowSettingsPopover.tsx)):**
+   - **Header:** 36px high (`h-9`), sans 11px/500 muted title, 24px close button.
+   - **Body:** `12px 16px 16px` padding (`px-4 pt-3 pb-4`).
+   - **Rows & Dividers:** 72px label column (`.ll-dlbl`) | field (`.ll-dtc`); hairline group dividers (`.ll-dmg`).
+   - **Visibility:** Added `.ll-open` state class matching `animations.css` specifications.
+
+3. **Theme & Tokens ([`PageSection.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/PageSection.tsx)):**
+   - Eliminated nested boxy frames and heavy outlines.
+   - Token rows unified to P's 2-column `.ll-drow` (`.ll-dpair` swatch + `#` field | `.ll-dsub` label).
+   - Default radius unified to 28px `NumberField` (with corner radius icon prefix) in a 2-column grid.
+   - Font, Scale, and Shadow selects unified to 28px hairline fields with internal prefix labels and prefix indent classes (`.ll-has-prefix-8`, `.ll-has-prefix-10`, `.ll-has-prefix-14`).
+
+4. **FontPicker & FramePresetsPanel ([`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx), [`FramePresetsPanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsPanel.tsx)):**
+   - FontPicker: Added category tabs sliding highlight and 28px mono search input.
+   - FramePresetsPanel: 44px header with portrait/landscape toggles, 40px search, 28px custom inputs (W, H) with internal prefixes and ratio lock, proportional glyphs matching P line 655, and solid neutral surfaces.
+
+### Verification & Artifacts
+- **Handoff Document:** [`DOCS/UI/handoffs/2026-11-08-0735-F1.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0735-F1.md)
+- **Decisions Log:** [`DOCS/UI/DECISIONS.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/DECISIONS.md)
+- **Parity Table:** [`DOCS/UI/PARITY.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/PARITY.md)
+- **Playwright Comparison Screenshots:** Saved in [`DOCS/UI/handoffs/screenshots/f1/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f1/) across Warm and Darkroom themes side-by-side with prototype P.
+- **Git State:** No files outside lane touched; no commits or pushes made.

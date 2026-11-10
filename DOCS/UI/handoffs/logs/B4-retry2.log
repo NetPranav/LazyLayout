@@ -1,0 +1,26 @@
+Completed the **Retry 2** section of [DOCS/UI/tasks/2026-11-08-B4-canvas.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-B4-canvas.md).
+
+### Summary of Changes
+
+1. **[`CanvasCursor.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/CanvasCursor.tsx)**
+   - Replaced pointer loop `mloop` rAF loop with `defaultHost.register(mloop)` from [`src/editor/motion/loop.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion/loop.ts).
+   - `dt` is derived from `info.dt` (clamped between `0.001` and `0.032`).
+   - Unregisters when physics settles at rest and on `mclear()`.
+   - `update` scheduling converted to a one-shot `defaultHost.register` that unregisters itself before invoking `update()`.
+   - Cleanup on unmount unregisters both `unregisterSched` and `unregisterMloop`.
+
+2. **[`TextFormatBar.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/TextFormatBar.tsx)**
+   - Replaced raw `requestAnimationFrame(checkSelection)` on `selectionchange`/`resize` with a coalesced `defaultHost.register` task that unregisters itself and cleans up on unmount.
+   - Added `FORMAT_BAR_GLYPH_SIZE_PX = 14` constant for the inline SVG glyphs.
+   - Dropped bare `ftxb`, `ib`, and `ftxs` classes in favor of `ll-ftxb`, `ll-ib`, and `ll-ftxs`.
+
+3. **[`stage.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/stage.css)**
+   - Updated selectors to target `.ll-ftxb .ll-ib b` and `.ll-ftxb .ll-ftxs` (while retaining `.ib` and `.ftxs` for backward compatibility).
+
+4. **[`DOCS/UI/handoffs/2026-11-08-0700-B4.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0700-B4.md)**
+   - Removed the raw rAF item under "Not done".
+   - Documented the Retry 2 motion loop changes and verification results.
+
+### Verification
+- **`npx tsc --noEmit`**: Clean pass across all lane files (only the pre-existing generated `.next/types/validator.ts` error outside our lane remains).
+- **Headless Playwright Verification**: Confirmed that `#ll-cur` continues following the mouse cursor across the stage viewport and that `[data-testid="text-format-bar"]` appears directly above selected text ranges. No commits made.

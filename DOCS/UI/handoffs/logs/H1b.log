@@ -1,0 +1,4 @@
+root agent idle; waiting for 1 background task(s) to finish
+I have initiated the baseline TypeScript check and am waiting for it to complete.
+I will wait for the task to finish.
+Waiting for baseline `tsc` check to finish.

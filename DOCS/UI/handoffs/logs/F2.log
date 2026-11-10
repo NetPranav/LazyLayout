@@ -1,0 +1,26 @@
+I have completed the task specified in [`DOCS/UI/tasks/2026-11-08-F2-timeline-playhead.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-F2-timeline-playhead.md) strictly within the permitted Lane boundaries.
+
+### Summary of Changes
+1. **Playhead Geometry & Styling**:
+   - Added token definitions in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css#L1795-L1805) and [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css#L362-L372) inside the `B7 motion` lane: knob dimensions (`11x12px`), position (`top: 9px`, `left: -5px`), and radius (`1px`).
+   - In [`TimelinePlayhead.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePlayhead.tsx), styled the needle (1px) and knob with `--ll-control-primary-bg` (matching prototype `.phl` / `var(--ctl)`), removed box shadow, updated work area dimming overlay to `top-8` (32px) and `surface-panel/60`, and wired label collision hiding (`.ll-tkl.ll-hid`) under the playhead.
+2. **DOM Hierarchy & Scroller Parity**:
+   - In [`TimelinePanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePanel.tsx), restructured the scroller DOM so the tracks scroller [`.ll-tls`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePanel.tsx#L388) and playhead overlay [`.ll-tlhd`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePlayhead.tsx#L130-L135) are direct siblings inside `.ll-tl`. Vertical scrolling of tracks no longer scrolls the playhead knob out of view.
+   - Implemented playback auto-scroll when zoomed (`zoom > 1`), automatically panning `t0` when the playhead approaches lane boundaries.
+   - Connected ruler snapping to trigger the snap flash line (`.ll-snl-on`) for 600ms.
+3. **Motion Spring Glide vs Instant Scrub**:
+   - In [`store.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion-model/store.ts), added `playheadGlide: boolean` and `seek(t, glide)`.
+   - In [`TimelineRuler.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineRuler.tsx) and [`TimelinePlayhead.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePlayhead.tsx), click-to-seek, marker clicks, `stepFrame`, `jumpKey`, and `Home`/`End` glide smoothly with spring simulation (`Spring` with `mo().hl`), while drag-scrubbing tracks instantaneously with pointer movements.
+4. **Keyframe Diamonds & Multi-Drag**:
+   - In [`TimelineLane.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineLane.tsx#L830-L875), unselected keyframes render at 9x9px with `var(--ll-text-secondary)`, while selected keyframes render at 11x11px with `var(--ll-control-primary-bg)` and double-ring `box-shadow: 0 0 0 2px var(--ll-surface-panel), 0 0 0 3px var(--ll-control-primary-bg)`.
+   - Implemented multi-keyframe drag with relative offset preservation and bounds clamping.
+   - Implemented marquee box selection (`.mq`) across property lanes.
+5. **Footer Parity**:
+   - Added `id="tmp"` to the mini-map playhead indicator line in [`TimelineFooter.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineFooter.tsx#L230).
+
+### Deliverables
+- **Screenshots**: Before and after headless Playwright screenshots captured for App vs Prototype across Warm and Darkroom themes at 1440, 1024, and 390 viewports in [`DOCS/UI/handoffs/screenshots/f2/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f2/).
+- **TypeScript**: 0 errors in lane files (`npx tsc --noEmit`).
+- **Decisions Log**: Decision entry logged in [`DOCS/UI/DECISIONS.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/DECISIONS.md).
+- **Handoff Document**: Written in [`DOCS/UI/handoffs/2026-11-08-0715-F2.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0715-F2.md).
+- **Git**: Working tree left uncommitted per instructions.

@@ -1,0 +1,25 @@
+root agent idle; waiting for 1 background task(s) to finish
+I have launched the comprehensive Playwright screenshot and frame-by-frame comparison suite across viewports (1440, 1024, 390), themes (Warm, Darkroom), and interaction states (Design, Motion, Code, Narrow Lift, and Spotlight open/close strips). The task is currently running in the background.
+The task **F3: toolbar placement and toolbar-to-Spotlight morph transition** is complete.
+
+### What Was Done
+1. **Toolbar Placement & Narrow Lift:**
+   - Fixed host element lookup in [`Toolbar.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Toolbar.tsx) using `closest('[data-center="true"], #center, main')` instead of `parentElement` (which was `display: contents` and returned 0 width).
+   - Real-time `ResizeObserver` on host ensures the toolbar stays centered on the visible canvas when side panels open, close, or resize.
+   - Sits strictly at `bottom: 16px` across Design, Motion (16px above timeline panel), and Code (16px above code panel) modes.
+   - Accurately lifts to `bottom: 72px` above the zoom bar when canvas is narrow (`(cw + bw) / 2 > cw - zw - 32`), verified at 1024 and 390 viewports matching prototype P.
+
+2. **Unified Toolbar <-> Spotlight Morph Transition:**
+   - Eliminated the separate floating toolbar container in [`Spotlight.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Spotlight.tsx), eliminating the double toolbar bug.
+   - The toolbar `#tools` element itself morphs and springs to 560px (or `host.clientWidth - 32px`), tool buttons fade and blur out with stagger, and the search field `.sp-fld` is portaled into `#tools`.
+   - Results panel `.ll-sp-res` grows upward out of `#tools` (`bottom: baseBottom + bar.offsetHeight + 8`) with staggered row entrance on `preset.rows`.
+   - Reverse transition on Esc or outside click springs the toolbar back to its natural width on `[0.3, 1]`, blurs tool buttons back in on `preset.pop`, and slides the zoom bar back in.
+   - Fully interruptible mid-open closing; respects `prefers-reduced-motion` with 120ms opacity fade.
+
+3. **Per-Mode Toolbar Switch Morph:**
+   - Swapping between Design, Motion, and Code modes clones previous buttons into `.tbghost.ll-tbghost`, fades them out with 130ms blur, springs toolbar width `w0 -> w1` on `preset.shape`, and pops in new buttons with stagger on `preset.pop`.
+
+4. **Verification & Deliverables:**
+   - `npx tsc --noEmit` verified: **0 errors** in own lane files.
+   - Full Playwright screenshot suite executed with headless Chromium: 72 screenshots captured in [`DOCS/UI/handoffs/screenshots/f3/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f3/) comparing App vs P across Warm and Darkroom themes at 1440, 1024, and 390 viewports, plus 6-frame strips of open and close transitions for both App and P.
+   - Handoff doc created: [`DOCS/UI/handoffs/2026-11-08-0715-F3.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0715-F3.md). No files committed or pushed.

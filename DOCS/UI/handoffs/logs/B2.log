@@ -1,0 +1,33 @@
+root agent idle; waiting for 1 background task(s) to finish
+I have started taking the headless Playwright screenshots for lane B2 across all required viewports (1440, 1024, 390) and themes (Warm, Darkroom) side by side with the prototype. Waiting for the screenshots task to complete.
+Completed **Task B2: left panel (Layers rows, search, page selector)** strictly touching only paths in the B2 lane.
+
+### Summary of Work
+1. **Layers Tree (`src/editor/shell/left-panel/LayersTree.tsx`)**:
+   - **Sliding Selection Band**: Real spring physics simulation (`Spring(0, preset.hl)`) driving ONE absolute `.lyhl.sel` band with velocity-dependent vertical stretch (`scaleY`) along travel; `.lyb1` on `#p-layers` renders single-selected row transparent so only the sliding band is visible.
+   - **Hover Band**: `.lyhl.hov` follows pointer over rows using spring simulation.
+   - **Ancestor Tint**: Ancestors of selected layers receive the `.anc` class with `color-mix(in srgb, var(--ll-sel) 35%, transparent)`.
+   - **Folding Chevrons & Children**: Spring rotation on chevron (`mo().pop`), and children fold/unfold with staggered spring animation (`mo().rows`).
+   - **Drag Lift / Part / Drop**: Dragged row receives `.ldrag`, surrounding rows part on springs (`mo().flip`), `.lyline` drop line indicates insertion position, target frame receives `.ldi` on hover, and rows support `ldb`/`lda`/`ldi`.
+   - **Micro-interactions**: Eye vertical blink spring (`scaleY(0.15)`), Lock drop spring (`translateY(-5px)`), and Rename commit pop spring.
+   - **List End Bump**: Bumps `#p-layers` on spring `--lyb` (`.lybm`) when scrolling/wheeling at boundaries.
+   - **Edge Blur**: Subtle top/bottom edge blur mask (`.ll-list-edge-blur`) with no bulge.
+
+2. **Search (`src/editor/shell/left-panel/LeftPanelHeader.tsx`)**:
+   - Bouncy WAAPI morph transition from `#lsearchbtn` into full-width field matching prototype `openSearch(o)` (fade under reduced motion).
+   - Calm field with clear button (`&times;`), match count (`#lscount`), and highlighted matched letters in layer names (`.nm .hit`).
+
+3. **Page Selector (`src/editor/shell/left-panel/PageSelector.tsx`)**:
+   - Replaced dependency on `PageSwitcher.tsx` with a dedicated `PageSelector` matching P.
+   - 32px menu rows, checkmark `.llp-ck` on active page, route tooltip, "..." row actions flyout (`.llp-fly`: Rename, Duplicate, Delete), search filtering, and New page row.
+   - Inline page renaming and full binding to `usePagesData()`.
+   - Registered `window.LLPages` for prototype parity.
+
+4. **Tokens & Demos**:
+   - CSS rules added strictly inside `/* === lane: B2 layers === */` in `src/editor/styles/tokens.css`.
+   - Added `src/editor/design-system/demos/B2Demos.tsx` covering all states.
+
+### Verification & Checks
+- **Typecheck**: `npx tsc --noEmit` passed with 0 errors across all B2 lane files (`src/editor/shell/left-panel/**`, `src/editor/panels/layers/**`, `B2Demos.tsx`, `tokens.css`). Errors in other parallel lanes were recorded in the handoff.
+- **Screenshots**: Captured headless Playwright screenshots at 1440, 1024, and 390 wide in Warm and Darkroom, side by side with Prototype P, in `DOCS/UI/handoffs/screenshots/b2/`.
+- **Handoff**: Created `DOCS/UI/handoffs/2026-11-08-0615-b2.md` and `DOCS/UI/handoffs/2026-11-08-b2.md`.
