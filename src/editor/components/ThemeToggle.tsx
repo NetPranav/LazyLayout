@@ -30,9 +30,9 @@ export const LIGHT_THEMES: readonly ThemeOption[] = [
 ];
 
 export const DARK_THEMES: readonly ThemeOption[] = [
-  { id: "darkroom", label: "Darkroom (Default)" },
+  { id: "darkroom", label: "Darkroom" },
   { id: "dark", label: "Dark" },
-  { id: "graphite", label: "Graphite" },
+  { id: "graphite", label: "Graphite (Default)" },
   { id: "noir", label: "Noir" },
 ];
 
@@ -73,10 +73,10 @@ export function getClientTheme(): Theme {
   if (typeof document !== "undefined") {
     let attr = document.documentElement.getAttribute("data-theme");
     if (attr === "plum") {
-      document.documentElement.setAttribute("data-theme", "darkroom");
-      attr = "darkroom";
+      document.documentElement.setAttribute("data-theme", "graphite");
+      attr = "graphite";
       try {
-        localStorage.setItem("lazy-layout-theme", "darkroom");
+        localStorage.setItem("lazy-layout-theme", "graphite");
       } catch {
         // ignore
       }
@@ -88,8 +88,8 @@ export function getClientTheme(): Theme {
     try {
       let stored = localStorage.getItem("lazy-layout-theme");
       if (stored === "plum") {
-        stored = "darkroom";
-        localStorage.setItem("lazy-layout-theme", "darkroom");
+        stored = "graphite";
+        localStorage.setItem("lazy-layout-theme", "graphite");
       }
       if (stored && VALID_THEMES.has(stored)) {
         cachedTheme = stored as Theme;
@@ -108,24 +108,33 @@ export function getServerTheme(): Theme {
   return "warm";
 }
 
-/** Toggle between default light (Warm) and default dark (Darkroom). */
+/** Toggle between default light (Warm) and default dark (Graphite). */
 export function toggleTheme(): void {
   const current = getClientTheme();
   const isDark = current === "dark" || current === "graphite" || current === "darkroom" || current === "noir";
-  applyTheme(isDark ? "warm" : "darkroom");
+  applyTheme(isDark ? "warm" : "graphite");
 }
 
 /** Set and persist active theme across DOM, localStorage, and listeners. */
 export function applyTheme(nextTheme: Theme): void {
   if ((nextTheme as string) === "plum") {
-    nextTheme = "darkroom";
+    nextTheme = "graphite";
   }
   if (!VALID_THEMES.has(nextTheme)) {
     nextTheme = "warm";
   }
   cachedTheme = nextTheme;
   if (typeof document !== "undefined") {
-    document.documentElement.setAttribute("data-theme", nextTheme);
+    const root = document.documentElement;
+    const commit = () => root.setAttribute("data-theme", nextTheme);
+    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const withTransition = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
+    if (withTransition && !reduced && root.getAttribute("data-theme") !== nextTheme) {
+      // The whole screen cross-fades from the old theme to the new one (styled in tokens.css).
+      withTransition.call(document, commit);
+    } else {
+      commit();
+    }
   }
   try {
     localStorage.setItem("lazy-layout-theme", nextTheme);
@@ -169,7 +178,7 @@ if (typeof window !== "undefined") {
   }
 }
 
-/** React hook for theme with useSyncExternalStore and server snapshot ('paper'). */
+/** React hook for theme with useSyncExternalStore and server snapshot ('warm'). */
 export function useTheme(): [Theme, (nextTheme: Theme) => void] {
   const theme = useSyncExternalStore(subscribeTheme, getClientTheme, getServerTheme);
   return [theme, applyTheme];

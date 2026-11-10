@@ -1882,7 +1882,8 @@ svg {
 [data-theme="darkroom"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.6); }
 [data-theme="noir"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.7); }
 [data-theme="white"] { --ll-optpop-shadow: 0 4px 16px rgba(0,0,0,.12); }
-.ll-optpop { box-shadow: var(--ll-optpop-shadow); }
+/* Flat by user request (2026-11-10): hairline border only, no shadow. */
+.ll-optpop { box-shadow: none; }
 /* The prototype stacks groups in a column with an 8px gap, plus the 8px group margin. */
 .ll-optpop .ll-dmg + .ll-dmg { margin-top: calc(var(--ll-spacing-2) * 2); }
 /* ===== end inspector options popover surface ===== */
@@ -2351,3 +2352,17 @@ svg {
   box-shadow: var(--ll-optpop-shadow);
 }
 /* ===== end Colour picker, row settings popover, dropdown list and menu surfaces ===== */
+
+/* Dropdown fields (Select triggers) are flat: the list surface's shadow must not reach the trigger that shares its .ll-dd class. */
+.ll-dfield.ll-dd { box-shadow: none !important; }
+
+/* ===== Theme switch: a soft cross-fade of the whole screen (ThemeToggle.tsx uses the View Transitions API). Off under reduced motion. ===== */
+:root { --ll-dur-theme: 320ms; --ll-ease-theme: cubic-bezier(0.4, 0, 0.2, 1); }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--ll-dur-theme);
+  animation-timing-function: var(--ll-ease-theme);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

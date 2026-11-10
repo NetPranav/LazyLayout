@@ -218,7 +218,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [themePickerOpen, setThemePickerOpen] = useState(false);
 
   const handleThemeToggle = useCallback(() => {
-    selectTheme(isDark ? "paper" : "noir");
+    selectTheme(isDark ? "warm" : "graphite");
   }, [isDark, selectTheme]);
 
   const handleOpenSearch = useCallback(() => {
