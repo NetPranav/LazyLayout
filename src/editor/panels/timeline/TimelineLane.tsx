@@ -466,6 +466,14 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
         .tlrow:hover .act .ib.add { display: flex; }
         .tlhc .act .ib { opacity: 0.5; }
         .tlrow:hover .act .ib, .tlhc:focus-within .act .ib, .tlrow.on .act .ib, .tlrow[data-on] .act .ib, .tlhc .act .ib[aria-pressed="true"] { opacity: 1; }
+        .tlln { isolation: isolate; }
+        .tlln::before { content: ""; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(to right, var(--ll-border-color) 1px, transparent 1px); background-size: var(--gp) 100%; background-position: var(--go) 0; opacity: 0.5; pointer-events: none; }
+        .tlln::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--ll-select-bg); opacity: 0; pointer-events: none; }
+        .tlgrp.on .tlrow .tlln::after { opacity: 0.55; }
+        .tlgrp.open > .tlrow:not(:last-child) { border-bottom-color: color-mix(in srgb, var(--ll-border-color) 45%, transparent); }
+        .clip { background: var(--lt); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lc) 50%, transparent); }
+        .clip.on { background: color-mix(in srgb, var(--lc) 30%, var(--lt)); box-shadow: none; outline: 1px solid var(--ll-text-primary); outline-offset: 0; }
+        .clip .cn { max-width: calc(100% - 16px); }
         .ch::after { content: ""; position: absolute; left: 3px; top: 4px; bottom: 4px; width: 2px; background: var(--ll-text-primary, var(--text)); opacity: 0; transition: opacity 0.12s; border-radius: 1px; }
         .ch.r::after { left: auto; right: 3px; }
         .clip:hover .ch::after { opacity: 0.6; }
@@ -529,7 +537,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                 motionActions.toggleLayerOpen(layer.id);
               }
             }}
-            className="ib tlch ll:w-5 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:text-muted ll:hover:text-primary ll:transition-colors"
+            className="ib tlch ll:w-5 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:transition-colors"
           >
             <Icon
               icon={(isGroup ? layer.gopen : layer.open) ? ChevronDown : ChevronRight}
@@ -570,7 +578,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                     layerId: layer.id,
                   });
                 }}
-                className="ib add ll:w-6 ll:h-6 ll:items-center ll:justify-center ll:rounded-xs ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+                className="ib add ll:w-6 ll:h-6 ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
               >
                 <Icon icon={Plus} size={14} />
               </button>
@@ -583,7 +591,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               aria-pressed={layer.mute}
               onClick={() => motionActions.toggleLayerMute(layer.id)}
               title={layer.mute ? "Unmute animation" : "Mute animation"}
-              className={`ib ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
+              className={`ib ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
                 layer.mute
                   ? "ll:text-control-active"
                   : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -599,7 +607,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               aria-pressed={layer.lock}
               onClick={() => motionActions.toggleLayerLock(layer.id)}
               title={layer.lock ? "Unlock" : "Lock"}
-              className={`ib ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
+              className={`ib ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
                 layer.lock
                   ? "ll:text-control-active"
                   : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -615,7 +623,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               aria-pressed={layer.solo}
               onClick={() => motionActions.toggleLayerSolo(layer.id)}
               title="Solo"
-              className={`ib s ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:font-mono ll:text-micro ll:font-title ll:transition-colors ${
+              className={`ib s ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:font-mono ll:text-micro ll:font-title ll:transition-colors ${
                 layer.solo
                   ? "ll:text-control-active"
                   : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
@@ -653,8 +661,6 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               style={{
                 left: `${X(minStart, pps, t0, 24, fps)}px`,
                 width: `${Math.max(6, X(maxEnd, pps, t0, 24, fps) - X(minStart, pps, t0, 24, fps))}px`,
-                backgroundColor: `var(--ll-label-${labelNum}-tint)`,
-                boxShadow: `inset 0 0 0 1px var(--ll-label-${labelNum})`,
               }}
               className={`clip grp ${isSelected ? "on" : ""} ll-clip ll-grp ll:absolute ll:top-1 ll:bottom-1 ll:rounded-sm ll:overflow-hidden ll:cursor-default`}
             >
@@ -664,14 +670,14 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   style={{
                     left: `${X(k.t, pps, t0, 24, fps) - X(minStart, pps, t0, 24, fps)}px`,
                   }}
-                  className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.5 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
+                  className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.25 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
                 />
               ))}
               <span
-                className="cn ll-cn ll:absolute ll:top-0 ll:bottom-0 ll:flex ll:items-center ll:gap-1 ll:font-sans ll:text-nano ll:font-medium ll:text-primary ll:pointer-events-none"
+                className="cn ll-cn ll:absolute ll:top-0 ll:bottom-0 ll:flex ll:items-center ll:gap-1 ll:font-sans ll:text-micro ll:font-medium ll:text-primary ll:pointer-events-none"
                 style={{ left: `${8 + Math.max(0, -X(minStart, pps, t0, 24, fps))}px` }}
               >
-                <Icon icon={Layers} size={11} className="ll:text-secondary" />
+                <Icon icon={Layers} size={12} className="ll:text-secondary" />
                 <span className="ll:truncate">{layerName(layer.id)}</span>
               </span>
             </div>
@@ -707,8 +713,6 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   style={{
                     left: `${x0}px`,
                     width: `${width}px`,
-                    backgroundColor: `var(--ll-label-${labelNum}-tint)`,
-                    boxShadow: `inset 0 0 0 1px var(--ll-label-${labelNum})`,
                   }}
                   className={`clip ${isSelected ? "on" : ""} ll-clip ll:absolute ll:top-1 ll:bottom-1 ll:rounded-sm ll:overflow-hidden ll:cursor-grab ll:active:cursor-grabbing ll:group`}
                 >
@@ -728,16 +732,16 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                         style={{
                           left: `${X(k.t, pps, t0, 24, fps) - x0}px`,
                         }}
-                        className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.5 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
+                        className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.25 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
                       />
                     ))}
 
                   {/* Clip label */}
                   <span
-                    className="cn ll-cn ll:absolute ll:top-0 ll:bottom-0 ll:flex ll:items-center ll:gap-1 ll:font-sans ll:text-nano ll:font-medium ll:text-primary ll:pointer-events-none"
+                    className="cn ll-cn ll:absolute ll:top-0 ll:bottom-0 ll:flex ll:items-center ll:gap-1 ll:font-sans ll:text-micro ll:font-medium ll:text-primary ll:pointer-events-none"
                     style={{ left: `${8 + Math.max(0, -x0)}px` }}
                   >
-                    <Icon icon={LayerIconComp} size={11} className="ll:text-secondary" />
+                    <Icon icon={LayerIconComp} size={12} className="ll:text-secondary" />
                     <span className="ll:truncate">{layerName(layer.id)}</span>
                   </span>
 
@@ -800,10 +804,10 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   });
                 }}
                 className={`tlhc ll-tlhc ll:flex ll:items-center ll:gap-0.5 ll:pr-1 ll:border-r ll:border-border ll:cursor-pointer ll:select-none ${
-                  isTrackSelected
+                  isSelected
+                    ? "ll:bg-select-bg ll:text-primary"
+                    : isTrackSelected
                     ? "ll:bg-surface-hover ll:text-primary"
-                    : isSelected
-                    ? "ll:bg-select-bg ll:text-secondary"
                     : "ll:bg-surface-panel ll:text-secondary ll:hover:bg-surface-hover"
                 }`}
               >
@@ -822,7 +826,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   data-testid="timeline-prop-value"
                   onPointerDown={(e) => handleScrubReadout(e, track.p)}
                   title="Drag to change value at playhead"
-                  className="rd ll-rd ll:min-w-10 ll:text-right ll:font-mono ll:text-micro ll:text-primary ll:cursor-ew-resize ll:px-1 ll:rounded-xs ll:hover:bg-surface-segmented"
+                  className="rd ll-rd ll:min-w-10 ll:text-right ll:font-mono ll:text-micro ll:text-primary ll:cursor-ew-resize ll:px-0.5 ll:rounded-sm ll:hover:bg-surface-segmented"
                 >
                   {formatValue(track.p, currentValue)}
                 </span>
@@ -838,7 +842,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                       if (prev) motionActions.setPlayhead(prev.t);
                     }}
                     title="Previous keyframe"
-                    className="ib ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:text-muted ll:hover:text-primary"
+                    className="ib ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary"
                   >
                     <Icon icon={ChevronLeft} size={12} />
                   </button>
@@ -861,7 +865,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                       hasKeyAtPlayhead
                         ? "on ll:text-control-active"
                         : "ll:text-muted ll:hover:text-primary"
-                    } ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors`}
+                    } ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors`}
                   >
                     <Icon icon={Diamond} size={12} />
                   </button>
@@ -873,7 +877,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                       if (next) motionActions.setPlayhead(next.t);
                     }}
                     title="Next keyframe"
-                    className="ib ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:text-muted ll:hover:text-primary"
+                    className="ib ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary"
                   >
                     <Icon icon={ChevronRight} size={12} />
                   </button>
@@ -985,7 +989,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
           }}
           className={`tlrow prp add ${isChild ? "kid" : ""} ll-tlrow ll:grid ll:h-7 ll:border-b ll:border-border ll:shrink-0 ll:bg-surface-panel`}
         >
-          <div className={`tlhc ll-tlhc ll:flex ll:items-center ll:pr-1 ll:border-r ll:border-border ll:bg-surface-panel ll:hover:bg-surface-hover ${isChild ? "ll:pl-10" : "ll:pl-8"}`}>
+          <div className={`tlhc ll-tlhc ll:flex ll:items-center ll:pr-1 ll:border-r ll:border-border ${isSelected ? "ll:bg-select-bg" : "ll:bg-surface-panel ll:hover:bg-surface-hover"} ${isChild ? "ll:pl-10" : "ll:pl-8"}`}>
             <button
               type="button"
               data-la="add"

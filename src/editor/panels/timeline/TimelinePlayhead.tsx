@@ -202,7 +202,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
               left: `${trackWidth}px`,
               transform: `translateX(${Math.min(hoverX + 6, laneWidth - 60)}px)`,
             }}
-            className="ll-hvt ll:absolute ll:top-0.5 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-surface-raised ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-primary ll:shadow-sm ll:pointer-events-none ll:z-30 ll:whitespace-nowrap"
+            className="ll-hvt ll:absolute ll:top-0.5 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-surface-raised ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-primary ll:pointer-events-none ll:z-30 ll:whitespace-nowrap"
           >
             {frames ? String(hoverFrame) : timecode(hoverFrame, fps)}
           </span>

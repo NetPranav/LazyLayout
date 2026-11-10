@@ -190,7 +190,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       className="ll-tlrow ll-tlrul ll:grid ll:h-8 ll:sticky ll:top-0 ll:z-10 ll:bg-surface-panel ll:border-b ll:border-border ll:shrink-0 ll:select-none"
     >
       {/* 1. Header Column (sticky top-left) */}
-      <div className="ll-tlhc ll-tlhh ll:flex ll:items-center ll:pl-4 ll:pr-2 ll:bg-surface-panel ll:text-muted">
+      <div className="ll-tlhc ll-tlhh ll:flex ll:items-center ll:pl-4 ll:pr-2 ll:border-r ll:border-border ll:bg-surface-panel ll:text-muted">
         <span className="ll:font-mono ll:text-micro ll:font-micro ll:uppercase">
           {view === "graph" ? "Properties" : "Layers"}
         </span>
@@ -234,7 +234,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
                   top: "13px",
                   lineHeight: "1",
                 }}
-                className="ll-tkl ll:absolute ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:pointer-events-none ll:whitespace-nowrap"
+                className="ll-tkl ll:absolute ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:pointer-events-none ll:whitespace-nowrap"
               >
                 {t.label}
               </span>
@@ -286,7 +286,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
                 }}
                 title={`${m.name}, frame ${m.t}`}
                 aria-label={`${m.name} at frame ${m.t}`}
-                className="ll-mkb ll:min-w-3.5 ll:px-0.75 ll:bg-control-active ll:text-control-active-fg ll:font-mono ll:text-micro ll:font-medium ll:leading-3.5 ll:rounded-xs ll:text-center ll:group-hover:rounded-r-none"
+                className="ll-mkb ll:min-w-3.5 ll:px-0.75 ll:bg-control-active ll:text-control-active-fg ll:font-mono ll:text-nano ll:font-medium ll:leading-3.5 ll:rounded-xs ll:text-center ll:group-hover:rounded-r-none"
               >
                 {i + 1}
               </button>

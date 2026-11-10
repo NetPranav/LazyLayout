@@ -199,7 +199,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
       id="tlf"
       role="region"
       aria-label="Timeline footer"
-      className="ll-tlf ll:h-7 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-nano ll:text-muted ll:shrink-0 ll:min-w-0 ll:select-none"
+      className="ll-tlf ll:h-7 ll:flex ll:items-center ll:gap-3 ll:px-3 ll:border-t ll:border-border ll:bg-surface-panel ll:font-mono ll:text-micro ll:font-body ll:text-muted ll:shrink-0 ll:min-w-0 ll:select-none"
     >
       {/* 1. Selection summary */}
       <span
@@ -364,7 +364,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
               left: `${zoomPct}%`,
               transform: "translate(-50%, 0)",
             }}
-            className="sl-g ll:absolute ll:bottom-full ll:mb-0.5 ll:min-w-8 ll:px-1.5 ll:h-5 ll:leading-4.5 ll:text-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:whitespace-nowrap ll:pointer-events-none ll:z-30 ll:shadow-sm"
+            className="sl-g ll:absolute ll:bottom-full ll:-mb-0.5 ll:min-w-8 ll:px-1.5 ll:h-5 ll:leading-5 ll:text-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:whitespace-nowrap ll:pointer-events-none ll:z-30"
           >
             {zoom.toFixed(1)}×
           </div>
@@ -402,7 +402,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         }}
         aria-label="Frame rate"
         title="Frame rate"
-        className="ll-tfb ll:h-6 ll:px-1.5 ll:flex ll:items-center ll:gap-1 ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        className="ll-tfb ll:h-6 ll:px-1.5 ll:flex ll:items-center ll:gap-1 ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
         <span>{fps} fps</span>
         <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
@@ -487,7 +487,7 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         data-ta="wa"
         onClick={() => motionActions.resetWorkArea()}
         title="Work area length. Click to clear the work area."
-        className="ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        className="ll-tfb ll:h-6 ll:px-1.5 ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
       >
         Work area {waStr}
       </button>

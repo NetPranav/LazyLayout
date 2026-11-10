@@ -109,7 +109,8 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
     <div
       role="toolbar"
       aria-label="Timeline header"
-      className={`ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
+      style={{ background: "color-mix(in srgb, var(--ll-surface-panel) 95%, var(--ll-text-primary))" }}
+      className={`ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
         autoKey ? "ll:outline ll:outline-1 ll:outline-primary ll:-outline-offset-1" : ""
       }`}
     >
@@ -129,7 +130,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
         </button>
         <span
           id="tt"
-          className="ll-tt ll:font-mono ll:font-normal ll:text-nano ll:text-muted ll:whitespace-nowrap ll:-ml-1"
+          className="ll-tt ll:font-mono ll:font-normal ll:text-micro ll:text-muted ll:whitespace-nowrap ll:-ml-1"
         >
           / {formattedTotal}
         </span>
@@ -382,7 +383,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-expanded={speedMenuOpen}
           aria-label="Playback speed"
           title="Playback speed"
-          className="ll-mdd ll:h-7 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors ll:flex-none"
+          className="ll-mdd ll:h-7 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors ll:flex-none"
         >
           <span className="ddt">{speed}×</span>
           <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
