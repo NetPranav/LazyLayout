@@ -2041,13 +2041,13 @@ svg {
 
 /* Prefix indent for inspector Select components */
 .ll-has-prefix-8 .ll-ddt {
-  padding-left: 2rem;
+  padding-left: 2.75rem;
 }
 .ll-has-prefix-10 .ll-ddt {
-  padding-left: 2.5rem;
+  padding-left: 3.25rem;
 }
 .ll-has-prefix-14 .ll-ddt {
-  padding-left: 3.5rem;
+  padding-left: 3.75rem;
 }
 
 /* Mixed shimmer for fields where values differ (scoped to right inspector and popovers) */

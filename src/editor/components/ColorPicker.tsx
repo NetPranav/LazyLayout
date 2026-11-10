@@ -55,6 +55,9 @@ export interface ColorPickerProps {
   anchorRef?: React.RefObject<HTMLElement | null>;
   triggerRef?: React.RefObject<HTMLElement | null>;
   anchorEl?: HTMLElement | null;
+  /** The token the colour was picked from, shown as a link on the swatch that opened the picker. */
+  linkedToken?: string | null;
+  onLinkedTokenChange?: (token: string | null) => void;
   className?: string;
   "aria-label"?: string;
   [key: string]: unknown;
@@ -76,6 +79,8 @@ export function ColorPicker({
   anchorRef,
   triggerRef,
   anchorEl,
+  linkedToken: linkedTokenProp = null,
+  onLinkedTokenChange,
   className = "",
   "aria-label": ariaLabel,
 }: ColorPickerProps) {
@@ -121,7 +126,14 @@ export function ColorPicker({
     setPrevOpacity(externalOpacity);
     setAlpha(externalOpacity / 100);
   }
-  const [linkedToken, setLinkedToken] = useState<string | null>(null);
+  const [linkedToken, setLinkedTokenState] = useState<string | null>(linkedTokenProp);
+  const setLinkedToken = useCallback(
+    (token: string | null) => {
+      setLinkedTokenState(token);
+      onLinkedTokenChange?.(token);
+    },
+    [onLinkedTokenChange]
+  );
   // text being typed in the hex / opacity fields: kept locally so partial input is not overwritten until it is valid
   const [hexDraft, setHexDraft] = useState<string | null>(null);
   const [alphaDraft, setAlphaDraft] = useState<string | null>(null);

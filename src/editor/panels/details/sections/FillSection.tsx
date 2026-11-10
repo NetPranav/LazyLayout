@@ -121,6 +121,8 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
   const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
+  // The hex field keeps what is typed until it has six digits; only then does it write the colour.
+  const [hexDraft, setHexDraft] = useState<{ id: string; value: string } | null>(null);
   // The row of a layer without a fill list (text, buttons) is local; a different layer starts again from its own colour.
   const [localFor, setLocalFor] = useState(selectedId);
   if (localFor !== selectedId) {
@@ -358,17 +360,21 @@ export const FillSection: React.FC<FillSectionProps> = ({
                   type="text"
                   maxLength={6}
                   aria-label="Fill hex"
-                  value={fill.hex}
+                  value={hexDraft?.id === fill.id ? hexDraft.value : fill.hex}
                   onClick={(e) => {
                     e.stopPropagation();
                     setActiveColorPickerId(fill.id);
                     setActiveColorPickerEl(e.currentTarget);
                   }}
-                  onChange={(e) =>
-                    handleUpdateFill(fill.id, {
-                      hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
-                    })
-                  }
+                  onBlur={() => setHexDraft(null)}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6).toUpperCase();
+                    setHexDraft({ id: fill.id, value: clean });
+                    if (clean.length === 6) {
+                      handleUpdateFill(fill.id, { hex: clean });
+                      setHexDraft(null);
+                    }
+                  }}
                   className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
                 />
               </div>

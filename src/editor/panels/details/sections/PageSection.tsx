@@ -10,6 +10,7 @@ import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
 import { ColorPicker } from "@/editor/components/ColorPicker";
+import { LinkIcon } from "@/editor/components/ColorPickerIcons";
 import { INSPECTOR_CONSTANTS } from "../constants";
 
 const PAGE_FONT_OPTIONS = [
@@ -176,6 +177,8 @@ export const ThemeTokensBody: React.FC = () => {
   const [themeFont, setThemeFont] = useState("Geist");
   const [typeScale, setTypeScale] = useState("1.25");
   const [themeShadow, setThemeShadow] = useState("Soft");
+  // The token each colour was picked from (null once a hex is typed in).
+  const [linkedTokens, setLinkedTokens] = useState<Record<string, string | null>>({});
 
   const tokenRows: Array<{ label: string; hex: string; set: (v: string) => void }> = [
     { label: "Primary", hex: primaryHex, set: setPrimaryHex },
@@ -197,9 +200,18 @@ export const ThemeTokensBody: React.FC = () => {
                 setActivePicker(isClosing ? null : row.label);
                 setActivePickerEl(isClosing ? null : e.currentTarget);
               }}
-              className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+              className="dsw ll-dsw ll:relative ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
               style={{ backgroundColor: `#${row.hex}` }}
-            />
+            >
+              {linkedTokens[row.label] && (
+                <Icon
+                  icon={LinkIcon}
+                  size={8}
+                  aria-hidden="true"
+                  className="cp-link ll:absolute ll:-right-1 ll:-bottom-1 ll:w-3 ll:h-3 ll:p-0.5 ll:rounded-xs ll:bg-control-primary ll:text-control-primary-fg"
+                />
+              )}
+            </button>
             <div
               className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0 ll:cursor-pointer"
               onClick={(e) => {
@@ -218,7 +230,10 @@ export const ThemeTokensBody: React.FC = () => {
                   setActivePicker(row.label);
                   setActivePickerEl(e.currentTarget);
                 }}
-                onChange={(e) => row.set(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  row.set(e.target.value.toUpperCase());
+                  setLinkedTokens((prev) => ({ ...prev, [row.label]: null }));
+                }}
                 className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
               />
             </div>
@@ -237,6 +252,8 @@ export const ThemeTokensBody: React.FC = () => {
             open={Boolean(activePicker)}
             value={`#${activeRow.hex}`}
             anchorEl={activePickerEl}
+            linkedToken={linkedTokens[activeRow.label] ?? null}
+            onLinkedTokenChange={(token) => setLinkedTokens((prev) => ({ ...prev, [activeRow.label]: token }))}
             onChange={(hex) => activeRow.set(hex.replace(/^#/, "").toUpperCase())}
             onClose={() => {
               setActivePicker(null);
