@@ -51,18 +51,15 @@ export function upgradeSavedProject(): void {
 
 /** The sample page at the size of a real page, in the editor's light look. */
 const SAMPLE_PAGE: Record<string, Record<string, PropValue>> = {
-  hero: { "frame.width": 1440, "frame.height": 560, "appearance.background.color": "#FFFFFF" },
-  features: { "frame.y": 560, "frame.width": 1440, "frame.height": 220, "appearance.background.color": "#F4F3EF" },
-  footer: { "frame.y": 780, "frame.width": 1440, "frame.height": 120, "appearance.background.color": "#E7E6E1" },
-  headline: { "frame.x": 120, "frame.y": 130, "frame.width": 720, "frame.height": 150, "typography.fontSize": 64, "typography.lineHeight": 1.1, "typography.color": "#22231E" },
-  subtitle: { "frame.x": 120, "frame.y": 300, "frame.width": 640, "frame.height": 36, "typography.fontSize": 20, "typography.color": "#55554F" },
-  button: { "frame.x": 120, "frame.y": 370, "frame.width": 180, "frame.height": 52, "appearance.background.color": "#22231E", "typography.color": "#FFFFFF", "typography.fontSize": 16 },
-  image: { "frame.x": 900, "frame.y": 100, "frame.width": 420, "frame.height": 360, "appearance.background.color": "#E7E6E1", "appearance.radius": 8 },
+  hero: { "frame.width": 1440, "frame.height": 900, "appearance.background.color": "#FFFFFF" },
+  headline: { "frame.x": 120, "frame.y": 290, "frame.width": 720, "frame.height": 150, "typography.fontSize": 64, "typography.lineHeight": 1.1, "typography.color": "#22231E" },
+  subtitle: { "frame.x": 120, "frame.y": 460, "frame.width": 640, "frame.height": 36, "typography.fontSize": 20, "typography.color": "#55554F" },
+  button: { "frame.x": 120, "frame.y": 530, "frame.width": 180, "frame.height": 52, "appearance.background.color": "#22231E", "typography.color": "#FFFFFF", "typography.fontSize": 16 },
+  image: { "frame.x": 900, "frame.y": 270, "frame.width": 420, "frame.height": 360, "appearance.background.color": "#E7E6E1", "appearance.radius": 8 },
 };
 
 /**
- * Returns the prototype page's 16 real layers matching the prototype names, order and values:
- * Hero (Headline, Subtitle, Get started, Hero image), Features, Footer, and Other elements.
+ * Returns the simple starting page: one Hero (Headline, Subtitle, Get started, Hero image).
  */
 export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_canvas_root"): Layer[] {
   // Ordered in internal document storage order (back-to-front).
@@ -75,182 +72,7 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
     children?: string[];
     properties: Record<string, PropValue>;
   }> = [
-    // 1. Other elements group (lowest in tree)
-    {
-      id: "others",
-      archetype: "container",
-      name: "Other elements",
-      parentId: rootContainerId,
-      // Painter's order: back to front
-      children: ["object3d", "counter", "shape", "icon", "background", "divider", "toggle", "input"],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 960,
-        "frame.width": 600,
-        "frame.height": 400,
-        "appearance.background.color": "#1E1E1E",
-        "appearance.opacity": 1,
-      },
-    },
-    // Other elements children
-    {
-      id: "input",
-      archetype: "input",
-      name: "Email input",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 420,
-        "frame.width": 240,
-        "frame.height": 36,
-        "appearance.radius": 6,
-        "appearance.background.color": "#383838",
-        "typography.fontSize": 13,
-      },
-    },
-    {
-      id: "toggle",
-      archetype: "toggle",
-      name: "Newsletter toggle",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 470,
-        "frame.width": 44,
-        "frame.height": 24,
-        "appearance.radius": 12,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "divider",
-      archetype: "divider",
-      name: "Section divider",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 510,
-        "frame.width": 528,
-        "frame.height": 1,
-        "appearance.background.color": "#444444",
-      },
-    },
-    {
-      id: "background",
-      archetype: "background",
-      name: "Page background",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 0,
-        "frame.width": 1440,
-        "frame.height": 900,
-        "appearance.background.color": "#1E1E1E",
-      },
-    },
-    {
-      id: "icon",
-      archetype: "icon",
-      name: "Menu icon",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 530,
-        "frame.width": 24,
-        "frame.height": 24,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "shape",
-      archetype: "star",
-      name: "Star shape",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 80,
-        "frame.y": 530,
-        "frame.width": 48,
-        "frame.height": 48,
-        "appearance.background.color": "#FFD60A",
-        "shape.points": 5,
-      },
-    },
-    {
-      id: "counter",
-      archetype: "text",
-      name: "Visitors counter",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 160,
-        "frame.y": 530,
-        "frame.width": 120,
-        "frame.height": 48,
-        "content.text": "12,480",
-        "typography.fontFamily": "Geist Mono",
-        "typography.fontWeight": 600,
-        "typography.fontSize": 32,
-        "typography.lineHeight": 1,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "object3d",
-      archetype: "object3D",
-      name: "3D model",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 320,
-        "frame.y": 520,
-        "frame.width": 160,
-        "frame.height": 160,
-        "appearance.background.color": "#2C2C2C",
-        "appearance.radius": 0,
-      },
-    },
-
-    // 2. Footer section
-    {
-      id: "footer",
-      archetype: "container",
-      name: "Footer",
-      parentId: rootContainerId,
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 840,
-        "frame.width": 600,
-        "frame.height": 80,
-        "appearance.background.color": "#1E1E1E",
-        "appearance.opacity": 1,
-      },
-    },
-
-    // 3. Features section
-    {
-      id: "features",
-      archetype: "container",
-      name: "Features",
-      parentId: rootContainerId,
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 420,
-        "frame.width": 600,
-        "frame.height": 380,
-        "appearance.background.color": "#242424",
-        "appearance.opacity": 1,
-      },
-    },
-
-    // 4. Hero section (top-most in tree)
+    // Hero section: the one simple block the page opens with
     {
       id: "hero",
       archetype: "container",
