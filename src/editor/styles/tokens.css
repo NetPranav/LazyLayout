@@ -689,6 +689,46 @@ svg {
 .ll-tl-flash {
   animation: ll-tl-flash 0.9s ease-out;
 }
+
+/* Playhead: 1px line with a faint panel-coloured halo so it stays readable over clips and gridlines */
+.ll-phl {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ll-surface-panel) 55%, transparent);
+}
+/* Pentagon head: flat top, point on the frame */
+.ll-phl-knob {
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+  transform-origin: 50% 0;
+}
+.ll-phl-time {
+  top: 3px;
+  left: 9px;
+  opacity: 0;
+  pointer-events: none;
+}
+.ll-phl[data-flip="1"] .ll-phl-time {
+  left: auto;
+  right: 9px;
+}
+.ll-phl[data-scrubbing="1"] .ll-phl-time {
+  opacity: 1;
+}
+.ll-phl[data-scrubbing="1"] .ll-phl-knob {
+  transform: scale(1.1);
+}
+.ll-phl-snap {
+  animation: ll-phl-snap 0.28s ease-out;
+}
+@keyframes ll-phl-snap {
+  0% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ll-phl-knob { transition: transform 0.12s ease-out; }
+  .ll-phl-time { transition: opacity 0.1s ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ll-phl-snap { animation: none; }
+}
 /* === end lane: L5 === */
 
 /* === lane: L6 motion inspector === */
@@ -2120,8 +2160,8 @@ svg {
   --ll-size-timeline-footer-btn: 28px;
   --ll-size-popover-min-w: 176px;
   --ll-size-playhead-knob-w: 11px;
-  --ll-size-playhead-knob-h: 12px;
-  --ll-size-playhead-knob-top: 9px;
+  --ll-size-playhead-knob-h: 14px;
+  --ll-size-playhead-knob-top: 7px;
   --ll-size-playhead-knob-left: -5px;
   --ll-radius-playhead-knob: 1px;
   --ll-size-bsplit-h: 6px;

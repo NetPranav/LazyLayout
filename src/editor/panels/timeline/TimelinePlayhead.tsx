@@ -12,6 +12,7 @@ import { simAdd, simRemove } from "@/editor/motion/loop";
 import { MOTION_PRESETS } from "@/editor/motion/presets";
 import { getFeel } from "@/editor/motion/feel";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 
 export interface TimelinePlayheadProps {
   laneWidth?: number;
@@ -47,7 +48,11 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
 
   const pps = propPps ?? legacyPps ?? 100;
 
+  const isScrubbing = useTimelineUiStore((s) => s.isScrubbing);
+
   const needleRef = useRef<HTMLDivElement | null>(null);
+  const labelRef = useRef<HTMLSpanElement | null>(null);
+  const knobRef = useRef<HTMLDivElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
 
   // Damped spring instance for playhead gliding (matching P: M.ph = new Spring(M.T, mo().hl))
@@ -68,6 +73,12 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       needleRef.current.style.transform = `translateX(${x.toFixed(2)}px)`;
       needleRef.current.style.visibility = x < -6 || x > laneWidth + 6 ? "hidden" : "visible";
       needleRef.current.setAttribute("data-time", String(Math.round(f)));
+      // Flip the scrub label to the left of the line near the right edge of the lanes
+      needleRef.current.setAttribute("data-flip", x > laneWidth - 84 ? "1" : "0");
+    }
+    if (labelRef.current) {
+      const r = Math.round(f);
+      labelRef.current.textContent = frames ? String(r) : timecode(r, fps);
     }
     if (layerRef.current) {
       layerRef.current.setAttribute("data-time", String(Math.round(f)));
@@ -88,7 +99,16 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
     if (miniNeedle && dur > 0) {
       miniNeedle.style.left = `${((f / dur) * 100).toFixed(2)}%`;
     }
-  }, [pps, t0, fps, laneWidth, dur]);
+  }, [pps, t0, fps, laneWidth, dur, frames]);
+
+  // Snap feedback: a short pulse on the head when a snap lands (restarts the CSS animation)
+  useEffect(() => {
+    const knob = knobRef.current;
+    if (snapFlashFrame === null || !knob) return;
+    knob.classList.remove("ll-phl-snap");
+    void knob.offsetWidth;
+    knob.classList.add("ll-phl-snap");
+  }, [snapFlashFrame]);
 
   useEffect(() => {
     const sp = phSpringRef.current;
@@ -180,15 +200,27 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
           data-testid="timeline-playhead"
           data-time={Math.round(playhead)}
           data-frame={Math.round(playhead)}
+          data-scrubbing={isScrubbing ? "1" : "0"}
           className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-primary-bg ll:will-change-transform"
         >
-          {/* Playhead Knob on ruler */}
-          <div className="ll-phl-knob ll:absolute ll:top-playhead-knob ll:left-playhead-knob ll:w-playhead-knob ll:h-playhead-knob ll:bg-control-primary-bg ll:rounded-playhead-knob" />
+          {/* Playhead head on ruler: a flag that points at the exact frame */}
+          <div
+            ref={knobRef}
+            className="ll-phl-knob ll:absolute ll:top-playhead-knob ll:left-playhead-knob ll:w-playhead-knob ll:h-playhead-knob ll:bg-control-primary-bg"
+          />
+          {/* Current time, tight to the head while scrubbing */}
+          <span
+            ref={labelRef}
+            aria-hidden="true"
+            className="ll-phl-time ll:absolute ll:top-1 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:pointer-events-none ll:whitespace-nowrap"
+          >
+            {frames ? String(Math.round(playhead)) : timecode(Math.round(playhead), fps)}
+          </span>
         </div>
       </div>
 
       {/* 2. Hover Guide Line & Tooltip */}
-      {hoverX !== null && hoverFrame !== null && (
+      {hoverX !== null && hoverFrame !== null && !isScrubbing && (
         <>
           <i
             style={{

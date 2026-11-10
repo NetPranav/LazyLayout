@@ -211,7 +211,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
           const f = Math.round(Fx(x, pps, t0, 24, fps));
           onContextMenu?.(e, f);
         }}
-        className="ll-tlln ll-tlruler ll:relative ll:h-full ll:cursor-pointer ll:overflow-hidden ll:bg-surface-panel"
+        className="ll-tlln ll-tlruler ll:relative ll:h-full ll:cursor-ew-resize ll:overflow-hidden ll:bg-surface-panel"
       >
         {/* Ticks and labels */}
         {ticks.map((t, idx) => (
