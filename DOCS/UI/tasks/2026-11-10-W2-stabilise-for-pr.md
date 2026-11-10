@@ -2,6 +2,10 @@
 
 Date: 2026-11-10. Branch `ui/redesign` (HEAD `7016686`). Do not commit, do not push. Do not stop to ask. Read `DOCS/UI/handoffs/2026-11-10-SESSION-HANDOFF.md` first (only that, plus the files named below).
 
+## TIME BOX (hard): this run must finish by 22:12 local time (check with `date '+%H:%M'` at the start of each phase)
+
+Run only these phases, in this order: **P1 (lint), P5 (two icons), P2 (browser proof, as many controls as fit, most important first: Position, Layout, Typography + font picker, Fill, Stroke, Appearance, Effects, Canvas settings, Insert box, Frame panel), then P6 (handoff)**. **Skip P3 (e2e) and P4 (build) in this run**: mark them `deferred` in `PROGRESS.md`. At 22:05 stop starting new work, finish the control you are on, update `PROGRESS.md` (items done / total for the phase you were in, and what is left), write the P6 handoff and run `npx tsc --noEmit` once. An unfinished phase is marked `in progress` with the exact count done, never `done`. Do not leave a file half-edited at the deadline: revert your own last unfinished change if you must.
+
 ## Goal
 Make the branch pass `npm run typecheck`, `npm run lint`, `npm run build` and `npm run test:e2e`, and prove that the Design-page wiring from task W1 really works in the browser. **No restyling**: do not change classes, tokens, layout, icons or animation unless a fix strictly needs it (keep the look identical). The visual design is frozen and matches `DOCS/UI/design/editor-design-mode-blocks-dark.html` (never read that file whole).
 

@@ -29,8 +29,8 @@ Open: Pen tool is `available:false` in core (engine request, needs the user's go
 |---|---|---|---|---|---|
 | P1 | Lint errors to zero | 0 / 9 files | not started | | known ~9 errors in `options/*.tsx` |
 | P2 | Prove wiring in the browser | 0 / 19 controls | not started | | table goes in `handoffs/2026-11-10-W2-verify.md` |
-| P3 | e2e passing | 0 / ? spec files | not started | | count unknown until the first run |
-| P4 | Production build | 0 / 1 | not started | | stop dev server first, restart after |
+| P3 | e2e passing | 0 / ? spec files | deferred | | not in the first W2 run (time box 22:12); count unknown until the first run |
+| P4 | Production build | 0 / 1 | deferred | | not in the first W2 run (time box 22:12); stop dev server first, restart after |
 | P5 | Two leftover icons in prototype style | 0 / 2 | not started | | open lock, text align |
 | P6 | Handoff and typecheck | 0 / 1 | not started | | |
 
