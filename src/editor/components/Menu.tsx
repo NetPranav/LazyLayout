@@ -121,7 +121,7 @@ export interface MenuProps {
 
 export const Menu: React.FC<MenuProps> = ({
   open,
-  onClose,
+  onClose: onCloseProp,
   anchorEl,
   anchorRef,
   position,
@@ -134,6 +134,12 @@ export const Menu: React.FC<MenuProps> = ({
   testId,
   family = "menu",
 }) => {
+  // Callers pass inline closures; a changing onClose must not re-run the open animation or re-bind listeners.
+  const onCloseRef = useRef(onCloseProp);
+  useEffect(() => {
+    onCloseRef.current = onCloseProp;
+  });
+  const onClose = useCallback(() => onCloseRef.current(), []);
   const autoId = useId();
   const menuId = id || `ll-menu-${autoId.replace(/:/g, "")}`;
   const subSurfaceId = `ll-sub-${autoId.replace(/:/g, "")}`;

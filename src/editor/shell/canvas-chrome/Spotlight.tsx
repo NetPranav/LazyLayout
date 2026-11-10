@@ -804,10 +804,19 @@ export const Spotlight: React.FC<SpotlightProps> = ({
     );
   }, []);
 
+  // The panel is un-hidden by React the moment `open` flips, but its morph only starts ~90ms later. Keep it invisible in
+  // between (set before paint) so it doesn't flash at full size and then collapse to 0 and grow.
+  const wasOpenRef = useRef(false);
   useLayoutEffect(() => {
     if (open) {
+      if (!wasOpenRef.current && resRef.current && !prefersReducedMotion() && document.getElementById("tools")) {
+        resRef.current.style.visibility = "hidden";
+      }
       sizeTo(false);
+    } else if (resRef.current) {
+      resRef.current.style.visibility = "";
     }
+    wasOpenRef.current = open;
   }, [open, sections, flatItems, query, prefixMode, sizeTo]);
 
   // Morph open and close transitions on #tools
@@ -845,6 +854,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         resRef.current.style.bottom = `${baseBottom + bar.offsetHeight + 8}px`;
         resRef.current.style.width = `${W}px`;
         resRef.current.hidden = false;
+        resRef.current.style.visibility = "";
         sizeTo(true);
       }
       inputRef.current?.focus();
@@ -901,6 +911,7 @@ export const Spotlight: React.FC<SpotlightProps> = ({
 
       sizeTo(true);
       const H = res.getBoundingClientRect().height;
+      res.style.visibility = "";
 
       springAnim(
         res,
