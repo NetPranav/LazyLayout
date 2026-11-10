@@ -151,6 +151,25 @@ export class ShellFx {
     rest: () => this.end(),
   };
 
+  /** Dragged bottom panel height per mode (undefined = default), persisted in localStorage. */
+  private readonly bottomH: { motion?: number; code?: number } = {};
+
+  private readSavedBottom(mode: "motion" | "code"): void {
+    try {
+      const n = parseFloat(localStorage.getItem(`ll-bh-${mode}`) ?? "");
+      if (!isNaN(n) && n >= BOTTOM_MIN) this.bottomH[mode] = n;
+    } catch (_) {}
+  }
+
+  private saveBottom(h: number): void {
+    const mode = this.mode;
+    if (mode !== "motion" && mode !== "code") return;
+    this.bottomH[mode] = h;
+    try {
+      localStorage.setItem(`ll-bh-${mode}`, String(h));
+    } catch (_) {}
+  }
+
   /** The splitter spring: dragging writes it directly, a double click glides it back. */
   private readonly mbh = new Spring(0, PANEL_SPRING_SEED);
   private readonly mbhSim: Sim = {
@@ -289,6 +308,20 @@ export class ShellFx {
     this.pending = null;
     const modeChanged = this.mode !== null && this.mode !== mode;
     this.mode = mode;
+    // Each bottom panel (Motion, Code) keeps its own height.
+    if (mode === "motion" || mode === "code") {
+      const saved = this.bottomH[mode];
+      if (saved === undefined) {
+        this.readSavedBottom(mode);
+      }
+      const h = this.bottomH[mode];
+      simRemove(this.mbhSim);
+      if (h === undefined) root.style.removeProperty("--mbh");
+      else {
+        this.mbh.jump(h);
+        root.style.setProperty("--mbh", `${h}px`);
+      }
+    }
 
     const wasLive = this.live;
     let a: LayoutVals | null;
@@ -444,6 +477,7 @@ export class ShellFx {
       const h = clamp(h0 - (ev.clientY - y0), BOTTOM_MIN, Math.round(window.innerHeight * BOTTOM_MAX_RATIO));
       this.mbh.jump(h);
       root.style.setProperty("--mbh", `${h}px`);
+      this.saveBottom(h);
     };
     const up = (): void => {
       handle.removeAttribute("data-on");
@@ -463,6 +497,7 @@ export class ShellFx {
     if (!root || !bottom) return;
     const h = Math.round(window.innerHeight * BOTTOM_DEFAULT_RATIO);
     this.mbh.jump(bottom.offsetHeight);
+    this.saveBottom(h);
     if (prefersReducedMotion()) {
       this.mbh.jump(h);
       root.style.setProperty("--mbh", `${h}px`);
