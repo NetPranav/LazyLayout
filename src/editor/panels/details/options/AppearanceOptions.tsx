@@ -6,7 +6,10 @@ import { Icon } from "@/editor/components/Icon";
 import { OptionGroup, OptionRow, OptionGrid4, OptionGridLabel } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
+import { isPropertyLegalFor } from "@/core/document/properties";
 import type { InspectorSectionProps } from "../types";
+
+const ONE_RADIUS = "This layer takes one radius for all corners; per-corner radius is for rectangles";
 
 export interface AppearanceOptionsProps extends InspectorSectionProps {
   radiusTopLeft?: number;
@@ -45,6 +48,7 @@ const POINTER_EVENTS_OPTIONS = [
 ] as const;
 
 export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
+  layer,
   getValue,
   onUpdateProp,
   radiusTopLeft: propTl = 0,
@@ -59,22 +63,24 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
   onChangeCursor,
   onChangePointerEvents,
 }) => {
-  const currentTl = typeof getValue?.("shape.cornerRadius.topLeft") === "number"
+  // only a rectangle has four corner radii; every other layer has the one `appearance.radius`
+  const perCorner = !layer || isPropertyLegalFor("shape.cornerRadius.topLeft", layer.archetype);
+  const currentTl = perCorner && typeof getValue?.("shape.cornerRadius.topLeft") === "number"
     ? (getValue?.("shape.cornerRadius.topLeft") as number)
     : typeof getValue?.("appearance.radius") === "number"
     ? (getValue?.("appearance.radius") as number)
     : propTl;
-  const currentTr = typeof getValue?.("shape.cornerRadius.topRight") === "number"
+  const currentTr = perCorner && typeof getValue?.("shape.cornerRadius.topRight") === "number"
     ? (getValue?.("shape.cornerRadius.topRight") as number)
     : typeof getValue?.("appearance.radius") === "number"
     ? (getValue?.("appearance.radius") as number)
     : propTr;
-  const currentBr = typeof getValue?.("shape.cornerRadius.bottomRight") === "number"
+  const currentBr = perCorner && typeof getValue?.("shape.cornerRadius.bottomRight") === "number"
     ? (getValue?.("shape.cornerRadius.bottomRight") as number)
     : typeof getValue?.("appearance.radius") === "number"
     ? (getValue?.("appearance.radius") as number)
     : propBr;
-  const currentBl = typeof getValue?.("shape.cornerRadius.bottomLeft") === "number"
+  const currentBl = perCorner && typeof getValue?.("shape.cornerRadius.bottomLeft") === "number"
     ? (getValue?.("shape.cornerRadius.bottomLeft") as number)
     : typeof getValue?.("appearance.radius") === "number"
     ? (getValue?.("appearance.radius") as number)
@@ -104,7 +110,7 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               value={tl}
               min={0}
               onChange={(v) => {
-                onUpdateProp?.("shape.cornerRadius.topLeft", v);
+                onUpdateProp?.(perCorner ? "shape.cornerRadius.topLeft" : "appearance.radius", v);
                 onChangeCornerRadius?.("tl", v);
               }}
             />
@@ -114,8 +120,10 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               label={<Icon icon={CornerUpRight} size={11} className="ll:text-muted" />}
               value={tr}
               min={0}
+              disabled={!perCorner}
+              title={perCorner ? undefined : ONE_RADIUS}
               onChange={(v) => {
-                onUpdateProp?.("shape.cornerRadius.topRight", v);
+                onUpdateProp?.(perCorner ? "shape.cornerRadius.topRight" : "appearance.radius", v);
                 onChangeCornerRadius?.("tr", v);
               }}
             />
@@ -125,8 +133,10 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               label={<Icon icon={CornerDownRight} size={11} className="ll:text-muted" />}
               value={br}
               min={0}
+              disabled={!perCorner}
+              title={perCorner ? undefined : ONE_RADIUS}
               onChange={(v) => {
-                onUpdateProp?.("shape.cornerRadius.bottomRight", v);
+                onUpdateProp?.(perCorner ? "shape.cornerRadius.bottomRight" : "appearance.radius", v);
                 onChangeCornerRadius?.("br", v);
               }}
             />
@@ -136,8 +146,10 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
               label={<Icon icon={CornerDownLeft} size={11} className="ll:text-muted" />}
               value={bl}
               min={0}
+              disabled={!perCorner}
+              title={perCorner ? undefined : ONE_RADIUS}
               onChange={(v) => {
-                onUpdateProp?.("shape.cornerRadius.bottomLeft", v);
+                onUpdateProp?.(perCorner ? "shape.cornerRadius.bottomLeft" : "appearance.radius", v);
                 onChangeCornerRadius?.("bl", v);
               }}
             />

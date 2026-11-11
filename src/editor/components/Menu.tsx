@@ -553,7 +553,9 @@ export const Menu: React.FC<MenuProps> = ({
         if (layRef.current) {
           swapIn(layRef.current, top >= oldTop ? 1 : -1);
         }
-      } else if (handoff) {
+      } else if (handoff && !menuEl.hasAttribute("data-lv")) {
+        // (a menu opened again while it is still leaving has nothing to adopt: it is the one that just closed, and
+        // retargeting it left its exit timer to hide it a moment later. It opens fresh below.)
         menuEl.style.left = `${Math.max(pad, left)}px`;
         menuEl.style.top = `${Math.max(pad, top)}px`;
         animateRetarget(menuEl, handoff, new DOMRect(left, top, menuW, menuH), layRef.current);

@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { REVEAL_EXPORT_EVENT } from "@/editor/panels/code-view/exportReveal";
 import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
+import { worldBox } from "@/core/editing/layerBoxes";
+import { fitRect } from "@/core/viewport/camera";
+import { panToCentre, requestStagePan } from "@/editor/stage/panRequest";
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { useSnapStore } from "@/core/store/useSnapStore";
 import { useToolStore } from "@/core/store/useToolStore";
@@ -466,7 +469,6 @@ export function useEditorActions(
 
   const zoomSelection = useCallback(() => {
     const selectedIds = useSelectionStore.getState().selectedIds;
-    const doc = getDocument();
     if (selectedIds.length > 0) {
       let minX = Infinity;
       let minY = Infinity;
@@ -475,25 +477,27 @@ export function useEditorActions(
       let found = false;
 
       for (const id of selectedIds) {
-        const layer = doc.layers[id];
-        if (layer && layer.properties) {
-          const x = Number(layer.properties["frame.x"] ?? 0);
-          const y = Number(layer.properties["frame.y"] ?? 0);
-          const width = Number(layer.properties["frame.width"] ?? 100);
-          const height = Number(layer.properties["frame.height"] ?? 100);
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x + width);
-          maxY = Math.max(maxY, y + height);
-          found = true;
-        }
+        // the box on the canvas: a layer's own frame.x / frame.y are relative to its parent
+        const box = worldBox(id);
+        if (!box) continue;
+        const rad = (box.rot * Math.PI) / 180;
+        const hw = (Math.abs(box.w * Math.cos(rad)) + Math.abs(box.h * Math.sin(rad))) / 2;
+        const hh = (Math.abs(box.w * Math.sin(rad)) + Math.abs(box.h * Math.cos(rad))) / 2;
+        minX = Math.min(minX, box.cx - hw);
+        minY = Math.min(minY, box.cy - hh);
+        maxX = Math.max(maxX, box.cx + hw);
+        maxY = Math.max(maxY, box.cy + hh);
+        found = true;
       }
 
       if (found) {
-        useCameraStore.getState().fitToRect(
-          { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
-          { padding: 64, maxZoom: 2, bottomInset: 56 }
-        );
+        const cam = useCameraStore.getState();
+        const opts = { padding: 64, maxZoom: 2, bottomInset: 56 };
+        const rect = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        // the stage centres its artboard itself, so the camera alone can't put the selection in the middle: ask for the pan too
+        const pan = panToCentre(selectedIds, cam.camera.zoom, fitRect(cam.viewport, rect, opts).zoom, opts.bottomInset);
+        if (pan) requestStagePan(pan);
+        cam.fitToRect(rect, opts);
         return;
       }
     }

@@ -30,6 +30,8 @@ export interface OptionRowProps {
   label: string;
   children: React.ReactNode;
   className?: string;
+  /** Hover text for the whole row (why a control is off). */
+  title?: string;
 }
 
 /** Standard row with 72px label column (.dlbl) and 1fr control column (.dtc) */
@@ -37,8 +39,10 @@ export const OptionRow: React.FC<OptionRowProps> = ({
   label,
   children,
   className = "",
+  title,
 }) => (
   <div
+    title={title}
     className={`dtrow ll-dtrow ll:min-h-7 ll:w-full ${className}`}
   >
     <span className="dlbl ll-dlbl ll:text-small ll:font-normal ll:text-muted ll:truncate ll:select-none">

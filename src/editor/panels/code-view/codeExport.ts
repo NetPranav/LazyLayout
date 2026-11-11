@@ -49,7 +49,9 @@ export function repoSummary(): { files: number; bytes: number; deps: string[]; n
       deps = [];
     }
   }
-  return { files: bundle.manifest.totalFiles, bytes: bundle.manifest.totalBytes, deps, name: bundle.manifest.projectName };
+  // the real zip entries: manifest.totalFiles / totalBytes leave out export-manifest.json, which the zip holds
+  const bytes = bundle.files.reduce((n, f) => n + new TextEncoder().encode(f.content).length, 0);
+  return { files: bundle.files.length, bytes, deps, name: bundle.manifest.projectName };
 }
 
 /** Every file of the generated repository (what the Repo .zip holds), for the Export dialog. */

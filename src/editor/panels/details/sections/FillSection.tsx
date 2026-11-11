@@ -100,9 +100,12 @@ export const FillSection: React.FC<FillSectionProps> = ({
   className = "",
 }) => {
   // Read existing background color, typography color or fills from layer
+  // (only a text layer's fill is its text colour: other layers answer typography.color with a default that is not theirs)
+  const textFirst = layer?.archetype === "text";
   const initialHex =
-    (getValue?.("typography.color") as string) ||
+    (textFirst ? (getValue?.("typography.color") as string) : "") ||
     (getValue?.("appearance.background.color") as string) ||
+    (getValue?.("typography.color") as string) ||
     (getValue?.("backgroundColor") as string) ||
     "FFFFFF";
   // The colour may carry its own alpha (rgba): the row shows the six digits and the percentage separately.

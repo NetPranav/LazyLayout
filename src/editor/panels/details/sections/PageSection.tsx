@@ -5,6 +5,8 @@ import { useLayers } from "@/core/store/useDocumentStore";
 import { activePageRootId } from "@/editor/stage/activePage";
 import { setLayerProps } from "@/core/editing/editOps";
 import { useProjectStore } from "@/core/store/useProjectStore";
+import { useEnvironmentStore } from "@/core/store/useEnvironmentStore";
+import type { ElevationPreset } from "@/core/types/environment";
 import { SquareRoundCorner } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
@@ -25,6 +27,10 @@ const SCALE_OPTIONS = [
   { value: "1.25", label: "1.25" },
   { value: "1.333", label: "1.333" },
 ] as const;
+
+/** The theme shadow names the page shows, and the engine's elevation preset each one is. */
+const ELEVATION_OF: Record<string, ElevationPreset> = { None: "none", Soft: "subtle_float", Medium: "medium_elevation", Strong: "dramatic_pop" };
+const SHADOW_OF = (e: ElevationPreset): string => Object.entries(ELEVATION_OF).find(([, v]) => v === e)?.[0] ?? "Soft";
 
 const SHADOW_OPTIONS = [
   { value: "None", label: "None" },
@@ -176,10 +182,16 @@ export const ThemeTokensBody: React.FC = () => {
   // the picker stays mounted after it closes so its exit animation can play
   const [shownPicker, setShownPicker] = useState<string | null>(null);
   if (activePicker && activePicker !== shownPicker) setShownPicker(activePicker);
-  const [radius, setRadius] = useState(8);
-  const [themeFont, setThemeFont] = useState("Geist");
-  const [typeScale, setTypeScale] = useState("1.25");
-  const [themeShadow, setThemeShadow] = useState("Soft");
+  // Radius, font, scale and shadow are the engine's theme settings (they persist with the project); the colours have no engine field yet
+  const theme = useEnvironmentStore((s) => s.environment.theme);
+  const updateEnvironment = useEnvironmentStore((s) => s.updateEnvironment);
+  const setTheme = (patch: Partial<typeof theme>) => updateEnvironment((env) => ({ ...env, theme: { ...env.theme, ...patch } }));
+  const radius = theme.defaultRadius;
+  const themeFont = theme.typography.family;
+  const typeScale = String(theme.typography.scaleRatio);
+  const themeShadow = SHADOW_OF(theme.elevation);
+  const fontOptions = PAGE_FONT_OPTIONS.some((o) => o.value === themeFont) ? PAGE_FONT_OPTIONS : [{ value: themeFont, label: themeFont }, ...PAGE_FONT_OPTIONS];
+  const scaleOptions = SCALE_OPTIONS.some((o) => o.value === typeScale) ? SCALE_OPTIONS : [{ value: typeScale, label: typeScale }, ...SCALE_OPTIONS];
   // The token each colour was picked from (null once a hex is typed in).
   const [linkedTokens, setLinkedTokens] = useState<Record<string, string | null>>({});
 
@@ -275,7 +287,7 @@ export const ThemeTokensBody: React.FC = () => {
           value={radius}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(r) => {
-            if (typeof r === "number") setRadius(r);
+            if (typeof r === "number") setTheme({ defaultRadius: Math.max(0, r) });
           }}
         />
       </div>
@@ -290,8 +302,8 @@ export const ThemeTokensBody: React.FC = () => {
           variant="floating"
           aria-label="Theme font"
           value={themeFont}
-          options={PAGE_FONT_OPTIONS}
-          onChange={(v) => setThemeFont(v)}
+          options={fontOptions}
+          onChange={(v) => setTheme({ typography: { ...theme.typography, family: v } })}
           className="ll:w-full ll-has-prefix-8"
         />
       </div>
@@ -306,8 +318,8 @@ export const ThemeTokensBody: React.FC = () => {
           variant="floating"
           aria-label="Type scale"
           value={typeScale}
-          options={SCALE_OPTIONS}
-          onChange={(v) => setTypeScale(v)}
+          options={scaleOptions}
+          onChange={(v) => setTheme({ typography: { ...theme.typography, scaleRatio: Number(v) } })}
           className="ll:w-full ll-has-prefix-10"
         />
       </div>
@@ -323,7 +335,7 @@ export const ThemeTokensBody: React.FC = () => {
           aria-label="Theme shadow"
           value={themeShadow}
           options={SHADOW_OPTIONS}
-          onChange={(v) => setThemeShadow(v)}
+          onChange={(v) => setTheme({ elevation: ELEVATION_OF[v] ?? "subtle_float" })}
           className="ll:w-full ll-has-prefix-14"
         />
       </div>

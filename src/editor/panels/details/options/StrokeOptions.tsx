@@ -6,7 +6,11 @@ import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { NumberField } from "@/editor/components/NumberField";
 import { RowColorField } from "../controls/RowColorField";
+import { isPropertyLegalFor } from "@/core/document/properties";
 import type { InspectorSectionProps, StrokeItem } from "../types";
+
+const NO_SVG_STROKE = "Cap, join and dash apply to shapes, vectors and icons, not to this layer";
+const NO_MITER = "Miter limit is not in the document model yet";
 
 export interface StrokeOptionsProps extends InspectorSectionProps {
   position?: "inside" | "center" | "outside";
@@ -78,7 +82,8 @@ export interface StrokeRowOptionsProps extends InspectorSectionProps {
  * Everything one stroke row has, in the row's own popover: colour, width, style and sides belong to the row; position, cap,
  * join, miter and dash are the layer's single stroke settings, so they read and write the layer.
  */
-export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onChangeStroke, getValue, onUpdateProp }) => {
+export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onChangeStroke, getValue, onUpdateProp, layer }) => {
+  const svgStroke = !layer || isPropertyLegalFor("svg.strokeLinecap", layer.archetype);
   const position = (getValue?.("stroke.align") as "inside" | "center" | "outside") ?? "inside";
   const cap = (getValue?.("svg.strokeLinecap") as "butt" | "round" | "square") ?? "round";
   const join = (getValue?.("svg.strokeLinejoin") as "miter" | "round" | "bevel") ?? "round";
@@ -121,18 +126,19 @@ export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onCh
 
       <OptionGroup>
         <OptionRow label="Cap">
-          <Select size="sm" aria-label="Line cap" value={cap} options={CAP_OPTIONS} onChange={(c) => onUpdateProp?.("svg.strokeLinecap", c as typeof cap)} className="ll:w-full" />
+          <div className="ll:w-full" title={svgStroke ? undefined : NO_SVG_STROKE}><Select size="sm" disabled={!svgStroke} aria-label="Line cap" value={cap} options={CAP_OPTIONS} onChange={(c) => onUpdateProp?.("svg.strokeLinecap", c as typeof cap)} className="ll:w-full" /></div>
         </OptionRow>
         <OptionRow label="Join">
-          <Select size="sm" aria-label="Line join" value={join} options={JOIN_OPTIONS} onChange={(j) => onUpdateProp?.("svg.strokeLinejoin", j as typeof join)} className="ll:w-full" />
+          <div className="ll:w-full" title={svgStroke ? undefined : NO_SVG_STROKE}><Select size="sm" disabled={!svgStroke} aria-label="Line join" value={join} options={JOIN_OPTIONS} onChange={(j) => onUpdateProp?.("svg.strokeLinejoin", j as typeof join)} className="ll:w-full" /></div>
         </OptionRow>
         <OptionRow label="Miter">
-          <NumberField size="sm" aria-label="Miter limit" value={miter} min={1} max={20} step={1} onChange={(m) => onUpdateProp?.("svg.strokeMiterlimit", m)} className="ll:w-full" />
+          <div className="ll:w-full" title={NO_MITER}><NumberField size="sm" disabled aria-label="Miter limit" value={miter} min={1} max={20} step={1} onChange={(m) => onUpdateProp?.("svg.strokeMiterlimit", m)} className="ll:w-full" /></div>
         </OptionRow>
         <OptionRow label="Dash">
-          <div className="dfield ll-dfield field ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:w-full">
+          <div title={svgStroke ? undefined : NO_SVG_STROKE} className="dfield ll-dfield field ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:w-full">
             <input
               type="text"
+              disabled={!svgStroke}
               aria-label="Dash array"
               placeholder="e.g. 4 2"
               value={dash}

@@ -9,6 +9,7 @@ import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom } from "@/core/viewport/camera";
+import { reportStagePan, usePanRequestStore } from "./panRequest";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
@@ -428,11 +429,16 @@ export const Stage: React.FC<StageProps> = ({
   }, [reportOrigin]);
   const cameraX = useCameraStore((c) => c.camera.x);
   const cameraY = useCameraStore((c) => c.camera.y);
+  const panReq = usePanRequestStore((s) => s.req);
   const [seenCamera, setSeenCamera] = useState({ x: cameraX, y: cameraY });
-  if (seenCamera.x !== cameraX || seenCamera.y !== cameraY) {
+  const [seenPanReq, setSeenPanReq] = useState(panReq);
+  if (seenCamera.x !== cameraX || seenCamera.y !== cameraY || seenPanReq !== panReq) {
     setSeenCamera({ x: cameraX, y: cameraY });
-    setDragPan({ x: 0, y: 0 });
+    setSeenPanReq(panReq);
+    // a camera action re-centres; zoom to selection also asks for the pan that puts the selection in the middle
+    setDragPan(panReq && panReq !== seenPanReq ? panReq.pan : { x: 0, y: 0 });
   }
+  useEffect(() => reportStagePan(pan), [pan]);
 
   // The wheel, as on the old canvas: a plain wheel or trackpad scroll pans, Ctrl or Cmd with the wheel (a pinch sends the same) zooms.
   // A native listener, because React's wheel listener is passive and could not stop the page from scrolling or zooming itself.

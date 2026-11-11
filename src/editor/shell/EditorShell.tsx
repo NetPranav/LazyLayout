@@ -31,6 +31,7 @@ import {
   FileDropOverlay,
 } from "./persistence";
 import { useEditorActions } from "./useEditorActions";
+import { installGestureUndo } from "./gestureUndo";
 import {
   useShellFx,
   useBottomCollapsed,
@@ -160,6 +161,8 @@ export function EditorShell({
 
   // Single centralized synchronization boundary between MDM v5 documentStore and Motion UI
   useEffect(() => installDocumentMotionSync(), []);
+  // A slider, scrub or colour-area drag is one undo step
+  useEffect(() => installGestureUndo(window), []);
 
   // One-clock transport command bindings and master driver
   useEffect(() => installTransportCommands(), []);
