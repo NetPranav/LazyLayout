@@ -1569,6 +1569,68 @@ The document and World Environment have their own stores, After-track actions mo
 
 ---
 
+# SURFACES TRACK — pulled forward (Phases S1–S8)
+
+> **Why here (2026-11-11, Lane A, by the project owner's priority):** the glossy "inflated" button (the collectui reference) can't be made from fills and shadows: it is light on a curved, creased surface that dents where it is pressed. These eight phases pull forward small, generic parts of Phases 175 (distance fields), 182 (surfaces and lights), 223 (inflate) and 75/179 (displacement), and add three pieces no phase had: surface creases and wrinkles, pointer-driven surface physics, and a one-step reference image. They work on any shape or frame, not only buttons. They keep their **S** numbers so the 277 phases are not renumbered; when Stage 4 is built, 175/182/223 extend these instead of starting again. Rendering: one shared WebGL2 context for every surface, drawn into each surface's own 2D canvas (`DOCS/INITIAL/decisions/0018-surface-rendering.md`), so Law 13 holds until the Phase 173 compositor takes over. Stage 4+ is not assigned to a lane; Lane B is told in the PR.
+
+### Phase S1 · Reference image
+**Needs:** 36 · **Status:** 🚧
+- [ ] **File > Place reference image** and Alt+drop: a picture placed behind everything on the page at 50% opacity, locked, and a helper (never exported, hidden in Preview). Its opacity and "on top / behind" are switches in the inspector.
+
+**You'll see:** a screenshot of what you're copying, under your design, that never ships.
+**Done when:** a placed reference is behind, locked, half transparent, absent from the export and from Preview.
+
+### Phase S2 · Surfaces: height from the shape
+**Needs:** S1 · **Status:** 🚧
+- [ ] Any frame or shape can be a **surface** (`surface.mode`: flat or inflated). Inflated: its height is a pressurised membrane fixed at its edge (a Poisson solve over the shape's mask, `src/core/surface/`), with **Depth** and **Fullness**. Drawn by one shared WebGL2 context into a canvas in the layer's box.
+
+**You'll see:** any rounded rectangle becomes a pillow.
+**Done when:** the solved height matches the analytic membrane on a circle within 1%; 20 surfaces share one WebGL context.
+
+### Phase S3 · Surface material & light
+**Needs:** S2 · **Status:** 🚧
+- [ ] Materials (Foil, Plastic, Satin) lit by a studio environment (a softbox above, a floor below), with gloss, Fresnel rim and edge occlusion. The colour is the layer's fill.
+
+**You'll see:** black foil, white plastic, satin, on any shape.
+**Done when:** a resting frame of the reference button is judged a match by a person, side by side.
+
+### Phase S4 · Creases & wrinkles
+**Needs:** S3 · **Status:** 🚧
+- [ ] Where an inflated surface runs short of material it buckles: diagonal creases from each corner along the shape's medial axis, and short wrinkles across the edges, seeded, with **Wrinkles**, **Wrinkle size**, **Creases** and **Seed**.
+
+**You'll see:** the corners of a pillow pinch and its edges crinkle.
+**Done when:** the same seed draws the same wrinkles every time; a person can't tell the resting button from the reference.
+
+### Phase S5 · Content on a surface
+**Needs:** S4 · **Status:** 🚧
+- [ ] A surface frame draws its text children onto itself: printed on the surface, lit with it and warped with it. The text stays real text (selectable, read by screen readers, editable).
+
+**You'll see:** a label that bends with the button.
+**Done when:** the text is still in the accessibility tree once, and follows a dent.
+
+### Phase S6 · Surface physics: press and ripple
+**Needs:** S5 · **Status:** 🚧
+- [ ] A damped membrane on the surface's grid: pressing pushes it in at the pointer, releasing lets it spring back with a ripple, the rest of the surface rises a little (the air goes somewhere), and wrinkles gather round the dent. **Stiffness**, **Damping**, **Dent depth**, **Dent size**. In Preview and on the exported site; never takes the pointer in Design (§10).
+
+**You'll see:** the button dents where you press it.
+**Done when:** a replay of the reference's presses, side by side with the video, is judged a match by a person.
+
+### Phase S7 · Surfaces in the export
+**Needs:** S6 · **Status:** 🚧
+- [ ] The exported site ships a small surface runtime (the same core and shader) and a still image for browsers without WebGL2.
+
+**You'll see:** the button works the same on your exported site.
+**Done when:** the export test presses an exported surface and sees the dent; with WebGL off it shows the still.
+
+### Phase S8 · Reference comparison harness
+**Needs:** S6 · **Status:** 🚧
+- [ ] Replays a reference video's input track (pointer path and presses) against a design, records it frame for frame, and builds a side-by-side page (both videos in sync, paired stills, a similarity score per frame).
+
+**You'll see:** the reference and ours, side by side, frame for frame.
+**Done when:** the reference button's comparison page is published and its score is recorded.
+
+---
+
 # STAGE 4 — INTERACTIVE & COMPLEX ANIMATION (Phases 132–202)
 
 > **Stage output:** anything can react to the **mouse, touch, scroll, keyboard, microphone, camera and gamepad**, and every layer knows where it is, how fast it moves and what is around it. One-step reactions ("Cursor → Bend"), one drag to connect any property to any input, and Pro binding graphs; magnet, tilt, follow and spotlight behaviours; squash and stretch; reactions that change layout inside fixed boxes; gestures (hold, swipe, fling, slingshot), constrained dragging, carousels and seamless loops; keyboard-driven motion and focus parity; Rive-style state machines. Kinetic composition from primitives: invisible helpers, follow pins, one-click Split, cloners, roles and selectors ("every button"), data-driven charts, fields and effectors, 2D physics with joints, ropes and soft bodies, and contact events. Interaction logic as Simple "When → Do" rules or Unreal-style Blueprint graphs, compiled to plain code; sound and haptics. GPU effects on a budgeted compositor: any layer as a texture, outline or distance field; effect layers, outline effects, liquid glass and 2D lights; shader graphs, particles, fluids and other simulations; deformation and fracture; image and text distortion, scroll-scrubbed sequences, smooth scrolling and depth parallax; custom cursors. Effects as data, bring-your-own code components, and production-hardened export with a small vendored runtime or an embed script.

@@ -12,7 +12,7 @@ Current schema: **v5** (on `main`).
 
 ## Decision records (`DOCS/INITIAL/decisions/`)
 
-Next free number: **0018** (0008 is the threat model and 0009 the render host; 0010–0017 are named in ROADMAP §6, where 0014 is the MCP bridge and 0015–0017 were added by ROADMAP v4.1). (0006 is unused on purpose; v3 numbers clashed, see ROADMAP §6.)
+Next free number: **0019** (0008 is the threat model and 0009 the render host; 0010–0017 are named in ROADMAP §6, where 0014 is the MCP bridge and 0015–0017 were added by ROADMAP v4.1). (0006 is unused on purpose; v3 numbers clashed, see ROADMAP §6.)
 
 | Number | Lane | Title | PR |
 |---|---|---|---|
@@ -22,6 +22,7 @@ Next free number: **0018** (0008 is the threat model and 0009 the render host; 0
 | 0015 | A (proposed) | Path engine: curve-exact booleans and offsets (Phase 103) | |
 | 0016 | unassigned | Scene rasteriser: any layer to pixels (Phase 172) | |
 | 0017 | unassigned | Rigging and deformation (Phase 203) | |
+| 0018 | A | Surface rendering: one shared WebGL2 context, drawn into each surface's 2D canvas (Phases S2–S7) | |
 
 ## New AUDIT IDs
 
