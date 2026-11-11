@@ -1,13 +1,9 @@
-<p align="left">
+<p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/logo-dark.svg">
-    <img src="public/logo.svg" alt="LazyLayout" width="72" height="72">
+    <source media="(prefers-color-scheme: dark)" srcset="public/readme/banner-dark.png">
+    <img src="public/readme/banner-light.png" alt="LazyLayout: design it once, ship it lazily" width="100%">
   </picture>
 </p>
-
-# LazyLayout
-
-**Design it once. Ship it lazily.**
 
 LazyLayout is an AI-native visual studio for building web pages and motion. You design on a canvas,
 animate on a timeline, and get clean, production-grade code out: GSAP, Framer Motion, SVG and CSS
@@ -18,7 +14,7 @@ that you can drop into any codebase. No lock-in, no runtime you have to keep.
 
 ---
 
-## What you get
+## (01) — What you get
 
 | Mode | What it is |
 | --- | --- |
@@ -29,7 +25,7 @@ that you can drop into any codebase. No lock-in, no runtime you have to keep.
 Everything you do edits one document. The compiler turns that document into code, so what you see
 in Code mode is what ships.
 
-## Highlights
+## (02) — Highlights
 
 - **One document, three views.** Design, Motion and Code read and write the same engine, and every
   edit goes through commands, so undo and redo work everywhere.
@@ -45,7 +41,7 @@ in Code mode is what ships.
 - **Themes.** Paper, Graphite and more, with a cross-fade between them.
 - **Command palette.** Ctrl+K reaches every command, including Export.
 
-## Quick start
+## (03) — Quick start
 
 ```bash
 npm install
@@ -58,7 +54,7 @@ previous editor is still available at `/editor/legacy`.
 This project runs on Next.js 16 and React 19, which have breaking changes from earlier versions.
 Read `AGENTS.md` before changing framework-level code.
 
-## Scripts
+## (04) — Scripts
 
 | Command | What it does |
 | --- | --- |
@@ -73,7 +69,7 @@ Read `AGENTS.md` before changing framework-level code.
 | `npm run test:canvas-contract` | Canvas, device-view and anchor suites (Chromium) |
 | `npm run export-harness` | Build the export-harness fixtures under `tests/export-harness/` |
 
-## How it is built
+## (05) — How it is built
 
 ```
 src/core            the engine: document model, commands, stores, templates (no DOM access)
@@ -94,7 +90,7 @@ live in `src/editor/components` and are shown on the `/design-system` page. UI r
 The full-vision product (logic blueprints, database studio, deployment, plugins, collaboration) is
 gated behind the `edition` flag (`src/core/flags.ts`) and does not ship in the current bundle.
 
-## Status
+## (06) — Status
 
 Honest list, as of this build. Checked means built, wired to the engine and exercised in a headless
 browser at 1440 px. Full details: `DOCS/UI/PROGRESS.md`.
@@ -117,7 +113,7 @@ browser at 1440 px. Full details: `DOCS/UI/PROGRESS.md`.
 **Not designed yet**
 - Breakpoint bar and device views, Tokens panel, Components and variants, Graph editor, Agent pairing.
 
-## Documentation
+## (07) — Documentation
 
 | Where | What |
 | --- | --- |
@@ -129,7 +125,7 @@ browser at 1440 px. Full details: `DOCS/UI/PROGRESS.md`.
 | `DOCS/TEAM/COLLABORATION.md` | How we work together: lanes, branches, PRs |
 | `DOCS/FUTURE/` | The full-vision track (not the active roadmap) |
 
-## Contributing
+## (08) — Contributing
 
 `main` changes only through pull requests with green CI. Work on a branch, never push to `main`.
 Read `DOCS/TEAM/COLLABORATION.md` first. Do not add `Co-Authored-By` trailers to commits or PRs in
