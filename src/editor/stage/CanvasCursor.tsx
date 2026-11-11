@@ -263,7 +263,8 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
 
       cancelAll(inc.s);
       cancelAll(inc.r);
-      inc.r.innerHTML = renderCursorSvg(kd);
+      // Parsed as an SVG document and adopted, not assigned as an HTML string (the stage builds no HTML strings).
+      inc.r.replaceChildren(document.importNode(new DOMParser().parseFromString(renderCursorSvg(kd), "image/svg+xml").documentElement, true));
       inc.s.style.left = `calc(-${g.x} * var(--ll-size-cursor) / ${GLYPH_GRID})`;
       inc.s.style.top = `calc(-${g.y} * var(--ll-size-cursor) / ${GLYPH_GRID})`;
       inc.s.style.transformOrigin = `calc(${g.x} * var(--ll-size-cursor) / ${GLYPH_GRID}) calc(${g.y} * var(--ll-size-cursor) / ${GLYPH_GRID})`;
