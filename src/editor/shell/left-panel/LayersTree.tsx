@@ -387,11 +387,24 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   });
 
   // Cascade rows on layer data / page change (matching prototype cascade line 6098 / 11413)
+  // Runs only when the set of rows changes (first paint, page switch, a layer added or removed), never on a plain edit
+  // such as opacity or fill, and then only the rows that are new pop in (the whole list on first paint or a page switch).
+  const rowIdsKey = visibleNodes.map((n) => n.id).join("|");
+  const seenRowIds = useRef<Set<string> | null>(null);
   useEffect(() => {
     const tree = treeRef.current;
+    const ids = rowIdsKey ? rowIdsKey.split("|") : [];
+    const prev = seenRowIds.current;
+    seenRowIds.current = new Set(ids);
     if (!tree || prefersReducedMotion()) return;
+    const fresh = prev ? ids.filter((id) => !prev.has(id)) : ids;
+    if (fresh.length === 0) return;
+    const wholeList = !prev || prev.size === 0 || fresh.length > ids.length / 2;
+    const freshSet = new Set(fresh);
     const p = getMotion().current();
-    const rows = Array.from(tree.querySelectorAll<HTMLElement>(".row:not(.lcl)"));
+    const rows = Array.from(tree.querySelectorAll<HTMLElement>(".row:not(.lcl)")).filter(
+      (r) => wholeList || freshSet.has(r.getAttribute("data-sel") ?? "")
+    );
     const rs = String(1 - (1 - Number(p.rowScale)) * 0.5);
 
     rows.slice(0, 16).forEach((r, i) => {
@@ -406,7 +419,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
         { delay: Math.min(i, 14) * (p.stagger || 18), fill: "backwards" }
       );
     });
-  }, [layers]);
+  }, [rowIdsKey]);
 
   const handleTreeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "F2") {
