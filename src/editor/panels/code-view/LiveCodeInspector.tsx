@@ -1,5 +1,6 @@
 "use client";
 
+import { useExportSamples } from "@/editor/panels/code-view/useExportSamples";
 import React, { useState, useMemo, useCallback } from "react";
 import {
   FileCode,
@@ -181,7 +182,7 @@ export const LiveCodeInspector: React.FC<LiveCodeInspectorProps> = ({
   const pages = useProjectStore((s) => s.pages);
   const elements = useLayers();
   const databaseSchemas = useProjectStore((s) => s.databaseSchemas);
-  const animationSamples = useProjectStore((s) => s.animationSamples);
+  const animationSamples = useExportSamples();
   const blueprintGraphs = useProjectStore((s) => s.blueprintGraphs);
   const projectName = useProjectMetaStore((s) => s.projectName);
   const _selectedElementId = useSelectionStore((s) => s.selectedId);
