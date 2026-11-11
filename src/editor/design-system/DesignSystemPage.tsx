@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreencastKeysDemo } from "./demos/ScreencastKeysDemo";
 import React, { useEffect, useState, useRef, useCallback, useSyncExternalStore } from "react";
 import { Swatch } from "../components/Swatch";
 import { WorkspaceFrame } from "../components/WorkspaceFrame";
@@ -330,6 +331,7 @@ const CANVAS_NAV: readonly NavItem[] = [
   { id: "rulers", label: "Rulers" },
   { id: "stage-selection", label: "Stage & Selection Handles" },
   { id: "motion-paths", label: "Motion Path Overlay" },
+  { id: "screencast-keys", label: "Show Keystrokes" },
 ];
 
 const PANELS_NAV: readonly NavItem[] = [
@@ -1608,6 +1610,7 @@ export function DesignSystemPage() {
             {activeSection === "rulers" && <RulersDemo />}
             {activeSection === "stage-selection" && <StageSelectionDemo />}
             {activeSection === "motion-paths" && <MotionPathOverlayDemo />}
+            {activeSection === "screencast-keys" && <ScreencastKeysDemo />}
 
             {/* 5. Panels & Details */}
             {activeSection === "panel-section" && <PanelSectionDemo />}
