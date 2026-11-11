@@ -12,6 +12,8 @@ test.use({ viewport: { width: 1600, height: 1000 } });
 test("Phase 55: frame scheduler deterministic stepping synchronizes transport, Motion store, ValueHud and canvas page in lockstep", async ({ page }) => {
   // Inject __LL_TEST__ before page load to activate test seams
   await page.addInitScript(() => {
+    // frame-exact stepping: keep every layer on the kernel (a Web Animation runs on wall time, not on scheduler steps)
+    (window as unknown as { __LL_KERNEL_ONLY__: boolean }).__LL_KERNEL_ONLY__ = true;
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
 
@@ -79,12 +81,13 @@ test("Phase 55: frame scheduler deterministic stepping synchronizes transport, M
     const hudFrameStr = await hud.getAttribute("data-frame");
     expect(Number(hudFrameStr), `Value HUD overlay frame matches step ${frame}`).toBe(frame);
 
-    // d. Drawn layer opacity in stage page matches evaluated entrance animation
-    // Headline keyframes in prototypeDocument: opacity 0 at t=0, opacity 1 at t=0.6s (frame 36)
-    const drawnOpacityStr = await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity);
-    const drawnOpacity = parseFloat(drawnOpacityStr);
-    const expectedOpacity = frame / 36;
-    expect(drawnOpacity, `Drawn headline opacity at frame ${frame}`).toBeCloseTo(expectedOpacity, 1);
+    // d. The drawn headline shows the engine's value for this frame (its fade-in is eased, so the kernel is the reference)
+    const drawnOpacity = parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity));
+    const kernelOpacity = await page.evaluate(
+      (f) => (window as unknown as { __LL_ENGINE__: { kernel: (id: string, t: number) => Record<string, unknown> } }).__LL_ENGINE__.kernel("headline", f / 60)["appearance.opacity"] as number,
+      frame,
+    );
+    expect(drawnOpacity, `Drawn headline opacity at frame ${frame}`).toBeCloseTo(kernelOpacity, 2);
   }
 
   // 6. Pause playback: seeking / stepping while paused applies immediately without needing a step

@@ -17,6 +17,8 @@ test.use({ viewport: { width: 1600, height: 1000 } });
 test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and timeline in lockstep, and leaves no stale inline styles on pause", async ({ page }) => {
   // 1. Enable test seams before page load
   await page.addInitScript(() => {
+    // frame-exact stepping: keep every layer on the kernel (a Web Animation runs on wall time, not on scheduler steps)
+    (window as unknown as { __LL_KERNEL_ONLY__: boolean }).__LL_KERNEL_ONLY__ = true;
     (window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true;
   });
 
@@ -118,11 +120,10 @@ test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and ti
     const needleFrame = Number(playheadFrameStr);
     expect(Math.abs(needleFrame - transportFrame), `Needle frame (${needleFrame}) and transport frame (${transportFrame}) agree within 1 frame`).toBeLessThanOrEqual(1);
 
-    // Drawn headline opacity: prototype entrance animates opacity from 0 to 1 over 36 frames (0.6s)
-    const drawnOpacityStr = await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity);
-    const drawnOpacity = parseFloat(drawnOpacityStr);
-    const headlineEvaluatedFrame = Math.round(drawnOpacity * 36);
-    expect(Math.abs(headlineEvaluatedFrame - transportFrame), `Headline frame (${headlineEvaluatedFrame}) and transport frame (${transportFrame}) agree within 1 frame`).toBeLessThanOrEqual(1);
+    // The drawn headline shows the engine's value for the transport's frame (its fade-in is eased: the kernel is the reference)
+    const drawnOpacity = parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity));
+    const kernelNow = await page.evaluate((f: number) => (window as unknown as { __LL_ENGINE__: { kernel: (id: string, t: number) => Record<string, unknown> } }).__LL_ENGINE__.kernel("headline", f / 60)["appearance.opacity"] as number, transportFrame);
+    expect(drawnOpacity, `Headline opacity at frame ${transportFrame}`).toBeCloseTo(kernelNow, 2);
   }
 
   // 4. Pause playback and check no stale inline style overrides remain
@@ -131,14 +132,20 @@ test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and ti
 
   // After pause React draws the paused frame itself (it writes opacity inline too), so an inline value is expected.
   // What must not survive is a value playback wrote: step one frame while paused, and the drawn opacity must be the
-  // new frame's (11 / 36), not the last value playback left.
+  // new frame's (the kernel's value at frame 11), not the last value playback left.
   await bar.getByRole("button", { name: "Step forward (Right)" }).click();
-  await expect.poll(async () => parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity)), "after a paused step, the drawn opacity is the new frame's").toBeCloseTo(11 / 36, 1);
+  // the scheduler is still in manual (deterministic) mode here: run the frame the step asks for
+  await page.evaluate(() => (window as unknown as { __LL_SCHEDULER__: { step: (dt: number) => void } }).__LL_SCHEDULER__.step(0));
+  const kernelAt11 = await page.evaluate(
+    () => (window as unknown as { __LL_ENGINE__: { kernel: (id: string, t: number) => Record<string, unknown> } }).__LL_ENGINE__.kernel("headline", 11 / 60)["appearance.opacity"] as number,
+  );
+  await expect.poll(async () => parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity)), "after a paused step, the drawn opacity is the new frame's").toBeCloseTo(kernelAt11, 2);
   await bar.getByRole("button", { name: "Step back (Left)" }).click();
 
-  // Computed opacity should match evaluated frame 10 (10 / 36 ~ 0.28)
-  const computedOpacity = await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity);
-  expect(parseFloat(computedOpacity)).toBeCloseTo(10 / 36, 1);
+  // and back to frame 10
+  await page.evaluate(() => (window as unknown as { __LL_SCHEDULER__: { step: (dt: number) => void } }).__LL_SCHEDULER__.step(0));
+  const kernelAt10 = await page.evaluate((f: number) => (window as unknown as { __LL_ENGINE__: { kernel: (id: string, t: number) => Record<string, unknown> } }).__LL_ENGINE__.kernel("headline", f / 60)["appearance.opacity"] as number, 10);
+  await expect.poll(async () => parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity))).toBeCloseTo(kernelAt10, 2);
 
   // 5. Verify Design-at-rest rule: in Design tab, headline is fully visible (opacity 1)
   await page.getByRole("tab", { name: "Design" }).click();
