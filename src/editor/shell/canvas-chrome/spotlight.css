@@ -428,3 +428,17 @@
     filter: none !important;
   }
 }
+
+/* Phone width: the tool bar is wider than the screen, so it stays inside it and scrolls sideways */
+@media (max-width: 480px) {
+  .ll-ftool,
+  .ftool {
+    max-width: calc(100% - var(--ll-spacing-4) * 2);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ll-ftool::-webkit-scrollbar,
+  .ftool::-webkit-scrollbar {
+    display: none;
+  }
+}

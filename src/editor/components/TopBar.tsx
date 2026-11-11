@@ -369,11 +369,11 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* 1px hairline divider (height 20px, margin 0 4px, visible in Noir) */}
         <i
           aria-hidden="true"
-          className="tdiv ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
+          className="tdiv ll-tdiv ll:block ll:max-sm:hidden ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
         />
 
         {/* Project Name (14px, 500 font-weight, truncate) */}
-        <div className="pinfo ll-pinfo ll:flex ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
+        <div className="pinfo ll-pinfo ll:flex ll:max-sm:hidden ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
           <span
             className="pname ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
             title={projectName}

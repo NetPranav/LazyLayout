@@ -188,6 +188,7 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
       tabIndex={-1}
       style={{
         width: "var(--ll-size-insert-w, 520px)",
+        maxWidth: "calc(100% - var(--ll-spacing-4) * 2)", // stays on a phone-width screen
         height: "var(--ll-size-insert-h, 400px)",
         bottom: "var(--ll-bottom-floating, 74px)",
       }}
