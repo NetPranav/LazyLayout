@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+
+const subscribeNever = () => () => {};
 import { Rulers } from "./Rulers";
 import { Toolbar } from "./Toolbar";
 import { InsertBox } from "./InsertBox";
@@ -590,7 +592,19 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   ]);
 
   // Stage grid style inline calculations using tokens without raw pixel literals
+  // The first client render must match the server HTML (defaults); saved canvas settings apply right after hydration.
+  const hydrated = React.useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false
+  );
+  const checkerboardSaved = checkerboard;
+  const gridStyleSaved = gridStyle;
+  const gridSizeSaved = gridSize;
   const stageBackgroundStyle = React.useMemo(() => {
+    const checkerboard = hydrated && checkerboardSaved;
+    const gridStyle = hydrated ? gridStyleSaved : "dots";
+    const gridSize = hydrated ? gridSizeSaved : 24;
     if (checkerboard) {
       return {
         background:
@@ -614,7 +628,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     return {
       backgroundColor: "var(--ll-surface-canvas)",
     };
-  }, [checkerboard, gridStyle, gridSize]);
+  }, [hydrated, checkerboardSaved, gridStyleSaved, gridSizeSaved]);
 
   return (
     <main
