@@ -7,6 +7,8 @@ import { booleanGroupD, isBooleanOp } from "../../editing/layerOutline";
 import { useDocument } from "../../store/useDocumentStore";
 import { ShapePaint } from "../shapePaint";
 import { BlurBands } from "../effectsRender";
+import { SurfaceView } from "../surfaceView";
+import { isSurface } from "../../surface/settings";
 
 /** `container` and `form`: a flex box that lays out its children. */
 export const Container: React.FC<ArchetypeRenderProps> = (props) => {
@@ -83,9 +85,12 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
   const fill = useFillStyle(layer, resolved, resolved.str("appearance.background.color", "transparent"));
   // FigCraft port F11: a group or a section (a section shows its name at its top)
   const kind = resolved.str("frame.kind", "frame");
+  // Surfaces (S2–S6): an inflated frame draws its surface under its content and prints its text on it
+  const surface = isSurface((path) => resolved.get(path));
   return (
     <div
       ref={nodeRef}
+      data-surface-host={surface ? "" : undefined}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
       data-mirror-of={ctx.mode !== "export" && layer.properties["frame.mirrorOf"] ? String(layer.properties["frame.mirrorOf"]) : undefined}
@@ -110,9 +115,19 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
         ...fill.style,
         borderRadius: px(resolved.num("appearance.radius", 0)),
         ...border,
+        ...(surface ? { background: "transparent", backgroundImage: "none", isolation: "isolate" as const } : {}),
       }}
     >
-      {fill.overlay}
+      {surface ? (
+        <SurfaceView
+          resolved={resolved}
+          geometry={{ width: Math.max(1, resolved.num("frame.width", 100)), height: Math.max(1, resolved.num("frame.height", 100)), radius: Math.max(0, resolved.num("appearance.radius", 0)), kind: "roundedRect" }}
+          interactive={ctx.mode === "preview" || ctx.mode === "export"}
+          content={resolved.get("surface.drawContent") !== false}
+        />
+      ) : (
+        fill.overlay
+      )}
       {kind === "section" && (
         <span data-section-label="" aria-hidden="true" style={{ position: "absolute", left: 8, top: 8, padding: "2px 8px", borderRadius: 6, background: "rgba(255,255,255,0.9)", color: "#0f172a", font: "500 12px/1.4 system-ui, sans-serif", whiteSpace: "nowrap", pointerEvents: "none" }}>
           {layer.name}

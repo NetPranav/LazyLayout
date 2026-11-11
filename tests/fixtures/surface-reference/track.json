@@ -1,0 +1,15 @@
+{
+  "source": "https://cdn.collectui.com/amplify_video/2108820482267152384/vid/avc1/720x720/upeVKqkB7rTIFolU-optimized.mp4",
+  "note": "The reference video's input, read from its frames (2026-11-11): the cursor tip in the video's 720x720 frame, and when it presses. Not the video itself (it isn't ours to ship): the harness downloads it.",
+  "size": [720, 720],
+  "duration": 11.8,
+  "button": { "x": 133, "y": 278, "width": 454, "height": 160 },
+  "cursor": [
+    [0.0, 640, 760], [0.8, 590, 700], [1.0, 552, 600], [1.3, 440, 410], [1.5, 300, 350], [1.7, 243, 340],
+    [3.1, 243, 340], [3.4, 330, 330], [3.7, 470, 370], [3.9, 498, 385],
+    [5.3, 498, 385], [5.6, 450, 345], [5.9, 380, 330], [6.05, 362, 328],
+    [7.4, 362, 328], [7.7, 300, 350], [8.0, 200, 370], [8.25, 162, 375],
+    [9.8, 162, 375], [10.2, 260, 760], [11.8, 260, 760]
+  ],
+  "presses": [[1.8, 2.0], [4.0, 4.2], [6.1, 6.3], [8.3, 8.5]]
+}

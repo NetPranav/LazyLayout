@@ -182,6 +182,7 @@ const LAYOUT = section("layout", "container_layout");
 const FLEX = section("container_layout");
 const BUTTON = only("button", "fab");
 const IMAGE = only("image");
+const SURFACE = only("container", "rectangle", "ellipse");
 /** Parametric shape archetypes (Phase 7.6). */
 export const SHAPE_ARCHETYPES = ["rectangle", "ellipse", "line", "polygon", "star", "arrow"] as const satisfies readonly ArchetypeId[];
 const SVG_STROKED = only("icon", "svgPath", "svgGroup", "svgUse", "svgText", ...SHAPE_ARCHETYPES);
@@ -462,6 +463,39 @@ const DEFS = {
   "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
   /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
   "typography.textPath": typed(str("", null, "layout", only("text"))),
+
+  // --- Surfaces (ROADMAP S2–S6) ---------------------------------------------------
+  /** Flat (a normal fill) or inflated: the layer is a surface with height, lit by a studio light, that dents when pressed. */
+  "surface.mode": oneOf(["flat", "inflated"], "flat", null, "paint", SURFACE),
+  /** Height of the highest point, px. */
+  "surface.depth": ranged(px(22, null, "paint", SURFACE), { min: 0, max: 200 }),
+  /** 0: a soft dome; 1: a full pillow with steep sides and a flat top. */
+  "surface.fullness": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
+  /** Foil (metallised film), plastic or satin; the colour is the layer's fill. */
+  "surface.material": oneOf(["foil", "plastic", "satin"], "foil", null, "paint", SURFACE),
+  "surface.gloss": ranged(num(1, null, "paint", SURFACE), { min: 0, max: 1 }),
+  /** Folds from the corners where the surface runs short of material (S4). */
+  "surface.creases": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.creaseLength": ranged(px(70, null, "paint", SURFACE), { min: 0, max: 400 }),
+  /** Short ridges across the edge (S4). */
+  "surface.wrinkles": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.wrinkleSize": ranged(px(12, null, "paint", SURFACE), { min: 2, max: 100 }),
+  "surface.wrinkleLength": ranged(px(22, null, "paint", SURFACE), { min: 1, max: 200 }),
+  /** Fine crumple over the whole surface. */
+  "surface.crinkle": ranged(num(0.25, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.seed": ranged(num(1, null, "paint", SURFACE, false), { min: 0, max: 1000000 }),
+  /** Press physics (S6): how fast it springs back, how much it rings, how deep and wide a press goes. */
+  "surface.stiffness": ranged(num(520, null, "paint", SURFACE), { min: 50, max: 3000 }),
+  "surface.damping": ranged(num(0.35, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.dentDepth": ranged(px(14, null, "paint", SURFACE), { min: 0, max: 200 }),
+  "surface.dentSize": ranged(px(34, null, "paint", SURFACE), { min: 2, max: 400 }),
+  "surface.volume": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.give": ranged(num(0.02, null, "paint", SURFACE), { min: 0, max: 0.1 }),
+  "surface.pressWrinkles": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
+  /** Text on the surface (S5): drawn onto it; how much it bends with the slope and is pulled into a press. */
+  "surface.drawContent": flag(true, "paint", only("container")),
+  "surface.contentWarp": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 4 }),
+  "surface.contentPull": ranged(num(0.35, null, "paint", SURFACE), { min: 0, max: 2 }),
 
   // --- Content ---------------------------------------------------------------
   "content.text": str("", null, "layout", only("text", "svgText", "generic")),
