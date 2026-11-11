@@ -5,6 +5,10 @@ import { PhosphorMotionIcon } from "@/editor/components/icons/PhosphorIcon";
 import { OptionGroup, OptionRow, OptionTwo, OptionGrid4, OptionGridLabel } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
+import { Button } from "@/editor/components/Button";
+import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshWarp";
+import { formatPinInLayer } from "@/core/geometry/cornerPin";
+import { TRANSFORM_ORIGIN_OPTIONS } from "../constants";
 import type { InspectorSectionProps } from "../types";
 
 export interface PositionOptionsProps extends InspectorSectionProps {
@@ -20,14 +24,14 @@ export interface PositionOptionsProps extends InspectorSectionProps {
   skewY?: number;
   rotateX?: number;
   rotateY?: number;
-  origin?: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  origin?: string;
   onChangeType?: (t: "static" | "relative" | "absolute" | "fixed" | "sticky") => void;
   onChangeZIndex?: (z: number) => void;
   onChangeOffset?: (side: "top" | "right" | "bottom" | "left", val: number) => void;
   onChangeScale?: (axis: "x" | "y", val: number) => void;
   onChangeSkew?: (axis: "x" | "y", val: number) => void;
   onChangeRotate3D?: (axis: "x" | "y", val: number) => void;
-  onChangeOrigin?: (origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right") => void;
+  onChangeOrigin?: (origin: string) => void;
 }
 
 const TYPE_OPTIONS = [
@@ -36,14 +40,6 @@ const TYPE_OPTIONS = [
   { value: "absolute", label: "Absolute" },
   { value: "fixed", label: "Fixed" },
   { value: "sticky", label: "Sticky" },
-] as const;
-
-const ORIGIN_OPTIONS = [
-  { value: "center", label: "Center" },
-  { value: "top-left", label: "Top left" },
-  { value: "top-right", label: "Top right" },
-  { value: "bottom-left", label: "Bottom left" },
-  { value: "bottom-right", label: "Bottom right" },
 ] as const;
 
 export const PositionOptions: React.FC<PositionOptionsProps> = ({
@@ -82,7 +78,21 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
   const currentSkewY = typeof getValue?.("transform.skewY") === "number" ? (getValue?.("transform.skewY") as number) : propSkewY;
   const currentRotateX = typeof getValue?.("transform.rotateX") === "number" ? (getValue?.("transform.rotateX") as number) : propRotateX;
   const currentRotateY = typeof getValue?.("transform.rotateY") === "number" ? (getValue?.("transform.rotateY") as number) : propRotateY;
-  const currentOrigin = (getValue?.("transform.origin") as typeof propOrigin) ?? propOrigin;
+  const currentOrigin = (getValue?.("transform.origin") as string) || propOrigin;
+
+  const meshVal = getValue?.("transform.mesh");
+  const mesh = parseMesh(meshVal);
+  const hasMesh = mesh !== null;
+  const x = Number(getValue?.("frame.x") ?? 0);
+  const y = Number(getValue?.("frame.y") ?? 0);
+  const w = Number(getValue?.("frame.width") ?? 0);
+  const h = Number(getValue?.("frame.height") ?? 0);
+  const [meshGrid, setMeshGrid] = useState<string>("3x3");
+  const currentGrid = mesh ? `${mesh.cols}x${mesh.rows}` : meshGrid;
+
+  const pinVal = getValue?.("transform.pin");
+  const pinned = typeof pinVal === "string" && pinVal !== "";
+  const flat = formatPinInLayer([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], [x, y]);
 
   const type = currentType;
   const zIndex = currentZIndex;
@@ -275,7 +285,7 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
             size="sm"
             aria-label="Transform origin"
             value={origin}
-            options={ORIGIN_OPTIONS}
+            options={TRANSFORM_ORIGIN_OPTIONS}
             onChange={(o) => {
               const next = o as typeof origin;
               onUpdateProp?.("transform.origin", next);
@@ -283,6 +293,87 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
             }}
             className="ll:w-full"
           />
+        </OptionRow>
+      </OptionGroup>
+
+      {/* Group 5: Surface & Warp Mesh */}
+      <OptionGroup>
+        <OptionRow label="Corner pin">
+          <div className="ll:flex ll:gap-1.5 ll:w-full">
+            <Button
+              size="sm"
+              aria-label={pinned ? "Reset corner pin" : "Pin corners"}
+              disabled={w <= 0 || h <= 0}
+              title="Puts four handles on the layer's corners and a grid on the surface. Drag each handle onto a corner of the road, wall or screen the layer should lie on."
+              onClick={() => onUpdateProp?.("transform.pin", flat)}
+            >
+              {pinned ? "Reset pin" : "Pin corners"}
+            </Button>
+            {pinned && (
+              <Button size="sm" aria-label="Remove corner pin" onClick={() => onUpdateProp?.("transform.pin", "")}>
+                Remove pin
+              </Button>
+            )}
+          </div>
+        </OptionRow>
+
+        <OptionRow label="Warp mesh">
+          <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
+            <div className="ll:flex ll:items-center ll:gap-1.5">
+              <Select
+                size="sm"
+                aria-label="Mesh grid size"
+                value={currentGrid}
+                options={[
+                  { value: "3x3", label: "3×3" },
+                  { value: "4x4", label: "4×4" },
+                  { value: "5x5", label: "5×5" },
+                ]}
+                onChange={(val) => {
+                  setMeshGrid(val);
+                  const [c, r] = val.split("x").map(Number);
+                  onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
+                }}
+                className="ll:flex-1"
+              />
+              {!hasMesh ? (
+                <Button
+                  size="sm"
+                  aria-label="Warp mesh"
+                  disabled={w <= 0 || h <= 0}
+                  title="Creates a multi-point mesh grid across the layer to bend it along curves and surfaces."
+                  onClick={() => {
+                    const [c, r] = currentGrid.split("x").map(Number);
+                    onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, c, r), [x, y]));
+                  }}
+                >
+                  Warp mesh
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    aria-label="Reset warp mesh"
+                    title="Resets mesh control points to a flat grid."
+                    onClick={() => onUpdateProp?.("transform.mesh", formatMeshInLayer(defaultMesh(x, y, w, h, mesh.cols, mesh.rows), [x, y]))}
+                  >
+                    Reset mesh
+                  </Button>
+                  <Button
+                    size="sm"
+                    aria-label="Remove warp mesh"
+                    title="Removes the warp mesh and restores the plain layer."
+                    onClick={() => onUpdateProp?.("transform.mesh", "")}
+                  >
+                    Remove mesh
+                  </Button>
+                </>
+              )}
+            </div>
+            <span className="ll:text-micro ll:font-sans ll:text-muted">
+              Bend along a curve: drag control points to warp. Shift-drag moves row.
+            </span>
+          </div>
         </OptionRow>
       </OptionGroup>
     </div>

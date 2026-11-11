@@ -67,7 +67,8 @@ export const PanelSection: React.FC<PanelSectionProps> = ({
             <IconButton
               size="sm"
               pressed={showMore}
-              aria-label={`Toggle advanced ${title} options`}
+              aria-label={`More ${title} options`}
+              tooltip={`More ${title} options`}
               icon={<Icon icon={MoreHorizontal} size={14} />}
               onClick={() => setShowMore((prev) => !prev)}
             />

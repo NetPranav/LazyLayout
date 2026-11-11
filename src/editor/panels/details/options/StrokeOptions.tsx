@@ -95,17 +95,19 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
     ? (getValue?.("svg.strokeWidth") as number)
     : propWidth;
   const currentStyle = (getValue?.("appearance.border.style") as typeof propStyle) ?? propStyle;
+  const currentSides = (getValue?.("stroke.sides") as typeof propSides) ?? propSides;
   const currentCap = (getValue?.("svg.strokeLinecap") as typeof propCap) ?? propCap;
   const currentJoin = (getValue?.("svg.strokeLinejoin") as typeof propJoin) ?? propJoin;
+  const currentMiter = typeof getValue?.("svg.strokeMiterlimit") === "number" ? (getValue?.("svg.strokeMiterlimit") as number) : propMiter;
   const currentDash = (getValue?.("svg.strokeDasharray") as string) || propDash;
 
   const position = currentPos;
   const width = currentWidth;
   const style = currentStyle;
-  const [sides, setSides] = useState(propSides);
+  const sides = currentSides;
   const cap = currentCap;
   const join = currentJoin;
-  const [miter, setMiter] = useState(propMiter);
+  const miter = currentMiter;
   const [typingDash, setTypingDash] = useState<string | null>(null);
   const dash = typingDash ?? currentDash;
 
@@ -168,7 +170,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             options={SIDES_OPTIONS}
             value={sides}
             onChange={(sd) => {
-              setSides(sd);
+              onUpdateProp?.("stroke.sides", sd);
               onChangeSides?.(sd);
             }}
             className="ll:w-full"
@@ -217,7 +219,7 @@ export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
             max={20}
             step={1}
             onChange={(m) => {
-              setMiter(m);
+              onUpdateProp?.("svg.strokeMiterlimit", m);
               onChangeMiter?.(m);
             }}
             className="ll:w-full"

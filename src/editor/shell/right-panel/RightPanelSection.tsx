@@ -109,8 +109,8 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               pressed={isPopoverOpen}
               aria-expanded={isPopoverOpen}
               aria-controls={moreId}
-              aria-label={`${title} options`}
-              tooltip={`${title} options`}
+              aria-label={`More ${title} options`}
+              tooltip={`More ${title} options`}
               data-more
               onClick={(e) => {
                 e.stopPropagation();

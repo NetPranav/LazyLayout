@@ -6,6 +6,7 @@ import type { Layer } from "@/core/document/schema";
 import type { PropValue } from "@/core/document/registry";
 import {
   PRESET_PIN_NAMES,
+  PRESET_PIN_ALIASES,
   resolveLayerAnchor,
   resolvePresetPinPosition,
   findNearestPresetPin,
@@ -314,7 +315,10 @@ export const AnchorOverlay: React.FC<AnchorOverlayProps> = ({
         data-testid="anchor-point-handle"
         data-anchor-x={Math.round(currentAnchor[0])}
         data-anchor-y={Math.round(currentAnchor[1])}
-        data-anchor-preset={dragState?.snappedPreset || (typeof layer?.properties?.["transform.origin"] === "string" ? layer.properties["transform.origin"] : "center")}
+        data-anchor-preset={(() => {
+          const raw = dragState?.snappedPreset || (typeof layer?.properties?.["transform.origin"] === "string" ? layer.properties["transform.origin"] : "center");
+          return PRESET_PIN_ALIASES[raw] ?? raw;
+        })()}
         data-interactive={modifier && armedFor === selectedIds[0] ? "true" : "false"}
         className={`ll:absolute ll:group ll:select-none ${modifier && armedFor === selectedIds[0] ? "ll:pointer-events-auto ll:cursor-grab active:ll:cursor-grabbing" : "ll:pointer-events-none"}`}
         style={{

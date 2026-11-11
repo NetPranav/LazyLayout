@@ -130,6 +130,12 @@ export interface UseEditorActionsReturn {
   setMarqueeMode: (mode: "intersects" | "encloses") => void;
   snapThreshold: number;
   setSnapThreshold: (threshold: number) => void;
+  smartGuides: boolean;
+  toggleSmartGuides: () => void;
+  panMethod: "space" | "middle" | "blank";
+  setPanMethod: (method: "space" | "middle" | "blank") => void;
+  zoomSpeed: "normal" | "fast";
+  setZoomSpeed: (speed: "normal" | "fast") => void;
 
   // File import / export
   exportProjectFile: () => Promise<void>;
@@ -1499,6 +1505,12 @@ export function useEditorActions(
       setMarqueeMode: canvasSettings.setMarqueeMode,
       snapThreshold: canvasSettings.snapThreshold,
       setSnapThreshold: canvasSettings.setSnapThreshold,
+      smartGuides: canvasSettings.smartGuides,
+      toggleSmartGuides: canvasSettings.toggleSmartGuides,
+      panMethod: canvasSettings.panMethod,
+      setPanMethod: canvasSettings.setPanMethod,
+      zoomSpeed: canvasSettings.zoomSpeed,
+      setZoomSpeed: canvasSettings.setZoomSpeed,
       exportProjectFile,
       importProjectFile,
     }),

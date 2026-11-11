@@ -18,7 +18,6 @@ import { useProjectLock } from "@/legacy-editor/shell/hooks/useProjectLock";
 import { useShellCommands } from "@/legacy-editor/shell/hooks/useShellCommands";
 import { projectSession } from "@/core/storage/ProjectSession";
 import { isUntouchedSeed, seedPrototypeDocument, upgradeSavedProject } from "./prototypeDocument";
-import { ConnectedCommandPalette } from "./ConnectedCommandPalette";
 import { FontSync } from "@/legacy-editor/fonts/FontSync";
 import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
 import { ExportDialog } from "@/legacy-editor/shell/ExportDialog";
@@ -33,6 +32,7 @@ import {
 import { useEditorActions } from "./useEditorActions";
 import {
   useShellFx,
+  useBottomCollapsed,
   LEFT_PANEL_MIN,
   LEFT_PANEL_DEFAULT,
   LEFT_PANEL_MAX,
@@ -129,7 +129,11 @@ export function EditorShell({
   });
   const timelineFullWidth = useMotionModel((s) => s.fullWidth);
   const bottomOpen = !actions.isZen && (actions.mode === "motion" || actions.mode === "code");
-  const fullWidth = bottomOpen && timelineFullWidth;
+  // Full width belongs to the Motion timeline only; Code always keeps its side panels.
+  const fullWidth = bottomOpen && actions.mode === "motion" && timelineFullWidth;
+  const bcMotion = useBottomCollapsed("motion");
+  const bcCode = useBottomCollapsed("code");
+  const bottomCollapsed = bottomOpen && (actions.mode === "motion" ? bcMotion : bcCode);
 
   // Panel springs, mode-switch content transitions: runs before paint, after the new attributes are in the DOM.
   useLayoutEffect(() => {
@@ -146,6 +150,7 @@ export function EditorShell({
     actions.isRightCollapsed,
     actions.isZen,
     fullWidth,
+    bottomCollapsed,
   ]);
 
   // Project persistence, locking and shell commands
@@ -211,8 +216,14 @@ export function EditorShell({
   }, [togglePanel]);
 
   useShellCommands({
-    toggleCommandPalette: actions.handleSearch,
-    toggleGlobalSearch: actions.handleSearch,
+    // Ctrl+K is handled only by the Spotlight (CanvasChrome). These used to send "antigravity:open_command_palette",
+    // which opened the full-screen palette on top of it. Nothing opens that palette any more.
+    toggleCommandPalette: () => {
+      // no-op: see above
+    },
+    toggleGlobalSearch: () => {
+      // no-op: see above
+    },
     toggleAiCoPilot: () => actions.toggleAiBox(),
     dockFullPage: (panelId: string) => {
       if (panelId === "code") actions.setMode("code");
@@ -253,6 +264,8 @@ export function EditorShell({
           .slice(0, 2)
           .toUpperCase(),
         status: "You",
+        src: localUser.avatarUrl,
+        color: localUser.color,
       },
       ...peers.map((p) => ({
         id: p.id,
@@ -264,6 +277,8 @@ export function EditorShell({
           .slice(0, 2)
           .toUpperCase(),
         status: p.role || "Viewing",
+        src: p.avatarUrl,
+        color: p.color,
       })),
     ];
   }, [connectedPeers, localUser]);
@@ -276,6 +291,7 @@ export function EditorShell({
       data-rc={actions.isRightCollapsed ? "" : undefined}
       data-zen={actions.isZen ? "" : undefined}
       data-fw={fullWidth ? "1" : "0"}
+      data-bc={bottomCollapsed ? "1" : undefined}
       data-blank={isBlankPage ? "1" : undefined}
       className={`ll-editor-root editor-root app ${isBlankPage ? "blank ll-blank" : ""} ll-shell ll:grid ll:relative ll:h-screen ll:w-screen ll:overflow-hidden ll:bg-surface-canvas ll:font-sans ll:text-primary ll:select-none ${className}`}
     >
@@ -336,7 +352,6 @@ export function EditorShell({
         <ReadOnlyBanner />
       </div>
 
-      <ConnectedCommandPalette />
       <FontSync />
       <ExportDialog />
       <AgentDialog />
@@ -408,8 +423,12 @@ export function EditorShell({
             onToggleInspectMode={actions.toggleInspectMode}
             canvasPan={actions.canvasPan}
             onToggleCanvasPan={actions.toggleCanvasPan}
+            panMethod={actions.panMethod}
+            onPanMethodChange={actions.setPanMethod}
             canvasZoom={actions.canvasZoom}
             onToggleCanvasZoom={actions.toggleCanvasZoom}
+            zoomSpeed={actions.zoomSpeed}
+            onZoomSpeedChange={actions.setZoomSpeed}
             worldAxes={actions.worldAxes}
             onToggleWorldAxes={actions.toggleWorldAxes}
             elementDragging={actions.elementDragging}
@@ -420,10 +439,13 @@ export function EditorShell({
             onCollisionModeChange={actions.setCollisionMode}
             marqueeMode={actions.marqueeMode}
             onMarqueeModeChange={actions.setMarqueeMode}
+            smartGuides={actions.smartGuides}
+            onToggleSmartGuides={actions.toggleSmartGuides}
             snapThreshold={actions.snapThreshold}
             onSnapThresholdChange={actions.setSnapThreshold}
             isInsertOpen={actions.isInsertOpen}
             onToggleInsert={actions.toggleInsert}
+            onInsertItem={insertCatalogItem}
             isAiBoxOpen={actions.isAiBoxOpen}
             onToggleAiBox={actions.toggleAiBox}
             isViewOptionsOpen={actions.isViewOptionsOpen}
@@ -457,6 +479,7 @@ export function EditorShell({
               onAskAi={actions.toggleAiBox}
               snapObjects={actions.snapObjects}
               snapGuides={actions.snapGuides}
+              smartGuides={actions.smartGuides}
               checkerboard={actions.checkerboard}
               pixelGrid={actions.pixelGrid}
               gridStyle={actions.gridStyle}
@@ -507,15 +530,17 @@ export function EditorShell({
       <div className="ll-shell-bottom">
         {bottomOpen && (
           <>
-            <div
-              className="ll-shell-bsplit"
-              role="separator"
-              aria-orientation="horizontal"
-              aria-label="Resize bottom panel"
-              title="Drag to resize, double click to reset"
-              onPointerDown={onSplitDown}
-              onDoubleClick={onSplitDouble}
-            />
+            {!bottomCollapsed && (
+              <div
+                className="ll-shell-bsplit"
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Resize bottom panel"
+                title="Drag to resize, double click to reset"
+                onPointerDown={onSplitDown}
+                onDoubleClick={onSplitDouble}
+              />
+            )}
             {actions.mode === "motion" ? <TimelinePanel height="100%" /> : <CodePanel />}
           </>
         )}

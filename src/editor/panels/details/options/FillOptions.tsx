@@ -11,7 +11,7 @@ import type { InspectorSectionProps } from "../types";
 import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
 import { changeType, paintColor, updatePaint } from "@/core/paint/paintEdits";
 import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
-import type { Paint, PaintType } from "@/core/paint/paints";
+import type { Paint, PaintType, ImageMode } from "@/core/paint/paints";
 
 export interface GradientStopItem {
   id: string;
@@ -124,7 +124,13 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
   const [angle, setAngle] = useState(propAngle);
   const [localStops, setLocalStops] = useState<GradientStopItem[] | null>(null);
   const stops = primaryPaint && "stops" in primaryPaint ? derivedStops : (localStops ?? propStops);
-  const [imageFit, setImageFit] = useState(propImageFit);
+  const derivedImageFit = primaryPaint && primaryPaint.type === "image"
+    ? ((primaryPaint.mode.charAt(0).toUpperCase() + primaryPaint.mode.slice(1)) as typeof propImageFit)
+    : (getValue?.("media.objectFit") as string)
+    ? (((getValue?.("media.objectFit") as string).charAt(0).toUpperCase() + (getValue?.("media.objectFit") as string).slice(1)) as typeof propImageFit)
+    : propImageFit;
+  const [localImageFit, setLocalImageFit] = useState<typeof propImageFit | null>(null);
+  const imageFit = localImageFit ?? derivedImageFit;
 
   const syncPaints = (nextPaint: Paint) => {
     if (layer && selectedId && hasFills(layer.archetype)) {
@@ -343,7 +349,10 @@ export const FillOptions: React.FC<FillOptionsProps> = ({
               options={IMAGE_FIT_OPTIONS}
               onChange={(fit) => {
                 const next = fit as typeof imageFit;
-                setImageFit(next);
+                setLocalImageFit(next);
+                if (primaryPaint && primaryPaint.type === "image") {
+                  syncPaints({ ...primaryPaint, mode: next.toLowerCase() as ImageMode });
+                }
                 onUpdateProp?.("media.objectFit", next.toLowerCase());
                 onChangeImageFit?.(next);
               }}

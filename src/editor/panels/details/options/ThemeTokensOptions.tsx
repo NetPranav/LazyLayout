@@ -22,16 +22,10 @@ export const ThemeTokensOptions: React.FC<ThemeTokensOptionsProps> = ({
   feedback: propFb = "Subtle",
   onChangeFeedback,
 }) => {
-  const getInitial = (): typeof propFb => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ll_theme_feedback");
-      if (stored === "None" || stored === "Subtle" || stored === "Strong") return stored;
-    }
-    const fromProp = getValue?.("theme.feedback") as typeof propFb | undefined;
-    return fromProp || propFb;
-  };
-
-  const [feedback, setFeedback] = useState<"None" | "Subtle" | "Strong">(getInitial);
+  const storedFb = typeof window !== "undefined" ? localStorage.getItem("ll_theme_feedback") : null;
+  const validStored = storedFb === "None" || storedFb === "Subtle" || storedFb === "Strong" ? storedFb : null;
+  const propVal = getValue?.("theme.feedback") as typeof propFb | undefined;
+  const feedback = validStored ?? propVal ?? propFb;
 
   return (
     <div className="ll:flex ll:flex-col ll:w-full">
@@ -44,7 +38,6 @@ export const ThemeTokensOptions: React.FC<ThemeTokensOptionsProps> = ({
             options={FEEDBACK_OPTIONS}
             onChange={(val) => {
               const next = val as typeof feedback;
-              setFeedback(next);
               if (typeof window !== "undefined") {
                 localStorage.setItem("ll_theme_feedback", next);
                 document.documentElement.dataset.feedback = next.toLowerCase();

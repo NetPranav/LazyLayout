@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Minus, Sliders } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { IconButton } from "@/editor/components/IconButton";
 import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { ColorSwatch } from "../controls/ColorSwatch";
@@ -222,6 +223,20 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
               {/* Style glyph slot of the design, hidden in the summary */}
               <span aria-hidden="true" className="ll:w-3.5 ll:h-3.5 ll:shrink-0 ll:invisible" />
             </div>
+
+            {/* Row Settings Trigger: opens RowSettingsPopover */}
+            <IconButton
+              size="sm"
+              variant="ghost"
+              pressed={isOpen}
+              aria-label={`Stroke ${strokeNum} settings`}
+              tooltip={`Stroke ${strokeNum} settings`}
+              aria-haspopup="dialog"
+              aria-expanded={isOpen}
+              icon={<Icon icon={Sliders} size={14} />}
+              onClick={() => setActivePopoverId(isOpen ? null : stroke.id)}
+              className="ll-ib"
+            />
 
             {/* Visibility Toggle */}
             <button

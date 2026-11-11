@@ -58,7 +58,11 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
   const currentRipple = typeof getValue?.("button.rippleEnabled") === "boolean" ? (getValue?.("button.rippleEnabled") as boolean) : propRp;
   const currentRippleDuration = typeof getValue?.("button.rippleDuration") === "number" ? (getValue?.("button.rippleDuration") as number) : propRd;
 
-  const [size, setSize] = useState(propSz);
+  const rawSize = getValue?.("button.size");
+  const derivedSize = typeof rawSize === "number"
+    ? rawSize <= 40 ? "Small" : rawSize >= 56 ? "Large" : "Medium"
+    : (typeof rawSize === "string" && (rawSize === "Small" || rawSize === "Medium" || rawSize === "Large") ? rawSize : propSz);
+  const size = derivedSize;
   const type = currentType || propTy;
   const [typingFocus, setTypingFocus] = useState<string | null>(null);
   const focusRingHex = typingFocus ?? currentFocus;
@@ -66,7 +70,8 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
   const disabledOpacity = currentDisabled;
   const [typingLabel, setTypingLabel] = useState<string | null>(null);
   const loadingLabel = typingLabel ?? currentLoadingLabel;
-  const [spinner, setSpinner] = useState(propSp);
+  const rawSpinner = getValue?.("button.spinnerType") as string | undefined;
+  const spinner = rawSpinner === "dots" ? "Dots" : "Circle";
   const ripple = currentRipple;
   const rippleDuration = currentRippleDuration;
 
@@ -82,7 +87,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             options={SIZE_OPTIONS}
             onChange={(s) => {
               const next = s as typeof size;
-              setSize(next);
               const pxSize = next === "Small" ? 40 : next === "Large" ? 56 : 48;
               onUpdateProp?.("button.size", pxSize);
             }}
@@ -190,7 +194,6 @@ export const StatesOptions: React.FC<StatesOptionsProps> = ({
             options={SPINNER_OPTIONS}
             onChange={(s) => {
               const next = s as typeof spinner;
-              setSpinner(next);
               onUpdateProp?.("button.spinnerType", next === "Circle" ? "ring" : "dots");
             }}
             className="ll:w-full"

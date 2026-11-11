@@ -4,6 +4,7 @@ import React, { useState, useRef, useLayoutEffect, useMemo, useEffect } from "re
 import { ChevronDown, Link2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
 import { TextFormatBar } from "./TextFormatBar";
@@ -19,7 +20,7 @@ import { RenderLayer } from "@/core/render";
 import { useMirrorViews } from "./useMirrorViews";
 import { exactDeviceOfFrame, frameSizeLabel, frameViewportHeight, mirrorSourceId, pageFrameOf } from "@/core/frames/devices";
 import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
-import { Checkbox } from "@/editor/components/Checkbox";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
@@ -473,6 +474,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
         }
       }}
     >
+      {/* Empty State ("Start with") when canvas has no layers */}
+      {isBlank && (
+        <div className="ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center ll:pointer-events-auto">
+          <EmptyState
+            onAddFrame={_onAddFrame}
+            onInsert={_onInsert}
+            onAskAi={_onAskAi}
+          />
+        </div>
+      )}
+
       {/* 1. Canvas Size Label / Dropdown Trigger (.lbl / #albl) */}
       {topFrames.length === 0 && (
         <button
@@ -591,9 +603,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             {screenHeight !== null && (
               // Preview: right here, the frame becomes the device's screen and scrolls; off, it is full height
               <div
-                data-testid="frame-preview-toggle"
-                data-frame-id={frame.id}
-                className="ll:absolute ll:flex ll:items-center ll:whitespace-nowrap ll:text-small ll:text-secondary"
+                className="ll:absolute"
                 style={{
                   left: frameEl.x + frameEl.width,
                   // on a frame too narrow on screen for both, it sits a row above the size label
@@ -604,17 +614,29 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Checkbox
-                  checked={isPreviewing}
-                  label="Preview"
+                {/* quiet: only seen on hover, selection, focus, or while previewing (opacity only, so it stays clickable) */}
+                <button
+                  type="button"
+                  data-testid="frame-preview-toggle"
+                  data-frame-id={frame.id}
+                  aria-pressed={isPreviewing}
                   aria-label={`Preview ${frame.name} as a ${sizeLabel.label} screen`}
-                  onChange={(on) => {
+                  title={isPreviewing ? "Exit device preview" : "Preview as device screen"}
+                  className={`ll:flex ll:items-center ll:justify-center ll:size-6 ll:rounded-sm ll:border-0 ll:cursor-pointer ll:outline-none ll:transition-opacity ll:duration-[120ms] ll:motion-reduce:transition-none ll:hover:opacity-100 ll:focus-visible:opacity-100 ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                    isPreviewing
+                      ? "ll:bg-control-primary ll:text-control-primary-fg"
+                      : "ll:bg-transparent ll:text-secondary ll:hover:bg-surface-panel ll:hover:text-primary"
+                  } ${isPreviewing || hoveredId === frame.id || selectedIds.includes(frame.id) || editingFrameId === frame.id ? "ll:opacity-100" : "ll:opacity-0"}`}
+                  onClick={() => {
+                    const on = !isPreviewing;
                     // the frame is looked at, not edited, while previewed: nothing inside it stays selected
                     if (on && !selectedIds.includes(frame.id) && (selectedMirror === frame.id || pageFrameOf(layers ?? {}, rootId ?? null, selectedIds[0]) === frame.id)) onSelect(frame.id);
                     if (!on) scrollDrawnFrame(frame.id, 0);
                     useFramePreviewStore.getState().setPreview(frame.id, on);
                   }}
-                />
+                >
+                  <ProtoIcon name="frameprev" size={16} />
+                </button>
               </div>
             )}
             {screenHeight !== null && !isPreviewing && fullHeight > screenHeight && (

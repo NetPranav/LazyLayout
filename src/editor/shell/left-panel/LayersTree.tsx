@@ -727,14 +727,18 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       const targetEl = el?.closest('#p-layers .row[data-sel]');
       if (!targetEl) {
         // below the last row: the bottom of the page's own list
-        const last = el?.closest("#p-layers") ? [...visibleNodes].reverse().find((n) => n.level === 0 && !blocked.has(n.id)) : undefined;
-        setDragState({ ...current, targetId: last?.id ?? null, pos: last ? "after" : null });
+        const last = el?.closest("#p-layers") ? [...visibleNodes].reverse().find((n) => (n.level === 0 || (n.parentId || "elem_canvas_root") === "elem_canvas_root") && !blocked.has(n.id)) : undefined;
+        const nextState: DragState = { ...current, targetId: last?.id ?? null, pos: last ? "after" : null };
+        dragStateRef.current = nextState;
+        setDragState(nextState);
         if (dropLineRef.current) dropLineRef.current.style.display = "none";
         return;
       }
       const targetId = targetEl.getAttribute("data-sel");
       if (!targetId || blocked.has(targetId)) {
-        setDragState({ ...current, targetId: null, pos: null });
+        const nextState: DragState = { ...current, targetId: null, pos: null };
+        dragStateRef.current = nextState;
+        setDragState(nextState);
         if (dropLineRef.current) dropLineRef.current.style.display = "none";
         return;
       }
@@ -744,13 +748,15 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
       const targetNode = visibleNodes.find((n) => n.id === targetId);
       // Only a frame can take layers inside it. On any other row the drop goes beside it (so into the frame that row is in).
       const holds = targetNode?.item.type === "frame" || targetNode?.item.type === "container";
-      const pos = !targetNode?.parentId ? "in" : holds ? (f < 0.25 ? "before" : f > 0.75 ? "after" : "in") : f < 0.5 ? "before" : "after";
+      const pos = holds ? (f < 0.25 ? "before" : f > 0.75 ? "after" : "in") : f < 0.5 ? "before" : "after";
 
-      setDragState({
+      const nextState: DragState = {
         ...current,
         targetId,
         pos,
-      });
+      };
+      dragStateRef.current = nextState;
+      setDragState(nextState);
 
       // Update drop line indicator
       if (dropLineRef.current && treeRef.current && pos !== "in") {
@@ -767,9 +773,10 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
 
     const handleGlobalPointerUp = () => {
       const current = dragStateRef.current;
-      if (!current) return;
+      dragStateRef.current = null;
       setDragState(null);
       if (dropLineRef.current) dropLineRef.current.style.display = "none";
+      if (!current) return;
 
       if (!current.active || !current.targetId || !current.pos) return;
 
@@ -778,7 +785,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
 
       const moving = movingIds(current.id);
       let refused: string | void;
-      if (current.pos === "in" || !targetNode.parentId) {
+      if (current.pos === "in") {
         // no index: on top of what the frame already holds, as it would be if it had just been drawn there
         refused = onMoveLayer?.(moving, current.targetId);
         if (!refused && !expandedSet.has(current.targetId)) {
@@ -786,8 +793,8 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
         }
       } else {
         // The list runs front to back and `children` runs back to front, and the index counts after the moved layers have left.
-        const parentId = targetNode.parentId;
-        const siblings = visibleNodes.filter((n) => n.parentId === parentId && !moving.includes(n.id));
+        const parentId = targetNode.parentId || "elem_canvas_root";
+        const siblings = visibleNodes.filter((n) => (n.parentId || "elem_canvas_root") === parentId && !moving.includes(n.id));
         const shownAt = siblings.findIndex((n) => n.id === current.targetId);
         const index = current.pos === "before" ? siblings.length - shownAt : siblings.length - 1 - shownAt;
         refused = onMoveLayer?.(moving, parentId, Math.max(0, index));
@@ -892,13 +899,15 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                       bandRef.current = { startY: e.clientY, active: false, lastKey: "" };
                       return;
                     }
-                    setDragState({
+                    const newDragState: DragState = {
                       id: node.id,
                       startY: e.clientY,
                       active: false,
                       targetId: null,
                       pos: null,
-                    });
+                    };
+                    dragStateRef.current = newDragState;
+                    setDragState(newDragState);
                   }}
                   onClick={(e) => {
                     if (bandJustEnded.current) {

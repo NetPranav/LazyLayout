@@ -12,8 +12,7 @@ import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
-import { addFrame } from "@/core/frames/frameCommands";
-import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { addPresetFrame } from "@/editor/stage/deviceViews";
 import { applyTheme, type Theme } from "@/editor/components/ThemeToggle";
 import { applyFeel } from "@/editor/motion/feel";
 import { type MotionPresetKey } from "@/editor/motion/presets";
@@ -108,8 +107,12 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   onToggleInspectMode: controlledOnToggleInspectMode,
   canvasPan: controlledCanvasPan,
   onToggleCanvasPan: controlledOnToggleCanvasPan,
+  panMethod: controlledPanMethod,
+  onPanMethodChange: controlledOnPanMethodChange,
   canvasZoom: controlledCanvasZoom,
   onToggleCanvasZoom: controlledOnToggleCanvasZoom,
+  zoomSpeed: controlledZoomSpeed,
+  onZoomSpeedChange: controlledOnZoomSpeedChange,
   worldAxes: controlledWorldAxes,
   onToggleWorldAxes: controlledOnToggleWorldAxes,
   elementDragging: controlledElementDragging,
@@ -302,6 +305,16 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
     controlledOnSnapThresholdChange,
     6
   );
+  const [panMethod, setPanMethod] = useControllable(
+    controlledPanMethod,
+    controlledOnPanMethodChange,
+    "space"
+  );
+  const [zoomSpeed, setZoomSpeed] = useControllable(
+    controlledZoomSpeed,
+    controlledOnZoomSpeedChange,
+    "normal"
+  );
   const [panelsCollapsed, setPanelsCollapsed] = useControllable(
     controlledPanelsCollapsed,
     controlledOnTogglePanels,
@@ -427,6 +440,21 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
       return next;
     });
   }, [setIsSpotlightOpen, setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsFramePresetsOpen]);
+
+  // The top bar's Search entries and the app.search action send "antigravity:open_command_palette". That opens this
+  // Spotlight. It only opens (never toggles), so Ctrl+K above stays the one thing that toggles it.
+  const handleOpenSpotlight = useCallback(() => {
+    setIsInsertOpen(false);
+    setIsAiBoxOpen(false);
+    setIsViewOptionsOpen(false);
+    setIsFramePresetsOpen(false);
+    setIsSpotlightOpen(true);
+  }, [setIsSpotlightOpen, setIsInsertOpen, setIsAiBoxOpen, setIsViewOptionsOpen, setIsFramePresetsOpen]);
+
+  useEffect(() => {
+    window.addEventListener("antigravity:open_command_palette", handleOpenSpotlight);
+    return () => window.removeEventListener("antigravity:open_command_palette", handleOpenSpotlight);
+  }, [handleOpenSpotlight]);
 
   const handleToggleFramePresets = useCallback(() => {
     setIsFramePresetsOpen((prev) => {
@@ -702,7 +730,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         open={isFramePresetsOpen}
         onClose={() => setIsFramePresetsOpen(false)}
         triggerRef={frameButtonRef}
-        onPick={(p) => useSelectionStore.getState().select(addFrame({ name: p.name, width: p.width, height: p.height }), "element")}
+        centreRef={toolbarRef}
+        onPick={(p) => addPresetFrame({ name: p.name, width: p.width, height: p.height })}
       />
 
 
@@ -772,8 +801,12 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onToggleInspectMode={setInspectMode}
         canvasPan={canvasPan}
         onToggleCanvasPan={setCanvasPan}
+        panMethod={panMethod}
+        onPanMethodChange={setPanMethod}
         canvasZoom={canvasZoom}
         onToggleCanvasZoom={setCanvasZoom}
+        zoomSpeed={zoomSpeed}
+        onZoomSpeedChange={setZoomSpeed}
         worldAxes={worldAxes}
         onToggleWorldAxes={setWorldAxes}
         elementDragging={elementDragging}

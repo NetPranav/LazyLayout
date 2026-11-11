@@ -8,6 +8,13 @@ import { OptionGroup, OptionRow } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import type { InspectorSectionProps } from "../types";
+import { parseShadows, serializeShadows, type Shadow } from "@/core/paint/paints";
+import { parseCss, toHex } from "@/core/paint/color";
+
+const hexOf = (css: string): string => {
+  const c = parseCss(css);
+  return c ? toHex(c).replace(/^#/, "").slice(0, 6).toUpperCase() : "000000";
+};
 
 export interface ShadowItem {
   id: string;
@@ -62,23 +69,44 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
   const currentBgBlur = typeof getValue?.("paint.backgroundBlur") === "number" ? (getValue?.("paint.backgroundBlur") as number) : propBgBlur;
   const currentBlend = (getValue?.("appearance.blendMode") as string) || propBlend;
 
-  const [shadows, setShadows] = useState<ShadowItem[]>(propShadows);
+  const rawDocShadows = getValue?.("paint.shadows");
+  const parsedShadows = parseShadows(rawDocShadows);
+  const derivedShadows: ShadowItem[] = parsedShadows.length > 0
+    ? parsedShadows.map((s, idx) => ({
+        id: `s-${idx + 1}`,
+        type: s.kind === "inner" ? "inner" : "drop",
+        hex: hexOf(s.color),
+        x: s.x,
+        y: s.y,
+        blur: s.blur,
+        spread: s.spread,
+      }))
+    : propShadows;
+
+  const [localShadows, setLocalShadows] = useState<ShadowItem[] | null>(null);
+  const shadows = localShadows ?? derivedShadows;
   const blur = currentBlur;
   const bgBlur = currentBgBlur;
   const blend = currentBlend;
 
   const syncShadows = (next: ShadowItem[]) => {
-    const css = next
-      .map((s) => `${s.type === "inner" ? "inset " : ""}${s.x}px ${s.y}px ${s.blur}px ${s.spread}px #${s.hex}`)
-      .join(", ");
-    onUpdateProp?.("paint.shadows", css);
+    const shadowsData: Shadow[] = next.map((s) => ({
+      kind: s.type === "inner" ? "inner" : "drop",
+      x: s.x,
+      y: s.y,
+      blur: s.blur,
+      spread: s.spread,
+      color: `#${s.hex}`,
+      visible: true,
+    }));
+    onUpdateProp?.("paint.shadows", serializeShadows(shadowsData));
   };
 
   const handleAddShadow = () => {
     const next: ShadowItem[] = [
       ...shadows,
       {
-        id: `s-${Date.now()}`,
+        id: `s-${shadows.length + 1}`,
         type: "drop",
         hex: "000000",
         x: 0,
@@ -87,21 +115,21 @@ export const EffectsOptions: React.FC<EffectsOptionsProps> = ({
         spread: 0,
       },
     ];
-    setShadows(next);
+    setLocalShadows(next);
     syncShadows(next);
     onChangeShadows?.(next);
   };
 
   const handleRemoveShadow = (id: string) => {
     const next = shadows.filter((s) => s.id !== id);
-    setShadows(next);
+    setLocalShadows(next);
     syncShadows(next);
     onChangeShadows?.(next);
   };
 
   const handleUpdateShadow = (id: string, patch: Partial<ShadowItem>) => {
     const next = shadows.map((s) => (s.id === id ? { ...s, ...patch } : s));
-    setShadows(next);
+    setLocalShadows(next);
     syncShadows(next);
     onChangeShadows?.(next);
   };

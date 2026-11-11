@@ -25,6 +25,9 @@ export interface CanvasSettingsState {
   collisionMode: "pass" | "push";
   marqueeMode: "intersects" | "encloses";
   snapThreshold: number;
+  smartGuides: boolean;
+  panMethod: "space" | "middle" | "blank";
+  zoomSpeed: "normal" | "fast";
 
   setGridStyle: (style: GridStyle) => void;
   setGridSize: (size: number) => void;
@@ -42,6 +45,9 @@ export interface CanvasSettingsState {
   setCollisionMode: (mode: "pass" | "push") => void;
   setMarqueeMode: (mode: "intersects" | "encloses") => void;
   setSnapThreshold: (threshold: number) => void;
+  toggleSmartGuides: () => void;
+  setPanMethod: (method: "space" | "middle" | "blank") => void;
+  setZoomSpeed: (speed: "normal" | "fast") => void;
 }
 
 const STORAGE_KEY = "lazylayout:canvas-settings";
@@ -76,6 +82,9 @@ function saveSettings(state: CanvasSettingsState): void {
       collisionMode: state.collisionMode,
       marqueeMode: state.marqueeMode,
       snapThreshold: state.snapThreshold,
+      smartGuides: state.smartGuides,
+      panMethod: state.panMethod,
+      zoomSpeed: state.zoomSpeed,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch {
@@ -103,6 +112,9 @@ export const useCanvasSettingsStore = create<CanvasSettingsState>((set, get) => 
     collisionMode: initial.collisionMode || "pass",
     marqueeMode: initial.marqueeMode || "intersects",
     snapThreshold: initial.snapThreshold ?? 6,
+    smartGuides: initial.smartGuides ?? true,
+    panMethod: initial.panMethod || "space",
+    zoomSpeed: initial.zoomSpeed || "normal",
 
     setGridStyle: (gridStyle) => {
       set({ gridStyle });
@@ -170,6 +182,18 @@ export const useCanvasSettingsStore = create<CanvasSettingsState>((set, get) => 
     },
     setSnapThreshold: (snapThreshold) => {
       set({ snapThreshold });
+      saveSettings(get());
+    },
+    toggleSmartGuides: () => {
+      set((s) => ({ smartGuides: !s.smartGuides }));
+      saveSettings(get());
+    },
+    setPanMethod: (panMethod) => {
+      set({ panMethod });
+      saveSettings(get());
+    },
+    setZoomSpeed: (zoomSpeed) => {
+      set({ zoomSpeed });
       saveSettings(get());
     },
   };

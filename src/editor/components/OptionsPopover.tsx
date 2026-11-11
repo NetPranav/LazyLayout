@@ -276,11 +276,12 @@ export function OptionsPopover({
     if (!open || !isRendered) return;
 
     // The popover closes only when the user presses on the canvas stage. Everything else (its own
-    // children, nested portal UIs such as dropdown lists, pickers and tooltips, other panels) is not "outside".
+    // children, nested portal UIs such as dropdown lists, pickers and tooltips, other panels, and stage overlay controls) is not "outside".
     const handlePointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target?.closest) return;
       if (popRef.current?.contains(target)) return;
+      if (target.closest('button, [role="button"], [data-testid*="overlay"], [data-testid*="handle"]')) return;
       if (!target.closest(STAGE_AREA)) return;
       onCloseRef.current();
     };

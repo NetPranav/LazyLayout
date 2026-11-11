@@ -123,7 +123,7 @@ export const PageBackgroundBody: React.FC<{
         <button
           ref={swatchRef}
           type="button"
-          aria-label="Background color picker"
+          aria-label="Page background colour picker"
           title="Choose background color"
           onClick={() => setIsPickerOpen((prev) => !prev)}
           className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
@@ -196,7 +196,7 @@ export const ThemeTokensBody: React.FC = () => {
           <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
             <button
               type="button"
-              aria-label={`${row.label} color picker`}
+              aria-label={`${row.label} colour picker`}
               title={`Choose ${row.label.toLowerCase()} color`}
               onClick={(e) => {
                 const isClosing = activePicker === row.label;

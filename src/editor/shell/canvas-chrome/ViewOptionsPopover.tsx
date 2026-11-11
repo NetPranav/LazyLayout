@@ -50,8 +50,12 @@ export interface ViewOptionsPopoverProps {
   onToggleInspectMode?: (inspect: boolean) => void;
   canvasPan?: boolean;
   onToggleCanvasPan?: (pan: boolean) => void;
+  panMethod?: "space" | "middle" | "blank";
+  onPanMethodChange?: (method: "space" | "middle" | "blank") => void;
   canvasZoom?: boolean;
   onToggleCanvasZoom?: (zoom: boolean) => void;
+  zoomSpeed?: "normal" | "fast";
+  onZoomSpeedChange?: (speed: "normal" | "fast") => void;
   worldAxes?: boolean;
   onToggleWorldAxes?: (axes: boolean) => void;
   elementDragging?: boolean;
@@ -168,8 +172,12 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   onToggleInspectMode,
   canvasPan = true,
   onToggleCanvasPan,
+  panMethod = "space",
+  onPanMethodChange,
   canvasZoom = true,
   onToggleCanvasZoom,
+  zoomSpeed = "normal",
+  onZoomSpeedChange,
   worldAxes = true,
   onToggleWorldAxes,
   elementDragging = true,
@@ -192,8 +200,6 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   const [isRendered, setIsRendered] = useState<boolean>(open);
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
-  const [panMethod, setPanMethod] = useState<"space" | "middle" | "blank">("space");
-  const [zoomSpeed, setZoomSpeed] = useState<"normal" | "fast">("normal");
   const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const popRef = useRef<HTMLDivElement>(null);
@@ -554,7 +560,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           <SegmentedControl
             size="sm"
             value={panMethod}
-            onChange={setPanMethod}
+            onChange={(v) => onPanMethodChange?.(v as "space" | "middle" | "blank")}
             ariaLabel="Pan with"
             options={[
               { value: "space", label: "Space + drag" },
@@ -574,7 +580,7 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
           <SegmentedControl
             size="sm"
             value={zoomSpeed}
-            onChange={setZoomSpeed}
+            onChange={(v) => onZoomSpeedChange?.(v as "normal" | "fast")}
             ariaLabel="Zoom speed"
             options={[
               { value: "normal", label: "Normal" },

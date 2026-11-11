@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Phosphor Icons, Light weight (fallback set; the prototype set in protoGlyphs.ts wins where it has a twin) (https://github.com/phosphor-icons/core, MIT, (c) 2023 Phosphor Icons).
  * Glyph data lives in phosphorGlyphs.ts. viewBox 0 0 256 256, filled with currentColor.

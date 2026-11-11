@@ -94,8 +94,12 @@ export interface CanvasChromeProps {
   onToggleInspectMode?: (inspect: boolean) => void;
   canvasPan?: boolean;
   onToggleCanvasPan?: (pan: boolean) => void;
+  panMethod?: "space" | "middle" | "blank";
+  onPanMethodChange?: (method: "space" | "middle" | "blank") => void;
   canvasZoom?: boolean;
   onToggleCanvasZoom?: (zoom: boolean) => void;
+  zoomSpeed?: "normal" | "fast";
+  onZoomSpeedChange?: (speed: "normal" | "fast") => void;
   worldAxes?: boolean;
   onToggleWorldAxes?: (axes: boolean) => void;
   elementDragging?: boolean;

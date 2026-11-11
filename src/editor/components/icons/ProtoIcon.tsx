@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Prototype icons (protoGlyphs.ts, from DOCS/UI/design). viewBox 0 0 24 24, no fill, 1.5 stroke, round caps and joins,
  * exactly as the prototype's `svg` rule. The stroke scales with the box like in the prototype, so no optical scale.
@@ -17,8 +19,9 @@ function renderNode(node: ProtoNode, key: number): React.ReactNode {
   return React.createElement(tag, { key, ...attrs }, children?.map(renderNode));
 }
 
-export const ProtoIcon: React.FC<ProtoIconProps> = ({ name, size = 16, className = "", ...props }) => {
-  const glyph: ProtoGlyph = PROTO_GLYPHS[name];
+export function ProtoIcon({ name, size = 16, className = "", ...props }: ProtoIconProps) {
+  const glyph: ProtoGlyph | undefined = PROTO_GLYPHS[name];
+  if (!glyph) return null;
   return (
     <svg
       width={size}
@@ -37,4 +40,4 @@ export const ProtoIcon: React.FC<ProtoIconProps> = ({ name, size = 16, className
       {glyph.n.map(renderNode)}
     </svg>
   );
-};
+}

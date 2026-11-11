@@ -147,7 +147,7 @@ test.describe("responsive frames: auto-adapt, fold and Preview", () => {
 
     // Preview on: right here, the frame is the phone's screen, and the rest scrolls
     const toggle = page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${mirror.id}"]`);
-    await toggle.getByRole("checkbox").click();
+    await toggle.click();
     await expect.poll(size).toEqual({ w: 375, h: 812 });
     await expect(fold).toHaveCount(0);
     await expect(hit(ids.foot), "not editable while previewed").toHaveCount(0);
@@ -158,7 +158,7 @@ test.describe("responsive frames: auto-adapt, fold and Preview", () => {
     await expect.poll(() => drawn.evaluate((e) => e.scrollTop), "the wheel scrolls the frame, not the canvas").toBeGreaterThan(0);
 
     // Preview off: full height again, from the top
-    await toggle.getByRole("checkbox").click();
+    await toggle.click();
     await expect.poll(size).toEqual(full);
     expect(await drawn.evaluate((e) => e.scrollTop)).toBe(0);
     await expect(fold).toBeVisible();
@@ -169,7 +169,7 @@ test.describe("responsive frames: auto-adapt, fold and Preview", () => {
     const drawn = page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${desktop.id}"]`);
     await expect.poll(() => drawn.evaluate((e) => (e as HTMLElement).offsetHeight)).toBe(1700);
     await expect(page.locator(`[data-testid="frame-fold-line"][data-frame-id="${desktop.id}"]`)).toContainText("Fold · 900");
-    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${desktop.id}"]`).getByRole("checkbox").click();
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${desktop.id}"]`).click();
     await expect.poll(() => drawn.evaluate((e) => (e as HTMLElement).offsetHeight)).toBe(900);
   });
 

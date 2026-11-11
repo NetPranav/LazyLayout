@@ -825,9 +825,11 @@ export function FontPicker({
           activate(entry.name, { quiet: true });
           pick(entry.name);
         }}
-        onMouseMove={(e) => {
-          if ((!e.movementX && !e.movementY) || act === entry.name) return;
-          activate(entry.name);
+        onMouseEnter={() => {
+          if (act !== entry.name) activate(entry.name);
+        }}
+        onMouseMove={() => {
+          if (act !== entry.name) activate(entry.name);
         }}
         className="fp-r"
       >

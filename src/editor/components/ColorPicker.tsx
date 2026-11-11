@@ -689,7 +689,10 @@ export function ColorPicker({
       ref={pickerRef}
       role="dialog"
       aria-label={ariaLabel || "Colour picker"}
-      data-color-picker=""
+      data-color-picker={open ? "" : undefined}
+      data-closing={!open ? "true" : undefined}
+      aria-hidden={!open ? "true" : undefined}
+      inert={!open ? true : undefined}
       tabIndex={-1}
       className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
     >
@@ -854,7 +857,7 @@ export function ColorPicker({
               <IconButton
                 size="md"
                 variant="ghost"
-                aria-label="Pick colour from screen"
+                aria-label="Pick a colour from the screen"
                 tooltip="Eyedropper"
                 icon={<Icon icon={Pipette} size={14} />}
                 onClick={handleEyedropper}
