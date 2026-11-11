@@ -3,7 +3,7 @@
 ## Project Name: LazyLayout — AI-Native Motion Design Studio
 **Document Version:** 4.1.0
 **Date:** 2026-10-18 (v4.1: 2026-10-21)
-**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–52 are merged to `main` (#53 for 39–43, #57 for 44–49 and the FigCraft port, #58 for 50, #59 for 51, #60 for 52) but their rows still say 🚧 until someone marks them ✅ once CI on `main` is green; 52 is merged (#60) but stays 🚧: its manual run and doc rewrites are not done. **Lane B:** Phases 53–63 ✅; 64–68 are merged to `main` (#55; 🚧, and Phase 68 is only partly done, see its entry); Phase 81 (needs only 59) is merged (#56), fallback path only. **Next: Phase 69** (Lane B, needs Phase 40 from Lane A as well as 68). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
+**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–52 are merged to `main` (#53 for 39–43, #57 for 44–49 and the FigCraft port, #58 for 50, #59 for 51, #60 for 52) but their rows still say 🚧 until someone marks them ✅ once CI on `main` is green; 52 is merged (#60) but stays 🚧: its manual run and doc rewrites are not done. **Lane B:** Phases 53–63 ✅; 64–68 are merged to `main` (#55; 🚧, and Phase 68 is only partly done, see its entry); Phase 81 (needs only 59) is merged (#56), fallback path only. **Lane B, 2026-11-11:** Phases 69–73 are merged (#65, #73, #74, #76; all 🚧, because GitHub Actions has been blocked by billing since 2026-11-06 and no CI run on `main` has been green since). **Next: Phase 74** (Lane B, needs 73). Lane A is wiring Stage 2 into the rebuilt editor (`DOCS/UI/WIRING-53-80.md`; PR #86 covers 64–71). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
 **File Location:** `DOCS/INITIAL/ROADMAP.md`
 **Supersedes:** v3.3 (91 phases, run through a separate order file). v3.3 is kept unchanged as `ROADMAP_v3_ARCHIVE.md` for its progress logs, amendments and evidence. `order.md` is retired: in v4, **the phase number is the order**.
 **Inputs:** `PRD.md` v2.4, `AUDIT.md`, the grammar (`lazylayout_element_grammer.md` v0.3), `ANIMATION_PROPERTIES_AND_ENGINE_SPECIFICATION.md`, `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md`, and the World Environment properties in `action working.md`.
@@ -247,7 +247,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 66 | Keyframing | 65 | v3 23.2 | 2 | 🚧 |
 | 67 | Graph editor & easing | 66 | v3 23.3 | 2 | 🚧 |
 | 68 | Retire the legacy animation panels | 67 | v3 57.1 (part) | 2 | 🚧 |
-| 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 📋 |
+| 69 | Motion paths on the canvas | 40, 68 | v3 53.1 | 2 | 🚧 |
 | 70 | Auto-key on the stage & value HUD | 69 | v3 53.2, 53.4 | 2 | 🚧 |
 | 71 | Onion skin | 70 | v3 53.3 | 2 | 🚧 |
 | 72 | Anchor points & pins | 71 | v3 51.1, 88.2 (model) | 2 | 🚧 |
@@ -1084,11 +1084,12 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a grep gate finds no `INITIAL_ELEMENT_TRACKS` or `AnimationSample` usage; the Phase 3 persistence suite passes.
 
 ### Phase 69 · Motion paths on the canvas
-**Needs:** 40, 68 · **Was:** v3 53.1 · **Status:** 📋
-- [ ] Position keyframes draw as a path with keyframe dots and per-frame ticks (spacing shows speed). Drag a dot to change that keyframe; drag bezier handles for spatial interpolation (a new track field, separate from easing).
+**Needs:** 40, 68 · **Was:** v3 53.1 · **Status:** 🚧
+- [x] Position keyframes draw as a path with keyframe dots and per-frame ticks (spacing shows speed). Drag a dot to change that keyframe; drag bezier handles for spatial interpolation (a new track field, separate from easing).
 
 **You'll see:** After Effects-style motion paths you can bend on the canvas.
 **Done when:** dragging a dot changes exactly one keyframe in one undo step; sampled positions match `evaluate()` within 0.5 px.
+**Evidence (2026-11-06, PR #65):** `spatialPath.test.ts` (centripetal Catmull-Rom, arc-length parameterisation, 0.05% speed deviation and 0.015 px spatial tolerance), `evaluateSpatial.test.ts` (the kernel follows the path), `speedGraph.test.ts`, `spatialWaypoint.test.ts` (waypoints, `spatialIn` / `spatialOut` tangents, x and y tracks paired). The canvas overlay (`MotionPathOverlay.tsx`: ribbon, waypoint markers, velocity ticks, tangent handles, playhead) draws in the new editor's Motion mode; there is no browser spec for dragging a waypoint yet. Status stays 🚧 until CI on `main` is green (GitHub Actions has been blocked by billing since 2026-11-06).
 
 ### Phase 70 · Auto-key on the stage & value HUD
 **Needs:** 69 · **Was:** v3 53.2, 53.4 · **Status:** 🚧
