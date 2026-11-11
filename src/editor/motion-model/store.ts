@@ -38,11 +38,12 @@ import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 const activeCompositionId = (): string => getTransport().compositionId || MAIN_COMPOSITION_ID;
 import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
 import { setWorkArea as setDocumentWorkArea } from "@/core/timeline/timelineOps";
+import { setKeyframeEase } from "@/core/timeline/graph";
 import {
   UI_TO_CANONICAL_PATH,
   CANONICAL_TO_UI_PATH,
   uiToCanonicalValue,
-  uiEaseToCanonical,
+  uiEaseToCanonicalString,
   uiClipTypeToCanonical,
   uiTriggerToCanonical,
   CATEGORY_DEFAULT_TRIGGERS,
@@ -1031,7 +1032,7 @@ export const motionActions = {
       const locs = locateKeyframes(doc, activeCompositionId(), [keyId]);
       if (locs.length > 0) {
         const loc = locs[0];
-        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonicalString(ease, bz, spring) });
       }
     } catch {
       // fallback
@@ -1048,18 +1049,16 @@ export const motionActions = {
       }
     });
 
+    // Phase 67: the real easing string (a curve's handles, a spring's Bounce and Time), one undo step.
     try {
-      const locs = locateKeyframes(getDocument(), activeCompositionId(), keyIds);
-      if (locs.length > 0) {
-        transaction("Change easing", () => {
-          for (const loc of locs) {
-            documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
-          }
-        });
-      }
+      setKeyframeEase(keyIds, uiEaseToCanonicalString(ease, bz, spring), activeCompositionId());
     } catch {
-      // fallback
+      // standalone fallback
     }
+  },
+  /** Phase 67: an engine easing preset (Snappy, Smooth, Bouncy, Lazy, the curves, Hold) on the selected keyframes. */
+  applyEasePreset(keyIds: string[], value: string): number {
+    return setKeyframeEase(keyIds, value, activeCompositionId());
   },
   deleteKeys(ids: string[]): void {
     const set = new Set(ids);

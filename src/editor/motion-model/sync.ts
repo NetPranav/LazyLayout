@@ -2,11 +2,14 @@
 
 import { documentStore, getDocument } from "@/core/store/useDocumentStore";
 import { getTransport, subscribeTransport } from "@/core/time/transport";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import type { MotionDocument, Layer } from "@/core/document/schema";
 import type { Trigger as CanonicalTrigger, ClipType } from "@/core/document/motion";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useMotionModel } from "./store";
 import { makeLayer, PROPS, sortTracks } from "./model";
+import { bezierEase, bezierHandles, easeKind, springEase, springParams } from "@/core/timeline/graph";
+import type { Bezier, SpringParams } from "./types";
 import type { Composition, EaseName, Keyframe, MotionLayer, PropId, PropTrack, Trigger as UiTrigger, ClipCategory } from "./types";
 
 /** Maps canonical document trigger to UI trigger name */
@@ -133,6 +136,9 @@ export const CANONICAL_TO_UI_PATH: Record<string, PropId> = {
 export function canonicalEaseToUi(ease?: string): EaseName {
   if (!ease) return "Ease out";
   const lower = ease.toLowerCase();
+  // springs and bezier curves first ("spring" contains "in")
+  if (lower.includes("spring")) return "Spring";
+  if (lower.includes("cubic") || lower.includes("custom")) return "Custom";
   if (lower.includes("linear")) return "Linear";
   if (lower.includes("in-out") || lower.includes("inout")) return "Ease in out";
   if (lower.includes("in")) return "Ease in";
@@ -141,6 +147,33 @@ export function canonicalEaseToUi(ease?: string): EaseName {
   if (lower.includes("spring")) return "Spring";
   if (lower.includes("custom") || lower.includes("cubic")) return "Custom";
   return "Ease out";
+}
+
+/** Phase 67: a keyframe's bezier handles and spring, read from its easing string, so the easing editor shows what is saved. */
+function easeDetails(ease: string | undefined): Pick<Keyframe, "bz" | "spring"> {
+  const kind = easeKind(ease);
+  if (kind === "bezier") {
+    const h = bezierHandles(ease);
+    return h ? { bz: [h.x1, h.y1, h.x2, h.y2] } : {};
+  }
+  if (kind === "spring") {
+    const sp = springParams(ease);
+    return sp ? { spring: { response: sp.time, damping: Math.min(1, Math.max(0, 1 - sp.bounce)) } } : {};
+  }
+  return {};
+}
+
+/** Phase 67: the easing string saved for a timeline easing: curves keep their handles, springs their Bounce and Time. */
+export function uiEaseToCanonicalString(ease: EaseName, bz?: Bezier, spring?: SpringParams): string {
+  if (ease === "Spring") {
+    const sp = spring ?? { response: 0.35, damping: 0.6 };
+    return springEase(1 - sp.damping, sp.response);
+  }
+  if (ease === "Custom") {
+    const h = bz ?? [0.25, 0.1, 0.25, 1];
+    return bezierEase({ x1: h[0], y1: h[1], x2: h[2], y2: h[3] });
+  }
+  return uiEaseToCanonical(ease);
 }
 
 export function uiEaseToCanonical(ease: EaseName): string {
@@ -154,7 +187,7 @@ export function uiEaseToCanonical(ease: EaseName): string {
     case "Ease in out":
       return "ease-in-out";
     case "Back out":
-      return "back-out";
+      return "back.out"; // the kernel's name ("back-out" was never a valid easing)
     case "Anticipate":
       return "anticipate";
     case "Spring":
@@ -248,6 +281,7 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition,
             t: Math.round((offsetSec + k.time) * fps),
             v: canonicalToUiValue(propId, k.value),
             ease: canonicalEaseToUi(k.ease),
+            ...easeDetails(k.ease),
           }));
           const existing = trMap.get(propId) ?? [];
           trMap.set(propId, [...existing, ...keys]);
@@ -321,6 +355,7 @@ let lastClipsRef: Record<string, unknown> | null = null;
 let lastCompsRef: Record<string, unknown> | null = null;
 let lastCompositionId: string | null = null;
 let unsubscribeTransport: (() => void) | null = null;
+let unsubscribeKeySelection: (() => void) | null = null;
 const shownCompositionId = (): string => getTransport().compositionId || MAIN_COMPOSITION_ID;
 
 /**
@@ -370,6 +405,12 @@ export function installDocumentMotionSync(): () => void {
         isSyncing = false;
       }
     });
+    // Phase 66/67: the keyframes selected here are the engine's selection too, so its timeline commands (F9 Easy Ease,
+    // Ctrl+C / Ctrl+V, the graph editor) act on them.
+    unsubscribeKeySelection = useMotionModel.subscribe((state, prev) => {
+      if (state.selectedKeys === prev.selectedKeys) return;
+      useTimelineUiStore.getState().selectKeys(Object.keys(state.selectedKeys).filter((id) => state.selectedKeys[id]), "replace");
+    });
     // Opening another composition (a tab, a breadcrumb, a precomp bar) shows its clips.
     unsubscribeTransport = subscribeTransport((t) => {
       const id = t.compositionId || MAIN_COMPOSITION_ID;
@@ -386,6 +427,8 @@ export function installDocumentMotionSync(): () => void {
     if (activeSubscriptionCount <= 0) {
       activeSubscriptionCount = 0;
       unsubscribeTransport?.();
+      unsubscribeKeySelection?.();
+      unsubscribeKeySelection = null;
       unsubscribeTransport = null;
       lastCompositionId = null;
       if (unsubscribeDocumentStore) {
