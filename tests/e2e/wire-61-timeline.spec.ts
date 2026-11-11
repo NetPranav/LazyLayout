@@ -67,10 +67,10 @@ test("Phase 61 on the new editor: a ten-step timeline journey, the document chec
 
   // 5-6. The work area from the playhead: start at 1 s, end at 3 s, saved in the composition.
   await page.evaluate(() => (window as unknown as Win).__LL_ENGINE__!.seek(1));
-  await page.getByRole("button", { name: "Work area in at playhead (I)" }).click();
+  await page.getByRole("button", { name: "Work area starts at playhead (B)" }).click();
   await expect.poll(async () => (await comp(page)).workArea.start).toBeCloseTo(1, 1);
   await page.evaluate(() => (window as unknown as Win).__LL_ENGINE__!.seek(3));
-  await page.getByRole("button", { name: "Work area out at playhead (O)" }).click();
+  await page.getByRole("button", { name: "Work area ends at playhead (N)" }).click();
   await expect.poll(async () => (await comp(page)).workArea.end).toBeCloseTo(3, 1);
   expect((await comp(page)).workArea.start).toBeCloseTo(1, 1);
 

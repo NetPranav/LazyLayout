@@ -757,8 +757,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <IconButton
               size="lg"
               data-mact="wa-in"
-              aria-label="Work area in at playhead (I)"
-              tooltip="Work area in at playhead (I)"
+              aria-label="Work area starts at playhead (B)"
+              tooltip="Work area starts at playhead (B)"
               tabIndex={focusedIndex === 21 ? 0 : -1}
               onFocus={() => setFocusedIndex(21)}
               onClick={() => {
@@ -772,8 +772,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             <IconButton
               size="lg"
               data-mact="wa-out"
-              aria-label="Work area out at playhead (O)"
-              tooltip="Work area out at playhead (O)"
+              aria-label="Work area ends at playhead (N)"
+              tooltip="Work area ends at playhead (N)"
               tabIndex={focusedIndex === 22 ? 0 : -1}
               onFocus={() => setFocusedIndex(22)}
               onClick={() => {

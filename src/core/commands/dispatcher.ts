@@ -27,6 +27,9 @@ function handleKeyDown(e: KeyboardEvent): void {
   // The key's own target is the truth about text editing. A text field removed while it had focus (a rename box
   // that closes on Enter) fires no `focusout` in some engines (WebKit), which left shortcuts dead for good.
   setTextEditing(isTextEditingTarget(e.target));
+  // A key a focused panel already handled (it called preventDefault) is not run again as a shortcut: the same key doing
+  // two things at once is how Space toggled playback twice (no change) and an arrow stepped two frames.
+  if (e.defaultPrevented) return;
   const ctx = getContextKeys();
   for (const command of getAllCommands()) {
     if (!command.keybinding) continue;
