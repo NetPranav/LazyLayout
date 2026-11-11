@@ -85,7 +85,7 @@ export class SurfaceController {
     if (cached) {
       if (this.restKey !== wantCloth) {
         this.restKey = wantCloth;
-        this.tex.height = gl.makeFloatTexture(cached.height, cached.w, cached.h, this.tex.height);
+        this.tex.height = gl.makeFloatTexture(cached.height, cached.w, cached.h, this.tex.height, this.tex.owner);
         this.tex.heightPx = [cached.w * cell, cached.h * cell];
         this.onState?.("cloth");
       }
@@ -93,7 +93,7 @@ export class SurfaceController {
       // the quick shape at once (a cloth surface shows it until its simulation is in)
       this.restKey = key;
       const rest = restingSurface(shape, wantCloth ? { ...settings.look, creases: 0, wrinkles: 0 } : settings.look, cell);
-      this.tex.height = gl.makeFloatTexture(rest.height, rest.grid.w, rest.grid.h, this.tex.height);
+      this.tex.height = gl.makeFloatTexture(rest.height, rest.grid.w, rest.grid.h, this.tex.height, this.tex.owner);
       this.tex.heightPx = [rest.grid.w * rest.grid.cell, rest.grid.h * rest.grid.cell];
       this.onState?.("quick");
     }
@@ -125,7 +125,7 @@ export class SurfaceController {
     if (!source) {
       this.tex.hasContent = false;
     } else {
-      this.tex.content = gl.makeImageTexture(source, this.tex.content);
+      this.tex.content = gl.makeImageTexture(source, this.tex.content, this.tex.owner);
       this.tex.hasContent = true;
     }
     this.draw();
@@ -166,7 +166,7 @@ export class SurfaceController {
   private uploadDyn(): void {
     const gl = surfaceGL();
     if (!gl || !this.sim) return;
-    this.tex.dyn = gl.makeFloatTexture(this.sim.u, this.sim.grid.w, this.sim.grid.h, this.tex.dyn);
+    this.tex.dyn = gl.makeFloatTexture(this.sim.u, this.sim.grid.w, this.sim.grid.h, this.tex.dyn, this.tex.owner);
     this.tex.dynPx = [this.sim.grid.w * this.sim.grid.cell, this.sim.grid.h * this.sim.grid.cell];
   }
 

@@ -109,7 +109,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | | **Stage 1 · GPU base** |||||
 | 3D-001 | 3D stack decision & licences | Main 218 | — | A | 🚧 |
 | 3D-002 | GPU surface strategy & compositor | Main 173 | 3D-001 | A | 🚧 |
-| 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 📋 |
+| 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 🚧 |
 | 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 📋 |
 | 3D-005 | 3D performance tiers & budgets | new | 3D-004 | A | 📋 |
 | 3D-006 | Worker & WASM job system | new | 3D-001 | A | 📋 |
@@ -411,12 +411,13 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** decision `decisions/0011-gpu-surfaces.md` from a measurement of three strategies (`scripts/benchmarks/gpu-surfaces.ts`, real GPU and SwiftShader); `src/core/gpu/compositor.ts` (shared surface context, scene contexts within a budget, sleep with a poster, loss recovery); the 2.5D surfaces draw through it (comparison score unchanged, 0.6065); `tests/e2e/gpu-compositor.spec.ts` (budget, sleep and wake, loss within 1 s) passes in Chromium.
 
 ### Phase 3D-003 · Passes, render targets & GPU memory ledger
-**Needs:** 3D-002 · **Was:** Main 174 · **Lane:** A · **Status:** 📋
+**Needs:** 3D-002 · **Was:** Main 174 · **Lane:** A · **Status:** 🚧
 - [ ] Pass stacks (render, feedback ping-pong, post), float targets after a capability check.
 - [ ] A memory ledger: every texture, target, buffer and program counted, by owner, and freed when unused.
 
 **You'll see:** a debug view of what the GPU holds, by layer.
 **Done when:** mounting and unmounting 50 scenes returns the ledger to zero; float targets fall back cleanly where unsupported.
+**Evidence (2026-11-11):** `src/core/gpu/ledger.ts` (pure bookkeeping: owner, kind, bytes, release by handle or owner) and `passes.ts` (render targets, ping-pong, pass stacks, float targets after a capability check with RGBA8 fallback); the 2.5D surfaces track every texture; `ledger.test.ts` (7 unit tests) and the browser test (50 surfaces mount and unmount twice, ledger back to the shared baseline); a ledger view on `/editor/gpu-lab`.
 
 ### Phase 3D-004 · GPU & interactive verification harness
 **Needs:** 3D-003 · **Was:** Main 137 · **Lane:** A · **Status:** 📋

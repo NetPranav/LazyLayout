@@ -90,3 +90,27 @@ test("3D-002: a lost context comes back within a second, and surfaces draw again
   });
   await expect.poll(ready, { timeout: 1000, message: "the scene drew again after its context came back" }).toBeGreaterThan(n);
 });
+
+test("3D-003: mounting and unmounting 50 surfaces returns the memory ledger to the shared baseline", async ({ page }) => {
+  type Led = { bytes: number; count: number; owners: Array<{ owner: string; count: number; bytes: number }> };
+  const ledger = () => page.evaluate(() => (window as unknown as { __LL_GPU__: { ledger: () => Led } }).__LL_GPU__.ledger());
+  await page.setViewportSize({ width: 1400, height: 1000 });
+  await page.goto("/editor/gpu-lab?surfaces=0&scenes=0", { waitUntil: "load" });
+  await page.waitForFunction(() => !!(window as unknown as Win).__LL_GPU__);
+  const set = (n: number) => page.evaluate((n) => (window as unknown as { __LL_GPU__: { setSurfaces: (n: number) => void } }).__LL_GPU__.setSurfaces(n), n);
+  await set(1);
+  await expect.poll(async () => (await ledger()).owners.some((o) => o.owner.startsWith("surface:") && o.owner !== "surface:shared"), { timeout: 30_000 }).toBe(true);
+  await set(0);
+  await expect.poll(async () => (await ledger()).owners.filter((o) => o.owner !== "surface:shared").length).toBe(0);
+  const baseline = await ledger();
+  for (let round = 0; round < 2; round++) {
+    await set(50);
+    await expect.poll(async () => (await ledger()).owners.filter((o) => o.owner !== "surface:shared").length, { timeout: 60_000 }).toBe(50);
+    expect((await ledger()).bytes, "50 surfaces hold GPU memory").toBeGreaterThan(baseline.bytes);
+    await set(0);
+    await expect.poll(async () => (await ledger()).owners.filter((o) => o.owner !== "surface:shared").length, { timeout: 30_000 }).toBe(0);
+    const after = await ledger();
+    expect(after.bytes, "back to the shared baseline (the studio map)").toBe(baseline.bytes);
+    expect(after.count).toBe(baseline.count);
+  }
+});

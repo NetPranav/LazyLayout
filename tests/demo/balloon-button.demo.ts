@@ -173,11 +173,13 @@ test("demo: the balloon button, built step by step", async ({ page }) => {
         easing: "linear",
         enabled: true,
         tracks: [
-          { id: "trk_balloon_scale", property: "transform.scale", keyframes: [
-            { id: "kb0", time: 0, value: 1 },
-            { id: "kb1", time: 0.12, value: 0.94, ease: "cubic-bezier(0.3, 0, 0.6, 1)" },
-            { id: "kb2", time: 0.6, value: 1, ease: "spring(bounce: 0.45, time: 0.45)" },
-          ] },
+          {
+            id: "trk_balloon_scale", property: "transform.scale", keyframes: [
+              { id: "kb0", time: 0, value: 1 },
+              { id: "kb1", time: 0.12, value: 0.94, ease: "cubic-bezier(0.3, 0, 0.6, 1)" },
+              { id: "kb2", time: 0.6, value: 1, ease: "spring(bounce: 0.45, time: 0.45)" },
+            ]
+          },
         ],
       },
       "Press animation",

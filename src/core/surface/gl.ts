@@ -5,6 +5,7 @@
  */
 
 import { compositor } from "../gpu/compositor";
+import { gpuLedger, textureBytes } from "../gpu/ledger";
 
 const VERT = `#version 300 es
 in vec2 aPos;
@@ -150,7 +151,10 @@ interface Tex {
 }
 
 /** What one surface keeps on the GPU: its height, its press displacement and its content. */
+let surfaceOwnerSeq = 0;
 export class SurfaceTextures {
+  /** The ledger owner of this surface's textures (3D-003). */
+  readonly owner = `surface:${++surfaceOwnerSeq}`;
   height: Tex | null = null;
   heightPx: [number, number] = [1, 1];
   dyn: Tex | null = null;
@@ -159,6 +163,7 @@ export class SurfaceTextures {
   hasContent = false;
   dispose(gl: WebGL2RenderingContext): void {
     for (const t of [this.height, this.dyn, this.content]) if (t) gl.deleteTexture(t.tex);
+    gpuLedger.releaseOwner(this.owner);
     this.height = this.dyn = this.content = null;
   }
 }
@@ -249,13 +254,17 @@ class SharedSurfaceGL {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gpuLedger.track(tex, "surface:shared", "texture", textureBytes(W, H, "RGBA8", true), "studio environment");
     return tex;
   }
 
-  makeFloatTexture(data: Float32Array, w: number, h: number, reuse?: Tex | null): Tex {
+  makeFloatTexture(data: Float32Array, w: number, h: number, reuse?: Tex | null, owner = "surface:shared"): Tex {
     const gl = this.gl;
     const tex = reuse && reuse.w === w && reuse.h === h ? reuse.tex : gl.createTexture()!;
-    if (reuse && reuse.tex !== tex) gl.deleteTexture(reuse.tex);
+    if (reuse && reuse.tex !== tex) {
+      gl.deleteTexture(reuse.tex);
+      gpuLedger.release(reuse.tex);
+    }
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, this.floatLinear ? gl.R32F : gl.R16F, w, h, 0, gl.RED, gl.FLOAT, data);
@@ -263,10 +272,11 @@ class SharedSurfaceGL {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gpuLedger.track(tex, owner, "texture", textureBytes(w, h, this.floatLinear ? "R32F" : "R16F"), "height / press field");
     return { tex, w, h };
   }
 
-  makeImageTexture(source: TexImageSource & { width: number; height: number }, reuse?: Tex | null): Tex {
+  makeImageTexture(source: TexImageSource & { width: number; height: number }, reuse?: Tex | null, owner = "surface:shared"): Tex {
     const gl = this.gl;
     const tex = reuse ? reuse.tex : gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -277,6 +287,7 @@ class SharedSurfaceGL {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gpuLedger.track(tex, owner, "texture", textureBytes(source.width, source.height, "RGBA8"), "text content");
     return { tex, w: source.width, h: source.height };
   }
 

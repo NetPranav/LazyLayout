@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RenderLayer } from "@/core/render";
 import type { Layer } from "@/core/document/schema";
 import { compositor } from "@/core/gpu/compositor";
+import { gpuLedger } from "@/core/gpu/ledger";
 
 /** A test scene: a canvas that, when the compositor gives it a context, clears to its colour and draws a triangle. */
 function TestScene({ index }: { index: number }) {
@@ -67,13 +68,37 @@ function surfaceLayers(count: number): Record<string, Layer> {
   return layers;
 }
 
-export function GpuLab({ surfaces, scenes, budget }: { surfaces: number; scenes: number; budget: number }) {
+/** The memory ledger's debug view: what the GPU holds, by owner (a surface, a scene). */
+function LedgerView() {
+  const [rows, setRows] = useState(() => gpuLedger.byOwner());
+  useEffect(() => gpuLedger.subscribe(() => setRows(gpuLedger.byOwner())), []);
+  const total = rows.reduce((a, r) => a + r.bytes, 0);
+  return (
+    <table data-testid="gpu-ledger" style={{ position: "fixed", right: 8, top: 8, background: "#fffc", font: "11px/1.4 ui-monospace, monospace", border: "1px solid #ccc", padding: 6, maxHeight: "40vh", overflow: "auto" }}>
+      <caption style={{ textAlign: "left", fontWeight: 600 }}>GPU memory: {(total / 1024 / 1024).toFixed(2)} MB in {rows.length} owners</caption>
+      <tbody>
+        {rows.slice(0, 12).map((r) => (
+          <tr key={r.owner}>
+            <td>{r.owner}</td>
+            <td>{r.count}</td>
+            <td style={{ textAlign: "right" }}>{(r.bytes / 1024).toFixed(0)} KB</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+export function GpuLab({ surfaces: initialSurfaces, scenes, budget }: { surfaces: number; scenes: number; budget: number }) {
+  const [surfaces, setSurfaces] = useState(initialSurfaces);
   const layers = useMemo(() => surfaceLayers(surfaces), [surfaces]);
   useEffect(() => {
     compositor.sceneBudget = budget;
     const w = window as unknown as { __LL_GPU__?: unknown };
     w.__LL_GPU__ = {
       stats: () => compositor.stats(),
+      setSurfaces,
+      ledger: () => ({ bytes: gpuLedger.totalBytes(), count: gpuLedger.count(), owners: gpuLedger.byOwner() }),
       loseShared: () => compositor.loseSharedForTest(),
       restoreShared: () => compositor.restoreSharedForTest(),
     };
@@ -83,6 +108,7 @@ export function GpuLab({ surfaces, scenes, budget }: { surfaces: number; scenes:
   }, [budget]);
   return (
     <div data-testid="gpu-lab-scroll" style={{ background: "#fff", padding: 0, height: "100vh", overflowY: "auto" }}>
+      <LedgerView />
       <div data-testid="gpu-lab-surfaces" style={{ position: "relative", width: 720, height: 300 }}>
         <RenderLayer layerId="root" layers={layers} ctx={{ mode: "preview", layers, frameAtOrigin: true }} root />
       </div>
