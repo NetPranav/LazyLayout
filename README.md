@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000> for the launcher and <http://localhost:3000/editor> for the studio. The
+Open <http://localhost:3000> for the home page and <http://localhost:3000/editor> for the studio. The
 previous editor is still available at `/editor/legacy`.
 
 This project runs on Next.js 16 and React 19, which have breaking changes from earlier versions.
@@ -85,7 +85,7 @@ src/runtime         what the exported code runs on
 src/ai              the co-pilot
 src/editor          the new editor UI (Design, Motion, Code)
 src/legacy-editor   the previous editor, kept at /editor/legacy
-src/app             Next.js routes (launcher, /editor, /design-system)
+src/app             Next.js routes (home, /editor, /design-system)
 tests/e2e           Playwright specs
 DOCS                product, roadmap, audit, UI rules, handoffs
 ```
@@ -115,7 +115,8 @@ browser at 1440 px. Full details: `DOCS/UI/PROGRESS.md`.
 - The Code inspector's Framework, Styling and Animation choices need compiler options.
 - Pen point type, Round and Join have no engine command yet (see `DOCS/UI/INTEGRATION.md`).
 - Page share image has no engine field yet.
-- Full e2e run, production build check and narrow-width (1024 / 390 px) pass are in progress.
+- Some e2e specs are skipped (`test.fixme`) for features the new editor does not have yet; see `DOCS/UI/handoffs/2026-11-12-e2e.md`.
+- At 390 px the side panels are hidden by design; 1024 px is checked.
 
 **Not designed yet**
 - Breakpoint bar and device views, Tokens panel, Components and variants, Graph editor, Agent pairing.
