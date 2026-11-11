@@ -1,5 +1,6 @@
 "use client";
 
+import { getTransport } from "@/core/time/transport";
 import React, { useEffect, useRef, useCallback } from "react";
 import {
   useMotionModel,
@@ -58,6 +59,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
 
   const needleRef = useRef<HTMLDivElement | null>(null);
   const labelRef = useRef<HTMLSpanElement | null>(null);
+  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const knobRef = useRef<HTMLDivElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
 
@@ -83,8 +85,19 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       needleRef.current.setAttribute("data-flip", x > laneWidth - 84 ? "1" : "0");
     }
     if (labelRef.current) {
-      const r = Math.round(f);
-      labelRef.current.textContent = frames ? String(r) : timecode(r, fps);
+      // The label is only visible while scrubbing, and its text is a DOM commit, so it is written here (not rendered by
+      // React) and, while playing, only once the head has stopped moving. Seeking and scrubbing update it at once.
+      const write = (frame: number) => {
+        if (!labelRef.current) return;
+        const r = Math.round(frame);
+        labelRef.current.textContent = frames ? String(r) : timecode(r, fps);
+      };
+      if (labelTimerRef.current !== undefined) {
+        clearTimeout(labelTimerRef.current);
+        labelTimerRef.current = undefined;
+      }
+      if (getTransport().playing) labelTimerRef.current = setTimeout(() => write(f), 250);
+      else write(f);
     }
     if (layerRef.current) {
       layerRef.current.setAttribute("data-time", String(Math.round(f)));
@@ -219,9 +232,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
             ref={labelRef}
             aria-hidden="true"
             className="ll-phl-time ll:absolute ll:top-1 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:pointer-events-none ll:whitespace-nowrap"
-          >
-            {frames ? String(Math.round(playhead)) : timecode(Math.round(playhead), fps)}
-          </span>
+          />
         </div>
       </div>
 

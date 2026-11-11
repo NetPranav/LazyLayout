@@ -40,7 +40,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 }) => {
   // Motion store subscriptions
   const comp = useMotionModel((s) => s.comp);
-  const playhead = useMotionModel((s) => s.playhead);
   const playing = useMotionModel((s) => s.playing);
   const speed = useMotionModel((s) => s.speed);
   const fps = useMotionModel((s) => s.fps);
@@ -113,13 +112,20 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const pps = ((laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps)) * zoom;
 
   // Auto-scroll when zoomed during playback
+  // Subscribed imperatively (not through a hook) so the whole panel does not re-render on every playback frame.
   useEffect(() => {
     if (!playing || zoom <= 1) return;
-    const x = X(playhead, pps, t0, 24, fps);
-    if (x > laneAvailableWidth - 24 || x < 24) {
-      motionActions.setT0(playhead / fps - 0.1 * ((laneAvailableWidth - 48) / pps));
-    }
-  }, [playing, zoom, playhead, pps, t0, fps, laneAvailableWidth]);
+    const follow = (playhead: number) => {
+      const x = X(playhead, pps, t0, 24, fps);
+      if (x > laneAvailableWidth - 24 || x < 24) {
+        motionActions.setT0(playhead / fps - 0.1 * ((laneAvailableWidth - 48) / pps));
+      }
+    };
+    follow(useMotionModel.getState().playhead);
+    return useMotionModel.subscribe((state, prev) => {
+      if (state.playhead !== prev.playhead) follow(state.playhead);
+    });
+  }, [playing, zoom, pps, t0, fps, laneAvailableWidth]);
 
   // Panel Height Splitter Drag Handle (#bsplit)
   const handleSplitterPointerDown = (e: React.PointerEvent) => {
@@ -300,7 +306,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         motionActions.setT0(0);
       } else if (key === "m" || key === "M") {
         e.preventDefault();
-        motionActions.addMarker(playhead);
+        motionActions.addMarker(useMotionModel.getState().playhead);
       } else if (key === "v" || key === "V") {
         motionActions.setTool("select");
       } else if (key === "c" || key === "C") {
@@ -316,7 +322,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, fps, laneAvailableWidth, playhead, pps]
+    [clearSelection, comp.layers, fps, laneAvailableWidth, pps]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)

@@ -35,6 +35,7 @@ import {
   valueAt,
   snapT,
 } from "@/editor/motion-model";
+import { useThrottledPlayhead } from "@/editor/motion-model/useThrottledPlayhead";
 import type { MotionLayer, PropId, Keyframe } from "@/editor/motion-model";
 import type { ContextMenuState } from "./types";
 
@@ -159,7 +160,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
-  const playhead = useMotionModel((s) => s.playhead);
+  const playhead = useThrottledPlayhead();
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
   const tool = useMotionModel((s) => s.tool);
   const snap = useMotionModel((s) => s.snap);

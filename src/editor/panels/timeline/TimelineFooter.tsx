@@ -19,6 +19,7 @@ import {
   allKeys,
   clampN,
 } from "@/editor/motion-model";
+import { useThrottledPlayhead } from "@/editor/motion-model/useThrottledPlayhead";
 import { FPS_OPTIONS } from "./constants";
 import { AutoKeyIcon, OnionSkinIcon } from "./icons";
 
@@ -28,7 +29,7 @@ export interface TimelineFooterProps {
 
 export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) => {
   const comp = useMotionModel((s) => s.comp);
-  const playhead = useMotionModel((s) => s.playhead);
+  const playhead = useThrottledPlayhead();
   const fps = useMotionModel((s) => s.fps);
   const zoom = useMotionModel((s) => s.zoom);
   const t0 = useMotionModel((s) => s.t0);
