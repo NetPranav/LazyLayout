@@ -2,6 +2,7 @@
 
 import React, { useRef, useMemo } from "react";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
+import { TimelineLayerProperties } from "./TimelineLayerProperties";
 import { Icon } from "@/editor/components/Icon";
 import {
   ChevronDown,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   Diamond,
   Frame,
+  ListTree,
 } from "lucide-react";
 import {
   useMotionModel,
@@ -86,6 +88,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
   onSelectTrack: legacySelectTrack,
 }) => {
   const pps = propPps ?? legacyPps ?? 100;
+  const propsOpenSet = useTimelineUiStore((s) => s.open);
   const isSelected = propIsSelected ?? legacyIsSelected ?? false;
   const onSelectLayer = propSelectLayer ?? legacySelectTrack ?? (() => {});
 
@@ -157,6 +160,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
   }, [propLayer, legacyTrack]);
 
   const layer = propLayer ?? fallbackLayer;
+  const propsOpen = propsOpenSet.has(layer.id);
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
@@ -563,6 +567,23 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
           {/* Action icons (Add, Mute, Lock, Solo) */}
           <span className="act ll-act ll:flex ll:items-center ll:shrink-0" onClick={(e) => e.stopPropagation()}>
+            {!isGroup && (
+              // Phase 62: the layer's property groups, each property with a stopwatch
+              <button
+                type="button"
+                data-la="props"
+                data-l={layer.id}
+                aria-expanded={propsOpen}
+                aria-label={`${propsOpen ? "Hide" : "Show"} properties of ${layerName(layer.id)}`}
+                title="Properties (stopwatches)"
+                onClick={() => useTimelineUiStore.getState().toggleOpen(layer.id)}
+                className={`ib ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+                  propsOpen ? "ll:text-control-active" : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+                }`}
+              >
+                <Icon icon={ListTree} size={14} />
+              </button>
+            )}
             {!isGroup && (
               <button
                 type="button"
@@ -1015,6 +1036,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
           <div className="tlln ll-tlln ll:relative ll:h-full ll:bg-surface-panel" />
         </div>
       )}
+      {!isGroup && <TimelineLayerProperties layerId={layer.id} trackWidth={trackWidth} />}
     </div>
   );
 };

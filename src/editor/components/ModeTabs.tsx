@@ -81,9 +81,17 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
     }
   };
 
+  // whether the tabs got focus from the keyboard (Tab) rather than from a click
+  const pointerDownRef = useRef(false);
+  const keyboardFocusRef = useRef(false);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (disabled) return;
+      // Arrow, Home and End move between tabs only when the tabs were reached with the keyboard. After a click on a tab
+      // the keys belong to the workspace the pointer is over (Home on the timeline goes to the start, it must not
+      // switch back to Design).
+      if (!keyboardFocusRef.current) return;
       let nextIdx = -1;
 
       if (e.key === "ArrowRight") {
@@ -121,6 +129,13 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
         aria-label="Mode"
         data-state={dataState}
         onKeyDown={handleKeyDown}
+        onPointerDownCapture={() => {
+          pointerDownRef.current = true;
+        }}
+        onFocusCapture={() => {
+          keyboardFocusRef.current = !pointerDownRef.current;
+          pointerDownRef.current = false;
+        }}
         className={`modes ll-modes ll:relative ll:flex ll:items-center ll:gap-0.5 ll:h-8 ll:p-0.5 ll:border ll:border-border ll:rounded-md ll:self-center ll:box-border ${
           disabled ? "ll:opacity-disabled ll:pointer-events-none" : ""
         } ${className}`}

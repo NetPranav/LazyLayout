@@ -46,6 +46,7 @@ import {
 import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
 import { installTransportCommands } from "@/core/time/transportCommands";
 import { installTransportDriver } from "@/core/time/transportDriver";
+import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { transport, transportStore } from "@/core/time/transport";
 
 /** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
@@ -167,6 +168,7 @@ export function EditorShell({
   // One-clock transport command bindings and master driver
   useEffect(() => installTransportCommands(), []);
   useEffect(() => installTransportDriver(), []);
+  // Direct DOM playback optimization for stage elements (ROADMAP Phase 56: <= 10 React commits/sec during playback)
   // The editor opens with the playhead where the Motion panel always put it (frame 72, past the sample entrances), so
   // the canvas shows layers at rest rather than at the first frame of their entrance. Only on a fresh, untouched clock.
   useEffect(() => {
@@ -546,7 +548,13 @@ export function EditorShell({
                 onDoubleClick={onSplitDouble}
               />
             )}
-            {actions.mode === "motion" ? <TimelinePanel height="100%" /> : <CodePanel />}
+            {actions.mode === "motion" ? (
+              <React.Profiler id="timeline" onRender={() => recordCommit("timeline")}>
+                <TimelinePanel height="100%" />
+              </React.Profiler>
+            ) : (
+              <CodePanel />
+            )}
           </>
         )}
       </div>

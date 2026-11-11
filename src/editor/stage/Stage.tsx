@@ -1,5 +1,7 @@
 "use client";
 
+import { recordCommit } from "@/editor/diagnostics/commitCounter";
+import { useCanvasEngine } from "./useCanvasEngine";
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
@@ -155,6 +157,8 @@ export const Stage: React.FC<StageProps> = ({
   const storeLayers = useDocumentAt((d) => d.layers, undefined);
 
   const pageRef = useRef<HTMLDivElement>(null);
+  // the animation engine on the drawn page (Phase 57)
+  useCanvasEngine(pageRef);
   const activePageRoot = useProjectStore((p) => p.pages[p.activePageId]?.rootElementId);
   const rootId = useMemo(
     () => (activePageRoot && storeLayers?.[activePageRoot] ? activePageRoot : (Object.values(storeLayers ?? {}).find((l) => l.parentId === null)?.id ?? null)),
@@ -835,46 +839,48 @@ export const Stage: React.FC<StageProps> = ({
           e.target.value = "";
         }}
       />
-      <Artboard
-        title={title}
-        preset={activePreset}
-        onPresetChange={handlePresetChange}
-        width={presetDef.artboardWidth}
-        height={presetDef.artboardHeight}
-        background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
-        zoom={zoom}
-        pan={pan}
-        elements={elements}
-        layers={controlledElements ? undefined : storeLayers}
-        pageRef={pageRef}
-        rootId={controlledElements ? null : rootId}
-        drawPreview={drawPreview}
-        selectedIds={selectedIds}
-        hoveredId={hoveredId}
-        onSelect={handleSelect}
-        onHover={setHoveredId}
-        activeTool={activeTool}
-        snapGuides={snapGuides && isGesturing}
-        empty={empty}
-        references={
-          onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
-            <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
-          ) : undefined
-        }
-        onAddFrame={onAddFrame}
-        onInsert={onInsert}
-        onAskAi={onAskAi}
-        onElementChange={handleElementChange}
-        onLayerAction={handleLayerAction}
-        onToggleHidden={handleToggleHidden}
-        onToggleLocked={handleToggleLocked}
-        mode={mode}
-        snapLines={snapLines}
-        spacingMarks={spacingMarks}
-        onStartMove={startMove}
-        onStartResize={startResize}
-        isGesturing={isGesturing}
-      />
+      <React.Profiler id="artboard" onRender={() => recordCommit("artboard")}>
+        <Artboard
+          title={title}
+          preset={activePreset}
+          onPresetChange={handlePresetChange}
+          width={presetDef.artboardWidth}
+          height={presetDef.artboardHeight}
+          background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
+          zoom={zoom}
+          pan={pan}
+          elements={elements}
+          layers={controlledElements ? undefined : storeLayers}
+          pageRef={pageRef}
+          rootId={controlledElements ? null : rootId}
+          drawPreview={drawPreview}
+          selectedIds={selectedIds}
+          hoveredId={hoveredId}
+          onSelect={handleSelect}
+          onHover={setHoveredId}
+          activeTool={activeTool}
+          snapGuides={snapGuides && isGesturing}
+          empty={empty}
+          references={
+            onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
+              <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
+            ) : undefined
+          }
+          onAddFrame={onAddFrame}
+          onInsert={onInsert}
+          onAskAi={onAskAi}
+          onElementChange={handleElementChange}
+          onLayerAction={handleLayerAction}
+          onToggleHidden={handleToggleHidden}
+          onToggleLocked={handleToggleLocked}
+          mode={mode}
+          snapLines={snapLines}
+          spacingMarks={spacingMarks}
+          onStartMove={startMove}
+          onStartResize={startResize}
+          isGesturing={isGesturing}
+        />
+      </React.Profiler>
     </div>
   );
 };

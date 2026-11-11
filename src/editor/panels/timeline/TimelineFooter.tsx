@@ -22,6 +22,7 @@ import {
 import { useThrottledPlayhead } from "@/editor/motion-model/useThrottledPlayhead";
 import { FPS_OPTIONS } from "./constants";
 import { AutoKeyIcon, OnionSkinIcon } from "./icons";
+import { ParityBadge } from "@/editor/components/ParityBadge";
 
 export interface TimelineFooterProps {
   trackWidth: number;
@@ -308,6 +309,9 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
       >
         <Icon icon={Scan} size={14} />
       </button>
+
+      {/* Engine parity (Phase 60): dev builds and tests only, renders nothing in production */}
+      <ParityBadge className="ll:px-1.5" />
 
       <span className="ll:w-px ll:h-3.5 ll:bg-border ll:mx-0.5" aria-hidden="true" />
 

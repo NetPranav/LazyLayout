@@ -2,13 +2,13 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useFocusScope } from "@/core/commands/useFocusScope";
-import { transport, transportStore, getTransport } from "@/core/time/transport";
+import { transport } from "@/core/time/transport";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { installAutoKey } from "@/core/timeline/keyframeOps";
 import {
   useMotionModel,
   motionActions,
-  isGrp,
   X,
   Fx,
   majorOf,
@@ -110,6 +110,33 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   // Calculate pixels per second (pps)
   const laneAvailableWidth = Math.max(300, containerWidth - trackWidth);
   const pps = ((laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps)) * zoom;
+
+  // Phase 63: the engine's zoom (useTimelineUiStore.pixelsPerSecond, set by = - \ and Ctrl+wheel commands) and this
+  // panel's zoom are the same zoom. The panel reports its view width (so "zoom to the work area" knows what to fill),
+  // keeps the engine's value in step with its own, and follows the engine's value and scroll requests.
+  const basePps = (laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps);
+  const basePpsRef = useRef(basePps);
+  useEffect(() => {
+    basePpsRef.current = basePps;
+    useTimelineUiStore.getState().setViewportWidth(Math.max(0, laneAvailableWidth - 2 * TIMELINE_PADDING_PX));
+  }, [basePps, laneAvailableWidth]);
+  useEffect(() => {
+    const ui = useTimelineUiStore.getState();
+    if (Math.abs(ui.pixelsPerSecond - pps) > 0.5) ui.setZoom(pps);
+  }, [pps]);
+  useEffect(
+    () =>
+      useTimelineUiStore.subscribe((next, prev) => {
+        if (next.pixelsPerSecond === prev.pixelsPerSecond && next.scrollRequest === prev.scrollRequest) return;
+        const base = basePpsRef.current;
+        if (base > 0) motionActions.setZoom(next.pixelsPerSecond / base);
+        if (next.scrollRequest !== null) {
+          motionActions.setT0(next.scrollRequest / next.pixelsPerSecond);
+          next.clearScrollRequest();
+        }
+      }),
+    [],
+  );
 
   // Auto-scroll when zoomed during playback
   // Subscribed imperatively (not through a hook) so the whole panel does not re-render on every playback frame.
@@ -245,65 +272,18 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
       const key = e.key;
       const mod = e.ctrlKey || e.metaKey;
 
-      if (key === " ") {
+      // Space, Home, End, the arrows, J K L, I O, B N, U, = - \ and Page Up / Down are the timeline's commands
+      // (src/core/timeline/timelineCommands.ts, src/core/time/transportCommands.ts), run by the command bus while the
+      // pointer is over the timeline. Only what the panel alone does stays here.
+      if (e.altKey && (key === "ArrowLeft" || key === "ArrowRight")) {
         e.preventDefault();
-        transport.togglePlay();
-      } else if (key === "Home") {
+        motionActions.jumpKey(key === "ArrowLeft" ? -1 : 1);
+      } else if (e.shiftKey && (key === "ArrowLeft" || key === "ArrowRight")) {
         e.preventDefault();
-        motionActions.seek(getTransport().workArea.start * fps, true);
-      } else if (key === "End") {
-        e.preventDefault();
-        motionActions.seek(getTransport().workArea.end * fps, true);
-      } else if (key === "ArrowLeft") {
-        e.preventDefault();
-        if (e.altKey) motionActions.jumpKey(-1);
-        else transport.stepFrame(e.shiftKey ? -10 : -1);
-      } else if (key === "ArrowRight") {
-        e.preventDefault();
-        if (e.altKey) motionActions.jumpKey(1);
-        else transport.stepFrame(e.shiftKey ? 10 : 1);
+        transport.stepFrame(key === "ArrowLeft" ? -10 : 10);
       } else if (mod && (key === "d" || key === "D")) {
         e.preventDefault();
         motionActions.duplicateKeys();
-      } else if (key === "k" || key === "K") {
-        e.preventDefault();
-        const isCurrentlyPlaying = transportStore.getState().playing;
-        if (isCurrentlyPlaying) {
-          transport.pause();
-        } else {
-          transport.stopShuttle();
-        }
-      } else if (key === "j" || key === "J") {
-        e.preventDefault();
-        transport.shuttle("reverse");
-      } else if (key === "l" || key === "L") {
-        e.preventDefault();
-        transport.shuttle("forward");
-      } else if (key === "i" || key === "I") {
-        e.preventDefault();
-        const curTime = getTransport().time;
-        transport.setWorkArea({ start: curTime, end: getTransport().workArea.end });
-      } else if (key === "o" || key === "O") {
-        e.preventDefault();
-        const curTime = getTransport().time;
-        transport.setWorkArea({ start: getTransport().workArea.start, end: curTime });
-      } else if (key === "u" || key === "U") {
-        e.preventDefault();
-        const nonGroupLayers = comp.layers.filter((l) => !isGrp(l));
-        const allOpen = nonGroupLayers.every((l) => l.open);
-        nonGroupLayers.forEach((l) => {
-          motionActions.setLayer(l.id, { open: !allOpen });
-        });
-      } else if (key === "+" || key === "=") {
-        e.preventDefault();
-        motionActions.zoomAt(1.25, laneAvailableWidth / 2, pps);
-      } else if (key === "-" || key === "_") {
-        e.preventDefault();
-        motionActions.zoomAt(0.8, laneAvailableWidth / 2, pps);
-      } else if (key === "\\") {
-        e.preventDefault();
-        motionActions.setZoom(1);
-        motionActions.setT0(0);
       } else if (key === "m" || key === "M") {
         e.preventDefault();
         motionActions.addMarker(useMotionModel.getState().playhead);
@@ -322,7 +302,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, fps, laneAvailableWidth, pps]
+    [clearSelection]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)
@@ -343,6 +323,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     <section
       id="bottom"
       ref={panelRef}
+      data-pps={Math.round(pps * 100) / 100}
       tabIndex={0}
       role="region"
       aria-label="Motion Timeline"

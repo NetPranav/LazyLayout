@@ -32,6 +32,7 @@ import { createId } from "@/core/ids";
 import type { Clip, ClipTemplate } from "@/core/document/schema";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
+import { setWorkArea as setDocumentWorkArea } from "@/core/timeline/timelineOps";
 import {
   UI_TO_CANONICAL_PATH,
   CANONICAL_TO_UI_PATH,
@@ -118,12 +119,12 @@ export const useMotionModel = create<MotionState>(() => ({
 
 export const getOverlayFrame = (): number => {
   const s = useMotionModel.getState();
-  return s.playing ? s.overlayFrame : Math.round(getTransport().time * (getTransport().fps || 60));
+  return s.playing ? Math.round(getTransport().time * (getTransport().fps || 60)) : s.overlayFrame;
 };
 
 export const getOverlayTime = (): number => {
   const s = useMotionModel.getState();
-  return s.playing ? s.overlayTime : getTransport().time;
+  return s.playing ? getTransport().time : s.overlayTime;
 };
 
 export const useOverlayFrame = (): number => useMotionModel((s) => (s.playing ? s.overlayFrame : s.playhead));
@@ -171,33 +172,48 @@ function syncOverlayFromTransport(t: TransportState): void {
   }
 }
 
-// ROADMAP Phase 55: Frame scheduler integration
+// ROADMAP Phase 55 & 56: Frame scheduler integration
 // Ordered phases: input → evaluate → apply → render → overlay → stats
 // During playback:
 // 1. evaluate advances transport (see installTransportDriver in src/core/time/transportDriver.ts)
-// 2. apply copies transport time into the Motion store once per frame
-// 3. render redraws the stage / timeline
-// 4. overlay updates published overlay frame/time so overlays follow the canvas in lockstep
-frameScheduler.register("apply", () => {
+// 2. apply: direct DOM apply updates the stage; Motion store updates at <= 10 Hz (or per-step in deterministic mode)
+// 3. render redraws the stage / timeline when needed
+// 4. overlay updates playhead needle and overlays in direct DOM, throttled store sync at <= 10 Hz
+let lastMotionSync = 0;
+frameScheduler.register("apply", ({ now }) => {
   const t = getTransport();
   if (t.playing) {
-    syncTransportToMotion(t);
+    if (frameScheduler.stats.deterministic) {
+      syncTransportToMotion(t);
+    } else if (now - lastMotionSync >= 100) {
+      lastMotionSync = now;
+      syncTransportToMotion(t);
+    }
   }
 });
 
-frameScheduler.register("overlay", () => {
+let lastOverlaySync = 0;
+frameScheduler.register("overlay", ({ now }) => {
   const t = getTransport();
   if (t.playing) {
-    syncOverlayFromTransport(t);
+    if (frameScheduler.stats.deterministic) {
+      syncOverlayFromTransport(t);
+    } else if (now - lastOverlaySync >= 100) {
+      lastOverlaySync = now;
+      syncOverlayFromTransport(t);
+    }
   }
 });
 
 // Single subscription: core transport is the ONE clock.
 // When NOT playing (seek, step, scrub, pause, reset), apply at once so editing stays immediate.
-// During playback, time and playhead are copied in the "apply" phase above, not from raw subscription.
+// During playback, time and playhead are copied in the "apply" phase above, throttled to <= 10 Hz.
 subscribeTransport((state, prev) => {
   if (!state.playing) {
+    lastMotionSync = 0;
+    lastOverlaySync = 0;
     syncTransportToMotion(state);
+    syncOverlayFromTransport(state);
   } else {
     // Sync non-time playback flags immediately (loop, speed, direction, playing)
     const loopNum: 0 | 1 | 2 = state.loop === "off" ? 0 : state.loop === "loop" ? 1 : 2;
@@ -353,10 +369,10 @@ export const motionActions = {
   setWorkArea(a: number, b: number): void {
     const s = useMotionModel.getState();
     const fps = s.fps || 60;
-    transport.setWorkArea({
-      start: clampN(a, 0, s.comp.dur - 1) / fps,
-      end: clampN(b, 1, s.comp.dur) / fps,
-    });
+    const area = { start: clampN(a, 0, s.comp.dur - 1) / fps, end: clampN(b, 1, s.comp.dur) / fps };
+    transport.setWorkArea(area);
+    // the work area is the composition's (Phase 61): saved with the document, and one undo step
+    setDocumentWorkArea(area.start, area.end, MAIN_COMPOSITION_ID);
   },
   resetWorkArea(): void {
     transport.setWorkArea({ start: 0, end: getTransport().duration });
@@ -1153,6 +1169,7 @@ export const motionActions = {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) Object.assign(l, patch);
     });
+
 
     if (patch.category !== undefined || patch.trig !== undefined) {
       motionActions.setClipSettings(layerId, {
