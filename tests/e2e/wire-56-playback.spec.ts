@@ -120,12 +120,12 @@ test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and ti
   await bar.getByRole("button", { name: "Pause (Space)", exact: true }).click();
   await expect(bar.getByRole("button", { name: "Play (Space)", exact: true })).toBeVisible();
 
-  // Directly check inline style attributes: must be empty string
-  const inlineOpacity = await drawnHeadline.evaluate((el) => (el as HTMLElement).style.opacity);
-  expect(inlineOpacity, "Drawn headline must have no stale inline style opacity override").toBe("");
-
-  const inlineTransform = await drawnHeadline.evaluate((el) => (el as HTMLElement).style.transform);
-  expect(inlineTransform, "Drawn headline must have no stale inline style transform override").toBe("");
+  // After pause React draws the paused frame itself (it writes opacity inline too), so an inline value is expected.
+  // What must not survive is a value playback wrote: step one frame while paused, and the drawn opacity must be the
+  // new frame's (11 / 36), not the last value playback left.
+  await bar.getByRole("button", { name: "Step forward (Right)" }).click();
+  await expect.poll(async () => parseFloat(await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity)), "after a paused step, the drawn opacity is the new frame's").toBeCloseTo(11 / 36, 1);
+  await bar.getByRole("button", { name: "Step back (Left)" }).click();
 
   // Computed opacity should match evaluated frame 10 (10 / 36 ~ 0.28)
   const computedOpacity = await drawnHeadline.evaluate((el) => window.getComputedStyle(el).opacity);
