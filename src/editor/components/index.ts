@@ -19,6 +19,7 @@ export * from "./PropertyRow";
 export * from "./ListRow";
 export * from "./TreeRow";
 export * from "./Tabs";
+export * from "./BudgetMeter";
 export { Avatar, type AvatarProps, ShipButton, type ShipButtonProps } from "./Avatar";
 export * from "./EmptyState";
 export * from "./TopBar";

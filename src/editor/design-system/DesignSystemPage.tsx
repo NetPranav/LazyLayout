@@ -102,6 +102,7 @@ import {
   TimelineFooterDemo,
   ParityBadgeDemo,
   TimelineCompositionTabsDemo,
+  BudgetMeterDemo,
 } from "./demos/TimelineDemos";
 import {
   SliderDemo,
@@ -1660,6 +1661,11 @@ export function DesignSystemPage() {
             {activeSection === "timeline-footer" && (
               <Titled title="Engine parity badge" note="Phase 60: idle, OK, drift. Dev builds only.">
                 <ParityBadgeDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-footer" && (
+              <Titled title="Budget meter" note="3D-005: a scene against phones, laptops and high-end machines, with what to drop first.">
+                <BudgetMeterDemo />
               </Titled>
             )}
             {activeSection === "timeline-footer" && (
