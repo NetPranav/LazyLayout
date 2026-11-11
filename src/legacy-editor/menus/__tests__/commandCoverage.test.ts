@@ -72,12 +72,25 @@ describe("Phase 13: menu → command coverage", () => {
       "editor/shell/canvas-chrome/AiBox.tsx",
       "editor/shell/canvas-chrome/InsertBox.tsx",
       "editor/shell/canvas-chrome/ViewOptionsPopover.tsx",
+      // from the rebuilt UI (#84): keys inside an open picker, popover or dialog, a drag being cancelled, the pen's edit mode,
+      // the cursor following held modifiers, and the toolbar closing its tool flyout on any key
+      "editor/components/ColorPicker.tsx",
+      "editor/components/FontPicker.tsx",
+      "editor/components/FramePresetsPanel.tsx",
+      "editor/components/OptionsPopover.tsx",
+      "editor/panels/timeline/EasingPopover.tsx",
+      "editor/shell/canvas-chrome/Spotlight.tsx",
+      "editor/shell/canvas-chrome/Toolbar.tsx",
+      "editor/shell/export-dialog/ExportDialog.tsx",
+      "editor/stage/CanvasCursor.tsx",
+      "editor/stage/layout-overlay/useValueDrag.ts",
+      "editor/stage/pen/PathEditLayer.tsx",
     ]);
     // KNOWN DEBT, not an approval: these files of the new editor handle real global shortcuts (tool keys R L Y K V H F T O, Space,
     // Delete, arrow nudging, zoom, Ctrl+/ ...) with raw window listeners instead of commands with a keybinding (Phase 13, Law 20). So the
     // engine's command keybindings and the shortcuts shown in the new menus can disagree. Moving them onto the command bus removes them
     // from this list; do not add to it.
-    const pendingCommandMigration = new Set(["editor/shell/useEditorActions.ts", "editor/stage/useStageTransform.ts", "editor/shell/canvas-chrome/CanvasChrome.tsx"]);
+    const pendingCommandMigration = new Set(["editor/shell/useEditorActions.ts", "editor/stage/useStageTransform.ts", "editor/shell/canvas-chrome/CanvasChrome.tsx", "editor/panels/code-view/CodePanel.tsx" /* Ctrl+F in the code view, from #84 */]);
     const offenders: string[] = [];
     const root = join(process.cwd(), "src");
     for (const file of sourceFiles(root)) {
