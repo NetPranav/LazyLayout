@@ -44,6 +44,7 @@ import type { EaseName } from "@/editor/motion-model";
 import type { ContextMenuState } from "./types";
 import { SplitIcon, EaseCurveIcon } from "./icons";
 import { timelineOpsAdapter } from "./timelineOpsAdapter";
+import { EASE_PRESETS } from "@/core/timeline/graph";
 
 export interface TimelineMenusProps {
   ctx: ContextMenuState | null;
@@ -102,6 +103,27 @@ export const TimelineMenus: React.FC<TimelineMenusProps> = ({ ctx, onClose }) =>
                 }}
               >
                 {easeName}
+              </MenuItem>
+            ))}
+          </SubMenu>
+
+          {/* Phase 67: the engine's named feels (springs by Bounce and Time), its curves and Hold, on the selected keyframes */}
+          <SubMenu
+            id="sub-key-feel"
+            label="Feel"
+            icon={<Icon icon={Diamond} size={14} className="ll:text-muted ll:shrink-0" />}
+          >
+            {EASE_PRESETS.map((preset) => (
+              <MenuItem
+                key={preset.id}
+                onClick={() => {
+                  const selected = Object.keys(useMotionModel.getState().selectedKeys);
+                  const ids = ctx.keyId && !selected.includes(ctx.keyId) ? [ctx.keyId] : selected;
+                  motionActions.applyEasePreset(ids, preset.value);
+                  onClose();
+                }}
+              >
+                {preset.label}
               </MenuItem>
             ))}
           </SubMenu>
