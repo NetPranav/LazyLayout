@@ -220,3 +220,13 @@ Honest list of open items before merging into `main`:
 9. **Final side-by-side screenshots:** Prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured.
 10. **Timeline header token:** Timeline header token is 44px (prototype task said 40; flagged for design session).
 11. **Legacy lint error:** fixed in the merge review (2026-11-05): `src/legacy-editor/menus/UnifiedLogoMenu.tsx` reset its submenu state inside an effect (a lint error that failed CI `verify`); it now resets while rendering, the same behaviour. That file is not from `main`: it came from the `wip(ui)` experiments (feba8ec).
+
+### W4: engine changes requested for Motion and Code (2026-11-11)
+- **Area:** motion / code
+- **Requests:**
+  1. Console: remove the sample `INITIAL_LOGS` seed in `src/editor/panels/console/consoleStore.ts`, and make Run emit a real build result (outside W4's lane).
+  2. Trace: a runtime trace source. `TraceView` uses the constant `TRACE_STEPS`.
+  3. Compiler: per-layer line ranges in the emitted files, so a canvas selection can highlight code and a code line can select a layer.
+  4. Compiler: framework, styling and animation options (Vue, HTML, Tailwind, CSS modules). The Code inspector selects do nothing because the emitters only produce Next.js 15 with scoped CSS.
+  5. Core: clip trim, split and duplicate as single commands. W4 composes them from `updateClip`, `addClip`, `removeClip` and `setKeyframe` inside one `transaction`.
+- **Status:** open

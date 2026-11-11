@@ -34,6 +34,20 @@ Open: Pen tool is `available:false` in core (engine request, needs the user's go
 | P5 | Two leftover icons in prototype style | 2 / 2 | done | 2026-11-10 22:02 | 5 prototype glyphs added (unlock, tal, tac, tar, taj); screenshots in Paper and Graphite |
 | P6 | Handoff and typecheck | 1 / 1 | done | 2026-11-10 22:07 | Handoff written, tsc --noEmit 0 errors |
 
+## E. Wiring Motion and Code (task W4, 2026-11-11)
+
+| Item | Status | Notes |
+|---|---|---|
+| 1 Motion audit | done | handoffs/2026-11-11-W4-audit.md |
+| 2 Local and dead controls wired | done | add keyframe, split, easing, clip ops, markers, layer flags, key copy/paste/align/duplicate, auto-key, onion skin |
+| 3 Selection, undo/redo | done | undo checked for add key, split (and redo), marker; others code only. Rename and reorder are not on the Motion page |
+| 4 Playback | done | transport is the one clock; play, loop, step, end, work area checked. Space key did not toggle play in my headless run (not investigated) |
+| 5 Code audit | done | same audit file |
+| 6 Real compiler output | done | file tree, tabs, code, footer |
+| 7 Export | done | Toolbar Export menu and inspector; clipboard blocked in headless so copy is not proven |
+| 8 Console and Trace | blocked | starting lines and Trace are sample data in files outside the lane; requests in INTEGRATION.md |
+| 9 e2e | in progress | 0 of 5 chosen specs run (run was interrupted, not retried) |
+
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).
 
