@@ -107,7 +107,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 |---|---|---|---|---|---|
 | **M1 · The foil button** |||||
 | | **Stage 1 · GPU base** |||||
-| 3D-001 | 3D stack decision & licences | Main 218 | — | A | 📋 |
+| 3D-001 | 3D stack decision & licences | Main 218 | — | A | 🚧 |
 | 3D-002 | GPU surface strategy & compositor | Main 173 | 3D-001 | A | 📋 |
 | 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 📋 |
 | 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 📋 |
@@ -381,7 +381,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 ## Stage 1 · GPU base
 
 ### Phase 3D-001 · 3D stack decision & licences
-**Needs:** — · **Was:** Main 218 · **Lane:** A · **Status:** 📋
+**Needs:** — · **Was:** Main 218 · **Lane:** A · **Status:** 🚧
 - [ ] Decision record 0013 (3D stack):
   - three.js through the compositor, with WebGPU and TSL first and WebGL2 as the fallback.
   - R3F and drei for the React export.
@@ -394,6 +394,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** nothing yet; the choices are written down.
 **Done when:** the record is reviewed, the benchmark is archived, and every dependency is in `LICENSES.md`.
+**Evidence (2026-11-11):** decision `decisions/0013-3d-stack.md` (stack, budgets, fallbacks); licences read from the installed packages and the registry, recorded in `LICENSES.md`; physics benchmark archived (`scripts/benchmarks/physics-3d.mjs`: Rapier 0.1–0.2 ms a step for 100 bodies, deterministic, 749 KB gz; cannon-es 0.8–1 ms, 74 KB gz). Stays 🚧 until the record is reviewed.
 
 ### Phase 3D-002 · GPU surface strategy & compositor
 **Needs:** 3D-001 · **Was:** Main 173 · **Lane:** A · **Status:** 📋
