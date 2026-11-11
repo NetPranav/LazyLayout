@@ -7,6 +7,7 @@ import { Icon } from "./Icon";
 import { SegmentedControl } from "./SegmentedControl";
 import { IconButton } from "./IconButton";
 import { Select } from "./Select";
+import { Slider } from "./Slider";
 import { useMounted } from "./useMounted";
 import { getActivePreset, prefersReducedMotion } from "../motion/feel";
 import { springEase } from "../motion/ease";
@@ -17,7 +18,6 @@ import {
   CLOSE_DURATION,
   gradientStopLeftCalc,
   IMAGE_TILE_SIZE,
-  OPACITY_SLIDER_BG_SIZE,
 } from "./ColorPickerMotion";
 import {
   registerOverlay,
@@ -87,8 +87,6 @@ export function ColorPicker({
   const mounted = useMounted();
   const pickerRef = useRef<HTMLDivElement>(null);
   const sbRef = useRef<HTMLDivElement>(null);
-  const hueSliderRef = useRef<HTMLDivElement>(null);
-  const opacitySliderRef = useRef<HTMLDivElement>(null);
   const stopsBarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevAnchorRef = useRef<HTMLElement | null>(null);
@@ -493,91 +491,26 @@ export function ColorPicker({
     sb.addEventListener("pointerup", onPointerUp);
   };
 
-  // Hue Slider Dragging
-  const handleHuePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const slider = hueSliderRef.current;
-    if (!slider || e.button !== 0) return;
+  // Hue and opacity sliders (shared Slider; the colour is previewed while dragging)
+  const applyHue = (h: number) => {
+    const nextHsv = { ...hsv, h };
+    setHsv(nextHsv);
+    const nextHex = rgb2hex(hsv2rgb(nextHsv.h, nextHsv.s, nextHsv.v));
+    emitColorChange(nextHex, alpha);
 
-    slider.setPointerCapture(e.pointerId);
-    const rect = slider.getBoundingClientRect();
-
-    const updateHue = (clientX: number) => {
-      const h = clamp((clientX - rect.left) / rect.width, 0, 1) * 360;
-      const nextHsv = { ...hsv, h };
-      setHsv(nextHsv);
-      const nextRgb = hsv2rgb(nextHsv.h, nextHsv.s, nextHsv.v);
-      const nextHex = rgb2hex(nextRgb);
-      emitColorChange(nextHex, alpha);
-
-      if (mode !== "Solid" && mode !== "Image") {
-        setStops((prev) =>
-          prev.map((stop, i) =>
-            i === activeStopIndex ? { ...stop, h } : stop
-          )
-        );
-      }
-    };
-
-    updateHue(e.clientX);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      updateHue(ev.clientX);
-    };
-
-    const onPointerUp = (ev: PointerEvent) => {
-      try {
-        slider.releasePointerCapture(ev.pointerId);
-      } catch {
-        // ignore
-      }
-      slider.removeEventListener("pointermove", onPointerMove);
-      slider.removeEventListener("pointerup", onPointerUp);
-    };
-
-    slider.addEventListener("pointermove", onPointerMove);
-    slider.addEventListener("pointerup", onPointerUp);
+    if (mode !== "Solid" && mode !== "Image") {
+      setStops((prev) => prev.map((stop, i) => (i === activeStopIndex ? { ...stop, h } : stop)));
+    }
   };
 
-  // Opacity Slider Dragging
-  const handleOpacityPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const slider = opacitySliderRef.current;
-    if (!slider || e.button !== 0) return;
+  const applyOpacity = (pct: number) => {
+    const a = clamp(pct / 100, 0, 1);
+    setAlpha(a);
+    emitColorChange(hex, a);
 
-    slider.setPointerCapture(e.pointerId);
-    const rect = slider.getBoundingClientRect();
-
-    const updateOpacity = (clientX: number) => {
-      const a = clamp((clientX - rect.left) / rect.width, 0, 1);
-      setAlpha(a);
-      emitColorChange(hex, a);
-
-      if (mode !== "Solid" && mode !== "Image") {
-        setStops((prev) =>
-          prev.map((stop, i) =>
-            i === activeStopIndex ? { ...stop, a } : stop
-          )
-        );
-      }
-    };
-
-    updateOpacity(e.clientX);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      updateOpacity(ev.clientX);
-    };
-
-    const onPointerUp = (ev: PointerEvent) => {
-      try {
-        slider.releasePointerCapture(ev.pointerId);
-      } catch {
-        // ignore
-      }
-      slider.removeEventListener("pointermove", onPointerMove);
-      slider.removeEventListener("pointerup", onPointerUp);
-    };
-
-    slider.addEventListener("pointermove", onPointerMove);
-    slider.addEventListener("pointerup", onPointerUp);
+    if (mode !== "Solid" && mode !== "Image") {
+      setStops((prev) => prev.map((stop, i) => (i === activeStopIndex ? { ...stop, a } : stop)));
+    }
   };
 
   // Eyedropper
@@ -884,56 +817,28 @@ export function ColorPicker({
               />
 
               <div className="cp-sls ll:flex ll:flex-col ll:gap-1.5 ll:flex-1 ll:min-w-0">
-                {/* Hue Slider (12px) */}
-                <div
-                  ref={hueSliderRef}
-                  tabIndex={0}
-                  role="slider"
-                  aria-label="Hue"
-                  aria-valuemin={0}
-                  aria-valuemax={360}
-                  aria-valuenow={Math.round(hsv.h)}
-                  onPointerDown={handleHuePointerDown}
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00)",
-                  }}
-                  className="cp-s h ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
-                >
-                  <i
-                    style={{
-                      left: `${(hsv.h / 360) * 100}%`,
-                      boxShadow: "0 0 0 2px var(--ll-surface-panel)",
-                    }}
-                    className="cp-sh ll:absolute ll:-top-0.75 ll:w-1.5 ll:h-4.5 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:pointer-events-none"
-                  />
-                </div>
-
-                {/* Opacity Slider (12px) */}
-                <div
-                  ref={opacitySliderRef}
-                  tabIndex={0}
-                  role="slider"
-                  aria-label="Opacity"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(alpha * 100)}
-                  onPointerDown={handleOpacityPointerDown}
-                  style={{
-                    backgroundColor: "var(--ll-surface-panel)",
-                    backgroundImage: `linear-gradient(90deg, transparent, #${hex}), conic-gradient(var(--ll-border-color) 25%, var(--ll-surface-panel) 0 50%, var(--ll-border-color) 0 75%, var(--ll-surface-panel) 0)`,
-                    backgroundSize: OPACITY_SLIDER_BG_SIZE,
-                  }}
-                  className="cp-s a ll:relative ll:h-3 ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:touch-none ll:select-none ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary"
-                >
-                  <i
-                    style={{
-                      left: `${alpha * 100}%`,
-                      boxShadow: "0 0 0 2px var(--ll-surface-panel)",
-                    }}
-                    className="cp-sh ll:absolute ll:-top-0.75 ll:w-1.5 ll:h-4.5 ll:-ml-0.75 ll:rounded-xs ll:bg-primary ll:pointer-events-none"
-                  />
-                </div>
+                <Slider
+                  track="gradient"
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={Math.round(hsv.h)}
+                  onChange={applyHue}
+                  ariaLabel="Hue"
+                  unit="°"
+                  trackBackground="linear-gradient(90deg, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00)"
+                />
+                <Slider
+                  track="checker"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={Math.round(alpha * 100)}
+                  onChange={applyOpacity}
+                  ariaLabel="Opacity"
+                  unit="%"
+                  trackBackground={`linear-gradient(90deg, transparent, #${hex})`}
+                />
               </div>
             </div>
 

@@ -22,6 +22,8 @@ import {
   unregisterOverlay,
   getFamilyHandoff,
   animateRetarget,
+  registerClosingOverlay,
+  releaseClosingOverlay,
 } from "./retarget";
 
 export interface OptionsPopoverProps {
@@ -144,11 +146,7 @@ export function OptionsPopover({
       const swap = wasClosing ? null : handoff;
 
       if (reduced) {
-        pop.animate([{ opacity: 0 }, { opacity: 1 }], {
-          duration: REDUCED_DURATION,
-          easing: "ease-out",
-          fill: "backwards",
-        });
+        // motion is off (the user toggle or the OS setting): it appears in place, no fade
       } else if (isAnchorSwitch && prevAnchorRef.current) {
         const oldRect = prevAnchorRef.current.getBoundingClientRect();
         animateRetarget(pop, oldRect, toRect, bodyRef.current, { blur: false });
@@ -230,13 +228,13 @@ export function OptionsPopover({
       prevAnchorRef.current = null;
       unregisterOverlay(optionsUniqueId);
       pop.getAnimations().forEach((a) => a.cancel());
-      if (isImmediateCloseRef.current) {
+      if (isImmediateCloseRef.current || reduced) {
         isImmediateCloseRef.current = false;
         setIsRendered(false);
         return;
       }
       let anim: Animation;
-      if (reduced || !anchor) {
+      if (!anchor) {
         anim = pop.animate([{ opacity: 1 }, { opacity: 0 }], {
           duration: REDUCED_DURATION,
           easing: "ease-out",
@@ -264,8 +262,24 @@ export function OptionsPopover({
       }
 
       closeAnimRef.current = anim;
+      registerClosingOverlay({
+        id: optionsUniqueId,
+        family: "inspector-options",
+        element: pop,
+        anchor,
+        close: () => {
+          anim.onfinish = null;
+          anim.cancel();
+          closeAnimRef.current = null;
+          releaseClosingOverlay(optionsUniqueId);
+          setIsRendered(false);
+        },
+        rect: pop.getBoundingClientRect(),
+        timestamp: performance.now(),
+      });
       anim.onfinish = () => {
         closeAnimRef.current = null;
+        releaseClosingOverlay(optionsUniqueId);
         setIsRendered(false);
       };
     }

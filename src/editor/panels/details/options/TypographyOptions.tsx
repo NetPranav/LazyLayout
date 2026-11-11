@@ -3,6 +3,7 @@
 import React from "react";
 import { Italic, Underline, Strikethrough, Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { Slider } from "@/editor/components/Slider";
 import { IconButton } from "@/editor/components/IconButton";
 import { OptionGroup, OptionRow, OptionGridLabel } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
@@ -227,19 +228,16 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             </span>
           </div>
           <div className="ll:flex ll:items-center ll:h-6 ll:w-full">
-            <input
-              type="range"
+            <Slider
               min={100}
               max={900}
               step={10}
               value={weightAxis}
-              aria-label="Weight axis"
-              onChange={(e) => {
-                const w = Number(e.target.value);
+              ariaLabel="Weight axis"
+              onChange={(w) => {
                 onUpdateProp?.("typography.fontWeight", String(w));
                 onChangeWeightAxis?.(w);
               }}
-              className="ll:w-full ll:accent-primary ll:cursor-pointer"
             />
           </div>
         </div>

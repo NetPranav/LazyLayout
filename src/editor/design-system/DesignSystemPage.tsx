@@ -1522,7 +1522,7 @@ export function DesignSystemPage() {
             {activeSection === "theme-swatch" && <ThemeSwatchDemo />}
             {activeSection === "menu-heading" && <MenuHeadingDemo />}
             {activeSection === "slider" && (
-              <Titled title="Slider" note="Spring-stretch slider with units and steps. Lives in components/Slider.tsx.">
+              <Titled title="Slider" note="The one slider: springs, value bubble, onChange while dragging and one onCommit on release, snap points, number field, gradient and checker bars. Lives in components/Slider.tsx.">
                 <SliderDemo />
               </Titled>
             )}

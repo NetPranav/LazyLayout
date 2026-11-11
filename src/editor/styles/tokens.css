@@ -807,6 +807,21 @@ svg {
   outline: 2px solid var(--ll-text-primary);
   outline-offset: 2px;
 }
+/* Bar tracks (gradient and checker): a 12px bar for hue, opacity and similar */
+.ll-sld.ll-sld-bar .ll-sl-t {
+  top: 4px;
+  height: 12px;
+  border: 1px solid var(--ll-border-color);
+  border-radius: var(--ll-radius-sm);
+  box-sizing: border-box;
+}
+.ll-sld.ll-sld-bar .ll-sl-f {
+  display: none;
+}
+.ll-sld.ll-sld-bar .ll-sl-h {
+  top: 1px;
+  height: 18px;
+}
 
 /* Easing editor */
 .ll-kcurve {
@@ -1939,11 +1954,11 @@ svg {
 }
 
 /* A row settings popover pads its own body, so its last group gets no second padding from the rule above */
-.ll-rowpop.llm-pop > .ll-pbody > :last-child {
+.ll-rowpop.llm-pop .ll-pbody > :last-child {
   padding: 0;
   gap: var(--ll-spacing-2);
 }
-.ll-rowpop.llm-pop > .ll-pbody > .ll-dmg + .ll-dmg:last-child {
+.ll-rowpop.llm-pop .ll-pbody > .ll-dmg + .ll-dmg:last-child {
   padding-top: var(--ll-spacing-2);
 }
 

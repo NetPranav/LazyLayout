@@ -261,7 +261,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             </button>
 
             {/* Settings Popover */}
-            <RowSettingsPopover isOpen={isOpen} title="Stroke" onClose={() => setActivePopoverId(null)}>
+            <RowSettingsPopover isOpen={isOpen} title="Stroke" onClose={() => setActivePopoverId((cur) => (cur === stroke.id ? null : cur))}>
               <StrokeRowOptions
                 selectedId={selectedId}
                 layer={layer}

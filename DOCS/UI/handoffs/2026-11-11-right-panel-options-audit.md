@@ -40,3 +40,9 @@ Source: `DOCS/UI/design/editor-design-mode-blocks-dark.html` (`renderIns`, `posi
 - Stroke edits are now one undo step; the stroke row follows undo.
 - Old StrokeOptions/FillOptions/EffectsOptions are kept: the design-system demos import them.
 - Screenshots: DOCS/UI/handoffs/screenshots/options-unify/.
+
+## Row popover motion (Fill, Stroke, Effects)
+
+Cause: `RowSettingsPopover` was its own portal (`isOpen && createPortal`), one instance per row, with no motion code, so it appeared and vanished instantly and a row switch was an unmount plus a mount.
+
+Change: `RowSettingsPopover` is now a thin wrapper around the shared `OptionsPopover` (anchored to the row's sliders button), so open, close, slide-to-anchor and content crossfade use the same springs as the Position/Layout/Appearance popovers. `retarget.ts` gained `registerClosingOverlay`/`releaseClosingOverlay`, so a popover still playing its exit is adopted (and ended) by the next same-family popover: one element slides, never two. `OptionsPopover` now does nothing animated when `isMotionOff()` (no 100 ms fade). The three sections' `onClose` only clears their own row id, so a closing row cannot clear a newly opened one. `tokens.css`: `.ll-rowpop` body selectors no longer need a direct-child `.ll-pbody`. Header text is now "Fill options" (was "Fill"). Measurements and screenshots: `screenshots/popover-motion/`.

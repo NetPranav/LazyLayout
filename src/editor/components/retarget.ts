@@ -111,6 +111,20 @@ export function unregisterOverlay(id: string): void {
 }
 
 /**
+ * Keep an overlay that is playing its exit animation findable, so a same-family overlay that opens now
+ * adopts its geometry and ends the exit at once (one surface slides, never a closing one beside an opening one).
+ * It never closes other overlays.
+ */
+export function registerClosingOverlay(record: ActiveOverlayRecord): void {
+  activeOverlays.set(record.id, record);
+}
+
+/** Drop a closing overlay's record once its exit animation has finished. */
+export function releaseClosingOverlay(id: string): void {
+  activeOverlays.delete(id);
+}
+
+/**
  * Look up the handoff geometry for the same overlay family.
  * If another active overlay of the same family is currently open, it captures its live rect
  * and closes it immediately without duplicate exit animation, transferring ownership.

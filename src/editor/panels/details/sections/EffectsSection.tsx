@@ -200,7 +200,7 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
               <Icon icon={Minus} size={14} />
             </button>
 
-            <RowSettingsPopover isOpen={isOpen} title="Effects" onClose={() => setActivePopoverId(null)}>
+            <RowSettingsPopover isOpen={isOpen} title="Effects" onClose={() => setActivePopoverId((cur) => (cur === effect.id ? null : cur))}>
               <OptionGroup>
                 <OptionRow label="Type">
                   <Select

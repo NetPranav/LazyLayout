@@ -54,6 +54,9 @@ Pages manager (add, rename, duplicate, set as home, delete with inline confirm, 
 ## G. Auto layout and grid (2026-11-11)
 Canvas padding bands and gap strips (drag, Shift all sides, Alt one side, snap to the spacing scale, Esc cancels), grid tracks (dashed lines, resize, add), insertion line when dragging inside a stack or grid, Free/Row/Column/Grid control, direction-aware alignment grid, Grow/Shrink/Self and column/row span in the panel, direction icon in the layers tree. Handoff: `handoffs/2026-11-11-auto-layout-grid.md`.
 
+## H. One shared Slider (2026-11-11)
+`components/Slider.tsx` rebuilt (springs for press, hover, click-to-jump and release overshoot, 1:1 drag, value bubble, keyboard incl. Shift and PageUp/Down, `onCommit`, snap points, number field, gradient and checker bars, animations-off = instant) and used for the colour picker hue and opacity, timeline zoom, trace scrubber, weight axis and the design-system page. Checked in headless Chromium; undo of a whole drag is not one step yet because the new editor does not install gesture coalescing. See `handoffs/2026-11-11-slider-audit.md`.
+
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).
 

@@ -448,7 +448,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
             />
 
             {/* Settings Popover */}
-            <RowSettingsPopover isOpen={isOpen} title="Fill" onClose={() => setActivePopoverId(null)}>
+            <RowSettingsPopover isOpen={isOpen} title="Fill" onClose={() => setActivePopoverId((cur) => (cur === fill.id ? null : cur))}>
               <OptionGroup>
                 <OptionRow label="Type">
                   <Select

@@ -8,6 +8,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { Slider } from "@/editor/components/Slider";
 import {
   useMotionModel,
   motionActions,
@@ -41,11 +42,8 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
   const [fpsMenuOpen, setFpsMenuOpen] = useState(false);
   const [fpsAnchor, setFpsAnchor] = useState<{ x: number; y: number } | null>(null);
 
-  const [sliderDragging, setSliderDragging] = useState(false);
-  const [sliderHover, setSliderHover] = useState(false);
 
   const minimapRef = useRef<HTMLDivElement | null>(null);
-  const sliderRef = useRef<HTMLDivElement | null>(null);
 
   // 1. Selection summary text
   const selKeyIds = Object.keys(selectedKeys);
@@ -90,35 +88,6 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
 
   // Zoom slider calculations
   const logZoom = Math.log2(zoom);
-  const zoomPct = clampN((logZoom / 5) * 100, 0, 100);
-
-  const handleSliderPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 || !sliderRef.current) return;
-    e.preventDefault();
-    setSliderDragging(true);
-
-    const rect = sliderRef.current.getBoundingClientRect();
-    const updateZoom = (clientX: number) => {
-      const frac = clampN((clientX - rect.left) / rect.width, 0, 1);
-      const val = frac * 5;
-      motionActions.setZoom(Math.pow(2, val));
-    };
-
-    updateZoom(e.clientX);
-
-    const onPointerMove = (ev: PointerEvent) => {
-      updateZoom(ev.clientX);
-    };
-
-    const onPointerUp = () => {
-      setSliderDragging(false);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-  };
 
   // Mini-map pointer down (window drag or edge zoom)
   const handleMinimapPointerDown = (e: React.PointerEvent) => {
@@ -310,65 +279,18 @@ export const TimelineFooter: React.FC<TimelineFooterProps> = ({ trackWidth }) =>
         />
       </div>
 
-      {/* 3. Custom Zoom Slider (.sld#tzoom matching P lines 1187-1193, 6582) */}
-      <div
-        ref={sliderRef}
-        id="tzoom"
-        role="slider"
-        tabIndex={0}
-        aria-label="Timeline zoom"
-        title="Timeline zoom"
-        aria-valuemin={0}
-        aria-valuemax={5}
-        aria-valuenow={+logZoom.toFixed(2)}
-        onPointerDown={handleSliderPointerDown}
-        onPointerEnter={() => setSliderHover(true)}
-        onPointerLeave={() => setSliderHover(false)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-            e.preventDefault();
-            motionActions.setZoom(Math.min(32, Math.pow(2, logZoom + 0.1)));
-          } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-            e.preventDefault();
-            motionActions.setZoom(Math.max(1, Math.pow(2, logZoom - 0.1)));
-          }
-        }}
-        style={{ width: "88px", height: "20px" }}
-        className={`ll-sld sld ll:relative ll:flex-none ll:h-5 ll:w-zoom-slider ll:cursor-pointer ll:touch-none ll:select-none ${
-          sliderDragging ? "drag" : ""
-        }`}
-      >
-        {/* Track bar */}
-        <div
-          style={{ background: "color-mix(in srgb, var(--ll-text-primary) 18%, transparent)" }}
-          className="sl-t ll:absolute ll:left-0 ll:right-0 ll:top-2.25 ll:h-0.5"
+      {/* 3. Zoom slider (the shared Slider, logarithmic 1x to 32x) */}
+      <div className="ll:flex-none ll:w-zoom-slider" id="tzoom">
+        <Slider
+          min={0}
+          max={5}
+          step={0.01}
+          keyStep={0.1}
+          value={+logZoom.toFixed(2)}
+          onChange={(v) => motionActions.setZoom(Math.pow(2, v))}
+          formatValue={(v) => `${Math.pow(2, v).toFixed(1)}×`}
+          ariaLabel="Timeline zoom"
         />
-        {/* Filled bar */}
-        <div
-          style={{ width: `${zoomPct}%` }}
-          className="sl-f ll:absolute ll:left-0 ll:top-2.25 ll:h-0.5 ll:bg-primary"
-        />
-        {/* Handle knob */}
-        <div
-          style={{
-            left: `${zoomPct}%`,
-            transform: "translateX(-50%)",
-            boxShadow: "0 0 0 2px var(--ll-surface-panel)",
-          }}
-          className="sl-h ll:absolute ll:top-0.75 ll:w-1.5 ll:h-3.5 ll:rounded-xs ll:bg-primary ll:transition-transform"
-        />
-        {/* Value badge tooltip */}
-        {(sliderDragging || sliderHover) && (
-          <div
-            style={{
-              left: `${zoomPct}%`,
-              transform: "translate(-50%, 0)",
-            }}
-            className="sl-g ll:absolute ll:bottom-full ll:-mb-0.5 ll:min-w-8 ll:px-1.5 ll:h-5 ll:leading-5 ll:text-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-micro ll:font-medium ll:whitespace-nowrap ll:pointer-events-none ll:z-30"
-          >
-            {zoom.toFixed(1)}×
-          </div>
-        )}
       </div>
 
       {/* 4. Fit Timeline Button */}

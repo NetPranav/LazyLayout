@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { Slider } from "@/editor/components/Slider";
 
 export interface TraceStep {
   id: string;
@@ -265,20 +266,20 @@ export const TraceView: React.FC<TraceViewProps> = ({ className = "", style }) =
           </button>
 
           {/* Scrubber Range */}
-          <input
-            id="trscr"
-            type="range"
-            min={0}
-            max={TRACE_STEPS.length - 1}
-            step={1}
-            value={cur}
-            onChange={(e) => {
-              pause();
-              setCur(+e.target.value);
-            }}
-            aria-label="Scrub the run"
-            className="ll:flex-1 ll:max-w-[360px] ll:mx-3 ll:accent-primary ll:cursor-pointer"
-          />
+          <div id="trscr" className="ll:flex-1 ll:max-w-[360px] ll:mx-3">
+            <Slider
+              min={0}
+              max={TRACE_STEPS.length - 1}
+              step={1}
+              value={cur}
+              onChange={(v) => {
+                pause();
+                setCur(v);
+              }}
+              formatValue={(v) => `${v + 1} / ${TRACE_STEPS.length}`}
+              ariaLabel="Scrub the run"
+            />
+          </div>
 
           <span id="trinfo" className="ll-trinfo trinfo mono ll:font-mono ll:text-micro ll:tracking-normal ll:leading-[1.4] ll:text-muted ll:truncate ll:whitespace-nowrap">
             {currentStep.node.replace(/\s+/g, " ")} · {stepEnd(cur)} ms
