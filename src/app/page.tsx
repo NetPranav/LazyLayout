@@ -15,9 +15,10 @@ const CSS = `
   background-image:radial-gradient(var(--ll-border-color) 1px,transparent 1px);background-size:24px 24px}
 .home .top{width:100%;display:flex;justify-content:space-between;align-items:center;font:500 12px var(--ll-font-mono),monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ll-text-muted)}
 .home .top a:hover,.home .top a:focus-visible{color:var(--ll-text-primary)}
-.home .mid{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
-.home .mark{display:grid;place-items:center;width:72px;height:72px;background:var(--ll-surface-panel);border:1px solid var(--ll-border-color);color:var(--ll-text-primary)}
-.home h1{margin:0;font-weight:200;font-size:clamp(44px,10vw,112px);letter-spacing:-.035em;line-height:1}
+.home .mid{display:flex;flex-direction:column;align-items:center;gap:26px;text-align:center}
+.home .mark{display:grid;place-items:center;color:var(--ll-text-primary)}
+.home .mark svg{overflow:visible}
+.home h1{margin:0;font-weight:200;font-size:clamp(14px,3vw,34px);letter-spacing:-.035em;line-height:1}
 .home h1 b{font-weight:600}
 .home .tag{margin:0;font:400 13px var(--ll-font-mono),monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ll-text-muted)}
 .home .foot{display:flex;flex-direction:column;align-items:center;gap:18px}
@@ -46,7 +47,7 @@ export default function Home() {
       </div>
       <div className="mid">
         <span className="mark">
-          <LogoMark size={36} className="ll-logo" />
+          <LogoMark size={112} saving className="ll-logo" />
         </span>
         <h1>
           Lazy <b>Layout</b>
