@@ -102,6 +102,11 @@ export function ColorPicker({
     onCloseRef.current = onCloseProp;
   });
   const onClose = useCallback(() => onCloseRef.current?.(), []);
+  // the anchor as it is after the latest render, read when a press has been released
+  const anchorElRef = useRef(anchorEl);
+  useEffect(() => {
+    anchorElRef.current = anchorEl;
+  });
   const pickerUniqueId = useId();
 
   const [isRendered, setIsRendered] = useState(open);
@@ -222,6 +227,8 @@ export function ColorPicker({
     const el = pickerRef.current;
     if (!el) return;
 
+    // where the picker is on screen before it is moved to the (possibly new) anchor
+    const beforeRect = el.getBoundingClientRect();
     updatePosition();
 
     const reduced = prefersReducedMotion();
@@ -239,15 +246,15 @@ export function ColorPicker({
 
       if (alreadyAnimated && !isAnchorSwitch) {
         // keep the running animation
+      } else if (isAnchorSwitch) {
+        // the same picker moves to another swatch: slide from where it was (animateRetarget honours reduced motion)
+        animateRetarget(el, beforeRect, toRect, el.firstElementChild as HTMLElement | null);
       } else if (reduced) {
         el.animate([{ opacity: 0 }, { opacity: 1 }], {
           duration: REDUCED_DURATION,
           easing: "ease-out",
           fill: "backwards",
         });
-      } else if (isAnchorSwitch && prevAnchorRef.current) {
-        const oldRect = prevAnchorRef.current.getBoundingClientRect();
-        animateRetarget(el, oldRect, toRect, el.firstElementChild as HTMLElement | null);
       } else if (handoff) {
         animateRetarget(el, handoff, toRect, el.firstElementChild as HTMLElement | null);
       } else if (anchor) {
@@ -357,7 +364,19 @@ export function ColorPicker({
         if (anchor && anchor.contains(target)) return;
         // lists and menus opened from inside the picker (the colour model dropdown) draw outside it
         if ((target as Element).closest?.("[role='listbox'], [role='menu']")) return;
-        onClose?.();
+        // The press may land on another swatch, whose click moves this picker there (the slide in the open effect).
+        // So the decision waits for the release: close only if the click left the anchor where it was.
+        const pressedAnchor = anchor ?? null;
+        document.addEventListener(
+          "pointerup",
+          () => {
+            window.setTimeout(() => {
+              const current = anchorRef?.current ?? triggerRef?.current ?? anchorElRef.current ?? null;
+              if (current === pressedAnchor) onClose?.();
+            }, 0);
+          },
+          { capture: true, once: true }
+        );
       }
     };
 
