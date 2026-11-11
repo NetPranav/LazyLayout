@@ -77,4 +77,23 @@ export function useSlidingIndicator({
 
     simAdd(sp.sim);
   }, [mounted, selectedIndex, containerRef, indicatorRef, itemRefs]);
+
+  // The container can change width after the selection settled (a scrollbar appears, the panel
+  // resizes, the row was hidden at mount): re-place the indicator under the selected item.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const btn = itemRefs.current?.[selectedIndex];
+      const indicator = indicatorRef.current;
+      const sp = springsRef.current;
+      if (!btn || !indicator || !sp || indicator.style.display !== "block") return;
+      sp.x.jump(btn.offsetLeft);
+      sp.w.jump(btn.offsetWidth);
+      indicator.style.transform = `translate3d(${btn.offsetLeft}px, 0, 0)`;
+      indicator.style.width = `${btn.offsetWidth}px`;
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [selectedIndex, containerRef, indicatorRef, itemRefs]);
 }

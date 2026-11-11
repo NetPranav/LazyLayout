@@ -4,6 +4,7 @@
  * palette is removed, so only the approved colors exist as utilities. All values reference tokens from tokens.css.
  */
 @import "./tokens.css";
+@import "./phosphor-hover.css";
 @import "tailwindcss/theme.css" prefix(ll);
 @import "tailwindcss/utilities.css" source(none);
 @source "../**/*.{ts,tsx}";
@@ -71,6 +72,17 @@
   --color-label-5-tint: var(--ll-label-5-tint);
   --color-label-6: var(--ll-label-6);
   --color-label-6-tint: var(--ll-label-6-tint);
+
+  /* Syntax highlight colours */
+  --color-syn-kw: var(--ll-syn-kw);
+  --color-syn-str: var(--ll-syn-str);
+  --color-syn-num: var(--ll-syn-num);
+  --color-syn-fn: var(--ll-syn-fn);
+  --color-syn-tag: var(--ll-syn-tag);
+  --color-syn-attr: var(--ll-syn-attr);
+  --color-syn-type: var(--ll-syn-type);
+  --color-syn-punc: var(--ll-syn-punc);
+  --color-syn-com: var(--ll-syn-com);
 
   /* Semantic hairline border */
   --color-border: var(--ll-border-color);
@@ -302,6 +314,88 @@
 
   /* === lane: L9 design system === */
   /* === end lane: L9 === */
+
+  /* === lane: B1 pickers === */
+  --width-picker: var(--ll-size-picker-w);
+  --width-color-picker: var(--ll-size-color-picker-w);
+  --width-options-popover: var(--ll-size-options-popover-w);
+  --width-frame-presets: var(--ll-size-frame-presets-w);
+  --height-frame-presets: var(--ll-size-frame-presets-h);
+  --height-sb-square: var(--ll-size-sb-square-h);
+  --width-loupe: var(--ll-size-loupe);
+  --height-loupe: var(--ll-size-loupe);
+  --gap-picker-popover: var(--ll-gap-picker-popover);
+  --spacing-picker-gap: var(--ll-gap-picker-popover);
+  /* === end lane: B1 === */
+
+  /* === lane: B2 layers === */
+  /* === end lane: B2 === */
+
+  /* === lane: B3 inspector === */
+  --width-vpop: var(--ll-size-vpop);
+  --height-options-header: var(--ll-h-options-header);
+  --width-more-label: var(--ll-w-more-label);
+  /* === end lane: B3 === */
+
+  /* === lane: B4 canvas === */
+  --width-cursor: var(--ll-size-cursor);
+  --height-cursor: var(--ll-size-cursor);
+  /* === end lane: B4 === */
+
+  /* === lane: B5 chrome === */
+  --width-spotlight: var(--ll-size-spotlight-w);
+  --height-spotlight-row: var(--ll-size-spotlight-row-h);
+  --height-spotlight-row-big: var(--ll-size-spotlight-row-big-h);
+  --spacing-toolbar-lift: var(--ll-size-toolbar-lift-bottom);
+  /* === end lane: B5 === */
+
+  /* === lane: B6 code === */
+  --width-find-input: var(--ll-size-find-input-w);
+  --spacing-find-top: var(--ll-size-find-top);
+  --spacing-find-right: var(--ll-size-find-right);
+  --shadow-log-error: var(--ll-shadow-log-error);
+  --shadow-log-warn: var(--ll-shadow-log-warn);
+  --shadow-prompt-focus: var(--ll-shadow-prompt-focus);
+  --shadow-trace-hot-run: var(--ll-shadow-trace-hot-run);
+  --shadow-trace-hot: var(--ll-shadow-trace-hot);
+  /* === end lane: B6 === */
+
+  /* === lane: B7 motion === */
+  --width-timeline-footer-btn: var(--ll-size-timeline-footer-btn);
+  --height-timeline-footer-btn: var(--ll-size-timeline-footer-btn);
+  --width-popover-min: var(--ll-size-popover-min-w);
+  --min-width-popover-min: var(--ll-size-popover-min-w);
+  --width-playhead-knob: var(--ll-size-playhead-knob-w);
+  --height-playhead-knob: var(--ll-size-playhead-knob-h);
+  --top-playhead-knob: var(--ll-size-playhead-knob-top);
+  --left-playhead-knob: var(--ll-size-playhead-knob-left);
+  --radius-playhead-knob: var(--ll-radius-playhead-knob);
+  --height-bsplit: var(--ll-size-bsplit-h);
+  --width-zoom-slider: var(--ll-size-zoom-slider-w);
+  --height-zoom-slider: var(--ll-size-zoom-slider-h);
+  --width-zoom-handle: var(--ll-size-zoom-handle-w);
+  --height-zoom-handle: var(--ll-size-zoom-handle-h);
+  /* === end lane: B7 === */
+
+  /* === lane: B8 topbar === */
+  --width-preview-btn: var(--ll-size-preview-btn);
+  --height-preview-btn: var(--ll-size-preview-btn);
+  --opacity-disabled: var(--ll-opacity-disabled);
+  --grid-template-columns-topbar-fit: minmax(0, 1fr) auto minmax(0, 1fr);
+  --grid-template-columns-topbar-narrow: minmax(0, 1fr) auto auto;
+  /* === end lane: B8 === */
+
+  /* === lane: F5 controls === */
+  --height-control-compact: var(--ll-size-control-compact);
+  /* === end lane: F5 controls === */
+
+  /* === lane: F6 menus === */
+  --transition-retarget: var(--ll-retarget-crossfade-ms) cubic-bezier(0.2, 0.8, 0.3, 1);
+  /* === end lane: F6 menus === */
+
+  /* === lane: F8 sweep === */
+  --size-context-seed: var(--ll-context-seed-size);
+  /* === end lane: F8 sweep === */
 }
 
 /* Default border color for new UI hairline boundaries */

@@ -13,6 +13,7 @@ export { DividerSection, DividerMore } from "./sections/DividerSection";
 export { BackgroundSection, BackgroundMore } from "./sections/BackgroundSection";
 export { IconSection, IconMore } from "./sections/IconSection";
 export { ShapeSection, ShapeMore } from "./sections/ShapeSection";
+export { VectorSection, VectorHeaderAction, VectorOptions } from "./sections/VectorSection";
 export { CounterSection, CounterMore } from "./sections/CounterSection";
 export { Object3DSection, Object3DMore } from "./sections/Object3DSection";
 export { FillSection } from "./sections/FillSection";

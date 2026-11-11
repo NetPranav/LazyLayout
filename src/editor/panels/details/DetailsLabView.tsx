@@ -29,6 +29,7 @@ import {
 import { EasingCurveBox } from "./controls/EasingCurveBox";
 import { AlignmentGrid } from "./controls/AlignmentGrid";
 import { AlignBar } from "./controls/AlignBar";
+import { MultiLayerIcon } from "./hooks/useSelectionInspector";
 import { EASING_PRESETS, type CubicBezierCurve } from "./constants";
 import type { PropValue } from "@/core/document/registry";
 
@@ -138,8 +139,8 @@ const MOCK_LAYERS: Record<MockLayerKind, MockLayerData> = {
   },
   multi: {
     id: "multi-layers",
-    name: "2 Layers Selected",
-    icon: Layers,
+    name: "2 layers",
+    icon: MultiLayerIcon,
     props: {
       "frame.x": 120,
       "frame.y": null, // Mixed

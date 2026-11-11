@@ -18,6 +18,7 @@ export interface TimelineRulerProps {
   laneWidth?: number;
   pps?: number;
   trackWidth?: number;
+  onSnapFlash?: (frame: number) => void;
   onContextMenu?: (e: React.MouseEvent, frame: number) => void;
   // Legacy compatibility props
   duration?: number;
@@ -31,6 +32,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
   laneWidth = 600,
   pps: propPps,
   trackWidth = 264,
+  onSnapFlash,
   onContextMenu,
   duration: legacyDur,
   pixelsPerSecond: legacyPps,
@@ -49,7 +51,6 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
   const view = useMotionModel((s) => s.view);
   const snap = useMotionModel((s) => s.snap);
   const comp = useMotionModel((s) => s.comp);
-  const playhead = useMotionModel((s) => s.playhead);
 
   const rulerRef = useRef<HTMLDivElement | null>(null);
 
@@ -58,7 +59,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
 
   // Generate tick candidates
   const startF = Math.max(0, Math.floor(Fx(-12, pps, t0, 24, fps) / min) * min);
-  const ticks: Array<{ f: number; isMajor: boolean; x: number; label?: string }> = [];
+  const ticks: Array<{ f: number; isMajor: boolean; x: number; label?: string; lw?: number }> = [];
 
   for (let f = startF; f <= dur; f += min) {
     const x = X(f, pps, t0, 24, fps);
@@ -66,6 +67,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
 
     const isMajor = f % maj === 0;
     let label: string | undefined;
+    let lw: number | undefined;
 
     if (isMajor) {
       if (frames) {
@@ -74,9 +76,18 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
         const s = f / fps;
         label = s >= 60 && f % fps === 0 ? `${Math.floor(s / 60)}:${(s % 60 < 10 ? "0" : "") + (s % 60)}` : `${+s.toFixed(2)}s`;
       }
+      lw = label.length * 6.6;
+      // In P line 4609: suppress label if it would overflow or collide with a marker
+      const markerCollision = markers.some((m) => {
+        const mx = X(m.t, pps, t0, 24, fps);
+        return mx < x + 5 + (lw ?? 24) && mx + 20 > x + 5;
+      });
+      if (x + 5 < 2 || x + 5 + (lw ?? 24) > laneWidth - 4 || markerCollision) {
+        label = undefined;
+      }
     }
 
-    ticks.push({ f, isMajor, x, label });
+    ticks.push({ f, isMajor, x, label, lw });
   }
 
   // Work area positions
@@ -91,23 +102,37 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
 
     useTimelineUiStore.getState().setIsScrubbing(true);
 
+    // Pause playback immediately if playing (matching P line 4962)
+    if (useMotionModel.getState().playing) {
+      motionActions.setPlaying(false);
+    }
+
+    const startClientX = e.clientX;
+
     const getFrame = (clientX: number) => {
       const rect = rulerRef.current?.getBoundingClientRect();
       if (!rect) return 0;
       const x = clientX - rect.left;
       const rawF = Fx(x, pps, t0, 24, fps);
-      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, useMotionModel.getState().playhead);
+      if (res.hit) {
+        onSnapFlash?.(res.snapped);
+      }
       return Math.round(res.snapped);
     };
 
-    const targetF = getFrame(e.clientX);
-    motionActions.setPlayhead(targetF);
-    legacySeek?.(targetF / 60);
+    const initialF = getFrame(e.clientX);
+    // Click seek glides on spring (matching P line 4963: seek(..., true))
+    motionActions.setPlayhead(initialF, true);
+    legacySeek?.(initialF / 60);
 
     const onPointerMove = (ev: PointerEvent) => {
-      const f = getFrame(ev.clientX);
-      motionActions.setPlayhead(f);
-      legacySeek?.(f / 60);
+      if (Math.abs(ev.clientX - startClientX) > 2) {
+        // Dragging scrubs immediately without glide (matching P line 4964)
+        const f = getFrame(ev.clientX);
+        motionActions.setPlayhead(f, false);
+        legacySeek?.(f / 60);
+      }
     };
 
     const onPointerUp = () => {
@@ -132,7 +157,10 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       if (!rect) return 0;
       const x = clientX - rect.left;
       const rawF = Fx(x, pps, t0, 24, fps);
-      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, useMotionModel.getState().playhead);
+      if (res.hit) {
+        onSnapFlash?.(res.snapped);
+      }
       return Math.round(res.snapped);
     };
 
@@ -162,7 +190,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     >
       {/* 1. Header Column (sticky top-left) */}
       <div className="ll-tlhc ll-tlhh ll:flex ll:items-center ll:pl-4 ll:pr-2 ll:border-r ll:border-border ll:bg-surface-panel ll:text-muted">
-        <span className="ll:font-mono ll:text-nano ll:font-medium ll:uppercase ll:tracking-wider">
+        <span className="ll:font-mono ll:text-micro ll:font-micro ll:uppercase">
           {view === "graph" ? "Properties" : "Layers"}
         </span>
       </div>
@@ -170,6 +198,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       {/* 2. Lane Ruler Area */}
       <div
         ref={rulerRef}
+        id="tlruler"
         data-testid="timeline-ruler"
         data-pps={pps}
         data-t0={t0}
@@ -181,21 +210,30 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
           const f = Math.round(Fx(x, pps, t0, 24, fps));
           onContextMenu?.(e, f);
         }}
-        className="ll-tlln ll-tlruler ll:relative ll:h-full ll:cursor-pointer ll:overflow-hidden ll:bg-surface-panel"
+        className="ll-tlln ll-tlruler ll:relative ll:h-full ll:cursor-ew-resize ll:overflow-hidden ll:bg-surface-panel"
       >
         {/* Ticks and labels */}
         {ticks.map((t, idx) => (
           <React.Fragment key={`tick-${t.f}-${idx}`}>
             <i
-              style={{ left: `${t.x}px` }}
-              className={`ll:absolute ll:bottom-0 ll:w-px ll:bg-muted ll:pointer-events-none ${
-                t.isMajor ? "ll:h-2.5 ll:opacity-100" : "ll:h-1.5 ll:opacity-60"
+              style={{
+                left: `${t.x}px`,
+                height: t.isMajor ? "9px" : "5px",
+              }}
+              className={`ll-tk ${t.isMajor ? "M" : ""} ll:absolute ll:bottom-0 ll:w-px ll:bg-muted ll:pointer-events-none ${
+                t.isMajor ? "ll:opacity-100" : "ll:opacity-60"
               }`}
             />
             {t.isMajor && t.label && (
               <span
-                style={{ left: `${t.x + 5}px` }}
-                className="ll-tkl ll:absolute ll:top-2 ll:font-mono ll:text-nano ll:font-medium ll:text-muted ll:pointer-events-none ll:whitespace-nowrap"
+                data-x={t.x + 5}
+                data-w={t.lw ?? 24}
+                style={{
+                  left: `${t.x + 5}px`,
+                  top: "13px",
+                  lineHeight: "1",
+                }}
+                className="ll-tkl ll:absolute ll:font-mono ll:text-micro ll:font-medium ll:text-muted ll:pointer-events-none ll:whitespace-nowrap"
               >
                 {t.label}
               </span>
@@ -217,7 +255,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
           onPointerDown={(e) => handleWaHandleDown(e, "a")}
           title="Work area start (I)"
           style={{ left: `${waX0 - 3}px` }}
-          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2.5 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
+          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
         />
 
         {/* Work area handle Right */}
@@ -225,7 +263,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
           onPointerDown={(e) => handleWaHandleDown(e, "b")}
           title="Work area end (O)"
           style={{ left: `${waX1 - 3}px` }}
-          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2.5 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
+          className="ll-wah ll:absolute ll:top-0 ll:w-1.5 ll:h-2 ll:bg-secondary ll:cursor-ew-resize ll:z-10"
         />
 
         {/* Markers */}
@@ -234,27 +272,33 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
           return (
             <div
               key={m.id}
-              style={{ left: `${mx}px` }}
-              className="ll-mk ll:group ll:absolute ll:top-2.5 ll:h-3.5 ll:flex ll:items-center ll:z-20"
+              style={{ left: `${mx}px`, top: "11px", height: "14px" }}
+              className="ll-mk ll:group ll:absolute ll:flex ll:items-center ll:z-20"
             >
               <button
                 type="button"
+                data-mk="seek"
+                data-m={m.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  motionActions.setPlayhead(m.t);
+                  motionActions.setPlayhead(m.t, true);
                 }}
                 title={`${m.name}, frame ${m.t}`}
-                className="ll-mkb ll:min-w-3.5 ll:px-1 ll:bg-control-active ll:text-control-active-fg ll:font-mono ll:text-micro ll:font-medium ll:leading-3.5 ll:rounded-xs ll:text-center"
+                aria-label={`${m.name} at frame ${m.t}`}
+                className="ll-mkb ll:min-w-3.5 ll:px-0.75 ll:bg-control-active ll:text-control-active-fg ll:font-mono ll:text-nano ll:font-medium ll:leading-3.5 ll:rounded-xs ll:text-center ll:group-hover:rounded-r-none"
               >
                 {i + 1}
               </button>
               <button
                 type="button"
+                data-mk="del"
+                data-m={m.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   motionActions.deleteMarker(m.id);
                 }}
                 title="Delete marker"
+                aria-label={`Delete ${m.name}`}
                 className="ll-mkx ll:hidden ll:group-hover:flex ll:items-center ll:justify-center ll:w-3.5 ll:h-3.5 ll:bg-control-active ll:text-control-active-fg ll:rounded-r-xs"
               >
                 <Icon icon={CloseIcon} size={10} />

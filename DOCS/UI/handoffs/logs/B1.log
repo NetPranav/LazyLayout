@@ -1,0 +1,47 @@
+Lane **B1 (Pickers)** is complete.
+
+### What Was Built
+1. **[`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx)** & **[`ColorPickerMath.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPickerMath.ts)**
+   - Floats 8px left of inspector, morphs out of trigger swatch with Bouncy spring.
+   - Tabs: Solid, Linear, Radial, Conic, Image.
+   - Gradient stops bar with click-to-add, horizontal drag, and vertical drag-off removal (>30px).
+   - SB square with 2D pointer capture, circular thumb, and keyboard arrow nudging.
+   - Sliders: Hue rainbow and Opacity checkered gradients with velocity stretch.
+   - Eyedropper loupe (96px, 8x8 pixel grid canvas with hex chip, native EyeDropper API fallback).
+   - Models: Hex, RGB, HSL, OKLCH with scrub labels and copy CSS button.
+   - Document colors grid with "+" save button; Token swatches with selection ring and token link indicator.
+   - Controlled props: `value`, `onChange(hex)`, `opacity`, `onChangeOpacity`, `anchorRef`, `triggerRef`, `open`, `onClose`.
+
+2. **[`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx)** & **[`FontPickerData.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPickerData.ts)**
+   - 304px wide, search with substring/fuzzy match highlighting.
+   - Segmented control: All, Sans, Serif, Mono, Display.
+   - Groups: "In this project", "System", "Library" with catalog fonts.
+   - Each family rendered in its own font family stack.
+   - Live hover preview callback: `onPreview(family | null)`.
+   - Footer: "Upload font…" (`.ttf`, `.otf`, `.woff`, `.woff2`) and "Google Fonts".
+   - Edge-blur masking on list edges, no visible scrollbar, zero weight controls.
+
+3. **[`FramePresetsPanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsPanel.tsx)** & **[`FramePresetsData.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsData.ts)**
+   - 340x480px frame panel.
+   - Header with orientation toggle (Portrait / Landscape).
+   - Search presets input.
+   - Custom W & H inputs with aspect ratio lock and "Add frame" action.
+   - Grouped presets (Desktop, Tablet, Phone, Watch, Social, Print, Presentation) with proportional glyphs and keyboard navigation; `onPick({ name, width, height })`.
+
+4. **[`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx)**
+   - 280px wide, 36px header with title and close button.
+   - Morphs out of trigger (`anchorRef`/`triggerRef`) with Bouncy spring.
+   - Cascading row entrance with blur-to-sharp spring stagger.
+   - Esc, outside click, and close button handling; hairline field styling.
+
+5. **[`B1Demos.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/B1Demos.tsx)**
+   - Interactive demos for all four components covering all modes, states, and live callbacks.
+
+6. **Tokens**: Added only inside lane block `/* === lane: B1 pickers === */` in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css#L1026-L1037) and [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css#L317-L328).
+
+---
+
+### Verification
+- **TypeScript**: `npx tsc --noEmit` passed with 0 errors in Lane B1 paths.
+- **Screenshots**: Captured 22 headless Playwright screenshots in Warm and Darkroom at 1440, 1024, and 390 viewports and side-by-side with prototype P in [`DOCS/UI/handoffs/screenshots/b1/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b1/).
+- **Handoff**: Written to [`DOCS/UI/handoffs/2026-11-08-0612-B1.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0612-B1.md).

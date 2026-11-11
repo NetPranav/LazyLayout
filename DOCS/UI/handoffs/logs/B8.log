@@ -1,0 +1,33 @@
+root agent idle; waiting for 2 background task(s) to finish
+Taking screenshots across Warm and Darkroom themes at 1440px, 1024px, and 390px viewports. Waiting for the capture to finish.
+Capturing screenshots across viewports and themes. Waiting for completion.
+Capturing screenshots across all viewports and themes. Waiting for completion.
+Finishing the remaining viewport screenshots. Waiting for task completion.
+Task **B8: top bar** is complete.
+
+### Summary of Changes
+
+1. **Preview Button**:
+   - Added the Preview button directly left of Ship (`id="previewbtn"`, `data-testid="preview-button"`), with 32x32 size and 4px radius (`rounded-sm`) matching prototype P (`.themebtn`).
+   - Wired to [`TopBarProps.onPreview`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/TopBar.tsx). When provided, the button is enabled and triggers the callback. When undefined (no engine preview mode exists yet), the button is disabled (`ll:opacity-45 ll:cursor-not-allowed`) with tooltip content and title `"Preview is not designed yet"`.
+
+2. **Logo Trace Loader**:
+   - Outline stroke (`.tro`, `.ll-tro`, `pathLength={100}`) draws and undraws alternate back and forth on a 1.6s bezier curve (`animation: ll-tro 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate`), completing a full cycle in 3.2s matching prototype line 5913.
+   - Fill (`.tfl`, `.ll-tfl`) is hidden (`opacity: 0`) while saving, with no opacity blink.
+   - Screen reader status text in `#saving` with `role="status"` announces `"Saving"` during save and `"Saved"` when saved.
+   - Zero visible "Saving" text and no save dot.
+   - Maintained `data-testid="save-status"` and `data-state` attribute on the logo button (`#menubtn`).
+   - Under `prefers-reduced-motion: reduce`, the stroke trace is hidden and the fill gently pulses opacity (`ll-fade 2.8s ease-in-out infinite`).
+
+3. **Tokens & Theme**:
+   - Added `--ll-size-preview-btn: 32px;` and `--ll-dur-save-cycle: 3.2s;` within lane block `/* === lane: B8 topbar === */` in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css) and [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+   - Exported constants [`SAVE_DURATION_MS`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/topbar-constants.ts) and [`PREVIEW_DISABLED_REASON`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/topbar-constants.ts).
+
+4. **Design System Demo**:
+   - Created [`B8Demos.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/B8Demos.tsx) with interactive 3.2s save simulation, disabled vs enabled Preview button, continuous saving trace, and standalone components.
+
+5. **Verification & Handoff**:
+   - `npx tsc --noEmit` verified with 0 errors in all Lane B8 files.
+   - Headless Playwright screenshots captured at 1440, 1024, and 390 viewports in Warm, Darkroom, Paper, and Dark themes side by side with prototype P, saved in `DOCS/UI/handoffs/screenshots/b8/`.
+   - Handoff written to [`DOCS/UI/handoffs/2026-11-08-B8.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-B8.md).
+terminating 1 daemon task(s) on exit

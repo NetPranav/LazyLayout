@@ -1,0 +1,32 @@
+I have launched the Playwright verification test to audit controls and capture screenshots across Warm and Darkroom themes in Design, Motion, and Code modes. I will wait for it to complete.
+Task **F5** (`DOCS/UI/tasks/2026-11-08-F5-native-controls.md`) is complete.
+
+### Summary of Changes
+1. **Safety Net Reset ([globals.css](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/globals.css))**:
+   - Added minimal base reset in `@layer base` under lane block `/* === lane: F5 controls === */` scoping `.ll-editor-root`, `.ll-design-system-root`, `html:has(...)`, and portaled surfaces (`.ll-cp`, `.ll-fp`, `.ll-fr-pop`, `.ll-options-popover`, `.ll-menu`, `.ll-popover`, `.ll-ftxb`, `[data-radix-popper-content-wrapper]`).
+   - Resets `button, select, input` with `appearance: none; -webkit-appearance: none; border: 0 solid currentColor; background: transparent; font: inherit; color: inherit; margin: 0; padding: 0;`.
+2. **Design System Components & Variants**:
+   - [`SegmentedControl`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/SegmentedControl.tsx): Added `compact` variant (24px height, 2px padding, `ll:rounded-xs` sliding highlight tile, `ll:text-micro ll:font-medium` font, muted unselected text, sliding active tile matching top-bar mode switch).
+   - [`Select`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/Select.tsx): Added `floating` variant with hairline outline (`ll:border ll:border-solid ll:border-border ll:hover:border-muted ll:bg-surface-bar` and `ll:border-primary` when open) at 28px height, plus `ll:appearance-none`.
+3. **Replaced Raw Native Controls**:
+   - [`ColorPicker`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/ColorPicker.tsx): Mode tabs converted to `<SegmentedControl size="compact">`; Image fit select converted to `<Select size="sm" variant="floating">`; Eyedropper converted to `<IconButton size="md" variant="ghost">`; Model dropdown converted to `<Select size="sm" variant="floating">`.
+   - [`FontPicker`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/FontPicker.tsx): Category tabs converted to `<SegmentedControl size="compact">`; footer buttons converted to `<Button size="sm" variant="default">`.
+   - [`FramePresetsPanel`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/FramePresetsPanel.tsx): Portrait/Landscape orientation converted to `<SegmentedControl size="compact">`; Ratio Lock converted to `<IconButton size="md">`; Add frame converted to `<Button size="sm" variant="default">`.
+   - [`OptionsPopover`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/components/OptionsPopover.tsx): Close button converted to `<IconButton size="sm" variant="ghost">`.
+   - [`RightPanelSection`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/shell/right-panel/RightPanelSection.tsx): Sliders options button and Add button converted to `<IconButton size="sm" variant="ghost">`.
+   - [`RightPanelHeader`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/shell/right-panel/RightPanelHeader.tsx): Hide layer toggle and More options buttons converted to `<IconButton size="sm" variant="ghost">`.
+   - [`FillSection`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/panels/details/sections/FillSection.tsx): Sliders settings trigger, Eye toggle, and Remove minus button converted to `<IconButton size="sm" variant="ghost">`.
+   - [`PageSection`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/panels/details/sections/PageSection.tsx): Font, Scale, and Shadow dropdowns updated to `<Select size="sm" variant="floating">`.
+   - [`TypographySection`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/panels/details/sections/TypographySection.tsx): Italic button converted to `<IconButton size="md">`.
+   - [`CodeInspector`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/panels/code-view/CodeInspector.tsx): Output format converted to `<SegmentedControl size="compact">`; Export type, Prop type, Framework, Styling, and Animation engine converted to `<Select size="sm" variant="floating">`; Remove prop button converted to `<IconButton size="sm" variant="ghost">`.
+   - [`PageSelector`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/shell/left-panel/PageSelector.tsx): Added explicit reset and `ll:` styling to trigger, action dots, new page, and flyout items.
+4. **Design System Demo**:
+   - Created [`F5Demos.tsx`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/design-system/demos/F5Demos.tsx) demonstrating `SegmentedControl` (compact 24px), `Select` (floating 28px), `IconButton`, and `Button` across all states.
+5. **Tokens**:
+   - Added `--ll-size-control-compact: 24px` in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/styles/tokens.css) and `--height-control-compact` in [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy layout/src/editor/styles/tailwind.css) inside `/* === lane: F5 controls === */`.
+
+### Verification & Phase Checks
+- **Automated Audit**: Automated Playwright check over `/editor` (Design, Motion, and Code modes across Warm and Darkroom themes) verified **0 remaining native-styled buttons/selects** (`border-top-style: outset/inset`: 0, `background-color: buttonface`: 0, `appearance: auto`: 0).
+- **TypeScript**: `npx tsc --noEmit` passed with 0 errors in lane files (only stale `.next/types/validator.ts` reported).
+- **Screenshots**: 14 headless screenshots captured at 1440 width in Warm and Darkroom saved under [`DOCS/UI/handoffs/screenshots/f5/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f5/).
+- **Handoff**: Written to [`DOCS/UI/handoffs/2026-11-08-0820-F5.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0820-F5.md). No commits made.

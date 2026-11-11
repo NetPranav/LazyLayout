@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useSyncExternalStore } from "react";
 import {
   ChevronLeft,
   Search,
@@ -19,7 +19,7 @@ import {
   CopyPlus,
   Trash2,
   Box,
-  Frame,
+  Split,
   Scan,
   Maximize,
   Square,
@@ -43,8 +43,6 @@ import {
   Info,
   Play,
   Star,
-  Sun,
-  Moon,
   Palette,
   Check,
   AlignStartVertical,
@@ -55,22 +53,23 @@ import {
   AlignEndHorizontal,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { LogoMark } from "./LogoMark";
+import { openExportDialog } from "@/editor/shell/export-dialog/useExportDialogStore";
 import { ModeTabs, type EditorMode } from "./ModeTabs";
 import { ShipPopover, type ShipIssue } from "./ShipPopover";
 import type { CollabUser } from "./AvatarStack";
 import { Menu, MenuItem, SubMenu, MenuSeparator, MenuHeading, ThemeSwatch } from "./Menu";
 import { useTheme, type Theme } from "./ThemeToggle";
+import { isUserMotionOff, setUserMotionOff, subscribeUserMotionOff } from "../motion/reducedMotion";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
+import { useSaveIndicator } from "./useSaveIndicator";
 import { invokeCommand } from "@/core/commands";
-import { useSaveStatus } from "@/core/storage/ProjectSession";
-import { useDocument } from "@/core/store/useDocumentStore";
+import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
-import { useExportUiStore } from "@/core/store/useExportUiStore";
-import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE } from "./topbar-constants";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
@@ -118,6 +117,79 @@ export interface TopBarProps {
   onSelectPreset?: (preset: "1440" | "768" | "375") => void;
 }
 
+/** Preview button left of Ship. Stays focusable and hoverable when disabled so the reason tooltip shows. */
+export const PreviewButton: React.FC<{ onPreview?: () => void; id?: string; "data-testid"?: string; className?: string }> = ({
+  onPreview,
+  id = "previewbtn",
+  "data-testid": dataTestId = "preview-button",
+  className = "",
+}) => (
+  <Tooltip content={onPreview ? "Preview" : PREVIEW_DISABLED_REASON} side="bottom">
+    <button
+      type="button"
+      id={id}
+      data-testid={dataTestId}
+      aria-label={onPreview ? "Preview" : `Preview (${PREVIEW_DISABLED_REASON})`}
+      aria-disabled={!onPreview}
+      onClick={onPreview}
+      className={`themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+        onPreview
+          ? "ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:cursor-pointer"
+          : "ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"
+      } ${className}`}
+    >
+      <Icon icon={Play} size={ACTION_ICON_SIZE} />
+    </button>
+  </Tooltip>
+);
+
+const PEOPLE_MAX = 4;
+
+function personInitials(u: CollabUser): string {
+  return (
+    u.initials ||
+    u.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+  );
+}
+
+/** Overlapping circular avatars (image, else initials). Names in tooltips only; no counts. */
+const TopBarPeople: React.FC<{ users: readonly CollabUser[] }> = ({ users }) => {
+  if (!users || users.length === 0) return null;
+  return (
+    <div
+      role="group"
+      aria-label="Collaborators"
+      data-testid="top-bar-people"
+      className="ll-people ll:flex ll:items-center ll:pr-1 ll:max-sm:hidden"
+    >
+      {users.slice(0, PEOPLE_MAX).map((u, i) => (
+        <Tooltip key={u.id} content={u.name} side="bottom">
+          <span
+            role="img"
+            aria-label={u.name}
+            style={{ ...(!u.src && u.color ? { backgroundColor: u.color } : null), ...(i > 0 ? { marginLeft: -3 } : null) }}
+            className={`ll-av ll:relative ll:w-7 ll:h-7 ll:rounded-full ll:grid ll:place-items-center ll:overflow-hidden ll:shrink-0 ll:ring-2 ll:ring-surface-panel ll:bg-avatar-bg ll:text-avatar-fg ll:text-nano ll:font-medium ll:font-sans ll:select-none ${
+              ""
+            }`}
+          >
+            {u.src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={u.src} alt="" className="ll:w-full ll:h-full ll:object-cover" />
+            ) : (
+              personInitials(u)
+            )}
+          </span>
+        </Tooltip>
+      ))}
+    </div>
+  );
+};
+
 export const TopBar: React.FC<TopBarProps> = ({
   projectName = "Visual Web App",
   saving = false,
@@ -139,28 +211,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   showRulers = false,
   isZen = false,
   onPreview,
-  onExport,
   onShare,
   viewportPreset: propViewportPreset,
   onSelectPreset,
 }) => {
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
-  // Save status resolution
-  const sessionSaveState = useSaveStatus((s) => s.state);
-  const resolvedState: "saved" | "dirty" | "saving" | "error" =
-    saveStatus !== undefined
-      ? saveStatus
-      : saving
-      ? "saving"
-      : sessionSaveState === "saving"
-      ? "saving"
-      : sessionSaveState === "error"
-      ? "error"
-      : sessionSaveState === "pending"
-      ? "dirty"
-      : "saved";
-
-  const isSaving = resolvedState === "saving";
+  // Save status: the same indicator drives the favicon (see useSaveIndicator)
+  const { state: resolvedState, isSaving } = useSaveIndicator({ saveStatus, saving });
 
   // Mode tabs state
   const [internalMode, setInternalMode] = useState<EditorMode>("design");
@@ -183,18 +240,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   // Theme integration
   const [theme, selectTheme] = useTheme();
-  const isDark =
-    theme === "dark" ||
-    theme === "noir" ||
-    theme === "graphite" ||
-    theme === "darkroom";
-
-  const themeBtnRef = useRef<HTMLButtonElement>(null);
-  const [themePickerOpen, setThemePickerOpen] = useState(false);
-
-  const handleThemeToggle = useCallback(() => {
-    selectTheme(isDark ? "paper" : "noir");
-  }, [isDark, selectTheme]);
+  const animationsOff = useSyncExternalStore(subscribeUserMotionOff, isUserMotionOff, () => false);
 
   const handleOpenSearch = useCallback(() => {
     if (onSearch) {
@@ -203,6 +249,11 @@ export const TopBar: React.FC<TopBarProps> = ({
       window.dispatchEvent(new CustomEvent("antigravity:open_command_palette"));
     }
   }, [onSearch]);
+
+  const handleOpenExport = useCallback(() => {
+    setLogoMenuOpen(false);
+    openExportDialog(document.getElementById("menubtn"));
+  }, []);
 
   const handleCopyLink = useCallback(() => {
     onMenuAction?.("file.copyLink");
@@ -286,7 +337,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     <header
       role="banner"
       data-testid="top-bar"
-      className={`top ll-top ll:text-body ll:grid ll:grid-cols-topbar ll:items-center ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
+      className={`top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ${className}`}
     >
       {/* =====================================================================
           1. LEFT COLUMN: Logo, 1px divider, Project Name
@@ -305,8 +356,8 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-haspopup="menu"
           aria-expanded={logoMenuOpen}
           onClick={() => setLogoMenuOpen((prev) => !prev)}
-          className={`logo ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:hover:[&_svg]:opacity-70 ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
-            isSaving ? "saving-on ll-saving-on" : ""
+          className={`logo ll-logo ll:w-logo ll:h-logo ll:grid ll:place-items-center ll:text-primary ll:bg-transparent ll:border-0 ll:p-0 ll:cursor-pointer ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+            isSaving ? "ll-saving-on" : ""
           }`}
         >
           <LogoMark saving={isSaving} size={LOGO_ICON_SIZE} />
@@ -318,11 +369,11 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* 1px hairline divider (height 20px, margin 0 4px, visible in Noir) */}
         <i
           aria-hidden="true"
-          className="tdiv ll-tdiv ll:block ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
+          className="tdiv ll-tdiv ll:block ll:max-sm:hidden ll:w-px ll:h-divider ll:mx-1 ll:bg-border ll:self-center ll:shrink-0"
         />
 
         {/* Project Name (14px, 500 font-weight, truncate) */}
-        <div className="pinfo ll-pinfo ll:flex ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
+        <div className="pinfo ll-pinfo ll:flex ll:max-sm:hidden ll:items-center ll:gap-4 ll:min-w-0 ll:text-secondary">
           <span
             className="pname ll-pname ll:text-title ll:font-medium ll:text-primary ll:truncate ll:whitespace-nowrap"
             title={projectName}
@@ -352,7 +403,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.exportCode", "Export…", Download, undefined, handleOpenExport)}
             {entry("file.connectAgent", "Connect an agent", Download)}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
@@ -376,7 +427,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("edit.duplicate", "Duplicate", CopyPlus, "Ctrl+D")}
             {entry("edit.delete", "Delete", Trash2, "Del")}
             {entry("edit.group", "Group", Box, "Ctrl+G")}
-            {entry("edit.ungroup", "Ungroup", Frame, "Ctrl+Shift+G")}
+            {entry("edit.ungroup", "Ungroup", Split, "Ctrl+Shift+G")}
             <MenuSeparator />
             {entry("align.left", "Align left", AlignStartVertical)}
             {entry("align.center", "Align center", AlignCenterVertical)}
@@ -492,6 +543,15 @@ export const TopBar: React.FC<TopBarProps> = ({
             {DARK_THEMES.map((id) => themeEntry(id))}
           </SubMenu>
 
+          <MenuItem
+            role="menuitemcheckbox"
+            icon={<Icon icon={Zap} size={MENU_ICON_SIZE} />}
+            checked={animationsOff}
+            onClick={() => setUserMotionOff(!animationsOff)}
+          >
+            Disable animations
+          </MenuItem>
+
           {entry("app.settings", "Settings", Settings, "Ctrl+,", undefined, undefined, true, "Settings panel coming in Phase 45")}
 
           <SubMenu
@@ -515,118 +575,22 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* =====================================================================
-          3. RIGHT COLUMN: Theme Toggle Button, Ship Button & Popover, Avatars
+          3. RIGHT COLUMN: Avatars, Preview (Play), Ship Button & Popover
           ===================================================================== */}
-      <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4">
-        {/* Dedicated Preview Button */}
-        <Tooltip content={canvasViewMode === "preview" ? "Exit Preview (Esc)" : "Preview Mode"}>
-          <button
-            type="button"
-            aria-label={canvasViewMode === "preview" ? "Exit Preview (Esc)" : "Preview"}
-            aria-pressed={canvasViewMode === "preview"}
-            onClick={() => {
-              if (onPreview) {
-                onPreview();
-              } else {
-                useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview");
-              }
-            }}
-            className={`ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-              canvasViewMode === "preview"
-                ? "ll:bg-accent ll:text-accent-foreground ll:shadow-sm"
-                : "ll:text-muted ll:hover:bg-control-active ll:hover:text-primary"
-            }`}
-          >
-            <Icon icon={canvasViewMode === "preview" ? Square : Play} size={14} />
-            <span>{canvasViewMode === "preview" ? "Exit" : "Preview"}</span>
-          </button>
-        </Tooltip>
+      <div className="tr ll-tr ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:justify-self-end ll:h-full ll:pr-4 ll:max-sm:pr-2">
+        {/* Collaborators: circular avatars, no counts */}
+        <TopBarPeople users={_users} />
 
-        {/* Dedicated Code Export Button */}
-        <Tooltip content="Export Code (Next.js, Vite, HTML, React, Vue)">
-          <button
-            type="button"
-            aria-label="Export Code"
-            onClick={() => {
-              if (onExport) {
-                onExport();
-              } else {
-                useExportUiStore.getState().open();
-              }
-            }}
-            className="ll:flex ll:items-center ll:gap-1.5 ll:h-8 ll:px-2.5 ll:rounded-sm ll:text-small ll:font-medium ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:transition-colors ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-          >
-            <Icon icon={Download} size={14} />
-            <span>Export</span>
-          </button>
-        </Tooltip>
-
-        {/* Theme button (32x32, toggles Paper and Noir; right-click opens 8-theme picker) */}
-        <Tooltip content={isDark ? "Switch to Paper" : "Switch to Noir"}>
-          <button
-            ref={themeBtnRef}
-            type="button"
-            id="themebtn"
-            onClick={handleThemeToggle}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setThemePickerOpen((prev) => !prev);
-            }}
-            aria-label={isDark ? "Switch to Paper" : "Switch to Noir"}
-            title={isDark ? "Switch to Paper" : "Switch to Noir"}
-            aria-haspopup="menu"
-            aria-expanded={themePickerOpen}
-            className="themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:outline-none ll:border-0 ll:bg-transparent ll:cursor-pointer ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
-          >
-            <Icon icon={isDark ? Sun : Moon} size={ACTION_ICON_SIZE} />
-          </button>
-        </Tooltip>
-
-        <Menu
-          open={themePickerOpen}
-          onClose={() => setThemePickerOpen(false)}
-          anchorRef={themeBtnRef}
-          width={200}
-          aria-label="Theme picker"
-        >
-          <MenuHeading>Light</MenuHeading>
-          {LIGHT_THEMES.map((id) => (
-            <MenuItem
-              key={id}
-              role="menuitemradio"
-              checked={theme === id}
-              onClick={() => {
-                selectTheme(id);
-                setThemePickerOpen(false);
-              }}
-              icon={<ThemeSwatch theme={id} />}
-            >
-              {id.charAt(0).toUpperCase() + id.slice(1)}
-            </MenuItem>
-          ))}
-          <MenuHeading>Dark</MenuHeading>
-          {DARK_THEMES.map((id) => (
-            <MenuItem
-              key={id}
-              role="menuitemradio"
-              checked={theme === id}
-              onClick={() => {
-                selectTheme(id);
-                setThemePickerOpen(false);
-              }}
-              icon={<ThemeSwatch theme={id} />}
-            >
-              {id.charAt(0).toUpperCase() + id.slice(1)}
-            </MenuItem>
-          ))}
-        </Menu>
+        {/* Preview button (32x32, 4px radius) in the old theme-toggle slot, right before Ship */}
+        <PreviewButton onPreview={onPreview ?? (() => useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview"))} className="ll:max-sm:hidden" />
 
         {/* Ship Button & Popover */}
         <ShipPopover
           issues={issues}
           onFixIssue={onFixIssue}
           onPublish={onPublish}
-          onPreview={onPreview ?? (() => onMenuAction?.("view.previewMode"))}
+          onPreview={onPreview}
+          className="ll:max-sm:hidden"
           onShare={onShare ?? (() => onMenuAction?.("file.copyLink"))}
         />
 

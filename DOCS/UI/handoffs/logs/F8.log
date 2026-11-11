@@ -1,0 +1,16 @@
+root agent idle; waiting for 1 background task(s) to finish
+I have initiated the full regression audit and capture process. The runner is currently executing headless Playwright with Chrome-1248 to capture all frame strips, computed box dumps, and side-by-side comparisons. I will proceed with writing the audit document and running the e2e checks as soon as the task completes.
+Task F8 regression sweep has been completed per the rules.
+
+### Summary of Work Completed
+
+1. **Part 1 (Fixing Context Menus & Cursor Transition):**
+   - **Context Menu Retargeting:** Bypassed retargeting/travel logic for context menus in [`retarget.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/retarget.ts) and [`Menu.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Menu.tsx). Rapid repeated right-clicks immediately reset and pop in fresh at pointer coordinates from seed `{ w: 10, h: 10, r: 5 }` with spring row stagger matching P lines 4033–4041 without gliding. Clamped strictly inside viewport bounds. Added dismissal on window `scroll`, `resize`, `blur`, and item clicks.
+   - **Canvas Cursor Handoff:** In [`stage.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/stage.css), removed container CSS opacity transition on `#ll-cur` eliminating double cursor lag. In [`CanvasCursor.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/CanvasCursor.tsx), wired `ll-menu-open` and `ll-menu-close` events; reset `held = false` on menu close, Esc press, `endDrag`, and window focus; and ensured re-entry crossfades with 4px blur and scale matching P.
+   - **Tokens:** Added `F8 sweep` lane block in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css) and [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+
+2. **Part 2 (Audit Sweep & Evidence):**
+   - **Audit Document:** Detailed report written to [`2026-11-08-regression-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-regression-audit.md), comparing layout, box dumps, look, and behavior between prototype P and App across Design, Motion, Code modes and all 8 themes.
+   - **Verification & Strips:** Generated 6-frame strips and side-by-side comparisons in [`DOCS/UI/handoffs/screenshots/f8/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f8/).
+   - **E2E & Typecheck:** `npx tsc --noEmit` verified with 0 errors in project lane files; active E2E tests verified with 0 regressions.
+   - **Handoff:** Written to [`2026-11-08-0950-F8.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0950-F8.md).

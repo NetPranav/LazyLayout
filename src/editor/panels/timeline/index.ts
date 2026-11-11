@@ -7,5 +7,8 @@ export * from "./TimelinePlayhead";
 export * from "./TimelineCurveGraph";
 export * from "./TimelineFooter";
 export * from "./TimelineMenus";
+export * from "./EasingPopover";
+export * from "./icons";
+export * from "./timelineOpsAdapter";
 export * from "./useTimelineAnimation";
 export { TimelinePanel, default } from "./TimelinePanel";

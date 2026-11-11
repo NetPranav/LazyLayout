@@ -27,6 +27,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "./activePage";
+import { NEW_FRAME_FILL } from "./frameFill";
 import { FRAME_GAP, frameInfo, nextFramePosition, uniqueFrameName } from "@/core/frames/frames";
 import {
   DEVICE_SPECS,
@@ -154,7 +155,7 @@ export function executeDeviceChoice(deviceKindInput: string): string {
           "frame.width": spec.width,
           "frame.height": spec.height,
           "frame.device": spec.id,
-          "appearance.background.color": "#ffffff",
+          "appearance.background.color": NEW_FRAME_FILL,
         },
       },
       `Create ${spec.label} frame`
@@ -186,7 +187,7 @@ export function executeDeviceChoice(deviceKindInput: string): string {
           "frame.height": spec.height,
           "frame.mirrorOf": action.mainFrameId,
           "frame.device": spec.id,
-          "appearance.background.color": "#ffffff",
+          "appearance.background.color": NEW_FRAME_FILL,
         },
       },
       `Open ${spec.label} linked view`
@@ -209,13 +210,43 @@ export function executeDeviceChoice(deviceKindInput: string): string {
         "frame.width": spec.width,
         "frame.height": spec.height,
         "frame.device": spec.id,
-        "appearance.background.color": "#ffffff",
+        "appearance.background.color": NEW_FRAME_FILL,
       },
     },
     `Create ${name} frame`
   );
   useSelectionStore.getState().select(frameId, "element");
   return frameId;
+}
+
+/**
+ * Adds a frame of a given size from the Frame presets dialog: on the page being looked at (a frame outside the page is
+ * never drawn), to the right of the frames already there, with the soft off-white fill. One undo step; returns its id.
+ */
+export function addPresetFrame(input: { name: string; width: number; height: number }): string {
+  const doc = getDocument();
+  const rootId = activePageRootId();
+  const frames = listTopLevelFrames(doc.layers, rootId);
+  const { x, y } = frames.length === 0 ? { x: 0, y: 0 } : nextFramePosition(frames.map(frameInfo));
+  const name = uniqueFrameName(frames.map(frameInfo), input.name.trim() || "Frame");
+  const id = documentCommands.addLayer(
+    {
+      archetype: "container",
+      parentId: rootId,
+      name,
+      properties: {
+        positioning: "absolute",
+        "frame.x": x,
+        "frame.y": y,
+        "frame.width": Math.round(input.width),
+        "frame.height": Math.round(input.height),
+        "appearance.background.color": NEW_FRAME_FILL,
+      },
+    },
+    `Add frame "${name}"`,
+  );
+  useSelectionStore.getState().select(id, "element");
+  return id;
 }
 
 /**

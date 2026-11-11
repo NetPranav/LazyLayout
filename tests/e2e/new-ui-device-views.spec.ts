@@ -132,6 +132,10 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
 
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
+
     await expect.poll(async () => {
       const frames = await ofKind(page, "container");
       return frames.find((f) => f.properties["frame.width"] === 1440);
@@ -149,6 +153,10 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     // Now click Tablet in Design dropdown
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
 
     // Live linked mirror frame is opened
     await expect.poll(async () => {
@@ -181,11 +189,19 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
 
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
+
     const frames1 = await ofKind(page, "container");
     const desktop = frames1[0];
 
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
 
     const frames2 = await ofKind(page, "container");
     const mirror = frames2.find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
@@ -206,10 +222,18 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     // Setup main frame, mirror and child rectangle
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
     const desktop = (await ofKind(page, "container"))[0];
 
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
     const mirror = (await ofKind(page, "container")).find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
 
     const rect = await rectangle(page, 0.1, 0.1, 0.25, 0.25);
@@ -242,6 +266,10 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
 
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
+
     const framesBefore = await ofKind(page, "container");
     expect(framesBefore).toHaveLength(1);
     const firstDesktop = framesBefore[0];
@@ -255,6 +283,10 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     // Click Desktop again with first desktop frame selected
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
 
     // Verify a new independent frame was created (NOT a mirror)
     await expect.poll(async () => (await ofKind(page, "container")).length, { timeout: 4000 }).toBe(2);
@@ -271,10 +303,18 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     // Create desktop frame and mirror
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
     const desktop = (await ofKind(page, "container"))[0];
 
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
 
     const mirror = (await ofKind(page, "container")).find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
     expect(mirror).toBeDefined();
@@ -305,10 +345,18 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     // Setup main frame, mirror and rectangle
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
     const desktop = (await ofKind(page, "container"))[0];
 
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
     const mirror = (await ofKind(page, "container")).find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
 
     const rect = await rectangle(page, 0.1, 0.1, 0.25, 0.25);
@@ -332,11 +380,20 @@ test.describe("Task I: Device views and live linked mirror frames", () => {
     await ready(page);
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Desktop/i })).toBeHidden();
     const desktop = (await ofKind(page, "container"))[0];
     const rect = await rectangle(page, 0.1, 0.1, 0.25, 0.25);
+    await expect(page.getByRole("menu")).toHaveCount(0); // the Shape menu has finished closing
     await page.locator(`[data-testid="layer-row"][data-layer-id="${desktop.id}"]`).click();
     await page.getByText("Design", { exact: true }).click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+
+    // the menu animates out; the next open must not hit it while it closes
+
+    await expect(page.getByRole("menuitem", { name: /Tablet/i })).toBeHidden();
     const mirror = (await ofKind(page, "container")).find((f) => f.properties["frame.mirrorOf"] === desktop.id)!;
 
     // pick the rectangle inside the mirror: the mirror says it is editing Tablet, the main frame keeps its width

@@ -1,0 +1,25 @@
+Task **B9: Wiring & Integration** has been completed according to [2026-11-08-B9-wiring.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-B9-wiring.md) and [.claude/agents/ui-worker.md](file:///E:/Projects/magnm%20related/lazy%20layout/.claude/agents/ui-worker.md).
+
+### Summary of Completed Work
+1. **Design System Demos (`DesignSystemPage.tsx`)**: Mounted all Wave B (`B1Demos`..`B8Demos`) and Wave F (`F5Demos`, `F6Demos`) demos as titled sections with all states; verified foundations display the 8 official themes, `--ll-syn-*` code syntax tokens, and `--ll-label-1..6` timeline track strip and clip tint tokens.
+2. **Component Exports (`index.ts`)**: Exported `ColorPicker`, `FontPicker`, `FramePresetsPanel`, `OptionsPopover`, `FramePresetsData`, and `FontPickerData`.
+3. **Shell Wiring (`EditorShell.tsx` & `CanvasChrome.tsx`)**:
+   - Passed `onRunCode` invoking `runCode()` from `@/editor/panels/console` to the shell toolbar; verified Run button appends the "Built in" diagnostic line and triggers the `CodePanel` console tab reveal.
+   - Mounted `Spotlight`, `FramePresetsPanel`, and `ColorPicker`/`FontPicker` integrations.
+   - Enforced single 1px hairline junction between side panels and bottom panel in [animations.css](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/animations.css), removing 6px gradient shadows and box shadows.
+4. **Blank Page Chrome**: Added reactive `isBlankPage` detection to hide rulers, guides, artboard outline, and selection overlays when a page has no layers (`.app.blank[data-mode="design"]`).
+5. **Responsive Shell (390px)**: Collapsed panels at `<= 768px` with safe initialization and non-looping resize handler; toolbar lifts 72px above zoom bar (`tb-hi`); `.ll-tdiv` layered in `animations.css` and unused `.ll-top` removed.
+6. **View Options Popover (`ViewOptionsPopover.tsx`)**: Standardized 320px width (`#vpop`), organized Grid, Snapping, Canvas, Behaviour, Appearance sections with hairlines, added scroll lock during spring open and reset `scrollTop = 0` to prevent scroll jumping.
+7. **Pickers & Glyphs (`ColorSwatchField.tsx`, `Icon.tsx`)**:
+   - Added `onOpenPicker` and `withPicker` on `ColorSwatchField` to open `ColorPicker` anchored to the swatch button; fixed React 19 compiler ref mutations.
+   - Added `MultiLayerGlyph` matching prototype P `<symbol id="multi">`, registered in `ICON_REGISTRY` for `"multi"` / `"multi-layer"`, added ReactNode `glyph` prop support, and removed unsafe `any` casts.
+8. **Cleanups & Screenshots**:
+   - `ModeTabs.tsx:120`: `ll:opacity-40` -> `ll:opacity-disabled`.
+   - `Spotlight.tsx`: `recentItems` starts empty; deduplicated registry command titles against handwritten commands.
+   - Re-shot stale 1024 and 390 screenshots for B2, B5, B6, B8.
+   - Generated 12 picker screenshots (1440, 1024, 390 in Warm and Darkroom, app vs prototype) saved to [DOCS/UI/handoffs/screenshots/b9/](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b9).
+9. **Verification**:
+   - `npx tsc --noEmit`: 0 errors across the entire codebase.
+   - `npx eslint`: 0 errors and 0 warnings across all modified lane files.
+
+Handoff document written to [DOCS/UI/handoffs/2026-11-08-1215-B9.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-1215-B9.md). No changes committed.

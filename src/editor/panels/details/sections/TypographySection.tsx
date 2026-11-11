@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   AlignLeft,
   AlignCenter,
@@ -14,10 +14,15 @@ import {
   Underline,
   Strikethrough,
   Minus,
+  Split,
+  Sparkles,
+  ArrowUpToLine,
 } from "lucide-react";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
+import { FontPicker } from "@/editor/components/FontPicker";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
+import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
 import { Slider } from "@/editor/components/Slider";
@@ -48,7 +53,9 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
     "";
 
   // Typography properties
+  const isFamilyMixed = getValue?.("typography.fontFamily") === null;
   const fontFamily = (getValue?.("typography.fontFamily") as string) || "Geist";
+  const isWeightMixed = getValue?.("typography.fontWeight") === null;
   const rawWeight = (getValue?.("typography.fontWeight") as string) || "600";
   const fontWeight = String(rawWeight);
 
@@ -70,6 +77,16 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
     layer.archetype === "button" ||
     (layer.archetype as string) === "counter";
 
+  const [isFontPickerOpen, setIsFontPickerOpen] = useState(false);
+  const fontAnchorRef = useRef<HTMLDivElement>(null);
+  const committedFontRef = useRef(fontFamily);
+
+  useEffect(() => {
+    if (!isFontPickerOpen) {
+      committedFontRef.current = fontFamily;
+    }
+  }, [fontFamily, isFontPickerOpen]);
+
   const isSingleText = layer?.archetype === "text";
   const docLayers = getDocument().layers;
   const isLettersDirect = isLettersGroup(layer, docLayers);
@@ -86,39 +103,37 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
       {/* Split into letters & Animate / Stand / Depth controls */}
       {(isSingleText || isLetters) && (
         <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-          <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-            <Button
-              size="sm"
+          <div className="ll:grid ll:grid-cols-3 ll:gap-2 ll:w-full">
+            <IconButton
+              size="md"
               variant="secondary"
-              className="ll:flex-1"
+              className="ll:w-full"
               disabled={!isSingleText}
+              aria-label="Split into letters"
+              tooltip={isSingleText ? "Split into letters" : "Already split into letters"}
+              icon={<Icon icon={Split} size={14} />}
               onClick={() => void invokeCommand("text.splitLetters")}
-              title={isSingleText ? "Split text into one layer per letter" : "Already split into letters"}
-            >
-              Split into letters
-            </Button>
-            {isLetters && (
-              <>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ll:flex-1"
-                  onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
-                  title="Animate letters with staggered entrance"
-                >
-                  Animate letters
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ll:flex-1"
-                  onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
-                  title="Stand letters up in 3D on a ground plane"
-                >
-                  Stand letters up
-                </Button>
-              </>
-            )}
+            />
+            <IconButton
+              size="md"
+              variant="secondary"
+              className="ll:w-full"
+              disabled={!isLetters}
+              aria-label="Animate letters"
+              tooltip="Animate letters: staggered entrance"
+              icon={<Icon icon={Sparkles} size={14} />}
+              onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
+            />
+            <IconButton
+              size="md"
+              variant="secondary"
+              className="ll:w-full"
+              disabled={!isLetters}
+              aria-label="Stand letters up"
+              tooltip="Stand letters up in 3D on a ground plane"
+              icon={<Icon icon={ArrowUpToLine} size={14} />}
+              onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
+            />
           </div>
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
@@ -145,8 +160,8 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
           )}
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-              <span className="ll:text-micro ll:text-muted ll:w-10">Depth</span>
-              <div className="ll:flex-1">
+              <span className="ll:w-10 ll:shrink-0 ll:text-small ll:font-normal ll:text-muted">Depth</span>
+              <div className="ll:flex-1 ll:min-w-0">
                 <Slider
                   min={0}
                   max={100}
@@ -167,6 +182,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
                   }}
                 />
               </div>
+              <span className="ll:w-10 ll:shrink-0 ll:text-right ll:font-mono ll:text-micro ll:text-muted">{depthValue}px</span>
             </div>
           )}
         </div>
@@ -191,22 +207,66 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
         </div>
       )}
 
-      {/* Font Family Select */}
-      <Select
-        size="sm"
-        aria-label="Font family"
-        value={fontFamily}
-        options={FONT_FAMILY_OPTIONS}
-        searchable
-        onChange={(val) => onUpdateProp?.("typography.fontFamily", val)}
-      />
+      {/* Font Family Select & FontPicker */}
+      <div
+        ref={fontAnchorRef}
+        className="ll:relative ll:w-full"
+        onClickCapture={(e) => {
+          if (!e.currentTarget.contains(e.target as Node)) return;
+          e.stopPropagation();
+          setIsFontPickerOpen(true);
+        }}
+      >
+        <Select
+          size="sm"
+          aria-label="Font family"
+          value={fontFamily}
+          options={FONT_FAMILY_OPTIONS}
+          mixed={isFamilyMixed}
+          onChange={(val) => {
+            committedFontRef.current = val;
+            onUpdateProps?.({
+              "typography.fontFamily": val,
+              fontFamily: val,
+            });
+          }}
+        />
+        <FontPicker
+          open={isFontPickerOpen}
+          value={fontFamily}
+          anchorRef={fontAnchorRef}
+          onPreview={(previewFamily) => {
+            const target = previewFamily || committedFontRef.current;
+            onUpdateProps?.({
+              "typography.fontFamily": target,
+              fontFamily: target,
+            });
+          }}
+          onChange={(family: string) => {
+            committedFontRef.current = family;
+            onUpdateProps?.({
+              "typography.fontFamily": family,
+              fontFamily: family,
+            });
+          }}
+          onClose={() => {
+            setIsFontPickerOpen(false);
+            onUpdateProps?.({
+              "typography.fontFamily": committedFontRef.current,
+              fontFamily: committedFontRef.current,
+            });
+          }}
+        />
+      </div>
 
       {/* Font Weight & Size Row */}
       <div className="ll:grid ll:grid-cols-2 ll:gap-2">
         <Select
           size="sm"
           aria-label="Font weight"
-          value={fontWeight}
+          value={isWeightMixed ? undefined : fontWeight}
+          placeholder={isWeightMixed ? "Mixed" : undefined}
+          mixed={isWeightMixed}
           options={[
             { value: "100", label: "W 100 Thin" },
             { value: "200", label: "W 200 X-Light" },
@@ -333,112 +393,133 @@ export const TypographyMore: React.FC<InspectorSectionProps> = ({
   const fontLoading = (getValue?.("typography.fontLoading") as string) || "swap";
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* Text Case & Italic */}
-      <div className="ll:flex ll:items-center ll:gap-2">
-        <div className="ll:flex-1">
+    <div className="ll:flex ll:flex-col ll:w-full">
+      {/* Group 1: Case & Decoration */}
+      <div className="ll-dmg">
+        <div className="ll-dgl">
+          <span className="ll-dlbl">Case</span>
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <div className="ll:flex-1">
+              <SegmentedControl
+                size="sm"
+                ariaLabel="Text case"
+                value={textTransform}
+                onChange={(val) => onUpdateProp?.("typography.textTransform", val)}
+                options={[
+                  { value: "none", label: "—", ariaLabel: "No case change" },
+                  { value: "uppercase", label: "AG", ariaLabel: "Uppercase" },
+                  { value: "lowercase", label: "ag", ariaLabel: "Lowercase" },
+                  { value: "capitalize", label: "Ag", ariaLabel: "Title case" },
+                ]}
+              />
+            </div>
+            <IconButton
+              size="md"
+              variant={isItalic ? "subtle" : "ghost"}
+              pressed={isItalic}
+              aria-label="Italic"
+              tooltip="Italic"
+              onClick={() =>
+                onUpdateProp?.(
+                  "typography.fontStyle",
+                  isItalic ? "normal" : "italic"
+                )
+              }
+              icon={<Icon icon={Italic} size={14} />}
+              className="ll:border ll:border-border"
+            />
+          </div>
+        </div>
+
+        <div className="ll-dgl">
+          <span className="ll-dlbl">Decoration</span>
           <SegmentedControl
             size="sm"
-            ariaLabel="Text case"
-            value={textTransform}
-            onChange={(val) => onUpdateProp?.("typography.textTransform", val)}
+            ariaLabel="Text decoration"
+            value={textDecoration}
+            onChange={(val) => onUpdateProp?.("typography.textDecoration", val)}
             options={[
-              { value: "none", label: "—", ariaLabel: "No case change" },
-              { value: "uppercase", label: "AG", ariaLabel: "Uppercase" },
-              { value: "lowercase", label: "ag", ariaLabel: "Lowercase" },
-              { value: "capitalize", label: "Ag", ariaLabel: "Title case" },
+              {
+                value: "none",
+                icon: <Icon icon={Minus} size={14} />,
+                ariaLabel: "No decoration",
+              },
+              {
+                value: "underline",
+                icon: <Icon icon={Underline} size={14} />,
+                ariaLabel: "Underline",
+              },
+              {
+                value: "line-through",
+                icon: <Icon icon={Strikethrough} size={14} />,
+                ariaLabel: "Strikethrough",
+              },
             ]}
           />
         </div>
-        <button
-          type="button"
-          aria-pressed={isItalic}
-          aria-label="Italic"
-          title="Italic"
-          onClick={() =>
-            onUpdateProp?.(
-              "typography.fontStyle",
-              isItalic ? "normal" : "italic"
-            )
-          }
-          className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-            isItalic
-              ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-              : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-          }`}
-        >
-          <Icon icon={Italic} size={14} />
-        </button>
       </div>
 
-      {/* Text Decoration: None, Underline, Strikethrough */}
-      <SegmentedControl
-        size="sm"
-        ariaLabel="Text decoration"
-        value={textDecoration}
-        onChange={(val) => onUpdateProp?.("typography.textDecoration", val)}
-        options={[
-          {
-            value: "none",
-            icon: <Icon icon={Minus} size={14} />,
-            ariaLabel: "No decoration",
-          },
-          {
-            value: "underline",
-            icon: <Icon icon={Underline} size={14} />,
-            ariaLabel: "Underline",
-          },
-          {
-            value: "line-through",
-            icon: <Icon icon={Strikethrough} size={14} />,
-            ariaLabel: "Strikethrough",
-          },
-        ]}
-      />
+      {/* Group 2: Word, Overflow, Wrap */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Word</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label=""
+              aria-label="Word spacing"
+              value={wordSpacing}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("typography.wordSpacing", v)}
+            />
+          </div>
+        </div>
 
-      {/* Word Spacing */}
-      <NumberField
-        size="sm"
-        className="ll:*:!text-micro ll:!gap-2"
-        label="Word"
-        aria-label="Word spacing"
-        value={wordSpacing}
-        step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-        onChange={(v) => onUpdateProp?.("typography.wordSpacing", v)}
-      />
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Overflow</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Text overflow"
+              title="What happens to text that does not fit: Clip cuts it off, Ellipsis ends it with three dots (on one line)."
+              value={textOverflow}
+              options={TEXT_OVERFLOW_OPTIONS}
+              onChange={(v) => onUpdateProp?.("typography.textOverflow", v)}
+            />
+          </div>
+        </div>
 
-      {/* Text Overflow & White Space */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Overflow"
-          aria-label="Text overflow"
-          title="What happens to text that does not fit: Clip cuts it off, Ellipsis ends it with three dots (on one line)."
-          value={textOverflow}
-          options={TEXT_OVERFLOW_OPTIONS}
-          onChange={(v) => onUpdateProp?.("typography.textOverflow", v)}
-        />
-        <Select
-          size="sm"
-          label="Wrap"
-          aria-label="White space"
-          title="Normal wraps at the box edge; No wrap keeps one line and lets it run past the box; Pre keeps your spaces and line breaks."
-          value={whiteSpace}
-          options={WHITE_SPACE_OPTIONS}
-          onChange={(v) => onUpdateProp?.("typography.whiteSpace", v)}
-        />
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Wrap</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="White space"
+              title="Normal wraps at the box edge; No wrap keeps one line and lets it run past the box; Pre keeps your spaces and line breaks."
+              value={whiteSpace}
+              options={WHITE_SPACE_OPTIONS}
+              onChange={(v) => onUpdateProp?.("typography.whiteSpace", v)}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Font Loading */}
-      <Select
-        size="sm"
-        label="Loading"
-        aria-label="Font loading"
-        title="How the text shows while its font downloads: Swap shows a stand-in at once, Block waits, Fallback waits briefly, Optional may skip the font."
-        value={fontLoading}
-        options={FONT_LOADING_OPTIONS}
-        onChange={(v) => onUpdateProp?.("typography.fontLoading", v)}
-      />
+      {/* Group 3: Loading */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Loading</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Font loading"
+              title="How the text shows while its font downloads: Swap shows a stand-in at once, Block waits, Fallback waits briefly, Optional may skip the font."
+              value={fontLoading}
+              options={FONT_LOADING_OPTIONS}
+              onChange={(v) => onUpdateProp?.("typography.fontLoading", v)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

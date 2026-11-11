@@ -1,0 +1,35 @@
+Task **A (L0b): Foundation tokens and shared motion table** is complete.
+
+### Summary of Changes
+
+1. **Tokens (`src/editor/styles/tokens.css` & `tailwind.css`)**:
+   - Added `--ll-syn-kw/str/num/fn/tag/attr/type/punc/com` across all 8 themes, copied exactly from prototype lines 81–88.
+   - Replaced `--ll-label-1..6` and `-tint` per theme with prototype lines 1128Task `DOCS/UI/tasks/2026-11-08-A-foundation.md` is complete.
+
+### Summary of Work
+
+1. **Tokens & Theme Defaults** ([`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css), [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css)):
+   - Added `--ll-syn-kw/str/num/fn/tag/attr/type/punc/com` for all 8 themes, copied exactly from prototype lines 81–88.
+   - Replaced `--ll-label-1..6` and `-tint` per theme with exact values from prototype lines 1128–1135 (all 8 sets with tints).
+   - Configured Warm as the default light theme (`:root, :root[data-theme="warm"], [data-theme="warm"]`) and Darkroom as the default dark theme.
+   - Removed conflicting theme overrides in lane L5 so per-theme label tokens apply cleanly across all 8 themes.
+   - Added 8 new lane blocks: `B1 pickers`, `B2 layers`, `B3 inspector`, `B4 canvas`, `B5 chrome`, `B6 code`, `B7 motion`, `B8 topbar`. Seeded B1 (picker width 304, popover gap 8, hairline), B4 (cursor 32px), B5 (spotlight width 560, row height 32), B7 none.
+   - Exposed syntax highlight tokens in `@theme inline` in `tailwind.css` (utilities `ll:text-syn-kw`, `ll:bg-syn-kw`, etc.) and seeded B-lane properties.
+
+2. **Logo Loader & Theme Toggle** ([`animations.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/animations.css), [`ThemeToggle.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ThemeToggle.tsx)):
+   - Tuned trace loader keyframes in `animations.css` to match prototype lines 96–100 (`@keyframes ll-tro` 88%–100% at 0 offset, `.tfl` opacity 0, `.tro` opacity 1).
+   - Updated `ThemeToggle.tsx` picker order (Warm first in Light, Darkroom first in Dark), server and client default themes to `warm`, and added `toggleTheme()` toggling Warm <-> Darkroom.
+
+3. **Shared Motion Preset Table** ([`motion/presets.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion/presets.ts), [`motion/feel.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion/feel.ts), [`motion/index.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/motion/index.ts)):
+   - Unified into ONE shared preset table (`MOTION_PRESETS`) with exact prototype values from lines 3027–3031, aliasing `PLAYFUL_PRESETS = MOTION_PRESETS` to prevent duplicate tables while retaining Nook backwards-compatibility properties.
+   - Exported typed `getMotion()` accessor returning `{ preset, current, feel, reduce, springEase, presets }` matching prototype `window.LLMotion` behavior without polluting global scope.
+
+4. **Component Exports & Placeholders** ([`components/index.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/index.ts)):
+   - Created minimal placeholder files [`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx), [`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx), [`FramePresetsPanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsPanel.tsx), and [`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx).
+   - Added export lines to `components/index.ts` so later lanes only create or replace the implementation.
+
+5. **Verification & Handoff**:
+   - `npx tsc --noEmit` verified: zero errors in `src/editor`.
+   - Headless Playwright screenshots captured at 1440, 1024, and 390 wide in Warm and Darkroom for App and Prototype P side-by-side, plus all 8 theme swatches on the design system page, saved in `DOCS/UI/handoffs/screenshots/foundation/` and `DOCS/UI/handoffs/screenshots/A-foundation/`.
+   - Handoff written to [`DOCS/UI/handoffs/2026-11-08-A-foundation.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-A-foundation.md).
+   - No git commits created.

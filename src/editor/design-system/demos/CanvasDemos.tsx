@@ -243,6 +243,7 @@ export function ViewOptionsPopoverDemo() {
       <div className="ll:relative ll:h-128 ll:rounded-md ll:border ll:border-border ll:bg-surface-canvas ll:flex ll:items-center ll:justify-center">
         <ViewOptionsPopover
           open={true}
+          inline={true}
           onClose={() => {}}
           gridStyle={gridStyle}
           onGridStyleChange={setGridStyle}

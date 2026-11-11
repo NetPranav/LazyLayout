@@ -1,8 +1,11 @@
 import type { CollabUser } from "@/editor/components/AvatarStack";
 
-export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image" | "pen" | "pencil";
+export type CanvasTool = "select" | "hand" | "frame" | "shape" | "text" | "image" | "pen" | "pencil" | "anchor";
 
 export type ShapeTool = "box" | "circle" | "line" | "arrow" | "poly" | "star";
+
+export type ExtendedCanvasTool = CanvasTool | "split" | "pen";
+export type ExtendedShapeTool = ShapeTool | "pen";
 
 export type GridStyle = "dots" | "lines" | "none";
 
@@ -42,6 +45,14 @@ export interface CanvasChromeProps {
   isInsertOpen?: boolean;
   onToggleInsert?: (open?: boolean) => void;
   onInsertItem?: (itemName: string) => void;
+
+  /** Spotlight command panel state */
+  isSpotlightOpen?: boolean;
+  onToggleSpotlight?: (open?: boolean) => void;
+
+  /** Frame presets panel state (Wave B1) */
+  isFramePresetsOpen?: boolean;
+  onToggleFramePresets?: (open?: boolean) => void;
 
   /** AI prompt box overlay state */
   isAiBoxOpen?: boolean;
@@ -83,8 +94,12 @@ export interface CanvasChromeProps {
   onToggleInspectMode?: (inspect: boolean) => void;
   canvasPan?: boolean;
   onToggleCanvasPan?: (pan: boolean) => void;
+  panMethod?: "space" | "middle" | "blank";
+  onPanMethodChange?: (method: "space" | "middle" | "blank") => void;
   canvasZoom?: boolean;
   onToggleCanvasZoom?: (zoom: boolean) => void;
+  zoomSpeed?: "normal" | "fast";
+  onZoomSpeedChange?: (speed: "normal" | "fast") => void;
   worldAxes?: boolean;
   onToggleWorldAxes?: (axes: boolean) => void;
   elementDragging?: boolean;
@@ -112,6 +127,9 @@ export interface CanvasChromeProps {
   panelsCollapsed?: boolean;
   onTogglePanels?: () => void;
   onPreview?: () => void;
+
+  /** Run generated code (Code mode toolbar action) */
+  onRunCode?: () => void;
 
   /** Collaborator avatars stack (.fbar.fpeople) shown when entries exist */
   users?: readonly CollabUser[];

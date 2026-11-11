@@ -74,7 +74,8 @@ test.describe("text image fill (Phase 35/37 Task A)", () => {
     const fillRow = page.locator('[data-k="fill"]').first();
     await expect(fillRow).toBeVisible();
 
-    const swatchButton = fillRow.locator('[data-lead]').first();
+    // the settings button of the row opens the popover (the swatch opens the colour picker)
+    const swatchButton = fillRow.getByRole("button", { name: "Fill 1 settings" });
     await swatchButton.click();
 
     // Change paint type to Image
@@ -114,7 +115,7 @@ test.describe("text image fill (Phase 35/37 Task A)", () => {
     expect(["rgba(0, 0, 0, 0)", "transparent"]).toContain(boxBg);
 
     // 4. Remove the fill via the inspector minus button
-    const removeButton = fillRow.locator('[data-rm]').first();
+    const removeButton = fillRow.getByRole("button", { name: "Remove fill 1" });
     await removeButton.click();
 
     // 5. Verify that removing the fill restores the solid colour and removes background-clip text

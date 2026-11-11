@@ -109,6 +109,12 @@ test.describe("Warp mesh", () => {
     expect(restoredMeshProp).not.toEqual(meshProp);
 
     // 5. Change grid size to 4x4 (16 points, 3x3 = 9 tiles)
+    if (await moreBtn.isVisible()) {
+      const expanded = await moreBtn.getAttribute("aria-expanded");
+      if (expanded !== "true") {
+        await moreBtn.click();
+      }
+    }
     const gridSelect = page.getByRole("combobox", { name: "Mesh grid size" });
     await gridSelect.click();
     await page.getByRole("option", { name: /^4[×x]4/ }).click();
@@ -121,6 +127,12 @@ test.describe("Warp mesh", () => {
     await expect(page.getByRole("button", { name: "Mesh point row 3 column 3" })).toBeVisible();
 
     // 6. Remove mesh puts the layer back to plain
+    if (await moreBtn.isVisible()) {
+      const expanded = await moreBtn.getAttribute("aria-expanded");
+      if (expanded !== "true") {
+        await moreBtn.click();
+      }
+    }
     const removeBtn = page.getByRole("button", { name: "Remove warp mesh" });
     await expect(removeBtn).toBeVisible();
     await removeBtn.click();

@@ -7,7 +7,8 @@ import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
-import { ColorSwatch } from "../controls/ColorSwatch";
+import { RowColorField } from "../controls/RowColorField";
+import { OptionGroup, OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps, EffectItem } from "../types";
 
 export interface EffectsSectionProps extends InspectorSectionProps {
@@ -39,8 +40,6 @@ const FIELD_TITLE: Record<string, string> = {
 const numberField = (label: string, value: number, onChange: (v: number) => void) => (
   <NumberField
     size="sm"
-    className="ll:*:!text-micro ll:!gap-1"
-    label={label}
     title={FIELD_TITLE[label]}
     aria-label={`Effect ${label}`}
     value={value}
@@ -201,47 +200,32 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
               <Icon icon={Minus} size={14} />
             </button>
 
-            <RowSettingsPopover isOpen={isOpen} title="Effects" onClose={() => setActivePopoverId(null)}>
-              <Select
-                aria-label="Effect type"
-                options={EFFECT_OPTIONS}
-                value={effect.type}
-                width="100%"
-                size="sm"
-                onChange={(value) => updateEffect(effect.id, { type: value as EffectItem["type"] })}
-              />
-              {isShadow ? (
-                <>
-                  <div className="ll:flex ll:items-center ll:gap-1">
-                    <ColorSwatch label="Shadow colour picker" hex={effect.hex} onChange={(h) => updateEffect(effect.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
-                    <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
-                      <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        aria-label="Shadow hex"
-                        value={effect.hex}
-                        onChange={(e) =>
-                          updateEffect(effect.id, {
-                            hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
-                          })
-                        }
-                        className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="ll:grid ll:grid-cols-4 ll:gap-1">
-                    {numberField("X", effect.x, (v) => updateEffect(effect.id, { x: v }))}
-                    {numberField("Y", effect.y, (v) => updateEffect(effect.id, { y: v }))}
-                    {numberField("B", effect.blur, (v) => updateEffect(effect.id, { blur: v }))}
-                    {numberField("S", effect.spread, (v) => updateEffect(effect.id, { spread: v }))}
-                  </div>
-                </>
-              ) : (
-                <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-                  {numberField("Amt", effect.amount, (v) => updateEffect(effect.id, { amount: v }))}
-                </div>
-              )}
+            <RowSettingsPopover isOpen={isOpen} title="Effects" onClose={() => setActivePopoverId((cur) => (cur === effect.id ? null : cur))}>
+              <OptionGroup>
+                <OptionRow label="Type">
+                  <Select
+                    aria-label="Effect type"
+                    options={EFFECT_OPTIONS}
+                    value={effect.type}
+                    width="100%"
+                    size="sm"
+                    onChange={(value) => updateEffect(effect.id, { type: value as EffectItem["type"] })}
+                  />
+                </OptionRow>
+                {isShadow ? (
+                  <>
+                    <OptionRow label="Colour">
+                      <RowColorField hex={effect.hex} label="Shadow colour picker" hexLabel="Shadow hex" onChange={(hex) => updateEffect(effect.id, { hex })} />
+                    </OptionRow>
+                    <OptionRow label="X">{numberField("X", effect.x, (v) => updateEffect(effect.id, { x: v }))}</OptionRow>
+                    <OptionRow label="Y">{numberField("Y", effect.y, (v) => updateEffect(effect.id, { y: v }))}</OptionRow>
+                    <OptionRow label="Blur">{numberField("B", effect.blur, (v) => updateEffect(effect.id, { blur: v }))}</OptionRow>
+                    <OptionRow label="Spread">{numberField("S", effect.spread, (v) => updateEffect(effect.id, { spread: v }))}</OptionRow>
+                  </>
+                ) : (
+                  <OptionRow label="Amount">{numberField("Amt", effect.amount, (v) => updateEffect(effect.id, { amount: v }))}</OptionRow>
+                )}
+              </OptionGroup>
             </RowSettingsPopover>
           </div>
         );

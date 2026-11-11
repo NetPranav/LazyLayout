@@ -1,0 +1,26 @@
+Completed the **Retry 2** section of [DOCS/UI/tasks/2026-11-08-B3-inspector.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-B3-inspector.md).
+
+### Summary of Changes
+
+1. **Options Popover Rows Matching Prototype P (`72px` Label Column)**:
+   - Updated `PositionMore` in [PositionSection.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/PositionSection.tsx): rows are now structured as `label | field` with a 72px label column using `.ll-dtrow` and `.ll-dlbl` (`Type`, `Z`, `Scale`, `Skew`, `3D rotate`, `Origin`). Removed stray separate "Rot X" and "Rot Y" rows in favor of a single `3D rotate` row with `X` and `Y` fields matching P. Value display for scale whole numbers matches P (`1` rather than `1.00`).
+   - Updated `TypographyMore` in [TypographySection.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/TypographySection.tsx): rows are structured into hairline-divided groups (`Case` & `Decoration`, `Word`, `Overflow`, `Wrap`, and `Loading`) with the 72px label column.
+   - Updated `LayoutMore` in [LayoutSection.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/LayoutSection.tsx) and `AppearanceMore` in [AppearanceSection.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/details/sections/AppearanceSection.tsx) to match the same 72px column grid and hairline dividers between `.ll-dmg` groups.
+   - Updated [RightPanelSection.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/right-panel/RightPanelSection.tsx) to pass `className="llm-pop"` to [`OptionsPopover`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx) without editing [`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx).
+   - Updated [B3Demos.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/B3Demos.tsx) floating surface demo to use `.ll-dmg` and `.ll-dtrow`.
+
+2. **[tokens.css](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css) & [tailwind.css](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css) Lane B3 Updates**:
+   - Removed `.vpop`, `[aria-label="View options"]`, and `.ppop` from the floating surface hairline selector.
+   - Replaced inline `0.9s` / `ease-out` in the shimmer animation with `--ll-dur-mixed-shimmer: 900ms;` and `--ll-ease-mixed-shimmer: var(--ll-ease-pop);`.
+   - Added popover header title typography rule ensuring sans 11px/500 muted (`var(--ll-font-sans)`, `var(--ll-text-micro-size)`, weight 500, normal tracking) instead of mono.
+   - Added `--ll-w-more-label: 72px;`, `.ll-dtrow`, `.ll-dlbl`, `.ll-dgl`, `.ll-dtc`, and `.ll-dmg` hairline divider rules (`.ll-dmg + .ll-dmg`).
+   - Added `--width-more-label: var(--ll-w-more-label);` inside the B3 block of [tailwind.css](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+
+3. **Verification & Screenshots**:
+   - Ran `npx tsc --noEmit`: 0 errors in lane files (only the pre-existing external `.next/types/validator.ts` generated error remains).
+   - Re-shot Position and Typography popovers in Warm and Darkroom themes at 1440 with headless Playwright and verified against P:
+     - [app-options-popover-position-warm-1440.png](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b3/app-options-popover-position-warm-1440.png)
+     - [app-options-popover-position-darkroom-1440.png](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b3/app-options-popover-position-darkroom-1440.png)
+     - [app-options-popover-typography-warm-1440.png](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b3/app-options-popover-typography-warm-1440.png)
+     - [app-options-popover-typography-darkroom-1440.png](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b3/app-options-popover-typography-darkroom-1440.png)
+   - Updated the single handoff document at [2026-11-08-0615-B3.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0615-B3.md). No files committed.

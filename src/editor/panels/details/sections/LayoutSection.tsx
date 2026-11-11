@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Move,
-  Rows,
   LayoutGrid,
   ArrowDown,
   ArrowRight,
@@ -31,7 +30,8 @@ import {
   ALIGN_SELF_OPTIONS,
 } from "../constants";
 import type { InspectorSectionProps } from "../types";
-import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing } from "@/core/editing/layoutOps";
+import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing, setGridCell, setStack } from "@/core/editing/layoutOps";
+import { useDocument } from "@/core/store/useDocumentStore";
 import { transaction } from "@/core/editing/editOps";
 
 /** The size a layer is really drawn at, for a W or H the document does not hold (Fill and Hug work it out when drawn). */
@@ -89,6 +89,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const heightVal = typeof rawH === "number" ? rawH : rawH === null ? null : INSPECTOR_CONSTANTS.DEFAULT_HEIGHT;
 
   // Sizing constraints & clip
+  const isWidthSizingMixed = getValue?.("sizing.horizontal") === null;
+  const isHeightSizingMixed = getValue?.("sizing.vertical") === null;
   const sizingH = (getValue?.("sizing.horizontal") as string) || "fixed";
   const sizingV = (getValue?.("sizing.vertical") as string) || "fixed";
   const isClipped = (getValue?.("layout.overflowX") as string) === "hidden";
@@ -103,16 +105,29 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   // Frame layout mode: free, stack, grid
   const layoutMode: "free" | "stack" | "grid" = isGrid(layer) ? "grid" : isAutoLayout(layer) ? "stack" : "free";
 
+  // What lays this layer out: its parent frame's stack or grid decides which child controls apply.
+  const parentKind = useDocument((d) => {
+    const parent = layer?.parentId ? d.layers[layer.parentId] : undefined;
+    return isGrid(parent) ? "grid" : isAutoLayout(parent) ? "stack" : null;
+  });
+  const inFlow = parentKind !== null && (getValue?.("positioning") as string) !== "absolute";
+
   // Flex Direction & Distribution (frame only)
   const flexDir = (getValue?.("layout.flexDirection") as string) || "column";
   const isVertical = flexDir.startsWith("column");
   const flexWrap = (getValue?.("layout.flexWrap") as string) || "nowrap";
   const isWrapped = flexWrap === "wrap";
   const justifyContent = (getValue?.("layout.justifyContent") as string) || "flex-start";
-  const alignItems = (getValue?.("layout.alignItems") as string) || "center";
+  const alignItems = (getValue?.("layout.alignItems") as string) || "flex-start";
   const isSpaceBetween = justifyContent === "space-between";
 
-  const matrixIndex = getAlignmentMatrixIndex(justifyContent, alignItems);
+  // The 3x3 grid is read as the screen: across is left to right, down is top to bottom. In a column the main axis (justify) runs down.
+  const matrixIndex = isVertical ? getAlignmentMatrixIndex(alignItems, justifyContent) : getAlignmentMatrixIndex(justifyContent, alignItems);
+  const alignSelf = (getValue?.("layout.alignSelf") as string) || "auto";
+  const flexGrow = (getValue?.("layout.flexGrow") as number) ?? 0;
+  const flexShrink = (getValue?.("layout.flexShrink") as number) ?? 1;
+  const colSpan = (getValue?.("layout.gridColumnSpan") as number) ?? 1;
+  const rowSpan = (getValue?.("layout.gridRowSpan") as number) ?? 1;
 
   // Spacing values (frame only)
   const gap = (getValue?.("layout.gap") as number) ?? 24;
@@ -126,13 +141,18 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const rowGap = (getValue?.("layout.rowGap") as number) ?? 16;
 
   // The real auto layout: a stack or grid places its children; going back to Free leaves each child where it is.
-  const handleLayoutModeChange = (mode: "free" | "stack" | "grid") => {
-    if (layoutMode === mode) return;
+  const direction: "free" | "row" | "column" | "grid" = layoutMode === "stack" ? (isVertical ? "column" : "row") : layoutMode;
+  const handleDirectionChange = (next: "free" | "row" | "column" | "grid") => {
+    if (direction === next) return;
     transaction("Change layout", () => {
-      if (layoutMode === "stack") removeAutoLayout(ids);
-      if (layoutMode === "grid") removeGridLayout(ids);
-      if (mode === "stack") addAutoLayout(ids);
-      if (mode === "grid") addGridLayout(ids);
+      const toMode = next === "row" || next === "column" ? "stack" : next;
+      if (layoutMode !== toMode) {
+        if (layoutMode === "stack") removeAutoLayout(ids);
+        if (layoutMode === "grid") removeGridLayout(ids);
+        if (toMode === "stack") addAutoLayout(ids);
+        if (toMode === "grid") addGridLayout(ids);
+      }
+      if (next === "row" || next === "column") setStack(ids, { direction: next });
     });
   };
 
@@ -141,22 +161,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
     justify: "flex-start" | "center" | "flex-end",
     align: "flex-start" | "center" | "flex-end"
   ) => {
-    onUpdateProps?.({
-      "layout.justifyContent": justify,
-      "layout.alignItems": align,
-    });
+    onUpdateProps?.(
+      isVertical && layoutMode === "stack"
+        ? { "layout.justifyContent": align, "layout.alignItems": justify }
+        : { "layout.justifyContent": justify, "layout.alignItems": align }
+    );
   };
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
-      {/* If frame: Free / Stack / Grid mode segmented switch */}
+      {/* If frame: Free / Row / Column / Grid */}
       {isFrame && (
         <SegmentedControl
           size="sm"
           className="ll:w-full ll:*:flex-1"
-          ariaLabel="Layout mode"
-          value={layoutMode}
-          onChange={handleLayoutModeChange}
+          ariaLabel="Layout direction"
+          value={direction}
+          onChange={handleDirectionChange}
           options={[
             {
               value: "free",
@@ -166,11 +187,18 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               title: "Free layout (absolute placement)",
             },
             {
-              value: "stack",
-              label: "Auto",
-              icon: <Icon icon={Rows} size={13} />,
-              ariaLabel: "Auto Layout stack",
-              title: "Auto Layout (flexbox stack)",
+              value: "row",
+              label: "Row",
+              icon: <Icon icon={ArrowRight} size={13} />,
+              ariaLabel: "Auto layout row",
+              title: "Auto layout, children side by side",
+            },
+            {
+              value: "column",
+              label: "Column",
+              icon: <Icon icon={ArrowDown} size={13} />,
+              ariaLabel: "Auto layout column",
+              title: "Auto layout, children one under another",
             },
             {
               value: "grid",
@@ -217,16 +245,20 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           size="sm"
           aria-label="Width sizing"
           title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
-          value={sizingH}
+          value={isWidthSizingMixed ? undefined : sizingH}
+          placeholder={isWidthSizingMixed ? "Mixed" : undefined}
           options={WIDTH_SIZING_OPTIONS}
+          mixed={isWidthSizingMixed}
           onChange={(val) => setChildSizing(ids, { horizontal: val as "fixed" | "hug" | "fill" })}
         />
         <Select
           size="sm"
           aria-label="Height sizing"
           title="Fixed keeps the number you type, Hug shrinks to fit the content, Fill stretches to the parent (inside an auto-layout frame)."
-          value={sizingV}
+          value={isHeightSizingMixed ? undefined : sizingV}
+          placeholder={isHeightSizingMixed ? "Mixed" : undefined}
           options={HEIGHT_SIZING_OPTIONS}
+          mixed={isHeightSizingMixed}
           onChange={(val) => setChildSizing(ids, { vertical: val as "fixed" | "hug" | "fill" })}
         />
         <button
@@ -248,56 +280,69 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         </button>
       </div>
 
+      {/* A child of a stack: how it fills the line. A child of a grid: how many cells it covers. */}
+      {inFlow && parentKind === "stack" && (
+        <div className="ll:grid ll:grid-cols-3 ll:gap-2 ll:w-full ll:items-center">
+          <NumberField
+            size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
+            label="Grow"
+            aria-label="Grow"
+            title="Share of the free room in the stack this layer takes (0 keeps its size)."
+            value={flexGrow}
+            min={0}
+            step={1}
+            onChange={(v) => onUpdateProp?.("layout.flexGrow", v)}
+          />
+          <NumberField
+            size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
+            label="Shrink"
+            aria-label="Shrink"
+            title="How much this layer gives up when the stack is too small (0 keeps its size)."
+            value={flexShrink}
+            min={0}
+            step={1}
+            onChange={(v) => onUpdateProp?.("layout.flexShrink", v)}
+          />
+          <Select
+            size="sm"
+            aria-label="Align self"
+            title="Where this layer sits across the stack, whatever the frame's alignment says."
+            value={alignSelf}
+            options={ALIGN_SELF_OPTIONS}
+            onChange={(v) => onUpdateProp?.("layout.alignSelf", v)}
+          />
+        </div>
+      )}
+      {inFlow && parentKind === "grid" && (
+        <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+          <NumberField
+            size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
+            label="Col span"
+            aria-label="Column span"
+            value={colSpan}
+            min={1}
+            step={1}
+            onChange={(v) => setGridCell(ids, { columnSpan: v })}
+          />
+          <NumberField
+            size="sm"
+            className="ll:*:!text-micro ll:!gap-2"
+            label="Row span"
+            aria-label="Row span"
+            value={rowSpan}
+            min={1}
+            step={1}
+            onChange={(v) => setGridCell(ids, { rowSpan: v })}
+          />
+        </div>
+      )}
+
       {/* Frame Stack Controls */}
       {isFrame && layoutMode === "stack" && (
         <div className="ll:flex ll:flex-col ll:gap-2 ll:pt-1">
-          <div className="ll:flex ll:items-center ll:gap-2">
-            <div className="ll:flex-1">
-              <SegmentedControl
-                size="sm"
-                className="ll:w-full ll:*:flex-1"
-                ariaLabel="Stack direction"
-                value={isVertical ? "vertical" : "horizontal"}
-                onChange={(v) =>
-                  onUpdateProp?.(
-                    "layout.flexDirection",
-                    v === "vertical" ? "column" : "row"
-                  )
-                }
-                options={[
-                  {
-                    value: "vertical",
-                    label: "Vertical",
-                    icon: <Icon icon={ArrowDown} size={13} />,
-                    ariaLabel: "Vertical stack (column)",
-                  },
-                  {
-                    value: "horizontal",
-                    label: "Horizontal",
-                    icon: <Icon icon={ArrowRight} size={13} />,
-                    ariaLabel: "Horizontal stack (row)",
-                  },
-                ]}
-              />
-            </div>
-            <button
-              type="button"
-              aria-pressed={isWrapped}
-              aria-label="Wrap"
-              title="Wrap"
-              onClick={() =>
-                onUpdateProp?.("layout.flexWrap", isWrapped ? "nowrap" : "wrap")
-              }
-              className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-                isWrapped
-                  ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-                  : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-              }`}
-            >
-              <Icon icon={WrapText} size={14} />
-            </button>
-          </div>
-
           <div className="ll:grid ll:grid-cols-layout-labeled ll:gap-2 ll:items-start">
             <AlignmentGrid
               selectedIndex={matrixIndex}
@@ -334,25 +379,45 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
             </div>
           </div>
 
-          <SegmentedControl
-            size="sm"
-            ariaLabel="Item distribution"
-            value={isSpaceBetween ? "space-between" : "packed"}
-            onChange={(v) =>
-              onUpdateProp?.(
-                "layout.justifyContent",
-                v === "space-between" ? "space-between" : "flex-start"
-              )
-            }
-            options={[
-              { value: "packed", label: "Packed", ariaLabel: "Packed" },
-              {
-                value: "space-between",
-                label: "Space between",
-                ariaLabel: "Space between",
-              },
-            ]}
-          />
+          <div className="ll:flex ll:items-center ll:gap-2">
+            <div className="ll:flex-1 ll:min-w-0">
+              <SegmentedControl
+                size="sm"
+                ariaLabel="Item distribution"
+                value={isSpaceBetween ? "space-between" : "packed"}
+                onChange={(v) =>
+                  onUpdateProp?.(
+                    "layout.justifyContent",
+                    v === "space-between" ? "space-between" : "flex-start"
+                  )
+                }
+                options={[
+                  { value: "packed", label: "Packed", ariaLabel: "Packed" },
+                  {
+                    value: "space-between",
+                    label: "Space between",
+                    ariaLabel: "Space between",
+                  },
+                ]}
+              />
+            </div>
+            <button
+              type="button"
+              aria-pressed={isWrapped}
+              aria-label="Wrap"
+              title="Wrap"
+              onClick={() =>
+                onUpdateProp?.("layout.flexWrap", isWrapped ? "nowrap" : "wrap")
+              }
+              className={`ll:w-7 ll:h-7 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+                isWrapped
+                  ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
+                  : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
+              }`}
+            >
+              <Icon icon={WrapText} size={14} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -452,222 +517,248 @@ export const LayoutMore: React.FC<LayoutSectionProps> = ({
   const flexShrink = (getValue?.("layout.flexShrink") as number) ?? 1;
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* Min/Max Width */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Min W"
-          aria-label="Min width"
-          value={minW}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.minWidth", v)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Max W"
-          aria-label="Max width"
-          value={maxW || null}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.maxWidth", v)}
-        />
-      </div>
-
-      {/* Min/Max Height */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Min H"
-          aria-label="Min height"
-          value={minH}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.minHeight", v)}
-        />
-        <NumberField
-          size="sm"
-          className="ll:*:!text-micro ll:!gap-2"
-          label="Max H"
-          aria-label="Max height"
-          value={maxH || null}
-          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-          onChange={(v) => onUpdateProp?.("layout.maxHeight", v)}
-        />
-      </div>
-
-      {/* Padding 4-grid */}
-      <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted" title="Space between a frame's edge and what is inside it. It shows on frames and text; a plain shape has no inside.">
-          Padding
-        </span>
-        <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="T"
-            aria-label="Padding Top"
-            value={padTop}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingTop", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="R"
-            aria-label="Padding Right"
-            value={padRight}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="B"
-            aria-label="Padding Bottom"
-            value={padBottom}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingBottom", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="L"
-            aria-label="Padding Left"
-            value={padLeft}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.paddingLeft", v)}
-          />
-        </div>
-      </div>
-
-      {/* Margin 4-grid */}
-      <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted" title="Space around a layer. It moves a layer only inside an auto-layout frame; a layer placed by X and Y ignores it.">
-          Margin
-        </span>
-        <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="T"
-            aria-label="Margin Top"
-            value={marginTop}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginTop", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="R"
-            aria-label="Margin Right"
-            value={marginRight}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="B"
-            aria-label="Margin Bottom"
-            value={marginBottom}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginBottom", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="L"
-            aria-label="Margin Left"
-            value={marginLeft}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("layout.marginLeft", v)}
-          />
-        </div>
-      </div>
-
-      {/* Overflow X & Y */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Over X"
-          aria-label="Overflow X"
-          title="What happens to content wider than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
-          value={overflowX}
-          options={OVERFLOW_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
-        />
-        <Select
-          size="sm"
-          label="Over Y"
-          aria-label="Overflow Y"
-          title="What happens to content taller than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
-          value={overflowY}
-          options={OVERFLOW_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.overflowY", v)}
-        />
-      </div>
-
-      {/* Unit & Box Sizing */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Unit"
-          aria-label="Unit"
-          value={unit}
-          options={UNIT_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.unit", v)}
-        />
-        <Select
-          size="sm"
-          label="Box"
-          aria-label="Box sizing"
-          value={boxSizing}
-          options={BOX_SIZING_OPTIONS}
-          onChange={(v) => onUpdateProp?.("layout.boxSizing", v)}
-        />
-      </div>
-
-      {/* Frame vs non-frame controls */}
-      {isFrame ? (
-        <Checkbox
-          label="Reverse layout"
-          checked={(getValue?.("layout.reverse") as boolean) || false}
-          onChange={(chk) => onUpdateProp?.("layout.reverse", chk)}
-        />
-      ) : (
-        <div className="ll:flex ll:flex-col ll:gap-2">
-          <Select
-            size="sm"
-            label="Self"
-            aria-label="Align self"
-            value={alignSelf}
-            options={ALIGN_SELF_OPTIONS}
-            onChange={(v) => onUpdateProp?.("layout.alignSelf", v)}
-          />
-          <div className="ll:grid ll:grid-cols-2 ll:gap-2">
+    <div className="ll:flex ll:flex-col ll:w-full">
+      {/* Group 1: Min/Max Width and Height */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Width</span>
+          <div className="ll-dtc">
             <NumberField
               size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="Grow"
-              aria-label="Grow"
-              value={flexGrow}
+              label="Min"
+              aria-label="Min width"
+              value={minW}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(v) => onUpdateProp?.("layout.flexGrow", v)}
+              onChange={(v) => onUpdateProp?.("layout.minWidth", v)}
             />
             <NumberField
               size="sm"
-              className="ll:*:!text-micro ll:!gap-2"
-              label="Shrink"
-              aria-label="Shrink"
-              value={flexShrink}
+              label="Max"
+              aria-label="Max width"
+              value={maxW || null}
               step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-              onChange={(v) => onUpdateProp?.("layout.flexShrink", v)}
+              onChange={(v) => onUpdateProp?.("layout.maxWidth", v)}
             />
           </div>
         </div>
-      )}
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Height</span>
+          <div className="ll-dtc">
+            <NumberField
+              size="sm"
+              label="Min"
+              aria-label="Min height"
+              value={minH}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.minHeight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="Max"
+              aria-label="Max height"
+              value={maxH || null}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.maxHeight", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 2: Padding & Margin */}
+      <div className="ll-dmg">
+        <div className="ll-dgl">
+          <span className="ll-dlbl" title="Space between a frame's edge and what is inside it. It shows on frames and text; a plain shape has no inside.">Padding</span>
+          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+            <NumberField
+              size="sm"
+              label="T"
+              aria-label="Padding Top"
+              value={padTop}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingTop", v)}
+            />
+            <NumberField
+              size="sm"
+              label="R"
+              aria-label="Padding Right"
+              value={padRight}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="B"
+              aria-label="Padding Bottom"
+              value={padBottom}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingBottom", v)}
+            />
+            <NumberField
+              size="sm"
+              label="L"
+              aria-label="Padding Left"
+              value={padLeft}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.paddingLeft", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dgl">
+          <span className="ll-dlbl" title="Space around a layer. It moves a layer only inside an auto-layout frame; a layer placed by X and Y ignores it.">Margin</span>
+          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+            <NumberField
+              size="sm"
+              label="T"
+              aria-label="Margin Top"
+              value={marginTop}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginTop", v)}
+            />
+            <NumberField
+              size="sm"
+              label="R"
+              aria-label="Margin Right"
+              value={marginRight}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="B"
+              aria-label="Margin Bottom"
+              value={marginBottom}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginBottom", v)}
+            />
+            <NumberField
+              size="sm"
+              label="L"
+              aria-label="Margin Left"
+              value={marginLeft}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("layout.marginLeft", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 3: Overflow, Unit, Box Sizing */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Overflow X</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Overflow X"
+              title="What happens to content wider than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
+              value={overflowX}
+              options={OVERFLOW_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.overflowX", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Overflow Y</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Overflow Y"
+              title="What happens to content taller than this box: Visible shows it, Hidden clips it, Scroll and Auto add a scrollbar."
+              value={overflowY}
+              options={OVERFLOW_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.overflowY", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Unit</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Unit"
+              value={unit}
+              options={UNIT_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.unit", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Box</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Box sizing"
+              value={boxSizing}
+              options={BOX_SIZING_OPTIONS}
+              onChange={(v) => onUpdateProp?.("layout.boxSizing", v)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Group 4: Frame vs Non-frame controls */}
+      <div className="ll-dmg">
+        {isFrame ? (
+          <div className="ll-dtrow">
+            <span className="ll-dlbl">Reverse</span>
+            <div className="ll-dtc">
+              <Checkbox
+                label=""
+                checked={(getValue?.("layout.reverse") as boolean) || false}
+                onChange={(chk) => onUpdateProp?.("layout.reverse", chk)}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Self</span>
+              <div className="ll-dtc">
+                <Select
+                  size="sm"
+                  aria-label="Align self"
+                  value={alignSelf}
+                  options={ALIGN_SELF_OPTIONS}
+                  onChange={(v) => onUpdateProp?.("layout.alignSelf", v)}
+                />
+              </div>
+            </div>
+
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Grow</span>
+              <div className="ll-dtc">
+                <NumberField
+                  size="sm"
+                  label=""
+                  aria-label="Grow"
+                  value={flexGrow}
+                  step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                  onChange={(v) => onUpdateProp?.("layout.flexGrow", v)}
+                />
+              </div>
+            </div>
+
+            <div className="ll-dtrow">
+              <span className="ll-dlbl">Shrink</span>
+              <div className="ll-dtc">
+                <NumberField
+                  size="sm"
+                  label=""
+                  aria-label="Shrink"
+                  value={flexShrink}
+                  step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+                  onChange={(v) => onUpdateProp?.("layout.flexShrink", v)}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

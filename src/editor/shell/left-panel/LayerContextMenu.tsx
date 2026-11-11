@@ -23,6 +23,7 @@ import {
   Eye,
   Film,
   Frame,
+  Split,
   Grid3x3,
   LayoutPanelLeft,
   ListTree,
@@ -188,7 +189,7 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
         icon={<Icon icon={ListTree} size={MENU_ICON_SIZE} />}
       >
         <MenuItem
-          icon={<Icon icon={Frame} size={MENU_ICON_SIZE} />}
+          icon={<Icon icon={Split} size={MENU_ICON_SIZE} />}
           shortcut="Ctrl+Shift+G"
           onClick={() => onAction("ungroup")}
         >

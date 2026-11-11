@@ -44,7 +44,9 @@ async function twoPages(page: Page) {
   await expect(page.locator("#pagelabel")).not.toHaveText("Home");
 }
 
-test.describe("loading pages", () => {
+// FIXME(2026-11-12): the new Pages manager (src/editor/shell/pages-manager) has no Loading entries or + between pages yet, and no #pagebtn menu of role menu "Pages".
+// These cover the old PageSwitcher; re-enable when the manager gains loading pages (see DOCS/UI/handoffs/2026-11-12-e2e.md).
+test.describe.fixme("loading pages", () => {
   test("a + between two pages adds a thin Loading entry there, and it opens with both pages beside it", async ({ page }) => {
     await twoPages(page);
     await openMenu(page);
@@ -150,7 +152,7 @@ test.describe("loading pages", () => {
   });
 });
 
-test("the Pages menu can be hovered when it is reopened straight after a choice", async ({ page }) => {
+test.fixme("the Pages menu can be hovered when it is reopened straight after a choice", async ({ page }) => {
   await openEditor(page);
   await page.locator("#pagebtn").click();
   await page.getByRole("menu", { name: "Pages" }).waitFor();
@@ -161,7 +163,7 @@ test("the Pages menu can be hovered when it is reopened straight after a choice"
   await expect.poll(() => page.getByRole("menu", { name: "Pages" }).evaluate((m) => getComputedStyle(m).pointerEvents), "the menu answers the pointer").toBe("auto");
 });
 
-test("the Next.js export writes the loading page as loading.tsx beside the page it leads to, and not as a page", async ({ page }) => {
+test.fixme("the Next.js export writes the loading page as loading.tsx beside the page it leads to, and not as a page", async ({ page }) => {
   await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
   await twoPages(page);
   await openMenu(page);

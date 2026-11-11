@@ -8,6 +8,8 @@ import { worldBox } from "@/core/editing/layerBoxes";
 import { subtreeIds } from "@/core/editing/cloneLayers";
 import { moveLayers } from "@/core/layers/reparent";
 import { frameAt } from "./createFromDrag";
+import { artboardPoint, flowDrop, type FlowDrop } from "./layout-overlay/flowDrop";
+import { useStackDropStore } from "@/core/store/useStackDropStore";
 import { activePageRootId } from "./activePage";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import type { StageElement } from "./types";
@@ -115,6 +117,8 @@ export function useStageTransform({
     initialBoxes: Record<string, { x: number; y: number; width: number; height: number }>;
     aspectRatio?: number;
     hasMoved: boolean;
+    /** Inside a stack or grid: the place in the order the layers would take if let go now (they do not move freely). */
+    drop?: FlowDrop | null;
   } | null>(null);
 
   // Parent artboard rect for snapping
@@ -280,6 +284,17 @@ export function useStageTransform({
       const activeMirrorId = activeGestureEl?.mirrorId ?? useSelectionStore.getState().selectedMirrorId;
 
       if (gesture.type === "move") {
+        // Inside an auto-layout frame the layers keep their place in the flow: the drag picks a new position in the order.
+        if (gesture.hasMoved && !activeGestureEl?.mirrorId) {
+          const drop = flowDrop(gesture.targetIds, artboardPoint(gesture.artboard, e), elements, getDocument().layers);
+          gesture.drop = drop;
+          useStackDropStore.getState().set(drop?.line ?? null);
+          if (drop) {
+            setSnapLines([]);
+            setSpacingMarks([]);
+            return;
+          }
+        }
         let dx = rawDx;
         let dy = rawDy;
 
@@ -542,6 +557,14 @@ export function useStageTransform({
     const handlePointerUp = (e: PointerEvent) => {
       if (gestureRef.current) {
         const done = gestureRef.current;
+        useStackDropStore.getState().clear();
+        if (done.type === "move" && done.drop) {
+          try {
+            moveLayers(done.targetIds, done.drop.parentId, done.drop.index);
+          } catch {
+            // a reorder that cannot be made leaves the layers where they are
+          }
+        }
         try {
           // Commit transform transaction
           txRef.current?.commit();
@@ -550,7 +573,7 @@ export function useStageTransform({
           // Commit fallback
         }
         // Layers dropped on a frame go into it, and ones dragged out of their frame go back to the page.
-        if (done.type === "move" && done.hasMoved) {
+        if (done.type === "move" && done.hasMoved && !done.drop) {
           try {
             const activeEl = latestElements.current[done.activeId];
             if (!activeEl?.mirrorId) {
@@ -616,6 +639,7 @@ export function useStageTransform({
       else if (e.key === "ArrowDown") dy = step;
       else if (e.key === "Escape") {
         if (gestureRef.current) {
+          useStackDropStore.getState().clear();
           try {
             txRef.current?.cancel();
             txRef.current = null;

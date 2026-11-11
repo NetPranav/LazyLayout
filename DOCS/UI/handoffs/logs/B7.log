@@ -1,0 +1,43 @@
+Task **B7: Motion** is complete.
+
+### Summary of Changes
+
+1. **Tokens & Theme Styling** (`src/editor/styles/tokens.css`, `src/editor/styles/tailwind.css`):
+   - Added `--ll-size-timeline-footer-btn: 28px` and `--ll-size-popover-min-w: 176px` strictly within the `/* === lane: B7 motion === */` block.
+   - Exposed `--width-popover-min: var(--ll-size-popover-min-w)` in `@theme inline`.
+   - Verified all label colours strictly use `--ll-label-N` and `--ll-label-N-tint` across all 8 themes without hardcoded fallbacks.
+
+2. **Motion Model & State** (`src/editor/motion-model/store.ts`):
+   - Added `autoKey: boolean` and `onionSkin: boolean` to `MotionState` (defaulting to `false`).
+   - Added `toggleAutoKey()`, `setAutoKey(bool)`, `toggleOnionSkin()`, `setOnionSkin(bool)`.
+   - Added `splitAtPlayhead(layerId?)` and `setKeysEase(keyIds, ease, bz, spring)` actions.
+
+3. **Motion Custom Icons** (`src/editor/panels/timeline/icons.tsx`):
+   - Sourced exact SVG paths from prototype P:
+     - `AutoKeyIcon` (`#tb-auto`)
+     - `OnionSkinIcon` (`#tb-onion`)
+     - `SplitIcon` (`#split`)
+     - `EaseCurveIcon` (`#tb-ease`)
+     - `AddKeyframeIcon` (`#kfadd`)
+   - Implemented as Lucide-compatible `forwardRef` components matching single 1.5 stroke width rules.
+
+4. **Timeline Operations Adapter** (`src/editor/panels/timeline/timelineOpsAdapter.ts`):
+   - Created thin adapter mediating between panel actions and core engine:
+     - `splitClipAtPlayhead()`: executes clip splitting at the playhead through document commands and syncs `motion-model`.
+     - `canAddKeyframe()`: returns `{ allowed: false, reason: "No engine command to add keyframe at playhead (requested in INTEGRATION.md)" }`.
+
+5. **Easing Popover** (`src/editor/panels/timeline/EasingPopover.tsx`):
+   - Floating popover positioned relative to trigger button or keyframe.
+   - Reuses existing [`EasingEditor`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/inspectors/EasingEditor.tsx) with bezier tangent handles and spring parameters (response/damping).
+   - Updates selected keyframes in `motion-model` upon curve/spring changes.
+
+6. **Timeline Footer & Header** (`src/editor/panels/timeline/TimelineFooter.tsx`, `TimelineTransport.tsx`):
+   - Footer: Added Auto-key (`data-tb="auto"`) and Onion skin (`data-tb="onion"`) toggles. Updated minimap clip colors to `color-mix(in srgb, var(--ll-label-${lbl}) 55%, var(--ll-label-${lbl}-tint))` matching P line 1172. Preserved all existing testids (`#tfps`, `#tsnap`, `#twa`, `#tmm`).
+   - Header: Added active Auto-key outline indicator on `.ph.mh`. Added Split (C), disabled Add Keyframe (K) button (`data-mact="kf"`), and Easing popover button (`data-tb="ease"`). Mounted [`EasingPopover`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/EasingPopover.tsx).
+
+7. **Design System Demos** ([`B7Demos.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/B7Demos.tsx)):
+   - Added `B7MotionTimelineDemo`, `B7TimelineFooterDemo`, `B7EasingPopoverDemo`, `B7LabelColorsDemo`, and `B7MotionIconsDemo`.
+
+8. **Screenshots & Handoff**:
+   - Captured 14 headless Playwright screenshots across Warm and Darkroom themes at 1440, 1024, and 390 viewports, side-by-side with prototype P in `DOCS/UI/handoffs/screenshots/b7/`.
+   - Written handoff documents: [2026-11-08-B7.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-B7.md) and [2026-11-08-0620-b7.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0620-b7.md). Zero TypeScript errors in lane B7 files. No commits made.

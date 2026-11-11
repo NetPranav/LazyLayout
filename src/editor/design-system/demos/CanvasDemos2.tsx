@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { Slider } from "@/editor/components/Slider";
 import { Toolbar } from "@/editor/shell/canvas-chrome/Toolbar";
 import { InsertBox } from "@/editor/shell/canvas-chrome/InsertBox";
 import { AiBox } from "@/editor/shell/canvas-chrome/AiBox";
@@ -249,6 +250,7 @@ export function ViewOptionsPopoverDemo() {
       <div className="ll:relative ll:h-144 ll:w-full ll:bg-surface-canvas ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
         <ViewOptionsPopover
           open={open}
+          inline={true}
           onClose={() => setOpen(false)}
           triggerRef={triggerRef}
           theme={theme}
@@ -532,16 +534,17 @@ export function MotionPathOverlayDemo() {
       <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-4 ll:p-3 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md">
         <div className="ll:flex ll:items-center ll:gap-2">
           <span className="ll:text-micro ll:font-mono ll:text-secondary">Scrub: {currentTime.toFixed(2)}s</span>
-          <input
-            type="range"
-            min={0}
-            max={2}
-            step={0.01}
-            value={currentTime}
-            onChange={(e) => setCurrentTime(parseFloat(e.target.value))}
-            className="ll:w-32 ll:accent-primary"
-            aria-label="Scrub playhead time"
-          />
+          <div className="ll:w-32">
+            <Slider
+              min={0}
+              max={2}
+              step={0.01}
+              value={currentTime}
+              onChange={setCurrentTime}
+              formatValue={(v) => `${v.toFixed(2)}s`}
+              ariaLabel="Scrub playhead time"
+            />
+          </div>
         </div>
 
         <div className="ll:flex ll:items-center ll:gap-2">

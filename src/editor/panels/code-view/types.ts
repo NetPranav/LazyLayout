@@ -39,6 +39,8 @@ export interface CodePanelProps {
   onCopy?: (code: string) => void;
   /** Export / download action handler */
   onExport?: (fileName: string, code: string) => void;
+  /** Called after a Run finished and its build line was appended to the Console */
+  onRun?: () => void;
   /** Additional CSS class names */
   className?: string;
   /** Inline style overrides */

@@ -1,6 +1,8 @@
 export { Stage } from "./Stage";
 export { Artboard } from "./Artboard";
 export { TransformOverlay } from "./TransformOverlay";
+export { CanvasCursor, renderCursorSvg, GLYPHS, type CursorKind } from "./CanvasCursor";
+export { TextFormatBar, type FormatState } from "./TextFormatBar";
 export { MotionPathOverlay, type MotionPathOverlayProps } from "./MotionPathOverlay";
 export { ValueHud, type ValueHudProps } from "./ValueHud";
 export { OnionSkinOverlay, type OnionSkinOverlayProps } from "./OnionSkinOverlay";

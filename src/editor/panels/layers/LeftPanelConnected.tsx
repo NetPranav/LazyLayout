@@ -2,9 +2,8 @@
 
 import React from "react";
 import { LeftPanel } from "@/editor/shell/left-panel";
-import { PageSwitcher } from "@/editor/components/PageSwitcher";
+import { PagesManager } from "@/editor/shell/pages-manager";
 import { useLeftPanelData } from "./useLeftPanelData";
-import { usePagesData } from "./usePagesData";
 import type { LeftPanelConnectedProps } from "./types";
 
 export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
@@ -15,21 +14,22 @@ export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
   ...overrides
 }) => {
   const leftPanelData = useLeftPanelData({ mode, filterByActivePage });
-  const pagesData = usePagesData();
 
   const renderedHeaderStart =
     headerStart !== undefined
       ? headerStart
       : mode === "design" || mode === "motion"
-      ? <PageSwitcher {...pagesData} />
+      ? <PagesManager query={leftPanelData.searchQuery} />
       : undefined;
 
   return (
-    <LeftPanel
-      {...leftPanelData}
-      headerStart={renderedHeaderStart}
-      className={className}
-      {...overrides}
-    />
+    <div className="ll:relative ll:w-full ll:h-full ll:min-h-0 ll:min-w-0">
+      <LeftPanel
+        {...leftPanelData}
+        headerStart={renderedHeaderStart}
+        className={className}
+        {...overrides}
+      />
+    </div>
   );
 };

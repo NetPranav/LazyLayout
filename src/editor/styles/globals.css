@@ -43,18 +43,53 @@ body {
     list-style: none;
   }
 
+  /* === lane: F5 controls === */
+  html:has(.ll-editor-root, .ll-design-system-root) button,
+  html:has(.ll-editor-root, .ll-design-system-root) select,
+  html:has(.ll-editor-root, .ll-design-system-root) input,
   .ll-design-system-root button,
-  .ll-editor-root button {
+  .ll-design-system-root select,
+  .ll-design-system-root input,
+  .ll-editor-root button,
+  .ll-editor-root select,
+  .ll-editor-root input,
+  .ll-cp button,
+  .ll-cp select,
+  .ll-cp input,
+  .ll-fp button,
+  .ll-fp select,
+  .ll-fp input,
+  .ll-fr-pop button,
+  .ll-fr-pop select,
+  .ll-fr-pop input,
+  .ll-options-popover button,
+  .ll-options-popover select,
+  .ll-options-popover input,
+  .ll-menu button,
+  .ll-menu select,
+  .ll-menu input,
+  .ll-popover button,
+  .ll-popover select,
+  .ll-popover input,
+  .ll-ftxb button,
+  .ll-ftxb select,
+  .ll-ftxb input,
+  [data-radix-popper-content-wrapper] button,
+  [data-radix-popper-content-wrapper] select,
+  [data-radix-popper-content-wrapper] input {
     margin: 0;
     padding: 0;
-    border: 0;
+    border: 0 solid currentColor;
     border-radius: 0;
     background: transparent;
     color: inherit;
     font: inherit;
     text-align: inherit;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
   }
+  /* === end lane: F5 controls === */
 }
 
 @keyframes ll-spin {

@@ -73,7 +73,28 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 3. Engine changes requested
 
-None so far. The new editor reuses existing core engine stores, commands, time scheduler, and persistence infrastructure without requiring modifications to `src/core`, `src/compiler`, or `src/runtime`.
+### Auto layout and grid
+- **Area:** stack and grid frames on the canvas and in the Layout section
+- **Used (read-only):** `layoutOps` (`setStack`, `setGrid`, `setGridCell`, `addAutoLayout`, `addGridLayout`, `readStack`), `moveLayers`, `useStackDropStore`, `layout.addAuto` (Shift+A) and `layout.removeAuto` (Alt+Shift+A).
+- **Engine changes requested (nothing blocks the UI):** (1) a command to remove a grid track (columns and rows can be added and resized, not removed from the canvas); (2) grid drag-reorder moves by child index, so there is no drop into a chosen cell (cell start/span exist, a cell-aware drop does not); (3) a gap strip is not drawn for wrapped stacks because there is no per-line gap read; (4) `setStack` has no "this side only" padding toggle in the doc model, so the canvas writes the four `layout.padding*` props directly inside one transaction.
+
+### Vector Pen tool support in core engine
+- **Area:** tools / engine
+- **Files:** `src/core/tools/toolDefs.ts`, `src/core/paths/penModel.ts`
+- **What changed:** Toolbar and Stage wire Pen tool selection (`P`) and vector path node placement. Core engine tool definitions and vector network commands should be verified and fully activated in tool registry.
+- **What A/B must do:** Ensure core tool machine and stage overlays provide full bezier control point dragging and path completion integration.
+- **Status:** open
+
+### Pages manager and Sections gallery (2026-11-11)
+- **Area:** left panel header, toolbar, `src/editor/shell/pages-manager/`, `src/editor/shell/sections-gallery/`
+- **What changed:** `LeftPanelConnected` mounts `PagesManager` (was `PageSelector`) and `SectionsGallery`; the Toolbar has a "Sections" button that toggles `useTemplatesUiStore`. Section insertion calls the engine's `insertSection` in one transaction. Page operations are in `pagesModel.ts` and write `useProjectStore.pages` after `recordProjectChange`, because `src/after/store/pagesActions.ts` may not be imported (bundle-scope check).
+- **Engine changes requested:**
+  1. **Page operations as commands.** `page.add`, `page.duplicate`, `page.delete`, `page.rename`, `page.setHome`, `page.reorder`, `page.setMeta` on the project-store page model, each one undo step, available in every edition. Today the only commands (`page.create`, `page.setRoute`, `page.setHome` in `core/pages/pageCommands.ts`) act on the other model (a frame with `page.route`), and the project-store actions are full-edition only. The two models are not synced.
+  2. **`duplicatePage` copies the whole page.** The after-track `duplicatePage` copies only the root layer (`children: []`); it should clone the subtree and clips (the UI does this itself with `cloneLayers`).
+  3. **`deletePage` removes the page's layers** (the after-track one leaves the root frame in the document).
+  4. **Share image.** `PageDefinition` has no field for it (`ogImage` or an asset id); the settings popover shows the row disabled.
+  5. **Drop a section on the canvas.** `insertSection` only takes a page; it needs an `index` (or `afterId`) option so a drag from the gallery can place it where dropped. The UI now moves the new section after insertion (inside the same transaction).
+- **Status:** open
 
 ## 4. New shared UI pieces
 
@@ -215,3 +236,34 @@ Honest list of open items before merging into `main`:
 9. **Final side-by-side screenshots:** Prototype vs. app visual parity screenshots at 1440px in Paper and Dark themes across Design, Motion, and Code modes remain to be captured.
 10. **Timeline header token:** Timeline header token is 44px (prototype task said 40; flagged for design session).
 11. **Legacy lint error:** fixed in the merge review (2026-11-05): `src/legacy-editor/menus/UnifiedLogoMenu.tsx` reset its submenu state inside an effect (a lint error that failed CI `verify`); it now resets while rendering, the same behaviour. That file is not from `main`: it came from the `wip(ui)` experiments (feba8ec).
+
+### W4: engine changes requested for Motion and Code (2026-11-11)
+- **Area:** motion / code
+- **Requests:**
+  1. Console: remove the sample `INITIAL_LOGS` seed in `src/editor/panels/console/consoleStore.ts`, and make Run emit a real build result (outside W4's lane).
+  2. Trace: a runtime trace source. `TraceView` uses the constant `TRACE_STEPS`.
+  3. Compiler: per-layer line ranges in the emitted files, so a canvas selection can highlight code and a code line can select a layer.
+  4. Compiler: framework, styling and animation options (Vue, HTML, Tailwind, CSS modules). The Code inspector selects do nothing because the emitters only produce Next.js 15 with scoped CSS.
+  5. Core: clip trim, split and duplicate as single commands. W4 composes them from `updateClip`, `addClip`, `removeClip` and `setKeyframe` inside one `transaction`.
+- **Status:** open
+
+### Pen and vector (2026-11-11)
+- **Area:** design / stage / right panel / layers
+- **Replaced / added:** the Pen button became a flyout (Pen, Pencil, Anchor; Shift+C is new) and "Pen" left the Shape menu; `stage/DraftPath.tsx` restyled (ghost line, close ring); new `stage/pen/` (`penAdapter.ts`, `PathEditLayer.tsx`, `PathContextBar.tsx`, `AnchorMark.tsx`); new Vector section (`panels/details/sections/VectorSection.tsx`); path rows in the Layers tree (own icon, point count); token `--ll-pen-mark` in `tokens.css`. `CanvasTool` gained `"anchor"` (maps to the core `select` tool).
+- **Relies on (read-only):** `useVectorEditStore`, `useDraftPathStore`, `core/paths/pathEdit` (move, insert, delete, close, toggleSmooth, hit tests), `core/paths/penModel`, `core/editing/vectorOps` (`applyPathEdit`, `editablePath`, `booleanLayers`), `createPathLayer`, `setLayerProps` (`svg.fillRule`), `deleteLayers`, `transaction`.
+- **Adapter-only (in `src/editor/stage/pen/penAdapter.ts`, each is one undo step, no engine command behind it):** point type, round corners, join.
+- **Engine changes requested:**
+  1. **Point type on the node.** `PathNode` has no type, so Straight / Mirrored / Free are read from the handles, and "Free" on a mirrored point only shortens its incoming handle. Wanted: `PathNode.kind` (`straight | mirrored | angle | free`) saved in `svg.nodes`, and `moveHandle` honouring it instead of guessing from collinearity.
+  2. **Join as an engine operation.** `joinPaths(a, b)` (and "join with this path's other end") in `vectorOps`, keeping the first layer's id, name, look and motion; today the adapter makes a new layer and deletes both, so layer ids, keys and links are lost.
+  3. **Live corner radius on paths.** `svg.cornerRadius` (and per-point radius) rendered by the path builder; today the adapter rewrites the nodes once ("Round"), so the radius cannot be changed afterwards and the points stay.
+  4. **Close and continue.** A close/open command and "continue this path from its end" (pen on an end point of an existing open path); `penModel` only starts new paths.
+  5. **Compound paths.** `editablePath` returns null for a path with more than one subpath, so Edit points and the point tools do nothing on boolean results with holes.
+  6. **Path edit mode in the engine's command table.** `path.edit`, `path.exitEdit`, `path.deleteNodes` exist only in `legacy-editor/canvas/vector/useVectorEdit.ts`; the new UI binds the keys itself (Enter, Esc, Backspace in `PathEditLayer.tsx`). Moving them to `src/core` would let both editors share them.
+  7. **Anchor tool id.** `core/tools/toolDefs` has no `anchor` tool, so the Anchor button sets `select` and the UI keeps the tool name.
+- **Status:** open
+
+### Option popovers: engine-side gaps found by the 2026-11-12 proof
+- **Stroke miter limit.** `svg.strokeMiterlimit` is not a property in `core/document/properties.ts` (the type exists in `core/types/svg.ts`, nothing reads or writes it). The Miter field in the Stroke row popover is disabled. Wanted: `svg.strokeMiterlimit` (number, 1 to 20, default 4, scope `SVG_STROKED`), emitted as `stroke-miterlimit`.
+- **Cap, join and dash** (`svg.strokeLinecap`, `svg.strokeLinejoin`, `svg.strokeDasharray`) are legal only for icons, vector paths and the shape layers (`SVG_STROKED`). A button, frame, text or image draws its stroke as a CSS border (`appearance.border.*`), which has no cap or join; the controls are disabled with a tooltip on those layers. Wanted if buttons and frames should dash: map `appearance.border.style` dashed or dotted, nothing else.
+- **Per-corner radius** (`shape.cornerRadius.topLeft` and the other three) is legal only for `rectangle`. Other layers take one `appearance.radius`; the popover now writes that for the first corner and disables the other three. Wanted: four corner radii on frames, buttons and images (`appearance.radius.topLeft` and so on, emitted as `border-top-left-radius`).
+- **Status:** open

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useId } from "react";
-import { ArrowUp, Check, Frame, X, Maximize2 } from "lucide-react";
+import { ArrowUp, Check, Frame, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
@@ -27,20 +27,10 @@ export interface AiBoxProps {
   aiLoading?: boolean;
 }
 
-const SUGGESTIONS: Record<string, string[]> = {
-  text: ["Make it bolder", "Shorten", "Rewrite", "Animate"],
-  layer: ["Change style", "Animate", "Duplicate"],
-  none: ["Add a section", "Improve the layout"],
-  multi: ["Align them", "Group"],
-  motion: ["Fade in", "Slide up", "Stagger"],
-  code: ["Explain", "Refactor", "Add props"],
-};
-
 export const AiBox: React.FC<AiBoxProps> = ({
   open,
   onClose,
   onSubmit,
-  onExpand,
   onStop,
   onUndo,
   onKeep,
@@ -127,6 +117,13 @@ export const AiBox: React.FC<AiBoxProps> = ({
     }
   }, [open, isRendered, triggerRef]);
 
+  // Focus the prompt once the box is open (the trigger click would otherwise keep focus)
+  useEffect(() => {
+    if (!open || !isRendered) return;
+    const id = setTimeout(() => textareaRef.current?.focus(), 0);
+    return () => clearTimeout(id);
+  }, [open, isRendered]);
+
   // Outside click & Escape handler
   useEffect(() => {
     if (!open || !isRendered) return;
@@ -194,7 +191,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
     aiState === "done"
       ? "Follow up…"
       : hasContext
-      ? "Ask anything…"
+      ? "Ask AI to build or edit…"
       : "Ask anything about this page…";
 
   return (
@@ -204,13 +201,13 @@ export const AiBox: React.FC<AiBoxProps> = ({
       aria-label="Ask AI"
       tabIndex={-1}
       style={{
-        width: "var(--ll-size-toolbar-w)",
+        width: "min(480px, calc(100% - var(--ll-spacing-8)))",
         bottom:
           "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
       }}
-      className="ll-aibox ll-surface-overlay ll:group ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:gap-2 ll:p-3 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:outline-none"
+      className="ll-aibox ll-surface-overlay ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:p-2 ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:outline-none ll:transition-colors ll:focus-within:border-primary"
     >
-      <div className="ll-lay ll:flex ll:flex-col ll:gap-2 ll:w-full">
+      <div className="ll-lay ll:flex ll:flex-col ll:gap-1 ll:w-full">
         {/* Done State Banner (.ll-aidone) */}
         {aiState === "done" && (
           <div className="ll-aidone ll:flex ll:items-center ll:gap-3 ll:min-h-7 ll:text-small ll:font-sans ll:text-primary">
@@ -241,10 +238,10 @@ export const AiBox: React.FC<AiBoxProps> = ({
 
         {/* Input Row (.ll-aiinrow) - shown when idle or done */}
         {aiState !== "work" && (
-          <div className="ll-aiinrow ll:flex ll:items-center ll:gap-2 ll:min-w-0 ll:w-full">
+          <div className="ll-aiinrow ll:flex ll:items-end ll:gap-2 ll:min-w-0 ll:w-full">
             {/* Context tag (.ll-aitag) */}
             {hasContext && (
-              <span className="ll-aitag ll:flex ll:items-center ll:gap-1 ll:shrink-0 ll:h-6 ll:pl-1.5 ll:pr-0.5 ll:rounded-sm ll:bg-surface-bar ll:text-secondary ll:text-nano ll:font-medium ll:select-none">
+              <span className="ll-aitag ll:flex ll:items-center ll:gap-1 ll:shrink-0 ll:h-7 ll:mb-0 ll:pl-1.5 ll:pr-0.5 ll:rounded-sm ll:bg-surface-bar ll:text-secondary ll:text-nano ll:font-medium ll:select-none">
                 <Icon icon={Frame} size={CANVAS_CHROME_SIZES.iconMd} className="ll:shrink-0" />
                 <span
                   style={{
@@ -272,8 +269,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
               rows={1}
               value={prompt}
               style={{
-                maxHeight:
-                  "calc(var(--ll-size-header-h) + var(--ll-spacing-16))",
+                maxHeight: "calc(var(--ll-spacing-16) + var(--ll-spacing-6))",
               }}
               onChange={(e) => {
                 setPrompt(e.target.value);
@@ -292,20 +288,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
               placeholder={placeholderText}
               aria-label="Ask AI"
               autoComplete="off"
-              className="ll:flex-1 ll:min-w-0 ll:h-7 ll:py-1 ll:bg-transparent ll:border-0 ll:outline-none ll:resize-none ll:text-body ll:font-sans ll:text-primary ll:placeholder:text-muted ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
-            />
-
-            {/* Expand AI button */}
-            <IconButton
-              size="sm"
-              aria-label="Expand AI"
-              tooltip="Expand AI"
-              onClick={() => {
-                onExpand?.(prompt);
-                onClose();
-              }}
-              className="ll-aiexpand ll:w-7 ll:h-7 ll:shrink-0 ll:opacity-0 ll:group-hover:opacity-100 ll:focus-visible:opacity-100"
-              icon={<Icon icon={Maximize2} size={CANVAS_CHROME_SIZES.iconMd} />}
+              className="ll:flex-1 ll:min-w-0 ll:h-7 ll:py-1 ll:px-1 ll:bg-transparent ll:border-0 ll:outline-none ll:resize-none ll:text-body ll:font-sans ll:text-primary ll:placeholder:text-muted "
             />
 
             {/* Send button using IconButton */}
@@ -314,31 +297,13 @@ export const AiBox: React.FC<AiBoxProps> = ({
               aria-label="Send"
               disabled={!prompt.trim()}
               onClick={() => handleSend()}
-              variant={prompt.trim() ? "secondary" : "ghost"}
+              variant="ghost"
+              pressed={!!prompt.trim()}
               className={`ll-aisend ll:w-7 ll:h-7 ll:shrink-0 ${
-                prompt.trim()
-                  ? "ll:bg-control-primary ll:text-control-primary-fg"
-                  : "ll:text-muted"
-              } ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset`}
+                prompt.trim() ? "" : "ll:text-muted"
+              }`}
               icon={<Icon icon={ArrowUp} size={CANVAS_CHROME_SIZES.iconMd} />}
             />
-          </div>
-        )}
-
-        {/* Suggestion Chips (.ll-aisugg) */}
-        {aiState === "idle" && !prompt.trim() && (
-          <div className="ll-aisugg ll:flex ll:flex-wrap ll:gap-1.5 ll:pt-1">
-            {(SUGGESTIONS[context.type] ?? SUGGESTIONS.layer).map((suggestion) => (
-              <Button
-                key={suggestion}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleSend(suggestion)}
-                className="ll:h-7 ll:px-2.5 ll:rounded-sm ll:bg-surface-bar ll:text-secondary ll:hover:text-primary ll:hover:bg-control-active ll:text-nano ll:font-medium ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
-              >
-                {suggestion}
-              </Button>
-            ))}
           </div>
         )}
 

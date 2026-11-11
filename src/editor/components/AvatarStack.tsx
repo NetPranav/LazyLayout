@@ -10,6 +10,8 @@ export interface CollabUser {
   initials?: string;
   status?: string;
   src?: string;
+  /** Peer colour, used behind initials when there is no image. */
+  color?: string;
 }
 
 export interface AvatarStackProps {

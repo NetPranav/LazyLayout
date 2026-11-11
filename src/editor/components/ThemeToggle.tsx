@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useSyncExternalStore } from "react";
 import { Palette } from "lucide-react";
+import { isMotionOff } from "../motion/reducedMotion";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { Tooltip } from "./Tooltip";
@@ -23,17 +24,17 @@ export interface ThemeOption {
 }
 
 export const LIGHT_THEMES: readonly ThemeOption[] = [
-  { id: "paper", label: "Paper (Default)" },
+  { id: "warm", label: "Warm (Default)" },
+  { id: "paper", label: "Paper" },
   { id: "white", label: "White" },
-  { id: "warm", label: "Warm" },
   { id: "lilac", label: "Lilac" },
 ];
 
 export const DARK_THEMES: readonly ThemeOption[] = [
-  { id: "noir", label: "Noir" },
-  { id: "dark", label: "Dark" },
-  { id: "graphite", label: "Graphite" },
   { id: "darkroom", label: "Darkroom" },
+  { id: "dark", label: "Dark" },
+  { id: "graphite", label: "Graphite (Default)" },
+  { id: "noir", label: "Noir" },
 ];
 
 export const THEMES: readonly ThemeOption[] = [
@@ -66,17 +67,17 @@ export function subscribeTheme(callback: () => void): () => void {
   };
 }
 
-let cachedTheme: Theme = "paper";
+let cachedTheme: Theme = "warm";
 
 /** Get active theme on client. */
 export function getClientTheme(): Theme {
   if (typeof document !== "undefined") {
     let attr = document.documentElement.getAttribute("data-theme");
     if (attr === "plum") {
-      document.documentElement.setAttribute("data-theme", "dark");
-      attr = "dark";
+      document.documentElement.setAttribute("data-theme", "graphite");
+      attr = "graphite";
       try {
-        localStorage.setItem("lazy-layout-theme", "dark");
+        localStorage.setItem("lazy-layout-theme", "graphite");
       } catch {
         // ignore
       }
@@ -88,8 +89,8 @@ export function getClientTheme(): Theme {
     try {
       let stored = localStorage.getItem("lazy-layout-theme");
       if (stored === "plum") {
-        stored = "dark";
-        localStorage.setItem("lazy-layout-theme", "dark");
+        stored = "graphite";
+        localStorage.setItem("lazy-layout-theme", "graphite");
       }
       if (stored && VALID_THEMES.has(stored)) {
         cachedTheme = stored as Theme;
@@ -103,22 +104,38 @@ export function getClientTheme(): Theme {
   return cachedTheme;
 }
 
-/** Server snapshot for theme (defaults to 'paper' on server). */
+/** Server snapshot for theme (defaults to 'warm' on server). */
 export function getServerTheme(): Theme {
-  return "paper";
+  return "warm";
+}
+
+/** Toggle between default light (Warm) and default dark (Graphite). */
+export function toggleTheme(): void {
+  const current = getClientTheme();
+  const isDark = current === "dark" || current === "graphite" || current === "darkroom" || current === "noir";
+  applyTheme(isDark ? "warm" : "graphite");
 }
 
 /** Set and persist active theme across DOM, localStorage, and listeners. */
 export function applyTheme(nextTheme: Theme): void {
   if ((nextTheme as string) === "plum") {
-    nextTheme = "dark";
+    nextTheme = "graphite";
   }
   if (!VALID_THEMES.has(nextTheme)) {
-    nextTheme = "paper";
+    nextTheme = "warm";
   }
   cachedTheme = nextTheme;
   if (typeof document !== "undefined") {
-    document.documentElement.setAttribute("data-theme", nextTheme);
+    const root = document.documentElement;
+    const commit = () => root.setAttribute("data-theme", nextTheme);
+    const reduced = isMotionOff();
+    const withTransition = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
+    if (withTransition && !reduced && root.getAttribute("data-theme") !== nextTheme) {
+      // The whole screen cross-fades from the old theme to the new one (styled in tokens.css).
+      withTransition.call(document, commit);
+    } else {
+      commit();
+    }
   }
   try {
     localStorage.setItem("lazy-layout-theme", nextTheme);
@@ -162,7 +179,7 @@ if (typeof window !== "undefined") {
   }
 }
 
-/** React hook for theme with useSyncExternalStore and server snapshot ('paper'). */
+/** React hook for theme with useSyncExternalStore and server snapshot ('warm'). */
 export function useTheme(): [Theme, (nextTheme: Theme) => void] {
   const theme = useSyncExternalStore(subscribeTheme, getClientTheme, getServerTheme);
   return [theme, applyTheme];
@@ -189,9 +206,8 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
   );
 
   const cycleTheme = useCallback(() => {
-    const currentIndex = THEMES.findIndex((t) => t.id === theme);
-    const nextIndex = (currentIndex + 1) % THEMES.length;
-    selectTheme(THEMES[nextIndex].id);
+    const isDark = theme === "dark" || theme === "graphite" || theme === "darkroom" || theme === "noir";
+    selectTheme(isDark ? "warm" : "darkroom");
   }, [theme, selectTheme]);
 
   const handleClick = useCallback(() => {
@@ -203,7 +219,7 @@ export function ThemeToggle({ size = "md", className = "", mode = "menu" }: Them
   }, [mode, cycleTheme]);
 
   const iconSize = size === "sm" ? 14 : 16;
-  const currentLabel = THEMES.find((t) => t.id === theme)?.label ?? "Paper (Default)";
+  const currentLabel = THEMES.find((t) => t.id === theme)?.label ?? "Warm (Default)";
 
   return (
     <div className="ll:relative ll:inline-flex">

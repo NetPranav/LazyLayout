@@ -8,6 +8,7 @@ import { getTransport } from "@/core/time/transport";
 import { getDocument } from "@/core/store/documentState";
 import { evaluate } from "@/core/kernel/evaluate";
 import { useMotionModel, useOverlayFrame, useOverlayTime } from "@/editor/motion-model";
+import { STAGE_CONSTANTS } from "./constants";
 
 export interface ValueHudProps {
   selectedIds: string[];
@@ -15,14 +16,17 @@ export interface ValueHudProps {
   layers?: Record<string, Layer>;
   isGesturing?: boolean;
   forceVisible?: boolean;
+  /** How much the artboard is scaled on screen; the chip is drawn against it so it keeps its size at any zoom. */
+  zoom?: number;
 }
 
 export const ValueHud: React.FC<ValueHudProps> = ({
   selectedIds,
   elements,
-  layers: _layers,
+  layers,
   isGesturing = false,
   forceVisible = false,
+  zoom = 1,
 }) => {
   const isPlaying = useMotionModel((s) => s.playing);
   const storeScrubbing = useTimelineUiStore((s) => s.isScrubbing);
@@ -74,9 +78,21 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   const rawOpacity = typeof opacityProp === "number" ? opacityProp : 1;
   const valOpacity = Math.round(rawOpacity <= 1 ? rawOpacity * 100 : rawOpacity);
 
-  // Position relative to layer (above, or below if near artboard top)
-  const hudLeft = el.x;
-  const hudTop = el.y >= 32 ? el.y - 28 : el.y + el.height + 26;
+  // Scale: the artboard is drawn zoomed, so the chip is divided by the zoom (1 screen px = 1 unit of inv).
+  const scale = zoom > 0 ? zoom : 1;
+  const inv = 1 / scale;
+  // The frame's title (the size label) is drawn above the frame, scaled to stay readable when zoomed out.
+  const titleScale = scale < 1 ? 1 / scale : 1;
+  const selectedLayer = layers?.[activeId];
+  const parentLayer = selectedLayer?.parentId ? layers?.[selectedLayer.parentId] : undefined;
+  const isTopFrame = selectedLayer?.archetype === "container" && !!parentLayer && parentLayer.parentId == null;
+  // Sit above the selection with an 8px gap; a top-level frame sits above its title row instead, so the title and handles stay clear.
+  const titleTop = el.y + STAGE_CONSTANTS.sizeLabelOffsetTop + STAGE_CONSTANTS.sizeLabelHeight - STAGE_CONSTANTS.sizeLabelHeight * titleScale;
+  const hudLeft = isTopFrame ? el.x + STAGE_CONSTANTS.sizeLabelOffsetLeft : el.x;
+  const hudBottom = (isTopFrame ? titleTop : el.y) - 8 * inv;
+  // The chip is 16px tall on screen. With no room above (the frame is near the top of the canvas), it drops below the selection instead.
+  const flipBelow = hudBottom - 16 * inv < 0;
+  const hudTop = flipBelow ? el.y + el.height + 8 * inv : hudBottom;
 
   return (
     <div
@@ -86,29 +102,37 @@ export const ValueHud: React.FC<ValueHudProps> = ({
       data-y={valY}
       data-rotation={valRot}
       data-opacity={valOpacity}
-      className="ll-value-hud ll:absolute ll:pointer-events-none ll:z-30 ll:flex ll:items-center ll:gap-2 ll:px-2 ll:py-1 ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm ll:shadow-sm ll:font-mono ll:text-nano ll:text-primary ll:whitespace-nowrap"
+      className="ll-value-hud ll:absolute ll:pointer-events-none ll:z-30 ll:flex ll:items-center ll:gap-2 ll:whitespace-nowrap"
       style={{
         left: hudLeft,
+        // above: the chip's bottom edge sits at hudTop and it grows upward, so it never reaches the title or the handles; flipped: it hangs below the selection
         top: hudTop,
+        transform: flipBelow ? `scale(${inv})` : `translateY(-100%) scale(${inv})`,
+        transformOrigin: flipBelow ? "left top" : "left bottom",
+        font: "500 11px/16px var(--ll-font-mono)",
+        backgroundColor: "var(--ll-control-primary-bg)",
+        color: "var(--ll-control-primary-fg)",
+        padding: "0 6px",
+        borderRadius: "var(--ll-radius-sm)",
       }}
     >
       <div className="ll:flex ll:items-center ll:gap-1">
-        <span className="ll:text-muted">X</span>
+        <span style={{ opacity: 0.6 }}>X</span>
         <span data-testid="value-hud-x">{valX}</span>
       </div>
-      <span className="ll:w-px ll:h-3 ll:bg-border" aria-hidden="true" />
+      <span className="ll:w-px ll:h-3" style={{ backgroundColor: "currentColor", opacity: 0.3 }} aria-hidden="true" />
       <div className="ll:flex ll:items-center ll:gap-1">
-        <span className="ll:text-muted">Y</span>
+        <span style={{ opacity: 0.6 }}>Y</span>
         <span data-testid="value-hud-y">{valY}</span>
       </div>
-      <span className="ll:w-px ll:h-3 ll:bg-border" aria-hidden="true" />
+      <span className="ll:w-px ll:h-3" style={{ backgroundColor: "currentColor", opacity: 0.3 }} aria-hidden="true" />
       <div className="ll:flex ll:items-center ll:gap-1">
-        <span className="ll:text-muted">R</span>
+        <span style={{ opacity: 0.6 }}>R</span>
         <span data-testid="value-hud-rotation">{valRot}°</span>
       </div>
-      <span className="ll:w-px ll:h-3 ll:bg-border" aria-hidden="true" />
+      <span className="ll:w-px ll:h-3" style={{ backgroundColor: "currentColor", opacity: 0.3 }} aria-hidden="true" />
       <div className="ll:flex ll:items-center ll:gap-1">
-        <span className="ll:text-muted">O</span>
+        <span style={{ opacity: 0.6 }}>O</span>
         <span data-testid="value-hud-opacity">{valOpacity}%</span>
       </div>
     </div>

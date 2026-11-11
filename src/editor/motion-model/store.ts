@@ -21,7 +21,12 @@ import {
   locateKeyframes,
   placementsOf,
   KEYFRAMES_CLIP_NAME,
+  alignKeyframes,
+  copyKeyframes,
+  pasteKeyframes,
 } from "@/core/timeline/keyframeOps";
+import { addMarkerAt, removeMarkerById, setLayerSwitch } from "@/core/timeline/timelineOps";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { transaction } from "@/core/editing/editOps";
 import { createId } from "@/core/ids";
 import type { Clip, ClipTemplate } from "@/core/document/schema";
@@ -41,6 +46,7 @@ export interface MotionState {
   comp: Composition;
   time: number;
   playhead: number;
+  playheadGlide: boolean;
   subhead: number;
   readoutPlayhead: number;
   overlayFrame: number;
@@ -64,6 +70,8 @@ export interface MotionState {
   snap: boolean;
   trackWidth: number;
   fullWidth: boolean;
+  autoKey: boolean;
+  onionSkin: boolean;
 }
 
 let clipAnimClipboard: { tr: { p: PropId; keys: Keyframe[] }[] } | null = null;
@@ -77,6 +85,7 @@ export const useMotionModel = create<MotionState>(() => ({
   comp: defaultComposition(),
   time: initTransport.time,
   playhead: initFrame,
+  playheadGlide: false,
   subhead: initTransport.time * initFps,
   readoutPlayhead: initFrame,
   overlayFrame: initFrame,
@@ -103,6 +112,8 @@ export const useMotionModel = create<MotionState>(() => ({
   snap: true,
   trackWidth: 264,
   fullWidth: true,
+  autoKey: false,
+  onionSkin: false,
 }));
 
 export const getOverlayFrame = (): number => {
@@ -215,12 +226,43 @@ subscribeTransport((state, prev) => {
   }
 });
 
+// Record mode and onion skin live in the core timeline UI store (the header buttons write there, the stage reads there).
+// This model mirrors them so the footer toggles show the same state as the header ones.
+useTimelineUiStore.subscribe((ui) => {
+  const cur = useMotionModel.getState();
+  if (cur.autoKey !== ui.recordMode || cur.onionSkin !== ui.onionSkin.enabled) {
+    useMotionModel.setState({ autoKey: ui.recordMode, onionSkin: ui.onionSkin.enabled });
+  }
+});
+
 function edit(fn: (comp: Composition) => void): void {
   useMotionModel.setState((s) => {
     const comp: Composition = structuredClone(s.comp);
     fn(comp);
     return { comp };
   });
+}
+
+/** Writes layer flags to the document when the layer exists there (the local row state is the fallback). */
+function writeLayerFlags(layerId: string, flags: { visible?: boolean; locked?: boolean }): void {
+  try {
+    if (getDocument().layers[layerId]) documentCommands.setLayerFlags(layerId, flags);
+  } catch {
+    // standalone fallback
+  }
+}
+
+/** The document clip behind a layer's Nth bar (same filter and order the document projection uses). */
+function docClipAt(layerId: string, index: number): Clip | undefined {
+  try {
+    return Object.values(getDocument().clips).filter((c) => c.layerId === layerId && c.enabled)[index];
+  } catch {
+    return undefined;
+  }
+}
+
+function fpsNow(): number {
+  return useMotionModel.getState().fps || 60;
 }
 
 function findKey(comp: Composition, id: string) {
@@ -244,10 +286,19 @@ function ensureLayer(comp: Composition, id: string): MotionLayer {
 }
 
 export const motionActions = {
-  setPlayhead(t: number, _options?: { updateReadout?: boolean }): void {
+  setPlayhead(t: number, glideOrOptions?: boolean | { updateReadout?: boolean }): void {
     const s = useMotionModel.getState();
     const fps = s.fps || 60;
     const clampedFrame = clampN(t, 0, s.comp.dur);
+    const glide = glideOrOptions === true;
+    if (s.playheadGlide !== glide) useMotionModel.setState({ playheadGlide: glide });
+    transport.seek(clampedFrame / fps);
+  },
+  seek(t: number, glide = false): void {
+    const s = useMotionModel.getState();
+    const fps = s.fps || 60;
+    const clampedFrame = clampN(Math.round(t), 0, s.comp.dur);
+    useMotionModel.setState({ playheadGlide: glide });
     transport.seek(clampedFrame / fps);
   },
   setReadoutPlayhead(frame: number): void {
@@ -330,6 +381,33 @@ export const motionActions = {
   toggleSnap(): void {
     useMotionModel.setState((s) => ({ snap: !s.snap }));
   },
+  toggleAutoKey(): void {
+    motionActions.setAutoKey(!useMotionModel.getState().autoKey);
+  },
+  setAutoKey(autoKey: boolean): void {
+    useMotionModel.setState({ autoKey });
+    // Core auto-key (record mode): changed properties get a keyframe at the playhead, in the same undo step.
+    useTimelineUiStore.getState().setRecordMode(autoKey);
+  },
+  toggleOnionSkin(): void {
+    motionActions.setOnionSkin(!useMotionModel.getState().onionSkin);
+  },
+  setOnionSkin(onionSkin: boolean): void {
+    useMotionModel.setState({ onionSkin });
+    // The core timeline UI store owns the onion-skin config that the stage draws.
+    useTimelineUiStore.getState().setOnionSkin({ enabled: onionSkin });
+  },
+  splitAtPlayhead(layerId?: string): boolean {
+    const s = useMotionModel.getState();
+    const playhead = s.playhead;
+    const targetLayer = layerId
+      ? s.comp.layers.find((x) => x.id === layerId)
+      : s.comp.layers.find((x) => x.clips.some((c) => playhead > c.s && playhead < c.e));
+    if (!targetLayer) return false;
+    const clipIdx = targetLayer.clips.findIndex((c) => playhead > c.s && playhead < c.e);
+    if (clipIdx < 0) return false;
+    return motionActions.splitClip(targetLayer.id, clipIdx, playhead);
+  },
   setTrackWidth(w: number): void {
     const hw = clampN(Math.round(w), 200, 420);
     useMotionModel.setState({ trackWidth: hw });
@@ -360,22 +438,33 @@ export const motionActions = {
     });
   },
   toggleLayerMute(layerId: string): void {
+    const cur = useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.mute ?? false;
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) l.mute = !l.mute;
     });
+    // Mute (eye) is the layer's visibility in the document: one undo step, same flag the Layers panel writes.
+    writeLayerFlags(layerId, { visible: cur });
   },
   toggleLayerLock(layerId: string): void {
+    const cur = useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.lock ?? false;
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) l.lock = !l.lock;
     });
+    writeLayerFlags(layerId, { locked: !cur });
   },
   toggleLayerSolo(layerId: string): void {
+    const cur = useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.solo ?? false;
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) l.solo = !l.solo;
     });
+    try {
+      if (getDocument().layers[layerId]) setLayerSwitch([layerId], "solo", !cur);
+    } catch {
+      // standalone fallback
+    }
   },
   setLayerLabel(layerId: string, lbl: number): void {
     edit((c) => {
@@ -428,6 +517,19 @@ export const motionActions = {
         sortKeys(tr);
       }
     });
+    // The bar's start is the clip's delay; its keyframes are relative to it, so they move with it.
+    const moved = useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.clips[clipIndex];
+    const dc = docClipAt(layerId, clipIndex);
+    if (moved && dc && !useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.lock) {
+      const delay = moved.s / fpsNow();
+      if (Math.abs((dc.delay ?? 0) - delay) > 1e-9) {
+        try {
+          documentCommands.updateClip(dc.id, { delay }, "Move animation");
+        } catch {
+          // fallback
+        }
+      }
+    }
   },
   trimClip(layerId: string, clipIndex: number, edge: "s" | "e", newTime: number): void {
     edit((c) => {
@@ -440,6 +542,28 @@ export const motionActions = {
         clip.e = clampN(newTime, clip.s + 1, c.dur);
       }
     });
+    const trimmed = useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.clips[clipIndex];
+    const dc = docClipAt(layerId, clipIndex);
+    if (trimmed && dc) {
+      const fps = fpsNow();
+      const delay = trimmed.s / fps;
+      const shift = delay - (dc.delay ?? 0);
+      try {
+        transaction("Trim animation", () => {
+          if (edge === "s" && Math.abs(shift) > 1e-9) {
+            // keep every keyframe where it is on the timeline: their times are relative to the delay
+            for (const track of dc.tracks) {
+              for (const kf of track.keyframes) {
+                documentCommands.setKeyframe(dc.id, track.id, { ...kf, time: Math.max(0, kf.time - shift) });
+              }
+            }
+          }
+          documentCommands.updateClip(dc.id, { delay, duration: (trimmed.e - trimmed.s) / fps });
+        });
+      } catch {
+        // fallback
+      }
+    }
   },
   splitClip(layerId: string, clipIndex: number, atFrame: number): boolean {
     let success = false;
@@ -453,6 +577,41 @@ export const motionActions = {
       l.clips.splice(clipIndex + 1, 0, { s: atFrame, e: oldEnd });
       success = true;
     });
+    const dc = success ? docClipAt(layerId, clipIndex) : undefined;
+    if (success && dc) {
+      const fps = fpsNow();
+      const at = atFrame / fps;
+      const delay = dc.delay ?? 0;
+      const end = delay + dc.duration;
+      try {
+        transaction("Split animation", () => {
+          // keyframes after the split go to the new right-hand clip (times relative to its own delay)
+          const rightTracks = dc.tracks
+            .map((t) => ({
+              id: createId("trk"),
+              property: t.property,
+              keyframes: t.keyframes
+                .filter((k) => delay + k.time >= at)
+                .map((k) => ({ ...k, id: createId("kf"), time: Math.max(0, delay + k.time - at) })),
+            }))
+            .filter((t) => t.keyframes.length > 0);
+          for (const track of dc.tracks) {
+            for (const kf of track.keyframes.filter((k) => delay + k.time >= at)) {
+              documentCommands.removeKeyframe(dc.id, track.id, kf.id);
+            }
+          }
+          documentCommands.updateClip(dc.id, { duration: at - delay });
+          const { id: _id, layerId: _layerId, ...rest } = dc;
+          void _id;
+          void _layerId;
+          documentCommands.addClip(layerId, { ...rest, id: createId("clip"), delay: at, duration: Math.max(1 / fps, end - at), tracks: rightTracks }, undefined, {
+            compositionId: MAIN_COMPOSITION_ID,
+          });
+        });
+      } catch {
+        // fallback
+      }
+    }
     if (success) {
       useMotionModel.setState({ selectedClip: clipIndex + 1 });
     }
@@ -477,9 +636,42 @@ export const motionActions = {
       }
       l.clips.splice(clipIndex + 1, 0, { s, e: s + len });
     });
+    const dc = docClipAt(layerId, clipIndex);
+    if (dc && !useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.lock) {
+      const fps = fpsNow();
+      try {
+        const { id: _id, layerId: _layerId, ...rest } = dc;
+        void _id;
+        void _layerId;
+        const nextDelay = Math.min((dc.delay ?? 0) + dc.duration, Math.max(0, useMotionModel.getState().comp.dur / fps - dc.duration));
+        documentCommands.addClip(
+          layerId,
+          {
+            ...rest,
+            id: createId("clip"),
+            delay: nextDelay,
+            tracks: dc.tracks.map((t) => ({ ...t, id: createId("trk"), keyframes: t.keyframes.map((k) => ({ ...k, id: createId("kf") })) })),
+          },
+          "Duplicate animation",
+          { compositionId: MAIN_COMPOSITION_ID },
+        );
+      } catch {
+        // fallback
+      }
+    }
     useMotionModel.setState({ selectedClip: clipIndex + 1 });
   },
   deleteClip(layerId: string, clipIndex: number): void {
+    const dc = docClipAt(layerId, clipIndex);
+    if (dc && !useMotionModel.getState().comp.layers.find((x) => x.id === layerId)?.lock) {
+      try {
+        documentCommands.removeClip(dc.id, "Delete animation");
+        useMotionModel.setState({ selectedClip: 0 });
+        return; // the document change re-projects the layer's bars into this model
+      } catch {
+        // fallback
+      }
+    }
     edit((c) => {
       const l = c.layers.find((x) => x.id === layerId);
       if (!l || !l.clips[clipIndex] || l.lock) return;
@@ -551,6 +743,11 @@ export const motionActions = {
   copyKeys(): void {
     const s = useMotionModel.getState();
     const selIds = s.selectedKeys;
+    try {
+      copyKeyframes(Object.keys(selIds));
+    } catch {
+      // standalone fallback
+    }
     const copied: { p: PropId; k: Keyframe }[] = [];
     let minT = Infinity;
     for (const l of s.comp.layers) {
@@ -571,6 +768,16 @@ export const motionActions = {
     }
   },
   pasteKeys(layerId: string, targetProp: PropId | null, atFrame: number): void {
+    try {
+      const fps = useMotionModel.getState().fps || 60;
+      const made = pasteKeyframes([layerId], atFrame / fps);
+      if (made.length > 0) {
+        useMotionModel.setState({ selectedKeys: Object.fromEntries(made.map((id) => [id, true as const])) });
+        return;
+      }
+    } catch {
+      // standalone fallback
+    }
     if (!keyClipboard || !keyClipboard.length) return;
     const newSel: Record<string, true> = {};
     edit((c) => {
@@ -598,6 +805,27 @@ export const motionActions = {
   duplicateKeys(): void {
     const s = useMotionModel.getState();
     const selIds = s.selectedKeys;
+    try {
+      // Document first: copies land 10 frames later in one undo step (same offset as the local fallback below).
+      const locs = locateKeyframes(getDocument(), MAIN_COMPOSITION_ID, Object.keys(selIds));
+      if (locs.length > 0) {
+        const fps = s.fps || 60;
+        const made: Record<string, true> = {};
+        transaction("Duplicate keyframes", () => {
+          for (const loc of locs) {
+            const id = setKeyframeAt(loc.layerId, loc.property, loc.time + 10 / fps, {
+              value: loc.keyframe.value,
+              ease: loc.keyframe.ease,
+            });
+            if (id) made[id] = true;
+          }
+        });
+        useMotionModel.setState({ selectedKeys: made });
+        return;
+      }
+    } catch {
+      // standalone fallback
+    }
     const newSel: Record<string, true> = {};
     edit((c) => {
       for (const l of c.layers) {
@@ -620,6 +848,12 @@ export const motionActions = {
     const s = useMotionModel.getState();
     const selIds = s.selectedKeys;
     const T = s.playhead;
+    try {
+      // Document first: one undo step; the document change re-projects the keys into this model.
+      if (alignKeyframes(Object.keys(selIds), "playhead") > 0) return;
+    } catch {
+      // standalone fallback
+    }
     edit((c) => {
       for (const l of c.layers) {
         if (l.lock) continue;
@@ -635,6 +869,7 @@ export const motionActions = {
     });
   },
   stepFrame(delta: number): void {
+    useMotionModel.setState({ playheadGlide: true });
     transport.stepFrame(delta);
   },
   jumpKey(dir: 1 | -1): void {
@@ -654,6 +889,7 @@ export const motionActions = {
     }
     if (best !== null) {
       const fps = s.fps || 60;
+      useMotionModel.setState({ playheadGlide: true });
       transport.seek(best / fps);
       transport.pause();
     }
@@ -767,6 +1003,30 @@ export const motionActions = {
       if (locs.length > 0) {
         const loc = locs[0];
         documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+      }
+    } catch {
+      // fallback
+    }
+  },
+  setKeysEase(keyIds: string[], ease: EaseName, bz?: Bezier, spring?: SpringParams): void {
+    edit((c) => {
+      for (const id of keyIds) {
+        const f = findKey(c, id);
+        if (!f) continue;
+        f.k.ease = ease;
+        if (bz) f.k.bz = bz;
+        if (spring) f.k.spring = spring;
+      }
+    });
+
+    try {
+      const locs = locateKeyframes(getDocument(), MAIN_COMPOSITION_ID, keyIds);
+      if (locs.length > 0) {
+        transaction("Change easing", () => {
+          for (const loc of locs) {
+            documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+          }
+        });
       }
     } catch {
       // fallback
@@ -998,11 +1258,19 @@ export const motionActions = {
     }
   },
   addMarker(t: number, name?: string): void {
+    let docId: string | null = null;
+    if (!useMotionModel.getState().comp.markers.some((m) => m.t === Math.round(t))) {
+      try {
+        docId = addMarkerAt(t / (useMotionModel.getState().fps || 60), name ?? "");
+      } catch {
+        // standalone fallback
+      }
+    }
     edit((c) => {
-      const hit = c.markers.find((m) => m.t === t);
+      const hit = c.markers.find((m) => m.t === Math.round(t) || (docId && m.id === docId));
       if (hit) return;
       c.markers.push({
-        id: `m${c.markers.length + 1}`,
+        id: docId ?? `m${c.markers.length + 1}`,
         t: Math.round(t),
         name: name ?? `Marker ${c.markers.length + 1}`,
       });
@@ -1010,6 +1278,11 @@ export const motionActions = {
     });
   },
   deleteMarker(id: string): void {
+    try {
+      removeMarkerById(id);
+    } catch {
+      // standalone fallback
+    }
     edit((c) => {
       c.markers = c.markers.filter((m) => m.id !== id);
     });

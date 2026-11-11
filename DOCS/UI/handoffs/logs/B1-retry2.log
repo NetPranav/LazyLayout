@@ -1,0 +1,22 @@
+The **Retry 2** items in [`DOCS/UI/tasks/2026-11-08-B1-pickers.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-B1-pickers.md#L32-L35) have been addressed touching only B1 lane paths:
+
+1. **Handoff [`2026-11-08-0612-B1.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0612-B1.md):**
+   - Removed "without any casts" / "casts were removed".
+   - Explicitly stated that [`ColorPickerIcons.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPickerIcons.tsx#L249-L258) uses `as unknown as LucideIcon` to type local SVG glyphs for [`Icon`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Icon.tsx).
+   - Listed [`Icon.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Icon.tsx) registry / `ReactNode` glyph support as a need from the `Icon.tsx` owner under `## Needs from other lanes`.
+   - Deleted the obsolete "build error" caveat.
+   - Stated that picker screenshots are handled by B9 once `B1Demos` is mounted on `/design-system`.
+
+2. **Extracted px and blur/mask literals into [`ColorPickerMotion.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPickerMotion.ts):**
+   - [`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx): line 619 uses `gradientStopLeftCalc(stop.p)` (based on `GRADIENT_STOP_OFFSET_PX = 12`).
+   - [`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx): line 661 uses `IMAGE_TILE_SIZE` (`"24px"`).
+   - [`ColorPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/ColorPicker.tsx): line 780 uses `OPACITY_SLIDER_BG_SIZE` (`"100% 100%, 8px 8px"`).
+   - [`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx) (lines 195, 200) & [`OptionsPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/OptionsPopover.tsx) (lines 158, 163): use `ROW_CASCADE_BLUR_ENTER` (`"blur(4px)"`) and `ROW_CASCADE_BLUR_SETTLE` (`"blur(0px)"`).
+   - [`FontPicker.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FontPicker.tsx) (lines 427, 429): uses `LIST_EDGE_MASK_IMAGE`.
+   - Gradient hex remains the documented exception.
+
+3. **Real `npx tsc --noEmit` output:**
+```
+.next/types/validator.ts(168,39): error TS2307: Cannot find module '../../src/app/editor/legacy/page.js' or its corresponding type declarations.
+```
+*(0 errors in Lane B1 paths. No commits made.)*

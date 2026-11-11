@@ -92,83 +92,94 @@ export const AppearanceMore: React.FC<InspectorSectionProps> = ({
   const pointerEvents = (getValue?.("appearance.pointerEvents") as string) || "auto";
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      {/* 4 Corners Grid */}
-      <div className="ll:flex ll:flex-col ll:gap-1">
-        <span className="ll:text-small ll:font-sans ll:text-muted">
-          Corners
-        </span>
-        <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="TL"
-            aria-label="Top left radius"
-            value={radTL}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("appearance.radiusTopLeft", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="TR"
-            aria-label="Top right radius"
-            value={radTR}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("appearance.radiusTopRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="BR"
-            aria-label="Bottom right radius"
-            value={radBR}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("appearance.radiusBottomRight", v)}
-          />
-          <NumberField
-            size="sm"
-            className="ll:*:!text-micro ll:!gap-2"
-            label="BL"
-            aria-label="Bottom left radius"
-            value={radBL}
-            step={INSPECTOR_CONSTANTS.STEP_INTEGER}
-            onChange={(v) => onUpdateProp?.("appearance.radiusBottomLeft", v)}
-          />
+    <div className="ll:flex ll:flex-col ll:w-full">
+      {/* Group 1: 4 Corners Grid */}
+      <div className="ll-dmg">
+        <div className="ll-dgl">
+          <span className="ll-dlbl">Corners</span>
+          <div className="ll:grid ll:grid-cols-4 ll:gap-1.5">
+            <NumberField
+              size="sm"
+              label="TL"
+              aria-label="Top left radius"
+              value={radTL}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("appearance.radiusTopLeft", v)}
+            />
+            <NumberField
+              size="sm"
+              label="TR"
+              aria-label="Top right radius"
+              value={radTR}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("appearance.radiusTopRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="BR"
+              aria-label="Bottom right radius"
+              value={radBR}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("appearance.radiusBottomRight", v)}
+            />
+            <NumberField
+              size="sm"
+              label="BL"
+              aria-label="Bottom left radius"
+              value={radBL}
+              step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+              onChange={(v) => onUpdateProp?.("appearance.radiusBottomLeft", v)}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Blend Mode */}
-      <Select
-        size="sm"
-        label="Blend"
-        aria-label="Blend mode"
-        title="How this layer mixes with what is under it: Multiply darkens, Screen lightens, Overlay boosts contrast, Normal just covers."
-        value={blendMode}
-        options={BLEND_MODE_OPTIONS}
-        onChange={(v) => onUpdateProp?.("appearance.blendMode", v)}
-      />
+      {/* Group 2: Blend Mode, Cursor & Pointer Events */}
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Blend</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Blend mode"
+              title="How this layer mixes with what is under it: Multiply darkens, Screen lightens, Overlay boosts contrast, Normal just covers."
+              value={blendMode}
+              mixed={getValue?.("appearance.blendMode") === null}
+              options={BLEND_MODE_OPTIONS}
+              onChange={(v) => onUpdateProp?.("appearance.blendMode", v)}
+            />
+          </div>
+        </div>
 
-      {/* Cursor & Pointer Events */}
-      <div className="ll:grid ll:grid-cols-2 ll:gap-2">
-        <Select
-          size="sm"
-          label="Cursor"
-          aria-label="Cursor"
-          title="The mouse cursor shown over this layer in the finished page (Pointer for links, Text for text, Move for draggable things)."
-          value={cursor}
-          options={CURSOR_OPTIONS}
-          onChange={(v) => onUpdateProp?.("appearance.cursor", v)}
-        />
-        <Select
-          size="sm"
-          label="Events"
-          aria-label="Pointer events"
-          title="Auto lets the layer take clicks; None lets clicks pass through it to what is underneath."
-          value={pointerEvents}
-          options={POINTER_EVENTS_OPTIONS}
-          onChange={(v) => onUpdateProp?.("appearance.pointerEvents", v)}
-        />
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Cursor</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Cursor"
+              title="The mouse cursor shown over this layer in the finished page (Pointer for links, Text for text, Move for draggable things)."
+              value={cursor}
+              mixed={getValue?.("appearance.cursor") === null}
+              options={CURSOR_OPTIONS}
+              onChange={(v) => onUpdateProp?.("appearance.cursor", v)}
+            />
+          </div>
+        </div>
+
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Events</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Pointer events"
+              title="Auto lets the layer take clicks; None lets clicks pass through it to what is underneath."
+              value={pointerEvents}
+              mixed={getValue?.("appearance.pointerEvents") === null}
+              options={POINTER_EVENTS_OPTIONS}
+              onChange={(v) => onUpdateProp?.("appearance.pointerEvents", v)}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

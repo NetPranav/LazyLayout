@@ -35,6 +35,7 @@ import { GitExporter } from "@/compiler/export/GitExporter";
 import { errorMessage } from "@/core/errors";
 import { SyntaxHighlighter } from "./SyntaxHighlighter";
 import { CODE_VIEW_TIMINGS } from "./constants";
+import { openExportDialog } from "@/editor/shell/export-dialog/useExportDialogStore";
 import type { LiveCodeInspectorProps } from "./types";
 
 type FileCategory =
@@ -58,7 +59,7 @@ const CATEGORY_TABS: { id: FileCategory; label: string }[] = [
   { id: "animation", label: "Animations" },
 ];
 
-function compileProjectFiles(project: {
+export function compileProjectFiles(project: {
   pages: ProjectStoreState["pages"];
   elements: Record<string, Layer>;
   databaseSchemas: ProjectStoreState["databaseSchemas"];
@@ -330,6 +331,14 @@ export const LiveCodeInspector: React.FC<LiveCodeInspectorProps> = ({
             leftIcon={<Icon icon={copied ? Check : Copy} size={14} />}
           >
             {copied ? "Copied" : "Copy Code"}
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => openExportDialog(e.currentTarget)}
+          >
+            Export…
           </Button>
 
           <Button

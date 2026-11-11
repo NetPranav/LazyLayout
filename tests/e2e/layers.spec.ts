@@ -96,7 +96,7 @@ test("Phase 32: the tree mirrors the document and the selection stays in sync bo
 
   // a click on the canvas selects the row, opening its parents if they were closed
   await heroRow.locator('[aria-label="Collapse"]').click();
-  await expect(buttonRow).toHaveCount(0);
+  await expect(buttonRow).toBeHidden(); // a collapsed row stays in the tree at zero height so it can animate
 
   const buttonElement = page.locator('[data-testid="stage-element"][data-element-id="button"]');
   await buttonElement.click();

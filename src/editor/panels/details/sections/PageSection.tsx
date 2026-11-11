@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { ColorSwatch } from "../controls/ColorSwatch";
+import React, { useState, useRef } from "react";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { activePageRootId } from "@/editor/stage/activePage";
 import { setLayerProps } from "@/core/editing/editOps";
 import { useProjectStore } from "@/core/store/useProjectStore";
+import { useEnvironmentStore } from "@/core/store/useEnvironmentStore";
+import type { ElevationPreset } from "@/core/types/environment";
 import { SquareRoundCorner } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
+import { ColorPicker } from "@/editor/components/ColorPicker";
+import { LinkIcon } from "@/editor/components/ColorPickerIcons";
 import { INSPECTOR_CONSTANTS } from "../constants";
 
 const PAGE_FONT_OPTIONS = [
@@ -25,6 +28,10 @@ const SCALE_OPTIONS = [
   { value: "1.333", label: "1.333" },
 ] as const;
 
+/** The theme shadow names the page shows, and the engine's elevation preset each one is. */
+const ELEVATION_OF: Record<string, ElevationPreset> = { None: "none", Soft: "subtle_float", Medium: "medium_elevation", Strong: "dramatic_pop" };
+const SHADOW_OF = (e: ElevationPreset): string => Object.entries(ELEVATION_OF).find(([, v]) => v === e)?.[0] ?? "Soft";
+
 const SHADOW_OPTIONS = [
   { value: "None", label: "None" },
   { value: "Soft", label: "Soft" },
@@ -33,13 +40,6 @@ const SHADOW_OPTIONS = [
 ] as const;
 
 const FIELD_LABEL = "ll:font-mono ll:text-micro ll:tracking-normal ll:text-muted ll:shrink-0";
-const HEX_FIELD =
-  "ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm";
-const HEX_INPUT =
-  "ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none";
-const SWATCH = "ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0";
-const SELECT_ROW =
-  "ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:w-full";
 
 export interface PageSectionProps {
   pageName?: string;
@@ -120,32 +120,54 @@ export const PageBackgroundBody: React.FC<{
   onChangeBackground,
 }) => {
   const [bgHex, setBgHex] = useState(backgroundColor.replace(/^#/, "").toUpperCase());
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const swatchRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-      <ColorSwatch
-        label="Page background colour picker"
-        hex={bgHex}
-        onChange={(h) => {
-          setBgHex(h);
-          onChangeBackground?.(h);
-        }}
-        className={SWATCH}
-      />
-      <div className={`${HEX_FIELD} ll:w-27`}>
-        <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
-        <input
-          type="text"
-          maxLength={6}
-          aria-label="Background hex"
-          value={bgHex}
-          onChange={(e) => {
-            const next = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+    <div className="drow ll-drow ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center ll:w-full">
+      <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+        <button
+          ref={swatchRef}
+          type="button"
+          aria-label="Page background colour picker"
+          title="Choose background color"
+          onClick={() => setIsPickerOpen((prev) => !prev)}
+          className="dsw ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+          style={{ backgroundColor: `#${bgHex}` }}
+        />
+        <ColorPicker
+          open={isPickerOpen}
+          value={`#${bgHex}`}
+          anchorRef={swatchRef}
+          onChange={(hex) => {
+            const next = hex.replace(/^#/, "").toUpperCase();
             setBgHex(next);
             onChangeBackground?.(next);
           }}
-          className={HEX_INPUT}
+          onClose={() => setIsPickerOpen(false)}
         />
+        <div
+          className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0 ll:cursor-pointer"
+          onClick={() => setIsPickerOpen(true)}
+        >
+          <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
+          <input
+            type="text"
+            maxLength={6}
+            aria-label="Background hex"
+            value={bgHex}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPickerOpen(true);
+            }}
+            onChange={(e) => {
+              const next = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+              setBgHex(next);
+              onChangeBackground?.(next);
+            }}
+            className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+          />
+        </div>
       </div>
     </div>
   );
@@ -155,10 +177,23 @@ export const ThemeTokensBody: React.FC = () => {
   const [primaryHex, setPrimaryHex] = useState("6C5CE7");
   const [surfaceHex, setSurfaceHex] = useState("F4F3EF");
   const [textHex, setTextHex] = useState("22231E");
-  const [radius, setRadius] = useState(8);
-  const [themeFont, setThemeFont] = useState("Geist");
-  const [typeScale, setTypeScale] = useState("1.25");
-  const [themeShadow, setThemeShadow] = useState("Soft");
+  const [activePicker, setActivePicker] = useState<string | null>(null);
+  const [activePickerEl, setActivePickerEl] = useState<HTMLElement | null>(null);
+  // the picker stays mounted after it closes so its exit animation can play
+  const [shownPicker, setShownPicker] = useState<string | null>(null);
+  if (activePicker && activePicker !== shownPicker) setShownPicker(activePicker);
+  // Radius, font, scale and shadow are the engine's theme settings (they persist with the project); the colours have no engine field yet
+  const theme = useEnvironmentStore((s) => s.environment.theme);
+  const updateEnvironment = useEnvironmentStore((s) => s.updateEnvironment);
+  const setTheme = (patch: Partial<typeof theme>) => updateEnvironment((env) => ({ ...env, theme: { ...env.theme, ...patch } }));
+  const radius = theme.defaultRadius;
+  const themeFont = theme.typography.family;
+  const typeScale = String(theme.typography.scaleRatio);
+  const themeShadow = SHADOW_OF(theme.elevation);
+  const fontOptions = PAGE_FONT_OPTIONS.some((o) => o.value === themeFont) ? PAGE_FONT_OPTIONS : [{ value: themeFont, label: themeFont }, ...PAGE_FONT_OPTIONS];
+  const scaleOptions = SCALE_OPTIONS.some((o) => o.value === typeScale) ? SCALE_OPTIONS : [{ value: typeScale, label: typeScale }, ...SCALE_OPTIONS];
+  // The token each colour was picked from (null once a hex is typed in).
+  const [linkedTokens, setLinkedTokens] = useState<Record<string, string | null>>({});
 
   const tokenRows: Array<{ label: string; hex: string; set: (v: string) => void }> = [
     { label: "Primary", hex: primaryHex, set: setPrimaryHex },
@@ -169,74 +204,139 @@ export const ThemeTokensBody: React.FC = () => {
   return (
     <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
       {tokenRows.map((row) => (
-        <div key={row.label} className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <ColorSwatch label={`${row.label} colour picker`} hex={row.hex} onChange={row.set} className={SWATCH} />
-          <div className={`${HEX_FIELD} ll:w-27`}>
-            <span className="ll:font-mono ll:text-micro ll:text-muted ll:mr-2">#</span>
-            <input
-              type="text"
-              maxLength={6}
-              aria-label={`${row.label} hex`}
-              value={row.hex}
-              onChange={(e) => row.set(e.target.value.toUpperCase())}
-              className={HEX_INPUT}
-            />
+        <div key={row.label} className="drow ll-drow ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center ll:w-full">
+          <div className="dpair ll-dpair ll:flex ll:items-center ll:gap-1 ll:min-w-0">
+            <button
+              type="button"
+              aria-label={`${row.label} colour picker`}
+              title={`Choose ${row.label.toLowerCase()} color`}
+              onClick={(e) => {
+                const isClosing = activePicker === row.label;
+                setActivePicker(isClosing ? null : row.label);
+                setActivePickerEl(e.currentTarget);
+              }}
+              className="dsw ll-dsw ll:relative ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:hover:ring-1 ll:hover:ring-border-active ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+              style={{ backgroundColor: `#${row.hex}` }}
+            >
+              {linkedTokens[row.label] && (
+                <Icon
+                  icon={LinkIcon}
+                  size={8}
+                  aria-hidden="true"
+                  className="cp-link ll:absolute ll:-right-1 ll:-bottom-1 ll:w-3 ll:h-3 ll:p-0.5 ll:rounded-xs ll:bg-control-primary ll:text-control-primary-fg"
+                />
+              )}
+            </button>
+            <div
+              className="dfield ll-dfield field ll:flex ll:items-center ll:gap-1.5 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:flex-1 ll:min-w-0 ll:cursor-pointer"
+              onClick={(e) => {
+                setActivePicker(row.label);
+                setActivePickerEl(e.currentTarget);
+              }}
+            >
+              <span className="pf ll-pf ll:font-mono ll:text-micro ll:text-muted ll:select-none">#</span>
+              <input
+                type="text"
+                maxLength={6}
+                aria-label={`${row.label} hex`}
+                value={row.hex}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActivePicker(row.label);
+                  setActivePickerEl(e.currentTarget);
+                }}
+                onChange={(e) => {
+                  row.set(e.target.value.toUpperCase());
+                  setLinkedTokens((prev) => ({ ...prev, [row.label]: null }));
+                }}
+                className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+              />
+            </div>
           </div>
-          <span className="ll:flex-1 ll:min-w-0 ll:ml-1 ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted">
+          <span className="dsub ll-dsub ll:font-sans ll:text-micro ll:tracking-normal ll:text-muted">
             {row.label}
           </span>
         </div>
       ))}
 
+      {(() => {
+        const activeRow = tokenRows.find((r) => r.label === shownPicker);
+        if (!activeRow) return null;
+        return (
+          <ColorPicker
+            open={Boolean(activePicker)}
+            value={`#${activeRow.hex}`}
+            anchorEl={activePickerEl}
+            linkedToken={linkedTokens[activeRow.label] ?? null}
+            onLinkedTokenChange={(token) => setLinkedTokens((prev) => ({ ...prev, [activeRow.label]: token }))}
+            onChange={(hex) => activeRow.set(hex.replace(/^#/, "").toUpperCase())}
+            onClose={() => {
+              setActivePicker(null);
+            }}
+          />
+        );
+      })()}
+
       {/* Default Radius */}
-      <div className="ll:flex ll:items-center ll:gap-2 ll:h-7 ll:px-2 ll:w-35 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
-        <Icon icon={SquareRoundCorner} size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />
-        <input
-          type="text"
-          inputMode="numeric"
+      <div className="dgrid ll-dgrid ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+        <NumberField
+          size="sm"
+          className="ll:w-full ll:min-w-0"
+          label={<Icon icon={SquareRoundCorner} size={12} aria-hidden="true" className="ll:text-muted ll:shrink-0" />}
           aria-label="Default radius"
           value={radius}
-          onChange={(e) => {
-            const n = parseFloat(e.target.value);
-            if (!Number.isNaN(n)) setRadius(n);
+          step={INSPECTOR_CONSTANTS.STEP_INTEGER}
+          onChange={(r) => {
+            if (typeof r === "number") setTheme({ defaultRadius: Math.max(0, r) });
           }}
-          className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
         />
       </div>
 
       {/* Theme Font */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Font</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Font
+        </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Theme font"
           value={themeFont}
-          options={PAGE_FONT_OPTIONS}
-          onChange={(v) => setThemeFont(v)}
+          options={fontOptions}
+          onChange={(v) => setTheme({ typography: { ...theme.typography, family: v } })}
+          className="ll:w-full ll-has-prefix-8"
         />
       </div>
 
       {/* Type Scale */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Scale</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Scale
+        </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Type scale"
           value={typeScale}
-          options={SCALE_OPTIONS}
-          onChange={(v) => setTypeScale(v)}
+          options={scaleOptions}
+          onChange={(v) => setTheme({ typography: { ...theme.typography, scaleRatio: Number(v) } })}
+          className="ll:w-full ll-has-prefix-10"
         />
       </div>
 
       {/* Theme Shadow */}
-      <div className={SELECT_ROW}>
-        <span className={FIELD_LABEL}>Shadow</span>
+      <div className="ll:relative ll:w-full">
+        <span className="pf ll-pf ll:absolute ll:left-2.5 ll:top-1/2 ll:-translate-y-1/2 ll:font-mono ll:text-micro ll:text-muted ll:pointer-events-none ll:z-1 ll:select-none">
+          Shadow
+        </span>
         <Select
           size="sm"
+          variant="floating"
           aria-label="Theme shadow"
           value={themeShadow}
           options={SHADOW_OPTIONS}
-          onChange={(v) => setThemeShadow(v)}
+          onChange={(v) => setTheme({ elevation: ELEVATION_OF[v] ?? "subtle_float" })}
+          className="ll:w-full ll-has-prefix-14"
         />
       </div>
     </div>
@@ -247,19 +347,25 @@ export const ThemeTokensMore: React.FC = () => {
   const [feedback, setFeedback] = useState("Subtle");
 
   return (
-    <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-      <Select
-        size="sm"
-        label="Feedback"
-        aria-label="Interactive feedback"
-        value={feedback}
-        options={[
-          { value: "None", label: "None" },
-          { value: "Subtle", label: "Subtle" },
-          { value: "Strong", label: "Strong" },
-        ]}
-        onChange={(v) => setFeedback(v)}
-      />
+    <div className="ll:flex ll:flex-col ll:w-full">
+      <div className="ll-dmg">
+        <div className="ll-dtrow">
+          <span className="ll-dlbl">Feedback</span>
+          <div className="ll-dtc">
+            <Select
+              size="sm"
+              aria-label="Interactive feedback"
+              value={feedback}
+              options={[
+                { value: "None", label: "None" },
+                { value: "Subtle", label: "Subtle" },
+                { value: "Strong", label: "Strong" },
+              ]}
+              onChange={(v) => setFeedback(v)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

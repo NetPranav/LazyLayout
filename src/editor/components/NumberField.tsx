@@ -3,13 +3,15 @@
 import React, { useState, useRef, useCallback, useId } from "react";
 
 export interface NumberFieldProps {
-  label: React.ReactNode;
+  label?: React.ReactNode;
   value: number | null;
   onChange: (value: number) => void;
   step?: number;
   min?: number;
   max?: number;
   suffix?: string;
+  unit?: string;
+  placeholder?: string;
   precision?: number;
   disabled?: boolean;
   size?: "sm" | "md";
@@ -28,6 +30,8 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   min,
   max,
   suffix,
+  unit,
+  placeholder,
   precision,
   disabled = false,
   size: _size = "md",
@@ -38,6 +42,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
 }) => {
   const generatedId = useId();
   const inputId = propId ?? generatedId;
+  const effectiveSuffix = suffix ?? unit;
 
   // While typing, draft stores the string text
   const [draft, setDraft] = useState<string | null>(null);
@@ -47,6 +52,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   const startXRef = useRef(0);
   const startValRef = useRef(0);
   const scrubActiveRef = useRef(false);
+  const hasMovedRef = useRef(false);
 
   const isMixed = value === null;
 
@@ -154,6 +160,57 @@ export const NumberField: React.FC<NumberFieldProps> = ({
     window.addEventListener("pointercancel", onPointerCancel);
   };
 
+  // Drag scrub directly on input when dragged horizontally
+  const handleInputPointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
+    if (disabled || e.button !== 0) return;
+    if (document.activeElement === inputRef.current && draft !== null) {
+      return;
+    }
+
+    const startX = e.clientX;
+    const initialVal = value ?? 0;
+    startXRef.current = startX;
+    startValRef.current = initialVal;
+    hasMovedRef.current = false;
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const deltaX = ev.clientX - startX;
+      if (!hasMovedRef.current) {
+        if (Math.abs(deltaX) >= 4) {
+          hasMovedRef.current = true;
+          scrubActiveRef.current = true;
+          setIsScrubbing(true);
+          inputRef.current?.blur();
+        } else {
+          return;
+        }
+      }
+
+      if (!scrubActiveRef.current) return;
+      let multiplier = 1;
+      if (ev.shiftKey) multiplier = 10;
+      if (ev.altKey) multiplier = 0.1;
+
+      const deltaVal = deltaX * step * multiplier;
+      const newVal = clamp(startValRef.current + deltaVal);
+      onChange(newVal);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      if (scrubActiveRef.current) {
+        scrubActiveRef.current = false;
+        setIsScrubbing(false);
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+  };
+
   // Keyboard arrow step handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -191,23 +248,25 @@ export const NumberField: React.FC<NumberFieldProps> = ({
       } ${disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""} ${className}`}
     >
       {/* Scrub label */}
-      <span
-        role="presentation"
-        data-scrub
-        title={`${title ? `${title} ` : ""}Drag horizontally to scrub value (Shift: x10, Alt: x0.1)`}
-        onPointerDown={handleLabelPointerDown}
-        className={`ll-pf ${
-          typeof label !== "string"
-            ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
-            : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
-        } ll:select-none ll:shrink-0 ${
-          isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
-        } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
-      >
-        {label}
-      </span>
+      {label != null && label !== "" && (
+        <span
+          role="presentation"
+          data-scrub
+          title={`${title ? `${title} ` : ""}Drag horizontally to scrub value (Shift: x10, Alt: x0.1)`}
+          onPointerDown={handleLabelPointerDown}
+          className={`ll-pf ${
+            typeof label !== "string"
+              ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
+              : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
+          } ll:select-none ll:shrink-0 ${
+            isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
+          } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
+        >
+          {label}
+        </span>
+      )}
 
-      <div className="ll:inline-flex ll:items-center ll:min-w-0 ll:max-w-full ll:h-full">
+      <div className="ll:flex ll:flex-1 ll:items-center ll:justify-between ll:min-w-0 ll:h-full">
         <input
           ref={inputRef}
           id={inputId}
@@ -215,36 +274,32 @@ export const NumberField: React.FC<NumberFieldProps> = ({
           inputMode="decimal"
           disabled={disabled}
           aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
-          placeholder={isMixed ? "Mixed" : undefined}
+          placeholder={isMixed ? "Mixed" : placeholder}
           value={displayedText}
+          onPointerDown={handleInputPointerDown}
           onFocus={() => setDraft(displayedText)}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={handleCommit}
           onKeyDown={handleKeyDown}
-          className={`ll:field-sizing-content ll:min-w-0 ll:max-w-full ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:font-normal ll:tracking-normal ll:text-primary ll:placeholder:text-muted ${
+          className={`ll:flex-1 ll:min-w-0 ll:h-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:font-normal ll:tracking-normal ll:text-primary ll:placeholder:text-muted ${
             disabled ? "ll:cursor-not-allowed" : ""
           }`}
         />
 
-        {suffix && (
+        {effectiveSuffix && (
           <span
-            aria-hidden="true"
-            className="ll:text-micro ll:font-mono ll:font-normal ll:tracking-normal ll:text-muted ll:shrink-0 ll:select-none"
+            role="presentation"
+            data-scrub
+            title="Drag horizontally to scrub value (Shift: x10, Alt: x0.1)"
+            onPointerDown={handleLabelPointerDown}
+            className={`ll:text-nano ll:font-mono ll:font-medium ll:tracking-wider ll:select-none ll:shrink-0 ll:ml-1.5 ${
+              isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
+            } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
           >
-            {suffix}
+            {effectiveSuffix}
           </span>
         )}
       </div>
-
-      <div
-        aria-hidden="true"
-        onPointerDown={(e) => {
-          if (disabled || e.button !== 0) return;
-          e.preventDefault();
-          inputRef.current?.focus();
-        }}
-        className={`ll:flex-1 ll:self-stretch ll:min-w-0 ${disabled ? "" : "ll:cursor-text"}`}
-      />
     </div>
   );
 };
