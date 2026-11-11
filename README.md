@@ -1,7 +1,14 @@
 <p align="center">
   <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/readme/logo-trace-dark.svg">
+    <img src="public/readme/logo-trace-light.svg" alt="LazyLayout logo" width="112" height="112">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/readme/banner-dark.png">
-    <img src="public/readme/banner-light.png" alt="LazyLayout: design it once, ship it lazily" width="100%">
+    <img src="public/readme/banner-light.png" alt="LazyLayout. Design it once. Ship it lazily." width="100%">
   </picture>
 </p>
 
