@@ -26,6 +26,8 @@ import {
 import { Icon } from "@/editor/components/Icon";
 import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { motionActions, useMotionModel } from "@/editor/motion-model";
+import { timelineOpsAdapter } from "@/editor/panels/timeline/timelineOpsAdapter";
+import { exportRepoZip, exportCurrentFile, copyNpmInstall, logCompileRun } from "@/editor/panels/code-view/codeExport";
 import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
@@ -182,7 +184,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   isPlaying: _isPlaying,
   onTogglePlay: _onTogglePlay,
   onAddKeyframe: _onAddKeyframe,
-  activeEasing = "Ease out",
+  activeEasing: activeEasingProp,
   onSelectEasing,
   onSplitClip,
   onRunCode,
@@ -212,6 +214,41 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   // Design: arrange tools need a selection. Motion: duplicating keys needs selected keys. Code: clearing needs log lines.
   const selectedKeyCount = useMotionModel((st) => Object.keys(st.selectedKeys).length);
   const consoleLineCount = useConsoleLogs().length;
+  // Easing shows the selected keyframes' easing (the first one); picking one sets it on all of them (one undo step).
+  const selectedKeyEase = useMotionModel((st) => {
+    for (const l of st.comp.layers) for (const tr of l.tr) for (const k of tr.keys) if (st.selectedKeys[k.id]) return k.ease;
+    return null;
+  });
+  const activeEasing = activeEasingProp ?? selectedKeyEase ?? "Ease out";
+  const applyEasing = (opt: EasingOption) => {
+    if (onSelectEasing) {
+      onSelectEasing(opt);
+      return;
+    }
+    const ids = Object.keys(useMotionModel.getState().selectedKeys);
+    if (ids.length > 0) motionActions.setKeysEase(ids, opt);
+  };
+  const runExport = (opt: ExportOption) => {
+    if (onExportOption) {
+      onExportOption(opt);
+      return;
+    }
+    try {
+      if (opt === "Repo .zip") {
+        exportRepoZip();
+        consoleStore.appendLog("info", "export", "Repo .zip downloaded");
+      } else if (opt === "Current file") {
+        const r = exportCurrentFile();
+        consoleStore.appendLog(r.ok ? "info" : "warn", "export", r.ok ? `Downloaded ${r.name}` : "No generated file to download");
+      } else {
+        void copyNpmInstall().then(({ cmd, ok }) =>
+          consoleStore.appendLog(ok ? "info" : "warn", "export", ok ? `Copied: ${cmd}` : `Could not copy (clipboard blocked): ${cmd}`),
+        );
+      }
+    } catch (err) {
+      consoleStore.appendLog("error", "export", `Export failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
 
   // Narrow canvas detection (prototype lift() lines 10582-10589)
   const checkLift = useCallback(() => {
@@ -431,6 +468,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const handleRunCodeClick = () => {
     if (isRunningCode) return;
     setIsRunningCode(true);
+    logCompileRun();
     onRunCode?.();
     setTimeout(() => {
       setIsRunningCode(false);
@@ -644,13 +682,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-hidden="true"
             />
 
-            {/* Add keyframe (K) - disabled with reason */}
+            {/* Add keyframe (K) -> timelineOpsAdapter.addKeyframeAtPlayhead (core setKeyframeAt) */}
             <IconButton
               size="lg"
               data-mact="kf"
               aria-label="Add keyframe (K)"
-              tooltip="Add keyframe (K) - Disabled: no engine command for add keyframe"
-              disabled={true}
+              tooltip="Add keyframe (K)"
+              onClick={() => timelineOpsAdapter.addKeyframeAtPlayhead()}
               tabIndex={-1}
               icon={<Icon icon={KeyframeAddSvg} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
@@ -666,7 +704,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               tabIndex={focusedIndex === 2 ? 0 : -1}
               onFocus={() => setFocusedIndex(2)}
               onClick={() => {
-                onSplitClip?.();
+                if (onSplitClip) onSplitClip();
+                else timelineOpsAdapter.splitClipAtPlayhead();
               }}
               icon={<Icon icon={Scissors} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
@@ -981,7 +1020,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             key={opt}
             checked={activeEasing === opt}
             onClick={() => {
-              onSelectEasing?.(opt);
+              applyEasing(opt);
               setIsEasingMenuOpen(false);
             }}
           >
@@ -1002,7 +1041,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <MenuItem
             key={opt}
             onClick={() => {
-              onExportOption?.(opt);
+              runExport(opt);
               setIsExportMenuOpen(false);
             }}
           >

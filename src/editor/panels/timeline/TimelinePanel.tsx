@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useFocusScope } from "@/core/commands/useFocusScope";
 import { transport, transportStore, getTransport } from "@/core/time/transport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { installAutoKey } from "@/core/timeline/keyframeOps";
 import {
   useMotionModel,
   motionActions,
@@ -70,6 +71,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useFocusScope("timeline", panelRef);
+
+  // Auto-key (record mode): the core hook turns changed properties into keyframes at the playhead, in the same undo step.
+  useEffect(() => installAutoKey(), []);
 
   // Synchronize track width with localStorage on mount (hydration-safe)
   useEffect(() => {

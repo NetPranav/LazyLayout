@@ -25,6 +25,9 @@ import { ZipPacker } from "@/compiler/export/ZipPacker";
 import { consoleStore, useConsoleLogs } from "@/editor/panels/console/consoleStore";
 import { SyntaxHighlighter } from "./SyntaxHighlighter";
 import { useCodeModels } from "./useCodeModels";
+import { useCompiledFiles } from "./useCompiledFiles";
+import { useCodeFilesStore } from "./codeFilesStore";
+import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { ConsoleView } from "./ConsoleView";
 import { TraceView } from "./TraceView";
 import {
@@ -38,6 +41,7 @@ import {
   FILE_OF,
   DEFAULT_CODE_STATE,
   type CodeGeneratorState,
+  type GeneratedFile,
 } from "./codeGenerator";
 import type { CodePanelProps, CodeTab } from "./types";
 
@@ -122,7 +126,28 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const [activeMatchIndex, setActiveMatchIndex] = useState<number>(0);
   const findInputRef = useRef<HTMLInputElement>(null);
 
-  const activeFileId = controlledFileId ?? internalActiveFile;
+  // The real generated files (compiler output for the current document). The prototype generator is the fallback
+  // only when the compiler yields no files, or when the caller passes its own files.
+  const compiled = useCompiledFiles();
+  const real = compiled.files.length > 0 && !propFiles;
+  const storeActiveId = useCodeFilesStore((s) => s.activeFileId);
+  const storeTabs = useCodeFilesStore((s) => s.openTabs);
+  const openFileInStore = useCodeFilesStore((s) => s.openFile);
+  const closeFileInStore = useCodeFilesStore((s) => s.closeFile);
+  const projectName = useProjectMetaStore((s) => s.projectName);
+  const compiledById = useMemo(() => new Map(compiled.files.map((f) => [f.id, f])), [compiled.files]);
+  const realActiveId = storeActiveId && compiledById.has(storeActiveId) ? storeActiveId : (compiled.files[0]?.id ?? "");
+  const realFile = real ? compiledById.get(realActiveId) : undefined;
+  const tabsShown = real
+    ? (storeTabs.filter((t) => compiledById.has(t)).length > 0 ? storeTabs.filter((t) => compiledById.has(t)) : [realActiveId])
+    : openTabs;
+  const nameOf = (id: string) => (real ? (compiledById.get(id)?.name ?? id) : fName(id, codeState));
+  const pathOf = (id: string) => (real ? (compiledById.get(id)?.path ?? id) : fPath(id, codeState));
+  const langOf = (id: string): "tsx" | "vue" | "html" | "css" | "json" =>
+    real ? (compiledById.get(id)?.lang === "css" ? "css" : compiledById.get(id)?.lang === "json" ? "json" : "tsx") : fLang(id, codeState);
+  const iconKeyOf = (id: string) => (real ? (compiledById.get(id)?.lang === "css" ? "fcss" : compiledById.get(id)?.lang === "json" ? "fjson" : "ftsx") : fIcon(id, codeState));
+
+  const activeFileId = controlledFileId ?? (real ? realActiveId : internalActiveFile);
 
   // Real store connections
   const selectedElementId = useSelectionStore((s) => s.selectedId);
@@ -132,9 +157,23 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const { data: dataModel, type: typeModel, txt: txtModel } = useCodeModels();
 
   // Generate current file output
-  const generatedFile = useMemo(() => {
+  const generatedFile = useMemo((): GeneratedFile => {
+    if (realFile) {
+      return {
+        id: realFile.id,
+        lines: realFile.content.split(/\r?\n/).map((t) => ({ t })),
+        rg: {},
+        lang: "tsx",
+        text: realFile.content,
+        deps: [],
+        rules: [],
+        kf: [],
+        nodes: {},
+        uses: {},
+      };
+    }
     return cxGen(activeFileId, codeState, dataModel, typeModel, txtModel);
-  }, [activeFileId, codeState, dataModel, typeModel, txtModel]);
+  }, [realFile, activeFileId, codeState, dataModel, typeModel, txtModel]);
 
   // Track previous text for diff flash
   const prevTextRef = useRef<string>(generatedFile.text);
@@ -161,8 +200,8 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     return generatedFile.lines;
   }, [propCode, generatedFile.lines]);
 
-  const displayFileName = propFileName ?? fName(activeFileId, codeState);
-  const displayFilePath = fPath(activeFileId, codeState);
+  const displayFileName = propFileName ?? nameOf(activeFileId);
+  const displayFilePath = pathOf(activeFileId);
 
   // Compute all matches in displayLines for find bar (.tbfind)
   const matches = useMemo(() => {
@@ -238,7 +277,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   // Open the tab, active file and line of the selected canvas element (adjusted during render)
   const selectedShort = selectedElementId ? selectedElementId.replace(/^el_/, "") : null;
-  const selectedTargetFile = selectedShort ? FILE_OF[selectedShort] : undefined;
+  const selectedTargetFile = !real && selectedShort ? FILE_OF[selectedShort] : undefined;
   if (selectedTargetFile && !openTabs.includes(selectedTargetFile)) {
     setOpenTabs((prev) => [...prev, selectedTargetFile]);
   }
@@ -297,6 +336,11 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   );
 
   const handleOpenTab = (fileId: string) => {
+    if (real) {
+      openFileInStore(fileId);
+      onSelectFile?.(fileId);
+      return;
+    }
     if (!openTabs.includes(fileId)) {
       setOpenTabs((prev) => [...prev, fileId]);
     }
@@ -309,6 +353,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   const handleCloseTab = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
+    if (real) {
+      closeFileInStore(fileId);
+      return;
+    }
     const nextTabs = openTabs.filter((t) => t !== fileId);
     setOpenTabs(nextTabs);
     if (activeFileId === fileId) {
@@ -320,7 +368,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   const handleCopyCurrentFile = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(displayCode);
+      navigator.clipboard.writeText(displayCode).catch(() => {});
     }
     onCopy?.(displayCode);
   };
@@ -341,6 +389,11 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   const handleExportZip = () => {
     const packer = new ZipPacker();
+    if (real) {
+      compiled.files.forEach((f) => packer.addFile(f.path, f.content));
+      packer.download(`${projectName || "my-project"}.zip`);
+      return;
+    }
     if (propFiles) {
       propFiles.forEach((f) => packer.addFile(f.name, f.content));
     } else {
@@ -387,7 +440,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
   const layerCount = Object.keys(generatedFile.rg).length;
   const genSourceLabel =
-    activeFileId === "css"
+    real
+      ? `Compiled from ${compiled.files.length} file${compiled.files.length === 1 ? "" : "s"} in ${compiled.durationMs} ms`
+      : activeFileId === "css"
       ? "Generated from the theme"
       : activeFileId === "pkg"
       ? "Generated from the project"
@@ -400,7 +455,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     css: "CSS",
     json: "JSON",
   };
-  const activeLangLabel = langLabelMap[fLang(activeFileId, codeState)] || "TypeScript React";
+  const activeLangLabel = langLabelMap[langOf(activeFileId)] || "TypeScript React";
   const fileSizeKB = (new Blob([displayCode]).size / 1024).toFixed(1);
 
   return (
@@ -468,10 +523,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             aria-label="Open files"
             className="ll-ctabs ctabs ll:flex-1 ll:min-w-0 ll:flex ll:items-stretch ll:self-stretch ll:overflow-x-auto"
           >
-            {openTabs.map((tabId) => {
+            {tabsShown.map((tabId) => {
               const isSelected = activeFileId === tabId;
-              const fileNameStr = fName(tabId, codeState);
-              const fileIconKey = fIcon(tabId, codeState);
+              const fileNameStr = nameOf(tabId);
+              const fileIconKey = iconKeyOf(tabId);
 
               return (
                 <div
@@ -487,7 +542,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                       handleCloseTab(e, tabId);
                     }
                   }}
-                  title={fPath(tabId, codeState)}
+                  title={pathOf(tabId)}
                   className={`ll-ctab ctab ll:group ll:relative ll:flex ll:items-center ll:gap-1.5 ll:shrink-0 ll:h-full ll:pl-3 ll:pr-1 ll:font-sans ll:text-small ll:font-medium ll:whitespace-nowrap ll:cursor-pointer ll:select-none ${
                     isSelected
                       ? "ll:text-primary ll:after:absolute ll:after:left-0 ll:after:right-0 ll:after:bottom-0 ll:after:h-0.5 ll:after:bg-primary"
@@ -728,7 +783,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             <div className="ll-cedit cedit ll:flex-1 ll:min-h-0 ll:relative ll:overflow-hidden">
               <SyntaxHighlighter
                 lines={displayLines}
-                language={fLang(activeFileId, codeState)}
+                language={langOf(activeFileId)}
                 highlightedLine={propHighlightedLine ?? curLine}
                 highlightedRanges={highlightedRanges}
                 changedLines={changedRanges}

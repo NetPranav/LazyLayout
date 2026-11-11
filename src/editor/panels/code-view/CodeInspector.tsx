@@ -20,7 +20,6 @@ import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
-import { ZipPacker } from "@/compiler/export/ZipPacker";
 import {
   FRAMEWORKS,
   STYLINGS,
@@ -31,9 +30,6 @@ import {
   fCompKind,
   cxGen,
   animOf,
-  cxFiles,
-  cxSize,
-  cxKB,
   FILE_OF,
   type FrameworkKey,
   type StylingKey,
@@ -41,6 +37,8 @@ import {
   type CodeGeneratorState,
 } from "./codeGenerator";
 import { useCodeModels } from "./useCodeModels";
+import { useCompiledFiles } from "./useCompiledFiles";
+import { exportRepoZip, exportCurrentFile, repoSummary } from "./codeExport";
 import type { CodeInspectorProps, CodePropItem } from "./types";
 
 const TARGET_OPTIONS: Array<"React" | "HTML" | "Vue"> = ["React", "HTML", "Vue"];
@@ -129,7 +127,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   // Export progress animation state
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
-  const [exportDone, setExportDone] = useState<{ n: number; sz: string } | null>(null);
+  const [exportDone, setExportDone] = useState<{ n: number; sz: string; name: string } | null>(null);
   const [copiedCmd, setCopiedCmd] = useState<boolean>(false);
 
   // Determine current active inspector state
@@ -171,6 +169,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   // Export repo simulation with progress bar matching P lines 6599-6604, 6825-6841
   const handleExportRepo = () => {
     if (isExporting) return;
+    const summary = repoSummary();
     setIsExporting(true);
     setExportProgress(0);
     setExportDone(null);
@@ -181,23 +180,21 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
         if (next >= 100) {
           clearInterval(interval);
           setIsExporting(false);
-          const totalSz = cxKB(cxSize(codeState));
-          setExportDone({ n: cxFiles(codeState).length, sz: totalSz });
-
-          // Trigger real zip download
-          const packer = new ZipPacker();
-          cxFiles(codeState).forEach((f) => {
-            const gen = cxGen(f.id, codeState);
-            packer.addFile(fName(f.id, codeState), gen.text);
-          });
-          packer.download("my-project.zip");
+          // Real repository zip from the compiler's export bundle
+          const zipName = exportRepoZip();
+          setExportDone({ n: summary.files, sz: `${(summary.bytes / 1024).toFixed(1)} KB`, name: zipName });
         }
         return next;
       });
     }, 120);
   };
 
-  const installCmdStr = `npm install ${cxGen("pkg", codeState).deps.join(" ")}`;
+  const compiledOut = useCompiledFiles();
+  const repoOut = useMemo(() => {
+    void compiledOut.files; // re-pack whenever the compiled output changes
+    return repoSummary();
+  }, [compiledOut.files]);
+  const installCmdStr = repoOut.deps.length > 0 ? `npm install ${repoOut.deps.join(" ")}` : "npm install";
 
   const handleCopyInstallCmd = () => {
     if (navigator.clipboard) {
@@ -777,18 +774,18 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
         <div className="ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:font-mono ll:text-micro">
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Files</span>
-            <span className="ll:text-primary">{cxFiles(codeState).length}</span>
+            <span className="ll:text-primary">{repoOut.files}</span>
           </div>
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Total size</span>
-            <span className="ll:text-primary">{cxKB(cxSize(codeState))}</span>
+            <span className="ll:text-primary">{(repoOut.bytes / 1024).toFixed(1)} KB</span>
           </div>
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Dependencies</span>
-            <span className="ll:text-primary">{cxGen("pkg", codeState).deps.length}</span>
+            <span className="ll:text-primary">{repoOut.deps.length}</span>
           </div>
           <div className="ll-cdeps ll:text-muted ll:font-mono ll:text-micro ll:break-words ll:mt-1">
-            {cxGen("pkg", codeState).deps.join(", ")}
+            {repoOut.deps.map((d) => d.replace(/@[^@]+$/, "")).join(", ")}
           </div>
         </div>
       </section>
@@ -802,16 +799,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
           {/* Export File */}
           <button
             type="button"
-            onClick={() => {
-              const gen = cxGen("hero", codeState);
-              const blob = new Blob([gen.text], { type: "text/plain;charset=utf-8" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = fName("hero", codeState);
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
+            onClick={() => exportCurrentFile()}
             className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
           >
             <Icon icon={Download} size={13} className="ll:text-muted" />
@@ -838,7 +826,7 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
                 <div role="status" className="ll-xdone ll:flex ll:items-center ll:gap-2 ll:font-sans ll:text-small ll:text-primary">
                   <Icon icon={Check} size={14} className="ll:text-primary" />
                   <span>
-                    my-project.zip · {exportDone.n} files · {exportDone.sz}
+                    {exportDone.name} · {exportDone.n} files · {exportDone.sz}
                   </span>
                 </div>
               )}

@@ -272,9 +272,9 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
       gopen: prevLayer?.gopen ?? true,
       clips,
       open: prevLayer?.open ?? false,
-      mute: prevLayer?.mute ?? false,
-      lock: prevLayer?.lock ?? false,
-      solo: prevLayer?.solo ?? false,
+      mute: docLayer.visible === false,
+      lock: docLayer.locked === true,
+      solo: docLayer.solo === true,
       category,
       trig,
       ease: prevLayer?.ease ?? (primaryClip ? canonicalEaseToUi(primaryClip.easing) : "Ease out"),
@@ -294,9 +294,15 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
     nextLayers.push(motionLayer);
   }
 
+  const mainComp = doc.compositions?.[MAIN_COMPOSITION_ID];
+  const markers = mainComp
+    ? (mainComp.markers ?? []).map((m) => ({ id: m.id, t: Math.round(m.time * fps), name: m.label }))
+    : prevComp.markers;
+
   return {
     ...prevComp,
     layers: nextLayers,
+    markers,
   };
 }
 
@@ -305,6 +311,7 @@ let unsubscribeDocumentStore: (() => void) | null = null;
 let isSyncing = false;
 let lastLayersRef: Record<string, Layer> | null = null;
 let lastClipsRef: Record<string, unknown> | null = null;
+let lastCompsRef: Record<string, unknown> | null = null;
 
 /**
  * Installs the centralized, idempotent document-to-motion synchronizer.
@@ -320,6 +327,7 @@ export function installDocumentMotionSync(): () => void {
       if (doc?.layers) {
         lastLayersRef = doc.layers;
         lastClipsRef = doc.clips;
+        lastCompsRef = doc.compositions;
         const currentComp = useMotionModel.getState().comp;
         const nextComp = syncDocumentToMotion(doc, currentComp);
         useMotionModel.setState({ comp: nextComp });
@@ -334,11 +342,12 @@ export function installDocumentMotionSync(): () => void {
       if (!doc || !doc.layers) return;
 
       // Only re-project if layers or clips references actually changed
-      if (doc.layers === lastLayersRef && doc.clips === lastClipsRef) {
+      if (doc.layers === lastLayersRef && doc.clips === lastClipsRef && doc.compositions === lastCompsRef) {
         return;
       }
       lastLayersRef = doc.layers;
       lastClipsRef = doc.clips;
+      lastCompsRef = doc.compositions;
 
       isSyncing = true;
       try {
@@ -361,6 +370,7 @@ export function installDocumentMotionSync(): () => void {
       }
       lastLayersRef = null;
       lastClipsRef = null;
+      lastCompsRef = null;
     }
   };
 }

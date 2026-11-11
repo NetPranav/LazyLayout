@@ -11,6 +11,8 @@ import { FileContextMenuContent } from "./FileContextMenu";
 import type { FileItem, FileMenuAction } from "./types";
 import { flattenFiles, filterTreeNodes, type FlatFileNode } from "./treeFilter";
 import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
+import { useCompiledFiles, compiledFilesToTree } from "@/editor/panels/code-view/useCompiledFiles";
+import { useCodeFilesStore } from "@/editor/panels/code-view/codeFilesStore";
 
 export interface FilesTreeProps {
   files: FileItem[];
@@ -31,6 +33,10 @@ const CATEGORY_OPTIONS = [
   { value: "Styles", label: "Styles" },
   { value: "Config", label: "Config" },
 ];
+
+function allFolderIds(items: FileItem[]): string[] {
+  return items.flatMap((f) => (f.isFolder ? [f.id, ...allFolderIds(f.children ?? [])] : []));
+}
 
 function getFileIcon(name: string, isFolder: boolean): React.ReactNode {
   if (isFolder) {
@@ -66,16 +72,37 @@ function renderHighlightedName(name: string, query: string) {
 }
 
 export const FilesTree: React.FC<FilesTreeProps> = ({
-  files,
-  selectedIds,
-  expandedIds,
+  files: propFiles,
+  selectedIds: propSelectedIds,
+  expandedIds: propExpandedIds,
   searchQuery = "",
-  visibleNodes: propVisibleNodes,
-  onSelect,
-  onToggleExpand,
+  visibleNodes: parentVisibleNodes,
+  onSelect: propOnSelect,
+  onToggleExpand: propOnToggleExpand,
   onRename,
   onFileAction,
 }) => {
+  // The real generated files: the compiler output for the current document. Selecting a row opens it in the code panel.
+  const compiled = useCompiledFiles();
+  const real = compiled.files.length > 0;
+  const activeFileId = useCodeFilesStore((s) => s.activeFileId);
+  const openFile = useCodeFilesStore((s) => s.openFile);
+  const realFiles = useMemo(() => compiledFilesToTree(compiled.files), [compiled.files]);
+  const [collapsedDirs, setCollapsedDirs] = useState<string[]>([]);
+  const files = real ? realFiles : propFiles;
+  const selectedIds = useMemo(
+    () => (real ? (activeFileId ? [activeFileId] : [compiled.files[0].id]) : propSelectedIds),
+    [real, activeFileId, compiled.files, propSelectedIds],
+  );
+  const expandedIds = useMemo(
+    () => (real ? allFolderIds(realFiles).filter((id) => !collapsedDirs.includes(id)) : propExpandedIds),
+    [real, realFiles, collapsedDirs, propExpandedIds],
+  );
+  const propVisibleNodes = real ? undefined : parentVisibleNodes;
+  const onSelect = real ? (id: string) => openFile(id) : propOnSelect;
+  const onToggleExpand = real
+    ? (id: string) => setCollapsedDirs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    : propOnToggleExpand;
   const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const treeRef = useRef<HTMLDivElement>(null);

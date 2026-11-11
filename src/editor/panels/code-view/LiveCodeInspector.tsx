@@ -58,7 +58,7 @@ const CATEGORY_TABS: { id: FileCategory; label: string }[] = [
   { id: "animation", label: "Animations" },
 ];
 
-function compileProjectFiles(project: {
+export function compileProjectFiles(project: {
   pages: ProjectStoreState["pages"];
   elements: Record<string, Layer>;
   databaseSchemas: ProjectStoreState["databaseSchemas"];

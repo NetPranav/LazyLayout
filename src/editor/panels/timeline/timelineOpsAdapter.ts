@@ -2,6 +2,7 @@
 
 import { useMotionModel, motionActions } from "@/editor/motion-model";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import type { PropId } from "@/editor/motion-model";
 
 export interface SplitResult {
   success: boolean;
@@ -17,29 +18,38 @@ export interface KeyframeCommandStatus {
 
 /**
  * Thin adapter mediating between Timeline Panel actions and Core Engine commands/ops.
- * Task B7 compliance:
- * - Split at playhead executes via timeline ops / motion model clip splitting.
- * - Add keyframe has no engine command: kept disabled with explicit reason.
+ * - Split at playhead executes via the motion model (which writes the document clips).
+ * - Add keyframe goes through `motionActions.addKey`, which calls the core `setKeyframeAt` (one undo step).
  */
+function keyframeTarget(layerId?: string): { layerId: string; props: PropId[] } | null {
+  const s = useMotionModel.getState();
+  const id = layerId ?? useSelectionStore.getState().selectedIds.find((x) => s.comp.layers.some((l) => l.id === x));
+  if (!id) return null;
+  const layer = s.comp.layers.find((l) => l.id === id);
+  if (!layer || layer.lock) return null;
+  if (s.selectedProp?.layerId === id) return { layerId: id, props: [s.selectedProp.p] };
+  const animated = layer.tr.map((t) => t.p);
+  return { layerId: id, props: animated.length > 0 ? animated : ["opacity"] };
+}
+
 export const timelineOpsAdapter = {
-  /**
-   * Status check for adding a keyframe.
-   * Core engine lacks an addKeyframe command.
-   */
-  canAddKeyframe(): KeyframeCommandStatus {
-    return {
-      allowed: false,
-      reason: "No engine command to add keyframe at playhead",
-    };
+  /** A keyframe can be added when a (unlocked) layer that the timeline knows is selected. */
+  canAddKeyframe(layerId?: string): KeyframeCommandStatus {
+    const target = keyframeTarget(layerId);
+    return target
+      ? { allowed: true, reason: "" }
+      : { allowed: false, reason: "Select an unlocked layer to add a keyframe at the playhead" };
   },
 
-  /**
-   * Attempts to add a keyframe at the playhead.
-   * Always fails with status explaining the missing engine command.
-   */
-  addKeyframeAtPlayhead(): { success: false; reason: string } {
-    const status = this.canAddKeyframe();
-    return { success: false, reason: status.reason };
+  /** Adds a keyframe at the playhead on the selected property, or on every animated property of the layer. */
+  addKeyframeAtPlayhead(layerId?: string): { success: boolean; reason?: string } {
+    const target = keyframeTarget(layerId);
+    if (!target) return { success: false, reason: this.canAddKeyframe(layerId).reason };
+    const { playhead } = useMotionModel.getState();
+    const ids: string[] = [];
+    for (const p of target.props) ids.push(motionActions.addKey(target.layerId, p, playhead));
+    motionActions.selectKeys(ids);
+    return { success: true };
   },
 
   /**
