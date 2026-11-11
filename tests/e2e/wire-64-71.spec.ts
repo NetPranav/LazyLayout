@@ -158,7 +158,8 @@ test("Phase 66 on the new editor: three keyframes distributed evenly, then made 
 
   await spacerKeys.nth(1).click({ button: "right" });
   await page.getByRole("menuitem", { name: "Slower" }).click();
-  await expect.poll(() => keyTimes(page, "Spacer")).toEqual([0, 0.938, 1.875]);
+  // ×1.25 around the first key, snapped to frames (56 and 113 of 60)
+  await expect.poll(() => keyTimes(page, "Spacer")).toEqual([0, 0.933, 1.883]);
 
   await page.locator("[data-stage=artboard]").hover();
   await page.keyboard.press("Control+z");
@@ -183,8 +184,9 @@ test("Phase 67 on the new editor: Bouncy and F9 write real easings, and the grap
 
   // the keyframe menu's named feels
   await second.click({ button: "right" });
-  await page.getByRole("menuitem", { name: "Feel" }).hover();
-  await page.getByRole("menuitem", { name: "Bouncy" }).click();
+  const feelMenu = page.getByRole("menu", { name: "Feel" });
+  if (!(await feelMenu.isVisible().catch(() => false))) await page.getByRole("menuitem", { name: "Feel" }).click();
+  await feelMenu.getByRole("menuitem", { name: "Bouncy" }).click();
   await expect.poll(ease).toMatch(/^spring\(bounce: [\d.]+, time: [\d.]+\)$/);
 
   // the graph: Value and Speed
