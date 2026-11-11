@@ -262,6 +262,8 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition,
       .filter((c) => c.layerId === docLayer.id && c.enabled && (!placementOffset || placementOffset.has(c.id)))
       .map((c) => (placementOffset ? { ...c, delay: (placementOffset.get(c.id) ?? 0) + (c.delay ?? 0) } : c));
 
+    // an interaction composition or a precomp lists only the layers animated in it
+    if (placementOffset && layerClips.length === 0) continue;
     let clips = (placementOffset ? undefined : prevLayer?.clips) ?? [{ s: 0, e: dur }];
     const trMap = new Map<PropId, Keyframe[]>();
 

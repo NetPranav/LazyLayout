@@ -10,6 +10,7 @@ import { TransformOverlay } from "./TransformOverlay";
 import { TextFormatBar } from "./TextFormatBar";
 import { setTextEditing } from "@/core/commands";
 import { MotionPathOverlay } from "./MotionPathOverlay";
+import { useTextEditRequest } from "./textEditRequest";
 import { ValueHud } from "./ValueHud";
 import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
@@ -313,6 +314,14 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const artboardContainerRef = useRef<HTMLDivElement | null>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
+  // a text just made with the Text tool opens for typing (the request comes from the stage)
+  useEffect(
+    () =>
+      useTextEditRequest.subscribe((r, prev) => {
+        if (r.seq !== prev.seq && r.id) setEditingText(r.id);
+      }),
+    [],
+  );
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Phase 65: motion paths and onion skin show the composition the timeline has open
   const shownCompositionId = useZustandStore(transportStore, (t) => t.compositionId);
