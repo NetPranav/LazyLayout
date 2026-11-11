@@ -122,7 +122,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
         <SurfaceView
           resolved={resolved}
           geometry={{ width: Math.max(1, resolved.num("frame.width", 100)), height: Math.max(1, resolved.num("frame.height", 100)), radius: Math.max(0, resolved.num("appearance.radius", 0)), kind: "roundedRect" }}
-          interactive={ctx.mode === "preview" || ctx.mode === "export"}
+          interactive={ctx.mode === "preview" || ctx.mode === "export" || ctx.surfacesLive === true}
           content={resolved.get("surface.drawContent") !== false}
         />
       ) : (

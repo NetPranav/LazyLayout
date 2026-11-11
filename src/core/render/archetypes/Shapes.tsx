@@ -62,7 +62,7 @@ const SurfaceBox: React.FC<ArchetypeRenderProps & { width: number; height: numbe
     data-surface-host=""
     style={{ ...layerBoxStyle(layer, resolved, ctx), width, height, flexShrink: 0, isolation: "isolate", borderRadius: kind === "ellipse" ? "50%" : radius }}
   >
-    <SurfaceView resolved={resolved} geometry={{ width, height, radius, kind }} interactive={ctx.mode === "preview" || ctx.mode === "export"} content={false} />
+    <SurfaceView resolved={resolved} geometry={{ width, height, radius, kind }} interactive={ctx.mode === "preview" || ctx.mode === "export" || ctx.surfacesLive === true} content={false} />
   </div>
 );
 

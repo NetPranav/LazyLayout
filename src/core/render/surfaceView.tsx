@@ -87,7 +87,7 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
     const zoom = host && host.offsetWidth > 0 && rect ? rect.width / host.offsetWidth : 1;
     const dpr = canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1;
     const [w, h, r, kind] = geoKey.split("|");
-    controller.update({ width: Number(w), height: Number(h), radius: Number(r), kind: kind as SurfaceGeometry["kind"] }, stableSettings, linearRgb(base), Math.min(3, dpr * zoom));
+    controller.update({ width: Number(w), height: Number(h), radius: Number(r), kind: kind as SurfaceGeometry["kind"] }, stableSettings, linearRgb(base), Math.min(3, dpr * Math.max(zoom, 2)));
   }, [geoKey, stableSettings, base, ticker]);
 
   // the text, printed on the surface
@@ -105,7 +105,7 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
       const rect = host.getBoundingClientRect();
       const zoom = host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
       const dpr = canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1;
-      controllerRef.current?.setContent(rasterizeText(host, Math.min(3, dpr * zoom)));
+      controllerRef.current?.setContent(rasterizeText(host, Math.min(3, dpr * Math.max(zoom, 2))));
     };
     const soon = () => {
       if (pending) return;
@@ -132,9 +132,16 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
       const zoom = host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
       return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
     };
+    // listen on the document, not the host: in the editor the canvas's hit boxes sit over the drawn page and take the
+    // pointer (which is how selection works), so the surface only hears presses that fall inside its own box
     let down = false;
+    const doc = host.ownerDocument;
+    const inside = (e: PointerEvent) => {
+      const rect = host.getBoundingClientRect();
+      return e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+    };
     const onDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !inside(e)) return;
       down = true;
       const p = local(e);
       controllerRef.current?.press(p.x, p.y);
@@ -149,16 +156,16 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
       down = false;
       controllerRef.current?.release();
     };
-    host.addEventListener("pointerdown", onDown);
-    host.addEventListener("pointermove", onMove);
-    const win = host.ownerDocument.defaultView ?? window;
-    win.addEventListener("pointerup", onUp);
-    host.addEventListener("pointercancel", onUp);
+    const opts = { capture: true, passive: true } as const;
+    doc.addEventListener("pointerdown", onDown, opts);
+    doc.addEventListener("pointermove", onMove, opts);
+    doc.addEventListener("pointerup", onUp, opts);
+    doc.addEventListener("pointercancel", onUp, opts);
     return () => {
-      host.removeEventListener("pointerdown", onDown);
-      host.removeEventListener("pointermove", onMove);
-      win.removeEventListener("pointerup", onUp);
-      host.removeEventListener("pointercancel", onUp);
+      doc.removeEventListener("pointerdown", onDown, opts);
+      doc.removeEventListener("pointermove", onMove, opts);
+      doc.removeEventListener("pointerup", onUp, opts);
+      doc.removeEventListener("pointercancel", onUp, opts);
     };
   }, [interactive]);
 

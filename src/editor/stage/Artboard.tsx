@@ -387,8 +387,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
     return out;
   }, [previewing, layers]);
   const engineCtx = useMemo(
-    () => (mirrorViews || screenFrames ? { ...ENGINE_CTX, ...(mirrorViews ? { mirrorViews } : {}), ...(screenFrames ? { screenFrames } : {}) } : ENGINE_CTX),
-    [mirrorViews, screenFrames],
+    () => {
+      const live = canvasViewMode === "preview";
+      const base = live ? { ...ENGINE_CTX, surfacesLive: true } : ENGINE_CTX;
+      return mirrorViews || screenFrames ? { ...base, ...(mirrorViews ? { mirrorViews } : {}), ...(screenFrames ? { screenFrames } : {}) } : base;
+    },
+    [mirrorViews, screenFrames, canvasViewMode],
   );
   /** How tall a frame is with everything in it: a linked view is as tall as what it shows at its breakpoint. */
   const fullHeightOf = (frame: Layer): number => {
