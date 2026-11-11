@@ -10,6 +10,10 @@ import {
   Minus,
   Star,
   Hexagon,
+  PenTool,
+  Columns3,
+  Rows3,
+  Grid3x3,
   ChevronRight,
   Film,
   Eye,
@@ -83,6 +87,8 @@ function getLayerIcon(type?: string): React.ReactNode {
     case "poly":
     case "shape":
       return <Icon icon={Hexagon} size={ICON_SIZE_PX} />;
+    case "path":
+      return <Icon icon={PenTool} size={ICON_SIZE_PX} />;
     case "frame":
     default:
       return <Icon icon={Frame} size={ICON_SIZE_PX} />;
@@ -988,6 +994,20 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Stack and grid frames: their direction */}
+                  {node.item.layout && (
+                    <span data-testid="layer-layout" data-layout={node.item.layout} title={node.item.layout === "grid" ? "Grid" : node.item.layout === "row" ? "Auto layout, row" : "Auto layout, column"} className="ll:shrink-0 ll:grid ll:place-items-center ll:text-muted">
+                      <Icon icon={node.item.layout === "grid" ? Grid3x3 : node.item.layout === "row" ? Columns3 : Rows3} size={ICON_SIZE_PX} />
+                    </span>
+                  )}
+
+                  {/* Path layers: the number of points */}
+                  {node.item.pointCount !== undefined && (
+                    <span data-testid="layer-point-count" title={`${node.item.pointCount} ${node.item.pointCount === 1 ? "point" : "points"}`} className="ll:shrink-0 ll:text-micro ll:tabular-nums ll:text-muted">
+                      {node.item.pointCount}
+                    </span>
+                  )}
 
                   {/* Actions: Eye (visibility) and Lock (sits before motion badge in P) */}
                   <span className="act ll-act">

@@ -48,6 +48,9 @@ Open: Pen tool is `available:false` in core (engine request, needs the user's go
 | 8 Console and Trace | blocked | starting lines and Trace are sample data in files outside the lane; requests in INTEGRATION.md |
 | 9 e2e | in progress | 0 of 5 chosen specs run (run was interrupted, not retried) |
 
+## F. Pages manager and Sections gallery (2026-11-11)
+Pages manager (add, rename, duplicate, set as home, delete with inline confirm, drag to reorder, settings, switch, undo) and the Sections gallery (now the Sections category of the toolbar Insert box, no separate button or panel; live thumbnails of the engine's eight templates, category tabs, search, insert below the selection, undo) built and checked in headless Chromium at 1440. Not reachable at 390 (left panel hidden by the shell). Open: share image field, drag a card onto the canvas, page commands in the engine. See `handoffs/2026-11-11-pages-sections.md`.
+
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).
 

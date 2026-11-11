@@ -36,6 +36,7 @@ import { applyFeel, getActivePreset } from "@/editor/motion/feel";
 import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import { springAnim, cancelAll } from "@/editor/motion/ease";
 import { useMounted } from "@/editor/components/useMounted";
+import { openExportDialog } from "@/editor/shell/export-dialog/useExportDialogStore";
 import {
   CANVAS_CHROME_SIZES,
   SPOTLIGHT_PREFIX_MAP,
@@ -351,6 +352,11 @@ export const Spotlight: React.FC<SpotlightProps> = ({
         name: "Go to Design",
         icon: Square,
         run: () => onSelectMode?.("design"),
+      },
+      {
+        name: "Export…",
+        icon: Zap,
+        run: () => openExportDialog(),
       },
       {
         name: "Add keyframe",

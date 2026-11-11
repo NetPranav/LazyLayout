@@ -9,6 +9,10 @@ import { prefersReducedMotion } from "@/editor/motion/feel";
 import { CANVAS_CHROME_SIZES } from "./constants";
 import { INSERT_CATALOG, type InsertItem } from "./insertData";
 import { insertCatalogItem, canInsertCatalogItem } from "./insertCommands";
+import { SECTION_TEMPLATES, type SectionTemplate } from "@/core/templates/sections";
+import { CATEGORIES, categoryOf } from "./sectionCategories";
+import { insertSectionBelowSelection } from "./insertSection";
+import { SectionThumb } from "./SectionThumb";
 
 export interface InsertBoxProps {
   open: boolean;
@@ -137,6 +141,23 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
     [onInsertItem, onClose, triggerRef]
   );
 
+  const handleSelectSection = useCallback(
+    (id: string) => {
+      insertSectionBelowSelection(id);
+      onClose();
+      triggerRef?.current?.focus();
+    },
+    [onClose, triggerRef]
+  );
+
+  const matchedSections = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return SECTION_TEMPLATES.filter(
+      (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.id.includes(q)
+    );
+  }, [searchQuery]);
+
   // Search filtering logic across all categories
   const filteredItems = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -248,7 +269,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
           <div
             ref={panelRef}
             onKeyDown={(e) => {
-              const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: GRID_COLS, ArrowUp: -GRID_COLS };
+              const cols = Number((document.activeElement as HTMLElement | null)?.dataset.cols) || GRID_COLS;
+              const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols };
               const step = keys[e.key];
               if (step === undefined) return;
               const cards = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("[data-card]"));
@@ -262,22 +284,42 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
             className="ll-insr ll:flex-1 ll:min-w-0 ll:overflow-y-auto ll:p-4"
           >
             {filteredItems !== null ? (
-              filteredItems.length > 0 ? (
-                <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
-                  {filteredItems.map((item) => (
-                    <CardItem
-                      key={item.name}
-                      enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
-                      item={item}
-                      onSelect={handleSelectCard}
-                    />
-                  ))}
-                </div>
+              filteredItems.length + matchedSections.length > 0 ? (
+                <>
+                  {matchedSections.length > 0 && (
+                    <div className={filteredItems.length > 0 ? "ll:mb-4" : ""}>
+                      <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">Sections</h4>
+                      <SectionGrid templates={matchedSections} onSelect={handleSelectSection} />
+                    </div>
+                  )}
+                  {filteredItems.length > 0 && (
+                    <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
+                      {filteredItems.map((item) => (
+                        <CardItem
+                          key={item.name}
+                          enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
+                          item={item}
+                          onSelect={handleSelectCard}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted">
                   Nothing found
                 </div>
               )
+            ) : activeCategory === "Sections" ? (
+              CATEGORIES.map((cat, gIdx) => (
+                <div key={cat.id} className={gIdx > 0 ? "ll:mt-4" : ""}>
+                  <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">{cat.label}</h4>
+                  <SectionGrid
+                    templates={SECTION_TEMPLATES.filter((t) => categoryOf(t) === cat.id)}
+                    onSelect={handleSelectSection}
+                  />
+                </div>
+              ))
             ) : (
               INSERT_CATALOG[activeCategory]?.map((group, gIdx) => (
                 <div
@@ -316,6 +358,38 @@ interface CardItemProps {
 }
 
 const GRID_COLS = 3;
+
+const SectionGrid: React.FC<{ templates: SectionTemplate[]; onSelect: (id: string) => void }> = ({
+  templates,
+  onSelect,
+}) => (
+  <div className="ll-insgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:items-start">
+    {templates.map((t) => (
+      <button
+        key={t.id}
+        type="button"
+        data-card
+        data-cols={2}
+        data-testid="section-card"
+        data-template={t.id}
+        aria-label={`Insert ${t.name}`}
+        title={t.description}
+        onClick={() => onSelect(t.id)}
+        className="ll-card ll:group ll:flex ll:flex-col ll:items-stretch ll:gap-1.5 ll:min-w-0 ll:p-0 ll:border-0 ll:font-sans ll:bg-transparent ll:text-left ll:text-secondary ll:cursor-pointer ll:outline-none ll:transition-transform ll:duration-150 ll:hover:-translate-y-0.5 ll:focus-visible:-translate-y-0.5"
+      >
+        <span className="ll:relative ll:block ll:w-full ll:overflow-hidden ll:rounded-sm ll:border ll:border-border ll:box-border ll:transition-shadow ll:duration-150 ll:group-hover:border-muted ll:group-hover:shadow-soft ll:group-focus-visible:ring-1 ll:group-focus-visible:ring-primary">
+          <SectionThumb template={t} />
+          <span className="ll:absolute ll:inset-x-0 ll:bottom-0 ll:flex ll:items-center ll:justify-center ll:h-6 ll:bg-control-primary ll:text-control-primary-fg ll:text-micro ll:font-medium ll:opacity-0 ll:transition-opacity ll:duration-150 ll:group-hover:opacity-100 ll:group-focus-visible:opacity-100">
+            Insert
+          </span>
+        </span>
+        <span className="ll-cname ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
+          {t.name}
+        </span>
+      </button>
+    ))}
+  </div>
+);
 
 function focusCard(root: HTMLElement | null, index: number) {
   root?.querySelectorAll<HTMLButtonElement>("[data-card]")[index]?.focus();

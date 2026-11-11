@@ -1,6 +1,8 @@
 "use client";
 
 import { GitExporter } from "@/compiler/export/GitExporter";
+import { ZipPacker } from "@/compiler/export/ZipPacker";
+import type { EmittedFile } from "@/core/types/compiler";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { getDocument } from "@/core/store/useDocumentStore";
@@ -50,18 +52,31 @@ export function repoSummary(): { files: number; bytes: number; deps: string[]; n
   return { files: bundle.manifest.totalFiles, bytes: bundle.manifest.totalBytes, deps, name: bundle.manifest.projectName };
 }
 
-/** Downloads the whole generated repository as a .zip. Returns the file name. */
-export function exportRepoZip(): string {
+/** Every file of the generated repository (what the Repo .zip holds), for the Export dialog. */
+export function repoFiles(): EmittedFile[] {
+  return bundleNow().files;
+}
+
+/** Downloads the generated repository as a .zip: all of it, or only the files whose paths are in `include`. Returns the file name. */
+export function exportRepoZip(include?: ReadonlySet<string>): string {
   const bundle = bundleNow();
   const filename = `${bundle.manifest.projectName}.zip`;
-  bundle.downloadZip(filename);
+  if (!include) {
+    bundle.downloadZip(filename);
+    return filename;
+  }
+  const packer = new ZipPacker();
+  for (const file of bundle.files) {
+    if (include.has(file.path)) packer.addFile(file.path, file.content);
+  }
+  packer.download(filename);
   return filename;
 }
 
-/** Downloads one generated file (the one open in the Code page, or the first). */
-export function exportCurrentFile(): { name: string; ok: boolean } {
-  const { files } = compileNow();
-  const activeId = useCodeFilesStore.getState().activeFileId;
+/** Downloads one generated file: the given repo path, else the one open in the Code page, else the first. */
+export function exportCurrentFile(path?: string): { name: string; ok: boolean } {
+  const { files } = path ? { files: repoFiles() } : compileNow();
+  const activeId = path ?? useCodeFilesStore.getState().activeFileId;
   const file = files.find((f) => f.path === activeId) ?? files[0];
   if (!file || typeof document === "undefined") return { name: "", ok: false };
   const name = file.path.split("/").pop() || "file.txt";

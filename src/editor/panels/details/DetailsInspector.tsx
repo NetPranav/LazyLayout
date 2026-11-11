@@ -14,6 +14,7 @@ import { DividerSection } from "./sections/DividerSection";
 import { BackgroundSection } from "./sections/BackgroundSection";
 import { IconSection } from "./sections/IconSection";
 import { ShapeSection } from "./sections/ShapeSection";
+import { VectorSection, VectorHeaderAction, VectorOptions } from "./sections/VectorSection";
 import { CounterSection } from "./sections/CounterSection";
 import { Object3DSection } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
@@ -31,9 +32,6 @@ import {
   ThemeTokensBody,
 } from "./sections/PageSection";
 import {
-  StrokeOptions,
-  EffectsOptions,
-  FillOptions,
   PositionOptions,
   LayoutOptions,
   AppearanceOptions,
@@ -113,6 +111,7 @@ export function getInspectorDesignSections(
   const isBackground = archetype === "background";
   const isIcon = archetype === "icon";
   const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
+  const isPath = archetype === "svgPath";
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
@@ -217,6 +216,17 @@ export function getInspectorDesignSections(
           },
         ]
       : []),
+    ...(isPath
+      ? [
+          {
+            id: "vector",
+            title: "Vector",
+            headerAction: <VectorHeaderAction {...sectionProps} />,
+            children: <VectorSection {...sectionProps} />,
+            moreContent: <VectorOptions {...sectionProps} />,
+          },
+        ]
+      : []),
     ...(isCounter
       ? [
           {
@@ -274,7 +284,6 @@ export function getInspectorDesignSections(
             title: "Fill",
             onAdd: () => fillAddRef.current?.(),
             children: <FillSection {...sectionProps} onAddFillRef={fillAddRef} />,
-            moreContent: <FillOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -285,7 +294,6 @@ export function getInspectorDesignSections(
             title: "Stroke",
             onAdd: () => strokeAddRef.current?.(),
             children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
-            moreContent: <StrokeOptions {...sectionProps} />,
           },
         ]
       : []),
@@ -294,7 +302,6 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
-      moreContent: <EffectsOptions {...sectionProps} />,
     },
     {
       id: "accessibility",

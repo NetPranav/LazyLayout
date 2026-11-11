@@ -6,20 +6,12 @@ import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
-import { ColorSwatch } from "../controls/ColorSwatch";
+import { StrokeRowOptions } from "../options/StrokeOptions";
 import type { InspectorSectionProps, StrokeItem } from "../types";
 
 export interface StrokeSectionProps extends InspectorSectionProps {
   onAddStrokeRef?: { current?: () => void };
 }
-
-const STYLE_OPTIONS = ["solid", "dashed", "dotted"] as const;
-const SIDE_OPTIONS = ["all", "top", "right", "bottom", "left"] as const;
-
-const segClass = (active: boolean) =>
-  `ll:flex-1 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-micro ll:capitalize ll:cursor-pointer ll:border-0 ll:p-0 ll:outline-none ${
-    active ? "ll:bg-surface-panel ll:text-primary" : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
-  }`;
 
 /** The stroke a layer already has, as a row: any border width above 0 (a shape's stroke width, through the same fields). */
 function strokeFromDocument(get: InspectorSectionProps["getValue"]): StrokeItem[] {
@@ -40,6 +32,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
   layer,
   getValue,
   onUpdateProp,
+  onUpdateProps,
   onAddStrokeRef,
   className = "",
 }) => {
@@ -55,6 +48,8 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
     setSeen({ selectedId, docKey });
     // undo or another panel brought a stroke back
     if (docStroke.length === 1 && !strokes.some((s) => !s.hidden)) setStrokes(docStroke);
+    // undo or redo of a single visible stroke: the row follows the document
+    else if (docStroke.length === 1 && strokes.length === 1) setStrokes([{ ...docStroke[0], id: strokes[0].id }]);
   }
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
@@ -65,10 +60,12 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
   const syncPrimaryToStore = (updatedStrokes: StrokeItem[]) => {
     const visible = updatedStrokes.find((s) => !s.hidden);
+    // One undo step for the whole row: every field it writes goes in one patch.
+    const patch: Record<string, string | number | null> = {};
     // One side only: the width goes on that side ("top right bottom left") and the rest are 0. Boxes and rectangles only.
     if (layer && ["rectangle", "container", "button", "badge", "fab", "generic", "form"].includes(layer.archetype)) {
       const w = visible ? visible.width : 0;
-      const sides =
+      patch["stroke.sides"] =
         !visible || visible.sides === "all"
           ? null
           : visible.sides === "top"
@@ -78,15 +75,16 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
               : visible.sides === "bottom"
                 ? `0 0 ${w} 0`
                 : `0 0 0 ${w}`;
-      onUpdateProp?.("stroke.sides", sides);
     }
     if (visible) {
-      onUpdateProp?.("appearance.border.color", `#${visible.hex}`);
-      onUpdateProp?.("appearance.border.width", visible.width);
-      onUpdateProp?.("appearance.border.style", visible.style);
+      patch["appearance.border.color"] = `#${visible.hex}`;
+      patch["appearance.border.width"] = visible.width;
+      patch["appearance.border.style"] = visible.style;
     } else {
-      onUpdateProp?.("appearance.border.width", 0);
+      patch["appearance.border.width"] = 0;
     }
+    if (onUpdateProps) onUpdateProps(patch);
+    else for (const [key, value] of Object.entries(patch)) onUpdateProp?.(key, value);
   };
 
   const handleAddStroke = () => {
@@ -264,71 +262,14 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
 
             {/* Settings Popover */}
             <RowSettingsPopover isOpen={isOpen} title="Stroke" onClose={() => setActivePopoverId(null)}>
-              <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:items-center">
-                <div className="ll:flex ll:items-center ll:gap-1 ll:min-w-0">
-                  <ColorSwatch label="Stroke colour picker" hex={stroke.hex} onChange={(h) => handleUpdateStroke(stroke.id, { hex: h })} className="ll-dsw ll:w-7 ll:h-7 ll:rounded-sm ll:border ll:border-border ll:shrink-0" />
-                  <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:flex-1 ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
-                    <span className="ll:font-mono ll:text-micro ll:text-muted">#</span>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      aria-label="Stroke hex"
-                      value={stroke.hex}
-                      onChange={(e) =>
-                        handleUpdateStroke(stroke.id, {
-                          hex: e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase(),
-                        })
-                      }
-                      className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="ll-dfield ll:flex ll:items-center ll:gap-1 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:rounded-sm">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    aria-label="Stroke width"
-                    value={stroke.width}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      if (!isNaN(val)) handleUpdateStroke(stroke.id, { width: Math.max(0, val) });
-                    }}
-                    className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-                  />
-                </div>
-              </div>
-
-              <span className="ll:text-micro ll:text-muted">Style</span>
-              <div role="radiogroup" aria-label="Stroke style" className="ll:flex ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm">
-                {STYLE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    role="radio"
-                    aria-checked={stroke.style === opt}
-                    onClick={() => handleUpdateStroke(stroke.id, { style: opt })}
-                    className={segClass(stroke.style === opt)}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-
-              <span className="ll:text-micro ll:text-muted">Sides</span>
-              <div role="radiogroup" aria-label="Stroke sides" className="ll:flex ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:rounded-sm">
-                {SIDE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    role="radio"
-                    aria-checked={stroke.sides === opt}
-                    onClick={() => handleUpdateStroke(stroke.id, { sides: opt })}
-                    className={segClass(stroke.sides === opt)}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
+              <StrokeRowOptions
+                selectedId={selectedId}
+                layer={layer}
+                getValue={getValue}
+                onUpdateProp={onUpdateProp}
+                stroke={stroke}
+                onChangeStroke={(patch) => handleUpdateStroke(stroke.id, patch)}
+              />
             </RowSettingsPopover>
           </div>
         );

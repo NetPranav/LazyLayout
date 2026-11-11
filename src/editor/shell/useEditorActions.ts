@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { REVEAL_EXPORT_EVENT } from "@/editor/panels/code-view/exportReveal";
 import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import { useCameraStore } from "@/core/store/useCameraStore";
@@ -339,6 +340,7 @@ export function useEditorActions(
       image: "select",
       pen: "pen",
       pencil: "pencil",
+      anchor: "select",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
   }, []);
@@ -373,6 +375,16 @@ export function useEditorActions(
     setIsLeftCollapsed(anyOpen);
     setIsRightCollapsed(anyOpen);
   }, [isLeftCollapsed, isRightCollapsed]);
+
+  // The Code toolbar's Export button: open the right sidebar, where the Export section scrolls itself into view.
+  useEffect(() => {
+    const open = () => {
+      setIsRightCollapsed(false);
+      setIsZen(false);
+    };
+    window.addEventListener(REVEAL_EXPORT_EVENT, open);
+    return () => window.removeEventListener(REVEAL_EXPORT_EVENT, open);
+  }, []);
 
   // Toggle Zen mode (Tab)
   const toggleZen = useCallback(() => {
@@ -1277,6 +1289,16 @@ export function useEditorActions(
         if (key === "t" && (mode === "motion" || mode === "code")) {
           e.preventDefault();
           motionActions.setFullWidth(!useMotionModel.getState().fullWidth);
+          return;
+        }
+        if (key === "p") {
+          e.preventDefault();
+          setActiveTool("pencil");
+          return;
+        }
+        if (key === "c") {
+          e.preventDefault();
+          setActiveTool("anchor");
           return;
         }
         if (key === "r") {

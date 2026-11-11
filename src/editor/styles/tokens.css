@@ -1938,6 +1938,15 @@ svg {
   gap: 0;
 }
 
+/* A row settings popover pads its own body, so its last group gets no second padding from the rule above */
+.ll-rowpop.llm-pop > .ll-pbody > :last-child {
+  padding: 0;
+  gap: var(--ll-spacing-2);
+}
+.ll-rowpop.llm-pop > .ll-pbody > .ll-dmg + .ll-dmg:last-child {
+  padding-top: var(--ll-spacing-2);
+}
+
 /* Options popover groups: hairline dividers between groups */
 .ll-dmg {
   display: flex;
@@ -2410,4 +2419,13 @@ svg {
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* Pen and vector marks (anchors, handles, the path outline while editing): the selection ink, and the accent where a theme has one (only Lilac). */
+:root,
+[data-theme] {
+  --ll-pen-mark: var(--ll-text-primary);
+}
+[data-theme="lilac"] {
+  --ll-pen-mark: var(--ll-accent);
 }

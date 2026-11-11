@@ -28,14 +28,7 @@ const ARCHETYPE_BY_ITEM: Record<string, ArchetypeId> = {
 /** The cards that are whole sections: each one inserts the engine's section template. */
 const SECTION_BY_ITEM: Record<string, string> = {
   "Hero split": "hero",
-  "Hero centered": "hero",
-  "Hero image": "hero",
-  "Pricing table": "pricing",
   "Pricing cards": "pricing",
-  Comparison: "pricing",
-  "Footer simple": "footer",
-  "Footer links": "footer",
-  "Footer large": "footer",
   Navbar: "navbar",
 };
 

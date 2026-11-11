@@ -6,9 +6,7 @@ import {
   FileCode,
   Plus,
   X,
-  Copy,
   Download,
-  Check,
   Film,
   Type,
   Square,
@@ -38,7 +36,8 @@ import {
 } from "./codeGenerator";
 import { useCodeModels } from "./useCodeModels";
 import { useCompiledFiles } from "./useCompiledFiles";
-import { exportRepoZip, exportCurrentFile, repoSummary } from "./codeExport";
+import { repoSummary } from "./codeExport";
+import { CodeExportSection } from "./CodeExportSection";
 import type { CodeInspectorProps, CodePropItem } from "./types";
 
 const TARGET_OPTIONS: Array<"React" | "HTML" | "Vue"> = ["React", "HTML", "Vue"];
@@ -124,12 +123,6 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   const [depsList, setDepsList] = useState<string[]>([]);
   const [newDepInput, setNewDepInput] = useState<string>("");
 
-  // Export progress animation state
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportProgress, setExportProgress] = useState<number>(0);
-  const [exportDone, setExportDone] = useState<{ n: number; sz: string; name: string } | null>(null);
-  const [copiedCmd, setCopiedCmd] = useState<boolean>(false);
-
   // Determine current active inspector state
   const inspectorKind: "layer" | "file" | "project" = selectedElementId
     ? "layer"
@@ -166,44 +159,11 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
     onStyleTypeChange?.(s === "tw" ? "Tailwind" : s === "mod" ? "CSS modules" : "Inline");
   };
 
-  // Export repo simulation with progress bar matching P lines 6599-6604, 6825-6841
-  const handleExportRepo = () => {
-    if (isExporting) return;
-    const summary = repoSummary();
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportDone(null);
-
-    const interval = setInterval(() => {
-      setExportProgress((prev) => {
-        const next = Math.min(100, prev + 12 + Math.random() * 8);
-        if (next >= 100) {
-          clearInterval(interval);
-          setIsExporting(false);
-          // Real repository zip from the compiler's export bundle
-          const zipName = exportRepoZip();
-          setExportDone({ n: summary.files, sz: `${(summary.bytes / 1024).toFixed(1)} KB`, name: zipName });
-        }
-        return next;
-      });
-    }, 120);
-  };
-
   const compiledOut = useCompiledFiles();
   const repoOut = useMemo(() => {
     void compiledOut.files; // re-pack whenever the compiled output changes
     return repoSummary();
   }, [compiledOut.files]);
-  const installCmdStr = repoOut.deps.length > 0 ? `npm install ${repoOut.deps.join(" ")}` : "npm install";
-
-  const handleCopyInstallCmd = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(installCmdStr);
-    }
-    setCopiedCmd(true);
-    setTimeout(() => setCopiedCmd(false), 1400);
-  };
-
   // Add dependency to package.json
   const handleAddDependency = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -381,6 +341,8 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
             <span>Jump to code</span>
           </button>
         </section>
+
+        <CodeExportSection topBorder />
       </div>
     );
   }
@@ -646,6 +608,8 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
             <span>Download {fName(selectedFileId, codeState)}</span>
           </button>
         </section>
+
+        <CodeExportSection topBorder />
       </div>
     );
   }
@@ -790,72 +754,8 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
         </div>
       </section>
 
-      {/* Section 3: Export */}
-      <section className="ll-dsec ll:flex ll:flex-col ll:gap-2.5 ll:p-4">
-        <div className="ll-dtitle ll:flex ll:items-center ll:justify-between">
-          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Export</h3>
-        </div>
-        <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
-          {/* Export File */}
-          <button
-            type="button"
-            onClick={() => exportCurrentFile()}
-            className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
-          >
-            <Icon icon={Download} size={13} className="ll:text-muted" />
-            <span>Export file</span>
-          </button>
-
-          {/* Export Repo (.zip) with progress bar matching P lines 6599-6604 */}
-          {isExporting ? (
-            <div role="status" className="ll-xprog ll:flex ll:flex-col ll:gap-1.5 ll:p-2 ll:bg-surface-bar ll:rounded-sm">
-              <div className="ll:flex ll:items-center ll:justify-between ll:font-sans ll:text-micro">
-                <span className="ll:text-primary">Packing files for export...</span>
-                <span className="ll:font-mono ll:text-muted">{Math.round(exportProgress)}%</span>
-              </div>
-              <div className="ll-xbar ll:h-0.5 ll:w-full ll:bg-border ll:rounded-xs ll:overflow-hidden">
-                <div
-                  className="ll:h-full ll:bg-primary ll:transition-all ll:duration-100"
-                  style={{ width: `${exportProgress}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {exportDone && (
-                <div role="status" className="ll-xdone ll:flex ll:items-center ll:gap-2 ll:font-sans ll:text-small ll:text-primary">
-                  <Icon icon={Check} size={14} className="ll:text-primary" />
-                  <span>
-                    {exportDone.name} · {exportDone.n} files · {exportDone.sz}
-                  </span>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleExportRepo}
-                className="ll-btn ll:w-full ll:h-8 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-control-primary-bg ll:text-control-primary-fg ll:border-0 ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:cursor-pointer"
-              >
-                <Icon icon={Download} size={14} />
-                <span>Export repo (.zip)</span>
-              </button>
-            </>
-          )}
-
-          {/* Copy install command */}
-          <button
-            type="button"
-            onClick={handleCopyInstallCmd}
-            className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
-          >
-            <Icon icon={Copy} size={13} className="ll:text-muted" />
-            <span>{copiedCmd ? "Copied" : "Copy install command"}</span>
-          </button>
-
-          <code className="ll-cinst ll:block ll:p-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:text-secondary ll:break-all">
-            {installCmdStr}
-          </code>
-        </div>
-      </section>
+      {/* Section 3: Export (quick export; the toolbar Export button scrolls here) */}
+      <CodeExportSection />
     </div>
   );
 };

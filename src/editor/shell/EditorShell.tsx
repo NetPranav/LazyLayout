@@ -21,6 +21,7 @@ import { isUntouchedSeed, seedPrototypeDocument, upgradeSavedProject } from "./p
 import { FontSync } from "@/legacy-editor/fonts/FontSync";
 import { insertCatalogItem } from "@/editor/shell/canvas-chrome/insertCommands";
 import { ExportDialog } from "@/legacy-editor/shell/ExportDialog";
+import { ExportDialog as RepoExportDialog } from "@/editor/shell/export-dialog";
 import { useExportUiStore } from "@/core/store/useExportUiStore";
 import { AgentDialog } from "@/legacy-editor/shell/AgentDialog";
 import {
@@ -354,6 +355,7 @@ export function EditorShell({
 
       <FontSync />
       <ExportDialog />
+      <RepoExportDialog />
       <AgentDialog />
 
       {/* 2. Left panel slot in "left" grid area */}

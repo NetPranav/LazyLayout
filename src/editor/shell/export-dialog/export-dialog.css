@@ -1,0 +1,63 @@
+/* Export dialog: sizes and the stacked small-screen layout. Colours come from Tailwind tokens in the markup. */
+:root {
+  --ll-size-export-w: 880px;
+  --ll-size-export-h: 560px;
+  --ll-size-export-tree-w: 280px;
+  --ll-blur-export: 6px;
+}
+
+.ll-xd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: var(--ll-spacing-4);
+  box-sizing: border-box;
+  -webkit-backdrop-filter: blur(var(--ll-blur-export));
+  backdrop-filter: blur(var(--ll-blur-export));
+}
+
+.ll-xd-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(var(--ll-size-export-w), 100%);
+  height: min(var(--ll-size-export-h), 100%);
+  box-sizing: border-box;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.ll-xd-body {
+  display: grid;
+  grid-template-columns: var(--ll-size-export-tree-w) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ll-xd-pick {
+  display: none;
+}
+
+.ll-xd-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--ll-spacing-3);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .ll-xd-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .ll-xd-tree {
+    display: none;
+  }
+  .ll-xd-pick {
+    display: flex;
+  }
+  .ll-xd-foot-actions {
+    margin-left: auto;
+  }
+}

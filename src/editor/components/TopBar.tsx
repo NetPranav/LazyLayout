@@ -57,6 +57,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { LogoMark } from "./LogoMark";
+import { openExportDialog } from "@/editor/shell/export-dialog/useExportDialogStore";
 import { ModeTabs, type EditorMode } from "./ModeTabs";
 import { ShipPopover, type ShipIssue } from "./ShipPopover";
 import type { CollabUser } from "./AvatarStack";
@@ -263,6 +264,11 @@ export const TopBar: React.FC<TopBarProps> = ({
     }
   }, [onSearch]);
 
+  const handleOpenExport = useCallback(() => {
+    setLogoMenuOpen(false);
+    openExportDialog(document.getElementById("menubtn"));
+  }, []);
+
   const handleCopyLink = useCallback(() => {
     onMenuAction?.("file.copyLink");
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -411,7 +417,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.new", "New project", Plus, "Ctrl+N")}
             {entry("file.open", "Open…", Folder, "Ctrl+O")}
             {entry("file.save", "Save", Save, "Ctrl+S", () => invokeCommand("file.save"))}
-            {entry("file.exportCode", "Export code", Download, "Ctrl+E")}
+            {entry("file.exportCode", "Export…", Download, undefined, handleOpenExport)}
             {entry("file.connectAgent", "Connect an agent", Download)}
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />

@@ -7,6 +7,8 @@ import { OptionGroup, OptionRow, OptionTwo, OptionGrid4, OptionGridLabel } from 
 import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import type { InspectorSectionProps } from "../types";
+import { useDocument } from "@/core/store/useDocumentStore";
+import { isAutoLayout } from "@/core/editing/layoutOps";
 
 export interface LayoutOptionsProps extends InspectorSectionProps {
   isFrame?: boolean;
@@ -76,6 +78,7 @@ const ALIGN_SELF_OPTIONS = [
 ] as const;
 
 export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
+  layer,
   getValue,
   onUpdateProp,
   isFrame = false,
@@ -116,6 +119,8 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
   onChangeReverse,
   onChangeGridTemplate,
 }) => {
+  // A child of a stack has Grow, Shrink and Self in the Layout section itself.
+  const inStack = useDocument((d) => isAutoLayout(layer?.parentId ? d.layers[layer.parentId] : undefined));
   const currentMinWidth = typeof getValue?.("layout.minWidth") === "number" ? (getValue?.("layout.minWidth") as number) : propMinWidth;
   const currentMaxWidth = typeof getValue?.("layout.maxWidth") === "number" ? (getValue?.("layout.maxWidth") as number) : propMaxWidth;
   const currentMinHeight = typeof getValue?.("layout.minHeight") === "number" ? (getValue?.("layout.minHeight") as number) : propMinHeight;
@@ -420,7 +425,7 @@ export const LayoutOptions: React.FC<LayoutOptionsProps> = ({
               </div>
             </OptionRow>
           </>
-        ) : (
+        ) : inStack ? null : (
           <>
             <OptionRow label="Self">
               <Select

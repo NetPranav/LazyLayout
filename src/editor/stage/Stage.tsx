@@ -25,6 +25,7 @@ import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, typ
 import { useDraftPathStore } from "@/core/store/useDraftPathStore";
 import { EMPTY_PEN, penClose, penDrag, penFinishable, penNearFirst, penPress, penUndo, type PenState } from "@/core/paths/penModel";
 import { fitStroke, type Sample } from "@/core/paths/pathFit";
+import { markPenFinished, registerDraftControls } from "./pen/penAdapter";
 import { createPathLayer, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
@@ -486,7 +487,10 @@ export const Stage: React.FC<StageProps> = ({
     useDraftPathStore.getState().clear();
     if (penFinishable(state) && parent) {
       const newId = createPathLayer(state.nodes, state.closed, parent, PEN_STYLE, "Path");
-      if (newId) selectStore(newId, "element");
+      if (newId) {
+        selectStore(newId, "element");
+        markPenFinished();
+      }
     }
     onToolDone?.();
   }, [onToolDone, selectStore]);
@@ -511,31 +515,24 @@ export const Stage: React.FC<StageProps> = ({
     }
   }, [activeTool]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (activeTool !== "pen") return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        finishPen();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        cancelPen();
-      } else if (e.key === "Backspace" || e.key === "Delete") {
-        e.preventDefault();
-        e.stopPropagation();
-        const next = penUndo(penStateRef.current);
-        penStateRef.current = next;
-        if (next.nodes.length === 0) {
-          cancelPen();
-        } else {
-          useDraftPathStore.getState().setPen(next.nodes, next.closed, null);
-        }
-      }
-    },
-    [activeTool, finishPen, cancelPen]
+  // The pen's context bar and keys (Close path, Delete point, Done; Enter, Esc, Backspace) drive the draft through these
+  useEffect(
+    () =>
+      registerDraftControls({
+        finish: finishPen,
+        cancel: cancelPen,
+        close: () => {
+          penStateRef.current = penClose(penStateRef.current);
+          if (penStateRef.current.closed) finishPen();
+        },
+        removeLast: () => {
+          const next = penUndo(penStateRef.current);
+          penStateRef.current = next;
+          if (next.nodes.length === 0) cancelPen();
+          else useDraftPathStore.getState().setPen(next.nodes, next.closed, null);
+        },
+      }),
+    [finishPen, cancelPen]
   );
 
   /** A screen point in the artboard's own pixels, and how many screen px one artboard px is. */
@@ -602,7 +599,7 @@ export const Stage: React.FC<StageProps> = ({
     if (!spec) {
       // Select on empty canvas: a drag selects what it touches
       const pressedOn = e.target as HTMLElement;
-      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],button,[role=menu]')) return;
+      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],[data-layout-grab],button,[role=menu]')) return;
       const from = toArtboard(e.clientX, e.clientY);
       if (!from) return;
       const box = pressedOn.closest<HTMLElement>('[data-testid="stage-element"]');
@@ -796,7 +793,6 @@ export const Stage: React.FC<StageProps> = ({
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
-      onKeyDown={handleKeyDown}
       onDoubleClick={(e) => {
         if (activeTool === "pen" && penStateRef.current.nodes.length >= 2) {
           e.preventDefault();

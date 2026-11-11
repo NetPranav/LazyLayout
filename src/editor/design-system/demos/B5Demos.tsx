@@ -6,7 +6,7 @@ import { Spotlight } from "@/editor/shell/canvas-chrome/Spotlight";
 import { Button } from "@/editor/components/Button";
 import { ModeTabs, type EditorMode } from "@/editor/components/ModeTabs";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
-import type { EasingOption, ExportOption } from "@/editor/shell/canvas-chrome/constants";
+import type { EasingOption } from "@/editor/shell/canvas-chrome/constants";
 
 export function B5Demos() {
   const [mode, setMode] = useState<EditorMode>("design");
@@ -84,7 +84,6 @@ export function B5Demos() {
             onSelectEasing={setActiveEasing}
             onSplitClip={() => {}}
             onRunCode={() => {}}
-            onExportOption={(_opt: ExportOption) => {}}
           />
 
           <Spotlight

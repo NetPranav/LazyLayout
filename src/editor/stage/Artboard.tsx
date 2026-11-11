@@ -16,6 +16,11 @@ import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { DraftPath } from "./DraftPath";
+import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
+import { PathEditLayer } from "./pen/PathEditLayer";
+import { PathContextBar } from "./pen/PathContextBar";
+import { penJustFinished } from "./pen/penAdapter";
+import { useVectorEditStore } from "@/core/store/useVectorEditStore";
 import { RenderLayer } from "@/core/render";
 import { useMirrorViews } from "./useMirrorViews";
 import { exactDeviceOfFrame, frameSizeLabel, frameViewportHeight, mirrorSourceId, pageFrameOf } from "@/core/frames/devices";
@@ -214,7 +219,7 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
 };
 
 /** The outline of what a creation tool is drawing: the shape it will make, not always a box. */
-const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number }> = ({ archetype, width, height }) => {
+const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number; zoom?: number }> = ({ archetype, width, height, zoom = 1 }) => {
   const w = Math.max(1, width);
   const h = Math.max(1, height);
   const common = { fill: "none", stroke: "var(--ll-text-primary)", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const };
@@ -241,7 +246,7 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
       break;
     }
     case "marquee":
-      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: "1px solid var(--ll-text-primary)", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)" }} />;
+      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: `calc(1px / ${zoom > 0 ? zoom : 1}) solid var(--ll-text-primary)`, background: "color-mix(in srgb, var(--ll-text-primary) 6%, transparent)" }} />;
     default:
       shape = <rect x={0} y={0} width={w} height={h} {...common} />;
   }
@@ -263,6 +268,7 @@ function scrollDrawnFrame(frameId: string, top: number): void {
 
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
+  activeTool,
   title = "LazyLayout",
   preset: controlledPreset,
   onPresetChange,
@@ -368,6 +374,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
   // Scale computation: prototype uses `zoom / .59 * .9`
   const zoomScale = zoom > 0 ? zoom : 1;
+  const editingPath = useVectorEditStore((s) => s.layerId !== null);
   const labelKeep = zoomScale < 1 ? 1 / zoomScale : 1;
 
   const handleSelectPreset = (newPreset: StagePreset) => {
@@ -469,7 +476,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       }}
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !penJustFinished()) {
           onSelect(null);
         }
       }}
@@ -961,12 +968,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
             transform: drawPreview.rotation ? `rotate(${drawPreview.rotation}deg)` : undefined,
           }}
         >
-          <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} />
+          <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} zoom={zoomScale} />
         </div>
       )}
 
       {/* 5c. Vector Pen & Pencil live path overlay */}
       <DraftPath />
+      <PathEditLayer containerRef={artboardContainerRef} elements={elements} activeTool={activeTool} zoom={zoomScale} />
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
       {/* The scroll of previewed frames: the page is drawn under the canvas's click layer, so this scrolls it */}
@@ -989,9 +997,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
         );
       })}
 
+      {/* Auto layout and grid: padding bands, gap strips and tracks of the selected frame, under the selection handles */}
+      {!isBlank && mode === "design" && !editingPath && (
+        <>
+          <LayoutOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} isGesturing={isGesturing} />
+          <FlowDropLine zoom={zoomScale} />
+        </>
+      )}
+
       {!isBlank && (
         <TransformOverlay
-          selectedIds={selectedIds}
+          selectedIds={editingPath ? [] : selectedIds}
           hoveredId={hoveredId}
           elements={elements}
           snapLines={snapLines}
@@ -1024,6 +1040,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         layers={layers}
         isGesturing={isGesturing}
         forceVisible={showValueHud}
+        zoom={zoomScale}
       />
 
       {/* 6c. Anchor Overlay (ROADMAP Phase 72: Anchor points & pins) */}
@@ -1036,6 +1053,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* 7. Inline Text Format Bar */}
       <TextFormatBar containerRef={artboardContainerRef} />
+      <PathContextBar />
 
       {/* 8. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}
       <Menu

@@ -153,7 +153,7 @@ test.describe("the canvas draws the real tree", () => {
     const before = await count(page);
     await page.getByRole("button", { name: /Insert/ }).first().click();
     await page.getByText("Sections", { exact: true }).first().click();
-    await page.getByText("Hero split", { exact: true }).first().click();
+    await page.locator("[data-testid=section-card][data-template=hero]").click();
     await expect.poll(() => count(page)).toBeGreaterThan(before);
     const added = Object.values(await layers(page)).filter((l) => l.parentId !== null);
     await expect(drawn(page, added[0].id)).toBeVisible();

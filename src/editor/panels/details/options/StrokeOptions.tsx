@@ -5,7 +5,8 @@ import { OptionGroup, OptionRow } from "./OptionRow";
 import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { NumberField } from "@/editor/components/NumberField";
-import type { InspectorSectionProps } from "../types";
+import { RowColorField } from "../controls/RowColorField";
+import type { InspectorSectionProps, StrokeItem } from "../types";
 
 export interface StrokeOptionsProps extends InspectorSectionProps {
   position?: "inside" | "center" | "outside";
@@ -67,6 +68,87 @@ const JOIN_OPTIONS = [
   { value: "round", label: "Round" },
   { value: "bevel", label: "Bevel" },
 ] as const;
+
+export interface StrokeRowOptionsProps extends InspectorSectionProps {
+  stroke: StrokeItem;
+  onChangeStroke: (patch: Partial<StrokeItem>) => void;
+}
+
+/**
+ * Everything one stroke row has, in the row's own popover: colour, width, style and sides belong to the row; position, cap,
+ * join, miter and dash are the layer's single stroke settings, so they read and write the layer.
+ */
+export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onChangeStroke, getValue, onUpdateProp }) => {
+  const position = (getValue?.("stroke.align") as "inside" | "center" | "outside") ?? "inside";
+  const cap = (getValue?.("svg.strokeLinecap") as "butt" | "round" | "square") ?? "round";
+  const join = (getValue?.("svg.strokeLinejoin") as "miter" | "round" | "bevel") ?? "round";
+  const rawMiter = getValue?.("svg.strokeMiterlimit");
+  const miter = typeof rawMiter === "number" ? rawMiter : 4;
+  const currentDash = (getValue?.("svg.strokeDasharray") as string) || "";
+  const [typingDash, setTypingDash] = useState<string | null>(null);
+  const dash = typingDash ?? currentDash;
+
+  return (
+    <>
+      <OptionGroup>
+        <OptionRow label="Colour">
+          <RowColorField hex={stroke.hex} label="Stroke colour picker" hexLabel="Stroke hex" onChange={(hex) => onChangeStroke({ hex })} />
+        </OptionRow>
+        <OptionRow label="Position">
+          <Select size="sm" aria-label="Stroke position" value={position} options={POSITION_OPTIONS} onChange={(val) => onUpdateProp?.("stroke.align", val as typeof position)} className="ll:w-full" />
+        </OptionRow>
+        <OptionRow label="Width">
+          <NumberField
+            size="sm"
+            aria-label="Stroke width"
+            value={stroke.width}
+            min={0}
+            step={1}
+            onChange={(w) => onChangeStroke({ width: w })}
+            className="ll:w-full"
+          />
+        </OptionRow>
+      </OptionGroup>
+
+      <OptionGroup>
+        <OptionRow label="Style">
+          <SegmentedControl size="compact" ariaLabel="Stroke style" options={STYLE_OPTIONS} value={stroke.style} onChange={(s) => onChangeStroke({ style: s })} className="ll:w-full" />
+        </OptionRow>
+        <OptionRow label="Sides">
+          <SegmentedControl size="compact" ariaLabel="Stroke sides" options={SIDES_OPTIONS} value={stroke.sides} onChange={(sd) => onChangeStroke({ sides: sd })} className="ll:w-full" />
+        </OptionRow>
+      </OptionGroup>
+
+      <OptionGroup>
+        <OptionRow label="Cap">
+          <Select size="sm" aria-label="Line cap" value={cap} options={CAP_OPTIONS} onChange={(c) => onUpdateProp?.("svg.strokeLinecap", c as typeof cap)} className="ll:w-full" />
+        </OptionRow>
+        <OptionRow label="Join">
+          <Select size="sm" aria-label="Line join" value={join} options={JOIN_OPTIONS} onChange={(j) => onUpdateProp?.("svg.strokeLinejoin", j as typeof join)} className="ll:w-full" />
+        </OptionRow>
+        <OptionRow label="Miter">
+          <NumberField size="sm" aria-label="Miter limit" value={miter} min={1} max={20} step={1} onChange={(m) => onUpdateProp?.("svg.strokeMiterlimit", m)} className="ll:w-full" />
+        </OptionRow>
+        <OptionRow label="Dash">
+          <div className="dfield ll-dfield field ll:flex ll:items-center ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm ll:w-full">
+            <input
+              type="text"
+              aria-label="Dash array"
+              placeholder="e.g. 4 2"
+              value={dash}
+              onChange={(e) => {
+                setTypingDash(e.target.value);
+                onUpdateProp?.("svg.strokeDasharray", e.target.value);
+              }}
+              onBlur={() => setTypingDash(null)}
+              className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+            />
+          </div>
+        </OptionRow>
+      </OptionGroup>
+    </>
+  );
+};
 
 export const StrokeOptions: React.FC<StrokeOptionsProps> = ({
   getValue,

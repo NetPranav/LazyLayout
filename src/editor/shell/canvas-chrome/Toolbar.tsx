@@ -15,6 +15,7 @@ import {
   Play,
   Scissors,
   Spline,
+  Pencil,
   Download,
   Undo2,
   Redo2,
@@ -27,7 +28,8 @@ import { Icon } from "@/editor/components/Icon";
 import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { motionActions, useMotionModel } from "@/editor/motion-model";
 import { timelineOpsAdapter } from "@/editor/panels/timeline/timelineOpsAdapter";
-import { exportRepoZip, exportCurrentFile, copyNpmInstall, logCompileRun } from "@/editor/panels/code-view/codeExport";
+import { logCompileRun } from "@/editor/panels/code-view/codeExport";
+import { revealExportSection } from "@/editor/panels/code-view/exportReveal";
 import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
@@ -39,9 +41,7 @@ import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
 import {
   CANVAS_CHROME_SIZES,
   EASING_OPTIONS,
-  EXPORT_OPTIONS,
   type EasingOption,
-  type ExportOption,
 } from "./constants";
 import type { CanvasTool, ShapeTool } from "./types";
 
@@ -95,7 +95,6 @@ export interface ToolbarProps {
 
   // Code-mode toolbar controls
   onRunCode?: () => void;
-  onExportOption?: (option: ExportOption) => void;
 }
 
 const KeyframeAddSvg: LucideIcon = Object.assign(
@@ -132,8 +131,33 @@ const ToolbarPenNib: LucideIcon = Object.assign(
   { displayName: "ToolbarPenNib" }
 );
 
+/** The anchor point tool's glyph: a point on a curve with its handle. Same 24 grid and stroke as the other tool glyphs. */
+const ToolbarAnchor: LucideIcon = Object.assign(
+  React.forwardRef<SVGSVGElement, LucideProps>(function ToolbarAnchor({ size = 20, strokeWidth = 1.5, className = "" }, ref) {
+    return (
+      <svg ref={ref} viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`ll:shrink-0 ${className}`}>
+        <path d="M3 19c4 0 5-6 9-6" />
+        <rect x="10" y="11" width="4" height="4" rx="0.5" />
+        <path d="M14 13h4" />
+        <circle cx="20" cy="13" r="1.5" />
+      </svg>
+    );
+  }),
+  { displayName: "ToolbarAnchor" }
+);
+
+type PenFlyoutTool = "pen" | "pencil" | "anchor";
+
+/** The pen flyout: the three ways into a vector path. */
+const PEN_TOOLS: ReadonlyArray<{ id: PenFlyoutTool; label: string; icon: LucideIcon; shortcut: string }> = [
+  { id: "pen", label: "Pen", icon: ToolbarPenNib, shortcut: "P" },
+  { id: "pencil", label: "Pencil", icon: Pencil, shortcut: "Shift+P" },
+  { id: "anchor", label: "Anchor", icon: ToolbarAnchor, shortcut: "Shift+C" },
+];
+const isPenFlyoutTool = (t: string): t is PenFlyoutTool => t === "pen" || t === "pencil" || t === "anchor";
+
 const SHAPES: ReadonlyArray<{
-  id: ShapeTool | "pen";
+  id: ShapeTool;
   label: string;
   icon: LucideIcon;
   shortcut: string;
@@ -144,11 +168,10 @@ const SHAPES: ReadonlyArray<{
   { id: "arrow", label: "Arrow", icon: ArrowUpRight, shortcut: "Shift+L" },
   { id: "poly", label: "Polygon", icon: Hexagon, shortcut: "Y" },
   { id: "star", label: "Star", icon: Star, shortcut: "Shift+Y" },
-  { id: "pen", label: "Pen", icon: ToolbarPenNib, shortcut: "P" },
 ];
 
-/** Visual groups of the Shape menu: basic shapes, line and arrow, polygons, pen. */
-const SHAPE_GROUP: Record<string, number> = { box: 0, circle: 0, line: 1, arrow: 1, poly: 2, star: 2, pen: 3 };
+/** Visual groups of the Shape menu: basic shapes, line and arrow, polygons. */
+const SHAPE_GROUP: Record<string, number> = { box: 0, circle: 0, line: 1, arrow: 1, poly: 2, star: 2 };
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   mode = "design",
@@ -188,7 +211,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onSelectEasing,
   onSplitClip,
   onRunCode,
-  onExportOption,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const internalToolbarRef = useRef<HTMLDivElement>(null);
@@ -198,13 +220,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const resolvedZoomBarRef = externalZoomBarRef ?? internalZoomBarRef;
 
   const shapeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const penButtonRef = useRef<HTMLButtonElement | null>(null);
   const easingButtonRef = useRef<HTMLButtonElement | null>(null);
-  const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const zoomButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [isShapeMenuOpen, setIsShapeMenuOpen] = useState(false);
+  const [isPenMenuOpen, setIsPenMenuOpen] = useState(false);
+  const [lastPenTool, setLastPenTool] = useState<PenFlyoutTool>("pen");
   const [isEasingMenuOpen, setIsEasingMenuOpen] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
@@ -228,28 +251,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const ids = Object.keys(useMotionModel.getState().selectedKeys);
     if (ids.length > 0) motionActions.setKeysEase(ids, opt);
   };
-  const runExport = (opt: ExportOption) => {
-    if (onExportOption) {
-      onExportOption(opt);
-      return;
-    }
-    try {
-      if (opt === "Repo .zip") {
-        exportRepoZip();
-        consoleStore.appendLog("info", "export", "Repo .zip downloaded");
-      } else if (opt === "Current file") {
-        const r = exportCurrentFile();
-        consoleStore.appendLog(r.ok ? "info" : "warn", "export", r.ok ? `Downloaded ${r.name}` : "No generated file to download");
-      } else {
-        void copyNpmInstall().then(({ cmd, ok }) =>
-          consoleStore.appendLog(ok ? "info" : "warn", "export", ok ? `Copied: ${cmd}` : `Could not copy (clipboard blocked): ${cmd}`),
-        );
-      }
-    } catch (err) {
-      consoleStore.appendLog("error", "export", `Export failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  };
-
   // Narrow canvas detection (prototype lift() lines 10582-10589)
   const checkLift = useCallback(() => {
     const bar = externalToolbarRef?.current ?? internalToolbarRef.current;
@@ -337,7 +338,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     // Close any open popovers immediately (P closePop())
     setIsShapeMenuOpen(false);
     setIsEasingMenuOpen(false);
-    setIsExportMenuOpen(false);
     setIsZoomMenuOpen(false);
     document.querySelectorAll(".tbpop").forEach((p) => p.remove());
 
@@ -476,6 +476,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   };
 
   const shapeIcon = (SHAPES.find((sh) => sh.id === activeShape) ?? SHAPES[0]).icon;
+  const penTool: PenFlyoutTool = isPenFlyoutTool(activeTool) ? activeTool : lastPenTool;
+  const penIcon = (PEN_TOOLS.find((t) => t.id === penTool) ?? PEN_TOOLS[0]).icon;
   const zoomPercentage = `${Math.round(zoom * 100)}%`;
 
   return (
@@ -565,17 +567,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Pen (P) */}
+            {/* Pen flyout: Pen (P), Pencil (Shift+P), Anchor (Shift+C) */}
             <IconButton
+              ref={penButtonRef}
               size="lg"
               data-tool="pen"
-              aria-label="Pen (P) / Pencil (Shift+P)"
-              tooltip="Pen (P) / Pencil (Shift+P)"
-              pressed={activeTool === "pen" || activeTool === "pencil"}
+              aria-label="Pen tools"
+              tooltip="Pen (P)"
+              aria-haspopup="menu"
+              aria-expanded={isPenMenuOpen}
+              pressed={isPenFlyoutTool(activeTool) || isPenMenuOpen}
               tabIndex={focusedIndex === 4 ? 0 : -1}
               onFocus={() => setFocusedIndex(4)}
-              onClick={() => onSelectTool?.("pen")}
-              icon={<ProtoIcon name="pen2" size={CANVAS_CHROME_SIZES.iconLg} />}
+              onClick={() => {
+                onSelectTool?.(penTool);
+                setIsPenMenuOpen((prev) => !prev);
+              }}
+              icon={<Icon icon={penIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
             {/* Text (T) */}
@@ -842,18 +850,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
             {/* Export - Item 2: no caret */}
             <IconButton
-              ref={exportButtonRef}
               id="exportbtn"
               size="lg"
               data-tb="exp"
               aria-label="Export"
               tooltip="Export"
-              aria-haspopup="menu"
-              aria-expanded={isExportMenuOpen}
-              pressed={isExportMenuOpen}
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
-              onClick={() => setIsExportMenuOpen((prev) => !prev)}
+              onClick={revealExportSection}
               icon={<Icon icon={Download} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
@@ -972,7 +976,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         width={CANVAS_CHROME_SIZES.shapeMenuWidth}
       >
         {SHAPES.map((sh, i) => {
-          const isCurrent = activeShape === sh.id && (activeTool === "shape" || sh.id !== "pen");
+          const isCurrent = activeShape === sh.id;
           const groupStart = i > 0 && SHAPE_GROUP[sh.id] !== SHAPE_GROUP[SHAPES[i - 1].id];
           return (
             <React.Fragment key={sh.id}>
@@ -991,18 +995,47 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     : ""
                 }
                 onClick={() => {
-                  if (sh.id === "pen") {
-                    onSelectTool?.("pen");
-                  } else {
-                    onSelectShape?.(sh.id);
-                    onSelectTool?.("shape");
-                  }
+                  onSelectShape?.(sh.id);
+                  onSelectTool?.("shape");
                   setIsShapeMenuOpen(false);
                 }}
               >
                 {sh.label}
               </MenuItem>
             </React.Fragment>
+          );
+        })}
+      </Menu>
+
+      {/* Pen flyout (Design mode) */}
+      <Menu
+        open={isPenMenuOpen}
+        onClose={() => setIsPenMenuOpen(false)}
+        anchorRef={penButtonRef}
+        aria-label="Pen options"
+        width={CANVAS_CHROME_SIZES.shapeMenuWidth}
+      >
+        {PEN_TOOLS.map((t) => {
+          const isCurrent = activeTool === t.id;
+          return (
+            <MenuItem
+              key={t.id}
+              icon={
+                <span className={isCurrent ? "ll:text-primary" : "ll:text-secondary"}>
+                  <Icon icon={t.icon} size={CANVAS_CHROME_SIZES.iconMd} />
+                </span>
+              }
+              shortcut={t.shortcut}
+              checked={isCurrent}
+              className={isCurrent ? "ll:bg-[color-mix(in_srgb,var(--ll-text-primary)_12%,transparent)] ll:text-primary ll:font-medium" : ""}
+              onClick={() => {
+                setLastPenTool(t.id);
+                onSelectTool?.(t.id);
+                setIsPenMenuOpen(false);
+              }}
+            >
+              {t.label}
+            </MenuItem>
           );
         })}
       </Menu>
@@ -1022,27 +1055,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             onClick={() => {
               applyEasing(opt);
               setIsEasingMenuOpen(false);
-            }}
-          >
-            {opt}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      {/* Export Menu (Code mode) */}
-      <Menu
-        open={isExportMenuOpen}
-        onClose={() => setIsExportMenuOpen(false)}
-        anchorRef={exportButtonRef}
-        aria-label="Export options"
-        width={CANVAS_CHROME_SIZES.exportMenuWidth}
-      >
-        {EXPORT_OPTIONS.map((opt) => (
-          <MenuItem
-            key={opt}
-            onClick={() => {
-              runExport(opt);
-              setIsExportMenuOpen(false);
             }}
           >
             {opt}

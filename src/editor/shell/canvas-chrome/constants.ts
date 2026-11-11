@@ -16,7 +16,6 @@ export const CANVAS_CHROME_SIZES = {
   shapeMenuWidth: 160,
   zoomMenuWidth: 180,
   easingMenuWidth: 176,
-  exportMenuWidth: 176,
 
   // Spotlight geometry
   spotlightWidthMax: 560,
@@ -79,14 +78,6 @@ export const EASING_OPTIONS = [
 ] as const;
 
 export type EasingOption = (typeof EASING_OPTIONS)[number];
-
-export const EXPORT_OPTIONS = [
-  "Repo .zip",
-  "Current file",
-  "Copy npm install",
-] as const;
-
-export type ExportOption = (typeof EXPORT_OPTIONS)[number];
 
 export const SPOTLIGHT_PREFIX_MAP = {
   ">": "cmd",
