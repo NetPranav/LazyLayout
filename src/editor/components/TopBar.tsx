@@ -410,6 +410,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}
+            {entry("file.placeReference", "Place reference image…", ImageIcon, undefined, () => invokeCommand("file.placeReference"))}
             {entry("file.exportFile", "Export project file", Download)}
           </SubMenu>
 

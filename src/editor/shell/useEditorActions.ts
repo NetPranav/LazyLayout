@@ -1,5 +1,6 @@
 "use client";
 
+import { pickReferenceImage } from "@/core/assets/reference";
 import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -916,6 +917,12 @@ export function useEditorActions(
         title: "View Options...",
         category: "View",
         run: () => toggleViewOptions(true),
+      }),
+      defineCommand({
+        id: "file.placeReference",
+        title: "Place Reference Image…",
+        category: "File",
+        run: () => pickReferenceImage(),
       }),
       defineCommand({
         id: "view.showKeystrokes",

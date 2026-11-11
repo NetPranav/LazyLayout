@@ -5,6 +5,7 @@ import { Eye, EyeOff, Frame, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Menu, MenuItem } from "@/editor/components/Menu";
+import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { MENU_DEFAULT_WIDTH } from "@/editor/components/topbar-constants";
 import { getActivePreset, prefersReducedMotion } from "@/editor/motion/feel";
 import { springEase } from "@/editor/motion/ease";
@@ -22,6 +23,9 @@ export interface RightPanelHeaderProps {
   onDelete?: () => void;
   statusChips?: StatusChip[];
   onSelectStatusChip?: (chip: StatusChip) => void;
+  /** The 2D / 3D switch (top right): 2D is the Figma-style settings, 3D the Blender-style ones for the same layer. Hidden when omitted. */
+  dimension?: "2d" | "3d";
+  onDimensionChange?: (d: "2d" | "3d") => void;
   className?: string;
 }
 
@@ -35,6 +39,8 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   onDelete,
   statusChips = [],
   onSelectStatusChip,
+  dimension,
+  onDimensionChange,
   className = "",
 }) => {
   const headRef = useRef<HTMLDivElement>(null);
@@ -91,6 +97,20 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
         </span>
 
         <div className="ll:flex-1" />
+
+        {dimension && onDimensionChange && (
+          <SegmentedControl
+            size="compact"
+            ariaLabel="Settings: 2D or 3D"
+            value={dimension}
+            options={[
+              { value: "2d", label: "2D", title: "Design settings (fill, layout, type)" },
+              { value: "3d", label: "3D", title: "3D settings (surface, material, light, press)" },
+            ]}
+            onChange={onDimensionChange}
+            className="ll-rdim ll:shrink-0"
+          />
+        )}
 
         <IconButton
           size="sm"

@@ -33,6 +33,7 @@ import { fitStroke, type Sample } from "@/core/paths/pathFit";
 import { markPenFinished, registerDraftControls } from "./pen/penAdapter";
 import { createPathLayer, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
+import { placeReferenceFiles } from "@/core/assets/reference";
 import { getDocument } from "@/core/store/documentState";
 import { documentOrder } from "@/core/selection/selectionOps";
 import { setLayerProps } from "@/core/editing/editOps";
@@ -769,10 +770,16 @@ export const Stage: React.FC<StageProps> = ({
     if (files.length === 0) return;
     e.preventDefault();
     const at = toArtboard(e.clientX, e.clientY) ?? { x: presetDef.artboardWidth / 2, y: presetDef.artboardHeight / 2 };
-    const outcomes = await importFiles(files);
     const under = frameAt(at, undefined, elements);
     const parentId = under?.id ?? activePageRootId();
     if (!parentId) return;
+    // Alt+drop: a reference image (behind everything, half transparent, locked, never exported; S1)
+    if (e.altKey) {
+      const placed = await placeReferenceFiles(files, { x: at.x, y: at.y, parentId, parentOrigin: under ? { x: under.x, y: under.y } : { x: 0, y: 0 } });
+      if (placed.length) selectStore(placed[placed.length - 1], "element");
+      return;
+    }
+    const outcomes = await importFiles(files);
     let last: string | null = null;
     outcomes.forEach((o, i) => {
       if (!o.entry || o.entry.kind === "font") return; // a font is only stored
