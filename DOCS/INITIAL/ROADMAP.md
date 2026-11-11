@@ -1575,42 +1575,60 @@ The document and World Environment have their own stores, After-track actions mo
 
 ### Phase S1 · Reference image
 **Needs:** 36 · **Status:** 🚧
-- [ ] **File > Place reference image** and Alt+drop: a picture placed behind everything on the page at 50% opacity, locked, and a helper (never exported, hidden in Preview). Its opacity and "on top / behind" are switches in the inspector.
+- [x] **File > Place reference image** and Alt+drop: a picture placed behind everything on the page at 50% opacity, locked, and a helper (never exported, hidden in Preview). Its opacity and "on top / behind" are switches in the inspector.
 
 **You'll see:** a screenshot of what you're copying, under your design, that never ships.
 **Done when:** a placed reference is behind, locked, half transparent, absent from the export and from Preview.
 
 ### Phase S2 · Surfaces: height from the shape
 **Needs:** S1 · **Status:** 🚧
-- [ ] Any frame or shape can be a **surface** (`surface.mode`: flat or inflated). Inflated: its height is a pressurised membrane fixed at its edge (a Poisson solve over the shape's mask, `src/core/surface/`), with **Depth** and **Fullness**. Drawn by one shared WebGL2 context into a canvas in the layer's box.
+- [x] Any frame or shape can be a **surface** (`surface.mode`: flat or inflated). Inflated: its height is a pressurised membrane fixed at its edge (a Poisson solve over the shape's mask, `src/core/surface/`), with **Depth** and **Fullness**. Drawn by one shared WebGL2 context into a canvas in the layer's box.
 
 **You'll see:** any rounded rectangle becomes a pillow.
 **Done when:** the solved height matches the analytic membrane on a circle within 1%; 20 surfaces share one WebGL context.
 
 ### Phase S3 · Surface material & light
 **Needs:** S2 · **Status:** 🚧
-- [ ] Materials (Foil, Plastic, Satin) lit by a studio environment (a softbox above, a floor below), with gloss, Fresnel rim and edge occlusion. The colour is the layer's fill.
+- [x] Materials (Foil, Plastic, Satin) lit by a studio environment (a softbox above, a floor below), with gloss, Fresnel rim and edge occlusion. The colour is the layer's fill.
 
 **You'll see:** black foil, white plastic, satin, on any shape.
 **Done when:** a resting frame of the reference button is judged a match by a person, side by side.
 
 ### Phase S4 · Creases & wrinkles
 **Needs:** S3 · **Status:** 🚧
-- [ ] Where an inflated surface runs short of material it buckles: diagonal creases from each corner along the shape's medial axis, and short wrinkles across the edges, seeded, with **Wrinkles**, **Wrinkle size**, **Creases** and **Seed**.
+- [x] Where an inflated surface runs short of material it buckles: diagonal creases from each corner along the shape's medial axis, and short wrinkles across the edges, seeded, with **Wrinkles**, **Wrinkle size**, **Creases** and **Seed**.
 
 **You'll see:** the corners of a pillow pinch and its edges crinkle.
 **Done when:** the same seed draws the same wrinkles every time; a person can't tell the resting button from the reference.
 
+### Phase S4b · Cloth simulation of the resting shape
+**Needs:** S4 · **Status:** 🚧
+- [x] The resting shape by simulation: an inextensible sheet with a little extra material (**Wrinkles**), sealed at a seam that stays put or pulls in (**Seam**), inflated by pressure (position-based dynamics: stretch, shear, a weak bend, pressure along the normal). Run in a worker, cached; the quick membrane shows until it's in (`src/core/surface/cloth.ts`, `cloth.worker.ts`). The pleats at the seam and the pinched ends come from the physics, not from a pattern.
+
+**You'll see:** pleats where the material runs short, as on a real foil balloon.
+**Done when:** the reference's resting frame is judged a match side by side.
+
+### Phase S3b · Studio light
+**Needs:** S3 · **Status:** 🚧
+- [x] The surface reflects a studio (an environment map made in code: a large softbox above-left, a strip light, side strips, a dark floor), blurred by the material's gloss (mipmaps), with Fresnel. Replaces the three hand-tuned light zones.
+
+### Phase S9 · The 3D face of the inspector
+**Needs:** S4b · **Status:** 🚧
+- [x] A **2D | 3D** switch at the top right of the right panel. 2D is the Figma-style settings; 3D is the same layer's surface settings: **Looks** (Foil balloon, Pillow, Glossy plastic, Soft satin, Flat: one click, sized to the layer, finishing it with corners, a shadow and centred content), **Shape** (Cloth or Quick, Depth, Wrinkles, Seam, Detail, Shuffle), **Material & light** (Foil, Plastic, Satin, Gloss), **Press** (Dent depth and size, Springiness, Text pull), **Reference**.
+
+**You'll see:** the inflated button in 7 steps with only buttons and keys (`scripts/demo-balloon-steps.ts`).
+**Done when:** a person makes the reference button in 8 steps or fewer.
+
 ### Phase S5 · Content on a surface
 **Needs:** S4 · **Status:** 🚧
-- [ ] A surface frame draws its text children onto itself: printed on the surface, lit with it and warped with it. The text stays real text (selectable, read by screen readers, editable).
+- [x] A surface frame draws its text children onto itself: printed on the surface, lit with it and warped with it. The text stays real text (selectable, read by screen readers, editable).
 
 **You'll see:** a label that bends with the button.
 **Done when:** the text is still in the accessibility tree once, and follows a dent.
 
 ### Phase S6 · Surface physics: press and ripple
 **Needs:** S5 · **Status:** 🚧
-- [ ] A damped membrane on the surface's grid: pressing pushes it in at the pointer, releasing lets it spring back with a ripple, the rest of the surface rises a little (the air goes somewhere), and wrinkles gather round the dent. **Stiffness**, **Damping**, **Dent depth**, **Dent size**. In Preview and on the exported site; never takes the pointer in Design (§10).
+- [x] A damped membrane on the surface's grid: pressing pushes it in at the pointer, releasing lets it spring back with a ripple, the rest of the surface rises a little (the air goes somewhere), and wrinkles gather round the dent. **Stiffness**, **Damping**, **Dent depth**, **Dent size**. In Preview and on the exported site; never takes the pointer in Design (§10).
 
 **You'll see:** the button dents where you press it.
 **Done when:** a replay of the reference's presses, side by side with the video, is judged a match by a person.
@@ -1624,7 +1642,7 @@ The document and World Environment have their own stores, After-track actions mo
 
 ### Phase S8 · Reference comparison harness
 **Needs:** S6 · **Status:** 🚧
-- [ ] Replays a reference video's input track (pointer path and presses) against a design, records it frame for frame, and builds a side-by-side page (both videos in sync, paired stills, a similarity score per frame).
+- [x] Replays a reference video's input track (pointer path and presses) against a design, records it frame for frame, and builds a side-by-side page (both videos in sync, paired stills, a similarity score per frame).
 
 **You'll see:** the reference and ours, side by side, frame for frame.
 **Done when:** the reference button's comparison page is published and its score is recorded.
