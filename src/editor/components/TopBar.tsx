@@ -66,8 +66,8 @@ import { useTheme, type Theme } from "./ThemeToggle";
 import { isUserMotionOff, setUserMotionOff, subscribeUserMotionOff } from "../motion/reducedMotion";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
+import { useSaveIndicator } from "./useSaveIndicator";
 import { invokeCommand } from "@/core/commands";
-import { useSaveStatus } from "@/core/storage/ProjectSession";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 
@@ -216,22 +216,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onSelectPreset,
 }) => {
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
-  // Save status resolution
-  const sessionSaveState = useSaveStatus((s) => s.state);
-  const resolvedState: "saved" | "dirty" | "saving" | "error" =
-    saveStatus !== undefined
-      ? saveStatus
-      : saving
-      ? "saving"
-      : sessionSaveState === "saving"
-      ? "saving"
-      : sessionSaveState === "error"
-      ? "error"
-      : sessionSaveState === "pending"
-      ? "dirty"
-      : "saved";
-
-  const isSaving = resolvedState === "saving";
+  // Save status: the same indicator drives the favicon (see useSaveIndicator)
+  const { state: resolvedState, isSaving } = useSaveIndicator({ saveStatus, saving });
 
   // Mode tabs state
   const [internalMode, setInternalMode] = useState<EditorMode>("design");
