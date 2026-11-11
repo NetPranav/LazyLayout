@@ -206,6 +206,7 @@ type NavSectionId =
   | "rulers"
   | "stage-selection"
   | "motion-paths"
+  | "screencast-keys"
   // Panels
   | "panel-section"
   | "property-row"
