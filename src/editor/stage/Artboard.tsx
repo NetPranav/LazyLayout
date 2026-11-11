@@ -36,11 +36,10 @@ import {
   getLayerParentRef,
   type AffineMatrix2D,
 } from "@/core/geometry/parentTransforms";
-import { evaluate, type ResolvedProps } from "@/core/kernel/evaluate";
+import { evaluate } from "@/core/kernel/evaluate";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useMotionModel } from "@/editor/motion-model";
 import type { ArtboardProps, StagePreset } from "./types";
-import type { PropValue } from "@/core/document/registry";
 import {
   STAGE_CONSTANTS,
   STAGE_PRESETS,
@@ -317,42 +316,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const fps = useMotionModel((s) => s.fps) || 60;
   const motionTimeSec = playhead / fps;
 
-  // ROADMAP Phase 55: Evaluated layers at the current motion playhead time
-  // so the drawn page tree in [data-testid="stage-page"] animates in lockstep with evaluate()
-  // In Design the canvas draws the design itself (an element that fades in stays visible whatever the playhead); the
-  // animated frame is drawn in Motion and Preview, and while playing.
-  const playingNow = useMotionModel((s) => s.playing);
-  const showAnimated = canvasViewMode !== "design" || playingNow;
-  const animatedLayers = useMemo(() => {
-    if (!layers || !showAnimated) return layers;
-    const doc = getDocument();
-    if (!doc.clips || Object.keys(doc.clips).length === 0) return layers;
-
-    let hasAnyClips = false;
-    for (const c of Object.values(doc.clips)) {
-      if (layers[c.layerId]) {
-        hasAnyClips = true;
-        break;
-      }
-    }
-    if (!hasAnyClips) return layers;
-
-    const out: Record<string, Layer> = {};
-    for (const [id, layer] of Object.entries(layers)) {
-      let evaluatedProps: Record<string, PropValue> | undefined;
-      try {
-        evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, id, motionTimeSec);
-      } catch {
-        // fallback
-      }
-      if (evaluatedProps && Object.keys(evaluatedProps).length > 0) {
-        out[id] = { ...layer, properties: { ...layer.properties, ...evaluatedProps } };
-      } else {
-        out[id] = layer;
-      }
-    }
-    return out;
-  }, [layers, motionTimeSec, showAnimated]);
+  // The page is drawn at rest; the animation engine (useCanvasEngine, Phase 57) writes the animated values onto it in
+  // Motion and Preview and while playing, without re-rendering.
 
   const activeBreakpointId = useBreakpointStore((s) => s.activeId);
   const mirrorViews = useMirrorViews(rootId ?? null);
@@ -760,7 +725,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
           )}
-          <RenderLayer layerId={rootId} layers={animatedLayers ?? layers} ctx={engineCtx} root />
+          <RenderLayer layerId={rootId} layers={layers} ctx={engineCtx} root />
         </div>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { recordCommit } from "@/editor/diagnostics/commitCounter";
+import { useCanvasEngine } from "./useCanvasEngine";
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
@@ -156,6 +157,8 @@ export const Stage: React.FC<StageProps> = ({
   const storeLayers = useDocumentAt((d) => d.layers, undefined);
 
   const pageRef = useRef<HTMLDivElement>(null);
+  // the animation engine on the drawn page (Phase 57)
+  useCanvasEngine(pageRef);
   const activePageRoot = useProjectStore((p) => p.pages[p.activePageId]?.rootElementId);
   const rootId = useMemo(
     () => (activePageRoot && storeLayers?.[activePageRoot] ? activePageRoot : (Object.values(storeLayers ?? {}).find((l) => l.parentId === null)?.id ?? null)),
