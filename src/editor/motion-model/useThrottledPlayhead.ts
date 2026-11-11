@@ -7,11 +7,14 @@ import { useMotionModel } from "./store";
  * The playhead frame for a component that only displays it. While playing it re-renders at most `maxHz` times a second
  * (with a trailing update); while paused, seeking or scrubbing it follows every change at once. Anything that needs every
  * frame (the needle) writes to the DOM directly instead, and event handlers read `useMotionModel.getState().playhead`.
+ * With `enabled` false it doesn't follow the playhead at all (Phase 64: a closed timeline lane shows nothing that depends
+ * on it, so a scrub doesn't re-render it); turning it back on picks up the current frame.
  */
-export function useThrottledPlayhead(maxHz = 10): number {
+export function useThrottledPlayhead(maxHz = 10, enabled = true): number {
   const [frame, setFrame] = useState(() => useMotionModel.getState().playhead);
 
   useEffect(() => {
+    if (!enabled) return;
     const interval = 1000 / maxHz;
     let last = 0;
     let trailing: ReturnType<typeof setTimeout> | undefined;
@@ -39,7 +42,7 @@ export function useThrottledPlayhead(maxHz = 10): number {
       unsubscribe();
       if (trailing !== undefined) clearTimeout(trailing);
     };
-  }, [maxHz]);
+  }, [maxHz, enabled]);
 
   return frame;
 }
