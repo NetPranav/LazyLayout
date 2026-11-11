@@ -231,7 +231,7 @@ export const TypographyOptions: React.FC<TypographyOptionsProps> = ({
             <Slider
               min={100}
               max={900}
-              step={10}
+              step={1}
               value={weightAxis}
               ariaLabel="Weight axis"
               onChange={(w) => {

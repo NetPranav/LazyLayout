@@ -745,6 +745,7 @@ svg {
 .ll-sld {
   position: relative;
   display: block;
+  width: 100%;
   height: 20px;
   min-width: 0;
   cursor: pointer;
