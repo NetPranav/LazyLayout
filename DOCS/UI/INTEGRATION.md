@@ -261,3 +261,9 @@ Honest list of open items before merging into `main`:
   6. **Path edit mode in the engine's command table.** `path.edit`, `path.exitEdit`, `path.deleteNodes` exist only in `legacy-editor/canvas/vector/useVectorEdit.ts`; the new UI binds the keys itself (Enter, Esc, Backspace in `PathEditLayer.tsx`). Moving them to `src/core` would let both editors share them.
   7. **Anchor tool id.** `core/tools/toolDefs` has no `anchor` tool, so the Anchor button sets `select` and the UI keeps the tool name.
 - **Status:** open
+
+### Option popovers: engine-side gaps found by the 2026-11-12 proof
+- **Stroke miter limit.** `svg.strokeMiterlimit` is not a property in `core/document/properties.ts` (the type exists in `core/types/svg.ts`, nothing reads or writes it). The Miter field in the Stroke row popover is disabled. Wanted: `svg.strokeMiterlimit` (number, 1 to 20, default 4, scope `SVG_STROKED`), emitted as `stroke-miterlimit`.
+- **Cap, join and dash** (`svg.strokeLinecap`, `svg.strokeLinejoin`, `svg.strokeDasharray`) are legal only for icons, vector paths and the shape layers (`SVG_STROKED`). A button, frame, text or image draws its stroke as a CSS border (`appearance.border.*`), which has no cap or join; the controls are disabled with a tooltip on those layers. Wanted if buttons and frames should dash: map `appearance.border.style` dashed or dotted, nothing else.
+- **Per-corner radius** (`shape.cornerRadius.topLeft` and the other three) is legal only for `rectangle`. Other layers take one `appearance.radius`; the popover now writes that for the first corner and disables the other three. Wanted: four corner radii on frames, buttons and images (`appearance.radius.topLeft` and so on, emitted as `border-top-left-radius`).
+- **Status:** open

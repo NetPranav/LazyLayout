@@ -178,7 +178,8 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     const baseChildX = Number(baseLayers[r.id].properties["frame.x"] ?? 0);
 
     // Switch to Tablet via frame's size label dropdown
-    await page.locator("#albl").click();
+    await expect(page.getByRole("menu")).toHaveCount(0); // a menu that is still closing would be adopted by this one
+    await page.getByTestId("frame-size-label").first().click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
     await expect(page.locator("#albltx")).toContainText("Tablet");
 
@@ -193,7 +194,8 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     }).toBe(newTabletX);
 
     // Switch back to Desktop via frame's size label dropdown
-    await page.locator("#albl").click();
+    await expect(page.getByRole("menu")).toHaveCount(0); // a menu that is still closing would be adopted by this one
+    await page.getByTestId("frame-size-label").first().click();
     await page.getByRole("menuitem", { name: /Desktop/i }).click();
     await expect(page.locator("#albltx")).toContainText("Desktop");
 
@@ -202,7 +204,8 @@ test.describe("Task E: No ghost frame and Desktop / Tablet / Mobile presets", ()
     expect(Number(desktopLayers[r.id].properties["frame.x"] ?? 0)).toBe(baseChildX);
 
     // Switch back to Tablet via frame's size label dropdown
-    await page.locator("#albl").click();
+    await expect(page.getByRole("menu")).toHaveCount(0); // a menu that is still closing would be adopted by this one
+    await page.getByTestId("frame-size-label").first().click();
     await page.getByRole("menuitem", { name: /Tablet/i }).click();
     await expect(page.locator("#albltx")).toContainText("Tablet");
 

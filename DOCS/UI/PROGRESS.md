@@ -55,7 +55,16 @@ Pages manager (add, rename, duplicate, set as home, delete with inline confirm, 
 Canvas padding bands and gap strips (drag, Shift all sides, Alt one side, snap to the spacing scale, Esc cancels), grid tracks (dashed lines, resize, add), insertion line when dragging inside a stack or grid, Free/Row/Column/Grid control, direction-aware alignment grid, Grow/Shrink/Self and column/row span in the panel, direction icon in the layers tree. Handoff: `handoffs/2026-11-11-auto-layout-grid.md`.
 
 ## H. One shared Slider (2026-11-11)
-`components/Slider.tsx` rebuilt (springs for press, hover, click-to-jump and release overshoot, 1:1 drag, value bubble, keyboard incl. Shift and PageUp/Down, `onCommit`, snap points, number field, gradient and checker bars, animations-off = instant) and used for the colour picker hue and opacity, timeline zoom, trace scrubber, weight axis and the design-system page. Checked in headless Chromium; undo of a whole drag is not one step yet because the new editor does not install gesture coalescing. See `handoffs/2026-11-11-slider-audit.md`.
+`components/Slider.tsx` rebuilt (springs for press, hover, click-to-jump and release overshoot, 1:1 drag, value bubble, keyboard incl. Shift and PageUp/Down, `onCommit`, snap points, number field, gradient and checker bars, animations-off = instant) and used for the colour picker hue and opacity, timeline zoom, trace scrubber, weight axis and the design-system page. Checked in headless Chromium; undo of a whole drag is now one step (`shell/gestureUndo.ts`, installed in EditorShell; pointerdown on a slider, `[data-scrub]` or `[data-gesture]` opens one transaction until pointerup). See `handoffs/2026-11-11-slider-audit.md`.
+
+## I. Stabilise: undo, option popovers, e2e, narrow widths (2026-11-12)
+- Undo: one Ctrl+Z per drag/scrub (gestureUndo.ts). Stroke cap/join/dash disabled where core does not allow them; miter limit not in the model.
+- Export sidebar file count matches the dialog (14 files). Shift+2 centres the selection (rotation-aware, via stage/panRequest.ts).
+- Popover proof: `handoffs/2026-11-12-popover-proof.md`. Fixed per-corner radius (rectangles only), fill hex on images, shape border style, Theme tokens now use environment.theme.
+- Menu.tsx: reopening a menu while it was leaving no longer hides it (real bug).
+- e2e: `handoffs/2026-11-12-e2e.md`. Pages loading-entries spec and 7 Lane A specs are fixme (feature not ported or UI moved); cutout Depth fails (not UI).
+- Narrow: toolbar, Insert box and top bar fixed at 390 px; panels are hidden under 640 px by design (`handoffs/2026-11-12-narrow-widths.md`).
+- Still open: Page theme Primary/Surface/Text colours have no engine field; Ctrl+K and Ctrl+Alt+] specs not investigated.
 
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).

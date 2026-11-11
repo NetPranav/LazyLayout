@@ -48,8 +48,11 @@ async function drag(page: Page, a: { x: number; y: number }, b: { x: number; y: 
 async function rectangle(page: Page, x1: number, y1: number, x2: number, y2: number) {
   const before = new Set((await ofKind(page, "rectangle")).map((l) => l.id));
   const rectItem = page.getByRole("menuitem", { name: /^Rectangle/ });
-  if (!(await rectItem.isVisible().catch(() => false))) {
-    await page.getByRole("button", { name: "Shape", exact: true }).click();
+  // the menu animates out after a pick, so "visible" can mean "closing": the button's aria-expanded says whether it is open
+  const shape = page.getByRole("button", { name: "Shape", exact: true });
+  if ((await shape.getAttribute("aria-expanded")) !== "true") {
+    await expect(rectItem).toBeHidden();
+    await shape.click();
   }
   await rectItem.click();
   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
@@ -100,8 +103,8 @@ test.describe("the canvas draws the real tree", () => {
     const a = await rectangle(page, 0.15, 0.2, 0.25, 0.3);
     const b = await rectangle(page, 0.3, 0.2, 0.4, 0.3);
     await page.getByText(f.name, { exact: true }).first().click();
-    await page.getByRole("radio", { name: "Auto Layout stack" }).click();
-    await page.getByRole("radio", { name: "Horizontal stack (row)" }).click();
+    // the direction control is Free / Row / Column / Grid: Row is the horizontal stack
+    await page.getByRole("radio", { name: "Auto layout row" }).click();
     const gap = page.getByLabel("Gap", { exact: true }).first();
     await gap.fill("30");
     await gap.press("Enter");
@@ -540,7 +543,7 @@ test.describe("arranging: what is on top is what you see", () => {
       await item.click();
     };
     // on the canvas: red's own corner, which no other shape covers
-    const corner = await art(page, 0.21, 0.21);
+    const corner = await art(page, 0.225, 0.225); // inside red's own strip, clear of its selection handle
     await page.mouse.click(corner.x, corner.y, { button: "right" });
     await choose(/^Bring to front/);
     await expect.poll(() => order(page, ids)).toBe("green,blue,red");
