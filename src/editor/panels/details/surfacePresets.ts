@@ -25,7 +25,7 @@ function finishing(id: SurfacePresetId, side: number, current: (key: string) => 
   if (archetype !== "ellipse" && !(Number(current(radiusKey)) > 0)) out[radiusKey] = Math.round(side * 0.19);
   const shadows = current("paint.shadows");
   if (!(typeof shadows === "string" && shadows.length > 2)) out["paint.shadows"] = JSON.stringify([{ kind: "drop", x: 0, y: Math.round(side * 0.09), blur: Math.round(side * 0.19), spread: -4, color: "rgba(0,0,0,0.28)", visible: true }]);
-  if (archetype === "container") Object.assign(out, { "layout.display": "flex", "layout.flexDirection": "row", "layout.justifyContent": "center", "layout.alignItems": "center" });
+  if (archetype === "container") Object.assign(out, { "layout.auto": true, "layout.display": "flex", "layout.flexDirection": "row", "layout.justifyContent": "center", "layout.alignItems": "center", "sizing.horizontal": "fixed", "sizing.vertical": "fixed" });
   if (id === "balloon" || id === "pillow") {
     if (archetype === "container") out["appearance.background.color"] = "#0b0b0b";
     else out["paint.fills"] = JSON.stringify([{ type: "solid", color: "#0b0b0b", opacity: 1, visible: true }]);
