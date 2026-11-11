@@ -97,7 +97,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               tooltip="Add"
               onClick={onAdd}
               icon={<Icon icon={Plus} size={14} />}
-              className={`ll-dic ll-add ${!hasMore ? "ll:-mr-1" : ""}`}
+              className={`ll-dic ll-add ll:!rounded-full ${!hasMore ? "ll:-mr-1" : ""}`}
             />
           )}
 
@@ -117,7 +117,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
                 setIsPopoverOpen((prev) => !prev);
               }}
               icon={<Icon icon={Sliders} size={14} />}
-              className="ll-dic ll-more ll:-mr-1"
+              className="ll-dic ll-more ll:!rounded-full ll:-mr-1"
             />
           )}
         </div>

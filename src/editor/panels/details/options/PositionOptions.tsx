@@ -10,6 +10,7 @@ import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshW
 import { formatPinInLayer } from "@/core/geometry/cornerPin";
 import { TRANSFORM_ORIGIN_OPTIONS } from "../constants";
 import type { InspectorSectionProps } from "../types";
+import { CONSTRAINT_HORIZONTAL_OPTIONS, CONSTRAINT_VERTICAL_OPTIONS } from "../sections/PositionSection";
 
 export interface PositionOptionsProps extends InspectorSectionProps {
   type?: "static" | "relative" | "absolute" | "fixed" | "sticky";
@@ -291,6 +292,86 @@ export const PositionOptions: React.FC<PositionOptionsProps> = ({
               onUpdateProp?.("transform.origin", next);
               onChangeOrigin?.(next);
             }}
+            className="ll:w-full"
+          />
+        </OptionRow>
+      </OptionGroup>
+
+      {/* Group 4b: 3D depth and render role (same paths as before) */}
+      <OptionGroup>
+        <OptionRow label="Perspective">
+          <NumberField
+            size="sm"
+            label=""
+            aria-label="Perspective"
+            title="3D depth in px. Set it (try 600), then tilt with 3D rotate: the layer recedes into the distance. 0 is flat."
+            suffix="px"
+            value={typeof getValue?.("transform.perspective") === "number" ? (getValue?.("transform.perspective") as number) : 0}
+            step={50}
+            onChange={(val) => onUpdateProp?.("transform.perspective", Math.max(0, val))}
+          />
+        </OptionRow>
+        <OptionRow label="Translate Z">
+          <NumberField
+            size="sm"
+            label=""
+            aria-label="Translate Z"
+            title="Distance along the Z axis in px. Negative moves back into depth."
+            suffix="px"
+            value={typeof getValue?.("transform.translateZ") === "number" ? (getValue?.("transform.translateZ") as number) : 0}
+            step={1}
+            onChange={(val) => onUpdateProp?.("transform.translateZ", val)}
+          />
+        </OptionRow>
+        <OptionRow label="3D space">
+          <Select
+            size="sm"
+            aria-label="3D Space"
+            title="Preserve 3D keeps children in the same shared 3D perspective context."
+            value={(getValue?.("transform.style3d") as string) || "flat"}
+            options={[
+              { value: "flat", label: "Flat" },
+              { value: "preserve3d", label: "Preserve 3D" },
+            ]}
+            onChange={(val) => onUpdateProp?.("transform.style3d", val)}
+            className="ll:w-full"
+          />
+        </OptionRow>
+        <OptionRow label="Role">
+          <Select
+            size="sm"
+            aria-label="Render role"
+            title="A helper layer is an invisible null driver; drawn dashed in Design mode, never rendered in Preview or export."
+            value={(getValue?.("render.role") as string) || "content"}
+            options={[
+              { value: "content", label: "Content" },
+              { value: "helper", label: "Helper (Null)" },
+            ]}
+            onChange={(val) => onUpdateProp?.("render.role", val)}
+            className="ll:w-full"
+          />
+        </OptionRow>
+      </OptionGroup>
+
+      {/* Group 4c: Constraints (moved here from the section body: the prototype has no constraints in the main body) */}
+      <OptionGroup>
+        <OptionRow label="Constraint H">
+          <Select
+            size="sm"
+            aria-label="Horizontal constraint"
+            value={(getValue?.("constraints.horizontal") as string) || "left"}
+            options={CONSTRAINT_HORIZONTAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.horizontal", val)}
+            className="ll:w-full"
+          />
+        </OptionRow>
+        <OptionRow label="Constraint V">
+          <Select
+            size="sm"
+            aria-label="Vertical constraint"
+            value={(getValue?.("constraints.vertical") as string) || "top"}
+            options={CONSTRAINT_VERTICAL_OPTIONS}
+            onChange={(val) => onUpdateProp?.("constraints.vertical", val)}
             className="ll:w-full"
           />
         </OptionRow>
