@@ -110,7 +110,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-001 | 3D stack decision & licences | Main 218 | — | A | 🚧 |
 | 3D-002 | GPU surface strategy & compositor | Main 173 | 3D-001 | A | 🚧 |
 | 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 🚧 |
-| 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 📋 |
+| 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 🚧 |
 | 3D-005 | 3D performance tiers & budgets | new | 3D-004 | A | 📋 |
 | 3D-006 | Worker & WASM job system | new | 3D-001 | A | 📋 |
 | | **Stage 2 · The 3D document** |||||
@@ -420,7 +420,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** `src/core/gpu/ledger.ts` (pure bookkeeping: owner, kind, bytes, release by handle or owner) and `passes.ts` (render targets, ping-pong, pass stacks, float targets after a capability check with RGBA8 fallback); the 2.5D surfaces track every texture; `ledger.test.ts` (7 unit tests) and the browser test (50 surfaces mount and unmount twice, ledger back to the shared baseline); a ledger view on `/editor/gpu-lab`.
 
 ### Phase 3D-004 · GPU & interactive verification harness
-**Needs:** 3D-003 · **Was:** Main 137 · **Lane:** A · **Status:** 📋
+**Needs:** 3D-003 · **Was:** Main 137 · **Lane:** A · **Status:** 🚧
 - [ ] Headless Chromium with a software WebGL2 / WebGPU rasteriser on every pull request, and a nightly real-GPU job.
 - [ ] Frame capture at exact times (deterministic scheduler).
 - [ ] Perceptual metrics with a documented tolerance: SSIM, plus a FLIP-style metric.
@@ -428,6 +428,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** each 3D pull request has picture checks, with the difference shown when one fails.
 **Done when:** a deliberate one-pixel shift passes, a wrong colour fails, and the same scene gives the same image twice in a row.
+**Evidence (2026-11-11):** `src/core/gpu/compare.ts` (SSIM plus a symmetric neighbourhood error) with 7 unit tests: identical passes, a 1 px shift of hard edges passes, 3 px fails, a wrong colour fails, a slightly different shade passes, a missing shape fails with the diff marking it; `tests/support/golden.ts` (golden helper, `GOLDEN_UPDATE=1` approve flow, actual and diff attached on failure); `tests/e2e/gpu-harness.spec.ts` (the same exact-time frame twice is identical; goldens for the resting and pressed button; a wrong look fails). Goldens are made by the headless Chromium CI runs (software GL); the nightly real-GPU job is not set up yet, so this phase stays 🚧.
 
 ### Phase 3D-005 · 3D performance tiers & budgets
 **Needs:** 3D-004 · **Was:** — · **Lane:** A · **Status:** 📋
