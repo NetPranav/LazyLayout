@@ -72,7 +72,7 @@ export interface TimelineLaneProps {
   onSeek?: (timeSec: number) => void;
 }
 
-export const TimelineLane: React.FC<TimelineLaneProps> = ({
+const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
   layer: propLayer,
   isChild = false,
   childLayers,
@@ -164,7 +164,10 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
-  const playhead = useThrottledPlayhead();
+  // Phase 64: only an open lane shows values at the playhead, so only an open lane re-renders on a scrub; handlers read
+  // the playhead when they run.
+  const playhead = useThrottledPlayhead(10, layer.open);
+  const ph = () => useMotionModel.getState().playhead;
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
   const tool = useMotionModel((s) => s.tool);
   const snap = useMotionModel((s) => s.snap);
@@ -240,15 +243,15 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
       if (mode === "move") {
         const rawS = initialStart + deltaF;
-        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, ph());
         motionActions.moveClip(layer.id, clipIndex, res.snapped);
       } else if (mode === "s") {
         const rawS = initialStart + deltaF;
-        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, ph());
         motionActions.trimClip(layer.id, clipIndex, "s", res.snapped);
       } else {
         const rawE = initialEnd + deltaF;
-        const res = snapT(rawE, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawE, comp, snap, pps, fps, undefined, clip, false, ph());
         motionActions.trimClip(layer.id, clipIndex, "e", res.snapped);
       }
     };
@@ -313,7 +316,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
       if (isMulti) {
         const rawT = initialT + deltaF;
-        const res = snapT(rawT, comp, snap, pps, fps, selMap, undefined, false, playhead);
+        const res = snapT(rawT, comp, snap, pps, fps, selMap, undefined, false, ph());
         let effectiveDelta = res.snapped - initialT;
         // Clamp so no key goes < 0 or > comp.dur
         effectiveDelta = Math.max(-minBaseT, Math.min(comp.dur - maxBaseT, effectiveDelta));
@@ -324,7 +327,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
         });
       } else {
         const rawT = initialT + deltaF;
-        const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, playhead);
+        const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, ph());
         motionActions.setKeyTime(keyframe.id, Math.max(0, Math.min(comp.dur, res.snapped)));
       }
     };
@@ -428,14 +431,14 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
     useTimelineUiStore.getState().setIsScrubbing(true);
 
-    const initialVal = valueAt(layer, p, playhead);
+    const initialVal = valueAt(layer, p, ph());
     const startX = e.clientX;
 
     const onPointerMove = (ev: PointerEvent) => {
       const deltaPx = ev.clientX - startX;
       const factor = ev.shiftKey ? 5 : 1;
       const nextVal = initialVal + deltaPx * factor;
-      motionActions.addKey(layer.id, p, playhead, nextVal);
+      motionActions.addKey(layer.id, p, ph(), nextVal);
     };
 
     const onPointerUp = () => {
@@ -515,7 +518,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
               kind: "track",
               x: e.clientX,
               y: e.clientY,
-              frame: playhead,
+              frame: ph(),
               layerId: layer.id,
             });
           }}
@@ -596,7 +599,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                     kind: "track",
                     x: e.clientX,
                     y: e.clientY,
-                    frame: playhead,
+                    frame: ph(),
                     layerId: layer.id,
                   });
                 }}
@@ -727,7 +730,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                       kind: "clip",
                       x: e.clientX,
                       y: e.clientY,
-                      frame: playhead,
+                      frame: ph(),
                       layerId: layer.id,
                       clipIndex: idx,
                     });
@@ -820,7 +823,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                     kind: "track",
                     x: e.clientX,
                     y: e.clientY,
-                    frame: playhead,
+                    frame: ph(),
                     layerId: layer.id,
                     prop: track.p,
                   });
@@ -860,7 +863,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                     onClick={() => {
                       const prev = [...track.keys]
                         .reverse()
-                        .find((k) => k.t < playhead);
+                        .find((k) => k.t < ph());
                       if (prev) motionActions.setPlayhead(prev.t);
                     }}
                     title="Previous keyframe"
@@ -873,10 +876,10 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                     type="button"
                     onClick={() => {
                       if (hasKeyAtPlayhead) {
-                        const hit = track.keys.find((k) => k.t === playhead);
+                        const hit = track.keys.find((k) => k.t === ph());
                         if (hit) motionActions.deleteKeys([hit.id]);
                       } else {
-                        motionActions.addKey(layer.id, track.p, playhead);
+                        motionActions.addKey(layer.id, track.p, ph());
                       }
                     }}
                     title={
@@ -895,7 +898,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      const next = track.keys.find((k) => k.t > playhead);
+                      const next = track.keys.find((k) => k.t > ph());
                       if (next) motionActions.setPlayhead(next.t);
                     }}
                     title="Next keyframe"
@@ -1023,7 +1026,7 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
                   kind: "track",
                   x: e.clientX,
                   y: e.clientY,
-                  frame: playhead,
+                  frame: ph(),
                   layerId: layer.id,
                 });
               }}
@@ -1040,3 +1043,6 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
     </div>
   );
 };
+
+/** Memoized (Phase 64): a lane re-renders when its own layer or the shared timeline state changes, not when the panel does. */
+export const TimelineLane = React.memo(TimelineLaneInner);

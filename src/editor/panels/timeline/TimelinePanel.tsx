@@ -16,6 +16,10 @@ import {
 import { TimelineTransport } from "./TimelineTransport";
 import { TimelineRuler } from "./TimelineRuler";
 import { TimelineLane } from "./TimelineLane";
+import { LazyRow } from "./LazyRow";
+
+/** Phase 64: past this many layers, rows out of view are not built. */
+const LAZY_ROWS_FROM = 40;
 import { TimelineCurveGraph } from "./TimelineCurveGraph";
 import { TimelineFooter } from "./TimelineFooter";
 import { TimelinePlayhead } from "./TimelinePlayhead";
@@ -64,6 +68,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const [hoverFrame, setHoverFrame] = useState<number | null>(null);
   const [snapFlashFrame, setSnapFlashFrame] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const onSelectLayer = useCallback((id: string) => selectElement(id, "element"), [selectElement]);
   const [isDropOver, setIsDropOver] = useState(false);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -440,8 +445,8 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                     pps={pps}
                     laneWidth={laneAvailableWidth}
                     isSelected={selectedIds.includes("hero")}
-                    onSelectLayer={(id) => selectElement(id, "element")}
-                    onOpenContextMenu={(ctx) => setContextMenu(ctx)}
+                    onSelectLayer={onSelectLayer}
+                    onOpenContextMenu={setContextMenu}
                   />
                 )}
 
@@ -454,17 +459,18 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                       (layer.id === "el_buy_button" && selectedIds.includes("button"));
 
                     return (
-                      <TimelineLane
-                        key={layer.id}
-                        layer={layer}
-                        isChild={true}
-                        trackWidth={trackWidth}
-                        pps={pps}
-                        laneWidth={laneAvailableWidth}
-                        isSelected={isSelected}
-                        onSelectLayer={(id) => selectElement(id, "element")}
-                        onOpenContextMenu={(ctx) => setContextMenu(ctx)}
-                      />
+                      <LazyRow key={layer.id} root={scrollRef} id={layer.id} lazy={treeLayers.children.length > LAZY_ROWS_FROM}>
+                        <TimelineLane
+                          layer={layer}
+                          isChild={true}
+                          trackWidth={trackWidth}
+                          pps={pps}
+                          laneWidth={laneAvailableWidth}
+                          isSelected={isSelected}
+                          onSelectLayer={onSelectLayer}
+                          onOpenContextMenu={setContextMenu}
+                        />
+                      </LazyRow>
                     );
                   })}
 
