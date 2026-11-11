@@ -32,6 +32,7 @@ import { createId } from "@/core/ids";
 import type { Clip, ClipTemplate } from "@/core/document/schema";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
+import { setWorkArea as setDocumentWorkArea } from "@/core/timeline/timelineOps";
 import {
   UI_TO_CANONICAL_PATH,
   CANONICAL_TO_UI_PATH,
@@ -368,10 +369,10 @@ export const motionActions = {
   setWorkArea(a: number, b: number): void {
     const s = useMotionModel.getState();
     const fps = s.fps || 60;
-    transport.setWorkArea({
-      start: clampN(a, 0, s.comp.dur - 1) / fps,
-      end: clampN(b, 1, s.comp.dur) / fps,
-    });
+    const area = { start: clampN(a, 0, s.comp.dur - 1) / fps, end: clampN(b, 1, s.comp.dur) / fps };
+    transport.setWorkArea(area);
+    // the work area is the composition's (Phase 61): saved with the document, and one undo step
+    setDocumentWorkArea(area.start, area.end, MAIN_COMPOSITION_ID);
   },
   resetWorkArea(): void {
     transport.setWorkArea({ start: 0, end: getTransport().duration });
@@ -1168,6 +1169,7 @@ export const motionActions = {
       const l = c.layers.find((x) => x.id === layerId);
       if (l) Object.assign(l, patch);
     });
+
 
     if (patch.category !== undefined || patch.trig !== undefined) {
       motionActions.setClipSettings(layerId, {
