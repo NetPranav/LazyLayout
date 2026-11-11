@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
+import { frameScheduler } from "@/core/time/scheduler";
+import { getTransport } from "@/core/time/transport";
 import {
   useMotionModel,
-  useOverlayFrame,
   X,
   timecode,
 } from "@/editor/motion-model";
@@ -35,11 +36,58 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
   const wa = useMotionModel((s) => s.wa);
-  const playhead = useOverlayFrame();
+  const isPlaying = useMotionModel((s) => s.playing);
+  // While playing, needle position is driven by direct DOM updates from frameScheduler "overlay" phase.
+  // We subscribe only to paused playhead so React does not commit every frame during playback.
+  const pausedPlayhead = useMotionModel((s) => (s.playing ? 0 : s.playhead));
+  const playhead = isPlaying ? Math.round(getTransport().time * (getTransport().fps || 60)) : pausedPlayhead;
   const markers = useMotionModel((s) => s.comp.markers);
   const frames = useMotionModel((s) => s.frames);
 
   const pps = propPps ?? legacyPps ?? 100;
+
+  const needleRef = useRef<HTMLDivElement | null>(null);
+  const layerRef = useRef<HTMLDivElement | null>(null);
+
+  const ppsRef = useRef(pps);
+  const t0Ref = useRef(t0);
+  const laneWidthRef = useRef(laneWidth);
+  const fpsRef = useRef(fps);
+
+  useEffect(() => {
+    ppsRef.current = pps;
+    t0Ref.current = t0;
+    laneWidthRef.current = laneWidth;
+    fpsRef.current = fps;
+  }, [pps, t0, laneWidth, fps]);
+
+  // Direct DOM updates for playhead needle during playback (ROADMAP Phase 56)
+  useEffect(() => {
+    return frameScheduler.register("overlay", () => {
+      const t = getTransport();
+      if (!t.playing) return;
+      const curFps = fpsRef.current || 60;
+      const currentFrame = Math.round(t.time * curFps);
+      const ppsVal = ppsRef.current;
+      const t0Val = t0Ref.current;
+      const laneWidthVal = laneWidthRef.current;
+
+      const phX = X(currentFrame, ppsVal, t0Val, 24, curFps);
+      const needle = needleRef.current;
+      if (needle) {
+        needle.style.transform = `translateX(${phX}px)`;
+        needle.setAttribute("data-frame", String(currentFrame));
+        needle.setAttribute("data-time", String(currentFrame));
+        const isVisible = phX >= -6 && phX <= laneWidthVal + 6;
+        needle.style.display = isVisible ? "" : "none";
+      }
+      const layer = layerRef.current;
+      if (layer) {
+        layer.setAttribute("data-frame", String(currentFrame));
+        layer.setAttribute("data-time", String(currentFrame));
+      }
+    });
+  }, []);
 
   const phX = X(playhead, pps, t0, 24, fps);
   const waX0 = X(wa.a, pps, t0, 24, fps);
@@ -52,6 +100,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
     <>
       {/* 1. Playhead and Markers Overlay */}
       <div
+        ref={layerRef}
         style={{ left: `${trackWidth}px` }}
         data-testid="timeline-playhead-layer"
         data-time={Math.round(playhead)}
@@ -92,21 +141,21 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
           className="ll-endl ll:absolute ll:top-8 ll:bottom-0 ll:w-px ll:bg-border"
         />
 
-        {/* 60fps Playhead needle */}
-        {isPhVisible && (
-          <div
-            style={{
-              transform: `translateX(${phX}px)`,
-            }}
-            data-testid="timeline-playhead"
-            data-time={Math.round(playhead)}
-            data-frame={Math.round(playhead)}
-            className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
-          >
-            {/* Playhead Knob on ruler */}
-            <div className="ll:absolute ll:-left-1.5 ll:top-2 ll:w-3 ll:h-3 ll:bg-control-active ll:rounded-xs ll:shadow-xs" />
-          </div>
-        )}
+        {/* Playhead needle (direct DOM updated at 60fps while playing; React rendered when paused) */}
+        <div
+          ref={needleRef}
+          style={{
+            transform: `translateX(${phX}px)`,
+            ...(isPhVisible ? {} : { display: "none" }),
+          }}
+          data-testid="timeline-playhead"
+          data-time={Math.round(playhead)}
+          data-frame={Math.round(playhead)}
+          className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
+        >
+          {/* Playhead Knob on ruler */}
+          <div className="ll:absolute ll:-left-1.5 ll:top-2 ll:w-3 ll:h-3 ll:bg-control-active ll:rounded-xs ll:shadow-xs" />
+        </div>
       </div>
 
       {/* 2. Hover Guide Line & Tooltip */}

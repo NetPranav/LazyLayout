@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { frameScheduler } from "@/core/time/scheduler";
 import { Icon } from "@/editor/components/Icon";
 import {
   Play,
@@ -94,6 +95,28 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
   const isFw = fullWidth ?? storeFullWidth;
 
+  const timecodeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const framesRef = useRef(frames);
+  const fpsRef = useRef(fps);
+
+  useEffect(() => {
+    framesRef.current = frames;
+    fpsRef.current = fps;
+  }, [frames, fps]);
+
+  useEffect(() => {
+    return frameScheduler.register("overlay", () => {
+      const t = getTransport();
+      if (!t.playing || !timecodeBtnRef.current) return;
+      const curFps = fpsRef.current || 60;
+      const f = Math.round(t.time * curFps);
+      const text = framesRef.current ? String(f) : timecode(f, curFps);
+      if (timecodeBtnRef.current.textContent !== text) {
+        timecodeBtnRef.current.textContent = text;
+      }
+    });
+  }, []);
+
   const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
   const currentFrame = Math.round(currentTransportTime * fps);
   const durFrames = Math.round(dur * fps);
@@ -111,6 +134,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
       {/* 1. Left: Timecode and total */}
       <div className="ll-mtc ll:flex ll:items-baseline ll:gap-2 ll:min-w-0">
         <button
+          ref={timecodeBtnRef}
           type="button"
           onClick={() => motionActions.toggleFrames()}
           aria-label="Playhead time"

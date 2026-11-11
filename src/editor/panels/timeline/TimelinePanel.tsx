@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo, Profiler } from "react";
+import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { useFocusScope } from "@/core/commands/useFocusScope";
 import { transport, transportStore, getTransport } from "@/core/time/transport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -37,7 +38,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 }) => {
   // Motion store subscriptions
   const comp = useMotionModel((s) => s.comp);
-  const playhead = useMotionModel((s) => s.playhead);
   const playing = useMotionModel((s) => s.playing);
   const speed = useMotionModel((s) => s.speed);
   const fps = useMotionModel((s) => s.fps);
@@ -246,7 +246,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         motionActions.setT0(0);
       } else if (key === "m" || key === "M") {
         e.preventDefault();
-        motionActions.addMarker(playhead);
+        motionActions.addMarker(useMotionModel.getState().playhead);
       } else if (key === "v" || key === "V") {
         motionActions.setTool("select");
       } else if (key === "c" || key === "C") {
@@ -262,7 +262,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, laneAvailableWidth, playhead, pps]
+    [clearSelection, comp.layers, laneAvailableWidth, pps]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)
@@ -280,8 +280,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const hasSelection = selectedIds.length > 0;
 
   return (
-    <section
-      id="bottom"
+    <Profiler id="timeline-panel" onRender={() => recordCommit("timeline")}>
+      <section
+        id="bottom"
       ref={panelRef}
       tabIndex={0}
       role="region"
@@ -451,6 +452,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         onClose={() => setContextMenu(null)}
       />
     </section>
+  </Profiler>
   );
 };
 

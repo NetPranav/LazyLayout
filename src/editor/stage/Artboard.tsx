@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect, useMemo } from "react";
+import React, { useState, useRef, useLayoutEffect, useMemo, Profiler } from "react";
+import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { ChevronDown, Link2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -275,15 +276,16 @@ export const Artboard: React.FC<ArtboardProps> = ({
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
-  const playhead = useMotionModel((s) => s.playhead);
+  const playingNow = useMotionModel((s) => s.playing);
+  // While playing, animated values are applied directly to DOM in scheduler "apply" phase (ROADMAP Phase 56).
+  // Artboard only re-evaluates in React when paused (immediate full rate) or at playback transitions.
+  const pausedPlayhead = useMotionModel((s) => (s.playing ? 0 : s.playhead));
   const fps = useMotionModel((s) => s.fps) || 60;
-  const motionTimeSec = playhead / fps;
+  const motionTimeSec = pausedPlayhead / fps;
 
-  // ROADMAP Phase 55: Evaluated layers at the current motion playhead time
-  // so the drawn page tree in [data-testid="stage-page"] animates in lockstep with evaluate()
+  // ROADMAP Phase 55 & 56: Evaluated layers at the current motion playhead time
   // In Design the canvas draws the design itself (an element that fades in stays visible whatever the playhead); the
   // animated frame is drawn in Motion and Preview, and while playing.
-  const playingNow = useMotionModel((s) => s.playing);
   const showAnimated = canvasViewMode !== "design" || playingNow;
   const animatedLayers = useMemo(() => {
     if (!layers || !showAnimated) return layers;
@@ -401,8 +403,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const hideLabel = !hasElements || empty;
 
   return (
-    <div
-      id={id}
+    <Profiler id="artboard" onRender={() => recordCommit("artboard")}>
+      <div
+        id={id}
       data-stage="artboard"
       data-testid="stage-artboard"
       data-bare={bare ? "true" : undefined}
@@ -681,7 +684,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
-        <div ref={pageRef} data-testid="stage-page" data-frame={playhead} style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
+        <div ref={pageRef} data-testid="stage-page" data-frame={pausedPlayhead} style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
           {bare && (
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
@@ -1015,5 +1018,6 @@ export const Artboard: React.FC<ArtboardProps> = ({
         />
       </Menu>
     </div>
+  </Profiler>
   );
 };

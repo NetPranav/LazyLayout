@@ -49,7 +49,6 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
   const view = useMotionModel((s) => s.view);
   const snap = useMotionModel((s) => s.snap);
   const comp = useMotionModel((s) => s.comp);
-  const playhead = useMotionModel((s) => s.playhead);
 
   const rulerRef = useRef<HTMLDivElement | null>(null);
 
@@ -96,7 +95,8 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       if (!rect) return 0;
       const x = clientX - rect.left;
       const rawF = Fx(x, pps, t0, 24, fps);
-      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      const currentPh = useMotionModel.getState().playhead;
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, currentPh);
       return Math.round(res.snapped);
     };
 
@@ -132,7 +132,8 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
       if (!rect) return 0;
       const x = clientX - rect.left;
       const rawF = Fx(x, pps, t0, 24, fps);
-      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, playhead);
+      const currentPh = useMotionModel.getState().playhead;
+      const res = snapT(rawF, comp, snap, pps, fps, undefined, undefined, true, currentPh);
       return Math.round(res.snapped);
     };
 

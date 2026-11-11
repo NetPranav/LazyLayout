@@ -2,6 +2,7 @@
 
 import React, { useRef, useMemo } from "react";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
+import { useTransportTime } from "@/core/time/useTransportTime";
 import { Icon } from "@/editor/components/Icon";
 import {
   ChevronDown,
@@ -158,7 +159,11 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
-  const playhead = useMotionModel((s) => s.playhead);
+  const isPlaying = useMotionModel((s) => s.playing);
+  const pausedPlayhead = useMotionModel((s) => (s.playing ? 0 : s.playhead));
+  // Display playhead updates at <= 10 Hz during playback; full immediate rate when paused
+  const throttledTime = useTransportTime({ maxHz: 10 });
+  const playhead = isPlaying ? Math.round(throttledTime * fps) : pausedPlayhead;
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
   const tool = useMotionModel((s) => s.tool);
   const snap = useMotionModel((s) => s.snap);
@@ -233,17 +238,18 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
       const deltaPx = ev.clientX - startX;
       const deltaF = Math.round((deltaPx / pps) * fps);
 
+      const currentPh = useMotionModel.getState().playhead;
       if (mode === "move") {
         const rawS = initialStart + deltaF;
-        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, currentPh);
         motionActions.moveClip(layer.id, clipIndex, res.snapped);
       } else if (mode === "s") {
         const rawS = initialStart + deltaF;
-        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawS, comp, snap, pps, fps, undefined, clip, false, currentPh);
         motionActions.trimClip(layer.id, clipIndex, "s", res.snapped);
       } else {
         const rawE = initialEnd + deltaF;
-        const res = snapT(rawE, comp, snap, pps, fps, undefined, clip, false, playhead);
+        const res = snapT(rawE, comp, snap, pps, fps, undefined, clip, false, currentPh);
         motionActions.trimClip(layer.id, clipIndex, "e", res.snapped);
       }
     };
@@ -280,7 +286,8 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
       const deltaPx = ev.clientX - startX;
       const deltaF = Math.round((deltaPx / pps) * fps);
       const rawT = initialT + deltaF;
-      const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, playhead);
+      const currentPh = useMotionModel.getState().playhead;
+      const res = snapT(rawT, comp, snap, pps, fps, { [keyframe.id]: true }, undefined, false, currentPh);
       motionActions.setKeyTime(keyframe.id, res.snapped);
     };
 
@@ -301,15 +308,16 @@ export const TimelineLane: React.FC<TimelineLaneProps> = ({
 
     useTimelineUiStore.getState().setIsScrubbing(true);
 
+    const currentPh = useMotionModel.getState().playhead;
     const spec = PROPS[p];
-    const initialVal = valueAt(layer, p, playhead);
+    const initialVal = valueAt(layer, p, currentPh);
     const startX = e.clientX;
 
     const onPointerMove = (ev: PointerEvent) => {
       const deltaPx = ev.clientX - startX;
       const factor = ev.shiftKey ? 5 : 1;
       const nextVal = initialVal + deltaPx * factor;
-      motionActions.addKey(layer.id, p, playhead, nextVal);
+      motionActions.addKey(layer.id, p, currentPh, nextVal);
     };
 
     const onPointerUp = () => {

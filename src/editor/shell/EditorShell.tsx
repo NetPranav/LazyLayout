@@ -34,6 +34,7 @@ import { useShellFx } from "./shellFx";
 import { useMotionModel, installDocumentMotionSync } from "@/editor/motion-model";
 import { installTransportCommands } from "@/core/time/transportCommands";
 import { installTransportDriver } from "@/core/time/transportDriver";
+import { installStagePlaybackDirectDom } from "@/editor/stage/directDomApply";
 import { transport, transportStore } from "@/core/time/transport";
 
 /** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
@@ -85,6 +86,8 @@ export function EditorShell({
   // One-clock transport command bindings and master driver
   useEffect(() => installTransportCommands(), []);
   useEffect(() => installTransportDriver(), []);
+  // Direct DOM playback optimization for stage elements (ROADMAP Phase 56: <= 10 React commits/sec during playback)
+  useEffect(() => installStagePlaybackDirectDom(), []);
   // The editor opens with the playhead where the Motion panel always put it (frame 72, past the sample entrances), so
   // the canvas shows layers at rest rather than at the first frame of their entrance. Only on a fresh, untouched clock.
   useEffect(() => {
