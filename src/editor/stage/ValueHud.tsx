@@ -90,6 +90,9 @@ export const ValueHud: React.FC<ValueHudProps> = ({
   const titleTop = el.y + STAGE_CONSTANTS.sizeLabelOffsetTop + STAGE_CONSTANTS.sizeLabelHeight - STAGE_CONSTANTS.sizeLabelHeight * titleScale;
   const hudLeft = isTopFrame ? el.x + STAGE_CONSTANTS.sizeLabelOffsetLeft : el.x;
   const hudBottom = (isTopFrame ? titleTop : el.y) - 8 * inv;
+  // The chip is 16px tall on screen. With no room above (the frame is near the top of the canvas), it drops below the selection instead.
+  const flipBelow = hudBottom - 16 * inv < 0;
+  const hudTop = flipBelow ? el.y + el.height + 8 * inv : hudBottom;
 
   return (
     <div
@@ -102,10 +105,10 @@ export const ValueHud: React.FC<ValueHudProps> = ({
       className="ll-value-hud ll:absolute ll:pointer-events-none ll:z-30 ll:flex ll:items-center ll:gap-2 ll:whitespace-nowrap"
       style={{
         left: hudLeft,
-        // the chip's bottom edge sits at hudBottom and it grows upward, so it never reaches the title or the handles
-        top: hudBottom,
-        transform: `translateY(-100%) scale(${inv})`,
-        transformOrigin: "left bottom",
+        // above: the chip's bottom edge sits at hudTop and it grows upward, so it never reaches the title or the handles; flipped: it hangs below the selection
+        top: hudTop,
+        transform: flipBelow ? `scale(${inv})` : `translateY(-100%) scale(${inv})`,
+        transformOrigin: flipBelow ? "left top" : "left bottom",
         font: "500 11px/16px var(--ll-font-mono)",
         backgroundColor: "var(--ll-control-primary-bg)",
         color: "var(--ll-control-primary-fg)",

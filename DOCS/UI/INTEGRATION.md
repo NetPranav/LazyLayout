@@ -73,6 +73,11 @@ When the rebuild is done, Lane A and Lane B use this file to connect the new UI 
 
 ## 3. Engine changes requested
 
+### Auto layout and grid
+- **Area:** stack and grid frames on the canvas and in the Layout section
+- **Used (read-only):** `layoutOps` (`setStack`, `setGrid`, `setGridCell`, `addAutoLayout`, `addGridLayout`, `readStack`), `moveLayers`, `useStackDropStore`, `layout.addAuto` (Shift+A) and `layout.removeAuto` (Alt+Shift+A).
+- **Engine changes requested (nothing blocks the UI):** (1) a command to remove a grid track (columns and rows can be added and resized, not removed from the canvas); (2) grid drag-reorder moves by child index, so there is no drop into a chosen cell (cell start/span exist, a cell-aware drop does not); (3) a gap strip is not drawn for wrapped stacks because there is no per-line gap read; (4) `setStack` has no "this side only" padding toggle in the doc model, so the canvas writes the four `layout.padding*` props directly inside one transaction.
+
 ### Vector Pen tool support in core engine
 - **Area:** tools / engine
 - **Files:** `src/core/tools/toolDefs.ts`, `src/core/paths/penModel.ts`

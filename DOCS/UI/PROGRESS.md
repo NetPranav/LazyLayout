@@ -51,6 +51,9 @@ Open: Pen tool is `available:false` in core (engine request, needs the user's go
 ## F. Pages manager and Sections gallery (2026-11-11)
 Pages manager (add, rename, duplicate, set as home, delete with inline confirm, drag to reorder, settings, switch, undo) and the Sections gallery (now the Sections category of the toolbar Insert box, no separate button or panel; live thumbnails of the engine's eight templates, category tabs, search, insert below the selection, undo) built and checked in headless Chromium at 1440. Not reachable at 390 (left panel hidden by the shell). Open: share image field, drag a card onto the canvas, page commands in the engine. See `handoffs/2026-11-11-pages-sections.md`.
 
+## G. Auto layout and grid (2026-11-11)
+Canvas padding bands and gap strips (drag, Shift all sides, Alt one side, snap to the spacing scale, Esc cancels), grid tracks (dashed lines, resize, add), insertion line when dragging inside a stack or grid, Free/Row/Column/Grid control, direction-aware alignment grid, Grow/Shrink/Self and column/row span in the panel, direction icon in the layers tree. Handoff: `handoffs/2026-11-11-auto-layout-grid.md`.
+
 ## D. New screens from main (design first, then build)
 Breakpoint bar and device views, pen/vector tools, auto layout and grid controls, tokens, components and variants, pages manager, export dialog, graph editor, agent pairing, sections gallery. None designed in the new UI yet (see `MAIN_SYNC_REPORT.md`).
 

@@ -30,3 +30,13 @@ Source: `DOCS/UI/design/editor-design-mode-blocks-dark.html` (`renderIns`, `posi
 
 ## Not verified
 - Only a Frame layer was selected in the screenshots; Typography, Image, States and kind-section popovers were not opened live.
+
+## Row-list sections: one popover per row (options unify)
+- Fill, Stroke and Effects no longer have a header sliders button. Each row's sliders button (Effects: the row's lead swatch) opens the only popover for that item.
+- Stroke row popover: Colour, Position, Width | Style, Sides (5 icons) | Cap, Join, Miter, Dash. Fill: Type, Colour, Angle, Opacity | gradient Stops (add, remove, colour, position) | image Fit, Picture, Cut out. Effects: Type, Colour, X, Y, Blur, Spread, or Amount.
+- All use OptionGroup/OptionRow (72px label column). Fixed a CSS rule that zeroed the gap and double-padded the last group of row popovers (tokens.css, `.ll-rowpop`).
+- Layer-wide settings in the Stroke popover (Position, Cap, Join, Miter, Dash) still write the layer's single stroke properties. Cap/Join/Miter/Dash (svg.*) do not persist on a button layer; the old header had the same limit.
+- Blend was in the Fill and Effects headers; it is already in Appearance, so it was dropped from the row popovers. Effects header blur/shadow lists duplicated the rows.
+- Stroke edits are now one undo step; the stroke row follows undo.
+- Old StrokeOptions/FillOptions/EffectsOptions are kept: the design-system demos import them.
+- Screenshots: DOCS/UI/handoffs/screenshots/options-unify/.
