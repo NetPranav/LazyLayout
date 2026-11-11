@@ -3,10 +3,11 @@
  */
 import { DEFAULT_LOOK, type SurfaceLook } from "./field";
 import { DEFAULT_PHYSICS, type PhysicsSettings } from "./membrane";
+import { DEFAULT_CLOTH, type ClothSettings } from "./cloth";
 
 export const SURFACE_MATERIALS = {
   /** Thin metallised film (a foil balloon): almost all reflection, very glossy. */
-  foil: { f0: 0.55, gloss: 1, exposure: 1.3, diffuse: 0.04 },
+  foil: { f0: 0.55, gloss: 0.4, exposure: 1.3, diffuse: 0.04 },
   /** Glossy plastic: some colour, a clear reflection. */
   plastic: { f0: 0.05, gloss: 0.9, exposure: 1.2, diffuse: 0.75 },
   /** Satin: colour first, a soft reflection. */
@@ -15,10 +16,13 @@ export const SURFACE_MATERIALS = {
 export type SurfaceMaterialId = keyof typeof SURFACE_MATERIALS;
 
 /** The studio: a softbox above, a floor below, two side panels and a little front light. */
-export const STUDIO_LIGHT = { softbox: 0.75, floor: 0.012, sides: 0.03, front: 0.003 };
+export const STUDIO_LIGHT = { softbox: 1, floor: 0, sides: 0, front: 0.002 };
 
 export interface SurfaceSettings {
   look: SurfaceLook;
+  /** How the resting shape is made: cloth simulation (real creases and wrinkles), or the quick membrane. */
+  method: "cloth" | "quick";
+  cloth: ClothSettings;
   physics: PhysicsSettings;
   material: { f0: number; gloss: number; exposure: number; diffuse: number };
   light: typeof STUDIO_LIGHT;
@@ -44,7 +48,17 @@ export function isSurface(get: Get): boolean {
 export function surfaceSettings(get: Get): SurfaceSettings {
   const materialId = (typeof get("surface.material") === "string" ? get("surface.material") : "foil") as string;
   const base = SURFACE_MATERIALS[(materialId in SURFACE_MATERIALS ? materialId : "foil") as SurfaceMaterialId];
+  const method = get("surface.method") === "quick" ? "quick" : "cloth";
   return {
+    method,
+    cloth: {
+      ...DEFAULT_CLOTH,
+      slack: num(get, "surface.slack", DEFAULT_CLOTH.slack, 0, 0.3),
+      seam: get("surface.seam") === "free" ? "free" : "fixed",
+      spacing: num(get, "surface.detail", DEFAULT_CLOTH.spacing, 2, 12),
+      pressure: num(get, "surface.pressure", DEFAULT_CLOTH.pressure, 0.1, 1),
+      seed: num(get, "surface.seed", DEFAULT_CLOTH.seed, 0, 1e6),
+    },
     look: {
       depth: num(get, "surface.depth", DEFAULT_LOOK.depth, 0, 200),
       fullness: num(get, "surface.fullness", DEFAULT_LOOK.fullness, 0, 1),
@@ -82,6 +96,11 @@ export function linearRgb(color: unknown): [number, number, number] {
     return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   };
   return [ch(0), ch(2), ch(4)];
+}
+
+/** A key for the cloth simulation's result. */
+export function clothKey(width: number, height: number, radius: number, kind: string, depth: number, cloth: ClothSettings): string {
+  return [Math.round(width), Math.round(height), Math.round(radius), kind, depth, cloth.slack, cloth.seam, cloth.spacing, cloth.pressure, cloth.seed, cloth.bend, cloth.steps, cloth.iterations].join("|");
 }
 
 /** A key that changes when the resting surface must be solved again. */

@@ -73,8 +73,10 @@ async function main() {
   await page.goto(`${base}/editor/surface-lab${query ? `?${query}` : ""}`, { waitUntil: "load" });
   await page.waitForFunction(() => {
     const c = document.querySelector<HTMLCanvasElement>("[data-surface-canvas]");
-    return !!c && c.width > 10 && !!(window as unknown as { __LL_SURFACE_LAB__?: unknown }).__LL_SURFACE_LAB__;
-  }, undefined, { timeout: 60_000 });
+    // a cloth surface first shows its quick shape; wait for the simulation
+    const ready = !!c && c.width > 10 && (c.dataset.surfaceState === "cloth" || (location.search.includes("surface.method=quick") && c.dataset.surfaceState === "quick"));
+    return ready && !!(window as unknown as { __LL_SURFACE_LAB__?: unknown }).__LL_SURFACE_LAB__;
+  }, undefined, { timeout: 120_000 });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(800);
   await page.evaluate(() => (window as unknown as { __LL_SURFACE_LAB__: { deterministic: (on: boolean) => void } }).__LL_SURFACE_LAB__.deterministic(true));

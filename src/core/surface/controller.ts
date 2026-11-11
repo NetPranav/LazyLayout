@@ -6,7 +6,38 @@
 import { restingSurface, type SurfaceShape } from "./field";
 import { MembraneSim } from "./membrane";
 import { surfaceGL, SurfaceTextures, type SurfaceDrawInput } from "./gl";
-import { lookKey, type SurfaceSettings } from "./settings";
+import { clothKey, lookKey, type SurfaceSettings } from "./settings";
+import type { ClothJob } from "./cloth.worker";
+
+/** Cloth results by key, shared by every surface (re-mounting, undo, a second identical button: instant). */
+const clothCache = new Map<string, { height: Float32Array; w: number; h: number }>();
+let worker: Worker | null = null;
+let workerFailed = false;
+let jobId = 0;
+const waiting = new Map<number, (r: { height: Float32Array; w: number; h: number }) => void>();
+function clothWorker(): Worker | null {
+  if (worker || workerFailed || typeof Worker === "undefined") return worker;
+  try {
+    worker = new Worker(new URL("./cloth.worker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (e: MessageEvent<{ id: number; height: Float32Array; w: number; h: number }>) => {
+      const done = waiting.get(e.data.id);
+      waiting.delete(e.data.id);
+      done?.({ height: e.data.height, w: e.data.w, h: e.data.h });
+    };
+  } catch {
+    workerFailed = true;
+  }
+  return worker;
+}
+function solveCloth(job: Omit<ClothJob, "id">): Promise<{ height: Float32Array; w: number; h: number }> | null {
+  const w = clothWorker();
+  if (!w) return null;
+  const id = ++jobId;
+  return new Promise((resolve) => {
+    waiting.set(id, resolve);
+    w.postMessage({ ...job, id });
+  });
+}
 
 /** Runs `task` every frame with the seconds since the last one; returns the stop function. */
 export type Ticker = (task: (dt: number) => void) => () => void;
@@ -29,6 +60,9 @@ export class SurfaceController {
   private stopTicker: (() => void) | null = null;
   private scale = 1;
   private disposed = false;
+  private clothWanted = "";
+  /** Told when the resting shape changes: "quick" first, then "cloth" when the simulation is in. */
+  onState: ((state: "quick" | "cloth") => void) | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly ticker: Ticker) {}
 
@@ -42,12 +76,33 @@ export class SurfaceController {
     if (!gl) return;
     const shape: SurfaceShape = geometry.kind === "ellipse" ? { kind: "ellipse", width: geometry.width, height: geometry.height } : { kind: "roundedRect", width: geometry.width, height: geometry.height, radius: geometry.radius };
     const key = lookKey(geometry.width, geometry.height, geometry.radius, geometry.kind, settings.look);
-    if (key !== this.restKey) {
+    const cell = geometry.width * geometry.height > 600_000 ? 2 : 1;
+    const wantCloth = settings.method === "cloth" ? clothKey(geometry.width, geometry.height, geometry.radius, geometry.kind, settings.look.depth, settings.cloth) : "";
+    const cached = wantCloth ? clothCache.get(wantCloth) : undefined;
+    if (cached) {
+      if (this.restKey !== wantCloth) {
+        this.restKey = wantCloth;
+        this.tex.height = gl.makeFloatTexture(cached.height, cached.w, cached.h, this.tex.height);
+        this.tex.heightPx = [cached.w * cell, cached.h * cell];
+        this.onState?.("cloth");
+      }
+    } else if (key !== this.restKey) {
+      // the quick shape at once (a cloth surface shows it until its simulation is in)
       this.restKey = key;
-      const cell = geometry.width * geometry.height > 600_000 ? 2 : 1;
-      const rest = restingSurface(shape, settings.look, cell);
+      const rest = restingSurface(shape, wantCloth ? { ...settings.look, creases: 0, wrinkles: 0 } : settings.look, cell);
       this.tex.height = gl.makeFloatTexture(rest.height, rest.grid.w, rest.grid.h, this.tex.height);
       this.tex.heightPx = [rest.grid.w * rest.grid.cell, rest.grid.h * rest.grid.cell];
+      this.onState?.("quick");
+    }
+    if (wantCloth && !cached && this.clothWanted !== wantCloth) {
+      this.clothWanted = wantCloth;
+      const job = solveCloth({ shape, depth: settings.look.depth, cloth: settings.cloth, cell });
+      void job?.then((r) => {
+        if (clothCache.size > 12) clothCache.delete(clothCache.keys().next().value as string);
+        clothCache.set(wantCloth, r);
+        if (this.disposed || this.clothWanted !== wantCloth || !this.geometry || !this.settings) return;
+        this.update(this.geometry, this.settings, this.base, this.scale);
+      });
     }
     const simKey = [Math.round(geometry.width), Math.round(geometry.height), Math.round(geometry.radius), geometry.kind].join("|");
     if (simKey !== this.simKey || !this.sim) {

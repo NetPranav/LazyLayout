@@ -467,13 +467,23 @@ const DEFS = {
   // --- Surfaces (ROADMAP S2–S6) ---------------------------------------------------
   /** Flat (a normal fill) or inflated: the layer is a surface with height, lit by a studio light, that dents when pressed. */
   "surface.mode": oneOf(["flat", "inflated"], "flat", null, "paint", SURFACE),
+  /** How the resting shape is made: a cloth simulation (real creases and wrinkles; a moment to compute) or the quick membrane. */
+  "surface.method": oneOf(["cloth", "quick"], "cloth", null, "paint", SURFACE),
+  /** Extra material in the sheet (cloth): more is more wrinkles. */
+  "surface.slack": ranged(num(0.06, null, "paint", SURFACE), { min: 0, max: 0.3 }),
+  /** The seam stays put (a clean outline) or slides in as the air pulls it (a real foil pillow's pinched edge). */
+  "surface.seam": oneOf(["fixed", "free"], "fixed", null, "paint", SURFACE),
+  /** Cloth particle spacing, px: smaller is finer wrinkles and slower. */
+  "surface.detail": ranged(px(4, null, "paint", SURFACE), { min: 2, max: 12 }),
+  /** How hard the air pushes (cloth). */
+  "surface.pressure": ranged(num(0.7, null, "paint", SURFACE), { min: 0.1, max: 1 }),
   /** Height of the highest point, px. */
   "surface.depth": ranged(px(22, null, "paint", SURFACE), { min: 0, max: 200 }),
   /** 0: a soft dome; 1: a full pillow with steep sides and a flat top. */
   "surface.fullness": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
   /** Foil (metallised film), plastic or satin; the colour is the layer's fill. */
   "surface.material": oneOf(["foil", "plastic", "satin"], "foil", null, "paint", SURFACE),
-  "surface.gloss": ranged(num(1, null, "paint", SURFACE), { min: 0, max: 1 }),
+  "surface.gloss": ranged(num(0.4, null, "paint", SURFACE), { min: 0, max: 1 }),
   /** Folds from the corners where the surface runs short of material (S4). */
   "surface.creases": ranged(num(0.6, null, "paint", SURFACE), { min: 0, max: 1 }),
   "surface.creaseLength": ranged(px(70, null, "paint", SURFACE), { min: 0, max: 400 }),

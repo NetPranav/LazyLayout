@@ -31,6 +31,8 @@ uniform vec4 uLight;         // softbox, floor, sides, front
 uniform vec4 uPress;         // x, y, amount, dent size
 uniform vec4 uDynWrinkle;    // strength, count, seed, give
 uniform vec2 uWarp;          // content refraction, content pull
+uniform sampler2D uEnv;      // the studio, as an equirectangular map (intensity / 4)
+uniform float uEnvLod;       // blur of the reflection (roughness), in mip levels
 
 float sdShape(vec2 p) {
   vec2 hs = uShape.xy * 0.5;
@@ -74,13 +76,11 @@ float heightAt(vec2 p) {
 }
 
 vec3 env(vec3 r) {
-  // a broad softbox above, in front and a little to the left: what faces backwards (r.z < 0) can't see it
-  float front = smoothstep(-0.15, 0.3, r.z);
-  float soft = smoothstep(0.05, 0.5, r.y) * (1.0 - smoothstep(0.7, 0.98, r.y)) * (1.0 - smoothstep(0.35, 0.95, abs(r.x + 0.32))) * front;
-  // the floor, seen only by the steepest lower flank
-  float floorL = smoothstep(-0.8, -0.99, r.y);
-  float sides = smoothstep(0.5, 0.9, abs(r.x)) * (1.0 - smoothstep(0.15, 0.6, abs(r.y)));
-  return vec3(uLight.x * soft + uLight.y * floorL + uLight.z * sides + uLight.w);
+  // r: x right, y up, z towards the viewer. The studio's lights are in front of the object (on the viewer's side).
+  float yaw = atan(r.x, r.z);
+  float pitch = asin(clamp(r.y, -1.0, 1.0));
+  vec2 uv = vec2(0.5 + yaw / 6.2831853, 0.5 - pitch / 3.1415927);
+  return textureLod(uEnv, uv, uEnvLod).rgb * 4.0 * uLight.x + vec3(uLight.w);
 }
 
 void main() {
@@ -100,7 +100,7 @@ void main() {
   float f0 = uMaterial.x;
   float fres = f0 + (1.0 - f0) * pow(1.0 - clamp(n.z, 0.0, 1.0), 5.0);
   // gloss: a sharp reflection; less gloss blurs it towards the average light
-  vec3 refl = mix(vec3(0.5 * (uLight.x + uLight.y) * 0.35 + uLight.w), env(r), uMaterial.y);
+  vec3 refl = env(r);
   vec3 L = normalize(vec3(0.0, 0.55, 1.0));
   float diff = max(dot(n, L), 0.0);
   vec3 col = uBase * (0.06 + uMaterial.w * diff) + refl * fres;
@@ -118,7 +118,7 @@ void main() {
       pull = d * fall * uPress.z * uWarp.y;
     }
     vec4 ink = texture(uContent, (p - grad * uWarp.x + pull) / uSize);
-    vec3 lit = ink.rgb * (0.55 + 0.55 * diff) + refl * fres * ink.a * 0.35;
+    vec3 lit = ink.rgb * (0.85 + 0.35 * diff) + refl * fres * ink.a * 0.25;
     col = col * (1.0 - ink.a) + lit;
   }
 
@@ -195,9 +195,57 @@ class SharedSurfaceGL {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    for (const name of ["uHeight", "uHeightSize", "uDyn", "uDynSize", "uContent", "uHasContent", "uSize", "uScale", "uShape", "uBase", "uMaterial", "uLight", "uPress", "uDynWrinkle", "uWarp"])
+    for (const name of ["uHeight", "uHeightSize", "uDyn", "uDynSize", "uContent", "uHasContent", "uSize", "uScale", "uShape", "uBase", "uMaterial", "uLight", "uPress", "uDynWrinkle", "uWarp", "uEnv", "uEnvLod"])
       this.uniforms[name] = gl.getUniformLocation(prog, name);
     this.zero = this.makeFloatTexture(new Float32Array([0]), 1, 1).tex;
+    this.env = this.makeEnvTexture();
+  }
+
+  private readonly env: WebGLTexture;
+
+  /**
+   * The studio (S3): an equirectangular map of a photo studio, made in code: a large softbox above and a little to the
+   * left of the viewer, a thin strip light below it, two faint vertical strips at the sides, a dark floor. Stored as
+   * intensity / 4 with mipmaps, so a rough surface reflects a blurred studio.
+   */
+  private makeEnvTexture(): WebGLTexture {
+    const gl = this.gl;
+    const W = 512;
+    const H = 256;
+    const data = new Uint8Array(W * H * 4);
+    const soft = (v: number, a: number, b: number) => {
+      const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    const box = (yaw: number, pitch: number, cy: number, cp: number, hw: number, hh: number, edge: number) =>
+      soft(hw - Math.abs(yaw - cy), -edge, edge) * soft(hh - Math.abs(pitch - cp), -edge, edge);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const yaw = ((x + 0.5) / W - 0.5) * 360;
+        const pitch = (0.5 - (y + 0.5) / H) * 180;
+        let v = 0.004;
+        // the key softbox: big, above, a little left; brightest at its top
+        v += 2.6 * box(yaw, pitch, -14, 30, 46, 17, 9) * (0.75 + 0.25 * soft(pitch, 18, 46));
+        // a thin strip light under it
+        v += 1.4 * box(yaw, pitch, -4, 8, 58, 2.5, 2.5);
+        // faint vertical strips at the sides
+        v += 0.5 * box(yaw, pitch, -78, 10, 4, 34, 4) + 0.35 * box(yaw, pitch, 78, 10, 4, 34, 4);
+        // the floor: dark, a little lighter towards the horizon
+        if (pitch < 0) v += 0.03 * soft(pitch, -60, -5);
+        const c = Math.min(255, Math.round((v / 4) * 255));
+        const i = (y * W + x) * 4;
+        data[i] = data[i + 1] = data[i + 2] = c;
+        data[i + 3] = 255;
+      }
+    const tex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tex;
   }
 
   makeFloatTexture(data: Float32Array, w: number, h: number, reuse?: Tex | null): Tex {
@@ -247,6 +295,9 @@ class SharedSurfaceGL {
     bind(0, t.height?.tex ?? this.zero, "uHeight");
     bind(1, t.dyn?.tex ?? this.zero, "uDyn");
     bind(2, t.content?.tex ?? this.zero, "uContent");
+    bind(3, this.env, "uEnv");
+    // gloss 1: a sharp studio (a little blur still: real foil isn't a mirror); gloss 0: very blurred
+    gl.uniform1f(u.uEnvLod, 1.2 + (1 - input.material.gloss) * 5);
     gl.uniform2f(u.uHeightSize, t.heightPx[0], t.heightPx[1]);
     gl.uniform2f(u.uDynSize, t.dynPx[0], t.dynPx[1]);
     gl.uniform1f(u.uHasContent, t.content && t.hasContent ? 1 : 0);

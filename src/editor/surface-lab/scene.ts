@@ -25,10 +25,8 @@ export function referenceScene(overrides: Record<string, string | number> = {}):
     // tuned against the reference, side by side (S8)
     "surface.depth": 55,
     "surface.fullness": 0,
-    "surface.creases": 1,
-    "surface.creaseLength": 55,
-    "surface.wrinkles": 1,
-    "surface.wrinkleLength": 20,
+    "surface.slack": 0.02,
+    "surface.seed": 4,
     "surface.pressWrinkles": 1,
     "surface.dentSize": 60,
     "surface.dentDepth": 16,

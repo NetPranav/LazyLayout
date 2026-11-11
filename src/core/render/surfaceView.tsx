@@ -70,6 +70,9 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
     const canvas = canvasRef.current;
     if (!canvas) return;
     const controller = new SurfaceController(canvas, ticker);
+    controller.onState = (state) => {
+      canvas.dataset.surfaceState = state;
+    };
     controllerRef.current = controller;
     return () => {
       controller.dispose();
