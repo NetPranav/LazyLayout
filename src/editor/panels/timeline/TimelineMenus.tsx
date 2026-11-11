@@ -179,6 +179,31 @@ export const TimelineMenus: React.FC<TimelineMenusProps> = ({ ctx, onClose }) =>
           >
             Align to playhead
           </MenuItem>
+          <MenuItem
+            disabled={Object.keys(useMotionModel.getState().selectedKeys).length < 3}
+            onClick={() => {
+              motionActions.distributeKeys();
+              onClose();
+            }}
+          >
+            Distribute evenly
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              motionActions.scaleKeyTime(1.25);
+              onClose();
+            }}
+          >
+            Slower
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              motionActions.scaleKeyTime(0.8);
+              onClose();
+            }}
+          >
+            Faster
+          </MenuItem>
         </>
       )}
 

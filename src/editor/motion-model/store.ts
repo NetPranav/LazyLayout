@@ -22,6 +22,8 @@ import {
   placementsOf,
   KEYFRAMES_CLIP_NAME,
   alignKeyframes,
+  distributeKeyframes,
+  scaleKeyframeTime,
   copyKeyframes,
   pasteKeyframes,
 } from "@/core/timeline/keyframeOps";
@@ -862,6 +864,14 @@ export const motionActions = {
       }
     });
     useMotionModel.setState({ selectedKeys: newSel });
+  },
+  /** Phase 66: spread the selected keyframes evenly between the first and the last (three or more), one undo step. */
+  distributeKeys(): number {
+    return distributeKeyframes(Object.keys(useMotionModel.getState().selectedKeys), activeCompositionId());
+  },
+  /** Phase 66: Slower (×1.25) and Faster (×0.8): the selected keyframes' timing scaled around the first, one undo step. */
+  scaleKeyTime(factor: number): number {
+    return scaleKeyframeTime(Object.keys(useMotionModel.getState().selectedKeys), factor, "first", activeCompositionId());
   },
   alignKeysToPlayhead(): void {
     const s = useMotionModel.getState();
