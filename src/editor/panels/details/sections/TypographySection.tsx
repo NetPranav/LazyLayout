@@ -14,6 +14,9 @@ import {
   Underline,
   Strikethrough,
   Minus,
+  Split,
+  Sparkles,
+  ArrowUpToLine,
 } from "lucide-react";
 import { NumberField } from "@/editor/components/NumberField";
 import { Select } from "@/editor/components/Select";
@@ -100,39 +103,37 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
       {/* Split into letters & Animate / Stand / Depth controls */}
       {(isSingleText || isLetters) && (
         <div className="ll:flex ll:flex-col ll:gap-2 ll:w-full">
-          <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-            <Button
-              size="sm"
+          <div className="ll:grid ll:grid-cols-3 ll:gap-2 ll:w-full">
+            <IconButton
+              size="md"
               variant="secondary"
-              className="ll:flex-1"
+              className="ll:w-full"
               disabled={!isSingleText}
+              aria-label="Split into letters"
+              tooltip={isSingleText ? "Split into letters" : "Already split into letters"}
+              icon={<Icon icon={Split} size={14} />}
               onClick={() => void invokeCommand("text.splitLetters")}
-              title={isSingleText ? "Split text into one layer per letter" : "Already split into letters"}
-            >
-              Split into letters
-            </Button>
-            {isLetters && (
-              <>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ll:flex-1"
-                  onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
-                  title="Animate letters with staggered entrance"
-                >
-                  Animate letters
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="ll:flex-1"
-                  onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
-                  title="Stand letters up in 3D on a ground plane"
-                >
-                  Stand letters up
-                </Button>
-              </>
-            )}
+            />
+            <IconButton
+              size="md"
+              variant="secondary"
+              className="ll:w-full"
+              disabled={!isLetters}
+              aria-label="Animate letters"
+              tooltip="Animate letters: staggered entrance"
+              icon={<Icon icon={Sparkles} size={14} />}
+              onClick={() => void invokeCommand("text.animateLetters", { id: lettersGroupId ?? undefined })}
+            />
+            <IconButton
+              size="md"
+              variant="secondary"
+              className="ll:w-full"
+              disabled={!isLetters}
+              aria-label="Stand letters up"
+              tooltip="Stand letters up in 3D on a ground plane"
+              icon={<Icon icon={ArrowUpToLine} size={14} />}
+              onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
+            />
           </div>
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
@@ -159,8 +160,8 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
           )}
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-              <span className="ll:text-micro ll:text-muted ll:w-10">Depth</span>
-              <div className="ll:flex-1">
+              <span className="ll:w-10 ll:shrink-0 ll:text-small ll:font-normal ll:text-muted">Depth</span>
+              <div className="ll:flex-1 ll:min-w-0">
                 <Slider
                   min={0}
                   max={100}
@@ -181,6 +182,7 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
                   }}
                 />
               </div>
+              <span className="ll:w-10 ll:shrink-0 ll:text-right ll:font-mono ll:text-micro ll:text-muted">{depthValue}px</span>
             </div>
           )}
         </div>
