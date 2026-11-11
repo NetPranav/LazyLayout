@@ -5,6 +5,7 @@ import { TimelinePanel } from "@/editor/panels/timeline/TimelinePanel";
 import { TimelineTransport } from "@/editor/panels/timeline/TimelineTransport";
 import { TimelineFooter } from "@/editor/panels/timeline/TimelineFooter";
 import { ParityBadge } from "@/editor/components/ParityBadge";
+import { TimelineCompositionTabs } from "@/editor/panels/timeline/TimelineCompositions";
 import { parityStore } from "@/core/engine/stage/parity";
 import { Button } from "@/editor/components/Button";
 
@@ -95,6 +96,15 @@ export function ParityBadgeDemo() {
       <Button size="sm" onClick={() => set("idle")}>Idle</Button>
       <Button size="sm" onClick={() => set("ok")}>OK</Button>
       <Button size="sm" onClick={() => set("drift")}>Drift</Button>
+    </div>
+  );
+}
+
+/** Phase 65: the composition tab strip and breadcrumbs, on the live document (Main, interactions, opened precomps). */
+export function TimelineCompositionTabsDemo() {
+  return (
+    <div className="ll:w-full ll:max-w-2xl ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+      <TimelineCompositionTabs />
     </div>
   );
 }

@@ -100,6 +100,7 @@ import {
   TimelineTransportDemo,
   TimelineFooterDemo,
   ParityBadgeDemo,
+  TimelineCompositionTabsDemo,
 } from "./demos/TimelineDemos";
 import {
   SliderDemo,
@@ -1655,6 +1656,11 @@ export function DesignSystemPage() {
             {activeSection === "timeline-footer" && (
               <Titled title="Engine parity badge" note="Phase 60: idle, OK, drift. Dev builds only.">
                 <ParityBadgeDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-footer" && (
+              <Titled title="Composition tabs" note="Phase 65: Main, interaction compositions with their trigger, opened precomps, + Precomp, breadcrumbs.">
+                <TimelineCompositionTabsDemo />
               </Titled>
             )}
             {activeSection === "easing-curve" && (
