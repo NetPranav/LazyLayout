@@ -439,9 +439,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
         border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid ${bare ? "transparent" : "var(--ll-board-line)"}`,
         boxShadow: bare ? "none" : "var(--ll-shadow-soft)",
       }}
+      onPointerDownCapture={(e) => {
+        // where the press began: only a press on the background itself may deselect
+        e.currentTarget.dataset.pressOnBackground = e.target === e.currentTarget ? "1" : "0";
+      }}
       onClick={(e) => {
-        // Clicking directly on artboard background deselects elements
-        if (e.target === e.currentTarget && !penJustFinished()) {
+        // Clicking directly on artboard background deselects elements. A click whose press began on a layer never
+        // does, even when the layer moved from under the pointer during the press (a drag, or a layer animating
+        // while recording), which makes the browser report the click on the background.
+        const pressedBackground = e.currentTarget.dataset.pressOnBackground !== "0";
+        delete e.currentTarget.dataset.pressOnBackground;
+        if (e.target === e.currentTarget && pressedBackground && !penJustFinished()) {
           onSelect(null);
         }
       }}
