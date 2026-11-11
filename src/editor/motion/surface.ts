@@ -5,6 +5,7 @@ import { simAdd, simRemove, type Sim } from "./loop";
 import { MOT, SP, EXIT, MENU_FALLBACKS } from "./presets";
 import { getActivePreset, prefersReducedMotion } from "./feel";
 import { springAnim, cancelAll } from "./ease";
+import { isUserMotionOff } from "./reducedMotion";
 import { measureFlip, playFlip } from "./flip";
 
 export interface SurfaceOptions {
@@ -32,7 +33,7 @@ function shp(): [number, number] {
  * Blur and fade an item into view (runs on CSS animation, never on a spring)
  */
 export function blurIn(c: HTMLElement, d: number): void {
-  if (typeof c.animate !== "function") return;
+  if (typeof c.animate !== "function" || isUserMotionOff()) return;
   c.animate(
     [
       { opacity: 0, filter: `blur(${MOT.blur[0]}px)` },

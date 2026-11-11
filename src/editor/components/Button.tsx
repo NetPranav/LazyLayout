@@ -106,7 +106,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${disabledStyles} ${className}`}
+      className={`${iconOnly ? "ll-ib " : ""}${baseStyles} ${sizeStyles} ${variantStyles} ${disabledStyles} ${className}`}
       {...props}
     >
       {loading ? (

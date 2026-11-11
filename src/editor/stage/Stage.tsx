@@ -1,17 +1,20 @@
 "use client";
 
+import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
-import { useDocument, useDocumentAt } from "@/core/store/useDocumentStore";
+import { useDocument, useDocumentAt, documentCommands } from "@/core/store/useDocumentStore";
 import { framesOfPage } from "@/core/frames/devices";
 import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom } from "@/core/viewport/camera";
+import { reportStagePan, usePanRequestStore } from "./panRequest";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
+import { CanvasCursor } from "./CanvasCursor";
 import { TransitionReferences, TRANSITION_GAP } from "./TransitionReferences";
 import { isLoadingPage } from "@/core/pages/loadingPages";
 import { useStageTransform } from "./useStageTransform";
@@ -24,6 +27,7 @@ import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, typ
 import { useDraftPathStore } from "@/core/store/useDraftPathStore";
 import { EMPTY_PEN, penClose, penDrag, penFinishable, penNearFirst, penPress, penUndo, type PenState } from "@/core/paths/penModel";
 import { fitStroke, type Sample } from "@/core/paths/pathFit";
+import { markPenFinished, registerDraftControls } from "./pen/penAdapter";
 import { createPathLayer, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { getDocument } from "@/core/store/documentState";
@@ -78,6 +82,10 @@ export const Stage: React.FC<StageProps> = ({
   onInsert,
   onAskAi,
   mode = "design",
+  checkerboard = false,
+  pixelGrid = false,
+  gridStyle = "dots",
+  gridSize = 24,
   className = "",
 }) => {
   // Store-backed selection
@@ -96,6 +104,22 @@ export const Stage: React.FC<StageProps> = ({
     const cam = useCameraStore.getState();
     if (cam.camera.zoom === 1 && !cam.touched) {
       cam.setCamera({ x: 0, y: 0, zoom: STAGE_CONSTANTS.defaultZoom });
+    }
+
+    if (typeof window !== "undefined") {
+      (window as unknown as { __clearAllLayers?: () => void }).__clearAllLayers = () => {
+        try {
+          const doc = getDocument();
+          if (doc?.layers) {
+            const ids = Object.keys(doc.layers);
+            ids.forEach((id) => {
+              documentCommands.removeLayer(id, "Delete all layers");
+            });
+          }
+        } catch {
+          // ignore
+        }
+      };
     }
   }, []);
 
@@ -406,11 +430,16 @@ export const Stage: React.FC<StageProps> = ({
   }, [reportOrigin]);
   const cameraX = useCameraStore((c) => c.camera.x);
   const cameraY = useCameraStore((c) => c.camera.y);
+  const panReq = usePanRequestStore((s) => s.req);
   const [seenCamera, setSeenCamera] = useState({ x: cameraX, y: cameraY });
-  if (seenCamera.x !== cameraX || seenCamera.y !== cameraY) {
+  const [seenPanReq, setSeenPanReq] = useState(panReq);
+  if (seenCamera.x !== cameraX || seenCamera.y !== cameraY || seenPanReq !== panReq) {
     setSeenCamera({ x: cameraX, y: cameraY });
-    setDragPan({ x: 0, y: 0 });
+    setSeenPanReq(panReq);
+    // a camera action re-centres; zoom to selection also asks for the pan that puts the selection in the middle
+    setDragPan(panReq && panReq !== seenPanReq ? panReq.pan : { x: 0, y: 0 });
   }
+  useEffect(() => reportStagePan(pan), [pan]);
 
   // The wheel, as on the old canvas: a plain wheel or trackpad scroll pans, Ctrl or Cmd with the wheel (a pinch sends the same) zooms.
   // A native listener, because React's wheel listener is passive and could not stop the page from scrolling or zooming itself.
@@ -445,10 +474,6 @@ export const Stage: React.FC<StageProps> = ({
     | null
   >(null);
   const justDragged = useRef(false);
-  const rightPan = useRef(false);
-  const rightMoved = useRef(false);
-  const syntheticMenu = useRef(false);
-  const rightDownAt = useRef<{ target: EventTarget | null; x: number; y: number } | null>(null);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const toolCursor = activeTool === "hand" ? "grab" : activeTool === "pen" || activeTool === "pencil" ? "crosshair" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
@@ -469,7 +494,10 @@ export const Stage: React.FC<StageProps> = ({
     useDraftPathStore.getState().clear();
     if (penFinishable(state) && parent) {
       const newId = createPathLayer(state.nodes, state.closed, parent, PEN_STYLE, "Path");
-      if (newId) selectStore(newId, "element");
+      if (newId) {
+        selectStore(newId, "element");
+        markPenFinished();
+      }
     }
     onToolDone?.();
   }, [onToolDone, selectStore]);
@@ -494,31 +522,24 @@ export const Stage: React.FC<StageProps> = ({
     }
   }, [activeTool]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (activeTool !== "pen") return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        finishPen();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        cancelPen();
-      } else if (e.key === "Backspace" || e.key === "Delete") {
-        e.preventDefault();
-        e.stopPropagation();
-        const next = penUndo(penStateRef.current);
-        penStateRef.current = next;
-        if (next.nodes.length === 0) {
-          cancelPen();
-        } else {
-          useDraftPathStore.getState().setPen(next.nodes, next.closed, null);
-        }
-      }
-    },
-    [activeTool, finishPen, cancelPen]
+  // The pen's context bar and keys (Close path, Delete point, Done; Enter, Esc, Backspace) drive the draft through these
+  useEffect(
+    () =>
+      registerDraftControls({
+        finish: finishPen,
+        cancel: cancelPen,
+        close: () => {
+          penStateRef.current = penClose(penStateRef.current);
+          if (penStateRef.current.closed) finishPen();
+        },
+        removeLast: () => {
+          const next = penUndo(penStateRef.current);
+          penStateRef.current = next;
+          if (next.nodes.length === 0) cancelPen();
+          else useDraftPathStore.getState().setPen(next.nodes, next.closed, null);
+        },
+      }),
+    [finishPen, cancelPen]
   );
 
   /** A screen point in the artboard's own pixels, and how many screen px one artboard px is. */
@@ -532,17 +553,7 @@ export const Stage: React.FC<StageProps> = ({
 
   const handleToolPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     justDragged.current = false;
-    rightMoved.current = false;
-    if (e.button === 2) {
-      // Right button on empty canvas drags the canvas; a plain right-click (no drag) still opens the menu.
-      if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
-      gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
-      rightPan.current = true;
-      rightDownAt.current = { target: e.target, x: e.clientX, y: e.clientY };
-      e.currentTarget.setPointerCapture(e.pointerId);
-      return;
-    }
-    if (e.button !== 0) return;
+    if (e.button !== 0) return; // the right button only opens the canvas menu: it never pans or switches tools
     if (activeTool === "hand") {
       gesture.current = { kind: "pan", startX: e.clientX, startY: e.clientY, from: pan };
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -595,7 +606,7 @@ export const Stage: React.FC<StageProps> = ({
     if (!spec) {
       // Select on empty canvas: a drag selects what it touches
       const pressedOn = e.target as HTMLElement;
-      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],button,[role=menu]')) return;
+      if (activeTool !== "select" || pressedOn.closest('[data-testid="selection-handle"],[data-layout-grab],button,[role=menu]')) return;
       const from = toArtboard(e.clientX, e.clientY);
       if (!from) return;
       const box = pressedOn.closest<HTMLElement>('[data-testid="stage-element"]');
@@ -649,7 +660,6 @@ export const Stage: React.FC<StageProps> = ({
     const g = gesture.current;
     if (!g) return;
     if (g.kind === "pan") {
-      if (rightPan.current && Math.hypot(e.clientX - g.startX, e.clientY - g.startY) > 3) rightMoved.current = true;
       setDragPan({ x: g.from.x + e.clientX - g.startX, y: g.from.y + e.clientY - g.startY });
       return;
     }
@@ -695,18 +705,7 @@ export const Stage: React.FC<StageProps> = ({
     if (g.kind === "marquee" && !g.moved) return; // a plain click: the click handler deselects
     justDragged.current = true; // the click that follows a drag must not deselect what the drag just made
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    if (g.kind === "pan") {
-      if (rightPan.current && !rightMoved.current && rightDownAt.current?.target instanceof Element) {
-        // a right-click that did not drag: open the canvas menu now
-        const at = rightDownAt.current;
-        syntheticMenu.current = true;
-        (at.target as Element).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, button: 2 }));
-        syntheticMenu.current = false;
-      }
-      rightPan.current = false;
-      rightMoved.current = false;
-      return;
-    }
+    if (g.kind === "pan") return;
     setDrawPreview(null);
     const at = toArtboard(e.clientX, e.clientY);
     if (!at) return;
@@ -784,13 +783,23 @@ export const Stage: React.FC<StageProps> = ({
       ref={viewportRef}
       data-stage="workspace"
       data-testid="stage-viewport"
+      data-checkerboard={checkerboard ? "true" : undefined}
       className={`ll-stage-viewport ll:relative ll:w-full ll:h-full ll:overflow-hidden ${className}`}
-      style={{ cursor: toolCursor }}
+      style={{
+        cursor: toolCursor,
+        ...(checkerboard
+          ? {
+              backgroundImage:
+                "linear-gradient(45deg, var(--ll-border-color) 25%, transparent 25%), linear-gradient(-45deg, var(--ll-border-color) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--ll-border-color) 75%), linear-gradient(-45deg, transparent 75%, var(--ll-border-color) 75%)",
+              backgroundSize: "20px 20px",
+              backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0",
+            }
+          : {}),
+      }}
       onPointerDownCapture={handleToolPointerDown}
       onPointerMove={handleToolPointerMove}
       onPointerUp={handleToolPointerUp}
       onPointerCancel={handleToolPointerCancel}
-      onKeyDown={handleKeyDown}
       onDoubleClick={(e) => {
         if (activeTool === "pen" && penStateRef.current.nodes.length >= 2) {
           e.preventDefault();
@@ -802,14 +811,6 @@ export const Stage: React.FC<StageProps> = ({
         if (e.dataTransfer.types.includes("Files")) e.preventDefault();
       }}
       onDrop={(e) => void dropPictures(e)}
-      onContextMenu={(e) => {
-        // On empty canvas the menu waits for the button to come up (macOS sends it on press): a right-drag pans, a plain
-        // right-click opens it. Layers keep their own menu, opened at once.
-        if (syntheticMenu.current) return;
-        if ((e.target as HTMLElement).closest('[data-testid="stage-element"],button,[role=menu]')) return;
-        e.preventDefault();
-        e.stopPropagation();
-      }}
       onClick={(e) => {
         if (justDragged.current) {
           justDragged.current = false;
@@ -821,6 +822,7 @@ export const Stage: React.FC<StageProps> = ({
         }
       }}
     >
+      <CanvasCursor viewportRef={viewportRef} />
       <input
         ref={imageInput}
         type="file"
@@ -834,45 +836,48 @@ export const Stage: React.FC<StageProps> = ({
           e.target.value = "";
         }}
       />
-      <Artboard
-        title={title}
-        preset={activePreset}
-        onPresetChange={handlePresetChange}
-        width={presetDef.artboardWidth}
-        height={presetDef.artboardHeight}
-        background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
-        zoom={zoom}
-        pan={pan}
-        elements={elements}
-        layers={controlledElements ? undefined : storeLayers}
-        pageRef={pageRef}
-        rootId={controlledElements ? null : rootId}
-        drawPreview={drawPreview}
-        selectedIds={selectedIds}
-        hoveredId={hoveredId}
-        onSelect={handleSelect}
-        onHover={setHoveredId}
-        activeTool={activeTool}
-        snapGuides={snapGuides && isGesturing}
-        empty={empty}
-        references={
-          onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
-            <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
-          ) : undefined
-        }
-        onAddFrame={onAddFrame}
-        onInsert={onInsert}
-        onAskAi={onAskAi}
-        onLayerAction={handleLayerAction}
-        onToggleHidden={handleToggleHidden}
-        onToggleLocked={handleToggleLocked}
-        mode={mode}
-        snapLines={snapLines}
-        spacingMarks={spacingMarks}
-        onStartMove={startMove}
-        onStartResize={startResize}
-        isGesturing={isGesturing}
-      />
+      <React.Profiler id="artboard" onRender={() => recordCommit("artboard")}>
+        <Artboard
+          title={title}
+          preset={activePreset}
+          onPresetChange={handlePresetChange}
+          width={presetDef.artboardWidth}
+          height={presetDef.artboardHeight}
+          background={typeof rootSized?.properties["appearance.background.color"] === "string" && rootSized.properties["appearance.background.color"] !== "transparent" ? (rootSized.properties["appearance.background.color"] as string) : undefined}
+          zoom={zoom}
+          pan={pan}
+          elements={elements}
+          layers={controlledElements ? undefined : storeLayers}
+          pageRef={pageRef}
+          rootId={controlledElements ? null : rootId}
+          drawPreview={drawPreview}
+          selectedIds={selectedIds}
+          hoveredId={hoveredId}
+          onSelect={handleSelect}
+          onHover={setHoveredId}
+          activeTool={activeTool}
+          snapGuides={snapGuides && isGesturing}
+          empty={empty}
+          references={
+            onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
+              <TransitionReferences loading={activePageDef} pages={allPages} layers={storeLayers} width={pageW} height={pageH} zoom={zoom > 0 ? zoom : 1} />
+            ) : undefined
+          }
+          onAddFrame={onAddFrame}
+          onInsert={onInsert}
+          onAskAi={onAskAi}
+          onElementChange={handleElementChange}
+          onLayerAction={handleLayerAction}
+          onToggleHidden={handleToggleHidden}
+          onToggleLocked={handleToggleLocked}
+          mode={mode}
+          snapLines={snapLines}
+          spacingMarks={spacingMarks}
+          onStartMove={startMove}
+          onStartResize={startResize}
+          isGesturing={isGesturing}
+        />
+      </React.Profiler>
     </div>
   );
 };

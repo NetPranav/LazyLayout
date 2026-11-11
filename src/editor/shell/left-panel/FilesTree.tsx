@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useEffect, useLayoutEffect, useState } from "react";
+import { springAnim } from "@/editor/motion/ease";
+import { prefersReducedMotion } from "@/editor/motion/feel";
 import { Folder, File, Code, Hash, Braces, ChevronRight } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Select } from "@/editor/components/Select";
@@ -9,6 +11,8 @@ import { FileContextMenuContent } from "./FileContextMenu";
 import type { FileItem, FileMenuAction } from "./types";
 import { flattenFiles, filterTreeNodes, type FlatFileNode } from "./treeFilter";
 import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
+import { useCompiledFiles, compiledFilesToTree } from "@/editor/panels/code-view/useCompiledFiles";
+import { useCodeFilesStore } from "@/editor/panels/code-view/codeFilesStore";
 
 export interface FilesTreeProps {
   files: FileItem[];
@@ -29,6 +33,10 @@ const CATEGORY_OPTIONS = [
   { value: "Styles", label: "Styles" },
   { value: "Config", label: "Config" },
 ];
+
+function allFolderIds(items: FileItem[]): string[] {
+  return items.flatMap((f) => (f.isFolder ? [f.id, ...allFolderIds(f.children ?? [])] : []));
+}
 
 function getFileIcon(name: string, isFolder: boolean): React.ReactNode {
   if (isFolder) {
@@ -64,16 +72,37 @@ function renderHighlightedName(name: string, query: string) {
 }
 
 export const FilesTree: React.FC<FilesTreeProps> = ({
-  files,
-  selectedIds,
-  expandedIds,
+  files: propFiles,
+  selectedIds: propSelectedIds,
+  expandedIds: propExpandedIds,
   searchQuery = "",
-  visibleNodes: propVisibleNodes,
-  onSelect,
-  onToggleExpand,
+  visibleNodes: parentVisibleNodes,
+  onSelect: propOnSelect,
+  onToggleExpand: propOnToggleExpand,
   onRename,
   onFileAction,
 }) => {
+  // The real generated files: the compiler output for the current document. Selecting a row opens it in the code panel.
+  const compiled = useCompiledFiles();
+  const real = compiled.files.length > 0;
+  const activeFileId = useCodeFilesStore((s) => s.activeFileId);
+  const openFile = useCodeFilesStore((s) => s.openFile);
+  const realFiles = useMemo(() => compiledFilesToTree(compiled.files), [compiled.files]);
+  const [collapsedDirs, setCollapsedDirs] = useState<string[]>([]);
+  const files = real ? realFiles : propFiles;
+  const selectedIds = useMemo(
+    () => (real ? (activeFileId ? [activeFileId] : [compiled.files[0].id]) : propSelectedIds),
+    [real, activeFileId, compiled.files, propSelectedIds],
+  );
+  const expandedIds = useMemo(
+    () => (real ? allFolderIds(realFiles).filter((id) => !collapsedDirs.includes(id)) : propExpandedIds),
+    [real, realFiles, collapsedDirs, propExpandedIds],
+  );
+  const propVisibleNodes = real ? undefined : parentVisibleNodes;
+  const onSelect = real ? (id: string) => openFile(id) : propOnSelect;
+  const onToggleExpand = real
+    ? (id: string) => setCollapsedDirs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    : propOnToggleExpand;
   const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const treeRef = useRef<HTMLDivElement>(null);
@@ -102,8 +131,62 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
       }
       all = all.filter((n) => matchingFileIds.has(n.id) || neededFolderIds.has(n.id));
     }
-    return filterTreeNodes(all, searchQuery);
+    return filterTreeNodes(all, searchQuery, { keepCollapsed: true });
   }, [propVisibleNodes, files, expandedSet, selectedSet, searchQuery, selectedCat]);
+
+  // Rows inside a closed folder stay mounted (display none) so a fold can animate them.
+  const navigableNodes = useMemo(() => visibleNodes.filter((n) => !n.isCollapsed), [visibleNodes]);
+
+  // Folder fold: the chevron springs round and the folder's rows spring open or shut together
+  // (prototype dirToggle: chevron .26/.55, open .3/.72, close .26/.9, height + opacity).
+  const prevExpanded = useRef<Set<string>>(expandedSet);
+  useLayoutEffect(() => {
+    const prev = prevExpanded.current;
+    prevExpanded.current = expandedSet;
+    const tree = treeRef.current;
+    if (!tree || searchQuery.trim().length > 0 || prefersReducedMotion()) return;
+    const byId = new Map(visibleNodes.map((n) => [n.id, n]));
+    const changed = visibleNodes.filter((n) => n.hasChildren && prev.has(n.id) !== expandedSet.has(n.id));
+    changed.forEach((folder) => {
+      const open = expandedSet.has(folder.id);
+      const ref = open ? expandedSet : prev;
+      const chev = tree.querySelector<HTMLElement>(`[data-id="${folder.id}"] .c svg`);
+      if (chev) springAnim(chev, [{ rotate: open ? "0deg" : "90deg" }, { rotate: open ? "90deg" : "0deg" }], 0.26, 0.55);
+      visibleNodes.forEach((n) => {
+        // a row takes part when every folder between it and this one was open
+        let p = n.parentId;
+        let inside = false;
+        while (p) {
+          if (p === folder.id) {
+            inside = true;
+            break;
+          }
+          if (!ref.has(p)) break;
+          p = byId.get(p)?.parentId ?? null;
+        }
+        if (!inside) return;
+        const el = tree.querySelector<HTMLElement>(`[data-id="${n.id}"]`);
+        if (!el) return;
+        const an = el as unknown as { _an?: Animation | null };
+        an._an?.cancel();
+        el.style.overflow = "hidden";
+        el.style.display = "";
+        const a = open
+          ? springAnim(el, [{ height: "0px", opacity: 0 }, { height: "32px", opacity: 1 }], 0.3, 0.72)
+          : springAnim(el, [{ height: "32px", opacity: 1 }, { height: "0px", opacity: 0 }], 0.26, 0.9, { fill: "forwards" });
+        const done = () => {
+          if (an._an !== a) return;
+          an._an = null;
+          el.style.overflow = "";
+          if (!open) el.style.display = "none";
+          a?.cancel();
+        };
+        an._an = a;
+        if (a) a.onfinish = done;
+        else done();
+      });
+    });
+  }, [expandedSet, visibleNodes, searchQuery]);
 
   // Synchronize roving tabindex on rendered treeitem rows
   const activeId = selectedIds[selectedIds.length - 1] || visibleNodes[0]?.id;
@@ -123,7 +206,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
 
   // Shared roving keyboard navigation
   const baseKeyNav = useTreeKeyboardNav({
-    visibleNodes,
+    visibleNodes: navigableNodes,
     selectedIds,
     containerRef: treeRef,
     onSelect,
@@ -187,6 +270,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
                 aria-expanded={node.hasChildren ? node.expanded : undefined}
                 style={{
                   paddingLeft: `calc(16px + ${node.level} * 16px)`,
+                  display: node.isCollapsed ? "none" : undefined,
                 }}
                 onClick={(e) => {
                   onSelect?.(node.id, e);
@@ -222,9 +306,7 @@ export const FilesTree: React.FC<FilesTreeProps> = ({
                     <Icon
                       icon={ChevronRight}
                       size={12}
-                      className={`ll:transition-transform ll:duration-120 ${
-                        node.expanded ? "ll:rotate-90" : ""
-                      }`}
+                      className={node.expanded ? "ll:rotate-90" : ""}
                     />
                   </span>
                 ) : (

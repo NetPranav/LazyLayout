@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { NumberField } from "./NumberField";
+import { ColorPicker } from "./ColorPicker";
 
 export interface ColorSwatchFieldProps {
   hex: string;
@@ -12,6 +13,10 @@ export interface ColorSwatchFieldProps {
   disabled?: boolean;
   size?: "sm" | "md";
   className?: string;
+  /** Callback invoked when the swatch button is clicked, passing the anchor element for positioning ColorPicker */
+  onOpenPicker?: (anchorEl: HTMLElement) => void;
+  /** When true, automatically manages opening and anchoring an embedded ColorPicker */
+  withPicker?: boolean;
 }
 
 export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
@@ -21,11 +26,15 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
   onChangeOpacity,
   label,
   disabled = false,
-  size = "md",
+  size: _size = "md",
   className = "",
+  onOpenPicker,
+  withPicker = false,
 }) => {
   const [draftHex, setDraftHex] = useState(hex.replace(/^#/, ""));
   const [prevHex, setPrevHex] = useState(hex);
+  const [isInternalPickerOpen, setIsInternalPickerOpen] = useState(false);
+  const internalSwatchRef = useRef<HTMLButtonElement | null>(null);
 
   // Sync draft state with prop during render without useEffect
   if (hex !== prevHex) {
@@ -54,19 +63,34 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
     }
   };
 
+  const handleSwatchClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    if (onOpenPicker) {
+      onOpenPicker(e.currentTarget);
+    }
+    if (withPicker) {
+      setIsInternalPickerOpen((prev) => !prev);
+    }
+  };
+
   const heightStyles = "ll:h-7";
   const swatchSize = "ll:w-7 ll:h-7 ll:min-w-7";
-
   const cleanHex = hex.startsWith("#") ? hex : `#${hex}`;
 
   return (
     <div className={`ll:flex ll:items-center ll:gap-2 ll:w-full ${className}`}>
-      {/* Color Swatch: 28px, border only, no shadow */}
-      <div
-        role="presentation"
+      {/* Color Swatch: 28px, border only, interactive click anchor for ColorPicker */}
+      <button
+        ref={internalSwatchRef}
+        type="button"
+        disabled={disabled}
+        onClick={handleSwatchClick}
+        aria-label={label ? `${label} color swatch: ${cleanHex}` : `Color swatch: ${cleanHex}`}
         title={label ? `${label}: ${cleanHex}` : cleanHex}
         style={{ backgroundColor: cleanHex }}
-        className={`${swatchSize} ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0`}
+        className={`${swatchSize} ll:rounded-sm ll:border ll:border-swatch-line ll:shrink-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+          disabled ? "ll:opacity-40 ll:cursor-not-allowed" : "ll:hover:ring-1 ll:hover:ring-border-active"
+        }`}
       />
 
       {/* Hex Input */}
@@ -100,16 +124,31 @@ export const ColorSwatchField: React.FC<ColorSwatchFieldProps> = ({
           <NumberField
             label=""
             value={opacity}
-            onChange={onChangeOpacity}
+            onChange={(v) => onChangeOpacity(v ?? 100)}
             min={0}
             max={100}
             step={1}
             suffix="%"
-            size={size}
-            aria-label={label ? `${label} opacity` : "Opacity"}
             disabled={disabled}
+            size="sm"
+            aria-label={label ? `${label} opacity` : "Opacity"}
           />
         </div>
+      )}
+
+      {/* Optional embedded ColorPicker */}
+      {withPicker && isInternalPickerOpen && (
+        <ColorPicker
+          open={isInternalPickerOpen}
+          value={cleanHex}
+          opacity={opacity}
+          anchorRef={internalSwatchRef}
+          onChange={(newVal: string) => {
+            onChangeHex(newVal.replace(/^#/, ""));
+          }}
+          onChangeOpacity={onChangeOpacity}
+          onClose={() => setIsInternalPickerOpen(false)}
+        />
       )}
     </div>
   );

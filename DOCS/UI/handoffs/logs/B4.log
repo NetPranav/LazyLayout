@@ -1,0 +1,23 @@
+The Lane B4 task (`DOCS/UI/tasks/2026-11-08-B4-canvas.md`) is complete.
+
+### What Was Built
+1. **Canvas Custom Cursor (`#ll-cur`)** — [CanvasCursor.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/CanvasCursor.tsx):
+   - Implemented all 26 cursor variants (`sel`, `move`, `hand`, `grabbing`, `x`, `x-frame`, `x-rect`, `x-ellipse`, `x-line`, `x-arrow`, `x-polygon`, `x-star`, `x-image`, `ibeam`, `eye`, `zin`, `zout`, `copy`, `add`, `locked`, and rotated `rs`/`rot` variants).
+   - Dual-slot blur crossfading on a spring (`XF = [0.11, 1]`), angle rotation spring (`ROT_SP = [0.2, 0.8]`), press scale (`scale(0.9)`), hover pop, and velocity lean & stretch following active feel physics.
+   - Strictly canvas-scoped: native cursor is hidden only over `.ll-stage-viewport.ll-stage-cursor-active`; panels, menus, and inspector fields keep system cursors. Suppressed while context menus are active.
+2. **Inline Text Format Bar (`.ftxb`)** — [TextFormatBar.tsx](file:///E:/Projects/magnm%20related/lazy layout/src/editor/stage/TextFormatBar.tsx):
+   - Floating format toolbar (`role="toolbar"`, `aria-label="Text format"`) with Bold (`Ctrl+B`), Italic (`Ctrl+I`), Underline (`Ctrl+U`), Strikethrough (`Ctrl+Shift+X`), and Link buttons.
+   - Pops above text selections with spring physics or below if constrained by viewport bounds; tracks active format styles via `document.queryCommandState`.
+3. **Blank Page Support & In-Place Editing** — [Artboard.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/Artboard.tsx):
+   - A page with no layers renders **nothing** on the artboard (no placeholder/start prompt, transparent borderless board matching `.app.blank[data-mode=design] .artboard`).
+   - Double-clicking text/button elements initiates in-place `contentEditable` editing with formatting shortcuts.
+   - Preserved all e2e testids (`stage-viewport`, `stage-artboard`, `stage-element`, `selection-overlay`, `selection-box`, `selection-handle`, `hover-outline`, `snap-guide`, `spacing-mark`).
+4. **Design System Demo** — [B4Demos.tsx](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/design-system/demos/B4Demos.tsx):
+   - Interactive Canvas Cursor stage playground with physics + visual gallery of all 26 kinds.
+   - Interactive Text Format Bar selection playground.
+   - Blank page vs populated stage comparison.
+
+### Handoff & Verification
+- **Handoff:** [2026-11-08-B4.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-B4.md)
+- **TypeScript:** 0 errors in Lane B4 files (`npx tsc --noEmit` real output documented in handoff).
+- **Screenshots:** 20 headless Playwright captures saved in [DOCS/UI/handoffs/screenshots/b4/](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b4/) across Warm & Darkroom at 1440, 1024, and 390 viewports side by side with prototype P. No commits created.

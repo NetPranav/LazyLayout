@@ -32,6 +32,7 @@ import type {
   LayerItem,
 } from "./types";
 import {
+  SAMPLE_LAYERS,
   SAMPLE_FILES,
   SAMPLE_TRACKS,
   DEFAULT_EXPANDED_IDS,
@@ -91,11 +92,19 @@ export function useLeftPanelData(
   const filterByActivePage = filterByActivePageOption ?? hasMultiplePages;
   const rootFilterId = filterByActivePage ? pages[activePageId]?.rootElementId : null;
   const layerTree: LayerItem[] = useMemo(() => {
-    return buildLayerTree(layers, motionMap, rootFilterId);
+    const built = buildLayerTree(layers, motionMap, rootFilterId);
+    if (built.length === 0) {
+      return SAMPLE_LAYERS;
+    }
+    return built;
   }, [layers, motionMap, rootFilterId]);
 
   const allLayers: LayerItem[] = useMemo(() => {
-    return buildLayerTree(layers, motionMap, null);
+    const built = buildLayerTree(layers, motionMap, null);
+    if (built.length === 0) {
+      return SAMPLE_LAYERS;
+    }
+    return built;
   }, [layers, motionMap]);
 
   // Expanded IDs as array with default expanded fallback

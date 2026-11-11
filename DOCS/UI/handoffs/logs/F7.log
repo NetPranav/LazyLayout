@@ -1,0 +1,64 @@
+# Task F7: Motion Timeline Full Match — Complete
+
+The Phase 1 measured audit and Phase 2 matching implementations for task [`DOCS/UI/tasks/2026-11-08-F7-timeline-full-match.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-F7-timeline-full-match.md) have been executed with strict adherence to lane boundaries, Apple-grade restraint, and zero arbitrary Tailwind values.
+
+---
+
+### Key Deliverables & Changes
+
+1. **Phase 1 Audit Report & Dumps:**
+   - Captured full DOM element metric dumps across Prototype and App in both Warm and Darkroom themes: [`dump-proto-warm.json`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/dump-proto-warm.json), [`dump-app-warm.json`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/dump-app-warm.json), [`dump-proto-darkroom.json`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/dump-proto-darkroom.json), and [`dump-app-darkroom.json`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/dump-app-darkroom.json).
+   - Documented complete audit findings in [`DOCS/UI/handoffs/2026-11-08-timeline-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-timeline-audit.md).
+
+2. **Panel Height Splitter (`#bsplit`):**
+   - Added top 6px horizontal resize splitter in [`TimelinePanel.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelinePanel.tsx) with drag-to-resize and double-click reset to 40% window height (`innerHeight * 0.4`).
+
+3. **Header Toolbar (`.ph.mh` / `.ll-mrt`):**
+   - Restored exact 10-item layout in [`TimelineTransport.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineTransport.tsx) matching P lines 6567–6578 (removed rogue Add Keyframe and Easing toolbar buttons).
+   - Added `#tc` and `data-ta="tc"` to timecode button, `#tt` to total readout.
+   - Updated `#vseg` tablist to 32px height segmented control with 13px 500 equal-width buttons.
+
+4. **Timeline Ruler & Markers:**
+   - In [`TimelineRuler.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineRuler.tsx), updated header cell font to 11px mono 500 (`text-nano`).
+   - Adjusted major ticks to 9px (`tk.M`) and minor ticks to 5px (`tk`); adjusted labels to `top: 13px` 11px mono 500.
+   - Added marker hover delete button `.mkx`.
+
+5. **Track Rows & Hairlines (`.tlrow`, `.tlhc`, `.clip`):**
+   - In [`TimelineLane.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineLane.tsx), added vertical (`::before`) and branch (`::after`) hairlines with `--gx: 18px` (`30px` for child tracks) matching P lines 913–917.
+   - Set property rows to `--rp: 28px` height.
+   - Rendered Solo button as text `"S"` in 11px mono 600.
+   - Set clip border-radius to 4px and added 2px center tick mark indicator to trim handles `.ch` and `.ch.r` on hover.
+   - Added `+ Add property` row at the bottom of open property tracks.
+   - Wired focus dimming via `#tl[data-focus] .tlgrp:not(.on)` (0.45 opacity, recovering to 0.8 on hover).
+
+6. **Graph View Tab (`TimelineCurveGraph.tsx`):**
+   - Aligned Graph view with 32px property rows on the left (`.gvl`), SVG canvas (`.gvp`), crispEdges grid lines, 1.5px curve path (`.c`), dashed bounds (`.f`), tangent handle lines (`.hn`), tangent knobs (`.gh`), keyframe diamonds (`.gk`), and playhead dot (`.gdot`) matching P lines 845–875, 4644–4680.
+
+7. **Footer & Custom Zoom Slider (`TimelineFooter.tsx`):**
+   - Removed outer borders and radius on mini-map `.tmm`, added repeating linear gradient background `--tms`, and added handle center tick marks `.tmh::after`.
+   - Replaced native range input with custom 88px zoom slider `.sld#tzoom` matching P lines 1187–1193, 6582 with 2px track `.sl-t`, filled bar `.sl-f`, handle `.sl-h` (6x14px with 2px panel ring), and popup bubble tooltip `.sl-g` displaying `${zoom.toFixed(1)}×`.
+   - Updated font weights to 500 on `#tfps` and `#twa`.
+
+8. **Tokens & Verification:**
+   - Added lane tokens strictly inside `/* === lane: B7 motion === */` in [`tokens.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tokens.css) and [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+   - Confirmed all 16 timeline interactive behaviors pass.
+   - Verified 0 TypeScript errors in lane files (`npx tsc --noEmit`).
+
+---
+
+### Screenshots Captured
+
+All 7 required screenshots have been saved to [`DOCS/UI/handoffs/screenshots/f7/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/):
+- [`timeline-warm-1440.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-warm-1440.png)
+- [`timeline-warm-1024.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-warm-1024.png)
+- [`timeline-darkroom-1440.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-darkroom-1440.png)
+- [`timeline-darkroom-1024.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-darkroom-1024.png)
+- [`timeline-expanded-layers.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-expanded-layers.png)
+- [`timeline-selected-keyframes.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-selected-keyframes.png)
+- [`timeline-graph-tab.png`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/f7/timeline-graph-tab.png)
+
+### Documentation Updated
+
+- Updated [`DOCS/UI/DECISIONS.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/DECISIONS.md) with all F7 implementation decisions.
+- Updated [`DOCS/UI/PARITY.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/PARITY.md) with F7 full match status.
+- Final handoff logged in [`DOCS/UI/handoffs/2026-11-08-0925-F7.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0925-F7.md).

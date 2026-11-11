@@ -6,19 +6,18 @@ import {
   FileCode,
   Plus,
   X,
-  Copy,
   Download,
-  Check,
   Film,
   Type,
   Square,
   Image as ImageIcon,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
+import { Select } from "@/editor/components/Select";
+import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
-import { ZipPacker } from "@/compiler/export/ZipPacker";
 import {
   FRAMEWORKS,
   STYLINGS,
@@ -29,9 +28,6 @@ import {
   fCompKind,
   cxGen,
   animOf,
-  cxFiles,
-  cxSize,
-  cxKB,
   FILE_OF,
   type FrameworkKey,
   type StylingKey,
@@ -39,6 +35,9 @@ import {
   type CodeGeneratorState,
 } from "./codeGenerator";
 import { useCodeModels } from "./useCodeModels";
+import { useCompiledFiles } from "./useCompiledFiles";
+import { repoSummary } from "./codeExport";
+import { CodeExportSection } from "./CodeExportSection";
 import type { CodeInspectorProps, CodePropItem } from "./types";
 
 const TARGET_OPTIONS: Array<"React" | "HTML" | "Vue"> = ["React", "HTML", "Vue"];
@@ -124,12 +123,6 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
   const [depsList, setDepsList] = useState<string[]>([]);
   const [newDepInput, setNewDepInput] = useState<string>("");
 
-  // Export progress animation state
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportProgress, setExportProgress] = useState<number>(0);
-  const [exportDone, setExportDone] = useState<{ n: number; sz: string } | null>(null);
-  const [copiedCmd, setCopiedCmd] = useState<boolean>(false);
-
   // Determine current active inspector state
   const inspectorKind: "layer" | "file" | "project" = selectedElementId
     ? "layer"
@@ -166,45 +159,11 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
     onStyleTypeChange?.(s === "tw" ? "Tailwind" : s === "mod" ? "CSS modules" : "Inline");
   };
 
-  // Export repo simulation with progress bar matching P lines 6599-6604, 6825-6841
-  const handleExportRepo = () => {
-    if (isExporting) return;
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportDone(null);
-
-    const interval = setInterval(() => {
-      setExportProgress((prev) => {
-        const next = Math.min(100, prev + 12 + Math.random() * 8);
-        if (next >= 100) {
-          clearInterval(interval);
-          setIsExporting(false);
-          const totalSz = cxKB(cxSize(codeState));
-          setExportDone({ n: cxFiles(codeState).length, sz: totalSz });
-
-          // Trigger real zip download
-          const packer = new ZipPacker();
-          cxFiles(codeState).forEach((f) => {
-            const gen = cxGen(f.id, codeState);
-            packer.addFile(fName(f.id, codeState), gen.text);
-          });
-          packer.download("my-project.zip");
-        }
-        return next;
-      });
-    }, 120);
-  };
-
-  const installCmdStr = `npm install ${cxGen("pkg", codeState).deps.join(" ")}`;
-
-  const handleCopyInstallCmd = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(installCmdStr);
-    }
-    setCopiedCmd(true);
-    setTimeout(() => setCopiedCmd(false), 1400);
-  };
-
+  const compiledOut = useCompiledFiles();
+  const repoOut = useMemo(() => {
+    void compiledOut.files; // re-pack whenever the compiled output changes
+    return repoSummary();
+  }, [compiledOut.files]);
   // Add dependency to package.json
   const handleAddDependency = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -382,6 +341,8 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
             <span>Jump to code</span>
           </button>
         </section>
+
+        <CodeExportSection topBorder />
       </div>
     );
   }
@@ -450,18 +411,24 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
               {/* Export Type select */}
               <div className="ll:flex ll:items-center ll:gap-2">
                 <span className="ll:font-sans ll:text-small ll:text-muted ll:w-16">Export</span>
-                <select
-                  value={currentExp}
-                  onChange={(e) => {
-                    const next = e.target.value as "Named" | "Default";
-                    setExpTypes((prev) => ({ ...prev, [selectedFileId]: next }));
-                    onExportTypeChange?.(next.toLowerCase() as "named" | "default");
-                  }}
-                  className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-                >
-                  <option value="Named">Named</option>
-                  <option value="Default">Default</option>
-                </select>
+                <div className="ll:flex-1">
+                  <Select
+                    size="sm"
+                    variant="floating"
+                    aria-label="Export type"
+                    value={currentExp}
+                    options={[
+                      { value: "Named", label: "Named" },
+                      { value: "Default", label: "Default" },
+                    ]}
+                    onChange={(next) => {
+                      const exp = next as "Named" | "Default";
+                      setExpTypes((prev) => ({ ...prev, [selectedFileId]: exp }));
+                      onExportTypeChange?.(exp.toLowerCase() as "named" | "default");
+                    }}
+                    className="ll:w-full"
+                  />
+                </div>
               </div>
             </div>
           </section>
@@ -530,24 +497,29 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
                       className="ll:w-full ll:bg-transparent ll:border-0 ll:outline-none ll:font-mono ll:text-micro ll:text-primary ll:p-0"
                     />
                   </div>
-                  <select
-                    value={p.type}
-                    onChange={(e) => {
-                      const nextType = e.target.value;
-                      setCompProps((prev) => ({
-                        ...prev,
-                        [selectedFileId]: (prev[selectedFileId] || []).map((x) =>
-                          x.id === p.id ? { ...x, type: nextType } : x
-                        ),
-                      }));
-                    }}
-                    className="ll:w-24 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
-                  >
-                    <option value="string">string</option>
-                    <option value="number">number</option>
-                    <option value="boolean">boolean</option>
-                    <option value="node">node</option>
-                  </select>
+                  <div className="ll:w-24">
+                    <Select
+                      size="sm"
+                      variant="floating"
+                      aria-label="Prop type"
+                      value={p.type}
+                      options={[
+                        { value: "string", label: "string" },
+                        { value: "number", label: "number" },
+                        { value: "boolean", label: "boolean" },
+                        { value: "node", label: "node" },
+                      ]}
+                      onChange={(nextType) => {
+                        setCompProps((prev) => ({
+                          ...prev,
+                          [selectedFileId]: (prev[selectedFileId] || []).map((x) =>
+                            x.id === p.id ? { ...x, type: nextType } : x
+                          ),
+                        }));
+                      }}
+                      className="ll:w-full"
+                    />
+                  </div>
                   <button
                     type="button"
                     aria-label="Remove prop"
@@ -636,6 +608,8 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
             <span>Download {fName(selectedFileId, codeState)}</span>
           </button>
         </section>
+
+        <CodeExportSection topBorder />
       </div>
     );
   }
@@ -671,78 +645,75 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
           {/* Target Format: React / HTML / Vue */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Output</span>
-            <div
-              role="group"
-              aria-label="Output format"
-              className="ll-seg ll:flex-1 ll:flex ll:items-center ll:gap-0.5 ll:p-0.5 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm"
-            >
-              {TARGET_OPTIONS.map((t) => {
-                const isSelected = currentTargetLib === t;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => handleTargetChange(t)}
-                    className={`ll:flex-1 ll:h-6 ll:rounded-xs ll:font-sans ll:text-micro ll:font-medium ll:border-0 ll:cursor-pointer ll:transition-colors ${
-                      isSelected
-                        ? "ll:bg-control-active ll:text-primary"
-                        : "ll:bg-transparent ll:text-muted ll:hover:text-primary"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                );
-              })}
+            <div className="ll:flex-1">
+              <SegmentedControl<(typeof TARGET_OPTIONS)[number]>
+                size="compact"
+                options={TARGET_OPTIONS.map((t) => ({ value: t, label: t }))}
+                value={currentTargetLib}
+                onChange={handleTargetChange}
+                ariaLabel="Output format"
+              />
             </div>
           </div>
 
           {/* Framework dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Framework</span>
-            <select
-              value={fw}
-              onChange={(e) => setFw(e.target.value as FrameworkKey)}
-              aria-label="Framework"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              {FWS_BY_TARGET[currentTargetLib].map((k) => (
-                <option key={k} value={k}>
-                  {FRAMEWORKS[k].n}
-                </option>
-              ))}
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Framework"
+                value={fw}
+                options={FWS_BY_TARGET[currentTargetLib].map((k) => ({
+                  value: k,
+                  label: FRAMEWORKS[k].n,
+                }))}
+                onChange={(next) => setFw(next as FrameworkKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* Styling dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Styling</span>
-            <select
-              value={sty}
-              onChange={(e) => handleStyleChange(e.target.value as StylingKey)}
-              aria-label="Styling"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              <option value="tw">{STYLINGS.tw}</option>
-              <option value="mod">{STYLINGS.mod}</option>
-              <option value="inline">{STYLINGS.inline}</option>
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Styling"
+                value={sty}
+                options={[
+                  { value: "tw", label: STYLINGS.tw },
+                  { value: "mod", label: STYLINGS.mod },
+                  { value: "inline", label: STYLINGS.inline },
+                ]}
+                onChange={(next) => handleStyleChange(next as StylingKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* Animation dropdown */}
           <div className="ll:flex ll:items-center ll:gap-2">
             <span className="ll:font-sans ll:text-small ll:text-muted ll:w-20">Animation</span>
-            <select
-              value={anim}
-              onChange={(e) => setAnim(e.target.value as AnimationKey)}
-              aria-label="Animation engine"
-              className="ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-sans ll:text-small ll:text-primary ll:outline-none"
-            >
-              <option value="none">{ANIMATIONS.none}</option>
-              <option value="css">{ANIMATIONS.css}</option>
-              {currentTargetLib === "React" && <option value="fm">{ANIMATIONS.fm}</option>}
-              <option value="gsap">{ANIMATIONS.gsap}</option>
-            </select>
+            <div className="ll:flex-1">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Animation engine"
+                value={anim}
+                options={[
+                  { value: "none", label: ANIMATIONS.none },
+                  { value: "css", label: ANIMATIONS.css },
+                  ...(currentTargetLib === "React" ? [{ value: "fm", label: ANIMATIONS.fm }] : []),
+                  { value: "gsap", label: ANIMATIONS.gsap },
+                ]}
+                onChange={(next) => setAnim(next as AnimationKey)}
+                className="ll:w-full"
+              />
+            </div>
           </div>
 
           {/* TypeScript checkbox */}
@@ -767,97 +738,24 @@ export const CodeInspector: React.FC<CodeInspectorProps> = ({
         <div className="ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:font-mono ll:text-micro">
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Files</span>
-            <span className="ll:text-primary">{cxFiles(codeState).length}</span>
+            <span className="ll:text-primary">{repoOut.files}</span>
           </div>
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Total size</span>
-            <span className="ll:text-primary">{cxKB(cxSize(codeState))}</span>
+            <span className="ll:text-primary">{(repoOut.bytes / 1024).toFixed(1)} KB</span>
           </div>
           <div className="ll-crow ll:flex ll:items-baseline ll:justify-between">
             <span className="ll:text-muted">Dependencies</span>
-            <span className="ll:text-primary">{cxGen("pkg", codeState).deps.length}</span>
+            <span className="ll:text-primary">{repoOut.deps.length}</span>
           </div>
           <div className="ll-cdeps ll:text-muted ll:font-mono ll:text-micro ll:break-words ll:mt-1">
-            {cxGen("pkg", codeState).deps.join(", ")}
+            {repoOut.deps.map((d) => d.replace(/@[^@]+$/, "")).join(", ")}
           </div>
         </div>
       </section>
 
-      {/* Section 3: Export */}
-      <section className="ll-dsec ll:flex ll:flex-col ll:gap-2.5 ll:p-4">
-        <div className="ll-dtitle ll:flex ll:items-center ll:justify-between">
-          <h3 className="ll:text-body ll:font-medium ll:text-primary ll:m-0">Export</h3>
-        </div>
-        <div className="ll-dbody ll:flex ll:flex-col ll:gap-2">
-          {/* Export File */}
-          <button
-            type="button"
-            onClick={() => {
-              const gen = cxGen("hero", codeState);
-              const blob = new Blob([gen.text], { type: "text/plain;charset=utf-8" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = fName("hero", codeState);
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
-          >
-            <Icon icon={Download} size={13} className="ll:text-muted" />
-            <span>Export file</span>
-          </button>
-
-          {/* Export Repo (.zip) with progress bar matching P lines 6599-6604 */}
-          {isExporting ? (
-            <div role="status" className="ll-xprog ll:flex ll:flex-col ll:gap-1.5 ll:p-2 ll:bg-surface-bar ll:rounded-sm">
-              <div className="ll:flex ll:items-center ll:justify-between ll:font-sans ll:text-micro">
-                <span className="ll:text-primary">Packing files for export...</span>
-                <span className="ll:font-mono ll:text-muted">{Math.round(exportProgress)}%</span>
-              </div>
-              <div className="ll-xbar ll:h-0.5 ll:w-full ll:bg-border ll:rounded-xs ll:overflow-hidden">
-                <div
-                  className="ll:h-full ll:bg-primary ll:transition-all ll:duration-100"
-                  style={{ width: `${exportProgress}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {exportDone && (
-                <div role="status" className="ll-xdone ll:flex ll:items-center ll:gap-2 ll:font-sans ll:text-small ll:text-primary">
-                  <Icon icon={Check} size={14} className="ll:text-primary" />
-                  <span>
-                    my-project.zip · {exportDone.n} files · {exportDone.sz}
-                  </span>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleExportRepo}
-                className="ll-btn ll:w-full ll:h-8 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-control-primary-bg ll:text-control-primary-fg ll:border-0 ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:cursor-pointer"
-              >
-                <Icon icon={Download} size={14} />
-                <span>Export repo (.zip)</span>
-              </button>
-            </>
-          )}
-
-          {/* Copy install command */}
-          <button
-            type="button"
-            onClick={handleCopyInstallCmd}
-            className="ll-btn ll:w-full ll:h-7 ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:bg-surface-bar ll:border ll:border-border ll:hover:border-muted ll:rounded-sm ll:font-sans ll:text-small ll:font-medium ll:text-primary ll:cursor-pointer"
-          >
-            <Icon icon={Copy} size={13} className="ll:text-muted" />
-            <span>{copiedCmd ? "Copied" : "Copy install command"}</span>
-          </button>
-
-          <code className="ll-cinst ll:block ll:p-2 ll:bg-surface-bar ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-micro ll:text-secondary ll:break-all">
-            {installCmdStr}
-          </code>
-        </div>
-      </section>
+      {/* Section 3: Export (quick export; the toolbar Export button scrolls here) */}
+      <CodeExportSection />
     </div>
   );
 };

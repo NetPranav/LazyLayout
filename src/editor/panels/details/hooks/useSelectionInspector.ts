@@ -31,6 +31,11 @@ import {
 import type { AlignMode, SpreadAxis } from "@/core/geometry/align";
 import { isRemapped, propertyFor, readFor, valueFor } from "./shapeProps";
 
+/**
+ * Multi-layer icon: closest existing glyph (`Frame`); a dedicated multi-layer glyph is requested in the handoff.
+ */
+export const MultiLayerIcon = Frame;
+
 export function getIconForArchetype(archetype?: string): LucideIcon {
   switch (archetype) {
     case "text":
@@ -104,7 +109,7 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
 
   const selectionIcon = useMemo(() => {
     if (!hasSelection) return Frame;
-    if (isMulti) return Frame;
+    if (isMulti) return MultiLayerIcon;
     return getIconForArchetype(primaryLayer?.archetype);
   }, [hasSelection, isMulti, primaryLayer?.archetype]);
 
@@ -135,7 +140,8 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
         }
       }
 
-      return firstVal;
+      // Absent everywhere (undefined) is not Mixed: callers fall back to defaults.
+      return firstVal as PropValue | null;
     },
     [selectedLayers]
   );

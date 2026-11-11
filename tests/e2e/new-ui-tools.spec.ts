@@ -5,7 +5,7 @@
  * painted from the inspector, and the right-click menu's Arrange and Duplicate act on the layer.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor } from "./support/editor";
+import { openEditor, pickShape } from "./support/editor";
 
 type Doc = { get: () => { layers: Record<string, { id: string; archetype: string; name: string; parentId: string | null; children: string[]; properties: Record<string, unknown> }> } };
 
@@ -42,10 +42,6 @@ const stageElement = (page: Page, id: string) => page.locator(`[data-testid="sta
 /** What the engine drew for a layer (the stage element above it is a transparent click target). */
 const drawn = (page: Page, id: string) => page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`);
 
-async function pickShape(page: Page, name: string) {
-  await page.getByRole("button", { name: "Shape", exact: true }).click();
-  await page.getByRole("menuitem", { name: new RegExp(`^${name}`) }).click();
-}
 
 test.use({ viewport: { width: 1600, height: 1000 } }); // the page is drawn at its real size, so give it room
 

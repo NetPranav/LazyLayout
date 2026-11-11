@@ -1,5 +1,7 @@
 // Spring engine presets and constants ported from Nook (the owner's own product) & prototype
 
+import { isUserMotionOff } from "./reducedMotion";
+
 export type MotionPresetKey = "smooth" | "lively" | "bouncy";
 
 export interface MotionPreset {
@@ -38,12 +40,12 @@ export const MOTION_PRESETS: Record<MotionPresetKey, MotionPreset> & {
   smooth: {
     shape: [0.34, 0.88],
     hl: [0.2, 0.9],
-    rows: [0.5, 0.72],
-    stagger: 45,
-    rowScale: "0.96",
+    rows: [0.3, 0.9],
+    stagger: 6,
+    rowScale: 0.97,
     wiggle: 0,
     stretch: 0.003,
-    endBump: 60,
+    endBump: 100,
     lock: 380,
     glideW: [0.44, 0.78],
     glideH: [0.46, 0.8],
@@ -65,13 +67,13 @@ export const MOTION_PRESETS: Record<MotionPresetKey, MotionPreset> & {
   lively: {
     shape: [0.38, 0.7],
     hl: [0.22, 0.75],
-    rows: [0.34, 0.55],
-    stagger: 30,
-    rowScale: "0.96",
+    rows: [0.3, 0.7],
+    stagger: 12,
+    rowScale: 0.94,
     wiggle: 6,
     stretch: 0.008,
-    endBump: 140,
-    lock: 280,
+    endBump: 240,
+    lock: 320,
     glideW: [0.34, 0.58],
     glideH: [0.36, 0.55],
     flip: [0.34, 0.58],
@@ -92,13 +94,13 @@ export const MOTION_PRESETS: Record<MotionPresetKey, MotionPreset> & {
   bouncy: {
     shape: [0.42, 0.55],
     hl: [0.26, 0.6],
-    rows: [0.28, 0.4],
-    stagger: 22,
-    rowScale: "0.92 1.14",
+    rows: [0.32, 0.55],
+    stagger: 18,
+    rowScale: 0.9,
     wiggle: 12,
     stretch: 0.015,
-    endBump: 230,
-    lock: 220,
+    endBump: 420,
+    lock: 350,
     glideW: [0.28, 0.42],
     glideH: [0.3, 0.38],
     flip: [0.28, 0.42],
@@ -127,57 +129,8 @@ export const MOTION_PRESETS: Record<MotionPresetKey, MotionPreset> & {
   },
 };
 
-/** Prototype's playful-specific values from editor-design-mode-blocks-dark.html */
-export const PLAYFUL_PRESETS = {
-  smooth: {
-    shape: [0.34, 0.88] as [number, number],
-    hl: [0.2, 0.9] as [number, number],
-    rows: [0.3, 0.9] as [number, number],
-    stagger: 6,
-    rowScale: 0.97,
-    wiggle: 0,
-    stretch: 0.003,
-    endBump: 100,
-    lock: 380,
-    glideW: [0.44, 0.78] as [number, number],
-    glideH: [0.46, 0.8] as [number, number],
-    flip: [0.46, 0.76] as [number, number],
-    flipKick: 0,
-    pop: [0.42, 0.6] as [number, number],
-  },
-  lively: {
-    shape: [0.38, 0.7] as [number, number],
-    hl: [0.22, 0.75] as [number, number],
-    rows: [0.3, 0.7] as [number, number],
-    stagger: 12,
-    rowScale: 0.94,
-    wiggle: 6,
-    stretch: 0.008,
-    endBump: 240,
-    lock: 320,
-    glideW: [0.34, 0.58] as [number, number],
-    glideH: [0.36, 0.55] as [number, number],
-    flip: [0.34, 0.58] as [number, number],
-    flipKick: 0,
-    pop: [0.32, 0.5] as [number, number],
-  },
-  bouncy: {
-    shape: [0.42, 0.55] as [number, number],
-    hl: [0.26, 0.6] as [number, number],
-    rows: [0.32, 0.55] as [number, number],
-    stagger: 18,
-    rowScale: 0.9,
-    wiggle: 12,
-    stretch: 0.015,
-    endBump: 420,
-    lock: 350,
-    glideW: [0.28, 0.42] as [number, number],
-    glideH: [0.3, 0.38] as [number, number],
-    flip: [0.28, 0.42] as [number, number],
-    flipKick: 140,
-    pop: [0.26, 0.38] as [number, number],
-  },
-};
+/** Shared single spring preset table alias for backwards compatibility */
+export const PLAYFUL_PRESETS = MOTION_PRESETS;
 
 /** Named fallback constants for overlay geometry when tokens are not yet loaded */
 export const MENU_FALLBACKS = {
@@ -189,7 +142,10 @@ export const MENU_FALLBACKS = {
   menuWidthDefault: 200,      // --ll-size-menu-w
   menuWidthContext: 248,      // --ll-size-menu-ctx-w
   menuWidthWide: 320,         // --ll-size-menu-wide-w
-  reducedMotionDuration: 120, // MOT / reduced motion standard
+  /** MOT / reduced motion standard (120 ms fade); 0 when the user disabled animations. */
+  get reducedMotionDuration(): number {
+    return isUserMotionOff() ? 0 : 120;
+  },
   defaultMenuHeight: 240,
   seedDefault: { w: 32, h: 32 },
   seedPointer: { w: 16, h: 16 },

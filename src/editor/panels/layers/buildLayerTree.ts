@@ -1,5 +1,6 @@
 import type { Layer } from "@/core/document/schema";
 import type { MotionSummary } from "@/core/timeline/model";
+import { parsePathNodes } from "@/core/paths/pathLayer";
 import { rootIdsOf } from "@/core/layers/layerTree";
 import type { LayerItem } from "@/editor/shell/left-panel/types";
 
@@ -23,7 +24,20 @@ export function mapArchetypeToLayerType(archetype: string): LayerItem["type"] {
     case "polygon":
       return "poly";
     case "star":
+    case "icon":
       return "star";
+    case "svgPath":
+      return "path";
+    case "svgGroup":
+    case "svgUse":
+    case "effectSurface":
+      return "shape";
+    case "object3D":
+    case "camera3D":
+    case "light3D":
+      return "object3d";
+    case "badge":
+      return "button";
     case "line":
     case "arrow":
     case "divider":
@@ -73,6 +87,12 @@ export function layerToItem(
     type: mapArchetypeToLayerType(layer.archetype),
     level,
     hasChildren: kids.length > 0,
+    ...(layer.archetype === "container" && layer.properties["layout.display"] === "grid"
+      ? { layout: "grid" as const }
+      : layer.archetype === "container" && layer.properties["layout.auto"] === true
+        ? { layout: layer.properties["layout.flexDirection"] === "row" ? ("row" as const) : ("column" as const) }
+        : {}),
+    ...(layer.archetype === "svgPath" ? { pointCount: parsePathNodes(layer.properties["svg.nodes"])?.nodes.length } : {}),
     hasMotion,
     hidden: layer.visible === false,
     locked: layer.locked === true,

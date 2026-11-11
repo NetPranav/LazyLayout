@@ -47,8 +47,14 @@ async function drag(page: Page, a: { x: number; y: number }, b: { x: number; y: 
 }
 async function rectangle(page: Page, x1: number, y1: number, x2: number, y2: number) {
   const before = new Set((await ofKind(page, "rectangle")).map((l) => l.id));
-  await page.getByRole("button", { name: "Shape", exact: true }).click();
-  await page.getByRole("menuitem", { name: /^Rectangle/ }).click();
+  const rectItem = page.getByRole("menuitem", { name: /^Rectangle/ });
+  // the menu animates out after a pick, so "visible" can mean "closing": the button's aria-expanded says whether it is open
+  const shape = page.getByRole("button", { name: "Shape", exact: true });
+  if ((await shape.getAttribute("aria-expanded")) !== "true") {
+    await expect(rectItem).toBeHidden();
+    await shape.click();
+  }
+  await rectItem.click();
   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
 }
@@ -97,8 +103,8 @@ test.describe("the canvas draws the real tree", () => {
     const a = await rectangle(page, 0.15, 0.2, 0.25, 0.3);
     const b = await rectangle(page, 0.3, 0.2, 0.4, 0.3);
     await page.getByText(f.name, { exact: true }).first().click();
-    await page.getByRole("radio", { name: "Auto Layout stack" }).click();
-    await page.getByRole("radio", { name: "Horizontal stack (row)" }).click();
+    // the direction control is Free / Row / Column / Grid: Row is the horizontal stack
+    await page.getByRole("radio", { name: "Auto layout row" }).click();
     const gap = page.getByLabel("Gap", { exact: true }).first();
     await gap.fill("30");
     await gap.press("Enter");
@@ -150,7 +156,7 @@ test.describe("the canvas draws the real tree", () => {
     const before = await count(page);
     await page.getByRole("button", { name: /Insert/ }).first().click();
     await page.getByText("Sections", { exact: true }).first().click();
-    await page.getByText("Hero split", { exact: true }).first().click();
+    await page.locator("[data-testid=section-card][data-template=hero]").click();
     await expect.poll(() => count(page)).toBeGreaterThan(before);
     const added = Object.values(await layers(page)).filter((l) => l.parentId !== null);
     await expect(drawn(page, added[0].id)).toBeVisible();
@@ -200,7 +206,7 @@ test.describe("gestures", () => {
 
     // fold the frame in the list, then sweep from empty space across everything
     await page.locator(`#p-layers .row[data-sel="${f.id}"]`).getByRole("button", { name: "Collapse" }).click();
-    await expect(page.locator(`#p-layers .row[data-sel="${a.id}"]`)).toHaveCount(0);
+    await expect(page.locator(`#p-layers .row:not(.lcl)[data-sel="${a.id}"]`)).toHaveCount(0);
     await page.locator("[data-stage=workspace]").click({ position: { x: 8, y: 300 } });
     await drag(page, await art(page, 0.02, 0.03), await art(page, 0.9, 0.5));
 
@@ -333,7 +339,7 @@ test.describe("what goes under what", () => {
 
     // back out to the page, then onto the frame's own row: on top of what it holds
     const pageRoot = Object.values(await layers(page)).find((l) => l.parentId === null)!;
-    await dragTo(outside.id, f.id, 0.9);
+    await dragTo(outside.id, f.id, 0.82);
     await expect.poll(() => parentOf(page, outside.id)).toBe(pageRoot.id);
     await dragTo(outside.id, f.id, 0.5);
     await expect.poll(() => parentOf(page, outside.id)).toBe(f.id);
@@ -531,13 +537,13 @@ test.describe("arranging: what is on top is what you see", () => {
     const ids = await threeColours(page);
     const choose = async (label: RegExp) => {
       await page.waitForTimeout(300); // a person takes a moment to reach the menu
-      await page.getByRole("menuitem", { name: /^Arrange/ }).hover();
+      await page.getByRole("menuitem", { name: /^Arrange/ }).hover({ force: true });
       const item = page.getByRole("menuitem", { name: label });
       if (!(await item.isVisible().catch(() => false))) await page.getByRole("menuitem", { name: /^Arrange/ }).click();
       await item.click();
     };
     // on the canvas: red's own corner, which no other shape covers
-    const corner = await art(page, 0.21, 0.21);
+    const corner = await art(page, 0.225, 0.225); // inside red's own strip, clear of its selection handle
     await page.mouse.click(corner.x, corner.y, { button: "right" });
     await choose(/^Bring to front/);
     await expect.poll(() => order(page, ids)).toBe("green,blue,red");

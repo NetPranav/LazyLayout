@@ -1,6 +1,7 @@
 export { LeftPanel } from "./LeftPanel";
 export { LeftPanelLab } from "./LeftPanelLab";
 export { LeftPanelHeader } from "./LeftPanelHeader";
+export { PageSelector } from "./PageSelector";
 export { LayersTree } from "./LayersTree";
 export { FilesTree } from "./FilesTree";
 export { AssetsSection } from "./AssetsSection";

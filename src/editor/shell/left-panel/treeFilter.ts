@@ -12,6 +12,7 @@ export interface FlatLayerNode {
   locked: boolean;
   hasMotion: boolean;
   parentId: string | null;
+  isCollapsed?: boolean;
 }
 
 export interface FlatFileNode {
@@ -27,6 +28,7 @@ export interface FlatFileNode {
   cat?: string;
   dir?: string;
   parentId: string | null;
+  isCollapsed?: boolean;
 }
 
 export function flattenLayers(
@@ -118,15 +120,19 @@ export interface TreeFilterResult<T> {
   matchCount: number;
 }
 
+export interface FilterTreeOptions {
+  keepCollapsed?: boolean;
+}
+
 /**
  * Shared pure filtering function for tree nodes.
- * When searchQuery is empty, only shows nodes whose ancestors are expanded.
+ * When searchQuery is empty, only shows nodes whose ancestors are expanded (or marks isCollapsed if keepCollapsed=true).
  * When searchQuery is present, matches nodes case-insensitively and keeps all their ancestors.
  * Returns both the visible nodes and the exact count of direct matches.
  */
 export function filterTreeNodes<
-  T extends { id: string; name: string; hasChildren: boolean; expanded: boolean; parentId: string | null }
->(allNodes: T[], searchQuery: string): TreeFilterResult<T> {
+  T extends { id: string; name: string; hasChildren: boolean; expanded: boolean; parentId: string | null; isCollapsed?: boolean }
+>(allNodes: T[], searchQuery: string, options?: FilterTreeOptions): TreeFilterResult<T> {
   const q = searchQuery.trim().toLowerCase();
 
   // If no search query, return nodes whose ancestors are all expanded
@@ -153,7 +159,12 @@ export function filterTreeNodes<
         currParentId = parentNode ? parentNode.parentId : null;
       }
 
-      if (!isAncestorCollapsed) {
+      if (options?.keepCollapsed) {
+        visible.push({
+          ...node,
+          isCollapsed: isAncestorCollapsed,
+        });
+      } else if (!isAncestorCollapsed) {
         visible.push(node);
       }
     }

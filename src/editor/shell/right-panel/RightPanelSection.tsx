@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useId } from "react";
-import { Plus } from "lucide-react";
+import React, { useState, useRef, useId } from "react";
+import { Plus, Sliders } from "@/editor/components/ColorPickerIcons";
 import { Icon } from "@/editor/components/Icon";
+import { IconButton } from "@/editor/components/IconButton";
+import { OptionsPopover } from "@/editor/components/OptionsPopover";
 
 export interface RightPanelSectionProps {
   id?: string;
@@ -34,6 +36,8 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   children,
   className = "",
 }) => {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
   const autoId = useId();
   const sectionId = propId ?? autoId;
   const [showMore, setShowMoreState] = useState(() => (propId ? openMore.has(propId) : false));
@@ -52,70 +56,91 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
 
   const hasMore = Boolean(moreContent);
 
+  // Alt+click on any field inside the section opens its section's OptionsPopover (matches prototype line 2468)
+  const handleSectionClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (e.altKey && hasMore) {
+      const target = e.target as HTMLElement;
+      if (
+        !target.closest("[data-more]") &&
+        !target.closest('.llm-pop, [role="group"][aria-label*="options"]')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsPopoverOpen(true);
+      }
+    }
+  };
+
   return (
     <section
       data-section-id={sectionId}
+      onClick={handleSectionClick}
       className={`ll-dsec ll:flex ll:flex-col ll:gap-2 ll:px-4 ll:py-3 ll:border-t ll:first:border-t-0 ll:border-border ${className}`}
     >
       {/* Section Header */}
       <div className="ll-dtitle ll:flex ll:items-center ll:gap-2 ll:min-h-6 ll:select-none">
-        <h3 className="ll:text-body ll:font-medium ll:text-primary ll:truncate ll:m-0">
+        <h3 className="ll:text-small ll:font-medium ll:text-primary ll:truncate ll:m-0">
           {title}
         </h3>
 
         <div className="ll:flex-1" />
 
-        {/* Section Actions: More button ("...") and Add button ("+") */}
+        {/* Section Actions: Add button ("+") and Sliders icon button for options */}
         <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
           {headerAction}
 
-          {hasMore && (
-            <button
-              type="button"
-              aria-expanded={showMore}
-              aria-controls={moreId}
-              aria-label={`More ${title} options`}
-              title="More options"
-              onClick={() => setShowMore((prev) => !prev)}
-              className={`ll-ib ll-more ll:w-6 ll:h-6 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:font-sans ll:text-body ll:font-semibold ll:leading-none ll:tracking-wider ll:cursor-pointer ll:bg-transparent ll:border-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-                showMore ? "ll:bg-control-secondary-bg ll:text-primary" : ""
-              } ${!onAdd ? "ll:-mr-1" : ""}`}
-            >
-              <span className="ll:inline-block ll:leading-none ll:-translate-y-0.5" aria-hidden="true">
-                ...
-              </span>
-            </button>
+          {onAdd && (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              aria-label={`Add ${title.toLowerCase()}`}
+              tooltip="Add"
+              onClick={onAdd}
+              icon={<Icon icon={Plus} size={14} />}
+              className={`ll-dic ll-add ll:!rounded-full ${!hasMore ? "ll:-mr-1" : ""}`}
+            />
           )}
 
-          {onAdd && (
-            <button
-              type="button"
-              aria-label={`Add ${title.toLowerCase()}`}
-              title="Add"
-              onClick={onAdd}
-              className="ll-ib ll:w-6 ll:h-6 ll:inline-grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:cursor-pointer ll:bg-transparent ll:border-0 ll:-mr-1.25 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors"
-            >
-              <Icon icon={Plus} size={14} />
-            </button>
+          {hasMore && (
+            <IconButton
+              ref={moreBtnRef}
+              size="sm"
+              variant="ghost"
+              pressed={isPopoverOpen}
+              aria-expanded={isPopoverOpen}
+              aria-controls={moreId}
+              aria-label={`More ${title} options`}
+              tooltip={`More ${title} options`}
+              data-more
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPopoverOpen((prev) => !prev);
+              }}
+              icon={<Icon icon={Sliders} size={14} />}
+              className="ll-dic ll-more ll:!rounded-full ll:-mr-1"
+            />
           )}
         </div>
       </div>
 
-      {/* Section Content: always visible, generous spacing, no dashed placeholders */}
+      {/* Section Content: always visible, generous spacing */}
       {children && (
         <div id={bodyId} className="ll-dbody ll:flex ll:flex-col ll:gap-2 ll:empty:hidden">
           {children}
         </div>
       )}
 
-      {/* Expandable Advanced Options Drawer */}
-      {showMore && moreContent && (
-        <div
-          id={moreId}
-          className="ll-dmore ll:flex ll:flex-col ll:gap-2 ll:pt-3 ll:mt-1 ll:border-t ll:border-border ll:animate-in ll:fade-in ll:slide-in-from-top-1 ll:duration-120 ll:motion-reduce:animate-none"
+      {/* OptionsPopover: floats 8px left of inspector with extra fields, hairline fields */}
+      {hasMore && (
+        <OptionsPopover
+          className="llm-pop"
+          open={isPopoverOpen}
+          title={title}
+          anchorRef={moreBtnRef}
+          onClose={() => setIsPopoverOpen(false)}
         >
           {moreContent}
-        </div>
+        </OptionsPopover>
       )}
     </section>
   );

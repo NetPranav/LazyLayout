@@ -7,12 +7,14 @@ export interface LogoMarkProps {
   saving?: boolean;
   size?: number;
   className?: string;
+  "data-testid"?: string;
 }
 
 export const LogoMark: React.FC<LogoMarkProps> = ({
   saving = false,
   size = LOGO_ICON_SIZE,
   className = "",
+  "data-testid": dataTestId,
 }) => {
   return (
     <svg
@@ -20,16 +22,17 @@ export const LogoMark: React.FC<LogoMarkProps> = ({
       width={size}
       height={size}
       aria-hidden="true"
+      data-testid={dataTestId}
       data-saving={saving ? "true" : undefined}
-      className={`ll:shrink-0 ${saving ? "saving-on ll-saving-on" : ""} ${className}`}
+      className={`ll:shrink-0 ${saving ? "ll-saving-on" : ""} ${className}`}
     >
       <path
-        className="tro ll-tro"
+        className="ll-tro"
         pathLength={100}
         d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"
       />
       <path
-        className="tfl ll-tfl"
+        className="ll-tfl"
         d="M256 256H128L0 128H128ZM256 128H128L0 0H128Z"
       />
     </svg>

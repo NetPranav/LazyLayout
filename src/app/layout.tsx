@@ -59,14 +59,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="paper"
+      data-theme="warm"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("lazy-layout-theme");var themes=['paper','dark','white','warm','lilac'];if(themes.indexOf(t)>-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","paper");}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("lazy-layout-theme");var themes=['paper','dark','white','warm','lilac','graphite','darkroom','noir'];if(themes.indexOf(t)>-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","warm");}}catch(e){}try{if(localStorage.getItem("ll-animations-off")==="1"){document.documentElement.setAttribute("data-motion","off");}}catch(e){}})();`,
           }}
         />
       </head>

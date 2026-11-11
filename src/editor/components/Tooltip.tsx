@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useId } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from "react";
 import { prefersReducedMotion } from "../motion/feel";
 
 export interface TooltipProps {
@@ -23,6 +23,7 @@ export function Tooltip({
   const tooltipId = useId();
   const [isVisible, setIsVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -47,6 +48,17 @@ export function Tooltip({
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
+
+  // A tip near the window edge (the panel's header buttons) shifts inward instead of running off screen.
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!isVisible || !el || (side !== "top" && side !== "bottom")) return;
+    el.style.marginLeft = "0px";
+    const r = el.getBoundingClientRect();
+    const pad = 8;
+    if (r.right > window.innerWidth - pad) el.style.marginLeft = `${window.innerWidth - pad - r.right}px`;
+    else if (r.left < pad) el.style.marginLeft = `${pad - r.left}px`;
+  }, [isVisible, side]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,6 +99,7 @@ export function Tooltip({
     >
       {children}
       <div
+        ref={tipRef}
         id={tooltipId}
         role="tooltip"
         aria-hidden={!isVisible}

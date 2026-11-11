@@ -1,0 +1,28 @@
+root agent idle; waiting for 1 background task(s) to finish
+I have launched the screenshot capture script in headless Playwright to re-shoot the app and prototype in Motion mode across Warm and Darkroom themes at 1440, 1024, and 390 viewports. Waiting for the capture task to complete.
+Capturing Darkroom and prototype screenshots in Motion mode...
+Completed all items in the **Retry 1** section of [`DOCS/UI/tasks/2026-11-08-B7-motion.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-B7-motion.md):
+
+1. **Re-shot Screenshots in Motion Mode**:
+   - Re-captured 18 headless Playwright screenshots in **Motion mode** (clicking the Motion tab and waiting for `[aria-label="Motion Timeline"]`) across Warm and Darkroom themes at 1440, 1024, and 390 viewports in [`DOCS/UI/handoffs/screenshots/b7/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/b7/).
+   - Captured dedicated states for Auto-key & Onion skin toggles ON, and the open easing popover with a selected keyframe, each with matching prototype P states.
+   - Removed the side-by-side claim from the handoff.
+2. **Removed Direct `lucide-react` Import in [`EasingPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/EasingPopover.tsx)**:
+   - Sourced and defined [`CloseIcon`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/icons.tsx) as a forwardRef component compatible with [`Icon`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/Icon.tsx).
+   - Logged missing close glyph in the design system under "Needs from other lanes".
+3. **Used B7 Sizing Tokens**:
+   - Mapped `--width-timeline-footer-btn`, `--height-timeline-footer-btn`, and `--min-width-popover-min` inside the `/* === lane: B7 motion === */` block of [`tailwind.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/styles/tailwind.css).
+   - Applied `ll:w-timeline-footer-btn ll:h-timeline-footer-btn` in [`TimelineFooter.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineFooter.tsx) for Auto-key and Onion skin buttons.
+   - Applied `ll:min-w-popover-min` on [`EasingPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/EasingPopover.tsx).
+4. **Wired `splitAtPlayhead`**:
+   - [`timelineOpsAdapter.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/timelineOpsAdapter.ts) now delegates clip splitting directly to `motionActions.splitAtPlayhead()`.
+5. **Sanitized Adapter & Easing Popover Guard**:
+   - Removed the silent `catch {}` block from [`timelineOpsAdapter.ts`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/timelineOpsAdapter.ts).
+   - Sanitized `canAddKeyframe().reason` to remove any references to files this lane did not write.
+   - In [`EasingPopover.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/EasingPopover.tsx), when no keyframe is selected, the popover displays an informative disabled banner and sets `aria-disabled="true"` with pointer-events disabled instead of editing the first non-hero layer.
+   - In [`TimelineTransport.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/panels/timeline/TimelineTransport.tsx), the Easing button is disabled when no keyframe is selected, enabling once a keyframe is selected.
+6. **Handoff Cleanup & Verification**:
+   - Deleted duplicate handoffs `2026-11-08-0620-b7.md` and `2026-11-08-B7.md`.
+   - Written single consolidated handoff [`DOCS/UI/handoffs/2026-11-08-0630-B7.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0630-B7.md) with engine changes requested and decisions listed.
+   - Preserved `INTEGRATION.md`, `PARITY.md`, `DECISIONS.md`, and `DesignSystemPage.tsx`.
+   - Reran `npx tsc --noEmit` (0 errors in Lane B7 files). No git commits made.

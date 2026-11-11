@@ -22,14 +22,7 @@ export const WIREFRAMES: Record<string, string> = {
   bg: "6,6,88,88 12,12,30,6",
   o3d: "20,30,40,40 38,18,40,40",
   hs: "8,20,44,10 8,36,40,5 8,46,40,5 8,60,20,10 58,18,34,64",
-  hc: "28,26,44,12 22,44,56,5 30,54,40,5 38,66,24,10",
-  hi: "6,6,88,88 10,60,46,10 10,74,22,8",
-  pt: "6,8,88,12 6,24,88,8 6,36,88,8 6,48,88,8 6,60,88,8 6,72,88,8",
   pc: "6,14,27,72 37,8,27,82 68,14,27,72",
-  cmp: "6,8,30,10 42,8,20,10 66,8,28,10 6,24,30,6 42,24,20,6 66,24,28,6 6,36,30,6 42,36,20,6 66,36,28,6",
-  fs: "6,70,88,2 6,80,30,6 66,80,28,6",
-  fl: "6,62,18,30 30,62,18,30 54,62,18,30 78,62,16,30",
-  fb: "6,50,88,44 10,58,20,6 10,68,20,6 34,58,20,6 34,68,20,6 62,58,20,6 62,68,20,6",
 };
 
 export interface InsertItem {
@@ -62,32 +55,8 @@ export const INSERT_CATALOG: Record<string, InsertGroup[]> = {
       ],
     },
   ],
-  Sections: [
-    {
-      groupName: "Hero",
-      items: [
-        { name: "Hero split", wireframe: WIREFRAMES.hs },
-        { name: "Hero centered", wireframe: WIREFRAMES.hc },
-        { name: "Hero image", wireframe: WIREFRAMES.hi },
-      ],
-    },
-    {
-      groupName: "Pricing",
-      items: [
-        { name: "Pricing table", wireframe: WIREFRAMES.pt },
-        { name: "Pricing cards", wireframe: WIREFRAMES.pc },
-        { name: "Comparison", wireframe: WIREFRAMES.cmp },
-      ],
-    },
-    {
-      groupName: "Footer",
-      items: [
-        { name: "Footer simple", wireframe: WIREFRAMES.fs },
-        { name: "Footer links", wireframe: WIREFRAMES.fl },
-        { name: "Footer large", wireframe: WIREFRAMES.fb },
-      ],
-    },
-  ],
+  // The Sections cards are drawn from the engine's section templates (see InsertBox), not listed here.
+  Sections: [],
   Components: [
     {
       groupName: "",

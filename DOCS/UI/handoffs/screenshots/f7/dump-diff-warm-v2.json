@@ -1,0 +1,533 @@
+[
+  {
+    "element": "bottom",
+    "protoBox": "1440x360",
+    "appBox": "1440x360",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "header",
+    "protoBox": "1440x44",
+    "appBox": "1440x44",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "timecode",
+    "protoBox": "104x28",
+    "appBox": "104x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "20px 500",
+    "appFont": "20px 500"
+  },
+  {
+    "element": "totalTime",
+    "protoBox": "66x14",
+    "appBox": "68x12",
+    "boxDiff": "+2w, -2h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "transportCenter",
+    "protoBox": "238x28",
+    "appBox": "238x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnHome",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnPrevKey",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnStepBack",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnPlay",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnStepFwd",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnNextKey",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnEnd",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "btnLoop",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "vseg",
+    "protoBox": "144x32",
+    "appBox": "144x32",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "tabTimeline",
+    "protoBox": "75x26",
+    "appBox": "68x26",
+    "boxDiff": "-7w, +0h",
+    "boxMatch": false,
+    "protoFont": "13px 500",
+    "appFont": "13px 500"
+  },
+  {
+    "element": "tabGraph",
+    "protoBox": "75x26",
+    "appBox": "68x26",
+    "boxDiff": "-7w, +0h",
+    "boxMatch": false,
+    "protoFont": "13px 500",
+    "appFont": "13px 500"
+  },
+  {
+    "element": "toolSelect",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "toolSplit",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "speedDropdown",
+    "protoBox": "47x28",
+    "appBox": "48x28",
+    "boxDiff": "+1w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "10px 500"
+  },
+  {
+    "element": "fullWidthBtn",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "exportBtn",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "moreBtn",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 600",
+    "appFont": "16px 500"
+  },
+  {
+    "element": "bsplit",
+    "protoBox": "1440x6",
+    "appBox": "1440x6",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "hwsizer",
+    "protoBox": "8x287",
+    "appBox": "8x287",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "rulerRow",
+    "protoBox": "1440x32",
+    "appBox": "1440x32",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "rulerHeader",
+    "protoBox": "264x32",
+    "appBox": "264x31",
+    "boxDiff": "+0w, -1h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "rulerLane",
+    "protoBox": "1176x32",
+    "appBox": "1176x31",
+    "boxDiff": "+0w, -1h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "rulerFirstTick",
+    "protoBox": "1x9",
+    "appBox": "1x9",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "rulerFirstLabel",
+    "protoBox": "13x11",
+    "appBox": "14x10",
+    "boxDiff": "+1w, -1h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "10px 500"
+  },
+  {
+    "element": "workAreaBar",
+    "protoBox": "1128x4",
+    "appBox": "1128x4",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "workAreaHandleA",
+    "protoBox": "6x8",
+    "appBox": "6x8",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "marker",
+    "protoBox": "14x14",
+    "appBox": "14x14",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "firstGroupRow",
+    "protoBox": "1440x32",
+    "appBox": "1440x32",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "layerHeader",
+    "protoBox": "264x32",
+    "appBox": "264x31",
+    "boxDiff": "+0w, -1h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "layerName",
+    "protoBox": "20x24",
+    "appBox": "20x24",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "clip",
+    "protoBox": "1128x23",
+    "appBox": "1128x23",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "propRow",
+    "protoBox": "1440x28",
+    "appBox": "1440x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "propHeader",
+    "protoBox": "264x28",
+    "appBox": "264x27",
+    "boxDiff": "+0w, -1h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "propValue",
+    "protoBox": "40x14",
+    "appBox": "40x12",
+    "boxDiff": "+0w, -2h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "propNav",
+    "protoBox": "54x20",
+    "appBox": "54x20",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "keyframe",
+    "protoBox": "16x16",
+    "appBox": "16x16",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "playheadLayer",
+    "protoBox": "1176x287",
+    "appBox": "1176x287",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "playheadNeedle",
+    "protoBox": "1x287",
+    "appBox": "1x287",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "playheadKnob",
+    "protoBox": "1x287",
+    "appBox": "1x287",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "footer",
+    "protoBox": "1440x28",
+    "appBox": "1440x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "footerSummary",
+    "protoBox": "240x14",
+    "appBox": "240x12",
+    "boxDiff": "+0w, -2h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "minimap",
+    "protoBox": "677x20",
+    "appBox": "668x20",
+    "boxDiff": "-9w, +0h",
+    "boxMatch": false,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "minimapWindow",
+    "protoBox": "677x20",
+    "appBox": "668x20",
+    "boxDiff": "-9w, +0h",
+    "boxMatch": false,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "minimapHandle",
+    "protoBox": "8x20",
+    "appBox": "8x20",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "minimapPlayhead",
+    "protoBox": "1x20",
+    "appBox": "1x20",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "zoomSlider",
+    "protoBox": "88x20",
+    "appBox": "88x20",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "fitBtn",
+    "protoBox": "24x24",
+    "appBox": "24x24",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "fpsBtn",
+    "protoBox": "68x24",
+    "appBox": "69x24",
+    "boxDiff": "+1w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 500",
+    "appFont": "10px 500"
+  },
+  {
+    "element": "autoKeyBtn",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "onionBtn",
+    "protoBox": "28x28",
+    "appBox": "28x28",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "snapBtn",
+    "protoBox": "24x24",
+    "appBox": "24x24",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "11px 400",
+    "appFont": "10px 400"
+  },
+  {
+    "element": "waFoot",
+    "protoBox": "131x24",
+    "appBox": "134x24",
+    "boxDiff": "+3w, +0h",
+    "boxMatch": false,
+    "protoFont": "11px 500",
+    "appFont": "10px 500"
+  },
+  {
+    "element": "dropzone",
+    "protoBox": "1440x56",
+    "appBox": "1440x56",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "13px 400",
+    "appFont": "16px 400"
+  },
+  {
+    "element": "dropzoneInner",
+    "protoBox": "1160x40",
+    "appBox": "1160x40",
+    "boxDiff": "+0w, +0h",
+    "boxMatch": true,
+    "protoFont": "12px 400",
+    "appFont": "16px 400"
+  }
+]

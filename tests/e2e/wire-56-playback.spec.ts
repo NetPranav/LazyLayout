@@ -46,8 +46,16 @@ test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and ti
   await bar.getByRole("button", { name: "Play (Space)", exact: true }).click();
   await expect(bar.getByRole("button", { name: "Pause (Space)", exact: true })).toBeVisible();
 
-  // Play for ~1 second of wall time
-  await page.waitForTimeout(1050);
+  // Play for ~1 second of wall time, sampling the drawn headline: it must actually animate while nothing re-renders
+  const drawnLive = page.locator('[data-testid="stage-page"] [data-archetype][data-element-id="headline"]');
+  const opacityAt = () => drawnLive.evaluate((el) => parseFloat(window.getComputedStyle(el).opacity));
+  await page.waitForTimeout(150);
+  const earlyOpacity = await opacityAt();
+  await page.waitForTimeout(900);
+  const lateOpacity = await opacityAt();
+  const playedTo = await page.evaluate(() => (window as unknown as { __LL_TRANSPORT__: () => { time: number } }).__LL_TRANSPORT__().time);
+  expect(playedTo, "the clock really advanced during the second of playback").toBeGreaterThan(0.5);
+  expect(lateOpacity, "the canvas really animated during playback (the headline faded in)").toBeGreaterThan(earlyOpacity);
 
   // Read commit counts while still playing or right at pause
   const commits = await page.evaluate(() => {
@@ -60,6 +68,7 @@ test("Phase 56: playback throttles React commits to <= 10/s, keeps canvas and ti
   await expect(bar.getByRole("button", { name: "Play (Space)", exact: true })).toBeVisible();
 
   expect(commits).not.toBeNull();
+  console.log(`commits during ~1s of playback: timeline ${commits?.timeline}, artboard ${commits?.artboard}`);
   expect(commits?.timeline, `Timeline commits during ~1s playback: ${commits?.timeline}`).toBeLessThanOrEqual(10);
   expect(commits?.artboard, `Artboard commits during ~1s playback: ${commits?.artboard}`).toBeLessThanOrEqual(10);
 

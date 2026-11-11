@@ -49,20 +49,22 @@ export function upgradeSavedProject(): void {
   tx.commit();
 }
 
-/** The sample page at the size of a real page, in the editor's light look. */
-const SAMPLE_PAGE: Record<string, Record<string, PropValue>> = {
-  hero: { "frame.width": 1440, "frame.height": 560, "appearance.background.color": "#FFFFFF" },
-  features: { "frame.y": 560, "frame.width": 1440, "frame.height": 220, "appearance.background.color": "#F4F3EF" },
-  footer: { "frame.y": 780, "frame.width": 1440, "frame.height": 120, "appearance.background.color": "#E7E6E1" },
-  headline: { "frame.x": 120, "frame.y": 130, "frame.width": 720, "frame.height": 150, "typography.fontSize": 64, "typography.lineHeight": 1.1, "typography.color": "#22231E" },
-  subtitle: { "frame.x": 120, "frame.y": 300, "frame.width": 640, "frame.height": 36, "typography.fontSize": 20, "typography.color": "#55554F" },
-  button: { "frame.x": 120, "frame.y": 370, "frame.width": 180, "frame.height": 52, "appearance.background.color": "#22231E", "typography.color": "#FFFFFF", "typography.fontSize": 16 },
-  image: { "frame.x": 900, "frame.y": 100, "frame.width": 420, "frame.height": 360, "appearance.background.color": "#E7E6E1", "appearance.radius": 8 },
-};
+/** The sample page: a warm off-white page (the user's design, so it stays fixed in every editor theme). */
+const PAGE_BG = "#F9F7F2";
+const INK = "#1C1B18";
+
+/** The Hero image: a quiet two-tone composition (an arch and a circle on soft sand), inline so it needs no file or URL. */
+const HERO_VISUAL_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice">' +
+  '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ECE7DC"/><stop offset="1" stop-color="#D8D0BF"/></linearGradient></defs>' +
+  '<rect width="600" height="600" fill="url(#g)"/>' +
+  '<circle cx="390" cy="190" r="86" fill="#F9F7F2"/>' +
+  '<path d="M150 600V340a150 150 0 0 1 300 0V600Z" fill="#1C1B18"/>' +
+  "</svg>";
+const HERO_VISUAL_SRC = `data:image/svg+xml;utf8,${encodeURIComponent(HERO_VISUAL_SVG)}`;
 
 /**
- * Returns the prototype page's 16 real layers matching the prototype names, order and values:
- * Hero (Headline, Subtitle, Get started, Hero image), Features, Footer, and Other elements.
+ * Returns the simple starting page: one Hero (Headline, Subtitle, Get started, Hero image).
  */
 export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_canvas_root"): Layer[] {
   // Ordered in internal document storage order (back-to-front).
@@ -75,182 +77,7 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
     children?: string[];
     properties: Record<string, PropValue>;
   }> = [
-    // 1. Other elements group (lowest in tree)
-    {
-      id: "others",
-      archetype: "container",
-      name: "Other elements",
-      parentId: rootContainerId,
-      // Painter's order: back to front
-      children: ["object3d", "counter", "shape", "icon", "background", "divider", "toggle", "input"],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 960,
-        "frame.width": 600,
-        "frame.height": 400,
-        "appearance.background.color": "#1E1E1E",
-        "appearance.opacity": 1,
-      },
-    },
-    // Other elements children
-    {
-      id: "input",
-      archetype: "input",
-      name: "Email input",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 420,
-        "frame.width": 240,
-        "frame.height": 36,
-        "appearance.radius": 6,
-        "appearance.background.color": "#383838",
-        "typography.fontSize": 13,
-      },
-    },
-    {
-      id: "toggle",
-      archetype: "toggle",
-      name: "Newsletter toggle",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 470,
-        "frame.width": 44,
-        "frame.height": 24,
-        "appearance.radius": 12,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "divider",
-      archetype: "divider",
-      name: "Section divider",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 510,
-        "frame.width": 528,
-        "frame.height": 1,
-        "appearance.background.color": "#444444",
-      },
-    },
-    {
-      id: "background",
-      archetype: "background",
-      name: "Page background",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 0,
-        "frame.width": 1440,
-        "frame.height": 900,
-        "appearance.background.color": "#1E1E1E",
-      },
-    },
-    {
-      id: "icon",
-      archetype: "icon",
-      name: "Menu icon",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 36,
-        "frame.y": 530,
-        "frame.width": 24,
-        "frame.height": 24,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "shape",
-      archetype: "star",
-      name: "Star shape",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 80,
-        "frame.y": 530,
-        "frame.width": 48,
-        "frame.height": 48,
-        "appearance.background.color": "#FFD60A",
-        "shape.points": 5,
-      },
-    },
-    {
-      id: "counter",
-      archetype: "text",
-      name: "Visitors counter",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 160,
-        "frame.y": 530,
-        "frame.width": 120,
-        "frame.height": 48,
-        "content.text": "12,480",
-        "typography.fontFamily": "Geist Mono",
-        "typography.fontWeight": 600,
-        "typography.fontSize": 32,
-        "typography.lineHeight": 1,
-        "appearance.background.color": "#FFFFFF",
-      },
-    },
-    {
-      id: "object3d",
-      archetype: "object3D",
-      name: "3D model",
-      parentId: "others",
-      children: [],
-      properties: {
-        "frame.x": 320,
-        "frame.y": 520,
-        "frame.width": 160,
-        "frame.height": 160,
-        "appearance.background.color": "#2C2C2C",
-        "appearance.radius": 0,
-      },
-    },
-
-    // 2. Footer section
-    {
-      id: "footer",
-      archetype: "container",
-      name: "Footer",
-      parentId: rootContainerId,
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 840,
-        "frame.width": 600,
-        "frame.height": 80,
-        "appearance.background.color": "#1E1E1E",
-        "appearance.opacity": 1,
-      },
-    },
-
-    // 3. Features section
-    {
-      id: "features",
-      archetype: "container",
-      name: "Features",
-      parentId: rootContainerId,
-      children: [],
-      properties: {
-        "frame.x": 0,
-        "frame.y": 420,
-        "frame.width": 600,
-        "frame.height": 380,
-        "appearance.background.color": "#242424",
-        "appearance.opacity": 1,
-      },
-    },
-
-    // 4. Hero section (top-most in tree)
+    // Hero section: the one simple block the page opens with
     {
       id: "hero",
       archetype: "container",
@@ -261,9 +88,9 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       properties: {
         "frame.x": 0,
         "frame.y": 0,
-        "frame.width": 600,
-        "frame.height": 380,
-        "appearance.background.color": "#2C2C2C",
+        "frame.width": 1440,
+        "frame.height": 900,
+        "appearance.background.color": PAGE_BG,
         "appearance.opacity": 1,
       },
     },
@@ -275,18 +102,18 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       parentId: "hero",
       children: [],
       properties: {
-        "frame.x": 36,
-        "frame.y": 70,
-        "frame.width": 340,
-        "frame.height": 82,
+        "frame.x": 96,
+        "frame.y": 286,
+        "frame.width": 600,
+        "frame.height": 148,
         "content.text": "Design it once. Ship it lazily.",
         "typography.fontFamily": "Geist",
         "typography.fontWeight": 600,
-        "typography.fontSize": 30,
-        "typography.lineHeight": 1.05,
+        "typography.fontSize": 68,
+        "typography.lineHeight": 1.04,
         "typography.letterSpacing": -0.03,
         "typography.textAlign": "left",
-        "typography.color": "#FFFFFF",
+        "typography.color": INK,
         "appearance.opacity": 1,
       },
     },
@@ -297,18 +124,18 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       parentId: "hero",
       children: [],
       properties: {
-        "frame.x": 36,
-        "frame.y": 160,
-        "frame.width": 340,
-        "frame.height": 36,
+        "frame.x": 96,
+        "frame.y": 462,
+        "frame.width": 480,
+        "frame.height": 60,
         "content.text": "Build pages visually and get production code out.",
         "typography.fontFamily": "Geist",
         "typography.fontWeight": 400,
-        "typography.fontSize": 13,
-        "typography.lineHeight": 1.4,
+        "typography.fontSize": 20,
+        "typography.lineHeight": 1.5,
         "typography.letterSpacing": 0,
         "typography.textAlign": "left",
-        "typography.color": "#BFBFBF",
+        "typography.color": "#6B6860",
         "appearance.opacity": 1,
       },
     },
@@ -319,21 +146,21 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       parentId: "hero",
       children: [],
       properties: {
-        "frame.x": 36,
-        "frame.y": 226,
-        "frame.width": 112,
-        "frame.height": 34,
+        "frame.x": 96,
+        "frame.y": 562,
+        "frame.width": 172,
+        "frame.height": 52,
         "content.label": "Get started",
         "content.text": "Get started",
         "appearance.radius": 6,
-        "appearance.background.color": "#FFFFFF",
+        "appearance.background.color": INK,
         "appearance.opacity": 1,
         "typography.fontFamily": "Geist",
         "typography.fontWeight": 500,
-        "typography.fontSize": 15,
+        "typography.fontSize": 16,
         "typography.lineHeight": 1.2,
         "typography.letterSpacing": 0,
-        "typography.color": "#000000",
+        "typography.color": PAGE_BG,
       },
     },
     {
@@ -343,12 +170,14 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
       parentId: "hero",
       children: [],
       properties: {
-        "frame.x": 420,
-        "frame.y": 70,
-        "frame.width": 150,
-        "frame.height": 170,
-        "appearance.radius": 0,
-        "appearance.background.color": "#2C2C2C",
+        "frame.x": 744,
+        "frame.y": 150,
+        "frame.width": 600,
+        "frame.height": 600,
+        "media.src": HERO_VISUAL_SRC,
+        "media.alt": "Abstract composition of an arch and a circle on sand",
+        "appearance.radius": 8,
+        "appearance.background.color": "#E4DDCF",
         "appearance.opacity": 1,
       },
     },
@@ -365,7 +194,6 @@ export function getPrototypeSeedLayers(rootContainerId: string | null = "elem_ca
         ...getDefaultProps(def.archetype),
         ...def.properties,
         ...(typeof def.properties["frame.x"] === "number" ? { positioning: "absolute" as const } : {}),
-        ...(SAMPLE_PAGE[def.id] ?? {}),
       },
     });
     // the catalog of other elements stays in the Layers panel, out of the sample page
@@ -389,7 +217,7 @@ export function seedPrototypeDocument(): void {
   // Insert complete layers in one command transaction
   documentCommands.insertLayers(seedLayers, [], "Seed prototype document");
   // The page is as big as the desktop artboard, so aligning a layer to its page (centre, edges) means the page the designer sees.
-  if (rootId) documentCommands.updateProps(rootId, { "frame.width": 1440, "frame.widthUnit": "px", "frame.height": 900, "frame.heightUnit": "px", "appearance.background.color": "#FFFFFF" });
+  if (rootId) documentCommands.updateProps(rootId, { "frame.width": 1440, "frame.widthUnit": "px", "frame.height": 900, "frame.heightUnit": "px", "appearance.background.color": PAGE_BG });
 
   // Also ensure the active page rootElementId points to root container or hero
   const projectState = useProjectStore.getState();

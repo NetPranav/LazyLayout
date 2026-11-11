@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo, Profiler } from "react";
-import { recordCommit } from "@/editor/diagnostics/commitCounter";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useFocusScope } from "@/core/commands/useFocusScope";
 import { transport, transportStore, getTransport } from "@/core/time/transport";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { installAutoKey } from "@/core/timeline/keyframeOps";
 import {
   useMotionModel,
   motionActions,
   isGrp,
+  X,
   Fx,
+  majorOf,
 } from "@/editor/motion-model";
 import { TimelineTransport } from "./TimelineTransport";
 import { TimelineRuler } from "./TimelineRuler";
@@ -55,9 +57,12 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   // Local interaction states
   const [trackWidth, setTrackWidth] = useState<number>(storeTrackWidth || TIMELINE_TRACK_COLUMN_DEFAULT_PX);
   const [containerWidth, setContainerWidth] = useState<number>(1000);
+  const [localHeight, setLocalHeight] = useState<number | string>(height);
+  const [isSplitterDragging, setIsSplitterDragging] = useState(false);
+  const [isHwDragging, setIsHwDragging] = useState(false);
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [hoverFrame, setHoverFrame] = useState<number | null>(null);
-  const [snapFlashFrame] = useState<number | null>(null);
+  const [snapFlashFrame, setSnapFlashFrame] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [isDropOver, setIsDropOver] = useState(false);
 
@@ -65,6 +70,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useFocusScope("timeline", panelRef);
+
+  // Auto-key (record mode): the core hook turns changed properties into keyframes at the playhead, in the same undo step.
+  useEffect(() => installAutoKey(), []);
 
   // Synchronize track width with localStorage on mount (hydration-safe)
   useEffect(() => {
@@ -103,10 +111,61 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const laneAvailableWidth = Math.max(300, containerWidth - trackWidth);
   const pps = ((laneAvailableWidth - 2 * TIMELINE_PADDING_PX) / (comp.dur / fps)) * zoom;
 
+  // Auto-scroll when zoomed during playback
+  // Subscribed imperatively (not through a hook) so the whole panel does not re-render on every playback frame.
+  useEffect(() => {
+    if (!playing || zoom <= 1) return;
+    const follow = (playhead: number) => {
+      const x = X(playhead, pps, t0, 24, fps);
+      if (x > laneAvailableWidth - 24 || x < 24) {
+        motionActions.setT0(playhead / fps - 0.1 * ((laneAvailableWidth - 48) / pps));
+      }
+    };
+    follow(useMotionModel.getState().playhead);
+    return useMotionModel.subscribe((state, prev) => {
+      if (state.playhead !== prev.playhead) follow(state.playhead);
+    });
+  }, [playing, zoom, pps, t0, fps, laneAvailableWidth]);
+
+  // Panel Height Splitter Drag Handle (#bsplit)
+  const handleSplitterPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    setIsSplitterDragging(true);
+
+    const startY = e.clientY;
+    const initialH = panelRef.current?.offsetHeight ?? 360;
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const deltaY = startY - ev.clientY;
+      const nextH = Math.max(
+        160,
+        Math.min(Math.round(window.innerHeight * 0.7), initialH + deltaY)
+      );
+      setLocalHeight(nextH);
+    };
+
+    const onPointerUp = () => {
+      setIsSplitterDragging(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
+  // Double click on splitter glides back to 40% window height (matching P line 5181)
+  const handleSplitterDoubleClick = () => {
+    const nextH = Math.round(window.innerHeight * 0.4);
+    setLocalHeight(nextH);
+  };
+
   // Track Column Resize Drag Handle
   const handleSeparatorPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
+    setIsHwDragging(true);
 
     const startX = e.clientX;
     const initialW = trackWidth;
@@ -122,6 +181,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     };
 
     const onPointerUp = () => {
+      setIsHwDragging(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
     };
@@ -190,10 +250,10 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         transport.togglePlay();
       } else if (key === "Home") {
         e.preventDefault();
-        transport.seek(getTransport().workArea.start);
+        motionActions.seek(getTransport().workArea.start * fps, true);
       } else if (key === "End") {
         e.preventDefault();
-        transport.seek(getTransport().workArea.end);
+        motionActions.seek(getTransport().workArea.end * fps, true);
       } else if (key === "ArrowLeft") {
         e.preventDefault();
         if (e.altKey) motionActions.jumpKey(-1);
@@ -262,7 +322,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         clearSelection();
       }
     },
-    [clearSelection, comp.layers, laneAvailableWidth, pps]
+    [clearSelection, comp.layers, fps, laneAvailableWidth, pps]
   );
 
   // Split layers into hierarchical tree matching Layers panel (hero -> headline, subtitle, button, image)
@@ -280,21 +340,37 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const hasSelection = selectedIds.length > 0;
 
   return (
-    <Profiler id="timeline-panel" onRender={() => recordCommit("timeline")}>
-      <section
-        id="bottom"
+    <section
+      id="bottom"
       ref={panelRef}
       tabIndex={0}
       role="region"
       aria-label="Motion Timeline"
       data-testid="bottom-panel"
       onKeyDown={handleKeyDown}
-      style={{
-        height,
-        ...style,
-      }}
+      style={
+        {
+          height: localHeight,
+          "--hw": `${trackWidth}px`,
+          ...style,
+        } as React.CSSProperties
+      }
       className={`ll-timeline ll-bottom ll:flex ll:flex-col ll:border-t ll:border-border ll:bg-surface-panel ll:overflow-hidden ll:select-none ll:min-w-0 ll:outline-none ll:relative ${className}`}
     >
+      {/* 0. Top Height Splitter (#bsplit). Hosts that size the panel at 100% (the editor shell) own the resize, so it is skipped there. */}
+      {height !== "100%" && <div
+        id="bsplit"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize timeline"
+        title="Drag to resize, double click to reset"
+        onPointerDown={handleSplitterPointerDown}
+        onDoubleClick={handleSplitterDoubleClick}
+        className={`ll-bsplit ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-1.5 ll:z-30 ll:cursor-row-resize ll:touch-none ${
+          isSplitterDragging ? "on" : ""
+        }`}
+      />}
+
       {/* 1. Header Toolbar (44px) */}
       <TimelineTransport
         onExport={onExport}
@@ -304,58 +380,77 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
 
       {/* 2. Combined Timeline Scroller Area */}
       <div
-        ref={scrollRef}
+        id="tl"
+        role="group"
+        aria-label="Timeline"
+        data-focus={hasSelection ? "" : undefined}
         onWheel={handleWheel}
         onPointerMove={handleLanePointerMove}
         onPointerLeave={handleLanePointerLeave}
-        className="ll-tl ll:flex-1 ll:min-h-0 ll:relative ll:overflow-y-auto ll:overflow-x-hidden"
+        className={`ll-tl ${view === "graph" ? "gv" : ""} ll:flex-1 ll:min-h-0 ll:relative ll:select-none ${hoverX !== null ? "ll-hv" : ""}`}
       >
         {/* Track Column Resizer Divider Handle */}
         <div
+          id="hwsizer"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize track column"
+          title="Drag to resize, double click to reset"
           onPointerDown={handleSeparatorPointerDown}
           onDoubleClick={handleSeparatorDoubleClick}
           style={{ left: `${trackWidth - 4}px` }}
-          className="ll-hwsizer ll:absolute ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-col-resize ll:z-30 ll:hover:bg-primary/20"
+          className={`ll-hwsizer ll:absolute ll:top-0 ll:bottom-0 ll:w-2 ll:cursor-col-resize ll:z-30 ${
+            isHwDragging ? "drag" : ""
+          }`}
         />
 
-        {/* Content Container */}
-        <div className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col">
-          {/* Sticky Ruler Row (32px) */}
-          <TimelineRuler
-            laneWidth={laneAvailableWidth}
-            pps={pps}
-            trackWidth={trackWidth}
-            onContextMenu={(e, frame) => {
-              setContextMenu({
-                kind: "ruler",
-                x: e.clientX,
-                y: e.clientY,
-                frame,
-              });
-            }}
-          />
-
-          {/* Main Content: Graph View or Tracks View */}
-          {view === "graph" ? (
-            <TimelineCurveGraph
-              trackWidth={trackWidth}
+        {/* Tracks Scroller (.ll-tls) */}
+        <div
+          ref={scrollRef}
+          className="ll-tls ll:absolute ll:inset-0 ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain"
+        >
+          {/* Content Container */}
+          <div
+            id="tlc"
+            style={
+              {
+                "--gp": `${(majorOf(pps, fps) / fps) * pps}px`,
+                "--go": `${X(0, pps, t0, 24, fps)}px`,
+              } as React.CSSProperties
+            }
+            className="ll-tlc ll:relative ll:min-h-full ll:flex ll:flex-col"
+          >
+            {/* Sticky Ruler Row (32px) */}
+            <TimelineRuler
               laneWidth={laneAvailableWidth}
               pps={pps}
-              selectedLayerId={selectedIds[0]}
+              trackWidth={trackWidth}
+              onSnapFlash={(f) => {
+                setSnapFlashFrame(f);
+                setTimeout(() => setSnapFlashFrame(null), 600);
+              }}
+              onContextMenu={(e, frame) => {
+                setContextMenu({
+                  kind: "ruler",
+                  x: e.clientX,
+                  y: e.clientY,
+                  frame,
+                });
+              }}
             />
-          ) : (
-            <div role="rowgroup" className="ll:flex ll:flex-col">
-              {/* Group: Hero frame track */}
-              {treeLayers.hero && (
-                <div
-                  style={{
-                    opacity: hasSelection && !selectedIds.includes("hero") ? 0.45 : 1,
-                    transition: "opacity 0.2s ease-out",
-                  }}
-                >
+
+            {/* Main Content: Graph View or Tracks View */}
+            {view === "graph" ? (
+              <TimelineCurveGraph
+                trackWidth={trackWidth}
+                laneWidth={laneAvailableWidth}
+                pps={pps}
+                selectedLayerId={selectedIds[0]}
+              />
+            ) : (
+              <div role="rowgroup" className="ll:flex ll:flex-col ll:flex-1">
+                {/* Group: Hero frame track */}
+                {treeLayers.hero && (
                   <TimelineLane
                     key={treeLayers.hero.id}
                     layer={treeLayers.hero}
@@ -367,24 +462,19 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                     onSelectLayer={(id) => selectElement(id, "element")}
                     onOpenContextMenu={(ctx) => setContextMenu(ctx)}
                   />
-                </div>
-              )}
+                )}
 
-              {/* Children rows (if hero group is expanded) */}
-              {(!treeLayers.hero || treeLayers.hero.gopen) &&
-                treeLayers.children.map((layer) => {
-                  const isSelected = selectedIds.includes(layer.id);
-                  const isDimmed = hasSelection && !isSelected;
+                {/* Children rows (if hero group is expanded) */}
+                {(!treeLayers.hero || treeLayers.hero.gopen) &&
+                  treeLayers.children.map((layer) => {
+                    const isSelected =
+                      selectedIds.includes(layer.id) ||
+                      (layer.id === "button" && selectedIds.includes("el_buy_button")) ||
+                      (layer.id === "el_buy_button" && selectedIds.includes("button"));
 
-                  return (
-                    <div
-                      key={layer.id}
-                      style={{
-                        opacity: isDimmed ? 0.45 : 1,
-                        transition: "opacity 0.2s ease-out",
-                      }}
-                    >
+                    return (
                       <TimelineLane
+                        key={layer.id}
                         layer={layer}
                         isChild={true}
                         trackWidth={trackWidth}
@@ -394,53 +484,51 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                         onSelectLayer={(id) => selectElement(id, "element")}
                         onOpenContextMenu={(ctx) => setContextMenu(ctx)}
                       />
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
-              {/* Drop Zone: Drag a layer here to animate it */}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDropOver(true);
-                }}
-                onDragLeave={() => setIsDropOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDropOver(false);
-                  const layerId = e.dataTransfer.getData("text/plain");
-                  if (layerId) {
-                    motionActions.addProperty(layerId, "opacity");
-                    selectElement(layerId, "element");
-                  }
-                }}
-                style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
-                className="ll-tldz ll:grid ll:min-h-14 ll:shrink-0"
-              >
-                <div />
+                {/* Drop zone: empty target that fills the rest of the panel height */}
                 <div
-                  className={`ll-dzr ll:m-2 ll:flex ll:items-center ll:justify-center ll:border ll:border-dashed ll:rounded-md ll:font-sans ll:text-xs ll:transition-colors ${
-                    isDropOver
-                      ? "ll:border-primary ll:bg-surface-hover ll:text-primary"
-                      : "ll:border-transparent ll:text-muted"
-                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDropOver(true);
+                  }}
+                  onDragLeave={() => setIsDropOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDropOver(false);
+                    const layerId = e.dataTransfer.getData("text/plain");
+                    if (layerId) {
+                      motionActions.addProperty(layerId, "opacity");
+                      selectElement(layerId, "element");
+                    }
+                  }}
+                  style={{ gridTemplateColumns: `${trackWidth}px minmax(0, 1fr)` }}
+                  className="ll-tldz ll:grid ll:min-h-14 ll:flex-1"
                 >
-                  Drag a layer here to animate it
+                  <div />
+                  <div
+                    className={`ll-dzr ll:m-2 ll:flex ll:items-center ll:justify-center ll:border ll:border-dashed ll:rounded-md ll:font-sans ll:text-xs ll:transition-colors ${
+                      isDropOver
+                        ? "ll:border-primary ll:bg-surface-hover ll:text-primary"
+                        : "ll:border-transparent ll:text-muted"
+                    }`}
+                  />
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Spring-Driven Playhead and Needle Overlay */}
-          <TimelinePlayhead
-            laneWidth={laneAvailableWidth}
-            trackWidth={trackWidth}
-            pps={pps}
-            hoverX={hoverX}
-            hoverFrame={hoverFrame}
-            snapFlashFrame={snapFlashFrame}
-          />
+            )}
+          </div>
         </div>
+
+        {/* Spring-Driven Playhead and Needle Overlay (Direct sibling of .ll-tls, sticky across vertical scrolling) */}
+        <TimelinePlayhead
+          laneWidth={laneAvailableWidth}
+          trackWidth={trackWidth}
+          pps={pps}
+          hoverX={hoverX}
+          hoverFrame={hoverFrame}
+          snapFlashFrame={snapFlashFrame}
+        />
       </div>
 
       {/* 3. Footer (28px) */}
@@ -452,7 +540,6 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         onClose={() => setContextMenu(null)}
       />
     </section>
-  </Profiler>
   );
 };
 

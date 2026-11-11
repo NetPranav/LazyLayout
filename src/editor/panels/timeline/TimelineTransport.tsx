@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { frameScheduler } from "@/core/time/scheduler";
+import React, { useState } from "react";
 import { Icon } from "@/editor/components/Icon";
 import {
   Play,
@@ -16,12 +15,10 @@ import {
   RotateCcw,
   Layers,
   MousePointer2,
-  Scissors,
-  Maximize2,
   Download,
-  MoreHorizontal,
   ChevronDown,
 } from "lucide-react";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 import { useStore } from "zustand";
@@ -37,6 +34,9 @@ import {
   timecode,
 } from "@/editor/motion-model";
 import { SPEED_OPTIONS } from "./constants";
+import { SplitIcon } from "./icons";
+import { timelineOpsAdapter } from "./timelineOpsAdapter";
+import { BottomCollapseButton } from "@/editor/shell/BottomCollapseButton";
 
 export interface TimelineTransportProps {
   onExport?: () => void;
@@ -59,6 +59,14 @@ export interface TimelineTransportProps {
   onToggleGraph?: () => void;
   onAddKeyframe?: () => void;
 }
+
+/** One control: 32px square, 4px radius. Idle colours are added per button. */
+const BTN = "ll:w-8 ll:h-8 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:flex-none ll:transition-colors";
+const BTN_IDLE = "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover";
+/** 1px hairline between groups, with 6px of margin on each side (the flex gap adds 8px more). */
+const Sep: React.FC = () => (
+  <i className="tdiv ll:w-px ll:h-5 ll:bg-border ll:mx-1.5 ll:flex-none" aria-hidden="true" />
+);
 
 export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   onExport,
@@ -84,6 +92,7 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const tool = useMotionModel((s) => s.tool);
   const view = useMotionModel((s) => s.view);
   const storeFullWidth = useMotionModel((s) => s.fullWidth);
+  const autoKey = useMotionModel((s) => s.autoKey);
   const recordMode = useTimelineUiStore((s) => s.recordMode);
   const onionSkin = useTimelineUiStore((s) => s.onionSkin);
 
@@ -94,28 +103,6 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const [moreAnchor, setMoreAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const isFw = fullWidth ?? storeFullWidth;
-
-  const timecodeBtnRef = useRef<HTMLButtonElement | null>(null);
-  const framesRef = useRef(frames);
-  const fpsRef = useRef(fps);
-
-  useEffect(() => {
-    framesRef.current = frames;
-    fpsRef.current = fps;
-  }, [frames, fps]);
-
-  useEffect(() => {
-    return frameScheduler.register("overlay", () => {
-      const t = getTransport();
-      if (!t.playing || !timecodeBtnRef.current) return;
-      const curFps = fpsRef.current || 60;
-      const f = Math.round(t.time * curFps);
-      const text = framesRef.current ? String(f) : timecode(f, curFps);
-      if (timecodeBtnRef.current.textContent !== text) {
-        timecodeBtnRef.current.textContent = text;
-      }
-    });
-  }, []);
 
   const effectivePlaying = legacyPlaying !== undefined ? legacyPlaying : playing;
   const currentFrame = Math.round(currentTransportTime * fps);
@@ -129,122 +116,119 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
     <div
       role="toolbar"
       aria-label="Timeline header"
-      className="ll-ph ll-mh ll:h-11 ll:grid ll:grid-cols-timeline-header ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:bg-surface-panel ll:shrink-0 ll:min-w-0 ll:overflow-hidden"
+      style={{ background: "color-mix(in srgb, var(--ll-surface-panel) 95%, var(--ll-text-primary))" }}
+      className={`ll-ph ll-mh ll:@container ll:h-11 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:min-w-0 ll:overflow-hidden ${
+        autoKey ? "ll:outline ll:outline-1 ll:outline-primary ll:-outline-offset-1" : ""
+      }`}
     >
-      {/* 1. Left: Timecode and total */}
-      <div className="ll-mtc ll:flex ll:items-baseline ll:gap-2 ll:min-w-0">
-        <button
-          ref={timecodeBtnRef}
-          type="button"
-          onClick={() => motionActions.toggleFrames()}
-          aria-label="Playhead time"
-          title="Click to switch between timecode and frames"
-          style={{ fontSize: "20px", lineHeight: "28px" }}
-          className="ll-tc ll:font-mono ll:font-medium ll:h-7 ll:rounded-sm ll:px-1 ll:-ml-1 ll:text-primary ll:hover:bg-surface-hover ll:transition-colors"
-        >
-          {formattedTime}
-        </button>
-        <span className="ll-tt ll:font-mono ll:font-normal ll:text-nano ll:text-muted ll:whitespace-nowrap">
-          / {formattedTotal}
-        </span>
-      </div>
-
-      {/* 2. Center: Transport Controls */}
-      <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:justify-self-center">
+      {/* Left: transport, then playhead time / total */}
+      <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:flex-none">
         <button
           type="button"
+          data-ta="start"
           onClick={() => {
             const wa = getTransport().workArea;
-            transport.seek(wa.start);
+            motionActions.seek(wa.start * fps, true);
           }}
           aria-label="Go to start (Home)"
           title="Go to start (Home)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={SkipBack} size={15} />
+          <Icon icon={SkipBack} size={16} />
         </button>
 
         <button
           type="button"
+          data-ta="kprev"
           onClick={() => motionActions.jumpKey(-1)}
           aria-label="Previous keyframe (Alt+Left)"
           title="Previous keyframe (Alt+Left)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE} ll:@max-[820px]:hidden`}
         >
-          <Icon icon={StepBack} size={15} />
+          <Icon icon={StepBack} size={16} />
         </button>
 
         <button
           type="button"
-          onClick={() => transport.stepFrame(-1)}
+          data-ta="back"
+          onClick={() => motionActions.stepFrame(-1)}
           aria-label="Step back (Left)"
           title="Step back (Left)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
           <Icon icon={ChevronLeft} size={16} />
         </button>
 
         <button
           type="button"
+          id="tplay"
+          data-ta="play"
           onClick={() => transport.togglePlay()}
           aria-pressed={effectivePlaying}
           aria-label={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
           title={effectivePlaying ? "Pause (Space)" : "Play (Space)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ${
             effectivePlaying
               ? "ll:bg-control-active ll:text-control-active-fg"
               : "ll:text-primary ll:hover:bg-surface-hover"
           }`}
         >
-          <Icon icon={effectivePlaying ? Pause : Play} size={15} />
+          <Icon icon={effectivePlaying ? Pause : Play} size={16} />
         </button>
 
         <button
           type="button"
-          onClick={() => transport.stepFrame(1)}
+          data-ta="fwd"
+          onClick={() => motionActions.stepFrame(1)}
           aria-label="Step forward (Right)"
           title="Step forward (Right)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
           <Icon icon={ChevronRight} size={16} />
         </button>
 
         <button
           type="button"
+          data-ta="knext"
           onClick={() => motionActions.jumpKey(1)}
           aria-label="Next keyframe (Alt+Right)"
           title="Next keyframe (Alt+Right)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE} ll:@max-[820px]:hidden`}
         >
-          <Icon icon={StepForward} size={15} />
+          <Icon icon={StepForward} size={16} />
         </button>
 
         <button
           type="button"
+          data-ta="end"
           onClick={() => {
             const wa = getTransport().workArea;
-            transport.seek(wa.end);
+            motionActions.seek(wa.end * fps, true);
           }}
           aria-label="Go to end (End)"
           title="Go to end (End)"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={SkipForward} size={15} />
+          <Icon icon={SkipForward} size={16} />
         </button>
+
+        <Sep />
 
         <button
           type="button"
+          id="tloop"
+          data-ta="loop"
           onClick={() => transport.cycleLoop()}
           aria-pressed={loop !== "off"}
           aria-label={`Loop: ${loopLabel}`}
           title={`Loop: ${loopLabel}`}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ${
             loop !== "off"
               ? "ll:text-control-active ll:bg-surface-hover"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
-          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={14} />
+          <Icon icon={loop === "ping-pong" ? RotateCcw : Repeat} size={16} />
         </button>
 
         <button
@@ -254,10 +238,10 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-label="Auto-key record mode"
           data-testid="timeline-record-button"
           title={recordMode ? "Auto-key record mode (ON) - changes create keyframes" : "Auto-key record mode (OFF)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ll:@max-[980px]:hidden ${
             recordMode
               ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
           <div
@@ -274,90 +258,126 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-label="Toggle onion skin"
           data-testid="timeline-onion-skin-button"
           title={onionSkin.enabled ? "Onion skin (ON) - shows ghost frames" : "Onion skin (OFF)"}
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
+          className={`${BTN} ll:@max-[980px]:hidden ${
             onionSkin.enabled
               ? "ll:bg-control-primary-bg ll:text-control-primary-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
+              : BTN_IDLE
           }`}
         >
-          <Icon icon={Layers} size={14} />
+          <Icon icon={Layers} size={16} />
         </button>
       </div>
 
-      {/* 3. Right: View tabs, Tools, Speed, Full Width, Export */}
-      <div className="ll-mrt ll:flex ll:items-center ll:gap-1 ll:justify-end ll:min-w-0">
-        {/* Segmented view switch (Timeline / Graph) */}
+      <Sep />
+
+      <div className="ll-mtc ll:flex ll:items-baseline ll:gap-1.5 ll:min-w-0 ll:flex-none">
+        <button
+          type="button"
+          id="tc"
+          data-ta="tc"
+          onClick={() => motionActions.toggleFrames()}
+          aria-label="Playhead time"
+          title="Click to switch between timecode and frames"
+          style={{ fontSize: "18px", lineHeight: "32px" }}
+          className="ll-tc ll:font-mono ll:font-medium ll:tabular-nums ll:h-8 ll:rounded-sm ll:px-1.5 ll:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+        >
+          {formattedTime}
+        </button>
+        <span
+          id="tt"
+          className="ll-tt ll:font-mono ll:font-normal ll:tabular-nums ll:text-micro ll:text-muted ll:whitespace-nowrap"
+        >
+          / {formattedTotal}
+        </span>
+      </div>
+
+      <div className="ll:flex-1 ll:min-w-0" aria-hidden="true" />
+
+      {/* Right: view switch, tools, speed, expand width, export, more */}
+      <div className="ll-mrt ll:flex ll:items-center ll:gap-0.5 ll:justify-end ll:flex-none">
+        {/* Segmented view switch (Timeline / Graph), icon only */}
         <div
+          id="vseg"
           role="tablist"
           aria-label="Timeline view"
-          className="ll-vseg ll:flex ll:items-center ll:h-7 ll:p-0.5 ll:bg-surface-segmented ll:rounded-sm"
+          className="seg vseg ll-vseg ll:flex ll:items-center ll:h-8 ll:p-px ll:gap-px ll:border ll:border-border ll:rounded-sm ll:flex-none"
         >
           <button
             type="button"
             role="tab"
+            data-view="timeline"
             aria-selected={view === "timeline"}
+            aria-pressed={view === "timeline"}
+            aria-label="Timeline"
+            title="Timeline"
             onClick={() => motionActions.setView("timeline")}
-            className={`ll:h-6 ll:px-2.5 ll:rounded-xs ll:font-sans ll:text-xs ll:font-medium ll:transition-colors ${
+            className={`ll:w-9 ll:h-full ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
               view === "timeline"
-                ? "ll:bg-surface-panel ll:text-primary ll:shadow-xs"
+                ? "ll:bg-surface-segmented ll:text-primary"
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
-            Timeline
+            <ProtoIcon name="tlview" size={20} />
           </button>
           <button
             type="button"
             role="tab"
+            data-view="graph"
             aria-selected={view === "graph"}
+            aria-pressed={view === "graph"}
+            aria-label="Graph"
+            title="Graph"
             onClick={() => motionActions.setView("graph")}
-            className={`ll:h-6 ll:px-2.5 ll:rounded-xs ll:font-sans ll:text-xs ll:font-medium ll:transition-colors ${
+            className={`ll:w-9 ll:h-full ll:flex ll:items-center ll:justify-center ll:rounded-xs ll:transition-colors ${
               view === "graph"
-                ? "ll:bg-surface-panel ll:text-primary ll:shadow-xs"
+                ? "ll:bg-surface-segmented ll:text-primary"
                 : "ll:text-muted ll:hover:text-primary"
             }`}
           >
-            Graph
+            <ProtoIcon name="graphview" size={20} />
           </button>
         </div>
 
-        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+        <Sep />
 
-        {/* Tools: Select (V) and Split (C) */}
+        {/* Tools: Select (V), Split (C) */}
         <button
           type="button"
+          data-mtool="select"
           onClick={() => motionActions.setTool("select")}
           aria-pressed={tool === "select"}
           aria-label="Select (V)"
           title="Select (V)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            tool === "select"
-              ? "ll:bg-selection ll:text-selection-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${tool === "select" ? "ll:bg-selection ll:text-selection-fg" : BTN_IDLE}`}
         >
-          <Icon icon={MousePointer2} size={15} />
+          <Icon icon={MousePointer2} size={16} />
         </button>
 
         <button
           type="button"
-          onClick={() => motionActions.setTool("split")}
+          data-mtool="split"
+          onClick={() => {
+            if (tool === "split") {
+              timelineOpsAdapter.splitClipAtPlayhead();
+            } else {
+              motionActions.setTool("split");
+            }
+          }}
           aria-pressed={tool === "split"}
           aria-label="Split clip (C)"
           title="Split clip (C)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            tool === "split"
-              ? "ll:bg-selection ll:text-selection-fg"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${tool === "split" ? "ll:bg-selection ll:text-selection-fg" : BTN_IDLE}`}
         >
-          <Icon icon={Scissors} size={15} />
+          <Icon icon={SplitIcon} size={16} />
         </button>
 
-        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+        <Sep />
 
         {/* Speed dropdown */}
         <button
           type="button"
+          id="tspeed"
+          data-ta="speed"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setSpeedAnchor({ x: rect.left, y: rect.bottom + 4 });
@@ -367,9 +387,9 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-expanded={speedMenuOpen}
           aria-label="Playback speed"
           title="Playback speed"
-          className="ll-mdd ll:h-7 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors"
+          className="ll-mdd ll:h-8 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:border ll:border-border ll:rounded-sm ll:font-mono ll:tabular-nums ll:text-micro ll:font-medium ll:text-secondary ll:hover:bg-surface-hover ll:hover:text-primary ll:transition-colors ll:flex-none"
         >
-          <span>{speed}×</span>
+          <span className="ddt">{speed}×</span>
           <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
         </button>
 
@@ -393,9 +413,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           </Menu>
         )}
 
-        {/* Full width button (Shift+T) */}
+        {/* Expand width button (Shift+T) */}
         <button
           type="button"
+          id="tfw"
+          data-ta="fw"
           onClick={() => {
             const next = !isFw;
             motionActions.setFullWidth(next);
@@ -404,41 +426,43 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           aria-pressed={isFw}
           aria-label="Full width (Shift+T)"
           title="Full width (Shift+T)"
-          className={`ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors ${
-            isFw
-              ? "ll:bg-surface-hover ll:text-primary"
-              : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover"
-          }`}
+          className={`${BTN} ${isFw ? "ll:bg-surface-hover ll:text-primary" : BTN_IDLE}`}
         >
-          <Icon icon={Maximize2} size={15} />
+          <ProtoIcon name="expandw" size={18} />
         </button>
 
-        <span className="ll:w-px ll:h-4 ll:bg-border ll:mx-1" aria-hidden="true" />
+        <Sep />
 
         {/* Export animation */}
         <button
           type="button"
+          id="texp"
+          data-ta="export"
           onClick={onExport}
           aria-label="Export animation"
           title="Export animation"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          className={`${BTN} ${BTN_IDLE}`}
         >
-          <Icon icon={Download} size={15} />
+          <Icon icon={Download} size={16} />
         </button>
 
         {/* More options menu */}
         <button
           type="button"
+          id="tmore"
+          data-ta="more"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             setMoreAnchor({ x: rect.left, y: rect.bottom + 4 });
             setMoreMenuOpen(true);
           }}
+          aria-haspopup="menu"
+          aria-expanded={moreMenuOpen}
           aria-label="More timeline options"
-          title="More options"
-          className="ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:transition-colors"
+          title="More"
+          className={`ll-more ${BTN} ${BTN_IDLE} ll:font-mono ll:text-sm ll:font-medium ll:leading-none`}
         >
-          <Icon icon={MoreHorizontal} size={15} />
+          ...
         </button>
 
         {moreMenuOpen && moreAnchor && (
@@ -474,6 +498,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
             </MenuItem>
           </Menu>
         )}
+
+        <Sep />
+
+        {/* Collapse the timeline to this header strip */}
+        <BottomCollapseButton mode="motion" />
       </div>
     </div>
   );

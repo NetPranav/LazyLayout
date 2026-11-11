@@ -1,13 +1,19 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
-import { frameScheduler } from "@/core/time/scheduler";
 import { getTransport } from "@/core/time/transport";
+import React, { useEffect, useRef, useCallback } from "react";
 import {
   useMotionModel,
+  useOverlayFrame,
   X,
   timecode,
 } from "@/editor/motion-model";
+import { Spring } from "@/editor/motion/spring";
+import { simAdd, simRemove } from "@/editor/motion/loop";
+import { MOTION_PRESETS } from "@/editor/motion/presets";
+import { getFeel } from "@/editor/motion/feel";
+import { prefersReducedMotion } from "@/editor/motion/reducedMotion";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
 
 export interface TimelinePlayheadProps {
   laneWidth?: number;
@@ -23,6 +29,12 @@ export interface TimelinePlayheadProps {
   onSeek?: (timeSec: number) => void;
 }
 
+/** Round a CSS px position to a whole device pixel so the 1px line is crisp (never straddles two pixels). */
+function snapToDevicePx(x: number): number {
+  const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  return Math.round(x * dpr) / dpr;
+}
+
 export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   laneWidth = 600,
   trackWidth = 264,
@@ -36,70 +48,125 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
   const wa = useMotionModel((s) => s.wa);
-  const isPlaying = useMotionModel((s) => s.playing);
-  // While playing, needle position is driven by direct DOM updates from frameScheduler "overlay" phase.
-  // We subscribe only to paused playhead so React does not commit every frame during playback.
-  const pausedPlayhead = useMotionModel((s) => (s.playing ? 0 : s.playhead));
-  const playhead = isPlaying ? Math.round(getTransport().time * (getTransport().fps || 60)) : pausedPlayhead;
+  const playhead = useOverlayFrame();
+  const playheadGlide = useMotionModel((s) => s.playheadGlide);
   const markers = useMotionModel((s) => s.comp.markers);
   const frames = useMotionModel((s) => s.frames);
 
   const pps = propPps ?? legacyPps ?? 100;
 
+  const isScrubbing = useTimelineUiStore((s) => s.isScrubbing);
+
   const needleRef = useRef<HTMLDivElement | null>(null);
+  const labelRef = useRef<HTMLSpanElement | null>(null);
+  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const knobRef = useRef<HTMLDivElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
 
-  const ppsRef = useRef(pps);
-  const t0Ref = useRef(t0);
-  const laneWidthRef = useRef(laneWidth);
-  const fpsRef = useRef(fps);
+  // Damped spring instance for playhead gliding (matching P: M.ph = new Spring(M.T, mo().hl))
+  const phSpringRef = useRef<Spring | null>(null);
+  if (phSpringRef.current == null) {
+    const feel = getFeel();
+    phSpringRef.current = new Spring(playhead, MOTION_PRESETS[feel].hl);
+  }
 
-  useEffect(() => {
-    ppsRef.current = pps;
-    t0Ref.current = t0;
-    laneWidthRef.current = laneWidth;
-    fpsRef.current = fps;
-  }, [pps, t0, laneWidth, fps]);
-
-  // Direct DOM updates for playhead needle during playback (ROADMAP Phase 56)
-  useEffect(() => {
-    return frameScheduler.register("overlay", () => {
-      const t = getTransport();
-      if (!t.playing) return;
-      const curFps = fpsRef.current || 60;
-      const currentFrame = Math.round(t.time * curFps);
-      const ppsVal = ppsRef.current;
-      const t0Val = t0Ref.current;
-      const laneWidthVal = laneWidthRef.current;
-
-      const phX = X(currentFrame, ppsVal, t0Val, 24, curFps);
-      const needle = needleRef.current;
-      if (needle) {
-        needle.style.transform = `translateX(${phX}px)`;
-        needle.setAttribute("data-frame", String(currentFrame));
-        needle.setAttribute("data-time", String(currentFrame));
-        const isVisible = phX >= -6 && phX <= laneWidthVal + 6;
-        needle.style.display = isVisible ? "" : "none";
-      }
-      const layer = layerRef.current;
-      if (layer) {
-        layer.setAttribute("data-frame", String(currentFrame));
-        layer.setAttribute("data-time", String(currentFrame));
-      }
-    });
-  }, []);
-
-  const phX = X(playhead, pps, t0, 24, fps);
   const waX0 = X(wa.a, pps, t0, 24, fps);
   const waX1 = X(wa.b, pps, t0, 24, fps);
   const endX = X(dur, pps, t0, 24, fps);
 
-  const isPhVisible = phX >= -6 && phX <= laneWidth + 6;
+  // Direct DOM update function avoiding React re-render overhead at 60fps (Rule 4)
+  const updateNeedle = useCallback((f: number) => {
+    const x = X(f, pps, t0, 24, fps);
+    if (needleRef.current) {
+      needleRef.current.style.transform = `translateX(${snapToDevicePx(x)}px)`;
+      needleRef.current.style.visibility = x < -6 || x > laneWidth + 6 ? "hidden" : "visible";
+      needleRef.current.setAttribute("data-time", String(Math.round(f)));
+      // Flip the scrub label to the left of the line near the right edge of the lanes
+      needleRef.current.setAttribute("data-flip", x > laneWidth - 84 ? "1" : "0");
+    }
+    if (labelRef.current) {
+      // The label is only visible while scrubbing, and its text is a DOM commit, so it is written here (not rendered by
+      // React) and, while playing, only once the head has stopped moving. Seeking and scrubbing update it at once.
+      const write = (frame: number) => {
+        if (!labelRef.current) return;
+        const r = Math.round(frame);
+        labelRef.current.textContent = frames ? String(r) : timecode(r, fps);
+      };
+      if (labelTimerRef.current !== undefined) {
+        clearTimeout(labelTimerRef.current);
+        labelTimerRef.current = undefined;
+      }
+      if (getTransport().playing) labelTimerRef.current = setTimeout(() => write(f), 250);
+      else write(f);
+    }
+    if (layerRef.current) {
+      layerRef.current.setAttribute("data-time", String(Math.round(f)));
+    }
+
+    // Hide ruler tick label under playhead head (matching P line 4708)
+    const rulerLabels = document.querySelectorAll<HTMLElement>(".ll-tkl");
+    rulerLabels.forEach((el) => {
+      const lx = Number(el.dataset.x ?? 0);
+      const lw = Number(el.dataset.w ?? 24);
+      const hid = x + 9 > lx && x - 9 < lx + lw;
+      el.classList.toggle("ll-hid", hid);
+      el.style.visibility = hid ? "hidden" : "visible";
+    });
+
+    // Update mini-map playhead needle
+    const miniNeedle = document.querySelector<HTMLElement>(".ll-tmp, #tmp");
+    if (miniNeedle && dur > 0) {
+      miniNeedle.style.left = `${((f / dur) * 100).toFixed(2)}%`;
+    }
+  }, [pps, t0, fps, laneWidth, dur, frames]);
+
+  // Snap feedback: a short pulse on the head when a snap lands (restarts the CSS animation)
+  useEffect(() => {
+    const knob = knobRef.current;
+    if (snapFlashFrame === null || !knob) return;
+    knob.classList.remove("ll-phl-snap");
+    void knob.offsetWidth;
+    knob.classList.add("ll-phl-snap");
+  }, [snapFlashFrame]);
+
+  useEffect(() => {
+    const sp = phSpringRef.current;
+    if (!sp) return;
+
+    if (playheadGlide && !prefersReducedMotion()) {
+      const feel = getFeel();
+      sp.tune(MOTION_PRESETS[feel].hl);
+      sp.to = playhead;
+
+      const sim = {
+        sp: [sp],
+        apply: () => {
+          updateNeedle(sp.x);
+        },
+        rest: () => {
+          updateNeedle(playhead);
+          useMotionModel.setState({ playheadGlide: false });
+        },
+      };
+
+      simAdd(sim);
+      return () => {
+        simRemove(sim);
+      };
+    } else {
+      sp.jump(playhead);
+      updateNeedle(playhead);
+    }
+  }, [playhead, playheadGlide, updateNeedle]);
+
+  const initX = X(playhead, pps, t0, 24, fps);
+  const isPhVisible = initX >= -6 && initX <= laneWidth + 6;
 
   return (
     <>
       {/* 1. Playhead and Markers Overlay */}
       <div
+        id="tlhd"
         ref={layerRef}
         style={{ left: `${trackWidth}px` }}
         data-testid="timeline-playhead-layer"
@@ -111,7 +178,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
         {wa.a > 0 && (
           <div
             style={{ left: 0, width: `${Math.max(0, waX0)}px` }}
-            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-canvas/60"
+            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-panel/60"
           />
         )}
 
@@ -119,7 +186,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
         {wa.b < dur && (
           <div
             style={{ left: `${waX1}px`, right: 0 }}
-            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-canvas/60"
+            className="ll-wad ll:absolute ll:top-8 ll:bottom-0 ll:bg-surface-panel/60"
           />
         )}
 
@@ -141,25 +208,36 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
           className="ll-endl ll:absolute ll:top-8 ll:bottom-0 ll:w-px ll:bg-border"
         />
 
-        {/* Playhead needle (direct DOM updated at 60fps while playing; React rendered when paused) */}
+        {/* Playhead needle (spanning ruler + all tracks) */}
         <div
+          id="tlph"
           ref={needleRef}
           style={{
-            transform: `translateX(${phX}px)`,
-            ...(isPhVisible ? {} : { display: "none" }),
+            transform: `translateX(${snapToDevicePx(initX)}px)`,
+            visibility: isPhVisible ? "visible" : "hidden",
           }}
           data-testid="timeline-playhead"
           data-time={Math.round(playhead)}
           data-frame={Math.round(playhead)}
-          className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-active ll:will-change-transform"
+          data-scrubbing={isScrubbing ? "1" : "0"}
+          className="ll-phl ll:absolute ll:left-0 ll:top-0 ll:bottom-0 ll:w-px ll:bg-control-primary-bg ll:will-change-transform"
         >
-          {/* Playhead Knob on ruler */}
-          <div className="ll:absolute ll:-left-1.5 ll:top-2 ll:w-3 ll:h-3 ll:bg-control-active ll:rounded-xs ll:shadow-xs" />
+          {/* Playhead head on ruler: a flag that points at the exact frame */}
+          <div
+            ref={knobRef}
+            className="ll-phl-knob ll:absolute ll:w-playhead-knob ll:h-playhead-knob ll:bg-control-primary-bg"
+          />
+          {/* Current time, tight to the head while scrubbing */}
+          <span
+            ref={labelRef}
+            aria-hidden="true"
+            className="ll-phl-time ll:absolute ll:top-1 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-control-primary-bg ll:text-control-primary-fg ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:pointer-events-none ll:whitespace-nowrap"
+          />
         </div>
       </div>
 
       {/* 2. Hover Guide Line & Tooltip */}
-      {hoverX !== null && hoverFrame !== null && (
+      {hoverX !== null && hoverFrame !== null && !isScrubbing && (
         <>
           <i
             style={{
@@ -173,7 +251,7 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
               left: `${trackWidth}px`,
               transform: `translateX(${Math.min(hoverX + 6, laneWidth - 60)}px)`,
             }}
-            className="ll-hvt ll:absolute ll:top-1 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-surface-panel ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:text-primary ll:shadow-sm ll:pointer-events-none ll:z-30 ll:whitespace-nowrap"
+            className="ll-hvt ll:absolute ll:top-0.5 ll:h-4.5 ll:px-1.5 ll:flex ll:items-center ll:bg-surface-raised ll:border ll:border-border ll:rounded-sm ll:font-mono ll:text-nano ll:font-medium ll:text-primary ll:pointer-events-none ll:z-30 ll:whitespace-nowrap"
           >
             {frames ? String(hoverFrame) : timecode(hoverFrame, fps)}
           </span>
@@ -183,9 +261,10 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       {/* 3. Snapping indicator flash line */}
       {snapFlashFrame !== null && (
         <i
+          id="snl"
           style={{
             left: `${trackWidth}px`,
-            transform: `translateX(${X(snapFlashFrame, pps, t0, 24, fps)}px)`,
+            transform: `translateX(${X(snapFlashFrame, pps, t0, 24, fps).toFixed(1)}px)`,
           }}
           className="ll-snl ll-snl-on ll:absolute ll:top-0 ll:bottom-0 ll:w-px ll:bg-primary ll:pointer-events-none ll:z-30"
         />

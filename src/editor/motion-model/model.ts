@@ -59,13 +59,17 @@ export function defaultComposition(layers?: Record<string, { id: string; name?: 
     const heroLayer = list.find((l) => l.id === "hero" || l.name?.toLowerCase() === "hero");
     const headlineLayer = list.find((l) => l.id === "headline" || (l.archetype === "text" && l.name?.toLowerCase().includes("headline")));
     const subtitleLayer = list.find((l) => l.id === "subtitle" || (l.archetype === "text" && l.name?.toLowerCase().includes("subtitle")));
-    const buttonLayer = list.find((l) => l.id === "button" || l.archetype === "button" || l.name?.toLowerCase().includes("started"));
+    const buttonLayer = list.find((l) => l.id === "button" || (l.archetype === "button" && l.id !== "el_buy_button") || l.name?.toLowerCase().includes("started") || l.id === "el_buy_button");
     const imageLayer = list.find((l) => l.id === "image" || l.archetype === "image" || l.name?.toLowerCase().includes("image"));
 
     if (heroLayer) heroId = heroLayer.id;
     if (headlineLayer) headlineId = headlineLayer.id;
     if (subtitleLayer) subtitleId = subtitleLayer.id;
-    if (buttonLayer) buttonId = buttonLayer.id;
+    if (docLayers["button"]) {
+      buttonId = "button";
+    } else if (buttonLayer) {
+      buttonId = buttonLayer.id;
+    }
     if (imageLayer) imageId = imageLayer.id;
   }
 
@@ -177,6 +181,7 @@ export const LAYER_NAMES: Record<string, string> = {
   headline: "Headline",
   subtitle: "Subtitle",
   button: "Get started",
+  el_buy_button: "Get started",
   image: "Hero image",
   features: "Features",
   footer: "Footer",
@@ -187,6 +192,7 @@ export const LAYER_TYPES: Record<string, string> = {
   headline: "text",
   subtitle: "text",
   button: "button",
+  el_buy_button: "button",
   image: "image",
   hero: "frame",
   features: "frame",
@@ -203,6 +209,7 @@ export const LAYER_TYPES: Record<string, string> = {
 };
 
 export function layerName(id: string): string {
+  if (id === "button" || id === "el_buy_button") return "Get started";
   if (typeof window !== "undefined") {
     try {
       const docLayer = documentStore.getState().document.layers[id];

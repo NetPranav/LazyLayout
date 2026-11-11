@@ -42,6 +42,8 @@ import {
 } from "@/editor/motion-model";
 import type { EaseName } from "@/editor/motion-model";
 import type { ContextMenuState } from "./types";
+import { SplitIcon, EaseCurveIcon } from "./icons";
+import { timelineOpsAdapter } from "./timelineOpsAdapter";
 
 export interface TimelineMenusProps {
   ctx: ContextMenuState | null;
@@ -184,7 +186,7 @@ export const TimelineMenus: React.FC<TimelineMenusProps> = ({ ctx, onClose }) =>
       {ctx.kind === "clip" && currentLayer && currentClip && (
         <>
           <MenuItem
-            icon={<Icon icon={Scissors} size={14} className="ll:text-muted ll:shrink-0" />}
+            icon={<Icon icon={SplitIcon} size={14} className="ll:text-muted ll:shrink-0" />}
             shortcut="C"
             disabled={
               currentLayer.lock ||
@@ -192,7 +194,10 @@ export const TimelineMenus: React.FC<TimelineMenusProps> = ({ ctx, onClose }) =>
               ctx.frame >= currentClip.e - 1
             }
             onClick={() => {
-              motionActions.splitClip(currentLayer.id, ctx.clipIndex ?? 0, ctx.frame);
+              timelineOpsAdapter.splitClipAtPlayhead(currentLayer.id, {
+                clipIndex: ctx.clipIndex,
+                frame: ctx.frame,
+              });
               onClose();
             }}
           >

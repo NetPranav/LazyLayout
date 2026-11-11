@@ -19,6 +19,7 @@ export interface LayerItem {
     | "toggle"
     | "divider"
     | "container"
+    | "path"
     | string;
   level?: number;
   hasChildren?: boolean;
@@ -27,6 +28,10 @@ export interface LayerItem {
   hidden?: boolean;
   locked?: boolean;
   hasMotion?: boolean;
+  /** A frame that lays out its children: a stack (row or column) or a grid (a small icon beside the name). */
+  layout?: "row" | "column" | "grid";
+  /** Path layers: how many points the path has (shown beside the name). */
+  pointCount?: number;
   labelColor?: number;
   parentId?: string | null;
   children?: LayerItem[];

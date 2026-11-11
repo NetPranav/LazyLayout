@@ -33,165 +33,150 @@ export const TransformOverlay: React.FC<TransformOverlayProps> = ({
   onStartResize,
   zoom = 1,
 }) => {
-  const keep = zoom > 0 && zoom < 1 ? 1 / zoom : 1; // the page is drawn smaller than life, so grow the handles back
+  // The page is drawn scaled, so every outline, handle and label is divided by the zoom: they stay 1px / 8px / 11px on screen at any zoom, like the design prototype.
+  const inv = zoom > 0 ? 1 / zoom : 1;
+  const px = (n: number) => `calc(${n}px * ${inv})`;
   const selectedMirrorId = useSelectionStore((s) => s.selectedMirrorId);
+  const dimmed = "color-mix(in srgb, var(--ll-text-primary) 55%, transparent)";
+
+  const boxOf = (id: string): StageElement | undefined => {
+    const targetId = id === "subtitle" ? "headline" : id;
+    const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${targetId}` : null;
+    return (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[targetId];
+  };
+  const picked = selectedIds.map((id) => ({ id, el: boxOf(id) })).filter((x): x is { id: string; el: StageElement } => !!x.el);
+  const multi = picked.length > 1;
+  let group: { x: number; y: number; width: number; height: number } | null = null;
+  if (multi) {
+    const x0 = Math.min(...picked.map((p) => p.el.x));
+    const y0 = Math.min(...picked.map((p) => p.el.y));
+    const x1 = Math.max(...picked.map((p) => p.el.x + p.el.width));
+    const y1 = Math.max(...picked.map((p) => p.el.y + p.el.height));
+    group = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+  }
+
+  /** The 8 resize handles: 8px squares centred on the corners and edge midpoints of the box. */
+  const handles = RESIZE_HANDLE_NAMES.map((name) => {
+    const pos: React.CSSProperties = {};
+    if (name.includes("n")) pos.top = px(-4);
+    if (name.includes("s")) pos.bottom = px(-4);
+    if (name.includes("w")) pos.left = px(-4);
+    if (name.includes("e")) pos.right = px(-4);
+    if (name === "n" || name === "s") pos.left = `calc(50% - ${px(4)})`;
+    if (name === "w" || name === "e") pos.top = `calc(50% - ${px(4)})`;
+    return (
+      <div
+        key={name}
+        data-handle={name}
+        data-testid="selection-handle"
+        className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10"
+        style={{
+          ...pos,
+          boxSizing: "border-box",
+          width: px(8),
+          height: px(8),
+          backgroundColor: "var(--ll-surface-panel)",
+          border: `${px(1)} solid var(--ll-text-primary)`,
+          cursor: RESIZE_HANDLE_CURSORS[name],
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onStartResize?.(name, e);
+        }}
+      >
+        {/* a larger invisible target around the square, so the handle is easy to hit and the cursor changes at once */}
+        <span aria-hidden="true" className="ll:absolute" style={{ inset: px(-4), cursor: RESIZE_HANDLE_CURSORS[name] }} />
+      </div>
+    );
+  });
+
+  /** The size chip: centred under the box, 8px below it, 11px mono on the control colour. */
+  const dim = (w: number, h: number) => (
+    <div
+      className="ll-dim dim ll:absolute ll:z-10 ll:whitespace-nowrap ll:font-mono ll:select-none ll:pointer-events-none"
+      style={{
+        left: "50%",
+        top: `calc(100% + ${px(8)})`,
+        transform: `translateX(-50%) scale(${inv})`,
+        transformOrigin: "50% 0",
+        font: "500 11px/16px var(--ll-font-mono)",
+        backgroundColor: "var(--ll-control-primary-bg)",
+        color: "var(--ll-control-primary-fg)",
+        padding: "0 6px",
+        borderRadius: "var(--ll-radius-sm)",
+      }}
+    >
+      {Math.round(w)} × {Math.round(h)}
+    </div>
+  );
+
   return (
     <div
       data-testid="selection-overlay"
       className="ll-transform-overlay ll:absolute ll:inset-0 ll:pointer-events-none ll:overflow-visible"
       aria-hidden="true"
     >
-      {/* 1. Hover Outlines for non-selected hovered element */}
+      {/* 1. Hover outline for a non-selected hovered element: 1px at 55% */}
       {(() => {
         const targetHover = hoveredId === "subtitle" ? "headline" : hoveredId;
         if (!targetHover || selectedIds.includes(targetHover)) return null;
-        const compoundHover = selectedMirrorId ? `${selectedMirrorId}::${targetHover}` : null;
-        const el = (compoundHover && elements[compoundHover]) ? elements[compoundHover] : elements[targetHover];
+        const el = boxOf(targetHover);
         if (!el) return null;
         return (
           <div
             data-testid="hover-outline"
-            className="ll-hover-outline ll:absolute ll:border ll:border-muted ll:rounded-sm ll:pointer-events-none"
+            className="ll-hover-outline ll:absolute ll:pointer-events-none"
             style={{
-              left: el.x - STAGE_CONSTANTS.selectionBorderWidth,
-              top: el.y - STAGE_CONSTANTS.selectionBorderWidth,
-              width: el.width + STAGE_CONSTANTS.selectionBorderWidth * 2,
-              height: el.height + STAGE_CONSTANTS.selectionBorderWidth * 2,
+              left: el.x,
+              top: el.y,
+              width: el.width,
+              height: el.height,
+              boxSizing: "border-box",
+              border: `${px(1)} solid ${dimmed}`,
+              ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
             }}
           />
         );
       })()}
 
-      {/* 2. Selection Boxes & 8 Resize Handles */}
-      {selectedIds.map((id) => {
-        const targetId = id === "subtitle" ? "headline" : id;
-        const compoundKey = selectedMirrorId ? `${selectedMirrorId}::${targetId}` : null;
-        const el = (compoundKey && elements[compoundKey]) ? elements[compoundKey] : elements[targetId];
-        if (!el) return null;
-
-        return (
-          <div
-            key={id}
-            data-selection-id={id}
-            data-testid="selection-box"
-            className="ll-selbox selbox ll:absolute ll:pointer-events-none"
-            style={{
-              left: el.x + STAGE_CONSTANTS.selectionBoxOffset,
-              top: el.y + STAGE_CONSTANTS.selectionBoxOffset,
-              width: el.width - STAGE_CONSTANTS.selectionBoxOffset * 2,
-              height: el.height - STAGE_CONSTANTS.selectionBoxOffset * 2,
-              border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
-              ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
-            }}
-          >
-            {/* 8 Resize Handles around the bounding frame */}
-            {RESIZE_HANDLE_NAMES.map((name) => {
-              // Calculate handle relative position
-              let leftStyle: string | number = 0;
-              let topStyle: string | number = 0;
-              let transformStyle = "none";
-
-              switch (name) {
-                case "nw":
-                  leftStyle = STAGE_CONSTANTS.handleOffset;
-                  topStyle = STAGE_CONSTANTS.handleOffset;
-                  break;
-                case "n":
-                  leftStyle = "50%";
-                  topStyle = STAGE_CONSTANTS.handleOffset;
-                  transformStyle = `translateX(${STAGE_CONSTANTS.handleCenterOffset}px)`;
-                  break;
-                case "ne":
-                  leftStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  topStyle = STAGE_CONSTANTS.handleOffset;
-                  break;
-                case "e":
-                  leftStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  topStyle = "50%";
-                  transformStyle = `translateY(${STAGE_CONSTANTS.handleCenterOffset}px)`;
-                  break;
-                case "se":
-                  leftStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  topStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  break;
-                case "s":
-                  leftStyle = "50%";
-                  topStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  transformStyle = `translateX(${STAGE_CONSTANTS.handleCenterOffset}px)`;
-                  break;
-                case "sw":
-                  leftStyle = STAGE_CONSTANTS.handleOffset;
-                  topStyle = `calc(100% - ${
-                    STAGE_CONSTANTS.handleSize + STAGE_CONSTANTS.handleOffset
-                  }px)`;
-                  break;
-                case "w":
-                  leftStyle = STAGE_CONSTANTS.handleOffset;
-                  topStyle = "50%";
-                  transformStyle = `translateY(${STAGE_CONSTANTS.handleCenterOffset}px)`;
-                  break;
-              }
-
-              return (
-                <div
-                  key={name}
-                  data-handle={name}
-                  data-testid="selection-handle"
-                  className="ll-handle handle ll:absolute ll:pointer-events-auto ll:z-10"
-                  style={{
-                    left: leftStyle,
-                    top: topStyle,
-                    width: STAGE_CONSTANTS.handleSize,
-                    height: STAGE_CONSTANTS.handleSize,
-                    backgroundColor: "var(--ll-surface-canvas)",
-                    border: `${STAGE_CONSTANTS.selectionBorderWidth}px solid var(--ll-text-primary)`,
-                    cursor: RESIZE_HANDLE_CURSORS[name],
-                    transform: `${transformStyle === "none" ? "" : transformStyle} scale(${keep})`.trim(),
-                  }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    onStartResize?.(name, e);
-                  }}
-                >
-                  {/* a larger invisible target around the dot, so the handle is easy to hit and the cursor changes at once */}
-                  <span aria-hidden="true" className="ll:absolute" style={{ inset: -5.5, cursor: RESIZE_HANDLE_CURSORS[name] }} />
-                </div>
-              );
-            })}
-
-            {/* Dimension Badge (.dim): e.g. "340 × 82" */}
-            <div
-              className="ll-dim dim ll:absolute ll:z-10 ll:flex ll:items-center ll:justify-center ll:whitespace-nowrap ll:font-mono ll:select-none ll:pointer-events-none"
-              style={{
-                left: 0,
-                top: "calc(100% + var(--ll-spacing-0-5))",
-                fontSize: "var(--ll-text-micro-size)",
-                lineHeight: "var(--ll-text-micro-line-height)",
-                fontWeight: "var(--ll-text-micro-weight)",
-                backgroundColor: "var(--ll-control-primary-bg)",
-                color: "var(--ll-control-primary-fg)",
-                paddingLeft: STAGE_CONSTANTS.dimBadgePaddingX,
-                paddingRight: STAGE_CONSTANTS.dimBadgePaddingX,
-                paddingTop: STAGE_CONSTANTS.dimBadgePaddingY,
-                paddingBottom: STAGE_CONSTANTS.dimBadgePaddingY,
-                borderRadius: "var(--ll-radius-sm)",
-              }}
-            >
-              {Math.round(el.width)} × {Math.round(el.height)}
-            </div>
-          </div>
-        );
-      })}
+      {/* 2. Selection boxes. One layer: the box on its bounds with 8 handles and the size chip. Several: each layer gets a 55% outline, and one box around all of them carries the handles and the chip. */}
+      {picked.map(({ id, el }) => (
+        <div
+          key={id}
+          data-selection-id={id}
+          data-testid="selection-box"
+          className="ll-selbox selbox ll:absolute ll:pointer-events-none"
+          style={{
+            left: el.x,
+            top: el.y,
+            width: el.width,
+            height: el.height,
+            boxSizing: "border-box",
+            border: `${px(1)} solid ${multi ? dimmed : "var(--ll-text-primary)"}`,
+            ...(el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
+          }}
+        >
+          {!multi && handles}
+          {!multi && dim(el.width, el.height)}
+        </div>
+      ))}
+      {group && (
+        <div
+          data-testid="selection-group"
+          className="ll-selbox selbox ll:absolute ll:pointer-events-none"
+          style={{
+            left: group.x,
+            top: group.y,
+            width: group.width,
+            height: group.height,
+            boxSizing: "border-box",
+            border: `${px(1)} solid ${dimmed}`,
+          }}
+        >
+          {handles}
+          {dim(group.width, group.height)}
+        </div>
+      )}
 
       {/* 3. Snapping Guide Lines */}
       {snapLines.map((line, idx) => {

@@ -1,6 +1,6 @@
 // Spring easing generator and element animator ported from Nook (the owner's own product)
 
-import { prefersReducedMotion } from "./reducedMotion";
+import { prefersReducedMotion, isUserMotionOff } from "./reducedMotion";
 
 export interface SpringEaseResult {
   easing: string;
@@ -66,6 +66,11 @@ export function springAnim(
 ): Animation | null {
   if (typeof el.animate !== "function") {
     return null;
+  }
+
+  if (isUserMotionOff()) {
+    // "Disable animations": jump to the end state; keeps a finished Animation for callers.
+    return el.animate(keyframes, { ...extra, duration: 0, delay: 0, endDelay: 0 });
   }
 
   if (prefersReducedMotion()) {

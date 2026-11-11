@@ -85,6 +85,11 @@ export function readFor(layer: Pick<Layer, "archetype" | "properties">, key: str
     if (key === "divider.style" && typeof v === "string") return v === "none" ? "solid" : v === "1 6" ? "dotted" : "dashed";
     if (key === "divider.cap" && typeof v === "string") return v.charAt(0).toUpperCase() + v.slice(1);
   }
+  // A shape's border style is its dash array: read it back as the style the row offers
+  if (isSvgPainted(layer) && key === "appearance.border.style") {
+    const dash = typeof v === "string" ? v.trim() : "none";
+    return dash === "" || dash === "none" ? "solid" : dash === "1 6" ? "dotted" : "dashed";
+  }
   // A layer with a width and no sizing of its own is fixed on that axis, however the property's general default reads.
   if (v === undefined && (real === "sizing.horizontal" || real === "sizing.vertical")) {
     const parentId = "parentId" in layer ? (layer.parentId as string | null) : ""; // only the page itself has none

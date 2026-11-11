@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect, useMemo, Profiler } from "react";
-import { recordCommit } from "@/editor/diagnostics/commitCounter";
+import React, { useState, useRef, useLayoutEffect, useMemo, useEffect } from "react";
 import { ChevronDown, Link2 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { Menu, MenuItem } from "@/editor/components/Menu";
 import { EmptyState } from "@/editor/components/EmptyState";
 import { LayerContextMenuContent } from "@/editor/shell/left-panel/LayerContextMenu";
 import { TransformOverlay } from "./TransformOverlay";
+import { TextFormatBar } from "./TextFormatBar";
+import { setTextEditing } from "@/core/commands";
 import { MotionPathOverlay } from "./MotionPathOverlay";
 import { ValueHud } from "./ValueHud";
 import { OnionSkinOverlay } from "./OnionSkinOverlay";
@@ -15,11 +16,16 @@ import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { DraftPath } from "./DraftPath";
+import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
+import { PathEditLayer } from "./pen/PathEditLayer";
+import { PathContextBar } from "./pen/PathContextBar";
+import { penJustFinished } from "./pen/penAdapter";
+import { useVectorEditStore } from "@/core/store/useVectorEditStore";
 import { RenderLayer } from "@/core/render";
 import { useMirrorViews } from "./useMirrorViews";
 import { exactDeviceOfFrame, frameSizeLabel, frameViewportHeight, mirrorSourceId, pageFrameOf } from "@/core/frames/devices";
 import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
-import { Checkbox } from "@/editor/components/Checkbox";
+import { ProtoIcon } from "@/editor/components/icons/ProtoIcon";
 import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
@@ -40,6 +46,7 @@ import {
   STAGE_PRESETS,
   SIZES_MAP,
 } from "./constants";
+import "./stage.css";
 import { presetForBreakpoint } from "./presetBreakpoints";
 import { deviceOfFrame, DEVICE_SPECS, switchFrameView, type DeviceKind } from "./deviceViews";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -148,6 +155,34 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
       spellCheck={false}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
+        const isMod = e.ctrlKey || e.metaKey;
+        if (isMod && !e.altKey) {
+          const k = e.key.toLowerCase();
+          if (k === "b") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("bold");
+            return;
+          }
+          if (k === "i") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("italic");
+            return;
+          }
+          if (k === "u") {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("underline");
+            return;
+          }
+          if (k === "x" && e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.execCommand("strikeThrough");
+            return;
+          }
+        }
         e.stopPropagation();
         if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) e.currentTarget.blur();
       }}
@@ -184,7 +219,7 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
 };
 
 /** The outline of what a creation tool is drawing: the shape it will make, not always a box. */
-const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number }> = ({ archetype, width, height }) => {
+const PreviewOutline: React.FC<{ archetype?: string; width: number; height: number; zoom?: number }> = ({ archetype, width, height, zoom = 1 }) => {
   const w = Math.max(1, width);
   const h = Math.max(1, height);
   const common = { fill: "none", stroke: "var(--ll-text-primary)", strokeWidth: 1, vectorEffect: "non-scaling-stroke" as const };
@@ -211,7 +246,7 @@ const PreviewOutline: React.FC<{ archetype?: string; width: number; height: numb
       break;
     }
     case "marquee":
-      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: "1px solid var(--ll-text-primary)", background: "color-mix(in srgb, var(--ll-text-primary) 8%, transparent)" }} />;
+      return <div data-testid="marquee" style={{ width: w, height: h, boxSizing: "border-box", border: `calc(1px / ${zoom > 0 ? zoom : 1}) solid var(--ll-text-primary)`, background: "color-mix(in srgb, var(--ll-text-primary) 6%, transparent)" }} />;
     default:
       shape = <rect x={0} y={0} width={w} height={h} {...common} />;
   }
@@ -233,6 +268,7 @@ function scrollDrawnFrame(frameId: string, top: number): void {
 
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
+  activeTool,
   title = "LazyLayout",
   preset: controlledPreset,
   onPresetChange,
@@ -253,9 +289,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
   snapGuides = false,
   empty = false,
   references,
-  onAddFrame,
-  onInsert,
-  onAskAi,
+  onAddFrame: _onAddFrame,
+  onInsert: _onInsert,
+  onAskAi: _onAskAi,
   onLayerAction,
   onToggleHidden,
   onToggleLocked,
@@ -273,19 +309,19 @@ export const Artboard: React.FC<ArtboardProps> = ({
     coords: { x: number; y: number };
     elementId: string;
   } | null>(null);
+  const artboardContainerRef = useRef<HTMLDivElement | null>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
-  const playingNow = useMotionModel((s) => s.playing);
-  // While playing, animated values are applied directly to DOM in scheduler "apply" phase (ROADMAP Phase 56).
-  // Artboard only re-evaluates in React when paused (immediate full rate) or at playback transitions.
-  const pausedPlayhead = useMotionModel((s) => (s.playing ? 0 : s.playhead));
+  const playhead = useMotionModel((s) => s.playhead);
   const fps = useMotionModel((s) => s.fps) || 60;
-  const motionTimeSec = pausedPlayhead / fps;
+  const motionTimeSec = playhead / fps;
 
-  // ROADMAP Phase 55 & 56: Evaluated layers at the current motion playhead time
+  // ROADMAP Phase 55: Evaluated layers at the current motion playhead time
+  // so the drawn page tree in [data-testid="stage-page"] animates in lockstep with evaluate()
   // In Design the canvas draws the design itself (an element that fades in stays visible whatever the playhead); the
   // animated frame is drawn in Motion and Preview, and while playing.
+  const playingNow = useMotionModel((s) => s.playing);
   const showAnimated = canvasViewMode !== "design" || playingNow;
   const animatedLayers = useMemo(() => {
     if (!layers || !showAnimated) return layers;
@@ -338,6 +374,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
   // Scale computation: prototype uses `zoom / .59 * .9`
   const zoomScale = zoom > 0 ? zoom : 1;
+  const editingPath = useVectorEditStore((s) => s.layerId !== null);
   const labelKeep = zoomScale < 1 ? 1 / zoomScale : 1;
 
   const handleSelectPreset = (newPreset: StagePreset) => {
@@ -401,15 +438,28 @@ export const Artboard: React.FC<ArtboardProps> = ({
     ? activeFrameEl.y + STAGE_CONSTANTS.sizeLabelOffsetTop
     : STAGE_CONSTANTS.sizeLabelOffsetTop;
   const hideLabel = !hasElements || empty;
+  // Blank page: a page with no layers renders nothing on the artboard (no placeholder)
+  const isBlank = !hasElements;
+
+  // The format bar and the keyboard context follow the in-place text editor
+  useEffect(() => {
+    if (editingText === null) return;
+    useCanvasViewStore.getState().startTextEdit(editingText);
+    setTextEditing(true);
+    return () => {
+      useCanvasViewStore.getState().stopTextEdit();
+      setTextEditing(false);
+    };
+  }, [editingText]);
 
   return (
-    <Profiler id="artboard" onRender={() => recordCommit("artboard")}>
-      <div
-        id={id}
+    <div
+      ref={artboardContainerRef}
+      id={id}
       data-stage="artboard"
       data-testid="stage-artboard"
       data-bare={bare ? "true" : undefined}
-      className="ll-artboard ll:absolute ll:select-none ll:transition-shadow"
+      className={`ll-artboard artboard ll:absolute ll:select-none ll:transition-shadow ${isBlank ? "ll-artboard-blank" : ""}`}
       style={{
         left: STAGE_CONSTANTS.artboardLeftPercent,
         top:
@@ -426,11 +476,22 @@ export const Artboard: React.FC<ArtboardProps> = ({
       }}
       onClick={(e) => {
         // Clicking directly on artboard background deselects elements
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !penJustFinished()) {
           onSelect(null);
         }
       }}
     >
+      {/* Empty State ("Start with") when canvas has no layers */}
+      {isBlank && (
+        <div className="ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center ll:pointer-events-auto">
+          <EmptyState
+            onAddFrame={_onAddFrame}
+            onInsert={_onInsert}
+            onAskAi={_onAskAi}
+          />
+        </div>
+      )}
+
       {/* 1. Canvas Size Label / Dropdown Trigger (.lbl / #albl) */}
       {topFrames.length === 0 && (
         <button
@@ -549,9 +610,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
             {screenHeight !== null && (
               // Preview: right here, the frame becomes the device's screen and scrolls; off, it is full height
               <div
-                data-testid="frame-preview-toggle"
-                data-frame-id={frame.id}
-                className="ll:absolute ll:flex ll:items-center ll:whitespace-nowrap ll:text-small ll:text-secondary"
+                className="ll:absolute"
                 style={{
                   left: frameEl.x + frameEl.width,
                   // on a frame too narrow on screen for both, it sits a row above the size label
@@ -562,17 +621,29 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Checkbox
-                  checked={isPreviewing}
-                  label="Preview"
+                {/* quiet: only seen on hover, selection, focus, or while previewing (opacity only, so it stays clickable) */}
+                <button
+                  type="button"
+                  data-testid="frame-preview-toggle"
+                  data-frame-id={frame.id}
+                  aria-pressed={isPreviewing}
                   aria-label={`Preview ${frame.name} as a ${sizeLabel.label} screen`}
-                  onChange={(on) => {
+                  title={isPreviewing ? "Exit device preview" : "Preview as device screen"}
+                  className={`ll:flex ll:items-center ll:justify-center ll:size-6 ll:rounded-sm ll:border-0 ll:cursor-pointer ll:outline-none ll:transition-opacity ll:duration-[120ms] ll:motion-reduce:transition-none ll:hover:opacity-100 ll:focus-visible:opacity-100 ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                    isPreviewing
+                      ? "ll:bg-control-primary ll:text-control-primary-fg"
+                      : "ll:bg-transparent ll:text-secondary ll:hover:bg-surface-panel ll:hover:text-primary"
+                  } ${isPreviewing || hoveredId === frame.id || selectedIds.includes(frame.id) || editingFrameId === frame.id ? "ll:opacity-100" : "ll:opacity-0"}`}
+                  onClick={() => {
+                    const on = !isPreviewing;
                     // the frame is looked at, not edited, while previewed: nothing inside it stays selected
                     if (on && !selectedIds.includes(frame.id) && (selectedMirror === frame.id || pageFrameOf(layers ?? {}, rootId ?? null, selectedIds[0]) === frame.id)) onSelect(frame.id);
                     if (!on) scrollDrawnFrame(frame.id, 0);
                     useFramePreviewStore.getState().setPreview(frame.id, on);
                   }}
-                />
+                >
+                  <ProtoIcon name="frameprev" size={16} />
+                </button>
               </div>
             )}
             {screenHeight !== null && !isPreviewing && fullHeight > screenHeight && (
@@ -652,8 +723,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
         {title}
       </div>
 
-      {/* 3. Center Alignment Guides (.guide.v and .guide.h) */}
-      {snapGuides && (
+      {/* 3. Center Alignment Guides (.guide.v and .guide.h) - hidden on blank page */}
+      {!isBlank && snapGuides && (
         <>
           <div
             className="ll-guide guide v ll-guide-v ll:absolute ll:pointer-events-none"
@@ -684,24 +755,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* The page: the real tree, drawn by the engine exactly as it is exported. Clicks go to the transparent boxes above it. */}
       {layers && rootId && (
-        <div ref={pageRef} data-testid="stage-page" data-frame={pausedPlayhead} style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
+        <div ref={pageRef} data-testid="stage-page" data-frame={playhead} style={{ position: "absolute", inset: 0, pointerEvents: "none", ...(hideLabel ? { visibility: "hidden" as const } : {}) }}>
           {bare && (
             // the page root draws no fill, border or shadow of its own: what is on it sits straight on the canvas
             <style>{`[data-testid="stage-page"] > [data-element-id="${rootId}"] { background: transparent !important; box-shadow: none !important; border: none !important; }`}</style>
           )}
           <RenderLayer layerId={rootId} layers={animatedLayers ?? layers} ctx={engineCtx} root />
-        </div>
-      )}
-
-      {/* 4. Empty State if no elements or explicitly empty */}
-      {(!hasElements || empty) && (
-        <div id="es" className="ll-es es ll:absolute ll:inset-0 ll:flex ll:items-center ll:justify-center">
-          <EmptyState
-            title="Start with"
-            onAddFrame={onAddFrame}
-            onInsert={onInsert}
-            onAskAi={onAskAi}
-          />
         </div>
       )}
 
@@ -751,6 +810,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
               data-mirror-id={el.mirrorId}
               data-testid="stage-element"
               data-selected={isSelected ? "true" : "false"}
+              data-locked={el.locked ? "true" : "false"}
               data-layer-role={isHelper ? "helper" : "content"}
               className={`ll-element ll:absolute ll:select-none ${
                 isSelected ? "ll-sel sel " : ""
@@ -908,12 +968,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
             transform: drawPreview.rotation ? `rotate(${drawPreview.rotation}deg)` : undefined,
           }}
         >
-          <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} />
+          <PreviewOutline archetype={drawPreview.archetype} width={drawPreview.width} height={drawPreview.height} zoom={zoomScale} />
         </div>
       )}
 
       {/* 5c. Vector Pen & Pencil live path overlay */}
       <DraftPath />
+      <PathEditLayer containerRef={artboardContainerRef} elements={elements} activeTool={activeTool} zoom={zoomScale} />
 
       {/* 6. Transform Overlay (Hover, Selection, 8 handles, Dimensions, Snapping) */}
       {/* The scroll of previewed frames: the page is drawn under the canvas's click layer, so this scrolls it */}
@@ -936,16 +997,26 @@ export const Artboard: React.FC<ArtboardProps> = ({
         );
       })}
 
-      <TransformOverlay
-        selectedIds={selectedIds}
-        hoveredId={hoveredId}
-        elements={elements}
-        snapLines={snapLines}
-        spacingMarks={spacingMarks}
-        onStartMove={onStartMove}
-        onStartResize={onStartResize}
-        zoom={zoomScale}
-      />
+      {/* Auto layout and grid: padding bands, gap strips and tracks of the selected frame, under the selection handles */}
+      {!isBlank && mode === "design" && !editingPath && (
+        <>
+          <LayoutOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} isGesturing={isGesturing} />
+          <FlowDropLine zoom={zoomScale} />
+        </>
+      )}
+
+      {!isBlank && (
+        <TransformOverlay
+          selectedIds={editingPath ? [] : selectedIds}
+          hoveredId={hoveredId}
+          elements={elements}
+          snapLines={snapLines}
+          spacingMarks={spacingMarks}
+          onStartMove={onStartMove}
+          onStartResize={onStartResize}
+          zoom={zoomScale}
+        />
+      )}
 
       {/* Corner pin: handles and a grid on the surface a pinned layer lies on */}
       <CornerPinOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
@@ -969,6 +1040,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
         layers={layers}
         isGesturing={isGesturing}
         forceVisible={showValueHud}
+        zoom={zoomScale}
       />
 
       {/* 6c. Anchor Overlay (ROADMAP Phase 72: Anchor points & pins) */}
@@ -979,7 +1051,11 @@ export const Artboard: React.FC<ArtboardProps> = ({
         zoom={zoomScale}
       />
 
-      {/* 7. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}
+      {/* 7. Inline Text Format Bar */}
+      <TextFormatBar containerRef={artboardContainerRef} />
+      <PathContextBar />
+
+      {/* 8. Element Context Menu (.menu.ctx, MENUS.elem prototype parity) */}
       <Menu
         open={contextMenu !== null}
         onClose={() => setContextMenu(null)}
@@ -1018,6 +1094,5 @@ export const Artboard: React.FC<ArtboardProps> = ({
         />
       </Menu>
     </div>
-  </Profiler>
   );
 };

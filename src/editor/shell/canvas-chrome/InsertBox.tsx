@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useId } from "react";
-import { Search, FileText } from "lucide-react";
+import { Search, File } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
-import { Button } from "@/editor/components/Button";
 import { surf, type Surf } from "@/editor/motion/surface";
 import { MENU_FALLBACKS, MOT } from "@/editor/motion/presets";
 import { prefersReducedMotion } from "@/editor/motion/feel";
 import { CANVAS_CHROME_SIZES } from "./constants";
 import { INSERT_CATALOG, type InsertItem } from "./insertData";
 import { insertCatalogItem, canInsertCatalogItem } from "./insertCommands";
+import { SECTION_TEMPLATES, type SectionTemplate } from "@/core/templates/sections";
+import { CATEGORIES, categoryOf } from "./sectionCategories";
+import { insertSectionBelowSelection } from "./insertSection";
+import { SectionThumb } from "./SectionThumb";
 
 export interface InsertBoxProps {
   open: boolean;
@@ -74,6 +77,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
         };
       }
 
+      // Enforce P's fixed 520x400 size in all states
+      s.size = { w: 520, h: 400 };
       s.open({
         from: seed,
         up: true,
@@ -136,6 +141,23 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
     [onInsertItem, onClose, triggerRef]
   );
 
+  const handleSelectSection = useCallback(
+    (id: string) => {
+      insertSectionBelowSelection(id);
+      onClose();
+      triggerRef?.current?.focus();
+    },
+    [onClose, triggerRef]
+  );
+
+  const matchedSections = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return SECTION_TEMPLATES.filter(
+      (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.id.includes(q)
+    );
+  }, [searchQuery]);
+
   // Search filtering logic across all categories
   const filteredItems = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -165,12 +187,12 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
       aria-label="Insert"
       tabIndex={-1}
       style={{
-        width: "calc(var(--ll-size-menu-wide-w) + var(--ll-size-menu-w))",
-        height: "calc(var(--ll-size-menu-w) * 2)",
-        bottom:
-          "calc(var(--ll-size-topbar-h) + var(--ll-spacing-4) + var(--ll-spacing-2) - var(--ll-spacing-0-5))",
+        width: "var(--ll-size-insert-w, 520px)",
+        maxWidth: "calc(100% - var(--ll-spacing-4) * 2)", // stays on a phone-width screen
+        height: "var(--ll-size-insert-h, 400px)",
+        bottom: "var(--ll-bottom-floating, 74px)",
       }}
-      className="ll-ins ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:overflow-hidden ll:outline-none"
+      className="ll-ins ll:absolute ll:left-1/2 ll:-translate-x-1/2 ll:z-30 ll:flex ll:flex-col ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:overflow-hidden ll:outline-none"
     >
       <div className="ll-lay ll:flex ll:flex-col ll:flex-1 ll:min-h-0">
         {/* Search header (.ll-insq) */}
@@ -224,22 +246,21 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
             className="ll-insl ll:shrink-0 ll:flex ll:flex-col ll:gap-0.5 ll:p-2 ll:border-r ll:border-border ll:overflow-y-auto"
           >
             {Object.keys(INSERT_CATALOG).map((category) => {
-              const isSelected = activeCategory === category && !searchQuery;
+              const isSelected = activeCategory === category;
               return (
                 <React.Fragment key={category}>
                   {category === "Recent" && (
                     <div className="ll:h-px ll:bg-border ll:my-1.5" aria-hidden="true" />
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
+                    type="button"
                     aria-pressed={isSelected}
                     data-cat={category}
                     onClick={() => selectCategory(category)}
-                    className="ll:w-full ll:justify-start ll:h-8 ll:px-2 ll:border-0 ll:text-secondary ll:hover:text-primary ll:aria-pressed:bg-surface-hover ll:aria-pressed:text-primary"
+                    className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-2 ll:border-0 ll:rounded-sm ll:bg-transparent ll:text-left ll:whitespace-nowrap ll:cursor-pointer ll:text-secondary ll:hover:text-primary ll:aria-pressed:bg-surface-hover ll:aria-pressed:text-primary ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
                   >
-                    <span className="ll:text-body ll:font-normal">{category}</span>
-                  </Button>
+                    {category}
+                  </button>
                 </React.Fragment>
               );
             })}
@@ -249,7 +270,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
           <div
             ref={panelRef}
             onKeyDown={(e) => {
-              const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: GRID_COLS, ArrowUp: -GRID_COLS };
+              const cols = Number((document.activeElement as HTMLElement | null)?.dataset.cols) || GRID_COLS;
+              const keys: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols };
               const step = keys[e.key];
               if (step === undefined) return;
               const cards = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("[data-card]"));
@@ -263,22 +285,42 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
             className="ll-insr ll:flex-1 ll:min-w-0 ll:overflow-y-auto ll:p-4"
           >
             {filteredItems !== null ? (
-              filteredItems.length > 0 ? (
-                <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
-                  {filteredItems.map((item) => (
-                    <CardItem
-                      key={item.name}
-                      enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
-                      item={item}
-                      onSelect={handleSelectCard}
-                    />
-                  ))}
-                </div>
+              filteredItems.length + matchedSections.length > 0 ? (
+                <>
+                  {matchedSections.length > 0 && (
+                    <div className={filteredItems.length > 0 ? "ll:mb-4" : ""}>
+                      <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">Sections</h4>
+                      <SectionGrid templates={matchedSections} onSelect={handleSelectSection} />
+                    </div>
+                  )}
+                  {filteredItems.length > 0 && (
+                    <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
+                      {filteredItems.map((item) => (
+                        <CardItem
+                          key={item.name}
+                          enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
+                          item={item}
+                          onSelect={handleSelectCard}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted ll:text-small">
+                <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted">
                   Nothing found
                 </div>
               )
+            ) : activeCategory === "Sections" ? (
+              CATEGORIES.map((cat, gIdx) => (
+                <div key={cat.id} className={gIdx > 0 ? "ll:mt-4" : ""}>
+                  <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">{cat.label}</h4>
+                  <SectionGrid
+                    templates={SECTION_TEMPLATES.filter((t) => categoryOf(t) === cat.id)}
+                    onSelect={handleSelectSection}
+                  />
+                </div>
+              ))
             ) : (
               INSERT_CATALOG[activeCategory]?.map((group, gIdx) => (
                 <div
@@ -318,6 +360,38 @@ interface CardItemProps {
 
 const GRID_COLS = 3;
 
+const SectionGrid: React.FC<{ templates: SectionTemplate[]; onSelect: (id: string) => void }> = ({
+  templates,
+  onSelect,
+}) => (
+  <div className="ll-insgrid ll:grid ll:grid-cols-2 ll:gap-3 ll:items-start">
+    {templates.map((t) => (
+      <button
+        key={t.id}
+        type="button"
+        data-card
+        data-cols={2}
+        data-testid="section-card"
+        data-template={t.id}
+        aria-label={`Insert ${t.name}`}
+        title={t.description}
+        onClick={() => onSelect(t.id)}
+        className="ll-card ll:group ll:flex ll:flex-col ll:items-stretch ll:gap-1.5 ll:min-w-0 ll:p-0 ll:border-0 ll:font-sans ll:bg-transparent ll:text-left ll:text-secondary ll:cursor-pointer ll:outline-none ll:transition-transform ll:duration-150 ll:hover:-translate-y-0.5 ll:focus-visible:-translate-y-0.5"
+      >
+        <span className="ll:relative ll:block ll:w-full ll:overflow-hidden ll:rounded-sm ll:border ll:border-border ll:box-border ll:transition-shadow ll:duration-150 ll:group-hover:border-muted ll:group-hover:shadow-soft ll:group-focus-visible:ring-1 ll:group-focus-visible:ring-primary">
+          <SectionThumb template={t} />
+          <span className="ll:absolute ll:inset-x-0 ll:bottom-0 ll:flex ll:items-center ll:justify-center ll:h-6 ll:bg-control-primary ll:text-control-primary-fg ll:text-micro ll:font-medium ll:opacity-0 ll:transition-opacity ll:duration-150 ll:group-hover:opacity-100 ll:group-focus-visible:opacity-100">
+            Insert
+          </span>
+        </span>
+        <span className="ll-cname ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
+          {t.name}
+        </span>
+      </button>
+    ))}
+  </div>
+);
+
 function focusCard(root: HTMLElement | null, index: number) {
   root?.querySelectorAll<HTMLButtonElement>("[data-card]")[index]?.focus();
 }
@@ -332,16 +406,16 @@ const CardItem: React.FC<CardItemProps> = ({ item, enabled, onSelect }) => {
       onClick={() => {
         if (enabled) onSelect(item.name);
       }}
-      className={`ll-card ll:group ll:flex ll:flex-col ll:items-stretch ll:gap-1.5 ll:min-w-0 ll:px-1.5 ll:py-0 ll:border-0 ll:font-sans ll:bg-transparent ll:text-left ll:text-secondary ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${enabled ? "ll:cursor-pointer" : "ll:cursor-not-allowed ll:opacity-40"}`}
+      className={`ll-card ll:group ll:flex ll:flex-col ll:items-stretch ll:gap-1.5 ll:min-w-0 ll:px-1.5 ll:border-0 ll:font-sans ll:bg-transparent ll:text-left ll:text-secondary ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ll:cursor-pointer`}
     >
       <span className="ll-thumb ll:relative ll:block ll:w-full ll:aspect-4/3 ll:bg-thumb-bg ll:border ll:border-border ll:group-hover:border-muted ll:rounded-sm ll:overflow-hidden ll:box-border">
         {item.kind === "a" ? (
           <span className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-muted">
-            <Icon icon={FileText} size={CANVAS_CHROME_SIZES.iconXl} />
+            <Icon icon={File} size={CANVAS_CHROME_SIZES.iconXl} />
           </span>
         ) : item.kind === "f" ? (
           <span
-            className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-center ll:text-lead ll:leading-tight ll:text-primary"
+            className="ll-big ll:absolute ll:inset-0 ll:grid ll:place-items-center ll:p-2 ll:text-center ll:text-primary"
             style={{ fontFamily: item.name }}
           >
             {item.name}
@@ -364,7 +438,7 @@ const CardItem: React.FC<CardItemProps> = ({ item, enabled, onSelect }) => {
           })
         ) : null}
       </span>
-      <span className="ll-cname ll:text-micro ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
+      <span className="ll-cname ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
         {item.name}
       </span>
     </button>

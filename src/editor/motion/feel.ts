@@ -1,8 +1,8 @@
 // Active motion feel and reduced motion support ported from Nook (the owner's own product) & prototype
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { MOTION_PRESETS, PLAYFUL_PRESETS, type MotionPresetKey, type MotionPreset } from "./presets";
-import { springEase } from "./ease";
+import { MOTION_PRESETS, type MotionPresetKey, type MotionPreset } from "./presets";
+import { springEase, type SpringEaseResult } from "./ease";
 import { prefersReducedMotion, subscribeReducedMotion, getServerReducedMotion } from "./reducedMotion";
 
 export { prefersReducedMotion } from "./reducedMotion";
@@ -25,17 +25,39 @@ export function subscribeFeel(callback: () => void): () => void {
   };
 }
 
-/** Return the MotionPreset object for a given feel key (all three feels use the prototype's playful values). */
+/** Return the MotionPreset object for a given feel key from the shared preset table. */
 export function getPresetForFeel(feel: MotionPresetKey): MotionPreset {
-  return {
-    ...MOTION_PRESETS[feel],
-    ...PLAYFUL_PRESETS[feel],
-  };
+  return MOTION_PRESETS[feel] ?? MOTION_PRESETS.bouncy;
 }
 
 /** Return the MotionPreset object for the active feel. */
 export function getActivePreset(): MotionPreset {
   return getPresetForFeel(currentFeel);
+}
+
+export interface LLMotion {
+  presets: Record<MotionPresetKey, MotionPreset>;
+  preset: MotionPreset;
+  current: () => MotionPreset;
+  feel: MotionPresetKey;
+  reduce: boolean;
+  springEase: (response: number, damping: number) => SpringEaseResult;
+}
+
+/**
+ * Accessor for the shared motion engine and active feel configuration.
+ * Mirrors prototype's window.LLMotion without polluting global scope.
+ */
+export function getMotion(): LLMotion {
+  const currentPreset = getActivePreset();
+  return {
+    presets: MOTION_PRESETS,
+    preset: currentPreset,
+    current: () => currentPreset,
+    feel: getFeel(),
+    reduce: prefersReducedMotion(),
+    springEase,
+  };
 }
 
 // Initialize feel from localStorage if in browser

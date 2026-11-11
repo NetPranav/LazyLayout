@@ -1,0 +1,42 @@
+Completed Task B5 (`DOCS/UI/tasks/2026-11-08-B5-chrome.md`) following `.claude/agents/ui-worker.md` and `DOCS/UI/tasks/2026-11-08-COMMON.md`.
+
+### Summary of Changes
+
+1. **Per-Mode Floating Toolbars (`src/editor/shell/canvas-chrome/Toolbar.tsx`)**:
+   - **Design Mode**: Select, Hand, Frame, Shape ▾ (with Pen inside), Text, Insert, AI.
+   - **Motion Mode**: Select, Hand, Add keyframe (disabled with reason), Split, Easing ▾.
+   - **Code Mode**: Inspect, Hand, Run, Export ▾.
+   - Menu carets positioned directly to the right of dropdown icons (`Shape ▾`, `Easing ▾`, `Export ▾`).
+   - Narrow canvas detection lifts the toolbar to 72px (`--ll-size-toolbar-lift-bottom`) above the zoom bar when horizontal space collides.
+   - Zoom bar smoothly slides aside when Spotlight is active.
+   - Connected Frame tool to open [`FramePresetsPanel`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsPanel.tsx) (Wave B1).
+
+2. **Spotlight Command Panel (`src/editor/shell/canvas-chrome/Spotlight.tsx` & `spotlight.css`)**:
+   - Replaced `CommandPalette` in canvas-chrome with the full Spotlight implementation.
+   - Bound global shortcuts: `Ctrl+K` and `/` on the canvas to open; `Escape` to close.
+   - Toolbar morphs into a responsive 560px search field (`--ll-size-spotlight-w`) with prefix chips for `>` (Commands), `@` (Layers), and `#` (Pages).
+   - Results popover stacks above the toolbar with:
+     - Top Hit (44px big row)
+     - Categorized sections: Commands, Layers, Pages, Assets, Settings
+     - Recent & Suggested items on empty query
+     - Sliding highlight (`.ll-sp-hl`)
+     - Edge blur simulation on list scroll
+     - Hidden scrollbars (`scrollbar-width: none`)
+   - Wired to live commands (`getAllCommands`, `runCommand`), document layers/pages (`getDocument()`, `useProjectStore`), and selection (`useSelectionStore`).
+   - Unbound prototype actions display disabled with reasons (never faked).
+
+3. **Canvas Chrome Integration (`src/editor/shell/canvas-chrome/CanvasChrome.tsx`)**:
+   - Integrated [`Spotlight`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Spotlight.tsx), [`FramePresetsPanel`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/components/FramePresetsPanel.tsx), and updated [`Toolbar`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Toolbar.tsx).
+   - Preserved all existing testids (`canvas-chrome`, `tools`, `vsel`, `vhand`, `plusbtn`, `aibtn`, `zoombtn`, `undobtn`, `redobtn`, `panelbtn`, etc.).
+
+4. **Design System Demo (`src/editor/design-system/demos/B5Demos.tsx`)**:
+   - Added interactive mode switcher and demos for Design, Motion, and Code toolbars, Easing & Export popovers, narrow canvas lift, and interactive Spotlight.
+
+5. **Tokens (`tokens.css` & `tailwind.css`)**:
+   - Added `--ll-size-spotlight-row-big-h: 44px;` and `--ll-size-toolbar-lift-bottom: 72px;` strictly within the `B5 chrome` lane block.
+
+### Verification
+- **Typecheck (`npx tsc --noEmit`)**: 0 errors in lane files.
+- **Headless Playwright Screenshots**: Generated side-by-side with prototype P at 1440, 1024, and 390 viewport widths in both Warm and Darkroom, plus Spotlight and toolbar feature shots in `DOCS/UI/handoffs/screenshots/b5/`.
+- **Handoff**: Written to [`DOCS/UI/handoffs/2026-11-08-0620-b5.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-0620-b5.md) (and `2026-11-08-B5.md`). No git commit was performed.
+terminating 1 daemon task(s) on exit

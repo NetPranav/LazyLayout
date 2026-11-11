@@ -157,3 +157,24 @@ export function diffPixels(a: Buffer, b: Buffer, outPath: string) {
   }
   return { n, note: `${n} px differ${box}` };
 }
+
+/**
+ * Picks an item from the toolbar's Shape menu (Rectangle, Ellipse, ...). The menu animates in and out, so the button is only
+ * clicked while the menu is not open, and a click that lands as the menu is closing is tried again.
+ */
+export async function pickShape(page: Page, name: string | RegExp) {
+  const shape = page.getByRole("button", { name: "Shape", exact: true });
+  const item = page.getByRole("menuitem", { name: typeof name === "string" ? new RegExp("^" + name) : name });
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if ((await shape.getAttribute("aria-expanded")) !== "true") await shape.click();
+    try {
+      await item.waitFor({ state: "visible", timeout: 1500 });
+      break;
+    } catch {
+      await page.keyboard.press("Escape");
+      await page.getByRole("menu").waitFor({ state: "detached", timeout: 2000 }).catch(() => {});
+      await page.waitForTimeout(300);
+    }
+  }
+  await item.click();
+}

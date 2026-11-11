@@ -91,7 +91,7 @@ if (pressed) {
 }
 
 const baseStyles =
-"ll:inline-grid ll:place-items-center ll:box-border ll:select-none ll:shrink-0 ll:rounded-sm ll:transition-none ll:cursor-pointer ll:font-sans ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent ll:disabled:hover:text-secondary";
+"ll-ib ll:inline-grid ll:place-items-center ll:box-border ll:select-none ll:shrink-0 ll:rounded-sm ll:transition-none ll:cursor-pointer ll:font-sans ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ll:disabled:opacity-40 ll:disabled:cursor-not-allowed ll:disabled:hover:bg-transparent ll:disabled:hover:text-secondary";
 
 const buttonElement = (
   <button

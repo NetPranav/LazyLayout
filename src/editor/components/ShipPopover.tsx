@@ -9,6 +9,12 @@ import { prefersReducedMotion } from "../motion/feel";
 import { Icon } from "./Icon";
 import { useMounted } from "./useMounted";
 import {
+  registerOverlay,
+  unregisterOverlay,
+  getFamilyHandoff,
+  animateRetarget,
+} from "./retarget";
+import {
   SHIP_POPOVER_WIDTH,
   VIEWPORT_EDGE_PAD,
   TRIGGER_GAP_Y,
@@ -17,6 +23,7 @@ import {
   POPUP_LEAVE_REDUCED_DURATION_MS,
   MENU_ICON_SIZE,
   DEFAULT_SHIP_ISSUES,
+  PREVIEW_DISABLED_REASON,
 } from "./topbar-constants";
 
 export interface ShipIssue {
@@ -98,20 +105,38 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
 
       const left = Math.max(pad, Math.min(r.right - popW, window.innerWidth - popW - pad));
       const top = r.bottom + TRIGGER_GAP_Y;
+      const popH = popEl.offsetHeight || 340;
+      const toRect = new DOMRect(left, top, popW, popH);
+      const handoff = getFamilyHandoff("ship", popoverId) || getFamilyHandoff("menu", popoverId);
 
       popEl.style.left = `${left}px`;
       popEl.style.top = `${top}px`;
 
-      s.open({
-        from: {
-          w: Math.round(r.width),
-          h: Math.round(r.height),
-          r: RADIUS_MD,
-        },
-        y0: -(r.height + TRIGGER_GAP_Y),
-        right: true,
+      if (handoff) {
+        animateRetarget(popEl, handoff, toRect, layRef.current);
+      } else {
+        s.open({
+          from: {
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            r: RADIUS_MD,
+          },
+          y0: -(r.height + TRIGGER_GAP_Y),
+          right: true,
+        });
+      }
+
+      registerOverlay({
+        id: popoverId,
+        family: "ship",
+        element: popEl,
+        anchor: triggerEl,
+        close: closePopover,
+        rect: toRect,
+        timestamp: performance.now(),
       });
     } else {
+      unregisterOverlay(popoverId);
       s.leave();
       const duration = prefersReducedMotion()
         ? POPUP_LEAVE_REDUCED_DURATION_MS
@@ -121,7 +146,7 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
       }, duration);
       return () => clearTimeout(t);
     }
-  }, [isOpen, isRendered]);
+  }, [closePopover, isOpen, isRendered, popoverId]);
 
   // Focus the first control in the dialog when it opens (Item 9)
   useEffect(() => {
@@ -200,25 +225,22 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         data-state={dataState}
+        data-ship={isReady ? "ready" : "error"}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? popoverId : undefined}
         aria-label={isReady ? "Ship, ready" : `Ship, ${issueCount} to fix`}
         className={`ship ll-ship ${
           isReady ? "ready ll-ready" : ""
-        } ll:inline-flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:border-0 ll:font-sans ll:text-body ll:font-medium ll:cursor-pointer ll:select-none ll:shrink-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
+        } ll:inline-flex ll:items-center ll:gap-2 ll:h-8 ll:px-3 ll:rounded-md ll:font-sans ll:text-body ll:font-medium ll:cursor-pointer ll:select-none ll:shrink-0 ll:outline-none ll:focus-visible:ring-2 ll:focus-visible:ring-primary ${
           isReady
-            ? "ll:bg-control-primary ll:text-control-primary-fg"
-            : "ll:bg-ship-bg ll:text-ship-fg"
+            ? "ll:border-0 ll:bg-control-primary ll:text-control-primary-fg"
+            : "ll:border ll:border-solid ll:border-syn-tag ll:bg-ship-bg ll:text-syn-tag"
         } ${dataState === "hover" ? "ll:opacity-90 " : ""}${
           dataState === "focus" ? "ll:ring-2 ll:ring-primary " : ""
-        }${disabled ? "ll:opacity-40 ll:cursor-not-allowed" : ""} ${className}`}
+        }${disabled ? "ll:opacity-disabled ll:cursor-not-allowed" : ""} ${className}`}
       >
         <span>Ship</span>
-
-        <span id="shipc" className="shipc ll-shipc ll:font-sans ll:text-body ll:font-medium ll:tabular-nums">
-          {isReady ? "Ready" : issueCount}
-        </span>
 
         <Icon
           icon={ChevronDown}
@@ -271,11 +293,14 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
               <button
                 type="button"
                 role="menuitem"
+                aria-disabled={!onPreview}
+                title={onPreview ? undefined : PREVIEW_DISABLED_REASON}
                 onClick={() => {
-                  onPreview?.();
+                  if (!onPreview) return;
+                  onPreview();
                   closePopover();
                 }}
-                className="ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:text-left ll:cursor-pointer ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover"
+                className={`ll:flex ll:items-center ll:w-full ll:h-8 ll:px-3 ll:text-body ll:text-left ll:outline-none ${onPreview ? "ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer" : "ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"} ll:border-0 ll:bg-transparent ll:focus-visible:bg-surface-hover`}
               >
                 Preview link
               </button>

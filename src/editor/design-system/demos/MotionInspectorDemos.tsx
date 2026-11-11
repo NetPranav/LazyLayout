@@ -17,6 +17,9 @@ export const SliderDemo: React.FC = () => {
   const [val1, setVal1] = useState(24);
   const [val2, setVal2] = useState(0.35);
   const [val3, setVal3] = useState(75);
+  const [val4, setVal4] = useState(50);
+  const [hue, setHue] = useState(210);
+  const [commits, setCommits] = useState(0);
 
   return (
     <div className="ll:flex ll:flex-col ll:gap-6 ll:p-6 ll:bg-surface-panel ll:border ll:border-border ll:rounded-md ll:max-w-md">
@@ -66,6 +69,56 @@ export const SliderDemo: React.FC = () => {
           unit="%"
           ariaLabel="Opacity percentage"
         />
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <div className="ll:flex ll:justify-between ll:text-micro ll:text-muted">
+          <span>Commit on release (one undo step per gesture)</span>
+          <span className="ll:font-mono ll:text-primary" data-testid="slider-commits">
+            {commits} commits
+          </span>
+        </div>
+        <Slider
+          min={0}
+          max={100}
+          step={1}
+          value={val4}
+          onChange={setVal4}
+          onCommit={() => setCommits((c) => c + 1)}
+          snapPoints={[0, 50, 100]}
+          unit="%"
+          showInput
+          ariaLabel="Snaps to 0, 50 and 100"
+        />
+      </div>
+
+      <div className="ll:flex ll:flex-col ll:gap-2">
+        <span className="ll:text-micro ll:text-muted">Gradient bar (hue)</span>
+        <Slider
+          track="gradient"
+          min={0}
+          max={360}
+          step={1}
+          value={hue}
+          onChange={setHue}
+          unit="°"
+          ariaLabel="Hue"
+          trackBackground="linear-gradient(90deg, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00)"
+        />
+        <span className="ll:text-micro ll:text-muted">Checker bar (opacity)</span>
+        <Slider
+          track="checker"
+          min={0}
+          max={100}
+          step={1}
+          value={val3}
+          onChange={setVal3}
+          unit="%"
+          ariaLabel="Opacity bar"
+          trackBackground={`linear-gradient(90deg, transparent, hsl(${hue} 100% 50%))`}
+        />
+        <span className="ll:text-micro ll:text-muted">Disabled</span>
+        <Slider disabled value={30} onChange={setVal4} ariaLabel="Disabled slider" />
       </div>
     </div>
   );

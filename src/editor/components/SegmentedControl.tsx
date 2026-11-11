@@ -16,7 +16,7 @@ export interface SegmentedControlProps<T extends string = string> {
   options: readonly SegmentedControlOption<T>[];
   value: T;
   onChange: (value: T) => void;
-  size?: "sm" | "md";
+  size?: "compact" | "sm" | "md";
   disabled?: boolean;
   className?: string;
   ariaLabel?: string;
@@ -83,9 +83,19 @@ export function SegmentedControl<T extends string = string>({
     [disabled, options, onChange]
   );
 
-  const containerSizeStyles = size === "sm" ? "ll:h-7 ll:p-px" : "ll:h-8 ll:p-0.5";
+  const containerSizeStyles =
+    size === "compact"
+      ? "ll:h-6 ll:p-0.5"
+      : size === "sm"
+      ? "ll:h-7 ll:p-px"
+      : "ll:h-8 ll:p-0.5";
   const itemPaddingStyles =
-    size === "sm" ? "ll:px-2 ll:gap-1.5 ll:text-micro" : "ll:px-3 ll:gap-2 ll:text-body";
+    size === "compact"
+      ? "ll:px-1.5 ll:gap-1 ll:text-micro"
+      : size === "sm"
+      ? "ll:px-2 ll:gap-1.5 ll:text-micro"
+      : "ll:px-3 ll:gap-2 ll:text-body";
+  const markerRadiusStyles = size === "compact" ? "ll:rounded-xs" : "ll:rounded-sm";
 
   return (
     <div
@@ -101,7 +111,7 @@ export function SegmentedControl<T extends string = string>({
       <div
         ref={markerRef}
         aria-hidden="true"
-        className="ll:absolute ll:top-0.5 ll:bottom-0.5 ll:left-0 ll:bg-control-active ll:rounded-sm ll:pointer-events-none ll:hidden"
+        className={`ll:absolute ll:top-0.5 ll:bottom-0.5 ll:left-0 ll:bg-control-active ${markerRadiusStyles} ll:pointer-events-none ll:hidden`}
       />
 
       {options.map((option, index) => {
@@ -123,7 +133,7 @@ export function SegmentedControl<T extends string = string>({
             aria-label={option.ariaLabel}
             onClick={() => !isItemDisabled && onChange(option.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:transition-colors ll:duration-100 ll:cursor-pointer ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
+            className={`ll:relative ll:z-10 ll:flex ll:flex-1 ll:min-w-0 ll:h-full ll:items-center ll:justify-center ll:box-border ll:rounded-sm ll:font-sans ll:font-medium ll:whitespace-nowrap ll:transition-colors ll:duration-100 ll:cursor-pointer ll:p-0 ll:appearance-none ll:border-0 ll:bg-transparent ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ${itemPaddingStyles} ${
               isSelected
                 ? "ll:text-primary ll:font-medium"
                 : "ll:text-muted ll:hover:text-primary ll:hover:bg-surface-bar"

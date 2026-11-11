@@ -32,7 +32,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `foundations` (tokens, type and spacing scales, base components) | done | `src/editor/styles/` (`tokens.css`, `tailwind.css`, `animations.css`), `src/editor/motion/` | new | Eight official themes, label colours, token blocks, Nook spring engine |
 | `design-system` (the `/design-system` page, shows every component and its states) | done | `src/editor/design-system/`, `src/app/design-system/` | new | 94 interactive sections wired |
 | `shell` | done | `src/editor/shell/` (`EditorShell.tsx`), `src/editor/components/TopBar.tsx` | 38 | `DetachedPanelShell.tsx` (bridge kept); legacy editor kept at `/editor/legacy` with `LegacyStudioHeader.tsx` |
-| `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`) | 4 | Rebuilt with Nook motion engine |
+| `menus` | done | `src/editor/components/` (`Menu.tsx`, `ContextMenu.tsx`, `Select.tsx`, `Popover.tsx`, `retarget.ts`) | 5 | Rebuilt with Nook motion engine; F6 menu & popover retargeting gliding across same-family triggers with 160ms blur-crossfade |
 | `canvas` | done | `src/editor/shell/canvas-chrome/` (`Toolbar.tsx`, `Rulers.tsx`, `AiBox.tsx`, `InsertPanel.tsx`, `ViewOptionsPopover.tsx`, `ZoomControls.tsx`) | 20 | Rebuilt from prototype; main's vector and pen tools live in legacy at `/editor/legacy` |
 | `stage` | done | `src/editor/stage/` (`Stage.tsx`, `StageViewport.tsx`, `SelectionOverlay.tsx`, `TransformHandles.tsx`, `HoverOutline.tsx`, `SnapGuides.tsx`, `Artboard.tsx`, `pageMeasure.ts`) | 2 | Reads/writes real document (d7df6af); draws the real tree through the engine, with transparent hit boxes above it |
 | `runtime` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/runtime/`) | 3 | - |
@@ -49,7 +49,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `panels/database` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/database/`) | 10 | Needs design |
 | `panels/dependencies` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/dependencies/`) | 2 | `ReferenceViewerPanel.tsx` |
 | `panels/deployment` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/deployment/`) | 5 | Needs design |
-| `panels/details` | done | `src/editor/panels/details/`, `src/editor/shell/right-panel/` (`DetailsInspector.tsx`, sections, controls) | 46 | Rebuilt from prototype; reads real document; main's auto layout, breakpoints, tokens in legacy |
+| `panels/details` | done | `src/editor/panels/details/`, `src/editor/shell/right-panel/` (`DetailsInspector.tsx`, sections, controls) | 46 | Rebuilt from prototype; reads real document; F1 pickers & options polished to P lines 964-989, 4165-4305; main's auto layout, breakpoints, tokens in legacy |
 | `panels/execution-trace` | todo | `src/editor` (TraceView built inside code-view; standalone panel not rebuilt) | 1 | `ExecutionTracePanel.tsx` |
 | `panels/global-search` | todo | `src/editor` (no new version yet; `CommandPalette` built in components) | 2 | `GlobalSearchPanel.tsx` |
 | `panels/history` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/history/`) | 2 | `UndoHistoryPanel.tsx` |
@@ -61,7 +61,7 @@ Everything the old UI has, so nothing is missed. The orchestrator works from the
 | `panels/sequencer` | todo | `src/editor/panels/sequencer/TimelineSequencer.tsx` | 8 | `TimelineSequencer.tsx` (bridge to legacy) |
 | `panels/settings` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/settings/`) | 1 | `ProjectSettings.tsx` |
 | `panels/state` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/state/`) | 1 | `StateMatrixViewer.tsx` |
-| `panels/timeline` | done | `src/editor/panels/timeline/`, `src/editor/motion-model/` | 1 | Rebuilt from prototype; reads real document; subframe accumulator fixed 3 fps playback bug (ea8ee24) |
+| panels/timeline | done | src/editor/panels/timeline/, src/editor/motion-model/ | 1 | Rebuilt from prototype; reads real document; F7 timeline full match: #bsplit 6px resize splitter, 32px #vseg tabs, 28px property rows with tree guide hairlines (::before/::after), custom 88px .sld#tzoom slider, 11px mono 600 S solo button, trim handle 2px ticks, polished Graph tab canvas, 16/16 interactive behaviors verified PASS; subframe accumulator fixed 3 fps playback bug (ea8ee24) |
 | `panels/versioning` | todo | `src/editor` (no new version yet; legacy in `src/legacy-editor/panels/versioning/`) | 2 | `VersionControlPanel.tsx` |
 | `stage-lab` | todo | `src/editor/stage-lab/` | 2 | `CanvasLab.tsx`, `StageLab.tsx` (bridges) |
 | `render-gallery` | todo | `src/editor/render-gallery/` | 1 | `RenderGallery.tsx` (bridge) |

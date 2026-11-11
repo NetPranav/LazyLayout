@@ -1,0 +1,27 @@
+I have launched the computed style and behaviour audit between the HTML prototype and the app in headless Playwright across Warm and Darkroom themes, and will proceed once the run finishes.
+Task `H1a` has been completed following all rules and constraints in [UI_RULES.md](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/UI_RULES.md) and [`2026-11-08-H1a-design-chrome.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/tasks/2026-11-08-H1a-design-chrome.md).
+
+### Summary of Completed Work
+1. **Toolbar Mode Switching:**
+   - Wired synchronous measurement and popover dismissal in [`Toolbar.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Toolbar.tsx).
+   - Ensured all mode transitions (Design <-> Motion, Design <-> Code, Motion <-> Code) show exactly the Design tools (`Select`, `Hand`, `Frame`, `Shape`, `Text`, `Insert`, `AI`) with prototype-matched ghost fading, width spring, and pop-in stagger without leftover buttons.
+2. **Removed Toolbar Dropdown Carets:**
+   - Converted `Shape`, `Easing`, and `Export` buttons to 40x40 icon buttons (`var(--ll-size-icon-btn-lg)`) without chevrons, maintaining `aria-haspopup="menu"` and `aria-expanded` in [`Toolbar.tsx`](file:///E:/Projects/magnm related/lazy layout/src/editor/shell/canvas-chrome/Toolbar.tsx) and [`spotlight.css`](file:///E:/Projects/magnm related/lazy layout/src/editor/shell/canvas-chrome/spotlight.css).
+3. **Spotlight Dynamic Height & Outline:**
+   - Implemented `sizeTo(first)` in [`Spotlight.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/Spotlight.tsx) following content upward from the field up to max 360px without empty jump or gap across empty/recents, typing, prefixes (`>`, `@`, `#`), and no-results states.
+   - Removed focus outline/stroke box-shadow in [`spotlight.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/spotlight.css) for hairline border parity with P.
+4. **Insert Box Dimensions:**
+   - Locked Insert box to 520x400 in [`InsertBox.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/InsertBox.tsx) and [`spotlight.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/shell/canvas-chrome/spotlight.css) across all category tabs with internal card scrolling.
+5. **Canvas Cursor Activation:**
+   - Resolved root cause in [`CanvasCursor.tsx`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/CanvasCursor.tsx): replaced global `[role=menu]:not([data-lv])` check with visible `.ll-menu.ll-open, .menu.ll-open, .tbpop.ll-open`.
+   - Added `document.elementFromPoint` probing after menu close to immediately reactivate over canvas without requiring clicks.
+   - Subscribed to [`useToolStore`](file:///E:/Projects/magnm%20related/lazy%20layout/src/core/store/useToolStore.ts) and `[data-mode]` mutations, and suppressed native cursor over the canvas in [`stage.css`](file:///E:/Projects/magnm%20related/lazy%20layout/src/editor/stage/stage.css).
+6. **Icons:**
+   - Left untouched per instructions.
+
+### Quality & Verification
+- **TypeScript:** `npx tsc --noEmit` passed with 0 errors in lane files.
+- **ESLint:** `npx eslint` passed with 0 errors and 0 warnings on all touched files.
+- **Audit File:** [`DOCS/UI/handoffs/2026-11-08-H1a-audit.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-H1a-audit.md).
+- **Screenshots:** All baseline and state screenshots captured at 1440x900 in Warm and Darkroom themes under [`DOCS/UI/handoffs/screenshots/h1a/`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/screenshots/h1a/).
+- **Handoff Document:** [`DOCS/UI/handoffs/2026-11-08-1335-H1a.md`](file:///E:/Projects/magnm%20related/lazy%20layout/DOCS/UI/handoffs/2026-11-08-1335-H1a.md). No commits made.
