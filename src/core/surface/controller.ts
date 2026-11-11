@@ -5,7 +5,7 @@
  */
 import { restingSurface, type SurfaceShape } from "./field";
 import { MembraneSim } from "./membrane";
-import { surfaceGL, SurfaceTextures, type SurfaceDrawInput } from "./gl";
+import { surfaceGL, surfaceGeneration, SurfaceTextures, type SurfaceDrawInput } from "./gl";
 import { clothKey, lookKey, type SurfaceSettings } from "./settings";
 import type { ClothJob } from "./cloth.worker";
 
@@ -61,6 +61,9 @@ export class SurfaceController {
   private scale = 1;
   private disposed = false;
   private clothWanted = "";
+  /** The shared context's generation this surface's textures belong to (3D-002: after a loss, upload again). */
+  private generation = surfaceGeneration();
+  private lastContent: HTMLCanvasElement | null = null;
   /** Told when the resting shape changes: "quick" first, then "cloth" when the simulation is in. */
   onState: ((state: "quick" | "cloth") => void) | null = null;
 
@@ -116,6 +119,7 @@ export class SurfaceController {
 
   /** Text drawn onto the surface (a canvas the size of the box × scale), or null for none. */
   setContent(source: HTMLCanvasElement | null): void {
+    this.lastContent = source;
     const gl = surfaceGL();
     if (!gl) return;
     if (!source) {
@@ -167,6 +171,15 @@ export class SurfaceController {
   }
 
   draw(): void {
+    if (this.generation !== surfaceGeneration()) {
+      // the context was lost and re-created: every texture is gone, so upload everything again
+      this.generation = surfaceGeneration();
+      this.tex.height = this.tex.dyn = this.tex.content = null;
+      this.restKey = this.simKey = this.clothWanted = "";
+      if (this.geometry && this.settings) this.update(this.geometry, this.settings, this.base, this.scale);
+      if (this.lastContent) this.setContent(this.lastContent);
+      return;
+    }
     const gl = surfaceGL();
     if (!gl || !this.geometry || !this.settings || this.disposed) return;
     const g = this.geometry;

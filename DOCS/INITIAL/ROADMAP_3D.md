@@ -108,7 +108,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | **M1 · The foil button** |||||
 | | **Stage 1 · GPU base** |||||
 | 3D-001 | 3D stack decision & licences | Main 218 | — | A | 🚧 |
-| 3D-002 | GPU surface strategy & compositor | Main 173 | 3D-001 | A | 📋 |
+| 3D-002 | GPU surface strategy & compositor | Main 173 | 3D-001 | A | 🚧 |
 | 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 📋 |
 | 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 📋 |
 | 3D-005 | 3D performance tiers & budgets | new | 3D-004 | A | 📋 |
@@ -397,7 +397,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** decision `decisions/0013-3d-stack.md` (stack, budgets, fallbacks); licences read from the installed packages and the registry, recorded in `LICENSES.md`; physics benchmark archived (`scripts/benchmarks/physics-3d.mjs`: Rapier 0.1–0.2 ms a step for 100 bodies, deterministic, 749 KB gz; cannon-es 0.8–1 ms, 74 KB gz). Stays 🚧 until the record is reviewed.
 
 ### Phase 3D-002 · GPU surface strategy & compositor
-**Needs:** 3D-001 · **Was:** Main 173 · **Lane:** A · **Status:** 📋
+**Needs:** 3D-001 · **Was:** Main 173 · **Lane:** A · **Status:** 🚧
 - [ ] Decision record 0011 (GPU surfaces): per-surface canvases within a budget, a shared backdrop canvas, or one hidden context drawing into 2D, chosen per surface role. WebGL2 baseline, WebGPU opt-in.
 - [ ] The compositor service:
   - it owns every context;
@@ -408,6 +408,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** many 3D layers on a page without the browser's "too many WebGL contexts" warning.
 **Done when:** a 20-surface page never exceeds the budget in 3 browsers; a forced context loss recovers within 1 s.
+**Evidence (2026-11-11):** decision `decisions/0011-gpu-surfaces.md` from a measurement of three strategies (`scripts/benchmarks/gpu-surfaces.ts`, real GPU and SwiftShader); `src/core/gpu/compositor.ts` (shared surface context, scene contexts within a budget, sleep with a poster, loss recovery); the 2.5D surfaces draw through it (comparison score unchanged, 0.6065); `tests/e2e/gpu-compositor.spec.ts` (budget, sleep and wake, loss within 1 s) passes in Chromium.
 
 ### Phase 3D-003 · Passes, render targets & GPU memory ledger
 **Needs:** 3D-002 · **Was:** Main 174 · **Lane:** A · **Status:** 📋

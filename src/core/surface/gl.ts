@@ -4,6 +4,8 @@
  * a floor below, two side panels) reflected by the surface's normal, with Fresnel, so foil looks like foil.
  */
 
+import { compositor } from "../gpu/compositor";
+
 const VERT = `#version 300 es
 in vec2 aPos;
 out vec2 vUv;
@@ -171,9 +173,11 @@ class SharedSurfaceGL {
   private readonly floatLinear: boolean;
 
   constructor() {
-    this.canvas = document.createElement("canvas");
-    const gl = this.canvas.getContext("webgl2", { premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
-    if (!gl) throw new Error("WebGL2 is not available");
+    // the compositor's shared surface context (3D-002, decision 0011): surfaces never open a context of their own
+    const gl = compositor.shared();
+    const canvas = compositor.sharedCanvasElement();
+    if (!gl || !canvas) throw new Error("WebGL2 is not available");
+    this.canvas = canvas;
     this.gl = gl;
     this.floatLinear = !!gl.getExtension("OES_texture_float_linear");
     const compile = (type: number, src: string) => {
@@ -280,8 +284,7 @@ class SharedSurfaceGL {
     const gl = this.gl;
     const pw = Math.max(1, Math.round(input.width * input.scale));
     const ph = Math.max(1, Math.round(input.height * input.scale));
-    if (this.canvas.width < pw) this.canvas.width = pw;
-    if (this.canvas.height < ph) this.canvas.height = ph;
+    compositor.ensureSharedSize(pw, ph);
     gl.viewport(0, 0, pw, ph);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -311,22 +314,32 @@ class SharedSurfaceGL {
     gl.uniform4f(u.uDynWrinkle, input.dynWrinkle.strength, input.dynWrinkle.count, input.dynWrinkle.seed, input.dynWrinkle.give);
     gl.uniform2f(u.uWarp, input.warp.refraction, input.warp.pull);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    if (target.width !== pw) target.width = pw;
-    if (target.height !== ph) target.height = ph;
-    const ctx = target.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, pw, ph);
-    // the GL canvas may be bigger than this surface: copy the bottom-left pw × ph (GL's origin is bottom left)
-    ctx.drawImage(this.canvas, 0, this.canvas.height - ph, pw, ph, 0, 0, pw, ph);
+    // the shared canvas may be bigger than this surface: the compositor copies the bottom-left pw × ph
+    compositor.present(target, pw, ph);
   }
 }
 
 let shared: SharedSurfaceGL | null = null;
 let failed = false;
+let generation = 0;
+let listening = false;
 
-/** The one context every surface draws with (decision 0018), or null when WebGL2 isn't there. */
+/**
+ * The surface drawer on the compositor's shared context, or null when WebGL2 isn't there. After a context loss the
+ * compositor says when the context is back; the drawer is then rebuilt and `surfaceGeneration()` changes, which tells
+ * every surface to upload its textures again.
+ */
 export function surfaceGL(): SharedSurfaceGL | null {
+  if (!listening && typeof document !== "undefined") {
+    listening = true;
+    compositor.onSharedRestored(() => {
+      shared = null;
+      failed = false;
+      generation++;
+    });
+  }
   if (shared || failed) return shared;
+  if (compositor.shared()?.isContextLost()) return null;
   try {
     shared = new SharedSurfaceGL();
   } catch {
@@ -335,9 +348,9 @@ export function surfaceGL(): SharedSurfaceGL | null {
   return shared;
 }
 
-/** How many WebGL contexts surfaces have opened (the budget test reads this: never more than one). */
-export function surfaceContextCount(): number {
-  return shared ? 1 : 0;
+/** Changes each time the shared context is re-created (after a loss): surfaces holding textures upload them again. */
+export function surfaceGeneration(): number {
+  return generation;
 }
 
 export type { SharedSurfaceGL };
