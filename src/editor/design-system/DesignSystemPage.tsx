@@ -99,6 +99,7 @@ import {
   TimelineCompactDemo,
   TimelineTransportDemo,
   TimelineFooterDemo,
+  ParityBadgeDemo,
 } from "./demos/TimelineDemos";
 import {
   SliderDemo,
@@ -1649,6 +1650,11 @@ export function DesignSystemPage() {
             {activeSection === "timeline-footer" && (
               <Titled title="Timeline Footer" note="28px status footer.">
                 <TimelineFooterDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-footer" && (
+              <Titled title="Engine parity badge" note="Phase 60: idle, OK, drift. Dev builds only.">
+                <ParityBadgeDemo />
               </Titled>
             )}
             {activeSection === "easing-curve" && (

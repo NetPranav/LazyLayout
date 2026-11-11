@@ -39,4 +39,4 @@ export * from "./FramePresetsData";
 export * from "./FontPickerData";
 export * from "./Cursor";
 export * from "./ScrollFade";
-
+export { ParityBadge, type ParityBadgeProps } from "./ParityBadge";

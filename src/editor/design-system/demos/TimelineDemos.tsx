@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { TimelinePanel } from "@/editor/panels/timeline/TimelinePanel";
 import { TimelineTransport } from "@/editor/panels/timeline/TimelineTransport";
 import { TimelineFooter } from "@/editor/panels/timeline/TimelineFooter";
+import { ParityBadge } from "@/editor/components/ParityBadge";
+import { parityStore } from "@/core/engine/stage/parity";
+import { Button } from "@/editor/components/Button";
 
 /**
  * 1. Default Timeline Workstation Demo
@@ -71,6 +74,27 @@ export function TimelineFooterDemo() {
   return (
     <div className="ll:w-full ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:bg-surface-panel">
       <TimelineFooter trackWidth={264} />
+    </div>
+  );
+}
+
+/**
+ * Engine parity badge (Phase 60): idle, OK and drift, set by hand here. Shown in the timeline footer in dev builds.
+ */
+export function ParityBadgeDemo() {
+  const set = (status: "idle" | "ok" | "drift") =>
+    parityStore.setState({
+      status,
+      checked: status === "idle" ? 0 : 3,
+      samples: 1,
+      drifts: status === "drift" ? [{ layerId: "headline", property: "opacity", expected: "0.5", actual: "0.2" }] : [],
+    } as ReturnType<typeof parityStore.getState>);
+  return (
+    <div className="ll:flex ll:items-center ll:gap-3">
+      <ParityBadge />
+      <Button size="sm" onClick={() => set("idle")}>Idle</Button>
+      <Button size="sm" onClick={() => set("ok")}>OK</Button>
+      <Button size="sm" onClick={() => set("drift")}>Drift</Button>
     </div>
   );
 }
