@@ -17,6 +17,7 @@ import { TimelineTransport } from "./TimelineTransport";
 import { TimelineRuler } from "./TimelineRuler";
 import { TimelineLane } from "./TimelineLane";
 import { LazyRow } from "./LazyRow";
+import { TimelineCompositionTabs, TimelineNestedRows } from "./TimelineCompositions";
 
 /** Phase 64: past this many layers, rows out of view are not built. */
 const LAZY_ROWS_FROM = 40;
@@ -357,6 +358,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         }`}
       />}
 
+      {/* Phase 65: the composition tabs and breadcrumbs */}
+      <TimelineCompositionTabs />
+
       {/* 1. Header Toolbar (44px) */}
       <TimelineTransport
         onExport={onExport}
@@ -473,6 +477,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                       </LazyRow>
                     );
                   })}
+
+                {/* Phase 65: precomps placed in the composition shown */}
+                <TimelineNestedRows trackWidth={trackWidth} pps={pps} />
 
                 {/* Drop zone: empty target that fills the rest of the panel height */}
                 <div

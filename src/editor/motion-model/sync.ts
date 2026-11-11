@@ -1,6 +1,7 @@
 "use client";
 
 import { documentStore, getDocument } from "@/core/store/useDocumentStore";
+import { getTransport, subscribeTransport } from "@/core/time/transport";
 import type { MotionDocument, Layer } from "@/core/document/schema";
 import type { Trigger as CanonicalTrigger, ClipType } from "@/core/document/motion";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
@@ -207,9 +208,13 @@ export function isEligibleMotionLayer(layer: Layer): boolean {
 }
 
 /** Pure projection: constructs an updated Composition from canonical MotionDocument */
-export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition): Composition {
+export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition, compositionId: string = MAIN_COMPOSITION_ID): Composition {
   const fps = prevComp.fps || 60;
   const dur = prevComp.dur || 300;
+  // Phase 65: Main lists every clip (an interaction clip is still shown on its layer there, as before); an interaction
+  // composition or an opened precomp lists only the clips placed in it, at their placement's offset.
+  const shown = compositionId !== MAIN_COMPOSITION_ID ? doc.compositions?.[compositionId] : undefined;
+  const placementOffset = shown ? new Map(shown.clips.map((p) => [p.clipId, p.offset])) : null;
   const existingLayerMap = new Map(prevComp.layers.map((l) => [l.id, l]));
 
   // Find all eligible layers from doc.layers
@@ -220,9 +225,11 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
     const prevLayer = existingLayerMap.get(docLayer.id);
 
     // Look for canonical clips in doc.clips for this layer
-    const layerClips = Object.values(doc.clips).filter((c) => c.layerId === docLayer.id && c.enabled);
+    const layerClips = Object.values(doc.clips)
+      .filter((c) => c.layerId === docLayer.id && c.enabled && (!placementOffset || placementOffset.has(c.id)))
+      .map((c) => (placementOffset ? { ...c, delay: (placementOffset.get(c.id) ?? 0) + (c.delay ?? 0) } : c));
 
-    let clips = prevLayer?.clips ?? [{ s: 0, e: dur }];
+    let clips = (placementOffset ? undefined : prevLayer?.clips) ?? [{ s: 0, e: dur }];
     const trMap = new Map<PropId, Keyframe[]>();
 
     if (layerClips.length > 0) {
@@ -246,7 +253,7 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
           trMap.set(propId, [...existing, ...keys]);
         }
       }
-    } else if (prevLayer && prevLayer.tr.length > 0) {
+    } else if (!placementOffset && prevLayer && prevLayer.tr.length > 0) {
       // Retain existing tracks if canonical clips haven't been generated yet
       for (const tr of prevLayer.tr) {
         trMap.set(tr.p, [...tr.keys]);
@@ -294,7 +301,7 @@ export function syncDocumentToMotion(doc: MotionDocument, prevComp: Composition)
     nextLayers.push(motionLayer);
   }
 
-  const mainComp = doc.compositions?.[MAIN_COMPOSITION_ID];
+  const mainComp = doc.compositions?.[compositionId] ?? doc.compositions?.[MAIN_COMPOSITION_ID];
   const markers = mainComp
     ? (mainComp.markers ?? []).map((m) => ({ id: m.id, t: Math.round(m.time * fps), name: m.label }))
     : prevComp.markers;
@@ -312,6 +319,9 @@ let isSyncing = false;
 let lastLayersRef: Record<string, Layer> | null = null;
 let lastClipsRef: Record<string, unknown> | null = null;
 let lastCompsRef: Record<string, unknown> | null = null;
+let lastCompositionId: string | null = null;
+let unsubscribeTransport: (() => void) | null = null;
+const shownCompositionId = (): string => getTransport().compositionId || MAIN_COMPOSITION_ID;
 
 /**
  * Installs the centralized, idempotent document-to-motion synchronizer.
@@ -328,8 +338,9 @@ export function installDocumentMotionSync(): () => void {
         lastLayersRef = doc.layers;
         lastClipsRef = doc.clips;
         lastCompsRef = doc.compositions;
+        lastCompositionId = shownCompositionId();
         const currentComp = useMotionModel.getState().comp;
-        const nextComp = syncDocumentToMotion(doc, currentComp);
+        const nextComp = syncDocumentToMotion(doc, currentComp, lastCompositionId);
         useMotionModel.setState({ comp: nextComp });
       }
     } catch {
@@ -342,9 +353,10 @@ export function installDocumentMotionSync(): () => void {
       if (!doc || !doc.layers) return;
 
       // Only re-project if layers or clips references actually changed
-      if (doc.layers === lastLayersRef && doc.clips === lastClipsRef && doc.compositions === lastCompsRef) {
+      if (doc.layers === lastLayersRef && doc.clips === lastClipsRef && doc.compositions === lastCompsRef && shownCompositionId() === lastCompositionId) {
         return;
       }
+      lastCompositionId = shownCompositionId();
       lastLayersRef = doc.layers;
       lastClipsRef = doc.clips;
       lastCompsRef = doc.compositions;
@@ -352,11 +364,20 @@ export function installDocumentMotionSync(): () => void {
       isSyncing = true;
       try {
         const currentComp = useMotionModel.getState().comp;
-        const nextComp = syncDocumentToMotion(doc, currentComp);
+        const nextComp = syncDocumentToMotion(doc, currentComp, lastCompositionId);
         useMotionModel.setState({ comp: nextComp });
       } finally {
         isSyncing = false;
       }
+    });
+    // Opening another composition (a tab, a breadcrumb, a precomp bar) shows its clips.
+    unsubscribeTransport = subscribeTransport((t) => {
+      const id = t.compositionId || MAIN_COMPOSITION_ID;
+      if (id === lastCompositionId) return;
+      lastCompositionId = id;
+      const doc = getDocument();
+      if (!doc?.layers) return;
+      useMotionModel.setState({ comp: syncDocumentToMotion(doc, useMotionModel.getState().comp, id) });
     });
   }
 
@@ -364,6 +385,9 @@ export function installDocumentMotionSync(): () => void {
     activeSubscriptionCount--;
     if (activeSubscriptionCount <= 0) {
       activeSubscriptionCount = 0;
+      unsubscribeTransport?.();
+      unsubscribeTransport = null;
+      lastCompositionId = null;
       if (unsubscribeDocumentStore) {
         unsubscribeDocumentStore();
         unsubscribeDocumentStore = null;
