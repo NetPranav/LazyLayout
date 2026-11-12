@@ -27,7 +27,8 @@
     "mcp": "tsx bin/lazylayout-mcp.ts",
     "check:roadmap-order": "tsx scripts/check-roadmap-order.mts",
     "changelog:fold": "tsx scripts/fold-changelog.mts",
-    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
+    "demo": "playwright test -c playwright.demo.config.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

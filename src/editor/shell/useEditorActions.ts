@@ -1,5 +1,6 @@
 "use client";
 
+import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { REVEAL_EXPORT_EVENT } from "@/editor/panels/code-view/exportReveal";
@@ -915,6 +916,12 @@ export function useEditorActions(
         title: "View Options...",
         category: "View",
         run: () => toggleViewOptions(true),
+      }),
+      defineCommand({
+        id: "view.showKeystrokes",
+        title: "Show / Hide Keystrokes",
+        category: "View",
+        run: () => useScreencastStore.getState().toggle(),
       }),
       defineCommand({
         id: "view.hideInterface",

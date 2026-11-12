@@ -9,6 +9,7 @@ import { getDocument } from "@/core/store/useDocumentStore";
 import { useCodeFilesStore } from "./codeFilesStore";
 import { consoleStore } from "@/editor/panels/console/consoleStore";
 import { compileProjectFiles } from "./LiveCodeInspector";
+import { exportSamples } from "@/core/animation/clipSamples";
 
 /** The compiler's output for the document as it is right now (not a React hook: for menu and toolbar actions). */
 export function compileNow() {
@@ -17,7 +18,7 @@ export function compileNow() {
     pages: project.pages,
     elements: getDocument().layers,
     databaseSchemas: project.databaseSchemas,
-    animationSamples: project.animationSamples,
+    animationSamples: exportSamples(getDocument(), project.animationSamples),
     blueprintGraphs: project.blueprintGraphs,
   });
 }
@@ -30,7 +31,7 @@ function bundleNow() {
       elements: getDocument().layers,
       databaseSchemas: project.databaseSchemas,
       blueprintGraphs: project.blueprintGraphs,
-      animationSamples: project.animationSamples,
+      animationSamples: exportSamples(getDocument(), project.animationSamples),
     },
     { projectName: useProjectMetaStore.getState().projectName || "lazy-layout-app" },
   );

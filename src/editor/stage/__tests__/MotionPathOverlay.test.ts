@@ -93,7 +93,7 @@ describe("Phase 69 Milestone 4: MotionPathOverlay (Canvas Overlay & Path Renderi
     assert.equal(html, "");
   });
 
-  it("renders null when selected layer has no clips with spatial trajectories", () => {
+  it("draws a straight path for plain x / y keys (Phase 69: position keys always draw a path)", () => {
     const layer = createTestLayer("box-1");
     const scalarClip: Clip = {
       id: "clip-scalar",
@@ -124,6 +124,25 @@ describe("Phase 69 Milestone 4: MotionPathOverlay (Canvas Overlay & Path Renderi
       })
     );
 
+    assert.match(html, /data-testid="motion-path-ribbon"/);
+    assert.match(html, /data-waypoint-id="k0"/);
+    assert.match(html, /data-waypoint-id="k1"/);
+  });
+
+  it("renders null when the selected layer's clips move nothing (no position keys)", () => {
+    const layer = createTestLayer("box-1");
+    const fade: Clip = {
+      id: "clip-fade",
+      layerId: "box-1",
+      name: "Fade",
+      type: "entrance",
+      trigger: "mount",
+      duration: 1,
+      easing: "linear",
+      enabled: true,
+      tracks: [{ id: "op", property: "appearance.opacity", keyframes: [{ id: "o0", time: 0, value: 0 }, { id: "o1", time: 1, value: 1 }] }],
+    };
+    const html = renderToStaticMarkup(React.createElement(MotionPathOverlay, { selectedIds: ["box-1"], layers: { "box-1": layer }, clips: { [fade.id]: fade } }));
     assert.equal(html, "");
   });
 

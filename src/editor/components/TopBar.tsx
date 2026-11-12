@@ -70,6 +70,7 @@ import { useSaveIndicator } from "./useSaveIndicator";
 import { invokeCommand } from "@/core/commands";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
 const DARK_THEMES: readonly Theme[] = ["noir", "dark", "graphite", "darkroom"];
@@ -237,6 +238,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   // Logo application menu state
   const logoBtnRef = useRef<HTMLButtonElement>(null);
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
+  const showKeystrokes = useScreencastStore((s) => s.enabled);
 
   // Theme integration
   const [theme, selectTheme] = useTheme();
@@ -453,6 +455,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               onMenuAction?.("view.options");
             })}
             {entry("view.hideInterface", "Hide interface", EyeOff, "Tab", () => onMenuAction?.("view.hideInterface"), isZen)}
+            {entry("view.showKeystrokes", "Show keystrokes", Keyboard, undefined, () => invokeCommand("view.showKeystrokes"), showKeystrokes)}
             <MenuSeparator />
             {entry("view.zoom100", "Zoom to 100%", Square, "Ctrl+0")}
             {entry("view.zoomSelection", "Zoom to selection", Focus, "Shift+2")}

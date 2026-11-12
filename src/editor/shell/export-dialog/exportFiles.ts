@@ -1,5 +1,6 @@
 "use client";
 
+import { useExportSamples } from "@/editor/panels/code-view/useExportSamples";
 import { useMemo } from "react";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { useLayers } from "@/core/store/useDocumentStore";
@@ -39,7 +40,7 @@ export function useExportFiles(active: boolean): { files: ExportFile[]; tree: Fi
   const pages = useProjectStore((s) => s.pages);
   const elements = useLayers();
   const databaseSchemas = useProjectStore((s) => s.databaseSchemas);
-  const animationSamples = useProjectStore((s) => s.animationSamples);
+  const animationSamples = useExportSamples();
   const blueprintGraphs = useProjectStore((s) => s.blueprintGraphs);
 
   return useMemo(() => {

@@ -2,6 +2,8 @@
 
 import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { useCanvasEngine } from "./useCanvasEngine";
+import { ScreencastKeys } from "@/editor/components/ScreencastKeys";
+import { requestTextEdit } from "./textEditRequest";
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
@@ -724,8 +726,11 @@ export const Stage: React.FC<StageProps> = ({
       return;
     }
     const box = drawBox(g.spec, g.start, { x: at.x, y: at.y }, { shift: e.shiftKey, alt: e.altKey }, at.scale);
-    selectStore(createLayerFromBox(g.spec, box, elements), "element");
+    const made = createLayerFromBox(g.spec, box, elements);
+    selectStore(made, "element");
     onToolDone?.();
+    // a new text opens for typing straight away
+    if (g.spec.archetype === "text" && made) requestTextEdit(made);
   };
 
   // The Image tool asks for a picture as soon as it is chosen, then puts it in the middle of the page, at its own size (up to 600px a side).
@@ -881,6 +886,8 @@ export const Stage: React.FC<StageProps> = ({
           isGesturing={isGesturing}
         />
       </React.Profiler>
+      {/* View > Show keystrokes: keys, mouse buttons and the command that ran, bottom left (Blender's Screencast Keys) */}
+      <ScreencastKeys />
     </div>
   );
 };
