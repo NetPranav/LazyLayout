@@ -115,7 +115,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-006 | Worker & WASM job system | new | 3D-001 | A | 🚧 |
 | | **Stage 2 · The 3D document** |||||
 | 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 🚧 |
-| 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 📋 |
+| 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 🚧 |
 | 3D-009 | Units, axes & conventions | new | 3D-008 | A | 📋 |
 | 3D-010 | 3D in the evaluation kernel | new | 3D-009 | A | 📋 |
 | 3D-011 | 3D commands, undo & "Adjust last operation" | new | 3D-010 | A | 📋 |
@@ -485,7 +485,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** schema v7 data-block tables, migration, makeSingleUser, binary mesh (1M vertices < 1s); 170 document tests pass
 
 ### Phase 3D-008 · Transforms & hierarchy
-**Needs:** 3D-007 · **Was:** — · **Lane:** A · **Status:** 📋
+**Needs:** 3D-007 · **Was:** — · **Lane:** A · **Status:** 🚧
 - [ ] Location, rotation and scale:
   - rotation stored as a quaternion and shown as Euler (mode XYZ … ZYX);
   - a parent inverse matrix, as in Blender, so parenting keeps the world position;
@@ -494,6 +494,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** parent a cube to a sphere; it stays where it was and follows from then on.
 **Done when:** golden tests for world matrices through 4-level hierarchies; parenting and unparenting keep world transforms within 1e-6.
+**Evidence (2026-11-11):** src/core/3d math, hierarchy, apply: golden 4-level worlds, parent/unparent within 1e-6, all six Euler orders; unit tests pass
 
 ### Phase 3D-009 · Units, axes & conventions
 **Needs:** 3D-008 · **Was:** — · **Lane:** A · **Status:** 📋
