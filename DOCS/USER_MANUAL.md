@@ -262,6 +262,9 @@ Click the **`+`** icon on the **Effects** header to add:
 > [!NOTE]
 > **Effect stack and motion blur.** The engine now supports up to eight effects per layer, in order: **blur, glow, drop shadow, colour adjust, displacement and noise**, each with settings you can animate. A layer can also have **motion blur**, which smears it along the way it moves (turn it on with the layer's motion-blur switch in the timeline). The editor has no Effects section or effect keyframes yet; they are planned.
 
+> [!NOTE]
+> **Property links (pick-whip).** The engine now lets one property **follow** another: link a layer's rotation to another layer's position and it turns as that layer moves. A link can pass the number straight through, map a range onto another range (0 to 400 px onto 0 to 90 degrees), or ease it. A link that would loop back on itself is refused and the loop is shown. The editor has no pick-whip to drag yet; it is planned.
+
 ---
 
 ## 8. Layers Hierarchy & Asset Management

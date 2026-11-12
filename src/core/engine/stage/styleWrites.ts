@@ -3,6 +3,7 @@ import { getPropertyDefinition, type PropertyDefinition } from "../../document/p
 import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
 import { adjustmentFilter, isAdjustPath, isMaskPath, maskStyle, readerOf } from "../../render/compositing";
 import { baseFilterFunctions } from "../../render/geometry";
+import { hasLinks, readLinks } from "../../links/linkModel";
 import { fxStyle, hasFx, isFxPath, type FxFilterSpec } from "../../render/fxStack";
 
 /**
@@ -34,6 +35,8 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   if (mattesOf(doc).has(layerId)) paths.add("appearance.opacity");
   // Phase 75: a layer with an effect, or with motion blur on, has its filter written every frame (a parameter or the velocity may change).
   if (own && hasFx(own, doc.layers[layerId]?.motionBlur === true)) paths.add("fx.stack");
+  // Phase 76: a property a link drives is written every frame (its source may move), so it counts as animated.
+  if (own) for (const link of readLinks(own)) if (link.enabled) paths.add(link.target);
   return paths;
 }
 
@@ -43,7 +46,7 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   const layerIds = new Set<string>();
   for (const clip of Object.values(doc.clips)) if (clip.enabled) layerIds.add(clip.layerId);
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
-  for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true)) layerIds.add(layer.id);
+  for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true) || hasLinks(layer.properties)) layerIds.add(layer.id);
   for (const [source, targets] of mattesOf(doc)) {
     layerIds.add(source);
     for (const id of targets) layerIds.add(id);

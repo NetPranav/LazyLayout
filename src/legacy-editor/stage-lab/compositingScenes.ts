@@ -14,3 +14,7 @@ export const MATTE_SOURCE = "scene_matte_source";
 export const FX_STACK_LAYER = "scene_fx";
 export const MB_ON_LAYER = "scene_mb_on";
 export const MB_OFF_LAYER = "scene_mb_off";
+
+/** Phase 76's scene: a hero layer whose rotation and vertical position are linked to a null that slides across the page. */
+export const LINK_NULL = "scene_link_null";
+export const LINK_HERO = "scene_link_hero";

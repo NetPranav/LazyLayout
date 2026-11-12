@@ -8,6 +8,7 @@ import { registerFrameCommands } from "@/core/frames/frameCommands";
 import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
+import { registerLinkCommands } from "@/core/links/linkCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "@/editor/stage/activePage";
@@ -54,6 +55,7 @@ export function useLeftPanelData(
     const offTimeline = registerTimelineCommands();
     const offCompositing = registerCompositingCommands(); // blend, adjustment, mask and matte (Phase 74)
     const offFx = registerFxCommands(); // the effect stack and motion blur (Phase 75)
+    const offLinks = registerLinkCommands(); // property links, the pick-whip (Phase 76)
 
     return () => {
       offEditing();
@@ -62,6 +64,7 @@ export function useLeftPanelData(
       offTimeline();
       offCompositing();
       offFx();
+      offLinks();
     };
   }, []);
 
