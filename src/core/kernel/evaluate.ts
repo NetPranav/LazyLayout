@@ -52,6 +52,8 @@ import {
   MAX_PARENT_CHAIN_DEPTH,
   type AffineMatrix2D,
 } from "../geometry/parentTransforms";
+import { is3DPath, get3DInterpolationMethod } from "../3d/paths";
+import { quatFromEuler, eulerFromQuat } from "../3d/math";
 
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
@@ -120,7 +122,11 @@ export function sampleTrack(track: Track, time: number): PropValue | undefined {
   const eased = sampleEasing(easing, segmentT);
 
   const def = getPropertyDefinition(track.property);
-  const method = def?.interpolation ?? "discrete";
+  const method =
+    def?.interpolation ??
+    (is3DPath(track.property)
+      ? get3DInterpolationMethod(track.property, k0.value, k1.value)
+      : "discrete");
   return interpolateValue(method, k0.value, k1.value, eased);
 }
 
@@ -543,6 +549,49 @@ function evaluateBaseProps(
 }
 
 /**
+ * Synthesizes 3D rotation quaternion if Euler angle tracks were animated.
+ * Converts interpolated Euler angles to quaternion via quatFromEuler("XYZ").
+ */
+export function synthesize3DQuaternions(doc: MotionDocument, props: ResolvedProps): ResolvedProps {
+  const eulerPattern = /^3d:objects\/([^/]+)\/transform\.rotationEuler\.(x|y|z)$/;
+  const objectsWithEuler = new Set<string>();
+
+  for (const key of Object.keys(props)) {
+    const match = eulerPattern.exec(key);
+    if (match) {
+      objectsWithEuler.add(match[1]);
+    }
+  }
+
+  if (objectsWithEuler.size === 0) return props;
+
+  const out = { ...props };
+  for (const objId of objectsWithEuler) {
+    const quatKey = `3d:objects/${objId}/transform.rotationQuat`;
+    if (Object.prototype.hasOwnProperty.call(props, quatKey)) {
+      continue;
+    }
+
+    const baseObj = doc.objects?.[objId];
+    const baseQuat = baseObj?.transform?.rotationQuat ?? [0, 0, 0, 1];
+    const baseEuler = eulerFromQuat("XYZ", baseQuat);
+
+    const exKey = `3d:objects/${objId}/transform.rotationEuler.x`;
+    const eyKey = `3d:objects/${objId}/transform.rotationEuler.y`;
+    const ezKey = `3d:objects/${objId}/transform.rotationEuler.z`;
+
+    const ex = typeof props[exKey] === "number" ? (props[exKey] as number) : baseEuler[0];
+    const ey = typeof props[eyKey] === "number" ? (props[eyKey] as number) : baseEuler[1];
+    const ez = typeof props[ezKey] === "number" ? (props[ezKey] as number) : baseEuler[2];
+
+    const q = quatFromEuler("XYZ", ex, ey, ez);
+    out[quatKey] = [q[0], q[1], q[2], q[3]];
+  }
+
+  return out;
+}
+
+/**
  * The evaluation kernel. Pure: the same `(doc, compositionId, layerId, t,
  * inputs)` always produces the same `ResolvedProps` (fuzz-tested for this in
  * `__tests__/evaluate.test.ts`).
@@ -650,6 +699,7 @@ function evaluateWorld(doc: MotionDocument, compositionId: string, layerId: stri
   const layer = doc.layers[layerId];
 
   let resolved = evaluateLocalProps(doc, compositionId, layerId, t, inputs);
+  resolved = synthesize3DQuaternions(doc, resolved);
 
   // Phase 73: Transform composition across independent parent chain
   const parentRef = getLayerParentRef(layer);

@@ -117,7 +117,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 🚧 |
 | 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 🚧 |
 | 3D-009 | Units, axes & conventions | new | 3D-008 | A | 🚧 |
-| 3D-010 | 3D in the evaluation kernel | new | 3D-009 | A | 📋 |
+| 3D-010 | 3D in the evaluation kernel | new | 3D-009 | A | 🚧 |
 | 3D-011 | 3D commands, undo & "Adjust last operation" | new | 3D-010 | A | 📋 |
 | 3D-012 | Scene layer on the canvas | Main 219 | 3D-003, 3D-011 | A | 📋 |
 | 3D-013 | Mesh data structure & GPU upload | new | 3D-012 | A | 📋 |
@@ -507,7 +507,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** units, axes, 2D frame to 3D within 0.5 px, glTF mapping round-trip; unit tests pass
 
 ### Phase 3D-010 · 3D in the evaluation kernel
-**Needs:** 3D-009 · **Was:** — · **Lane:** A · **Status:** 📋
+**Needs:** 3D-009 · **Was:** — · **Lane:** A · **Status:** 🚧
 - [ ] `evaluate()` gives every 3D property at any time, the same way it does for 2D:
   - transforms;
   - material, light and camera values;
@@ -518,6 +518,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** scrubbing a 3D animation is exact.
 **Done when:** 3D tracks match `evaluate()` at 5 times; the parity monitor covers 3D.
+**Evidence (2026-11-11):** evaluate3D, 3D paths, quaternion synthesis, parity diff; kernel tests and 3127-test suite pass (additive to evaluate.ts)
 
 ### Phase 3D-011 · 3D commands, undo & "Adjust last operation"
 **Needs:** 3D-010 · **Was:** — · **Lane:** A · **Status:** 📋
