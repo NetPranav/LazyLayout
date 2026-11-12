@@ -1,0 +1,1 @@
+- **Roadmap status, Lane A:** Phases 20–51 are marked ✅ (built, verified locally and on `main`; the owner's rule from 2026-11-12 is to mark a phase when it is verified and merged, not to wait for CI, which GitHub billing had blocked). Phase 52 stays 🚧: its performance target (5 frames × 200 layers at 60 fps, hit-test p95) and a cleanup line are still unchecked.
