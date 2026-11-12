@@ -15,3 +15,14 @@ export * from "./gltfMap";
 export * from "./commands";
 export * from "./transform";
 export * from "./snap";
+export * from "./path";
+export * from "./sdf";
+export * from "./outliner";
+export * from "./blocks";
+export * from "./modifiers";
+export * from "./primitives";
+export * from "./make3d";
+export * from "./text";
+// names that two folders both export: keep the established ones
+export type { MeshData } from "./modifiers";
+export type { PlaneOptions } from "./commands";

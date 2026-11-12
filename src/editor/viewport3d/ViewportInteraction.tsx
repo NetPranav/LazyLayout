@@ -61,6 +61,9 @@ import { SnapBar } from "./SnapBar";
 import { ViewCube } from "./ViewCube";
 import { GizmoOverlay } from "./GizmoOverlay";
 import { TransformStatus } from "./TransformStatus";
+import { AddMenu3d, AddMenuButton } from "./AddMenu3d";
+import { PrimitiveHandles } from "./PrimitiveHandles";
+import { TextEditOverlay3d } from "./TextEditOverlay3d";
 import { registerTransformTrigger, registerBoxSelectTrigger } from "./viewCommands";
 import type {
   ViewportInteractionProps,
@@ -798,13 +801,20 @@ export const ViewportInteraction: React.FC<ViewportInteractionProps> = ({
         </svg>
       )}
 
-      {/* 5. Header Strip (SnapBar) */}
-      <div className="ll:absolute ll:top-2 ll:left-2 ll:z-10">
+      {/* 5. Header Strip (SnapBar & Add Button) */}
+      {/* the Add button comes first and the strip wraps, so a narrow scene never clips it */}
+      <div
+        className="ll:absolute ll:top-2 ll:left-2 ll:right-2 ll:z-10 ll:flex ll:flex-wrap ll:items-center ll:gap-2 ll:pointer-events-none"
+        onPointerDown={(e) => e.stopPropagation()} /* controls here are not part of the 3D drag */
+      >
+        <div className="ll:pointer-events-auto">
+          <AddMenuButton />
+        </div>
         <SnapBar />
       </div>
 
       {/* 6. Navigation ViewCube */}
-      <div className="ll:absolute ll:top-2 ll:right-2 ll:z-10">
+      <div className="ll:absolute ll:top-20 ll:right-2 ll:z-10" onPointerDown={(e) => e.stopPropagation()}>
         <ViewCube size={54} />
       </div>
 
@@ -812,6 +822,15 @@ export const ViewportInteraction: React.FC<ViewportInteractionProps> = ({
       <div className="ll:absolute ll:bottom-3 ll:left-3 ll:z-10">
         <TransformStatus state={modalTransform} />
       </div>
+
+      {/* 8. Parametric Primitive Handles */}
+      <PrimitiveHandles width={width} height={height} />
+
+      {/* 9. 3D In-Place Text Editing Overlay */}
+      <TextEditOverlay3d width={width} height={height} />
+
+      {/* 10. Blender-style Add Menu (Shift+A) */}
+      <AddMenu3d />
     </div>
   );
 };

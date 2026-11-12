@@ -69,6 +69,18 @@ export const SceneSettingsSchema = z
   .strict();
 export type SceneSettings = z.infer<typeof SceneSettingsSchema>;
 
+export const Collection3dSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string(),
+    parent: IdSchema.nullable().optional(),
+    visible: z.boolean().optional(),
+    selectable: z.boolean().optional(),
+    renderVisible: z.boolean().optional(),
+  })
+  .strict();
+export type Collection3d = z.infer<typeof Collection3dSchema>;
+
 export const Scene3dSchema = z
   .object({
     id: IdSchema,
@@ -77,15 +89,28 @@ export const Scene3dSchema = z
     world: IdSchema.nullable().optional(),
     activeCamera: IdSchema.nullable().optional(),
     settings: SceneSettingsSchema.optional(),
+    collections: z.record(IdSchema, Collection3dSchema).optional(),
   })
   .strict();
 export type Scene3d = z.infer<typeof Scene3dSchema>;
 
 // ---------------------------------------------------------------------------
-// 2. Object
+// 2. Object & Modifiers
 // ---------------------------------------------------------------------------
 
-export const ObjectType3dSchema = z.enum(["mesh", "light", "camera", "armature", "empty"]);
+export const Modifier3dSchema = z
+  .object({
+    id: IdSchema,
+    type: z.string(),
+    name: z.string().optional(),
+    enabled: z.boolean().optional(),
+    renderEnabled: z.boolean().optional(),
+    params: z.record(z.string(), z.unknown()).default({}),
+  })
+  .strict();
+export type Modifier3d = z.infer<typeof Modifier3dSchema>;
+
+export const ObjectType3dSchema = z.enum(["mesh", "light", "camera", "armature", "empty", "text"]);
 export type ObjectType3d = z.infer<typeof ObjectType3dSchema>;
 
 export const Object3dSchema = z
@@ -101,6 +126,10 @@ export const Object3dSchema = z
     materialSlots: z.array(IdSchema).optional(),
     materials: z.array(IdSchema).optional(),
     visible: z.boolean().optional(),
+    selectable: z.boolean().optional(),
+    renderVisible: z.boolean().optional(),
+    collection: IdSchema.optional(),
+    modifiers: z.array(Modifier3dSchema).optional(),
   })
   .strict();
 export type Object3d = z.infer<typeof Object3dSchema>;
@@ -118,6 +147,14 @@ export const MeshBinaryRefSchema = z
   .strict();
 export type MeshBinaryRef = z.infer<typeof MeshBinaryRefSchema>;
 
+export const ProceduralSourceSchema = z
+  .object({
+    kind: z.string(),
+    params: z.record(z.string(), z.unknown()),
+  })
+  .strict();
+export type ProceduralSource = z.infer<typeof ProceduralSourceSchema>;
+
 export const Mesh3dSchema = z
   .object({
     id: IdSchema,
@@ -127,6 +164,12 @@ export const Mesh3dSchema = z
     normals: z.array(z.number()).optional(),
     uvs: z.array(z.number()).optional(),
     binary: MeshBinaryRefSchema.optional(),
+    source: z
+      .object({
+        kind: z.string(),
+        params: z.record(z.string(), z.unknown()),
+      })
+      .optional(),
   })
   .strict()
   .superRefine((mesh, ctx) => {
@@ -303,3 +346,60 @@ export const Image3dSchema = z
   })
   .strict();
 export type Image3d = z.infer<typeof Image3dSchema>;
+
+// ---------------------------------------------------------------------------
+// 11. Text3d (Phase 3D-026)
+// ---------------------------------------------------------------------------
+
+export const Text3dSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string().optional(),
+    text: z.string().default("Text"),
+    fontFamily: z.string().default("Geist"),
+    fontUrl: z.string().optional(),
+    size: z.number().default(1),
+    depth: z.number().default(0.2),
+    bevel: z.number().default(0.02),
+    bevelSegments: z.number().int().nonnegative().default(3),
+    align: z.enum(["left", "center", "right"]).default("left"),
+    tracking: z.number().default(0),
+    lineHeight: z.number().default(1.2),
+  })
+  .strict();
+export type Text3d = z.infer<typeof Text3dSchema>;
+
+// ---------------------------------------------------------------------------
+// 11. Looks (Phase 3D-023)
+// ---------------------------------------------------------------------------
+
+export const LookSectionSchema = z.enum([
+  "material",
+  "light",
+  "physics",
+  "modifier",
+  "animation",
+  "interaction",
+]);
+export type LookSection = z.infer<typeof LookSectionSchema>;
+
+export const LookSizingRuleSchema = z
+  .object({
+    property: z.string(),
+    mode: z.enum(["smallest_side", "scene_size"]),
+    factor: z.number(),
+  })
+  .strict();
+export type LookSizingRule = z.infer<typeof LookSizingRuleSchema>;
+
+export const Look3dSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string(),
+    section: LookSectionSchema,
+    values: z.record(z.string(), z.unknown()),
+    sizing: z.array(LookSizingRuleSchema).optional(),
+  })
+  .strict();
+export type Look3d = z.infer<typeof Look3dSchema>;
+

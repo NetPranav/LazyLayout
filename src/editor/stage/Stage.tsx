@@ -348,6 +348,18 @@ export const Stage: React.FC<StageProps> = ({
         case "split-letters":
           invokeCommand("text.splitLetters");
           break;
+        case "make-3d-extrude":
+          invokeCommand("3d.make3d.from_layer", { layerId: targetId, mode: "extrude" });
+          break;
+        case "make-3d-inflate":
+          invokeCommand("3d.make3d.from_layer", { layerId: targetId, mode: "inflate" });
+          break;
+        case "make-3d-lathe":
+          invokeCommand("3d.make3d.from_layer", { layerId: targetId, mode: "lathe" });
+          break;
+        case "make-3d-plane":
+          invokeCommand("3d.make3d.from_layer", { layerId: targetId, mode: "plane" });
+          break;
         default:
           break;
       }

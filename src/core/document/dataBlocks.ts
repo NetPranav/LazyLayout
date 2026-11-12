@@ -15,7 +15,7 @@
  */
 
 import { createId } from "../ids";
-import type { Material3d, MotionDocument } from "./schema";
+import type { Action3d, Material3d, Mesh3d, MotionDocument } from "./schema";
 
 export type DataBlockKind =
   | "scene"
@@ -39,7 +39,9 @@ export type DataBlockKind =
   | "image"
   | "images"
   | "image3d"
-  | "images3d";
+  | "images3d"
+  | "text"
+  | "texts";
 
 function normalizeKind(kind: DataBlockKind): string {
   const k = kind.toLowerCase();
@@ -53,6 +55,7 @@ function normalizeKind(kind: DataBlockKind): string {
   if (k === "actions" || k === "action") return "action";
   if (k === "worlds" || k === "world") return "world";
   if (k === "images" || k === "image" || k === "image3d" || k === "images3d") return "image3d";
+  if (k === "texts" || k === "text") return "text";
   return k;
 }
 
@@ -158,26 +161,118 @@ export function userCount(doc: MotionDocument, kind: DataBlockKind, id: string):
       return count;
     }
 
+    case "text": {
+      let count = 0;
+      for (const obj of Object.values(doc.objects ?? {})) {
+        if (obj.dataId === id && obj.type === "text") count++;
+      }
+      return count;
+    }
+
     default:
       return 0;
   }
 }
 
+export type SingleUserTarget =
+  | number
+  | "material"
+  | "mesh"
+  | "action"
+  | { kind: "material"; slot?: number }
+  | { kind: "mesh" }
+  | { kind: "action" };
+
 /**
- * Copies a shared material for that object slot only and returns the new doc
+ * Copies a shared material, mesh, or action for that object only and returns the new doc
  * (pure, immutable style like other document helpers).
- * If the material has only 1 user, it is already single-user and doc is returned.
+ * If the data block has <= 1 user, it is already single-user and doc is returned.
+ * Backward-compatible with `makeSingleUser(doc, objectId, slot: number)`.
  */
 export function makeSingleUser(
   doc: MotionDocument,
   objectId: string,
-  slot: number
+  target?: SingleUserTarget,
+  slot?: number
 ): MotionDocument {
   const obj = doc.objects?.[objectId];
   if (!obj) return doc;
 
+  let kind: "material" | "mesh" | "action" = "material";
+  let targetSlot = slot ?? 0;
+
+  if (typeof target === "number") {
+    kind = "material";
+    targetSlot = target;
+  } else if (typeof target === "string") {
+    if (target === "mesh" || target === "action") {
+      kind = target;
+    } else {
+      kind = "material";
+      if (slot !== undefined) targetSlot = slot;
+    }
+  } else if (typeof target === "object" && target !== null) {
+    kind = target.kind;
+    if (target.kind === "material" && target.slot !== undefined) {
+      targetSlot = target.slot;
+    } else if (slot !== undefined) {
+      targetSlot = slot;
+    }
+  }
+
+  if (kind === "mesh") {
+    const currentMeshId = obj.dataId;
+    if (!currentMeshId || !doc.meshes?.[currentMeshId]) return doc;
+
+    if (userCount(doc, "mesh", currentMeshId) <= 1) {
+      return doc;
+    }
+
+    const next = structuredClone(doc);
+    const sourceMesh = next.meshes![currentMeshId];
+    const newMeshId = createId("msh");
+    const newMesh: Mesh3d = {
+      ...structuredClone(sourceMesh),
+      id: newMeshId,
+      name: sourceMesh.name ? `${sourceMesh.name}.001` : "Mesh.001",
+    };
+
+    next.meshes![newMeshId] = newMesh;
+    next.objects![objectId] = {
+      ...next.objects![objectId],
+      dataId: newMeshId,
+    };
+    return next;
+  }
+
+  if (kind === "action") {
+    const currentActionId = (obj as Record<string, unknown>).actionId as string | undefined;
+    if (!currentActionId || !doc.actions?.[currentActionId]) return doc;
+
+    if (userCount(doc, "action", currentActionId) <= 1) {
+      return doc;
+    }
+
+    const next = structuredClone(doc);
+    const sourceAction = next.actions![currentActionId];
+    const newActionId = createId("act");
+    const newAction: Action3d = {
+      ...structuredClone(sourceAction),
+      id: newActionId,
+      name: sourceAction.name ? `${sourceAction.name}.001` : "Action.001",
+    };
+
+    next.actions![newActionId] = newAction;
+    next.objects![objectId] = {
+      ...next.objects![objectId],
+      actionId: newActionId,
+    } as unknown as NonNullable<typeof next.objects>[string];
+    return next;
+  }
+
+  // kind === "material"
   const slots = obj.materialSlots ?? obj.materials ?? [];
-  const currentMatId = slots[slot];
+  const currentMatId = slots[targetSlot];
   if (!currentMatId || !doc.materials?.[currentMatId]) return doc;
 
   // If already single-user (<= 1 user), no need to duplicate
@@ -199,11 +294,11 @@ export function makeSingleUser(
 
   if (targetObj.materialSlots) {
     targetObj.materialSlots = [...targetObj.materialSlots];
-    targetObj.materialSlots[slot] = newMatId;
+    targetObj.materialSlots[targetSlot] = newMatId;
   }
   if (targetObj.materials) {
     targetObj.materials = [...targetObj.materials];
-    targetObj.materials[slot] = newMatId;
+    targetObj.materials[targetSlot] = newMatId;
   }
   if (!targetObj.materialSlots && !targetObj.materials) {
     targetObj.materialSlots = [newMatId];
@@ -309,6 +404,16 @@ export function removeUnused(doc: MotionDocument): MotionDocument {
       for (const [id] of Object.entries(next.actions)) {
         if (userCount(next, "action", id) === 0) {
           delete next.actions[id];
+          changed = true;
+        }
+      }
+    }
+
+    // 10. Unused texts
+    if (next.texts) {
+      for (const [id] of Object.entries(next.texts)) {
+        if (userCount(next, "text", id) === 0) {
+          delete next.texts[id];
           changed = true;
         }
       }

@@ -5,6 +5,8 @@ import { LeftPanel } from "@/editor/shell/left-panel";
 import { PagesManager } from "@/editor/shell/pages-manager";
 import { useLeftPanelData } from "./useLeftPanelData";
 import type { LeftPanelConnectedProps } from "./types";
+import { useViewportStore } from "@/core/render/scene3d/viewportStore";
+import { Outliner3d } from "./Outliner3d";
 
 export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
   mode = "design",
@@ -13,6 +15,7 @@ export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
   className = "",
   ...overrides
 }) => {
+  const editingSceneId = useViewportStore((s) => s.editingSceneId);
   const leftPanelData = useLeftPanelData({ mode, filterByActivePage });
 
   const renderedHeaderStart =
@@ -21,6 +24,14 @@ export const LeftPanelConnected: React.FC<LeftPanelConnectedProps> = ({
       : mode === "design" || mode === "motion"
       ? <PagesManager query={leftPanelData.searchQuery} />
       : undefined;
+
+  if (editingSceneId) {
+    return (
+      <div className="ll:relative ll:w-full ll:h-full ll:min-h-0 ll:min-w-0">
+        <Outliner3d sceneId={editingSceneId} className={className} />
+      </div>
+    );
+  }
 
   return (
     <div className="ll:relative ll:w-full ll:h-full ll:min-h-0 ll:min-w-0">

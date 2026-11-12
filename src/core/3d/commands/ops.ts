@@ -23,6 +23,7 @@ import type {
   MotionDocument,
   Object3d,
   Scene3d,
+  World3d,
 } from "../../document/schema";
 import {
   cube,
@@ -387,6 +388,45 @@ export const MaterialSetSchema = z.object({
   doubleSided: z.boolean().optional(),
 });
 
+export const LightSetSchema = z.object({
+  lightId: z.string(),
+  name: z.string().optional(),
+  type: z.enum(["point", "sun", "spot", "area", "directional"]).optional(),
+  color: z.string().optional(),
+  intensity: z.number().nonnegative().optional(),
+  distance: z.number().nonnegative().optional(),
+  decay: z.number().nonnegative().optional(),
+  castShadow: z.boolean().optional(),
+  spotAngle: z.number().optional(),
+  spotBlend: z.number().optional(),
+});
+
+export const CameraSetSchema = z.object({
+  cameraId: z.string(),
+  name: z.string().optional(),
+  type: z.enum(["perspective", "orthographic"]).optional(),
+  fov: z.number().positive().optional(),
+  near: z.number().positive().optional(),
+  far: z.number().positive().optional(),
+  orthoScale: z.number().positive().optional(),
+});
+
+export const WorldSetSchema = z.object({
+  worldId: z.string(),
+  name: z.string().optional(),
+  color: z.string().optional(),
+  ambientColor: z.string().optional(),
+  ambientIntensity: z.number().nonnegative().optional(),
+  environmentIntensity: z.number().nonnegative().optional(),
+  environmentRotation: z.number().optional(),
+});
+
+export const ObjectSetVisibilitySchema = z.object({
+  objectId: z.string(),
+  visible: z.boolean().optional(),
+  renderVisible: z.boolean().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Operation Map & Registry
 // ---------------------------------------------------------------------------
@@ -426,6 +466,12 @@ export const COMMAND_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "3d.material.assign": MaterialAssignSchema,
   "3d.material.make_single_user": MaterialMakeSingleUserSchema,
   "3d.material.set": MaterialSetSchema,
+
+  // Properties 3D Updates
+  "3d.light.set": LightSetSchema,
+  "3d.camera.set": CameraSetSchema,
+  "3d.world.set": WorldSetSchema,
+  "3d.object.set_visibility": ObjectSetVisibilitySchema,
 };
 
 export const COMMAND_TITLES: Record<string, string> = {
@@ -460,6 +506,11 @@ export const COMMAND_TITLES: Record<string, string> = {
   "3d.material.assign": "Assign 3D Material",
   "3d.material.make_single_user": "Make 3D Material Single User",
   "3d.material.set": "Set 3D Material",
+
+  "3d.light.set": "Set 3D Light",
+  "3d.camera.set": "Set 3D Camera",
+  "3d.world.set": "Set 3D World",
+  "3d.object.set_visibility": "Set 3D Visibility",
 };
 
 // ---------------------------------------------------------------------------
@@ -1163,6 +1214,77 @@ export function run3dOp(id: string, doc: MotionDocument, rawArgs: unknown): OpRe
 
       next.materials![args.materialId] = updated;
       return { doc: next };
+    }
+
+    case "3d.light.set": {
+      const args = parsed as z.infer<typeof LightSetSchema>;
+      const light = doc.lights?.[args.lightId];
+      if (!light) return { doc };
+
+      const next = cloneDocument(doc);
+      const updated: Light3d = { ...light };
+      if (args.name !== undefined) updated.name = args.name;
+      if (args.type !== undefined) updated.type = args.type;
+      if (args.color !== undefined) updated.color = args.color;
+      if (args.intensity !== undefined) updated.intensity = args.intensity;
+      if (args.distance !== undefined) updated.distance = args.distance;
+      if (args.decay !== undefined) updated.decay = args.decay;
+      if (args.castShadow !== undefined) updated.castShadow = args.castShadow;
+      if (args.spotAngle !== undefined) updated.spotAngle = args.spotAngle;
+      if (args.spotBlend !== undefined) updated.spotBlend = args.spotBlend;
+
+      next.lights![args.lightId] = updated;
+      return { doc: next };
+    }
+
+    case "3d.camera.set": {
+      const args = parsed as z.infer<typeof CameraSetSchema>;
+      const cam = doc.cameras?.[args.cameraId];
+      if (!cam) return { doc };
+
+      const next = cloneDocument(doc);
+      const updated: Camera3d = { ...cam };
+      if (args.name !== undefined) updated.name = args.name;
+      if (args.type !== undefined) updated.type = args.type;
+      if (args.fov !== undefined) updated.fov = args.fov;
+      if (args.near !== undefined) updated.near = args.near;
+      if (args.far !== undefined) updated.far = args.far;
+      if (args.orthoScale !== undefined) updated.orthoScale = args.orthoScale;
+
+      next.cameras![args.cameraId] = updated;
+      return { doc: next };
+    }
+
+    case "3d.world.set": {
+      const args = parsed as z.infer<typeof WorldSetSchema>;
+      const world = doc.worlds?.[args.worldId];
+      if (!world) return { doc };
+
+      const next = cloneDocument(doc);
+      const updated: World3d = { ...world };
+      if (args.name !== undefined) updated.name = args.name;
+      if (args.color !== undefined) updated.color = args.color;
+      if (args.ambientColor !== undefined) updated.ambientColor = args.ambientColor;
+      if (args.ambientIntensity !== undefined) updated.ambientIntensity = args.ambientIntensity;
+      if (args.environmentIntensity !== undefined) updated.environmentIntensity = args.environmentIntensity;
+      if (args.environmentRotation !== undefined) updated.environmentRotation = args.environmentRotation;
+
+      next.worlds![args.worldId] = updated;
+      return { doc: next };
+    }
+
+    case "3d.object.set_visibility": {
+      const args = parsed as z.infer<typeof ObjectSetVisibilitySchema>;
+      const obj = doc.objects?.[args.objectId];
+      if (!obj) return { doc };
+
+      const next = cloneDocument(doc);
+      const updated: Object3d = { ...obj };
+      if (args.visible !== undefined) updated.visible = args.visible;
+      if (args.renderVisible !== undefined) updated.renderVisible = args.renderVisible;
+
+      next.objects![args.objectId] = updated;
+      return { doc: next, selection: [args.objectId] };
     }
 
     default:
