@@ -1,4 +1,6 @@
 import React from "react";
+import { SurfaceView } from "../surfaceView";
+import { isSurface } from "../../surface/settings";
 import { layerBoxStyle } from "../geometry";
 import { clampNumber } from "../limits";
 import { safeDashArray } from "../../paint/paints";
@@ -51,8 +53,22 @@ export function rectangleRadii(resolved: ResolvedProps): [number, number, number
   return [corner("topLeft"), corner("topRight"), corner("bottomRight"), corner("bottomLeft")];
 }
 
+/** Surfaces (S2–S6): an inflated shape is a box with its surface in it (shadows as the box's own). */
+const SurfaceBox: React.FC<ArchetypeRenderProps & { width: number; height: number; radius: number; kind: "roundedRect" | "ellipse" }> = ({ layer, resolved, ctx, nodeRef, width, height, radius, kind }) => (
+  <div
+    ref={nodeRef}
+    data-element-id={layer.id}
+    data-archetype={layer.archetype}
+    data-surface-host=""
+    style={{ ...layerBoxStyle(layer, resolved, ctx), width, height, flexShrink: 0, isolation: "isolate", borderRadius: kind === "ellipse" ? "50%" : radius }}
+  >
+    <SurfaceView resolved={resolved} geometry={{ width, height, radius, kind }} interactive={ctx.mode === "preview" || ctx.mode === "export" || ctx.surfacesLive === true} content={false} />
+  </div>
+);
+
 export const Rectangle: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 160, 120);
+  if (isSurface((path) => p.resolved.get(path))) return <SurfaceBox {...p} width={width} height={height} radius={Math.min(rectangleRadii(p.resolved)[0], Math.min(width, height) / 2)} kind="roundedRect" />;
   const strokeWidth = alignsStroke(p.resolved) ? 0 : strokeOf(p.resolved, 0);
   const inset = strokeWidth / 2;
   const w = Math.max(0, width - strokeWidth);
@@ -77,6 +93,7 @@ export const Rectangle: React.FC<ArchetypeRenderProps> = (p) => {
 
 export const Ellipse: React.FC<ArchetypeRenderProps> = (p) => {
   const { width, height } = size(p.resolved, 120, 120);
+  if (isSurface((path) => p.resolved.get(path))) return <SurfaceBox {...p} width={width} height={height} radius={0} kind="ellipse" />;
   const strokeWidth = alignsStroke(p.resolved) ? 0 : strokeOf(p.resolved, 0);
   const sweep = clampNumber(p.resolved.num("shape.arcSweep", 360), -360, 360, 360);
   const start = clampNumber(p.resolved.num("shape.arcStart", 0), -360, 360, 0);

@@ -332,4 +332,5 @@ export const ARCHETYPE_PROPERTY_BINDING_MATRIX: Record<
   star: {},
   arrow: {},
   effectSurface: {},
+  scene3d: {},
 };

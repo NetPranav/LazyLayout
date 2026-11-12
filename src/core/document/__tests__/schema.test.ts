@@ -135,11 +135,11 @@ const propsArb = fc.dictionary(fc.constantFrom(...NON_GEOMETRY_PATHS), propValue
   noNullPrototype: true,
 });
 
-/** First animatable numeric path legal for the archetype (every archetype has one); v4 type-checks keyframe values. */
-const trackPathFor = (archetype: ArchetypeId) =>
+/** First animatable numeric path legal for the archetype; undefined when none exists (e.g. scene3d). */
+const trackPathFor = (archetype: ArchetypeId): string | undefined =>
   PROPERTY_PATHS.find(
     (p) => PROPERTY_REGISTRY[p].animatable && PROPERTY_REGISTRY[p].interpolation === "numeric" && PROPERTY_REGISTRY[p].archetypes.includes(archetype)
-  )!;
+  );
 
 /** A random valid document: a forest where each layer's parent comes earlier in the list. */
 const documentArb: fc.Arbitrary<MotionDocument> = fc
@@ -185,6 +185,20 @@ const documentArb: fc.Arbitrary<MotionDocument> = fc
       clips.forEach((clip, i) => {
         const id = `clip_${i.toString(16).padStart(8, "0")}`;
         const layerId = layerIds[clip.owner % layerIds.length];
+        const trackProp = trackPathFor(doc.layers[layerId].archetype);
+        const tracks = trackProp
+          ? [
+              {
+                id: `trk_${i.toString(16).padStart(8, "0")}`,
+                property: trackProp,
+                keyframes: [...clip.keyframes]
+                  .sort((a, b) => a.at - b.at)
+                  .map((k) => ({ time: (k.at / 1000) * clip.duration, value: k.value }))
+                  .filter((k, j, all) => j === 0 || k.time > all[j - 1].time)
+                  .map((k, j) => ({ id: `kf_${j.toString(16).padStart(8, "0")}`, ...k })),
+              },
+            ]
+          : [];
         doc.clips[id] = {
           id,
           layerId,
@@ -196,17 +210,7 @@ const documentArb: fc.Arbitrary<MotionDocument> = fc
           easing: "linear",
           enabled: true,
           ...(clip.repeat !== undefined ? { repeat: clip.repeat } : {}),
-          tracks: [
-            {
-              id: `trk_${i.toString(16).padStart(8, "0")}`,
-              property: trackPathFor(doc.layers[layerId].archetype),
-              keyframes: [...clip.keyframes]
-                .sort((a, b) => a.at - b.at)
-                .map((k) => ({ time: (k.at / 1000) * clip.duration, value: k.value }))
-                .filter((k, j, all) => j === 0 || k.time > all[j - 1].time)
-                .map((k, j) => ({ id: `kf_${j.toString(16).padStart(8, "0")}`, ...k })),
-            },
-          ],
+          tracks,
         };
       });
     }
@@ -214,7 +218,7 @@ const documentArb: fc.Arbitrary<MotionDocument> = fc
     return doc;
   });
 
-describe("MDM v6 schema: property-based round trip", () => {
+describe("MDM v7 schema: property-based round trip", () => {
   it("500 random documents survive validate → serialise → parse → validate unchanged", () => {
     fc.assert(
       fc.property(documentArb, (doc) => {

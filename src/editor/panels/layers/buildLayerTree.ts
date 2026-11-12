@@ -35,6 +35,7 @@ export function mapArchetypeToLayerType(archetype: string): LayerItem["type"] {
     case "object3D":
     case "camera3D":
     case "light3D":
+    case "scene3d":
       return "object3d";
     case "badge":
       return "button";

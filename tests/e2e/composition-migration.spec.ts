@@ -33,7 +33,7 @@ test.fixme("Phase 46: a v4 project migrates to v5 and renders identically to the
   const migratedShot = await stageShot(page, outDir, "migrated-from-v4");
 
   const doc = migrated.file.snapshot.document as { schemaVersion: number; compositions: Record<string, { kind: string }> };
-  expect(doc.schemaVersion).toBe(6); // v4 → v5 (Phase 46) → v6 (Phase 53)
+  expect(doc.schemaVersion).toBe(7); // v4 → v5 (Phase 46) → v6 (Phase 53) → v7 (Phase 3D-007)
   expect(doc.compositions.comp_main?.kind, "the migration adds the main composition").toBe("main");
   expect(canonical(doc), "the migrated v4 demo is the same document as the native v5 demo").toBe(canonical(native.file.snapshot.document));
 

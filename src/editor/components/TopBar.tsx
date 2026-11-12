@@ -410,6 +410,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("file.copyLink", "Copy project link", LinkIcon, undefined, handleCopyLink)}
             <MenuSeparator />
             {entry("file.import", "Import project file…", Folder)}
+            {entry("file.placeReference", "Place reference image…", ImageIcon, undefined, () => invokeCommand("file.placeReference"))}
             {entry("file.exportFile", "Export project file", Download)}
           </SubMenu>
 
@@ -439,6 +440,17 @@ export const TopBar: React.FC<TopBarProps> = ({
             {entry("align.bottom", "Align bottom", AlignEndHorizontal)}
             {entry("align.distributeH", "Distribute horizontally", AlignHorizontalDistributeCenter)}
             {entry("align.distributeV", "Distribute vertically", AlignVerticalDistributeCenter)}
+          </SubMenu>
+
+          <SubMenu
+            id="sub-insert"
+            label="Insert"
+            icon={<Icon icon={Plus} size={MENU_ICON_SIZE} />}
+          >
+            {entry("3d.scene.insert", "3D scene", Box, undefined, () => {
+              setLogoMenuOpen(false);
+              invokeCommand("3d.scene.insert", {});
+            })}
           </SubMenu>
 
           <SubMenu

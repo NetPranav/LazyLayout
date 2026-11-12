@@ -66,6 +66,7 @@ export const ARCHETYPE_IDS = [
   "object3D",
   "camera3D",
   "light3D",
+  "scene3d",
 ] as const;
 export type ArchetypeId = (typeof ARCHETYPE_IDS)[number];
 
@@ -570,6 +571,18 @@ const ENTRIES: Record<ArchetypeId, Omit<ArchetypeEntry, "id">> = {
       "scene3d.light.castShadow": true,
       "scene3d.light.distance": 0,
       "scene3d.light.decay": 1,
+    },
+  },
+  scene3d: {
+    kind: "scene3d",
+    family: null,
+    label: "3D Scene",
+    idPrefix: "s3d_scn",
+    exportTag: "div",
+    grammarType: "Canvas",
+    sections: ["identity"],
+    defaultProps: {
+      scene: "",
     },
   },
 };

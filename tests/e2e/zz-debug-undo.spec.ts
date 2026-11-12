@@ -1,0 +1,21 @@
+import { test, expect } from "@playwright/test";
+import { openEditor } from "./support/editor";
+test.use({ viewport: { width: 1600, height: 1000 } });
+type W = { __LL_COMMANDS__: { run: (id: string, a?: unknown) => unknown; tryRun: (id: string) => unknown; context: () => unknown }; __LL_DOC__: { get: () => { meshes?: Record<string, { positions?: ArrayLike<number> }> } } };
+test("debug undo", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await openEditor(page);
+  await page.waitForFunction(() => !!(window as unknown as W).__LL_COMMANDS__);
+  const run = (id: string, a?: unknown) => page.evaluate(([i, x]) => (window as unknown as W).__LL_COMMANDS__.run(i as string, x), [id, a] as const);
+  const info = () => page.evaluate(() => Object.values((window as unknown as W).__LL_DOC__.get().meshes ?? {}).map((m) => (m.positions?.length ?? 0) / 3).join(","));
+  await run("3d.scene.insert", { width: 480, height: 320 }); await run("3d.add.cylinder", { vertices: 32 });
+  const input = page.locator('[data-testid="adjust-last-op-panel"] [data-arg="vertices"] input');
+  await expect(input).toBeVisible({ timeout: 8000 });
+  await input.fill("64"); await input.press("Enter"); await page.waitForTimeout(400);
+  console.log("verts after adjust", await info());
+  const act = await page.evaluate(() => document.activeElement ? document.activeElement.tagName + "#" + (document.activeElement.getAttribute("aria-label") ?? document.activeElement.className).toString().slice(0, 60) : "none"); console.log("ACTIVE before blur", act); await input.blur(); await page.waitForTimeout(300); console.log("ACTIVE after blur", await page.evaluate(() => document.activeElement ? document.activeElement.tagName + "#" + (document.activeElement.getAttribute("aria-label") ?? document.activeElement.className).toString().slice(0, 60) : "none"));
+  const ctx = await page.evaluate(() => JSON.stringify((window as unknown as W).__LL_COMMANDS__.context()));
+  const out = await page.evaluate(() => JSON.stringify((window as unknown as W).__LL_COMMANDS__.tryRun("edit.undo")));
+  console.log("CTX", ctx, "OUT", out); await page.waitForTimeout(300);
+  console.log("verts after undo", await info());
+});

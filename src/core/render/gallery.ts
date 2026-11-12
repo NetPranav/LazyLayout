@@ -205,6 +205,7 @@ export const GALLERY_CASES: GalleryCase[] = [
   { id: "object-3d", archetype: "object3D", label: "3D object (placeholder)" },
   { id: "camera-3d", archetype: "camera3D", label: "3D camera (placeholder)" },
   { id: "light-3d", archetype: "light3D", label: "3D light (placeholder)" },
+  { id: "scene-3d", archetype: "scene3d", label: "3D scene (placeholder)" },
 ];
 
 function build(c: GalleryCase, parentId: string | null, out: Record<string, Layer>): void {

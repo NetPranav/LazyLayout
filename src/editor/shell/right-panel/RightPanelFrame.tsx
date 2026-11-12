@@ -2,6 +2,7 @@
 
 import React, { useRef, useId } from "react";
 import { RightPanelHeader } from "./RightPanelHeader";
+import { useInspectorDimension } from "@/editor/panels/details/inspectorDimension";
 import { RightPanelSection } from "./RightPanelSection";
 import { RightPanelAccordionRow } from "./RightPanelAccordionRow";
 import { RightPanelAiChat } from "./RightPanelAiChat";
@@ -79,6 +80,8 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
 
   // Live selection inspector hook to resolve real element data when props are not provided
   const inspector = useSelectionInspector();
+  const dimension = useInspectorDimension((st) => st.dimension);
+  const setDimension = useInspectorDimension((st) => st.setDimension);
 
   const activeSelectionName = propSelectionName !== undefined ? propSelectionName : inspector.selectionName;
   const activeSelectionIcon = propSelectionIcon !== undefined ? propSelectionIcon : inspector.selectionIcon;
@@ -137,6 +140,8 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               onDelete={onDelete}
               statusChips={activeStatusChips}
               onSelectStatusChip={handleStatusChipClick}
+              dimension={inspector.hasSelection ? dimension : undefined}
+              onDimensionChange={setDimension}
             />
           )}
 

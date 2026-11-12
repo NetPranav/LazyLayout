@@ -8,6 +8,8 @@ import { ParityBadge } from "@/editor/components/ParityBadge";
 import { TimelineCompositionTabs } from "@/editor/panels/timeline/TimelineCompositions";
 import { parityStore } from "@/core/engine/stage/parity";
 import { Button } from "@/editor/components/Button";
+import { BudgetMeter } from "@/editor/components/BudgetMeter";
+import type { FeatureCost } from "@/core/gpu/tiers";
 
 /**
  * 1. Default Timeline Workstation Demo
@@ -105,6 +107,21 @@ export function TimelineCompositionTabsDemo() {
   return (
     <div className="ll:w-full ll:max-w-2xl ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
       <TimelineCompositionTabs />
+    </div>
+  );
+}
+
+/** ROADMAP_3D 3D-005: a sample scene against the three device tiers. */
+const SAMPLE_SCENE: FeatureCost[] = [
+  { id: "mesh", label: "Geometry", cost: { frameMs: 3, gpuMB: 60, drawCalls: 60, kTriangles: 90, simMs: 0 } },
+  { id: "shadows", label: "Soft shadows", dropOrder: 1, downgrade: "hard shadows", cost: { frameMs: 2, gpuMB: 40, drawCalls: 20, kTriangles: 0, simMs: 0 } },
+  { id: "cloth", label: "Live cloth", dropOrder: 2, downgrade: "baked", cost: { frameMs: 1, gpuMB: 16, drawCalls: 0, kTriangles: 0, simMs: 2.5 } },
+  { id: "bloom", label: "Bloom", dropOrder: 3, downgrade: "off", cost: { frameMs: 1.2, gpuMB: 24, drawCalls: 4, kTriangles: 0, simMs: 0 } },
+];
+export function BudgetMeterDemo() {
+  return (
+    <div className="ll:w-72">
+      <BudgetMeter features={SAMPLE_SCENE} />
     </div>
   );
 }

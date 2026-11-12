@@ -704,4 +704,12 @@ export const ARCHETYPE_ANIMATION_COMPATIBILITY: Record<
       },
     },
   },
+  scene3d: {
+    archetype: "scene3d",
+    allowedTracks: [],
+    disallowedTracks: {
+      ...COMMON_SVG_DISALLOWED_TRACKS,
+      ...COMMON_3D_DISALLOWED_TRACKS,
+    },
+  },
 };

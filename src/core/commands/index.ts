@@ -1,5 +1,5 @@
 export type { Command, CommandOutcome, ContextKeys, ContextKeyName, FocusScope } from "./types";
-export { useContextKeysStore, getContextKeys, setFocusScope, setTextEditing } from "./contextKeys";
+export { useContextKeysStore, getContextKeys, setFocusScope, setTextEditing, setEditingScene3d } from "./contextKeys";
 export { defineCommand, defineTypedCommand, getCommand, getAllCommands, isCommandAvailable, runCommand, tryRunCommand, invokeCommand, useCommand, onCommandRun } from "./registry";
 export { installCommandDispatcher } from "./dispatcher";
 export { installGlobalCommands } from "./globalCommands";

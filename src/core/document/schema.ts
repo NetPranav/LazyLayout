@@ -44,6 +44,39 @@ import { InteractionGraphSchema } from "./graph";
 import { ComponentSchema, GeneratorSchema, PinsSchema, TagSchema } from "./kinetics";
 import { CompositionSchema, createMainComposition, MAIN_COMPOSITION_ID } from "./compositions";
 import { checkReferences } from "./references";
+import {
+  Scene3dSchema,
+  Object3dSchema,
+  Mesh3dSchema,
+  Material3dSchema,
+  Light3dSchema,
+  Camera3dSchema,
+  Armature3dSchema,
+  Action3dSchema,
+  World3dSchema,
+  Image3dSchema,
+  type Scene3d,
+  type Object3d,
+  type Mesh3d,
+  type Material3d,
+  type Light3d,
+  type Camera3d,
+  type Armature3d,
+  type Action3d,
+  type World3d,
+  type Image3d,
+  type Transform3d,
+  type DeltaTransform3d,
+  type Mat4Array,
+  DeltaTransform3dSchema,
+  Mat4ArraySchema,
+  type Vector3,
+  type Quaternion,
+  type Bone3d,
+  type FCurve3d,
+  type Keyframe3d,
+  type MeshBinaryRef,
+} from "./scene3d";
 
 /**
  * v3 (Phase 42): every prop key and track path is a canonical `properties.ts`
@@ -63,8 +96,12 @@ import { checkReferences } from "./references";
  * v6 (Phase 53): the animation grammar's gaps closed. Clip types `exit`,
  * `focus`, `stagger` and `layout`; triggers `unmount` and `layoutChange`.
  * Purely additive: a v5 document is a valid v6 document.
+ *
+ * v7 (Phase 3D-007): 3D data blocks (scenes, objects, meshes, materials, lights,
+ * cameras, armatures, actions, worlds, images3d) and scene3d layer archetype.
+ * Purely additive: a v6 document is a valid v7 document.
  */
-export const SCHEMA_VERSION = 6 as const;
+export const SCHEMA_VERSION = 7 as const;
 
 // ---------------------------------------------------------------------------
 // Primitives
@@ -76,6 +113,7 @@ export const SCHEMA_VERSION = 6 as const;
  */
 const RESERVED_KEY = "__proto__";
 
+export { DeltaTransform3dSchema, Mat4ArraySchema };
 export const IdSchema = z.string().min(1).describe("Stable entity id, `<prefix>_<8hex>` for new entities.");
 
 export { PropValueSchema } from "./motion";
@@ -236,6 +274,17 @@ const MotionDocumentShape = z.object({
   compositions: z.record(IdSchema, CompositionSchema),
   tokens: TokensSchema,
   exportSettings: ExportSettingsSchema,
+  /** 3D scene data blocks (ROADMAP_3D Phase 3D-007, MDM v7) */
+  scenes: z.record(IdSchema, Scene3dSchema).optional(),
+  objects: z.record(IdSchema, Object3dSchema).optional(),
+  meshes: z.record(IdSchema, Mesh3dSchema).optional(),
+  materials: z.record(IdSchema, Material3dSchema).optional(),
+  lights: z.record(IdSchema, Light3dSchema).optional(),
+  cameras: z.record(IdSchema, Camera3dSchema).optional(),
+  armatures: z.record(IdSchema, Armature3dSchema).optional(),
+  actions: z.record(IdSchema, Action3dSchema).optional(),
+  worlds: z.record(IdSchema, World3dSchema).optional(),
+  images3d: z.record(IdSchema, Image3dSchema).optional(),
   /** Imported files, by content hash (Phase 36). Absent in documents saved before assets: read it as empty. */
   assets: z.record(z.string(), AssetEntrySchema).optional(),
   /** The design components: id, name and the layer that is the main component (Phase 46). */
@@ -367,6 +416,27 @@ export type { Surface, InputTape, EffectInstance } from "./effects";
 export type { InteractionGraph } from "./graph";
 export type { Component, Generator } from "./kinetics";
 export type { Composition, CompositionLayer, NestedComposition, Marker, TimeRemap } from "./compositions";
+export type {
+  Scene3d,
+  Object3d,
+  Mesh3d,
+  Material3d,
+  Light3d,
+  Camera3d,
+  Armature3d,
+  Action3d,
+  World3d,
+  Image3d,
+  Transform3d,
+  DeltaTransform3d,
+  Mat4Array,
+  Vector3,
+  Quaternion,
+  Bone3d,
+  FCurve3d,
+  Keyframe3d,
+  MeshBinaryRef,
+};
 export type Layer = z.infer<typeof LayerSchema>;
 export type Tokens = z.infer<typeof TokensSchema>;
 export type ExportSettings = z.infer<typeof ExportSettingsSchema>;

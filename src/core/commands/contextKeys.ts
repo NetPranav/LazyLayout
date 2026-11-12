@@ -10,6 +10,7 @@
 import { create } from "zustand";
 import type { ContextKeys, FocusScope } from "./types";
 import { useSelectionStore } from "../store/useSelectionStore";
+import { isTextEditingTarget } from "./normalize";
 
 const DEFAULT_CONTEXT: ContextKeys = {
   canvasFocus: false,
@@ -18,6 +19,7 @@ const DEFAULT_CONTEXT: ContextKeys = {
   textEditing: false,
   "selection.count": 0,
   "transport.playing": false,
+  editingScene3d: false,
 };
 
 interface ContextKeysStore extends ContextKeys {
@@ -31,6 +33,12 @@ export const useContextKeysStore = create<ContextKeysStore>((set) => ({
 
 export function getContextKeys(): ContextKeys {
   const { setContext: _setContext, ...ctx } = useContextKeysStore.getState();
+  // A focused field that is removed from the page (a panel re-renders under it) never fires focusout, which would leave
+  // `textEditing` stuck on and Undo and every shortcut off. Whether a field really has focus is a fact we can ask for.
+  if (ctx.textEditing && typeof document !== "undefined" && !isTextEditingTarget(document.activeElement)) {
+    useContextKeysStore.setState({ textEditing: false });
+    return { ...ctx, textEditing: false };
+  }
   return ctx;
 }
 
@@ -48,6 +56,10 @@ export function setFocusScope(scope: FocusScope | null): void {
 
 export function setTextEditing(editing: boolean): void {
   useContextKeysStore.setState({ textEditing: editing });
+}
+
+export function setEditingScene3d(editing: boolean): void {
+  useContextKeysStore.setState({ editingScene3d: editing });
 }
 
 // `selection.count` follows the one selection store (it used to be declared and never written).

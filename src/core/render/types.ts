@@ -38,6 +38,8 @@ export interface RenderContext {
   screenFrames?: Readonly<Record<string, number>>;
   /** The container layer ID of the mirror frame enclosing this layer. */
   mirrorId?: string;
+  /** Surfaces react to presses (S6): the editor's canvas in preview mode. In Design the layer keeps the pointer (§10). */
+  surfacesLive?: boolean;
 }
 
 /** Every render definition has this shape: draw `layer` from its resolved props (Phase 17, Law 11). */
