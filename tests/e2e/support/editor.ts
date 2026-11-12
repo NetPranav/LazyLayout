@@ -5,7 +5,7 @@
  */
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-import type { Download, Page } from "@playwright/test";
+import { expect, type Download, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 
 export const EDITOR_URL = "/editor";
@@ -162,8 +162,21 @@ export function diffPixels(a: Buffer, b: Buffer, outPath: string) {
  * Picks an item from the toolbar's Shape menu (Rectangle, Ellipse, ...). The menu animates in and out, so the button is only
  * clicked while the menu is not open, and a click that lands as the menu is closing is tried again.
  */
+const SHAPE_KEYS: Record<string, string> = { Rectangle: "r", Ellipse: "o", Line: "l", Arrow: "Shift+L", Polygon: "y", Star: "Shift+Y" };
 export async function pickShape(page: Page, name: string | RegExp) {
   const shape = page.getByRole("button", { name: "Shape", exact: true });
+  // each shape has a shortcut that arms it straight away: no menu animation to race (a Shape click made while the tool is
+  // handing back to Select after a draw is closed again by the hand-back, which timed out on slow CI machines)
+  const key = typeof name === "string" ? SHAPE_KEYS[name] : undefined;
+  if (key) {
+    await page.keyboard.press(key);
+    try {
+      await expect(shape).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+      return;
+    } catch {
+      /* no luck (focus was somewhere else): the menu below does it */
+    }
+  }
   const item = page.getByRole("menuitem", { name: typeof name === "string" ? new RegExp("^" + name) : name });
   for (let attempt = 0; attempt < 4; attempt++) {
     if ((await shape.getAttribute("aria-expanded")) !== "true") await shape.click();
