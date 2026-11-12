@@ -62,6 +62,7 @@ The project owner named four things the studio must make. Everything is ordered 
 
 | Order | Track | Phases | Ends at |
 |---|---|---|---|
+| **0** | **The Design master track** (ROADMAP.md, D1 – D21): goes first. 3D work continues only where it needs it (D4 takes 3D-044 – 047 and 3D-197; D16 – D17 take 3D-204 – 206; D19 needs 3D-033, 3D-037 and 3D-158). | D1 – D21 | the watch page (D21) |
 | 1 | Finish M1's core: lights, materials, inputs, cloth, export | 3D-031 – 3D-061 | Gate M1 (3D-062) |
 | 2 | **Small export** (case 1 and 2) | 3D-191 – 3D-196 | measured budgets |
 | 3 | **Pointer light** (case 2) | 3D-197 – 3D-200 | Gate A (3D-200) |
@@ -232,10 +233,10 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-042 | Real-time renderer | new | 3D-041 | A | 📋 |
 | 3D-043 | Ambient occlusion & screen-space reflections | new | 3D-042 | A | 📋 |
 | | **Stage 7 · Input & simulation core** |||||
-| 3D-044 | Input bus & coordinate spaces | Main 132 | 3D-012 | A | 📋 |
-| 3D-045 | Signal catalogue | Main 133 | 3D-044 | A | 📋 |
-| 3D-046 | Input tapes | Main 136 | 3D-045 | A | 📋 |
-| 3D-047 | Operators & bindings runtime | Main 138 | 3D-046 | A | 📋 |
+| 3D-044 | Input bus & coordinate spaces → *ROADMAP.md D4* | Main 132 | 3D-012 | A | 📋 |
+| 3D-045 | Signal catalogue → *ROADMAP.md D4* | Main 133 | 3D-044 | A | 📋 |
+| 3D-046 | Input tapes → *ROADMAP.md D4* | Main 136 | 3D-045 | A | 📋 |
+| 3D-047 | Operators & bindings runtime → *ROADMAP.md D4* | Main 138 | 3D-046 | A | 📋 |
 | 3D-048 | Stateful simulations & replay | Main 184 | 3D-006, 3D-046 | A | 📋 |
 | 3D-049 | Simulation framework for 3D | new | 3D-048, 3D-013 | A | 📋 |
 | 3D-050 | Cloth on the GPU (XPBD) | new (from S4b) | 3D-049 | A | 📋 |
@@ -407,7 +408,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-195 | One chunk per element, lazy start & the no-editor-code rule | new | 3D-193, 3D-194 | A | 📋 |
 | 3D-196 | Size gates for the five reference recipes in CI | new | 3D-195 | A | 📋 |
 | | **Stage 25 · Page input & the pointer light** |||||
-| 3D-197 | Page-wide signals | new | 3D-045 | A | 📋 |
+| 3D-197 | Page-wide signals → *ROADMAP.md D4* | new | 3D-045 | A | 📋 |
 | 3D-198 | Pointer light | new | 3D-197, 3D-037 | A | 📋 |
 | 3D-199 | Touch, tilt & phone behaviour | new | 3D-198 | A | 📋 |
 | 3D-200 | Gate A: the reactive 3D button (case 2) | new | 3D-062, 3D-196, 3D-199 | A | 📋 |
@@ -417,9 +418,9 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-202 | Browser vision models | new | 3D-201 | A | 📋 |
 | 3D-203 | Server models | new | 3D-201 | A | 📋 |
 | | **Stage 27 · Tracking & corner pin** |||||
-| 3D-204 | Corner pin & perspective placement | new | 3D-193 | A | 📋 |
-| 3D-205 | Point & planar tracking | new | 3D-204, 3D-006, Main 99 | B* | 📋 |
-| 3D-206 | Tracking becomes keyframes | new | 3D-205 | A | 📋 |
+| 3D-204 | Corner pin & perspective placement → *ROADMAP.md D16* | new | 3D-193 | A | 📋 |
+| 3D-205 | Point & planar tracking → *ROADMAP.md D17* | new | 3D-204, 3D-006, Main 99 | B* | 📋 |
+| 3D-206 | Tracking becomes keyframes → *ROADMAP.md D17* | new | 3D-205 | A | 📋 |
 | 3D-207 | Camera solve (3D camera tracker) | new | 3D-205 | A | ⏸ |
 | | **Stage 28 · Photo to surface** |||||
 | 3D-208 | Cutout & matte, production grade | new | 3D-202 | A | 📋 |
@@ -1020,6 +1021,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 ### Phase 3D-044 · Input bus & coordinate spaces
 **Needs:** 3D-012 · **Was:** Main 132 · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D4 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] From ROADMAP.md 132: one input bus for pointer, wheel, keys and touch, with coordinate spaces (page, layer, frame).
 - [ ] New for 3D: scene space and object space (through the camera), so a pointer has a ray and a hit point.
 
@@ -1028,6 +1030,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 ### Phase 3D-045 · Signal catalogue
 **Needs:** 3D-044 · **Was:** Main 133 · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D4 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] From ROADMAP.md 133: named signals (pointer position, speed, press, scroll progress, time, keys), smoothed and normalised. New: signals for objects (hovered, pressed, hit point, hit normal).
 
 **You'll see:** a list of signals you can connect things to.
@@ -1035,6 +1038,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 ### Phase 3D-046 · Input tapes
 **Needs:** 3D-045 · **Was:** Main 136 · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D4 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] From ROADMAP.md 136: record and replay input with exact timing.
 - [ ] Used by tests, the comparison harness (3D-060) and the demo runs (View > Show keystrokes).
 
@@ -1043,6 +1047,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 ### Phase 3D-047 · Operators & bindings runtime
 **Needs:** 3D-046 · **Was:** Main 138 · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D4 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] From ROADMAP.md 138: bindings from a signal to any property, through operators (map range, smooth, spring, clamp, curve). New: 3D properties as targets.
 
 **You'll see:** tilt an object with the pointer by binding pointer x to its rotation.
@@ -2047,6 +2052,7 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 
 ### Phase 3D-197 · Page-wide signals
 **Needs:** 3D-045 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D4 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] The pointer **anywhere on the page** (not only over the element), its speed, scroll position and speed, scroll progress through a section, device tilt and visibility, with their touch equivalents, as sources for any property.
 - [ ] Shaping: smoothing, springs, ranges, dead zones, inversion; "away from the pointer" computed from the pointer's position relative to the element's centre.
 - [ ] One shared, passive listener for the page; asleep when no element uses it.
@@ -2114,6 +2120,7 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 
 ### Phase 3D-204 · Corner pin & perspective placement
 **Needs:** 3D-193 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D16 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] Drag **four points** to place any image, text, video or shape on a plane in a photo, as After Effects' Corner Pin does: exact homography, edge anti-aliasing, optional rounded corners and feather. Builds on the existing corner-pin tool.
 - [ ] Handles snap to the corners of a detected quad; the plane's grid is shown.
 - [ ] Exports as a CSS 3D transform (tiny) or as a micro-renderer quad when lighting or tracking is involved.
@@ -2123,6 +2130,7 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 
 ### Phase 3D-205 · Point & planar tracking
 **Needs:** 3D-204, 3D-006, Main 99 · **Was:** new (2026-11-13) · **Lane:** B* · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D17 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] Track one point, two points (position, scale, rotation) or a planar region (4 points) through a video clip: Lucas–Kanade tracking and feature matching in a worker, sub-pixel. Our own code first; OpenCV.js (Apache-2.0, editor only, loaded on demand) if it does not reach quality.
 - [ ] Forward and backward tracking, confidence, drift correction, manual nudges at any frame, masks for moving parts.
 - [ ] Needs video layers (Main 99, Lane B).
@@ -2132,6 +2140,7 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 
 ### Phase 3D-206 · Tracking becomes keyframes
 **Needs:** 3D-205 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+> **Pulled into ROADMAP.md's Design master track as D17 (2026-11-13):** built there first, for 2D and 3D.
 - [ ] Track results are ordinary keyframes: smooth them, offset, scale, add wiggle, link by expression.
 - [ ] Baked into the export as small delta-compressed arrays; no tracker ships.
 
