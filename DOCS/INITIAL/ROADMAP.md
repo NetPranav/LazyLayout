@@ -12,6 +12,8 @@
 
 ## 0. How to Use This Roadmap
 
+> **2026-11-13:** Lane A's next work is the **Design master track (D1–D21)**, pulled forward ahead of the number order, as the Surfaces track was. The anime studio in ROADMAP_3D is parked as a to-do.
+
 1. **Take the lowest-numbered phase that isn't ✅.** There is no other order to look up.
 2. **A phase only needs lower-numbered phases.** Every "Needs" line points backwards. `scripts/check-roadmap-order.mts` checks this (Law 18), so the order can't silently break when phases are added.
 3. **Every stage ends with a gate you can try in the website.** If a stage gate passes, that stage's promise is true in a real browser and a real build, not just in tests.
@@ -286,14 +288,14 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 103 | Curve-exact path engine | 40 | — (new in v4.1) | 3 | 📋 |
+| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 📋 |
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 📋 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
 | 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
 | 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 📋 |
 | 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 📋 |
-| 110 | Modifiers I: repeat, trim, offset & round | 109 | — (new in v4.1) | 3 | 📋 |
+| 110 | Modifiers I: repeat, trim, offset & round → *Design track D8 (repeat)* | 109 | — (new in v4.1) | 3 | 📋 |
 | 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 📋 |
 | 112 | Shape generators: scatter, Voronoi & flow lines | 110 | — (new in v4.1) | 3 | 📋 |
 | 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 📋 |
@@ -320,32 +322,32 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 132 | Input bus & coordinate spaces | 55, 102 | v3 59.1 | 4 | 📋 |
-| 133 | Signal catalogue, including the keyboard | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
+| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 📋 |
+| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
-| 136 | Input tapes | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
-| 137 | GPU & interactive verification harness | 136 | v3 71 | 4 | 📋 |
-| 138 | Operators & bindings runtime | 137 | v3 60.1 | 4 | 📋 |
-| 139 | Targets, blending & cycles | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
+| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
+| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
+| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
+| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
-| 141 | Connect anything: drag a property onto an input | 140 | — (new in v4.1) | 4 | 📋 |
+| 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
-| 144 | Velocity effects: squash & stretch, lean & trails | 134, 143 | — (new in v4.1) | 4 | 📋 |
+| 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
-| 151 | State machines | 146 | v3 11.3 | 4 | 📋 |
-| 152 | Helpers, pins & Follow | 151 | v3 88 | 4 | 📋 |
+| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
+| 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
-| 154 | Cloners, tags & group targets | 153 | v3 89.2, 89.3 | 4 | 📋 |
+| 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
-| 157 | Fields & effectors | 154 | v3 90.1–90.3 | 4 | 📋 |
+| 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
@@ -361,31 +363,31 @@ One row per phase, in execution order. Update the Status column together with th
 | 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
-| 173 | GPU surface strategy & compositor | 170 | v3 61.1, 61.3 | 4 | 📋 |
-| 174 | Passes, render targets & GPU memory ledger | 173 | v3 61.2, 61.5 | 4 | 📋 |
-| 175 | Layer textures, outlines & distance fields | 172, 174 | — (new in v4.1) | 4 | 📋 |
+| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
+| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
+| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
-| 177 | Shader graph | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
-| 178 | Raw GLSL (Pro) & shader safety | 177 | v3 62.2 | 4 | 📋 |
+| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
+| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
-| 183 | Particles & force fields | 178, 175 | v3 63, 19.2 | 4 | 📋 |
-| 184 | Stateful simulations & replay | 183 | v3 64.2, 64.3 | 4 | 📋 |
+| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
+| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
-| 188 | Scroll-scrubbed image sequences & video | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
-| 189 | Smooth scrolling & scroll physics | 188 | — (new in v4.1) | 4 | 📋 |
-| 190 | Depth parallax by scroll and cursor | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
+| 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
+| 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
+| 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 📋 |
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 📋 |
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 📋 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
 | 196 | Code components | 195 | v3 68 | 4 | 📋 |
-| 197 | Interactive export runtime | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
+| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
@@ -396,12 +398,12 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 203 | Rig model: bones & skins | 72, 73, 185, 202 | — (new in v4.1) | 5 | 📋 |
-| 204 | Bone tool & posing | 203 | — (new in v4.1) | 5 | 📋 |
-| 205 | Bones on the timeline | 66, 67, 71, 204 | — (new in v4.1) | 5 | 📋 |
-| 206 | Mesh deformation & weights | 205 | — (new in v4.1) | 5 | 📋 |
-| 207 | Inverse kinematics | 206 | — (new in v4.1) | 5 | 📋 |
-| 208 | Constraints & secondary motion | 207 | — (new in v4.1) | 5 | 📋 |
+| 203 | Rig model: bones & skins → *ROADMAP_3D 3D-117 (deferred)* | 72, 73, 185, 202 | — (new in v4.1) | 5 | 📋 |
+| 204 | Bone tool & posing → *ROADMAP_3D 3D-118 (deferred)* | 203 | — (new in v4.1) | 5 | 📋 |
+| 205 | Bones on the timeline → *ROADMAP_3D 3D-119 (deferred)* | 66, 67, 71, 204 | — (new in v4.1) | 5 | 📋 |
+| 206 | Mesh deformation & weights → *ROADMAP_3D 3D-120 (deferred)* | 205 | — (new in v4.1) | 5 | 📋 |
+| 207 | Inverse kinematics → *ROADMAP_3D 3D-121 (deferred)* | 206 | — (new in v4.1) | 5 | 📋 |
+| 208 | Constraints & secondary motion → *ROADMAP_3D 3D-122 (deferred)* | 207 | — (new in v4.1) | 5 | 📋 |
 | 209 | Puppet pins | 206 | — (new in v4.1) | 5 | 📋 |
 | 210 | Rigs that react | 135, 208, 209 | — (new in v4.1) | 5 | 📋 |
 | 211 | Character states & blend trees | 151, 210 | — (new in v4.1) | 5 | 📋 |
@@ -416,29 +418,29 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 218 | 3D stack decision & licences | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 📋 |
-| 219 | Scene layer | 218 | v3 18.1 | 6 | 📋 |
-| 220 | 3D viewport editing | 219 | — (new) | 6 | 📋 |
-| 221 | Scene hierarchy & 3D inspector | 220 | — (new) | 6 | 📋 |
-| 222 | Primitives & 3D text | 221 | v3 18.2 (primitives) | 6 | 📋 |
-| 223 | Inflate & extrude any vector into 3D | 103, 222 | — (new in v4.1) | 6 | 📋 |
-| 224 | GLTF import pipeline | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 📋 |
-| 225 | Materials & textures | 224 | v3 18.2 (materials) | 6 | 📋 |
-| 226 | Lights, shadows & environments | 225 | v3 18.2 (lights) | 6 | 📋 |
-| 227 | Cameras & camera paths | 226 | v3 18.3 (camera) | 6 | 📋 |
-| 228 | 3D keyframes on the timeline | 227 | v3 18.3 (tracks) | 6 | 📋 |
-| 229 | Animated GLTF playback | 228 | — (new) | 6 | 📋 |
-| 230 | 3D skeletons & IK | 207, 208, 229 | — (new in v4.1) | 6 | 📋 |
-| 231 | 3D materials in the shader graph & WebGPU | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 📋 |
-| 232 | 3D reactions & raycast events | 231 | v3 18.3 (pointer) + new | 6 | 📋 |
-| 233 | Page layers inside 3D scenes | 232 | — (new in v4.1) | 6 | 📋 |
-| 234 | Instancing, LOD & 3D cloners | 232 | — (new; extends 154 to 3D) | 6 | 📋 |
-| 235 | 3D physics | 234 | — (new) | 6 | 📋 |
-| 236 | Post-processing | 235 | — (new) | 6 | 📋 |
-| 237 | 3D memory discipline | 236 | v3 18 (v3.3 amendment) | 6 | 📋 |
-| 238 | 3D export | 237 | v3 18.4 | 6 | 📋 |
-| 239 | 3D library | 238 | v3 25.3 (wave 6) | 6 | 📋 |
-| 240 | Stage 6 gate: the 3D journey | 218–239 | — (new) | 6 | 📋 |
+| 218 | 3D stack decision & licences → *ROADMAP_3D 3D-001* | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 📋 |
+| 219 | Scene layer → *ROADMAP_3D 3D-012* | 218 | v3 18.1 | 6 | 📋 |
+| 220 | 3D viewport editing → *ROADMAP_3D 3D-014, 3D-016* | 219 | — (new) | 6 | 📋 |
+| 221 | Scene hierarchy & 3D inspector → *ROADMAP_3D 3D-021, 3D-022* | 220 | — (new) | 6 | 📋 |
+| 222 | Primitives & 3D text → *ROADMAP_3D 3D-025, 3D-026* | 221 | v3 18.2 (primitives) | 6 | 📋 |
+| 223 | Inflate & extrude any vector into 3D → *ROADMAP_3D 3D-029* | 103, 222 | — (new in v4.1) | 6 | 📋 |
+| 224 | GLTF import pipeline → *ROADMAP_3D 3D-158* | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 📋 |
+| 225 | Materials & textures → *ROADMAP_3D 3D-033* | 224 | v3 18.2 (materials) | 6 | 📋 |
+| 226 | Lights, shadows & environments → *ROADMAP_3D 3D-037 – 3D-039* | 225 | v3 18.2 (lights) | 6 | 📋 |
+| 227 | Cameras & camera paths → *ROADMAP_3D 3D-099, 3D-101* | 226 | v3 18.3 (camera) | 6 | 📋 |
+| 228 | 3D keyframes on the timeline → *ROADMAP_3D 3D-104, 3D-108* | 227 | v3 18.3 (tracks) | 6 | 📋 |
+| 229 | Animated GLTF playback → *ROADMAP_3D 3D-110* | 228 | — (new) | 6 | 📋 |
+| 230 | 3D skeletons & IK → *ROADMAP_3D 3D-127, 3D-128 (deferred)* | 207, 208, 229 | — (new in v4.1) | 6 | 📋 |
+| 231 | 3D materials in the shader graph & WebGPU → *ROADMAP_3D 3D-083 (deferred)* | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 📋 |
+| 232 | 3D reactions & raycast events → *ROADMAP_3D 3D-053, 3D-150* | 231 | v3 18.3 (pointer) + new | 6 | 📋 |
+| 233 | Page layers inside 3D scenes → *ROADMAP_3D 3D-165* | 232 | — (new in v4.1) | 6 | 📋 |
+| 234 | Instancing, LOD & 3D cloners → *ROADMAP_3D 3D-170 (deferred)* | 232 | — (new; extends 154 to 3D) | 6 | 📋 |
+| 235 | 3D physics → *ROADMAP_3D 3D-135 (deferred)* | 234 | — (new) | 6 | 📋 |
+| 236 | Post-processing → *ROADMAP_3D 3D-093* | 235 | — (new) | 6 | 📋 |
+| 237 | 3D memory discipline → *ROADMAP_3D 3D-176* | 236 | v3 18 (v3.3 amendment) | 6 | 📋 |
+| 238 | 3D export → *ROADMAP_3D 3D-171* | 237 | v3 18.4 | 6 | 📋 |
+| 239 | 3D library → *ROADMAP_3D 3D-184* | 238 | v3 25.3 (wave 6) | 6 | 📋 |
+| 240 | Stage 6 gate: the 3D journey → *ROADMAP_3D 3D-189* | 218–239 | — (new) | 6 | 📋 |
 
 **Stage 7 · AI & agents (Phases 241–250)**
 
@@ -1649,6 +1651,211 @@ The document and World Environment have their own stores, After-track actions mo
 
 ---
 
+# DESIGN MASTER TRACK — pulled forward (Phases D1–D21)
+
+> **Why here (2026-11-13, Lane A, by the project owner's priority):** the Design panel is about a fifth of what it must be (estimate of 2026-11-13: about 26% built and reachable, about 23% counting the controls that do nothing). The goal is a master tool for the most complex website animations, built by combining a few blocks: **drivers** (scroll, pointer, speed), **relationships** (parent, follow, links, opposite), **repeat** (cloners and effectors), **break apart** (split text, explode models), **choreography** (scroll scenes), **effects** (speed), **tracking**, and **code freedom** (write any CSS). The test is the watch page (D21). Like the Surfaces track, this track is **pulled forward** ahead of the number order. Numbered phases it takes over say *→ Design track D…* in the index. Lane B's phases in it (D11, D12, D15, and Main 99 for D17) stay Lane B's: agree before Lane A builds any of them.
+
+**Order:** D1 → D21. Lane B's items (D11, D12, D15) can run in parallel with Lane A's D3 – D10. `npm run check:design-track` checks this table against the entries.
+
+| # | Phase | Was | Needs | Lane | Status |
+|---|---|---|---|---|---|
+| | **Wave 0 · Make it work** |||||
+| D1 | Make every Design control work | the owner's Lane A test file (LA-001 – LA-035) | — | A | 📋 |
+| D2 | Control coverage test | new | D1 | A | 📋 |
+| | **Wave 1 · Freedom & relationships** |||||
+| D3 | Style code: write any CSS for a layer | new | D2 | A | 📋 |
+| D4 | Drivers: scroll, pointer, speed and time for any property | ROADMAP_3D 3D-044 – 3D-047, 3D-197 (Main 132 – 138) | D2 | A | 📋 |
+| D5 | Parenting, pick-whip & expressions in the new editor | wiring Main 73, 76, 77 (Lane B's engine, merged) | D2 | A | 📋 |
+| D6 | Follow, pins & helpers | Main 152 | D5 | A | 📋 |
+| D7 | Connect anything | Main 141 | D4, D5 | A | 📋 |
+| | **Wave 2 · Repeat** |||||
+| D8 | Repeater | Main 110 (the repeat part) | D2 | A | 📋 |
+| D9 | Cloner: grid, radial, line, path, fill | Main 154 | D8 | A | 📋 |
+| D10 | Fields & effectors | Main 157 | D9, D4 | A | 📋 |
+| | **Wave 3 · Scroll & choreography** |||||
+| D11 | Scroll scenes: pin, scrub, snap | Main 81, 82 | D4 | B | 📋 |
+| D12 | Split text & text motion | Main 83, 84 | D2 | B | 📋 |
+| D13 | Scroll-scrubbed image sequences & video | Main 188 | D11 | A | 📋 |
+| D14 | Smooth scroll & depth parallax | Main 189, 190 | D11, D4 | A | 📋 |
+| D15 | States: hover, press, focus choreography | Main 78 | D2 | B | 📋 |
+| | **Wave 4 · Tracking & speed** |||||
+| D16 | Corner pin & perspective placement | ROADMAP_3D 3D-204 | D2 | A | 📋 |
+| D17 | Tracking & parent to track | ROADMAP_3D 3D-205, 3D-206 (needs Main 99, Lane B) | D16, D5 | A | 📋 |
+| D18 | Speed effects | Main 144 | D4 | A | 📋 |
+| | **Wave 5 · 3D parts** |||||
+| D19 | 3D model parts & explode | new (uses ROADMAP_3D 3D-158 import, 3D-033 materials, 3D-037 lights) | D4, 3D-158, 3D-033, 3D-037 | A | 📋 |
+| D20 | Labels that follow 3D parts | new | D19, D6 | A | 📋 |
+| | **Gate** |||||
+| D21 | Gate: the watch page | new | D1 – D20 | A | 📋 |
+
+## Wave 0 · Make it work
+
+### Phase D1 · Make every Design control work
+**Needs:** — · **Was:** the owner's Lane A test file (LA-001 – LA-035) · **Lane:** A · **Status:** 📋
+- [ ] Fix the issues still open in the owner's test file: LA-003, 006, 007, 009, 010, 015, 017 – 022, 027, 028, 034, 035 (padding, margin, flex grow, overflow, fill opacity, blur effects, cursor, tooltips, scrubbing while focused, line shadow…).
+- [ ] Reachability audit of the new editor: components and variants, tokens and styles, breakpoints, pages, pen tools. Anything still only in the legacy editor is wired, or gets a D-phase.
+
+**You'll see:** every control in Design visibly changes the canvas.
+**Done when:** each listed issue has a passing test; the audit list is empty or every item has a phase.
+
+### Phase D2 · Control coverage test
+**Needs:** D1 · **Was:** new · **Lane:** A · **Status:** 📋
+- [ ] A generated test walks every control of the Design panel (from the panel's own config) and checks that it changes the document, the canvas and the export.
+- [ ] A control that does nothing fails CI, so "dead controls" cannot come back.
+
+**You'll see:** a coverage line in CI: "Design controls: 214 of 214 change the page".
+**Done when:** 100% of the listed controls pass in Chromium; a deliberately dead control fails the run.
+
+## Wave 1 · Freedom & relationships
+
+### Phase D3 · Style code: write any CSS for a layer
+**Needs:** D2 · **Was:** new · **Lane:** A · **Status:** 📋
+- [ ] A **Style code** box per layer (and per state and breakpoint): write declarations as in a stylesheet. Known properties become the normal controls, both ways; unknown ones are kept as custom, validated, and exported as written. CSS variables, `calc()`, autocomplete, inline errors.
+- [ ] Safe: no selectors that leak out of the layer, no script, sanitised like code components (Main 195).
+
+**You'll see:** type `padding: 24px; backdrop-filter: blur(8px)` and the Padding control shows 24.
+**Done when:** 50 declarations round-trip (code to controls to code); unknown ones export unchanged; a hostile declaration is refused with a message.
+
+### Phase D4 · Drivers: scroll, pointer, speed and time for any property
+**Needs:** D2 · **Was:** ROADMAP_3D 3D-044 – 3D-047, 3D-197 (Main 132 – 138) · **Lane:** A · **Status:** 📋
+- [ ] Built here first, for 2D and 3D: the input bus, the signal catalogue (scroll progress of a section, the pointer anywhere on the page, velocity, time, visibility, tilt), input tapes for tests, and the bindings runtime.
+- [ ] Shaping: range, smoothing, spring, invert.
+
+**You'll see:** a **Driven by** menu on any property: Scroll, Pointer, Speed, Time.
+**Done when:** the same input tape gives the same values in the editor and in the export; drivers cost nothing when unused.
+
+### Phase D5 · Parenting, pick-whip & expressions in the new editor
+**Needs:** D2 · **Was:** wiring Main 73, 76, 77 (Lane B's engine, merged) · **Lane:** A · **Status:** 📋
+- [ ] Parent any layer to another, including helper (null) layers; drag the pick-whip from one property to another; type an expression. Lane A wires the UI on Lane B's engine, as the wire-53–71 PRs did.
+
+**You'll see:** link a ring's rotation to the watch's at × −1 and it turns the other way.
+**Done when:** a parented layer keeps its place; links and expressions evaluate the same in the editor and in the export; Lane B's engine tests still pass.
+
+### Phase D6 · Follow, pins & helpers
+**Needs:** D5 · **Was:** Main 152 · **Lane:** A · **Status:** 📋
+- [ ] Follow a layer or a point with offset, delay and smoothing; look-at; **pin to a point on an image**, so a label moves and scales with the image.
+
+**You'll see:** a label stays on the watch's crown while the image zooms.
+**Done when:** pinned points stay within 0.5 px through 10 different transforms.
+
+### Phase D7 · Connect anything
+**Needs:** D4, D5 · **Was:** Main 141 · **Lane:** A · **Status:** 📋
+- [ ] Drag any property onto a driver or onto another property; map ranges; multiply; one click for "opposite".
+
+**You'll see:** drag Rotation onto Scroll and the layer turns as the page scrolls.
+**Done when:** 20 connections evaluate identically in the editor and in the export.
+
+## Wave 2 · Repeat
+
+### Phase D8 · Repeater
+**Needs:** D2 · **Was:** Main 110 (the repeat part) · **Lane:** A · **Status:** 📋
+- [ ] Repeat a layer N times with a step in position, rotation, scale and opacity, like After Effects' Repeater. Trim, offset and round stay in Main 110.
+
+**You'll see:** one petal becomes a flower of 12.
+**Done when:** golden positions for 10 settings; one undo step per change.
+
+### Phase D9 · Cloner: grid, radial, line, path, fill
+**Needs:** D8 · **Was:** Main 154 · **Lane:** A · **Status:** 📋
+- [ ] Rows × columns, a ring, a line, along a path, or **fill an area** (as many copies as fit at a spacing). Each copy knows its index, for links and expressions.
+- [ ] The export picks the cheapest form: a static dot grid becomes one CSS background line, a few copies become elements, thousands of animated copies become one canvas.
+
+**You'll see:** draw a dot, choose Clone > Fill area, and the section fills with dots.
+**Done when:** a 100 × 60 dot grid exports with no script and matches the editor; 5,000 animated copies hold 60 fps on the mid tier.
+
+### Phase D10 · Fields & effectors
+**Needs:** D9, D4 · **Was:** Main 157 · **Lane:** A · **Status:** 📋
+- [ ] Vary copies by distance to the pointer, scroll progress, noise or index: scale, colour, offset, delay (stagger).
+
+**You'll see:** dots grow near the cursor and ripple as you scroll.
+**Done when:** per-copy values match hand-computed falloffs at 5 positions.
+
+## Wave 3 · Scroll & choreography
+
+### Phase D11 · Scroll scenes: pin, scrub, snap
+**Needs:** D4 · **Was:** Main 81, 82 · **Lane:** B · **Status:** 📋
+- [ ] Sections pin for a number of screens; animations scrub with scroll progress; snap points; the scroll simulator in the editor. Lane B's phases; Lane A builds them only if Lane B agrees.
+
+**You'll see:** a section that holds still while its animation plays with the scroll.
+**Done when:** Main 81 and 82's own gates, plus scroll tapes matching the export.
+
+### Phase D12 · Split text & text motion
+**Needs:** D2 · **Was:** Main 83, 84 · **Lane:** B · **Status:** 📋
+- [ ] Split text into characters, words or lines, accessibly, and animate them with stagger. Lane B's phases.
+
+**You'll see:** a headline whose words rise one after another.
+**Done when:** Main 83 and 84's own gates.
+
+### Phase D13 · Scroll-scrubbed image sequences & video
+**Needs:** D11 · **Was:** Main 188 · **Lane:** A · **Status:** 📋
+- [ ] Apple-style frame sequences and video scrubbed by scroll on a sticky canvas, with preloading and a size budget.
+
+**You'll see:** a product turning frame by frame as you scroll.
+**Done when:** no dropped frames on the mid tier at normal scroll speed; the frames load within the size budget.
+
+### Phase D14 · Smooth scroll & depth parallax
+**Needs:** D11, D4 · **Was:** Main 189, 190 · **Lane:** A · **Status:** 📋
+- [ ] Smooth scrolling with sane physics and an off switch; layers that move at their own depth by scroll and cursor.
+
+**You'll see:** a page whose layers drift at different depths.
+**Done when:** reduced motion turns both off; scroll tapes match the export.
+
+### Phase D15 · States: hover, press, focus choreography
+**Needs:** D2 · **Was:** Main 78 · **Lane:** B · **Status:** 📋
+- [ ] Named states and transitions on any layer. Lane B's phase.
+
+**You'll see:** a button with Hover and Press states, previewed live.
+**Done when:** Main 78's own gate.
+
+## Wave 4 · Tracking & speed
+
+### Phase D16 · Corner pin & perspective placement
+**Needs:** D2 · **Was:** ROADMAP_3D 3D-204 · **Lane:** A · **Status:** 📋
+- [ ] Drag four points to place an image, text or video on a plane in a photo; exports as a CSS 3D transform.
+
+**You'll see:** a poster set onto a billboard in a photo in four drags.
+**Done when:** the four points are hit within 0.01 px; the export matches within 0.5 px at 5 sizes.
+
+### Phase D17 · Tracking & parent to track
+**Needs:** D16, D5 · **Was:** ROADMAP_3D 3D-205, 3D-206 (needs Main 99, Lane B) · **Lane:** A · **Status:** 📋
+- [ ] Track one point, two points or a plane through a video; the track becomes a helper layer you can **parent anything to**; results are editable keys, baked small in the export. Needs video layers (Main 99, Lane B).
+
+**You'll see:** press Track, parent a label to the track, and it rides along with the car.
+**Done when:** on 10 clips the pin stays within 1.5 px for 95% of frames; a 10-second track exports under 4 KB.
+
+### Phase D18 · Speed effects
+**Needs:** D4 · **Was:** Main 144 · **Lane:** A · **Status:** 📋
+- [ ] Motion blur by velocity, speed lines, trails, squash and stretch, driven by how fast a layer moves (uses the motion blur of Main 75).
+
+**You'll see:** a fast swipe leaves speed lines and a blur that fade as it stops.
+**Done when:** the effect amount matches the velocity curve at 5 times; it costs nothing at rest.
+
+## Wave 5 · 3D parts
+
+### Phase D19 · 3D model parts & explode
+**Needs:** D4, 3D-158, 3D-033, 3D-037 · **Was:** new (uses ROADMAP_3D 3D-158 import, 3D-033 materials, 3D-037 lights) · **Lane:** A · **Status:** 📋
+- [ ] An imported model's parts become separate layers; an **Explode** generator moves each part from its place outward (along its own axis, radially, or along a path) by one progress value, with stagger.
+
+**You'll see:** drag the Explode slider and the watch comes apart into its pieces.
+**Done when:** parts return exactly to their place at 0; the progress can be driven by scroll; the export stays under its size budget.
+
+### Phase D20 · Labels that follow 3D parts
+**Needs:** D19, D6 · **Was:** new · **Lane:** A · **Status:** 📋
+- [ ] 2D layers follow points on 3D parts (projected each frame), with leader lines.
+
+**You'll see:** a label and a line that stay on the watch's gear as it turns and comes apart.
+**Done when:** labels stay within 1 px of their projected points at 10 poses.
+
+## Gate
+
+### Phase D21 · Gate: the watch page
+**Needs:** D1 – D20 · **Was:** new · **Lane:** A · **Status:** 📋
+- [ ] The benchmark: a 3D watch pinned for four screens; it turns with scroll while a ring of elements turns the other way; then it explodes into parts with labels following; words stagger in; a dot field reacts to scroll speed. Built in about 10 steps, exported under its size budget.
+
+**You'll see:** the finished watch page, live.
+**Done when:** built from scratch in under an hour by the owner; holds 60 fps on the mid tier; works with reduced motion and on touch.
+
+---
+
 # STAGE 4 — INTERACTIVE & COMPLEX ANIMATION (Phases 132–202)
 
 > **Stage output:** anything can react to the **mouse, touch, scroll, keyboard, microphone, camera and gamepad**, and every layer knows where it is, how fast it moves and what is around it. One-step reactions ("Cursor → Bend"), one drag to connect any property to any input, and Pro binding graphs; magnet, tilt, follow and spotlight behaviours; squash and stretch; reactions that change layout inside fixed boxes; gestures (hold, swipe, fling, slingshot), constrained dragging, carousels and seamless loops; keyboard-driven motion and focus parity; Rive-style state machines. Kinetic composition from primitives: invisible helpers, follow pins, one-click Split, cloners, roles and selectors ("every button"), data-driven charts, fields and effectors, 2D physics with joints, ropes and soft bodies, and contact events. Interaction logic as Simple "When → Do" rules or Unreal-style Blueprint graphs, compiled to plain code; sound and haptics. GPU effects on a budgeted compositor: any layer as a texture, outline or distance field; effect layers, outline effects, liquid glass and 2D lights; shader graphs, particles, fluids and other simulations; deformation and fracture; image and text distortion, scroll-scrubbed sequences, smooth scrolling and depth parallax; custom cursors. Effects as data, bring-your-own code components, and production-hardened export with a small vendored runtime or an embed script.
@@ -2288,6 +2495,8 @@ The document and World Environment have their own stores, After-track actions mo
 ---
 
 # STAGE 6 — 3D (Phases 218–240)
+
+> **Moved to `ROADMAP_3D.md` (2026-11-11), re-ordered 2026-11-13.** Stage 6 is replaced by the 3D roadmap, which now also carries the photo studio and the anime studio. Its build order is its §0a. Rows in the index above that say *→ ROADMAP_3D 3D-…* are done there, not here. Phases this file owes it: **99** (video and audio layers; needed by tracking, 3D-205, and shots, 3D-223), **76–79** (links, expressions, states, transitions; Lane B) and the animation phases Lane B builds around them (3D-218 time on twos, 3D-227 live animation mixing).
 
 > **Stage output:** real 3D inside the same documents, timeline and interactions: a scene layer drawn through the GPU compositor, Spline-style editing with gizmos, primitives and 3D text, GLTF models (including their animations), PBR materials, lights, shadows and environments, cameras and camera paths, 3D keyframes, cursor and scroll reactions, raycast events for Blueprints, instancing, 3D physics, post-processing, and export to React Three Fiber or plain three.js.
 >
