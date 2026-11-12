@@ -68,6 +68,14 @@ function cloneObject3d(obj: Object3d): Object3d {
     ...(obj.parentInverse ? { parentInverse: [...obj.parentInverse] } : {}),
     ...(obj.materialSlots ? { materialSlots: [...obj.materialSlots] } : {}),
     ...(obj.materials ? { materials: [...obj.materials] } : {}),
+    ...(obj.modifiers
+      ? {
+          modifiers: obj.modifiers.map((m) => ({
+            ...m,
+            params: m.params ? { ...m.params } : {},
+          })),
+        }
+      : {}),
   };
 }
 
@@ -115,6 +123,7 @@ export function evaluate3D(
   const actions = cloneTable(doc.actions);
   const worlds = cloneTable(doc.worlds);
   const images3d = cloneTable(doc.images3d);
+  const texts = cloneTable(doc.texts);
 
   const tables: Record<string, Record<string, unknown>> = {
     scenes: scenes as Record<string, unknown>,
@@ -127,6 +136,7 @@ export function evaluate3D(
     actions: actions as Record<string, unknown>,
     worlds: worlds as Record<string, unknown>,
     images3d: images3d as Record<string, unknown>,
+    texts: texts as Record<string, unknown>,
   };
 
   // 2. Resolve active composition
@@ -257,6 +267,7 @@ export function evaluate3D(
     actions,
     worlds,
     images3d,
+    texts,
     worldMatrices,
   };
 }

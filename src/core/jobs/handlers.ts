@@ -5,6 +5,9 @@
  */
 import { clothSurface, type ClothSettings } from "../surface/cloth";
 import { shapeDistance, type SurfaceShape } from "../surface/field";
+import { evaluateModifiersWorker } from "../3d/modifiers/stack";
+import type { MeshData } from "../3d/modifiers/types";
+import type { Modifier3d } from "../document/schema";
 
 export interface HandlerContext {
   progress: (progress: number) => void;
@@ -23,6 +26,12 @@ export interface ClothPayload {
   cell: number;
 }
 
+export interface ModifiersEvalPayload {
+  mesh: MeshData;
+  modifiers?: Modifier3d[];
+  viewport?: boolean;
+}
+
 export const handlers: Record<string, Handler> = {
   cloth: ((payload: ClothPayload, ctx: HandlerContext): HandlerResult => {
     const { height, w, h } = clothSurface({
@@ -35,6 +44,21 @@ export const handlers: Record<string, Handler> = {
       onProgress: ctx.progress,
     });
     return { result: { height, w, h }, transfer: [height.buffer] };
+  }) as Handler,
+
+  "modifiers.eval": ((payload: ModifiersEvalPayload, _ctx: HandlerContext): HandlerResult => {
+    const raw = payload.mesh;
+    const mesh: MeshData = {
+      positions: raw.positions instanceof Float32Array ? raw.positions : new Float32Array(raw.positions),
+      indices: raw.indices instanceof Uint32Array ? raw.indices : new Uint32Array(raw.indices),
+      uvs: raw.uvs ? (raw.uvs instanceof Float32Array ? raw.uvs : new Float32Array(raw.uvs)) : undefined,
+      normals: raw.normals ? (raw.normals instanceof Float32Array ? raw.normals : new Float32Array(raw.normals)) : undefined,
+    };
+    const result = evaluateModifiersWorker(mesh, payload.modifiers, payload.viewport);
+    const transfer: Transferable[] = [result.positions.buffer, result.indices.buffer];
+    if (result.uvs) transfer.push(result.uvs.buffer);
+    if (result.normals) transfer.push(result.normals.buffer);
+    return { result, transfer };
   }) as Handler,
 
   /** A busy loop for `ms`, reporting progress (tests: the main thread must stay free, and cancel must be prompt). */
