@@ -5,3 +5,7 @@ export const SCENE_BOX = { width: 120, height: 100 } as const;
 export const SCENE_SQUARE = "M5 5 L115 5 L115 95 L5 95 Z";
 export const SCENE_DIAMOND = "M60 5 L115 50 L60 95 L5 50 Z";
 
+
+/** The track-matte scene (Phase 74 gap): a red layer whose mask is a second layer, an ellipse that slides across it. */
+export const MATTE_TARGET = "scene_matte";
+export const MATTE_SOURCE = "scene_matte_source";

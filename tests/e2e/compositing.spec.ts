@@ -10,7 +10,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
-import { SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "../../src/legacy-editor/stage-lab/compositingScenes";
+import { MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "../../src/legacy-editor/stage-lab/compositingScenes";
 
 const STAGE = 'iframe[title="Stage"]';
 const TIMES = [0, 0.25, 0.5, 0.75, 1];
@@ -117,4 +117,31 @@ test("Phase 74: five compositing scenes at five times match evaluate() in the re
   expect(isRed(diamondCorner), `the diamond leaves that corner empty: ${diamondCorner}`).toBe(false);
   const diamondCentre = await pixel(page, sceneId("lumaMorph"), 60, 50);
   expect(isRed(diamondCentre), `and shows the layer at its centre: ${diamondCentre}`).toBe(true);
+});
+
+test("Phase 74: a layer used as a matte masks another layer, follows its animation, and is hidden itself", async ({ page }) => {
+  await openLab(page);
+  const isRed = (p: number[]) => p[0] > 200 && p[1] < 60 && p[2] < 60 && p[3] > 200;
+  const targetPixel = async (x: number) => {
+    const buffer = await page.frameLocator(STAGE).locator(`[data-element-id="${MATTE_TARGET}"]`).screenshot();
+    const png = PNG.sync.read(buffer);
+    const scale = png.width / 220;
+    const i = (Math.round(50 * scale) * png.width + Math.round(x * scale)) * 4;
+    return [png.data[i], png.data[i + 1], png.data[i + 2], png.data[i + 3]];
+  };
+  for (const t of TIMES) {
+    await seek(page, t);
+    const kernelPath = (await kernel(page, MATTE_TARGET, t))["mask.path"] as string;
+    const svg = maskSvg(await computed(page, MATTE_TARGET, "mask-image"));
+    expect(/<path d="([^"]*)"/.exec(svg)![1], `matte path at ${t}`).toBe(kernelPath);
+    // the matte layer itself is not drawn
+    expect(Number(await computed(page, MATTE_SOURCE, "opacity")), `the source is hidden at ${t}`).toBe(0);
+  }
+  // the ellipse starts at the left (centre x 30) and ends at x 190: the red shows through where it is
+  await seek(page, 0);
+  expect(isRed(await targetPixel(30)), "at 0 the left shows red").toBe(true);
+  expect(isRed(await targetPixel(190)), "at 0 the right is hidden").toBe(false);
+  await seek(page, 1);
+  expect(isRed(await targetPixel(30)), "at 1 the left is hidden").toBe(false);
+  expect(isRed(await targetPixel(190)), "at 1 the right shows red").toBe(true);
 });

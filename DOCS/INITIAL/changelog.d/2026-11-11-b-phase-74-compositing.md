@@ -11,5 +11,10 @@
 - A compositing reference-scene set in the stage lab ("Load 5 compositing scenes") and `tests/e2e/compositing.spec.ts`: five scenes at five times compared with `evaluate()` in the real stage, including the pixels.
 - Tests: 20 unit tests (`compositing.test.ts`).
 
+- **Track mattes:** `matte.source`, `matte.mode`, `matte.showSource`. A layer uses another layer as its mask (alpha, luma and inverted): the source's shape, position, scale and rotation, animated, become the mask, and the source is hidden unless you ask to show it. It reads a box or ellipse on the same absolute canvas; anything else gives no matte and the source stays visible. `src/core/geometry/matteShape.ts`, `withMatte` in the kernel.
+- Commands for the inspector and agents: `layer.setBlend`, `layer.setAdjustment`, `layer.setMask`, `layer.setMatte`.
+- `mask.width` and `mask.height` default to -1 (the layer's own); 0 is now a real zero, so a mask can grow from nothing.
+- Tests: 12 matte unit tests and 4 more compositing tests; the stage-lab spec gains a track-matte scene.
+
 #### Not done
-- A layer used as another layer's matte (the matte here is a shape described by properties). Inspector and timeline controls for isolation, adjustments and masks (Lane A wires them into the new editor). A `mask.width` of 0 means the layer's own width, so an ellipse can't grow from exactly 0. Firefox and WebKit runs (CI).
+- The inspector and timeline controls (the commands and property paths are ready; the UI pipeline wires them, see the wiring doc). A matte whose source is under a flow layout. Masks and mattes in exported code. Firefox and WebKit runs (CI).

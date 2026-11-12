@@ -14,7 +14,7 @@ import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
-import { SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
+import { MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -79,17 +79,23 @@ function compositingDocument() {
     box("back_adjust_r", 2, { "appearance.background.color": "#0000ff", "frame.x": 20 + 2 * 150 + SCENE_BOX.width / 2, "frame.width": SCENE_BOX.width / 2 }),
     box(sceneId("adjustment"), 2, { "render.role": "adjustment" }),
     // alpha mask: a red layer shown through an ellipse that grows
-    box(sceneId("alphaMask"), 3, { "appearance.background.color": "#ff0000", "mask.mode": "alpha", "mask.shape": "ellipse", "mask.width": 10, "mask.height": 100 }),
+    box(sceneId("alphaMask"), 3, { "appearance.background.color": "#ff0000", "mask.mode": "alpha", "mask.shape": "ellipse", "mask.width": 0, "mask.height": 100 }),
     // luma mask: a red layer shown through a white path that morphs from a square to a diamond
     box(sceneId("lumaMorph"), 4, { "appearance.background.color": "#ff0000", "mask.mode": "luma", "mask.shape": "path", "mask.path": SCENE_SQUARE, "mask.fill": "#ffffff" }),
   ];
-  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 200 } }) as Layer;
+  // track matte: the red layer is shown through a second layer, an ellipse that slides from left to right across it
+  layers.push(
+    createLayer({ id: MATTE_TARGET, archetype: "container", parentId: LAB_ROOT, properties: { positioning: "absolute", "frame.x": 20, "frame.y": 180, "frame.width": 220, "frame.height": 100, "appearance.background.color": "#ff0000", "matte.source": MATTE_SOURCE, "matte.mode": "alpha" } }) as Layer,
+    createLayer({ id: MATTE_SOURCE, archetype: "ellipse", parentId: LAB_ROOT, properties: { positioning: "absolute", "frame.x": 20, "frame.y": 180, "frame.width": 60, "frame.height": 100 } }) as Layer,
+  );
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
   const animate = (layerId: string, name: string, tracks: Array<{ property: string; from: number | string; to: number | string }>) =>
     attachClip(hydrateClip({ name, type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: tracks.map((t) => ({ property: t.property, keyframes: [{ time: 0, value: t.from }, { time: 1, value: t.to }] })) }), layerId);
   const clips = [
     animate(sceneId("adjustment"), "Blur up", [{ property: "adjust.blur", from: 0, to: 16 }]),
-    animate(sceneId("alphaMask"), "Grow", [{ property: "mask.width", from: 10, to: 120 }]),
+    animate(sceneId("alphaMask"), "Grow", [{ property: "mask.width", from: 0, to: 120 }]),
     animate(sceneId("lumaMorph"), "Morph", [{ property: "mask.path", from: SCENE_SQUARE, to: SCENE_DIAMOND }]),
+    animate(MATTE_SOURCE, "Slide", [{ property: "transform.x", from: 0, to: 160 }]),
   ];
   return createDocumentFromLayers([root, ...layers], clips);
 }

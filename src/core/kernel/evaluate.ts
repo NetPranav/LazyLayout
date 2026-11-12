@@ -36,6 +36,7 @@ import { interpolateValue } from "./interpolators";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
+import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
 import {
   createLayerLocalMatrix,
   multiplyAffineMatrices,
@@ -420,6 +421,75 @@ export function evaluateLocalProps(
 export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
   const layer = doc.layers[layerId];
   if (!layer) return {};
+  return withMatte(doc, compositionId, layerId, t, inputs, evaluateWorld(doc, compositionId, layerId, t, inputs));
+}
+
+// ---------------------------------------------------------------------------
+// Track mattes (Phase 74): another layer is the mask
+// ---------------------------------------------------------------------------
+
+/** Which layers use each layer as a matte, by source id. Built once per document (the document is immutable, so the answer can't go stale). */
+const matteTargets = new WeakMap<MotionDocument, Map<string, string[]>>();
+export function mattesOf(doc: MotionDocument): Map<string, string[]> {
+  let index = matteTargets.get(doc);
+  if (!index) {
+    index = new Map();
+    for (const layer of Object.values(doc.layers)) {
+      const source = layer.properties["matte.source"];
+      const mode = layer.properties["matte.mode"];
+      if (typeof source !== "string" || source === "" || source === layer.id || !doc.layers[source] || typeof mode !== "string" || mode === "none") continue;
+      index.set(source, [...(index.get(source) ?? []), layer.id]);
+    }
+    matteTargets.set(doc, index);
+  }
+  return index;
+}
+
+/**
+ * A layer that is a matte's source is hidden (unless a layer using it asks for it to show); a layer with a matte gets
+ * the source's shape, at this moment, as its mask. A matte the geometry can't read (see `matteShape.ts`) changes nothing.
+ */
+function withMatte(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, resolved: ResolvedProps): ResolvedProps {
+  const index = mattesOf(doc);
+  if (index.size === 0) return resolved;
+  const local = new Map<string, ResolvedProps>();
+  const localOf = (id: string): ResolvedProps => {
+    let props = local.get(id);
+    if (!props) local.set(id, (props = evaluateLocalProps(doc, compositionId, id, t, inputs)));
+    return props;
+  };
+  let out = resolved;
+
+  const targets = index.get(layerId);
+  if (targets && targets.length > 0 && matteSourceShape(doc.layers, layerId, localOf) && !targets.some((id) => doc.layers[id].properties["matte.showSource"] === true)) {
+    out = { ...out, "appearance.opacity": 0 };
+  }
+
+  const layer = doc.layers[layerId];
+  const sourceId = layer.properties["matte.source"];
+  const mode = layer.properties["matte.mode"];
+  if (typeof sourceId === "string" && sourceId !== "" && sourceId !== layerId && typeof mode === "string" && mode !== "none" && doc.layers[sourceId]) {
+    const shape = matteSourceShape(doc.layers, sourceId, localOf);
+    const origin = canvasOrigin(doc.layers, layerId, localOf);
+    if (shape && origin) {
+      const source = localOf(sourceId);
+      const fill = source["appearance.background.color"];
+      const opacity = typeof source["appearance.opacity"] === "number" ? (source["appearance.opacity"] as number) : 1;
+      out = {
+        ...out,
+        "mask.mode": mode,
+        "mask.shape": "path",
+        "mask.path": matteShapePath(shape, origin),
+        ...(typeof fill === "string" && fill !== "" && fill !== "transparent" ? { "mask.fill": fill } : {}),
+        "mask.opacity": opacity * (typeof out["mask.opacity"] === "number" ? (out["mask.opacity"] as number) : 1),
+      };
+    }
+  }
+  return out;
+}
+
+function evaluateWorld(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs): ResolvedProps {
+  const layer = doc.layers[layerId];
 
   let resolved = evaluateLocalProps(doc, compositionId, layerId, t, inputs);
 

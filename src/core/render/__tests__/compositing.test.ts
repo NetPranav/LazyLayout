@@ -94,6 +94,14 @@ describe("Phase 74: masks", () => {
     assert.match(svg, /<ellipse cx="100" cy="50" rx="100" ry="50" fill="#000"\/>/);
     assert.doesNotMatch(svg, /<mask|luminanceToAlpha/);
   });
+  it("a width or height of 0 is a real zero (a shape can grow from nothing); -1, the default, is the layer's own", () => {
+    const zero = maskSpec(read({ "mask.mode": "alpha", "mask.shape": "ellipse", "mask.width": 0 }), size)!;
+    assert.deepEqual([zero.width, zero.height], [0, 100]);
+    assert.match(maskSvg(zero, size), /rx="0"/);
+    const dflt = maskSpec(read({ "mask.mode": "alpha" }), size)!;
+    assert.deepEqual([dflt.width, dflt.height], [200, 100]);
+    assert.equal(getPropertyDefinition("mask.width")!.default, -1);
+  });
   it("an inverted alpha mask cuts the shape out of a full rectangle", () => {
     const svg = maskSvg(maskSpec(read({ "mask.mode": "alphaInverted", "mask.shape": "rect", "mask.x": 10, "mask.y": 10, "mask.width": 50, "mask.height": 40 }), size)!, size);
     assert.match(svg, /<mask id="m"/);
@@ -179,5 +187,69 @@ describe("Phase 74: a keyframed adjustment or mask is drawn by the same code as 
     assert.equal(a["backdrop-filter"], "blur(10px)");
     assert.equal(a["-webkit-backdrop-filter"], "blur(10px)");
     assert.equal(styleWrites(["adjust.blur"], evaluate(doc, "comp_main", "l", 0))["backdrop-filter"], "none");
+  });
+});
+
+import { registerCompositingCommands } from "../compositingCommands";
+import { invokeCommand } from "../../commands";
+import { setDocument } from "../../store/documentState";
+import { getDocument, historyCommands } from "../../store/useDocumentStore";
+
+describe("Phase 74: the compositing commands", () => {
+  const fresh = () => {
+    setDocument(createDocumentFromLayers([createLayer({ id: "a", archetype: "container", parentId: null, children: ["b", "c"], properties: { "frame.width": 400 } }) as Layer, layer({}, "b"), layer({}, "c")], []));
+    return registerCompositingCommands();
+  };
+  const props = (id: string) => getDocument().layers[id].properties;
+
+  it("set the blend mode and isolation, an adjustment and a mask, each one undo step, only what is given", () => {
+    const off = fresh();
+    try {
+      assert.equal(invokeCommand("layer.setBlend", { ids: ["b"], mode: "multiply", isolate: true }), true);
+      assert.equal(props("b")["appearance.blendMode"], "multiply");
+      assert.equal(props("b")["appearance.isolation"], "isolate");
+      invokeCommand("layer.setBlend", { ids: ["b"], isolate: false });
+      assert.equal(props("b")["appearance.blendMode"], "multiply", "left alone");
+      assert.equal(props("b")["appearance.isolation"], "auto");
+      invokeCommand("layer.setAdjustment", { ids: ["b"], blur: 12, saturate: 0.5, asLayer: true });
+      assert.deepEqual([props("b")["adjust.blur"], props("b")["adjust.saturate"], props("b")["render.role"]], [12, 0.5, "adjustment"]);
+      invokeCommand("layer.setMask", { ids: ["b"], mode: "luma", shape: "ellipse", width: 0, feather: 8, fill: "#808080" });
+      assert.deepEqual([props("b")["mask.mode"], props("b")["mask.shape"], props("b")["mask.width"], props("b")["mask.feather"], props("b")["mask.fill"]], ["luma", "ellipse", 0, 8, "#808080"]);
+      historyCommands.undo();
+      assert.equal(props("b")["mask.mode"], undefined);
+      assert.equal(props("b")["adjust.blur"], 12, "the earlier steps stay");
+    } finally {
+      off();
+    }
+  });
+
+  it("refuse a bad value before writing it", () => {
+    const off = fresh();
+    try {
+      assert.equal(invokeCommand("layer.setBlend", { ids: ["b"], mode: "banana" }), false);
+      assert.equal(invokeCommand("layer.setAdjustment", { ids: ["b"], blur: 999 }), false);
+      assert.equal(invokeCommand("layer.setMask", { ids: ["b"], mode: "sideways" }), false);
+      assert.equal(props("b")["appearance.blendMode"], undefined);
+    } finally {
+      off();
+    }
+  });
+
+  it("layer.setMatte names a source, takes the usual mode, and refuses itself or a layer that isn't there", () => {
+    const off = fresh();
+    try {
+      invokeCommand("layer.setMatte", { ids: ["b"], sourceId: "c" });
+      assert.deepEqual([props("b")["matte.source"], props("b")["matte.mode"]], ["c", "alpha"]);
+      invokeCommand("layer.setMatte", { ids: ["b"], mode: "lumaInverted", showSource: true });
+      assert.deepEqual([props("b")["matte.source"], props("b")["matte.mode"], props("b")["matte.showSource"]], ["c", "lumaInverted", true]);
+      invokeCommand("layer.setMatte", { ids: ["b"], sourceId: null });
+      assert.deepEqual([props("b")["matte.source"] ?? "", props("b")["matte.mode"]], ["", "none"], "cleared");
+      const before = JSON.stringify(props("b"));
+      invokeCommand("layer.setMatte", { ids: ["b"], sourceId: "b" });
+      invokeCommand("layer.setMatte", { ids: ["b"], sourceId: "ghost" });
+      assert.equal(JSON.stringify(props("b")), before);
+    } finally {
+      off();
+    }
   });
 });

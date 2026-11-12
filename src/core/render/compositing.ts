@@ -118,16 +118,16 @@ export function maskSpec(read: PropReader, size: { width: number; height: number
   const mode = text(read, "mask.mode", "none");
   if (!(MASK_MODES as readonly string[]).includes(mode) || mode === "none") return null;
   const shape = text(read, "mask.shape", "rect");
-  const width = num(read, "mask.width");
-  const height = num(read, "mask.height");
+  const width = num(read, "mask.width", -1);
+  const height = num(read, "mask.height", -1);
   return {
     mode: mode as MaskSpec["mode"],
     shape: shape === "ellipse" || shape === "path" ? shape : "rect",
     path: safePathData(text(read, "mask.path")),
     x: num(read, "mask.x"),
     y: num(read, "mask.y"),
-    width: width > 0 ? width : size.width,
-    height: height > 0 ? height : size.height,
+    width: width >= 0 ? width : size.width,
+    height: height >= 0 ? height : size.height,
     radius: Math.max(0, num(read, "mask.radius")),
     feather: clamp(num(read, "mask.feather"), 0, 200),
     expansion: clamp(num(read, "mask.expansion"), 0, 200),

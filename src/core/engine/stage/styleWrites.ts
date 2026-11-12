@@ -1,6 +1,6 @@
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
-import type { ResolvedProps } from "../../kernel/evaluate";
+import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
 import { adjustmentFilter, isAdjustPath, isMaskPath, maskStyle, readerOf } from "../../render/compositing";
 
 /**
@@ -21,6 +21,10 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   for (const behaviour of Object.values(doc.behaviours)) {
     if (behaviour.layerId === layerId && behaviour.enabled && behaviour.type === "loop") paths.add(behaviour.params.property);
   }
+  // Phase 74: a layer with a track matte has its mask written every frame (the source moves), and a matte's source is hidden by opacity.
+  const own = doc.layers[layerId]?.properties;
+  if (own && typeof own["matte.source"] === "string" && own["matte.source"] !== "" && own["matte.mode"] !== undefined && own["matte.mode"] !== "none") paths.add("mask.path");
+  if (mattesOf(doc).has(layerId)) paths.add("appearance.opacity");
   return paths;
 }
 
@@ -30,6 +34,10 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   const layerIds = new Set<string>();
   for (const clip of Object.values(doc.clips)) if (clip.enabled) layerIds.add(clip.layerId);
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
+  for (const [source, targets] of mattesOf(doc)) {
+    layerIds.add(source);
+    for (const id of targets) layerIds.add(id);
+  }
   for (const id of layerIds) {
     if (!doc.layers[id]) continue;
     const paths = animatedPaths(doc, id);

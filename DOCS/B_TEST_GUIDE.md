@@ -702,7 +702,7 @@ If any step fails, stop and report it. Everything else depends on them.
 - **Adjustment:** a layer filters what is **behind** it (blur, brightness, contrast, saturation, hue, grayscale, sepia, invert), like an After Effects adjustment layer.
 - **Masks:** a shape (rectangle, ellipse or path) decides what of the layer shows. **Alpha** shows where the shape is; **luma** shows as much as the shape is bright; the **inverted** modes show everything else. Soft edge (feather), grow (expansion) and opacity. The path morphs between keyframes.
 
-**Known gaps (don't report):** there are no inspector or timeline controls for isolation, adjustment or masks yet (Lane A wires them into the new editor), so the way to see them is the **stage lab** below, or setting the properties by command. A layer used as another layer's matte isn't built (the shape is described by properties).
+**Known gaps (don't report):** there are no inspector or timeline controls for isolation, adjustment, masks or mattes yet (the UI pipeline wires them; the commands exist), so the way to see them is the **stage lab** below, or the commands. A matte reads a box or an ellipse on the same absolute canvas; a source under a flow layout gives no matte.
 
 **User test (the stage lab, covered by `tests/e2e/compositing.spec.ts`)**
 - [ ] **T74.1** Do: run the app with `npm run dev` and open `http://localhost:3000/editor/stage-lab`. Click **Load 5 compositing scenes**. Expect: five boxes in a row on the page (left to right): a dark red box (multiply), a green box (isolated), a red-and-blue box, a red box with a small oval cut out of it, and a red box with a square cut out of it.
@@ -714,8 +714,10 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T74.7** Do: open DevTools → Elements, find the fourth box (`data-element-id="scene_alphaMask"`). Expect: its style has `mask-image: url("data:image/svg+xml…")` and the browser's computed style shows the same. The third box has `backdrop-filter: blur(…px)`.
 
 **Developer test**
-- [ ] **T74.8** Do: `npx tsx --test src/core/render/__tests__/compositing.test.ts`. Expect: 20 tests pass.
-- [ ] **T74.9** Do: `npx playwright test tests/e2e/compositing.spec.ts --project=chromium` (it uses the dev page, so the stage lab must be enabled: `NEXT_PUBLIC_ENABLE_LABS=1` in a production build, on by default in `npm run dev`). Expect: 1 test passes: five scenes at five times match `evaluate()`, including pixels.
+- [ ] **T74.7a** Do: in the stage lab, look below the five boxes. Expect: a long box with a red oval-shaped window in it (a **track matte**: the red box is shown only through an ellipse layer, which is itself invisible). Drag **Time** from 0 to 1. Expect: the red window slides from the left end to the right end of the box. The ellipse layer is never seen.
+- [ ] **T74.7b** Do: the fourth box (the growing oval). At **Time** 0. Expect: it is empty (the oval starts at width 0), then grows.
+- [ ] **T74.8** Do: `npx tsx --test src/core/render/__tests__/compositing.test.ts`. Expect: 24 tests pass; and `npx tsx --test src/core/kernel/__tests__/matte.test.ts`: 12 tests pass.
+- [ ] **T74.9** Do: `npx playwright test tests/e2e/compositing.spec.ts --project=chromium` (it uses the dev page, so the stage lab must be enabled: `NEXT_PUBLIC_ENABLE_LABS=1` in a production build, on by default in `npm run dev`). Expect: 2 tests pass: five scenes at five times match `evaluate()` including pixels, and the track matte follows its source.
 - [ ] **T74.10** Do: set the properties on a real layer in the new editor: with `window.__LL_TEST__ = true` set before load, in the console run `__LL_COMMANDS__.all().find(c=>c.id==="layer.setProps").run({ids:["button"],props:{"mask.mode":"alpha","mask.shape":"ellipse","appearance.blendMode":"multiply"},label:"t"})`. Expect: the button on the stage is cut to an oval and multiplied.
 - [ ] **T74.11** Do: read `src/core/render/compositing.ts`. Expect: pure functions, no DOM; `styleWrites.ts` and `geometry.ts` both call them.
 

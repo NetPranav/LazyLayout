@@ -6,6 +6,7 @@ import { registerEditingCommands } from "@/core/editing/editCommands";
 import { registerSelectionCommands } from "@/core/selection/selectionCommands";
 import { registerFrameCommands } from "@/core/frames/frameCommands";
 import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
+import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { activePageRootId } from "@/editor/stage/activePage";
@@ -50,12 +51,14 @@ export function useLeftPanelData(
     const offSelection = registerSelectionCommands();
     const offFrame = registerFrameCommands();
     const offTimeline = registerTimelineCommands();
+    const offCompositing = registerCompositingCommands(); // blend, adjustment, mask and matte (Phase 74)
 
     return () => {
       offEditing();
       offSelection();
       offFrame();
       offTimeline();
+      offCompositing();
     };
   }, []);
 
