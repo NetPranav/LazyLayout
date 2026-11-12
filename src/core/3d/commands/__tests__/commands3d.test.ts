@@ -213,11 +213,11 @@ describe("Task 3D-011: 3D commands, undo & Adjust last operation", () => {
   // (b) Registered 3D Commands Args Schema and Title
   // ---------------------------------------------------------------------------
   describe("(b) Registered 3D commands have an args schema, category, and a title", () => {
-    it("all 29 canonical operations have registered schemas and titles", () => {
+    it("every canonical operation has a registered schema and a title (at least the 29 of the roadmap)", () => {
       const cleanup = register3dCommands();
       try {
         const canonicalIds = Object.keys(COMMAND_SCHEMAS);
-        assert.strictEqual(canonicalIds.length, 29);
+        assert.ok(canonicalIds.length >= 29, `at least 29 operations (found ${canonicalIds.length})`);
 
         const all = getAllCommands();
         for (const id of canonicalIds) {

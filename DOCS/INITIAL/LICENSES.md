@@ -111,6 +111,7 @@ exists; this one records the *current status* of each gate, kept current as the 
 - **The 3D stack (added 2026-11-11, ROADMAP_3D 3D-001, decision `decisions/0013-3d-stack.md`):**
   - Installed, licences read from the packages: `three` 0.186.1 (MIT), `@react-three/fiber` 9.8.1 (MIT), `@react-three/drei` 10.7.8 (MIT), `three-mesh-bvh` 0.8.3 (MIT).
   - Planned, licences read from the npm registry and recorded here before use: `three-gpu-pathtracer` (MIT, editor only), `@dimforge/rapier3d-compat` / `-deterministic-compat` (Apache-2.0), `meshoptimizer` (MIT), `draco3d` (Apache-2.0), `postprocessing` (zlib, only if needed), `cannon-es` (MIT, fallback only).
+  - Installed 2026-11-12 (ROADMAP_3D 3D-026, 3D text): `opentype.js` 2.0.0 (MIT, licence read from the package), to read font outlines. Its parser handles TTF, OTF and WOFF, not WOFF2.
   - All permissive, no competitive-use restriction. Apache-2.0 needs its NOTICE kept in `THIRD_PARTY_NOTICES.md` when shipped.
 - **`polygon-clipping` (MIT, Phase 40 booleans), `@hugeicons/core-free-icons` and
   `@hugeicons/react` (MIT, the icons BranchedMenu uses), `fflate` (MIT, ZIP in the export

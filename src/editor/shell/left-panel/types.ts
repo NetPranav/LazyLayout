@@ -111,7 +111,11 @@ export type LayerMenuAction =
   | "set-label-4"
   | "set-label-5"
   | "set-label-6"
-  | "set-label-default";
+  | "set-label-default"
+  | "make-3d-extrude"
+  | "make-3d-inflate"
+  | "make-3d-lathe"
+  | "make-3d-plane";
 
 export interface LeftPanelProps {
   /** Active editor mode: design (layers + assets), motion (layers + tracks), or code (files) */

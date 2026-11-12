@@ -20,6 +20,7 @@ import type {
   Action3d,
   World3d,
   Image3d,
+  Text3d,
 } from "../document/schema";
 import type { Mat4 } from "./math";
 
@@ -34,6 +35,7 @@ export interface Evaluated3DState {
   actions?: Record<string, Action3d>;
   worlds?: Record<string, World3d>;
   images3d?: Record<string, Image3d>;
+  texts?: Record<string, Text3d>;
   worldMatrices?: Record<string, Mat4 | number[]>;
   [key: string]: unknown;
 }

@@ -34,7 +34,8 @@ function handleKeyDown(e: KeyboardEvent): void {
   for (const command of getAllCommands()) {
     if (!command.keybinding) continue;
     const bindings = Array.isArray(command.keybinding) ? command.keybinding : [command.keybinding];
-    if (!bindings.includes(normalized)) continue;
+    // a binding written as "g" or "Shift+a" must match the key the same way "G" or "Shift+A" does
+    if (!bindings.some((b) => b === normalized || normalizeShortcut(b) === normalized)) continue;
     if (command.when && !command.when(ctx)) continue;
     e.preventDefault();
     void command.run();

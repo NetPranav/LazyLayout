@@ -338,6 +338,18 @@ export function useLeftPanelData(
         case "copy-as-code":
           console.info("[Layers] copy-as-code action on layer", id);
           break;
+        case "make-3d-extrude":
+          void invokeCommand("3d.make3d.from_layer", { layerId: id, mode: "extrude" });
+          break;
+        case "make-3d-inflate":
+          void invokeCommand("3d.make3d.from_layer", { layerId: id, mode: "inflate" });
+          break;
+        case "make-3d-lathe":
+          void invokeCommand("3d.make3d.from_layer", { layerId: id, mode: "lathe" });
+          break;
+        case "make-3d-plane":
+          void invokeCommand("3d.make3d.from_layer", { layerId: id, mode: "plane" });
+          break;
         default:
           break;
       }

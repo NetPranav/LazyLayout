@@ -22,6 +22,12 @@ import { SnapBar } from "../../viewport3d/SnapBar";
 import { ViewCube } from "../../viewport3d/ViewCube";
 import { GizmoOverlay } from "../../viewport3d/GizmoOverlay";
 import { ViewportInteraction } from "../../viewport3d/ViewportInteraction";
+import { Properties3d } from "../../panels/details/properties3d";
+import { AddMenu3d, AddMenuButton, openAddMenu } from "../../viewport3d/AddMenu3d";
+import { PrimitiveHandles } from "../../viewport3d/PrimitiveHandles";
+import { TextPanel3d } from "../../viewport3d/TextPanel3d";
+import { Outliner3d } from "../../panels/layers/Outliner3d";
+import { LayerContextMenuContent } from "../../shell/left-panel/LayerContextMenu";
 import { useViewportStore } from "../../../core/render/scene3d/viewportStore";
 import { recordLastOperation, clearLastOperation } from "../../../core/3d/commands/lastOperation";
 import { getDocument } from "../../../core/store/useDocumentStore";
@@ -271,9 +277,176 @@ export function ViewportInteractionLayerDemo() {
   );
 }
 
+export function Properties3dDemo() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          Blender-Style 3D Properties Editor (ROADMAP Phase 3D-022, 3D-023, 3D-030)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          8-tab properties inspector with Simple/Pro faces, thumbnail Looks strip, modifier stack,
+          Euler transform inputs, and GPU budget readouts.
+        </p>
+      </div>
+
+      <div className="ll:w-80 ll:h-[520px] ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:shadow-sm">
+        <Properties3d activeId="obj_default_cube" />
+      </div>
+    </div>
+  );
+}
+
+export function AddMenu3dDemo() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          Blender-Style Add Menu & Header Button (ROADMAP Phase 3D-025, 3D-026)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          Shift+A or Header &ldquo;Add&rdquo; button opens menu with Mesh primitives, 3D Text, Lights, Camera, and Empty. Searchable via live typing filter.
+        </p>
+      </div>
+
+      <div className="ll:flex ll:items-center ll:gap-3">
+        <AddMenuButton />
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => openAddMenu({ x: 120, y: 120 })}
+        >
+          Open Menu at (120, 120)
+        </Button>
+      </div>
+      <AddMenu3d />
+    </div>
+  );
+}
+
+export function PrimitiveHandlesDemo() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          Parametric Primitive Handles (ROADMAP Phase 3D-025)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          SVG diamonds rendered on selected procedural primitives. Dragging recalculates closest ray-to-axis point and commits 1 undo step.
+        </p>
+      </div>
+
+      <div className="ll:relative ll:w-full ll:h-48 ll:bg-surface-bar ll:border ll:border-border ll:rounded-md ll:overflow-hidden">
+        <PrimitiveHandles width={480} height={192} />
+        <div className="ll:p-4 ll:text-micro ll:text-muted">
+          Select an active primitive in 3D scene to preview handles
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function TextPanel3dDemo() {
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          3D Text Floating Properties Panel (ROADMAP Phase 3D-026)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          Floating parameters for 3D text (text, size, depth, bevel, resolution, alignment, spacing) with one-click Convert to Mesh.
+        </p>
+      </div>
+
+      <div className="ll:w-64">
+        <TextPanel3d />
+      </div>
+    </div>
+  );
+}
+
+export function Outliner3dDemo() {
+  const doc = getDocument();
+  const sceneId = Object.keys(doc.scenes ?? {})[0] ?? "demo_scene";
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          3D Outliner Tree in Layers Panel (ROADMAP Phase 3D-021 & 3D-024)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          Hierarchical scene tree with visibility, selectability, and render toggles; inline renaming; drag-and-drop reparenting; shared data block badges with &ldquo;Make single user&rdquo;; and copy/paste attributes.
+        </p>
+      </div>
+
+      <div className="ll:w-64 ll:h-[420px] ll:border ll:border-border ll:rounded-md ll:overflow-hidden ll:bg-surface-panel ll:shadow-soft">
+        <Outliner3d sceneId={sceneId} />
+      </div>
+    </div>
+  );
+}
+
+export function Make3dMenuDemo() {
+  const [lastAction, setLastAction] = useState<string>("");
+
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-4">
+      <div>
+        <h3 className="ll:text-title ll:font-semibold ll:text-primary ll:font-sans">
+          Make 3D from 2D Layer Context Menu (ROADMAP Phase 3D-029)
+        </h3>
+        <p className="ll:text-small ll:text-muted">
+          Right-click context menu options: Extrude, Inflate, Lathe, Plane. Enabled when a 3D scene exists; disabled with reason &quot;Insert a 3D scene first&quot; when no scene exists.
+        </p>
+      </div>
+
+      <div className="ll:flex ll:gap-6">
+        <div className="ll:flex ll:flex-col ll:gap-2">
+          <span className="ll:text-caption ll:font-medium ll:text-secondary">Enabled (Scene Exists)</span>
+          <div className="ll:w-60 ll:p-1 ll:border ll:border-border ll:rounded-md ll:bg-surface-panel ll:shadow-soft">
+            <LayerContextMenuContent
+              selectionCount={1}
+              hasScene={true}
+              onAction={(a) => setLastAction(`Enabled menu -> ${a}`)}
+              onToggleHidden={() => {}}
+              onToggleLocked={() => {}}
+            />
+          </div>
+        </div>
+
+        <div className="ll:flex ll:flex-col ll:gap-2">
+          <span className="ll:text-caption ll:font-medium ll:text-secondary">Disabled (No 3D Scene)</span>
+          <div className="ll:w-60 ll:p-1 ll:border ll:border-border ll:rounded-md ll:bg-surface-panel ll:shadow-soft">
+            <LayerContextMenuContent
+              selectionCount={1}
+              hasScene={false}
+              onAction={(a) => setLastAction(`Disabled menu -> ${a}`)}
+              onToggleHidden={() => {}}
+              onToggleLocked={() => {}}
+            />
+          </div>
+        </div>
+      </div>
+
+      {lastAction && (
+        <span className="ll:text-nano ll:font-mono ll:text-primary">
+          Action triggered: {lastAction}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function Viewport3dDemos() {
   return (
     <div className="ll:flex ll:flex-col ll:gap-8">
+      <Outliner3dDemo />
+      <Make3dMenuDemo />
+      <AddMenu3dDemo />
+      <PrimitiveHandlesDemo />
+      <TextPanel3dDemo />
+      <Properties3dDemo />
       <ViewportInteractionLayerDemo />
       <SnapBarDemo />
       <ViewCubeDemo />

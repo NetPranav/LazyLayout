@@ -34,6 +34,7 @@ import {
   type Image3d,
 } from "../schema";
 import {
+  Collection3dSchema,
   Scene3dSchema,
   Object3dSchema,
   Mesh3dSchema,
@@ -237,6 +238,47 @@ describe("Phase 3D-007: 3D data block schemas & round-trip", () => {
     // 11. Image3d
     const parsedImg = Image3dSchema.parse(sampleImage);
     assert.deepEqual(JSON.parse(JSON.stringify(parsedImg)), sampleImage);
+  });
+
+  it("validates Phase 3D-021 Collection3dSchema and Object3d/Scene3d outliner fields", () => {
+    const col = Collection3dSchema.parse({
+      id: "col_props",
+      name: "Props",
+      parent: null,
+      visible: true,
+      selectable: false,
+      renderVisible: true,
+    });
+    assert.equal(col.name, "Props");
+    assert.equal(col.selectable, false);
+
+    // Strict schema rejects unknown fields
+    assert.throws(() => Collection3dSchema.parse({ id: "col_bad", name: "Bad", unknownKey: 123 }), /unrecognized_key|invalid|Invalid/);
+
+    const obj = Object3dSchema.parse({
+      id: "obj_1",
+      type: "mesh",
+      transform: {
+        location: [0, 0, 0],
+        rotationQuat: [0, 0, 0, 1],
+        scale: [1, 1, 1],
+      },
+      selectable: false,
+      renderVisible: false,
+      collection: "col_props",
+    });
+    assert.equal(obj.selectable, false);
+    assert.equal(obj.renderVisible, false);
+    assert.equal(obj.collection, "col_props");
+
+    const scene = Scene3dSchema.parse({
+      id: "scn_1",
+      objects: ["obj_1"],
+      collections: {
+        col_props: col,
+      },
+    });
+    assert.ok(scene.collections?.col_props);
   });
 
   it("a complete MotionDocument with all 10 3D tables validates and round-trips", () => {

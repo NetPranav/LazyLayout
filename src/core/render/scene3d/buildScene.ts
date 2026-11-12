@@ -211,9 +211,18 @@ export function buildScene(
     let threeObj: THREE.Object3D;
 
     switch (obj.type) {
+      case "text":
       case "mesh": {
         let geom: THREE.BufferGeometry;
-        const meshData = obj.dataId ? meshes[obj.dataId] : null;
+        let meshData = obj.dataId ? meshes[obj.dataId] : null;
+        if (!meshData && obj.type === "text" && obj.dataId) {
+          meshData =
+            Object.values(meshes).find(
+              (m) => m.source?.kind === "text" && m.source?.params?.textId === obj.dataId
+            ) ??
+            meshes[`mesh_${obj.dataId}`] ??
+            null;
+        }
         if (meshData) {
           geom = createBufferGeometry(meshData);
           geometriesById.set(meshData.id, geom);

@@ -67,6 +67,8 @@ export function checkReferences(doc: MotionDocument, issue: Issue): void {
     "actions",
     "worlds",
     "images3d",
+    "texts",
+    "looks",
   ] as const) {
     if (doc[table]) keyed(table);
   }

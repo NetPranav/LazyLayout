@@ -65,6 +65,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   aiMessages,
   onAiSendMessage,
   aiInputPlaceholder,
+  dimension: propDimension,
   designSections = DEFAULT_DESIGN_SECTIONS,
   motionRows = DEFAULT_MOTION_ROWS,
   codeRows = DEFAULT_CODE_ROWS,
@@ -140,7 +141,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               onDelete={onDelete}
               statusChips={activeStatusChips}
               onSelectStatusChip={handleStatusChipClick}
-              dimension={inspector.hasSelection ? dimension : undefined}
+              dimension={propDimension !== undefined ? propDimension : (inspector.hasSelection ? dimension : undefined)}
               onDimensionChange={setDimension}
             />
           )}

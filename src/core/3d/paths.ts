@@ -32,6 +32,7 @@ export const VALID_3D_TABLES = [
   "actions",
   "worlds",
   "images3d",
+  "texts",
 ] as const;
 
 export type Valid3DTable = (typeof VALID_3D_TABLES)[number];
@@ -57,6 +58,8 @@ const TABLE_ALIASES: Record<string, Valid3DTable> = {
   world: "worlds",
   images3d: "images3d",
   image3d: "images3d",
+  texts: "texts",
+  text: "texts",
 };
 
 export interface Parsed3DPath {
@@ -278,6 +281,18 @@ export function apply3DProperty(target: Record<string, unknown>, rest: string, v
   const modMatch = /^modifiers[/.](\w[\w.-]*)[/.]([\w.-]+)$/.exec(rest);
   if (modMatch) {
     const [, modId, param] = modMatch;
+    if (Array.isArray(target.modifiers)) {
+      const mod = target.modifiers.find((m: unknown) => (m as { id?: string })?.id === modId) as Record<string, unknown> | undefined;
+      if (mod) {
+        if (param === "enabled" || param === "renderEnabled" || param === "name") {
+          mod[param] = value;
+        } else {
+          const params = (mod.params = (mod.params as Record<string, unknown>) || {});
+          params[param] = value;
+        }
+        return;
+      }
+    }
     const mods = (target.modifiers = (target.modifiers as Record<string, unknown>) || {});
     const mod = (mods[modId] = (mods[modId] as Record<string, unknown>) || {});
     mod[param] = value;
@@ -328,6 +343,17 @@ export function get3DProperty(target: Record<string, unknown>, rest: string): un
   const modMatch = /^modifiers[/.](\w[\w.-]*)[/.]([\w.-]+)$/.exec(rest);
   if (modMatch) {
     const [, modId, param] = modMatch;
+    if (Array.isArray(target.modifiers)) {
+      const mod = target.modifiers.find((m: unknown) => (m as { id?: string })?.id === modId) as Record<string, unknown> | undefined;
+      if (mod) {
+        if (param === "enabled" || param === "renderEnabled" || param === "name") {
+          return mod[param];
+        }
+        const params = mod.params as Record<string, unknown> | undefined;
+        return params ? params[param] : undefined;
+      }
+      return undefined;
+    }
     const mods = target.modifiers as Record<string, unknown> | undefined;
     const mod = mods ? (mods[modId] as Record<string, unknown> | undefined) : undefined;
     return mod ? mod[param] : undefined;

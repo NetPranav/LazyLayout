@@ -31,6 +31,7 @@ import {
   Palette,
   Plus,
   RotateCcw,
+  Square,
   Trash2,
   Type,
   type LucideIcon,
@@ -39,6 +40,7 @@ import { Icon } from "@/editor/components/Icon";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { MenuItem, MenuSeparator, SubMenu } from "@/editor/components/Menu";
 import { MENU_ICON_SIZE } from "@/editor/components/topbar-constants";
+import { getDocument } from "@/core/store/documentState";
 import type { LayerMenuAction } from "./types";
 
 export interface LayerContextMenuContentProps {
@@ -47,6 +49,8 @@ export interface LayerContextMenuContentProps {
   onAction: (action: LayerMenuAction) => void;
   onToggleHidden: () => void;
   onToggleLocked: () => void;
+  /** Explicit scene presence override (falls back to checking doc.scenes) */
+  hasScene?: boolean;
 }
 
 interface Entry {
@@ -109,7 +113,14 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
   onAction,
   onToggleHidden,
   onToggleLocked,
+  hasScene: hasSceneProp,
 }) => {
+  const doc = getDocument();
+  const scenesPresent =
+    hasSceneProp !== undefined
+      ? hasSceneProp
+      : Boolean(doc?.scenes && Object.keys(doc.scenes).length > 0);
+  const make3dReason = !scenesPresent ? "Insert a 3D scene first" : undefined;
   const renderEntry = (e: Entry) => (
     <MenuItem
       key={e.action}
@@ -180,6 +191,45 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
       >
         Tidy up
       </MenuItem>
+
+      <MenuSeparator />
+
+      <SubMenu
+        id="layer-make-3d"
+        label="Make 3D"
+        icon={<Icon icon={Box} size={MENU_ICON_SIZE} />}
+        disabled={!scenesPresent}
+        title={make3dReason}
+      >
+        <MenuItem
+          icon={<Icon icon={Box} size={MENU_ICON_SIZE} />}
+          disabled={!scenesPresent}
+          onClick={() => onAction("make-3d-extrude")}
+        >
+          Extrude
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={Box} size={MENU_ICON_SIZE} />}
+          disabled={!scenesPresent}
+          onClick={() => onAction("make-3d-inflate")}
+        >
+          Inflate
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={RotateCcw} size={MENU_ICON_SIZE} />}
+          disabled={!scenesPresent}
+          onClick={() => onAction("make-3d-lathe")}
+        >
+          Lathe
+        </MenuItem>
+        <MenuItem
+          icon={<Icon icon={Square} size={MENU_ICON_SIZE} />}
+          disabled={!scenesPresent}
+          onClick={() => onAction("make-3d-plane")}
+        >
+          Plane
+        </MenuItem>
+      </SubMenu>
 
       <MenuSeparator />
 

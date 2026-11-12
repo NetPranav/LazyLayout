@@ -45,8 +45,11 @@ import { ComponentSchema, GeneratorSchema, PinsSchema, TagSchema } from "./kinet
 import { CompositionSchema, createMainComposition, MAIN_COMPOSITION_ID } from "./compositions";
 import { checkReferences } from "./references";
 import {
+  Collection3dSchema,
   Scene3dSchema,
   Object3dSchema,
+  Modifier3dSchema,
+  ProceduralSourceSchema,
   Mesh3dSchema,
   Material3dSchema,
   Light3dSchema,
@@ -55,8 +58,13 @@ import {
   Action3dSchema,
   World3dSchema,
   Image3dSchema,
+  Text3dSchema,
+  Look3dSchema,
+  type Collection3d,
   type Scene3d,
   type Object3d,
+  type Modifier3d,
+  type ProceduralSource,
   type Mesh3d,
   type Material3d,
   type Light3d,
@@ -65,6 +73,8 @@ import {
   type Action3d,
   type World3d,
   type Image3d,
+  type Text3d,
+  type Look3d,
   type Transform3d,
   type DeltaTransform3d,
   type Mat4Array,
@@ -285,6 +295,9 @@ const MotionDocumentShape = z.object({
   actions: z.record(IdSchema, Action3dSchema).optional(),
   worlds: z.record(IdSchema, World3dSchema).optional(),
   images3d: z.record(IdSchema, Image3dSchema).optional(),
+  texts: z.record(IdSchema, Text3dSchema).optional(),
+  /** Looks library (ROADMAP_3D Phase 3D-023) */
+  looks: z.record(IdSchema, Look3dSchema).optional(),
   /** Imported files, by content hash (Phase 36). Absent in documents saved before assets: read it as empty. */
   assets: z.record(z.string(), AssetEntrySchema).optional(),
   /** The design components: id, name and the layer that is the main component (Phase 46). */
@@ -416,9 +429,13 @@ export type { Surface, InputTape, EffectInstance } from "./effects";
 export type { InteractionGraph } from "./graph";
 export type { Component, Generator } from "./kinetics";
 export type { Composition, CompositionLayer, NestedComposition, Marker, TimeRemap } from "./compositions";
+export { Collection3dSchema, Modifier3dSchema, ProceduralSourceSchema, Look3dSchema, Text3dSchema };
 export type {
+  Collection3d,
   Scene3d,
   Object3d,
+  Modifier3d,
+  ProceduralSource,
   Mesh3d,
   Material3d,
   Light3d,
@@ -427,6 +444,8 @@ export type {
   Action3d,
   World3d,
   Image3d,
+  Text3d,
+  Look3d,
   Transform3d,
   DeltaTransform3d,
   Mat4Array,

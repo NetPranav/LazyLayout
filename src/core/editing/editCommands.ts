@@ -38,6 +38,13 @@ import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./b
 import { outlineStrokes } from "./outlineStroke";
 import { registerAgentCommands } from "../agent/agentCommands";
 import { register3dCommands } from "../3d/commands";
+import { register3dPrimitiveCommands } from "../3d/primitives";
+import { register3dModifierCommands } from "../3d/modifiers";
+import { register3dLookCommands } from "../3d/looks";
+import { register3dOutlinerCommands } from "../3d/outliner";
+import { register3dBlocksCommands } from "../3d/blocks";
+import { register3dMake3dCommands } from "../3d/make3d";
+import { register3dTextCommands } from "../3d/text";
 import { registerSceneCommands } from "../3d/commands/sceneInsert";
 import { registerViewport3dCommands, installAddAtCursorWrapper } from "@/editor/viewport3d";
 import { registerTemplateCommands } from "../templates/templateCommands";
@@ -517,6 +524,13 @@ export function registerEditingCommands(): () => void {
   add(registerExportCommands());
   add(registerAgentCommands());
   add(register3dCommands());
+  add(register3dPrimitiveCommands());
+  add(register3dModifierCommands());
+  add(register3dLookCommands());
+  add(register3dOutlinerCommands());
+  add(register3dBlocksCommands());
+  add(register3dMake3dCommands());
+  add(register3dTextCommands());
   add(registerSceneCommands());
   add(registerViewport3dCommands());
   add(installAddAtCursorWrapper());

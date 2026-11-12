@@ -1063,6 +1063,7 @@ export interface SubMenuProps {
   label: React.ReactNode;
   icon?: React.ReactNode;
   disabled?: boolean;
+  title?: string;
   children: React.ReactNode;
   className?: string;
 }
@@ -1072,6 +1073,7 @@ export const SubMenu: React.FC<SubMenuProps> = ({
   label,
   icon,
   disabled = false,
+  title,
   children,
   className = "",
 }) => {
@@ -1132,6 +1134,7 @@ export const SubMenu: React.FC<SubMenuProps> = ({
       aria-haspopup="menu"
       aria-expanded={isSubOpen}
       disabled={disabled}
+      title={title}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}

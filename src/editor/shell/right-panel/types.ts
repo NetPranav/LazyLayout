@@ -67,6 +67,8 @@ export interface RightPanelFrameProps {
   onAiSendMessage?: (content: string) => void;
   /** Placeholder text for AI chat input. Default: "Ask anything about this…" */
   aiInputPlaceholder?: string;
+  /** Explicit dimension override (2D or 3D) for the header switcher */
+  dimension?: "2d" | "3d";
   /** Custom section list for Design mode. Defaults to the 11 prototype sections. */
   designSections?: DesignSectionConfig[];
   /** Custom accordion rows for Key/Motion mode. Defaults to the 9 prototype rows. */

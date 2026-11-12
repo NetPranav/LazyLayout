@@ -44,6 +44,7 @@ export function register3dCommands(): () => void {
           draft.actions = result.doc.actions;
           draft.worlds = result.doc.worlds;
           draft.images3d = result.doc.images3d;
+          if (result.doc.looks) draft.looks = result.doc.looks;
         });
 
         recordLastOperation({

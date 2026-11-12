@@ -46,3 +46,36 @@ export type {
   BoxSelectState,
   LassoSelectState,
 } from "./types";
+
+export {
+  AddMenu3d,
+  AddMenuButton,
+  openAddMenu,
+  closeAddMenu,
+  registerAddMenuCommand,
+  useAddMenuStore,
+  ADD_MENU_ITEMS,
+  type MenuItemDef,
+} from "./AddMenu3d";
+
+export { PrimitiveHandles } from "./PrimitiveHandles";
+export type { PrimitiveHandlesProps } from "./PrimitiveHandles";
+
+export {
+  TextEditOverlay3d,
+  useTextEditRequest3d,
+  requestTextEdit3d,
+  endTextEdit3d,
+} from "./TextEditOverlay3d";
+export type { TextEditOverlay3dProps } from "./TextEditOverlay3d";
+
+export { TextPanel3d } from "./TextPanel3d";
+export type { TextPanel3dProps } from "./TextPanel3d";
+
+export {
+  fetchFontBuffer,
+  installTestFontSeam,
+  ensureFontLoaded,
+  base64ToArrayBuffer,
+} from "./textFontSeam";
+
