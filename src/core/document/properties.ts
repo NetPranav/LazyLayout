@@ -786,6 +786,8 @@ const DEFS = {
   "scene3d.light.castShadow": flag(true, "gpu", LIGHT3D),
   "scene3d.light.distance": num(0, null, "gpu", LIGHT3D),
   "scene3d.light.decay": num(1, null, "gpu", LIGHT3D),
+  /** Scene layer archetype (ROADMAP_3D Phase 3D-007): points at a 3D scene id */
+  "scene": typed(str("", null, "none", only("scene3d"))),
 
   // --- Editor metadata stored on layers ------------------------------------------
   "motion.attachedSampleId": str("", null, "none", ALL),

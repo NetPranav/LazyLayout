@@ -22,6 +22,7 @@ import { PIN_PRESETS, bindingLayerRefs, type BindingDraft, type TargetSet, type 
 import { REPEATABLE_COMPONENTS, cloneCount, splitGraphemes } from "./kinetics";
 import { LAYER_PARAMS } from "./graph";
 import { MAIN_COMPOSITION_ID, clipFits } from "./compositions";
+import { is3DPath, parse3DPath } from "../3d/paths";
 
 type Issue = (path: (string | number)[], message: string) => void;
 
@@ -55,6 +56,20 @@ export function checkReferences(doc: MotionDocument, issue: Issue): void {
   keyed("sequences");
   keyed("inputTapes");
   keyed("compositions");
+  for (const table of [
+    "scenes",
+    "objects",
+    "meshes",
+    "materials",
+    "lights",
+    "cameras",
+    "armatures",
+    "actions",
+    "worlds",
+    "images3d",
+  ] as const) {
+    if (doc[table]) keyed(table);
+  }
 
   // --- Property paths (Phase 42): canonical, legal, typed --------------------
   const checkPath = (at: (string | number)[], path: string, archetype: ArchetypeId, opts: { animatable?: boolean; value?: PropValue } = {}) => {
@@ -87,6 +102,18 @@ export function checkReferences(doc: MotionDocument, issue: Issue): void {
     if (!l) continue;
     clip.tracks.forEach((track, i) => {
       const at = ["clips", key, "tracks", i, "property"];
+      if (is3DPath(track.property)) {
+        const parsed = parse3DPath(track.property);
+        if (!parsed.ok) {
+          issue(at, parsed.error);
+        } else {
+          const table = doc[parsed.table];
+          if (table && !table[parsed.id]) {
+            issue(at, `3D entity "${parsed.id}" not found in table "${parsed.table}".`);
+          }
+        }
+        return;
+      }
       const def = checkPath(at, track.property, l.archetype, { animatable: true });
       if (def) {
         track.keyframes.forEach((kf, k) => {

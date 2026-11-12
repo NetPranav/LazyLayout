@@ -166,7 +166,7 @@ describe("Phase 53: migration v5 → v6", () => {
   it("only moves schemaVersion; every v5 entity is kept exactly", () => {
     const before = v5();
     const loaded = loadDocument({ document: structuredClone(before) });
-    assert.equal(loaded.schemaVersion, 6);
+    assert.equal(loaded.schemaVersion, 7);
     const { schemaVersion: _a, ...rest } = loaded as unknown as Record<string, unknown>;
     const { schemaVersion: _b, ...restBefore } = before;
     void _a;

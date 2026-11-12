@@ -53,6 +53,7 @@ const GROUP_OF_PREFIX: Record<string, GroupId> = {
   divider: "divider",
   background: "background",
   scene3d: "scene3d",
+  scene: "scene3d",
   interaction: "behaviour", a11y: "behaviour", export: "behaviour", motion: "behaviour", logic: "behaviour",
 };
 

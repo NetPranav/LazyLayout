@@ -114,7 +114,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-005 | 3D performance tiers & budgets | new | 3D-004 | A | 🚧 |
 | 3D-006 | Worker & WASM job system | new | 3D-001 | A | 🚧 |
 | | **Stage 2 · The 3D document** |||||
-| 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 📋 |
+| 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 🚧 |
 | 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 📋 |
 | 3D-009 | Units, axes & conventions | new | 3D-008 | A | 📋 |
 | 3D-010 | 3D in the evaluation kernel | new | 3D-009 | A | 📋 |
@@ -462,7 +462,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 ## Stage 2 · The 3D document
 
 ### Phase 3D-007 · 3D data blocks & schema v7
-**Needs:** 3D-001 · **Was:** — · **Lane:** A · **Status:** 📋
+**Needs:** 3D-001 · **Was:** — · **Lane:** A · **Status:** 🚧
 - [ ] Decision record 0019 (3D document model).
 - [ ] Data blocks shared by id, as in Blender:
   - **Scene**: objects, world, active camera, settings.
@@ -482,6 +482,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** nothing yet; 3D saves and reloads.
 **Done when:** a document with every data-block kind round-trips exactly; the migration test passes; a 1-million-vertex mesh saves in under 1 s.
+**Evidence (2026-11-11):** schema v7 data-block tables, migration, makeSingleUser, binary mesh (1M vertices < 1s); 170 document tests pass
 
 ### Phase 3D-008 · Transforms & hierarchy
 **Needs:** 3D-007 · **Was:** — · **Lane:** A · **Status:** 📋

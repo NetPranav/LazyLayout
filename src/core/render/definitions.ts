@@ -48,4 +48,5 @@ export const RENDER_DEFINITIONS: Record<ArchetypeId, ComponentType<ArchetypeRend
   object3D: Placeholder,
   camera3D: Placeholder,
   light3D: Placeholder,
+  scene3d: Placeholder,
 };

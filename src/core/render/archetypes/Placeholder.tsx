@@ -7,6 +7,7 @@ const LABELS: Record<string, string> = {
   object3D: "3D object",
   camera3D: "3D camera",
   light3D: "3D light",
+  scene3d: "3D scene",
 };
 
 /**

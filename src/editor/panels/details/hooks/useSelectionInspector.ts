@@ -62,6 +62,7 @@ export function getIconForArchetype(archetype?: string): LucideIcon {
       return Star;
     case "object3d":
     case "object3D":
+    case "scene3d":
       return Box;
     case "counter":
       return Hash;
