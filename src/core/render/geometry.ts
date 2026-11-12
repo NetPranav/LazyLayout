@@ -1,3 +1,4 @@
+import { adjustmentFilter, blendStyle, maskStyle } from "./compositing";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 import type { CSSProperties } from "react";
 import type { Layer } from "../document/schema";
@@ -213,6 +214,14 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   if (typeof opacity === "number" && opacity >= 0 && opacity <= 1) {
     if (style3d !== "preserve3d" || opacity === 1) style.opacity = opacity;
   }
+  // Compositing (Phase 74): blend mode and isolation, then the mask. A flattening property, so not inside a 3D stage group.
+  if (style3d !== "preserve3d") {
+    const blend = blendStyle((path) => resolved.get(path));
+    if (blend.mixBlendMode) style.mixBlendMode = blend.mixBlendMode;
+    if (blend.isolation) style.isolation = blend.isolation;
+    const mask = maskStyle((path) => resolved.get(path), { width: g.frame.width, height: g.frame.height });
+    if (mask) Object.assign(style, mask);
+  }
   // Effects (Phase 35): drop and inner shadows (a shape draws its own, inside its SVG), layer blur and background blur.
   if (options.shadow !== "none") {
     const shadow = boxShadowCss(parseShadows(resolved.get("paint.shadows")));
@@ -244,6 +253,8 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
       backdrops.push(g.backdropFilter);
       if (options.shadow !== "none") style.boxShadow = style.boxShadow ? `${style.boxShadow}, ${g.boxShadow}` : g.boxShadow;
     }
+    const adjustment = adjustmentFilter((path) => resolved.get(path));
+    if (adjustment) backdrops.push(adjustment);
     if (backdrops.length > 0) {
       style.backdropFilter = backdrops.join(" ");
       (style as Record<string, unknown>).WebkitBackdropFilter = backdrops.join(" ");

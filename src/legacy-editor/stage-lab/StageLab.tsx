@@ -9,10 +9,12 @@
  */
 import React, { useCallback, useEffect, useState } from "react";
 import { installTransportDriver } from "@/core/time/transportDriver";
+import { transport } from "@/core/time/transport";
 import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "@/core/document/factories";
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
+import { SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -59,6 +61,39 @@ function animationDocument() {
   return createDocumentFromLayers([root, ...kids], clips);
 }
 
+/**
+ * Phase 74's five compositing reference scenes (blend, isolation, adjustment, an alpha mask with a growing ellipse, a
+ * luma mask with a morphing path). Each is a backdrop and a subject, side by side, animated over one second.
+ */
+function compositingDocument() {
+  const at = (i: number) => ({ positioning: "absolute", "frame.x": 20 + i * 150, "frame.y": 40, "frame.width": SCENE_BOX.width, "frame.height": SCENE_BOX.height }) as Layer["properties"];
+  const box = (id: string, i: number, extra: Layer["properties"]) => createLayer({ id, archetype: "container", parentId: LAB_ROOT, properties: { ...at(i), ...extra } }) as Layer;
+  const layers: Layer[] = [
+    // blend: a red layer multiplied onto a (128, 128, 255) backdrop gives (128, 0, 0)
+    box("back_blend", 0, { "appearance.background.color": "#8080ff" }),
+    box(sceneId("blend"), 0, { "appearance.background.color": "#ff0000", "appearance.blendMode": "multiply" }),
+    // isolation: an isolated group
+    box(sceneId("isolation"), 1, { "appearance.background.color": "#00aa00", "appearance.isolation": "isolate" }),
+    // adjustment: a sharp red | blue edge, blurred from behind more and more
+    box("back_adjust_l", 2, { "appearance.background.color": "#ff0000", "frame.width": SCENE_BOX.width / 2 }),
+    box("back_adjust_r", 2, { "appearance.background.color": "#0000ff", "frame.x": 20 + 2 * 150 + SCENE_BOX.width / 2, "frame.width": SCENE_BOX.width / 2 }),
+    box(sceneId("adjustment"), 2, { "render.role": "adjustment" }),
+    // alpha mask: a red layer shown through an ellipse that grows
+    box(sceneId("alphaMask"), 3, { "appearance.background.color": "#ff0000", "mask.mode": "alpha", "mask.shape": "ellipse", "mask.width": 10, "mask.height": 100 }),
+    // luma mask: a red layer shown through a white path that morphs from a square to a diamond
+    box(sceneId("lumaMorph"), 4, { "appearance.background.color": "#ff0000", "mask.mode": "luma", "mask.shape": "path", "mask.path": SCENE_SQUARE, "mask.fill": "#ffffff" }),
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 200 } }) as Layer;
+  const animate = (layerId: string, name: string, tracks: Array<{ property: string; from: number | string; to: number | string }>) =>
+    attachClip(hydrateClip({ name, type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: tracks.map((t) => ({ property: t.property, keyframes: [{ time: 0, value: t.from }, { time: 1, value: t.to }] })) }), layerId);
+  const clips = [
+    animate(sceneId("adjustment"), "Blur up", [{ property: "adjust.blur", from: 0, to: 16 }]),
+    animate(sceneId("alphaMask"), "Grow", [{ property: "mask.width", from: 10, to: 120 }]),
+    animate(sceneId("lumaMorph"), "Morph", [{ property: "mask.path", from: SCENE_SQUARE, to: SCENE_DIAMOND }]),
+  ];
+  return createDocumentFromLayers([root, ...layers], clips);
+}
+
 function labLayers(): Layer[] {
   const children = Array.from({ length: LAB_COUNT }, (_, i) => labId(i));
   const kids = children.map(
@@ -98,6 +133,7 @@ export const StageLab: React.FC = () => {
   }, []);
 
   const loadAnimations = useCallback(() => documentCommands.replaceDocument(animationDocument(), "Load reference animations"), []);
+  const loadCompositing = useCallback(() => documentCommands.replaceDocument(compositingDocument(), "Load compositing scenes"), []);
 
   const editOne = useCallback(() => {
     setEdits((n) => n + 1);
@@ -118,10 +154,15 @@ export const StageLab: React.FC = () => {
         <div style={{ marginTop: 8 }}>
           <button type="button" style={button} onClick={load}>Load 500 layers</button>
           <button type="button" style={button} onClick={loadAnimations}>Load 10 animations</button>
+          <button type="button" style={button} onClick={loadCompositing}>Load 5 compositing scenes</button>
           <button type="button" style={button} onClick={editOne}>Edit one layer</button>
           <button type="button" style={button} onClick={addOne}>Add one layer</button>
           <button type="button" style={button} onClick={removeOne}>Remove one layer</button>
           <button type="button" style={button} onClick={reset}>Reset render counts</button>
+          <label style={{ marginLeft: 6 }}>
+            Time{" "}
+            <input type="range" min={0} max={1} step={0.01} defaultValue={0} aria-label="Time" onChange={(e) => transport.seek(Number(e.target.value))} />
+          </label>
           <span data-testid="mount-ms">{mountMs === null ? "not loaded" : `mounted in ${mountMs.toFixed(1)} ms`}</span>
           <span data-testid="edit-count" style={{ marginLeft: 12 }}>edits: {edits}</span>
         </div>

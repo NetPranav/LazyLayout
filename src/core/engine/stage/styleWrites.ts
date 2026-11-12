@@ -1,6 +1,7 @@
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
 import type { ResolvedProps } from "../../kernel/evaluate";
+import { adjustmentFilter, isAdjustPath, isMaskPath, maskStyle, readerOf } from "../../render/compositing";
 
 /**
  * ROADMAP Phase 57: the bridge from the kernel's output (property path → value) to CSS. Pure, so the mapping is
@@ -77,6 +78,21 @@ export function styleWrites(paths: Iterable<string>, resolved: ResolvedProps): R
     if (!def?.css || resolved[path] === undefined) continue;
     const css = cssValue(def, resolved, resolved[path]);
     if (css !== null) out[def.css] = css;
+  }
+  // Compositing (Phase 74): an adjustment and a mask are each one CSS value made from several properties.
+  const paths2 = Array.from(paths);
+  const read = readerOf(resolved);
+  if (paths2.some(isAdjustPath)) {
+    const blur = typeof resolved["paint.backgroundBlur"] === "number" && resolved["paint.backgroundBlur"] > 0 ? `blur(${Math.min(200, resolved["paint.backgroundBlur"])}px) ` : "";
+    const filter = `${blur}${adjustmentFilter(read)}`.trim() || "none";
+    out["backdrop-filter"] = filter;
+    out["-webkit-backdrop-filter"] = filter;
+  }
+  if (paths2.some(isMaskPath)) {
+    const width = typeof resolved["frame.width"] === "number" ? resolved["frame.width"] : 0;
+    const height = typeof resolved["frame.height"] === "number" ? resolved["frame.height"] : 0;
+    const mask = maskStyle(read, { width, height });
+    for (const key of ["mask-image", "-webkit-mask-image", "mask-size", "-webkit-mask-size", "mask-repeat", "-webkit-mask-repeat"]) out[key] = mask ? { "mask-image": mask.maskImage, "-webkit-mask-image": mask.WebkitMaskImage, "mask-size": mask.maskSize, "-webkit-mask-size": mask.WebkitMaskSize, "mask-repeat": mask.maskRepeat, "-webkit-mask-repeat": mask.WebkitMaskRepeat }[key]! : "none";
   }
   if (transformTouched) {
     const parts: string[] = [];
