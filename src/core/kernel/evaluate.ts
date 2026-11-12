@@ -553,6 +553,8 @@ function evaluateBaseProps(
  * Converts interpolated Euler angles to quaternion via quatFromEuler("XYZ").
  */
 export function synthesize3DQuaternions(doc: MotionDocument, props: ResolvedProps): ResolvedProps {
+  // the hot path: a 2D document has no 3D objects, so there is nothing to scan
+  if (!doc.objects) return props;
   const eulerPattern = /^3d:objects\/([^/]+)\/transform\.rotationEuler\.(x|y|z)$/;
   const objectsWithEuler = new Set<string>();
 
