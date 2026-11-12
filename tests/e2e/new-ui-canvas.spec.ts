@@ -7,7 +7,7 @@
 import path from "node:path";
 import { PNG } from "pngjs";
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, waitSaved } from "./support/editor";
+import { openEditor, waitSaved, pickShape } from "./support/editor";
 
 type L = { id: string; archetype: string; name: string; parentId: string | null; children: string[]; visible?: boolean; properties: Record<string, unknown> };
 type Win = { __LL_TEST__: boolean; __LL_DOC__: { get: () => { layers: Record<string, L> }; commands: { updateProps: (id: string, p: Record<string, unknown>) => void } } };
@@ -47,15 +47,11 @@ async function drag(page: Page, a: { x: number; y: number }, b: { x: number; y: 
 }
 async function rectangle(page: Page, x1: number, y1: number, x2: number, y2: number) {
   const before = new Set((await ofKind(page, "rectangle")).map((l) => l.id));
-  const rectItem = page.getByRole("menuitem", { name: /^Rectangle/ });
-  // the menu animates out after a pick, so "visible" can mean "closing": the button's aria-expanded says whether it is open
   const shape = page.getByRole("button", { name: "Shape", exact: true });
-  if ((await shape.getAttribute("aria-expanded")) !== "true") {
-    await expect(rectItem).toBeHidden();
-    await shape.click();
-  }
-  await rectItem.click();
+  await pickShape(page, "Rectangle");
   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+  // the tool hands back to Select after a draw; a Shape click made before that is closed again by the hand-back
+  await expect(shape).not.toHaveAttribute("aria-pressed", "true");
   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
 }
 async function frame(page: Page, x1: number, y1: number, x2: number, y2: number) {
@@ -685,7 +681,8 @@ test.describe("saved projects", () => {
           const found: Record<string, L> = record.snapshot.document?.layers ?? record.snapshot.layers;
           found[rootId].properties["frame.widthUnit"] = "%";
           found[rootId].properties["frame.heightUnit"] = "%";
-          delete found.headline.properties.positioning;
+          // the new editor saves only what the page holds in its snapshot: a sample layer may not be in it
+          if (found.headline) delete found.headline.properties.positioning;
           store.put(record);
         };
         tx.oncomplete = () => ok();
