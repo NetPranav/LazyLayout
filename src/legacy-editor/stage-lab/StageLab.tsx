@@ -14,7 +14,7 @@ import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
-import { MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
+import { FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -100,6 +100,30 @@ function compositingDocument() {
   return createDocumentFromLayers([root, ...layers], clips);
 }
 
+function effectsDocument() {
+  const box = (id: string, extra: Layer["properties"], flags: Partial<Layer> = {}) => ({ ...(createLayer({ id, archetype: "container", parentId: LAB_ROOT, properties: { positioning: "absolute", ...extra } }) as Layer), ...flags }) as Layer;
+  const layers: Layer[] = [
+    box(FX_STACK_LAYER, {
+      "frame.x": 60, "frame.y": 40, "frame.width": 120, "frame.height": 100, "appearance.background.color": "#ff0000",
+      "fx.1.type": "blur", "fx.1.radius": 0,
+      "fx.2.type": "dropShadow", "fx.2.x": 0, "fx.2.y": 0, "fx.2.radius": 6, "fx.2.color": "#000000", "fx.2.opacity": 1,
+      "fx.3.type": "colorAdjust", "fx.3.saturate": 1,
+      "fx.4.type": "displacement", "fx.4.scale": 0, "fx.4.frequency": 0.03, "fx.4.seed": 2,
+    }),
+    box(MB_ON_LAYER, { "frame.x": 20, "frame.y": 190, "frame.width": 60, "frame.height": 40, "appearance.background.color": "#0000ff", "motion.shutterAngle": 720 }, { motionBlur: true }),
+    box(MB_OFF_LAYER, { "frame.x": 20, "frame.y": 260, "frame.width": 60, "frame.height": 40, "appearance.background.color": "#0000ff" }),
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
+  const animate = (layerId: string, name: string, tracks: Array<{ property: string; from: number; to: number }>) =>
+    attachClip(hydrateClip({ name, type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: tracks.map((t) => ({ property: t.property, keyframes: [{ time: 0, value: t.from }, { time: 1, value: t.to }] })) }), layerId);
+  const clips = [
+    animate(FX_STACK_LAYER, "Stack", [{ property: "fx.1.radius", from: 0, to: 12 }, { property: "fx.2.y", from: 0, to: 20 }, { property: "fx.3.saturate", from: 1, to: 0 }, { property: "fx.4.scale", from: 0, to: 40 }]),
+    animate(MB_ON_LAYER, "Slide", [{ property: "transform.x", from: 0, to: 600 }]),
+    animate(MB_OFF_LAYER, "Slide", [{ property: "transform.x", from: 0, to: 600 }]),
+  ];
+  return createDocumentFromLayers([root, ...layers], clips);
+}
+
 function labLayers(): Layer[] {
   const children = Array.from({ length: LAB_COUNT }, (_, i) => labId(i));
   const kids = children.map(
@@ -139,6 +163,7 @@ export const StageLab: React.FC = () => {
   }, []);
 
   const loadAnimations = useCallback(() => documentCommands.replaceDocument(animationDocument(), "Load reference animations"), []);
+  const loadEffects = useCallback(() => documentCommands.replaceDocument(effectsDocument(), "Load effect scenes"), []);
   const loadCompositing = useCallback(() => documentCommands.replaceDocument(compositingDocument(), "Load compositing scenes"), []);
 
   const editOne = useCallback(() => {
@@ -161,6 +186,7 @@ export const StageLab: React.FC = () => {
           <button type="button" style={button} onClick={load}>Load 500 layers</button>
           <button type="button" style={button} onClick={loadAnimations}>Load 10 animations</button>
           <button type="button" style={button} onClick={loadCompositing}>Load 5 compositing scenes</button>
+          <button type="button" style={button} onClick={loadEffects}>Load effect scenes</button>
           <button type="button" style={button} onClick={editOne}>Edit one layer</button>
           <button type="button" style={button} onClick={addOne}>Add one layer</button>
           <button type="button" style={button} onClick={removeOne}>Remove one layer</button>

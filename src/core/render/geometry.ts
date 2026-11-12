@@ -1,4 +1,5 @@
-import { adjustmentFilter, blendStyle, maskStyle } from "./compositing";
+import { adjustmentFilter, blendStyle, maskStyle, type PropReader } from "./compositing";
+import { fxStyle } from "./fxStack";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 import type { CSSProperties } from "react";
 import type { Layer } from "../document/schema";
@@ -229,16 +230,10 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   }
   // FigCraft port F7: the effect list (`paint.effects`); a blur in it wins over the plain one
   const effects = parseEffects(resolved.get("paint.effects"));
-  const filters: string[] = [];
   const backdrops: string[] = [];
-  if (needsFilter(effects)) filters.push(`url(#${effectFilterId(layer.id)})`);
-  const layerBlur = blurOf(effects, "layerBlur");
-  const blur = resolved.get("filter.blur");
-  if (layerBlur) {
-    // a progressive one is drawn by the frame's backdrop layers; elsewhere it is the uniform blur half way up its ramp
-    if (layerBlur.blurType !== "progressive") filters.push(`blur(${Math.min(layerBlur.radius, 200)}px)`);
-    else if (!options.bands) filters.push(`blur(${Math.min((layerBlur.radius + layerBlur.startRadius) / 2, 200)}px)`);
-  } else if (typeof blur === "number" && blur > 0) filters.push(`blur(${Math.min(blur, 200)}px)`);
+  // The layer's filters (FigCraft's effects and the plain blur), then the effect stack's CSS ones (Phase 75). The stack's
+  // SVG effects and motion blur are added by the animation engine, which keeps their filters in the frame.
+  const filters = [...baseFilterFunctions((path) => resolved.get(path), layer.id, options.bands === true), ...fxStyle(layer.id, (path) => resolved.get(path), { svg: false }).functions];
   if (filters.length > 0 && style3d !== "preserve3d") style.filter = filters.join(" ");
   const bgBlur = blurOf(effects, "backgroundBlur");
   const backdrop = resolved.get("paint.backgroundBlur");
@@ -261,6 +256,24 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     }
   }
   return style;
+}
+
+/**
+ * The `filter` functions a layer has apart from the effect stack: FigCraft's noise and texture filter, its layer blur (a
+ * progressive one is drawn by the frame's backdrop layers when `bands`; elsewhere it is the uniform blur half way up its
+ * ramp) and the plain blur. The render definitions and the animation engine both call this.
+ */
+export function baseFilterFunctions(get: PropReader, layerId: string, bands: boolean): string[] {
+  const effects = parseEffects(get("paint.effects"));
+  const filters: string[] = [];
+  if (needsFilter(effects)) filters.push(`url(#${effectFilterId(layerId)})`);
+  const layerBlur = blurOf(effects, "layerBlur");
+  const blur = get("filter.blur");
+  if (layerBlur) {
+    if (layerBlur.blurType !== "progressive") filters.push(`blur(${Math.min(layerBlur.radius, 200)}px)`);
+    else if (!bands) filters.push(`blur(${Math.min((layerBlur.radius + layerBlur.startRadius) / 2, 200)}px)`);
+  } else if (typeof blur === "number" && blur > 0) filters.push(`blur(${Math.min(blur, 200)}px)`);
+  return filters;
 }
 
 /** `px` strings for numbers; used for radii, gaps and paddings read from props. */

@@ -164,7 +164,7 @@ export class ParityMonitor {
     const stillLate = new Set<string>();
     for (const layer of running) {
       const skew = SKEW_FRAMES / env.fps();
-      const at = (t: number) => styleWrites(layer.paths, evaluate(doc, compositionId, layer.layerId, Math.max(0, t)));
+      const at = (t: number) => styleWrites(layer.paths, evaluate(doc, compositionId, layer.layerId, Math.max(0, t)), layer.layerId);
       const [expected, before, after] = [at(layer.time), at(layer.time - skew), at(layer.time + skew)];
       for (const [property, want] of Object.entries(expected)) {
         const got = env.read(layer.element, property);

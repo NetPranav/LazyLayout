@@ -259,6 +259,9 @@ Click the **`+`** icon on the **Effects** header to add:
 > [!NOTE]
 > **Blend modes, adjustment and masks.** A layer's **Blend mode** (Multiply, Screen, Overlay and the rest) now really mixes it with what is behind it on the canvas and in the exported code. The engine also supports **isolated groups**, **adjustment layers** (a layer that blurs, brightens, desaturates or tints everything behind it) and **masks** (a rectangle, oval or drawn path that decides what of a layer shows, with a soft edge, and a path that can morph over time). The editor has no buttons for isolation, adjustment or masks yet; they are planned.
 
+> [!NOTE]
+> **Effect stack and motion blur.** The engine now supports up to eight effects per layer, in order: **blur, glow, drop shadow, colour adjust, displacement and noise**, each with settings you can animate. A layer can also have **motion blur**, which smears it along the way it moves (turn it on with the layer's motion-blur switch in the timeline). The editor has no Effects section or effect keyframes yet; they are planned.
+
 ---
 
 ## 8. Layers Hierarchy & Asset Management

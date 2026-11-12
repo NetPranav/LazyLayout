@@ -293,7 +293,7 @@ const frequency = (size: number) => Math.min(2, 1 / Math.max(0.5, size * 2));
 
 /** One SVG filter primitive (tag and attributes), so the stage and the export draw the same markup. */
 export interface FilterPrimitive {
-  tag: "feTurbulence" | "feColorMatrix" | "feFlood" | "feComposite" | "feBlend" | "feDisplacementMap" | "feMerge" | "feMergeNode" | "feOffset";
+  tag: "feTurbulence" | "feColorMatrix" | "feFlood" | "feComposite" | "feBlend" | "feDisplacementMap" | "feMerge" | "feMergeNode" | "feOffset" | "feGaussianBlur";
   attrs: Record<string, string | number>;
   children?: FilterPrimitive[];
 }

@@ -37,6 +37,7 @@ import { synthesizeSingleTransformMatrix, type TransformComponents } from "../en
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
 import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
+import { motionBlurSigma } from "../render/fxStack";
 import {
   createLayerLocalMatrix,
   multiplyAffineMatrices,
@@ -421,7 +422,7 @@ export function evaluateLocalProps(
 export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
   const layer = doc.layers[layerId];
   if (!layer) return {};
-  return withMatte(doc, compositionId, layerId, t, inputs, evaluateWorld(doc, compositionId, layerId, t, inputs));
+  return withMotionBlur(doc, compositionId, layerId, t, inputs, withMatte(doc, compositionId, layerId, t, inputs, evaluateWorld(doc, compositionId, layerId, t, inputs)));
 }
 
 // ---------------------------------------------------------------------------
@@ -486,6 +487,35 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Motion blur (Phase 75): opt-in, from how fast the layer is moving
+// ---------------------------------------------------------------------------
+
+/**
+ * With the layer's motion blur switch on, adds how much to blur across and down (`motion.blur.x` and `motion.blur.y`, the
+ * standard deviations in px) from the layer's velocity at `t`, measured over one frame centred on `t` and scaled by the
+ * shutter angle (`motion.shutterAngle`, 180 by default). A layer that is still, or barely moving, gets nothing. It is a
+ * pure function of the document and `t`, so scrubbing shows the same blur as playing.
+ */
+function withMotionBlur(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, resolved: ResolvedProps): ResolvedProps {
+  const layer = doc.layers[layerId];
+  if (!layer || layer.motionBlur !== true) return resolved;
+  const fps = doc.compositions[compositionId]?.fps ?? 60;
+  const half = 0.5 / fps;
+  const at = (time: number) => {
+    const world = evaluateWorld(doc, compositionId, layerId, time, inputs)["transform.worldMatrix"] as unknown as AffineMatrix2D | undefined;
+    return world ? { x: world[4], y: world[5] } : { x: 0, y: 0 };
+  };
+  const t0 = Math.max(0, t - half);
+  const t1 = t + half;
+  const a = at(t0);
+  const b = at(t1);
+  const dt = t1 - t0;
+  const shutter = typeof resolved["motion.shutterAngle"] === "number" ? (resolved["motion.shutterAngle"] as number) : 180;
+  const sigma = motionBlurSigma({ x: (b.x - a.x) / dt, y: (b.y - a.y) / dt }, fps, shutter);
+  return sigma.x > 0.05 || sigma.y > 0.05 ? { ...resolved, "motion.blur.x": sigma.x, "motion.blur.y": sigma.y } : resolved;
 }
 
 function evaluateWorld(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs): ResolvedProps {

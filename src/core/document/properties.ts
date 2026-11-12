@@ -194,6 +194,38 @@ const ALL = only(...ARCHETYPE_IDS);
 /** Stroke ends (FigCraft port F3), plus the three older names Phase 7.6 stored. */
 const CAP_OPTIONS = ["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled", "arrow", "triangle", "circle"] as const;
 
+/**
+ * The effect stack (Phase 75): an ordered list of up to 8 effects per layer, one numbered slot each, so every parameter
+ * is an ordinary keyframeable property (`fx.1.radius`, `fx.3.color`). The list's order is the slot order. Slot, type
+ * and parameter names are in `core/render/fxStack.ts`; defaults here are neutral (a new effect is written with its own
+ * starting values by `layer.addEffect`).
+ */
+const FX_TYPE_OPTIONS = ["none", "blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise"] as const;
+function fxSlotDefs(): Record<string, Def> {
+  const out: Record<string, Def> = {};
+  for (let slot = 1; slot <= 8; slot++) {
+    const at = (name: string) => `fx.${slot}.${name}`;
+    out[at("type")] = typed(oneOf(FX_TYPE_OPTIONS, "none", null, "paint", VISUAL));
+    out[at("enabled")] = typed(flag(true, "paint", VISUAL));
+    out[at("radius")] = ranged(px(0, null, "paint", VISUAL), { min: 0, max: 200 });
+    out[at("intensity")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 4 });
+    out[at("x")] = ranged(px(0, null, "paint", VISUAL), { min: -1000, max: 1000 });
+    out[at("y")] = ranged(px(0, null, "paint", VISUAL), { min: -1000, max: 1000 });
+    out[at("opacity")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 1 });
+    out[at("color")] = typed(color("#000000", null, "paint", VISUAL));
+    out[at("brightness")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 });
+    out[at("contrast")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 });
+    out[at("saturate")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 });
+    out[at("hueRotate")] = deg(0, null, "paint", VISUAL);
+    out[at("scale")] = ranged(px(0, null, "paint", VISUAL), { min: 0, max: 500 });
+    out[at("frequency")] = ranged(num(0.02, null, "paint", VISUAL), { min: 0.001, max: 1 });
+    out[at("seed")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 100000 });
+    out[at("amount")] = ranged(num(0.3, null, "paint", VISUAL), { min: 0, max: 1 });
+    out[at("size")] = ranged(num(1, null, "paint", VISUAL), { min: 0.5, max: 50 });
+  }
+  return out;
+}
+
 const DEFS = {
   // --- Geometry (Phase 42.3): layout, what the canvas edits -----------------
   "frame.x": px(0, "left", "layout", VISUAL),
@@ -676,6 +708,8 @@ const DEFS = {
   // --- Editor metadata stored on layers ------------------------------------------
   "motion.attachedSampleId": str("", null, "none", ALL),
   "motion.trigger": str("", null, "none", ALL),
+  /** Motion blur (Phase 75), when the layer's motion blur switch is on: the shutter angle in degrees (180 is half a frame's time open, After Effects' default). */
+  "motion.shutterAngle": ranged(num(180, null, "paint", VISUAL), { min: 1, max: 720 }),
   /** Logic Blueprint graph this layer's events run (After-track; read by the dependency graph). */
   "logic.blueprintGraphId": str("", null, "none", ALL),
 } satisfies Record<string, Def>;
@@ -684,7 +718,7 @@ const DEFS = {
 export type PropertyPath = keyof typeof DEFS;
 
 export const PROPERTY_REGISTRY: Readonly<Record<string, PropertyDefinition>> = Object.fromEntries(
-  Object.entries(DEFS as Record<string, Def>).map(([path, { scope, ...def }]) => [
+  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs() }).map(([path, { scope, ...def }]) => [
     path,
     { path, ...def, interpolation: INTERPOLATION_BY_TYPE[def.valueType], archetypes: resolveScope(scope) },
   ])

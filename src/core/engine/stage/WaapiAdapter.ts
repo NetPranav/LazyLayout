@@ -166,7 +166,7 @@ export class WaapiAdapter implements EngineAdapter {
       if (!element || typeof element.animate !== "function") continue;
       const keyframes: Array<Record<string, string | number>> = [];
       for (let i = 0; i <= intervals; i++) {
-        const writes = styleWrites(paths, evaluate(doc, compositionId, layerId, (i / intervals) * duration, this.inputs));
+        const writes = styleWrites(paths, evaluate(doc, compositionId, layerId, (i / intervals) * duration, this.inputs), layerId);
         const frame: Record<string, string | number> = { offset: i / intervals };
         for (const [property, value] of Object.entries(writes)) frame[camel(property)] = value;
         keyframes.push(frame);
