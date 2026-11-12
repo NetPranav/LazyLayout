@@ -286,7 +286,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 103 | Curve-exact path engine | 40 | — (new in v4.1) | 3 | 📋 |
+| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 📋 |
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 📋 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
@@ -320,14 +320,14 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 132 | Input bus & coordinate spaces | 55, 102 | v3 59.1 | 4 | 📋 |
-| 133 | Signal catalogue, including the keyboard | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
+| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 📋 |
+| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
-| 136 | Input tapes | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
-| 137 | GPU & interactive verification harness | 136 | v3 71 | 4 | 📋 |
-| 138 | Operators & bindings runtime | 137 | v3 60.1 | 4 | 📋 |
-| 139 | Targets, blending & cycles | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
+| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
+| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
+| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
+| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
 | 141 | Connect anything: drag a property onto an input | 140 | — (new in v4.1) | 4 | 📋 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
@@ -339,7 +339,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
-| 151 | State machines | 146 | v3 11.3 | 4 | 📋 |
+| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
 | 152 | Helpers, pins & Follow | 151 | v3 88 | 4 | 📋 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
 | 154 | Cloners, tags & group targets | 153 | v3 89.2, 89.3 | 4 | 📋 |
@@ -361,18 +361,18 @@ One row per phase, in execution order. Update the Status column together with th
 | 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
-| 173 | GPU surface strategy & compositor | 170 | v3 61.1, 61.3 | 4 | 📋 |
-| 174 | Passes, render targets & GPU memory ledger | 173 | v3 61.2, 61.5 | 4 | 📋 |
-| 175 | Layer textures, outlines & distance fields | 172, 174 | — (new in v4.1) | 4 | 📋 |
+| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
+| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
+| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
-| 177 | Shader graph | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
-| 178 | Raw GLSL (Pro) & shader safety | 177 | v3 62.2 | 4 | 📋 |
+| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
+| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
-| 183 | Particles & force fields | 178, 175 | v3 63, 19.2 | 4 | 📋 |
-| 184 | Stateful simulations & replay | 183 | v3 64.2, 64.3 | 4 | 📋 |
+| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
+| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
@@ -385,7 +385,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
 | 196 | Code components | 195 | v3 68 | 4 | 📋 |
-| 197 | Interactive export runtime | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
+| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
@@ -396,12 +396,12 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 203 | Rig model: bones & skins | 72, 73, 185, 202 | — (new in v4.1) | 5 | 📋 |
-| 204 | Bone tool & posing | 203 | — (new in v4.1) | 5 | 📋 |
-| 205 | Bones on the timeline | 66, 67, 71, 204 | — (new in v4.1) | 5 | 📋 |
-| 206 | Mesh deformation & weights | 205 | — (new in v4.1) | 5 | 📋 |
-| 207 | Inverse kinematics | 206 | — (new in v4.1) | 5 | 📋 |
-| 208 | Constraints & secondary motion | 207 | — (new in v4.1) | 5 | 📋 |
+| 203 | Rig model: bones & skins → *ROADMAP_3D 3D-117 (deferred)* | 72, 73, 185, 202 | — (new in v4.1) | 5 | 📋 |
+| 204 | Bone tool & posing → *ROADMAP_3D 3D-118 (deferred)* | 203 | — (new in v4.1) | 5 | 📋 |
+| 205 | Bones on the timeline → *ROADMAP_3D 3D-119 (deferred)* | 66, 67, 71, 204 | — (new in v4.1) | 5 | 📋 |
+| 206 | Mesh deformation & weights → *ROADMAP_3D 3D-120 (deferred)* | 205 | — (new in v4.1) | 5 | 📋 |
+| 207 | Inverse kinematics → *ROADMAP_3D 3D-121 (deferred)* | 206 | — (new in v4.1) | 5 | 📋 |
+| 208 | Constraints & secondary motion → *ROADMAP_3D 3D-122 (deferred)* | 207 | — (new in v4.1) | 5 | 📋 |
 | 209 | Puppet pins | 206 | — (new in v4.1) | 5 | 📋 |
 | 210 | Rigs that react | 135, 208, 209 | — (new in v4.1) | 5 | 📋 |
 | 211 | Character states & blend trees | 151, 210 | — (new in v4.1) | 5 | 📋 |
@@ -416,29 +416,29 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 218 | 3D stack decision & licences | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 📋 |
-| 219 | Scene layer | 218 | v3 18.1 | 6 | 📋 |
-| 220 | 3D viewport editing | 219 | — (new) | 6 | 📋 |
-| 221 | Scene hierarchy & 3D inspector | 220 | — (new) | 6 | 📋 |
-| 222 | Primitives & 3D text | 221 | v3 18.2 (primitives) | 6 | 📋 |
-| 223 | Inflate & extrude any vector into 3D | 103, 222 | — (new in v4.1) | 6 | 📋 |
-| 224 | GLTF import pipeline | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 📋 |
-| 225 | Materials & textures | 224 | v3 18.2 (materials) | 6 | 📋 |
-| 226 | Lights, shadows & environments | 225 | v3 18.2 (lights) | 6 | 📋 |
-| 227 | Cameras & camera paths | 226 | v3 18.3 (camera) | 6 | 📋 |
-| 228 | 3D keyframes on the timeline | 227 | v3 18.3 (tracks) | 6 | 📋 |
-| 229 | Animated GLTF playback | 228 | — (new) | 6 | 📋 |
-| 230 | 3D skeletons & IK | 207, 208, 229 | — (new in v4.1) | 6 | 📋 |
-| 231 | 3D materials in the shader graph & WebGPU | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 📋 |
-| 232 | 3D reactions & raycast events | 231 | v3 18.3 (pointer) + new | 6 | 📋 |
-| 233 | Page layers inside 3D scenes | 232 | — (new in v4.1) | 6 | 📋 |
-| 234 | Instancing, LOD & 3D cloners | 232 | — (new; extends 154 to 3D) | 6 | 📋 |
-| 235 | 3D physics | 234 | — (new) | 6 | 📋 |
-| 236 | Post-processing | 235 | — (new) | 6 | 📋 |
-| 237 | 3D memory discipline | 236 | v3 18 (v3.3 amendment) | 6 | 📋 |
-| 238 | 3D export | 237 | v3 18.4 | 6 | 📋 |
-| 239 | 3D library | 238 | v3 25.3 (wave 6) | 6 | 📋 |
-| 240 | Stage 6 gate: the 3D journey | 218–239 | — (new) | 6 | 📋 |
+| 218 | 3D stack decision & licences → *ROADMAP_3D 3D-001* | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 📋 |
+| 219 | Scene layer → *ROADMAP_3D 3D-012* | 218 | v3 18.1 | 6 | 📋 |
+| 220 | 3D viewport editing → *ROADMAP_3D 3D-014, 3D-016* | 219 | — (new) | 6 | 📋 |
+| 221 | Scene hierarchy & 3D inspector → *ROADMAP_3D 3D-021, 3D-022* | 220 | — (new) | 6 | 📋 |
+| 222 | Primitives & 3D text → *ROADMAP_3D 3D-025, 3D-026* | 221 | v3 18.2 (primitives) | 6 | 📋 |
+| 223 | Inflate & extrude any vector into 3D → *ROADMAP_3D 3D-029* | 103, 222 | — (new in v4.1) | 6 | 📋 |
+| 224 | GLTF import pipeline → *ROADMAP_3D 3D-158* | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 📋 |
+| 225 | Materials & textures → *ROADMAP_3D 3D-033* | 224 | v3 18.2 (materials) | 6 | 📋 |
+| 226 | Lights, shadows & environments → *ROADMAP_3D 3D-037 – 3D-039* | 225 | v3 18.2 (lights) | 6 | 📋 |
+| 227 | Cameras & camera paths → *ROADMAP_3D 3D-099, 3D-101* | 226 | v3 18.3 (camera) | 6 | 📋 |
+| 228 | 3D keyframes on the timeline → *ROADMAP_3D 3D-104, 3D-108* | 227 | v3 18.3 (tracks) | 6 | 📋 |
+| 229 | Animated GLTF playback → *ROADMAP_3D 3D-110* | 228 | — (new) | 6 | 📋 |
+| 230 | 3D skeletons & IK → *ROADMAP_3D 3D-127, 3D-128 (deferred)* | 207, 208, 229 | — (new in v4.1) | 6 | 📋 |
+| 231 | 3D materials in the shader graph & WebGPU → *ROADMAP_3D 3D-083 (deferred)* | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 📋 |
+| 232 | 3D reactions & raycast events → *ROADMAP_3D 3D-053, 3D-150* | 231 | v3 18.3 (pointer) + new | 6 | 📋 |
+| 233 | Page layers inside 3D scenes → *ROADMAP_3D 3D-165* | 232 | — (new in v4.1) | 6 | 📋 |
+| 234 | Instancing, LOD & 3D cloners → *ROADMAP_3D 3D-170 (deferred)* | 232 | — (new; extends 154 to 3D) | 6 | 📋 |
+| 235 | 3D physics → *ROADMAP_3D 3D-135 (deferred)* | 234 | — (new) | 6 | 📋 |
+| 236 | Post-processing → *ROADMAP_3D 3D-093* | 235 | — (new) | 6 | 📋 |
+| 237 | 3D memory discipline → *ROADMAP_3D 3D-176* | 236 | v3 18 (v3.3 amendment) | 6 | 📋 |
+| 238 | 3D export → *ROADMAP_3D 3D-171* | 237 | v3 18.4 | 6 | 📋 |
+| 239 | 3D library → *ROADMAP_3D 3D-184* | 238 | v3 25.3 (wave 6) | 6 | 📋 |
+| 240 | Stage 6 gate: the 3D journey → *ROADMAP_3D 3D-189* | 218–239 | — (new) | 6 | 📋 |
 
 **Stage 7 · AI & agents (Phases 241–250)**
 
@@ -2288,6 +2288,8 @@ The document and World Environment have their own stores, After-track actions mo
 ---
 
 # STAGE 6 — 3D (Phases 218–240)
+
+> **Moved to `ROADMAP_3D.md` (2026-11-11), re-ordered 2026-11-13.** Stage 6 is replaced by the 3D roadmap, which now also carries the photo studio and the anime studio. Its build order is its §0a. Rows in the index above that say *→ ROADMAP_3D 3D-…* are done there, not here. Phases this file owes it: **99** (video and audio layers; needed by tracking, 3D-205, and shots, 3D-223), **76–79** (links, expressions, states, transitions; Lane B) and the animation phases Lane B builds around them (3D-218 time on twos, 3D-227 live animation mixing).
 
 > **Stage output:** real 3D inside the same documents, timeline and interactions: a scene layer drawn through the GPU compositor, Spline-style editing with gizmos, primitives and 3D text, GLTF models (including their animations), PBR materials, lights, shadows and environments, cameras and camera paths, 3D keyframes, cursor and scroll reactions, raycast events for Blueprints, instancing, 3D physics, post-processing, and export to React Three Fiber or plain three.js.
 >
