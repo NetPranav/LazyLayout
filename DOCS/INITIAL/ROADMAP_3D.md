@@ -1,7 +1,7 @@
 # LazyLayout — 3D Engine Roadmap (Blender for the web builder)
 
 **Version:** 3D-1.1 (2026-11-13) · **Owner:** Lane A (proposed; see §8) · **Status:** In progress. Takes priority over the main roadmap's remaining order (owner, 2026-11-11). **Re-ordered on 2026-11-13 around four cases (§0a).**
-**Phases:** 227, numbered **3D-001 … 3D-227**: the original 190 plus **37 added on 2026-11-13** (3D-191 – 3D-227). **64** are deferred (⏸). **24** of the original 190 are main-roadmap phases pulled in because the 3D work needs them. Each says where it came from (`Was: Main 173`), and the main roadmap's row points here.
+**Phases:** 227, numbered **3D-001 … 3D-227**: the original 190 plus **37 added on 2026-11-13** (3D-191 – 3D-227). **75** are deferred (⏸), the anime studio among them as a to-do. **24** of the original 190 are main-roadmap phases pulled in because the 3D work needs them. Each says where it came from (`Was: Main 173`), and the main roadmap's row points here.
 **Relationship to ROADMAP.md:**
 - This file replaces the main roadmap's Stage 6 (Phases 218–240) and takes over the 24 phases listed in §7.
 - Everything else in ROADMAP.md is unchanged: its laws, Definition of Done and lane rules apply here too.
@@ -31,7 +31,7 @@
 | **M4 · Ship & simplicity** | 3D-158 – 3D-190 | Import models, put real page text in 3D, export small and fast to React Three Fiber, three.js or an embed, degrade by device, and make every recipe in 8 steps or fewer. |
 | **M1+ · Small and reactive** | 3D-191 – 3D-200 | Export a hover component with no script, and the foil button in a few KB, lit by a light that follows the pointer across the whole page, on touch and tilt too. |
 | **M5 · The photo studio** | 3D-201 – 3D-215 | Cut out a car, find its body lines, wrap text on it so it looks painted on yet can be told apart, corner-pin and track images in video like After Effects. |
-| **M6 · The anime studio** | 3D-216 – 3D-227 | Build a 15-second fight shot in a Solo Leveling, One Piece or Naruto look: toon shading, ink lines, twos, smears, effects, camera language, a shot list, rendered to video. |
+| **M6 · The anime studio** | 3D-216 – 3D-227 | **Parked as a to-do (owner, 2026-11-13); only 3D-227, live animation mixing, stays active.** Later: build a 15-second fight shot in a Solo Leveling, One Piece or Naruto look: toon shading, ink lines, twos, smears, effects, camera language, a shot list, rendered to video. |
 
 M2, M3 and M4 keep their numbers. The phases marked ⏸ in §6 are deferred, and the gates of M2 and M3 are re-scoped to the phases that stay.
 
@@ -68,14 +68,14 @@ The project owner named four things the studio must make. Everything is ordered 
 | 4 | **Animation first**: keys, cameras, post, render to video, mixing | 3D-090, 3D-092 – 3D-094, 3D-096 – 3D-115, 3D-227 | Gate M2, re-scoped (3D-116) |
 | 5 | **AI services** | 3D-201 – 3D-203 | |
 | 6 | **The photo studio** (case 3) | 3D-204 – 3D-215 | Gate B (3D-215) |
-| 7 | **The anime studio** (case 4) | 3D-216 – 3D-226 | Gate C (3D-226) |
+| ⏸ | **The anime studio** (case 4): parked as a to-do on 2026-11-13 | 3D-216 – 3D-226 | Gate C (3D-226) |
 | 8 | Interaction and the page | 3D-146 – 3D-156, 3D-158, 3D-159, 3D-164 – 3D-169 | Gate M3, re-scoped (3D-157) |
 | 9 | Ship | 3D-171 – 3D-190 | Gate M4c (3D-189) |
 | ⏸ | Deferred: edit mode (3D-063 – 073), modifier depth (3D-075 – 082), node materials and painting (3D-083 – 089), motion blur and fog (3D-091, 3D-095), rigging and physics depth (3D-117 – 145), asset browser and imports (3D-160 – 163), instancing (3D-170), camera solve (3D-207). | | |
 
 Two things can run side by side. **Lane A** takes the tracks that need 3D, vision and export. **Lane B** takes the animation side that tracks 4 and 7 lean on (3D-113, 3D-114, 3D-147, 3D-218, 3D-223, 3D-227) and the video layers that tracking needs (Main 99). The cheap toon shaders (3D-216, 3D-217) can start as soon as 3D-098 is unblocked; they do not wait for the photo studio.
 
-## 0b. The anime studio in one page
+## 0b. The anime studio in one page (parked as a to-do, 2026-11-13)
 
 **What makes the look.** A show like Solo Leveling, One Piece or Naruto is drawn on **twos and threes** (a new picture every second or third frame), with strong key poses, **smears** and **impact frames** at the hits, **line art** that is thick on the outside and fine inside, **flat colour with hand-shaped shadows**, **effects** (auras, slashes, flames, shockwaves) animated by specialists, **compositing** (glow, grain, chromatic edges, texture), painted backgrounds with **camera moves**, and tight cutting. Studios spend their time on the drawings, the effects and the compositing. These are the same layers the studio rebuilds:
 
@@ -432,17 +432,17 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-215 | Gate B: the car | new | 3D-206, 3D-214 | A | 📋 |
 | **M6 · The anime studio** |||||
 | | **Stage 29 · The anime look** |||||
-| 3D-216 | Anime shading core | new | 3D-098, 3D-037 | A | 📋 |
-| 3D-217 | Ink lines | new | 3D-216 | A | 📋 |
-| 3D-218 | Time on twos & threes | new | 3D-010, 3D-104 | B* | 📋 |
-| 3D-219 | Smears, impact frames & motion lines | new | 3D-218, 3D-217 | A | 📋 |
-| 3D-220 | Effects animation library | new | 3D-219, 3D-092 | A | 📋 |
-| 3D-221 | Drawn art in 3D space | new | 3D-217, 3D-167 | A | 📋 |
-| 3D-222 | Camera & cut language | new | 3D-099, 3D-218 | A | 📋 |
-| 3D-223 | Shots, storyboard & animatic | new | 3D-222, Main 99 | B* | 📋 |
-| 3D-224 | Character import & pose library | new | 3D-158, 3D-217, 3D-112 | A | 📋 |
-| 3D-225 | AI assists for anime | new | 3D-203, 3D-221 | A | 📋 |
-| 3D-226 | Gate C: the anime shot (case 4) | new | 3D-097, 3D-216 – 3D-225 | A | 📋 |
+| 3D-216 | Anime shading core | new | 3D-098, 3D-037 | A | ⏸ |
+| 3D-217 | Ink lines | new | 3D-216 | A | ⏸ |
+| 3D-218 | Time on twos & threes | new | 3D-010, 3D-104 | B* | ⏸ |
+| 3D-219 | Smears, impact frames & motion lines | new | 3D-218, 3D-217 | A | ⏸ |
+| 3D-220 | Effects animation library | new | 3D-219, 3D-092 | A | ⏸ |
+| 3D-221 | Drawn art in 3D space | new | 3D-217, 3D-167 | A | ⏸ |
+| 3D-222 | Camera & cut language | new | 3D-099, 3D-218 | A | ⏸ |
+| 3D-223 | Shots, storyboard & animatic | new | 3D-222, Main 99 | B* | ⏸ |
+| 3D-224 | Character import & pose library | new | 3D-158, 3D-217, 3D-112 | A | ⏸ |
+| 3D-225 | AI assists for anime | new | 3D-203, 3D-221 | A | ⏸ |
+| 3D-226 | Gate C: the anime shot (case 4) | new | 3D-097, 3D-216 – 3D-225 | A | ⏸ |
 | | **Stage 30 · Animation first: several animations, live** |||||
 | 3D-227 | Live multi-animation mixing | new | 3D-111, 3D-010 | B* | 📋 |
 
@@ -2214,12 +2214,15 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 
 # M6 · THE ANIME STUDIO (3D-216 – 3D-227)
 
+> **Parked as a to-do (owner, 2026-11-13).** 3D-216 – 3D-226 are ⏸; 3D-227 (live animation mixing) is general animation and stays active.
+
 > At the gate: a 15-second fight shot in a Solo Leveling, One Piece or Naruto look is built by one person in a day, with toon shading, ink lines, time on twos, smears and impact frames, effects, camera language and a shot list, and rendered to video.
 
 ## Stage 29 · The anime look
 
 ### Phase 3D-216 · Anime shading core
-**Needs:** 3D-098, 3D-037 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-098, 3D-037 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Two- and three-tone bands from a ramp; **hand-shaped shadows** (a shadow threshold and shape per object that you can paint or bias); rim light; flat highlight shapes; halftone or hatched tone on the dark side; skin and hair that shift colour in shadow.
 - [ ] A palette and a light direction per shot, so every shot can be lit by hand.
 
@@ -2227,7 +2230,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** a reference model matches a reference still within the perceptual tolerance; shadow-shape edits are one undo step and export identically.
 
 ### Phase 3D-217 · Ink lines
-**Needs:** 3D-216 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-216 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Outlines by pushing a copy of the mesh along **smoothed normals stored in a mesh attribute** (so lines do not break at hard edges), thickness from vertex colour, depth and curvature, with taper; plus lines from depth, normal and object-ID edges for interior detail.
 - [ ] Line colour per material; a small "boil" wobble on twos for the hand-drawn feel.
 - [ ] Works on photo reliefs (3D-209).
@@ -2236,7 +2240,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** lines are unbroken at hard edges on 5 models; thickness maps edit live; the line pass costs under its tier budget.
 
 ### Phase 3D-218 · Time on twos & threes
-**Needs:** 3D-010, 3D-104 · **Was:** new (2026-11-13) · **Lane:** B* · **Status:** 📋
+**Needs:** 3D-010, 3D-104 · **Was:** new (2026-11-13) · **Lane:** B* · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Each layer or object has its own frame rate: animate on ones, twos or threes; held frames; pose-to-pose with breakdowns. The stepping lives **in the kernel**, so the editor, the export and the video render agree.
 - [ ] A "limited animation" preset applies stepping to a whole shot while the camera and effects keep their own smooth rate.
 
@@ -2244,7 +2249,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** `evaluate()` at 24 fps on twos returns each pose for exactly 2 frames; the export matches to the frame; changing the rate is one undo step.
 
 ### Phase 3D-219 · Smears, impact frames & motion lines
-**Needs:** 3D-218, 3D-217 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-218, 3D-217 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Smear frames: stretch or blur the shape along its motion for 1 to 3 frames; multiple-image trails; **impact frames** (one flash, inverted or high-contrast frame); speed lines and focus lines; screen-tone bursts.
 - [ ] Driven from motion (speed, direction) or placed by hand on a frame.
 
@@ -2252,7 +2258,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** a punch preset placed on a reference clip matches the reference frame list (which frames flash, smear and hold); effects are deterministic when scrubbing.
 
 ### Phase 3D-220 · Effects animation library
-**Needs:** 3D-219, 3D-092 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-219, 3D-092 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Tiny procedural presets: energy slash, aura and **shadow flames** (Solo Leveling's shadow soldiers), shockwave, dust, sparks, steam, lightning, cut-in flash. Each is a shader plus a timing curve, with parameters, saved as Looks.
 - [ ] Hand-drawn effect sprite sheets can be imported and timed like any layer.
 - [ ] Compositing finishes: glow, chromatic aberration, film grain, vignette, texture overlays, screen-tone.
@@ -2261,7 +2268,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** 12 presets exist, each under its size budget and with a golden strip of frames; the owner picks 8 of 12 as shippable.
 
 ### Phase 3D-221 · Drawn art in 3D space
-**Needs:** 3D-217, 3D-167 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-217, 3D-167 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] The mid-3D, mid-2D look: drawn characters, props and backgrounds as layers with depth, parallax, 2.5D camera moves and depth of field. A drawing can swap between frames (a sprite sequence) or be a puppet; light passes can be painted by hand or estimated.
 - [ ] Mixed freely with 3D models in one scene under one camera.
 
@@ -2269,14 +2277,16 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** a 5-layer scene renders the same in the editor and in the tier-1 export within tolerance; the camera move is smooth at 60 fps on the mid tier.
 
 ### Phase 3D-222 · Camera & cut language
-**Needs:** 3D-099, 3D-218 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-099, 3D-218 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Crash zoom, dolly zoom, whip pan, shake, dutch angle, rack focus, cut to flash, hold on a pose, as presets with a timing curve on any camera.
 
 **You'll see:** "Crash zoom" on a shot with one click.
 **Done when:** each preset matches its reference curve; each is one undo step.
 
 ### Phase 3D-223 · Shots, storyboard & animatic
-**Needs:** 3D-222, Main 99 · **Was:** new (2026-11-13) · **Lane:** B* · **Status:** 📋
+**Needs:** 3D-222, Main 99 · **Was:** new (2026-11-13) · **Lane:** B* · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] A shot list: every shot has a camera, timing, effects and a length; cuts and transitions; sound markers on audio layers.
 - [ ] A storyboard view from stills and an animatic that plays the shots in order.
 
@@ -2284,7 +2294,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** a 5-shot sequence plays in order with sound markers in sync within 1 frame; editing one shot changes no other.
 
 ### Phase 3D-224 · Character import & pose library
-**Needs:** 3D-158, 3D-217, 3D-112 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-158, 3D-217, 3D-112 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Import glTF or VRM characters; the toon material and ink lines are applied automatically; body and face pose libraries; mouth shapes and blinks through shape keys.
 - [ ] Characters from a photo or drawing through a server model (3D-203), with the quality marked honestly.
 
@@ -2292,7 +2303,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** 3 VRM and 3 glTF characters import with the right shading in one step; a pose from the library is one undo step.
 
 ### Phase 3D-225 · AI assists for anime
-**Needs:** 3D-203, 3D-221 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-203, 3D-221 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] Optional, through the gateway: in-betweens for drawn key frames, line art to colour flats, a video-to-anime style pass, automatic lip sync from audio.
 - [ ] Each task shows its cost, its model and its licence, and its result is a **draft**: the artist always has the last word. Every assist can be turned off.
 
@@ -2300,7 +2312,8 @@ Instancing (3D-170) and bundles (3D-174, folded into 3D-195 and 3D-196) are defe
 **Done when:** each assist has a licence note, a cost note, a stub test and one worked example judged by the owner.
 
 ### Phase 3D-226 · Gate C: the anime shot (case 4)
-**Needs:** 3D-097, 3D-216 – 3D-225 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** 📋
+**Needs:** 3D-097, 3D-216 – 3D-225 · **Was:** new (2026-11-13) · **Lane:** A · **Status:** ⏸
+> ⏸ **Parked as a to-do (owner, 2026-11-13):** the anime studio waits until the design work (§0a) is done.
 - [ ] From a **reference clip chosen by the owner** (about 15 seconds, a fight shot), one person rebuilds the look in the studio in one day: toon shading, ink lines, twos, smears and impact frames, effects, camera moves, a shot list, rendered to video.
 - [ ] The first aim is "looks like the same show", not an identical drawing. Time and cost are recorded.
 
