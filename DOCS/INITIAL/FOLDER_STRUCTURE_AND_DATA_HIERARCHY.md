@@ -1,287 +1,82 @@
-# ENGINE FOLDER STRUCTURE & DATA HIERARCHY SPECIFICATION — INITIAL PHASE
+# Folder structure and data hierarchy
 
-> **⚠️ Pending v2 update:** This document still describes Initial Phase v1.1. Where it conflicts with `PRD.md` v2.0.0 or `ROADMAP.md` v2.0.0, those documents win. It will be rewritten in ROADMAP v2 Phase 6.3 (schema content in Phase 2). See `AUDIT.md` for known gaps between this spec and the code.
-
-## Project Name: LazyLayout
-**Internal Codename:** "Unreal Engine for Animation & Frontend Design"
-**Document Version:** 1.1.0
-**Phase:** Initial Phase (Element Animation Studio)
-**Status:** Production-Ready Architectural Specification
-**File Location:** `DOCS/INITIAL/FOLDER_STRUCTURE_AND_DATA_HIERARCHY.md`
+**Version:** 2.0.0 (rewritten in ROADMAP Phase 52, checked against the code on 2026-11-13).
+**Replaces:** the v1.1 spec ("Initial Phase", with `wasm/` C++ sources, an old UI.md, and an `elements` map). That layout was never built as written.
+**Authority:** the code. If this file and `src/` disagree, `src/` wins and this file is wrong; fix it in the same PR. The document model itself is in `SCHEMA_REFERENCE.md` §0 (schema v7); the rules are in `ROADMAP.md` §0–§4 and `CONVENTIONS.md`.
 
 ---
 
-## 1. Overview & Architectural Philosophy
-
-LazyLayout separates its data and codebase architecture into two clearly defined hierarchies:
-1. **HIERARCHY A: THE ENGINE CODEBASE STRUCTURE (`WebAPPBuilder/`):** The internal Next.js application housing the C++ WebAssembly spline kernel, motion runtime, dockable UI panels, and code emitters.
-2. **HIERARCHY B: THE USER PROJECT & ASSET DATA HIERARCHY:** The portable declarative project format (`project.json` / `.motionproj`) representing one element, its node tree, animation tracks, and export manifest.
-
-All database models, SQL/Prisma schemas, API endpoints, Auth RBAC, and cloud deployment directories from the full-stack architecture have been eliminated from this phase. Component-tree and Page-tree folders (multi-element composition) are likewise absent — they belong to Phase 9+ per `ROADMAP.md` and must not be pre-created as empty stubs.
-
----
-
-## 2. Hierarchy A: The Engine Codebase Structure
+## 1. Repository layout
 
 ```text
 WebAPPBuilder/
-│
-├── DOCS/                                   # Architectural Specifications
-│   ├── Initial/                            # INITIAL PHASE: Element Animation Studio
-│   │   ├── PRD.md                          # Product Requirements Document
-│   │   ├── UI.md                           # UI & Workspace Architecture
-│   │   ├── PANELS.md                       # Complete Panel & Tab Registry
-│   │   ├── ROADMAP.md                      # Phased Implementation Milestones
-│   │   ├── FOLDER_STRUCTURE_AND_DATA_HIERARCHY.md # This Document
-│   │   ├── SCHEMA_REFERENCE.md             # JSON Schema Contracts
-│   │   ├── CONVENTIONS.md                  # Coding & File Conventions
-│   │   └── CHANGELOG.md                    # Changelog
-│   └── After/                              # AFTER PHASE: Full-Stack Web App Engine (future vision, not built now)
-│
-├── wasm/                                   # C++ HIGH-PERFORMANCE WEBASSEMBLY KERNEL
-│   ├── CMakeLists.txt                      # Emscripten build manifest
-│   ├── include/
-│   │   ├── SplineSolver.h                  # Hermite & Cubic Bezier curve math
-│   │   ├── SpringPhysics.h                 # Verlet spring & cable tension solver
-│   │   └── ArcLengthParameterizer.h        # 120 FPS curve sampling
-│   └── src/
-│       ├── SplineSolver.cpp                # Curve geometry & tangent computation
-│       ├── SpringPhysics.cpp               # Physical spring bounce simulation
-│       └── WasmBindings.cpp                # EMSCRIPTEN_BINDINGS exports
-│
-├── public/                                 # Static Assets & Icons
-│   ├── wasm/                               # Compiled Wasm binaries (.wasm + .js)
-│   ├── icons/                              # Lucide & engine vector icons
-│   └── sample-assets/                      # Bundled sample images for the Image archetype's onboarding preset
-│
-└── src/                                    # CORE APPLICATION ENGINE
-    │
-    ├── core/                               # FOUNDATIONAL TYPES & LOGIC
-    │   ├── motion/                         # Motion subsystem
-    │   │   ├── types/                      # Declarative track & keyframe schemas
-    │   │   │   ├── tracks.ts               # Property tracks (transform, opacity, media, divider, background, etc.)
-    │   │   │   ├── keyframes.ts            # Keyframe definitions & diamond handles
-    │   │   │   ├── easings.ts              # Bezier curves & spring parameter contracts
-    │   │   │   └── triggers.ts             # Hover, click, scroll, mount triggers
-    │   │   └── engine/                     # Motion compatibility & validation
-    │   │       ├── MotionEvaluator.ts      # Checks archetype ↔ track compatibility (CONVENTIONS.md §4)
-    │   │       ├── CurveMath.ts            # Fallback JS bezier solver
-    │   │       └── Diagnostics.ts          # [ANIM_COMPAT] diagnostic dispatcher
-    │   │
-    │   ├── elements/                       # UI Element Archetype System
-    │   │   ├── types.ts                    # Element AST node definitions (base + archetype union)
-    │   │   ├── archetypes/                 # One file per archetype family (PRD.md §5)
-    │   │   │   ├── interactive.ts          # Button, Toggle, Badge, FAB schemas + defaults
-    │   │   │   ├── media.ts                # Image, Icon schemas + defaults
-    │   │   │   ├── structural.ts           # Divider, Background Layer, Container schemas + defaults
-    │   │   │   └── text.ts                 # Text/Label schema + defaults
-    │   │   └── validators/                 # Zod runtime validators, one per archetype file above
-    │   │       ├── interactive.test.ts
-    │   │       ├── media.test.ts
-    │   │       ├── structural.test.ts
-    │   │       └── text.test.ts
-    │   │
-    │   ├── store/                          # Reactive Zustand Stores
-    │   │   ├── useProjectStore.ts          # Root project AST state & undo/redo
-    │   │   ├── useTimelineStore.ts         # Active playhead, zoom, tracks, selection
-    │   │   ├── useSelectionStore.ts        # Active selected element & keyframe IDs
-    │   │   └── useExportStore.ts           # Target framework & styling preferences
-    │   │
-    │   └── wasm/                           # Wasm Worker Bridge
-    │       ├── WasmWorker.ts               # Web Worker wrapper for Wasm math
-    │       └── WasmWorkerPool.ts           # Multi-threaded curve computation pool
-    │
-    ├── editor/                             # DOCKABLE STUDIO SHELL & PANELS
-    │   ├── shell/                          # Layout and docking infrastructure
-    │   │   ├── EditorShell.tsx             # Master viewport, docks & splitters
-    │   │   ├── StudioHeader.tsx            # Top bar (Project name, Play, Export CTA)
-    │   │   ├── DockSplitter.tsx            # 1D resizable splitter bars
-    │   │   ├── DockCornerSplitter.tsx      # 2D simultaneous width/height drag handles
-    │   │   └── FloatingDock.tsx            # Bottom floating pill toolbar
-    │   │
-    │   ├── panels/                         # Individual Dockable Panels
-    │   │   ├── launcher/                   # Panel 00: Project Hub / Home Screen
-    │   │   │   ├── ProjectHub.tsx          # Element-only scope card + disabled Component/Page cards
-    │   │   │   ├── ScopeCard.tsx           # Renders enabled (Element) or disabled (Component/Page) state
-    │   │   │   ├── ArchetypePicker.tsx     # Family A–D archetype grid (PRD.md §6)
-    │   │   │   └── TechConfigurator.tsx    # Framework, CSS, and Animation pickers
-    │   │   │
-    │   │   ├── viewport/                   # Panel 01: Element Stage Viewport
-    │   │   │   ├── CanvasViewport.tsx      # Confluence dot-grid stage
-    │   │   │   ├── ElementStage.tsx        # Isolated centered frame + contrast toggles
-    │   │   │   └── ScrollSimulator.tsx     # ScrollTrigger virtual scrub overlay
-    │   │   │
-    │   │   ├── outliner/                   # Panel 02: Element & Animation Outliner
-    │   │   │   ├── ElementOutliner.tsx     # Tree view: Element ➔ Child ➔ Animation
-    │   │   │   ├── TreeNode.tsx            # Node row with archetype icon + mute/solo/lock toggles
-    │   │   │   └── QuickAddModal.tsx       # Popover to attach new animations
-    │   │   │
-    │   │   ├── details/                    # Panel 03: Details & Properties Inspector
-    │   │   │   ├── DetailsInspector.tsx    # Master accordion inspector; renders sections by archetype
-    │   │   │   ├── TransformSection.tsx    # X, Y, Z, Rotation, Scale, Origin (universal)
-    │   │   │   ├── LayoutSection.tsx       # Flexbox, CSS Grid, Gap, Padding (universal)
-    │   │   │   ├── AppearanceSection.tsx   # Colors, Gradients, Radius, Shadows (universal)
-    │   │   │   ├── TypographySection.tsx   # Fonts, Weights, Sizes, Line heights (Interactive + Text)
-    │   │   │   ├── SvgSection.tsx          # Fill, Stroke, Dashoffset, Path editor (Icon)
-    │   │   │   ├── MediaSection.tsx        # src, objectFit, focalPoint, filters, clipPath, overlay (Image)
-    │   │   │   ├── DividerSection.tsx      # orientation, length, thickness, style, gradient, dashoffset (Divider)
-    │   │   │   └── BackgroundSection.tsx   # type, gradient, parallax, blendMode, noise (Background Layer)
-    │   │   │
-    │   │   ├── content/                    # Panel 04: Content & Motion Browser
-    │   │   │   ├── ContentBrowser.tsx      # Asset drawer with live hover previews
-    │   │   │   └── AssetCard.tsx           # Draggable cards for presets, curves, and images
-    │   │   │
-    │   │   ├── sequencer/                  # Panel 05: Motion Sequencer
-    │   │   │   ├── MotionSequencer.tsx     # Multi-track keyframe timeline
-    │   │   │   ├── TrackHeader.tsx         # Track label, color badge, mute/solo
-    │   │   │   ├── KeyframeTrack.tsx       # Horizontal track with diamond markers
-    │   │   │   └── PlayheadControls.tsx    # Play, Pause, Loop, Reverse, Scrub bar
-    │   │   │
-    │   │   ├── curves/                     # Panel 06: Curve Editor
-    │   │   │   ├── CurveEditor.tsx         # Visual cubic bezier handle editor
-    │   │   │   └── SpringEditor.tsx        # Framer Motion spring physics visualizer
-    │   │   │
-    │   │   ├── code/                       # Panel 07: Live Code Inspector
-    │   │   │   ├── CodeInspector.tsx       # Split-tab syntax-highlighted viewer
-    │   │   │   └── ExportDialog.tsx        # Copy code & Download ZIP package
-    │   │   │
-    │   │   ├── output/                     # Panel 08: Output Log & Diagnostics
-    │   │   │   └── OutputLog.tsx           # Filterable diagnostic event stream
-    │   │   │
-    │   │   ├── sandbox/                    # Panel 09: Play & Interaction Sandbox
-    │   │   │   └── InteractionSandbox.tsx  # Zero-build interactive testing stage
-    │   │   │
-    │   │   └── ai/                         # Panel 11: MotionAI Assistant
-    │   │       ├── MotionAICoPilot.tsx     # Conversational prompt assistant
-    │   │       └── DiffPreview.tsx         # Translucent ghost keyframe diff
-    │   │
-    │   └── styles/                         # Scoped Panel Stylesheets
-    │       ├── tokens.css                  # Global design tokens & CSS variables
-    │       ├── globals.css                 # CSS reset & custom scrollbars
-    │       ├── animations.css              # Micro-interaction keyframes
-    │       ├── launcher.css                # Scoped styles for Screen 00 Hub
-    │       ├── viewport.css                # Scoped canvas styles
-    │       ├── outliner.css                # Scoped outliner tree styles
-    │       ├── details.css                 # Scoped inspector styles
-    │       ├── sequencer.css               # Scoped timeline styles
-    │       └── code.css                    # Scoped code viewer styles
-    │
-    ├── compiler/                           # CLEAN CODE EMITTER PIPELINE
-    │   ├── ast/                            # AST Transformers & Normalizers
-    │   ├── emitters/                       # Framework & library code generators
-    │   │   ├── react/                      # React 19 / Next.js 16 TSX Emitter
-    │   │   │   ├── InteractiveEmitter.ts   # Button/Toggle/Badge/FAB tag + prop emission
-    │   │   │   ├── MediaEmitter.ts         # <Image>/<img> emission with objectFit, overlay, clipPath
-    │   │   │   ├── StructuralEmitter.ts    # <hr>/<svg><line/> for Divider; <div> for Background
-    │   │   │   └── TextEmitter.ts          # Text/label emission with SplitText stagger support
-    │   │   ├── tailwind/                   # Tailwind CSS class synthesizer
-    │   │   ├── css/                        # Scoped CSS modules & keyframe emitter
-    │   │   ├── gsap/                       # GSAP useGSAP() hook emitter
-    │   │   ├── framer/                     # Framer Motion motion.div emitter
-    │   │   └── svg/                        # SVG vector, morph & stroke-draw emitter (Icon + Divider)
-    │   └── bundler/                        # Standalone ZIP package generator
-    │
-    └── app/                                # NEXT.JS APP ROUTER
-        ├── layout.tsx                      # Root layout with font imports
-        ├── page.tsx                        # Screen 00: Interactive Project Hub
-        └── editor/                         # Screen 01–12: Design Studio IDE
-            └── page.tsx                    # Loads EditorShell with active project
+├── AGENTS.md, CLAUDE.md            rules for people and AI assistants (CLAUDE.local.md is private, not checked in)
+├── DOCS/
+│   ├── INITIAL/                    PRD, ROADMAP (+ ROADMAP_3D), SCHEMA_REFERENCE, CONVENTIONS, AUDIT, CHANGELOG,
+│   │                               changelog.d/ (fragments), decisions/ (records), this file
+│   ├── TEAM/                       COLLABORATION.md (two lanes), CLAIMS.md (schema numbers, decision numbers)
+│   ├── UI/                         UI_RULES, WORKER_RULES, ORCHESTRATOR_RULES, DECISIONS (the editor rebuild)
+│   ├── 3D/                         3D working notes and agy task briefs
+│   └── FUTURE/, Learn/, images/    later phases, learning notes, screenshots
+├── public/                         fonts, icons, samples, mock-api-worker.js, stage-frame.html
+├── bin/                            lazylayout-mcp (the agent bridge), nodescript-cli
+├── extensions/nodescript-vscode    VS Code extension for NodeScript
+├── scripts/                        roadmap and doc checkers, changelog fold, tooling
+├── tests/                          e2e/ (Playwright), and support helpers; unit tests sit beside the code in __tests__/
+└── src/                            see §2
 ```
 
----
+## 2. `src/`
 
-## 3. Hierarchy B: The User Project & Asset Data Hierarchy
+| Folder | What lives there |
+|---|---|
+| `src/app/` | Next.js routes: `/` (home), `/editor` (the new editor), `/editor/legacy` (the old one, no link), `/design-system`, `/database` |
+| `src/editor/` | The new editor UI. `components/` (the shared UI kit, shown on `/design-system`), `shell/`, `stage/`, `panels/`, `motion/`, `motion-model/`, `viewport3d/`, `styles/`, labs (`stage-lab`, `surface-lab`, `gpu-lab`, `render-gallery`, `diagnostics`). Tailwind classes take the `ll:` prefix; colours come from tokens |
+| `src/legacy-editor/` | The old editor (agent, blueprints, canvas, components, database, dialogs, fonts, menus, panels, shell, stage, styles, viewport); kept until the new UI reaches parity |
+| `src/core/` | Pure logic, no page access (lint enforces it for `editing, document, frames, geometry, paint, breakpoints, text, store`). See §3 |
+| `src/compiler/` | Code emitters and export: `ast-to-react`, `blueprint-to-js`, `motion-to-gsap`, `schema-to-prisma`, `emitters`, `export`, `bundler`, `validator` |
+| `src/runtime/` | Runtime tooling: sandbox, bridge, inspector, mock API and database, hot reload, profiler, breakpoints/tracing |
+| `src/ai/` | The co-pilot: agent, codegen, intent, layout, motion, review, scaffold, prompts, history, explain |
+| `src/after/` | Stores for the later full-stack phase (blueprint, database, pages, state variables actions) |
+| `src/components/`, `src/types/` | A shared menu component; ambient type declarations |
 
-When a user saves or exports their work, it is represented as a clean, portable declarative structure. The example below is an **Image** archetype project; a Divider or Background project follows the identical shape with `elements/root.element.json` containing that archetype's fragment (`SCHEMA_REFERENCE.md` §3.1–3.3) instead.
+## 3. `src/core/` by subject
+
+- **Document and editing:** `document` (the MDM, migrations, property paths, `editorOnly`), `commands` (the command registry), `store` (every store), `rules` (the rule table), `undo`, `selection`, `clipboard`, `editing`, `tools`, `keybindings`, `hooks`, `events`, `jobs`, `errors.ts`, `flags.ts`, `ids.ts`.
+- **Layout and design:** `frames`, `geometry`, `layout` (auto layout), `breakpoints`, `pages`, `paint`, `paths`, `text`, `fonts`, `image`, `assets` (the asset store), `tokens`, `components`, `templates`, `inspector`, `viewport`, `workspace`, `hit`, `layers`, `links`.
+- **Motion:** `animation`, `timeline`, `motion`, `time`, `engine`, `kernel`, `scroll`, `surface`, `expressions`, `nodescript`, `ast`, `wasm` (the TypeScript side of the kernel: spline solver, cable physics, spatial index, worker pool; there are no C++ sources in this repo).
+- **3D:** `3d` (scenes, objects, meshes, modifiers, picking, snapping, primitives, text, SDF, viewport), `gpu`, `render`.
+- **Platform:** `export`, `storage`, `collab`, `agent` (the agent bridge), `devmode`, `profiler`.
+
+## 4. Data hierarchy
+
+**In memory** (one document, held by the stores in `src/core/store`):
 
 ```text
-AnimatedHeroImage.motionproj/
-│
-├── project.json                            # Project manifest & metadata
-│                                           # (Scope: Element, Archetype: Image, Framework: Next.js, Styling: Tailwind)
-│
-├── elements/                               # UI Element AST Definitions
-│   └── root.element.json                   # Root node — here, the "image" archetype fragment
-│
-├── animations/                             # Choreographed Animation Timelines
-│   ├── hover.timeline.json                 # Hover state timeline tracks & keyframes
-│   ├── scroll.timeline.json                # ScrollTrigger parallax / reveal tracks
-│   └── ambient.timeline.json               # Infinite-loop ambient tracks (e.g. background drift)
-│
-├── curves/                                 # Custom Easing Curves
-│   └── custom-bounce.curve.json            # Cubic bezier tangent points
-│
-├── assets/                                 # Imported raw assets (present only for Image/Icon archetypes)
-│   └── hero-mountain.jpg                   # Source raster image referenced by media.src
-│
-└── exported/                               # Generated Production Code (Ready to copy)
-    ├── AnimatedHeroImage.tsx                # Standalone Next.js/React component
-    ├── useImageMotion.ts                    # Clean GSAP / Framer Motion hook
-    └── README.md                            # Copy-paste & install instructions
+Document (schema v7)
+├── layers          Record<id, Layer>        tree by parentId / children; one root; archetype per layer
+├── pages, breakpoints, tokens, modes, designComponents, components
+├── clips, states, behaviours, sequences, transitions, bindings, surfaces, inputTapes, graphs, effects, generators, compositions
+├── assets          imported files by content hash
+├── 3D tables       scenes, objects, meshes, materials, lights, cameras, armatures, actions, worlds, images3d, texts, looks
+└── exportSettings
 ```
 
----
+A layer's properties live at property paths (`src/core/document`); every change is a command (`src/core/commands`), so undo, collaboration, the agent bridge and the code view all see the same edit.
 
-## 4. In-Memory AST Hierarchy
+**On disk and in the browser:**
 
-The reactive state store (`useProjectStore.ts`) manages the project as a structured in-memory AST. `ElementNodeAST` now explicitly carries a `family`-discriminating `archetype` field, and an optional archetype-specific data block (`media` | `divider` | `background`) alongside the universal `styles`.
+- The project is one document (JSON, versioned, migrated on load); pictures are in the asset store (IndexedDB, keyed by content hash) and are embedded when a project file is saved.
+- A second tab of the same project opens read-only (Phase 36).
+- Export reads only the document and emits code for what the project uses; editor-only layers and attributes never ship (`isEditorOnlyLayer`, `EDITOR_ONLY_ATTRIBUTES`).
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          MotionProjectAST (Root)                            │
-│  - id: string                                                               │
-│  - name: string                                                             │
-│  - scope: 'element'                          // fixed value in this phase  │
-│  - rootArchetype: ArchetypeId                                              │
-│  - target: { framework: 'nextjs'|'react'|'vue', styling: 'tailwind'|'css' } │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                    ┌──────────────────┴──────────────────┐
-                    ▼                                     ▼
-      ┌───────────────────────────┐         ┌───────────────────────────┐
-      │      ElementNodeAST       │         │   AnimationTimelineAST    │
-      │  - id: string             │         │  - id: string             │
-      │  - archetype: ArchetypeId │         │  - trigger: TriggerConfig │
-      │  - family: FamilyId       │         │  - duration: number (sec) │
-      │  - styles: StyleProps     │         │  - tracks: MotionTrack[]  │
-      │  - media?: MediaProps     │         └─────────────┬─────────────┘
-      │  - divider?: DividerProps │                       │
-      │  - background?: BgProps  │                       │
-      │  - children: ElementNode[]│                       │
-      └─────────────┬─────────────┘                       │
-                    │ connects via track.elementId        │
-                    └─────────────────────────────────────┘
-                                                          │
-                                         ┌────────────────┴────────────────┐
-                                         ▼                                 ▼
-                           ┌───────────────────────────┐     ┌───────────────────────────┐
-                           │      MotionTrackAST       │     │       KeyframeAST         │
-                           │  - property: PropertyPath │     │  - time: number (sec)     │
-                           │  - engine: 'gsap'|'framer'│     │  - value: number | string │
-                           │  - keyframes: Keyframe[]  │     │  - easing: BezierEasing   │
-                           └───────────────────────────┘     └───────────────────────────┘
+## 5. Flow of an edit
+
+```text
+gesture or shortcut or agent request
+  → command (validated, with its rule from src/core/rules)
+  → document store (one undo step)
+  → render: the stage draws from the document; the code view and export read the same document
 ```
 
-`ArchetypeId` = `'button' | 'toggle' | 'badge' | 'fab' | 'image' | 'icon' | 'divider' | 'background' | 'container' | 'text'`
-`FamilyId` = `'interactive' | 'media' | 'structural' | 'text'`
-
----
-
-## 5. Execution Lifecycle: From Visual Edit to Code Export
-
-```
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│ 1. VISUAL EDIT  │ ────> │ 2. AST MUTATION │ ────> │ 3. LIVE SANDBOX │
-│ User drags a    │       │ Zustand store   │       │ GSAP/Framer     │
-│ keyframe diamond│       │ updates with    │       │ runtime scrubs  │
-│ or slider       │       │ undo/redo stack │       │ preview at 60fps│
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-                                                              │
-                                                              ▼
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│ 6. DROP INTO    │ <──── │ 5. 1-CLICK COPY │ <──── │ 4. CODE EMITTER │
-│ EXTERNAL REPO   │       │ Formatted TSX   │       │ Archetype-aware │
-│ Runs identically│       │ copied directly │       │ emitter picks   │
-│ with zero setup │       │ to clipboard    │       │ tag per family  │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-```
+The editor measures the page and hands the result to core; core never reads the page (canvas contract rule 5, COLLABORATION §10).
