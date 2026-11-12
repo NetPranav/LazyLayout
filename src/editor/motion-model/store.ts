@@ -22,6 +22,8 @@ import {
   placementsOf,
   KEYFRAMES_CLIP_NAME,
   alignKeyframes,
+  distributeKeyframes,
+  scaleKeyframeTime,
   copyKeyframes,
   pasteKeyframes,
 } from "@/core/timeline/keyframeOps";
@@ -31,13 +33,17 @@ import { transaction } from "@/core/editing/editOps";
 import { createId } from "@/core/ids";
 import type { Clip, ClipTemplate } from "@/core/document/schema";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
+
+/** Phase 65: edits go to the composition the timeline shows (Main, an interaction or an opened precomp). */
+const activeCompositionId = (): string => getTransport().compositionId || MAIN_COMPOSITION_ID;
 import { getDocument, documentCommands } from "@/core/store/useDocumentStore";
 import { setWorkArea as setDocumentWorkArea } from "@/core/timeline/timelineOps";
+import { setKeyframeEase } from "@/core/timeline/graph";
 import {
   UI_TO_CANONICAL_PATH,
   CANONICAL_TO_UI_PATH,
   uiToCanonicalValue,
-  uiEaseToCanonical,
+  uiEaseToCanonicalString,
   uiClipTypeToCanonical,
   uiTriggerToCanonical,
   CATEGORY_DEFAULT_TRIGGERS,
@@ -372,7 +378,7 @@ export const motionActions = {
     const area = { start: clampN(a, 0, s.comp.dur - 1) / fps, end: clampN(b, 1, s.comp.dur) / fps };
     transport.setWorkArea(area);
     // the work area is the composition's (Phase 61): saved with the document, and one undo step
-    setDocumentWorkArea(area.start, area.end, MAIN_COMPOSITION_ID);
+    setDocumentWorkArea(area.start, area.end, activeCompositionId());
   },
   resetWorkArea(): void {
     transport.setWorkArea({ start: 0, end: getTransport().duration });
@@ -621,7 +627,7 @@ export const motionActions = {
           void _id;
           void _layerId;
           documentCommands.addClip(layerId, { ...rest, id: createId("clip"), delay: at, duration: Math.max(1 / fps, end - at), tracks: rightTracks }, undefined, {
-            compositionId: MAIN_COMPOSITION_ID,
+            compositionId: activeCompositionId(),
           });
         });
       } catch {
@@ -669,7 +675,7 @@ export const motionActions = {
             tracks: dc.tracks.map((t) => ({ ...t, id: createId("trk"), keyframes: t.keyframes.map((k) => ({ ...k, id: createId("kf") })) })),
           },
           "Duplicate animation",
-          { compositionId: MAIN_COMPOSITION_ID },
+          { compositionId: activeCompositionId() },
         );
       } catch {
         // fallback
@@ -823,7 +829,7 @@ export const motionActions = {
     const selIds = s.selectedKeys;
     try {
       // Document first: copies land 10 frames later in one undo step (same offset as the local fallback below).
-      const locs = locateKeyframes(getDocument(), MAIN_COMPOSITION_ID, Object.keys(selIds));
+      const locs = locateKeyframes(getDocument(), activeCompositionId(), Object.keys(selIds));
       if (locs.length > 0) {
         const fps = s.fps || 60;
         const made: Record<string, true> = {};
@@ -859,6 +865,14 @@ export const motionActions = {
       }
     });
     useMotionModel.setState({ selectedKeys: newSel });
+  },
+  /** Phase 66: spread the selected keyframes evenly between the first and the last (three or more), one undo step. */
+  distributeKeys(): number {
+    return distributeKeyframes(Object.keys(useMotionModel.getState().selectedKeys), activeCompositionId());
+  },
+  /** Phase 66: Slower (×1.25) and Faster (×0.8): the selected keyframes' timing scaled around the first, one undo step. */
+  scaleKeyTime(factor: number): number {
+    return scaleKeyframeTime(Object.keys(useMotionModel.getState().selectedKeys), factor, "first", activeCompositionId());
   },
   alignKeysToPlayhead(): void {
     const s = useMotionModel.getState();
@@ -971,7 +985,7 @@ export const motionActions = {
 
     try {
       const doc = getDocument();
-      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      const locs = locateKeyframes(doc, activeCompositionId(), [keyId]);
       if (locs.length > 0) {
         const loc = locs[0];
         const propId = CANONICAL_TO_UI_PATH[loc.property];
@@ -993,7 +1007,7 @@ export const motionActions = {
 
     try {
       const doc = getDocument();
-      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      const locs = locateKeyframes(doc, activeCompositionId(), [keyId]);
       if (locs.length > 0) {
         const loc = locs[0];
         const fps = useMotionModel.getState().fps || 60;
@@ -1015,10 +1029,10 @@ export const motionActions = {
 
     try {
       const doc = getDocument();
-      const locs = locateKeyframes(doc, MAIN_COMPOSITION_ID, [keyId]);
+      const locs = locateKeyframes(doc, activeCompositionId(), [keyId]);
       if (locs.length > 0) {
         const loc = locs[0];
-        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
+        documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonicalString(ease, bz, spring) });
       }
     } catch {
       // fallback
@@ -1035,18 +1049,16 @@ export const motionActions = {
       }
     });
 
+    // Phase 67: the real easing string (a curve's handles, a spring's Bounce and Time), one undo step.
     try {
-      const locs = locateKeyframes(getDocument(), MAIN_COMPOSITION_ID, keyIds);
-      if (locs.length > 0) {
-        transaction("Change easing", () => {
-          for (const loc of locs) {
-            documentCommands.setKeyframe(loc.clipId, loc.trackId, { ...loc.keyframe, ease: uiEaseToCanonical(ease) });
-          }
-        });
-      }
+      setKeyframeEase(keyIds, uiEaseToCanonicalString(ease, bz, spring), activeCompositionId());
     } catch {
-      // fallback
+      // standalone fallback
     }
+  },
+  /** Phase 67: an engine easing preset (Snappy, Smooth, Bouncy, Lazy, the curves, Hold) on the selected keyframes. */
+  applyEasePreset(keyIds: string[], value: string): number {
+    return setKeyframeEase(keyIds, value, activeCompositionId());
   },
   deleteKeys(ids: string[]): void {
     const set = new Set(ids);
@@ -1112,7 +1124,7 @@ export const motionActions = {
       const doc = getDocument();
       if (!doc || !doc.layers[layerId]) return;
 
-      const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+      const placed = placementsOf(doc, activeCompositionId(), layerId);
       const existingClip =
         placed[clipIdx]?.clip ??
         placed[0]?.clip ??
@@ -1134,7 +1146,7 @@ export const motionActions = {
         });
       } else {
         transaction("Add animation", () => {
-          const comp = doc.compositions[MAIN_COMPOSITION_ID] ?? Object.values(doc.compositions)[0];
+          const comp = doc.compositions[activeCompositionId()] ?? doc.compositions[MAIN_COMPOSITION_ID];
           const template: ClipTemplate = {
             id: createId("clip"),
             name: KEYFRAMES_CLIP_NAME,
@@ -1147,7 +1159,7 @@ export const motionActions = {
             ...(canonicalType === "stagger" ? { stagger: { each: 0.05, from: "start" } } : {}),
           };
           documentCommands.addClip(layerId, template, undefined, {
-            compositionId: comp?.id ?? MAIN_COMPOSITION_ID,
+            compositionId: comp?.id ?? activeCompositionId(),
           });
         });
       }
@@ -1207,7 +1219,7 @@ export const motionActions = {
       const canonicalPath = UI_TO_CANONICAL_PATH[p];
       if (canonicalPath) {
         const doc = getDocument();
-        const placed = placementsOf(doc, MAIN_COMPOSITION_ID, layerId);
+        const placed = placementsOf(doc, activeCompositionId(), layerId);
         for (const pl of placed) {
           const tr = pl.clip.tracks.find((t) => t.property === canonicalPath);
           if (tr) {

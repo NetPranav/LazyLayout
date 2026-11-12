@@ -1,7 +1,8 @@
-# Lane B manual test guide (Phases 53–68, 74, 81)
+# Lane B manual test guide (Phases 53–74, 81)
 
 **For:** `@OVERxPOWERED`. **Covers:** Lane B's phases 53–68, tested together with Lane A's work (`A_TEST_GUIDE.md`).
-**Last checked:** Phases 53–68 on `main` (PR #55 merged, CI green). **Phase 81 (marked NEW) is on the branch `b/phase-81-scroll-model`, not on `main` yet**: switch to that branch (or its PR) to test it. Their labels and counts were compared with the code and the unit tests and the Chromium e2e specs for them passed on 2026-10-28.
+**Editor note (2026-11-11):** the editor was rebuilt on 2026-11-05. Sections 3.2–3.17 describe the OLD editor (now `/editor/legacy`); section **3.18 uses the new editor**. A full re-walk of 3.2–3.17 in the new editor is still to do.
+**Last checked:** Phases 53–68 on `main` (PR #55 merged, CI green). Phases 69–73 and 81 are on `main` too (PRs #65, #73, #74, #76, #56). Their labels and counts were compared with the code and the unit tests and the Chromium e2e specs for them passed on 2026-10-28.
 **Updated:** after every phase (this file, `A_TEST_GUIDE.md` and `USER_MANUAL.md` are the three files kept current with every phase). The newest phase is the last one in section 3.
 **What a person should test, in order:** the **10-minute quick pass** below first. If it passes, do the phase sections you care about.
 **What CI already checks and what only you can check:** `A_TEST_GUIDE.md` section 6.
@@ -24,8 +25,13 @@
 | 66 | Auto-key, and select / move / copy / paste / align / distribute / delete keyframes | #55 | 3.14 |
 | 67 | Graph editor: value and speed curves, Snappy / Smooth / Bouncy / Lazy, bezier handles, Bounce and Time | #55 | 3.15 |
 | 68 | The Content Browser's Animation panel lives in the document (part 1; the phase isn't finished) | #55 | 3.16 |
+| 69 | Motion paths drawn on the canvas | #65 | 3.18 |
+| 70 | Auto-key by dragging on the stage, and the Value HUD | #73 | 3.18 |
+| 71 | Onion skin | #73 | 3.18 |
+| 72 | Anchor points and pins | #74 | 3.18 |
+| 73 | Parenting and helper layers (no UI yet) | #76 | 3.18 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
-| 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | this branch (NEW) | 3.17 |
+| 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
 ## The 10-minute quick pass (start here)
 
@@ -694,6 +700,69 @@ If any step fails, stop and report it. Everything else depends on them.
 **Known gaps (don't report):** scroll animations can't be set from a panel yet (commands only); there is no scroll scrubber on the timeline (Phase 82); pinned layers don't lengthen the page; native CSS scroll-driven animation isn't used yet, only the scheduler path; Firefox and Safari are checked by CI only.
 
 ---
+
+### 3.18 Phases 69–73 in the rebuilt editor (NEW)
+
+**Read this first.** On 2026-11-05 the editor was rebuilt (`/editor` is now the new UI; the old one is `/editor/legacy`). Sections 3.2–3.17 above were written for the **old** editor and name buttons that the new one doesn't have (**Animate workspace**, **Layer Timeline**, **Motion Sequencer**, **Mount Showcase Demo**). Lane A is wiring Lane B's phases into the new editor (`DOCS/UI/WIRING-53-80.md`, PR #86 for 64–71), so those older tests may or may not apply yet. **Sections 3.18 onwards use the new editor's labels.** Each test says whether a browser spec already covers it (**covered**) or whether it is read from the code and only you can confirm it (**by hand**).
+
+**The new editor's map (what you'll click)**
+
+| Thing | Where | Called |
+|---|---|---|
+| Modes | Top centre | **Design**, **Motion**, **Code**; **Preview** (play icon) and **Ship** at the right |
+| Layers | Left panel | A tree: Hero › Headline, Subtitle, Get started, Hero image |
+| Stage | Centre | The page, with a frame title like **Desktop · 1440** |
+| Timeline | Bottom, in **Motion** mode | Tabs **Timeline** and **Graph**; a transport row (**Go to start**, **Step back**, **Play**, **Loop**, **Auto-key record mode**, **Toggle onion skin**, **Playhead time**); a ruler and one lane per layer |
+| Inspector | Right | In Design: Position (with **More Position options**), Layout, Appearance. In Motion: Trigger, Clip, Repeat, Stagger |
+
+**Set up:** open `/editor`. A "Blank Project" with a page of five layers loads. Click the page's **Get started** button on the stage to select it. Click **Motion** (top).
+
+#### Phase 70: Auto-key and the Value HUD
+
+- [ ] **T70.1** (covered) Do: in the transport row find the round **Auto-key record mode** button. Expect: it is not pressed. Click it: it is pressed (and shows as recording). Click again: off.
+- [ ] **T70.2** (covered) Do: turn it on. Click on the ruler at about 1 s (the **Playhead time** follows). Drag **Get started** on the stage a little. Expect: while you drag, a small readout next to the layer shows **x**, **y**, **rotation** and **opacity** live (the Value HUD).
+- [ ] **T70.3** (covered) Do: release. Click the ruler at 2 s and drag the layer again; then at 3 s and drag it again. Expect: the layer's lane shows keyframe marks at 1, 2 and 3 s (3 keyframes for position).
+- [ ] **T70.4** (covered) Do: drag the playhead from 0 to 3 s. Expect: the layer glides through the three positions.
+- [ ] **T70.5** (covered) Do: **Ctrl+Z**. Expect: the last move and its keyframe go together.
+- [ ] **T70.6** (covered) Do: turn Auto-key **off**, move to 4 s and drag the layer. Expect: it moves, and **no** new keyframe appears.
+
+#### Phase 69: motion paths
+
+- [ ] **T69.1** (by hand) Do: after T70.3, look at the stage with **Get started** selected at any time. Expect: a curved line through the positions you made (the path), with a marker at each keyframe (a square for a sharp corner, a round one for a curve) and a playhead dot where the layer is now. Small tick marks along the line show speed: close together is slow, far apart is fast.
+- [ ] **T69.2** (by hand) Do: drag one marker. Expect: only that keyframe's position changes, and the path bends. **Ctrl+Z** puts it back in one step.
+- [ ] **T69.3** (by hand) Do: click a curved marker. Expect: two handles appear; drag one and the path bends around the marker.
+- [ ] **T69.4** (by hand) Do: switch to **Graph** at the bottom. Expect: a value or speed curve of the layer's motion.
+
+#### Phase 71: onion skin
+
+- [ ] **T71.1** (covered) Do: in the transport row click **Toggle onion skin**. Expect: it is pressed.
+- [ ] **T71.2** (covered) Do: with the layer from T70.3 selected and the playhead at 1.5 s, look at the stage. Expect: faint copies of the layer at nearby earlier and later moments (ghosts), fainter the further they are from the playhead.
+- [ ] **T71.3** (covered) Do: click and drag the layer through a ghost. Expect: ghosts never block the pointer.
+- [ ] **T71.4** (covered) Do: toggle it off. Expect: the ghosts disappear.
+- [ ] **T71.5** (by hand) Do: put the playhead at 0 s, then at the last frame. Expect: no ghosts beyond the ends.
+- [ ] **T71.6** (by hand) Do: play with onion skin on. Expect: smooth playback (5 ghosts took under 1 ms a frame in the benchmark).
+
+#### Phase 72: anchor points and pins
+
+- [ ] **T72.1** (covered) Do: switch to **Design**. Select **Get started**. Expect: no anchor mark (the anchor is the centre, which shows nothing).
+- [ ] **T72.2** (covered) Do: hold **Ctrl** (**Cmd** on a Mac) over the selected layer. Expect: a bullseye handle appears at its centre.
+- [ ] **T72.3** (covered) Do: Ctrl-drag the bullseye toward the layer's top-right corner. Expect: while you drag, small targets show the 9 preset points; on release it snaps to the top-right corner.
+- [ ] **T72.4** (by hand) Do: in the inspector under **Position** choose **More Position options**, then the **Transform origin** menu. Expect: the 9 preset points and a custom option. Pick **Bottom left**: the bullseye moves there.
+- [ ] **T72.5** (by hand) Do: set the layer's **Rotation** (Pro inspector, or the rotate handle). Expect: it turns **about the anchor**, not its centre. Move the anchor with the layer rotated: the layer does **not** jump.
+- [ ] **T72.6** (covered) Do: **Ctrl+Z**. Expect: the anchor move undoes in one step.
+
+#### Phase 73: parenting and helper layers
+
+**Known gap:** the new editor has **no control to create a helper layer or set a parent** yet (no pick-whip or menu); the engine and the stage handle them, and the browser spec makes them through the document. So there is nothing to click for these. Don't report this.
+
+- [ ] **T73.1** (covered by a browser spec, not hand-testable) The spec `tests/e2e/parenting.spec.ts` makes a helper layer and checks it draws dashed with a badge in Design and is **absent from the Preview DOM**, and that rotating a parent rotates its child.
+
+#### Developer tests (all of 69–73)
+
+- [ ] **T69.5** Do: `npx tsx --test src/core/geometry/__tests__/spatialPath.test.ts src/core/kernel/__tests__/evaluateSpatial.test.ts src/core/kernel/__tests__/speedGraph.test.ts src/core/document/__tests__/spatialWaypoint.test.ts`. Expect: pass.
+- [ ] **T70.7** Do: `npx playwright test tests/e2e/auto-key-hud.spec.ts tests/e2e/onion-skin.spec.ts tests/e2e/anchor-points.spec.ts tests/e2e/parenting.spec.ts --project=chromium --workers=1`. Expect: 9 tests pass (checked on 2026-11-11 against the dev server).
+- [ ] **T72.7** Do: `npx tsx --test src/core/geometry/__tests__/pins.test.ts src/core/geometry/__tests__/anchorTransforms.test.ts src/core/geometry/__tests__/parentTransforms.test.ts src/core/kernel/__tests__/parentEvaluation.test.ts`. Expect: pass.
+- [ ] **T73.2** Do: `npm run test:canvas-contract`. Expect: pass. (`COLLABORATION.md` §10 requires this before merging anything drawn on the canvas.)
 
 ### 3.19 Phase 74: blend modes, adjustment layers and masks (NEW)
 

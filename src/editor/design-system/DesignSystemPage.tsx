@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreencastKeysDemo } from "./demos/ScreencastKeysDemo";
 import React, { useEffect, useState, useRef, useCallback, useSyncExternalStore } from "react";
 import { Swatch } from "../components/Swatch";
 import { WorkspaceFrame } from "../components/WorkspaceFrame";
@@ -100,6 +101,7 @@ import {
   TimelineTransportDemo,
   TimelineFooterDemo,
   ParityBadgeDemo,
+  TimelineCompositionTabsDemo,
 } from "./demos/TimelineDemos";
 import {
   SliderDemo,
@@ -204,6 +206,7 @@ type NavSectionId =
   | "rulers"
   | "stage-selection"
   | "motion-paths"
+  | "screencast-keys"
   // Panels
   | "panel-section"
   | "property-row"
@@ -329,6 +332,7 @@ const CANVAS_NAV: readonly NavItem[] = [
   { id: "rulers", label: "Rulers" },
   { id: "stage-selection", label: "Stage & Selection Handles" },
   { id: "motion-paths", label: "Motion Path Overlay" },
+  { id: "screencast-keys", label: "Show Keystrokes" },
 ];
 
 const PANELS_NAV: readonly NavItem[] = [
@@ -1607,6 +1611,7 @@ export function DesignSystemPage() {
             {activeSection === "rulers" && <RulersDemo />}
             {activeSection === "stage-selection" && <StageSelectionDemo />}
             {activeSection === "motion-paths" && <MotionPathOverlayDemo />}
+            {activeSection === "screencast-keys" && <ScreencastKeysDemo />}
 
             {/* 5. Panels & Details */}
             {activeSection === "panel-section" && <PanelSectionDemo />}
@@ -1655,6 +1660,11 @@ export function DesignSystemPage() {
             {activeSection === "timeline-footer" && (
               <Titled title="Engine parity badge" note="Phase 60: idle, OK, drift. Dev builds only.">
                 <ParityBadgeDemo />
+              </Titled>
+            )}
+            {activeSection === "timeline-footer" && (
+              <Titled title="Composition tabs" note="Phase 65: Main, interaction compositions with their trigger, opened precomps, + Precomp, breadcrumbs.">
+                <TimelineCompositionTabsDemo />
               </Titled>
             )}
             {activeSection === "easing-curve" && (
