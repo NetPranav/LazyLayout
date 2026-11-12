@@ -190,7 +190,7 @@ test("3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D tex
     const win = window as unknown as Win;
     const doc = win.__LL_DOC__?.get();
     const obj = doc?.objects?.[id!];
-    const mesh = doc?.meshes?.[obj?.dataId!];
+    const mesh = obj?.dataId ? doc?.meshes?.[obj.dataId] : undefined;
     return Number(mesh?.source?.params?.depth ?? 2);
   }, cylinderId);
 
@@ -212,7 +212,7 @@ test("3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D tex
       const win = window as unknown as Win;
       const doc = win.__LL_DOC__?.get();
       const obj = doc?.objects?.[id!];
-      const mesh = doc?.meshes?.[obj?.dataId!];
+      const mesh = obj?.dataId ? doc?.meshes?.[obj.dataId] : undefined;
       return Number(mesh?.source?.params?.depth ?? 0);
     }, cylinderId);
   }).toBeGreaterThan(depthBefore);
@@ -220,7 +220,7 @@ test("3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D tex
   // Exactly ONE undo restores depth
   await page.evaluate(() => {
     const win = window as unknown as Win;
-    win.__LL_COMMANDS__!.run("edit.undo");
+    win.__LL_COMMANDS__!.run?.("edit.undo");
   });
 
   await expect.poll(async () => {
@@ -228,7 +228,7 @@ test("3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D tex
       const win = window as unknown as Win;
       const doc = win.__LL_DOC__?.get();
       const obj = doc?.objects?.[id!];
-      const mesh = doc?.meshes?.[obj?.dataId!];
+      const mesh = obj?.dataId ? doc?.meshes?.[obj.dataId] : undefined;
       return Number(mesh?.source?.params?.depth ?? 0);
     }, cylinderId);
   }).toBeCloseTo(depthBefore, 1);
