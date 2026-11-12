@@ -55,7 +55,7 @@ function rand(seed: number): () => number {
  * Inflates a sheet cut to `inside` (a test in the shape's own px) over a `width` × `height` box.
  * Particles on the shape's edge are the seam: they stay in the seam's plane (z = 0) but may slide inwards.
  */
-export function inflateCloth(width: number, height: number, inside: (x: number, y: number) => boolean, settings: ClothSettings = DEFAULT_CLOTH): ClothResult {
+export function inflateCloth(width: number, height: number, inside: (x: number, y: number) => boolean, settings: ClothSettings = DEFAULT_CLOTH, onProgress?: (progress: number) => void): ClothResult {
   const sp = Math.max(1.5, settings.spacing);
   const nx = Math.max(3, Math.round(width / sp) + 1);
   const ny = Math.max(3, Math.round(height / sp) + 1);
@@ -130,6 +130,7 @@ export function inflateCloth(width: number, height: number, inside: (x: number, 
   const damping = 0.96;
   const iterations = Math.max(1, Math.round(settings.iterations));
   for (let step = 0; step < settings.steps; step++) {
+    if (onProgress && step % 10 === 0) onProgress(step / settings.steps);
     // normals from the neighbours (area weighted), for the pressure
     normal.fill(0);
     for (let j = 0; j < ny - 1; j++)
@@ -287,13 +288,14 @@ export interface ClothSurfaceRequest {
   cloth: ClothSettings;
   /** Grid cell of the result, px. */
   cell: number;
+  onProgress?: (progress: number) => void;
 }
 
 /** The resting height by cloth simulation, on the renderer's grid, smoothed and scaled to `depth`. */
 export function clothSurface(req: ClothSurfaceRequest): { height: Float32Array; w: number; h: number } {
   const w = Math.max(2, Math.ceil(req.width / req.cell));
   const h = Math.max(2, Math.ceil(req.height / req.cell));
-  const sim = inflateCloth(req.width, req.height, req.inside, req.cloth);
+  const sim = inflateCloth(req.width, req.height, req.inside, req.cloth, req.onProgress);
   const raw = clothHeightField(sim, w, h, req.cell);
   const smooth = smoothField(raw, w, h, Math.max(1, Math.round(req.cloth.spacing / req.cell / 1.5)));
   let max = 0;

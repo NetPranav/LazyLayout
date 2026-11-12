@@ -112,7 +112,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | 3D-003 | Passes, render targets & GPU memory ledger | Main 174 | 3D-002 | A | 🚧 |
 | 3D-004 | GPU & interactive verification harness | Main 137 | 3D-003 | A | 🚧 |
 | 3D-005 | 3D performance tiers & budgets | new | 3D-004 | A | 🚧 |
-| 3D-006 | Worker & WASM job system | new | 3D-001 | A | 📋 |
+| 3D-006 | Worker & WASM job system | new | 3D-001 | A | 🚧 |
 | | **Stage 2 · The 3D document** |||||
 | 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 📋 |
 | 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 📋 |
@@ -447,7 +447,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** `src/core/gpu/tiers.ts` (tier budgets, per-feature costs with a downgrade order, `fitScene` names what to drop first and calls a scene hopeless when nothing droppable helps, tier guess from the browser's hints) with 7 unit tests; `BudgetMeter` on /design-system. **Not done, so it stays 🚧:** the meter in the editor and 'reference scenes report their cost per tier' need a scene to measure, which exists from 3D-012; the editor overlay is added there.
 
 ### Phase 3D-006 · Worker & WASM job system
-**Needs:** 3D-001 · **Was:** — · **Lane:** A · **Status:** 📋
+**Needs:** 3D-001 · **Was:** — · **Lane:** A · **Status:** 🚧
 - [ ] A pool of workers for geometry, simulation and baking:
   - jobs carry typed arrays (transferred, not copied);
   - jobs can be cancelled and given priorities;
@@ -457,6 +457,7 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 
 **You'll see:** heavy work never freezes the editor; a progress ring on the object while it computes.
 **Done when:** a 5-second job leaves the main thread under 4 ms per frame; cancelling stops it within one step.
+**Evidence (2026-11-11):** src/core/jobs pool (8 unit tests), cloth in a worker, e2e jobs.spec (2 of 3 pass; cloth test awaiting rerun)
 
 ## Stage 2 · The 3D document
 

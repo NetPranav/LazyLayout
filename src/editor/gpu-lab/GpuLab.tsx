@@ -5,6 +5,7 @@ import { RenderLayer } from "@/core/render";
 import type { Layer } from "@/core/document/schema";
 import { compositor } from "@/core/gpu/compositor";
 import { gpuLedger } from "@/core/gpu/ledger";
+import { jobPool, JobCancelled, type JobHandle, type JobOptions, type PoolStats } from "@/core/jobs";
 
 /** A test scene: a canvas that, when the compositor gives it a context, clears to its colour and draws a triangle. */
 function TestScene({ index }: { index: number }) {
@@ -94,7 +95,16 @@ export function GpuLab({ surfaces: initialSurfaces, scenes, budget }: { surfaces
   const layers = useMemo(() => surfaceLayers(surfaces), [surfaces]);
   useEffect(() => {
     compositor.sceneBudget = budget;
-    const w = window as unknown as { __LL_GPU__?: unknown };
+    const w = window as unknown as {
+      __LL_GPU__?: unknown;
+      __LL_JOBS__?: {
+        run: (kind: string, payload: unknown, opts?: JobOptions) => number;
+        cancel: (id: number) => void;
+        result: (id: number) => { state: "pending" | "done" | "cancelled" | "error"; value?: unknown };
+        stats: () => PoolStats;
+        mainThreadTicks: () => number;
+      };
+    };
     w.__LL_GPU__ = {
       stats: () => compositor.stats(),
       setSurfaces,
@@ -102,8 +112,50 @@ export function GpuLab({ surfaces: initialSurfaces, scenes, budget }: { surfaces
       loseShared: () => compositor.loseSharedForTest(),
       restoreShared: () => compositor.restoreSharedForTest(),
     };
+    // 3D-006 seam: the browser test drives jobs and verifies the main thread stays free
+    let ticks = 0;
+    const interval = setInterval(() => {
+      ticks++;
+    }, 10);
+    const pool = jobPool();
+    const results = new Map<number, { state: "pending" | "done" | "cancelled" | "error"; value?: unknown }>();
+    const handles = new Map<number, JobHandle<unknown>>();
+    w.__LL_JOBS__ = {
+      run: (kind: string, payload: unknown, opts?: JobOptions) => {
+        const p = pool ?? jobPool();
+        if (!p) return -1;
+        const handle = p.run(kind, payload, opts);
+        const id = handle.id;
+        results.set(id, { state: "pending" });
+        handles.set(id, handle);
+        handle.promise.then(
+          (value) => {
+            results.set(id, { state: "done", value });
+            handles.delete(id);
+          },
+          (err) => {
+            const isCancelled = err instanceof JobCancelled || (err as Error)?.name === "JobCancelled";
+            results.set(id, { state: isCancelled ? "cancelled" : "error", value: (err as Error)?.message ?? err });
+            handles.delete(id);
+          },
+        );
+        return id;
+      },
+      cancel: (id: number) => {
+        const handle = handles.get(id);
+        if (handle) {
+          results.set(id, { state: "cancelled" });
+          handle.cancel();
+        }
+      },
+      result: (id: number) => results.get(id) ?? { state: "error" },
+      stats: () => (pool ?? jobPool())?.stats() ?? { workers: 0, busy: 0, queued: 0, completed: 0, cancelled: 0, cacheHits: 0, respawns: 0 },
+      mainThreadTicks: () => ticks,
+    };
     return () => {
+      clearInterval(interval);
       delete w.__LL_GPU__;
+      delete w.__LL_JOBS__;
     };
   }, [budget]);
   return (

@@ -7,37 +7,13 @@ import { restingSurface, type SurfaceShape } from "./field";
 import { MembraneSim } from "./membrane";
 import { surfaceGL, surfaceGeneration, SurfaceTextures, type SurfaceDrawInput } from "./gl";
 import { clothKey, lookKey, type SurfaceSettings } from "./settings";
-import type { ClothJob } from "./cloth.worker";
+import { jobPool, type JobHandle } from "../jobs";
+import type { ClothPayload } from "../jobs/handlers";
+
+type ClothResult = { height: Float32Array; w: number; h: number };
 
 /** Cloth results by key, shared by every surface (re-mounting, undo, a second identical button: instant). */
-const clothCache = new Map<string, { height: Float32Array; w: number; h: number }>();
-let worker: Worker | null = null;
-let workerFailed = false;
-let jobId = 0;
-const waiting = new Map<number, (r: { height: Float32Array; w: number; h: number }) => void>();
-function clothWorker(): Worker | null {
-  if (worker || workerFailed || typeof Worker === "undefined") return worker;
-  try {
-    worker = new Worker(new URL("./cloth.worker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (e: MessageEvent<{ id: number; height: Float32Array; w: number; h: number }>) => {
-      const done = waiting.get(e.data.id);
-      waiting.delete(e.data.id);
-      done?.({ height: e.data.height, w: e.data.w, h: e.data.h });
-    };
-  } catch {
-    workerFailed = true;
-  }
-  return worker;
-}
-function solveCloth(job: Omit<ClothJob, "id">): Promise<{ height: Float32Array; w: number; h: number }> | null {
-  const w = clothWorker();
-  if (!w) return null;
-  const id = ++jobId;
-  return new Promise((resolve) => {
-    waiting.set(id, resolve);
-    w.postMessage({ ...job, id });
-  });
-}
+const clothCache = new Map<string, ClothResult>();
 
 /** Runs `task` every frame with the seconds since the last one; returns the stop function. */
 export type Ticker = (task: (dt: number) => void) => () => void;
@@ -61,6 +37,9 @@ export class SurfaceController {
   private scale = 1;
   private disposed = false;
   private clothWanted = "";
+  private clothJob: JobHandle<ClothResult> | null = null;
+  /** The cloth simulation's progress (0..1), or null when none is running (3D-006: a ring on the object). */
+  onProgress: ((progress: number | null) => void) | null = null;
   /** The shared context's generation this surface's textures belong to (3D-002: after a loss, upload again). */
   private generation = surfaceGeneration();
   private lastContent: HTMLCanvasElement | null = null;
@@ -99,13 +78,29 @@ export class SurfaceController {
     }
     if (wantCloth && !cached && this.clothWanted !== wantCloth) {
       this.clothWanted = wantCloth;
-      const job = solveCloth({ shape, depth: settings.look.depth, cloth: settings.cloth, cell });
-      void job?.then((r) => {
-        if (clothCache.size > 12) clothCache.delete(clothCache.keys().next().value as string);
-        clothCache.set(wantCloth, r);
-        if (this.disposed || this.clothWanted !== wantCloth || !this.geometry || !this.settings) return;
-        this.update(this.geometry, this.settings, this.base, this.scale);
-      });
+      this.clothJob?.cancel(); // a newer setting makes the running simulation pointless
+      const pool = jobPool();
+      const payload: ClothPayload = { shape, depth: settings.look.depth, cloth: settings.cloth, cell };
+      if (pool) {
+        this.onProgress?.(0);
+        const job: JobHandle<ClothResult> = pool.run<ClothResult>("cloth", payload, { key: wantCloth, priority: 1, onProgress: (p) => this.onProgress?.(p) });
+        this.clothJob = job;
+        job.promise.then(
+          (r) => {
+            if (this.clothJob === job) this.clothJob = null;
+            this.onProgress?.(null);
+            clothCache.set(wantCloth, r);
+            if (clothCache.size > 12) clothCache.delete(clothCache.keys().next().value as string);
+            if (this.disposed || this.clothWanted !== wantCloth || !this.geometry || !this.settings) return;
+            this.update(this.geometry, this.settings, this.base, this.scale);
+          },
+          () => {
+            // cancelled (a newer setting) or failed: the quick shape stays
+            if (this.clothJob === job) this.clothJob = null;
+            this.onProgress?.(null);
+          },
+        );
+      }
     }
     const simKey = [Math.round(geometry.width), Math.round(geometry.height), Math.round(geometry.radius), geometry.kind].join("|");
     if (simKey !== this.simKey || !this.sim) {
@@ -202,6 +197,7 @@ export class SurfaceController {
 
   dispose(): void {
     this.disposed = true;
+    this.clothJob?.cancel();
     this.stopTicker?.();
     this.stopTicker = null;
     const gl = surfaceGL();

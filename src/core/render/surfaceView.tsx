@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { ArchetypeRenderProps } from "./types";
 type ResolvedProps = ArchetypeRenderProps["resolved"];
 import { frameScheduler } from "../time/scheduler";
@@ -59,6 +59,8 @@ export interface SurfaceViewProps {
 
 export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, interactive, content, ticker = editorTicker }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // 3D-006: a ring on the surface while its cloth simulation runs in a worker
+  const [progress, setProgress] = useState<number | null>(null);
   const controllerRef = useRef<SurfaceController | null>(null);
   const settings = surfaceSettings((p) => resolved.get(p));
   const settingsKey = JSON.stringify(settings);
@@ -72,6 +74,11 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
     const controller = new SurfaceController(canvas, ticker);
     controller.onState = (state) => {
       canvas.dataset.surfaceState = state;
+    };
+    controller.onProgress = (p) => {
+      if (p === null) delete canvas.dataset.surfaceProgress;
+      else canvas.dataset.surfaceProgress = String(Math.round(p * 100));
+      setProgress(p);
     };
     controllerRef.current = controller;
     return () => {
@@ -173,11 +180,30 @@ export const SurfaceView: React.FC<SurfaceViewProps> = ({ resolved, geometry, in
   }, [interactive]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      data-surface-canvas=""
-      aria-hidden="true"
-      style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: -1, pointerEvents: "none", display: "block" }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        data-surface-canvas=""
+        aria-hidden="true"
+        style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: -1, pointerEvents: "none", display: "block" }}
+      />
+      {progress !== null && progress < 1 && interactive === false && (
+        <svg
+          role="progressbar"
+          aria-label="Simulating"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+          data-surface-progress-ring=""
+          width={22}
+          height={22}
+          viewBox="0 0 22 22"
+          style={{ position: "absolute", right: 6, top: 6, zIndex: 1, pointerEvents: "none" }}
+        >
+          <circle cx={11} cy={11} r={8} fill="none" stroke="currentColor" strokeOpacity={0.25} strokeWidth={2.5} style={{ color: "#fff" }} />
+          <circle cx={11} cy={11} r={8} fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeDasharray={`${Math.max(0.01, progress) * 50.27} 50.27`} transform="rotate(-90 11 11)" />
+        </svg>
+      )}
+    </>
   );
 };
