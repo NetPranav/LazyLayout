@@ -289,7 +289,48 @@ const DEFS = {
    * Kinetic composition (Phase 7.5 types, 88.1 runtime): a `helper` is logic-only —
    * never rendered in Preview or export, never focused or announced (grammar 6.17).
    */
-  "render.role": typed(oneOf(["content", "helper"], "content", null, "none", VISUAL)),
+  "render.role": typed(oneOf(["content", "helper", "adjustment"], "content", null, "none", VISUAL)),
+  // --- Compositing (Phase 74): blend, isolation, adjustment and masks; drawn by `core/render/compositing.ts` ----------
+  /** `isolate` makes the layer a group: what is inside blends only with itself, not with what is behind the group. */
+  "appearance.isolation": typed(oneOf(["auto", "isolate"], "auto", "isolation", "paint", VISUAL)),
+  /** Adjustment (a layer with `render.role: "adjustment"`, or any layer): filters applied to what is BEHIND the layer's box (CSS `backdrop-filter`). */
+  "adjust.blur": ranged(px(0, null, "paint", VISUAL), { min: 0, max: 200 }),
+  "adjust.brightness": ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 }),
+  "adjust.contrast": ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 }),
+  "adjust.saturate": ranged(num(1, null, "paint", VISUAL), { min: 0, max: 5 }),
+  "adjust.hueRotate": deg(0, null, "paint", VISUAL),
+  "adjust.grayscale": ranged(num(0, null, "paint", VISUAL), { min: 0, max: 1 }),
+  "adjust.sepia": ranged(num(0, null, "paint", VISUAL), { min: 0, max: 1 }),
+  "adjust.invert": ranged(num(0, null, "paint", VISUAL), { min: 0, max: 1 }),
+  /**
+   * A mask (the shape that decides what of the layer shows). `alpha`: the shape is the visible part; `luma`: how bright
+   * the shape's colour is decides how much shows; `…Inverted`: everything but the shape. In layer pixels.
+   */
+  "mask.mode": typed(oneOf(["none", "alpha", "alphaInverted", "luma", "lumaInverted"], "none", null, "paint", VISUAL)),
+  "mask.shape": typed(oneOf(["rect", "ellipse", "path"], "rect", null, "paint", VISUAL)),
+  /** SVG path data in layer pixels, used when the shape is `path`. Animatable: the path morphs. */
+  "mask.path": typed({ valueType: "pathData", default: "", css: null, compositing: "paint", animatable: true, scope: VISUAL }),
+  /** The shape's box for `rect` and `ellipse`; a width or height of -1 (the default) means the layer's own, so 0 is a real zero and a shape can grow from nothing. */
+  "mask.x": ranged(px(0, null, "paint", VISUAL), { min: -100000, max: 100000 }),
+  "mask.y": ranged(px(0, null, "paint", VISUAL), { min: -100000, max: 100000 }),
+  "mask.width": ranged(px(-1, null, "paint", VISUAL), { min: -1, max: 100000 }),
+  "mask.height": ranged(px(-1, null, "paint", VISUAL), { min: -1, max: 100000 }),
+  "mask.radius": ranged(px(0, null, "paint", VISUAL), { min: 0, max: 100000 }),
+  /** Soft edge, in px. */
+  "mask.feather": ranged(px(0, null, "paint", VISUAL), { min: 0, max: 200 }),
+  /** Grows the shape by this many px all round. */
+  "mask.expansion": ranged(px(0, null, "paint", VISUAL), { min: 0, max: 200 }),
+  /** The shape's colour: for `luma` masks its brightness is how much shows (white all, black none). */
+  "mask.fill": typed(color("#ffffff", null, "paint", VISUAL)),
+  "mask.opacity": ranged(num(1, null, "paint", VISUAL), { min: 0, max: 1 }),
+  /**
+   * A track matte (After Effects): another layer is the mask. `matte.source` is that layer's id (a rectangle, ellipse or
+   * any box on the same absolute-positioned canvas); its shape, position, scale and rotation, animated, become this
+   * layer's mask (`core/geometry/matteShape.ts`). The source layer is hidden unless `matte.showSource` is on.
+   */
+  "matte.source": typed(str("", null, "paint", VISUAL)),
+  "matte.mode": typed(oneOf(["none", "alpha", "alphaInverted", "luma", "lumaInverted"], "none", null, "paint", VISUAL)),
+  "matte.showSource": typed(flag(false, "paint", VISUAL)),
   /** What a group was made for, so commands find it by this mark rather than by its name: `letters` (a text split into letters). */
   "group.role": oneOf(["none", "letters"], "none", null, "none", only("container")),
   "filter.blur": px(0, "filter", "paint", VISUAL),

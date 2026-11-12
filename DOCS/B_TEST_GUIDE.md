@@ -1,4 +1,4 @@
-# Lane B manual test guide (Phases 53–73, 81)
+# Lane B manual test guide (Phases 53–74, 81)
 
 **For:** `@OVERxPOWERED`. **Covers:** Lane B's phases 53–68, tested together with Lane A's work (`A_TEST_GUIDE.md`).
 **Editor note (2026-11-11):** the editor was rebuilt on 2026-11-05. Sections 3.2–3.17 describe the OLD editor (now `/editor/legacy`); section **3.18 uses the new editor**. A full re-walk of 3.2–3.17 in the new editor is still to do.
@@ -30,6 +30,7 @@
 | 71 | Onion skin | #73 | 3.18 |
 | 72 | Anchor points and pins | #74 | 3.18 |
 | 73 | Parenting and helper layers (no UI yet) | #76 | 3.18 |
+| 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
 ## The 10-minute quick pass (start here)
@@ -762,6 +763,32 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T70.7** Do: `npx playwright test tests/e2e/auto-key-hud.spec.ts tests/e2e/onion-skin.spec.ts tests/e2e/anchor-points.spec.ts tests/e2e/parenting.spec.ts --project=chromium --workers=1`. Expect: 9 tests pass (checked on 2026-11-11 against the dev server).
 - [ ] **T72.7** Do: `npx tsx --test src/core/geometry/__tests__/pins.test.ts src/core/geometry/__tests__/anchorTransforms.test.ts src/core/geometry/__tests__/parentTransforms.test.ts src/core/kernel/__tests__/parentEvaluation.test.ts`. Expect: pass.
 - [ ] **T73.2** Do: `npm run test:canvas-contract`. Expect: pass. (`COLLABORATION.md` §10 requires this before merging anything drawn on the canvas.)
+
+### 3.19 Phase 74: blend modes, adjustment layers and masks (NEW)
+
+**What changed:** three things a layer can now do that the stage actually draws (the inspector's Blend mode used to be saved but never drawn):
+- **Blend mode and isolation:** the layer mixes with what is behind it (Multiply, Screen, Overlay…). **Isolate** makes a layer a group whose insides blend only with each other.
+- **Adjustment:** a layer filters what is **behind** it (blur, brightness, contrast, saturation, hue, grayscale, sepia, invert), like an After Effects adjustment layer.
+- **Masks:** a shape (rectangle, ellipse or path) decides what of the layer shows. **Alpha** shows where the shape is; **luma** shows as much as the shape is bright; the **inverted** modes show everything else. Soft edge (feather), grow (expansion) and opacity. The path morphs between keyframes.
+
+**Known gaps (don't report):** there are no inspector or timeline controls for isolation, adjustment, masks or mattes yet (the UI pipeline wires them; the commands exist), so the way to see them is the **stage lab** below, or the commands. A matte reads a box or an ellipse on the same absolute canvas; a source under a flow layout gives no matte.
+
+**User test (the stage lab, covered by `tests/e2e/compositing.spec.ts`)**
+- [ ] **T74.1** Do: run the app with `npm run dev` and open `http://localhost:3000/editor/stage-lab`. Click **Load 5 compositing scenes**. Expect: five boxes in a row on the page (left to right): a dark red box (multiply), a green box (isolated), a red-and-blue box, a red box with a small oval cut out of it, and a red box with a square cut out of it.
+- [ ] **T74.2** Do: look at the **first** box. Expect: it is a dark red (about `rgb(128, 0, 0)`), not bright red on lilac: the red layer is multiplied onto the lilac one under it.
+- [ ] **T74.3** Do: drag the **Time** slider from 0 to 1. Expect on the **third** box (red | blue): at 0 the edge between red and blue is sharp; as you drag right it softens into a smear (the layer blurs what is behind it); at 1 it is clearly soft.
+- [ ] **T74.4** Do: watch the **fourth** box while dragging **Time**. Expect: at 0 only a thin oval at its left is visible; it grows with the slider until a full oval of red fills the box at 1. The corners stay empty.
+- [ ] **T74.5** Do: watch the **fifth** box. Expect: at 0 the red shows through a square; as you drag, the square turns into a diamond (its corners are cut off at 1) and smoothly in between.
+- [ ] **T74.6** Do: drag back to 0. Expect: all three return exactly to how they started (nothing stays blurred or cut).
+- [ ] **T74.7** Do: open DevTools → Elements, find the fourth box (`data-element-id="scene_alphaMask"`). Expect: its style has `mask-image: url("data:image/svg+xml…")` and the browser's computed style shows the same. The third box has `backdrop-filter: blur(…px)`.
+
+**Developer test**
+- [ ] **T74.7a** Do: in the stage lab, look below the five boxes. Expect: a long box with a red oval-shaped window in it (a **track matte**: the red box is shown only through an ellipse layer, which is itself invisible). Drag **Time** from 0 to 1. Expect: the red window slides from the left end to the right end of the box. The ellipse layer is never seen.
+- [ ] **T74.7b** Do: the fourth box (the growing oval). At **Time** 0. Expect: it is empty (the oval starts at width 0), then grows.
+- [ ] **T74.8** Do: `npx tsx --test src/core/render/__tests__/compositing.test.ts`. Expect: 24 tests pass; and `npx tsx --test src/core/kernel/__tests__/matte.test.ts`: 12 tests pass.
+- [ ] **T74.9** Do: `npx playwright test tests/e2e/compositing.spec.ts --project=chromium` (it uses the dev page, so the stage lab must be enabled: `NEXT_PUBLIC_ENABLE_LABS=1` in a production build, on by default in `npm run dev`). Expect: 2 tests pass: five scenes at five times match `evaluate()` including pixels, and the track matte follows its source.
+- [ ] **T74.10** Do: set the properties on a real layer in the new editor: with `window.__LL_TEST__ = true` set before load, in the console run `__LL_COMMANDS__.all().find(c=>c.id==="layer.setProps").run({ids:["button"],props:{"mask.mode":"alpha","mask.shape":"ellipse","appearance.blendMode":"multiply"},label:"t"})`. Expect: the button on the stage is cut to an oval and multiplied.
+- [ ] **T74.11** Do: read `src/core/render/compositing.ts`. Expect: pure functions, no DOM; `styleWrites.ts` and `geometry.ts` both call them.
 
 ---
 

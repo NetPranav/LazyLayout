@@ -1,6 +1,7 @@
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
-import type { ResolvedProps } from "../../kernel/evaluate";
+import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
+import { adjustmentFilter, isAdjustPath, isMaskPath, maskStyle, readerOf } from "../../render/compositing";
 
 /**
  * ROADMAP Phase 57: the bridge from the kernel's output (property path → value) to CSS. Pure, so the mapping is
@@ -20,6 +21,10 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   for (const behaviour of Object.values(doc.behaviours)) {
     if (behaviour.layerId === layerId && behaviour.enabled && behaviour.type === "loop") paths.add(behaviour.params.property);
   }
+  // Phase 74: a layer with a track matte has its mask written every frame (the source moves), and a matte's source is hidden by opacity.
+  const own = doc.layers[layerId]?.properties;
+  if (own && typeof own["matte.source"] === "string" && own["matte.source"] !== "" && own["matte.mode"] !== undefined && own["matte.mode"] !== "none") paths.add("mask.path");
+  if (mattesOf(doc).has(layerId)) paths.add("appearance.opacity");
   return paths;
 }
 
@@ -29,6 +34,10 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   const layerIds = new Set<string>();
   for (const clip of Object.values(doc.clips)) if (clip.enabled) layerIds.add(clip.layerId);
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
+  for (const [source, targets] of mattesOf(doc)) {
+    layerIds.add(source);
+    for (const id of targets) layerIds.add(id);
+  }
   for (const id of layerIds) {
     if (!doc.layers[id]) continue;
     const paths = animatedPaths(doc, id);
@@ -77,6 +86,21 @@ export function styleWrites(paths: Iterable<string>, resolved: ResolvedProps): R
     if (!def?.css || resolved[path] === undefined) continue;
     const css = cssValue(def, resolved, resolved[path]);
     if (css !== null) out[def.css] = css;
+  }
+  // Compositing (Phase 74): an adjustment and a mask are each one CSS value made from several properties.
+  const paths2 = Array.from(paths);
+  const read = readerOf(resolved);
+  if (paths2.some(isAdjustPath)) {
+    const blur = typeof resolved["paint.backgroundBlur"] === "number" && resolved["paint.backgroundBlur"] > 0 ? `blur(${Math.min(200, resolved["paint.backgroundBlur"])}px) ` : "";
+    const filter = `${blur}${adjustmentFilter(read)}`.trim() || "none";
+    out["backdrop-filter"] = filter;
+    out["-webkit-backdrop-filter"] = filter;
+  }
+  if (paths2.some(isMaskPath)) {
+    const width = typeof resolved["frame.width"] === "number" ? resolved["frame.width"] : 0;
+    const height = typeof resolved["frame.height"] === "number" ? resolved["frame.height"] : 0;
+    const mask = maskStyle(read, { width, height });
+    for (const key of ["mask-image", "-webkit-mask-image", "mask-size", "-webkit-mask-size", "mask-repeat", "-webkit-mask-repeat"]) out[key] = mask ? { "mask-image": mask.maskImage, "-webkit-mask-image": mask.WebkitMaskImage, "mask-size": mask.maskSize, "-webkit-mask-size": mask.WebkitMaskSize, "mask-repeat": mask.maskRepeat, "-webkit-mask-repeat": mask.WebkitMaskRepeat }[key]! : "none";
   }
   if (transformTouched) {
     const parts: string[] = [];
