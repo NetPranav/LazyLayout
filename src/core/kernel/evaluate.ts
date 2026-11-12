@@ -38,7 +38,12 @@ import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } 
 import { resolveLayerAnchor } from "../geometry/pins";
 import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
 import { motionBlurSigma } from "../render/fxStack";
-import { hasLinks, mapValue, readLinks } from "../links/linkModel";
+import { hasLinks, mapValue, readLinks, resolveLayerRef } from "../links/linkModel";
+import { evaluateExpression, type ExprContext } from "../expressions/evaluate";
+import { hasExpressions, readExpressions, type LayerExpression } from "../expressions/exprModel";
+import { parseCached } from "../expressions/parse";
+import { seedFromText } from "../expressions/noise";
+import { layerBar } from "../document/compositions";
 import {
   createLayerLocalMatrix,
   multiplyAffineMatrices,
@@ -367,7 +372,7 @@ export function evaluateLocalProps(
   const layer = doc.layers[layerId];
   if (!layer) return {};
   const base = evaluateBaseProps(doc, compositionId, layerId, t, inputs);
-  if (!hasLinks(layer.properties)) return base;
+  if (!hasLinks(layer.properties) && !hasExpressions(layer.properties)) return base;
   return applyLinks({ doc, compositionId, t, inputs, base: new Map([[layerId, base]]) }, layerId, base);
 }
 
@@ -390,31 +395,90 @@ const baseOf = (ctx: LinkContext, layerId: string): ResolvedProps => {
   return props;
 };
 
+/** When a property's keyframes begin and end, in composition seconds, and what they hold (null with fewer than two). */
+function keyRange(ctx: LinkContext, layerId: string, path: string): { first: number; last: number; firstValue: number; lastValue: number } | null {
+  const comp = ctx.doc.compositions[ctx.compositionId];
+  if (!comp) return null;
+  const bar = layerBar(comp, layerId);
+  const marks: Array<{ time: number; value: number }> = [];
+  for (const placed of comp.clips) {
+    const clip = ctx.doc.clips[placed.clipId];
+    if (!clip || clip.layerId !== layerId || !clip.enabled) continue;
+    for (const track of clip.tracks) {
+      if (track.property !== path || track.muted) continue;
+      for (const k of track.keyframes) if (typeof k.value === "number") marks.push({ time: bar.start + (placed.offset + (clip.delay ?? 0) + k.time) * bar.stretch, value: k.value });
+    }
+  }
+  if (marks.length < 2) return null;
+  marks.sort((a, b) => a.time - b.time);
+  return { first: marks[0].time, last: marks[marks.length - 1].time, firstValue: marks[0].value, lastValue: marks[marks.length - 1].value };
+}
+
+/** An expression's number for a property, given the value before it; undefined when it can't be worked out (the property then keeps its value). */
+function runExpression(ctx: LinkContext, layerId: string, path: string, expr: LayerExpression, value: number, stack: readonly string[]): number | undefined {
+  const parsed = parseCached(expr.text);
+  if (!parsed.ok) return undefined;
+  const comp = ctx.doc.compositions[ctx.compositionId];
+  const at = (t: number): LinkContext => (t === ctx.t ? ctx : { ...ctx, t, base: new Map() });
+  const exprCtx: ExprContext = {
+    time: ctx.t,
+    value,
+    fps: comp?.fps ?? 60,
+    duration: comp?.duration ?? 0,
+    seed: seedFromText(`${layerId}|${path}`),
+    valueAtTime: (t) => {
+      const v = baseOf(at(t), layerId)[path];
+      return typeof v === "number" ? v : undefined;
+    },
+    ref: (ref, property, t) => {
+      const other = resolveLayerRef(ctx.doc.layers, ref);
+      if (!other) return undefined;
+      const v = drivenValue(at(t ?? ctx.t), other, property, stack);
+      return typeof v === "number" ? v : undefined;
+    },
+    keys: () => keyRange(ctx, layerId, path),
+  };
+  return evaluateExpression(parsed.ast, exprCtx);
+}
+
 /**
- * The number one property has at this moment, with links followed: if a link drives it, what that link reads (carried across
- * its map), otherwise its own value. `stack` holds the properties being worked out, so a cycle (which the commands refuse,
- * but a file can hold) stops there and the link falls back to the property's own value instead of looping.
+ * The value one property has at this moment, with its drivers followed: the property's own value (keyframes, behaviours),
+ * then a link that drives it (what the link reads, carried across its map), then an expression on it (which sees that as
+ * `value`). `stack` holds the properties being worked out, so a cycle (which the commands refuse, but a file can hold) stops
+ * there and falls back to the property's own value instead of looping.
  */
-function linkedValue(ctx: LinkContext, layerId: string, path: string, stack: readonly string[]): PropValue | undefined {
+function drivenValue(ctx: LinkContext, layerId: string, path: string, stack: readonly string[]): PropValue | undefined {
   const here = `${layerId}|${path}`;
   const layer = ctx.doc.layers[layerId];
   if (!layer || stack.includes(here)) return undefined;
+  const inner = [...stack, here];
+  let current: PropValue | undefined;
   const link = readLinks(layer.properties).find((l) => l.enabled && l.target === path);
   if (link) {
-    const from = linkedValue(ctx, link.source, link.sourceProperty, [...stack, here]);
-    if (typeof from === "number" && Number.isFinite(from)) return mapValue(link, from);
+    const from = drivenValue(ctx, link.source, link.sourceProperty, inner);
+    if (typeof from === "number" && Number.isFinite(from)) current = mapValue(link, from);
   }
-  const own = baseOf(ctx, layerId)[path];
-  return own !== undefined ? own : (getPropertyDefinition(path)?.default as PropValue | undefined);
+  if (current === undefined) {
+    const own = baseOf(ctx, layerId)[path];
+    current = own !== undefined ? own : (getPropertyDefinition(path)?.default as PropValue | undefined);
+  }
+  const expr = readExpressions(layer.properties).find((e) => e.enabled && e.target === path);
+  if (expr && typeof current === "number") {
+    const out = runExpression(ctx, layerId, path, expr, current, inner);
+    if (out !== undefined) current = out;
+  }
+  return current;
 }
 
 function applyLinks(ctx: LinkContext, layerId: string, base: ResolvedProps): ResolvedProps {
   const layer = ctx.doc.layers[layerId];
+  const targets = new Set<string>();
+  for (const link of readLinks(layer.properties)) if (link.enabled) targets.add(link.target);
+  for (const expr of readExpressions(layer.properties)) if (expr.enabled) targets.add(expr.target);
   let out = base;
-  for (const link of readLinks(layer.properties)) {
-    if (!link.enabled) continue;
-    const value = linkedValue(ctx, layerId, link.target, []);
-    if (typeof value === "number" && value !== out[link.target]) out = { ...out, [link.target]: value };
+  for (const path of targets) {
+    const value = drivenValue(ctx, layerId, path, []);
+    if (typeof value === "number" && value !== out[path]) out = { ...out, [path]: value };
   }
   return out;
 }

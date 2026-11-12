@@ -18,3 +18,7 @@ export const MB_OFF_LAYER = "scene_mb_off";
 /** Phase 76's scene: a hero layer whose rotation and vertical position are linked to a null that slides across the page. */
 export const LINK_NULL = "scene_link_null";
 export const LINK_HERO = "scene_link_hero";
+
+/** Phase 77 scene: a layer that wiggles, and one that loops its own slide. */
+export const EXPR_WIGGLE = "scene_expr_wiggle";
+export const EXPR_LOOP = "scene_expr_loop";

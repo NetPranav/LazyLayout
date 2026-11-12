@@ -25,6 +25,7 @@ import { registerScrollClipCommand, registerScrollCommands } from "@/core/scroll
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
+import { registerExpressionCommands } from "@/core/expressions/expressionCommands";
 import { useSavedLayouts } from "@/core/workspace/useSavedLayouts";
 
 export interface ShellCommandActions {
@@ -259,6 +260,7 @@ export function useShellCommands(actions: ShellCommandActions) {
   useEffect(() => registerCompositingCommands(), []);
   useEffect(() => registerFxCommands(), []);
   useEffect(() => registerLinkCommands(), []);
+  useEffect(() => registerExpressionCommands(), []);
   useEffect(() => registerScrollClipCommand(), []);
 
   // Phase 15: workspace presets and saved layouts. The no-argument commands are what the

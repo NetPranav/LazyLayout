@@ -771,6 +771,29 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T76.10** Do: `npx playwright test tests/e2e/links.spec.ts --project=chromium` (dev server, stage lab on). Expect: 1 test passes.
 - [ ] **T76.11** Do: read `src/core/links/linkModel.ts`. Expect: pure functions: `readLinks`, `mapValue`, `linkCycleIf`, `findLinkCycle`, `describeChain`.
 
+### 3.22 Phase 77: expressions (NEW)
+
+**What changed:** a property can be driven by a short formula. Type `wiggle(2, 10)` and the property shakes around its value two times a second by up to 10. `loopOut("pingpong")` repeats its own keyframes back and forth. A wrong formula is **refused** with where the mistake is. A formula can be converted to keyframes.
+
+**Known gaps (don't report):** there is no expression field in the editor yet (the commands exist; the UI pipeline wires it), so use the **stage lab** below, or the commands. Exporters don't emit the compiled code yet.
+
+**User test (the stage lab, covered by `tests/e2e/expressions.spec.ts`)**
+- [ ] **T77.1** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load expression scene**. Expect: a red bar in the middle and a small grey square at the lower left.
+- [ ] **T77.2** Do: drag **Time** slowly from 0 to 2. Expect: the red bar **wobbles smoothly** left and right (up to 40 px) and rocks a little (up to 15 degrees). The grey square slides right and back left again, and so on (a pingpong loop).
+- [ ] **T77.3** Do: drag **Time** back to a moment you looked at before. Expect: the bar is in **exactly** the same place (it never moves randomly).
+- [ ] **T77.4** Do: reload the page, load the scene, go to the same moment. Expect: the same place again.
+
+**Command test** (set `window.__LL_TEST__ = true` before the editor loads; in the new editor the layer ids are `button`, `headline`…)
+- [ ] **T77.5** Do: `__LL_COMMANDS__.all().find(c=>c.id==="layer.setExpression").run({id:"headline",property:"transform.x",text:"wiggle(2, 10)"})`. Expect: `{ ok: true, slot: 1, description: "Headline.transform.x" }`; move **Time** and the headline shakes. **Ctrl+Z** takes it away in one step.
+- [ ] **T77.6** Do: the same with `text:"wiggle(2"`. Expect: `{ ok: false, code: "EXPR_SYNTAX", message: "[EXPR_SYNTAX] ... (at character N)" }` and nothing changed. With `text:"wiggle(1)"`: `code: "EXPR_TYPE"` (wiggle takes 2 to 3 values).
+- [ ] **T77.7** Do: give the headline `ref("Button", "transform.x") * 2`, then give the button `ref("Headline", "transform.x")`. Expect: the second is refused with `[LINK_CYCLE] Button.transform.x ← Headline.transform.x ← Button.transform.x`.
+- [ ] **T77.8** Do: with the wiggle on, run `layer.bakeExpression` with `{id:"headline",property:"transform.x"}`. Expect: `{ ok: true, keyframes: N }` (one per frame of the work area), the expression is gone, and the headline moves **the same** as before, now with keyframes you can edit. **Ctrl+Z** puts the expression back in one step.
+
+**Developer test**
+- [ ] **T77.9** Do: `npx tsx --test src/core/expressions/__tests__/expressions.test.ts`. Expect: 40 tests pass (golden values, `wiggle` pinned, the kernel, compiled-equals-evaluated, the commands).
+- [ ] **T77.10** Do: `npx playwright test tests/e2e/expressions.spec.ts --project=chromium` (dev server, stage lab on). Expect: 2 tests pass.
+- [ ] **T77.11** Do: `grep -rnE "eval\(|new Function" src/core/expressions --include=*.ts --exclude-dir=__tests__`. Expect: nothing outside comments (the one place a function is built from the compiled source is in the test).
+
 ---
 
 ## 4. Regression checks (things that must still work)

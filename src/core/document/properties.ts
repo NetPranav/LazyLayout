@@ -223,6 +223,22 @@ function linkSlotDefs(): Record<string, Def> {
   return out;
 }
 
+/**
+ * Expressions (Phase 77): up to 8 per layer, one numbered slot each. `expr.N.target` is the property path the expression
+ * drives and `expr.N.text` its source (`wiggle(2, 10)`); `expr.N.enabled` switches it off without losing it. The language
+ * and what an expression can see are in `core/expressions/`. An expression runs after the property's keyframes and links, and its
+ * `value` is what they left.
+ */
+function exprSlotDefs(): Record<string, Def> {
+  const out: Record<string, Def> = {};
+  for (let slot = 1; slot <= 8; slot++) {
+    out[`expr.${slot}.target`] = typed(str("", null, "paint", VISUAL));
+    out[`expr.${slot}.text`] = typed(str("", null, "paint", VISUAL));
+    out[`expr.${slot}.enabled`] = typed(flag(true, "paint", VISUAL));
+  }
+  return out;
+}
+
 function fxSlotDefs(): Record<string, Def> {
   const out: Record<string, Def> = {};
   for (let slot = 1; slot <= 8; slot++) {
@@ -740,7 +756,7 @@ const DEFS = {
 export type PropertyPath = keyof typeof DEFS;
 
 export const PROPERTY_REGISTRY: Readonly<Record<string, PropertyDefinition>> = Object.fromEntries(
-  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs() }).map(([path, { scope, ...def }]) => [
+  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs(), ...exprSlotDefs() }).map(([path, { scope, ...def }]) => [
     path,
     { path, ...def, interpolation: INTERPOLATION_BY_TYPE[def.valueType], archetypes: resolveScope(scope) },
   ])

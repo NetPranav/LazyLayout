@@ -14,7 +14,7 @@ import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
-import { LINK_HERO, LINK_NULL, FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
+import { EXPR_LOOP, EXPR_WIGGLE, LINK_HERO, LINK_NULL, FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -139,6 +139,17 @@ function linksDocument() {
   return createDocumentFromLayers([root, ...layers], [clip]);
 }
 
+function expressionsDocument() {
+  const box = (id: string, extra: Layer["properties"]) => createLayer({ id, archetype: "container", parentId: LAB_ROOT, properties: { positioning: "absolute", ...extra } }) as Layer;
+  const layers: Layer[] = [
+    box(EXPR_WIGGLE, { "frame.x": 300, "frame.y": 120, "frame.width": 140, "frame.height": 70, "appearance.background.color": "#ff0000", "expr.1.target": "transform.x", "expr.1.text": "wiggle(3, 40)", "expr.1.enabled": true, "expr.2.target": "transform.rotate", "expr.2.text": "wiggle(2, 15, 4)", "expr.2.enabled": true }),
+    box(EXPR_LOOP, { "frame.x": 20, "frame.y": 220, "frame.width": 40, "frame.height": 40, "appearance.background.color": "#94a3b8", "expr.1.target": "transform.x", "expr.1.text": "loopOut(\"pingpong\")", "expr.1.enabled": true }),
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
+  const clip = attachClip(hydrateClip({ name: "Slide", type: "entrance", trigger: "mount", duration: 0.5, easing: "linear", tracks: [{ property: "transform.x", keyframes: [{ time: 0, value: 0 }, { time: 0.5, value: 200 }] }] }), EXPR_LOOP);
+  return createDocumentFromLayers([root, ...layers], [clip]);
+}
+
 function labLayers(): Layer[] {
   const children = Array.from({ length: LAB_COUNT }, (_, i) => labId(i));
   const kids = children.map(
@@ -180,6 +191,7 @@ export const StageLab: React.FC = () => {
   const loadAnimations = useCallback(() => documentCommands.replaceDocument(animationDocument(), "Load reference animations"), []);
   const loadEffects = useCallback(() => documentCommands.replaceDocument(effectsDocument(), "Load effect scenes"), []);
   const loadLinks = useCallback(() => documentCommands.replaceDocument(linksDocument(), "Load link scene"), []);
+  const loadExpressions = useCallback(() => documentCommands.replaceDocument(expressionsDocument(), "Load expression scene"), []);
   const loadCompositing = useCallback(() => documentCommands.replaceDocument(compositingDocument(), "Load compositing scenes"), []);
 
   const editOne = useCallback(() => {
@@ -204,6 +216,7 @@ export const StageLab: React.FC = () => {
           <button type="button" style={button} onClick={loadCompositing}>Load 5 compositing scenes</button>
           <button type="button" style={button} onClick={loadEffects}>Load effect scenes</button>
           <button type="button" style={button} onClick={loadLinks}>Load link scene</button>
+          <button type="button" style={button} onClick={loadExpressions}>Load expression scene</button>
           <button type="button" style={button} onClick={editOne}>Edit one layer</button>
           <button type="button" style={button} onClick={addOne}>Add one layer</button>
           <button type="button" style={button} onClick={removeOne}>Remove one layer</button>

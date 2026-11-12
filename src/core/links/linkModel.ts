@@ -3,6 +3,8 @@ import type { PropValue } from "../document/registry";
 import type { MotionDocument } from "../document/schema";
 import { parseEasing } from "../document/motion";
 import { sampleEasing } from "../kernel/easing";
+import { readExpressions } from "../expressions/exprModel";
+import { expressionRefs, parseCached } from "../expressions/parse";
 
 /**
  * ============================================================================
@@ -121,24 +123,37 @@ export interface LinkNode {
 }
 const key = (n: LinkNode) => `${n.layerId}|${n.property}`;
 
-/** The properties this property depends on, through the layer's enabled links (`target` ← `source`). */
-function dependencies(doc: Pick<MotionDocument, "layers">, node: LinkNode, extra?: Link & { layerId: string }): LinkNode[] {
+/** A layer by id, or by its name when exactly one layer has it (how an expression's `ref("Hero", …)` finds it). */
+export function resolveLayerRef(layers: MotionDocument["layers"], ref: string): string | undefined {
+  if (layers[ref]) return ref;
+  const named = Object.values(layers).filter((l) => l.name === ref);
+  return named.length === 1 ? named[0].id : undefined;
+}
+
+/** The properties an expression's `ref` and `refAtTime` read, as nodes (a reference to a layer that isn't there is skipped). */
+export function expressionDependencies(layers: MotionDocument["layers"], text: string): LinkNode[] {
+  const parsed = parseCached(text);
+  if (!parsed.ok) return [];
   const out: LinkNode[] = [];
-  const layer = doc.layers[node.layerId];
-  const links = layer ? readLinks(layer.properties).filter((l) => l.enabled && l.target === node.property) : [];
-  for (const l of links) out.push({ layerId: l.source, property: l.sourceProperty });
-  if (extra && extra.layerId === node.layerId && extra.target === node.property) out.push({ layerId: extra.source, property: extra.sourceProperty });
+  for (const ref of expressionRefs(parsed.ast)) {
+    const layerId = resolveLayerRef(layers, ref.layer);
+    if (layerId) out.push({ layerId, property: ref.property });
+  }
   return out;
 }
 
-/**
- * The chain of properties that closes a cycle if `link` (on `layerId`) were added, or null if it wouldn't: starting from
- * the new link's source and following dependencies, does it come back to the property the link drives? The chain starts and
- * ends at that property: `[A.rotate, B.x, A.rotate]` reads "A.rotate follows B.x, which follows A.rotate".
- */
-export function linkCycleIf(doc: Pick<MotionDocument, "layers">, layerId: string, link: Pick<Link, "target" | "source" | "sourceProperty">): LinkNode[] | null {
-  const start: LinkNode = { layerId, property: link.target };
-  const first: LinkNode = { layerId: link.source, property: link.sourceProperty };
+/** The properties this property depends on: what its link reads, and what its expression refers to. */
+function dependencies(doc: Pick<MotionDocument, "layers">, node: LinkNode): LinkNode[] {
+  const out: LinkNode[] = [];
+  const layer = doc.layers[node.layerId];
+  if (!layer) return out;
+  for (const l of readLinks(layer.properties)) if (l.enabled && l.target === node.property) out.push({ layerId: l.source, property: l.sourceProperty });
+  for (const e of readExpressions(layer.properties)) if (e.enabled && e.target === node.property) out.push(...expressionDependencies(doc.layers, e.text));
+  return out;
+}
+
+/** The chain from `first` back to `start` through the dependencies, if there is one (`start` leads the chain, and ends it). */
+function chainBack(doc: Pick<MotionDocument, "layers">, start: LinkNode, first: LinkNode): LinkNode[] | null {
   if (key(first) === key(start)) return [start, first];
   const seen = new Set<string>();
   const walk = (node: LinkNode, path: LinkNode[]): LinkNode[] | null => {
@@ -154,7 +169,26 @@ export function linkCycleIf(doc: Pick<MotionDocument, "layers">, layerId: string
   return walk(first, [first]);
 }
 
-/** Any cycle among the links already in the document (a hand-edited file can have one), as a chain, or null. */
+/**
+ * The chain of properties that closes a cycle if `link` (on `layerId`) were added, or null if it wouldn't: starting from
+ * the new link's source and following dependencies, does it come back to the property the link drives? The chain starts and
+ * ends at that property: `[A.rotate, B.x, A.rotate]` reads "A.rotate follows B.x, which follows A.rotate".
+ */
+export function linkCycleIf(doc: Pick<MotionDocument, "layers">, layerId: string, link: Pick<Link, "target" | "source" | "sourceProperty">): LinkNode[] | null {
+  return chainBack(doc, { layerId, property: link.target }, { layerId: link.source, property: link.sourceProperty });
+}
+
+/** The same for an expression: would an expression with this text on `layerId`'s `target` close a cycle through the layers it refers to? */
+export function expressionCycleIf(doc: Pick<MotionDocument, "layers">, layerId: string, target: string, text: string): LinkNode[] | null {
+  const start: LinkNode = { layerId, property: target };
+  for (const first of expressionDependencies(doc.layers, text)) {
+    const chain = chainBack(doc, start, first);
+    if (chain) return chain;
+  }
+  return null;
+}
+
+/** Any cycle among the links and expressions already in the document (a hand-edited file can have one), as a chain, or null. */
 export function findLinkCycle(doc: Pick<MotionDocument, "layers">): LinkNode[] | null {
   for (const layer of Object.values(doc.layers)) {
     for (const l of readLinks(layer.properties)) {
@@ -162,6 +196,12 @@ export function findLinkCycle(doc: Pick<MotionDocument, "layers">): LinkNode[] |
       // the link is already stored: ask as if it were being added to the others
       const others: Pick<MotionDocument, "layers"> = { layers: { ...doc.layers, [layer.id]: { ...layer, properties: { ...layer.properties, [linkPath(l.slot, "enabled")]: false } } } };
       const chain = linkCycleIf(others, layer.id, l);
+      if (chain) return chain;
+    }
+    for (const e of readExpressions(layer.properties)) {
+      if (!e.enabled) continue;
+      const others: Pick<MotionDocument, "layers"> = { layers: { ...doc.layers, [layer.id]: { ...layer, properties: { ...layer.properties, [`expr.${e.slot}.enabled`]: false } } } };
+      const chain = expressionCycleIf(others, layer.id, e.target, e.text);
       if (chain) return chain;
     }
   }
