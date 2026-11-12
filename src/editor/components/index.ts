@@ -41,3 +41,7 @@ export * from "./FontPickerData";
 export * from "./Cursor";
 export * from "./ScrollFade";
 export { ParityBadge, type ParityBadgeProps } from "./ParityBadge";
+export * from "./AdjustLastOperationPanel";
+export * from "./ShadingBar";
+export * from "./OverlaysMenu";
+export * from "./ViewportStats";

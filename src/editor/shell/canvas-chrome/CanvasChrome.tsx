@@ -11,6 +11,7 @@ import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { Spotlight } from "./Spotlight";
 import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
+import { LastOperationHost } from "@/editor/viewport3d/panels/LastOperationHost";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { type CollabUser } from "@/editor/components/AvatarStack";
 import { useCollabStore } from "@/core/store/useCollabStore";
@@ -677,6 +678,9 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
             {/* Content Slot for Artboard and stage handles */}
             {children}
           </div>
+
+          {/* 3D Viewport Chrome & Last Operation Host */}
+          <LastOperationHost />
         </div>
       </div>
 

@@ -241,3 +241,23 @@ export class GpuCompositor {
 
 /** The one compositor for the page. */
 export const compositor = new GpuCompositor();
+
+if (typeof window !== "undefined") {
+  const w = window as unknown as {
+    __LL_GPU__?: {
+      stats: () => CompositorStats;
+      loseShared: () => void;
+      restoreShared: () => void;
+    };
+  };
+  if (!w.__LL_GPU__) {
+    Object.defineProperty(w, "__LL_GPU__", {
+      configurable: true,
+      get: () => ({
+        stats: () => compositor.stats(),
+        loseShared: () => compositor.loseSharedForTest(),
+        restoreShared: () => compositor.restoreSharedForTest(),
+      }),
+    });
+  }
+}

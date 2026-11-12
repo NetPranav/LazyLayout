@@ -129,6 +129,7 @@ import { MenuHeadingDemo, ThemeSwatchDemo } from "./demos/MenuPartsDemos";
 import { InspectorControlsDemo } from "./demos/PanelDemos";
 
 // Wave B and F Rebuild Demos
+import { Viewport3dDemos } from "./demos/Viewport3dDemos";
 import { B1Demos } from "./demos/B1Demos";
 import { B2Demos } from "./demos/B2Demos";
 import { B3Demos } from "./demos/B3Demos";
@@ -223,6 +224,7 @@ type NavSectionId =
   | "element-inputs"
   | "element-shapes"
   | "element-3d"
+  | "viewport-3d"
   | "repeatable-rows"
   | "ai-expanded"
   // Motion
@@ -351,6 +353,7 @@ const PANELS_NAV: readonly NavItem[] = [
   { id: "element-inputs", label: "Element: Inputs" },
   { id: "element-shapes", label: "Element: Shapes" },
   { id: "element-3d", label: "Element: 3D" },
+  { id: "viewport-3d", label: "3D Viewport Chrome" },
   { id: "repeatable-rows", label: "Repeatable Rows" },
   { id: "ai-expanded", label: "AI Expanded View" },
 ];
@@ -1629,6 +1632,7 @@ export function DesignSystemPage() {
             {activeSection === "element-inputs" && <ElementInspectorInputsDemo />}
             {activeSection === "element-shapes" && <ElementInspectorShapesDemo />}
             {activeSection === "element-3d" && <ElementInspector3DDemo />}
+            {activeSection === "viewport-3d" && <Viewport3dDemos />}
             {activeSection === "repeatable-rows" && <RepeatableRowsDemo />}
             {activeSection === "ai-expanded" && <AiExpandedViewDemo />}
 

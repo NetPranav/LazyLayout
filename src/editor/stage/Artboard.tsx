@@ -42,6 +42,7 @@ import {
 import { evaluate } from "@/core/kernel/evaluate";
 import { MAIN_COMPOSITION_ID } from "@/core/document/compositions";
 import { useMotionModel } from "@/editor/motion-model";
+import { useViewportStore } from "@/core/render/scene3d/viewportStore";
 import type { ArtboardProps, StagePreset } from "./types";
 import {
   STAGE_CONSTANTS,
@@ -55,6 +56,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useBreakpointStore, useEditBreakpointId } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
+import { ViewportInteraction } from "../viewport3d";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
 function designTransform(
@@ -336,6 +338,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const mirrorViews = useMirrorViews(rootId ?? null);
   // the frame the selection is being edited in, and the breakpoint its edits go to (none: the base)
   const editBp = useEditBreakpointId();
+  const editingSceneId = useViewportStore((s) => s.editingSceneId);
   const selectedMirror = useSelectionStore((s) => s.selectedMirrorId);
   const editingFrameId = selectedMirror ?? (layers && rootId ? pageFrameOf(layers, rootId, selectedIds[0]) : null);
   const editingName = editBp ? breakpointsOf(getDocument()).find((b) => b.id === editBp)?.name ?? null : null;
@@ -833,6 +836,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
                   e.stopPropagation();
                   setEditingText(el.id);
                 }
+                // a 3D scene opens for 3D editing (the hit box covers the layer, so the layer never sees the double-click)
+                if (layer && layer.archetype === "scene3d" && !layer.locked) {
+                  e.stopPropagation();
+                  const sceneRef = layer.properties.scene;
+                  if (typeof sceneRef === "string" && sceneRef) useViewportStore.getState().setEditingSceneId(sceneRef);
+                }
               }}
               onPointerDown={(e) => {
                 if (editingText === el.id) return;
@@ -884,6 +893,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
                     bottom: -12,
                   }}
                 />
+              )}
+              {/* the scene open for 3D editing: orbit, pick and move happen here, above the page's other hit boxes */}
+              {layer && layer.archetype === "scene3d" && editingSceneId !== null && layer.properties.scene === editingSceneId && (
+                <div
+                  className="ll:absolute ll:inset-0"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                >
+                  <ViewportInteraction sceneId={editingSceneId} width={el.width} height={el.height} />
+                </div>
               )}
               {editingText === el.id && layer && (
                 <InlineTextEditor
@@ -998,7 +1018,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {!isBlank && (
         <TransformOverlay
-          selectedIds={editingPath ? [] : selectedIds}
+          selectedIds={editingPath || editingSceneId ? [] : selectedIds}
           hoveredId={hoveredId}
           elements={elements}
           snapLines={snapLines}

@@ -10,6 +10,7 @@ import { surf, hlMove, hlHide, type Surf } from "@/editor/motion/surface";
 import { MENU_FALLBACKS, MOT } from "@/editor/motion/presets";
 import { getActivePreset, prefersReducedMotion } from "@/editor/motion/feel";
 import { springAnim } from "@/editor/motion/ease";
+import { useViewportStore, type KeymapId } from "@/core/render/scene3d/viewportStore";
 import type { GridStyle, MotionFeel } from "./types";
 
 export interface ViewOptionsPopoverProps {
@@ -44,6 +45,8 @@ export interface ViewOptionsPopoverProps {
   onMotionFeelChange?: (feel: MotionFeel) => void;
   dropdownBulge?: number;
   onDropdownBulgeChange?: (bulge: number) => void;
+  keymapId?: KeymapId;
+  onKeymapIdChange?: (id: KeymapId) => void;
 
   // Canvas
   inspectMode?: boolean;
@@ -168,6 +171,8 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   onMotionFeelChange,
   dropdownBulge = 50,
   onDropdownBulgeChange,
+  keymapId: propKeymapId,
+  onKeymapIdChange,
   inspectMode = false,
   onToggleInspectMode,
   canvasPan = true,
@@ -197,6 +202,14 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
   onFocusSelection,
   onOpenWorldEnvironment,
 }) => {
+  const storeKeymapId = useViewportStore((s) => s.keymapId);
+  const activeKeymapId = propKeymapId ?? storeKeymapId;
+
+  const handleKeymapChange = (id: KeymapId) => {
+    useViewportStore.getState().setKeymapId(id);
+    onKeymapIdChange?.(id);
+  };
+
   const [isRendered, setIsRendered] = useState<boolean>(open);
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
@@ -734,6 +747,22 @@ export const ViewOptionsPopover: React.FC<ViewOptionsPopoverProps> = ({
               { value: "smooth", label: "Smooth" },
               { value: "lively", label: "Lively" },
               { value: "bouncy", label: "Bouncy" },
+            ]}
+          />
+        </div>
+
+        <div className="vrow vrow-c">
+          <span className="ll:text-body">3D keymap</span>
+        </div>
+        <div className="vsub ll:px-4 ll:pb-2">
+          <SegmentedControl
+            size="sm"
+            value={activeKeymapId}
+            onChange={(v) => handleKeymapChange(v as KeymapId)}
+            ariaLabel="3D keymap"
+            options={[
+              { value: "blender", label: "Blender" },
+              { value: "beginner", label: "Beginner" },
             ]}
           />
         </div>

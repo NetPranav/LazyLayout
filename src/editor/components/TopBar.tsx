@@ -443,6 +443,17 @@ export const TopBar: React.FC<TopBarProps> = ({
           </SubMenu>
 
           <SubMenu
+            id="sub-insert"
+            label="Insert"
+            icon={<Icon icon={Plus} size={MENU_ICON_SIZE} />}
+          >
+            {entry("3d.scene.insert", "3D scene", Box, undefined, () => {
+              setLogoMenuOpen(false);
+              invokeCommand("3d.scene.insert", {});
+            })}
+          </SubMenu>
+
+          <SubMenu
             id="sub-view"
             label="View"
             icon={<Icon icon={Eye} size={MENU_ICON_SIZE} />}

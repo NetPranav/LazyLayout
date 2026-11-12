@@ -13,6 +13,7 @@ import { Divider } from "./archetypes/Divider";
 import { Background } from "./archetypes/Background";
 import { Image } from "./archetypes/Image";
 import { Placeholder } from "./archetypes/Placeholder";
+import { Scene3dLayer } from "./archetypes/Scene3dLayer";
 import { Arrow, Ellipse, Line, Polygon, Rectangle, Star } from "./archetypes/Shapes";
 import { Icon, SvgGroup, SvgPath, SvgText, SvgUse } from "./archetypes/Svg";
 
@@ -48,5 +49,5 @@ export const RENDER_DEFINITIONS: Record<ArchetypeId, ComponentType<ArchetypeRend
   object3D: Placeholder,
   camera3D: Placeholder,
   light3D: Placeholder,
-  scene3d: Placeholder,
+  scene3d: Scene3dLayer,
 };
