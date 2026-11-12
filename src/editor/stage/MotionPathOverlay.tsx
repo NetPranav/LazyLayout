@@ -172,7 +172,20 @@ export const MotionPathOverlay: React.FC<MotionPathOverlayProps> = ({
         (c) => c.layerId === layerId && c.enabled !== false
       );
 
-      for (const clip of layerClips) {
+      for (const sourceClip of layerClips) {
+        // Phase 69: position keyframes always draw as a path. A clip with x / y keys and no spatial data yet gets
+        // straight (linear) segments between its paired keys, which is what the kernel plays for it.
+        let clip = sourceClip;
+        if (!clip.spatialTrajectories?.transform) {
+          const paired = extractClipWaypoints(clip, layer?.properties);
+          if (paired.length < 2) continue;
+          clip = {
+            ...clip,
+            spatialTrajectories: {
+              transform: { id: `auto_${clip.id}`, propertyGroup: "transform", enabled: true, waypoints: paired.map((w) => ({ id: w.id, time: w.time, mode: "linear" as const })) },
+            },
+          };
+        }
         const spatialMeta = clip.spatialTrajectories?.transform;
         if (!spatialMeta || spatialMeta.enabled === false) continue;
         if (!spatialMeta.waypoints || spatialMeta.waypoints.length < 2) continue;

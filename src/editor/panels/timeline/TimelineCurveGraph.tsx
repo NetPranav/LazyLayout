@@ -18,6 +18,12 @@ import {
   numStr,
 } from "@/editor/motion-model";
 import { useThrottledPlayhead } from "@/editor/motion-model/useThrottledPlayhead";
+import { UI_TO_CANONICAL_PATH } from "@/editor/motion-model/sync";
+import { useStore } from "zustand";
+import { useDocument } from "@/core/store/useDocumentStore";
+import { useTimelineUiStore } from "@/core/store/useTimelineUiStore";
+import { transportStore } from "@/core/time/transport";
+import { graphCurves, curvePoints, curveValue, speedPoints } from "@/core/timeline/graph";
 import type { PropId, Keyframe } from "@/editor/motion-model";
 
 export interface TimelineCurveGraphProps {
@@ -53,6 +59,10 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
 
   const [activeProp, setActiveProp] = useState<PropId>("opacity");
+  // Phase 67: the curve drawn is the engine's (the kernel's easing maths), as a Value or a Speed graph.
+  const doc = useDocument((d) => d);
+  const compositionId = useStore(transportStore, (st) => st.compositionId);
+  const graphMode = useTimelineUiStore((st) => st.graphMode);
   const graphContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Determine which layer to plot
@@ -82,6 +92,14 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
   const track = targetLayer.tr.find((t) => t.p === currentPropId) ?? targetLayer.tr[0];
   const spec = PROPS[track.p];
   const ks = track.keys;
+  // the engine's curve for this layer's property, in the timeline's units (opacity and scale in %)
+  const canonicalPath = UI_TO_CANONICAL_PATH[track.p];
+  const unit = track.p === "opacity" || track.p === "scale" ? 100 : 1;
+  const engineCurve = graphCurves(doc, compositionId, new Set(), [targetLayer.id]).find((c) => c.property === canonicalPath && c.keys.length > 0);
+  const enginePoints: Array<[number, number]> | null = engineCurve
+    ? (graphMode === "speed" ? speedPoints(engineCurve) : curvePoints(engineCurve)).map(([t, v]) => [t * fps, v * unit])
+    : null;
+  const speed = graphMode === "speed" && enginePoints !== null;
 
   const H = 220; // Canvas height
   const pm = 20; // Vertical padding in px
@@ -95,7 +113,16 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
     hi = Math.max(hi, k.v);
   }
 
-  if (ks.length > 1) {
+  if (speed) {
+    lo = Infinity;
+    hi = -Infinity;
+  }
+  if (enginePoints) {
+    for (const [, v] of enginePoints) {
+      lo = Math.min(lo, v);
+      hi = Math.max(hi, v);
+    }
+  } else if (ks.length > 1) {
     for (let i = 0; i <= 80; i++) {
       const t = ks[0].t + ((ks[ks.length - 1].t - ks[0].t) * i) / 80;
       const v = valueAt(targetLayer, track.p, t);
@@ -124,7 +151,11 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
 
   // Curve path SVG data
   let curvePath = "";
-  if (ks.length > 0) {
+  if (enginePoints) {
+    enginePoints.forEach(([f, v], i) => {
+      curvePath += (i === 0 ? "M" : "L") + `${X(f, pps, t0, 24, fps).toFixed(1)} ${gY(v).toFixed(1)}`;
+    });
+  } else if (ks.length > 0) {
     const x0 = X(ks[0].t, pps, t0, 24, fps);
     const x1 = X(ks[ks.length - 1].t, pps, t0, 24, fps);
     const n = Math.max(8, Math.min(480, Math.round((x1 - x0) / 2)));
@@ -137,7 +168,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
   }
 
   // Playhead value indicator dot
-  const currentVal = valueAt(targetLayer, track.p, playhead);
+  const currentVal = engineCurve && !speed ? curveValue(engineCurve, playhead / fps) * unit : valueAt(targetLayer, track.p, playhead);
   const dotX = X(playhead, pps, t0, 24, fps);
   const dotY = gY(currentVal);
 
@@ -271,6 +302,22 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
           </div>
         </div>
 
+        <div role="radiogroup" aria-label="Graph" className="ll:flex ll:items-center ll:gap-0.5 ll:px-3 ll:h-8 ll:border-b ll:border-border">
+          {(["value", "speed"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={graphMode === m}
+              data-graph-mode={m}
+              onClick={() => useTimelineUiStore.getState().setGraphMode(m)}
+              className={`ll:px-2 ll:h-6 ll:rounded-sm ll:font-sans ll:text-small ${graphMode === m ? "ll:bg-surface-hover ll:text-primary" : "ll:text-muted ll:hover:text-primary"}`}
+            >
+              {m === "value" ? "Value graph" : "Speed graph"}
+            </button>
+          ))}
+        </div>
+
         {targetLayer.tr.map((t, j) => {
           const isCurrent = t.p === currentPropId;
           const pSpec = PROPS[t.p];
@@ -344,7 +391,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
           {curvePath && <path d={curvePath} className="c" />}
 
           {/* Tangent handle lines */}
-          {ks.map((k, idx) => {
+          {!speed && ks.map((k, idx) => {
             if (idx >= ks.length - 1) return null;
             const nextK = ks[idx + 1];
             if (k.ease === "Spring") return null;
@@ -385,7 +432,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
         ))}
 
         {/* Bezier Tangent Handle knobs */}
-        {ks.map((k, idx) => {
+        {!speed && ks.map((k, idx) => {
           if (idx >= ks.length - 1) return null;
           const nextK = ks[idx + 1];
           if (k.ease === "Spring") return null;
@@ -427,7 +474,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
         })}
 
         {/* Keyframe diamond handles */}
-        {ks.map((k) => {
+        {!speed && ks.map((k) => {
           const x = X(k.t, pps, t0, 24, fps);
           const y = gY(k.v);
           const isSel = !!selectedKeys[k.id];

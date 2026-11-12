@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { Icon } from "@/editor/components/Icon";
 import { CloseIcon } from "./icons";
 import { EasingEditor } from "@/editor/panels/inspectors/EasingEditor";
+import { EASE_PRESETS } from "@/core/timeline/graph";
 import { registerOverlay, retargetPosition, getFamilyHandoff } from "@/editor/components/retarget";
 import {
   useMotionModel,
@@ -214,6 +215,22 @@ export const EasingPopover: React.FC<EasingPopoverProps> = ({
           Select a keyframe on the timeline to edit easing curves and spring physics.
         </div>
       )}
+
+      {/* Phase 67: the engine's preset strip: the four named feels (springs by Bounce and Time), the curves, Hold */}
+      <div role="group" aria-label="Easing presets" className={`ll:flex ll:flex-wrap ll:gap-1 ${!hasSelectedKeys ? "ll:opacity-45 ll:pointer-events-none" : ""}`}>
+        {EASE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            title={preset.hint}
+            data-ease-preset={preset.id}
+            onClick={() => motionActions.applyEasePreset(selectedKeyIds, preset.value)}
+            className={`ll:h-6 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:font-sans ll:text-micro ll:transition-colors ll:hover:bg-surface-hover ${preset.group === "feel" ? "ll:text-primary" : "ll:text-secondary"}`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
 
       {/* Embedded EasingEditor */}
       <div

@@ -75,6 +75,14 @@ export function isCommandAvailable(command: Command, ctx = getContextKeys()): bo
 }
 
 /** Validates `args` against the command's schema (when it has one), runs it, and checks its result. Never throws. */
+/** Who wants to know that a command ran (the keystroke overlay shows its name). Display only: a listener can't change the outcome. */
+type CommandRunListener = (ran: { id: string; title: string }) => void;
+const runListeners = new Set<CommandRunListener>();
+export function onCommandRun(listener: CommandRunListener): () => void {
+  runListeners.add(listener);
+  return () => void runListeners.delete(listener);
+}
+
 function execute(command: Command, args: unknown): CommandOutcome {
   let parsed: unknown = undefined;
   if (command.args) {
@@ -92,6 +100,13 @@ function execute(command: Command, args: unknown): CommandOutcome {
     const check = command.result.safeParse(result);
     if (!check.success) return { ok: false, reason: "invalid-result", message: check.error.message };
     result = check.data;
+  }
+  for (const listener of runListeners) {
+    try {
+      listener({ id: command.id, title: command.title });
+    } catch {
+      // a display listener never breaks a command
+    }
   }
   return { ok: true, result };
 }
