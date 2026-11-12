@@ -256,6 +256,9 @@ Click the **`+`** icon on the **Effects** header to add:
 - **Layer Blur:** Blurs the entire element and its contents (great for ambient glowing lights).
 - **Background Blur:** Creates a modern **frosted glass (glassmorphism)** effect by blurring everything sitting behind the layer.
 
+> [!NOTE]
+> **Blend modes, adjustment and masks.** A layer's **Blend mode** (Multiply, Screen, Overlay and the rest) now really mixes it with what is behind it on the canvas and in the exported code. The engine also supports **isolated groups**, **adjustment layers** (a layer that blurs, brightens, desaturates or tints everything behind it) and **masks** (a rectangle, oval or drawn path that decides what of a layer shows, with a soft edge, and a path that can morph over time). The editor has no buttons for isolation, adjustment or masks yet; they are planned.
+
 ---
 
 ## 8. Layers Hierarchy & Asset Management
