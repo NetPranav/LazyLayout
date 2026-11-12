@@ -10,6 +10,7 @@ import { TransformOverlay } from "./TransformOverlay";
 import { TextFormatBar } from "./TextFormatBar";
 import { setTextEditing } from "@/core/commands";
 import { MotionPathOverlay } from "./MotionPathOverlay";
+import { useTextEditRequest } from "./textEditRequest";
 import { ValueHud } from "./ValueHud";
 import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
@@ -30,6 +31,8 @@ import { setLayerProps } from "@/core/editing/editOps";
 import type { Layer } from "@/core/document/schema";
 import { resolveLayerAnchor, formatCssTransformOrigin } from "@/core/geometry/pins";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useStore as useZustandStore } from "zustand";
+import { transportStore } from "@/core/time/transport";
 import {
   computeComposedWorldMatrix,
   formatCssMatrix,
@@ -311,7 +314,17 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const artboardContainerRef = useRef<HTMLDivElement | null>(null);
   // Double-clicking a text layer edits its words in place; leaving the box (or Esc / Ctrl+Enter) writes them as one undo step.
   const [editingText, setEditingText] = useState<string | null>(null);
+  // a text just made with the Text tool opens for typing (the request comes from the stage)
+  useEffect(
+    () =>
+      useTextEditRequest.subscribe((r, prev) => {
+        if (r.seq !== prev.seq && r.id) setEditingText(r.id);
+      }),
+    [],
+  );
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
+  // Phase 65: motion paths and onion skin show the composition the timeline has open
+  const shownCompositionId = useZustandStore(transportStore, (t) => t.compositionId);
   const playhead = useMotionModel((s) => s.playhead);
   const fps = useMotionModel((s) => s.fps) || 60;
   const motionTimeSec = playhead / fps;
@@ -739,6 +752,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* 4a. Onion Skin Overlay (ROADMAP Phase 71: Onion skin - rendered behind live elements) */}
       <OnionSkinOverlay
+        compositionId={shownCompositionId}
         selectedIds={selectedIds}
         elements={elements}
         layers={layers}
@@ -999,6 +1013,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay
+        compositionId={shownCompositionId}
         selectedIds={selectedIds}
         elements={elements}
         layers={layers}

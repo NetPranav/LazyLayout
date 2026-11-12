@@ -85,6 +85,8 @@ describe("Phase 13: menu → command coverage", () => {
       "editor/stage/CanvasCursor.tsx",
       "editor/stage/layout-overlay/useValueDrag.ts",
       "editor/stage/pen/PathEditLayer.tsx",
+      // View > Show keystrokes: only displays the keys pressed, never handles one
+      "editor/components/ScreencastKeys.tsx",
     ]);
     // KNOWN DEBT, not an approval: these files of the new editor handle real global shortcuts (tool keys R L Y K V H F T O, Space,
     // Delete, arrow nudging, zoom, Ctrl+/ ...) with raw window listeners instead of commands with a keybinding (Phase 13, Law 20). So the

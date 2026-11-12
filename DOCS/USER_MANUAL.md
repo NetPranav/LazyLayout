@@ -331,12 +331,21 @@ Follow these exact steps to create a smooth entrance animation for a heading:
 6. **Adjust Timing:** Want the animation faster or slower? Simply click and drag the second keyframe diamond left (faster) or right (slower).
 
 > [!TIP]
-> **Using Auto-Key & Stage Value HUD:** Click the **● Record** button in the timeline transport toolbar. When Auto-Key is active, simply scrub the playhead to any moment in time and move, resize, or restyle any element on the stage—LazyLayout will automatically generate the corresponding keyframes for you at that exact playhead timestamp!
+> **Using Auto-Key & Stage Value HUD:** Click the round **Auto-key record mode** button in the timeline transport row (hover it to see its name). When Auto-Key is active, simply scrub the playhead to any moment in time and move, resize, or restyle any element on the stage—LazyLayout will automatically generate the corresponding keyframes for you at that exact playhead timestamp!
 >
 > While scrubbing the playhead or transforming layers on stage, a floating **Value HUD** automatically appears beside the active layer, displaying live real-time metrics:
 > - **X & Y:** Current position in canvas pixels.
 > - **R:** Rotation in degrees (e.g. `0°`, `45°`).
 > - **O:** Opacity percentage (`0%` to `100%`).
+
+> [!TIP]
+> **Onion skin:** press **Toggle onion skin** in the same transport row to see faint ghosts of the selected layer at nearby moments, fainter the further they are from the playhead. They stop at the ends of the clip and never get in the way of clicking or dragging.
+>
+> **Motion path:** once a layer has position keyframes, its route shows on the stage as a curved line with a marker at each keyframe. Close tick marks mean slow, wide ones fast.
+>
+> **Anchor point (Design mode):** hold **Ctrl** (**Cmd** on a Mac) over a selected layer to show the point it rotates and scales around. Drag it; it snaps to the nine standard points. The Position section's **More Position options → Transform origin** menu does the same, and moving the anchor never makes the layer jump.
+>
+> **Not in the editor yet:** parenting a layer to an invisible helper ("null") layer works in the engine, but there is no button for it.
 
 ---
 
@@ -534,7 +543,7 @@ Shortcuts are context-aware: stage shortcuts fire when your cursor is over the s
 **A:** An element will only move if it has animated keyframes assigned to it. Twirl open the layer's properties in the timeline, ensure the stopwatch icon is highlighted blue, and confirm that at least two keyframe diamonds exist with different values at different points in time (see [Section 9.3](#step-by-step-tutorial-creating-your-first-animation)).
 
 ### Q: Every time I move an element on the stage, a new keyframe is created! How do I stop this?
-**A:** **Auto-Key** is turned on. Look at the toolbar above the timeline and click the **● Auto-Key** button to turn it off. When Auto-Key is off, changes you make on the stage will adjust the element's base value without adding keyframes.
+**A:** **Auto-Key** is turned on. Look at the toolbar above the timeline and click the round **Auto-key record mode** button to turn it off. When Auto-Key is off, changes you make on the stage will adjust the element's base value without adding keyframes.
 
 ### Q: Why does the editor say "Read-Only: Project open in another tab"?
 **A:** To protect your project data against conflicting overwrites, LazyLayout locks active projects to a single browser tab. If you see this banner, look for the other open tab, or simply click the **"Edit here instead"** button to safely take over editing control.
