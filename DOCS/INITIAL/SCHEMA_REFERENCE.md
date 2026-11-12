@@ -1,6 +1,6 @@
 # JSON SCHEMA REFERENCE CONTRACTS — INITIAL PHASE
 
-> **Status:** §0 (Motion Document Model, schema v3) is current and authoritative as of ROADMAP Phase 42. §1–§8 below still describe Initial Phase v1.1 (the `elements` map, `animationStack`, v1 trigger names); they are kept for reference and rewritten in ROADMAP v2 Phase 6.3. Where they conflict with §0, §0 wins.
+> **Status:** §0 (Motion Document Model, schema v7) is current and authoritative as of ROADMAP Phase 52 and 3D-007. §1–§8 below still describe Initial Phase v1.1 (the `elements` map, `animationStack`, v1 trigger names); they are kept for reference and rewritten in ROADMAP v2 Phase 6.3. Where they conflict with §0, §0 wins.
 
 ## Project Name: LazyLayout
 **Internal Codename:** "Unreal Engine for Animation & Frontend Design"
@@ -11,7 +11,7 @@
 
 ---
 
-## 0. Motion Document Model (MDM, schema v6), authoritative
+## 0. Motion Document Model (MDM, schema v7), authoritative
 
 **Source of truth:** `src/core/document/schema.ts` (Zod). One source produces three outputs:
 1. TypeScript types (`MotionDocument`, `Layer`, `Clip`, `Track`, `Keyframe`, `LayerState`, `Behaviour`, `Binding`, `Surface`, `InteractionGraph`, `Component`, `Generator`, …).
@@ -26,7 +26,7 @@
 
 ```text
 MotionDocument
-  schemaVersion: 5
+  schemaVersion: 7
   layers         Record<id, Layer>          // top-level layers are frames (v2's document-level artboard moved onto them)
   clips          Record<id, Clip>          // a layer's animation stack = its clips, in insertion order
   states         Record<id, LayerState>
@@ -42,6 +42,25 @@ MotionDocument
   generators     Record<id, Generator>     // v4 (7.5, Track K)
   compositions   Record<id, Composition>   // v5 (Phase 46): comp_main + interaction compositions + precomps
   tokens         { colors, spacing, radii }
+  // optional tables, absent in older documents (read as empty)
+  assets         Record<hash, AssetEntry>          // imported files by content hash (Phase 36)
+  designComponents  design components: id, name, the layer that is the main component (Phase 46)
+  modes          { id, name }[]                     // variable modes, the first is the default (Phase 45)
+  breakpoints    { id, name, width }[]              // up to 12 (Phase 43)
+  fontDisplay    swap | block | fallback | optional | auto   // CSS font-display (Phase 38)
+  // 3D data blocks, shared by id as in Blender (v7, ROADMAP_3D 3D-007)
+  scenes         Record<id, Scene3d>                // objects, world, active camera, settings; a `scene3d` layer points at one
+  objects        Record<id, Object3d>               // type, transform (location, rotationQuat, scale), parent, data, material slots, modifiers, visibility
+  meshes         Record<id, Mesh3d>                 // inline positions and indices, or a pointer to binary geometry in the asset store; `source` keeps a primitive's recipe
+  materials      Record<id, Material3d>             // PBR: baseColor, metallic, roughness, emissive
+  lights         Record<id, Light3d>
+  cameras        Record<id, Camera3d>
+  armatures      Record<id, Armature3d>             // bones
+  actions        Record<id, Action3d>               // f-curves
+  worlds         Record<id, World3d>
+  images3d       Record<id, Image3d>                // points at an asset-store id
+  texts          Record<id, Text3d>                 // 3D text (3D-026)
+  looks          Record<id, Look3d>                 // saved looks (3D-023)
   exportSettings { framework, styling, animation, language }   // was project `target` in v1
 
 Layer      { id, name, archetype, parentId | null, children[], visible?, locked?, solo?, shy?, motionBlur?, properties: Props,
@@ -116,7 +135,7 @@ Phase 7's reasoning (strictness, the easing grammar, perceptual springs, binding
 New entities use `createId(prefix)` → `<prefix>_<8 hex>` from `crypto.getRandomValues` (`elem_btn_3f8a109c`, `clip_…`, `trk_…`, `kf_…`). Existing ids are kept as they are.
 
 ### 0.5 Versions & migration
-`loadDocument()` (`src/core/document/migrations`) accepts any version and migrates one step at a time (v1 → v2 → v3 → v4 → v5 → v6). **v5 → v6** (Phase 53) adds the clip types `exit`, `focus`, `stagger`, `layout` and the triggers `unmount`, `layoutChange`; it is additive and only moves `schemaVersion`. **v4 → v5** (Phase 46) adds `comp_main` and places every clip (mount/time into main; others into an interaction composition with the playback their trigger implies), changing nothing else. **v3 → v4** (Phase 7) makes these changes and reports each one:
+`loadDocument()` (`src/core/document/migrations`) accepts any version and migrates one step at a time (v1 → v2 → v3 → v4 → v5 → v6 → v7). **v6 → v7** (ROADMAP_3D 3D-007) adds the optional 3D tables and the `scene3d` layer type; additive, it only moves `schemaVersion`, and a v6 document loads unchanged. **v5 → v6** (Phase 53) adds the clip types `exit`, `focus`, `stagger`, `layout` and the triggers `unmount`, `layoutChange`; it is additive and only moves `schemaVersion`. **v4 → v5** (Phase 46) adds `comp_main` and places every clip (mount/time into main; others into an interaction composition with the playback their trigger implies), changing nothing else. **v3 → v4** (Phase 7) makes these changes and reports each one:
 - adds the nine new collections, empty;
 - gives behaviours typed params: defaults, plus any v3 param whose name and type match;
 - sorts keyframes (a stable sort, so equal times stay an instant jump), types keyframe and state values by their property (`"20px"` → 20; unreadable → the property default), and extends a clip to cover its last keyframe;
