@@ -26,6 +26,8 @@ export interface ContextKeys {
   textEditing: boolean;
   "selection.count": number;
   "transport.playing": boolean;
+  /** True when currently editing a 3D scene (Phase 3D-012). */
+  editingScene3d?: boolean;
 }
 
 export type ContextKeyName = keyof ContextKeys;
