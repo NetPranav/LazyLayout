@@ -9,3 +9,8 @@ export const SCENE_DIAMOND = "M60 5 L115 50 L60 95 L5 50 Z";
 /** The track-matte scene (Phase 74 gap): a red layer whose mask is a second layer, an ellipse that slides across it. */
 export const MATTE_TARGET = "scene_matte";
 export const MATTE_SOURCE = "scene_matte_source";
+
+/** Phase 75's scenes: a layer with a 4-effect stack (blur, drop shadow, colour adjust, displacement) animated over a second, and two identical layers sliding right, one with motion blur. */
+export const FX_STACK_LAYER = "scene_fx";
+export const MB_ON_LAYER = "scene_mb_on";
+export const MB_OFF_LAYER = "scene_mb_off";

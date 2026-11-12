@@ -1,4 +1,4 @@
-# Lane B manual test guide (Phases 53–74, 81)
+# Lane B manual test guide (Phases 53–75, 81)
 
 **For:** `@OVERxPOWERED`. **Covers:** Lane B's phases 53–68, tested together with Lane A's work (`A_TEST_GUIDE.md`).
 **Editor note (2026-11-11):** the editor was rebuilt on 2026-11-05. Sections 3.2–3.17 describe the OLD editor (now `/editor/legacy`); section **3.18 uses the new editor**. A full re-walk of 3.2–3.17 in the new editor is still to do.
@@ -31,6 +31,7 @@
 | 72 | Anchor points and pins | #74 | 3.18 |
 | 73 | Parenting and helper layers (no UI yet) | #76 | 3.18 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
+| 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
 ## The 10-minute quick pass (start here)
@@ -789,6 +790,29 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T74.9** Do: `npx playwright test tests/e2e/compositing.spec.ts --project=chromium` (it uses the dev page, so the stage lab must be enabled: `NEXT_PUBLIC_ENABLE_LABS=1` in a production build, on by default in `npm run dev`). Expect: 2 tests pass: five scenes at five times match `evaluate()` including pixels, and the track matte follows its source.
 - [ ] **T74.10** Do: set the properties on a real layer in the new editor: with `window.__LL_TEST__ = true` set before load, in the console run `__LL_COMMANDS__.all().find(c=>c.id==="layer.setProps").run({ids:["button"],props:{"mask.mode":"alpha","mask.shape":"ellipse","appearance.blendMode":"multiply"},label:"t"})`. Expect: the button on the stage is cut to an oval and multiplied.
 - [ ] **T74.11** Do: read `src/core/render/compositing.ts`. Expect: pure functions, no DOM; `styleWrites.ts` and `geometry.ts` both call them.
+
+---
+
+### 3.20 Phase 75: the effect stack and motion blur (NEW)
+
+**What changed:** a layer can carry up to **eight effects in order** (blur, glow, drop shadow, colour adjust, displacement, noise), each with settings that can be keyframed, and a layer can have **motion blur** from how fast it moves. For each effect the rules say **which backend draws it and why**.
+
+**Known gaps (don't report):** the inspector has no Effects section and the timeline has no stopwatches for effect settings yet (the commands exist; the UI pipeline wires them), so the way to see them is the **stage lab** below or the commands. Effects other than the CSS ones aren't in exported code yet.
+
+**User test (the stage lab, covered by `tests/e2e/effects.spec.ts`)**
+- [ ] **T75.1** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load effect scenes**. Expect: a red box near the top left, and two blue bars lower down at the left.
+- [ ] **T75.2** Do: drag **Time** from 0 to 1. Expect on the **red box**: it gets softer (blur), grows a dark shadow below it, drains of colour until it is **grey** at 1, and its edges ripple (displacement). Four effects at once, each changing smoothly.
+- [ ] **T75.3** Do: watch the **two blue bars** while dragging **Time**. Expect: both slide to the right at the same speed. The **upper** one (motion blur on) is smeared sideways, softer at its left and right edges; the **lower** one stays sharp.
+- [ ] **T75.4** Do: drag **Time** back to 0. Expect: everything returns to how it started: sharp, red, no shadow; both bars at the left, sharp.
+- [ ] **T75.5** Do: open DevTools → Elements, select the red box (`data-element-id="scene_fx"`). Expect: its style has a `filter` like `blur(6px) drop-shadow(...) saturate(0.5) url("#fxs-scene_fx-4")` (it changes as you drag Time). Search the page for `fxs-scene_fx-4`: there is one `<filter>` with a `feDisplacementMap` whose `scale` changes with Time, and it is never duplicated.
+- [ ] **T75.6** Do: select the upper blue bar (`scene_mb_on`). Expect: `filter: url("#mb-scene_mb_on")`, and a `<filter id="mb-scene_mb_on">` with an `feGaussianBlur` whose `stdDeviation` is like `1.4 0` (more across, none down) and grows when the bar moves faster. The lower bar has no `filter`.
+- [ ] **T75.7** Do: in the console (with `window.__LL_TEST__` set before load), `__LL_ENGINE__.kernel("scene_fx", 0.5)`. Expect: `fx.1.radius` 6, `fx.2.y` 10, `fx.3.saturate` 0.5, `fx.4.scale` 20: the numbers the stage shows.
+
+**Developer test**
+- [ ] **T75.8** Do: `npx tsx --test src/core/render/__tests__/fxStack.test.ts`. Expect: 24 tests pass, including "a 4-effect stack matches evaluate() at five times" and "the rules explain each effect's route".
+- [ ] **T75.9** Do: `npx playwright test tests/e2e/effects.spec.ts --project=chromium` (against the dev server, stage lab on). Expect: 2 tests pass.
+- [ ] **T75.10** Do: in code, `routeEffect("displacement")` from `src/core/rules/effectRouting.ts`. Expect: `{ backend: "svg", reason: "CSS has no function that pushes pixels around…" }`; `routeEffect("blur")` is `css`.
+- [ ] **T75.11** Do: set effects on a real layer in the new editor (with `window.__LL_TEST__` set before load): `__LL_COMMANDS__.all().find(c=>c.id==="layer.addEffect").run({ids:["button"],type:"dropShadow"})`. Expect: the button gets a soft shadow below it on the stage. Run `layer.moveEffect` / `layer.removeEffect` / `layer.setEffect` to reorder, remove and change it; **Ctrl+Z** undoes each in one step.
 
 ---
 

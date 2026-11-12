@@ -1,7 +1,8 @@
 import type { MotionDocument } from "../../document/schema";
 import { evaluate, type EvaluateInputs } from "../../kernel/evaluate";
 import type { AdapterHost, EngineAdapter, EngineCapabilities, LayerFilter, StyledElement } from "./types";
-import { animatedLayers, styleWrites } from "./styleWrites";
+import { animatedLayers, fxFilters, styleWrites } from "./styleWrites";
+import { FxFilterWriter } from "./fxFilters";
 
 /**
  * ROADMAP Phase 57: applies `evaluate()` straight to the layers' elements. It is the universal fallback (it can
@@ -25,6 +26,8 @@ export class KernelAdapter implements EngineAdapter {
   /** What the element held before the first write, per layer and CSS property. */
   private readonly originals = new Map<string, Map<string, string>>();
   private readonly elements = new Map<string, StyledElement>();
+  /** The SVG filters of the effect stack and motion blur (Phase 75), kept in the frame document. */
+  private readonly fx = new FxFilterWriter();
 
   /** Counts of work done, for tests. */
   stats = { evaluations: 0, writes: 0 };
@@ -78,7 +81,9 @@ export class KernelAdapter implements EngineAdapter {
         this.elements.set(layerId, element);
       }
       this.stats.evaluations++;
-      this.apply(layerId, element, styleWrites(paths, evaluate(doc, compositionId, layerId, time, this.inputs)));
+      const resolved = evaluate(doc, compositionId, layerId, time, this.inputs);
+      this.apply(layerId, element, styleWrites(paths, resolved, layerId));
+      if (paths.has("fx.stack")) this.fx.sync(element as unknown as Element, layerId, fxFilters(layerId, resolved));
     }
   }
 
@@ -114,6 +119,7 @@ export class KernelAdapter implements EngineAdapter {
   /** Puts back what React drew on a layer's element and forgets it. */
   private restore(layerId: string): void {
     const element = this.elements.get(layerId);
+    this.fx.remove(element as unknown as Element | undefined, layerId);
     const originals = this.originals.get(layerId);
     if (element && originals) {
       for (const [property, original] of originals) {
