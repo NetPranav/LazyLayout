@@ -24,6 +24,7 @@ import { installAutoKey } from "@/core/timeline/keyframeOps";
 import { registerScrollClipCommand, registerScrollCommands } from "@/core/scroll/scrollCommands";
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
+import { registerLinkCommands } from "@/core/links/linkCommands";
 import { useSavedLayouts } from "@/core/workspace/useSavedLayouts";
 
 export interface ShellCommandActions {
@@ -257,6 +258,7 @@ export function useShellCommands(actions: ShellCommandActions) {
   useEffect(() => registerScrollCommands(), []);
   useEffect(() => registerCompositingCommands(), []);
   useEffect(() => registerFxCommands(), []);
+  useEffect(() => registerLinkCommands(), []);
   useEffect(() => registerScrollClipCommand(), []);
 
   // Phase 15: workspace presets and saved layouts. The no-argument commands are what the

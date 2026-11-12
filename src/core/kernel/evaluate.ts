@@ -38,6 +38,7 @@ import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } 
 import { resolveLayerAnchor } from "../geometry/pins";
 import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
 import { motionBlurSigma } from "../render/fxStack";
+import { hasLinks, mapValue, readLinks } from "../links/linkModel";
 import {
   createLayerLocalMatrix,
   multiplyAffineMatrices,
@@ -353,9 +354,72 @@ function propsToLocalMatrix(layer: import("../document/schema").Layer, props: Re
 }
 
 /**
- * Evaluates the local properties of a single layer without parent transform composition.
+ * Evaluates the local properties of a single layer without parent transform composition: its base properties, state, clips
+ * and behaviours, then its property links (Phase 76), which replace the driven properties with what they read.
  */
 export function evaluateLocalProps(
+  doc: MotionDocument,
+  compositionId: string,
+  layerId: string,
+  t: number,
+  inputs: EvaluateInputs = {}
+): ResolvedProps {
+  const layer = doc.layers[layerId];
+  if (!layer) return {};
+  const base = evaluateBaseProps(doc, compositionId, layerId, t, inputs);
+  if (!hasLinks(layer.properties)) return base;
+  return applyLinks({ doc, compositionId, t, inputs, base: new Map([[layerId, base]]) }, layerId, base);
+}
+
+// ---------------------------------------------------------------------------
+// Property links (Phase 76)
+// ---------------------------------------------------------------------------
+
+interface LinkContext {
+  doc: MotionDocument;
+  compositionId: string;
+  t: number;
+  inputs: EvaluateInputs;
+  /** Each layer's properties before links, worked out once per evaluation. */
+  base: Map<string, ResolvedProps>;
+}
+
+const baseOf = (ctx: LinkContext, layerId: string): ResolvedProps => {
+  let props = ctx.base.get(layerId);
+  if (!props) ctx.base.set(layerId, (props = evaluateBaseProps(ctx.doc, ctx.compositionId, layerId, ctx.t, ctx.inputs)));
+  return props;
+};
+
+/**
+ * The number one property has at this moment, with links followed: if a link drives it, what that link reads (carried across
+ * its map), otherwise its own value. `stack` holds the properties being worked out, so a cycle (which the commands refuse,
+ * but a file can hold) stops there and the link falls back to the property's own value instead of looping.
+ */
+function linkedValue(ctx: LinkContext, layerId: string, path: string, stack: readonly string[]): PropValue | undefined {
+  const here = `${layerId}|${path}`;
+  const layer = ctx.doc.layers[layerId];
+  if (!layer || stack.includes(here)) return undefined;
+  const link = readLinks(layer.properties).find((l) => l.enabled && l.target === path);
+  if (link) {
+    const from = linkedValue(ctx, link.source, link.sourceProperty, [...stack, here]);
+    if (typeof from === "number" && Number.isFinite(from)) return mapValue(link, from);
+  }
+  const own = baseOf(ctx, layerId)[path];
+  return own !== undefined ? own : (getPropertyDefinition(path)?.default as PropValue | undefined);
+}
+
+function applyLinks(ctx: LinkContext, layerId: string, base: ResolvedProps): ResolvedProps {
+  const layer = ctx.doc.layers[layerId];
+  let out = base;
+  for (const link of readLinks(layer.properties)) {
+    if (!link.enabled) continue;
+    const value = linkedValue(ctx, layerId, link.target, []);
+    if (typeof value === "number" && value !== out[link.target]) out = { ...out, [link.target]: value };
+  }
+  return out;
+}
+
+function evaluateBaseProps(
   doc: MotionDocument,
   compositionId: string,
   layerId: string,

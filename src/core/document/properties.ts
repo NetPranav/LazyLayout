@@ -201,6 +201,28 @@ const CAP_OPTIONS = ["none", "round", "square", "lineArrow", "triangleArrow", "r
  * starting values by `layer.addEffect`).
  */
 const FX_TYPE_OPTIONS = ["none", "blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise"] as const;
+/**
+ * Property links (Phase 76): up to 8 per layer, one numbered slot each. A link makes one of this layer's properties follow a
+ * property of another layer (or of this one): `link.N.target` is the property path it drives, `link.N.source` the layer id
+ * and `link.N.sourceProperty` the path it reads. `link.N.map` says how the number is carried across (`direct`, a `range`
+ * remap, or a `curve` through an easing); the map's numbers are ordinary properties, so they can be keyframed too.
+ */
+function linkSlotDefs(): Record<string, Def> {
+  const out: Record<string, Def> = {};
+  for (let slot = 1; slot <= 8; slot++) {
+    const at = (name: string) => `link.${slot}.${name}`;
+    out[at("target")] = typed(str("", null, "paint", VISUAL));
+    out[at("source")] = typed(str("", null, "paint", VISUAL));
+    out[at("sourceProperty")] = typed(str("", null, "paint", VISUAL));
+    out[at("map")] = typed(oneOf(["direct", "range", "curve"], "direct", null, "paint", VISUAL));
+    out[at("enabled")] = typed(flag(true, "paint", VISUAL));
+    out[at("clamp")] = typed(flag(true, "paint", VISUAL));
+    out[at("curve")] = typed(str("linear", null, "paint", VISUAL));
+    for (const [name, dflt] of [["inMin", 0], ["inMax", 1], ["outMin", 0], ["outMax", 1]] as const) out[at(name)] = ranged(num(dflt, null, "paint", VISUAL), { min: -1000000, max: 1000000 });
+  }
+  return out;
+}
+
 function fxSlotDefs(): Record<string, Def> {
   const out: Record<string, Def> = {};
   for (let slot = 1; slot <= 8; slot++) {
@@ -718,7 +740,7 @@ const DEFS = {
 export type PropertyPath = keyof typeof DEFS;
 
 export const PROPERTY_REGISTRY: Readonly<Record<string, PropertyDefinition>> = Object.fromEntries(
-  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs() }).map(([path, { scope, ...def }]) => [
+  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs() }).map(([path, { scope, ...def }]) => [
     path,
     { path, ...def, interpolation: INTERPOLATION_BY_TYPE[def.valueType], archetypes: resolveScope(scope) },
   ])

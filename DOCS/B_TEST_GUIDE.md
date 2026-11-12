@@ -1,4 +1,4 @@
-# Lane B manual test guide (Phases 53–68, 74, 75, 81)
+# Lane B manual test guide (Phases 53–68, 74–76, 81)
 
 **For:** `@OVERxPOWERED`. **Covers:** Lane B's phases 53–68, tested together with Lane A's work (`A_TEST_GUIDE.md`).
 **Last checked:** Phases 53–68 on `main` (PR #55 merged, CI green). **Phase 81 (marked NEW) is on the branch `b/phase-81-scroll-model`, not on `main` yet**: switch to that branch (or its PR) to test it. Their labels and counts were compared with the code and the unit tests and the Chromium e2e specs for them passed on 2026-10-28.
@@ -24,6 +24,7 @@
 | 66 | Auto-key, and select / move / copy / paste / align / distribute / delete keyframes | #55 | 3.14 |
 | 67 | Graph editor: value and speed curves, Snappy / Smooth / Bouncy / Lazy, bezier handles, Bounce and Time | #55 | 3.15 |
 | 68 | The Content Browser's Animation panel lives in the document (part 1; the phase isn't finished) | #55 | 3.16 |
+| 76 | Property links: one property follows another, with range and curve maps; cycles refused with their chain | this branch (NEW) | 3.21 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | this branch (NEW) | 3.17 |
@@ -744,6 +745,31 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T75.9** Do: `npx playwright test tests/e2e/effects.spec.ts --project=chromium` (against the dev server, stage lab on). Expect: 2 tests pass.
 - [ ] **T75.10** Do: in code, `routeEffect("displacement")` from `src/core/rules/effectRouting.ts`. Expect: `{ backend: "svg", reason: "CSS has no function that pushes pixels around…" }`; `routeEffect("blur")` is `css`.
 - [ ] **T75.11** Do: set effects on a real layer in the new editor (with `window.__LL_TEST__` set before load): `__LL_COMMANDS__.all().find(c=>c.id==="layer.addEffect").run({ids:["button"],type:"dropShadow"})`. Expect: the button gets a soft shadow below it on the stage. Run `layer.moveEffect` / `layer.removeEffect` / `layer.setEffect` to reorder, remove and change it; **Ctrl+Z** undoes each in one step.
+
+---
+
+### 3.21 Phase 76: property links (the pick-whip) (NEW)
+
+**What changed:** one property of a layer can **follow** a property of another layer. Link the hero's **rotation** to a null's **x**, and the hero turns as the null moves. A link can pass the number straight through (**direct**), map a range onto another (**range**, for example 0 to 400 px becomes 0 to 90 degrees), or ease it (**curve**). A link that would loop back on itself is **refused** and the loop is shown.
+
+**Known gaps (don't report):** the pick-whip drag itself isn't in the editor yet (the commands exist; the UI pipeline wires it), so use the **stage lab** below, or the commands.
+
+**User test (the stage lab, covered by `tests/e2e/links.spec.ts`)**
+- [ ] **T76.1** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load link scene**. Expect: a small grey square at the top left (the null) and a red bar in the middle.
+- [ ] **T76.2** Do: drag **Time** from 0 to 1. Expect: the grey square slides right across the page, and the red bar **turns clockwise** (up to 90 degrees at the end) **and sinks** (up to 80 px at the end). It sinks slowly at first and faster at the end (an eased link).
+- [ ] **T76.3** Do: drag **Time** back to 0. Expect: the bar is flat and back at its start.
+- [ ] **T76.4** Do: open DevTools → Elements, select the red bar (`data-element-id="scene_link_hero"`). Expect: its `transform` changes with Time, and nothing on the bar is animated by a clip: it only follows the square.
+
+**Command test (the pick-whip)** (set `window.__LL_TEST__ = true` before the editor loads; in the new editor the layer ids are `button`, `headline`…)
+- [ ] **T76.5** Do: `__LL_COMMANDS__.all().find(c=>c.id==="layer.setLink").run({id:"headline",targetProperty:"transform.rotate",sourceLayerId:"button",sourceProperty:"frame.x"})`. Expect: `{ ok: true, slot: 1, description: "Headline.transform.rotate ← Button.frame.x" }`, and the headline turns to as many degrees as the button's X (see its Position field). Move the button with the arrow keys: the headline turns by the same number of degrees. **Ctrl+Z** takes the link away in one step.
+- [ ] **T76.6** Do: now link the button's x back to the headline's rotation: `.run({id:"button",targetProperty:"frame.x",sourceLayerId:"headline",sourceProperty:"transform.rotate"})`. Expect: `{ ok: false, code: "LINK_CYCLE", message: "[LINK_CYCLE] Button.frame.x ← Headline.transform.rotate ← Button.frame.x", chain: [...] }` and nothing changed.
+- [ ] **T76.7** Do: try linking a colour: `targetProperty:"appearance.background.color"`. Expect: `{ ok: false, code: "NOT_LINKABLE" }`. Try a layer id that doesn't exist: `code: "NO_SOURCE"`.
+- [ ] **T76.8** Do: link rotation to x with a range: add `map:"range", inMin:0, inMax:400, outMin:0, outMax:90`. Expect: a button X of 100 gives a rotation of 22.5.
+
+**Developer test**
+- [ ] **T76.9** Do: `npx tsx --test src/core/links/__tests__/links.test.ts`. Expect: 23 tests pass (golden values, chains, cycles with their chains, the commands).
+- [ ] **T76.10** Do: `npx playwright test tests/e2e/links.spec.ts --project=chromium` (dev server, stage lab on). Expect: 1 test passes.
+- [ ] **T76.11** Do: read `src/core/links/linkModel.ts`. Expect: pure functions: `readLinks`, `mapValue`, `linkCycleIf`, `findLinkCycle`, `describeChain`.
 
 ---
 

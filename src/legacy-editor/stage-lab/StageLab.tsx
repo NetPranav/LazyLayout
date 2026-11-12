@@ -14,7 +14,7 @@ import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
-import { FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
+import { LINK_HERO, LINK_NULL, FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -124,6 +124,21 @@ function effectsDocument() {
   return createDocumentFromLayers([root, ...layers], clips);
 }
 
+function linksDocument() {
+  const box = (id: string, extra: Layer["properties"]) => createLayer({ id, archetype: "container", parentId: LAB_ROOT, properties: { positioning: "absolute", ...extra } }) as Layer;
+  const layers: Layer[] = [
+    box(LINK_NULL, { "frame.x": 20, "frame.y": 20, "frame.width": 40, "frame.height": 40, "appearance.background.color": "#94a3b8" }),
+    box(LINK_HERO, {
+      "frame.x": 300, "frame.y": 120, "frame.width": 140, "frame.height": 70, "appearance.background.color": "#ff0000",
+      "link.1.target": "transform.rotate", "link.1.source": LINK_NULL, "link.1.sourceProperty": "transform.x", "link.1.map": "range", "link.1.inMin": 0, "link.1.inMax": 400, "link.1.outMin": 0, "link.1.outMax": 90,
+      "link.2.target": "transform.y", "link.2.source": LINK_NULL, "link.2.sourceProperty": "transform.x", "link.2.map": "curve", "link.2.curve": "power2.in", "link.2.inMin": 0, "link.2.inMax": 400, "link.2.outMin": 0, "link.2.outMax": 80,
+    }),
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
+  const clip = attachClip(hydrateClip({ name: "Slide", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [{ property: "transform.x", keyframes: [{ time: 0, value: 0 }, { time: 1, value: 400 }] }] }), LINK_NULL);
+  return createDocumentFromLayers([root, ...layers], [clip]);
+}
+
 function labLayers(): Layer[] {
   const children = Array.from({ length: LAB_COUNT }, (_, i) => labId(i));
   const kids = children.map(
@@ -164,6 +179,7 @@ export const StageLab: React.FC = () => {
 
   const loadAnimations = useCallback(() => documentCommands.replaceDocument(animationDocument(), "Load reference animations"), []);
   const loadEffects = useCallback(() => documentCommands.replaceDocument(effectsDocument(), "Load effect scenes"), []);
+  const loadLinks = useCallback(() => documentCommands.replaceDocument(linksDocument(), "Load link scene"), []);
   const loadCompositing = useCallback(() => documentCommands.replaceDocument(compositingDocument(), "Load compositing scenes"), []);
 
   const editOne = useCallback(() => {
@@ -187,6 +203,7 @@ export const StageLab: React.FC = () => {
           <button type="button" style={button} onClick={loadAnimations}>Load 10 animations</button>
           <button type="button" style={button} onClick={loadCompositing}>Load 5 compositing scenes</button>
           <button type="button" style={button} onClick={loadEffects}>Load effect scenes</button>
+          <button type="button" style={button} onClick={loadLinks}>Load link scene</button>
           <button type="button" style={button} onClick={editOne}>Edit one layer</button>
           <button type="button" style={button} onClick={addOne}>Add one layer</button>
           <button type="button" style={button} onClick={removeOne}>Remove one layer</button>
