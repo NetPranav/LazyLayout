@@ -25,7 +25,7 @@ type Win = {
     all: () => Array<{ id: string; run: (args?: unknown) => unknown }>;
     context: () => Record<string, unknown>;
   };
-  __LL_GPU__?: {
+  __LL_COMPOSITOR__?: {
     stats: () => Stats;
     loseShared: () => void;
     restoreShared: () => void;
@@ -115,7 +115,7 @@ test("3D-012: 3D scene layer insertion, rendering, context loss recovery, and of
   });
 
   await expect.poll(async () => {
-    const stats = await page.evaluate(() => (window as unknown as Win).__LL_GPU__?.stats());
+    const stats = await page.evaluate(() => (window as unknown as Win).__LL_COMPOSITOR__?.stats());
     return stats ? stats.asleep : 0;
   }, { timeout: 10_000, message: "scene is reported asleep when off screen" }).toBeGreaterThanOrEqual(1);
 

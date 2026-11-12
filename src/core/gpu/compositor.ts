@@ -242,16 +242,17 @@ export class GpuCompositor {
 /** The one compositor for the page. */
 export const compositor = new GpuCompositor();
 
+// a test seam on every page (the GPU lab page has its own `__LL_GPU__` with more in it)
 if (typeof window !== "undefined") {
   const w = window as unknown as {
-    __LL_GPU__?: {
+    __LL_COMPOSITOR__?: {
       stats: () => CompositorStats;
       loseShared: () => void;
       restoreShared: () => void;
     };
   };
-  if (!w.__LL_GPU__) {
-    Object.defineProperty(w, "__LL_GPU__", {
+  if (!w.__LL_COMPOSITOR__) {
+    Object.defineProperty(w, "__LL_COMPOSITOR__", {
       configurable: true,
       get: () => ({
         stats: () => compositor.stats(),
