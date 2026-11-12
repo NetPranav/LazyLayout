@@ -116,7 +116,7 @@ A website doesn't need them, and each is a project of its own. They can be recon
 | | **Stage 2 · The 3D document** |||||
 | 3D-007 | 3D data blocks & schema v7 | new | 3D-001 | A | 🚧 |
 | 3D-008 | Transforms & hierarchy | new | 3D-007 | A | 🚧 |
-| 3D-009 | Units, axes & conventions | new | 3D-008 | A | 📋 |
+| 3D-009 | Units, axes & conventions | new | 3D-008 | A | 🚧 |
 | 3D-010 | 3D in the evaluation kernel | new | 3D-009 | A | 📋 |
 | 3D-011 | 3D commands, undo & "Adjust last operation" | new | 3D-010 | A | 📋 |
 | 3D-012 | Scene layer on the canvas | Main 219 | 3D-003, 3D-011 | A | 📋 |
@@ -497,13 +497,14 @@ The 2D parts of 132–208 that 3D doesn't use (keyboard signals, 2D physics, 2D 
 **Evidence (2026-11-11):** src/core/3d math, hierarchy, apply: golden 4-level worlds, parent/unparent within 1e-6, all six Euler orders; unit tests pass
 
 ### Phase 3D-009 · Units, axes & conventions
-**Needs:** 3D-008 · **Was:** — · **Lane:** A · **Status:** 📋
+**Needs:** 3D-008 · **Was:** — · **Lane:** A · **Status:** 🚧
 - [ ] Y-up, right-handed (glTF), with the Blender Z-up shown as an option in the viewport.
 - [ ] Metres in the document; a scale that maps 1 px on the page to a length in the scene, so a 2D frame turned 3D keeps its size on screen.
 - [ ] Angles in degrees in the UI and radians in the document.
 
 **You'll see:** a 454 px frame turned 3D is 454 px on screen at the default camera.
 **Done when:** glTF import and export keep axes and units (round-trip test); 2D-to-3D keeps size within 0.5 px.
+**Evidence (2026-11-11):** units, axes, 2D frame to 3D within 0.5 px, glTF mapping round-trip; unit tests pass
 
 ### Phase 3D-010 · 3D in the evaluation kernel
 **Needs:** 3D-009 · **Was:** — · **Lane:** A · **Status:** 📋
