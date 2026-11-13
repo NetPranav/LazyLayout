@@ -40,7 +40,16 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   if (own) for (const link of readLinks(own)) if (link.enabled) paths.add(link.target);
   // Phase 77: so is a property an expression drives (it may move with time alone).
   if (own) for (const expr of readExpressions(own)) if (expr.enabled) paths.add(expr.target);
+  // Design track D4: and a property a binding drives (the pointer or scroll may move it).
+  for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer" && b.target.on.ref === layerId) paths.add(b.target.path);
   return paths;
+}
+
+/** Layers a binding drives (Design track D4): the kernel draws them, because a Web Animation cannot follow the pointer or the scroll. */
+export function boundLayerIds(doc: MotionDocument): Set<string> {
+  const out = new Set<string>();
+  for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer") out.add(b.target.on.ref);
+  return out;
 }
 
 /** Layers that animate anything, with the paths they animate. */
@@ -50,6 +59,7 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   for (const clip of Object.values(doc.clips)) if (clip.enabled) layerIds.add(clip.layerId);
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
   for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true) || hasLinks(layer.properties) || hasExpressions(layer.properties)) layerIds.add(layer.id);
+  for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer") layerIds.add(b.target.on.ref);
   for (const [source, targets] of mattesOf(doc)) {
     layerIds.add(source);
     for (const id of targets) layerIds.add(id);
