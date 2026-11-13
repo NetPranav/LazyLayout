@@ -26,6 +26,7 @@ import { LogicSection } from "./sections/LogicSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { StyleCodeSection } from "./sections/StyleCodeSection";
 import { DrivenBySection } from "./sections/DrivenBySection";
+import { ParentLinksSection } from "./sections/ParentLinksSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -304,6 +305,11 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+    },
+    {
+      id: "parent-links",
+      title: "Parent & links",
+      children: <ParentLinksSection {...sectionProps} />,
     },
     {
       id: "driven-by",
