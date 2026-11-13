@@ -1,0 +1,1247 @@
+﻿2026-11-12T06:51:11.7484214Z Current runner version: '2.338.2'
+2026-11-12T06:51:11.7510257Z ##[group]Runner Image Provisioner
+2026-11-12T06:51:11.7511120Z Hosted Compute Agent
+2026-11-12T06:51:11.7511873Z Version: 20261028.624
+2026-11-12T06:51:11.7512625Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+2026-11-12T06:51:11.7513405Z Build Date: 2026-10-28T21:51:42Z
+2026-11-12T06:51:11.7514197Z Worker ID: {4f55b3c7-062b-4439-8d8c-f388fcd702e7}
+2026-11-12T06:51:11.7514952Z Region: eastus2
+2026-11-12T06:51:11.7515515Z Cloud: Azure
+2026-11-12T06:51:11.7516149Z ##[endgroup]
+2026-11-12T06:51:11.7517656Z ##[group]Operating System
+2026-11-12T06:51:11.7518379Z Ubuntu
+2026-11-12T06:51:11.7518921Z 26.04.1
+2026-11-12T06:51:11.7519428Z LTS
+2026-11-12T06:51:11.7520009Z ##[endgroup]
+2026-11-12T06:51:11.7520640Z ##[group]Runner Image
+2026-11-12T06:51:11.7521493Z Image: ubuntu-26.04
+2026-11-12T06:51:11.7522230Z Version: 20261101.186.1
+2026-11-12T06:51:11.7523586Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261101.186/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-12T06:51:11.7525204Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261101.186
+2026-11-12T06:51:11.7526280Z ##[endgroup]
+2026-11-12T06:51:11.7527569Z ##[group]GITHUB_TOKEN Permissions
+2026-11-12T06:51:11.7530243Z Contents: read
+2026-11-12T06:51:11.7530916Z Metadata: read
+2026-11-12T06:51:11.7531832Z Packages: read
+2026-11-12T06:51:11.7532528Z ##[endgroup]
+2026-11-12T06:51:11.7535094Z Secret source: Actions
+2026-11-12T06:51:11.7536235Z Cache mode: write
+2026-11-12T06:51:11.7536981Z Prepare workflow directory
+2026-11-12T06:51:11.7866166Z Prepare all required actions
+2026-11-12T06:51:11.7913849Z Getting action download info
+2026-11-12T06:51:11.9602686Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-12T06:51:12.0873038Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-12T06:51:12.1546534Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-12T06:51:12.3541169Z Complete job name: Browser E2E (firefox)
+2026-11-12T06:51:12.4413541Z ##[group]Run actions/checkout@v4
+2026-11-12T06:51:12.4414461Z with:
+2026-11-12T06:51:12.4414922Z   repository: NetPranav/LazyLayout
+2026-11-12T06:51:12.4419062Z   token: ***
+2026-11-12T06:51:12.4419500Z   ssh-strict: true
+2026-11-12T06:51:12.4419936Z   ssh-user: git
+2026-11-12T06:51:12.4420389Z   persist-credentials: true
+2026-11-12T06:51:12.4420886Z   clean: true
+2026-11-12T06:51:12.4421491Z   sparse-checkout-cone-mode: true
+2026-11-12T06:51:12.4422037Z   fetch-depth: 1
+2026-11-12T06:51:12.4422477Z   fetch-tags: false
+2026-11-12T06:51:12.4422935Z   show-progress: true
+2026-11-12T06:51:12.4423397Z   lfs: false
+2026-11-12T06:51:12.4423812Z   submodules: false
+2026-11-12T06:51:12.4424263Z   set-safe-directory: true
+2026-11-12T06:51:12.4424776Z   allow-unsafe-pr-checkout: false
+2026-11-12T06:51:12.4425571Z ##[endgroup]
+2026-11-12T06:51:12.7395289Z Syncing repository: NetPranav/LazyLayout
+2026-11-12T06:51:12.7398719Z ##[group]Getting Git version info
+2026-11-12T06:51:12.7400276Z Working directory is '/home/runner/work/LazyLayout/LazyLayout'
+2026-11-12T06:51:12.7415660Z [command]/usr/bin/git version
+2026-11-12T06:51:12.7476080Z git version 2.56.0
+2026-11-12T06:51:12.7507313Z ##[endgroup]
+2026-11-12T06:51:12.7526847Z Temporarily overriding HOME='/home/runner/work/_temp/cbf956f6-da89-4ae0-93b1-cc4b6856775b' before making global git config changes
+2026-11-12T06:51:12.7529752Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-12T06:51:12.7535912Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/LazyLayout/LazyLayout
+2026-11-12T06:51:12.7624493Z Deleting the contents of '/home/runner/work/LazyLayout/LazyLayout'
+2026-11-12T06:51:12.7630485Z ##[group]Initializing the repository
+2026-11-12T06:51:12.7638108Z [command]/usr/bin/git init /home/runner/work/LazyLayout/LazyLayout
+2026-11-12T06:51:12.7775531Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-12T06:51:12.7777983Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-12T06:51:12.7780078Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-12T06:51:12.7781903Z hint: call:
+2026-11-12T06:51:12.7782983Z hint:
+2026-11-12T06:51:12.7784333Z hint: 	git config --global init.defaultBranch <name>
+2026-11-12T06:51:12.7785630Z hint:
+2026-11-12T06:51:12.7787024Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-12T06:51:12.7789012Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-12T06:51:12.7790690Z hint:
+2026-11-12T06:51:12.7792133Z hint: 	git branch -m <name>
+2026-11-12T06:51:12.7793238Z hint:
+2026-11-12T06:51:12.7794684Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-12T06:51:12.7796837Z Initialized empty Git repository in /home/runner/work/LazyLayout/LazyLayout/.git/
+2026-11-12T06:51:12.7811865Z [command]/usr/bin/git remote add origin https://github.com/NetPranav/LazyLayout
+2026-11-12T06:51:12.7887476Z ##[endgroup]
+2026-11-12T06:51:12.7889048Z ##[group]Disabling automatic garbage collection
+2026-11-12T06:51:12.7894639Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-12T06:51:12.7942715Z ##[endgroup]
+2026-11-12T06:51:12.7944200Z ##[group]Setting up auth
+2026-11-12T06:51:12.7954660Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-12T06:51:12.8005756Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-12T06:51:12.8571106Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-12T06:51:12.8605173Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-12T06:51:12.8877319Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-12T06:51:12.8912281Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-12T06:51:12.9189287Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-12T06:51:12.9229053Z ##[endgroup]
+2026-11-12T06:51:12.9230787Z ##[group]Fetching the repository
+2026-11-12T06:51:12.9240822Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +a9bf82bcb07865cece675666778efce1e9d73d79:refs/remotes/pull/87/merge
+2026-11-12T06:51:14.7594809Z From https://github.com/NetPranav/LazyLayout
+2026-11-12T06:51:14.7603644Z  * [new ref]         a9bf82bcb07865cece675666778efce1e9d73d79 -> pull/87/merge
+2026-11-12T06:51:14.7607521Z ##[endgroup]
+2026-11-12T06:51:14.7608787Z ##[group]Determining the checkout info
+2026-11-12T06:51:14.7610112Z ##[endgroup]
+2026-11-12T06:51:14.7610956Z [command]/usr/bin/git sparse-checkout disable
+2026-11-12T06:51:14.7662044Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-12T06:51:14.7692811Z ##[group]Checking out the ref
+2026-11-12T06:51:14.7697750Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/87/merge
+2026-11-12T06:51:15.3808385Z Note: switching to 'refs/remotes/pull/87/merge'.
+2026-11-12T06:51:15.3809203Z 
+2026-11-12T06:51:15.3809642Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-12T06:51:15.3810662Z changes and commit them, and you can discard any commits you make in this
+2026-11-12T06:51:15.3812174Z state without impacting any branches by switching back to a branch.
+2026-11-12T06:51:15.3814186Z 
+2026-11-12T06:51:15.3814893Z If you want to create a new branch to retain commits you create, you may
+2026-11-12T06:51:15.3816629Z do so (now or later) by using -c with the switch command. Example:
+2026-11-12T06:51:15.3817285Z 
+2026-11-12T06:51:15.3817598Z   git switch -c <new-branch-name>
+2026-11-12T06:51:15.3818055Z 
+2026-11-12T06:51:15.3818330Z Or undo this operation with:
+2026-11-12T06:51:15.3818606Z 
+2026-11-12T06:51:15.3818790Z   git switch -
+2026-11-12T06:51:15.3819021Z 
+2026-11-12T06:51:15.3819391Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-12T06:51:15.3820252Z 
+2026-11-12T06:51:15.3821490Z HEAD is now at a9bf82b Merge df8167a9919c7874e18f95f30b2234583e87e1f3 into 935b6eed1d87352a04c16e7d4dd313795328ba0c
+2026-11-12T06:51:15.3847258Z ##[endgroup]
+2026-11-12T06:51:15.3894220Z [command]/usr/bin/git log -1 --format=%H
+2026-11-12T06:51:15.3920288Z a9bf82bcb07865cece675666778efce1e9d73d79
+2026-11-12T06:51:15.4210095Z ##[group]Run actions/setup-node@v4
+2026-11-12T06:51:15.4210402Z with:
+2026-11-12T06:51:15.4210607Z   node-version: 24
+2026-11-12T06:51:15.4210815Z   cache: npm
+2026-11-12T06:51:15.4211029Z   always-auth: false
+2026-11-12T06:51:15.4211249Z   check-latest: false
+2026-11-12T06:51:15.4214113Z   token: ***
+2026-11-12T06:51:15.4214336Z ##[endgroup]
+2026-11-12T06:51:15.5715083Z (node:2405) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-12T06:51:15.5716053Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-12T06:51:15.5726569Z Found in cache @ /opt/hostedtoolcache/node/24.22.2/x64
+2026-11-12T06:51:15.5727567Z ##[group]Environment details
+2026-11-12T06:51:15.9912319Z node: v24.22.2
+2026-11-12T06:51:15.9912741Z npm: 11.19.1
+2026-11-12T06:51:15.9913015Z yarn: 1.22.22
+2026-11-12T06:51:15.9913579Z ##[endgroup]
+2026-11-12T06:51:15.9935933Z [command]/opt/hostedtoolcache/node/24.22.2/x64/bin/npm config get cache
+2026-11-12T06:51:16.1195233Z /home/runner/.npm
+2026-11-12T06:51:16.2240962Z Cache hit for: node-cache-Linux-x64-npm-13d7f5171f43004ed8b0081a43fcffefe31a520f8b342087056a9b207c09d953
+2026-11-12T06:51:16.2361181Z (node:2405) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-12T06:51:17.1670707Z Received 208069023 of 208069023 (100.0%), 218.1 MBs/sec
+2026-11-12T06:51:17.1674714Z Cache Size: ~198 MB (208069023 B)
+2026-11-12T06:51:17.1799690Z [command]/usr/bin/tar -xf /home/runner/work/_temp/0e6fef15-6b2f-463f-b99a-ff3f8e340008/cache.tzst -P -C /home/runner/work/LazyLayout/LazyLayout --use-compress-program unzstd
+2026-11-12T06:51:17.6435455Z Cache restored successfully
+2026-11-12T06:51:17.6527936Z Cache restored from key: node-cache-Linux-x64-npm-13d7f5171f43004ed8b0081a43fcffefe31a520f8b342087056a9b207c09d953
+2026-11-12T06:51:17.6745630Z ##[group]Run npm ci
+2026-11-12T06:51:17.6745919Z npm ci
+2026-11-12T06:51:17.6807935Z shell: /usr/bin/bash -e {0}
+2026-11-12T06:51:17.6808206Z ##[endgroup]
+2026-11-12T06:51:25.8018323Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2026-11-12T06:52:22.4542382Z 
+2026-11-12T06:52:22.4552386Z > lazylayout@0.1.0 prepare
+2026-11-12T06:52:22.4554943Z > git config core.hooksPath .githooks 2>/dev/null || true
+2026-11-12T06:52:22.4555221Z 
+2026-11-12T06:52:22.5562585Z 
+2026-11-12T06:52:22.5563457Z added 481 packages, and audited 485 packages in 1m
+2026-11-12T06:52:22.5564144Z 
+2026-11-12T06:52:22.5564661Z 158 packages are looking for funding
+2026-11-12T06:52:22.5565514Z   run `npm fund` for details
+2026-11-12T06:52:22.8186152Z 
+2026-11-12T06:52:22.8187018Z 13 vulnerabilities (7 moderate, 5 high, 1 critical)
+2026-11-12T06:52:22.8187503Z 
+2026-11-12T06:52:22.8188007Z To address issues that do not require attention, run:
+2026-11-12T06:52:22.8188583Z   npm audit fix
+2026-11-12T06:52:22.8188819Z 
+2026-11-12T06:52:22.8189039Z To address all issues, run:
+2026-11-12T06:52:22.8189546Z   npm audit fix --force
+2026-11-12T06:52:22.8190382Z 
+2026-11-12T06:52:22.8190642Z Run `npm audit` for details.
+2026-11-12T06:52:22.8198312Z npm warn install-scripts 2 packages have install scripts not yet covered by allowScripts:
+2026-11-12T06:52:22.8200040Z npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+2026-11-12T06:52:22.8201869Z npm warn install-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+2026-11-12T06:52:22.8203052Z npm warn install-scripts
+2026-11-12T06:52:22.8204659Z npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+2026-11-12T06:52:22.9764872Z ##[group]Run echo 'Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99timeout
+2026-11-12T06:52:22.9765511Z echo 'Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99timeout
+2026-11-12T06:52:22.9766091Z echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+2026-11-12T06:52:22.9766667Z echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+2026-11-12T06:52:22.9819161Z shell: /usr/bin/bash -e {0}
+2026-11-12T06:52:22.9819433Z ##[endgroup]
+2026-11-12T06:52:22.9978440Z Acquire::http::Timeout "30";
+2026-11-12T06:52:23.0067565Z Acquire::https::Timeout "30";
+2026-11-12T06:52:23.0156456Z Acquire::Retries "3";
+2026-11-12T06:52:23.0204419Z ##[group]Run npx playwright install --with-deps firefox
+2026-11-12T06:52:23.0204964Z npx playwright install --with-deps firefox
+2026-11-12T06:52:23.0255473Z shell: /usr/bin/bash -e {0}
+2026-11-12T06:52:23.0255746Z ##[endgroup]
+2026-11-12T06:52:23.7876528Z Installing dependencies...
+2026-11-12T06:52:23.7967175Z Switching to root user to install dependencies...
+2026-11-12T06:52:23.8881871Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-11-12T06:52:23.9174083Z Hit:2 http://azure.archive.ubuntu.com/ubuntu resolute InRelease
+2026-11-12T06:52:23.9175694Z Get:6 https://packages.microsoft.com/ubuntu/26.04/prod resolute InRelease [3964 B]
+2026-11-12T06:52:23.9237716Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute-updates InRelease [137 kB]
+2026-11-12T06:52:23.9268086Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute-backports InRelease [137 kB]
+2026-11-12T06:52:23.9302635Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute-security InRelease [137 kB]
+2026-11-12T06:52:23.9550371Z Get:7 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main armhf Packages [1077 B]
+2026-11-12T06:52:23.9750994Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 Packages [869 kB]
+2026-11-12T06:52:23.9792790Z Get:14 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main amd64 Packages [156 kB]
+2026-11-12T06:52:23.9832625Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main Translation-en [195 kB]
+2026-11-12T06:52:23.9862777Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe amd64v3 Packages [390 kB]
+2026-11-12T06:52:23.9888143Z Get:15 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main arm64 Packages [142 kB]
+2026-11-12T06:52:23.9892400Z Get:11 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe Translation-en [122 kB]
+2026-11-12T06:52:23.9922647Z Get:12 http://azure.archive.ubuntu.com/ubuntu resolute-updates/restricted amd64v3 Packages [603 kB]
+2026-11-12T06:52:24.0003712Z Get:13 http://azure.archive.ubuntu.com/ubuntu resolute-updates/restricted Translation-en [125 kB]
+2026-11-12T06:52:24.0118298Z Get:16 http://azure.archive.ubuntu.com/ubuntu resolute-security/main amd64v3 Packages [718 kB]
+2026-11-12T06:52:24.0157208Z Get:17 http://azure.archive.ubuntu.com/ubuntu resolute-security/main Translation-en [157 kB]
+2026-11-12T06:52:24.0187474Z Get:18 http://azure.archive.ubuntu.com/ubuntu resolute-security/universe amd64v3 Packages [220 kB]
+2026-11-12T06:52:24.0189953Z Get:19 http://azure.archive.ubuntu.com/ubuntu resolute-security/universe Translation-en [72.5 kB]
+2026-11-12T06:52:24.0635097Z Get:20 http://azure.archive.ubuntu.com/ubuntu resolute-security/restricted amd64v3 Packages [590 kB]
+2026-11-12T06:52:24.0663586Z Get:21 http://azure.archive.ubuntu.com/ubuntu resolute-security/restricted Translation-en [122 kB]
+2026-11-12T06:52:26.1743395Z Fetched 4898 kB in 0s (12.0 MB/s)
+2026-11-12T06:52:26.8457017Z Reading package lists...
+2026-11-12T06:52:26.8724129Z Reading package lists...
+2026-11-12T06:52:27.0232506Z Building dependency tree...
+2026-11-12T06:52:27.0239450Z Reading state information...
+2026-11-12T06:52:27.0570342Z libasound2t64 is already the newest version (1.2.15.3-1ubuntu1.1).
+2026-11-12T06:52:27.0570999Z libasound2t64 set to manually installed.
+2026-11-12T06:52:27.0571879Z libatk1.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+2026-11-12T06:52:27.0572429Z libatk1.0-0t64 set to manually installed.
+2026-11-12T06:52:27.0572960Z libcairo-gobject2 is already the newest version (1.18.4-3).
+2026-11-12T06:52:27.0573493Z libcairo-gobject2 set to manually installed.
+2026-11-12T06:52:27.0573978Z libcairo2 is already the newest version (1.18.4-3).
+2026-11-12T06:52:27.0574471Z libcairo2 set to manually installed.
+2026-11-12T06:52:27.0575015Z libdbus-1-3 is already the newest version (1.16.2-2ubuntu4).
+2026-11-12T06:52:27.0575537Z libdbus-1-3 set to manually installed.
+2026-11-12T06:52:27.0576064Z libfontconfig1 is already the newest version (2.17.1-3ubuntu1).
+2026-11-12T06:52:27.0577105Z libfontconfig1 set to manually installed.
+2026-11-12T06:52:27.0577809Z libfreetype6 is already the newest version (2.14.2+dfsg-1ubuntu0.2).
+2026-11-12T06:52:27.0578351Z libfreetype6 set to manually installed.
+2026-11-12T06:52:27.0578914Z libgdk-pixbuf-2.0-0 is already the newest version (2.44.5+dfsg-4ubuntu1).
+2026-11-12T06:52:27.0579489Z libgdk-pixbuf-2.0-0 set to manually installed.
+2026-11-12T06:52:27.0580036Z libglib2.0-0t64 is already the newest version (2.88.0-1ubuntu0.1).
+2026-11-12T06:52:27.0580540Z libglib2.0-0t64 set to manually installed.
+2026-11-12T06:52:27.0581058Z libgtk-3-0t64 is already the newest version (3.24.52-0ubuntu1).
+2026-11-12T06:52:27.0581759Z libgtk-3-0t64 set to manually installed.
+2026-11-12T06:52:27.0582247Z libpango-1.0-0 is already the newest version (1.57.0-1).
+2026-11-12T06:52:27.0582720Z libpango-1.0-0 set to manually installed.
+2026-11-12T06:52:27.0583235Z libpangocairo-1.0-0 is already the newest version (1.57.0-1).
+2026-11-12T06:52:27.0583761Z libpangocairo-1.0-0 set to manually installed.
+2026-11-12T06:52:27.0584298Z libx11-6 is already the newest version (2:1.8.13-1ubuntu0.1).
+2026-11-12T06:52:27.0584764Z libx11-6 set to manually installed.
+2026-11-12T06:52:27.0585264Z libx11-xcb1 is already the newest version (2:1.8.13-1ubuntu0.1).
+2026-11-12T06:52:27.0585750Z libx11-xcb1 set to manually installed.
+2026-11-12T06:52:27.0586239Z libxcb-shm0 is already the newest version (1.17.0-2ubuntu1).
+2026-11-12T06:52:27.0586699Z libxcb-shm0 set to manually installed.
+2026-11-12T06:52:27.0587153Z libxcb1 is already the newest version (1.17.0-2ubuntu1).
+2026-11-12T06:52:27.0587600Z libxcb1 set to manually installed.
+2026-11-12T06:52:27.0588102Z libxcomposite1 is already the newest version (1:0.4.6-1build1).
+2026-11-12T06:52:27.0588604Z libxcomposite1 set to manually installed.
+2026-11-12T06:52:27.0589045Z libxcursor1 is already the newest version (1:1.2.3-1build1).
+2026-11-12T06:52:27.0589425Z libxcursor1 set to manually installed.
+2026-11-12T06:52:27.0589803Z libxdamage1 is already the newest version (1:1.1.7-1).
+2026-11-12T06:52:27.0590169Z libxdamage1 set to manually installed.
+2026-11-12T06:52:27.0590545Z libxext6 is already the newest version (2:1.3.4-1build3).
+2026-11-12T06:52:27.0590915Z libxext6 set to manually installed.
+2026-11-12T06:52:27.0591829Z libxfixes3 is already the newest version (1:6.0.0-2build2).
+2026-11-12T06:52:27.0592500Z libxfixes3 set to manually installed.
+2026-11-12T06:52:27.0593084Z libxi6 is already the newest version (2:1.8.2-2).
+2026-11-12T06:52:27.0593640Z libxi6 set to manually installed.
+2026-11-12T06:52:27.0594252Z libxrandr2 is already the newest version (2:1.5.4-1build1).
+2026-11-12T06:52:27.0594854Z libxrandr2 set to manually installed.
+2026-11-12T06:52:27.0595932Z libxrender1 is already the newest version (1:0.9.12-1build1).
+2026-11-12T06:52:27.0596660Z libxrender1 set to manually installed.
+2026-11-12T06:52:27.0597377Z xvfb is already the newest version (2:21.1.22-1ubuntu1.3).
+2026-11-12T06:52:27.0598287Z fonts-noto-color-emoji is already the newest version (2.051-1build1).
+2026-11-12T06:52:27.0599290Z fonts-liberation is already the newest version (1:2.1.5-3build1).
+2026-11-12T06:52:27.0600073Z fonts-liberation set to manually installed.
+2026-11-12T06:52:27.1124138Z Solving dependencies...
+2026-11-12T06:52:27.1968145Z The following additional packages will be installed:
+2026-11-12T06:52:27.1969324Z   libavutil60 libcodec2-1.2 libdav1d7 libgsm1 libmp3lame0 libmpg123-0t64
+2026-11-12T06:52:27.1973877Z   libopus0 librav1e0.8 libshine3 libsoxr0 libspeex1 libsvtav1enc2
+2026-11-12T06:52:27.1974658Z   libswresample6 libtheoradec2 libtheoraenc2 libtwolame0 libva-drm2
+2026-11-12T06:52:27.1975449Z   libva-x11-2 libva2 libvdpau1 libvorbisenc2 libvpl2 libvpx12 libx264-165
+2026-11-12T06:52:27.1976245Z   libx265-215 libxvidcore4 libzvbi-common libzvbi0t64 ocl-icd-libopencl1
+2026-11-12T06:52:27.1976768Z   xfonts-encodings xfonts-utils
+2026-11-12T06:52:27.1984490Z Suggested packages:
+2026-11-12T06:52:27.1985338Z   libcuda1 libnvcuvid1 libnvidia-encode1 opus-tools speex opencl-icd
+2026-11-12T06:52:27.1985853Z Recommended packages:
+2026-11-12T06:52:27.1986149Z   fonts-ipafont-mincho fonts-tlwg-loma
+2026-11-12T06:52:27.2258391Z The following NEW packages will be installed:
+2026-11-12T06:52:27.2259084Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2026-11-12T06:52:27.2260068Z   fonts-wqy-zenhei libavcodec62 libavutil60 libcodec2-1.2 libdav1d7 libgsm1
+2026-11-12T06:52:27.2263187Z   libmp3lame0 libmpg123-0t64 libopus0 librav1e0.8 libshine3 libsoxr0 libspeex1
+2026-11-12T06:52:27.2264277Z   libsvtav1enc2 libswresample6 libtheoradec2 libtheoraenc2 libtwolame0
+2026-11-12T06:52:27.2265363Z   libva-drm2 libva-x11-2 libva2 libvdpau1 libvorbisenc2 libvpl2 libvpx12
+2026-11-12T06:52:27.2266453Z   libx264-165 libx265-215 libxvidcore4 libzvbi-common libzvbi0t64
+2026-11-12T06:52:27.2267650Z   ocl-icd-libopencl1 xfonts-cyrillic xfonts-encodings xfonts-scalable
+2026-11-12T06:52:27.2268603Z   xfonts-utils
+2026-11-12T06:52:27.2492654Z 0 upgraded, 39 newly installed, 0 to remove and 58 not upgraded.
+2026-11-12T06:52:27.2493144Z Need to get 54.4 MB of archives.
+2026-11-12T06:52:27.2493612Z After this operation, 173 MB of additional disk space will be used.
+2026-11-12T06:52:27.2494233Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-11-12T06:52:27.2856723Z Get:2 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-ipafont-gothic all 00303-23ubuntu1 [3703 kB]
+2026-11-12T06:52:27.3242490Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 fonts-freefont-ttf all 20211204+svn4273-4build1 [5656 kB]
+2026-11-12T06:52:27.3750370Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-tlwg-loma-otf all 1:0.7.3-1build1 [106 kB]
+2026-11-12T06:52:27.3940200Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-unifont all 1:16.0.04-1build1 [3169 kB]
+2026-11-12T06:52:27.4303603Z Get:6 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-wqy-zenhei all 0.9.45-8build1 [7863 kB]
+2026-11-12T06:52:27.4936525Z Get:7 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libva2 amd64 2.23.0-1ubuntu1 [77.0 kB]
+2026-11-12T06:52:27.5241223Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libva-drm2 amd64 2.23.0-1ubuntu1 [7126 B]
+2026-11-12T06:52:27.5424719Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libva-x11-2 amd64 2.23.0-1ubuntu1 [12.2 kB]
+2026-11-12T06:52:27.5607097Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libvdpau1 amd64 1.5-4 [27.7 kB]
+2026-11-12T06:52:27.5791905Z Get:11 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libvpl2 amd64 1:2.16.0-1 [135 kB]
+2026-11-12T06:52:27.5981095Z Get:12 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 ocl-icd-libopencl1 amd64 2.3.4-1 [41.0 kB]
+2026-11-12T06:52:27.6168212Z Get:13 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libavutil60 amd64 7:8.0.1-3ubuntu2 [485 kB]
+2026-11-12T06:52:27.6378524Z Get:14 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libcodec2-1.2 amd64 1.2.0-4 [9016 kB]
+2026-11-12T06:52:27.7084270Z Get:15 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libdav1d7 amd64 1.5.3-1 [561 kB]
+2026-11-12T06:52:27.7307177Z Get:16 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libgsm1 amd64 1.0.23-2 [30.2 kB]
+2026-11-12T06:52:27.7490907Z Get:17 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libmpg123-0t64 amd64 1.33.3-2 [180 kB]
+2026-11-12T06:52:27.7683772Z Get:18 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 libmp3lame0 amd64 3.101~svn6525+dfsg-2ubuntu0.1 [123 kB]
+2026-11-12T06:52:27.7871515Z Get:19 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libopus0 amd64 1.6.1-1 [3557 kB]
+2026-11-12T06:52:27.8693319Z Get:20 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 librav1e0.8 amd64 0.8.1-7 [1062 kB]
+2026-11-12T06:52:27.8937035Z Get:21 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libshine3 amd64 3.1.1-3build1 [24.9 kB]
+2026-11-12T06:52:27.9125343Z Get:22 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libspeex1 amd64 1.2.1-3build1 [65.0 kB]
+2026-11-12T06:52:27.9313931Z Get:23 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libsvtav1enc2 amd64 2.3.0+dfsg-1build1 [2782 kB]
+2026-11-12T06:52:27.9656207Z Get:24 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libsoxr0 amd64 0.1.3-4.1 [82.0 kB]
+2026-11-12T06:52:27.9846163Z Get:25 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libswresample6 amd64 7:8.0.1-3ubuntu2 [80.9 kB]
+2026-11-12T06:52:28.0098130Z Get:26 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libtheoradec2 amd64 1.2.0+dfsg-6 [56.5 kB]
+2026-11-12T06:52:28.0285591Z Get:27 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libtheoraenc2 amd64 1.2.0+dfsg-6 [108 kB]
+2026-11-12T06:52:28.0474661Z Get:28 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libtwolame0 amd64 0.4.0-2build4 [53.3 kB]
+2026-11-12T06:52:28.0662390Z Get:29 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libvorbisenc2 amd64 1.3.7-3build2 [79.9 kB]
+2026-11-12T06:52:28.0849297Z Get:30 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 libvpx12 amd64 1.16.0-3 [1257 kB]
+2026-11-12T06:52:28.1115152Z Get:31 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libx264-165 amd64 2:0.165.3222+gitb35605ac-3build1 [610 kB]
+2026-11-12T06:52:28.1330727Z Get:32 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libx265-215 amd64 4.1-4 [1321 kB]
+2026-11-12T06:52:28.1589588Z Get:33 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libxvidcore4 amd64 2:1.3.7-3 [221 kB]
+2026-11-12T06:52:28.1785472Z Get:34 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libzvbi-common all 0.2.44-1ubuntu2 [43.0 kB]
+2026-11-12T06:52:28.1971785Z Get:35 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libzvbi0t64 amd64 0.2.44-1ubuntu2 [266 kB]
+2026-11-12T06:52:28.2168493Z Get:36 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 libavcodec62 amd64 7:8.0.1-3ubuntu2 [10.2 MB]
+2026-11-12T06:52:28.2956925Z Get:37 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-encodings all 1:1.0.5-0ubuntu3 [576 kB]
+2026-11-12T06:52:28.3170370Z Get:38 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-utils amd64 1:7.7+7build1 [97.3 kB]
+2026-11-12T06:52:28.3809484Z Get:39 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-cyrillic all 1:1.0.5+nmu1build1 [384 kB]
+2026-11-12T06:52:28.4007693Z Get:40 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-scalable all 1:1.0.3-1.3build1 [304 kB]
+2026-11-12T06:52:28.7561791Z Fetched 54.4 MB in 1s (46.6 MB/s)
+2026-11-12T06:52:28.7809581Z Selecting previously unselected package fonts-ipafont-gothic.
+2026-11-12T06:52:28.8128303Z (Reading database ... 
+2026-11-12T06:52:28.8128856Z (Reading database ... 5%
+2026-11-12T06:52:28.8129545Z (Reading database ... 10%
+2026-11-12T06:52:28.8130075Z (Reading database ... 15%
+2026-11-12T06:52:28.8130547Z (Reading database ... 20%
+2026-11-12T06:52:28.8130992Z (Reading database ... 25%
+2026-11-12T06:52:28.8131605Z (Reading database ... 30%
+2026-11-12T06:52:28.8131958Z (Reading database ... 35%
+2026-11-12T06:52:28.8132233Z (Reading database ... 40%
+2026-11-12T06:52:28.8132503Z (Reading database ... 45%
+2026-11-12T06:52:28.8132945Z (Reading database ... 50%
+2026-11-12T06:52:28.9277895Z (Reading database ... 55%
+2026-11-12T06:52:29.1184267Z (Reading database ... 60%
+2026-11-12T06:52:29.2878010Z (Reading database ... 65%
+2026-11-12T06:52:29.4174279Z (Reading database ... 70%
+2026-11-12T06:52:29.5811483Z (Reading database ... 75%
+2026-11-12T06:52:29.7823342Z (Reading database ... 80%
+2026-11-12T06:52:29.9263595Z (Reading database ... 85%
+2026-11-12T06:52:30.0913090Z (Reading database ... 90%
+2026-11-12T06:52:30.2325522Z (Reading database ... 95%
+2026-11-12T06:52:30.2326154Z (Reading database ... 100%
+2026-11-12T06:52:30.2327411Z (Reading database ... 213197 files and directories currently installed.)
+2026-11-12T06:52:30.2369861Z Preparing to unpack .../00-fonts-ipafont-gothic_00303-23ubuntu1_all.deb ...
+2026-11-12T06:52:30.2468712Z Unpacking fonts-ipafont-gothic (00303-23ubuntu1) ...
+2026-11-12T06:52:30.3247061Z Selecting previously unselected package fonts-freefont-ttf.
+2026-11-12T06:52:30.3383463Z Preparing to unpack .../01-fonts-freefont-ttf_20211204+svn4273-4build1_all.deb ...
+2026-11-12T06:52:30.3389402Z Unpacking fonts-freefont-ttf (20211204+svn4273-4build1) ...
+2026-11-12T06:52:30.4206998Z Selecting previously unselected package fonts-tlwg-loma-otf.
+2026-11-12T06:52:30.4343316Z Preparing to unpack .../02-fonts-tlwg-loma-otf_1%3a0.7.3-1build1_all.deb ...
+2026-11-12T06:52:30.4349600Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+2026-11-12T06:52:30.4568343Z Selecting previously unselected package fonts-unifont.
+2026-11-12T06:52:30.4705070Z Preparing to unpack .../03-fonts-unifont_1%3a16.0.04-1build1_all.deb ...
+2026-11-12T06:52:30.4710936Z Unpacking fonts-unifont (1:16.0.04-1build1) ...
+2026-11-12T06:52:30.5851051Z Selecting previously unselected package fonts-wqy-zenhei.
+2026-11-12T06:52:30.5987054Z Preparing to unpack .../04-fonts-wqy-zenhei_0.9.45-8build1_all.deb ...
+2026-11-12T06:52:30.6121678Z Unpacking fonts-wqy-zenhei (0.9.45-8build1) ...
+2026-11-12T06:52:30.6978108Z Selecting previously unselected package libva2:amd64.
+2026-11-12T06:52:30.7113669Z Preparing to unpack .../05-libva2_2.23.0-1ubuntu1_amd64v3.deb ...
+2026-11-12T06:52:30.7184616Z Unpacking libva2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:30.7412164Z Selecting previously unselected package libva-drm2:amd64.
+2026-11-12T06:52:30.7549133Z Preparing to unpack .../06-libva-drm2_2.23.0-1ubuntu1_amd64v3.deb ...
+2026-11-12T06:52:30.7573563Z Unpacking libva-drm2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:30.7789391Z Selecting previously unselected package libva-x11-2:amd64.
+2026-11-12T06:52:30.7926901Z Preparing to unpack .../07-libva-x11-2_2.23.0-1ubuntu1_amd64v3.deb ...
+2026-11-12T06:52:30.7933914Z Unpacking libva-x11-2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:30.8149945Z Selecting previously unselected package libvdpau1:amd64.
+2026-11-12T06:52:30.8285629Z Preparing to unpack .../08-libvdpau1_1.5-4_amd64v3.deb ...
+2026-11-12T06:52:30.8293521Z Unpacking libvdpau1:amd64 (1.5-4) ...
+2026-11-12T06:52:30.8525409Z Selecting previously unselected package libvpl2.
+2026-11-12T06:52:30.8660163Z Preparing to unpack .../09-libvpl2_1%3a2.16.0-1_amd64v3.deb ...
+2026-11-12T06:52:30.8668467Z Unpacking libvpl2 (1:2.16.0-1) ...
+2026-11-12T06:52:30.8896330Z Selecting previously unselected package ocl-icd-libopencl1:amd64.
+2026-11-12T06:52:30.9031030Z Preparing to unpack .../10-ocl-icd-libopencl1_2.3.4-1_amd64v3.deb ...
+2026-11-12T06:52:30.9037925Z Unpacking ocl-icd-libopencl1:amd64 (2.3.4-1) ...
+2026-11-12T06:52:30.9306020Z Selecting previously unselected package libavutil60:amd64.
+2026-11-12T06:52:30.9439950Z Preparing to unpack .../11-libavutil60_7%3a8.0.1-3ubuntu2_amd64v3.deb ...
+2026-11-12T06:52:30.9446595Z Unpacking libavutil60:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:30.9716294Z Selecting previously unselected package libcodec2-1.2:amd64.
+2026-11-12T06:52:30.9850586Z Preparing to unpack .../12-libcodec2-1.2_1.2.0-4_amd64v3.deb ...
+2026-11-12T06:52:30.9858303Z Unpacking libcodec2-1.2:amd64 (1.2.0-4) ...
+2026-11-12T06:52:31.0607758Z Selecting previously unselected package libdav1d7:amd64.
+2026-11-12T06:52:31.0744465Z Preparing to unpack .../13-libdav1d7_1.5.3-1_amd64v3.deb ...
+2026-11-12T06:52:31.0751895Z Unpacking libdav1d7:amd64 (1.5.3-1) ...
+2026-11-12T06:52:31.1035677Z Selecting previously unselected package libgsm1:amd64.
+2026-11-12T06:52:31.1172294Z Preparing to unpack .../14-libgsm1_1.0.23-2_amd64v3.deb ...
+2026-11-12T06:52:31.1179096Z Unpacking libgsm1:amd64 (1.0.23-2) ...
+2026-11-12T06:52:31.1399013Z Selecting previously unselected package libmpg123-0t64:amd64.
+2026-11-12T06:52:31.1533852Z Preparing to unpack .../15-libmpg123-0t64_1.33.3-2_amd64v3.deb ...
+2026-11-12T06:52:31.1540403Z Unpacking libmpg123-0t64:amd64 (1.33.3-2) ...
+2026-11-12T06:52:31.1772627Z Selecting previously unselected package libmp3lame0:amd64.
+2026-11-12T06:52:31.1909771Z Preparing to unpack .../16-libmp3lame0_3.101~svn6525+dfsg-2ubuntu0.1_amd64v3.deb ...
+2026-11-12T06:52:31.1918621Z Unpacking libmp3lame0:amd64 (3.101~svn6525+dfsg-2ubuntu0.1) ...
+2026-11-12T06:52:31.2160030Z Selecting previously unselected package libopus0:amd64.
+2026-11-12T06:52:31.2297149Z Preparing to unpack .../17-libopus0_1.6.1-1_amd64v3.deb ...
+2026-11-12T06:52:31.2303422Z Unpacking libopus0:amd64 (1.6.1-1) ...
+2026-11-12T06:52:31.2690948Z Selecting previously unselected package librav1e0.8:amd64.
+2026-11-12T06:52:31.2828306Z Preparing to unpack .../18-librav1e0.8_0.8.1-7_amd64v3.deb ...
+2026-11-12T06:52:31.2835484Z Unpacking librav1e0.8:amd64 (0.8.1-7) ...
+2026-11-12T06:52:31.3180696Z Selecting previously unselected package libshine3:amd64.
+2026-11-12T06:52:31.3316665Z Preparing to unpack .../19-libshine3_3.1.1-3build1_amd64v3.deb ...
+2026-11-12T06:52:31.3323929Z Unpacking libshine3:amd64 (3.1.1-3build1) ...
+2026-11-12T06:52:31.3545610Z Selecting previously unselected package libspeex1:amd64.
+2026-11-12T06:52:31.3681910Z Preparing to unpack .../20-libspeex1_1.2.1-3build1_amd64v3.deb ...
+2026-11-12T06:52:31.3689804Z Unpacking libspeex1:amd64 (1.2.1-3build1) ...
+2026-11-12T06:52:31.3912154Z Selecting previously unselected package libsvtav1enc2:amd64.
+2026-11-12T06:52:31.4047908Z Preparing to unpack .../21-libsvtav1enc2_2.3.0+dfsg-1build1_amd64v3.deb ...
+2026-11-12T06:52:31.4055243Z Unpacking libsvtav1enc2:amd64 (2.3.0+dfsg-1build1) ...
+2026-11-12T06:52:31.4609114Z Selecting previously unselected package libsoxr0:amd64.
+2026-11-12T06:52:31.4747710Z Preparing to unpack .../22-libsoxr0_0.1.3-4.1_amd64v3.deb ...
+2026-11-12T06:52:31.4754925Z Unpacking libsoxr0:amd64 (0.1.3-4.1) ...
+2026-11-12T06:52:31.4980154Z Selecting previously unselected package libswresample6:amd64.
+2026-11-12T06:52:31.5115520Z Preparing to unpack .../23-libswresample6_7%3a8.0.1-3ubuntu2_amd64v3.deb ...
+2026-11-12T06:52:31.5122030Z Unpacking libswresample6:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:31.5349585Z Selecting previously unselected package libtheoradec2:amd64.
+2026-11-12T06:52:31.5486498Z Preparing to unpack .../24-libtheoradec2_1.2.0+dfsg-6_amd64v3.deb ...
+2026-11-12T06:52:31.5493686Z Unpacking libtheoradec2:amd64 (1.2.0+dfsg-6) ...
+2026-11-12T06:52:31.5709877Z Selecting previously unselected package libtheoraenc2:amd64.
+2026-11-12T06:52:31.5845996Z Preparing to unpack .../25-libtheoraenc2_1.2.0+dfsg-6_amd64v3.deb ...
+2026-11-12T06:52:31.5852830Z Unpacking libtheoraenc2:amd64 (1.2.0+dfsg-6) ...
+2026-11-12T06:52:31.6075899Z Selecting previously unselected package libtwolame0:amd64.
+2026-11-12T06:52:31.6212278Z Preparing to unpack .../26-libtwolame0_0.4.0-2build4_amd64v3.deb ...
+2026-11-12T06:52:31.6220544Z Unpacking libtwolame0:amd64 (0.4.0-2build4) ...
+2026-11-12T06:52:31.6462080Z Selecting previously unselected package libvorbisenc2:amd64.
+2026-11-12T06:52:31.6599794Z Preparing to unpack .../27-libvorbisenc2_1.3.7-3build2_amd64v3.deb ...
+2026-11-12T06:52:31.6607021Z Unpacking libvorbisenc2:amd64 (1.3.7-3build2) ...
+2026-11-12T06:52:31.6848936Z Selecting previously unselected package libvpx12:amd64.
+2026-11-12T06:52:31.6987428Z Preparing to unpack .../28-libvpx12_1.16.0-3_amd64v3.deb ...
+2026-11-12T06:52:31.6994290Z Unpacking libvpx12:amd64 (1.16.0-3) ...
+2026-11-12T06:52:31.7363272Z Selecting previously unselected package libx264-165:amd64.
+2026-11-12T06:52:31.7500159Z Preparing to unpack .../29-libx264-165_2%3a0.165.3222+gitb35605ac-3build1_amd64v3.deb ...
+2026-11-12T06:52:31.7507398Z Unpacking libx264-165:amd64 (2:0.165.3222+gitb35605ac-3build1) ...
+2026-11-12T06:52:31.7806183Z Selecting previously unselected package libx265-215:amd64.
+2026-11-12T06:52:31.7944908Z Preparing to unpack .../30-libx265-215_4.1-4_amd64v3.deb ...
+2026-11-12T06:52:31.7953607Z Unpacking libx265-215:amd64 (4.1-4) ...
+2026-11-12T06:52:31.8631538Z Selecting previously unselected package libxvidcore4:amd64.
+2026-11-12T06:52:31.8768438Z Preparing to unpack .../31-libxvidcore4_2%3a1.3.7-3_amd64v3.deb ...
+2026-11-12T06:52:31.8776596Z Unpacking libxvidcore4:amd64 (2:1.3.7-3) ...
+2026-11-12T06:52:31.9008400Z Selecting previously unselected package libzvbi-common.
+2026-11-12T06:52:31.9145358Z Preparing to unpack .../32-libzvbi-common_0.2.44-1ubuntu2_all.deb ...
+2026-11-12T06:52:31.9151813Z Unpacking libzvbi-common (0.2.44-1ubuntu2) ...
+2026-11-12T06:52:31.9728059Z Selecting previously unselected package libzvbi0t64:amd64.
+2026-11-12T06:52:31.9865785Z Preparing to unpack .../33-libzvbi0t64_0.2.44-1ubuntu2_amd64v3.deb ...
+2026-11-12T06:52:31.9873417Z Unpacking libzvbi0t64:amd64 (0.2.44-1ubuntu2) ...
+2026-11-12T06:52:32.0124593Z Selecting previously unselected package libavcodec62:amd64.
+2026-11-12T06:52:32.0261728Z Preparing to unpack .../34-libavcodec62_7%3a8.0.1-3ubuntu2_amd64v3.deb ...
+2026-11-12T06:52:32.0269006Z Unpacking libavcodec62:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:32.1575625Z Selecting previously unselected package xfonts-encodings.
+2026-11-12T06:52:32.1712099Z Preparing to unpack .../35-xfonts-encodings_1%3a1.0.5-0ubuntu3_all.deb ...
+2026-11-12T06:52:32.1719130Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu3) ...
+2026-11-12T06:52:32.2004894Z Selecting previously unselected package xfonts-utils.
+2026-11-12T06:52:32.2144077Z Preparing to unpack .../36-xfonts-utils_1%3a7.7+7build1_amd64v3.deb ...
+2026-11-12T06:52:32.2154984Z Unpacking xfonts-utils (1:7.7+7build1) ...
+2026-11-12T06:52:32.2515216Z Selecting previously unselected package xfonts-cyrillic.
+2026-11-12T06:52:32.2653706Z Preparing to unpack .../37-xfonts-cyrillic_1%3a1.0.5+nmu1build1_all.deb ...
+2026-11-12T06:52:32.2660760Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+2026-11-12T06:52:32.2994318Z Selecting previously unselected package xfonts-scalable.
+2026-11-12T06:52:32.3131736Z Preparing to unpack .../38-xfonts-scalable_1%3a1.0.3-1.3build1_all.deb ...
+2026-11-12T06:52:32.3139066Z Unpacking xfonts-scalable (1:1.0.3-1.3build1) ...
+2026-11-12T06:52:32.3653741Z Setting up libspeex1:amd64 (1.2.1-3build1) ...
+2026-11-12T06:52:32.3680736Z Setting up libshine3:amd64 (3.1.1-3build1) ...
+2026-11-12T06:52:32.3698037Z Setting up libvpl2 (1:2.16.0-1) ...
+2026-11-12T06:52:32.3716590Z Setting up libtwolame0:amd64 (0.4.0-2build4) ...
+2026-11-12T06:52:32.3734173Z Setting up libgsm1:amd64 (1.0.23-2) ...
+2026-11-12T06:52:32.3751816Z Setting up libsoxr0:amd64 (0.1.3-4.1) ...
+2026-11-12T06:52:32.3769421Z Setting up libx264-165:amd64 (2:0.165.3222+gitb35605ac-3build1) ...
+2026-11-12T06:52:32.3787499Z Setting up libcodec2-1.2:amd64 (1.2.0-4) ...
+2026-11-12T06:52:32.3805345Z Setting up fonts-wqy-zenhei (0.9.45-8build1) ...
+2026-11-12T06:52:32.3951853Z Setting up fonts-freefont-ttf (20211204+svn4273-4build1) ...
+2026-11-12T06:52:32.3969332Z Setting up libmpg123-0t64:amd64 (1.33.3-2) ...
+2026-11-12T06:52:32.3986679Z Setting up libxvidcore4:amd64 (2:1.3.7-3) ...
+2026-11-12T06:52:32.4006283Z Setting up libtheoraenc2:amd64 (1.2.0+dfsg-6) ...
+2026-11-12T06:52:32.4662943Z Setting up librav1e0.8:amd64 (0.8.1-7) ...
+2026-11-12T06:52:32.4681481Z Setting up libtheoradec2:amd64 (1.2.0+dfsg-6) ...
+2026-11-12T06:52:32.4698835Z Setting up libvpx12:amd64 (1.16.0-3) ...
+2026-11-12T06:52:32.4716786Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+2026-11-12T06:52:32.4734722Z Setting up libva2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:32.4753350Z Setting up libsvtav1enc2:amd64 (2.3.0+dfsg-1build1) ...
+2026-11-12T06:52:32.4770831Z Setting up xfonts-encodings (1:1.0.5-0ubuntu3) ...
+2026-11-12T06:52:32.4790468Z Setting up libopus0:amd64 (1.6.1-1) ...
+2026-11-12T06:52:32.4808046Z Setting up libdav1d7:amd64 (1.5.3-1) ...
+2026-11-12T06:52:32.4826743Z Setting up libva-drm2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:32.4844829Z Setting up fonts-ipafont-gothic (00303-23ubuntu1) ...
+2026-11-12T06:52:32.4909278Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+2026-11-12T06:52:32.4923959Z Setting up ocl-icd-libopencl1:amd64 (2.3.4-1) ...
+2026-11-12T06:52:32.4941109Z Setting up libvdpau1:amd64 (1.5-4) ...
+2026-11-12T06:52:32.4966390Z Setting up libx265-215:amd64 (4.1-4) ...
+2026-11-12T06:52:32.4984016Z Setting up libva-x11-2:amd64 (2.23.0-1ubuntu1) ...
+2026-11-12T06:52:32.5000827Z Setting up libzvbi-common (0.2.44-1ubuntu2) ...
+2026-11-12T06:52:32.5018676Z Setting up libmp3lame0:amd64 (3.101~svn6525+dfsg-2ubuntu0.1) ...
+2026-11-12T06:52:32.5035506Z Setting up libvorbisenc2:amd64 (1.3.7-3build2) ...
+2026-11-12T06:52:32.5054321Z Setting up fonts-unifont (1:16.0.04-1build1) ...
+2026-11-12T06:52:32.5076763Z Setting up libzvbi0t64:amd64 (0.2.44-1ubuntu2) ...
+2026-11-12T06:52:32.5093782Z Setting up libavutil60:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:32.5112536Z Setting up xfonts-utils (1:7.7+7build1) ...
+2026-11-12T06:52:32.5166766Z Setting up libswresample6:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:32.5184915Z Setting up xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+2026-11-12T06:52:32.5643214Z Setting up xfonts-scalable (1:1.0.3-1.3build1) ...
+2026-11-12T06:52:32.6044943Z Setting up libavcodec62:amd64 (7:8.0.1-3ubuntu2) ...
+2026-11-12T06:52:32.6069323Z Processing triggers for libc-bin (2.43-2ubuntu2.4) ...
+2026-11-12T06:52:32.6730457Z Processing triggers for man-db (2.13.1-1build1) ...
+2026-11-12T06:52:32.6754155Z Not building database; man-db/auto-update is not 'true'.
+2026-11-12T06:52:32.6765439Z Processing triggers for fontconfig (2.17.1-3ubuntu1) ...
+2026-11-12T06:52:33.4129084Z 
+2026-11-12T06:52:33.4129738Z Running kernel seems to be up-to-date.
+2026-11-12T06:52:33.4130210Z 
+2026-11-12T06:52:33.4130377Z Restarting services...
+2026-11-12T06:52:33.4223129Z 
+2026-11-12T06:52:33.4223582Z Service restarts being deferred:
+2026-11-12T06:52:33.4226262Z  systemctl restart hosted-compute-agent.service
+2026-11-12T06:52:33.4226807Z 
+2026-11-12T06:52:33.4227547Z No containers need to be restarted.
+2026-11-12T06:52:33.4227890Z 
+2026-11-12T06:52:33.4228362Z No user sessions are running outdated binaries.
+2026-11-12T06:52:33.4228833Z 
+2026-11-12T06:52:33.4229498Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-11-12T06:52:34.4235097Z Downloading Firefox 155.0 (playwright firefox v1543) from https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1543/firefox-ubuntu-24.04.zip
+2026-11-12T06:52:34.8895304Z |                                                                                |   0% of 109.5 MiB
+2026-11-12T06:52:34.9787276Z |■■■■■■■■                                                                        |  10% of 109.5 MiB
+2026-11-12T06:52:35.0494510Z |■■■■■■■■■■■■■■■■                                                                |  20% of 109.5 MiB
+2026-11-12T06:52:35.1059264Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 109.5 MiB
+2026-11-12T06:52:35.1675080Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 109.5 MiB
+2026-11-12T06:52:35.2288499Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 109.5 MiB
+2026-11-12T06:52:35.2667058Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 109.5 MiB
+2026-11-12T06:52:35.3026403Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 109.5 MiB
+2026-11-12T06:52:35.3539050Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 109.5 MiB
+2026-11-12T06:52:35.3864213Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 109.5 MiB
+2026-11-12T06:52:35.4312464Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 109.5 MiB
+2026-11-12T06:52:37.3966146Z Firefox 155.0 (playwright firefox v1543) downloaded to /home/runner/.cache/ms-playwright/firefox-1543
+2026-11-12T06:52:37.3971142Z Downloading FFmpeg (playwright ffmpeg v1011) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+2026-11-12T06:52:37.7676088Z |                                                                                |   0% of 2.3 MiB
+2026-11-12T06:52:37.7788936Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+2026-11-12T06:52:37.7839662Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+2026-11-12T06:52:37.7880611Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+2026-11-12T06:52:37.7905837Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+2026-11-12T06:52:37.7928625Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+2026-11-12T06:52:37.7945271Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+2026-11-12T06:52:37.7961610Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+2026-11-12T06:52:37.7983451Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+2026-11-12T06:52:37.7988813Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+2026-11-12T06:52:37.8058998Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+2026-11-12T06:52:37.8649453Z FFmpeg (playwright ffmpeg v1011) downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1011
+2026-11-12T06:52:37.9924737Z ##[group]Run npx playwright test --project=firefox
+2026-11-12T06:52:37.9925146Z npx playwright test --project=firefox
+2026-11-12T06:52:37.9976611Z shell: /usr/bin/bash -e {0}
+2026-11-12T06:52:37.9976877Z ##[endgroup]
+2026-11-12T06:53:30.1039804Z 
+2026-11-12T06:53:30.1040282Z Running 394 tests using 1 worker
+2026-11-12T06:53:30.1040704Z 
+2026-11-12T06:53:35.2865927Z   ✓    1 [firefox] › tests/e2e/agent-bridge.spec.ts:37:5 › Phase 50: pairing by the code in the editor, then an approved change is one undo step (4.1s)
+2026-11-12T06:53:38.1863685Z   ✓    2 [firefox] › tests/e2e/agent-bridge.spec.ts:81:5 › Phase 50: Claude can't reach its own approval switch (2.9s)
+2026-11-12T06:53:42.2573599Z   ✓    3 [firefox] › tests/e2e/align.spec.ts:70:5 › Phase 30: align, distribute and tidy land layers on exact positions, one undo step each (4.0s)
+2026-11-12T06:53:44.2175910Z   ✓    4 [firefox] › tests/e2e/align.spec.ts:146:5 › Phase 30: tidy turns a ragged 2 x 2 into a grid, in one undo step (1.9s)
+2026-11-12T06:53:47.1596631Z   ✓    5 [firefox] › tests/e2e/align.spec.ts:163:5 › Phase 30: the inspector's align and distribute buttons run the commands (2.9s)
+2026-11-12T06:53:49.5152911Z   ✓    6 [firefox] › tests/e2e/anchor-points.spec.ts:29:7 › Phase 72 · Anchor points & pins › renders anchor handle for selected layer and updates when dragged with snapping (2.3s)
+2026-11-12T06:53:52.7168205Z   ✓    7 [firefox] › tests/e2e/anchor-points.spec.ts:79:7 › Phase 72 · Anchor points & pins › inspector Origin control updates anchor position on canvas (3.2s)
+2026-11-12T06:53:52.7170913Z   -    8 [firefox] › tests/e2e/assets.spec.ts:56:6 › Phase 36: a dropped picture becomes an asset and an image layer, and is still there after a reload (new editor lacks asset pipeline and asset store integration)
+2026-11-12T06:53:52.7174102Z   -    9 [firefox] › tests/e2e/assets.spec.ts:82:6 › Phase 36: a picture pasted from the clipboard becomes an image layer (new editor lacks clipboard image paste to asset store)
+2026-11-12T06:53:52.7176935Z   -   10 [firefox] › tests/e2e/assets.spec.ts:96:6 › Phase 36: a hostile SVG is cleaned before it is stored, and what isn't a picture is refused with a reason (new editor lacks asset pipeline)
+2026-11-12T06:53:52.7179584Z   -   11 [firefox] › tests/e2e/assets.spec.ts:115:6 › Phase 36: 200 MB of assets survive a reload, byte for byte (new editor lacks asset store integration)
+2026-11-12T06:53:52.7182462Z   -   12 [firefox] › tests/e2e/assets.spec.ts:134:6 › Phase 36: a project file carries its pictures into a fresh browser (new editor lacks embedded asset loading)
+2026-11-12T06:53:52.7184667Z   -   13 [firefox] › tests/e2e/assets.spec.ts:157:6 › Phase 36: the browser is asked once to keep this storage (new editor lacks asset storage persistence prompt)
+2026-11-12T06:53:52.7194343Z   -   14 [firefox] › tests/e2e/assets.spec.ts:173:6 › Phase 36: a second tab of the same project opens read-only, and can take over (new editor lacks multi-tab read-only lock banner)
+2026-11-12T06:53:55.5434238Z   ✓   15 [firefox] › tests/e2e/auto-key-hud.spec.ts:24:7 › Phase 70 · Auto-key on the stage & value HUD › timeline record button toggles record mode state (2.8s)
+2026-11-12T06:53:58.8574132Z   ✓   16 [firefox] › tests/e2e/auto-key-hud.spec.ts:44:7 › Phase 70 · Auto-key on the stage & value HUD › Value HUD displays live values and keyframe recording on stage drag (3.3s)
+2026-11-12T06:54:03.2575725Z   ✓   17 [firefox] › tests/e2e/auto-key-hud.spec.ts:81:7 › Phase 70 · Auto-key on the stage & value HUD › Condition 3: Complete browser-level 3-time recording workflow (4.4s)
+2026-11-12T06:54:06.3169773Z   ✓   18 [firefox] › tests/e2e/auto-layout.spec.ts:152:7 › Phase 41: nested stacks lay out as computed, at five widths › every box is within half a pixel of computeStack at 320, 480, 768, 1024 and 1440 (3.0s)
+2026-11-12T06:54:09.3613366Z   ✓   19 [firefox] › tests/e2e/auto-layout.spec.ts:178:7 › Phase 41: adding auto layout › Shift+A on a frame of loose layers reads the row, and the children flow; one undo step; Shift+Alt+A pins them (3.0s)
+2026-11-12T06:54:12.6036591Z   ✓   20 [firefox] › tests/e2e/auto-layout.spec.ts:206:7 › Phase 41: adding auto layout › the inspector changes direction, gap and alignment, and sizing of a child (3.2s)
+2026-11-12T06:54:16.2619972Z   ✓   21 [firefox] › tests/e2e/auto-layout.spec.ts:233:7 › Phase 41: reordering by dragging › dragging a child past its neighbour reorders it, with an insertion line, as one undo step (3.6s)
+2026-11-12T06:54:19.4843835Z   ✓   22 [firefox] › tests/e2e/breakpoint-canvas.spec.ts:62:7 › Phase 44: the breakpoint canvas › All shows Tablet and Mobile beside Desktop at their own widths, and a change shows in every view (3.2s)
+2026-11-12T06:54:22.8187265Z   ✓   23 [firefox] › tests/e2e/breakpoint-canvas.spec.ts:83:7 › Phase 44: the breakpoint canvas › selecting a layer outlines it in every view; clicking one in a preview selects it and makes that breakpoint the one being edited (3.3s)
+2026-11-12T06:54:26.1865055Z   ✓   24 [firefox] › tests/e2e/breakpoint-canvas.spec.ts:105:7 › Phase 44: the breakpoint canvas › dragging a view's edge changes the breakpoint's width, reflows live, and undoes in one step (3.4s)
+2026-11-12T06:54:33.1592390Z   ✓   25 [firefox] › tests/e2e/breakpoint-canvas.spec.ts:135:7 › Phase 44: the breakpoint canvas › a 200-layer page keeps frame rate while an edge is dragged (7.0s)
+2026-11-12T06:54:37.1032008Z   ✓   26 [firefox] › tests/e2e/breakpoints.spec.ts:60:7 › Phase 43: breakpoints and overrides › Mobile shows the page at 375 and an edit there leaves Desktop alone; reset and undo (3.9s)
+2026-11-12T06:54:40.7195080Z   ✓   27 [firefox] › tests/e2e/breakpoints.spec.ts:94:7 › Phase 43: breakpoints and overrides › Tablet changes reach Mobile, Mobile's own win, and Reset all clears Mobile only (3.6s)
+2026-11-12T06:54:43.8034099Z   ✓   28 [firefox] › tests/e2e/breakpoints.spec.ts:111:7 › Phase 43: breakpoints and overrides › a layer hidden at Mobile is drawn at Desktop and not at Mobile (3.1s)
+2026-11-12T06:54:46.7589285Z   ✓   29 [firefox] › tests/e2e/breakpoints.spec.ts:123:7 › Phase 43: breakpoints and overrides › a layer pinned to the right follows the narrower page, and an override beats the pin (2.9s)
+2026-11-12T06:54:50.0950633Z   ✓   30 [firefox] › tests/e2e/breakpoints.spec.ts:133:7 › Phase 43: breakpoints and overrides › a breakpoint of your own: add 1024, edit at it, remove it with its overrides (3.3s)
+2026-11-12T06:54:55.7109589Z   ✓   31 [firefox] › tests/e2e/command-bus.spec.ts:18:5 › Phase 13: Edit > Undo and Redo run the same commands as their shortcuts (5.6s)
+2026-11-12T06:54:57.8082961Z   ✓   32 [firefox] › tests/e2e/command-bus.spec.ts:39:5 › Phase 13: a menu item that isn't built yet is disabled and names its phase (2.1s)
+2026-11-12T06:55:01.0479415Z   ✓   33 [firefox] › tests/e2e/command-bus.spec.ts:47:5 › Phase 13: File > Save flushes the project through the command bus (3.2s)
+2026-11-12T06:55:05.6417986Z   ✓   34 [firefox] › tests/e2e/command-bus.spec.ts:56:5 › Phase 13: undo works from the command palette (4.6s)
+2026-11-12T06:55:08.5074222Z   ✓   35 [firefox] › tests/e2e/command-bus.spec.ts:72:5 › Phase 13: Space plays over the timeline and does not over the canvas (2.8s)
+2026-11-12T06:55:12.9585150Z   ✓   36 [firefox] › tests/e2e/command-bus.spec.ts:88:5 › Phase 13: Delete in the timeline removes exactly one keyframe (4.4s)
+2026-11-12T06:55:16.7693687Z   ✓   37 [firefox] › tests/e2e/components.spec.ts:74:7 › Phase 46: components and instances › create a component, insert instances from the Assets panel, and edits of the main reach them (3.8s)
+2026-11-12T06:55:20.0163190Z   ✓   38 [firefox] › tests/e2e/components.spec.ts:100:7 › Phase 46: components and instances › an override in an instance survives edits of the main, is listed in the inspector, and Reset gives the main's value back (3.2s)
+2026-11-12T06:55:23.3218170Z   ✓   39 [firefox] › tests/e2e/components.spec.ts:122:7 › Phase 46: components and instances › Go to main, swap and detach from the inspector (3.3s)
+2026-11-12T06:55:26.9923253Z   ✓   40 [firefox] › tests/e2e/components.spec.ts:146:7 › Phase 46: components and instances › editing the main keeps every override in 40 instances, and the edit with the update of all 40 is one undo step (3.7s)
+2026-11-12T06:55:26.9926460Z   -   41 [firefox] › tests/e2e/composition-migration.spec.ts:17:6 › Phase 46: a v4 project migrates to v5 and renders identically to the native v5 demo (new editor lacks Mount Showcase Demo and stage rendering of imported projects)
+2026-11-12T06:55:26.9953922Z   -   42 [firefox] › tests/e2e/creation-tools.spec.ts:66:6 › Phase 25: every box tool draws inside the frame with the dragged geometry, parented to it, selected, one undo step (new editor lacks canvas interactive shape creation pipeline)
+2026-11-12T06:55:26.9962896Z   -   43 [firefox] › tests/e2e/creation-tools.spec.ts:117:6 › Phase 25: Shift draws a square and Alt draws from the centre (new editor lacks canvas interactive shape creation pipeline)
+2026-11-12T06:55:26.9965144Z   -   44 [firefox] › tests/e2e/creation-tools.spec.ts:147:6 › Phase 25: a click places the tool's default size at the press (new editor lacks canvas click-to-create pipeline)
+2026-11-12T06:55:26.9968802Z   -   45 [firefox] › tests/e2e/creation-tools.spec.ts:161:6 › Phase 25: line and arrow draw segments, rotated about their centre; Shift snaps to 45 degrees (new editor lacks line/arrow creation pipeline)
+2026-11-12T06:55:26.9972980Z   -   46 [firefox] › tests/e2e/creation-tools.spec.ts:183:6 › Phase 25: over bare canvas only the Frame tool does anything, and it makes a top-level frame (new editor lacks canvas frame creation tool)
+2026-11-12T06:55:26.9976404Z   -   47 [firefox] › tests/e2e/creation-tools.spec.ts:201:6 › Phase 25: drawing inside a nested frame parents the layer to it (new editor lacks canvas frame creation tool)
+2026-11-12T06:55:29.1802947Z   ✓   48 [firefox] › tests/e2e/deterministic-clock.spec.ts:26:5 › 1. the clock deterministically controls rAF/performance.now in isolation (2.2s)
+2026-11-12T06:55:33.1104482Z   ✓   49 [firefox] › tests/e2e/deterministic-clock.spec.ts:45:5 › 2. seekRuler reaches an exact playhead time, repeatably (3.9s)
+2026-11-12T06:55:37.5771037Z   ✓   50 [firefox] › tests/e2e/deterministic-clock.spec.ts:68:5 › 3. AUD-41: transport playback on the frame scheduler is deterministic under the test clock (4.5s)
+2026-11-12T06:55:42.6573385Z   ✓   51 [firefox] › tests/e2e/editing.spec.ts:73:5 › Phase 29: a 25-step editing journey with the exact result after each step (5.1s)
+2026-11-12T06:55:47.4377568Z   ✓   52 [firefox] › tests/e2e/editing.spec.ts:231:5 › Phase 29: a copy in one tab pastes into another (4.8s)
+2026-11-12T06:55:55.3599208Z   ✓   53 [firefox] › tests/e2e/export.spec.ts:112:7 › Phase 49: static export looks like the canvas › the plain HTML export matches the stage at 1440, 1024, 768, 480 and 375, for the whole page and for every archetype (7.8s)
+2026-11-12T06:56:00.5957045Z   ✓   54 [firefox] › tests/e2e/export.spec.ts:168:7 › Phase 49: the Export dialog › File, Export Site: pick a target and styling, see the files, download a ZIP with them (5.2s)
+2026-11-12T06:56:03.8529084Z   ✓   55 [firefox] › tests/e2e/export.spec.ts:199:7 › Phase 49: the Export dialog › the command is Export Site on Ctrl+E, and the typed command downloads too (3.2s)
+2026-11-12T06:56:08.1987198Z   ✓   56 [firefox] › tests/e2e/export.spec.ts:210:7 › Phase 49: the Code tab shows the real export of the selection › select a layer: HTML, JSX, CSS and Tailwind of that layer, the same code Export Site writes (4.3s)
+2026-11-12T06:56:09.1458980Z   ✓   57 [firefox] › tests/e2e/figcraft-port.spec.ts:59:5 › FigCraft port: the render gallery draws the new shapes, paints, strokes, networks and boolean groups (919ms)
+2026-11-12T06:56:12.8582142Z   ✓   58 [firefox] › tests/e2e/figcraft-port.spec.ts:81:5 › FigCraft port: a live boolean group keeps its operands, changes operation and flattens, one undo step each (3.7s)
+2026-11-12T06:56:16.3702280Z   ✓   59 [firefox] › tests/e2e/figcraft-port.spec.ts:103:5 › FigCraft port: the Shape Builder merges the overlap of two rectangles into a new shape (3.5s)
+2026-11-12T06:56:19.7898150Z   ✓   60 [firefox] › tests/e2e/figcraft-port.spec.ts:120:5 › FigCraft port: the paint bucket unfills and refills a closed path (3.4s)
+2026-11-12T06:56:22.5081121Z   ✓   61 [firefox] › tests/e2e/figcraft-port.spec.ts:140:5 › FigCraft port: a frame's layout grid draws on the canvas overlay (2.7s)
+2026-11-12T06:56:26.0773599Z   ✓   62 [firefox] › tests/e2e/figcraft-port.spec.ts:152:5 › FigCraft port: push an instance's change to its main, combine two components as variants, duplicate a main as an instance (3.6s)
+2026-11-12T06:56:29.2210995Z   ✓   63 [firefox] › tests/e2e/figcraft-port.spec.ts:182:5 › FigCraft port: a collection's mode chosen on a frame, an alias, and a paint style reach the stage (3.1s)
+2026-11-12T06:56:33.3363536Z   ✓   64 [firefox] › tests/e2e/figcraft-port.spec.ts:231:5 › FigCraft port: effects added in the Pro inspector reach the stage: noise as a filter, a progressive blur as backdrop layers (4.1s)
+2026-11-12T06:56:37.0900115Z   ✓   65 [firefox] › tests/e2e/figcraft-port.spec.ts:254:5 › FigCraft port: a numbered list nested from the inspector, and text put on a shape's path (3.7s)
+2026-11-12T06:56:42.1286875Z   ✓   66 [firefox] › tests/e2e/figcraft-port.spec.ts:279:5 › FigCraft port: Alt-drag copies, the Scale tool scales strokes with the layer, Alt-hover measures to another layer, batch rename (5.0s)
+2026-11-12T06:56:45.2031536Z   ✓   67 [firefox] › tests/e2e/figcraft-port.spec.ts:352:5 › FigCraft port: the rotation origin moved to a corner turns the layer about it (3.1s)
+2026-11-12T06:56:48.8500030Z   ✓   68 [firefox] › tests/e2e/figcraft-port.spec.ts:372:5 › FigCraft port: a frame converted to a group and a section from the inspector, and a layer exported as PNG and SVG (3.6s)
+2026-11-12T06:56:52.7437366Z   ✓   69 [firefox] › tests/e2e/figcraft-port.spec.ts:405:5 › FigCraft port: Dev Mode in the Code tab: inspect a layer, annotate it, keep a measurement, mark it ready and compare changes (3.9s)
+2026-11-12T06:56:55.6511532Z   ✓   70 [firefox] › tests/e2e/figcraft-port.spec.ts:443:5 › FigCraft port: an SVG file placed as an editable design keeps its groups, gradient and text as layers (2.9s)
+2026-11-12T06:56:58.8640328Z   ✓   71 [firefox] › tests/e2e/figcraft-port.spec.ts:477:5 › FigCraft port: a component inside a component: the icon's edit reaches the button's instances, and the nested icon swaps from the inspector (3.2s)
+2026-11-12T06:57:03.0159934Z   ✓   72 [firefox] › tests/e2e/figcraft-port.spec.ts:517:5 › FigCraft port: a brush picked in the Pro inspector draws the stroke with shapes; variables export and import round-trip (4.1s)
+2026-11-12T06:57:03.0163122Z   -   73 [firefox] › tests/e2e/fonts.spec.ts:78:6 › Phase 38: an uploaded font renders on the canvas, and after a reload (new editor lacks custom font uploading and stage rendering)
+2026-11-12T06:57:03.0192238Z   -   74 [firefox] › tests/e2e/fonts.spec.ts:101:6 › Phase 38: a Google font loads only when used, and the layout follows it without a jump (new editor lacks dynamic Google font injection)
+2026-11-12T06:57:03.0195405Z   -   75 [firefox] › tests/e2e/fonts.spec.ts:134:6 › Phase 38: weights come from the family, variable axes are sliders, and font loading is a project setting (new editor lacks font family/variable axes inspector controls)
+2026-11-12T06:57:03.0199066Z   -   76 [firefox] › tests/e2e/frames.spec.ts:31:6 › Phase 21: Desktop, Tablet and Mobile are three frames, each its own stage, and they survive a reload (new editor lacks multi-frame stage canvas)
+2026-11-12T06:57:03.0202007Z   -   77 [firefox] › tests/e2e/frames.spec.ts:61:6 › Phase 21: add a custom frame, rename, resize, duplicate, reorder and delete (new editor lacks multi-frame stage canvas and custom frame management)
+2026-11-12T06:57:03.0204207Z   -   78 [firefox] › tests/e2e/frames.spec.ts:108:6 › Phase 21: the backdrop can be light, dark or a checkerboard (new editor lacks Canvas backdrop selector)
+2026-11-12T06:57:03.0206623Z   -   79 [firefox] › tests/e2e/frames.spec.ts:118:6 › Phase 21: the header switch and the frames own the active frame (new editor lacks Device Preview Target multi-frame switcher)
+2026-11-12T06:57:06.3003106Z   ✓   80 [firefox] › tests/e2e/grid-constraints.spec.ts:91:7 › Phase 42: constraints when a frame is resized › each constraint puts its layer where constrainBox says at four sizes, and undo restores (3.3s)
+2026-11-12T06:57:09.7574246Z   ✓   81 [firefox] › tests/e2e/grid-constraints.spec.ts:111:7 › Phase 42: constraints when a frame is resized › a resize through the inspector moves them, is one undo step, and matches the pure function exactly (3.4s)
+2026-11-12T06:57:12.9725357Z   ✓   82 [firefox] › tests/e2e/grid-constraints.spec.ts:137:7 › Phase 42: constraints when a frame is resized › the constraints controls set them on the selected layer (3.2s)
+2026-11-12T06:57:16.0318736Z   ✓   83 [firefox] › tests/e2e/grid-constraints.spec.ts:194:7 › Phase 42: grids › every cell is within half a pixel of trackSpans at 320, 480, 768, 1024 and 1440 (3.0s)
+2026-11-12T06:57:19.1559406Z   ✓   84 [firefox] › tests/e2e/grid-constraints.spec.ts:214:7 › Phase 42: grids › Add grid on a frame of loose layers reads the grid, draws its layout grid, and spans are set in the inspector (3.1s)
+2026-11-12T06:57:23.2270198Z   ✓   85 [firefox] › tests/e2e/grid-constraints.spec.ts:241:7 › Phase 42: grids › dragging a layer inside a grid moves it in the order, with an insertion line (4.1s)
+2026-11-12T06:57:25.1800069Z   ✓   86 [firefox] › tests/e2e/hit-testing.spec.ts:57:5 › Phase 22: the frames get no pointer events in Design mode (1.9s)
+2026-11-12T06:57:37.0256536Z   ✓   87 [firefox] › tests/e2e/hit-testing.spec.ts:63:5 › Phase 22: clicks at 20 known points select the expected layers at 3 zoom levels (11.8s)
+2026-11-12T06:57:40.1426464Z   ✓   88 [firefox] › tests/e2e/hit-testing.spec.ts:88:5 › Phase 22: a locked layer is skipped and a hidden one is not there to hit (3.1s)
+2026-11-12T06:57:42.7074817Z   ✓   89 [firefox] › tests/e2e/hit-testing.spec.ts:115:5 › Phase 22: hovering shows the layer a click would select (2.6s)
+2026-11-12T06:57:42.7079908Z   -   90 [firefox] › tests/e2e/images.spec.ts:100:6 › Phase 37: a picture fills a shape, fit and tile change how it sits, and its colours are properties (new editor lacks window.__LL_ASSETS__ test seam, stage iframe, and Fill colour dialog image settings)
+2026-11-12T06:57:42.7083157Z   -   91 [firefox] › tests/e2e/images.spec.ts:140:6 › Phase 37: crop by dragging the picture's corners, undone in one step (new editor lacks stage iframe and .canvas-overlay__ghandle image crop handles)
+2026-11-12T06:57:42.7086318Z   -   92 [firefox] › tests/e2e/images.spec.ts:187:6 › Phase 37: a frame takes a picture fill too, with colour changes drawn behind its content; replace swaps the picture and keeps the rest (new editor lacks stage iframe and legacy Fill colour dialog image settings)
+2026-11-12T06:57:42.7089451Z   -   93 [firefox] › tests/e2e/images.spec.ts:211:6 › Phase 37: replacing the picture of an image layer, by the command and by the Picture control (new editor lacks paint.replaceImage command and Picture inspector control)
+2026-11-12T06:57:42.7093141Z   -   94 [firefox] › tests/e2e/inspector-pro.spec.ts:70:6 › Phase 34: the Pro face has a control for every property of the selected layer, whatever its kind (new editor replaces Simple/Pro tabs with Design/Motion/Code modes and does not use form[name='Properties'] or [data-prop-path])
+2026-11-12T06:57:42.7098068Z   -   95 [firefox] › tests/e2e/inspector-pro.spec.ts:91:6 › Phase 34: type, arrow keys, scrub (and Escape), reset, and each control type writes to the document (new editor replaces Pro face with unified Design mode inspector, lacks [data-prop-path] and pro-number scrubbing)
+2026-11-12T06:57:42.7101807Z   -   96 [firefox] › tests/e2e/inspector-pro.spec.ts:163:6 › Phase 34: units, toggles, vectors, JSON, mixed values and the filter (new editor replaces Pro face with unified Design mode inspector, lacks [data-prop-path] and unit companion selects)
+2026-11-12T06:57:42.7105628Z   -   97 [firefox] › tests/e2e/inspector-simple.spec.ts:80:6 › Phase 33: every Simple control of a rectangle writes to the layer, the document and one undo step (new editor replaces Simple face with unified Design mode inspector, lacks form[name='Design'] and stage iframe)
+2026-11-12T06:57:42.7109105Z   -   98 [firefox] › tests/e2e/inspector-simple.spec.ts:128:6 › Phase 33: a text layer's words and colour, and a frame's fill, stroke and radius (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)
+2026-11-12T06:57:42.7112660Z   -   99 [firefox] › tests/e2e/inspector-simple.spec.ts:153:6 › Phase 33: several layers show Mixed where they differ, and one change sets them all (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)
+2026-11-12T06:57:42.7116366Z   -  100 [firefox] › tests/e2e/inspector-simple.spec.ts:184:6 › Phase 33: a layer placed by its parent's layout can be moved, and the Pro face is one click away (new editor replaces Simple/Pro face switching with top-bar Design/Motion/Code mode switch)
+2026-11-12T06:57:45.3078359Z   ✓  101 [firefox] › tests/e2e/keybinding-conflicts.spec.ts:10:5 › no two commands share a key in the same context (2.6s)
+2026-11-12T06:57:48.9056840Z   ✓  102 [firefox] › tests/e2e/keyframing.spec.ts:84:5 › Phase 64: keyframes are painted on one canvas, not made of DOM nodes (3.6s)
+2026-11-12T06:57:51.9532016Z   ✓  103 [firefox] › tests/e2e/keyframing.spec.ts:107:5 › Phase 64: only the rows in view are built, and scrolling builds the rest (3.0s)
+2026-11-12T06:57:55.5496363Z   ✓  104 [firefox] › tests/e2e/keyframing.spec.ts:126:5 › Phase 65: a precomp opens in a tab with breadcrumbs, is edited, and the parent shows the change (3.6s)
+2026-11-12T06:57:58.9512170Z   ✓  105 [firefox] › tests/e2e/keyframing.spec.ts:164:5 › Phase 66: Auto-key: 3 changes make 3 keyframes, playback matches, and undo removes them (3.4s)
+2026-11-12T06:58:03.2895735Z   ✓  106 [firefox] › tests/e2e/keyframing.spec.ts:189:5 › Phase 66: select, move, copy, paste and delete keyframes (4.3s)
+2026-11-12T06:58:06.8323703Z   ✓  107 [firefox] › tests/e2e/keyframing.spec.ts:236:5 › Phase 66: Shift-drag on empty lane box-selects keyframes (3.5s)
+2026-11-12T06:58:10.8014087Z   ✓  108 [firefox] › tests/e2e/keyframing.spec.ts:254:5 › Phase 67: the graph editor sets easing, by preset, by handles and by Bounce and Time (4.0s)
+2026-11-12T06:58:14.1795128Z   ✓  109 [firefox] › tests/e2e/layers.spec.ts:79:5 › Phase 32: the tree mirrors the document and the selection stays in sync both ways (3.4s)
+2026-11-12T06:58:14.1797943Z   -  110 [firefox] › tests/e2e/layers.spec.ts:122:6 › Phase 32: drag reorders, and moves a layer into another frame without moving it on the canvas (new editor lacks canvas interactive shape creation pipeline and canvas frame coordinate re-parenting)
+2026-11-12T06:58:14.1801685Z   -  111 [firefox] › tests/e2e/layers.spec.ts:160:6 › Phase 32: an illegal drop is refused with its reason and changes nothing (new editor lacks canvas interactive shape creation pipeline)
+2026-11-12T06:58:14.1809676Z   -  112 [firefox] › tests/e2e/layers.spec.ts:191:6 › Phase 32: rename in place, lock, hide and search (App bug: locked layers can still be selected via canvas stage click; Artboard.tsx lacks lock check on stage element pointer/click)
+2026-11-12T06:58:14.1900194Z   -  113 [firefox] › tests/e2e/layers.spec.ts:244:6 › Phase 32: a tree of hundreds of layers scrolls at frame rate and draws only the rows in view (new editor lacks virtualized layer tree scrolling)
+2026-11-12T06:58:16.0589599Z   ✓  114 [firefox] › tests/e2e/new-ui-canvas.spec.ts:74:7 › the canvas draws the real tree › an edit to a sample layer shows on the canvas (1.8s)
+2026-11-12T06:58:22.2812284Z   ✓  115 [firefox] › tests/e2e/new-ui-canvas.spec.ts:81:7 › the canvas draws the real tree › a frame's hide, opacity and clip reach what is inside it (6.2s)
+2026-11-12T06:58:31.4513274Z   ✓  116 [firefox] › tests/e2e/new-ui-canvas.spec.ts:100:7 › the canvas draws the real tree › Stack, gap and Fill lay the children out (9.2s)
+2026-11-12T06:58:36.2104640Z   ✓  117 [firefox] › tests/e2e/new-ui-canvas.spec.ts:133:7 › the canvas draws the real tree › a line's shadow is drawn, not cut off by its thin box (4.7s)
+2026-11-12T06:58:40.9629825Z   ✓  118 [firefox] › tests/e2e/new-ui-canvas.spec.ts:146:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn (4.7s)
+2026-11-12T06:58:45.6143790Z   ✓  119 [firefox] › tests/e2e/new-ui-canvas.spec.ts:154:7 › the canvas draws the real tree › Insert > Sections adds a real section to the page on screen (4.6s)
+2026-11-12T06:58:51.2111234Z   ✓  120 [firefox] › tests/e2e/new-ui-canvas.spec.ts:167:7 › shortcuts fire once › Duplicate adds one layer, Undo takes back one step, Delete removes one (5.6s)
+2026-11-12T06:59:00.6792758Z   ✓  121 [firefox] › tests/e2e/new-ui-canvas.spec.ts:188:7 › gestures › marquee on empty canvas selects what it touches (9.5s)
+2026-11-12T06:59:11.4446223Z   ✓  122 [firefox] › tests/e2e/new-ui-canvas.spec.ts:198:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all (10.8s)
+2026-11-12T06:59:17.9750648Z   ✓  123 [firefox] › tests/e2e/new-ui-canvas.spec.ts:223:7 › gestures › Shift-click adds to the selection and takes away from it (6.5s)
+2026-11-12T06:59:23.3033710Z   ✓  124 [firefox] › tests/e2e/new-ui-canvas.spec.ts:234:7 › gestures › Alt-drag leaves the original and moves a copy, as one undo step (5.3s)
+2026-11-12T06:59:29.1538115Z   ✓  125 [firefox] › tests/e2e/new-ui-canvas.spec.ts:268:7 › what goes under what › a new picture goes into the frame it lands on, or the selected frame, and shows on top there (5.8s)
+2026-11-12T06:59:38.9029255Z   ✓  126 [firefox] › tests/e2e/new-ui-canvas.spec.ts:287:7 › what goes under what › on the canvas a layer goes by where it is let go, even when it is bigger than the frame; several go together (9.7s)
+2026-11-12T06:59:48.3914108Z   ✓  127 [firefox] › tests/e2e/new-ui-canvas.spec.ts:313:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page (9.5s)
+2026-11-12T06:59:57.4770139Z   ✓  128 [firefox] › tests/e2e/new-ui-canvas.spec.ts:361:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows (9.1s)
+2026-11-12T07:00:06.8636492Z   ✓  129 [firefox] › tests/e2e/new-ui-canvas.spec.ts:390:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it (9.4s)
+2026-11-12T07:00:17.9990423Z   ✓  130 [firefox] › tests/e2e/new-ui-canvas.spec.ts:432:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them (11.1s)
+2026-11-12T07:00:29.1063825Z   ✓  131 [firefox] › tests/e2e/new-ui-canvas.spec.ts:446:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches (11.1s)
+2026-11-12T07:00:39.5116944Z   ✓  132 [firefox] › tests/e2e/new-ui-canvas.spec.ts:459:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders (10.4s)
+2026-11-12T07:00:51.7699809Z   ✓  133 [firefox] › tests/e2e/new-ui-canvas.spec.ts:509:7 › arranging: what is on top is what you see › Bring to front, Send to back, Bring forward and Send backward: by shortcut, each shows on screen (12.2s)
+2026-11-12T07:01:06.9069096Z   ✓  134 [firefox] › tests/e2e/new-ui-canvas.spec.ts:536:7 › arranging: what is on top is what you see › the same four from the right-click Arrange menu, on the canvas and on a row in the Layers panel (15.1s)
+2026-11-12T07:01:17.0293925Z   ✓  135 [firefox] › tests/e2e/new-ui-canvas.spec.ts:564:7 › arranging: what is on top is what you see › the Z field puts a layer over or under the others whatever the order, on the canvas (10.1s)
+2026-11-12T07:01:23.1123808Z   ✓  136 [firefox] › tests/e2e/new-ui-canvas.spec.ts:581:7 › corner pin: lay a layer on a surface › the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step (6.1s)
+2026-11-12T07:01:27.9509190Z   ✓  137 [firefox] › tests/e2e/new-ui-canvas.spec.ts:637:7 › saved projects › a current project is left as it is: a sample layer the designer put in flow stays in flow (4.8s)
+2026-11-12T07:01:33.3543493Z   ✓  138 [firefox] › tests/e2e/new-ui-canvas.spec.ts:649:7 › saved projects › an emptied page stays empty after a reload (5.4s)
+2026-11-12T07:02:34.8685422Z   ✘  139 [firefox] › tests/e2e/new-ui-canvas.spec.ts:663:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size (1.0m)
+2026-11-12T07:03:37.5638511Z   ✘  140 [firefox] › tests/e2e/new-ui-canvas.spec.ts:663:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size (retry #1) (1.0m)
+2026-11-12T07:03:46.2413862Z   ✓  141 [firefox] › tests/e2e/new-ui-canvas.spec.ts:709:7 › menus › a submenu opens at its full width, even when hovered again before it has finished opening (7.8s)
+2026-11-12T07:03:53.1248791Z   ✓  142 [firefox] › tests/e2e/new-ui-canvas.spec.ts:728:7 › menus, moving between submenus › hovering another row with a submenu swaps the submenu to that row's items (6.9s)
+2026-11-12T07:03:58.2806697Z   ✓  143 [firefox] › tests/e2e/new-ui-canvas.spec.ts:747:7 › an empty page is empty › the page is never drawn: no white sheet, border or title strip, with or without layers (5.1s)
+2026-11-12T07:04:05.2974494Z   ✓  144 [firefox] › tests/e2e/new-ui-canvas.spec.ts:784:7 › split text into letters › one click turns a word into one layer per letter, in place, each controllable on its own (7.0s)
+2026-11-12T07:04:08.8228028Z   ✓  145 [firefox] › tests/e2e/new-ui-colour-picker.spec.ts:7:5 › the page background and theme swatches open the colour picker and apply what is picked (3.5s)
+2026-11-12T07:04:14.2791148Z   ✓  146 [firefox] › tests/e2e/new-ui-cutout.spec.ts:46:5 › cut a mountain out of its picture and place it over another background (5.4s)
+2026-11-12T07:04:19.0303092Z   ✓  147 [firefox] › tests/e2e/new-ui-cutout.spec.ts:100:5 › Escape closes the cutout dialog without changing anything (4.7s)
+2026-11-12T07:04:24.6524198Z   ✓  148 [firefox] › tests/e2e/new-ui-cutout.spec.ts:122:5 › Apply to this image swaps the picture for its cutout (5.6s)
+2026-11-12T07:04:33.6167300Z   ✓  149 [firefox] › tests/e2e/new-ui-cutout.spec.ts:151:5 › a frame's picture fill: a piece cut from it lines up exactly, and text goes behind it (8.9s)
+2026-11-12T07:04:41.6029538Z   ✓  150 [firefox] › tests/e2e/new-ui-cutout.spec.ts:249:5 › a loose shape drawn around the mountain settles onto its edge with Snap to edges, and does not with it off (8.0s)
+2026-11-12T07:04:47.1124158Z   ✓  151 [firefox] › tests/e2e/new-ui-cutout.spec.ts:295:5 › Depth: the picture's depth is estimated, shown, picked from, and split into depth layers placed exactly over it (5.5s)
+2026-11-12T07:04:54.3225556Z   ✓  152 [firefox] › tests/e2e/new-ui-cutout.spec.ts:335:5 › Add selection + rest: one go gives the piece and the picture with it taken out; a piece reopens with its own shape (7.2s)
+2026-11-12T07:04:57.7502115Z   ✓  153 [firefox] › tests/e2e/new-ui-device-views.spec.ts:89:7 › Task I: Device views and live linked mirror frames › 1) no Desktop/Tablet/Mobile buttons in the top bar (3.4s)
+2026-11-12T07:05:02.2496379Z   ✓  154 [firefox] › tests/e2e/new-ui-device-views.spec.ts:104:7 › Task I: Device views and live linked mirror frames › 2) empty page + Mobile in the Design pill creates a Mobile frame (4.5s)
+2026-11-12T07:05:08.7694363Z   ✓  155 [firefox] › tests/e2e/new-ui-device-views.spec.ts:128:7 › Task I: Device views and live linked mirror frames › 3) with a Desktop frame selected, Tablet opens a mirror to the right (120px gap, same top) (6.5s)
+2026-11-12T07:05:16.9643492Z   ✓  156 [firefox] › tests/e2e/new-ui-device-views.spec.ts:185:7 › Task I: Device views and live linked mirror frames › 4) adding a rectangle inside the main appears in the mirror live (8.2s)
+2026-11-12T07:05:25.4047198Z   ✓  157 [firefox] › tests/e2e/new-ui-device-views.spec.ts:219:7 › Task I: Device views and live linked mirror frames › 5) moving a layer inside mirror writes a Tablet override and leaves main untouched (8.4s)
+2026-11-12T07:05:31.8605249Z   ✓  158 [firefox] › tests/e2e/new-ui-device-views.spec.ts:262:7 › Task I: Device views and live linked mirror frames › 6) clicking Desktop again with a Desktop frame selected creates a new independent frame (6.4s)
+2026-11-12T07:05:38.6720234Z   ✓  159 [firefox] › tests/e2e/new-ui-device-views.spec.ts:300:7 › Task I: Device views and live linked mirror frames › 7) deleting the mirror keeps the main frame intact (6.8s)
+2026-11-12T07:05:47.4255321Z   ✓  160 [firefox] › tests/e2e/new-ui-device-views.spec.ts:342:7 › Task I: Device views and live linked mirror frames › 8) deleting a layer inside a mirror is refused with a toast (8.7s)
+2026-11-12T07:05:55.7460060Z   ✓  161 [firefox] › tests/e2e/new-ui-device-views.spec.ts:379:7 › Task I: Device views and live linked mirror frames › 9) picking a layer in the mirror never leaves the main frame in Tablet: it keeps its width and edits go to Desktop (8.3s)
+2026-11-12T07:05:59.2125117Z   ✓  162 [firefox] › tests/e2e/new-ui-drop.spec.ts:23:5 › a picture dropped on the canvas is stored in the assets and placed where it was dropped (3.5s)
+2026-11-12T07:06:03.2583656Z   ✓  163 [firefox] › tests/e2e/new-ui-frames-presets.spec.ts:100:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › empty page + Frame tool = exactly one visible frame and no page sheet (4.0s)
+2026-11-12T07:06:08.1268360Z   ✓  164 [firefox] › tests/e2e/new-ui-frames-presets.spec.ts:121:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › a loose shape on the page shows on the canvas and the page is still never drawn (4.9s)
+2026-11-12T07:06:12.6769491Z   ✓  165 [firefox] › tests/e2e/new-ui-frames-presets.spec.ts:136:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › empty page + Mobile click creates a frame named Mobile of 375 wide (4.5s)
+2026-11-12T07:06:22.6685709Z   ✓  166 [firefox] › tests/e2e/new-ui-frames-presets.spec.ts:169:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › with a frame, Tablet click + moving a child gives an override that persists when switching Desktop -> Tablet again while Desktop stays unchanged (10.0s)
+2026-11-12T07:06:27.6308779Z   ✓  167 [firefox] › tests/e2e/new-ui-frames-presets.spec.ts:218:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › Backspace deletes the frame (4.9s)
+2026-11-12T07:07:20.9024148Z   ✓  168 [firefox] › tests/e2e/new-ui-hero.spec.ts:111:7 › build the Adventure hero in the new editor › a designer can build the whole hero from the Design tab (53.2s)
+2026-11-12T07:08:22.2096391Z   ✘  169 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:52:7 › Lane A issue fixes › LA-012: Arrange changes what is on top, on the canvas as well as in the list (1.0m)
+2026-11-12T07:09:24.8080681Z   ✘  170 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:52:7 › Lane A issue fixes › LA-012: Arrange changes what is on top, on the canvas as well as in the list (retry #1) (1.0m)
+2026-11-12T07:09:31.9458518Z   ✓  171 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:76:7 › Lane A issue fixes › LA-013 / LA-031 / LA-033: a frame can be drawn on bare canvas and holds what is drawn inside it (6.2s)
+2026-11-12T07:09:37.3016145Z   ✓  172 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:94:7 › Lane A issue fixes › LA-001: Center aligns a layer in its frame, not in a 100px page (5.3s)
+2026-11-12T07:09:37.3019226Z   -  173 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:110:8 › Lane A issue fixes › LA-002 / LA-004 / LA-008: No wrap keeps one line, Font loading keeps its choice, capitalisation shows while editing
+2026-11-12T07:09:44.3408144Z   ✓  174 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:127:7 › Lane A issue fixes › LA-014 / LA-016: scale, skew and transform origin show on the canvas and stay chosen (7.0s)
+2026-11-12T07:09:50.2852617Z   ✓  175 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:144:7 › Lane A issue fixes › LA-024: a stroke on one side only is written for that side (5.9s)
+2026-11-12T07:09:55.2898013Z   ✓  176 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:155:7 › Lane A issue fixes › LA-025 / LA-026: a line takes dash style and cap (5.0s)
+2026-11-12T07:10:00.5602579Z   ✓  177 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:171:7 › Lane A issue fixes › LA-030: the preview while drawing is the shape being drawn (5.3s)
+2026-11-12T07:10:00.5607682Z   -  178 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:183:8 › Lane A issue fixes › LA-032: Shift+wheel pans sideways and a right-button drag pans the canvas
+2026-11-12T07:10:05.7840509Z   ✓  179 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:200:7 › Lane A issue fixes › LA-011 / LA-005 / LA-023: resize handles have a real target and colours open a picker (5.2s)
+2026-11-12T07:10:11.1302712Z   ✓  180 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:215:7 › Lane A issue fixes › Ctrl+K opens the command palette and runs the command you pick (5.3s)
+2026-11-12T07:10:11.1304549Z   -  181 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:231:8 › Lane A issue fixes › the Page block resizes and colours the page, and a drag on a fill grip reorders fills
+2026-11-12T07:10:17.1731553Z   ✓  182 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:261:7 › Lane A issue fixes › round 3: a layer dropped on a frame in the Layers panel, or on the canvas, becomes its child and keeps its place (6.0s)
+2026-11-12T07:11:19.0072124Z   ✘  183 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:285:7 › Lane A issue fixes › round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back (1.0m)
+2026-11-12T07:12:21.4470106Z   ✘  184 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:285:7 › Lane A issue fixes › round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back (retry #1) (1.0m)
+2026-11-12T07:12:21.4474185Z   -  185 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:310:8 › Lane A issue fixes › round 3: a right-drag pans without opening the menu, a right-click opens it
+2026-11-12T07:12:21.4476766Z   -  186 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:323:8 › Lane A issue fixes › round 3: text you type does not wrap with No wrap, and the open More block stays open
+2026-11-12T07:12:21.4478926Z   -  187 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:348:8 › Lane A issue fixes › round 3: padding can be typed on text, and choosing Inner shadow, Layer blur or Background blur applies it
+2026-11-12T07:12:21.4481038Z   -  188 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:371:8 › Lane A issue fixes › round 3: a line turns vertical, has a colour picker, separate end caps and a shadow that shows
+2026-11-12T07:12:29.5859577Z   ✓  189 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:390:7 › Lane A issue fixes › round 3: Animation is in Motion, Data and Logic are in Code, none of them in Design (7.2s)
+2026-11-12T07:12:34.4851154Z   ✓  190 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:403:7 › Lane A issue fixes › round 3: the polygon preview has the sides the polygon gets (4.9s)
+2026-11-12T07:12:40.5158694Z   ✓  191 [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:416:7 › Lane A issue fixes › round 4: the selection around No wrap text includes the part that runs past the box (6.0s)
+2026-11-12T07:12:40.5163380Z   -  192 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:50:7 › loading pages › a + between two pages adds a thin Loading entry there, and it opens with both pages beside it
+2026-11-12T07:12:40.5165932Z   -  193 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:98:7 › loading pages › each reference has a dropdown to pick any page, the same one on both sides too, and it is kept
+2026-11-12T07:12:40.5168425Z   -  194 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:127:7 › loading pages › an ordinary page shows no references, and the view returns to the page
+2026-11-12T07:12:40.5170907Z   -  195 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:141:7 › loading pages › the last real page cannot be deleted just because a loading page is also there
+2026-11-12T07:12:40.5173376Z   -  196 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:155:6 › the Pages menu can be hovered when it is reopened straight after a choice
+2026-11-12T07:12:40.5180483Z   -  197 [firefox] › tests/e2e/new-ui-loading-pages.spec.ts:166:6 › the Next.js export writes the loading page as loading.tsx beside the page it leads to, and not as a page
+2026-11-12T07:12:45.8037933Z   ✓  198 [firefox] › tests/e2e/new-ui-reference-puffy-button.spec.ts:46:5 › a glossy inflated button from generic properties: lit top edge, dark body, a soft shadow below (5.3s)
+2026-11-12T07:12:52.6620144Z   ✓  199 [firefox] › tests/e2e/new-ui-responsive-frames.spec.ts:113:7 › responsive frames: auto-adapt, fold and Preview › a Tablet view lays out what is in the frame by itself: nothing runs out of the frame, and Desktop edits carry over (6.8s)
+2026-11-12T07:12:59.8352109Z   ✓  200 [firefox] › tests/e2e/new-ui-responsive-frames.spec.ts:135:7 › responsive frames: auto-adapt, fold and Preview › Mobile stacks the row; the fold shows how much fits; Preview makes the frame the phone's screen, and it scrolls (7.2s)
+2026-11-12T07:13:06.5860839Z   ✓  201 [firefox] › tests/e2e/new-ui-responsive-frames.spec.ts:167:7 › responsive frames: auto-adapt, fold and Preview › a Desktop frame stretched by its content shows the Desktop fold and previews at 900 (6.7s)
+2026-11-12T07:13:14.4578641Z   ✓  202 [firefox] › tests/e2e/new-ui-responsive-frames.spec.ts:176:7 › responsive frames: auto-adapt, fold and Preview › Tablet and Mobile views of one frame open side by side, not on top of each other (7.9s)
+2026-11-12T07:13:21.5866595Z   ✓  203 [firefox] › tests/e2e/new-ui-responsive-frames.spec.ts:188:7 › responsive frames: auto-adapt, fold and Preview › the size label tells the truth, and clicking and dragging still work around the new controls (7.1s)
+2026-11-12T07:13:30.0966662Z   ✓  204 [firefox] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the canvas (8.5s)
+2026-11-12T07:13:38.6477535Z   ✓  205 [firefox] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the inspector (8.5s)
+2026-11-12T07:13:46.7349805Z   ✓  206 [firefox] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the top bar (8.1s)
+2026-11-12T07:13:55.5868388Z   ✓  207 [firefox] › tests/e2e/new-ui-shortcuts.spec.ts:52:5 › typing in a field never deletes layers (8.8s)
+2026-11-12T07:13:59.7986574Z   ✓  208 [firefox] › tests/e2e/new-ui-standing-letters.spec.ts:36:7 › Task F: 3D standing letters with thickness › type FERRARI, split, stand up, extrude, remove depth, and car layering (4.2s)
+2026-11-12T07:14:05.3307234Z   ✓  209 [firefox] › tests/e2e/new-ui-text-fill.spec.ts:44:7 › text image fill (Phase 35/37 Task A) › text layer filled with an image clips letters and restores solid colour on removal (5.5s)
+2026-11-12T07:14:17.5819799Z   ✓  210 [firefox] › tests/e2e/new-ui-tools.spec.ts:49:7 › the new editor's drawing tools › Frame, every Shape and Text draw a layer by dragging, show it on the canvas, and hand back to Select (12.2s)
+2026-11-12T07:14:20.3289125Z   ✓  211 [firefox] › tests/e2e/new-ui-tools.spec.ts:83:7 › the new editor's drawing tools › the keyboard shortcuts arm the tools: R draws a rectangle, O an ellipse, T text (2.7s)
+2026-11-12T07:14:23.9853772Z   ✓  212 [firefox] › tests/e2e/new-ui-tools.spec.ts:93:7 › the new editor's drawing tools › a drawn layer is one undo step, and redo brings it back (3.6s)
+2026-11-12T07:14:27.2901716Z   ✓  213 [firefox] › tests/e2e/new-ui-tools.spec.ts:105:7 › the new editor's drawing tools › a drag on bare canvas, outside the page, still draws (LA-031) (3.3s)
+2026-11-12T07:14:32.0792302Z   ✓  214 [firefox] › tests/e2e/new-ui-tools.spec.ts:114:7 › the new editor's drawing tools › a new shape can be selected, moved by dragging, resized and painted from the inspector (4.8s)
+2026-11-12T07:14:38.4347140Z   ✓  215 [firefox] › tests/e2e/new-ui-tools.spec.ts:152:7 › the new editor's drawing tools › the right-click menu acts on a drawn layer: Duplicate, Delete (6.3s)
+2026-11-12T07:14:40.9939382Z   ✓  216 [firefox] › tests/e2e/new-ui-tools.spec.ts:187:7 › moving around the canvas › the Hand tool pans the artboard, and Select does not (2.5s)
+2026-11-12T07:14:43.0012809Z   -  217 [firefox] › tests/e2e/new-ui-tools.spec.ts:204:7 › moving around the canvas › the wheel pans, and Ctrl or Cmd with the wheel zooms
+2026-11-12T07:14:48.2664198Z   ✓  218 [firefox] › tests/e2e/new-ui-warp-mesh.spec.ts:41:7 › Warp mesh › creates mesh, drags centre point, verifies matrix3d tiles, undo restores, and remove restores plain layer (5.2s)
+2026-11-12T07:14:51.3276246Z   ✓  219 [firefox] › tests/e2e/onion-skin.spec.ts:28:7 › Phase 71 · Onion skin › timeline onion skin button toggles onion skin state in transport (3.0s)
+2026-11-12T07:14:55.5159158Z   ✓  220 [firefox] › tests/e2e/onion-skin.spec.ts:48:7 › Phase 71 · Onion skin › onion skin renders ghost frames on stage without blocking canvas interactions (4.2s)
+2026-11-12T07:14:57.5335105Z   ✓  221 [firefox] › tests/e2e/overlay-modes.spec.ts:36:5 › Phase 23: the overlay is one layer above the frames and never takes the pointer (2.0s)
+2026-11-12T07:14:59.7869772Z   ✓  222 [firefox] › tests/e2e/overlay-modes.spec.ts:53:5 › Phase 23: the hover outline appears within one frame of the pointer, with 1,000+ layers (2.2s)
+2026-11-12T07:15:01.8666834Z   ✓  223 [firefox] › tests/e2e/overlay-modes.spec.ts:83:5 › Phase 23: a selected layer gets a selection outline with its name and size (2.1s)
+2026-11-12T07:15:05.1923452Z   ✓  224 [firefox] › tests/e2e/overlay-modes.spec.ts:93:5 › Phase 23: Design mode picks layers; in Preview a click reaches the page (3.3s)
+2026-11-12T07:15:09.9725910Z   ✓  225 [firefox] › tests/e2e/pages.spec.ts:100:7 › Phase 48: pages, sections and links › a 5-page site navigates in Preview, with back and forward (4.8s)
+2026-11-12T07:15:14.1883611Z   ✓  226 [firefox] › tests/e2e/pages.spec.ts:153:7 › Phase 48: pages, sections and links › a link to a section scrolls to it; a link to a web address opens it; an edit of the shared header reaches every page (4.2s)
+2026-11-12T07:15:18.5309225Z   ✓  227 [firefox] › tests/e2e/pages.spec.ts:205:7 › Phase 48: pages, sections and links › the Pages panel lists the pages with their routes and edits them; the Link section sets a link and says when it leads nowhere (4.3s)
+2026-11-12T07:15:20.0827349Z   ✓  228 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: solid with opacity renders the same in every browser (1.4s)
+2026-11-12T07:15:21.4762550Z   ✓  229 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear, corner to corner renders the same in every browser (1.4s)
+2026-11-12T07:15:22.9708067Z   ✓  230 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: radial, off centre renders the same in every browser (1.5s)
+2026-11-12T07:15:24.3511200Z   ✓  231 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic, three colours renders the same in every browser (1.4s)
+2026-11-12T07:15:25.8270316Z   ✓  232 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: three fills stacked renders the same in every browser (1.5s)
+2026-11-12T07:15:27.2447532Z   ✓  233 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear on an ellipse renders the same in every browser (1.4s)
+2026-11-12T07:15:29.6702832Z   ✓  234 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic on a star renders the same in every browser (2.4s)
+2026-11-12T07:15:31.1282049Z   ✓  235 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear on a frame renders the same in every browser (1.4s)
+2026-11-12T07:15:32.5449793Z   ✓  236 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic on a frame renders the same in every browser (1.4s)
+2026-11-12T07:15:34.0081102Z   ✓  237 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: dashed stroke, rounded corners renders the same in every browser (1.4s)
+2026-11-12T07:15:35.5343596Z   ✓  238 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: dotted round-cap stroke on an ellipse renders the same in every browser (1.5s)
+2026-11-12T07:15:36.9227466Z   ✓  239 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: drop shadow on a shape renders the same in every browser (1.4s)
+2026-11-12T07:15:38.3838592Z   ✓  240 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: inner shadow on a shape renders the same in every browser (1.4s)
+2026-11-12T07:15:39.7616362Z   ✓  241 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: drop and inner shadows on a frame renders the same in every browser (1.4s)
+2026-11-12T07:15:41.1820927Z   ✓  242 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a rectangle renders the same in every browser (1.4s)
+2026-11-12T07:15:42.5946884Z   ✓  243 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fit in an ellipse renders the same in every browser (1.4s)
+2026-11-12T07:15:44.9610635Z   ✓  244 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture crop (the right-hand middle) renders the same in every browser (2.4s)
+2026-11-12T07:15:46.3809187Z   ✓  245 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture tiled at a fifth renders the same in every browser (1.4s)
+2026-11-12T07:15:47.8103392Z   ✓  246 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a star renders the same in every browser (1.4s)
+2026-11-12T07:15:49.2255452Z   ✓  247 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a frame renders the same in every browser (1.4s)
+2026-11-12T07:15:50.5943038Z   ✓  248 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture on a frame, desaturated and brighter renders the same in every browser (1.4s)
+2026-11-12T07:15:51.9852708Z   ✓  249 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture on a shape, high contrast renders the same in every browser (1.4s)
+2026-11-12T07:15:53.4390422Z   ✓  250 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: layer blur renders the same in every browser (1.4s)
+2026-11-12T07:15:54.8759462Z   ✓  251 [firefox] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: background blur over stripes renders the same in every browser (1.4s)
+2026-11-12T07:15:54.8763005Z   -  252 [firefox] › tests/e2e/paint.spec.ts:78:6 › Phase 35: the colour picker sets a colour by hex, by the square and sliders, and by OKLCH (new editor lacks legacy Fill colour dialog, OKLCH tab, and stage iframe)
+2026-11-12T07:15:54.8765754Z   -  253 [firefox] › tests/e2e/paint.spec.ts:124:6 › Phase 35: gradient fills: type, stops, handles on the canvas, and undo (new editor lacks canvas gradient handles and legacy gradient editor dialog)
+2026-11-12T07:15:54.8769344Z   -  254 [firefox] › tests/e2e/paint.spec.ts:185:6 › Phase 35: several fills stack, hide, reorder and go; the Simple face still sets one plain colour (new editor lacks legacy multi-fill stack controls and Simple face toggle)
+2026-11-12T07:15:54.8772330Z   -  255 [firefox] › tests/e2e/paint.spec.ts:212:6 › Phase 35: stroke patterns, shadows and blur (new editor lacks legacy stroke style and shadow popover controls)
+2026-11-12T07:15:56.7336454Z   ✓  256 [firefox] › tests/e2e/parenting.spec.ts:28:7 › Phase 73 · Parenting & helper layers › helper layer draws dashed with badge in Design mode and is absent from Preview DOM (1.8s)
+2026-11-12T07:15:58.5527544Z   ✓  257 [firefox] › tests/e2e/parenting.spec.ts:100:7 › Phase 73 · Parenting & helper layers › rotating parent rotates child layer on stage via transform composition (1.8s)
+2026-11-12T07:16:02.2635464Z   ✓  258 [firefox] › tests/e2e/parity.spec.ts:31:5 › Phase 60: correct playback stays green (3.7s)
+2026-11-12T07:16:04.0696311Z   ✓  259 [firefox] › tests/e2e/parity.spec.ts:46:5 › Phase 60: an injected wrong easing raises [PARITY_DRIFT] (1.8s)
+2026-11-12T07:16:04.0698738Z   -  260 [firefox] › tests/e2e/parity.spec.ts:69:6 › Phase 60: the badge shows the state in the editor's status bar (new editor lacks Engine parity status-bar badge and parity monitoring UI)
+2026-11-12T07:16:08.1673329Z   ✓  261 [firefox] › tests/e2e/pen.spec.ts:47:7 › Phase 39: pencil and pen › the pencil fits a stroke to a few nodes and a drag is one undo step (4.1s)
+2026-11-12T07:16:11.6718575Z   ✓  262 [firefox] › tests/e2e/pen.spec.ts:71:7 › Phase 39: pencil and pen › the pen: clicks, a dragged handle, Backspace, Enter, and Escape (3.5s)
+2026-11-12T07:16:14.6754507Z   ✓  263 [firefox] › tests/e2e/pen.spec.ts:115:7 › Phase 39: pencil and pen › clicking the first node closes the path (3.0s)
+2026-11-12T07:16:14.6757392Z   -  264 [firefox] › tests/e2e/phase3-persistence.spec.ts:68:8 › Phase 3: store, history & persistence › A. 20 edits persist across reload; 20 undos return to blank (new editor motion sequencer is client-only useMotionModel and does not persist keyframes to document.clips in .lazy.json)
+2026-11-12T07:16:14.6773861Z   -  265 [firefox] › tests/e2e/phase3-persistence.spec.ts:107:8 › Phase 3: store, history & persistence › B. import in a fresh profile restores the document and renders identically (depends on Case A export and legacy dock-zone layout)
+2026-11-12T07:16:14.6776945Z   -  266 [firefox] › tests/e2e/phase3-persistence.spec.ts:133:8 › Phase 3: store, history & persistence › C. dropping a .lazy.json onto the window opens it (depends on Case A export and legacy document loading)
+2026-11-12T07:16:14.6780038Z   -  267 [firefox] › tests/e2e/phase3-persistence.spec.ts:151:6 › D. crash recovery restores the last unsaved edit (Chromium only) (new editor motion sequencer does not record keyframe changes into document.clips for crash recovery snapshot)
+2026-11-12T07:16:14.6783399Z   -  268 [firefox] › tests/e2e/phase3-persistence.spec.ts:183:6 › E. dragging a keyframe is exactly one undo step (new editor motion sequencer does not record keyframe dragging into document command history)
+2026-11-12T07:16:14.6785339Z   -  269 [firefox] › tests/e2e/phase8-rules-engine.spec.ts:14:6 › New UI lacks Content Browser and Presets tool (panels/content-browser is todo in PARITY.md)
+2026-11-12T07:16:20.7468072Z   ✓  270 [firefox] › tests/e2e/playback-on-clock.spec.ts:45:5 › App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks (6.1s)
+2026-11-12T07:16:26.0216310Z   ✓  271 [firefox] › tests/e2e/playback-on-clock.spec.ts:67:5 › Phase 56: playing re-renders the timeline at most 10 times a second (5.2s)
+2026-11-12T07:16:27.9159502Z   ✓  272 [firefox] › tests/e2e/presets.spec.ts:15:5 › Phase 15: Design is the default — Layers │ stage │ Design inspector, timeline folded to the transport bar (1.9s)
+2026-11-12T07:16:30.5240728Z   ✓  273 [firefox] › tests/e2e/presets.spec.ts:25:5 › Phase 15: Animate gives the timeline ~40% of the window and opens the Motion inspector (2.6s)
+2026-11-12T07:16:38.3449097Z   ✘  274 [firefox] › tests/e2e/presets.spec.ts:41:5 › Phase 15: a preset switch takes under 100 ms and never replaces the stage (7.2s)
+2026-11-12T07:16:46.9582763Z   ✓  275 [firefox] › tests/e2e/presets.spec.ts:41:5 › Phase 15: a preset switch takes under 100 ms and never replaces the stage (retry #1) (7.6s)
+2026-11-12T07:16:48.8241176Z   ✓  276 [firefox] › tests/e2e/presets.spec.ts:91:5 › Phase 15: Logic, Data and Debug are not in the initial edition (1.8s)
+2026-11-12T07:16:51.1238011Z   ✓  277 [firefox] › tests/e2e/presets.spec.ts:97:5 › Phase 15: the Code inspector shows the document's code in the right dock (2.3s)
+2026-11-12T07:16:51.1240093Z   -  278 [firefox] › tests/e2e/presets.spec.ts:105:6 › New UI lacks custom saved layouts (legacy dock feature)
+2026-11-12T07:16:51.1243284Z   -  279 [firefox] › tests/e2e/property-migration.spec.ts:17:6 › Phase 42: a v2 project migrates to v3 and renders identically to the native v3 demo — New UI lacks Mount Showcase Demo action on /editor (TopBar help.demo is disabled: 'Showcase demo available in gallery')
+2026-11-12T07:16:52.1780834Z   ✓  280 [firefox] › tests/e2e/render-gallery.spec.ts:27:5 › Phase 17: every archetype is drawn, at the size its geometry says, in every browser (1.0s)
+2026-11-12T07:16:53.2657729Z   ✓  281 [firefox] › tests/e2e/render-gallery.spec.ts:60:5 › Phase 17: nothing from a hostile case runs, loads or overflows its cell (1.1s)
+2026-11-12T07:16:54.4675931Z   ✓  282 [firefox] › tests/e2e/render-gallery.spec.ts:81:5 › Phase 17: layout cases lay out the same way in every browser (1.2s)
+2026-11-12T07:16:57.9105259Z   ✓  283 [firefox] › tests/e2e/scroll.spec.ts:40:5 › Phase 81: a parallax follows the scroll exactly in Preview, and Design leaves it as drawn (3.4s)
+2026-11-12T07:17:02.3146770Z   ✓  284 [firefox] › tests/e2e/scroll.spec.ts:67:5 › Phase 81: a reveal waits at its first frame, plays once when it comes into view, and plays again after scrolling back above it (4.4s)
+2026-11-12T07:17:04.9384251Z   ✓  285 [firefox] › tests/e2e/scroll.spec.ts:81:5 › Phase 81: a pinned layer is held for the length of its range (2.6s)
+2026-11-12T07:17:09.2179120Z   ✓  286 [firefox] › tests/e2e/selection.spec.ts:60:5 › Phase 26: a 15-step selection journey asserts the exact selection after each step (4.3s)
+2026-11-12T07:17:12.2873473Z   ✓  287 [firefox] › tests/e2e/selection.spec.ts:135:5 › Phase 26: the selection stays in sync across the canvas, the inspector and the status bar (3.1s)
+2026-11-12T07:17:14.7324390Z   ✓  288 [firefox] › tests/e2e/snapping.spec.ts:65:5 › Phase 28: a moved layer snaps to another layer's edge, shows the guide line while it does, and clears it after (2.4s)
+2026-11-12T07:17:16.6594987Z   ✓  289 [firefox] › tests/e2e/snapping.spec.ts:79:5 › Phase 28: turning snapping off lets the same drag land where the pointer put it (1.9s)
+2026-11-12T07:17:18.5033268Z   ✓  290 [firefox] › tests/e2e/snapping.spec.ts:91:5 › Phase 28: a resize snaps the dragged edge (1.8s)
+2026-11-12T07:17:20.9974795Z   ✓  291 [firefox] › tests/e2e/snapping.spec.ts:101:5 › Phase 28: the Alt key shows the distances to the nearest neighbours (2.5s)
+2026-11-12T07:17:23.7375516Z   ✓  292 [firefox] › tests/e2e/snapping.spec.ts:116:5 › Phase 28: a guide dragged out of the ruler is a snap target, and the rulers can be hidden (2.7s)
+2026-11-12T07:17:28.0660196Z   ✓  293 [firefox] › tests/e2e/snapping.spec.ts:151:5 › Phase 28: guides belong to their frame, are saved, undone and restored (4.3s)
+2026-11-12T07:17:34.0679066Z   ✓  294 [firefox] › tests/e2e/split-letters.spec.ts:94:7 › split text: reliability & edge cases › shows toast feedback when text cannot be split due to 3D tilt (6.0s)
+2026-11-12T07:17:40.6287909Z   ✓  295 [firefox] › tests/e2e/split-letters.spec.ts:111:7 › split text: reliability & edge cases › splits multi-line text with correct vertical placement for each line (6.5s)
+2026-11-12T07:17:48.5875493Z   ✓  296 [firefox] › tests/e2e/split-letters.spec.ts:141:7 › split text: reliability & edge cases › splits text inside a nested container frame, keeping group inside parent frame (7.9s)
+2026-11-12T07:17:55.0289046Z   ✓  297 [firefox] › tests/e2e/split-letters.spec.ts:172:7 › split text: reliability & edge cases › splits rotated text preserving group rotation and visual position (6.4s)
+2026-11-12T07:18:01.5635132Z   ✓  298 [firefox] › tests/e2e/split-letters.spec.ts:198:7 › split text & animate letters inspector controls › shows 'Split into letters' button in Typography inspector, then 'Animate letters' button on the group (6.5s)
+2026-11-12T07:18:03.1964071Z   ✓  299 [firefox] › tests/e2e/stage-engine.spec.ts:62:5 › Phase 57: ten reference animations, seeked to five times, match the kernel within 0.5 px (1.6s)
+2026-11-12T07:18:04.8843578Z   ✓  300 [firefox] › tests/e2e/stage-engine.spec.ts:80:5 › Phase 57: pressing play moves the layers, and pausing holds them (1.7s)
+2026-11-12T07:18:05.9979377Z   ✓  301 [firefox] › tests/e2e/stage-engine.spec.ts:100:5 › Phase 57: scrubbing back to 0 puts the layers at their first keyframe (1.1s)
+2026-11-12T07:18:05.9981969Z   -  302 [firefox] › tests/e2e/stage-host.spec.ts:25:6 › Phase 18: the stage is a script-free same-origin frame with live DOM, not srcdoc — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+2026-11-12T07:18:05.9985152Z   -  303 [firefox] › tests/e2e/stage-host.spec.ts:72:6 › Phase 18: a document edit updates the stage in place, without reloading the frame, in under a frame — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+2026-11-12T07:18:05.9988105Z   -  304 [firefox] › tests/e2e/stage-host.spec.ts:129:6 › Phase 18: keys typed with the pointer over the stage reach the command bus — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+2026-11-12T07:18:07.0517488Z   ✓  305 [firefox] › tests/e2e/stage-incremental.spec.ts:34:5 › Phase 19: 500 layers mount in under 500 ms (1.0s)
+2026-11-12T07:18:08.2881480Z   ✓  306 [firefox] › tests/e2e/stage-incremental.spec.ts:42:5 › Phase 19: editing one layer re-renders no other layer (1.2s)
+2026-11-12T07:18:09.7690472Z   ✓  307 [firefox] › tests/e2e/stage-incremental.spec.ts:54:5 › Phase 19: adding or removing a layer re-renders its parent and nobody else (1.5s)
+2026-11-12T07:18:11.0456460Z   ✓  308 [firefox] › tests/e2e/stage-incremental.spec.ts:70:5 › Phase 19: the registry holds an element for every layer drawn (1.3s)
+2026-11-12T07:18:13.4523609Z   ✓  309 [firefox] › tests/e2e/stage-incremental.spec.ts:109:5 › Phase 19: measure() matches the DOM within 0.5 px, in document space, and follows layout (2.4s)
+2026-11-12T07:18:14.5400625Z   ✓  310 [firefox] › tests/e2e/stage-incremental.spec.ts:137:5 › Phase 19: measure() batches many callers into one answer per frame (1.1s)
+2026-11-12T07:18:15.8883739Z   ✓  311 [firefox] › tests/e2e/stage-waapi.spec.ts:49:5 › Phase 58: the reference animations run as Web Animations while playing, and not while scrubbing (1.3s)
+2026-11-12T07:18:17.0629974Z   ✓  312 [firefox] › tests/e2e/stage-waapi.spec.ts:58:5 › Phase 58: playing starts them at the transport's rate and pausing stops them (1.2s)
+2026-11-12T07:18:18.5767327Z   ✓  313 [firefox] › tests/e2e/stage-waapi.spec.ts:66:5 › Phase 58: a busy main thread doesn't stop a running animation's clock (1.5s)
+2026-11-12T07:18:26.1606576Z   ✓  314 [firefox] › tests/e2e/stage-waapi.spec.ts:81:5 › Phase 59: paused after really playing, the stage matches the kernel's (≤ 0.5%) at five times (7.6s)
+2026-11-12T07:18:32.5265946Z   ✓  315 [firefox] › tests/e2e/stage1-gate.spec.ts:83:7 › Phase 52: the design journeys › Journey A (a Figma user): frames, a card component with variants, a Mobile override, a pen icon, inline text, styles (6.3s)
+2026-11-12T07:18:38.5273766Z   ✓  316 [firefox] › tests/e2e/stage1-gate.spec.ts:175:7 › Phase 52: the design journeys › Journey B (a Wix user): a three-page site from templates, linked navigation, Mobile and Preview (6.0s)
+2026-11-12T07:18:42.7299572Z   ✓  317 [firefox] › tests/e2e/stage1-gate.spec.ts:250:7 › Phase 52: the design journeys › Journey C (output): the site exports as a ZIP and a project file opens again unchanged (4.2s)
+2026-11-12T07:18:46.0039519Z   ✓  318 [firefox] › tests/e2e/stage1-gate.spec.ts:280:7 › Phase 52: the design journeys › Journey D (an agent): Claude builds a section through MCP, and the user approves it (3.3s)
+2026-11-12T07:19:05.5476566Z [perf] firefox: 807 frames; median 17.1 ms (59 fps), p95 17.1 ms
+2026-11-12T07:19:05.6439581Z   ✓  319 [firefox] › tests/e2e/stage1-gate.spec.ts:325:7 › Phase 52: the design journeys › Performance: five frames of 200 layers pan and zoom smoothly (19.6s)
+2026-11-12T07:19:08.7821856Z   ✓  320 [firefox] › tests/e2e/stopwatch.spec.ts:49:5 › Phase 62: twirl a layer open, open a group, and its properties have stopwatches that are off (3.1s)
+2026-11-12T07:19:14.2697982Z   ✓  321 [firefox] › tests/e2e/stopwatch.spec.ts:69:5 › Phase 62: a stopwatch on and off round-trips through undo and save (5.5s)
+2026-11-12T07:19:17.2690727Z   ✓  322 [firefox] › tests/e2e/stopwatch.spec.ts:114:5 › Phase 62: the value at the playhead follows an animated property (3.0s)
+2026-11-12T07:19:21.4427345Z   ✓  323 [firefox] › tests/e2e/stopwatch.spec.ts:123:5 › Phase 62: U reveals the animated properties, and U twice the modified ones (4.2s)
+2026-11-12T07:19:34.3291086Z   ✓  324 [firefox] › tests/e2e/templates.spec.ts:48:5 › Phase 51: six templates make a landing page that follows the theme (12.9s)
+2026-11-12T07:19:36.7864938Z   ✓  325 [firefox] › tests/e2e/templates.spec.ts:119:5 › Phase 51: a starter project adds linked pages in one step (2.4s)
+2026-11-12T07:19:37.0905228Z   -  326 [firefox] › tests/e2e/text-editing.spec.ts:89:5 › Phase 31: draw a text box, type, style a word, new line, leave: one undo step; paste is plain text
+2026-11-12T07:19:37.3858332Z   -  327 [firefox] › tests/e2e/text-editing.spec.ts:142:5 › Phase 31: styled runs survive save and reload; double-click and Enter edit in place
+2026-11-12T07:19:38.4423300Z   -  328 [firefox] › tests/e2e/text-editing.spec.ts:196:5 › Phase 31: the inspector's text properties change the layer, one undo step each
+2026-11-12T07:19:38.7634787Z   -  329 [firefox] › tests/e2e/text-editing.spec.ts:240:5 › Phase 31: auto width, auto height and fixed size
+2026-11-12T07:19:39.0409993Z   -  330 [firefox] › tests/e2e/text-editing.spec.ts:286:5 › Phase 31: an IME composition is not interrupted, and commits as typed
+2026-11-12T07:19:39.3243947Z   -  331 [firefox] › tests/e2e/text-editing.spec.ts:308:5 › Phase 31: nothing leaves the editor while a composition is in progress (all browsers, with synthetic composition events)
+2026-11-12T07:19:43.0967135Z   ✓  332 [firefox] › tests/e2e/timeline-navigation.spec.ts:43:5 › Phase 63: a keyboard-only journey lands on exact times (3.8s)
+2026-11-12T07:19:46.2154474Z   ✓  333 [firefox] › tests/e2e/timeline-navigation.spec.ts:126:5 › Phase 63: the keys belong to the timeline: nothing happens over the canvas (3.1s)
+2026-11-12T07:19:49.2432390Z   ✓  334 [firefox] › tests/e2e/timeline-navigation.spec.ts:143:5 › Phase 63: Ctrl and the wheel zoom the timeline around the pointer (3.0s)
+2026-11-12T07:19:49.5386980Z   -  335 [firefox] › tests/e2e/timeline.spec.ts:43:5 › Phase 61: a ten-step journey through the timeline, asserting the document after each step
+2026-11-12T07:19:49.8217562Z   -  336 [firefox] › tests/e2e/timeline.spec.ts:123:5 › Phase 61: switches, blend mode and parent are saved in the document
+2026-11-12T07:19:50.1083393Z   -  337 [firefox] › tests/e2e/timeline.spec.ts:146:5 › Phase 61: the ruler can show frames, and dragging the ruler seeks
+2026-11-12T07:19:51.3802995Z   -  338 [firefox] › tests/e2e/timeline.spec.ts:157:5 › Phase 61: a motion badge in the Layers panel opens the layer in the timeline
+2026-11-12T07:19:54.7508639Z   ✓  339 [firefox] › tests/e2e/tokens.spec.ts:74:7 › Phase 45: design tokens › switching to Dark restyles every bound layer; the detached one stays put; Light brings it back (3.4s)
+2026-11-12T07:19:58.2009203Z   ✓  340 [firefox] › tests/e2e/tokens.spec.ts:91:7 › Phase 45: design tokens › changing a colour in the Tokens tab updates every layer bound to it, in the mode being viewed (3.4s)
+2026-11-12T07:20:01.4531907Z   ✓  341 [firefox] › tests/e2e/tokens.spec.ts:107:7 › Phase 45: design tokens › editing a bound value by hand detaches it, the inspector says so, Re-link binds it again (3.2s)
+2026-11-12T07:20:04.8023761Z   ✓  342 [firefox] › tests/e2e/tokens.spec.ts:126:7 › Phase 45: design tokens › Bind from the inspector, and Detach keeps what is shown in the mode being viewed (3.3s)
+2026-11-12T07:20:08.4311730Z   ✓  343 [firefox] › tests/e2e/tokens.spec.ts:142:7 › Phase 45: design tokens › a text style: made from one text, applied to another, a change restyles both (3.6s)
+2026-11-12T07:20:11.4058319Z   ✓  344 [firefox] › tests/e2e/tokens.spec.ts:160:7 › Phase 45: design tokens › deleting a variable keeps the look, and one undo brings the variable and its bindings back (3.0s)
+2026-11-12T07:20:14.8487365Z   ✓  345 [firefox] › tests/e2e/tools.spec.ts:37:5 › Phase 24: the dock shows only the tools that exist, and a button switches the tool (3.4s)
+2026-11-12T07:20:18.2936566Z   ✓  346 [firefox] › tests/e2e/tools.spec.ts:53:5 › Phase 24: a shortcut switches the tool (3.4s)
+2026-11-12T07:20:21.3923886Z   ✓  347 [firefox] › tests/e2e/tools.spec.ts:67:5 › Phase 24: holding Space gives the Hand and releasing returns to the previous tool (3.1s)
+2026-11-12T07:20:24.8148581Z   ✓  348 [firefox] › tests/e2e/tools.spec.ts:87:5 › Phase 24: holding Cmd/Ctrl gives deep select and releasing returns (3.4s)
+2026-11-12T07:20:27.6521849Z   ✓  349 [firefox] › tests/e2e/tools.spec.ts:96:5 › Phase 24: losing the window's focus can't leave a spring stuck on (2.8s)
+2026-11-12T07:20:31.0752648Z   ✓  350 [firefox] › tests/e2e/tools.spec.ts:105:5 › Phase 24: the Rectangle tool draws, returns to Select, and undo takes the shape back (3.4s)
+2026-11-12T07:20:34.1193494Z   ✓  351 [firefox] › tests/e2e/tools.spec.ts:120:5 › Phase 24: Space-drag and the middle button pan whatever tool is active, and draw nothing (3.0s)
+2026-11-12T07:20:44.3519554Z   ✓  352 [firefox] › tests/e2e/transform.spec.ts:83:5 › Phase 27: 30 standard manipulations are exactly 30 undo steps, and each leaves the geometry where it was (10.2s)
+2026-11-12T07:20:46.8520311Z   ✓  353 [firefox] › tests/e2e/transform.spec.ts:148:5 › Phase 27: Escape cancels a gesture and leaves no undo step (2.5s)
+2026-11-12T07:20:48.7461557Z   ✓  354 [firefox] › tests/e2e/transform.spec.ts:167:5 › Phase 27: a resize writes frame.* in one transaction and drawn shapes keep their parent (1.9s)
+2026-11-12T07:20:52.5587146Z   ✓  355 [firefox] › tests/e2e/transport-bar.spec.ts:9:5 › Phase 54: the transport bar plays, steps frames and cycles the loop mode (3.8s)
+2026-11-12T07:20:56.1134248Z   ✓  356 [firefox] › tests/e2e/variants.spec.ts:82:7 › Phase 47: variants, properties and slots › add variants from the inspector, choose one on an instance: its layers show, overrides stay; undo is one step (3.5s)
+2026-11-12T07:20:59.6388860Z   ✓  357 [firefox] › tests/e2e/variants.spec.ts:119:7 › Phase 47: variants, properties and slots › exposed properties are fields on the instance: a text and a visibility switch (3.5s)
+2026-11-12T07:21:03.4035887Z   ✓  358 [firefox] › tests/e2e/variants.spec.ts:148:7 › Phase 47: variants, properties and slots › a slot keeps an instance's own layer through edits of the main (3.8s)
+2026-11-12T07:21:07.4704125Z   ✓  359 [firefox] › tests/e2e/variants.spec.ts:165:7 › Phase 47: variants, properties and slots › a design system of 3 components × 3 variants with 40 instances keeps every override when every main is edited (4.1s)
+2026-11-12T07:21:11.1672679Z   ✓  360 [firefox] › tests/e2e/vector.spec.ts:65:7 › Phase 40: vector editing › Enter edits a path: move a node, add one, delete one, one undo step each (3.7s)
+2026-11-12T07:21:14.6263354Z   ✓  361 [firefox] › tests/e2e/vector.spec.ts:102:7 › Phase 40: vector editing › a handle pulled from a smooth node, and a corner made smooth by a double click (3.4s)
+2026-11-12T07:21:17.8778843Z   ✓  362 [firefox] › tests/e2e/vector.spec.ts:128:7 › Phase 40: vector editing › clicking one end then the other closes an open path (3.2s)
+2026-11-12T07:21:21.6019047Z   ✓  363 [firefox] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › union of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.7s)
+2026-11-12T07:21:25.2962885Z   ✓  364 [firefox] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › subtract of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.7s)
+2026-11-12T07:21:28.9893960Z   ✓  365 [firefox] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › intersect of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.7s)
+2026-11-12T07:21:32.6165480Z   ✓  366 [firefox] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › exclude of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.6s)
+2026-11-12T07:21:35.9353155Z   ✓  367 [firefox] › tests/e2e/vector.spec.ts:172:7 › Phase 40: boolean operations › flatten turns a rectangle into a path that can be edited (3.3s)
+2026-11-12T07:21:41.9217051Z   ✓  368 [firefox] › tests/e2e/vector.spec.ts:185:7 › Phase 40: SVG import › an imported 500-node SVG becomes editable vectors and stays editable at frame rate (6.0s)
+2026-11-12T07:21:44.5421777Z   ✓  369 [firefox] › tests/e2e/viewport-camera.spec.ts:50:5 › Phase 20: zoom keeps the point under the cursor fixed (2.6s)
+2026-11-12T07:21:49.8124401Z   ✓  370 [firefox] › tests/e2e/viewport-camera.spec.ts:69:5 › Phase 20: zoom runs from 2% to 6,400% (5.3s)
+2026-11-12T07:21:52.5945111Z   ✓  371 [firefox] › tests/e2e/viewport-camera.spec.ts:81:5 › Phase 20: plain wheel pans, and the buttons zoom to 100% and to fit (2.8s)
+2026-11-12T07:21:55.1132217Z   ✓  372 [firefox] › tests/e2e/viewport-camera.spec.ts:106:5 › Phase 20: wheel and pinch over the stage frame reach the camera (2.5s)
+2026-11-12T07:21:59.5987793Z   ✓  373 [firefox] › tests/e2e/viewport-camera.spec.ts:137:5 › Phase 20: the camera is saved per document and comes back after a reload (4.5s)
+2026-11-12T07:22:02.6091712Z   ✓  374 [firefox] › tests/e2e/viewport-camera.spec.ts:155:5 › Phase 20: Shift+2 zooms to the selected layer and Shift+0 returns to 100% (3.0s)
+2026-11-12T07:22:11.2776970Z   ✓  375 [firefox] › tests/e2e/viewport-camera.spec.ts:214:5 › Phase 20/21: pan and zoom hold 60 fps with 5 frames x 200 layers (8.7s)
+2026-11-12T07:22:18.6344021Z   ✓  376 [firefox] › tests/e2e/wire-53-motion-grammar.spec.ts:28:7 › Phase 53 · Animation grammar: close schema gaps in editor › two-way trigger and category binding survives reload and exports cleanly (7.3s)
+2026-11-12T07:22:23.0693710Z   ✓  377 [firefox] › tests/e2e/wire-54-transport.spec.ts:11:5 › Phase 54: single clock transport controls, step frame, play/pause, loop cycling and K pause (4.4s)
+2026-11-12T07:22:27.6752543Z   ✓  378 [firefox] › tests/e2e/wire-55-scheduler.spec.ts:12:5 › Phase 55: frame scheduler deterministic stepping synchronizes transport, Motion store, ValueHud and canvas page in lockstep (4.6s)
+2026-11-12T07:22:30.7463905Z   ✓  379 [firefox] › tests/e2e/wire-55-scheduler.spec.ts:119:5 › Design draws the design itself; Motion draws the animated frame at the playhead (3.1s)
+2026-11-12T07:22:35.0419764Z commits during ~1s of playback: timeline 0, artboard 0
+2026-11-12T07:22:36.8448833Z   ✓  380 [firefox] › tests/e2e/wire-56-playback.spec.ts:17:5 › Phase 56: playback throttles React commits to <= 10/s, keeps canvas and timeline in lockstep, and leaves no stale inline styles on pause (6.0s)
+2026-11-12T07:22:40.7529145Z   ✓  381 [firefox] › tests/e2e/wire-57-stage-engine.spec.ts:77:5 › Phase 57 on the new canvas: ten reference animations, seeked to five times, match the kernel (3.9s)
+2026-11-12T07:22:44.2945216Z   ✓  382 [firefox] › tests/e2e/wire-57-stage-engine.spec.ts:92:5 › Phase 57 on the new canvas: Design shows the design, Motion shows the playhead's frame, and play animates (3.5s)
+2026-11-12T07:22:47.7752054Z   ✓  383 [firefox] › tests/e2e/wire-58-60-engines.spec.ts:96:5 › Phase 58: the reference animations run as Web Animations while playing, not while scrubbing, and pausing stops them (3.5s)
+2026-11-12T07:22:53.3989237Z   ✓  384 [firefox] › tests/e2e/wire-58-60-engines.spec.ts:110:5 › Phase 59: paused after playing, every reference shows the kernel's value at that time (5.6s)
+2026-11-12T07:23:00.9897013Z   ✓  385 [firefox] › tests/e2e/wire-58-60-engines.spec.ts:128:5 › Phase 60: correct playback stays green, and an injected wrong easing raises [PARITY_DRIFT] and turns the badge (7.6s)
+2026-11-12T07:23:06.0004530Z   ✓  386 [firefox] › tests/e2e/wire-61-timeline.spec.ts:36:5 › Phase 61 on the new editor: a ten-step timeline journey, the document checked after each step (5.0s)
+2026-11-12T07:23:12.7854093Z   ✓  387 [firefox] › tests/e2e/wire-62-stopwatch.spec.ts:28:5 › Phase 62 on the new editor: twirl, groups, and a stopwatch on and off round-trips through undo and save (6.8s)
+2026-11-12T07:23:16.3554021Z   ✓  388 [firefox] › tests/e2e/wire-62-stopwatch.spec.ts:80:5 › Phase 62 on the new editor: U reveals only the animated properties (3.6s)
+2026-11-12T07:23:20.3713615Z   ✓  389 [firefox] › tests/e2e/wire-63-navigation.spec.ts:40:5 › Phase 63 on the new editor: a keyboard-only journey lands on exact times (4.0s)
+2026-11-12T07:23:20.6607218Z   -  390 [firefox] › tests/e2e/workspace.spec.ts:37:5 › Phase 14: an arranged layout (preset, tab, dock width) survives a reload
+2026-11-12T07:23:20.9353962Z   -  391 [firefox] › tests/e2e/workspace.spec.ts:57:5 › Phase 14: the stage node is the same object across resizes and preset switches
+2026-11-12T07:23:21.1908350Z   -  392 [firefox] › tests/e2e/workspace.spec.ts:78:5 › Phase 14: panels outside the layout are not loaded until they are shown
+2026-11-12T07:23:21.8119030Z   ✓  393 [firefox] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0 (580ms)
+2026-11-12T07:23:22.9761929Z   ✓  394 [firefox] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.25 (1.2s)
+2026-11-12T07:23:24.0202966Z   ✓  395 [firefox] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.5 (1.0s)
+2026-11-12T07:23:25.0627673Z   ✓  396 [firefox] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.75 (1.0s)
+2026-11-12T07:23:26.1238027Z   ✓  397 [firefox] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=1 (1.1s)
+2026-11-12T07:23:27.9332816Z   ✓  398 [firefox] › tests/export-harness/parity.spec.ts:169:7 › Phase 4.3: pixel parity (export vs. oracle) › broken export (wrong easing) fails parity at a mid-timeline sample (1.8s)
+2026-11-12T07:23:28.5737534Z 
+2026-11-12T07:23:28.5745271Z 
+2026-11-12T07:23:28.5757656Z   1) [firefox] › tests/e2e/new-ui-canvas.spec.ts:663:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size 
+2026-11-12T07:23:28.5758404Z 
+2026-11-12T07:23:28.5758640Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5759015Z 
+2026-11-12T07:23:28.5759291Z     Error: page.evaluate: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5759811Z 
+2026-11-12T07:23:28.5760603Z       670 |     await waitSaved(page);
+2026-11-12T07:23:28.5762227Z       671 |     // what older builds saved: 1440 stored as a percentage, a sample layer with no positioning, and an undo history
+2026-11-12T07:23:28.5763685Z     > 672 |     await page.evaluate(async ({ rootId }) => {
+2026-11-12T07:23:28.5764223Z           |                ^
+2026-11-12T07:23:28.5764771Z       673 |       const id = new URL(location.href).searchParams.get("projectId")!;
+2026-11-12T07:23:28.5765735Z       674 |       const db = await new Promise<IDBDatabase>((ok, no) => {
+2026-11-12T07:23:28.5766641Z       675 |         const q = indexedDB.open("lazylayout");
+2026-11-12T07:23:28.5767391Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-canvas.spec.ts:672:16
+2026-11-12T07:23:28.5767851Z 
+2026-11-12T07:23:28.5768524Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5769506Z     test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox/test-failed-1.png
+2026-11-12T07:23:28.5770441Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5770808Z 
+2026-11-12T07:23:28.5771586Z     Error Context: test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox/error-context.md
+2026-11-12T07:23:28.5772169Z 
+2026-11-12T07:23:28.5772666Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5773845Z     test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox/trace.zip
+2026-11-12T07:23:28.5774573Z     Usage:
+2026-11-12T07:23:28.5774720Z 
+2026-11-12T07:23:28.5775305Z         npx playwright show-trace test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox/trace.zip
+2026-11-12T07:23:28.5775859Z 
+2026-11-12T07:23:28.5776354Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5776669Z 
+2026-11-12T07:23:28.5777107Z     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5777715Z 
+2026-11-12T07:23:28.5777860Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5778197Z 
+2026-11-12T07:23:28.5778495Z     Error: page.evaluate: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5778809Z 
+2026-11-12T07:23:28.5778965Z       670 |     await waitSaved(page);
+2026-11-12T07:23:28.5779752Z       671 |     // what older builds saved: 1440 stored as a percentage, a sample layer with no positioning, and an undo history
+2026-11-12T07:23:28.5780446Z     > 672 |     await page.evaluate(async ({ rootId }) => {
+2026-11-12T07:23:28.5780875Z           |                ^
+2026-11-12T07:23:28.5781722Z       673 |       const id = new URL(location.href).searchParams.get("projectId")!;
+2026-11-12T07:23:28.5782323Z       674 |       const db = await new Promise<IDBDatabase>((ok, no) => {
+2026-11-12T07:23:28.5783098Z       675 |         const q = indexedDB.open("lazylayout");
+2026-11-12T07:23:28.5783762Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-canvas.spec.ts:672:16
+2026-11-12T07:23:28.5784133Z 
+2026-11-12T07:23:28.5784738Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5785655Z     test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox-retry1/test-failed-1.png
+2026-11-12T07:23:28.5786606Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5787084Z 
+2026-11-12T07:23:28.5787951Z     Error Context: test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox-retry1/error-context.md
+2026-11-12T07:23:28.5788566Z 
+2026-11-12T07:23:28.5789050Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5790050Z     test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5790698Z     Usage:
+2026-11-12T07:23:28.5790821Z 
+2026-11-12T07:23:28.5791664Z         npx playwright show-trace test-results/e2e-new-ui-canvas-saved-pr-8985c-nit-opens-at-the-right-size-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5792312Z 
+2026-11-12T07:23:28.5792699Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5793047Z 
+2026-11-12T07:23:28.5793966Z   2) [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:52:7 › Lane A issue fixes › LA-012: Arrange changes what is on top, on the canvas as well as in the list 
+2026-11-12T07:23:28.5794715Z 
+2026-11-12T07:23:28.5794884Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5795135Z 
+2026-11-12T07:23:28.5795372Z     Error: locator.click: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5795872Z     Call log:
+2026-11-12T07:23:28.5796310Z       - waiting for getByRole('menuitem', { name: /^Ellipse/ })
+2026-11-12T07:23:28.5796656Z 
+2026-11-12T07:23:28.5796676Z 
+2026-11-12T07:23:28.5796940Z        at e2e/support/editor.ts:179
+2026-11-12T07:23:28.5797185Z 
+2026-11-12T07:23:28.5797310Z       177 |     }
+2026-11-12T07:23:28.5797672Z       178 |   }
+2026-11-12T07:23:28.5798012Z     > 179 |   await item.click();
+2026-11-12T07:23:28.5798386Z           |              ^
+2026-11-12T07:23:28.5798779Z       180 | }
+2026-11-12T07:23:28.5799059Z       181 |
+2026-11-12T07:23:28.5799612Z         at pickShape (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/support/editor.ts:179:14)
+2026-11-12T07:23:28.5800458Z         at pick (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:39:5)
+2026-11-12T07:23:28.5801255Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:56:5
+2026-11-12T07:23:28.5801952Z 
+2026-11-12T07:23:28.5802556Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5803659Z     test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox/test-failed-1.png
+2026-11-12T07:23:28.5804662Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5805207Z 
+2026-11-12T07:23:28.5805726Z     Error Context: test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox/error-context.md
+2026-11-12T07:23:28.5806223Z 
+2026-11-12T07:23:28.5806751Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5807543Z     test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox/trace.zip
+2026-11-12T07:23:28.5808183Z     Usage:
+2026-11-12T07:23:28.5808374Z 
+2026-11-12T07:23:28.5808874Z         npx playwright show-trace test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox/trace.zip
+2026-11-12T07:23:28.5809473Z 
+2026-11-12T07:23:28.5809876Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5810228Z 
+2026-11-12T07:23:28.5810653Z     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5811023Z 
+2026-11-12T07:23:28.5811212Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5811691Z 
+2026-11-12T07:23:28.5812054Z     Error: locator.click: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5812527Z     Call log:
+2026-11-12T07:23:28.5813004Z       - waiting for getByRole('menuitem', { name: /^Ellipse/ })
+2026-11-12T07:23:28.5813296Z 
+2026-11-12T07:23:28.5813302Z 
+2026-11-12T07:23:28.5813494Z        at e2e/support/editor.ts:179
+2026-11-12T07:23:28.5813736Z 
+2026-11-12T07:23:28.5813849Z       177 |     }
+2026-11-12T07:23:28.5814224Z       178 |   }
+2026-11-12T07:23:28.5814577Z     > 179 |   await item.click();
+2026-11-12T07:23:28.5814949Z           |              ^
+2026-11-12T07:23:28.5815309Z       180 | }
+2026-11-12T07:23:28.5815571Z       181 |
+2026-11-12T07:23:28.5816204Z         at pickShape (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/support/editor.ts:179:14)
+2026-11-12T07:23:28.5817043Z         at pick (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:39:5)
+2026-11-12T07:23:28.5817880Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:56:5
+2026-11-12T07:23:28.5818303Z 
+2026-11-12T07:23:28.5818779Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5819689Z     test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox-retry1/test-failed-1.png
+2026-11-12T07:23:28.5820646Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5820991Z 
+2026-11-12T07:23:28.5821903Z     Error Context: test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox-retry1/error-context.md
+2026-11-12T07:23:28.5822667Z 
+2026-11-12T07:23:28.5823507Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5825138Z     test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5826764Z     Usage:
+2026-11-12T07:23:28.5827087Z 
+2026-11-12T07:23:28.5828109Z         npx playwright show-trace test-results/e2e-new-ui-lane-a-issues-L-71376-nvas-as-well-as-in-the-list-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5829195Z 
+2026-11-12T07:23:28.5830072Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5830717Z 
+2026-11-12T07:23:28.5832351Z   3) [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:285:7 › Lane A issue fixes › round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back 
+2026-11-12T07:23:28.5833587Z 
+2026-11-12T07:23:28.5833893Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5834511Z 
+2026-11-12T07:23:28.5835059Z     Error: locator.click: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5835518Z     Call log:
+2026-11-12T07:23:28.5836031Z       - waiting for getByRole('menuitem', { name: /^Ellipse/ })
+2026-11-12T07:23:28.5836369Z 
+2026-11-12T07:23:28.5836376Z 
+2026-11-12T07:23:28.5836535Z        at e2e/support/editor.ts:179
+2026-11-12T07:23:28.5836817Z 
+2026-11-12T07:23:28.5836999Z       177 |     }
+2026-11-12T07:23:28.5837368Z       178 |   }
+2026-11-12T07:23:28.5837690Z     > 179 |   await item.click();
+2026-11-12T07:23:28.5838119Z           |              ^
+2026-11-12T07:23:28.5838427Z       180 | }
+2026-11-12T07:23:28.5838700Z       181 |
+2026-11-12T07:23:28.5839139Z         at pickShape (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/support/editor.ts:179:14)
+2026-11-12T07:23:28.5839848Z         at pick (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:39:5)
+2026-11-12T07:23:28.5840548Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:289:5
+2026-11-12T07:23:28.5840917Z 
+2026-11-12T07:23:28.5841588Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5842623Z     test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox/test-failed-1.png
+2026-11-12T07:23:28.5843439Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5843730Z 
+2026-11-12T07:23:28.5844304Z     Error Context: test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox/error-context.md
+2026-11-12T07:23:28.5844809Z 
+2026-11-12T07:23:28.5845214Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5845937Z     test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox/trace.zip
+2026-11-12T07:23:28.5846435Z     Usage:
+2026-11-12T07:23:28.5846541Z 
+2026-11-12T07:23:28.5847035Z         npx playwright show-trace test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox/trace.zip
+2026-11-12T07:23:28.5847548Z 
+2026-11-12T07:23:28.5847886Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5848362Z 
+2026-11-12T07:23:28.5848715Z     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5849005Z 
+2026-11-12T07:23:28.5849129Z     Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5849309Z 
+2026-11-12T07:23:28.5849493Z     Error: locator.click: Test timeout of 60000ms exceeded.
+2026-11-12T07:23:28.5849810Z     Call log:
+2026-11-12T07:23:28.5850113Z       - waiting for getByRole('menuitem', { name: /^Ellipse/ })
+2026-11-12T07:23:28.5850362Z 
+2026-11-12T07:23:28.5850367Z 
+2026-11-12T07:23:28.5850494Z        at e2e/support/editor.ts:179
+2026-11-12T07:23:28.5850665Z 
+2026-11-12T07:23:28.5850750Z       177 |     }
+2026-11-12T07:23:28.5850947Z       178 |   }
+2026-11-12T07:23:28.5851493Z     > 179 |   await item.click();
+2026-11-12T07:23:28.5851864Z           |              ^
+2026-11-12T07:23:28.5852095Z       180 | }
+2026-11-12T07:23:28.5852305Z       181 |
+2026-11-12T07:23:28.5852739Z         at pickShape (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/support/editor.ts:179:14)
+2026-11-12T07:23:28.5853439Z         at pick (/home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:39:5)
+2026-11-12T07:23:28.5854127Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/new-ui-lane-a-issues.spec.ts:289:5
+2026-11-12T07:23:28.5854484Z 
+2026-11-12T07:23:28.5854934Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5856378Z     test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox-retry1/test-failed-1.png
+2026-11-12T07:23:28.5857798Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5858107Z 
+2026-11-12T07:23:28.5858635Z     Error Context: test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox-retry1/error-context.md
+2026-11-12T07:23:28.5859178Z 
+2026-11-12T07:23:28.5859582Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5860333Z     test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5860853Z     Usage:
+2026-11-12T07:23:28.5860963Z 
+2026-11-12T07:23:28.5861751Z         npx playwright show-trace test-results/e2e-new-ui-lane-a-issues-L-b51e1-g-to-front-and-send-to-back-firefox-retry1/trace.zip
+2026-11-12T07:23:28.5862305Z 
+2026-11-12T07:23:28.5862658Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5862936Z 
+2026-11-12T07:23:28.5863466Z   4) [firefox] › tests/e2e/presets.spec.ts:41:5 › Phase 15: a preset switch takes under 100 ms and never replaces the stage 
+2026-11-12T07:23:28.5863920Z 
+2026-11-12T07:23:28.5864112Z     Error: preset switch timings (ms): 82, 87, 107, 111, 114
+2026-11-12T07:23:28.5864350Z 
+2026-11-12T07:23:28.5864710Z     expect(received).toBeLessThan(expected)
+2026-11-12T07:23:28.5864929Z 
+2026-11-12T07:23:28.5865026Z     Expected: < 100
+2026-11-12T07:23:28.5865269Z     Received:   106.92000000000007
+2026-11-12T07:23:28.5865443Z 
+2026-11-12T07:23:28.5865524Z       80 |   }
+2026-11-12T07:23:28.5865781Z       81 |   timings.sort((a, b) => a - b);
+2026-11-12T07:23:28.5866491Z     > 82 |   expect(timings[Math.floor(timings.length / 2)], `preset switch timings (ms): ${timings.map((t) => t.toFixed(0)).join(", ")}`).toBeLessThan(100);
+2026-11-12T07:23:28.5867283Z          |                                                                                                                                 ^
+2026-11-12T07:23:28.5867670Z       83 |
+2026-11-12T07:23:28.5867944Z       84 |   const survived = await page.evaluate(() => {
+2026-11-12T07:23:28.5868752Z       85 |     const el = document.querySelector('[data-testid="stage-viewport"]') as (HTMLElement & { __stageMarker?: string }) | null;
+2026-11-12T07:23:28.5869520Z         at /home/runner/work/LazyLayout/LazyLayout/tests/e2e/presets.spec.ts:82:129
+2026-11-12T07:23:28.5869840Z 
+2026-11-12T07:23:28.5870242Z     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5870984Z     test-results/e2e-presets-Phase-15-a-pre-16f42-nd-never-replaces-the-stage-firefox/test-failed-1.png
+2026-11-12T07:23:28.5872076Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5872362Z 
+2026-11-12T07:23:28.5872811Z     Error Context: test-results/e2e-presets-Phase-15-a-pre-16f42-nd-never-replaces-the-stage-firefox/error-context.md
+2026-11-12T07:23:28.5873293Z 
+2026-11-12T07:23:28.5873680Z     attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5874394Z     test-results/e2e-presets-Phase-15-a-pre-16f42-nd-never-replaces-the-stage-firefox/trace.zip
+2026-11-12T07:23:28.5874876Z     Usage:
+2026-11-12T07:23:28.5875001Z 
+2026-11-12T07:23:28.5875477Z         npx playwright show-trace test-results/e2e-presets-Phase-15-a-pre-16f42-nd-never-replaces-the-stage-firefox/trace.zip
+2026-11-12T07:23:28.5875981Z 
+2026-11-12T07:23:28.5876316Z     ────────────────────────────────────────────────────────────────────────────────────────────────
+2026-11-12T07:23:28.5876597Z 
+2026-11-12T07:23:28.5876682Z   3 failed
+2026-11-12T07:23:28.5877391Z     [firefox] › tests/e2e/new-ui-canvas.spec.ts:663:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size 
+2026-11-12T07:23:28.5878560Z     [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:52:7 › Lane A issue fixes › LA-012: Arrange changes what is on top, on the canvas as well as in the list 
+2026-11-12T07:23:28.5879843Z     [firefox] › tests/e2e/new-ui-lane-a-issues.spec.ts:285:7 › Lane A issue fixes › round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back 
+2026-11-12T07:23:28.5880534Z   1 flaky
+2026-11-12T07:23:28.5881469Z     [firefox] › tests/e2e/presets.spec.ts:41:5 › Phase 15: a preset switch takes under 100 ms and never replaces the stage 
+2026-11-12T07:23:28.5882039Z   79 skipped
+2026-11-12T07:23:28.5882245Z   311 passed (30.8m)
+2026-11-12T07:23:29.1178045Z ##[error]Process completed with exit code 1.
+2026-11-12T07:23:29.1264228Z ##[group]Run actions/upload-artifact@v4
+2026-11-12T07:23:29.1264531Z with:
+2026-11-12T07:23:29.1264743Z   name: playwright-report-firefox
+2026-11-12T07:23:29.1265018Z   path: playwright-report/
+2026-11-12T07:23:29.1265267Z   retention-days: 14
+2026-11-12T07:23:29.1265489Z   if-no-files-found: warn
+2026-11-12T07:23:29.1275322Z   compression-level: 6
+2026-11-12T07:23:29.1275739Z   overwrite: false
+2026-11-12T07:23:29.1276069Z   include-hidden-files: false
+2026-11-12T07:23:29.1276331Z ##[endgroup]
+2026-11-12T07:23:29.3108708Z (node:23457) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-12T07:23:29.3109596Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-12T07:23:29.3264867Z With the provided path, there will be 53 files uploaded
+2026-11-12T07:23:29.3272193Z Artifact name is valid!
+2026-11-12T07:23:29.3273076Z Root directory input is valid!
+2026-11-12T07:23:29.5522430Z Beginning upload of artifact content to blob storage
+2026-11-12T07:23:30.0066069Z (node:23457) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-12T07:23:30.1251539Z Uploaded bytes 8388608
+2026-11-12T07:23:30.4588991Z Uploaded bytes 16097581
+2026-11-12T07:23:30.4839594Z Finished uploading artifact content to blob storage!
+2026-11-12T07:23:30.4840609Z SHA256 digest of uploaded artifact zip is 401f252aad09b96544d5ffef65f5a8562c5a0e0a6a3f0e6587ff73fb8e0a89d3
+2026-11-12T07:23:30.4842641Z Finalizing artifact upload
+2026-11-12T07:23:30.8295309Z Artifact playwright-report-firefox.zip successfully finalized. Artifact ID 13923617180
+2026-11-12T07:23:30.8296839Z Artifact playwright-report-firefox has been successfully uploaded! Final size is 16097581 bytes. Artifact ID is 13923617180
+2026-11-12T07:23:30.8302057Z Artifact download URL: https://github.com/NetPranav/LazyLayout/actions/runs/43073018680/artifacts/13923617180
+2026-11-12T07:23:30.8550530Z Post job cleanup.
+2026-11-12T07:23:30.9433020Z [command]/usr/bin/git version
+2026-11-12T07:23:30.9484575Z git version 2.56.0
+2026-11-12T07:23:30.9529681Z Temporarily overriding HOME='/home/runner/work/_temp/43fab8c5-aca3-46da-a103-743e8a429ac7' before making global git config changes
+2026-11-12T07:23:30.9531235Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-12T07:23:30.9535599Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/LazyLayout/LazyLayout
+2026-11-12T07:23:30.9577664Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-12T07:23:30.9615475Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-12T07:23:30.9934807Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-12T07:23:30.9970394Z http.https://github.com/.extraheader
+2026-11-12T07:23:30.9987457Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-12T07:23:31.0043293Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-12T07:23:31.0362998Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-12T07:23:31.0401169Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-12T07:23:31.0852525Z Cleaning up orphan processes
+2026-11-12T07:23:31.1188816Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

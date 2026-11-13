@@ -1,0 +1,22 @@
+ERROR: logging before google.Init: E1112 10:48:50.260687       1 main.go:781] Failed to redirect output for CLI: creating log file: opening log file: open /Users/pranav/.gemini/antigravity-cli/log/cli-20261112_104850.log: operation not permitted
+I1112 10:48:50.260904      37 server.go:2353] Starting language server process with pid 47678
+E1112 10:48:50.261020      37 server.go:2266] Failed to initialize crash reporter: failed to setup crash output: open /Users/pranav/.gemini/antigravity-cli/crashes/crash_47678_642f117d-5449-40d6-88de-db7360b3b3a0.log: operation not permitted
+I1112 10:48:50.261030      37 workflow_python.go:21] run_workflow Python: interpreter "", embedded true
+I1112 10:48:50.261670      37 server.go:2412] Language server version: 1.5.6
+I1112 10:48:50.261677      37 server.go:1103] Language server will attempt to listen on host localhost
+E1112 10:48:50.262318      37 main.go:963] CLI failed to start - listen tcp 127.0.0.1:0: bind: operation not permitted
+(1) attached stack trace
+  -- stack trace:
+  | google3/third_party/jetski/language_server/language_server.setUpServerPortListeners
+  | 	third_party/jetski/language_server/server.go:1115
+  | google3/third_party/jetski/language_server/language_server.CreateLanguageServerAndServe
+  | 	third_party/jetski/language_server/server.go:2424
+  | main.main.func4
+  | 	third_party/jetski/cmd/cli/main.go:961
+  | runtime.goexit
+  | 	third_party/go/gc/src/runtime/asm_arm64.s:1034
+Wraps: (2) listen tcp 127.0.0.1:0
+Wraps: (3) bind
+Wraps: (4) operation not permitted
+Error types: (1) *withstack.withStack (2) *net.OpError (3) *os.SyscallError (4) syscall.Errno
+Failed to start: listen tcp 127.0.0.1:0: bind: operation not permitted

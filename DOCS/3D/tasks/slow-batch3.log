@@ -1,0 +1,8 @@
+
+Running 3 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/add3d.spec.ts:106:5 › 3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D text in-place editing (15.4s)
+  ✓  2 [chromium] › tests/e2e/outliner3d.spec.ts:62:5 › 3D-021 & 3D-024 & 3D-029: Outliner in Layers panel, reparenting, renaming, and Make 3D (10.2s)
+  ✓  3 [chromium] › tests/e2e/properties3d.spec.ts:84:5 › 3D-022 / 3D-023 / 3D-030: Properties editor tabs, Looks strip, Modifiers, and Light data (13.6s)
+
+  3 passed (41.6s)

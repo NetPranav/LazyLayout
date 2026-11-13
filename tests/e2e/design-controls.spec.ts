@@ -197,11 +197,64 @@ test.describe("Design controls change what is drawn", () => {
     await expect.poll(() => css(page, t.id, "text-overflow")).toBe("ellipsis");
   });
 
-  test("unfamiliar options explain themselves (LA-009, LA-019, LA-021)", async ({ page }) => {
+  test("blend modes explain themselves (LA-021)", async ({ page }) => {
     await ready(page);
     await shape(page, "Rectangle", 0.2, 0.3, 0.4, 0.5);
     await open(page, "More Appearance options");
     await page.getByLabel("Blend mode", { exact: true }).first().click();
     await expect(page.getByText("Darkens: colours multiply with what is behind")).toBeVisible();
+  });
+
+  test("a number can still be scrubbed from its label while its input is focused (LA-015)", async ({ page }) => {
+    await ready(page);
+    const r = await shape(page, "Rectangle", 0.2, 0.3, 0.4, 0.5);
+    const x = async () => Number((await layers(page))[r.id].properties["frame.x"]);
+    const input = page.getByLabel("X", { exact: true }).first();
+    const label = page.locator("[data-scrub]", { hasText: /^X$/ }).first();
+    const scrub = async () => {
+      const b = (await label.boundingBox())!;
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(b.x + b.width / 2 + 30, b.y + b.height / 2, { steps: 6 });
+      await page.mouse.up();
+    };
+    const x0 = await x();
+    await scrub(); // not focused: the baseline
+    await expect.poll(x).toBeGreaterThan(x0);
+    const x1 = await x();
+    await input.focus(); // focused: it must still work
+    await scrub();
+    await expect.poll(x).toBeGreaterThan(x1);
+  });
+
+  test("Clip content and Overflow are one setting: the toggle sets both axes and the selects show it (LA-019)", async ({ page }) => {
+    await ready(page);
+    const f = await frame(page, 0.1, 0.2, 0.6, 0.7);
+    await expect.poll(() => css(page, f.id, "overflow-x")).not.toBe("hidden");
+    await page.getByRole("button", { name: "Clip content", exact: true }).first().click();
+    await expect.poll(() => css(page, f.id, "overflow-x")).toBe("hidden");
+    expect(await css(page, f.id, "overflow-y")).toBe("hidden");
+    await open(page, "More Layout options");
+    await expect(page.getByLabel("Overflow X", { exact: true }).first()).toContainText("Hidden");
+  });
+
+  test("a drop shadow's colour opens a picker and its fields are named (LA-027)", async ({ page }) => {
+    await ready(page);
+    await shape(page, "Rectangle", 0.2, 0.3, 0.4, 0.5);
+    await open(page, "Add effects");
+    await open(page, "Effect 1 settings");
+    await expect(page.getByLabel("Shadow colour picker", { exact: true }).first()).toBeVisible();
+    for (const t of ["Effect X", "Effect Y", "Effect B", "Effect S"]) await expect(page.getByLabel(t, { exact: true }).first()).toHaveAttribute("aria-label", t);
+    await expect(page.getByText("Blur", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Spread", { exact: true }).first()).toBeVisible();
+  });
+
+  test("Scale on a line draws (LA-035)", async ({ page }) => {
+    await ready(page);
+    const l = await shape(page, "Line", 0.3, 0.3, 0.55, 0.4);
+    const w0 = (await drawn(page, l.id).boundingBox())!.width;
+    await open(page, "More Position options");
+    await num(page, "Scale X", 2);
+    await expect.poll(async () => (await drawn(page, l.id).boundingBox())!.width).toBeGreaterThan(w0 * 1.5);
   });
 });
