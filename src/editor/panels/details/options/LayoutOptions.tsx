@@ -51,10 +51,10 @@ export interface LayoutOptionsProps extends InspectorSectionProps {
 }
 
 const OVERFLOW_OPTIONS = [
-  { value: "visible", label: "Visible" },
-  { value: "hidden", label: "Hidden" },
-  { value: "scroll", label: "Scroll" },
-  { value: "auto", label: "Auto" },
+  { value: "visible", label: "Visible", hint: "Children that stick out are drawn" },
+  { value: "hidden", label: "Hidden", hint: "Children that stick out are cut off (this is Clip content)" },
+  { value: "scroll", label: "Scroll", hint: "Always shows a scrollbar; children that stick out can be scrolled to" },
+  { value: "auto", label: "Auto", hint: "A scrollbar only when something sticks out" },
 ] as const;
 
 const UNIT_OPTIONS = [

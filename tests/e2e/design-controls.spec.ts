@@ -196,4 +196,12 @@ test.describe("Design controls change what is drawn", () => {
     await page.getByRole("option", { name: /ellipsis/i }).first().click();
     await expect.poll(() => css(page, t.id, "text-overflow")).toBe("ellipsis");
   });
+
+  test("unfamiliar options explain themselves (LA-009, LA-019, LA-021)", async ({ page }) => {
+    await ready(page);
+    await shape(page, "Rectangle", 0.2, 0.3, 0.4, 0.5);
+    await open(page, "More Appearance options");
+    await page.getByLabel("Blend mode", { exact: true }).first().click();
+    await expect(page.getByText("Darkens: colours multiply with what is behind")).toBeVisible();
+  });
 });
