@@ -59,4 +59,48 @@ test.describe("Drivers (D4)", () => {
     await page.getByText("Design", { exact: true }).first().click();
     await expect.poll(async () => Math.abs((await drawnBox(page, r.id))!.x - designX)).toBeLessThan(1.5);
   });
+
+  test("the Driven by section adds, turns off and removes a driver", async ({ page }) => {
+    const r = await setup(page);
+    const section = page.getByText("Driven by", { exact: true }).first();
+    await expect(section).toBeVisible();
+
+    // defaults: pointer left to right drives Position X
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    const bindings = async () => Object.values(((await page.evaluate(() => (window as unknown as { __LL_DOC__: { get: () => { bindings: Record<string, unknown> } } }).__LL_DOC__.get().bindings)) ?? {}) as Record<string, { enabled: boolean; ownerLayerId: string; target: { path: string } }>);
+    await expect.poll(async () => (await bindings()).length).toBe(1);
+    const [b] = await bindings();
+    expect(b.ownerLayerId).toBe(r.id);
+    expect(b.target.path).toBe("transform.x");
+    await expect(page.locator("[data-driver-id]")).toContainText("Pointer, left to right → Position X");
+
+    // turn it off, then on, then remove
+    await page.getByRole("button", { name: /^Turn off driver/ }).click();
+    await expect.poll(async () => (await bindings())[0].enabled).toBe(false);
+    await page.getByRole("button", { name: /^Turn on driver/ }).click();
+    await expect.poll(async () => (await bindings())[0].enabled).toBe(true);
+    await page.getByRole("button", { name: /^Remove driver/ }).click();
+    await expect.poll(async () => (await bindings()).length).toBe(0);
+
+    // one undo step brings it back
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
+    await expect.poll(async () => (await bindings()).length).toBe(1);
+  });
+
+  test("a driver made in the panel moves the layer with the pointer in Motion", async ({ page }) => {
+    const r = await setup(page);
+    const designX = (await drawnBox(page, r.id))!.x;
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    const at = async (fx: number) => {
+      await page.mouse.move(page0.x + page0.width * fx, page0.y + page0.height * 0.8, { steps: 6 });
+      await page.waitForTimeout(250);
+      return (await drawnBox(page, r.id))!.x;
+    };
+    const left = await at(0.05);
+    const right = await at(0.95);
+    expect(right - left).toBeGreaterThan(30); // defaults: 0..1 of the page maps to 0..200 px
+    expect(Math.abs(left - designX)).toBeLessThan(60);
+  });
 });

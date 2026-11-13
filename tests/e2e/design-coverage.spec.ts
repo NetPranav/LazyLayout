@@ -106,8 +106,8 @@ async function collect(page: Page): Promise<Control[]> {
   });
 }
 
-/** Controls the walker does not drive, with the reason: they swap the whole panel or leave the layer. */
-const SKIP = new Set(["More Layout options", "More Appearance options", "More Position options", "More Typography options", "Settings: 2D or 3D", "Image file", "Search commands, layers, pages"]);
+/** Controls the walker does not drive, with the reason: they swap the whole panel or leave the layer, or (the Driven by form) only fill in a form that "Add driver" then writes. */
+const SKIP = new Set(["Driver signal", "Driver property", "Driver input from", "Driver input to", "Driver output from", "Driver output to", "Driver smoothing", "More Layout options", "More Appearance options", "More Position options", "More Typography options", "Settings: 2D or 3D", "Image file", "Search commands, layers, pages"]);
 
 const locate = (page: Page, c: Control): Locator => {
   if (c.kind === "input") return page.locator(`input[aria-label="${c.label}"]`).nth(c.index);
