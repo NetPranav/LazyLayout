@@ -1,0 +1,995 @@
+
+Running 3 tests using 1 worker
+
+  ✘  1 [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep (5.1m)
+  ✘  2 [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps (5.0m)
+  ✘  3 [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo (5.0m)
+
+
+  1) [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep 
+
+    Test timeout of 300000ms exceeded.
+
+    Error: locator.dblclick: Test timeout of 300000ms exceeded.
+    Call log:
+      - waiting for locator('[data-archetype="scene3d"]').first()
+        - locator resolved to <div data-archetype="scene3d" data-scene-id="scn_1ce39b34" data-element-id="lay_8a2eddef">…</div>
+      - attempting dblclick action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 100ms
+        29 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+         - retrying dblclick action
+           - waiting 500ms
+        4 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" data-press="515.3046875,369.53515625,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+      - element was detached from the DOM, retrying
+        - locator resolved to <div data-archetype="scene3d" data-scene-id="scn_1ce39b34" data-element-id="lay_8a2eddef">…</div>
+      - attempting dblclick action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 100ms
+        4 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+        195 × waiting for element to be visible, enabled and stable
+            - element is visible, enabled and stable
+            - scrolling into view if needed
+            - done scrolling
+            - <div data-locked="false" id="el-lay_8a2eddef" data-selected="false" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+          - retrying dblclick action
+            - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" data-press="503.33203125,331.921875,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" data-press="489.296875,335.953125,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      5 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div id="el-hero" data-sel="hero" data-locked="false" data-selected="false" data-element-id="hero" data-layer-role="content" data-testid="stage-element" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div id="el-hero" data-sel="hero" data-locked="false" data-selected="false" data-element-id="hero" data-layer-role="content" data-testid="stage-element" data-press="485.24609375,334.53125,0" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div id="el-hero" data-sel="hero" data-locked="false" data-selected="true" data-element-id="hero" data-layer-role="content" data-testid="stage-element" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div id="el-hero" data-sel="hero" data-locked="false" data-selected="true" data-element-id="hero" data-layer-role="content" data-testid="stage-element" data-press="501.36328125,334.81640625,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div data-locked="false" id="el-lay_8a2eddef" data-selected="false" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div data-locked="false" id="el-lay_8a2eddef" data-selected="false" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      77 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <header role="banner" data-testid="top-bar" class="top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ">…</header> from <div class="ll-shell-top ll:w-full ll:flex ll:flex-col ll:visible">…</div> subtree intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      17 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - element is outside of the viewport
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - element is outside of the viewport
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - element is outside of the viewport
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+      6 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - element is outside of the viewport
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <header role="banner" data-testid="top-bar" class="top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ">…</header> from <div class="ll-shell-top ll:w-full ll:flex ll:flex-col ll:visible">…</div> subtree intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+      4 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <header role="banner" data-testid="top-bar" class="top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ">…</header> from <div class="ll-shell-top ll:w-full ll:flex ll:flex-col ll:visible">…</div> subtree intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      5 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <header role="banner" data-testid="top-bar" class="top ll:text-body ll:grid ll:grid-cols-topbar-fit ll:items-center ll:max-w-screen ll:max-sm:grid-cols-topbar-narrow ll:h-topbar ll:bg-surface-panel ll:border-b ll:border-border ll:px-0 ll:relative ll:z-20 ll:select-none ll:font-sans ">…</header> from <div class="ll-shell-top ll:w-full ll:flex ll:flex-col ll:visible">…</div> subtree intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      29 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_8a2eddef" data-selected="true" data-sel="lay_8a2eddef" data-layer-role="content" data-testid="stage-element" data-element-id="lay_8a2eddef" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      6 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" data-selected="true" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      12 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" data-selected="false" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      4 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" data-selected="true" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" data-press="564.4375,253.12109375,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      16 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" data-selected="false" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" data-press="564.4375,253.12109375,0" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+      14 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" data-selected="false" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" data-press="564.4375,253.12109375,0" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      59 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" data-selected="false" id="el-shp_rect_42aa40a2" data-layer-role="content" data-testid="stage-element" data-sel="shp_rect_42aa40a2" data-element-id="shp_rect_42aa40a2" data-press="564.4375,253.12109375,0" class="ll-element ll:absolute ll:select-none ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+
+
+       97 |
+       98 |   // 5. Entering 3D editing mode on double-click and leaving on Escape
+    >  99 |   await layer.dblclick();
+          |               ^
+      100 |   await expect(layer).toHaveAttribute("data-editing-3d", "true");
+      101 |   await expect.poll(() => page.evaluate(() => (window as unknown as Win).__LL_COMMANDS__!.context().editingScene3d)).toBe(true);
+      102 |
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/scene3d.spec.ts:99:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-scene3d-3D-012-3D-scen-fd2e7-ecovery-and-offscreen-sleep-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-scene3d-3D-012-3D-scen-fd2e7-ecovery-and-offscreen-sleep-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-scene3d-3D-012-3D-scen-fd2e7-ecovery-and-offscreen-sleep-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-scene3d-3D-012-3D-scen-fd2e7-ecovery-and-offscreen-sleep-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps 
+
+    Test timeout of 300000ms exceeded.
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-viewport3d-panels-B2-W-7e2c6-hading-overlays-and-keymaps-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-viewport3d-panels-B2-W-7e2c6-hading-overlays-and-keymaps-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-viewport3d-panels-B2-W-7e2c6-hading-overlays-and-keymaps-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-viewport3d-panels-B2-W-7e2c6-hading-overlays-and-keymaps-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo 
+
+    Test timeout of 300000ms exceeded.
+
+    Error: locator.dblclick: Test timeout of 300000ms exceeded.
+    Call log:
+      - waiting for locator('[data-archetype="scene3d"]').first()
+        - locator resolved to <div data-archetype="scene3d" data-scene-id="scn_5fc8870e" data-element-id="lay_3475e0cb">…</div>
+      - attempting dblclick action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 100ms
+        13 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+         - retrying dblclick action
+           - waiting 500ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" data-press="504.2734375,353.7265625,0" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying dblclick action
+          - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <button type="button" tabindex="-1" data-depth="1" role="treeitem" data-id="subtitle" data-sel="subtitle" data-selected="false" aria-selected="false" data-testid="layer-row" data-layer-id="subtitle" class="row ll-row ll:group ll:relative ll:flex ll:items-center ll:h-8 ll:pr-2 ll:text-left ll:w-full ll:whitespace-nowrap ll:select-none ll:outline-none ll:cursor-pointer ll:text-body ll:font-normal ll:box-border     ">…</button> from <div class="ll-shell-left">…</div> subtree intercepts pointer events
+      2 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+        - retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      26 × retrying dblclick action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      4 × retrying dblclick action
+          - waiting 500ms
+          - waiting for element to be visible, enabled and stable
+          - element is not stable
+      369 × retrying dblclick action
+            - waiting 500ms
+            - waiting for element to be visible, enabled and stable
+            - element is visible, enabled and stable
+            - scrolling into view if needed
+            - done scrolling
+            - <div data-locked="false" id="el-lay_3475e0cb" data-selected="true" data-sel="lay_3475e0cb" data-layer-role="content" data-testid="stage-element" data-element-id="lay_3475e0cb" class="ll-element ll:absolute ll:select-none ll-sel sel ll:cursor-default "></div> intercepts pointer events
+      - retrying dblclick action
+        - waiting 500ms
+
+
+      88 |
+      89 |   // 2. Double-click layer to enter 3D editing mode
+    > 90 |   await layer.dblclick();
+         |               ^
+      91 |   await expect(layer).toHaveAttribute("data-editing-3d", "true");
+      92 |   await expect.poll(() => page.evaluate(() => (window as unknown as Win).__LL_COMMANDS__!.context().editingScene3d)).toBe(true);
+      93 |
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/viewport3d.spec.ts:90:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-viewport3d-3D-014-3D-0-33e8f-icking-modal-G-X-2-and-undo-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-viewport3d-3D-014-3D-0-33e8f-icking-modal-G-X-2-and-undo-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-viewport3d-3D-014-3D-0-33e8f-icking-modal-G-X-2-and-undo-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-viewport3d-3D-014-3D-0-33e8f-icking-modal-G-X-2-and-undo-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Slow test file: [chromium] › tests/e2e/scene3d.spec.ts (5.1m)
+  Slow test file: [chromium] › tests/e2e/viewport3d.spec.ts (5.0m)
+  Slow test file: [chromium] › tests/e2e/viewport3d-panels.spec.ts (5.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  3 failed
+    [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep 
+    [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps 
+    [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo 

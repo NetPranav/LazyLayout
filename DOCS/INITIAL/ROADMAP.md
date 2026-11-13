@@ -1698,9 +1698,12 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** every control in Design visibly changes the canvas.
 **Done when:** each listed issue has a passing test; the audit list is empty or every item has a phase.
 
+**Status check (2026-11-13), 🚧:** every listed issue now has a passing Chromium test in `tests/e2e/design-controls.spec.ts` (17 tests): LA-003, 006, 007, 010, 015, 017, 018, 019, 020, 021, 022, 027, 028, 034, 035. Most were already fixed in code and only needed proof; LA-021 and LA-009 got real fixes (blend, cursor and overflow options have descriptions; every segmented control shows its label as a tooltip). LA-009 is a usability note: the row under text alignment is the Case row (it has a label); its choices now have tooltips, and there is no functional test for it.
+**Reachability audit (from the source, not a click-through):** reachable in the new editor: create component, pages, pen tool, export, templates, breakpoints (device views), asset drop. **Gaps still to wire:** (1) a tokens / variables / styles manager (Phases 45 and 47 exist in core; no panel in the new editor), (2) authoring variants and detaching an instance, (3) opening and saving a project file from the UI. Until these three are wired or given a phase of their own, D1 stays 🚧.
+
 ### Phase D2 · Control coverage test
 **Needs:** D1 · **Was:** new · **Lane:** A · **Status:** 📋
-- [ ] A generated test walks every control of the Design panel (from the panel's own config) and checks that it changes the document, the canvas and the export.
+- [ ] A generated test walks every control of the Design panel (the panel has no config, so it walks the page: open each "More … options" section for a fixed set of layer types, collect inputs, selects, segmented controls and toggles by their labels, set each to a non-default value) and checks that it changes the document, the canvas and the export. A short exclusion list, with a reason for each entry, covers editor-only controls.
 - [ ] A control that does nothing fails CI, so "dead controls" cannot come back.
 
 **You'll see:** a coverage line in CI: "Design controls: 214 of 214 change the page".

@@ -1,0 +1,544 @@
+
+
+########## 3D-007 ##########
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "scene3d" src/core/document/properties.ts
+
+[36m▶ run_command[0m 
+grep -n "scene3d" src/core/document/properties.ts
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "const SCENE3D" src/core/document/properties.ts -A 5 -B 5
+
+[36m▶ run_command[0m 
+grep -n "const SCENE3D" src/core/document/properties.ts -A 5 -B 5
+
+[36m▶ run_command[0m 
+grep -n '"scene"' src/core/document/properties.ts
+
+[36m▶ run_command[0m 
+grep -n '"scene"' src/core/document/properties.ts
+
+[36m▶ run_command[0m 
+grep -n "function getPropertyDefinition" src/core/document/properties.ts -A 10
+
+[36m▶ run_command[0m 
+grep -n "function getPropertyDefinition" src/core/document/properties.ts -A 10
+
+[36m▶ run_command[0m 
+grep -n "export const PROPERTY_REGISTRY" src/core/document/properties.ts -A 10
+
+[36m▶ run_command[0m 
+grep -n "export const PROPERTY_REGISTRY" src/core/document/properties.ts -A 10
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "export type GrammarElementType" src/core/types/element-grammar.ts -A 20
+
+[36m▶ run_command[0m 
+grep -n "export type GrammarElementType" src/core/types/element-grammar.ts -A 20
+
+[36m▶ run_command[0m 
+grep -n 'section("identity"' src/core/document/properties.ts
+
+[36m▶ run_command[0m 
+grep -n 'section("identity"' src/core/document/properties.ts
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+ls -la src/core/document/migrations/
+
+[36m▶ run_command[0m 
+ls -la src/core/document/migrations/
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+ls -la src/core/document/__tests__/
+
+[36m▶ run_command[0m 
+ls -la src/core/document/__tests__/
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "schemaVersion" src/core/document/__tests__/*.test.ts
+
+[36m▶ run_command[0m 
+grep -n "schemaVersion" src/core/document/__tests__/*.test.ts
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+git log -n 5 --oneline src/core/document/migrations/v5-to-v6.ts
+
+[36m▶ run_command[0m 
+git log -n 5 --oneline src/core/document/migrations/v5-to-v6.ts
+
+[36m▶ run_command[0m 
+git show afc57f9 --stat
+
+[36m▶ run_command[0m 
+git show afc57f9 --stat
+
+[36m▶ run_command[0m 
+grep -n "export type DetailSectionId" src/core/types/element-sections.ts -A 25
+
+[36m▶ run_command[0m 
+grep -n "export type DetailSectionId" src/core/types/element-sections.ts -A 25
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+ls -la src/core/document/__tests__/fixtures/ tests/e2e/fixtures/
+
+[36m▶ run_command[0m 
+ls -la src/core/document/__tests__/fixtures/ tests/e2e/fixtures/
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 src/core/document/__tests__/compositions.test.ts src/core/document/__tests__/motion-model.test.ts
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 src/core/document/__tests__/compositions.test.ts src/core/document/__tests__/motion-model.test.ts
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 src/core/document/__tests__/schema.test.ts
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 src/core/document/__tests__/schema.test.ts
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 tests/e2e/
+
+[36m▶ run_command[0m 
+git diff afc57f9~1 afc57f9 tests/e2e/
+
+[36m▶ run_command[0m 
+grep -rn "schemaVersion.*6" src/ tests/
+
+[36m▶ run_command[0m 
+grep -rn "schemaVersion.*6" src/ tests/
+
+[36m▶ run_command[0m 
+grep -rn "SCHEMA_VERSION" src/ tests/
+
+[36m▶ run_command[0m 
+grep -rn "SCHEMA_VERSION" src/ tests/
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "function validateLayerProps" src/core/document/properties.ts -A 25
+
+[36m▶ run_command[0m 
+grep -n "function validateLayerProps" src/core/document/properties.ts -A 25
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -n "function isCanonicalPath" src/core/document/properties.ts -A 5
+
+[36m▶ run_command[0m 
+grep -n "function isCanonicalPath" src/core/document/properties.ts -A 5
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+
+########## 3D-008 ##########
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+find src -name "*3d*" -o -name "*scene*"
+
+[36m▶ run_command[0m 
+find src -name "*3d*" -o -name "*scene*"
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+ls src/core/document
+
+[36m▶ run_command[0m 
+ls src/core/document
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+ls DOCS/3D/tasks
+
+[36m▶ run_command[0m 
+ls DOCS/3D/tasks
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ run_command[0m 
+grep -rn "function set" src/core/
+
+[36m▶ run_command[0m 
+grep -rn "function set" src/core/
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ edit_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ write_file[0m 
+
+[36m▶ read_file[0m 
+
+[36m▶ read_file[0m 

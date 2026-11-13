@@ -1,0 +1,125 @@
+
+Running 62 tests using 1 worker
+
+  ✓   1 [chromium] › tests/e2e/add3d.spec.ts:106:5 › 3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D text in-place editing (5.0s)
+  ✓   2 [chromium] › tests/e2e/anchor-points.spec.ts:29:7 › Phase 72 · Anchor points & pins › renders anchor handle for selected layer and updates when dragged with snapping (3.1s)
+  ✓   3 [chromium] › tests/e2e/anchor-points.spec.ts:79:7 › Phase 72 · Anchor points & pins › inspector Origin control updates anchor position on canvas (3.8s)
+  ✓   4 [chromium] › tests/e2e/gpu-compositor.spec.ts:37:5 › 3D-002: 20 surfaces and 10 scenes stay within the context budget (2.2s)
+  ✓   5 [chromium] › tests/e2e/gpu-compositor.spec.ts:48:5 › 3D-002: a scene out of view sleeps with its last frame; back in view it wakes (3.2s)
+  ✓   6 [chromium] › tests/e2e/gpu-compositor.spec.ts:64:5 › 3D-002: a lost context comes back within a second, and surfaces draw again (3.0s)
+  ✓   7 [chromium] › tests/e2e/gpu-compositor.spec.ts:94:5 › 3D-003: mounting and unmounting 50 surfaces returns the memory ledger to the shared baseline (4.6s)
+  ✓   8 [chromium] › tests/e2e/jobs.spec.ts:25:5 › 3D-006: a 5000 ms test.burn job leaves the main thread free to tick (3.9s)
+  ✓   9 [chromium] › tests/e2e/jobs.spec.ts:38:5 › 3D-006: cancelling a running job marks it cancelled within 500 ms and respawns the worker (1.1s)
+  ✓  10 [chromium] › tests/e2e/jobs.spec.ts:57:5 › 3D-006: cloth simulation completes on surface-lab within 30 s (11.1s)
+  ✓  11 [chromium] › tests/e2e/new-ui-canvas.spec.ts:70:7 › the canvas draws the real tree › an edit to a sample layer shows on the canvas (2.2s)
+  ✓  12 [chromium] › tests/e2e/new-ui-canvas.spec.ts:77:7 › the canvas draws the real tree › a frame's hide, opacity and clip reach what is inside it (8.1s)
+  ✓  13 [chromium] › tests/e2e/new-ui-canvas.spec.ts:96:7 › the canvas draws the real tree › Stack, gap and Fill lay the children out (7.5s)
+  ✓  14 [chromium] › tests/e2e/new-ui-canvas.spec.ts:129:7 › the canvas draws the real tree › a line's shadow is drawn, not cut off by its thin box (6.0s)
+  ✘  15 [chromium] › tests/e2e/new-ui-canvas.spec.ts:142:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn (1.5m)
+  ✓  16 [chromium] › tests/e2e/new-ui-canvas.spec.ts:150:7 › the canvas draws the real tree › Insert > Sections adds a real section to the page on screen (6.5s)
+  ✓  17 [chromium] › tests/e2e/new-ui-canvas.spec.ts:163:7 › shortcuts fire once › Duplicate adds one layer, Undo takes back one step, Delete removes one (5.0s)
+  ✘  18 [chromium] › tests/e2e/new-ui-canvas.spec.ts:184:7 › gestures › marquee on empty canvas selects what it touches (4.4m)
+  ✓  19 [chromium] › tests/e2e/new-ui-canvas.spec.ts:194:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all (11.2s)
+  ✓  20 [chromium] › tests/e2e/new-ui-canvas.spec.ts:219:7 › gestures › Shift-click adds to the selection and takes away from it (4.4s)
+  ✓  21 [chromium] › tests/e2e/new-ui-canvas.spec.ts:230:7 › gestures › Alt-drag leaves the original and moves a copy, as one undo step (4.3s)
+  ✓  22 [chromium] › tests/e2e/new-ui-canvas.spec.ts:264:7 › what goes under what › a new picture goes into the frame it lands on, or the selected frame, and shows on top there (6.4s)
+  ✓  23 [chromium] › tests/e2e/new-ui-canvas.spec.ts:283:7 › what goes under what › on the canvas a layer goes by where it is let go, even when it is bigger than the frame; several go together (11.5s)
+  ✓  24 [chromium] › tests/e2e/new-ui-canvas.spec.ts:309:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page (9.4s)
+  ✓  25 [chromium] › tests/e2e/new-ui-canvas.spec.ts:357:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows (8.8s)
+  ✓  26 [chromium] › tests/e2e/new-ui-canvas.spec.ts:386:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it (8.1s)
+  ✓  27 [chromium] › tests/e2e/new-ui-canvas.spec.ts:428:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them (4.1s)
+  ✓  28 [chromium] › tests/e2e/new-ui-canvas.spec.ts:442:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches (4.1s)
+  ✓  29 [chromium] › tests/e2e/new-ui-canvas.spec.ts:455:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders (4.4s)
+  ✓  30 [chromium] › tests/e2e/new-ui-canvas.spec.ts:505:7 › arranging: what is on top is what you see › Bring to front, Send to back, Bring forward and Send backward: by shortcut, each shows on screen (7.5s)
+  ✓  31 [chromium] › tests/e2e/new-ui-canvas.spec.ts:532:7 › arranging: what is on top is what you see › the same four from the right-click Arrange menu, on the canvas and on a row in the Layers panel (12.3s)
+  ✓  32 [chromium] › tests/e2e/new-ui-canvas.spec.ts:560:7 › arranging: what is on top is what you see › the Z field puts a layer over or under the others whatever the order, on the canvas (5.3s)
+  ✓  33 [chromium] › tests/e2e/new-ui-canvas.spec.ts:577:7 › corner pin: lay a layer on a surface › the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step (3.8s)
+  ✓  34 [chromium] › tests/e2e/new-ui-canvas.spec.ts:633:7 › saved projects › a current project is left as it is: a sample layer the designer put in flow stays in flow (4.6s)
+  ✓  35 [chromium] › tests/e2e/new-ui-canvas.spec.ts:645:7 › saved projects › an emptied page stays empty after a reload (4.8s)
+  ✓  36 [chromium] › tests/e2e/new-ui-canvas.spec.ts:659:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size (3.5s)
+  ✓  37 [chromium] › tests/e2e/new-ui-canvas.spec.ts:706:7 › menus › a submenu opens at its full width, even when hovered again before it has finished opening (5.4s)
+  ✓  38 [chromium] › tests/e2e/new-ui-canvas.spec.ts:725:7 › menus, moving between submenus › hovering another row with a submenu swaps the submenu to that row's items (3.7s)
+  ✓  39 [chromium] › tests/e2e/new-ui-canvas.spec.ts:744:7 › an empty page is empty › the page is never drawn: no white sheet, border or title strip, with or without layers (3.5s)
+  ✓  40 [chromium] › tests/e2e/new-ui-canvas.spec.ts:781:7 › split text into letters › one click turns a word into one layer per letter, in place, each controllable on its own (7.3s)
+  ✓  41 [chromium] › tests/e2e/new-ui-device-views.spec.ts:89:7 › Task I: Device views and live linked mirror frames › 1) no Desktop/Tablet/Mobile buttons in the top bar (3.0s)
+  ✓  42 [chromium] › tests/e2e/new-ui-device-views.spec.ts:104:7 › Task I: Device views and live linked mirror frames › 2) empty page + Mobile in the Design pill creates a Mobile frame (4.6s)
+  ✓  43 [chromium] › tests/e2e/new-ui-device-views.spec.ts:128:7 › Task I: Device views and live linked mirror frames › 3) with a Desktop frame selected, Tablet opens a mirror to the right (120px gap, same top) (7.7s)
+  ✓  44 [chromium] › tests/e2e/new-ui-device-views.spec.ts:185:7 › Task I: Device views and live linked mirror frames › 4) adding a rectangle inside the main appears in the mirror live (9.6s)
+  ✓  45 [chromium] › tests/e2e/new-ui-device-views.spec.ts:219:7 › Task I: Device views and live linked mirror frames › 5) moving a layer inside mirror writes a Tablet override and leaves main untouched (9.7s)
+  ✓  46 [chromium] › tests/e2e/new-ui-device-views.spec.ts:262:7 › Task I: Device views and live linked mirror frames › 6) clicking Desktop again with a Desktop frame selected creates a new independent frame (7.9s)
+  ✓  47 [chromium] › tests/e2e/new-ui-device-views.spec.ts:300:7 › Task I: Device views and live linked mirror frames › 7) deleting the mirror keeps the main frame intact (7.9s)
+  ✓  48 [chromium] › tests/e2e/new-ui-device-views.spec.ts:342:7 › Task I: Device views and live linked mirror frames › 8) deleting a layer inside a mirror is refused with a toast (9.7s)
+  ✓  49 [chromium] › tests/e2e/new-ui-device-views.spec.ts:379:7 › Task I: Device views and live linked mirror frames › 9) picking a layer in the mirror never leaves the main frame in Tablet: it keeps its width and edits go to Desktop (10.1s)
+  ✓  50 [chromium] › tests/e2e/new-ui-tools.spec.ts:49:7 › the new editor's drawing tools › Frame, every Shape and Text draw a layer by dragging, show it on the canvas, and hand back to Select (7.2s)
+  ✓  51 [chromium] › tests/e2e/new-ui-tools.spec.ts:83:7 › the new editor's drawing tools › the keyboard shortcuts arm the tools: R draws a rectangle, O an ellipse, T text (2.1s)
+  ✓  52 [chromium] › tests/e2e/new-ui-tools.spec.ts:93:7 › the new editor's drawing tools › a drawn layer is one undo step, and redo brings it back (1.8s)
+  ✓  53 [chromium] › tests/e2e/new-ui-tools.spec.ts:105:7 › the new editor's drawing tools › a drag on bare canvas, outside the page, still draws (LA-031) (1.9s)
+  ✓  54 [chromium] › tests/e2e/new-ui-tools.spec.ts:114:7 › the new editor's drawing tools › a new shape can be selected, moved by dragging, resized and painted from the inspector (2.3s)
+  ✓  55 [chromium] › tests/e2e/new-ui-tools.spec.ts:152:7 › the new editor's drawing tools › the right-click menu acts on a drawn layer: Duplicate, Delete (4.3s)
+  ✓  56 [chromium] › tests/e2e/new-ui-tools.spec.ts:187:7 › moving around the canvas › the Hand tool pans the artboard, and Select does not (1.8s)
+  ✓  57 [chromium] › tests/e2e/new-ui-tools.spec.ts:204:7 › moving around the canvas › the wheel pans, and Ctrl or Cmd with the wheel zooms (1.8s)
+  ✓  58 [chromium] › tests/e2e/outliner3d.spec.ts:62:5 › 3D-021 & 3D-024 & 3D-029: Outliner in Layers panel, reparenting, renaming, and Make 3D (2.9s)
+  ✓  59 [chromium] › tests/e2e/properties3d.spec.ts:84:5 › 3D-022 / 3D-023 / 3D-030: Properties editor tabs, Looks strip, Modifiers, and Light data (3.9s)
+  ✓  60 [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep (2.8s)
+  ✓  61 [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps (2.8s)
+  ✓  62 [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo (2.7s)
+
+
+  1) [chromium] › tests/e2e/new-ui-canvas.spec.ts:142:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn 
+
+    Test timeout of 60000ms exceeded.
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-the-canv-8ad1c--as-that-is-how-it-is-drawn-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-the-canv-8ad1c--as-that-is-how-it-is-drawn-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-the-canv-8ad1c--as-that-is-how-it-is-drawn-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-the-canv-8ad1c--as-that-is-how-it-is-drawn-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/new-ui-canvas.spec.ts:184:7 › gestures › marquee on empty canvas selects what it touches 
+
+    Test timeout of 60000ms exceeded.
+
+    TimeoutError: page.goto: Timeout 60000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3003/editor", waiting until "networkidle"
+
+
+       at e2e/support/editor.ts:15
+
+      13 |
+      14 | export async function openEditor(page: Page, url = EDITOR_URL) {
+    > 15 |   await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
+         |              ^
+      16 |   await page.waitForFunction(() => new URL(location.href).searchParams.has("projectId"));
+      17 |   await waitSaved(page);
+      18 | }
+        at openEditor (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/support/editor.ts:15:14)
+        at ready (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:29:19)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:185:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:142:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:184:7 › gestures › marquee on empty canvas selects what it touches 
+  60 passed (11.5m)
