@@ -606,6 +606,8 @@ const DEFS = {
   "a11y.role": str("", null, "none", ALL),
   /** Explicit semantic tag for export (overrides the archetype's inferred tag). */
   "export.tag": str("", null, "none", ALL),
+  /** Style code (Design track D3): CSS declarations written for this layer that are not a control, kept as written; see `core/style/styleCode.ts`. */
+  "style.custom": typed(str("", null, "paint", ALL)),
 
   // --- Button & FAB states (button_states) -----------------------------------
   "button.type": oneOf(["button", "submit", "reset"], "button", null, "none", only("button")),

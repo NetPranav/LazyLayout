@@ -24,6 +24,7 @@ import { AnimationSection } from "./sections/AnimationSection";
 import { DataSection } from "./sections/DataSection";
 import { LogicSection } from "./sections/LogicSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
+import { StyleCodeSection } from "./sections/StyleCodeSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -302,6 +303,11 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+    },
+    {
+      id: "style-code",
+      title: "Style code",
+      children: <StyleCodeSection {...sectionProps} />,
     },
     {
       id: "accessibility",

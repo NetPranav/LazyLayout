@@ -9,6 +9,7 @@ import { blurOf, effectFilterId, glassCss, maxRadius, needsFilter, parseEffects 
 import { isConvex, pinInLayer, pinMatrix3d } from "../geometry/cornerPin";
 import { isMeshConvex, parseMesh } from "../geometry/meshWarp";
 import type { RenderContext, ResolvedProps } from "./types";
+import { CUSTOM_STYLE_PATH, customDeclarationsOf, declarationsToStyle } from "../style/styleCode";
 
 /** Largest frame dimension the renderer will draw; a larger stored value is clamped. */
 export const MAX_FRAME_PX = 20_000;
@@ -255,6 +256,9 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
       (style as Record<string, unknown>).WebkitBackdropFilter = backdrops.join(" ");
     }
   }
+  // Style code (D3): declarations written by hand come last, so they win over the controls they overlap.
+  const custom = customDeclarationsOf(resolved.get(CUSTOM_STYLE_PATH));
+  if (custom.length > 0) Object.assign(style, declarationsToStyle(custom));
   return style;
 }
 

@@ -1724,6 +1724,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** type `padding: 24px; backdrop-filter: blur(8px)` and the Padding control shows 24.
 **Done when:** 50 declarations round-trip (code to controls to code); unknown ones export unchanged; a hostile declaration is refused with a message.
 
+**Status check (2026-11-14), 🚧:** built: `src/core/style/styleCode.ts` (parse, validate, split into controls and custom, compose, patch), the `style.custom` property, the canvas and export drawing it (`layerBoxStyle`), and the **Style code** section in the Design panel. Verified: a 50-declaration round trip, unknown declarations kept unchanged on the canvas and in the export, hostile ones refused with a line and a message (24 unit tests in `src/core/style/__tests__`, 4 Chromium tests in `tests/e2e/style-code.spec.ts`). The Done-when is met. **Still to build:** CSS property and value autocomplete; Style code per **state** (only the layer, and the breakpoint being edited through the normal writer, are covered; per-breakpoint is not tested); `calc()` and CSS variables are accepted and kept but have no helper UI. D3 turns ✅ when those bullets are done and it is on `main`.
+
 ### Phase D4 · Drivers: scroll, pointer, speed and time for any property
 **Needs:** D2 · **Was:** ROADMAP_3D 3D-044 – 3D-047, 3D-197 (Main 132 – 138) · **Lane:** A · **Status:** 📋
 - [ ] Built here first, for 2D and 3D: the input bus, the signal catalogue (scroll progress of a section, the pointer anywhere on the page, velocity, time, visibility, tilt), input tapes for tests, and the bindings runtime.
