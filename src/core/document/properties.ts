@@ -623,6 +623,15 @@ const DEFS = {
   "clone.radius": ranged(px(100, null, "paint", VISUAL, false), { min: 0 }),
   "clone.start": deg(0, null, "paint", VISUAL),
   "clone.faceOut": flag(false, "paint", VISUAL),
+  /** Effector (Design track D10): varies each copy of a repeater or cloner by a field; see `core/render/effector.ts`. */
+  "effector.mode": oneOf(["off", "index", "noise", "pointer"], "off", null, "paint", VISUAL),
+  "effector.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 20 }),
+  "effector.fade": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+  "effector.offsetX": px(0, null, "paint", VISUAL, false),
+  "effector.offsetY": px(0, null, "paint", VISUAL, false),
+  "effector.radius": ranged(px(200, null, "paint", VISUAL, false), { min: 1 }),
+  "effector.falloff": oneOf(["linear", "smoothstep", "gaussian", "inverse-square"], "smoothstep", null, "paint", VISUAL),
+  "effector.seed": ranged(num(1, null, "paint", VISUAL, false), { integer: true }),
   /** Style code (Design track D3): CSS declarations written for this layer that are not a control, kept as written; see `core/style/styleCode.ts`. */
   "style.custom": typed(str("", null, "paint", ALL)),
 

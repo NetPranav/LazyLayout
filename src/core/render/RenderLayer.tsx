@@ -10,8 +10,7 @@ import { EffectDefs, effectEntries } from "./effectsRender";
 import { layerBoxStyle } from "./geometry";
 import { mirrorSourceId } from "../frames/devices";
 import { isEditorOnlyLayer } from "../document/editorOnly";
-import { readRepeater, repeatCopies } from "./repeater";
-import { cloneTransform, clonerCopies, readCloner } from "./cloner";
+import { copyStyles } from "./copies";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -179,22 +178,16 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
     </Definition>
   );
 
-  // Repeater (Design track D8): copies of an absolutely placed layer, each in a zero-size wrapper at its parent's origin, so the
-  // layer's own left and top still apply. Copies are drawn, not selectable, and carry no layer id (the editor and the export
-  // both treat `data-repeat-copy` as editor-only).
-  const repeater = g.positioning === "absolute" ? readRepeater(resolved.get) : null;
-  const cloner = g.positioning === "absolute" ? readCloner(resolved.get) : null;
-  if (repeater || cloner) {
-    // The cloner (D9) wins when both are on. A fill measures the layer's parent frame.
-    const parentFrame = layer.parentId ? layers[layer.parentId] && getLayerGeometry(layers[layer.parentId]).frame : null;
-    const copies = cloner
-      ? clonerCopies(cloner, g.frame, { width: parentFrame?.width ?? 0, height: parentFrame?.height ?? 0 }).map((c) => ({
-          index: c.index,
-          transform: cloneTransform(c),
-          origin: `${g.frame.x + g.frame.width / 2}px ${g.frame.y + g.frame.height / 2}px`,
-          opacity: 1,
-        }))
-      : repeatCopies(repeater!, g.frame);
+  // Repeater, cloner and effector (Design track D8, D9, D10): copies of an absolutely placed layer, each in a zero-size wrapper at
+  // its parent's origin, so the layer's own left and top still apply. Copies are drawn, not selectable, and carry no layer id
+  // of their own (the editor and the export both treat `data-repeat-copy` and `data-repeat-of` as editor-only). A pointer
+  // effector is re-styled live by the stage's driver; here the copies are drawn as made.
+  const parentFrame = layer.parentId && layers[layer.parentId] ? getLayerGeometry(layers[layer.parentId]).frame : null;
+  const copies = g.positioning === "absolute" ? copyStyles(resolved.get, g.frame, { width: parentFrame?.width ?? 0, height: parentFrame?.height ?? 0 }) : [];
+  if (copies.length > 0) {
+    const copyProps = { ...layer.properties, "repeat.count": 1, "clone.mode": "off" };
+    const copyLayer = { ...layer, properties: copyProps };
+    const copyResolved = resolveProps({ archetype: layer.archetype, properties: copyProps });
     return (
       <>
         {main}
@@ -202,10 +195,11 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
           <div
             key={`repeat-${layer.id}-${c.index}`}
             data-repeat-copy={c.index}
+            data-repeat-of={layer.id}
             aria-hidden="true"
             style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "visible", pointerEvents: "none", transform: c.transform, transformOrigin: c.origin, opacity: c.opacity }}
           >
-            <Definition layer={{ ...layer, id: `${layer.id}`, properties: { ...layer.properties, "repeat.count": 1 } }} resolved={resolveProps({ archetype: layer.archetype, properties: { ...layer.properties, "repeat.count": 1 } })} ctx={definitionCtx}>
+            <Definition layer={copyLayer} resolved={copyResolved} ctx={definitionCtx}>
               {kids}
             </Definition>
           </div>
