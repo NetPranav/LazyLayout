@@ -103,4 +103,52 @@ test.describe("Drivers (D4)", () => {
     expect(right - left).toBeGreaterThan(30); // defaults: 0..1 of the page maps to 0..200 px
     expect(Math.abs(left - designX)).toBeLessThan(60);
   });
+
+  test("Follow: the chosen point of a layer follows the pointer (D6)", async ({ page }) => {
+    const r = await setup(page);
+    await page.getByLabel("Follow pin", { exact: true }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: "Bottom", exact: true }).first().click();
+    await page.waitForTimeout(500);
+    const lag = page.getByLabel("Follow lag", { exact: true }).first();
+    await lag.fill("0");
+    await lag.press("Enter");
+    await page.getByRole("button", { name: "Follow the pointer", exact: true }).click();
+    await expect.poll(async () => Object.values(((await page.evaluate(() => (window as unknown as { __LL_DOC__: { get: () => { bindings: Record<string, unknown> } } }).__LL_DOC__.get().bindings)) ?? {}) as Record<string, { name?: string }>).filter((b) => b.name === "Follow pointer").length).toBe(2);
+    await expect(page.locator("[data-driver-id]")).toHaveCount(2);
+
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    const target = { x: page0.x + page0.width * 0.7, y: page0.y + page0.height * 0.6 };
+    await page.mouse.move(target.x - 80, target.y - 50, { steps: 4 });
+    await page.mouse.move(target.x, target.y, { steps: 8 });
+    await page.waitForTimeout(400);
+    const box = (await drawnBox(page, r.id))!;
+    expect(Math.abs(box.x + box.width / 2 - target.x)).toBeLessThan(3);
+    expect(Math.abs(box.y + box.height - target.y)).toBeLessThan(3); // the bottom edge sits on the pointer
+
+    // one undo step takes the whole follow away
+    await page.getByText("Design", { exact: true }).first().click();
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
+    await expect(page.locator("[data-driver-id]")).toHaveCount(0);
+  });
+
+  test("a helper layer is drawn in the editor and left out of the export (D6)", async ({ page }) => {
+    const r = await setup(page);
+    const exported = () =>
+      page.evaluate(async () => {
+        const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ files: { path: string; text?: string }[] }> } };
+        const out = await w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+        return out.files.map((f) => f.text ?? "").join("\n");
+      });
+    const before = await exported();
+    await page.getByRole("button", { name: "Helper layer", exact: true }).click();
+    await expect.poll(async () => (await layers(page))[r.id].properties["render.role"]).toBe("helper");
+    await expect(page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first()).toBeVisible(); // still drawn while designing
+    const after = await exported();
+    expect(after.length).toBeLessThan(before.length - 30);
+    await page.getByRole("button", { name: "Helper layer", exact: true }).click();
+    await expect.poll(async () => (await layers(page))[r.id].properties["render.role"] ?? "").toBe("");
+    expect((await exported()).length).toBe(before.length);
+  });
 });
