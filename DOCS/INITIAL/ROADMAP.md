@@ -1752,6 +1752,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** a label stays on the watch's crown while the image zooms.
 **Done when:** pinned points stay within 0.5 px through 10 different transforms.
 
+**Status check (2026-11-14), 🚧:** built on D4 and D5. **Pins:** a label parented to an image where it sits stays on that point: `src/core/kernel/__tests__/pinThroughTransforms.test.ts` checks 10 transforms (moves, rotations, scales, skews, three origins) to within 0.5 px, plus a control that a label 10 px off is caught. This is the Done-when. **Follow:** `src/core/bindings/follow.ts` builds the two drivers (X and Y) from the layer's measured box: a pin (the nine preset points), a lag, an offset; the **Follow** form in Driven by makes them as one undo step, and replaces them as one. Verified: unit tests (all nine pins land exactly on the pointer at lag 0; lag arrives and is frame-rate independent) and a Chromium test that the bottom edge of a layer follows the real mouse. **Helpers:** a **Helper layer** toggle in Parent & links; a helper is drawn while designing and absent from the export (tested). **Not done:** (1) Follow does not account for a layer that is itself rotated or scaled (its box is not the pin's place), and does not follow another layer or a point, only the pointer; (2) no look-at, no scale by speed, no bounds or touch policies; (3) the pin dots are a menu, not clickable dots on the canvas; (4) the helper cannot be made invisible in Motion, only left out of Preview and the export.
+
 ### Phase D7 · Connect anything
 **Needs:** D4, D5 · **Was:** Main 141 · **Lane:** A · **Status:** 📋
 - [ ] Drag any property onto a driver or onto another property; map ranges; multiply; one click for "opposite".

@@ -48,3 +48,19 @@ export function removeBinding(id: string, label = "Remove driver"): boolean {
 
 /** The bindings a layer owns, in document order. */
 export const bindingsOf = (layerId: string): Binding[] => Object.values(getDocument().bindings ?? {}).filter((b) => b.ownerLayerId === layerId);
+
+/**
+ * Replaces the drivers a layer owns under one name with new ones, in one undo step (a Follow is two drivers; changing its
+ * settings must not leave the old pair behind or cost two undos). An empty list just removes them.
+ */
+export function setDriversNamed(ownerLayerId: string, name: string, drafts: readonly BindingDraft[], label = "Set driver"): string[] {
+  const doc = getDocument();
+  if (!doc.layers[ownerLayerId]) throw new Error(`There is no layer ${ownerLayerId}.`);
+  const made = drafts.map((d) => BindingSchema.parse({ ...BindingDraftSchema.parse(d), id: createId("bnd"), ownerLayerId, enabled: true, name }));
+  documentCommands.mutate(label, (draft) => {
+    const kept = Object.fromEntries(Object.entries(draft.bindings ?? {}).filter(([, b]) => !(b.ownerLayerId === ownerLayerId && b.name === name)));
+    for (const b of made) kept[b.id] = b;
+    draft.bindings = kept;
+  });
+  return made.map((b) => b.id);
+}

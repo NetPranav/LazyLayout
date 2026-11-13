@@ -7,7 +7,8 @@ import { Select } from "@/editor/components/Select";
 import { NumberField } from "@/editor/components/NumberField";
 import { Button } from "@/editor/components/Button";
 import { documentStore } from "@/core/store/documentState";
-import { addBinding, bindingsOf, removeBinding, setBindingEnabled } from "@/core/bindings/bindingCommands";
+import { addBinding, bindingsOf, removeBinding, setBindingEnabled, setDriversNamed } from "@/core/bindings/bindingCommands";
+import { DEFAULT_FOLLOW, FOLLOW_NAME, PRESET_PIN_NAMES, followDrafts, type PresetPinName } from "@/core/bindings/follow";
 import { unservedSignals } from "@/core/bindings/inputBus";
 import type { BindingDraft, Operator, Signal } from "@/core/document/signals";
 import { OptionRow } from "../options/OptionRow";
@@ -52,11 +53,14 @@ const PROPERTIES: Record<string, PropertyChoice> = {
 };
 const PROPERTY_OPTIONS = Object.entries(PROPERTIES).map(([value, p]) => ({ value, label: p.label }));
 
+const PIN_LABEL: Record<PresetPinName, string> = { topLeft: "Top left", top: "Top", topRight: "Top right", left: "Left", center: "Center", right: "Right", bottomLeft: "Bottom left", bottom: "Bottom", bottomRight: "Bottom right" };
+
 const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: string } }): string => {
   const sig = Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
+const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string } }): string => (b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
 
 export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
   const bindings = useStore(documentStore, (s) => s.document.bindings); // re-read when drivers change (undo, redo, another panel)
@@ -65,6 +69,11 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
   const [outRange, setOutRange] = useState<[number, number]>(PROPERTIES.x.out);
   const [inRange, setInRange] = useState<[number, number]>(SIGNALS.pointerX.range);
   const [smooth, setSmooth] = useState(0);
+  const [pin, setPin] = useState<PresetPinName>(DEFAULT_FOLLOW.pin);
+  const [lag, setLag] = useState(DEFAULT_FOLLOW.lag);
+  const [offX, setOffX] = useState(0);
+  const [offY, setOffY] = useState(0);
+  const [followNote, setFollowNote] = useState("");
   if (!selectedId || isMulti) return null;
   void bindings;
   const mine = bindingsOf(selectedId);
@@ -78,6 +87,27 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     addBinding(draft, selectedId);
   };
 
+  /** The drawn box of the layer in page px, measured from the page (zoom and pan do not matter). */
+  const measure = () => {
+    const el = document.querySelector<HTMLElement>(`[data-testid="stage-page"] [data-element-id="${selectedId}"]`);
+    const pageEl = el?.closest<HTMLElement>('[data-testid="stage-page"]');
+    if (!el || !pageEl) return null;
+    const r = el.getBoundingClientRect();
+    const pr = pageEl.getBoundingClientRect();
+    const k = pageEl.offsetWidth > 0 ? pr.width / pageEl.offsetWidth : 1;
+    return { x: (r.left - pr.left) / k, y: (r.top - pr.top) / k, width: r.width / k, height: r.height / k };
+  };
+  const follow = () => {
+    const box = measure();
+    if (!box) {
+      setFollowNote("The layer is not on the page right now.");
+      return;
+    }
+    setDriversNamed(selectedId, FOLLOW_NAME, followDrafts(selectedId, box, { pin, lag, offsetX: offX, offsetY: offY, axis: "both" }), "Follow pointer");
+    setFollowNote("");
+  };
+  const hasFollow = mine.some((b) => b.name === FOLLOW_NAME);
+
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
       {mine.map((b) => {
@@ -85,12 +115,12 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
         return (
           <div key={b.id} data-driver-id={b.id} className="ll:flex ll:items-center ll:gap-1.5 ll:min-h-7">
             <span className={`ll:flex-1 ll:min-w-0 ll:truncate ll:text-small ${b.enabled ? "ll:text-primary" : "ll:text-muted"}`} title={unserved.length > 0 ? "This driver reads a signal the editor does not measure yet." : undefined}>
-              {labelOf(b)}
+              {rowLabel(b)}
             </span>
-            <button type="button" aria-label={`${b.enabled ? "Turn off" : "Turn on"} driver ${labelOf(b)}`} aria-pressed={b.enabled} title={b.enabled ? "Turn off" : "Turn on"} onClick={() => setBindingEnabled(b.id, !b.enabled)} className="ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-secondary ll:hover:text-primary">
+            <button type="button" aria-label={`${b.enabled ? "Turn off" : "Turn on"} driver ${rowLabel(b)}`} aria-pressed={b.enabled} title={b.enabled ? "Turn off" : "Turn on"} onClick={() => setBindingEnabled(b.id, !b.enabled)} className="ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-secondary ll:hover:text-primary">
               <Icon icon={Power} size={14} />
             </button>
-            <button type="button" aria-label={`Remove driver ${labelOf(b)}`} title="Remove" onClick={() => removeBinding(b.id)} className="ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-secondary ll:hover:text-primary">
+            <button type="button" aria-label={`Remove driver ${rowLabel(b)}`} title="Remove" onClick={() => removeBinding(b.id)} className="ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-secondary ll:hover:text-primary">
               <Icon icon={Minus} size={14} />
             </button>
           </div>
@@ -141,6 +171,27 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
       <Button size="sm" aria-label="Add driver" onClick={add}>
         Add driver
       </Button>
+
+      <OptionRow label="Follow">
+        <Select aria-label="Follow pin" size="sm" width="100%" options={PRESET_PIN_NAMES.map((p) => ({ value: p, label: PIN_LABEL[p] }))} value={pin} onChange={(v) => setPin(v as PresetPinName)} />
+      </OptionRow>
+      <OptionRow label="Lag">
+        <NumberField size="sm" aria-label="Follow lag" title="Seconds the layer takes to catch up with the pointer. 0 sticks to it." value={lag} min={0} step={0.05} onChange={(v) => setLag(Math.max(0, v))} />
+      </OptionRow>
+      <OptionRow label="Offset">
+        <div className="ll:grid ll:grid-cols-2 ll:gap-1.5 ll:w-full">
+          <NumberField size="sm" aria-label="Follow offset X" title="Keeps the point this many px to the right of the pointer (negative: left)." value={offX} step={1} onChange={setOffX} />
+          <NumberField size="sm" aria-label="Follow offset Y" title="Keeps the point this many px below the pointer (negative: above)." value={offY} step={1} onChange={setOffY} />
+        </div>
+      </OptionRow>
+      <Button size="sm" aria-label={hasFollow ? "Update follow" : "Follow the pointer"} onClick={follow}>
+        {hasFollow ? "Update follow" : "Follow the pointer"}
+      </Button>
+      {followNote && (
+        <p role="alert" className="ll:m-0 ll:text-micro ll:text-primary">
+          {followNote}
+        </p>
+      )}
     </div>
   );
 };

@@ -44,6 +44,7 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
   if (parentOf !== NONE && !choices.some((c) => c.value === parentOf)) choices.push({ value: parentOf, label: doc.layers[parentOf]?.name ?? parentOf });
   const parentOptions = [{ value: NONE, label: "None" }, ...choices];
   const nameOf = (id: string) => doc.layers[id]?.name ?? id;
+  const isHelper = layer.properties["render.role"] === "helper";
   const links = readLinks(layer.properties);
   const exprs = readExpressions(layer.properties);
   const chosenSource = source || others[0]?.id || "";
@@ -74,6 +75,17 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
           }}
         />
       </OptionRow>
+
+      <button
+        type="button"
+        aria-pressed={isHelper}
+        aria-label="Helper layer"
+        title="A helper is drawn in the editor and left out of Preview and of every export: a null, a guide or a controller that other layers follow."
+        onClick={() => documentCommands.updateProps(selectedId, { "render.role": isHelper ? "" : "helper" }, isHelper ? "Make a normal layer" : "Make a helper")}
+        className={`ll:h-7 ll:px-2 ll:text-left ll:text-small ll:rounded-sm ll:border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ${isHelper ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active" : "ll:bg-surface-bar ll:text-muted ll:border-border ll:hover:text-primary"}`}
+      >
+        {isHelper ? "Helper layer: on" : "Make a helper layer"}
+      </button>
 
       {links.map((l) => (
         <div key={`l${l.slot}`} data-link-slot={l.slot} className="ll:flex ll:items-center ll:gap-1.5 ll:min-h-7">
