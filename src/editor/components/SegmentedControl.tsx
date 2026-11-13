@@ -129,7 +129,7 @@ export function SegmentedControl<T extends string = string>({
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
             disabled={isItemDisabled}
-            title={option.title}
+            title={option.title ?? option.ariaLabel}
             aria-label={option.ariaLabel}
             onClick={() => !isItemDisabled && onChange(option.value)}
             onKeyDown={(e) => handleKeyDown(e, index)}
