@@ -1770,6 +1770,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** one petal becomes a flower of 12.
 **Done when:** golden positions for 10 settings; one undo step per change.
 
+**Status check (2026-11-14), 🚧:** built: the `repeat.*` properties (count, step X and Y, turn, scale, fade), `src/core/render/repeater.ts` (pure; copy 0 is the layer, copy i is stepped by i, turn and scale about its own centre), the renderer drawing the copies as editor-only wrappers (`data-repeat-copy`), and the **Repeat** section in the Design panel. Verified: golden positions for 10 settings, hand-computed (`repeater.test.ts`, 15 tests), and Chromium tests (`tests/e2e/repeater.spec.ts`): 5 copies at the right positions, rotation, scale and fade steps drawn, the export carries the copies and the steps and none of the editor's marks, one undo step. The Done-when is met. **Not done:** copies do not follow an animation of the layer (they are static duplicates of its design look); not for layers inside an auto-layout frame (the panel says so); Main 110's trim, offset and round stay in Main 110; the mesh-warped layer draws no copies.
+
 ### Phase D9 · Cloner: grid, radial, line, path, fill
 **Needs:** D8 · **Was:** Main 154 · **Lane:** A · **Status:** 📋
 - [ ] Rows × columns, a ring, a line, along a path, or **fill an area** (as many copies as fit at a spacing). Each copy knows its index, for links and expressions.
@@ -1777,6 +1779,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** draw a dot, choose Clone > Fill area, and the section fills with dots.
 **Done when:** a 100 × 60 dot grid exports with no script and matches the editor; 5,000 animated copies hold 60 fps on the mid tier.
+
+**Status check (2026-11-14), 🚧:** built: the `clone.*` properties, `src/core/render/cloner.ts` (pure: grid, ring with face-out, fill the parent's area tiled from the layer's own cell, each copy with its index, capped at 10,000), the renderer (shared with the repeater), and the **Clone** section (mode, columns and rows, gaps, count, radius, start angle, face out, and a live "N in all" for a fill). Verified: 10 unit tests with hand-computed positions, and Chromium tests (`tests/e2e/cloner.spec.ts`): a grid at the right pitch, a fill that covers the frame and says how many, a ring turned face-out, and **a 100 × 60 dot grid (5,999 copies) that exports with no script and has the same copies as the editor**. **Not done:** (1) the export always writes one element per copy; the **cheapest form** (a static dot grid as one CSS background line, thousands of animated copies as one canvas) is not built; (2) **5,000 animated copies at 60 fps** is not measured (copies are static and do not follow an animation); (3) path and line modes (a line is the Repeater); (4) copies know their index in the document model but links and expressions cannot read it yet; (5) the fill measures the parent's frame, not an arbitrary area.
 
 ### Phase D10 · Fields & effectors
 **Needs:** D9, D4 · **Was:** Main 157 · **Lane:** A · **Status:** 📋
