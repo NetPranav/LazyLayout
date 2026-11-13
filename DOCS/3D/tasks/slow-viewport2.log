@@ -1,0 +1,8 @@
+
+Running 3 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep (6.6s)
+  ✓  2 [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps (14.4s)
+  ✓  3 [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo (15.1s)
+
+  3 passed (38.3s)

@@ -1,0 +1,97 @@
+
+Running 10 tests using 1 worker
+
+  ✓   1 [chromium] › tests/e2e/gpu-compositor.spec.ts:37:5 › 3D-002: 20 surfaces and 10 scenes stay within the context budget (3.2s)
+  ✓   2 [chromium] › tests/e2e/gpu-compositor.spec.ts:48:5 › 3D-002: a scene out of view sleeps with its last frame; back in view it wakes (2.5s)
+  ✓   3 [chromium] › tests/e2e/gpu-compositor.spec.ts:64:5 › 3D-002: a lost context comes back within a second, and surfaces draw again (3.6s)
+  ✓   4 [chromium] › tests/e2e/gpu-compositor.spec.ts:94:5 › 3D-003: mounting and unmounting 50 surfaces returns the memory ledger to the shared baseline (2.1s)
+  ✘   5 [chromium] › tests/e2e/gpu-harness.spec.ts:34:5 › 3D-004: the same scene at the same time gives the same picture, twice (7.4s)
+  ✘   6 [chromium] › tests/e2e/gpu-harness.spec.ts:47:5 › 3D-004: golden images of the resting and the pressed button (2.4s)
+  ✓   7 [chromium] › tests/e2e/gpu-harness.spec.ts:54:5 › 3D-004: a wrong look (red plastic for black foil) fails against the golden (2.4s)
+  ✓   8 [chromium] › tests/e2e/jobs.spec.ts:25:5 › 3D-006: a 5000 ms test.burn job leaves the main thread free to tick (4.4s)
+  ✓   9 [chromium] › tests/e2e/jobs.spec.ts:38:5 › 3D-006: cancelling a running job marks it cancelled within 500 ms and respawns the worker (1.5s)
+  ✓  10 [chromium] › tests/e2e/jobs.spec.ts:57:5 › 3D-006: cloth simulation completes on surface-lab within 30 s (6.9s)
+
+
+  1) [chromium] › tests/e2e/gpu-harness.spec.ts:34:5 › 3D-004: the same scene at the same time gives the same picture, twice 
+
+    Error: two runs differ in 1.571% of pixels
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      42 |   const [a, b] = shots.map((s) => PNG.sync.read(s));
+      43 |   const r = compare({ width: a.width, height: a.height, data: a.data }, { width: b.width, height: b.height, data: b.data }, { maxBadFraction: 0, minSsim: 0.9999, channelTolerance: 0, radius: 0 });
+    > 44 |   expect(r.pass, `two runs differ in ${(r.badFraction * 100).toFixed(3)}% of pixels`).toBe(true);
+         |                                                                                       ^
+      45 | });
+      46 |
+      47 | test("3D-004: golden images of the resting and the pressed button", async ({ page }) => {
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/gpu-harness.spec.ts:44:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-the-3c450-ives-the-same-picture-twice-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-the-3c450-ives-the-same-picture-twice-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-gpu-harness-3D-004-the-3c450-ives-the-same-picture-twice-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-the-3c450-ives-the-same-picture-twice-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-gpu-harness-3D-004-the-3c450-ives-the-same-picture-twice-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/gpu-harness.spec.ts:47:5 › 3D-004: golden images of the resting and the pressed button 
+
+    Error: surface/button-rest: 10.88% of pixels differ, SSIM 0.839, largest error 179
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at support/golden.ts:44
+
+      42 |     await test.info().attach(`${name} diff`, { path: `${out}.diff.png`, contentType: "image/png" });
+      43 |   }
+    > 44 |   expect(result.pass, `${name}: ${(result.badFraction * 100).toFixed(2)}% of pixels differ, SSIM ${result.ssim.toFixed(3)}, largest error ${result.maxError}`).toBe(true);
+         |                                                                                                                                                                ^
+      45 | }
+      46 |
+        at expectGolden (/Users/pranav/Project Folder/WebAPPBuilder/tests/support/golden.ts:44:160)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/gpu-harness.spec.ts:49:3
+
+    attachment #1: surface/button-rest actual (image/png) ──────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/attachments/surface-button-rest-actual-ee8a13eb4a0483b985383d30347fc0b5fffbf677.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: surface/button-rest diff (image/png) ────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/attachments/surface-button-rest-diff-8dc7523222030fdf2298464512715fcaca77634b.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-gpu-harness-3D-004-gol-0216a-ting-and-the-pressed-button-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests/e2e/gpu-harness.spec.ts:34:5 › 3D-004: the same scene at the same time gives the same picture, twice 
+    [chromium] › tests/e2e/gpu-harness.spec.ts:47:5 › 3D-004: golden images of the resting and the pressed button 
+  8 passed (40.8s)

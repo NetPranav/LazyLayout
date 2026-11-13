@@ -26,20 +26,20 @@ export interface AppearanceOptionsProps extends InspectorSectionProps {
 }
 
 const BLEND_OPTIONS = [
-  { value: "normal", label: "Normal" },
-  { value: "multiply", label: "Multiply" },
-  { value: "screen", label: "Screen" },
-  { value: "overlay", label: "Overlay" },
-  { value: "darken", label: "Darken" },
-  { value: "lighten", label: "Lighten" },
+  { value: "normal", label: "Normal", hint: "Covers what is behind it" },
+  { value: "multiply", label: "Multiply", hint: "Darkens: colours multiply with what is behind" },
+  { value: "screen", label: "Screen", hint: "Lightens: the opposite of Multiply" },
+  { value: "overlay", label: "Overlay", hint: "Raises contrast: Multiply in the darks, Screen in the lights" },
+  { value: "darken", label: "Darken", hint: "Keeps the darker of the two colours" },
+  { value: "lighten", label: "Lighten", hint: "Keeps the lighter of the two colours" },
 ] as const;
 
 const CURSOR_OPTIONS = [
-  { value: "auto", label: "Auto" },
-  { value: "pointer", label: "Pointer" },
-  { value: "text", label: "Text" },
-  { value: "move", label: "Move" },
-  { value: "not-allowed", label: "Not allowed" },
+  { value: "auto", label: "Auto", hint: "The browser picks" },
+  { value: "pointer", label: "Pointer", hint: "A hand, for links and buttons" },
+  { value: "text", label: "Text", hint: "An I-beam, for text" },
+  { value: "move", label: "Move", hint: "Four arrows, for something draggable" },
+  { value: "not-allowed", label: "Not allowed", hint: "A blocked circle" },
 ] as const;
 
 const POINTER_EVENTS_OPTIONS = [

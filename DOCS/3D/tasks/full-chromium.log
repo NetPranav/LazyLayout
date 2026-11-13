@@ -1,0 +1,843 @@
+
+Running 436 tests using 1 worker
+
+  ✓    1 [chromium] › tests/e2e/add3d.spec.ts:106:5 › 3D-025 & 3D-026: Shift+A Add menu, primitive handles drag/undo, and 3D text in-place editing (4.3s)
+  ✘    2 [chromium] › tests/e2e/agent-bridge.spec.ts:37:5 › Phase 50: pairing by the code in the editor, then an approved change is one undo step (21.3s)
+  ✘    3 [chromium] › tests/e2e/agent-bridge.spec.ts:81:5 › Phase 50: Claude can't reach its own approval switch (18.6s)
+  ✓    4 [chromium] › tests/e2e/align.spec.ts:70:5 › Phase 30: align, distribute and tidy land layers on exact positions, one undo step each (4.9s)
+  ✓    5 [chromium] › tests/e2e/align.spec.ts:146:5 › Phase 30: tidy turns a ragged 2 x 2 into a grid, in one undo step (2.4s)
+  ✓    6 [chromium] › tests/e2e/align.spec.ts:163:5 › Phase 30: the inspector's align and distribute buttons run the commands (3.1s)
+  ✓    7 [chromium] › tests/e2e/anchor-points.spec.ts:29:7 › Phase 72 · Anchor points & pins › renders anchor handle for selected layer and updates when dragged with snapping (5.9s)
+  ✓    8 [chromium] › tests/e2e/anchor-points.spec.ts:79:7 › Phase 72 · Anchor points & pins › inspector Origin control updates anchor position on canvas (10.6s)
+  -    9 [chromium] › tests/e2e/assets.spec.ts:56:6 › Phase 36: a dropped picture becomes an asset and an image layer, and is still there after a reload (new editor lacks asset pipeline and asset store integration)
+  -   10 [chromium] › tests/e2e/assets.spec.ts:82:6 › Phase 36: a picture pasted from the clipboard becomes an image layer (new editor lacks clipboard image paste to asset store)
+  -   11 [chromium] › tests/e2e/assets.spec.ts:96:6 › Phase 36: a hostile SVG is cleaned before it is stored, and what isn't a picture is refused with a reason (new editor lacks asset pipeline)
+  -   12 [chromium] › tests/e2e/assets.spec.ts:115:6 › Phase 36: 200 MB of assets survive a reload, byte for byte (new editor lacks asset store integration)
+  -   13 [chromium] › tests/e2e/assets.spec.ts:134:6 › Phase 36: a project file carries its pictures into a fresh browser (new editor lacks embedded asset loading)
+  -   14 [chromium] › tests/e2e/assets.spec.ts:157:6 › Phase 36: the browser is asked once to keep this storage (new editor lacks asset storage persistence prompt)
+  -   15 [chromium] › tests/e2e/assets.spec.ts:173:6 › Phase 36: a second tab of the same project opens read-only, and can take over (new editor lacks multi-tab read-only lock banner)
+  ✓   16 [chromium] › tests/e2e/auto-key-hud.spec.ts:24:7 › Phase 70 · Auto-key on the stage & value HUD › timeline record button toggles record mode state (3.7s)
+  ✓   17 [chromium] › tests/e2e/auto-key-hud.spec.ts:44:7 › Phase 70 · Auto-key on the stage & value HUD › Value HUD displays live values and keyframe recording on stage drag (3.2s)
+  ✓   18 [chromium] › tests/e2e/auto-key-hud.spec.ts:81:7 › Phase 70 · Auto-key on the stage & value HUD › Condition 3: Complete browser-level 3-time recording workflow (5.1s)
+  ✓   19 [chromium] › tests/e2e/auto-layout.spec.ts:152:7 › Phase 41: nested stacks lay out as computed, at five widths › every box is within half a pixel of computeStack at 320, 480, 768, 1024 and 1440 (3.8s)
+  ✓   20 [chromium] › tests/e2e/auto-layout.spec.ts:178:7 › Phase 41: adding auto layout › Shift+A on a frame of loose layers reads the row, and the children flow; one undo step; Shift+Alt+A pins them (3.5s)
+  ✓   21 [chromium] › tests/e2e/auto-layout.spec.ts:206:7 › Phase 41: adding auto layout › the inspector changes direction, gap and alignment, and sizing of a child (3.8s)
+  ✓   22 [chromium] › tests/e2e/auto-layout.spec.ts:233:7 › Phase 41: reordering by dragging › dragging a child past its neighbour reorders it, with an insertion line, as one undo step (3.1s)
+  ✓   23 [chromium] › tests/e2e/breakpoint-canvas.spec.ts:62:7 › Phase 44: the breakpoint canvas › All shows Tablet and Mobile beside Desktop at their own widths, and a change shows in every view (3.2s)
+  ✓   24 [chromium] › tests/e2e/breakpoint-canvas.spec.ts:83:7 › Phase 44: the breakpoint canvas › selecting a layer outlines it in every view; clicking one in a preview selects it and makes that breakpoint the one being edited (5.6s)
+  ✓   25 [chromium] › tests/e2e/breakpoint-canvas.spec.ts:105:7 › Phase 44: the breakpoint canvas › dragging a view's edge changes the breakpoint's width, reflows live, and undoes in one step (4.5s)
+  ✓   26 [chromium] › tests/e2e/breakpoint-canvas.spec.ts:135:7 › Phase 44: the breakpoint canvas › a 200-layer page keeps frame rate while an edge is dragged (10.4s)
+  ✓   27 [chromium] › tests/e2e/breakpoints.spec.ts:60:7 › Phase 43: breakpoints and overrides › Mobile shows the page at 375 and an edit there leaves Desktop alone; reset and undo (5.5s)
+  ✓   28 [chromium] › tests/e2e/breakpoints.spec.ts:94:7 › Phase 43: breakpoints and overrides › Tablet changes reach Mobile, Mobile's own win, and Reset all clears Mobile only (4.7s)
+  ✓   29 [chromium] › tests/e2e/breakpoints.spec.ts:111:7 › Phase 43: breakpoints and overrides › a layer hidden at Mobile is drawn at Desktop and not at Mobile (3.4s)
+  ✓   30 [chromium] › tests/e2e/breakpoints.spec.ts:123:7 › Phase 43: breakpoints and overrides › a layer pinned to the right follows the narrower page, and an override beats the pin (3.1s)
+  ✓   31 [chromium] › tests/e2e/breakpoints.spec.ts:133:7 › Phase 43: breakpoints and overrides › a breakpoint of your own: add 1024, edit at it, remove it with its overrides (2.9s)
+  ✓   32 [chromium] › tests/e2e/command-bus.spec.ts:18:5 › Phase 13: Edit > Undo and Redo run the same commands as their shortcuts (5.0s)
+  ✓   33 [chromium] › tests/e2e/command-bus.spec.ts:39:5 › Phase 13: a menu item that isn't built yet is disabled and names its phase (2.3s)
+  ✓   34 [chromium] › tests/e2e/command-bus.spec.ts:47:5 › Phase 13: File > Save flushes the project through the command bus (3.4s)
+  ✓   35 [chromium] › tests/e2e/command-bus.spec.ts:56:5 › Phase 13: undo works from the command palette (4.5s)
+  ✓   36 [chromium] › tests/e2e/command-bus.spec.ts:72:5 › Phase 13: Space plays over the timeline and does not over the canvas (2.8s)
+  ✓   37 [chromium] › tests/e2e/command-bus.spec.ts:88:5 › Phase 13: Delete in the timeline removes exactly one keyframe (4.2s)
+  ✓   38 [chromium] › tests/e2e/components.spec.ts:74:7 › Phase 46: components and instances › create a component, insert instances from the Assets panel, and edits of the main reach them (3.1s)
+  ✓   39 [chromium] › tests/e2e/components.spec.ts:100:7 › Phase 46: components and instances › an override in an instance survives edits of the main, is listed in the inspector, and Reset gives the main's value back (3.0s)
+  ✓   40 [chromium] › tests/e2e/components.spec.ts:122:7 › Phase 46: components and instances › Go to main, swap and detach from the inspector (3.3s)
+  ✓   41 [chromium] › tests/e2e/components.spec.ts:146:7 › Phase 46: components and instances › editing the main keeps every override in 40 instances, and the edit with the update of all 40 is one undo step (3.4s)
+  ✓   42 [chromium] › tests/e2e/compositing.spec.ts:59:5 › Phase 74: five compositing scenes at five times match evaluate() in the real stage (9.9s)
+  ✓   43 [chromium] › tests/e2e/compositing.spec.ts:122:5 › Phase 74: a layer used as a matte masks another layer, follows its animation, and is hidden itself (3.6s)
+  -   44 [chromium] › tests/e2e/composition-migration.spec.ts:17:6 › Phase 46: a v4 project migrates to v5 and renders identically to the native v5 demo (new editor lacks Mount Showcase Demo and stage rendering of imported projects)
+  -   45 [chromium] › tests/e2e/creation-tools.spec.ts:66:6 › Phase 25: every box tool draws inside the frame with the dragged geometry, parented to it, selected, one undo step (new editor lacks canvas interactive shape creation pipeline)
+  -   46 [chromium] › tests/e2e/creation-tools.spec.ts:117:6 › Phase 25: Shift draws a square and Alt draws from the centre (new editor lacks canvas interactive shape creation pipeline)
+  -   47 [chromium] › tests/e2e/creation-tools.spec.ts:147:6 › Phase 25: a click places the tool's default size at the press (new editor lacks canvas click-to-create pipeline)
+  -   48 [chromium] › tests/e2e/creation-tools.spec.ts:161:6 › Phase 25: line and arrow draw segments, rotated about their centre; Shift snaps to 45 degrees (new editor lacks line/arrow creation pipeline)
+  -   49 [chromium] › tests/e2e/creation-tools.spec.ts:183:6 › Phase 25: over bare canvas only the Frame tool does anything, and it makes a top-level frame (new editor lacks canvas frame creation tool)
+  -   50 [chromium] › tests/e2e/creation-tools.spec.ts:201:6 › Phase 25: drawing inside a nested frame parents the layer to it (new editor lacks canvas frame creation tool)
+  ✓   51 [chromium] › tests/e2e/design-controls.spec.ts:61:7 › Design controls change what is drawn › padding on a frame (LA-017) (5.4s)
+  ✓   52 [chromium] › tests/e2e/design-controls.spec.ts:69:7 › Design controls change what is drawn › margin moves a child inside an auto-layout frame (LA-018) (7.2s)
+  ✓   53 [chromium] › tests/e2e/design-controls.spec.ts:81:7 › Design controls change what is drawn › grow widens a child in a stack (LA-020) (6.3s)
+  ✓   54 [chromium] › tests/e2e/design-controls.spec.ts:92:7 › Design controls change what is drawn › fill opacity makes the fill see-through, not the layer (LA-007) (4.7s)
+  ✓   55 [chromium] › tests/e2e/design-controls.spec.ts:110:9 › Design controls change what is drawn › effect "Inner shadow" is selectable and draws (LA-028) (7.4s)
+  ✓   56 [chromium] › tests/e2e/design-controls.spec.ts:110:9 › Design controls change what is drawn › effect "Layer blur" is selectable and draws (LA-028) (5.4s)
+  ✓   57 [chromium] › tests/e2e/design-controls.spec.ts:110:9 › Design controls change what is drawn › effect "Background blur" is selectable and draws (LA-028) (7.2s)
+  ✓   58 [chromium] › tests/e2e/design-controls.spec.ts:121:7 › Design controls change what is drawn › a drop shadow on a line renders (LA-034) (4.4s)
+  ✓   59 [chromium] › tests/e2e/design-controls.spec.ts:129:7 › Design controls change what is drawn › the chosen cursor shows over the layer (LA-022) (6.7s)
+  ✓   60 [chromium] › tests/e2e/design-controls.spec.ts:139:7 › Design controls change what is drawn › Fixed, Hug and Fill size differently in a stack (LA-010) (6.5s)
+  ✓   61 [chromium] › tests/e2e/design-controls.spec.ts:155:7 › Design controls change what is drawn › two fills reorder by their handle (LA-006) (4.3s)
+  ✓   62 [chromium] › tests/e2e/design-controls.spec.ts:176:7 › Design controls change what is drawn › text modes: wrap, no wrap and clip are different (LA-003) (9.2s)
+  ✓   63 [chromium] › tests/e2e/deterministic-clock.spec.ts:26:5 › 1. the clock deterministically controls rAF/performance.now in isolation (2.4s)
+  ✓   64 [chromium] › tests/e2e/deterministic-clock.spec.ts:45:5 › 2. seekRuler reaches an exact playhead time, repeatably (4.0s)
+  ✓   65 [chromium] › tests/e2e/deterministic-clock.spec.ts:68:5 › 3. AUD-41: transport playback on the frame scheduler is deterministic under the test clock (4.1s)
+  ✘   66 [chromium] › tests/e2e/editing.spec.ts:73:5 › Phase 29: a 25-step editing journey with the exact result after each step (9.3s)
+  ✓   67 [chromium] › tests/e2e/editing.spec.ts:231:5 › Phase 29: a copy in one tab pastes into another (8.9s)
+  ✓   68 [chromium] › tests/e2e/effects.spec.ts:52:5 › Phase 75: a 4-effect stack at five times matches evaluate() in the real stage (2.7s)
+  ✓   69 [chromium] › tests/e2e/effects.spec.ts:92:5 › Phase 75: motion blur follows the layer's velocity, smears its edge, and is off without the switch (1.2s)
+  ✓   70 [chromium] › tests/e2e/export.spec.ts:112:7 › Phase 49: static export looks like the canvas › the plain HTML export matches the stage at 1440, 1024, 768, 480 and 375, for the whole page and for every archetype (10.3s)
+  ✓   71 [chromium] › tests/e2e/export.spec.ts:168:7 › Phase 49: the Export dialog › File, Export Site: pick a target and styling, see the files, download a ZIP with them (11.3s)
+  ✓   72 [chromium] › tests/e2e/export.spec.ts:199:7 › Phase 49: the Export dialog › the command is Export Site on Ctrl+E, and the typed command downloads too (5.0s)
+  ✓   73 [chromium] › tests/e2e/export.spec.ts:210:7 › Phase 49: the Code tab shows the real export of the selection › select a layer: HTML, JSX, CSS and Tailwind of that layer, the same code Export Site writes (5.1s)
+  ✓   74 [chromium] › tests/e2e/expressions.spec.ts:42:5 › Phase 77: wiggle on the stage matches the kernel at five times and is the same on every seek (2.7s)
+  ✓   75 [chromium] › tests/e2e/expressions.spec.ts:63:5 › Phase 77: loopOut repeats the slide back and forth on the stage (1.8s)
+  ✓   76 [chromium] › tests/e2e/figcraft-port.spec.ts:59:5 › FigCraft port: the render gallery draws the new shapes, paints, strokes, networks and boolean groups (1.8s)
+  ✓   77 [chromium] › tests/e2e/figcraft-port.spec.ts:81:5 › FigCraft port: a live boolean group keeps its operands, changes operation and flattens, one undo step each (5.1s)
+  ✓   78 [chromium] › tests/e2e/figcraft-port.spec.ts:103:5 › FigCraft port: the Shape Builder merges the overlap of two rectangles into a new shape (4.8s)
+  ✓   79 [chromium] › tests/e2e/figcraft-port.spec.ts:120:5 › FigCraft port: the paint bucket unfills and refills a closed path (5.2s)
+  ✓   80 [chromium] › tests/e2e/figcraft-port.spec.ts:140:5 › FigCraft port: a frame's layout grid draws on the canvas overlay (3.7s)
+  ✓   81 [chromium] › tests/e2e/figcraft-port.spec.ts:152:5 › FigCraft port: push an instance's change to its main, combine two components as variants, duplicate a main as an instance (4.4s)
+  ✓   82 [chromium] › tests/e2e/figcraft-port.spec.ts:182:5 › FigCraft port: a collection's mode chosen on a frame, an alias, and a paint style reach the stage (4.2s)
+  ✓   83 [chromium] › tests/e2e/figcraft-port.spec.ts:231:5 › FigCraft port: effects added in the Pro inspector reach the stage: noise as a filter, a progressive blur as backdrop layers (5.2s)
+  ✓   84 [chromium] › tests/e2e/figcraft-port.spec.ts:254:5 › FigCraft port: a numbered list nested from the inspector, and text put on a shape's path (6.4s)
+  ✓   85 [chromium] › tests/e2e/figcraft-port.spec.ts:279:5 › FigCraft port: Alt-drag copies, the Scale tool scales strokes with the layer, Alt-hover measures to another layer, batch rename (6.7s)
+  ✓   86 [chromium] › tests/e2e/figcraft-port.spec.ts:352:5 › FigCraft port: the rotation origin moved to a corner turns the layer about it (4.0s)
+  ✓   87 [chromium] › tests/e2e/figcraft-port.spec.ts:372:5 › FigCraft port: a frame converted to a group and a section from the inspector, and a layer exported as PNG and SVG (6.6s)
+  ✓   88 [chromium] › tests/e2e/figcraft-port.spec.ts:405:5 › FigCraft port: Dev Mode in the Code tab: inspect a layer, annotate it, keep a measurement, mark it ready and compare changes (6.1s)
+  ✓   89 [chromium] › tests/e2e/figcraft-port.spec.ts:443:5 › FigCraft port: an SVG file placed as an editable design keeps its groups, gradient and text as layers (4.0s)
+  ✓   90 [chromium] › tests/e2e/figcraft-port.spec.ts:477:5 › FigCraft port: a component inside a component: the icon's edit reaches the button's instances, and the nested icon swaps from the inspector (4.5s)
+  ✓   91 [chromium] › tests/e2e/figcraft-port.spec.ts:517:5 › FigCraft port: a brush picked in the Pro inspector draws the stroke with shapes; variables export and import round-trip (6.1s)
+  -   92 [chromium] › tests/e2e/fonts.spec.ts:78:6 › Phase 38: an uploaded font renders on the canvas, and after a reload (new editor lacks custom font uploading and stage rendering)
+  -   93 [chromium] › tests/e2e/fonts.spec.ts:101:6 › Phase 38: a Google font loads only when used, and the layout follows it without a jump (new editor lacks dynamic Google font injection)
+  -   94 [chromium] › tests/e2e/fonts.spec.ts:134:6 › Phase 38: weights come from the family, variable axes are sliders, and font loading is a project setting (new editor lacks font family/variable axes inspector controls)
+  -   95 [chromium] › tests/e2e/frames.spec.ts:31:6 › Phase 21: Desktop, Tablet and Mobile are three frames, each its own stage, and they survive a reload (new editor lacks multi-frame stage canvas)
+  -   96 [chromium] › tests/e2e/frames.spec.ts:61:6 › Phase 21: add a custom frame, rename, resize, duplicate, reorder and delete (new editor lacks multi-frame stage canvas and custom frame management)
+  -   97 [chromium] › tests/e2e/frames.spec.ts:108:6 › Phase 21: the backdrop can be light, dark or a checkerboard (new editor lacks Canvas backdrop selector)
+  -   98 [chromium] › tests/e2e/frames.spec.ts:118:6 › Phase 21: the header switch and the frames own the active frame (new editor lacks Device Preview Target multi-frame switcher)
+  ✓   99 [chromium] › tests/e2e/gpu-compositor.spec.ts:37:5 › 3D-002: 20 surfaces and 10 scenes stay within the context budget (3.9s)
+  ✓  100 [chromium] › tests/e2e/gpu-compositor.spec.ts:48:5 › 3D-002: a scene out of view sleeps with its last frame; back in view it wakes (4.0s)
+  ✓  101 [chromium] › tests/e2e/gpu-compositor.spec.ts:64:5 › 3D-002: a lost context comes back within a second, and surfaces draw again (3.9s)
+  ✓  102 [chromium] › tests/e2e/gpu-compositor.spec.ts:94:5 › 3D-003: mounting and unmounting 50 surfaces returns the memory ledger to the shared baseline (3.3s)
+  ✓  103 [chromium] › tests/e2e/gpu-harness.spec.ts:34:5 › 3D-004: the same scene at the same time gives the same picture, twice (5.4s)
+  ✓  104 [chromium] › tests/e2e/gpu-harness.spec.ts:47:5 › 3D-004: golden images of the resting and the pressed button (2.6s)
+  ✓  105 [chromium] › tests/e2e/gpu-harness.spec.ts:54:5 › 3D-004: a wrong look (red plastic for black foil) fails against the golden (2.0s)
+  ✓  106 [chromium] › tests/e2e/grid-constraints.spec.ts:91:7 › Phase 42: constraints when a frame is resized › each constraint puts its layer where constrainBox says at four sizes, and undo restores (4.3s)
+  ✓  107 [chromium] › tests/e2e/grid-constraints.spec.ts:111:7 › Phase 42: constraints when a frame is resized › a resize through the inspector moves them, is one undo step, and matches the pure function exactly (3.0s)
+  ✓  108 [chromium] › tests/e2e/grid-constraints.spec.ts:137:7 › Phase 42: constraints when a frame is resized › the constraints controls set them on the selected layer (3.8s)
+  ✓  109 [chromium] › tests/e2e/grid-constraints.spec.ts:194:7 › Phase 42: grids › every cell is within half a pixel of trackSpans at 320, 480, 768, 1024 and 1440 (3.8s)
+  ✓  110 [chromium] › tests/e2e/grid-constraints.spec.ts:214:7 › Phase 42: grids › Add grid on a frame of loose layers reads the grid, draws its layout grid, and spans are set in the inspector (3.2s)
+  ✓  111 [chromium] › tests/e2e/grid-constraints.spec.ts:241:7 › Phase 42: grids › dragging a layer inside a grid moves it in the order, with an insertion line (4.0s)
+  ✓  112 [chromium] › tests/e2e/hit-testing.spec.ts:57:5 › Phase 22: the frames get no pointer events in Design mode (2.5s)
+  ✓  113 [chromium] › tests/e2e/hit-testing.spec.ts:63:5 › Phase 22: clicks at 20 known points select the expected layers at 3 zoom levels (12.8s)
+  ✓  114 [chromium] › tests/e2e/hit-testing.spec.ts:88:5 › Phase 22: a locked layer is skipped and a hidden one is not there to hit (3.2s)
+  ✓  115 [chromium] › tests/e2e/hit-testing.spec.ts:115:5 › Phase 22: hovering shows the layer a click would select (2.5s)
+  -  116 [chromium] › tests/e2e/images.spec.ts:100:6 › Phase 37: a picture fills a shape, fit and tile change how it sits, and its colours are properties (new editor lacks window.__LL_ASSETS__ test seam, stage iframe, and Fill colour dialog image settings)
+  -  117 [chromium] › tests/e2e/images.spec.ts:140:6 › Phase 37: crop by dragging the picture's corners, undone in one step (new editor lacks stage iframe and .canvas-overlay__ghandle image crop handles)
+  -  118 [chromium] › tests/e2e/images.spec.ts:187:6 › Phase 37: a frame takes a picture fill too, with colour changes drawn behind its content; replace swaps the picture and keeps the rest (new editor lacks stage iframe and legacy Fill colour dialog image settings)
+  -  119 [chromium] › tests/e2e/images.spec.ts:211:6 › Phase 37: replacing the picture of an image layer, by the command and by the Picture control (new editor lacks paint.replaceImage command and Picture inspector control)
+  -  120 [chromium] › tests/e2e/inspector-pro.spec.ts:70:6 › Phase 34: the Pro face has a control for every property of the selected layer, whatever its kind (new editor replaces Simple/Pro tabs with Design/Motion/Code modes and does not use form[name='Properties'] or [data-prop-path])
+  -  121 [chromium] › tests/e2e/inspector-pro.spec.ts:91:6 › Phase 34: type, arrow keys, scrub (and Escape), reset, and each control type writes to the document (new editor replaces Pro face with unified Design mode inspector, lacks [data-prop-path] and pro-number scrubbing)
+  -  122 [chromium] › tests/e2e/inspector-pro.spec.ts:163:6 › Phase 34: units, toggles, vectors, JSON, mixed values and the filter (new editor replaces Pro face with unified Design mode inspector, lacks [data-prop-path] and unit companion selects)
+  -  123 [chromium] › tests/e2e/inspector-simple.spec.ts:80:6 › Phase 33: every Simple control of a rectangle writes to the layer, the document and one undo step (new editor replaces Simple face with unified Design mode inspector, lacks form[name='Design'] and stage iframe)
+  -  124 [chromium] › tests/e2e/inspector-simple.spec.ts:128:6 › Phase 33: a text layer's words and colour, and a frame's fill, stroke and radius (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)
+  -  125 [chromium] › tests/e2e/inspector-simple.spec.ts:153:6 › Phase 33: several layers show Mixed where they differ, and one change sets them all (new editor replaces Simple face with unified Design mode inspector and lacks stage iframe drawing tools)
+  -  126 [chromium] › tests/e2e/inspector-simple.spec.ts:184:6 › Phase 33: a layer placed by its parent's layout can be moved, and the Pro face is one click away (new editor replaces Simple/Pro face switching with top-bar Design/Motion/Code mode switch)
+  ✓  127 [chromium] › tests/e2e/jobs.spec.ts:25:5 › 3D-006: a 5000 ms test.burn job leaves the main thread free to tick (3.7s)
+  ✓  128 [chromium] › tests/e2e/jobs.spec.ts:38:5 › 3D-006: cancelling a running job marks it cancelled within 500 ms and respawns the worker (982ms)
+  ✓  129 [chromium] › tests/e2e/jobs.spec.ts:57:5 › 3D-006: cloth simulation completes on surface-lab within 30 s (9.2s)
+  ✓  130 [chromium] › tests/e2e/keybinding-conflicts.spec.ts:10:5 › no two commands share a key in the same context (2.3s)
+  ✓  131 [chromium] › tests/e2e/keyframing.spec.ts:84:5 › Phase 64: keyframes are painted on one canvas, not made of DOM nodes (3.5s)
+  ✓  132 [chromium] › tests/e2e/keyframing.spec.ts:107:5 › Phase 64: only the rows in view are built, and scrolling builds the rest (3.4s)
+  ✓  133 [chromium] › tests/e2e/keyframing.spec.ts:126:5 › Phase 65: a precomp opens in a tab with breadcrumbs, is edited, and the parent shows the change (4.1s)
+  ✓  134 [chromium] › tests/e2e/keyframing.spec.ts:164:5 › Phase 66: Auto-key: 3 changes make 3 keyframes, playback matches, and undo removes them (3.7s)
+  ✓  135 [chromium] › tests/e2e/keyframing.spec.ts:189:5 › Phase 66: select, move, copy, paste and delete keyframes (5.1s)
+  ✓  136 [chromium] › tests/e2e/keyframing.spec.ts:236:5 › Phase 66: Shift-drag on empty lane box-selects keyframes (4.0s)
+  ✓  137 [chromium] › tests/e2e/keyframing.spec.ts:254:5 › Phase 67: the graph editor sets easing, by preset, by handles and by Bounce and Time (4.2s)
+  ✓  138 [chromium] › tests/e2e/layers.spec.ts:79:5 › Phase 32: the tree mirrors the document and the selection stays in sync both ways (4.6s)
+  -  139 [chromium] › tests/e2e/layers.spec.ts:122:6 › Phase 32: drag reorders, and moves a layer into another frame without moving it on the canvas (new editor lacks canvas interactive shape creation pipeline and canvas frame coordinate re-parenting)
+  -  140 [chromium] › tests/e2e/layers.spec.ts:160:6 › Phase 32: an illegal drop is refused with its reason and changes nothing (new editor lacks canvas interactive shape creation pipeline)
+  -  141 [chromium] › tests/e2e/layers.spec.ts:191:6 › Phase 32: rename in place, lock, hide and search (App bug: locked layers can still be selected via canvas stage click; Artboard.tsx lacks lock check on stage element pointer/click)
+  -  142 [chromium] › tests/e2e/layers.spec.ts:244:6 › Phase 32: a tree of hundreds of layers scrolls at frame rate and draws only the rows in view (new editor lacks virtualized layer tree scrolling)
+  ✓  143 [chromium] › tests/e2e/links.spec.ts:43:5 › Phase 76: linked properties follow their source in the real stage at five times (2.0s)
+  ✓  144 [chromium] › tests/e2e/new-ui-canvas.spec.ts:70:7 › the canvas draws the real tree › an edit to a sample layer shows on the canvas (2.4s)
+  ✓  145 [chromium] › tests/e2e/new-ui-canvas.spec.ts:77:7 › the canvas draws the real tree › a frame's hide, opacity and clip reach what is inside it (8.9s)
+  ✓  146 [chromium] › tests/e2e/new-ui-canvas.spec.ts:96:7 › the canvas draws the real tree › Stack, gap and Fill lay the children out (8.0s)
+  ✓  147 [chromium] › tests/e2e/new-ui-canvas.spec.ts:129:7 › the canvas draws the real tree › a line's shadow is drawn, not cut off by its thin box (6.3s)
+  ✓  148 [chromium] › tests/e2e/new-ui-canvas.spec.ts:142:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn (4.4s)
+  ✓  149 [chromium] › tests/e2e/new-ui-canvas.spec.ts:150:7 › the canvas draws the real tree › Insert > Sections adds a real section to the page on screen (6.0s)
+  ✓  150 [chromium] › tests/e2e/new-ui-canvas.spec.ts:163:7 › shortcuts fire once › Duplicate adds one layer, Undo takes back one step, Delete removes one (4.5s)
+  ✓  151 [chromium] › tests/e2e/new-ui-canvas.spec.ts:184:7 › gestures › marquee on empty canvas selects what it touches (4.0s)
+  ✓  152 [chromium] › tests/e2e/new-ui-canvas.spec.ts:194:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all (5.7s)
+  ✓  153 [chromium] › tests/e2e/new-ui-canvas.spec.ts:219:7 › gestures › Shift-click adds to the selection and takes away from it (4.0s)
+  ✓  154 [chromium] › tests/e2e/new-ui-canvas.spec.ts:230:7 › gestures › Alt-drag leaves the original and moves a copy, as one undo step (4.7s)
+  ✓  155 [chromium] › tests/e2e/new-ui-canvas.spec.ts:264:7 › what goes under what › a new picture goes into the frame it lands on, or the selected frame, and shows on top there (7.4s)
+  ✓  156 [chromium] › tests/e2e/new-ui-canvas.spec.ts:283:7 › what goes under what › on the canvas a layer goes by where it is let go, even when it is bigger than the frame; several go together (10.2s)
+  ✓  157 [chromium] › tests/e2e/new-ui-canvas.spec.ts:309:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page (11.0s)
+  ✓  158 [chromium] › tests/e2e/new-ui-canvas.spec.ts:357:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows (11.4s)
+  ✓  159 [chromium] › tests/e2e/new-ui-canvas.spec.ts:386:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it (8.5s)
+  ✓  160 [chromium] › tests/e2e/new-ui-canvas.spec.ts:428:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them (9.8s)
+  ✓  161 [chromium] › tests/e2e/new-ui-canvas.spec.ts:442:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches (6.3s)
+  ✓  162 [chromium] › tests/e2e/new-ui-canvas.spec.ts:455:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders (6.3s)
+  ✓  163 [chromium] › tests/e2e/new-ui-canvas.spec.ts:505:7 › arranging: what is on top is what you see › Bring to front, Send to back, Bring forward and Send backward: by shortcut, each shows on screen (9.7s)
+  ✓  164 [chromium] › tests/e2e/new-ui-canvas.spec.ts:532:7 › arranging: what is on top is what you see › the same four from the right-click Arrange menu, on the canvas and on a row in the Layers panel (18.6s)
+  ✓  165 [chromium] › tests/e2e/new-ui-canvas.spec.ts:560:7 › arranging: what is on top is what you see › the Z field puts a layer over or under the others whatever the order, on the canvas (7.4s)
+  ✓  166 [chromium] › tests/e2e/new-ui-canvas.spec.ts:577:7 › corner pin: lay a layer on a surface › the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step (4.9s)
+  ✓  167 [chromium] › tests/e2e/new-ui-canvas.spec.ts:633:7 › saved projects › a current project is left as it is: a sample layer the designer put in flow stays in flow (5.5s)
+  ✓  168 [chromium] › tests/e2e/new-ui-canvas.spec.ts:645:7 › saved projects › an emptied page stays empty after a reload (10.8s)
+  ✓  169 [chromium] › tests/e2e/new-ui-canvas.spec.ts:659:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size (5.2s)
+  ✓  170 [chromium] › tests/e2e/new-ui-canvas.spec.ts:706:7 › menus › a submenu opens at its full width, even when hovered again before it has finished opening (6.6s)
+  ✓  171 [chromium] › tests/e2e/new-ui-canvas.spec.ts:725:7 › menus, moving between submenus › hovering another row with a submenu swaps the submenu to that row's items (5.8s)
+  ✓  172 [chromium] › tests/e2e/new-ui-canvas.spec.ts:744:7 › an empty page is empty › the page is never drawn: no white sheet, border or title strip, with or without layers (5.3s)
+  ✓  173 [chromium] › tests/e2e/new-ui-canvas.spec.ts:781:7 › split text into letters › one click turns a word into one layer per letter, in place, each controllable on its own (12.9s)
+  ✓  174 [chromium] › tests/e2e/new-ui-colour-picker.spec.ts:7:5 › the page background and theme swatches open the colour picker and apply what is picked (4.7s)
+  ✓  175 [chromium] › tests/e2e/new-ui-cutout.spec.ts:46:5 › cut a mountain out of its picture and place it over another background (6.8s)
+  ✓  176 [chromium] › tests/e2e/new-ui-cutout.spec.ts:100:5 › Escape closes the cutout dialog without changing anything (5.3s)
+  ✓  177 [chromium] › tests/e2e/new-ui-cutout.spec.ts:122:5 › Apply to this image swaps the picture for its cutout (6.8s)
+  ✓  178 [chromium] › tests/e2e/new-ui-cutout.spec.ts:151:5 › a frame's picture fill: a piece cut from it lines up exactly, and text goes behind it (13.8s)
+  ✓  179 [chromium] › tests/e2e/new-ui-cutout.spec.ts:249:5 › a loose shape drawn around the mountain settles onto its edge with Snap to edges, and does not with it off (9.7s)
+  ✓  180 [chromium] › tests/e2e/new-ui-cutout.spec.ts:295:5 › Depth: the picture's depth is estimated, shown, picked from, and split into depth layers placed exactly over it (7.1s)
+  ✓  181 [chromium] › tests/e2e/new-ui-cutout.spec.ts:335:5 › Add selection + rest: one go gives the piece and the picture with it taken out; a piece reopens with its own shape (6.5s)
+  ✓  182 [chromium] › tests/e2e/new-ui-device-views.spec.ts:89:7 › Task I: Device views and live linked mirror frames › 1) no Desktop/Tablet/Mobile buttons in the top bar (3.4s)
+  ✓  183 [chromium] › tests/e2e/new-ui-device-views.spec.ts:104:7 › Task I: Device views and live linked mirror frames › 2) empty page + Mobile in the Design pill creates a Mobile frame (4.7s)
+  ✓  184 [chromium] › tests/e2e/new-ui-device-views.spec.ts:128:7 › Task I: Device views and live linked mirror frames › 3) with a Desktop frame selected, Tablet opens a mirror to the right (120px gap, same top) (8.4s)
+  ✓  185 [chromium] › tests/e2e/new-ui-device-views.spec.ts:185:7 › Task I: Device views and live linked mirror frames › 4) adding a rectangle inside the main appears in the mirror live (21.6s)
+  ✓  186 [chromium] › tests/e2e/new-ui-device-views.spec.ts:219:7 › Task I: Device views and live linked mirror frames › 5) moving a layer inside mirror writes a Tablet override and leaves main untouched (15.6s)
+  ✓  187 [chromium] › tests/e2e/new-ui-device-views.spec.ts:262:7 › Task I: Device views and live linked mirror frames › 6) clicking Desktop again with a Desktop frame selected creates a new independent frame (11.1s)
+  ✓  188 [chromium] › tests/e2e/new-ui-device-views.spec.ts:300:7 › Task I: Device views and live linked mirror frames › 7) deleting the mirror keeps the main frame intact (10.4s)
+  ✓  189 [chromium] › tests/e2e/new-ui-device-views.spec.ts:342:7 › Task I: Device views and live linked mirror frames › 8) deleting a layer inside a mirror is refused with a toast (10.9s)
+  ✓  190 [chromium] › tests/e2e/new-ui-device-views.spec.ts:379:7 › Task I: Device views and live linked mirror frames › 9) picking a layer in the mirror never leaves the main frame in Tablet: it keeps its width and edits go to Desktop (10.6s)
+  ✓  191 [chromium] › tests/e2e/new-ui-drop.spec.ts:23:5 › a picture dropped on the canvas is stored in the assets and placed where it was dropped (3.2s)
+  ✓  192 [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:100:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › empty page + Frame tool = exactly one visible frame and no page sheet (3.7s)
+  ✓  193 [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:121:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › a loose shape on the page shows on the canvas and the page is still never drawn (5.1s)
+  ✓  194 [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:136:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › empty page + Mobile click creates a frame named Mobile of 375 wide (4.6s)
+  ✘  195 [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:169:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › with a frame, Tablet click + moving a child gives an override that persists when switching Desktop -> Tablet again while Desktop stays unchanged (1.0m)
+  ✓  196 [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:218:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › Backspace deletes the frame (5.6s)
+  ✓  197 [chromium] › tests/e2e/new-ui-hero.spec.ts:111:7 › build the Adventure hero in the new editor › a designer can build the whole hero from the Design tab (57.2s)
+  ✓  198 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:52:7 › Lane A issue fixes › LA-012: Arrange changes what is on top, on the canvas as well as in the list (7.2s)
+  ✓  199 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:76:7 › Lane A issue fixes › LA-013 / LA-031 / LA-033: a frame can be drawn on bare canvas and holds what is drawn inside it (7.8s)
+  ✓  200 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:94:7 › Lane A issue fixes › LA-001: Center aligns a layer in its frame, not in a 100px page (7.9s)
+  -  201 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:110:8 › Lane A issue fixes › LA-002 / LA-004 / LA-008: No wrap keeps one line, Font loading keeps its choice, capitalisation shows while editing
+  ✓  202 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:127:7 › Lane A issue fixes › LA-014 / LA-016: scale, skew and transform origin show on the canvas and stay chosen (5.8s)
+  ✓  203 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:144:7 › Lane A issue fixes › LA-024: a stroke on one side only is written for that side (5.0s)
+  ✓  204 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:155:7 › Lane A issue fixes › LA-025 / LA-026: a line takes dash style and cap (3.8s)
+  ✓  205 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:171:7 › Lane A issue fixes › LA-030: the preview while drawing is the shape being drawn (3.8s)
+  -  206 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:183:8 › Lane A issue fixes › LA-032: Shift+wheel pans sideways and a right-button drag pans the canvas
+  ✓  207 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:200:7 › Lane A issue fixes › LA-011 / LA-005 / LA-023: resize handles have a real target and colours open a picker (4.7s)
+  ✓  208 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:215:7 › Lane A issue fixes › Ctrl+K opens the command palette and runs the command you pick (4.9s)
+  -  209 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:231:8 › Lane A issue fixes › the Page block resizes and colours the page, and a drag on a fill grip reorders fills
+  ✓  210 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:261:7 › Lane A issue fixes › round 3: a layer dropped on a frame in the Layers panel, or on the canvas, becomes its child and keeps its place (6.6s)
+  ✓  211 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:285:7 › Lane A issue fixes › round 3: Backspace and Delete remove a layer; Ctrl+Alt+] and [ bring to front and send to back (6.9s)
+  -  212 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:310:8 › Lane A issue fixes › round 3: a right-drag pans without opening the menu, a right-click opens it
+  -  213 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:323:8 › Lane A issue fixes › round 3: text you type does not wrap with No wrap, and the open More block stays open
+  -  214 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:348:8 › Lane A issue fixes › round 3: padding can be typed on text, and choosing Inner shadow, Layer blur or Background blur applies it
+  -  215 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:371:8 › Lane A issue fixes › round 3: a line turns vertical, has a colour picker, separate end caps and a shadow that shows
+  ✓  216 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:390:7 › Lane A issue fixes › round 3: Animation is in Motion, Data and Logic are in Code, none of them in Design (5.1s)
+  ✓  217 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:403:7 › Lane A issue fixes › round 3: the polygon preview has the sides the polygon gets (4.6s)
+  ✓  218 [chromium] › tests/e2e/new-ui-lane-a-issues.spec.ts:416:7 › Lane A issue fixes › round 4: the selection around No wrap text includes the part that runs past the box (7.4s)
+  -  219 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:50:7 › loading pages › a + between two pages adds a thin Loading entry there, and it opens with both pages beside it
+  -  220 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:98:7 › loading pages › each reference has a dropdown to pick any page, the same one on both sides too, and it is kept
+  -  221 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:127:7 › loading pages › an ordinary page shows no references, and the view returns to the page
+  -  222 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:141:7 › loading pages › the last real page cannot be deleted just because a loading page is also there
+  -  223 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:155:6 › the Pages menu can be hovered when it is reopened straight after a choice
+  -  224 [chromium] › tests/e2e/new-ui-loading-pages.spec.ts:166:6 › the Next.js export writes the loading page as loading.tsx beside the page it leads to, and not as a page
+  ✓  225 [chromium] › tests/e2e/new-ui-reference-puffy-button.spec.ts:46:5 › a glossy inflated button from generic properties: lit top edge, dark body, a soft shadow below (7.1s)
+  ✓  226 [chromium] › tests/e2e/new-ui-responsive-frames.spec.ts:113:7 › responsive frames: auto-adapt, fold and Preview › a Tablet view lays out what is in the frame by itself: nothing runs out of the frame, and Desktop edits carry over (8.5s)
+  ✓  227 [chromium] › tests/e2e/new-ui-responsive-frames.spec.ts:135:7 › responsive frames: auto-adapt, fold and Preview › Mobile stacks the row; the fold shows how much fits; Preview makes the frame the phone's screen, and it scrolls (7.8s)
+  ✓  228 [chromium] › tests/e2e/new-ui-responsive-frames.spec.ts:167:7 › responsive frames: auto-adapt, fold and Preview › a Desktop frame stretched by its content shows the Desktop fold and previews at 900 (7.7s)
+  ✓  229 [chromium] › tests/e2e/new-ui-responsive-frames.spec.ts:176:7 › responsive frames: auto-adapt, fold and Preview › Tablet and Mobile views of one frame open side by side, not on top of each other (9.0s)
+  ✓  230 [chromium] › tests/e2e/new-ui-responsive-frames.spec.ts:188:7 › responsive frames: auto-adapt, fold and Preview › the size label tells the truth, and clicking and dragging still work around the new controls (7.7s)
+  ✓  231 [chromium] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the canvas (8.7s)
+  ✓  232 [chromium] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the inspector (11.3s)
+  ✓  233 [chromium] › tests/e2e/new-ui-shortcuts.spec.ts:31:7 › Select All then Backspace and Delete, with the pointer over the top bar (10.4s)
+  ✓  234 [chromium] › tests/e2e/new-ui-shortcuts.spec.ts:52:5 › typing in a field never deletes layers (9.6s)
+  ✓  235 [chromium] › tests/e2e/new-ui-standing-letters.spec.ts:36:7 › Task F: 3D standing letters with thickness › type FERRARI, split, stand up, extrude, remove depth, and car layering (3.6s)
+  ✓  236 [chromium] › tests/e2e/new-ui-text-fill.spec.ts:44:7 › text image fill (Phase 35/37 Task A) › text layer filled with an image clips letters and restores solid colour on removal (4.0s)
+  ✓  237 [chromium] › tests/e2e/new-ui-tools.spec.ts:49:7 › the new editor's drawing tools › Frame, every Shape and Text draw a layer by dragging, show it on the canvas, and hand back to Select (8.6s)
+  ✓  238 [chromium] › tests/e2e/new-ui-tools.spec.ts:83:7 › the new editor's drawing tools › the keyboard shortcuts arm the tools: R draws a rectangle, O an ellipse, T text (2.4s)
+  ✓  239 [chromium] › tests/e2e/new-ui-tools.spec.ts:93:7 › the new editor's drawing tools › a drawn layer is one undo step, and redo brings it back (2.0s)
+  ✓  240 [chromium] › tests/e2e/new-ui-tools.spec.ts:105:7 › the new editor's drawing tools › a drag on bare canvas, outside the page, still draws (LA-031) (1.7s)
+  ✓  241 [chromium] › tests/e2e/new-ui-tools.spec.ts:114:7 › the new editor's drawing tools › a new shape can be selected, moved by dragging, resized and painted from the inspector (2.4s)
+  ✓  242 [chromium] › tests/e2e/new-ui-tools.spec.ts:152:7 › the new editor's drawing tools › the right-click menu acts on a drawn layer: Duplicate, Delete (4.4s)
+  ✓  243 [chromium] › tests/e2e/new-ui-tools.spec.ts:187:7 › moving around the canvas › the Hand tool pans the artboard, and Select does not (2.6s)
+  ✓  244 [chromium] › tests/e2e/new-ui-tools.spec.ts:204:7 › moving around the canvas › the wheel pans, and Ctrl or Cmd with the wheel zooms (1.8s)
+  ✓  245 [chromium] › tests/e2e/new-ui-warp-mesh.spec.ts:41:7 › Warp mesh › creates mesh, drags centre point, verifies matrix3d tiles, undo restores, and remove restores plain layer (5.9s)
+  ✓  246 [chromium] › tests/e2e/onion-skin.spec.ts:28:7 › Phase 71 · Onion skin › timeline onion skin button toggles onion skin state in transport (2.4s)
+  ✓  247 [chromium] › tests/e2e/onion-skin.spec.ts:48:7 › Phase 71 · Onion skin › onion skin renders ghost frames on stage without blocking canvas interactions (3.8s)
+  ✓  248 [chromium] › tests/e2e/outliner3d.spec.ts:62:5 › 3D-021 & 3D-024 & 3D-029: Outliner in Layers panel, reparenting, renaming, and Make 3D (3.2s)
+  ✓  249 [chromium] › tests/e2e/overlay-modes.spec.ts:36:5 › Phase 23: the overlay is one layer above the frames and never takes the pointer (2.3s)
+  ✓  250 [chromium] › tests/e2e/overlay-modes.spec.ts:53:5 › Phase 23: the hover outline appears within one frame of the pointer, with 1,000+ layers (1.9s)
+  ✓  251 [chromium] › tests/e2e/overlay-modes.spec.ts:83:5 › Phase 23: a selected layer gets a selection outline with its name and size (1.7s)
+  ✓  252 [chromium] › tests/e2e/overlay-modes.spec.ts:93:5 › Phase 23: Design mode picks layers; in Preview a click reaches the page (2.1s)
+  ✓  253 [chromium] › tests/e2e/pages.spec.ts:100:7 › Phase 48: pages, sections and links › a 5-page site navigates in Preview, with back and forward (4.7s)
+  ✓  254 [chromium] › tests/e2e/pages.spec.ts:153:7 › Phase 48: pages, sections and links › a link to a section scrolls to it; a link to a web address opens it; an edit of the shared header reaches every page (4.3s)
+  ✓  255 [chromium] › tests/e2e/pages.spec.ts:205:7 › Phase 48: pages, sections and links › the Pages panel lists the pages with their routes and edits them; the Link section sets a link and says when it leads nowhere (4.2s)
+  ✓  256 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: solid with opacity renders the same in every browser (1.5s)
+  ✓  257 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear, corner to corner renders the same in every browser (1.2s)
+  ✓  258 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: radial, off centre renders the same in every browser (1.1s)
+  ✓  259 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic, three colours renders the same in every browser (1.1s)
+  ✓  260 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: three fills stacked renders the same in every browser (1.1s)
+  ✓  261 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear on an ellipse renders the same in every browser (1.2s)
+  ✓  262 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic on a star renders the same in every browser (1.7s)
+  ✓  263 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: linear on a frame renders the same in every browser (1.1s)
+  ✓  264 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: conic on a frame renders the same in every browser (1.1s)
+  ✓  265 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: dashed stroke, rounded corners renders the same in every browser (1.2s)
+  ✓  266 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: dotted round-cap stroke on an ellipse renders the same in every browser (1.4s)
+  ✓  267 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: drop shadow on a shape renders the same in every browser (1.2s)
+  ✓  268 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: inner shadow on a shape renders the same in every browser (1.1s)
+  ✓  269 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: drop and inner shadows on a frame renders the same in every browser (1.1s)
+  ✓  270 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a rectangle renders the same in every browser (1.0s)
+  ✓  271 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fit in an ellipse renders the same in every browser (1.1s)
+  ✓  272 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture crop (the right-hand middle) renders the same in every browser (1.1s)
+  ✓  273 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture tiled at a fifth renders the same in every browser (1.1s)
+  ✓  274 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a star renders the same in every browser (1.1s)
+  ✓  275 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture fill on a frame renders the same in every browser (1.0s)
+  ✓  276 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture on a frame, desaturated and brighter renders the same in every browser (1.0s)
+  ✓  277 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: picture on a shape, high contrast renders the same in every browser (1.1s)
+  ✓  278 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: layer blur renders the same in every browser (1.0s)
+  ✓  279 [chromium] › tests/e2e/paint-render.spec.ts:42:7 › Phase 35: background blur over stripes renders the same in every browser (1.1s)
+  -  280 [chromium] › tests/e2e/paint.spec.ts:78:6 › Phase 35: the colour picker sets a colour by hex, by the square and sliders, and by OKLCH (new editor lacks legacy Fill colour dialog, OKLCH tab, and stage iframe)
+  -  281 [chromium] › tests/e2e/paint.spec.ts:124:6 › Phase 35: gradient fills: type, stops, handles on the canvas, and undo (new editor lacks canvas gradient handles and legacy gradient editor dialog)
+  -  282 [chromium] › tests/e2e/paint.spec.ts:185:6 › Phase 35: several fills stack, hide, reorder and go; the Simple face still sets one plain colour (new editor lacks legacy multi-fill stack controls and Simple face toggle)
+  -  283 [chromium] › tests/e2e/paint.spec.ts:212:6 › Phase 35: stroke patterns, shadows and blur (new editor lacks legacy stroke style and shadow popover controls)
+  ✓  284 [chromium] › tests/e2e/parenting.spec.ts:28:7 › Phase 73 · Parenting & helper layers › helper layer draws dashed with badge in Design mode and is absent from Preview DOM (1.6s)
+  ✓  285 [chromium] › tests/e2e/parenting.spec.ts:100:7 › Phase 73 · Parenting & helper layers › rotating parent rotates child layer on stage via transform composition (1.6s)
+  ✓  286 [chromium] › tests/e2e/parity.spec.ts:31:5 › Phase 60: correct playback stays green (2.8s)
+  ✓  287 [chromium] › tests/e2e/parity.spec.ts:46:5 › Phase 60: an injected wrong easing raises [PARITY_DRIFT] (2.4s)
+  -  288 [chromium] › tests/e2e/parity.spec.ts:69:6 › Phase 60: the badge shows the state in the editor's status bar (new editor lacks Engine parity status-bar badge and parity monitoring UI)
+  ✓  289 [chromium] › tests/e2e/pen.spec.ts:47:7 › Phase 39: pencil and pen › the pencil fits a stroke to a few nodes and a drag is one undo step (4.2s)
+  ✓  290 [chromium] › tests/e2e/pen.spec.ts:71:7 › Phase 39: pencil and pen › the pen: clicks, a dragged handle, Backspace, Enter, and Escape (3.3s)
+  ✓  291 [chromium] › tests/e2e/pen.spec.ts:115:7 › Phase 39: pencil and pen › clicking the first node closes the path (2.7s)
+  -  292 [chromium] › tests/e2e/phase3-persistence.spec.ts:68:8 › Phase 3: store, history & persistence › A. 20 edits persist across reload; 20 undos return to blank (new editor motion sequencer is client-only useMotionModel and does not persist keyframes to document.clips in .lazy.json)
+  -  293 [chromium] › tests/e2e/phase3-persistence.spec.ts:107:8 › Phase 3: store, history & persistence › B. import in a fresh profile restores the document and renders identically (depends on Case A export and legacy dock-zone layout)
+  -  294 [chromium] › tests/e2e/phase3-persistence.spec.ts:133:8 › Phase 3: store, history & persistence › C. dropping a .lazy.json onto the window opens it (depends on Case A export and legacy document loading)
+  -  295 [chromium] › tests/e2e/phase3-persistence.spec.ts:151:6 › D. crash recovery restores the last unsaved edit (Chromium only) (new editor motion sequencer does not record keyframe changes into document.clips for crash recovery snapshot)
+  -  296 [chromium] › tests/e2e/phase3-persistence.spec.ts:183:6 › E. dragging a keyframe is exactly one undo step (new editor motion sequencer does not record keyframe dragging into document command history)
+  -  297 [chromium] › tests/e2e/phase8-rules-engine.spec.ts:14:6 › New UI lacks Content Browser and Presets tool (panels/content-browser is todo in PARITY.md)
+  ✓  298 [chromium] › tests/e2e/playback-on-clock.spec.ts:45:5 › App bug: TimelinePanel playback has no subframe accumulator and setPlayhead rounds to integer, losing time during rAF ticks (5.4s)
+  ✓  299 [chromium] › tests/e2e/playback-on-clock.spec.ts:67:5 › Phase 56: playing re-renders the timeline at most 10 times a second (4.8s)
+  ✓  300 [chromium] › tests/e2e/presets.spec.ts:15:5 › Phase 15: Design is the default — Layers │ stage │ Design inspector, timeline folded to the transport bar (1.4s)
+  ✓  301 [chromium] › tests/e2e/presets.spec.ts:25:5 › Phase 15: Animate gives the timeline ~40% of the window and opens the Motion inspector (2.0s)
+  ✓  302 [chromium] › tests/e2e/presets.spec.ts:41:5 › Phase 15: a preset switch takes under 100 ms and never replaces the stage (5.5s)
+  ✓  303 [chromium] › tests/e2e/presets.spec.ts:91:5 › Phase 15: Logic, Data and Debug are not in the initial edition (1.5s)
+  ✓  304 [chromium] › tests/e2e/presets.spec.ts:97:5 › Phase 15: the Code inspector shows the document's code in the right dock (1.8s)
+  -  305 [chromium] › tests/e2e/presets.spec.ts:105:6 › New UI lacks custom saved layouts (legacy dock feature)
+  ✓  306 [chromium] › tests/e2e/properties3d.spec.ts:84:5 › 3D-022 / 3D-023 / 3D-030: Properties editor tabs, Looks strip, Modifiers, and Light data (4.1s)
+  -  307 [chromium] › tests/e2e/property-migration.spec.ts:17:6 › Phase 42: a v2 project migrates to v3 and renders identically to the native v3 demo — New UI lacks Mount Showcase Demo action on /editor (TopBar help.demo is disabled: 'Showcase demo available in gallery')
+  ✓  308 [chromium] › tests/e2e/render-gallery.spec.ts:27:5 › Phase 17: every archetype is drawn, at the size its geometry says, in every browser (685ms)
+  ✓  309 [chromium] › tests/e2e/render-gallery.spec.ts:60:5 › Phase 17: nothing from a hostile case runs, loads or overflows its cell (692ms)
+  ✓  310 [chromium] › tests/e2e/render-gallery.spec.ts:81:5 › Phase 17: layout cases lay out the same way in every browser (613ms)
+  ✓  311 [chromium] › tests/e2e/scene3d.spec.ts:43:5 › 3D-012: 3D scene layer insertion, rendering, context loss recovery, and offscreen sleep (3.0s)
+  ✓  312 [chromium] › tests/e2e/scroll.spec.ts:40:5 › Phase 81: a parallax follows the scroll exactly in Preview, and Design leaves it as drawn (3.4s)
+  ✓  313 [chromium] › tests/e2e/scroll.spec.ts:67:5 › Phase 81: a reveal waits at its first frame, plays once when it comes into view, and plays again after scrolling back above it (3.9s)
+  ✓  314 [chromium] › tests/e2e/scroll.spec.ts:81:5 › Phase 81: a pinned layer is held for the length of its range (2.2s)
+  ✓  315 [chromium] › tests/e2e/selection.spec.ts:60:5 › Phase 26: a 15-step selection journey asserts the exact selection after each step (2.8s)
+  ✓  316 [chromium] › tests/e2e/selection.spec.ts:135:5 › Phase 26: the selection stays in sync across the canvas, the inspector and the status bar (2.7s)
+  ✓  317 [chromium] › tests/e2e/snapping.spec.ts:65:5 › Phase 28: a moved layer snaps to another layer's edge, shows the guide line while it does, and clears it after (1.5s)
+  ✓  318 [chromium] › tests/e2e/snapping.spec.ts:79:5 › Phase 28: turning snapping off lets the same drag land where the pointer put it (1.5s)
+  ✓  319 [chromium] › tests/e2e/snapping.spec.ts:91:5 › Phase 28: a resize snaps the dragged edge (1.5s)
+  ✓  320 [chromium] › tests/e2e/snapping.spec.ts:101:5 › Phase 28: the Alt key shows the distances to the nearest neighbours (1.6s)
+  ✓  321 [chromium] › tests/e2e/snapping.spec.ts:116:5 › Phase 28: a guide dragged out of the ruler is a snap target, and the rulers can be hidden (1.7s)
+  ✘  322 [chromium] › tests/e2e/snapping.spec.ts:151:5 › Phase 28: guides belong to their frame, are saved, undone and restored (1.0m)
+  ✓  323 [chromium] › tests/e2e/split-letters.spec.ts:94:7 › split text: reliability & edge cases › shows toast feedback when text cannot be split due to 3D tilt (8.1s)
+  ✓  324 [chromium] › tests/e2e/split-letters.spec.ts:111:7 › split text: reliability & edge cases › splits multi-line text with correct vertical placement for each line (7.2s)
+  ✓  325 [chromium] › tests/e2e/split-letters.spec.ts:141:7 › split text: reliability & edge cases › splits text inside a nested container frame, keeping group inside parent frame (6.8s)
+  ✓  326 [chromium] › tests/e2e/split-letters.spec.ts:172:7 › split text: reliability & edge cases › splits rotated text preserving group rotation and visual position (6.6s)
+  ✓  327 [chromium] › tests/e2e/split-letters.spec.ts:198:7 › split text & animate letters inspector controls › shows 'Split into letters' button in Typography inspector, then 'Animate letters' button on the group (5.3s)
+  ✓  328 [chromium] › tests/e2e/stage-engine.spec.ts:62:5 › Phase 57: ten reference animations, seeked to five times, match the kernel within 0.5 px (1.1s)
+  ✓  329 [chromium] › tests/e2e/stage-engine.spec.ts:80:5 › Phase 57: pressing play moves the layers, and pausing holds them (1.3s)
+  ✓  330 [chromium] › tests/e2e/stage-engine.spec.ts:100:5 › Phase 57: scrubbing back to 0 puts the layers at their first keyframe (708ms)
+  -  331 [chromium] › tests/e2e/stage-host.spec.ts:25:6 › Phase 18: the stage is a script-free same-origin frame with live DOM, not srcdoc — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+  -  332 [chromium] › tests/e2e/stage-host.spec.ts:72:6 › Phase 18: a document edit updates the stage in place, without reloading the frame, in under a frame — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+  -  333 [chromium] › tests/e2e/stage-host.spec.ts:129:6 › Phase 18: keys typed with the pointer over the stage reach the command bus — New editor renders stage directly in DOM, not inside an iframe (replaces Phase 18 stage frame)
+  ✓  334 [chromium] › tests/e2e/stage-incremental.spec.ts:34:5 › Phase 19: 500 layers mount in under 500 ms (564ms)
+  ✓  335 [chromium] › tests/e2e/stage-incremental.spec.ts:42:5 › Phase 19: editing one layer re-renders no other layer (712ms)
+  ✓  336 [chromium] › tests/e2e/stage-incremental.spec.ts:54:5 › Phase 19: adding or removing a layer re-renders its parent and nobody else (1.5s)
+  ✓  337 [chromium] › tests/e2e/stage-incremental.spec.ts:70:5 › Phase 19: the registry holds an element for every layer drawn (622ms)
+  ✓  338 [chromium] › tests/e2e/stage-incremental.spec.ts:109:5 › Phase 19: measure() matches the DOM within 0.5 px, in document space, and follows layout (1.3s)
+  ✓  339 [chromium] › tests/e2e/stage-incremental.spec.ts:137:5 › Phase 19: measure() batches many callers into one answer per frame (1.1s)
+  ✓  340 [chromium] › tests/e2e/stage-waapi.spec.ts:49:5 › Phase 58: the reference animations run as Web Animations while playing, and not while scrubbing (960ms)
+  ✓  341 [chromium] › tests/e2e/stage-waapi.spec.ts:58:5 › Phase 58: playing starts them at the transport's rate and pausing stops them (727ms)
+  ✓  342 [chromium] › tests/e2e/stage-waapi.spec.ts:66:5 › Phase 58: a busy main thread doesn't stop a running animation's clock (949ms)
+  ✓  343 [chromium] › tests/e2e/stage-waapi.spec.ts:81:5 › Phase 59: paused after really playing, the stage matches the kernel's (≤ 0.5%) at five times (7.7s)
+  ✓  344 [chromium] › tests/e2e/stage1-gate.spec.ts:83:7 › Phase 52: the design journeys › Journey A (a Figma user): frames, a card component with variants, a Mobile override, a pen icon, inline text, styles (5.4s)
+  ✓  345 [chromium] › tests/e2e/stage1-gate.spec.ts:175:7 › Phase 52: the design journeys › Journey B (a Wix user): a three-page site from templates, linked navigation, Mobile and Preview (4.2s)
+  ✓  346 [chromium] › tests/e2e/stage1-gate.spec.ts:250:7 › Phase 52: the design journeys › Journey C (output): the site exports as a ZIP and a project file opens again unchanged (4.8s)
+  ✘  347 [chromium] › tests/e2e/stage1-gate.spec.ts:280:7 › Phase 52: the design journeys › Journey D (an agent): Claude builds a section through MCP, and the user approves it (18.2s)
+[perf] chromium: 749 frames; median 16.7 ms (60 fps), p95 16.7 ms
+  ✓  348 [chromium] › tests/e2e/stage1-gate.spec.ts:325:7 › Phase 52: the design journeys › Performance: five frames of 200 layers pan and zoom smoothly (1.5m)
+  ✓  349 [chromium] › tests/e2e/stopwatch.spec.ts:49:5 › Phase 62: twirl a layer open, open a group, and its properties have stopwatches that are off (4.4s)
+  ✓  350 [chromium] › tests/e2e/stopwatch.spec.ts:69:5 › Phase 62: a stopwatch on and off round-trips through undo and save (5.0s)
+  ✓  351 [chromium] › tests/e2e/stopwatch.spec.ts:114:5 › Phase 62: the value at the playhead follows an animated property (2.2s)
+  ✓  352 [chromium] › tests/e2e/stopwatch.spec.ts:123:5 › Phase 62: U reveals the animated properties, and U twice the modified ones (3.9s)
+  ✓  353 [chromium] › tests/e2e/templates.spec.ts:48:5 › Phase 51: six templates make a landing page that follows the theme (12.6s)
+  ✓  354 [chromium] › tests/e2e/templates.spec.ts:119:5 › Phase 51: a starter project adds linked pages in one step (3.9s)
+  -  355 [chromium] › tests/e2e/text-editing.spec.ts:89:5 › Phase 31: draw a text box, type, style a word, new line, leave: one undo step; paste is plain text
+  -  356 [chromium] › tests/e2e/text-editing.spec.ts:142:5 › Phase 31: styled runs survive save and reload; double-click and Enter edit in place
+  -  357 [chromium] › tests/e2e/text-editing.spec.ts:196:5 › Phase 31: the inspector's text properties change the layer, one undo step each
+  -  358 [chromium] › tests/e2e/text-editing.spec.ts:240:5 › Phase 31: auto width, auto height and fixed size
+  -  359 [chromium] › tests/e2e/text-editing.spec.ts:286:5 › Phase 31: an IME composition is not interrupted, and commits as typed
+  -  360 [chromium] › tests/e2e/text-editing.spec.ts:308:5 › Phase 31: nothing leaves the editor while a composition is in progress (all browsers, with synthetic composition events)
+  ✓  361 [chromium] › tests/e2e/timeline-navigation.spec.ts:43:5 › Phase 63: a keyboard-only journey lands on exact times (4.2s)
+  ✓  362 [chromium] › tests/e2e/timeline-navigation.spec.ts:126:5 › Phase 63: the keys belong to the timeline: nothing happens over the canvas (2.9s)
+  ✓  363 [chromium] › tests/e2e/timeline-navigation.spec.ts:143:5 › Phase 63: Ctrl and the wheel zoom the timeline around the pointer (2.8s)
+  -  364 [chromium] › tests/e2e/timeline.spec.ts:43:5 › Phase 61: a ten-step journey through the timeline, asserting the document after each step
+  -  365 [chromium] › tests/e2e/timeline.spec.ts:123:5 › Phase 61: switches, blend mode and parent are saved in the document
+  -  366 [chromium] › tests/e2e/timeline.spec.ts:146:5 › Phase 61: the ruler can show frames, and dragging the ruler seeks
+  -  367 [chromium] › tests/e2e/timeline.spec.ts:157:5 › Phase 61: a motion badge in the Layers panel opens the layer in the timeline
+  ✓  368 [chromium] › tests/e2e/tokens.spec.ts:74:7 › Phase 45: design tokens › switching to Dark restyles every bound layer; the detached one stays put; Light brings it back (3.5s)
+  ✓  369 [chromium] › tests/e2e/tokens.spec.ts:91:7 › Phase 45: design tokens › changing a colour in the Tokens tab updates every layer bound to it, in the mode being viewed (3.1s)
+  ✓  370 [chromium] › tests/e2e/tokens.spec.ts:107:7 › Phase 45: design tokens › editing a bound value by hand detaches it, the inspector says so, Re-link binds it again (2.9s)
+  ✓  371 [chromium] › tests/e2e/tokens.spec.ts:126:7 › Phase 45: design tokens › Bind from the inspector, and Detach keeps what is shown in the mode being viewed (2.9s)
+  ✓  372 [chromium] › tests/e2e/tokens.spec.ts:142:7 › Phase 45: design tokens › a text style: made from one text, applied to another, a change restyles both (3.1s)
+  ✓  373 [chromium] › tests/e2e/tokens.spec.ts:160:7 › Phase 45: design tokens › deleting a variable keeps the look, and one undo brings the variable and its bindings back (2.7s)
+  ✓  374 [chromium] › tests/e2e/tools.spec.ts:37:5 › Phase 24: the dock shows only the tools that exist, and a button switches the tool (2.8s)
+  ✓  375 [chromium] › tests/e2e/tools.spec.ts:53:5 › Phase 24: a shortcut switches the tool (2.7s)
+  ✓  376 [chromium] › tests/e2e/tools.spec.ts:67:5 › Phase 24: holding Space gives the Hand and releasing returns to the previous tool (2.7s)
+  ✓  377 [chromium] › tests/e2e/tools.spec.ts:87:5 › Phase 24: holding Cmd/Ctrl gives deep select and releasing returns (2.6s)
+  ✓  378 [chromium] › tests/e2e/tools.spec.ts:96:5 › Phase 24: losing the window's focus can't leave a spring stuck on (2.6s)
+  ✓  379 [chromium] › tests/e2e/tools.spec.ts:105:5 › Phase 24: the Rectangle tool draws, returns to Select, and undo takes the shape back (3.2s)
+  ✓  380 [chromium] › tests/e2e/tools.spec.ts:120:5 › Phase 24: Space-drag and the middle button pan whatever tool is active, and draw nothing (2.8s)
+  ✓  381 [chromium] › tests/e2e/transform.spec.ts:83:5 › Phase 27: 30 standard manipulations are exactly 30 undo steps, and each leaves the geometry where it was (9.2s)
+  ✓  382 [chromium] › tests/e2e/transform.spec.ts:148:5 › Phase 27: Escape cancels a gesture and leaves no undo step (1.6s)
+  ✓  383 [chromium] › tests/e2e/transform.spec.ts:167:5 › Phase 27: a resize writes frame.* in one transaction and drawn shapes keep their parent (1.5s)
+  ✓  384 [chromium] › tests/e2e/transport-bar.spec.ts:9:5 › Phase 54: the transport bar plays, steps frames and cycles the loop mode (3.0s)
+  ✓  385 [chromium] › tests/e2e/variants.spec.ts:82:7 › Phase 47: variants, properties and slots › add variants from the inspector, choose one on an instance: its layers show, overrides stay; undo is one step (3.2s)
+  ✓  386 [chromium] › tests/e2e/variants.spec.ts:119:7 › Phase 47: variants, properties and slots › exposed properties are fields on the instance: a text and a visibility switch (3.0s)
+  ✓  387 [chromium] › tests/e2e/variants.spec.ts:148:7 › Phase 47: variants, properties and slots › a slot keeps an instance's own layer through edits of the main (3.0s)
+  ✓  388 [chromium] › tests/e2e/variants.spec.ts:165:7 › Phase 47: variants, properties and slots › a design system of 3 components × 3 variants with 40 instances keeps every override when every main is edited (3.3s)
+  ✓  389 [chromium] › tests/e2e/vector.spec.ts:65:7 › Phase 40: vector editing › Enter edits a path: move a node, add one, delete one, one undo step each (3.3s)
+  ✓  390 [chromium] › tests/e2e/vector.spec.ts:102:7 › Phase 40: vector editing › a handle pulled from a smooth node, and a corner made smooth by a double click (4.0s)
+  ✓  391 [chromium] › tests/e2e/vector.spec.ts:128:7 › Phase 40: vector editing › clicking one end then the other closes an open path (3.8s)
+  ✓  392 [chromium] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › union of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.1s)
+  ✓  393 [chromium] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › subtract of two overlapping rectangles is one path layer, and undo gives the rectangles back (2.7s)
+  ✓  394 [chromium] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › intersect of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.1s)
+  ✓  395 [chromium] › tests/e2e/vector.spec.ts:155:9 › Phase 40: boolean operations › exclude of two overlapping rectangles is one path layer, and undo gives the rectangles back (3.0s)
+  ✓  396 [chromium] › tests/e2e/vector.spec.ts:172:7 › Phase 40: boolean operations › flatten turns a rectangle into a path that can be edited (3.0s)
+  ✓  397 [chromium] › tests/e2e/vector.spec.ts:185:7 › Phase 40: SVG import › an imported 500-node SVG becomes editable vectors and stays editable at frame rate (4.6s)
+  ✓  398 [chromium] › tests/e2e/viewport-camera.spec.ts:50:5 › Phase 20: zoom keeps the point under the cursor fixed (2.7s)
+  ✓  399 [chromium] › tests/e2e/viewport-camera.spec.ts:69:5 › Phase 20: zoom runs from 2% to 6,400% (4.2s)
+  ✓  400 [chromium] › tests/e2e/viewport-camera.spec.ts:81:5 › Phase 20: plain wheel pans, and the buttons zoom to 100% and to fit (3.2s)
+  ✓  401 [chromium] › tests/e2e/viewport-camera.spec.ts:106:5 › Phase 20: wheel and pinch over the stage frame reach the camera (2.8s)
+  ✓  402 [chromium] › tests/e2e/viewport-camera.spec.ts:137:5 › Phase 20: the camera is saved per document and comes back after a reload (4.4s)
+  ✓  403 [chromium] › tests/e2e/viewport-camera.spec.ts:155:5 › Phase 20: Shift+2 zooms to the selected layer and Shift+0 returns to 100% (2.8s)
+  ✓  404 [chromium] › tests/e2e/viewport-camera.spec.ts:214:5 › Phase 20/21: pan and zoom hold 60 fps with 5 frames x 200 layers (8.4s)
+  ✓  405 [chromium] › tests/e2e/viewport3d-panels.spec.ts:48:5 › B2-W2-2b: 3D viewport panels, adjust last operation, shading, overlays, and keymaps (3.3s)
+  ✓  406 [chromium] › tests/e2e/viewport3d.spec.ts:65:5 › 3D-014..3D-017: Viewport interaction, camera navigation, top view, picking, modal G/X/2, and undo (3.1s)
+  ✓  407 [chromium] › tests/e2e/wire-53-motion-grammar.spec.ts:28:7 › Phase 53 · Animation grammar: close schema gaps in editor › two-way trigger and category binding survives reload and exports cleanly (8.2s)
+  ✘  408 [chromium] › tests/e2e/wire-54-transport.spec.ts:11:5 › Phase 54: single clock transport controls, step frame, play/pause, loop cycling and K pause (3.1s)
+  ✓  409 [chromium] › tests/e2e/wire-55-scheduler.spec.ts:12:5 › Phase 55: frame scheduler deterministic stepping synchronizes transport, Motion store, ValueHud and canvas page in lockstep (4.8s)
+  ✓  410 [chromium] › tests/e2e/wire-55-scheduler.spec.ts:119:5 › Design draws the design itself; Motion draws the animated frame at the playhead (5.0s)
+  ✘  411 [chromium] › tests/e2e/wire-56-playback.spec.ts:17:5 › Phase 56: playback throttles React commits to <= 10/s, keeps canvas and timeline in lockstep, and leaves no stale inline styles on pause (11.2s)
+  ✓  412 [chromium] › tests/e2e/wire-57-stage-engine.spec.ts:77:5 › Phase 57 on the new canvas: ten reference animations, seeked to five times, match the kernel (11.1s)
+  ✓  413 [chromium] › tests/e2e/wire-57-stage-engine.spec.ts:92:5 › Phase 57 on the new canvas: Design shows the design, Motion shows the playhead's frame, and play animates (10.0s)
+  ✓  414 [chromium] › tests/e2e/wire-58-60-engines.spec.ts:96:5 › Phase 58: the reference animations run as Web Animations while playing, not while scrubbing, and pausing stops them (9.2s)
+  ✓  415 [chromium] › tests/e2e/wire-58-60-engines.spec.ts:110:5 › Phase 59: paused after playing, every reference shows the kernel's value at that time (11.8s)
+  ✓  416 [chromium] › tests/e2e/wire-58-60-engines.spec.ts:128:5 › Phase 60: correct playback stays green, and an injected wrong easing raises [PARITY_DRIFT] and turns the badge (12.4s)
+  ✓  417 [chromium] › tests/e2e/wire-61-timeline.spec.ts:36:5 › Phase 61 on the new editor: a ten-step timeline journey, the document checked after each step (19.1s)
+  ✓  418 [chromium] › tests/e2e/wire-62-stopwatch.spec.ts:28:5 › Phase 62 on the new editor: twirl, groups, and a stopwatch on and off round-trips through undo and save (14.9s)
+  ✓  419 [chromium] › tests/e2e/wire-62-stopwatch.spec.ts:80:5 › Phase 62 on the new editor: U reveals only the animated properties (4.5s)
+  ✓  420 [chromium] › tests/e2e/wire-63-navigation.spec.ts:40:5 › Phase 63 on the new editor: a keyboard-only journey lands on exact times (6.2s)
+[phase 64] 200 layers x 5 tracks: mean frame 81.1 ms while scrubbing
+  ✘  421 [chromium] › tests/e2e/wire-64-71.spec.ts:61:5 › Phase 64 on the new editor: 200 layers build only the rows in view, and a scrub stays within a frame (16.6s)
+  ✓  422 [chromium] › tests/e2e/wire-64-71.spec.ts:115:5 › Phase 65 on the new editor: a precomp opens in a tab with breadcrumbs, is edited, and the parent shows the change (3.6s)
+  ✓  423 [chromium] › tests/e2e/wire-64-71.spec.ts:143:5 › Phase 66 on the new editor: three keyframes distributed evenly, then made slower, each one undo step (4.1s)
+  ✘  424 [chromium] › tests/e2e/wire-64-71.spec.ts:171:5 › Phase 67 on the new editor: Bouncy and F9 write real easings, and the graph shows speed (1.0m)
+  ✓  425 [chromium] › tests/e2e/wire-64-71.spec.ts:199:5 › Phase 68 on the new editor: a clip made in the document reaches the generated code (2.7s)
+  ✓  426 [chromium] › tests/e2e/wire-64-71.spec.ts:207:5 › Phases 69 and 71 on the new editor: the selected animated layer shows its motion path and onion skin (2.1s)
+  -  427 [chromium] › tests/e2e/workspace.spec.ts:37:5 › Phase 14: an arranged layout (preset, tab, dock width) survives a reload
+  -  428 [chromium] › tests/e2e/workspace.spec.ts:57:5 › Phase 14: the stage node is the same object across resizes and preset switches
+  -  429 [chromium] › tests/e2e/workspace.spec.ts:78:5 › Phase 14: panels outside the layout are not loaded until they are shown
+verts after adjust 8,130
+ACTIVE before blur BODY#
+ACTIVE after blur BODY#
+CTX {"canvasFocus":false,"timelineFocus":false,"blueprintFocus":false,"textEditing":false,"selection.count":1,"transport.playing":false,"editingScene3d":false} OUT {"ok":true,"result":true}
+verts after undo 8
+  ✓  430 [chromium] › tests/e2e/zz-debug-undo.spec.ts:5:5 › debug undo (3.1s)
+  ✓  431 [chromium] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0 (300ms)
+  ✓  432 [chromium] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.25 (710ms)
+  ✓  433 [chromium] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.5 (717ms)
+  ✓  434 [chromium] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=0.75 (722ms)
+  ✓  435 [chromium] › tests/export-harness/parity.spec.ts:153:9 › Phase 4.3: pixel parity (export vs. oracle) › correct export matches the oracle at t=1 (807ms)
+  ✓  436 [chromium] › tests/export-harness/parity.spec.ts:169:7 › Phase 4.3: pixel parity (export vs. oracle) › broken export (wrong easing) fails parity at a mid-timeline sample (762ms)
+
+
+  1) [chromium] › tests/e2e/agent-bridge.spec.ts:37:5 › Phase 50: pairing by the code in the editor, then an approved change is one undo step 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.') with timeout 15000ms
+      - waiting for getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+
+
+      37 | test("Phase 50: pairing by the code in the editor, then an approved change is one undo step", async ({ page }) => {
+      38 |   const dialog = await open(page);
+    > 39 |   await expect(dialog.getByText("Connected. Tell Claude the code below.")).toBeVisible({ timeout: 15_000 });
+         |                                                                            ^
+      40 |   const code = (await dialog.getByLabel("Pairing code").textContent())!.trim();
+      41 |   expect(code).toMatch(/^\d{8}$/);
+      42 |
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/agent-bridge.spec.ts:39:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-agent-bridge-Phase-50--138f4-ved-change-is-one-undo-step-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-agent-bridge-Phase-50--138f4-ved-change-is-one-undo-step-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-agent-bridge-Phase-50--138f4-ved-change-is-one-undo-step-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-agent-bridge-Phase-50--138f4-ved-change-is-one-undo-step-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/agent-bridge.spec.ts:81:5 › Phase 50: Claude can't reach its own approval switch 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.') with timeout 15000ms
+      - waiting for getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+
+
+      81 | test("Phase 50: Claude can't reach its own approval switch", async ({ page }) => {
+      82 |   const dialog = await open(page);
+    > 83 |   await expect(dialog.getByText("Connected. Tell Claude the code below.")).toBeVisible({ timeout: 15_000 });
+         |                                                                            ^
+      84 |   const code = (await dialog.getByLabel("Pairing code").textContent())!.trim();
+      85 |   await bridge.request("pair", { code });
+      86 |   const r = await bridge.request("run_command", { id: "agent.pair" });
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/agent-bridge.spec.ts:83:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-agent-bridge-Phase-50--f1c4a-ach-its-own-approval-switch-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-agent-bridge-Phase-50--f1c4a-ach-its-own-approval-switch-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-agent-bridge-Phase-50--f1c4a-ach-its-own-approval-switch-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-agent-bridge-Phase-50--f1c4a-ach-its-own-approval-switch-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests/e2e/editing.spec.ts:73:5 › Phase 29: a 25-step editing journey with the exact result after each step 
+
+    Error: picking m_ellipse at 831,54
+
+    expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('selected')
+    Expected: "m_ellipse"
+    Received: "m_rect"
+    Timeout:  5000ms
+
+    Call log:
+      - picking m_ellipse at 831,54 getByTestId('selected') with timeout 5000ms
+      - waiting for getByTestId('selected')
+        11 × locator resolved to <span data-testid="selected">m_rect</span>
+           - unexpected value "m_rect"
+
+
+      63 |   const c = await centre(page, id);
+      64 |   await page.mouse.click(c.x, c.y);
+    > 65 |   await expect(selection(page), `picking ${id} at ${c.x},${c.y}`).toHaveText(id);
+         |                                                                   ^
+      66 | }
+      67 |
+      68 | const press = async (page: Page, key: string) => {
+        at pick (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/editing.spec.ts:65:67)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/editing.spec.ts:138:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-editing-Phase-29-a-25--118ce-xact-result-after-each-step-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-editing-Phase-29-a-25--118ce-xact-result-after-each-step-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-editing-Phase-29-a-25--118ce-xact-result-after-each-step-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-editing-Phase-29-a-25--118ce-xact-result-after-each-step-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:169:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › with a frame, Tablet click + moving a child gives an override that persists when switching Desktop -> Tablet again while Desktop stays unchanged 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /Tablet/i })
+
+
+      181 |     await expect(page.getByRole("menu")).toHaveCount(0); // a menu that is still closing would be adopted by this one
+      182 |     await page.getByTestId("frame-size-label").first().click();
+    > 183 |     await page.getByRole("menuitem", { name: /Tablet/i }).click();
+          |                                                           ^
+      184 |     await expect(page.locator("#albltx")).toContainText("Tablet");
+      185 |
+      186 |     // Move the child while Tablet is active
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-frames-presets.spec.ts:183:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-frames-presets--288f9-ile-Desktop-stays-unchanged-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-frames-presets--288f9-ile-Desktop-stays-unchanged-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-frames-presets--288f9-ile-Desktop-stays-unchanged-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-frames-presets--288f9-ile-Desktop-stays-unchanged-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › tests/e2e/snapping.spec.ts:151:5 › Phase 28: guides belong to their frame, are saved, undone and restored 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.reload: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for navigation until "networkidle"
+        - navigated to "http://localhost:3003/editor/legacy?projectId=prj_mwdywy65_064l"
+
+
+      163 |   await waitSaved(page);
+      164 |
+    > 165 |   await page.reload({ waitUntil: "networkidle" });
+          |              ^
+      166 |   await expect(page.locator('.canvas-overlay__guide[data-axis="y"]:not([hidden])'), "the guide comes back with the document").toHaveCount(1);
+      167 |
+      168 |   await page.mouse.move(stage.x + 300, stage.y + 300);
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/snapping.spec.ts:165:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-snapping-Phase-28-guid-8807d-e-saved-undone-and-restored-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-snapping-Phase-28-guid-8807d-e-saved-undone-and-restored-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-snapping-Phase-28-guid-8807d-e-saved-undone-and-restored-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-snapping-Phase-28-guid-8807d-e-saved-undone-and-restored-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › tests/e2e/stage1-gate.spec.ts:280:7 › Phase 52: the design journeys › Journey D (an agent): Claude builds a section through MCP, and the user approves it 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.') with timeout 15000ms
+      - waiting for getByRole('dialog', { name: 'Pair with Claude' }).getByText('Connected. Tell Claude the code below.')
+
+
+      290 |       await page.getByRole("menuitem", { name: /Pair with Claude/ }).click();
+      291 |       const dialog = page.getByRole("dialog", { name: "Pair with Claude" });
+    > 292 |       await expect(dialog.getByText("Connected. Tell Claude the code below.")).toBeVisible({ timeout: 15_000 });
+          |                                                                                ^
+      293 |       const code = (await dialog.getByLabel("Pairing code").textContent())!.trim();
+      294 |       expect((await bridge.request("pair", { code })).error).toBeUndefined();
+      295 |
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/stage1-gate.spec.ts:292:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-stage1-gate-Phase-52-t-6380c-CP-and-the-user-approves-it-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-stage1-gate-Phase-52-t-6380c-CP-and-the-user-approves-it-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-stage1-gate-Phase-52-t-6380c-CP-and-the-user-approves-it-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-stage1-gate-Phase-52-t-6380c-CP-and-the-user-approves-it-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › tests/e2e/wire-54-transport.spec.ts:11:5 › Phase 54: single clock transport controls, step frame, play/pause, loop cycling and K pause 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 13
+    Received: 14
+
+      82 |   await expect(playheadEl).toBeVisible();
+      83 |   const rulerFrameStr = await playheadEl.getAttribute("data-time");
+    > 84 |   expect(Number(rulerFrameStr)).toBe(expectedFrame);
+         |                                 ^
+      85 |
+      86 |   // 4. Loop button cycles three modes
+      87 |   // Reset to start first
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/wire-54-transport.spec.ts:84:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-wire-54-transport-Phas-b6f4d-se-loop-cycling-and-K-pause-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-wire-54-transport-Phas-b6f4d-se-loop-cycling-and-K-pause-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-wire-54-transport-Phas-b6f4d-se-loop-cycling-and-K-pause-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-wire-54-transport-Phas-b6f4d-se-loop-cycling-and-K-pause-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › tests/e2e/wire-56-playback.spec.ts:17:5 › Phase 56: playback throttles React commits to <= 10/s, keeps canvas and timeline in lockstep, and leaves no stale inline styles on pause 
+
+    Error: the canvas really animated during playback (the headline faded in)
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 1
+    Received:   1
+
+      58 |   const playedTo = await page.evaluate(() => (window as unknown as { __LL_TRANSPORT__: () => { time: number } }).__LL_TRANSPORT__().time);
+      59 |   expect(playedTo, "the clock really advanced during the second of playback").toBeGreaterThan(0.5);
+    > 60 |   expect(lateOpacity, "the canvas really animated during playback (the headline faded in)").toBeGreaterThan(earlyOpacity);
+         |                                                                                             ^
+      61 |
+      62 |   // Read commit counts while still playing or right at pause
+      63 |   const commits = await page.evaluate(() => {
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/wire-56-playback.spec.ts:60:93
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-wire-56-playback-Phase-01127-tale-inline-styles-on-pause-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-wire-56-playback-Phase-01127-tale-inline-styles-on-pause-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-wire-56-playback-Phase-01127-tale-inline-styles-on-pause-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-wire-56-playback-Phase-01127-tale-inline-styles-on-pause-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium] › tests/e2e/wire-64-71.spec.ts:61:5 › Phase 64 on the new editor: 200 layers build only the rows in view, and a scrub stays within a frame 
+
+    Error: mean frame time while scrubbing 200 animated layers
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 34
+    Received:   81.10891666611036
+
+      110 |   );
+      111 |   console.log(`[phase 64] 200 layers x 5 tracks: mean frame ${avg.toFixed(1)} ms while scrubbing`);
+    > 112 |   expect(avg, "mean frame time while scrubbing 200 animated layers").toBeLessThan(34);
+          |                                                                      ^
+      113 | });
+      114 |
+      115 | test("Phase 65 on the new editor: a precomp opens in a tab with breadcrumbs, is edited, and the parent shows the change", async ({ page }) => {
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/wire-64-71.spec.ts:112:70
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-wire-64-71-Phase-64-on-a39ac--scrub-stays-within-a-frame-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-wire-64-71-Phase-64-on-a39ac--scrub-stays-within-a-frame-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-wire-64-71-Phase-64-on-a39ac--scrub-stays-within-a-frame-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-wire-64-71-Phase-64-on-a39ac--scrub-stays-within-a-frame-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [chromium] › tests/e2e/wire-64-71.spec.ts:171:5 › Phase 67 on the new editor: Bouncy and F9 write real easings, and the graph shows speed 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: 'Feel' })
+        - locator resolved to <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" data-sub-id="sub-key-feel" class="ll:relative ll:z-10 ll:flex ll:items-center ll:gap-2.5 ll:w-full ll:h-8 ll:bg-transparent ll:border-0 ll:m-0 ll:py-0 ll:px-3 ll:text-left ll:box-border ll:cursor-pointer ll:select-none ll:outline-none ll:font-sans ll:text-secondary ll:hover:text-primary ll:data-[subopen]:text-primary ">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - performing click action
+        - <div role="toolbar" aria-label="Timeline header" class="ll-ph ll-mh ll:@container ll:h-11 ll:flex ll:items-center ll:gap-2 ll:px-3 ll:border-b ll:border-border ll:shrink-0 ll:min-w-0 ll:overflow-hidden ">…</div> from <div>…</div> subtree intercepts pointer events
+      - retrying click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <span id="tt" class="ll-tt ll:font-mono ll:font-normal ll:tabular-nums ll:text-micro ll:text-muted ll:whitespace-nowrap">/ 00:05.00</span> from <div>…</div> subtree intercepts pointer events
+      - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying click action
+          - waiting 100ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      - retrying click action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <span class="ll:flex-1 ll:truncate ll:text-body">Snappy</span> from <div data-mv="" role="menu" tabindex="-1" aria-label="Feel" id="ll-sub-_r_1t_" data-submenu="true" class="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:box-border ll:origin-top-left ll:w-menu-ctx ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:outline-none ll:font-sans ll-open">…</div> subtree intercepts pointer events
+      104 × retrying click action
+            - waiting 500ms
+            - waiting for element to be visible, enabled and stable
+            - element is visible, enabled and stable
+            - scrolling into view if needed
+            - done scrolling
+            - <span class="ll:flex-1 ll:truncate ll:text-body">Snappy</span> from <div role="menu" tabindex="-1" aria-label="Feel" id="ll-sub-_r_1t_" data-submenu="true" class="ll-menu ll-ctx ll-submenu ll:fixed ll:z-60 ll:box-border ll:origin-top-left ll:w-menu-ctx ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:shadow-soft ll:p-1 ll:outline-none ll:font-sans ll-open">…</div> subtree intercepts pointer events
+      - retrying click action
+        - waiting 500ms
+
+
+      186 |   await second.click({ button: "right" });
+      187 |   const feelMenu = page.getByRole("menu", { name: "Feel" });
+    > 188 |   if (!(await feelMenu.isVisible().catch(() => false))) await page.getByRole("menuitem", { name: "Feel" }).click();
+          |                                                                                                            ^
+      189 |   await feelMenu.getByRole("menuitem", { name: "Bouncy" }).click();
+      190 |   await expect.poll(ease).toMatch(/^spring\(bounce: [\d.]+, time: [\d.]+\)$/);
+      191 |
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/wire-64-71.spec.ts:188:108
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-wire-64-71-Phase-67-on-23aeb-s-and-the-graph-shows-speed-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-wire-64-71-Phase-67-on-23aeb-s-and-the-graph-shows-speed-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-wire-64-71-Phase-67-on-23aeb-s-and-the-graph-shows-speed-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-wire-64-71-Phase-67-on-23aeb-s-and-the-graph-shows-speed-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10 failed
+    [chromium] › tests/e2e/agent-bridge.spec.ts:37:5 › Phase 50: pairing by the code in the editor, then an approved change is one undo step 
+    [chromium] › tests/e2e/agent-bridge.spec.ts:81:5 › Phase 50: Claude can't reach its own approval switch 
+    [chromium] › tests/e2e/editing.spec.ts:73:5 › Phase 29: a 25-step editing journey with the exact result after each step 
+    [chromium] › tests/e2e/new-ui-frames-presets.spec.ts:169:7 › Task E: No ghost frame and Desktop / Tablet / Mobile presets › with a frame, Tablet click + moving a child gives an override that persists when switching Desktop -> Tablet again while Desktop stays unchanged 
+    [chromium] › tests/e2e/snapping.spec.ts:151:5 › Phase 28: guides belong to their frame, are saved, undone and restored 
+    [chromium] › tests/e2e/stage1-gate.spec.ts:280:7 › Phase 52: the design journeys › Journey D (an agent): Claude builds a section through MCP, and the user approves it 
+    [chromium] › tests/e2e/wire-54-transport.spec.ts:11:5 › Phase 54: single clock transport controls, step frame, play/pause, loop cycling and K pause 
+    [chromium] › tests/e2e/wire-56-playback.spec.ts:17:5 › Phase 56: playback throttles React commits to <= 10/s, keeps canvas and timeline in lockstep, and leaves no stale inline styles on pause 
+    [chromium] › tests/e2e/wire-64-71.spec.ts:61:5 › Phase 64 on the new editor: 200 layers build only the rows in view, and a scrub stays within a frame 
+    [chromium] › tests/e2e/wire-64-71.spec.ts:171:5 › Phase 67 on the new editor: Bouncy and F9 write real easings, and the graph shows speed 
+  78 skipped
+  348 passed (34.5m)

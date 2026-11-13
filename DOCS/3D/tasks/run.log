@@ -1,0 +1,65 @@
+=== START 3D-007 10:57:46
+=== END 3D-007 11:11:53
+=== START 3D-008 11:11:53
+=== START 3D-009 (parallel) 11:21:35
+=== START 3D-010 (parallel) 11:21:35
+=== END 3D-007 fix1 11:25:47
+=== END 3D-010 exit=0 11:32:11
+=== END 3D-009 exit=0 11:32:35
+=== END 3D-009 fix1 11:34:59
+=== END 3D-010 fix1 11:35:04
+=== END 3D-010 fix2 11:37:10
+=== END 3D-009 fix2 11:37:21
+=== END 3D-008 fix1 11:38:38
+=== START B2-011 12:14:30
+=== START B2-013 12:14:30
+=== START B2-014-015 12:14:30
+=== START B2-016-017 12:14:30
+=== START B2-020 12:14:30
+=== END B2-013 12:26:01
+=== END B2-020 12:26:55
+=== END B2-014-015 12:28:13
+=== END B2-016-017 12:29:40
+=== END B2-011 12:29:43
+=== START B2-W2-1 12:31:52
+=== END B2-W2-1 12:51:20
+=== START B2-W2-2a 12:52:45
+=== START B2-W2-2b 12:52:45
+=== END B2-W2-2b 13:13:30
+=== END B2-W2-2a 13:17:55
+=== START B2-011.fix1 13:53:47
+=== START B2-013.fix1 13:53:47
+=== START B2-016-017.fix1 13:53:47
+=== START B2-W2-2b.fix1 13:53:47
+=== END B2-W2-2b.fix1 13:56:06
+=== END B2-016-017.fix1 14:01:43
+=== END B2-013.fix1 14:02:03
+=== END B2-011.fix1 14:36:59
+=== START B3-021-024 17:40:42
+=== START B3-025 17:40:42
+=== START B3-030 17:40:42
+=== START B3-027-028 17:40:42
+=== END B3-027-028 17:54:09
+=== END B3-030 17:55:28
+=== END B3-021-024 17:56:17
+=== END B3-025 17:57:20
+=== START B3-W2-make3d-text 17:58:30
+=== START B3-027-028.fix1 18:00:09
+=== START B3-021-024.fix1 18:00:09
+=== START B3-W3-properties 18:00:30
+=== END B3-021-024.fix1 18:03:25
+=== END B3-027-028.fix1 18:10:17
+=== END B3-W3-properties 18:20:12
+=== START B3-W3-outliner 18:20:36
+=== START B3-W3-addtext 18:20:36
+=== END B3-W2-make3d-text 18:20:58
+=== START B3-W3-properties.fix1 18:24:41
+=== START B3-W2-make3d-text.fix1 18:24:41
+=== END B3-W2-make3d-text.fix1 18:30:17
+=== START B3-W2-make3d-text.fix2 18:32:11
+=== END B3-W3-properties.fix1 18:34:08
+=== END B3-W3-addtext 18:36:46
+=== END B3-W3-outliner 18:39:44
+=== END B3-W2-make3d-text.fix2 18:42:16
+=== START B3-W2-make3d-text.fix3 18:44:19
+=== END B3-W2-make3d-text.fix3 18:49:13

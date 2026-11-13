@@ -1,0 +1,56 @@
+src/core/3d/looks/applyLook.ts(51,11): error TS2741: Property 'emissive' is missing in type '{ id: string; name: string; baseColor: string; metallic: number; roughness: number; }' but required in type '{ id: string; baseColor: string; metallic: number; roughne
+src/core/3d/looks/applyLook.ts(58,11): error TS2322: Type '{ id: string; baseColor: string; metallic: number; roughness: number; emissive: string; name?: string | undefined; emissiveIntensity?: number | undefined; opacity?: number | undefined; ... 5 more ...; 
+src/core/3d/looks/applyLook.ts(66,27): error TS2538: Type 'undefined' cannot be used as an index type.
+src/core/3d/looks/applyLook.ts(70,51): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(71,50): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(72,51): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(73,50): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(74,59): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(75,49): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(76,52): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/applyLook.ts(77,54): error TS18048: 'mat' is possibly 'undefined'.
+src/core/3d/looks/types.ts(11,23): error TS2305: Module '"../../document/schema"' has no exported member 'LookSection'.
+src/core/3d/looks/types.ts(11,36): error TS2305: Module '"../../document/schema"' has no exported member 'LookSizingRule'.
+src/editor/panels/details/properties3d/FieldRenderer.tsx(265,21): error TS2322: Type '{ value: string; onChange: (val: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/FieldRenderer.tsx(266,32): error TS7006: Parameter 'val' implicitly has an 'any' type.
+src/editor/panels/details/properties3d/LooksStrip.tsx(94,15): error TS2345: Argument of type '{ lookId: string; targetIds: string[]; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/LooksStrip.tsx(136,15): error TS2345: Argument of type '{ look: { id: string; name: string; section: "interaction" | "animation" | "light" | "material" | "physics" | "modifier"; values: Record<string, unknown>; sizing?: {
+src/editor/panels/details/properties3d/LooksStrip.tsx(147,15): error TS2345: Argument of type '{ lookId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(65,53): error TS2345: Argument of type '{ objectId: string; slot: number; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(72,40): error TS2345: Argument of type '{ objectId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(77,40): error TS2345: Argument of type '{ [x: string]: unknown; materialId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(182,19): error TS2322: Type '{ value: string; onChange: (c: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(183,30): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/editor/panels/details/properties3d/MaterialTab.tsx(229,19): error TS2322: Type '{ value: string; onChange: (em: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/MaterialTab.tsx(230,30): error TS7006: Parameter 'em' implicitly has an 'any' type.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(70,40): error TS2345: Argument of type '{ objectId: string; type: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(75,43): error TS2345: Argument of type '{ objectId: string; modifierId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(83,46): error TS2345: Argument of type '{ objectId: string; modifierId: string; newIndex: number; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(88,51): error TS2345: Argument of type '{ objectId: string; modifierId: string; enabled: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(96,51): error TS2345: Argument of type '{ objectId: string; modifierId: string; renderEnabled: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(104,42): error TS2345: Argument of type '{ objectId: string; modifierId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(108,46): error TS2345: Argument of type '{ objectId: string; modifierId: string; key: string; value: unknown; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(159,22): error TS2339: Property 'name' does not exist on type 'ModifierDefinition<never>'.
+src/editor/panels/details/properties3d/ModifiersTab.tsx(191,39): error TS2339: Property 'name' does not exist on type 'ModifierDefinition<never>'.
+src/editor/panels/details/properties3d/ObjectDataTab.tsx(110,71): error TS2345: Argument of type '{ objectId: string; param: string; value: number; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectDataTab.tsx(148,39): error TS2345: Argument of type '{ [x: string]: unknown; lightId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectDataTab.tsx(192,21): error TS2322: Type '{ "data-testid": string; value: string; onChange: (c: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/ObjectDataTab.tsx(193,32): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/editor/panels/details/properties3d/ObjectDataTab.tsx(272,40): error TS2345: Argument of type '{ [x: string]: unknown; cameraId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(73,47): error TS2345: Argument of type '{ objectId: string; location: [number, number, number]; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(85,18): error TS2554: Expected 4-5 arguments, but got 2.
+src/editor/panels/details/properties3d/ObjectTab.tsx(86,47): error TS2345: Argument of type '{ objectId: string; rotationQuat: number[]; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(96,44): error TS2345: Argument of type '{ objectId: string; scale: [number, number, number]; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(119,55): error TS2345: Argument of type '{ objectId: string; name: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(199,59): error TS2345: Argument of type '{ objectId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(201,57): error TS2345: Argument of type '{ childId: string; parentId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(227,61): error TS2345: Argument of type '{ objectId: string; visible: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(245,61): error TS2345: Argument of type '{ objectId: string; renderVisible: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(261,51): error TS2345: Argument of type '{ objectId: string; name: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(263,59): error TS2345: Argument of type '{ objectId: string; visible: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/ObjectTab.tsx(265,59): error TS2345: Argument of type '{ objectId: string; renderVisible: boolean; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/WorldTab.tsx(48,37): error TS2345: Argument of type '{ [x: string]: unknown; worldId: string; }' is not assignable to parameter of type 'undefined'.
+src/editor/panels/details/properties3d/WorldTab.tsx(81,17): error TS2322: Type '{ value: string; onChange: (c: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/WorldTab.tsx(82,28): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/editor/panels/details/properties3d/WorldTab.tsx(96,17): error TS2322: Type '{ value: string; onChange: (ac: any) => void; "aria-label": string; }' is not assignable to type 'IntrinsicAttributes & ColorSwatchFieldProps'.
+src/editor/panels/details/properties3d/WorldTab.tsx(97,28): error TS7006: Parameter 'ac' implicitly has an 'any' type.

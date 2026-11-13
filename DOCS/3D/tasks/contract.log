@@ -1,0 +1,357 @@
+
+Running 41 tests using 1 worker
+
+  ✓   1 [chromium] › tests/e2e/anchor-points.spec.ts:29:7 › Phase 72 · Anchor points & pins › renders anchor handle for selected layer and updates when dragged with snapping (2.3s)
+  ✓   2 [chromium] › tests/e2e/anchor-points.spec.ts:79:7 › Phase 72 · Anchor points & pins › inspector Origin control updates anchor position on canvas (4.3s)
+  ✓   3 [chromium] › tests/e2e/new-ui-canvas.spec.ts:74:7 › the canvas draws the real tree › an edit to a sample layer shows on the canvas (1.3s)
+  ✓   4 [chromium] › tests/e2e/new-ui-canvas.spec.ts:81:7 › the canvas draws the real tree › a frame's hide, opacity and clip reach what is inside it (5.0s)
+  ✓   5 [chromium] › tests/e2e/new-ui-canvas.spec.ts:100:7 › the canvas draws the real tree › Stack, gap and Fill lay the children out (9.2s)
+  ✓   6 [chromium] › tests/e2e/new-ui-canvas.spec.ts:133:7 › the canvas draws the real tree › a line's shadow is drawn, not cut off by its thin box (4.7s)
+  ✓   7 [chromium] › tests/e2e/new-ui-canvas.spec.ts:146:7 › the canvas draws the real tree › a drawn shape says Fixed, as that is how it is drawn (4.7s)
+  ✓   8 [chromium] › tests/e2e/new-ui-canvas.spec.ts:154:7 › the canvas draws the real tree › Insert > Sections adds a real section to the page on screen (4.5s)
+  ✓   9 [chromium] › tests/e2e/new-ui-canvas.spec.ts:167:7 › shortcuts fire once › Duplicate adds one layer, Undo takes back one step, Delete removes one (5.4s)
+  ✘  10 [chromium] › tests/e2e/new-ui-canvas.spec.ts:188:7 › gestures › marquee on empty canvas selects what it touches (1.0m)
+  ✘  11 [chromium] › tests/e2e/new-ui-canvas.spec.ts:198:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all (1.0m)
+  ✘  12 [chromium] › tests/e2e/new-ui-canvas.spec.ts:223:7 › gestures › Shift-click adds to the selection and takes away from it (1.0m)
+  ✓  13 [chromium] › tests/e2e/new-ui-canvas.spec.ts:234:7 › gestures › Alt-drag leaves the original and moves a copy, as one undo step (4.8s)
+  ✓  14 [chromium] › tests/e2e/new-ui-canvas.spec.ts:268:7 › what goes under what › a new picture goes into the frame it lands on, or the selected frame, and shows on top there (4.5s)
+  ✓  15 [chromium] › tests/e2e/new-ui-canvas.spec.ts:287:7 › what goes under what › on the canvas a layer goes by where it is let go, even when it is bigger than the frame; several go together (9.1s)
+  ✘  16 [chromium] › tests/e2e/new-ui-canvas.spec.ts:313:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page (1.0m)
+  ✘  17 [chromium] › tests/e2e/new-ui-canvas.spec.ts:361:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows (1.0m)
+  ✘  18 [chromium] › tests/e2e/new-ui-canvas.spec.ts:390:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it (1.0m)
+  ✘  19 [chromium] › tests/e2e/new-ui-canvas.spec.ts:432:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them (1.0m)
+  ✘  20 [chromium] › tests/e2e/new-ui-canvas.spec.ts:446:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches (1.0m)
+  ✘  21 [chromium] › tests/e2e/new-ui-canvas.spec.ts:459:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders (1.0m)
+  ✓  22 [chromium] › tests/e2e/new-ui-canvas.spec.ts:509:7 › arranging: what is on top is what you see › Bring to front, Send to back, Bring forward and Send backward: by shortcut, each shows on screen (12.0s)
+  ✓  23 [chromium] › tests/e2e/new-ui-canvas.spec.ts:536:7 › arranging: what is on top is what you see › the same four from the right-click Arrange menu, on the canvas and on a row in the Layers panel (16.8s)
+  ✓  24 [chromium] › tests/e2e/new-ui-canvas.spec.ts:564:7 › arranging: what is on top is what you see › the Z field puts a layer over or under the others whatever the order, on the canvas (10.0s)
+  ✓  25 [chromium] › tests/e2e/new-ui-canvas.spec.ts:581:7 › corner pin: lay a layer on a surface › the four handles move the corners, the layer is drawn in perspective, and a drag is one undo step (5.0s)
+  ✓  26 [chromium] › tests/e2e/new-ui-canvas.spec.ts:637:7 › saved projects › a current project is left as it is: a sample layer the designer put in flow stays in flow (4.2s)
+  ✓  27 [chromium] › tests/e2e/new-ui-canvas.spec.ts:649:7 › saved projects › an emptied page stays empty after a reload (4.7s)
+  ✓  28 [chromium] › tests/e2e/new-ui-canvas.spec.ts:663:7 › saved projects › a project saved with the page size in the wrong unit opens at the right size (3.4s)
+  ✓  29 [chromium] › tests/e2e/new-ui-canvas.spec.ts:709:7 › menus › a submenu opens at its full width, even when hovered again before it has finished opening (6.6s)
+  ✓  30 [chromium] › tests/e2e/new-ui-canvas.spec.ts:728:7 › menus, moving between submenus › hovering another row with a submenu swaps the submenu to that row's items (6.3s)
+  ✓  31 [chromium] › tests/e2e/new-ui-canvas.spec.ts:747:7 › an empty page is empty › the page is never drawn: no white sheet, border or title strip, with or without layers (4.7s)
+  ✓  32 [chromium] › tests/e2e/new-ui-canvas.spec.ts:784:7 › split text into letters › one click turns a word into one layer per letter, in place, each controllable on its own (7.0s)
+  ✓  33 [chromium] › tests/e2e/new-ui-device-views.spec.ts:89:7 › Task I: Device views and live linked mirror frames › 1) no Desktop/Tablet/Mobile buttons in the top bar (2.9s)
+  ✓  34 [chromium] › tests/e2e/new-ui-device-views.spec.ts:104:7 › Task I: Device views and live linked mirror frames › 2) empty page + Mobile in the Design pill creates a Mobile frame (4.6s)
+  ✓  35 [chromium] › tests/e2e/new-ui-device-views.spec.ts:128:7 › Task I: Device views and live linked mirror frames › 3) with a Desktop frame selected, Tablet opens a mirror to the right (120px gap, same top) (7.6s)
+  ✓  36 [chromium] › tests/e2e/new-ui-device-views.spec.ts:185:7 › Task I: Device views and live linked mirror frames › 4) adding a rectangle inside the main appears in the mirror live (9.3s)
+  ✓  37 [chromium] › tests/e2e/new-ui-device-views.spec.ts:219:7 › Task I: Device views and live linked mirror frames › 5) moving a layer inside mirror writes a Tablet override and leaves main untouched (9.5s)
+  ✓  38 [chromium] › tests/e2e/new-ui-device-views.spec.ts:262:7 › Task I: Device views and live linked mirror frames › 6) clicking Desktop again with a Desktop frame selected creates a new independent frame (7.5s)
+  ✓  39 [chromium] › tests/e2e/new-ui-device-views.spec.ts:300:7 › Task I: Device views and live linked mirror frames › 7) deleting the mirror keeps the main frame intact (7.5s)
+  ✓  40 [chromium] › tests/e2e/new-ui-device-views.spec.ts:342:7 › Task I: Device views and live linked mirror frames › 8) deleting a layer inside a mirror is refused with a toast (9.4s)
+  ✓  41 [chromium] › tests/e2e/new-ui-device-views.spec.ts:379:7 › Task I: Device views and live linked mirror frames › 9) picking a layer in the mirror never leaves the main frame in Tablet: it keeps its width and edits go to Desktop (9.7s)
+
+
+  1) [chromium] › tests/e2e/new-ui-canvas.spec.ts:188:7 › gestures › marquee on empty canvas selects what it touches 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:192:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-gestures-4b465-vas-selects-what-it-touches-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests/e2e/new-ui-canvas.spec.ts:198:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:204:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-3a3cf--Layers-list-shows-them-all-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-gestures-3a3cf--Layers-list-shows-them-all-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-3a3cf--Layers-list-shows-them-all-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-gestures-3a3cf--Layers-list-shows-them-all-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests/e2e/new-ui-canvas.spec.ts:223:7 › gestures › Shift-click adds to the selection and takes away from it 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:226:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-02976-tion-and-takes-away-from-it-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-gestures-02976-tion-and-takes-away-from-it-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-gestures-02976-tion-and-takes-away-from-it-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-gestures-02976-tion-and-takes-away-from-it-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › tests/e2e/new-ui-canvas.spec.ts:313:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:318:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-ae279-d-to-the-bottom-of-the-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-what-goe-ae279-d-to-the-bottom-of-the-page-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-ae279-d-to-the-bottom-of-the-page-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-what-goe-ae279-d-to-the-bottom-of-the-page-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › tests/e2e/new-ui-canvas.spec.ts:361:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:365:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-23e0b-nd-Shift-clicks-select-rows-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-what-goe-23e0b-nd-Shift-clicks-select-rows-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-23e0b-nd-Shift-clicks-select-rows-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-what-goe-23e0b-nd-Shift-clicks-select-rows-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › tests/e2e/new-ui-canvas.spec.ts:390:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:394:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-3a7a0-me-and-then-a-drag-moves-it-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-what-goe-3a7a0-me-and-then-a-drag-moves-it-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-what-goe-3a7a0-me-and-then-a-drag-moves-it-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-what-goe-3a7a0-me-and-then-a-drag-moves-it-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › tests/e2e/new-ui-canvas.spec.ts:432:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at fourLayers (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:427:97)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:433:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-8dc0c-hem-and-Delete-removes-them-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-selectin-8dc0c-hem-and-Delete-removes-them-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-8dc0c-hem-and-Delete-removes-them-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-selectin-8dc0c-hem-and-Delete-removes-them-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › tests/e2e/new-ui-canvas.spec.ts:446:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at fourLayers (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:427:97)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:447:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-4fb9a-selects-the-rows-it-reaches-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-selectin-4fb9a-selects-the-rows-it-reaches-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-4fb9a-selects-the-rows-it-reaches-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-selectin-4fb9a-selects-the-rows-it-reaches-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [chromium] › tests/e2e/new-ui-canvas.spec.ts:459:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('menuitem', { name: /^Rectangle/ })
+
+
+      55 |     await shape.click();
+      56 |   }
+    > 57 |   await rectItem.click();
+         |                  ^
+      58 |   await drag(page, await art(page, x1, y1), await art(page, x2, y2));
+      59 |   return (await ofKind(page, "rectangle")).find((l) => !before.has(l.id))!;
+      60 | }
+        at rectangle (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:57:18)
+        at fourLayers (/Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:427:97)
+        at /Users/pranav/Project Folder/WebAPPBuilder/tests/e2e/new-ui-canvas.spec.ts:460:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-82126-selected-row-still-reorders-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/e2e-new-ui-canvas-selectin-82126-selected-row-still-reorders-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/e2e-new-ui-canvas-selectin-82126-selected-row-still-reorders-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/e2e-new-ui-canvas-selectin-82126-selected-row-still-reorders-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9 failed
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:188:7 › gestures › marquee on empty canvas selects what it touches 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:198:7 › gestures › a drag through empty space selects every element it touches, inside frames too, and the Layers list shows them all 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:223:7 › gestures › Shift-click adds to the selection and takes away from it 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:313:7 › what goes under what › in the Layers panel a row drops into a frame, beside a child of a frame, and to the bottom of the page 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:361:7 › what goes under what › several selected rows drag together, and Ctrl and Shift clicks select rows 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:390:7 › what goes under what › a drag on a frame that holds layers selects inside it; a click selects the frame, and then a drag moves it 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:432:7 › selecting in the Layers panel by dragging › dragging down across rows selects them, and Delete removes them 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:446:7 › selecting in the Layers panel by dragging › a drag up from empty space below the rows selects the rows it reaches 
+    [chromium] › tests/e2e/new-ui-canvas.spec.ts:459:7 › selecting in the Layers panel by dragging › a click still selects one row, and dragging a selected row still reorders 
+  32 passed (12.6m)

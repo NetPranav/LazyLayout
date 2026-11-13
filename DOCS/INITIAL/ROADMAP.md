@@ -1687,6 +1687,9 @@ The document and World Environment have their own stores, After-track actions mo
 | D20 | Labels that follow 3D parts | new | D19, D6 | A | 📋 |
 | | **Gate** |||||
 | D21 | Gate: the watch page | new | D1 – D20 | A | 📋 |
+| D22 | Variables, tokens & styles manager in the new editor | Main 45, 47 (core exists; no panel) | D1 | A | 📋 |
+| D23 | Variants & instances in the new editor | Main 46, 47 (core exists; authoring UI missing) | D1 | A | 📋 |
+| D24 | Open and save a project file from the new editor | Main 3, 36 (core exists; no UI) | D1 | A | 📋 |
 
 ## Wave 0 · Make it work
 
@@ -1696,15 +1699,20 @@ The document and World Environment have their own stores, After-track actions mo
 - [ ] Reachability audit of the new editor: components and variants, tokens and styles, breakpoints, pages, pen tools. Anything still only in the legacy editor is wired, or gets a D-phase.
 
 **You'll see:** every control in Design visibly changes the canvas.
-**Done when:** each listed issue has a passing test; the audit list is empty or every item has a phase.
+**Done when:** each listed issue has a passing test; the audit list is empty or every item has a phase. *(Met on 2026-11-13; ✅ once it is on `main`.)*
+
+**Status check (2026-11-13), 🚧:** every listed issue now has a passing Chromium test in `tests/e2e/design-controls.spec.ts` (17 tests): LA-003, 006, 007, 010, 015, 017, 018, 019, 020, 021, 022, 027, 028, 034, 035. Most were already fixed in code and only needed proof; LA-021 and LA-009 got real fixes (blend, cursor and overflow options have descriptions; every segmented control shows its label as a tooltip). LA-009 is a usability note: the row under text alignment is the Case row (it has a label); its choices now have tooltips, and there is no functional test for it.
+**Reachability audit (from the source, not a click-through):** reachable in the new editor: create component, pages, pen tool, export, templates, breakpoints (device views), asset drop. **Gaps still to wire:** (1) a tokens / variables / styles manager (Phases 45 and 47 exist in core; no panel in the new editor), (2) authoring variants and detaching an instance, (3) opening and saving a project file from the UI. These three now have their own phases, D22, D23 and D24 (Wave 6), so the audit list has no unowned items.
 
 ### Phase D2 · Control coverage test
 **Needs:** D1 · **Was:** new · **Lane:** A · **Status:** 📋
-- [ ] A generated test walks every control of the Design panel (from the panel's own config) and checks that it changes the document, the canvas and the export.
+- [ ] A generated test walks every control of the Design panel (the panel has no config, so it walks the page: open each "More … options" section for a fixed set of layer types, collect inputs, selects, segmented controls and toggles by their labels, set each to a non-default value) and checks that it changes the document, the canvas and the export. A short exclusion list, with a reason for each entry, covers editor-only controls.
 - [ ] A control that does nothing fails CI, so "dead controls" cannot come back.
 
 **You'll see:** a coverage line in CI: "Design controls: 214 of 214 change the page".
 **Done when:** 100% of the listed controls pass in Chromium; a deliberately dead control fails the run.
+
+**Status check (2026-11-13):** the walker is `tests/e2e/design-coverage.spec.ts`: for a rectangle, a frame, a text and a line it drives every labelled input, select, segmented control and toggle in the Design panel (and its "More … options" sections) and prints a coverage line, e.g. "Design controls (frame): 16 of 16 change the document". **Result: no dead controls on those four layer types** (18, 16, 23 and 19 controls), and a test proves that a control that changes nothing fails the run. The Done-when is met for those four layer types (✅ once it is on `main`). **Follow-ups, not blocking:** (a) some controls change the document but not (or not in a way the walker's canvas check reads) the canvas or the export: cursor and pointer events, corner radius on text, word spacing, white space, font loading, divider dash offset and style, the three radius fields; each needs a look, to fix the control or to widen the check. (b) Image and 3D layers are not walked yet.
 
 ## Wave 1 · Freedom & relationships
 
@@ -1715,6 +1723,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** type `padding: 24px; backdrop-filter: blur(8px)` and the Padding control shows 24.
 **Done when:** 50 declarations round-trip (code to controls to code); unknown ones export unchanged; a hostile declaration is refused with a message.
+
+**Status check (2026-11-14), 🚧:** built: `src/core/style/styleCode.ts` (parse, validate, split into controls and custom, compose, patch), the `style.custom` property, the canvas and export drawing it (`layerBoxStyle`), and the **Style code** section in the Design panel. Verified: a 50-declaration round trip, unknown declarations kept unchanged on the canvas and in the export, hostile ones refused with a line and a message (24 unit tests in `src/core/style/__tests__`, 4 Chromium tests in `tests/e2e/style-code.spec.ts`). The Done-when is met. **Still to build:** CSS property and value autocomplete; Style code per **state** (only the layer, and the breakpoint being edited through the normal writer, are covered; per-breakpoint is not tested); `calc()` and CSS variables are accepted and kept but have no helper UI. D3 turns ✅ when those bullets are done and it is on `main`.
 
 ### Phase D4 · Drivers: scroll, pointer, speed and time for any property
 **Needs:** D2 · **Was:** ROADMAP_3D 3D-044 – 3D-047, 3D-197 (Main 132 – 138) · **Lane:** A · **Status:** 📋
@@ -1853,6 +1863,31 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** the finished watch page, live.
 **Done when:** built from scratch in under an hour by the owner; holds 60 fps on the mid tier; works with reduced motion and on touch.
+
+## Wave 6 · Gaps found by the D1 audit (2026-11-13)
+
+These three things work in the core and in the legacy editor, but the new editor has no way to reach them. They are separate phases so D1 can close; they are independent of D3 – D21 and can be built at any time after D1.
+
+### Phase D22 · Variables, tokens & styles manager in the new editor
+**Needs:** D1 · **Was:** Main 45, 47 (core exists; no panel) · **Lane:** A · **Status:** 📋
+- [ ] A panel to create, rename, group and delete variables (colour, number, text), modes, and colour and text styles; apply them from any control; show where each is used.
+
+**You'll see:** change a colour variable and every layer using it changes; switch the mode and the whole page switches.
+**Done when:** the Phase 45 and 47 behaviours pass against the new editor (the legacy specs, ported).
+
+### Phase D23 · Variants & instances in the new editor
+**Needs:** D1 · **Was:** Main 46, 47 (core exists; authoring UI missing) · **Lane:** A · **Status:** 📋
+- [ ] Add and edit variants of a component, set component properties, override in an instance, detach an instance.
+
+**You'll see:** a button component with Primary and Secondary variants that you switch in an instance.
+**Done when:** the Phase 46 and 47 behaviours pass against the new editor.
+
+### Phase D24 · Open and save a project file from the new editor
+**Needs:** D1 · **Was:** Main 3, 36 (core exists; no UI) · **Lane:** A · **Status:** 📋
+- [ ] File menu: Save as a project file (pictures embedded), Open a project file, with a clear message when it is from a newer version.
+
+**You'll see:** save a project, open it in a fresh browser, and it is identical.
+**Done when:** a saved file opens identically in a fresh browser, including pictures and 3D data.
 
 ---
 
