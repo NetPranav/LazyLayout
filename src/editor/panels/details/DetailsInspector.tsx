@@ -27,6 +27,8 @@ import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { StyleCodeSection } from "./sections/StyleCodeSection";
 import { DrivenBySection } from "./sections/DrivenBySection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
+import { RepeatSection } from "./sections/RepeatSection";
+import { CloneSection } from "./sections/CloneSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -305,6 +307,16 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+    },
+    {
+      id: "clone",
+      title: "Clone",
+      children: <CloneSection {...sectionProps} />,
+    },
+    {
+      id: "repeat",
+      title: "Repeat",
+      children: <RepeatSection {...sectionProps} />,
     },
     {
       id: "parent-links",
