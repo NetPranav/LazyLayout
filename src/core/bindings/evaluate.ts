@@ -76,7 +76,7 @@ interface Compiled {
   reset(): void;
 }
 
-function falloffOf(shape: "linear" | "smoothstep" | "gaussian" | "inverse-square", d: number, r: number): number {
+export function falloffOf(shape: "linear" | "smoothstep" | "gaussian" | "inverse-square", d: number, r: number): number {
   const q = r > 0 ? Math.abs(d) / r : Infinity;
   switch (shape) {
     case "linear":

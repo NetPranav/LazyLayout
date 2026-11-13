@@ -8,6 +8,7 @@ import type { AdapterHost, EngineAdapter } from "./types";
 import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
 import { BindingDriver, type BindingDriverHost } from "./BindingDriver";
 import { boundLayerIds } from "./styleWrites";
+import { EffectorDriver } from "./EffectorDriver";
 
 /**
  * ROADMAP Phase 57: puts the animation on the stage. Reads the transport (Phase 54), and each frame, in the
@@ -67,6 +68,9 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   const scrollDriver = options.scroll ? new ScrollDriver(options.scroll.host) : null;
   const bindingDriver = options.bindings ? new BindingDriver(options.bindings.host) : null;
   let bindingsWereLive = false;
+  // D10: pointer effectors restyle their copies live (same input source as the drivers)
+  const effectorDriver = options.bindings ? new EffectorDriver({ getDocument, node: (id) => renderer.registry.get(id), source: options.bindings.host.source }) : null;
+  let effectorsWereLive = false;
   const setBound = (bound: ReturnType<BindingDriver["update"]>) => {
     if (adapter instanceof StageAdapters) adapter.setBound(bound ?? undefined);
     else adapter.setInputs({ bound: bound ?? undefined });
@@ -91,6 +95,12 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (effectorDriver && options.bindings) {
+      const live = options.bindings.active() && !effectorDriver.idle;
+      if (live) effectorDriver.update();
+      else if (effectorsWereLive) effectorDriver.dispose(); // back to the copies as drawn
+      effectorsWereLive = live;
+    }
     if (bindingDriver && options.bindings) {
       // Drivers: nothing is measured or marked dirty while no binding is enabled. A frame with live bindings always redraws, because the pointer or the scroll may have moved.
       const live = options.bindings.active() && !bindingDriver.idle;
@@ -133,6 +143,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       : null;
 
   return () => {
+    effectorDriver?.dispose();
     scrollDriver?.reset();
     unmonitor?.();
     unregister();

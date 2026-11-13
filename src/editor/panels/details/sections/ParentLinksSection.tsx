@@ -31,6 +31,8 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
   const [source, setSource] = useState("");
   const [sourceProp, setSourceProp] = useState("transform.rotate");
   const [factor, setFactor] = useState(-1);
+  const [mapKind, setMapKind] = useState<"times" | "range">("times");
+  const [range, setRange] = useState({ inMin: 0, inMax: 100, outMin: 0, outMax: 1 });
   const [exprProp, setExprProp] = useState("transform.rotate");
   const [exprText, setExprText] = useState("");
   const [message, setMessage] = useState("");
@@ -109,16 +111,60 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
           <OptionRow label="Its">
             <Select aria-label="Link source property" size="sm" width="100%" options={PROP_OPTIONS} value={sourceProp} onChange={setSourceProp} />
           </OptionRow>
-          <OptionRow label="Times">
-            <NumberField size="sm" aria-label="Link multiplier" title="Multiplies what it follows. 1 follows it exactly; -1 does the opposite (a ring turns the other way); 0.5 half as much." value={factor} step={0.1} onChange={setFactor} />
+          <OptionRow label="Map">
+            <Select
+              aria-label="Link map"
+              size="sm"
+              width="100%"
+              options={[
+                { value: "times", label: "Times", hint: "Multiply what it follows" },
+                { value: "range", label: "Range", hint: "Map one range of its values onto another" },
+              ]}
+              value={mapKind}
+              onChange={(v) => setMapKind(v as "times" | "range")}
+            />
           </OptionRow>
-          <Button
-            size="sm"
-            aria-label="Add link"
-            onClick={() => run("layer.setLink", { id: selectedId, targetProperty: target, sourceLayerId: chosenSource, sourceProperty: sourceProp, map: "range", inMin: 0, inMax: 1, outMin: 0, outMax: factor, clamp: false })}
-          >
-            Add link
-          </Button>
+          {mapKind === "times" ? (
+            <OptionRow label="Times">
+              <NumberField size="sm" aria-label="Link multiplier" title="Multiplies what it follows. 1 follows it exactly; -1 does the opposite (a ring turns the other way); 0.5 half as much." value={factor} step={0.1} onChange={setFactor} />
+            </OptionRow>
+          ) : (
+            <>
+              <OptionRow label="When it is">
+                <div className="ll:grid ll:grid-cols-2 ll:gap-1.5 ll:w-full">
+                  <NumberField size="sm" aria-label="Link range from min" title="The value of what it follows that gives the first result." value={range.inMin} step={1} onChange={(v) => setRange({ ...range, inMin: v })} />
+                  <NumberField size="sm" aria-label="Link range from max" title="The value of what it follows that gives the second result." value={range.inMax} step={1} onChange={(v) => setRange({ ...range, inMax: v })} />
+                </div>
+              </OptionRow>
+              <OptionRow label="This is">
+                <div className="ll:grid ll:grid-cols-2 ll:gap-1.5 ll:w-full">
+                  <NumberField size="sm" aria-label="Link range to min" title="What this property is at the first value." value={range.outMin} step={1} onChange={(v) => setRange({ ...range, outMin: v })} />
+                  <NumberField size="sm" aria-label="Link range to max" title="What this property is at the second value." value={range.outMax} step={1} onChange={(v) => setRange({ ...range, outMax: v })} />
+                </div>
+              </OptionRow>
+            </>
+          )}
+          <div className="ll:grid ll:grid-cols-2 ll:gap-1.5">
+            <Button
+              size="sm"
+              aria-label="Add link"
+              onClick={() =>
+                run("layer.setLink", mapKind === "times"
+                  ? { id: selectedId, targetProperty: target, sourceLayerId: chosenSource, sourceProperty: sourceProp, map: "range", inMin: 0, inMax: 1, outMin: 0, outMax: factor, clamp: false }
+                  : { id: selectedId, targetProperty: target, sourceLayerId: chosenSource, sourceProperty: sourceProp, map: "range", ...range, clamp: true })
+              }
+            >
+              Add link
+            </Button>
+            <Button
+              size="sm"
+              aria-label="Add opposite link"
+              title="Follow it exactly the other way: a ring turns left while the watch turns right."
+              onClick={() => run("layer.setLink", { id: selectedId, targetProperty: target, sourceLayerId: chosenSource, sourceProperty: sourceProp, map: "range", inMin: 0, inMax: 1, outMin: 0, outMax: -1, clamp: false })}
+            >
+              Opposite
+            </Button>
+          </div>
         </>
       )}
 

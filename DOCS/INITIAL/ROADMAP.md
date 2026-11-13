@@ -1761,6 +1761,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** drag Rotation onto Scroll and the layer turns as the page scrolls.
 **Done when:** 20 connections evaluate identically in the editor and in the export.
 
+**Status check (2026-11-14), 🚧:** the D5 form now covers what D7 names except the drag: **Map** (Times, or Range: one span of values onto another, held at the ends) and a one-click **Opposite**. Verified in Chromium (`tests/e2e/parent-links.spec.ts`): Opposite turns the ring -60 against the watch's +60 at 1.5 s; a range maps the watch's rotation 0..120 to the ring's opacity 0..1 (0.5 at 60, held at 1 past the end). **Not done:** (1) **dragging** a property onto a driver or onto another property (it is a form); (2) linking **a driver** (a Driven by binding) from another property; (3) the export: 20 connections evaluating identically in the editor and the export is not tested; (4) only five properties are offered.
+
 ## Wave 2 · Repeat
 
 ### Phase D8 · Repeater
@@ -1788,6 +1790,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** dots grow near the cursor and ripple as you scroll.
 **Done when:** per-copy values match hand-computed falloffs at 5 positions.
+
+**Status check (2026-11-14), 🚧:** built: `src/core/render/effector.ts` (pure: a field gives each copy an influence 0..1; Scale, Fade and Shift take it from as made to the setting), `copies.ts` (one `copyStyles` used by the renderer and the live driver), the `effector.*` properties, the **Effector** section (Vary by: Ramp, Noise or Pointer; scale, fade, shift; radius and falloff for the pointer; seed for noise), and `EffectorDriver` in the stage engine (re-styles a pointer effector's copies every frame the pointer moves, writes only changes, puts them back when the engine stops, and does nothing when no layer has one). Verified: **hand-computed falloffs at 5 distances for all four shapes** (linear, smoothstep, gaussian, inverse-square), the ramp, seeded noise and the effect maths (`effector.test.ts`, 10 tests), and Chromium (`tests/e2e/effectors.spec.ts`): a ramp's copies are 1.5x, 2x, 2.5x, 3x the layer, noise varies the copies and is repeatable, and in Motion **dots grow near the pointer** (the biggest is the nearest) and are as drawn again in Design. The Done-when is met. **Not done:** (1) the **scroll** field (needs D4's scroll source); (2) **colour** variation; (3) a **delay** (stagger in time) per copy: the effector varies size, fade and shift, not timing; (4) the pointer effector's frame cost with thousands of copies is not measured; (5) an export of a pointer effector (the export ships the copies as made; the live behaviour is not exported yet).
 
 ## Wave 3 · Scroll & choreography
 

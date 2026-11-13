@@ -34,8 +34,13 @@ const select = (page: Page, id: string) => page.locator(`[data-testid="stage-ele
 const pick = async (page: Page, label: string, option: string) => {
   await page.getByLabel(label, { exact: true }).first().click();
   await page.waitForTimeout(250);
-  await page.getByRole("option", { name: option, exact: true }).first().click();
+  await page.getByRole("option", { name: new RegExp(`^${option}`) }).first().click();
   await page.waitForTimeout(250);
+};
+const set = async (page: Page, label: string, v: number) => {
+  const f = page.getByLabel(label, { exact: true }).first();
+  await f.fill(String(v));
+  await f.press("Enter");
 };
 const kernel = (page: Page, id: string, t: number) =>
   page.evaluate(([id, t]) => (window as unknown as { __LL_ENGINE__: { kernel: (i: string, t: number) => Record<string, unknown> } }).__LL_ENGINE__.kernel(id as string, t as number), [id, t] as const);
@@ -107,5 +112,36 @@ test.describe("Parent & links (D5)", () => {
     await expect.poll(async () => (await layers(page))[b.id].properties["transform.parent"] ?? "").toBe("");
     const cleared = (await box(b.id))!;
     expect(Math.abs(cleared.x - before.x)).toBeLessThan(2);
+  });
+
+  test("Opposite is one click, and a range maps one span of values onto another (D7)", async ({ page }) => {
+    const { a, b } = await two(page);
+    await select(page, a.id);
+    await page.getByLabel("Expression text", { exact: true }).fill("time * 40");
+    await page.getByRole("button", { name: "Set expression", exact: true }).click();
+    await expect(page.locator("[data-expression-slot]")).toContainText("time * 40");
+
+    // one click: the ring does the opposite
+    await select(page, b.id);
+    await pick(page, "Link source layer", a.name);
+    await page.getByRole("button", { name: "Add opposite link", exact: true }).click();
+    await expect(page.locator("[data-link-slot]")).toHaveCount(1);
+
+    // a range: the watch's rotation 0..120 becomes the ring's opacity 0..1
+    await page.waitForTimeout(700);
+    await pick(page, "Link property", "Opacity");
+    await page.waitForTimeout(700);
+    await pick(page, "Link map", "Range");
+    await set(page, "Link range from min", 0);
+    await set(page, "Link range from max", 120);
+    await set(page, "Link range to min", 0);
+    await set(page, "Link range to max", 1);
+    await page.getByRole("button", { name: "Add link", exact: true }).click();
+    await expect(page.locator("[data-link-slot]")).toHaveCount(2);
+
+    await motion(page);
+    await expect.poll(async () => Math.round(Number((await kernel(page, b.id, 1.5))["transform.rotate"]))).toBe(-60);
+    expect(Number((await kernel(page, b.id, 1.5))["appearance.opacity"])).toBeCloseTo(0.5, 3); // 60 on a 0..120 range
+    expect(Number((await kernel(page, b.id, 6))["appearance.opacity"])).toBeCloseTo(1, 3); // 240 is past the end: held at 1
   });
 });

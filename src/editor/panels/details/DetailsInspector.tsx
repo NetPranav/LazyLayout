@@ -29,6 +29,7 @@ import { DrivenBySection } from "./sections/DrivenBySection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
+import { EffectorSection } from "./sections/EffectorSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -312,6 +313,11 @@ export function getInspectorDesignSections(
       id: "clone",
       title: "Clone",
       children: <CloneSection {...sectionProps} />,
+    },
+    {
+      id: "effector",
+      title: "Effector",
+      children: <EffectorSection {...sectionProps} />,
     },
     {
       id: "repeat",
