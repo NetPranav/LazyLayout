@@ -1709,6 +1709,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** a coverage line in CI: "Design controls: 214 of 214 change the page".
 **Done when:** 100% of the listed controls pass in Chromium; a deliberately dead control fails the run.
 
+**Status check (2026-11-13), 🚧:** the walker is `tests/e2e/design-coverage.spec.ts`: for a rectangle, a frame, a text and a line it drives every labelled input, select, segmented control and toggle in the Design panel (and its "More … options" sections) and prints a coverage line, e.g. "Design controls (frame): 16 of 16 change the document". **Result: no dead controls on those four layer types** (18, 16, 23 and 19 controls). **Not yet met:** (a) many controls change the document but not (or not in a way the walker sees) the canvas or the export: cursor and pointer events on the canvas, corner radius and word spacing on text, white space and font loading, divider dash offset and style, the three radius fields. Each needs a look: a real gap, or a property the walker's canvas check does not read. (b) Image and 3D layers are not walked. (c) The "deliberately dead control fails the run" meta-test is not written. (d) The edit panel's own popovers (effects, fills) are driven by the D1 tests, not the walker.
+
 ## Wave 1 · Freedom & relationships
 
 ### Phase D3 · Style code: write any CSS for a layer
