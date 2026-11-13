@@ -17,6 +17,11 @@ type L = { id: string; archetype: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
   page.evaluate(() => Object.fromEntries(Object.entries((window as unknown as { __LL_DOC__: { get: () => { layers: Record<string, L> } } }).__LL_DOC__.get().layers)));
 
+type Row = { label: string; doc: boolean; canvas: boolean; exp: boolean };
+/** A control is dead when driving it changed nothing: not the document, not the canvas, not the export. */
+export const deadControls = (rows: readonly Row[]): Row[] =>
+  rows.filter((r) => !r.doc && !r.canvas && !r.exp).filter((r) => !Object.keys(EXPECTED_QUIET).some((k) => r.label.includes(k)));
+
 /** Controls that are allowed to change only some of the three (document, canvas, export), each with its reason. */
 export const EXPECTED_QUIET: Record<string, string> = {
   // a name and notes live in the document and the outline, not on the canvas
@@ -215,7 +220,7 @@ for (const [kind, make] of Object.entries(KINDS)) {
       before = after;
       rows.push({ label: `${c.kind}:${c.label}#${c.index}`, doc: was.doc !== after.doc, canvas: was.canvas !== after.canvas, exp: was.exp !== after.exp });
     }
-    const dead = rows.filter((r) => !r.doc && !r.canvas && !r.exp).filter((r) => !Object.keys(EXPECTED_QUIET).some((k) => r.label.includes(k)));
+    const dead = deadControls(rows);
     const partial = rows.filter((r) => (r.doc || r.canvas || r.exp) && !(r.doc && r.canvas && r.exp));
     const full = rows.filter((r) => r.doc && r.canvas && r.exp).length;
     console.log(`Design controls (${kind}): ${rows.length - dead.length} of ${rows.length} change the document; ${full} also change the canvas and the export`);
@@ -225,3 +230,14 @@ for (const [kind, make] of Object.entries(KINDS)) {
     expect(dead.map((d) => d.label), "dead controls").toEqual([]);
   });
 }
+
+test("a control that changes nothing is reported as dead, and fails the run", () => {
+  const rows: Row[] = [
+    { label: "input:Opacity#0", doc: true, canvas: true, exp: true },
+    { label: "input:Does nothing#0", doc: false, canvas: false, exp: false }, // a deliberately dead control
+    { label: "input:Layer name#0", doc: false, canvas: false, exp: false }, // allowed: on EXPECTED_QUIET
+  ];
+  expect(deadControls(rows).map((r) => r.label)).toEqual(["input:Does nothing#0"]);
+  // the same check that fails a layer's walk
+  expect(() => expect(deadControls(rows).map((r) => r.label), "dead controls").toEqual([])).toThrow();
+});
