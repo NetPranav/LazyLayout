@@ -25,12 +25,14 @@ export class StageAdapters implements EngineAdapter {
   private playing = false;
   /** Layers with a scroll-driven clip (Phase 81): the kernel draws them, because a Web Animation can't follow the scroll. */
   private scrollLayers: ReadonlySet<string> = new Set();
+  /** Layers a binding drives (Design track D4): also the kernel's. */
+  private boundLayers: ReadonlySet<string> = new Set();
 
   constructor(options: { waapi?: boolean } = {}) {
     // `__LL_KERNEL_ONLY__` is a test seam (set before load): everything on the kernel adapter, to compare it with Web Animations.
     const kernelOnly = typeof window !== "undefined" && (window as unknown as { __LL_KERNEL_ONLY__?: boolean }).__LL_KERNEL_ONLY__ === true;
     const useWaapi = options.waapi ?? (!kernelOnly && typeof Element !== "undefined" && typeof Element.prototype.animate === "function");
-    const onWaapi = (id: string, paths: ReadonlySet<string>) => useWaapi && this.playing && !this.scrollLayers.has(id) && canRunOnWaapi(paths);
+    const onWaapi = (id: string, paths: ReadonlySet<string>) => useWaapi && this.playing && !this.scrollLayers.has(id) && !this.boundLayers.has(id) && canRunOnWaapi(paths);
     this.waapi = new WaapiAdapter((id, paths) => onWaapi(id, paths));
     this.kernel = new KernelAdapter((id, paths) => !onWaapi(id, paths));
     this.all = [this.waapi, this.kernel];
@@ -62,6 +64,16 @@ export class StageAdapters implements EngineAdapter {
     if (layers.size === this.scrollLayers.size && Array.from(layers).every((id) => this.scrollLayers.has(id))) return;
     this.scrollLayers = layers;
     this.invalidate();
+  }
+  /** The layers bindings drive; they leave any Web Animation for the kernel. */
+  setBoundLayers(layers: ReadonlySet<string>): void {
+    if (layers.size === this.boundLayers.size && Array.from(layers).every((id) => this.boundLayers.has(id))) return;
+    this.boundLayers = layers;
+    this.invalidate();
+  }
+  /** This frame's bound values, for the kernel. */
+  setBound(bound: EvaluateInputs["bound"]): void {
+    this.kernel.setBound(bound);
   }
   setInputs(inputs: EvaluateInputs): void {
     for (const a of this.all) a.setInputs(inputs);
