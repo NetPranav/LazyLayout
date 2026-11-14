@@ -8,8 +8,10 @@ import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
 import { getTransport, transport, transportStore } from "@/core/time/transport";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import { parityStore } from "@/core/engine/stage/parity";
 import type { InputSource } from "@/core/bindings/inputBus";
+import type { ScrollHost } from "@/core/scroll/ScrollDriver";
 import { addBinding } from "@/core/bindings/bindingCommands";
 import { parseBinding, resolveLayerRefs } from "@/core/document/signals";
 
@@ -30,7 +32,9 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   const [renderer] = useState(() => new StageRenderer());
   const designing = useCanvasViewStore((s) => s.mode === "design");
   const playing = useStore(transportStore, (s) => s.playing);
-  const enabled = !designing || playing;
+  // a frame previewed in place (its Preview toggle) is a running page too: it scrolls, so drivers and effectors run
+  const framePreviewing = useFramePreviewStore((p) => Object.keys(p.previewing).length > 0);
+  const enabled = !designing || playing || framePreviewing;
 
   // keep the registry in step with what is drawn
   useLayoutEffect(() => {
@@ -50,7 +54,7 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
     if (!enabled) return undefined;
     const page = pageRef.current;
     const source = page ? pagePointerSource(page) : null;
-    const uninstall = installStageEngine(renderer, source ? { bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => true } } : {});
+    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => true } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {
@@ -94,7 +98,7 @@ function syncRegistry(page: HTMLElement, renderer: StageRenderer): void {
 /**
  * The input bus's eyes on the canvas (D4): where the pointer is over the stage, in the drawn page's own px (so zoom and
  * pan do not change what a driver reads), and the scroll of the frame. Pointer events on the stage viewport, not the
- * window; scroll is not served yet (the new canvas has no scroll host), so it reads as no scroll.
+ * window; scroll is the previewed frame's own scroll (`frame-preview-scroller`), and reads as none when nothing scrolls.
  */
 function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: () => void } {
   const view = page.closest<HTMLElement>('[data-testid="stage-viewport"]') ?? page;
@@ -109,6 +113,11 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     const t: "mouse" | "pen" | "touch" = e.pointerType === "pen" ? "pen" : e.pointerType === "touch" ? "touch" : "mouse";
     pointer = { ...toPage(e), down: e.buttons !== 0, coarse: t === "touch", pressure: e.pressure, type: t };
   };
+  /** The first previewed frame that has anything to scroll. */
+  const scroller = (): HTMLElement | null => {
+    for (const el of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) if (el.scrollHeight - el.clientHeight > 0) return el;
+    return null;
+  };
   view.addEventListener("pointermove", onMove);
   view.addEventListener("pointerdown", onMove);
   view.addEventListener("pointerup", onMove);
@@ -116,7 +125,33 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     input: {
       pointer: () => pointer,
       pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
-      scroll: () => ({ y: 0, max: 0 }),
+      // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
+      // one that has anything to scroll; none means no scroll, which reads as 0
+      scroll: () => {
+        const el = scroller();
+        return el ? { y: el.scrollTop, max: el.scrollHeight - el.clientHeight, viewport: el.clientHeight } : { y: 0, max: 0 };
+      },
+      // where a layer is on the page, in the same px as the pointer (the page's own, whatever the zoom)
+      layerRect: (id) => {
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!el) return null;
+        const pr = page.getBoundingClientRect();
+        const k = page.offsetWidth > 0 ? pr.width / page.offsetWidth : 1;
+        const r = el.getBoundingClientRect();
+        return { x: (r.left - pr.left) / (k || 1), y: (r.top - pr.top) / (k || 1), width: r.width / (k || 1), height: r.height / (k || 1) };
+      },
+      // where a layer sits in the scrolled content, in the page's own px: its drawn position inside the (scrolled) frame, plus the scroll
+      layerBox: (id) => {
+        const sc = scroller();
+        const frameId = sc?.getAttribute("data-frame-id");
+        const frame = frameId ? page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(frameId)}"]`) : null;
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!sc || !frame || !el) return null;
+        const k = page.offsetWidth > 0 ? page.getBoundingClientRect().width / page.offsetWidth : 1;
+        const fr = frame.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { top: (r.top - fr.top) / (k || 1) + sc.scrollTop, height: r.height / (k || 1) };
+      },
     },
     dispose: () => {
       view.removeEventListener("pointermove", onMove);
@@ -124,4 +159,73 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
       view.removeEventListener("pointerup", onMove);
     },
   };
+}
+
+/**
+ * The scroll the scroll-driven clips read (Phase 81 on the new canvas, Design track D11): the previewed frame's own scroll, and where
+ * each layer sits in its content. A frame shown as a device's screen scrolls (its `scrollTop`), so a clip's range is measured against
+ * that, not against the browser window.
+ */
+function pageScrollHost(page: HTMLElement, getDoc: () => import("@/core/document/schema").MotionDocument): ScrollHost {
+  const originals = new Map<string, string>();
+  // the scroll overlays live in the stage viewport, above the drawn page (not inside it)
+  const view = page.closest<HTMLElement>('[data-testid="stage-viewport"]') ?? page;
+  /** The first previewed frame that has anything to scroll, as the drawn element that scrolls. */
+  const frame = (): HTMLElement | null => {
+    for (const s of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) {
+      const id = s.getAttribute("data-frame-id");
+      const node = id ? page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`) : null;
+      if (node && node.scrollHeight - node.clientHeight > 0) return node;
+    }
+    return null;
+  };
+  const el = (id: string) => page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+  return {
+    getDocument: getDoc,
+    metrics() {
+      const f = frame();
+      return f ? { scrollY: f.scrollTop, viewportHeight: f.clientHeight } : null;
+    },
+    box(id) {
+      const f = frame();
+      const node = el(id);
+      if (!f || !node || !node.isConnected || !f.contains(node)) return null;
+      // layout position inside the frame's content, ignoring transforms (so a clip animating the layer cannot move its own range)
+      let top = 0;
+      let n: Element | null = node;
+      while (n && n !== f) {
+        const own = layoutTop(n);
+        if (own === null) return null;
+        top += own;
+        n = (n as HTMLElement).offsetParent ?? n.parentElement;
+      }
+      if (n !== f) return null;
+      const css = parseFloat(getComputedStyle(node).height);
+      const height = typeof node.offsetHeight === "number" ? node.offsetHeight : Number.isFinite(css) ? css : 0;
+      return { top, height };
+    },
+    setPin(id, px) {
+      const node = el(id);
+      if (!node) return;
+      if (px === null) {
+        const original = originals.get(id);
+        if (original) node.style.setProperty("translate", original);
+        else node.style.removeProperty("translate");
+        originals.delete(id);
+        return;
+      }
+      if (!originals.has(id)) originals.set(id, node.style.getPropertyValue("translate"));
+      node.style.setProperty("translate", `0 ${px}px`);
+    },
+  };
+}
+
+/** An element's top inside its offset parent from layout, not from where it is drawn: `offsetTop`, or the CSS `top` of an absolutely placed svg (which has no offsetTop). Null when it cannot be told. */
+function layoutTop(el: Element): number | null {
+  const h = el as HTMLElement;
+  if (typeof h.offsetTop === "number") return h.offsetTop;
+  const cs = getComputedStyle(el);
+  if (cs.position !== "absolute") return null;
+  const t = parseFloat(cs.top);
+  return Number.isFinite(t) ? t : 0;
 }

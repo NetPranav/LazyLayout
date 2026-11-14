@@ -4,6 +4,9 @@ import type { AdapterHost, EngineAdapter, EngineCapabilities, LayerFilter, Style
 import { animatedLayers, fxFilters, styleWrites } from "./styleWrites";
 import { FxFilterWriter } from "./fxFilters";
 
+/** The most copies of one layer that follow its animation (each is one more `evaluate` when the copies are staggered). */
+export const MAX_FOLLOWING_COPIES = 600;
+
 /**
  * ROADMAP Phase 57: applies `evaluate()` straight to the layers' elements. It is the universal fallback (it can
  * show any layer, any property) and the scrub engine: `seek(t)` is the exact value at `t`, whatever came before.
@@ -28,6 +31,9 @@ export class KernelAdapter implements EngineAdapter {
   private readonly elements = new Map<string, StyledElement>();
   /** The SVG filters of the effect stack and motion blur (Phase 75), kept in the frame document. */
   private readonly fx = new FxFilterWriter();
+
+  /** The element each copy of a layer draws (Design track D8), by copy number; found once per document and node set. */
+  private readonly copyCache = new Map<string, { parent: Element; copies: Map<number, StyledElement> }>();
 
   /** Counts of work done, for tests. */
   stats = { evaluations: 0, writes: 0 };
@@ -65,6 +71,23 @@ export class KernelAdapter implements EngineAdapter {
   invalidate(): void {
     this.plannedFor = null;
     this.written.clear(); // React may have redrawn an element since; write everything again
+    this.copyCache.clear();
+  }
+
+  /** The inner element of each copy of `layerId` (copy number -> element). Copies are drawn beside the layer, in wrappers marked `data-repeat-of`. */
+  private copiesOf(layerId: string, element: StyledElement): Map<number, StyledElement> {
+    const parent = (element as unknown as { parentElement?: Element | null }).parentElement;
+    if (!parent) return new Map();
+    const cached = this.copyCache.get(layerId);
+    if (cached && cached.parent === parent) return cached.copies;
+    const copies = new Map<number, StyledElement>();
+    for (const wrapper of Array.from(parent.querySelectorAll(`:scope > [data-repeat-of="${layerId.replace(/"/g, '\\"')}"]`))) {
+      const n = Number(wrapper.getAttribute("data-repeat-copy"));
+      const inner = wrapper.firstElementChild as unknown as StyledElement | null;
+      if (n > 0 && inner?.style) copies.set(n, inner);
+    }
+    this.copyCache.set(layerId, { parent, copies });
+    return copies;
   }
 
   seek(time: number): void {
@@ -89,6 +112,31 @@ export class KernelAdapter implements EngineAdapter {
       const resolved = evaluate(doc, compositionId, layerId, time, this.inputs);
       this.apply(layerId, element, styleWrites(paths, resolved, layerId));
       if (paths.has("fx.stack")) this.fx.sync(element as unknown as Element, layerId, fxFilters(layerId, resolved));
+      this.followWithCopies(doc, compositionId, layerId, paths, resolved, element, time);
+    }
+  }
+
+  /**
+   * Design track D8, D10: the copies of a repeated or cloned layer follow its animation, each `copy.delay` seconds behind the one
+   * before (0: all together). Beyond `MAX_FOLLOWING_COPIES` they stay as drawn.
+   */
+  private followWithCopies(doc: MotionDocument, compositionId: string, layerId: string, paths: ReadonlySet<string>, resolved: ReturnType<typeof evaluate>, element: StyledElement, time: number): void {
+    const copies = this.copiesOf(layerId, element);
+    if (copies.size === 0 || copies.size > MAX_FOLLOWING_COPIES) return;
+    const d = doc.layers[layerId]?.properties["copy.delay"];
+    const delay = typeof d === "number" && Number.isFinite(d) ? d : 0;
+    for (const [n, inner] of copies) {
+      const key = `${layerId}#c${n}`;
+      if (this.elements.get(key) !== inner) {
+        this.restore(key);
+        this.elements.set(key, inner);
+      }
+      let at = resolved;
+      if (delay !== 0) {
+        this.stats.evaluations++;
+        at = evaluate(doc, compositionId, layerId, time - n * delay, this.inputs);
+      }
+      this.apply(key, inner, styleWrites(paths, at, layerId));
     }
   }
 
@@ -139,6 +187,6 @@ export class KernelAdapter implements EngineAdapter {
 
   /** After a document change: layers that no longer animate anything give their elements back. */
   private restoreStale(): void {
-    for (const layerId of Array.from(this.elements.keys())) if (!this.plan.has(layerId)) this.restore(layerId);
+    for (const key of Array.from(this.elements.keys())) if (!this.plan.has(key.split("#")[0])) this.restore(key);
   }
 }

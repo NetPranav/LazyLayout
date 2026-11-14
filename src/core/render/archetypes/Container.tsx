@@ -1,5 +1,6 @@
 import React from "react";
 import { layerBoxStyle, px } from "../geometry";
+import { a11yAttrs } from "../a11y";
 import type { ArchetypeRenderProps } from "../types";
 import { useFillStyle } from "../paintStyle";
 import { parseSides } from "../../paths/strokes";
@@ -95,6 +96,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
       data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
       data-mirror-of={ctx.mode !== "export" && layer.properties["frame.mirrorOf"] ? String(layer.properties["frame.mirrorOf"]) : undefined}
       role={layer.archetype === "form" ? "form" : undefined}
+      {...a11yAttrs(resolved)}
       data-frame-kind={kind !== "frame" ? kind : undefined}
       style={{
         ...layerBoxStyle(layer, resolved, ctx, { bands: true }),

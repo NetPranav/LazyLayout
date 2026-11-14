@@ -3,8 +3,9 @@
  * resolves targets to layers, blends the results per property, clamps them to the registry range, and returns what to
  * write. Pure: the host (editor stage, an export's runtime, a test) supplies the frame and applies the answer.
  *
- * Only property targets are applied here (`transform.*`, `appearance.opacity`, ...). Other target kinds are reported as
- * `unsupported-target` until their phases land; a binding to a `layout` property is refused (`SIG_LAYOUT`, decision 0003).
+ * Property targets (`transform.*`, `appearance.opacity`, ...) come back from `step`; CSS-variable targets (`hero.cssvar.glow`)
+ * come back in `vars` after each step (last one wins by priority). Other target kinds are reported as `unsupported-target` until
+ * their phases land; a binding to a `layout` property is refused (`SIG_LAYOUT`, decision 0003).
  */
 import type { Binding, BindingTarget, BlendMode, Condition, Guard } from "../document/signals";
 import { defaultBlend } from "../document/signals";
@@ -44,12 +45,15 @@ export interface BindingRuntime {
   /** Forget every operator's state (after a seek). */
   reset(): void;
   readonly diagnostics: readonly Diagnostic[];
+  /** The CSS variables the last `step` set: layer id -> name (without `--`) -> value. */
+  readonly vars: ReadonlyMap<string, ReadonlyMap<string, number>>;
   /** True when there is nothing to evaluate: the host can skip the frame loop entirely. */
   readonly idle: boolean;
 }
 
 function checkTarget(b: Binding): Diagnostic | null {
   const t = b.target;
+  if (t.kind === "cssvar") return null;
   if (t.kind !== "property") return { bindingId: b.id, code: "unsupported-target", message: `${t.kind} targets are not applied yet.` };
   const def = PROPERTY_REGISTRY[t.path];
   if (!def) return { bindingId: b.id, code: "unknown-path", message: `${t.path} is not a property.` };
@@ -75,8 +79,12 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
     }
   });
 
+  let vars: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map();
   return {
     diagnostics,
+    get vars() {
+      return vars;
+    },
     idle: live.length === 0,
     reset() {
       for (const l of live) {
@@ -86,9 +94,20 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
     },
     step(frame) {
       const perProperty = new Map<string, Map<string, Contribution[]>>();
+      const perVar = new Map<string, Map<string, { value: number; priority: number; order: number }>>();
       for (const { binding, expr, guard, order } of live) {
         const value = toNumber(expr.step(frame)); // always advance state, even when guarded off, so it stays continuous
         if (guard && !guard.holds(host, frame)) continue;
+        if (binding.target.kind === "cssvar") {
+          for (const layerId of host.layersOf(binding.target.on)) {
+            const byName = perVar.get(layerId) ?? new Map();
+            const prev = byName.get(binding.target.name);
+            const next = { value, priority: binding.priority ?? 0, order };
+            if (!prev || next.priority > prev.priority || (next.priority === prev.priority && next.order > prev.order)) byName.set(binding.target.name, next); // the highest priority wins; a later binding wins a tie
+            perVar.set(layerId, byName);
+          }
+          continue;
+        }
         const target = binding.target as Extract<BindingTarget, { kind: "property" }>;
         const blend = binding.blend ?? defaultBlend(target);
         for (const layerId of host.layersOf(target.on)) {
@@ -99,6 +118,7 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
           perProperty.set(layerId, byPath);
         }
       }
+      vars = new Map([...perVar].map(([layerId, byName]) => [layerId, new Map([...byName].map(([n, v]) => [n, v.value]))]));
       const out: BoundValues = new Map();
       for (const [layerId, byPath] of perProperty) {
         const written = new Map<string, number>();

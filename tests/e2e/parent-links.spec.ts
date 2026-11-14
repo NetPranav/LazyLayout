@@ -2,7 +2,9 @@
  * Design track D5: the Parent & links section wires the new editor to the engine Lane B merged (Phases 73, 76, 77).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, pickShape } from "./support/editor";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; name: string; archetype: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -31,12 +33,7 @@ async function two(page: Page) {
   return { a: made[0], b: made[1] };
 }
 const select = (page: Page, id: string) => page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`).click();
-const pick = async (page: Page, label: string, option: string) => {
-  await page.getByLabel(label, { exact: true }).first().click();
-  await page.waitForTimeout(250);
-  await page.getByRole("option", { name: new RegExp(`^${option}`) }).first().click();
-  await page.waitForTimeout(250);
-};
+const pick = (page: Page, label: string, option: string) => chooseOption(page, label, option);
 const set = async (page: Page, label: string, v: number) => {
   const f = page.getByLabel(label, { exact: true }).first();
   await f.fill(String(v));
@@ -143,5 +140,73 @@ test.describe("Parent & links (D5)", () => {
     await expect.poll(async () => Math.round(Number((await kernel(page, b.id, 1.5))["transform.rotate"]))).toBe(-60);
     expect(Number((await kernel(page, b.id, 1.5))["appearance.opacity"])).toBeCloseTo(0.5, 3); // 60 on a 0..120 range
     expect(Number((await kernel(page, b.id, 6))["appearance.opacity"])).toBeCloseTo(1, 3); // 240 is past the end: held at 1
+  });
+
+  test("Pick on canvas: click the layer to follow instead of choosing it from a list (D5)", async ({ page }) => {
+    const { a, b } = await two(page);
+    await select(page, b.id);
+    await page.getByRole("button", { name: "Pick on canvas", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Pick on canvas", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await select(page, a.id); // the click on the canvas picks it
+    await expect(page.getByRole("button", { name: "Pick on canvas", exact: true })).toHaveAttribute("aria-pressed", "false");
+    // the selection is back on the layer being linked, not left on the one that was picked
+    await expect.poll(async () => await page.getByRole("button", { name: "Add link", exact: true }).isVisible()).toBe(true);
+    await page.getByRole("button", { name: "Add link", exact: true }).click();
+    await expect(page.locator("[data-link-slot]")).toHaveCount(1);
+    const l = await layers(page);
+    expect(l[b.id].properties["link.1.source"]).toBe(a.id); // b follows a, as picked
+    expect(l[a.id].properties["link.1.source"]).toBeUndefined(); // and a was not changed
+  });
+
+  test("links and expressions are in the export: an exported page turns the watch and the ring the opposite way (D5, D7)", async ({ page, browser }, testInfo) => {
+    const { a, b } = await two(page);
+    await select(page, a.id);
+    await page.getByLabel("Expression text", { exact: true }).fill("time * 40");
+    await page.getByRole("button", { name: "Set expression", exact: true }).click();
+    await expect(page.locator("[data-expression-slot]")).toContainText("time * 40");
+    await select(page, b.id);
+    await pick(page, "Link source layer", a.name);
+    await page.getByRole("button", { name: "Add opposite link", exact: true }).click();
+    await expect(page.locator("[data-link-slot]")).toHaveCount(1);
+
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /link|expression/i.test(x))).toEqual([]); // nothing is left out
+    const dir = testInfo.outputPath("export-links");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    const open = async (reduced: boolean) => {
+      const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 }, reducedMotion: reduced ? "reduce" : "no-preference" });
+      const p = await ctx.newPage();
+      await p.goto(`file://${join(dir, "index.html")}`);
+      return { ctx, p };
+    };
+    const turns = (p: Page) =>
+      p.evaluate(([ia, ib]) => {
+        const get = (id: string) => parseFloat((document.querySelector(`[data-ll="${id}"]`) as HTMLElement).style.rotate || "0");
+        return { watch: get(ia), ring: get(ib) };
+      }, [a.id, b.id]);
+
+    const live = await open(false);
+    await live.p.waitForTimeout(1200);
+    const one = await turns(live.p);
+    await live.p.waitForTimeout(800);
+    const two2 = await turns(live.p);
+    expect(one.watch, "the watch is turning with time").toBeGreaterThan(20);
+    expect(two2.watch).toBeGreaterThan(one.watch + 10);
+    expect(Math.abs(one.ring + one.watch), "the ring does the opposite").toBeLessThan(0.01);
+    expect(Math.abs(two2.ring + two2.watch)).toBeLessThan(0.01);
+    await live.ctx.close();
+
+    const still = await open(true);
+    await still.p.waitForTimeout(800);
+    expect(await turns(still.p)).toEqual({ watch: 0, ring: 0 }); // reduced motion: the page as designed
+    await still.ctx.close();
   });
 });

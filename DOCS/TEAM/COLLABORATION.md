@@ -37,7 +37,7 @@ Those are the only kinds of branches. Anything else on GitHub is old and can be 
 - **Inside a lane, the phase number is still the order** (Law 18). Take the lowest phase in your lane that isn't ✅.
 - A phase may start only when **every phase in its "Needs" line is ✅ on `main`**. This is ROADMAP §0 rule 7, and it's the only thing that links the two lanes. §2 lists every place where it matters.
 - **Stage 3, Design depth (Phases 103–131, added in ROADMAP v4.1 on 2026-10-21), is proposed for Lane A** after Phase 52, with branch prefix `a/`. Every phase in it needs only Stage 1, so it never waits on Lane B. It becomes Lane A's once Lane B agrees, in the v4.1 PR or in a message.
-- **Since 2026-11-13 Lane A works the Design master track (D1–D21 in ROADMAP.md)**, pulled forward by the project owner. It takes over Phases 110 (repeat), 141, 144, 152, 154, 157 and 188–190, and wires the UI for Lane B's merged engine work (73, 76, 77). Its Lane B items stay Lane B's: **D11** (Phases 81, 82), **D12** (83, 84), **D15** (78), and Phase 99 (video layers, needed by tracking). Agree before Lane A builds any of them.
+- **Since 2026-11-13 Lane A works the Design master track (D1–D21 in ROADMAP.md)**, pulled forward by the project owner. It takes over Phases 110 (repeat), 141, 144, 152, 154, 157 and 188–190, and wires the UI for Lane B's merged engine work (73, 76, 77). **On 2026-11-14 the project owner (admin) took over D11 to D20 for Lane A**, including the items that were Lane B's: **D11** (Phases 81, 82), **D12** (83, 84), **D15** (78) and Phase 99 (video layers, needed by tracking). Lane A builds them without waiting for agreement from Lane B. Lane B's work already on `main` is built on, not replaced; the hot-spot rules (§3, §4) and the Definition of Done still apply.
 - Stage 4 onward (132+) isn't assigned yet. Agree on it before either of you starts it. v4.1 renumbered every phase from 103 on; Phases 1–102 kept their numbers, and the old-to-new table is at the end of ROADMAP §7.
 - Laws 1–20 and the Definition of Done (ROADMAP §3, §4) apply to both lanes. Nothing in this file relaxes them.
 
@@ -118,6 +118,7 @@ The PR template (`.github/pull_request_template.md`) asks for this. In short:
 ## 8. Rules for Claude specifically
 
 1. Know your lane (§1). Work on phases in your lane, in order. You may edit any file a phase needs (§3).
+   **The project owner (the admin) decides who builds what.** When the owner moves a phase to a lane, or says to take it over, that is the decision: do not ask the other lane for permission or agreement, record the move here and in `ROADMAP.md`, and say so in the PR description and in the discussions panel so the other person knows. Everything else in this file (branches, PRs, hot spots, Definition of Done) still applies.
 2. Before starting a phase: `git fetch origin`, rebase on `origin/main`, check that every phase in its "Needs" line is ✅ on `origin/main`, and check `CLAIMS.md`.
 3. If you change a shared hot spot (§3), say so in the PR description and in your end-of-session summary.
 4. Never push to `main`. Merge a PR only when the person asks, and only a PR from their own lane (never the other lane's, unless they say so by name). Never use `--force` on a shared branch. Never pass `--admin` to bypass branch protection.

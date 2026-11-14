@@ -428,3 +428,26 @@ export const ConnectedPageBackground: React.FC = () => {
     />
   );
 };
+
+/** Smooth scrolling of the exported page (Design track D14): the seconds the page takes to catch up with the mouse wheel; 0 leaves the browser's own scrolling. */
+export const ConnectedPageScroll: React.FC = () => {
+  const layers = useLayers();
+  const root = pageRoot(layers);
+  const v = root?.properties["scroll.smooth"];
+  return (
+    <div className="ll:flex ll:flex-col ll:gap-1.5 ll:w-full">
+      <NumberField
+        size="sm"
+        aria-label="Smooth scrolling"
+        label={<span className={FIELD_LABEL}>Smooth</span>}
+        title="Seconds the exported page takes to catch up with the mouse wheel: 0.1 is snappy, 0.4 is floaty, 0 is the browser's own scrolling. Keys, find in page, links, touch and the scrollbar always stay native, and a visitor who asked for less motion gets none."
+        value={typeof v === "number" ? v : 0}
+        min={0}
+        step={0.05}
+        onChange={(n) => {
+          if (root) setLayerProps([root.id], { "scroll.smooth": Math.min(2, Math.max(0, Math.round(n * 100) / 100)) }, "Smooth scrolling");
+        }}
+      />
+    </div>
+  );
+};

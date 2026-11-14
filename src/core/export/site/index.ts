@@ -9,6 +9,9 @@ import { buildPlan, type SitePlan, type Styling } from "./plan";
 import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targets";
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
+import { buildDriversExport } from "../runtime/drivers";
+import { buildSmoothScrollSource } from "../runtime/smoothScroll";
+import { exportedPages } from "./plan";
 
 export type { SiteFile, Styling, Target, SitePlan };
 export { buildPlan, exportedPages } from "./plan";
@@ -21,6 +24,8 @@ export interface SiteExportOptions {
   readAsset?: (id: string) => Promise<AssetBytes | null>;
   /** The project's loading pages (see `PlanOptions.loading`). Only the Next.js target writes them, as `loading.tsx`. */
   loading?: { rootId: string; toRootId: string | null }[];
+  /** Write a grid of identical plain dots as one element (default true); false draws every dot, for a test to compare the two. */
+  dotGrids?: boolean;
 }
 
 export interface SiteExport {
@@ -31,7 +36,7 @@ export interface SiteExport {
 
 export async function buildSiteExport(doc: MotionDocument, options: SiteExportOptions): Promise<SiteExport> {
   const styling: Styling = options.target === "html" ? "css" : options.styling;
-  const plan = buildPlan(doc, { styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html", loading: options.loading });
+  const plan = buildPlan(doc, { dotGrids: options.dotGrids, styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html", loading: options.loading });
   const assets = new Map<string, AssetBytes>();
   const warnings = [...plan.warnings];
   if (options.target !== "next" && (options.loading?.length ?? 0) > 0) warnings.push("Loading pages are written for the Next.js target only (as loading.tsx); this export leaves them out.");
@@ -51,6 +56,44 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
     entries: doc.assets ?? {},
     assets,
   });
+  // Drivers (Design track D4): a standalone script for the plain HTML target, with only the operators the project uses.
+  const drivers = buildDriversExport(doc);
+  warnings.push(...drivers.warnings);
+  if (drivers.source) {
+    if (options.target === "html") {
+      files.push({ path: "lazylayout-drivers.js", content: drivers.source });
+      for (const f of files) {
+        if (!f.path.endsWith("index.html") || typeof f.content !== "string") continue;
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-drivers.js" defer></script>\n  </body>`);
+      }
+    } else {
+      // The React targets serve the same standalone script from `public/`, linked from the app's HTML. The script finds its layers by
+      // `data-ll` each frame, so it also works for elements React draws after it has loaded. (Not run in a Vite or Next build here.)
+      files.push({ path: "public/lazylayout-drivers.js", content: drivers.source });
+      for (const f of files) {
+        if (typeof f.content !== "string") continue;
+        if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-drivers.js" defer></script>\n  </body>`);
+        if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("<body>{children}</body>", `<body>\n        {children}\n        <script src="/lazylayout-drivers.js" defer />\n      </body>`);
+      }
+    }
+  }
+  // Smooth scrolling (Design track D14): one small script for the site, when a page frame asks for it
+  const tau = Math.max(0, ...exportedPages(doc).map((p) => { const v = doc.layers[p.id]?.properties["scroll.smooth"]; return typeof v === "number" && Number.isFinite(v) ? v : 0; }));
+  if (tau > 0) {
+    const place = options.target === "html" ? "" : "public/";
+    const href = options.target === "html" ? null : "/lazylayout-smooth.js";
+    files.push({ path: `${place}lazylayout-smooth.js`, content: buildSmoothScrollSource({ tau }) });
+    for (const f of files) {
+      if (typeof f.content !== "string") continue;
+      if (options.target === "html" && f.path.endsWith("index.html")) {
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-smooth.js" defer></script>\n  </body>`);
+      }
+      if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="${href}" defer></script>\n  </body>`);
+      if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("</body>", `  <script src="${href}" defer />\n      </body>`);
+    }
+  }
   return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };
 }
 

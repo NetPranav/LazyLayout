@@ -43,6 +43,7 @@ import { evaluateExpression, type ExprContext } from "../expressions/evaluate";
 import { hasExpressions, readExpressions, type LayerExpression } from "../expressions/exprModel";
 import { parseCached } from "../expressions/parse";
 import { seedFromText } from "../expressions/noise";
+import { readSpeedSettings, speedEffect, speedTransform } from "./speedEffects";
 import { layerBar } from "../document/compositions";
 import {
   createLayerLocalMatrix,
@@ -615,7 +616,7 @@ export function synthesize3DQuaternions(doc: MotionDocument, props: ResolvedProp
 export function evaluate(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs = {}): ResolvedProps {
   const layer = doc.layers[layerId];
   if (!layer) return {};
-  return withMotionBlur(doc, compositionId, layerId, t, inputs, withMatte(doc, compositionId, layerId, t, inputs, evaluateWorld(doc, compositionId, layerId, t, inputs)));
+  return withSpeedEffects(doc, compositionId, layerId, t, inputs, withMotionBlur(doc, compositionId, layerId, t, inputs, withMatte(doc, compositionId, layerId, t, inputs, evaluateWorld(doc, compositionId, layerId, t, inputs))));
 }
 
 // ---------------------------------------------------------------------------
@@ -692,9 +693,8 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
  * shutter angle (`motion.shutterAngle`, 180 by default). A layer that is still, or barely moving, gets nothing. It is a
  * pure function of the document and `t`, so scrubbing shows the same blur as playing.
  */
-function withMotionBlur(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, resolved: ResolvedProps): ResolvedProps {
-  const layer = doc.layers[layerId];
-  if (!layer || layer.motionBlur !== true) return resolved;
+/** A layer's world velocity (px per second) at `t`: its place half a frame either side, as the motion blur measures it. */
+function layerVelocity(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs): { x: number; y: number } {
   const fps = doc.compositions[compositionId]?.fps ?? 60;
   const half = 0.5 / fps;
   const at = (time: number) => {
@@ -706,9 +706,42 @@ function withMotionBlur(doc: MotionDocument, compositionId: string, layerId: str
   const a = at(t0);
   const b = at(t1);
   const dt = t1 - t0;
+  return { x: (b.x - a.x) / dt, y: (b.y - a.y) / dt };
+}
+
+function withMotionBlur(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, resolved: ResolvedProps): ResolvedProps {
+  const layer = doc.layers[layerId];
+  if (!layer || layer.motionBlur !== true) return resolved;
+  const fps = doc.compositions[compositionId]?.fps ?? 60;
   const shutter = typeof resolved["motion.shutterAngle"] === "number" ? (resolved["motion.shutterAngle"] as number) : 180;
-  const sigma = motionBlurSigma({ x: (b.x - a.x) / dt, y: (b.y - a.y) / dt }, fps, shutter);
+  const sigma = motionBlurSigma(layerVelocity(doc, compositionId, layerId, t, inputs), fps, shutter);
   return sigma.x > 0.05 || sigma.y > 0.05 ? { ...resolved, "motion.blur.x": sigma.x, "motion.blur.y": sigma.y } : resolved;
+}
+
+/**
+ * Design track D18: squash and stretch along the motion, lean into turns and a speed-driven blur, from how fast the layer moves.
+ * A layer with no speed effect switched on is returned as it was without measuring anything; one that is at rest is too.
+ */
+function withSpeedEffects(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, resolved: ResolvedProps): ResolvedProps {
+  const settings = readSpeedSettings((path) => resolved[path]);
+  if (!settings) return resolved;
+  const effect = speedEffect(settings, layerVelocity(doc, compositionId, layerId, t, inputs));
+  if (!effect) return resolved;
+  const world = resolved["transform.worldMatrix"] as unknown as AffineMatrix2D | undefined;
+  const rotation = world ? (Math.atan2(world[1], world[0]) * 180) / Math.PI : 0;
+  const extra = speedTransform(effect, rotation);
+  const base = typeof resolved.transform === "string" && resolved.transform !== "none" ? resolved.transform : "";
+  const out: ResolvedProps = { ...resolved };
+  if (extra) out.transform = `${base} ${extra}`.trim();
+  if (settings.blur > 0) {
+    const bx = Math.max(effect.blurX, typeof resolved["motion.blur.x"] === "number" ? (resolved["motion.blur.x"] as number) : 0);
+    const by = Math.max(effect.blurY, typeof resolved["motion.blur.y"] === "number" ? (resolved["motion.blur.y"] as number) : 0);
+    if (bx > 0.05 || by > 0.05) {
+      out["motion.blur.x"] = bx;
+      out["motion.blur.y"] = by;
+    }
+  }
+  return out;
 }
 
 function evaluateWorld(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs): ResolvedProps {

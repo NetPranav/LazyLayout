@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useStore } from "zustand";
 import { Minus } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
@@ -9,6 +9,7 @@ import { Button } from "@/editor/components/Button";
 import { tryRunCommand } from "@/core/commands";
 import { documentStore } from "@/core/store/documentState";
 import { documentCommands } from "@/core/store/useDocumentStore";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { transformParentChoices } from "@/core/timeline/timelineOps";
 import { getLayerParentRef } from "@/core/geometry/parentTransforms";
 import { readLinks } from "@/core/links/linkModel";
@@ -36,6 +37,19 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
   const [exprProp, setExprProp] = useState("transform.rotate");
   const [exprText, setExprText] = useState("");
   const [message, setMessage] = useState("");
+  const [picking, setPicking] = useState(false);
+  // Pick on canvas: while on, the next layer clicked on the canvas becomes the one this follows, and the selection goes back
+  useEffect(() => {
+    if (!picking || !selectedId) return undefined;
+    return useSelectionStore.subscribe((state, prev) => {
+      const next = state.selectedIds[0];
+      if (!next || next === selectedId || next === prev.selectedIds[0]) return;
+      setSource(next);
+      setPicking(false);
+      // the canvas may still be selecting during this gesture: put the selection back on the layer being linked once the click is over
+      document.addEventListener("click", () => setTimeout(() => useSelectionStore.getState().select(selectedId, "element"), 0), { once: true });
+    });
+  }, [picking, selectedId]);
   const layer = selectedId && !isMulti ? doc.layers[selectedId] : undefined;
   if (!layer || !selectedId) return null;
 
@@ -106,7 +120,21 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
             <Select aria-label="Link property" size="sm" width="100%" options={PROP_OPTIONS} value={target} onChange={setTarget} />
           </OptionRow>
           <OptionRow label="Follows">
-            <Select aria-label="Link source layer" size="sm" width="100%" options={others.map((l) => ({ value: l.id, label: l.name }))} value={chosenSource} onChange={setSource} />
+            <div className="ll:flex ll:items-center ll:gap-1.5 ll:w-full">
+              <div className="ll:flex-1 ll:min-w-0">
+                <Select aria-label="Link source layer" size="sm" width="100%" options={others.map((l) => ({ value: l.id, label: l.name }))} value={chosenSource} onChange={setSource} />
+              </div>
+              <button
+                type="button"
+                aria-pressed={picking}
+                aria-label="Pick on canvas"
+                title="Click here, then click the layer to follow on the canvas."
+                onClick={() => setPicking((p) => !p)}
+                className={`ll:h-7 ll:px-2 ll:shrink-0 ll:text-small ll:rounded-sm ll:border ll:cursor-pointer ll:outline-none ${picking ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active" : "ll:bg-surface-bar ll:text-muted ll:border-border ll:hover:text-primary"}`}
+              >
+                {picking ? "Click a layer…" : "Pick"}
+              </button>
+            </div>
           </OptionRow>
           <OptionRow label="Its">
             <Select aria-label="Link source property" size="sm" width="100%" options={PROP_OPTIONS} value={sourceProp} onChange={setSourceProp} />

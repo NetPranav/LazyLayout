@@ -197,7 +197,7 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
             data-repeat-copy={c.index}
             data-repeat-of={layer.id}
             aria-hidden="true"
-            style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "visible", pointerEvents: "none", transform: c.transform, transformOrigin: c.origin, opacity: c.opacity }}
+            style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "visible", pointerEvents: "none", transform: c.transform, transformOrigin: c.origin, opacity: c.opacity, ...(c.filter ? { filter: c.filter } : {}) }}
           >
             <Definition layer={copyLayer} resolved={copyResolved} ctx={definitionCtx}>
               {kids}

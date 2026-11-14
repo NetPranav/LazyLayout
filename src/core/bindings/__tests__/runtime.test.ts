@@ -76,7 +76,7 @@ describe("binding runtime (D4)", () => {
   it("an unknown path and a not-yet-applied target kind are reported, not thrown", () => {
     const unknown = createBindingRuntime([make("scroll.progress -> hero.transform.nonsense")], host());
     assert.equal(unknown.diagnostics[0]?.code, "unknown-path");
-    const css = createBindingRuntime([make("scroll.progress -> hero.cssvar.glow")], host());
+    const css = createBindingRuntime([make("scroll.progress -> hero.uniform.uX")], host());
     assert.equal(css.diagnostics[0]?.code, "unsupported-target");
   });
 
@@ -96,5 +96,36 @@ describe("binding runtime (D4)", () => {
     assert.ok(mid > 0 && mid < 1);
     rt.reset();
     assert.equal(value(rt.step(frame(1)), "lay_hero", "transform.x"), 1); // the first frame after a reset starts from the input
+  });
+
+  describe("CSS variable targets", () => {
+    it("a driver sets a CSS variable: the value comes back in vars, and no property is written", () => {
+      const rt = createBindingRuntime([make("scroll.progress |> remap(0, 1, 0, 10)\n-> hero.cssvar.glow")], host());
+      assert.equal(rt.diagnostics.length, 0);
+      assert.equal(rt.idle, false);
+      const out = rt.step(frame(0.5));
+      assert.equal(out.size, 0);
+      assert.equal(rt.vars.get("lay_hero")?.get("glow"), 5);
+      rt.step(frame(1));
+      assert.equal(rt.vars.get("lay_hero")?.get("glow"), 10);
+    });
+
+    it("two drivers on one variable: the higher priority wins, and a later one wins a tie", () => {
+      const a = make("scroll.progress |> remap(0, 1, 0, 1)\n-> hero.cssvar.v", "a", { priority: 1 });
+      const b = make("scroll.progress |> remap(0, 1, 100, 100)\n-> hero.cssvar.v", "b", { priority: 5 });
+      const c = make("scroll.progress |> remap(0, 1, 7, 7)\n-> hero.cssvar.v", "c", { priority: 5 });
+      const rt = createBindingRuntime([a, b, c], host());
+      rt.step(frame(0.3));
+      assert.equal(rt.vars.get("lay_hero")?.get("v"), 7);
+    });
+
+    it("a guard that fails leaves the variable unset; a disabled driver does nothing", () => {
+      const g = make("scroll.progress -> hero.cssvar.v when pointer.coarse = false");
+      const touch = createBindingRuntime([g], { ...host(), env: { ...host().env, pointerCoarse: true } });
+      touch.step(frame(1));
+      assert.equal(touch.vars.size, 0);
+      const off = createBindingRuntime([{ ...g, enabled: false }], host());
+      assert.equal(off.idle, true);
+    });
   });
 });

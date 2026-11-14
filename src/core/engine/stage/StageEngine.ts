@@ -7,8 +7,9 @@ import { ParityMonitor, parityEnabled } from "./parity";
 import type { AdapterHost, EngineAdapter } from "./types";
 import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
 import { BindingDriver, type BindingDriverHost } from "./BindingDriver";
-import { boundLayerIds } from "./styleWrites";
+import { boundLayerIds, copiedLayerIds } from "./styleWrites";
 import { EffectorDriver } from "./EffectorDriver";
+import { CssVarWriter } from "./CssVarWriter";
 
 /**
  * ROADMAP Phase 57: puts the animation on the stage. Reads the transport (Phase 54), and each frame, in the
@@ -71,12 +72,13 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   // D10: pointer effectors restyle their copies live (same input source as the drivers)
   const effectorDriver = options.bindings ? new EffectorDriver({ getDocument, node: (id) => renderer.registry.get(id), source: options.bindings.host.source }) : null;
   let effectorsWereLive = false;
+  const cssVars = new CssVarWriter((id) => renderer.registry.get(id) as unknown as { style: { setProperty(n: string, v: string): void; removeProperty(n: string): string; getPropertyValue(n: string): string } } | undefined);
   const setBound = (bound: ReturnType<BindingDriver["update"]>) => {
     if (adapter instanceof StageAdapters) adapter.setBound(bound ?? undefined);
     else adapter.setInputs({ bound: bound ?? undefined });
   };
   const syncBoundLayers = () => {
-    if (adapter instanceof StageAdapters) adapter.setBoundLayers(options.bindings ? boundLayerIds(getDocument()) : new Set());
+    if (adapter instanceof StageAdapters) adapter.setBoundLayers(new Set([...(options.bindings ? boundLayerIds(getDocument()) : []), ...copiedLayerIds(getDocument())]));
   };
   syncBoundLayers();
   let scrollWasLive = false;
@@ -106,9 +108,11 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       const live = options.bindings.active() && !bindingDriver.idle;
       if (live) {
         setBound(bindingDriver.update(time, frame.dt));
+        cssVars.apply(bindingDriver.vars);
         dirty = true;
       } else if (bindingsWereLive) {
         setBound(null); // back to what the document says
+        cssVars.dispose();
         dirty = true;
       }
       bindingsWereLive = live;
@@ -144,6 +148,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
 
   return () => {
     effectorDriver?.dispose();
+    cssVars.dispose();
     scrollDriver?.reset();
     unmonitor?.();
     unregister();

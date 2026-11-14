@@ -97,4 +97,46 @@ test.describe("Repeater (D8)", () => {
     await page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z");
     await expect(page.locator("[data-repeat-copy]")).toHaveCount(0);
   });
+
+  test("copies follow the layer's animation, each a little behind the one before (D8, D10)", async ({ page }) => {
+    const r = await setup(page);
+    // the layer turns with time: an expression on its rotation (turns 40 degrees a second)
+    await page.getByLabel("Expression text", { exact: true }).fill("time * 40");
+    await page.getByRole("button", { name: "Set expression", exact: true }).click();
+    await expect(page.locator("[data-expression-slot]")).toContainText("time * 40");
+    await set(page, "Repeat count", 4);
+    await set(page, "Repeat step X", 90);
+    await set(page, "Copy delay", 0.5);
+    await expect(page.locator("[data-repeat-copy]")).toHaveCount(3);
+
+    await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+    const turn = (sel: string) =>
+      page.locator(sel).first().evaluate((e) => {
+        const t = getComputedStyle(e).transform;
+        const m = new DOMMatrix(t === "none" ? undefined : t);
+        return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
+      });
+    const original = `[data-testid="stage-page"] [data-element-id="${r.id}"]`;
+    const copy = (i: number) => `[data-repeat-copy="${i}"] [data-element-id="${r.id}"]`;
+    await page.evaluate(() => (window as unknown as { __LL_ENGINE__: { seek: (t: number) => void } }).__LL_ENGINE__.seek(2));
+    // at 2 s the layer is at 80 degrees; copy i is i x 0.5 s behind: 60, 40, 20
+    await expect.poll(() => turn(original)).toBe(80);
+    expect(await turn(copy(1))).toBe(60);
+    expect(await turn(copy(2))).toBe(40);
+    expect(await turn(copy(3))).toBe(20);
+
+    // with no delay they all turn together
+    await page.getByText("Design", { exact: true }).first().click();
+    await set(page, "Copy delay", 0);
+    await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+    await page.evaluate(() => (window as unknown as { __LL_ENGINE__: { seek: (t: number) => void } }).__LL_ENGINE__.seek(1));
+    await expect.poll(() => turn(copy(3))).toBe(40);
+    expect(await turn(copy(1))).toBe(40);
+
+    // back in Design the copies are as drawn again
+    await page.getByText("Design", { exact: true }).first().click();
+    await expect.poll(() => turn(copy(2))).toBe(0);
+  });
 });

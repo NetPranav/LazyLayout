@@ -2,7 +2,7 @@
  * Design track D10: effectors vary the copies of a Repeat or Clone: a ramp, noise, or the pointer's distance.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, pickShape } from "./support/editor";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -26,12 +26,7 @@ async function dot(page: Page) {
   await page.mouse.up();
   return Object.values(await layers(page)).find((l) => !before.has(l.id))!;
 }
-const choose = async (page: Page, label: string, name: string) => {
-  await page.getByLabel(label, { exact: true }).first().click();
-  await page.waitForTimeout(300);
-  await page.getByRole("option", { name: new RegExp(`^${name}`) }).first().click();
-  await page.waitForTimeout(500);
-};
+const choose = (page: Page, label: string, name: string) => chooseOption(page, label, name);
 const set = async (page: Page, label: string, v: number) => {
   const f = page.getByLabel(label, { exact: true }).first();
   await f.fill(String(v));
@@ -97,5 +92,55 @@ test.describe("Effectors (D10)", () => {
     // back in Design the copies are as drawn
     await page.getByText("Design", { exact: true }).first().click();
     await expect.poll(async () => { const w = await widths(); return Math.max(...w) - Math.min(...w); }).toBeLessThan(1);
+  });
+
+  test("scroll sends a wave along the copies, and turns their colour (D10)", async ({ page }) => {
+    await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+    await openEditor(page);
+    await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      const el = page.getByText(name, { exact: true }).first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.click();
+        await page.keyboard.press("Delete");
+      }
+    }
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    type Win = { __LL_DOC__: { get: () => { layers: Record<string, { id: string; archetype: string; parentId: string | null }> }; commands: { addLayer: (a: unknown) => string } } };
+    const frameId = await page.evaluate(() => {
+      const w = window as unknown as Win;
+      const frame = Object.values(w.__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id;
+      const base = { positioning: "absolute", "frame.width": 40, "frame.height": 40 };
+      // ten dots in a row, with a wave that follows the scroll, spread over 2 copies, turning the colour up to 90 degrees
+      w.__LL_DOC__.commands.addLayer({ archetype: "ellipse", parentId: frame, name: "Dots", properties: { ...base, "frame.x": 100, "frame.y": 100, "repeat.count": 10, "repeat.x": 60, "effector.mode": "scroll", "effector.scale": 3, "effector.hue": 90, "effector.spread": 2, "effector.falloff": "linear" } });
+      w.__LL_DOC__.commands.addLayer({ archetype: "rectangle", parentId: frame, name: "Foot", properties: { ...base, "frame.x": 100, "frame.y": 1500 } });
+      return frame;
+    });
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${frameId}"]`).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    const scaleOf = (i: number) => page.locator(`[data-repeat-copy="${i}"]`).evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).a);
+    const filterOf = (i: number) => page.locator(`[data-repeat-copy="${i}"]`).evaluate((e) => getComputedStyle(e).filter);
+    await page.waitForTimeout(300);
+    expect(await filterOf(8)).toBe("none"); // at the top the wave is on the layer itself: the far copies are as made
+
+    // halfway the wave is on copy 4.5 of 0..9: copies 4 and 5 are the biggest
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = ((e as HTMLElement).scrollHeight - (e as HTMLElement).clientHeight) / 2));
+    await expect.poll(() => scaleOf(4)).toBeGreaterThan(2);
+    expect(await scaleOf(5)).toBeGreaterThan(2);
+    expect(await scaleOf(9)).toBeCloseTo(1, 1);
+    expect(await filterOf(4)).toContain("hue-rotate");
+    expect(await filterOf(9)).toBe("none");
+
+    // at the bottom the wave is on the last copy, and the middle is quiet
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = (e as HTMLElement).scrollHeight));
+    await expect.poll(() => scaleOf(9)).toBeCloseTo(3, 0);
+    expect(await scaleOf(4)).toBeCloseTo(1, 1);
+
+    // leaving the preview puts every copy back as drawn
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${frameId}"]`).click();
+    await expect.poll(() => scaleOf(9)).toBeCloseTo(1, 2);
+    expect(await filterOf(4)).toBe("none");
   });
 });

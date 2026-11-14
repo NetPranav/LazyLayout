@@ -17,6 +17,7 @@ import { anchorOf, pagesOf, resolveLink } from "../../pages/pages";
 import { modesOf, hasTokens } from "../../tokens/tokens";
 import { PRESENTATION_ATTRS, classNameFor, diffDecls, renderingOf, tailwindUtility, toCss, type CssBlock, type Decl, type Rule } from "./css";
 import { parseMarkup, walk, type ENode } from "./markup";
+import { collapseDotGrids } from "./dotGrid";
 import { renderLayerMarkup } from "./render";
 import { componentize, type ComponentDef } from "./components";
 
@@ -31,6 +32,8 @@ export interface PlanOptions {
    * `toRootId` is the frame of that page (null: the whole site, the home page's folder).
    */
   loading?: { rootId: string; toRootId: string | null }[];
+  /** Write a grid of identical plain dots as one element with a CSS background (default true). Off, for a test to compare the two. */
+  dotGrids?: boolean;
 }
 
 export interface PagePlan {
@@ -193,6 +196,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
   const modes = modesOf(doc);
   const useModes = hasTokens(doc) && Object.keys(doc.variables ?? {}).length > 0 && modes.length > 1;
   const modeIds = useModes ? modes.map((m) => m.id) : [modes[0].id];
+  const liveEffectorLayers = new Set(exportableEffectors(doc).map((e) => e.layer)); // their copies are restyled by the page script
   const siteAssets = new Set<string>();
   const routeOf = new Map(pagesList.map((p) => [p.id, p.route]));
   const used = new Set<string>(); // class names, across the whole site
@@ -206,7 +210,8 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     const render = (bpId: string | null, modeId: string | null) => {
       const view = resolveDocumentAt(doc, bpId, modeId === modes[0].id ? null : modeId);
       const html = renderLayerMarkup(view.layers, rootId, { assetUrl: (id) => (assets.add(id), siteAssets.add(id), `{{asset:${id}}}`) }, kind === "page");
-      const roots = parseMarkup(html);
+      const parsed = parseMarkup(html);
+      const roots = options.dotGrids === false ? parsed : collapseDotGrids(parsed, liveEffectorLayers);
       // (a layer that is hidden at a breakpoint draws nothing there)
       if (roots[0]) {
         if (kind === "page") normalizeRoot(roots[0]);
@@ -295,6 +300,10 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
       }
     }
 
+    const exportedDrivers = exportableDrivers(doc).drivers;
+    const drivenLayerIds = exportableProps(doc).layerIds;
+    const viewLayerIds = viewLayerIdsOf(exportedDrivers);
+    const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
     const nodeOfLayer = new Map<string, ENode>();
     const finalize = (nodes: ENode[]): ENode[] =>
       nodes.map((n) => {
@@ -302,10 +311,18 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         const key = keyOf.get(n)!;
         const attrs = { ...n.attrs };
         const layerId = attrs["data-element-id"];
+        const copyOf = attrs["data-repeat-of"];
+        const copyIndex = attrs["data-repeat-copy"];
         // the editor's own attributes never reach shipped code
         for (const name of EDITOR_ONLY_ATTRIBUTES) delete attrs[name];
         const cls = classOf.get(key);
         let out: ENode = { ...n, attrs, style: [], children: finalize(n.children), ...(layerId ? { layerId } : {}) };
+        // a layer a driver moves is found by the driver script through this mark (only layers drivers carry get one)
+        if (layerId && drivenLayerIds.has(layerId)) out.attrs["data-ll"] = layerId;
+        // a layer a driver reads the scroll position of (view) is found by its box
+        if (layerId && viewLayerIds.has(layerId)) out.attrs["data-ll-view"] = layerId;
+        // and so is each copy of a layer whose copies react to the pointer or the scroll
+        if (copyOf && copyIndex && liveEffectorIds.has(copyOf)) out.attrs["data-ll-copy"] = `${copyOf}:${copyIndex}`;
         if (cls) out.attrs.class = cls;
         if (layerId) nodeOfLayer.set(layerId, out);
         const layer: Layer | undefined = layerId ? layers[layerId] : undefined;
@@ -399,6 +416,7 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
 import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
+import { exportableDrivers, exportableEffectors, exportableProps, viewLayerIdsOf } from "../runtime/drivers";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";
