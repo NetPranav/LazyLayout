@@ -198,11 +198,13 @@ import { buildSiteExport } from "../../site";
 import { setLayerPropsForTest } from "./linkFixture";
 
 describe("the export says what it leaves out", () => {
-  it("links and expressions are named in the warnings, not dropped silently", async () => {
-    const withLink = setLayerPropsForTest(doc, "a", { "link.1.target": "transform.rotate", "link.1.source": "b", "link.1.sourceProperty": "transform.rotate", "link.1.enabled": true });
-    const out = await buildSiteExport(withLink, { target: "html", styling: "css" });
-    assert.ok(out.warnings.some((w) => /links or expressions/.test(w)), out.warnings.join(" | "));
-    const clean = await buildSiteExport(doc, { target: "html", styling: "css" });
-    assert.ok(!clean.warnings.some((w) => /links or expressions/.test(w)));
+  it("a link or expression it cannot carry is named in the warnings, not dropped silently; one it can carry is not", async () => {
+    const cannot = setLayerPropsForTest(doc, "a", { "link.1.target": "typography.fontSize", "link.1.source": "b", "link.1.sourceProperty": "transform.x", "link.1.enabled": true });
+    const out = await buildSiteExport(cannot, { target: "html", styling: "css" });
+    assert.ok(out.warnings.some((w) => /only position, rotation, scale and opacity/.test(w)), out.warnings.join(" | "));
+    const can = setLayerPropsForTest(doc, "a", { "link.1.target": "transform.rotate", "link.1.source": "b", "link.1.sourceProperty": "transform.rotate", "link.1.enabled": true });
+    const ok = await buildSiteExport(can, { target: "html", styling: "css" });
+    assert.ok(!ok.warnings.some((w) => /link on|expression on/.test(w)), ok.warnings.join(" | "));
+    assert.ok(ok.files.some((f) => f.path === "lazylayout-drivers.js"), "it is exported");
   });
 });

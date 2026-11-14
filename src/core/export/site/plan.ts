@@ -296,7 +296,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     }
 
     const exportedDrivers = exportableDrivers(doc).drivers;
-    const drivenLayerIds = new Set(exportedDrivers.map((d) => d.layer));
+    const drivenLayerIds = new Set(exportableProps(doc).props.map((p) => p.layer));
     const viewLayerIds = viewLayerIdsOf(exportedDrivers);
     const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
     const nodeOfLayer = new Map<string, ENode>();
@@ -411,7 +411,7 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
 import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
-import { exportableDrivers, exportableEffectors, viewLayerIdsOf } from "../runtime/drivers";
+import { exportableDrivers, exportableEffectors, exportableProps, viewLayerIdsOf } from "../runtime/drivers";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";
