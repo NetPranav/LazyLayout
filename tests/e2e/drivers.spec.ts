@@ -94,6 +94,7 @@ test.describe("Drivers (D4)", () => {
     const designX = (await drawnBox(page, r.id))!.x;
     await page.getByRole("button", { name: "Add driver", exact: true }).click();
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
     const at = async (fx: number) => {
       await page.mouse.move(page0.x + page0.width * fx, page0.y + page0.height * 0.8, { steps: 6 });
@@ -117,6 +118,7 @@ test.describe("Drivers (D4)", () => {
     await expect(page.locator("[data-driver-id]")).toHaveCount(2);
 
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
     const target = { x: page0.x + page0.width * 0.7, y: page0.y + page0.height * 0.6 };
     await page.mouse.move(target.x - 80, target.y - 50, { steps: 4 });
@@ -392,6 +394,7 @@ test.describe("Drivers in the export (D4)", () => {
 
     // in the editor: over the layer it grows, off it it goes back
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const width = async () => (await drawnBox(page, r.id))!.width;
     const base = await width();
     const box = (await drawnBox(page, r.id))!;
@@ -440,6 +443,7 @@ test.describe("Drivers in the export (D4)", () => {
 
     const glow = () => page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first().evaluate((e) => (e as HTMLElement).style.getPropertyValue("--glow"));
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
     await page.mouse.move(page0.x + page0.width * 0.05, page0.y + page0.height * 0.8, { steps: 5 });
     await expect.poll(async () => Number(await glow())).toBeLessThan(0.15);
@@ -476,6 +480,7 @@ test.describe("Drivers in the export (D4)", () => {
     await page.getByRole("button", { name: "Look at the pointer", exact: true }).click();
     await expect(page.locator("[data-driver-id]")).toContainText("Look at pointer");
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const el = page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first();
     const angle = () =>
       el.evaluate((e) => {
@@ -511,6 +516,7 @@ test.describe("Drivers in the export (D4)", () => {
     await expect(page.locator("[data-driver-id]")).toHaveCount(2);
 
     await page.getByText("Motion", { exact: true }).first().click();
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__); // the engine (and its pointer listeners) is in
     const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
     const target = { x: page0.x + page0.width * 0.6, y: page0.y + page0.height * 0.5 };
     await page.mouse.move(target.x - 60, target.y - 40, { steps: 3 });
