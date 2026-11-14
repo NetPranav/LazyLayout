@@ -182,6 +182,7 @@ const LAYOUT = section("layout", "container_layout");
 const FLEX = section("container_layout");
 const BUTTON = only("button", "fab");
 const IMAGE = only("image");
+const TEXT_ONLY = only("text");
 const SURFACE = only("container", "rectangle", "ellipse");
 /** Parametric shape archetypes (Phase 7.6). */
 export const SHAPE_ARCHETYPES = ["rectangle", "ellipse", "line", "polygon", "star", "arrow"] as const satisfies readonly ArchetypeId[];
@@ -403,7 +404,9 @@ const DEFS = {
   "matte.mode": typed(oneOf(["none", "alpha", "alphaInverted", "luma", "lumaInverted"], "none", null, "paint", VISUAL)),
   "matte.showSource": typed(flag(false, "paint", VISUAL)),
   /** What a group was made for, so commands find it by this mark rather than by its name: `letters` (a text split into letters). */
-  "group.role": oneOf(["none", "letters"], "none", null, "none", only("container")),
+  "group.role": oneOf(["none", "letters", "words", "lines"], "none", null, "none", only("container")),
+  /** The text a letters, words or lines group was split from (Design track D12): what Re-detect puts back before it splits again. */
+  "split.source": str("", null, "none", only("container")),
   "filter.blur": px(0, "filter", "paint", VISUAL),
 
   // --- Typography (CONVENTIONS §4.2) ----------------------------------------
@@ -623,6 +626,19 @@ const DEFS = {
   "speed.blur": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 0.2 }),
   "speed.ref": ranged(num(1200, null, "paint", VISUAL, false), { min: 1, max: 20000 }),
   /** Smooth scrolling of the exported page (Design track D14): seconds to catch up with the wheel; 0 is the browser's own. Set on a page frame. */
+  /** Text motion (Design track D12): what a text shows as `text.fxProgress` goes 0 to 1; see `core/text/textFx.ts`. */
+  "text.fx": oneOf(["off", "scramble", "typewriter", "rotate", "countup"], "off", null, "none", TEXT_ONLY),
+  "text.fxProgress": ranged(num(1, null, "none", TEXT_ONLY, true), { min: 0, max: 1 }),
+  "text.fxSeed": ranged(num(0, null, "none", TEXT_ONLY, false), { min: 0, max: 100000, integer: true }),
+  "text.fxCaret": flag(false, "none", TEXT_ONLY),
+  "text.fxWords": str("", null, "none", TEXT_ONLY),
+  "text.fxDecimals": ranged(num(0, null, "none", TEXT_ONLY, false), { min: 0, max: 8, integer: true }),
+  /** Variable-font axis animation (Design track D12): the axis tag (wght, wdth, slnt, opsz) and its value. */
+  /** Gradient sheen (Design track D12): a band of light crossing the text, 0 to 1; below 0 is off. */
+  "text.sheen": ranged(num(-1, null, "none", TEXT_ONLY, true), { min: -1, max: 1 }),
+  "text.sheenColor": str("#ffffff", null, "none", TEXT_ONLY),
+  "text.axis": str("", null, "none", TEXT_ONLY),
+  "text.axisValue": ranged(num(400, null, "none", TEXT_ONLY, true), { min: -1000, max: 1000 }),
   "scroll.smooth": ranged(num(0, null, "none", ALL, false), { min: 0, max: 2 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),

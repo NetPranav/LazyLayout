@@ -4,6 +4,8 @@ import { clampText } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
 import { textTypography } from "./textStyle";
 import { a11yAttrs } from "../a11y";
+import { textFxOf, textFxText } from "../../text/textFx";
+import { sheenBackground, variationSettings } from "../../text/axis";
 import { useTextFillStyle } from "../paintStyle";
 import { mixWithBlack } from "../../paint/shade";
 import { runsOf, type TextRun } from "../../text/runs";
@@ -19,6 +21,8 @@ export function runStyle(run: TextRun, hasFill = false): React.CSSProperties | u
   if (run.color && !hasFill) style.color = run.color;
   return Object.keys(style).length > 0 ? style : undefined;
 }
+
+const SR_ONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, margin: -1, padding: 0, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 };
 
 export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nodeRef }) => {
   const textFill = useTextFillStyle(layer, resolved);
@@ -51,7 +55,19 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const chosenSpace = layer.properties["typography.whiteSpace"];
   const space = chosenSpace === "nowrap" || chosenSpace === "pre" || chosenSpace === "normal" ? chosenSpace : null;
   const ellipsis = layer.properties["typography.textOverflow"] === "ellipsis";
-  const content = paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!, Boolean(textFill)) : text;
+  // Design track D12: scramble, typewriter, rotating words and count-up. The shown text is a function of the progress; a screen reader
+  // reads the full text once (the shown text is hidden from it) and the engine rewrites only the `data-fx` span.
+  const axisSettings = variationSettings((p) => resolved.get(p)) ?? undefined;
+  const sheen = textFill ? null : sheenBackground((p) => resolved.get(p));
+  const fx = textFxOf((p) => resolved.get(p));
+  const shownText = fx ? textFxText(text, fx) : null;
+  const plainContent = paragraphs ? paragraphs.render(styled ? allRuns : [{ text }], sizing === "autoWidth" ? "pre" : "pre-wrap") : styled ? runsContent(runs!, Boolean(textFill)) : text;
+  const content = fx && !paragraphs ? (
+    <>
+      <span data-fx="" aria-hidden="true">{shownText}</span>
+      <span style={SR_ONLY}>{text}</span>
+    </>
+  ) : plainContent;
   // Extruded depth: copies of the words behind them, each a step further back. Part of the text itself, so they move,
   // recolour and animate with it (and a word with depth is still one layer).
   const depth = ctx.inMeshTile ? 0 : resolved.num("text.depth", 0);
@@ -68,6 +84,8 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         margin: 0,
         ...textTypography(resolved),
         ...(textShadow ? { textShadow } : {}),
+        ...(axisSettings ? { fontVariationSettings: axisSettings } : {}),
+        ...(sheen ? { backgroundImage: sheen, WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" } : {}),
         // (paragraph blocks keep their own white space; between them it collapses, so an export's indentation adds no lines)
         whiteSpace: paragraphs ? "normal" : space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
         overflowWrap: sizing === "autoWidth" || space === "nowrap" || space === "pre" ? "normal" : "anywhere",
