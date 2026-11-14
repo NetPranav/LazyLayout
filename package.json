@@ -29,6 +29,7 @@
     "check:roadmap-order": "tsx scripts/check-roadmap-order.mts",
     "check:roadmap-3d": "tsx scripts/check-roadmap-3d.mts",
     "check:design-track": "tsx scripts/check-design-track.mts",
+    "check:release-plan": "tsx scripts/check-release-plan.mts",
     "changelog:fold": "tsx scripts/fold-changelog.mts",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "demo": "playwright test -c playwright.demo.config.ts"

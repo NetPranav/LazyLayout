@@ -61,6 +61,9 @@ jobs:
       - name: Roadmap order (Phase 13, Law 18)
         run: npm run check:roadmap-order
 
+      - name: Release plan (ROADMAP v5, Law 18)
+        run: npm run check:release-plan
+
   # ROADMAP Phase 4.1 — the Phase 3 and Phase 4 browser gates, in CI, on
   # every push/PR, on Chromium, Firefox and WebKit (playwright.config.ts).
   # Run in parallel across browsers to reduce wall-clock execution time.

@@ -20,7 +20,7 @@ Next free number: **0026** (0008 is the threat model and 0009 the render host; 0
 | 0008 | A | Threat model for the stage and user content (Phase 16) | |
 | 0009 | A | Render host: live DOM frames, no HTML strings (Phase 18) | |
 | 0014 | A | MCP bridge: a local MCP server paired with an open editor tab (Phase 50) | |
-| 0015 | A (proposed) | Path engine: curve-exact booleans and offsets (Phase 103) | |
+| 0015 | C | Path engine: curve-exact booleans (Phase 103); written 2026-11-14 | |
 | 0016 | unassigned | Scene rasteriser: any layer to pixels (Phase 172) | |
 | 0022 | A | Export tiers and the scene IR: zero-script, micro, full (ROADMAP_3D 3D-192) | |
 | 0023 | A | AI services and privacy: browser and server models, one gateway (ROADMAP_3D 3D-201) | |

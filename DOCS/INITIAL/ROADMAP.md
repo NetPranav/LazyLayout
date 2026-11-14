@@ -1,131 +1,233 @@
-# IMPLEMENTATION ROADMAP — v4 (Sequential)
+# IMPLEMENTATION ROADMAP — v5 (Releases)
 
 ## Project Name: LazyLayout — AI-Native Motion Design Studio
-**Document Version:** 4.1.0
-**Date:** 2026-10-18 (v4.1: 2026-10-21)
-**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–52 are merged to `main` (#53 for 39–43, #57 for 44–49 and the FigCraft port, #58 for 50, #59 for 51, #60 for 52) but their rows still say 🚧 until someone marks them ✅ once CI on `main` is green; 52 is merged (#60) but stays 🚧: its manual run and doc rewrites are not done. **Lane B:** Phases 53–63 ✅; 64–68 are merged to `main` (#55; 🚧, and Phase 68 is only partly done, see its entry); Phase 81 (needs only 59) is merged (#56), fallback path only. **Lane B, 2026-11-11:** Phases 69–73 are merged (#65, #73, #74, #76; all 🚧, because GitHub Actions has been blocked by billing since 2026-11-06 and no CI run on `main` has been green since). **Next: Phase 74** (Lane B, needs 73). Lane A is wiring Stage 2 into the rebuilt editor (`DOCS/UI/WIRING-53-80.md`; PR #86 covers 64–71). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
+**Document Version:** 5.0.0
+**Date:** 2026-11-14
+**Status:** Active. **R0 (Solid ground) is the active release.** For live numbers run `npm run check:release-plan`.
 **File Location:** `DOCS/INITIAL/ROADMAP.md`
-**Supersedes:** v3.3 (91 phases, run through a separate order file). v3.3 is kept unchanged as `ROADMAP_v3_ARCHIVE.md` for its progress logs, amendments and evidence. `order.md` is retired: in v4, **the phase number is the order**.
-**Inputs:** `PRD.md` v2.4, `AUDIT.md`, the grammar (`lazylayout_element_grammer.md` v0.3), `ANIMATION_PROPERTIES_AND_ENGINE_SPECIFICATION.md`, `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md`, and the World Environment properties in `action working.md`.
+**Supersedes:** v4.1 (277 phases worked in number order, with the Surfaces and Design tracks pulled forward and `ROADMAP_3D.md` running its own order). v5 changes **the order of work, the scope that is committed, and the rules**. It does not change what a phase builds: every phase keeps its number, its entry, its "Was" line and its history. The v4.1 text of §0–§4 is in git history (commit `0f4cc84`); v3.3 is kept as `ROADMAP_v3_ARCHIVE.md`.
+**Inputs:** `PRD.md` v2.4, `AUDIT.md`, `AUDIT_ISSUES.md`, `BUSINESS/COMPETITIVE_ANALYSIS.md`, the owner's four cases (`ROADMAP_3D.md` §0a), and the audit of the repository on 2026-11-14 (§1).
 
 ---
 
-## 0. How to Use This Roadmap
+## 0. The goal, and how to use this roadmap
 
-> **2026-11-13:** Lane A's next work is the **Design master track (D1–D21)**, pulled forward ahead of the number order, as the Surfaces track was. The anime studio in ROADMAP_3D is parked as a to-do.
+### 0.1 The goal
 
-1. **Take the lowest-numbered phase that isn't ✅.** There is no other order to look up.
-2. **A phase only needs lower-numbered phases.** Every "Needs" line points backwards. `scripts/check-roadmap-order.mts` checks this (Law 18), so the order can't silently break when phases are added.
-3. **Every stage ends with a gate you can try in the website.** If a stage gate passes, that stage's promise is true in a real browser and a real build, not just in tests.
-4. **Every phase from 13 on says what changes on screen** ("You'll see"). If a phase can't name something a user sees or does, it is infrastructure, and at most two of those may run in a row (Law 19).
-5. **Status:** ✅ gate passed in CI · 🚧 in progress · 📋 not started. Mark a phase ✅ in the index (§5) and in its own entry when its gate passes, and add a dated line to `CHANGELOG.md`.
-6. **"Was" names the v3 phase(s)** the work came from, so audit IDs, decision records, commit messages and `TODO(P7)`-style comments stay traceable. The full crosswalk is §7.
-7. **Working with several people:** someone may start a later phase early only if every phase in its "Needs" line is ✅. The number order stays the default. Since 2026-10-18 two people work in parallel lanes, **Lane A** (Phases 13–52) and **Lane B** (Phases 53–102); the lanes, the points where B waits on A, and the daily-merge workflow are in `DOCS/TEAM/COLLABORATION.md`.
+> **Interactive motion, designed on a canvas, that ships as your website's own code.**
+
+A person designs a component or a page, animates it on a timeline, makes it react to the pointer, to scroll and to touch, and exports plain code they own: no vendor runtime, and proof that the export matches the editor. AI builds the first draft and the person finishes it by hand. This is the one place where no competitor covers every part (`BUSINESS/COMPETITIVE_ANALYSIS.md` §5), and everything in this roadmap is ordered by how directly it serves that sentence.
+
+The owner named four cases the studio must make (2026-11-13). They are the order of the product:
+
+| Case | What a person makes | Release |
+|---|---|---|
+| **1** | A static or reactive component built from shapes and text: hover, press, pointer, scroll. Exported with no runtime. | **R1**, opened to the public in **R2** |
+| **2** | A fully 3D element, the foil button, lit by a light that follows the pointer across the page. Then the watch page. | **R3**, **R4** |
+| **3** | A photo with images and text corner-pinned, tracked and wrapped on its surface. | Later, theme L2 |
+| **4** | Anime: looks 2D, moves with 3D depth. | Later, theme L10 (parked by the owner on 2026-11-13) |
+
+### 0.2 How to use this roadmap
+
+1. **Work only in the active release.** The active release is the first one in §2 that is not finished. `npm run check:release-plan` names it.
+2. **Inside the release, take any work package whose Needs are ✅.** Packages in one release can run side by side; phases inside a package go in the order listed.
+3. **A release ends at its gate.** The gate is a list of things a person does in the real editor and the real export, plus CI. When the gate passes, tag the commit, and only then open the next release.
+4. **Later is not a queue.** The Later themes (§2) are everything else in the catalogue. Nothing in Later is started. At each gate the next release is cut from Later, with its real dependencies checked then.
+5. **Scope changes at gates only, one in and one out** (Law 22). A new idea goes into a Later theme the day it is had, not into the active release.
+6. **Status:** ✅ its gate passed in CI on `main` · 🚧 started, or built with a named gap · 📋 not started · ⏸ deferred. A 🚧 phase that belongs to a later release is **frozen**: its code stays, and nobody adds to it until its release is active.
+7. **The phase catalogue is §5 onward** (the index, then every entry) and `ROADMAP_3D.md`. A phase's **Needs** line names real dependencies only. v4's rule that the phase number is the order is retired: the order is §2.
+8. **Who builds what:** the lanes, branches and PR rules are in `DOCS/TEAM/COLLABORATION.md`. Each work package has one owner lane, agreed when the release opens.
 
 ---
 
-## 1. Where the Project Really Is (audited 2026-10-18)
+## 1. Where the project is (audited 2026-11-14)
 
-### 1.1 Measured on `main` @ `4c97bfb` (2026-10-17)
+### 1.1 Measured on `main` @ `0f4cc84`
 
 | Check | Result |
 |---|---|
 | `tsc --noEmit` | 0 errors |
-| ESLint | 0 errors, 437 warnings (budget 463) |
-| Unit tests (`npm run test:unit`) | 1,365 tests: 1,362 pass, 0 fail, 3 skipped (edition-gated) |
-| Browser tests | 11 Playwright tests in 5 specs, plus the export harness (last green in CI per the v3 logs; not re-run for this audit) |
-| Source size | ~108,000 lines of TS/TSX in `src/`, plus ~21,000 lines of tests |
+| Unit tests | 3,889 tests: 3,884 pass, 3 skipped (edition-gated), 2 fail on Windows only (two source-scanning tests compare paths with `/`). The `verify` job is green in CI. |
+| Browser tests (CI run of 2026-11-14) | Chromium: 419 pass, 4 fail, 78 skipped. Firefox: 408 pass, 14 fail, 79 skipped. WebKit: 405 pass, 15 fail, 81 skipped. |
+| CI on `main` | **Red since 2026-11-03.** About 100 commits have landed on `main` since. |
+| Skipped browser tests | 74 `test.fixme` and 7 `test.skip` |
+| `AUDIT_ISSUES.md` | 50 issues, all Open; 7 of them severity H (data loss, a stuck editor, a corrupt document) |
+| Source size | About 290,000 lines of TS/TSX in `src/` (core 109,000; new editor 97,000; legacy editor 67,000), plus about 64,000 lines of unit tests and 21,500 lines of browser tests |
+| AI | No model is called anywhere in `src/`. The AI code is offline parsers, plus the local MCP bridge (Phase 50). |
 
-### 1.2 What is done
+### 1.2 What is true today
 
-12 of v3's 91 phases are complete (v3 1–9, 41, 42, 46), and v3 43 is half done. In v4 they are **Phases 1–12** (Stage 0), and Phase 13 is in progress. They delivered:
-- one document model (MDM schema v5) with 216 canonical property paths, real geometry on every layer, compositions with nesting, and the types for every later feature (bindings, surfaces, tapes, graphs, helpers, pins, splits, fields, colliders, bodies);
-- an executable rules engine compiled from the grammar (432 matrix assertions), with engine routing that never needs GSAP;
-- a deterministic evaluation kernel (`evaluate()`), with easing checked against real GSAP output and springs checked against real Motion output;
-- patch-based undo with gesture transactions, IndexedDB autosave, crash recovery and `.lazy.json` files;
-- CI, a three-browser Playwright harness, an export build harness and pixel parity;
-- a small, split store, and a command registry with a focus model.
+- **The foundation is done and it is good** (Stage 0): one document model, a rules engine, a deterministic `evaluate()` kernel, patch-based undo, autosave, a three-browser harness and export parity.
+- **The design tool is built** (Stage 1, Phases 13–51 ✅). Its gate, Phase 52, is not passed: no person has recorded the manual run, and three Stage 1 features cannot be reached in the new editor (tokens and styles, variant authoring, opening and saving a project file: D22–D24).
+- **The animation engine is half built** (Stage 2). The clock, scheduler, adapters, timeline, keyframing, graph editor, parenting, masks, effects, links and expressions are merged (Phases 53–77). States, scroll choreography, text motion and **all of motion export (94–98) are not built in the numbered phases**.
+- **The Design track moved fast**: drivers, links, follow, cloners, effectors, scroll scenes, split text and speed effects (D3–D18) were built in two days, each with named gaps, and they already export to plain HTML.
+- **3D has started**: the GPU base, the 3D document and the viewport (3D-001 – 3D-030) are built with gaps.
 
-### 1.3 What the website shows today
+### 1.3 Why v4.1 could not reach the goal
 
-Checked by running the editor locally and screenshotting `/editor`:
-- **Works:** the editor shell (header, workspace tabs, docked panels, command palette, status bar), the dotted canvas with pan and zoom, the World Environment inspector, undo/redo, autosave, the showcase demo.
-- **Still the old system:** the stage is the v1.1 HTML-string iframe (`srcDoc`), and layers are laid out by flexbox, not by their geometry. The timeline is the legacy Sequencer with its own clock. The Content Browser's animation panel keeps tracks in local React state (AUD-39). The Code view doesn't show the document's animation (AUD-40).
-- **Not there yet:** on `main`, only the Select and Pan tools work. The Pencil, Text, Wire, Shapes, Components and Assets buttons do nothing. There are no transform handles, no dragging of layers on the canvas, and the Details panel's Position and Size fields are placeholders.
+| Problem | Evidence | Fixed in v5 by |
+|---|---|---|
+| **The plan grew faster than the work.** | 91 phases in v3.3, 202 in v4.0, 277 in v4.1, then 227 for 3D and 24 for Design: about 500 in seven weeks. In the same weeks the count of ✅ phases went from 12 to 75. | A fixed scope per release, and one in, one out (Law 22). |
+| **The order changed three times in one week.** | Surfaces (2026-11-11), 3D (2026-11-11) and the Design track (2026-11-13) were each pulled ahead of the number order. | One active release at a time (Law 21). |
+| **The public beta was at the end.** | Phase 266 of 277. Security, real devices and the model integration all came after characters and 3D. | The beta is R2, straight after the first complete product. |
+| **Needs were a chain, not dependencies.** | Law 18 made each phase need the one before it, so reduced motion "needed" the effect library, and the model integration "needed" the 3D gate. | Needs name real dependencies; the checker tests the release order against them. |
+| **`main` is red and work merges on it.** | §1.1. The 3D roadmap said "do not wait for CI". | Green `main` is a law again (Law 23), and R0 exists to get there. |
+| **No person checks the result.** | One PR added 36,000 lines for 29 phases in a day. The gates that need a person (Phase 52's manual run, D21) are the ones not done. | Every release gate is run by a person who did not build it (Law 24), and a PR holds one work package (Law 25). |
+| **Two editors.** | The legacy editor (67,000 lines) still ships; engine features draw on the canvas with no controls in the new editor (`DOCS/UI/WIRING-53-80.md`). | R0 closes the wiring gaps; R2 retires the legacy editor (Phase 263). |
 
-### 1.4 Built, but invisible
+### 1.4 Will following this roadmap reach the goal?
 
-| Built | Used by the website today |
-|---|---|
-| MDM v5, geometry, 216 property paths | Partly: the stage ignores geometry |
-| Rules engine (`rules.canAdd`, `validate`, `route`) | In 3 panels |
-| Evaluation kernel (`evaluate()`) | **Not imported by any editor file** |
-| Compositions, markers, precomps | Nothing shows them |
-| Track X / Track K types (bindings, helpers, splits …) | No runtime yet |
-
-### 1.5 Why it feels like nothing moved, and how much should be on screen
-
-The v3 plan built **inside out**, which was right for the foundations: the model, rules and maths are the hardest parts to change later. But its order put the first phase that changes the canvas (v3 48, the new renderer) at step 17 of 93, and the Figma-style stage (v3 20) at **step 48 of 93**. All 13 finished steps were model, store, rules and maths work. None of it can show on screen until a renderer and a viewport consume it.
-
-With the same 13 phases of effort in a viewport-first order, the stage would already render from geometry, and you would have selection, move/resize handles and a synced layers panel. In v4 that point is **Phase 27**, 15 phases from now, and every one of those phases changes something you can see except Phase 16 (a short threat-model document).
-
-**Progress in numbers:** 12 of 202 phases (6%) at this audit; v4.1 has 277 phases (§2). By difficulty it's better than the count suggests, because what everything else stands on is done and tested.
-
-### 1.6 Unmerged work
-
-Branch `phase-43-command-bus-finish` (last commit 2026-10-14) holds about 770 lines that are not on `main`: Tier A canvas tools on the old stage (select, hand, frame, rectangle, ellipse, line, text, commits `7a97baa` … `5c020dd`) and the menus-through-the-command-bus work in progress (`0792374`). Phases 13, 24 and 25 reuse it instead of redoing it. The last commit on `main` (2026-10-17) deleted `DOCS/After/` and the archived Wasm sources.
-
-### 1.7 What v3.3 was missing for the product described
-
-| Gap in v3.3 | Fixed in v4 by |
-|---|---|
-| Phase numbers weren't the order, so a separate `order.md` was needed. It also recorded 5 places where v3's own stage table contradicted the dependencies | Law 18: numbers are the order, checked by a script |
-| Basic Figma editing was never planned: copy/paste, duplicate, group, align and distribute, z-order, inline text editing, rulers, image crop, multi-selection editing | 28–31, 33–35, 37 |
-| Components and variants, core to Figma, were deferred to Release 2 | 46–47 (design), 80 (animated variants) |
-| Nothing could be exported until the whole motion pipeline existed | 49: static export at the end of Stage 1 |
-| The pen tool and vector editing came very late (v3 Stages 3 and 7) | 39, 40 |
-| Fonts lived inside the text-motion phase | 38 |
-| No MCP server, so Claude couldn't drive the editor | 50 (local MCP), 250 (full agent parity), 269 (remote MCP), and Law 20 |
-| Keyboard interactivity was a single `key` event in Blueprints | 133 (keyboard signals), 146 (keyboard and focus interactions) |
-| 3D was a single phase (v3 18) | Stage 6: 23 phases (v4.1) |
-| No on-ramp for people who already know Figma or After Effects | 251 (familiar keymaps), 252 (Figma import), 253 (After Effects import via Lottie) |
-| Legacy systems were removed in one late phase (v3 57), so old and new ran side by side for most of the project | Each phase that replaces a system deletes the old one (18, 56, 68 …); 263 is the final grep gate |
-| A few v3 decision-record numbers clashed with records that already exist (`0004`, `0005`, `0007`) | New records are numbered from `0008` (§6, "Decision records") |
-
-### 1.8 Will following this roadmap produce the engine?
-
-It covers everything the PRD, the grammar, both engine specs and the product description ask for, every phase has a real-environment gate, and the order is machine-checked. What a plan can't promise: phases differ in size, the usability gates need real people, and the first version of many gates will surface problems no document can predict (text measurement, physics feel, browser differences, GPU drivers). The protection against that is structural: **every stage ends with a website you can use**, so a wrong turn shows up within one stage instead of at the end.
-
-### 1.9 three.js: no custom 3D engine needed
-
-`three` 0.186.1, `@react-three/fiber` 9.8.1 and `@react-three/drei` 10.7.8 are **MIT-licensed** (checked in `node_modules` on 2026-10-18). MIT allows commercial use, modification and redistribution with the notice kept. So the "build our own three.js" stage isn't needed. Stage 6 builds the 3D *editor* on top of three.js instead. The only engine with a licence problem is GSAP (`LICENSES.md` GATE-01), which is already kept out of the editor.
+Releases R0 to R2 reach the goal in §0.1 for case 1, in public, with about 60 phases, half of them already built with named gaps. R3 and R4 add case 2 and the watch page. That is the part this roadmap commits to. The rest of the catalogue (about 300 phases) is kept and sorted into themes, and is not promised: a team of three cannot build Figma, After Effects, Blender and Rive at once, and no plan should say it can. What protects the goal is structural: **every release ends with something a stranger can use**, so a wrong turn shows up in weeks.
 
 ---
 
-## 2. The Stages at a Glance
+## 2. The release plan
 
-| Stage | Phases | Count | At the stage gate, a user can… |
-|---|---|---|---|
-| **0 · Foundation** ✅ | 1–12 | 12 | (no new UI) One document model, rules engine, evaluation kernel, history and persistence, test harnesses |
-| **1 · Figma / Wix viewport** | 13–52 | 40 | Design a responsive, multi-page site with components on an infinite canvas (frames, shapes, pen, text, auto-layout, constraints, breakpoints, styles), export it to Next.js, Vite or HTML, and let Claude build on the canvas through MCP |
-| **2 · Animation grammar** | 53–102 | 50 | Animate anything on an After Effects-style timeline: keyframes, curves, states and transitions, scroll, text and SVG motion, parenting, masks, expressions, motion paths on the canvas. Export verified motion code, and render MP4, GIF or Lottie |
-| **3 · Design depth** | 103–131 | 29 | Merge shapes into live boolean groups or melt them together, build shapes with the Shape Builder, stack non-destructive modifiers and generators, give every fill its own blend mode and mask, use noise, pattern, mesh and live fills on shapes and text, draw tapered and pressure strokes, put text on paths, and place page layers in 2.5D space with a depth camera |
-| **4 · Interactive & complex animation** | 132–202 | 71 | Make anything react to the mouse, touch, scroll and keyboard. Add GPU backgrounds, particles, fluids and cursors. Compose interactions from helpers, splits, fields and physics. Wire logic as Simple rules or Blueprint graphs. Export with a small vendored runtime or an embed script. New in v4.1: every layer knows where it is and what is around it; gestures, dragging and carousels; joints and soft bodies; sound and haptics; any layer as a texture, outline or distance field; effect layers, liquid glass, 2D lights, deformation and fracture; scroll-scrubbed sequences and depth parallax |
-| **5 · Characters & rigging** | 203–217 | 15 | Rig a character with bones, meshes and IK, give it constraints and secondary motion, make its head follow the cursor and its body walk with the keys, blend states, blink and lip-sync, drive it from the webcam, and export it |
-| **6 · 3D** | 218–240 | 23 | Build 3D scenes with gizmos, GLTF models, materials, lights and cameras, animate them on the same timeline, make them react to the cursor and scroll, add 3D physics, inflate any vector into 3D, pose 3D skeletons with the Stage 5 tools, put real page layers inside 3D scenes, and export them |
-| **7 · AI & agents** | 241–250 | 10 | Prompt → design, animation, effect or interaction; a co-pilot for edits; Claude can do everything the UI can through MCP |
-| **8 · Easy for everyone** | 251–258 | 8 | Use Figma or After Effects shortcuts, import Figma files and After Effects animations, draw rough shapes that become clean ones, and finish in a 3-step Simple mode |
-| **9 · Production & public beta** | 259–266 | 8 | Use a secure, observable, real-device-tested, licence-clean public beta |
-| **10 · Sites & platform** | 267–276 | 10 | Sign in, share, use remote MCP, manage content collections and forms, export or deploy whole sites, pay for a plan (GA) |
-| **11 · Apps** | 277 | 1 | (Planning) Re-plan data, backend logic, collaboration and plugins after an honest audit |
+Each release has a promise, its work packages, a gate and a time budget. The **budget is proposed** and the owner confirms it when the release opens. When a budget runs out, a package moves to Later; the release is not stretched.
 
-**Total: 277 phases** (v4.1; v4.0 had 202). The order asked for: the viewport first, then the basic animation grammar, then design depth, then complex and interactive animation, then characters, then 3D.
+A package row lists its phases. Numbers are phases in this file, `D` and `S` are the Design and Surfaces tracks in this file, `3D-` is `ROADMAP_3D.md`. A range skips phases that are ✅. A pointer phase (its title says "→ …") is not listed: it is done where its target is done.
+
+<!-- release-plan:start -->
+
+### R0 · Solid ground
+
+**Promise:** what is on `main` works, and this roadmap tells the truth. No new features.
+**Budget (proposed):** 2 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R0.1 | **Stage 1 gate.** The four journeys pass in CI in three browsers, WebKit pan and zoom meets its number or the number is changed in writing, and a person records the manual run. | 52 |
+| R0.2 | **Stage 1 in the new editor.** Tokens, variables and styles manager; authoring variants and detaching an instance; opening and saving a project file. | D22 – D24 |
+| R0.3 | **Timeline and keyframing closed.** Each phase's named gap is built or moved to a Later theme in writing; the legacy animation panels are gone. | 64–71 |
+| R0.4 | **Rig and compositing closed, with controls.** Anchor points, parenting, masks and mattes, the effect stack, links and expressions each have their controls in the new editor (`DOCS/UI/WIRING-53-80.md`). | 72–77 |
+| R0.5 | **Scroll runtime.** The native path, pinned spacing, a scroll trigger from the UI, three browsers. | 81 |
+
+Work in R0 that is not a phase:
+
+- **Green `main`.** Every failing browser test in §1.1 is fixed, or deleted with the reason in the PR. The two Windows-only unit failures and the roadmap checkers pass on Windows and Linux.
+- **Skipped tests.** Each of the 74 `test.fixme` and 7 `test.skip` is fixed, deleted, or carries the phase that will turn it on.
+- **Severity H audit issues.** Issues 4, 7, 10, 21, 23, 24 and 33 of `AUDIT_ISSUES.md` are Solved, each with a test.
+
+**Gate R0** (a person other than the author checks each line):
+1. CI on `main` is green in Chromium, Firefox and WebKit for five merges in a row.
+2. Phase 52 is ✅, with the recorded manual run linked from its entry.
+3. The seven severity H issues are Solved.
+4. `npm run check:release-plan` shows R0 with nothing open.
+
+### R1 · The motion studio (case 1)
+
+**Promise:** design a component or a section, animate it on the timeline, make it react to hover, press, the pointer and scroll, and export it as plain code that matches the editor, with no script where the browser can do it alone.
+**Budget (proposed):** 6 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R1.1 | **Code freedom.** Style code per layer, per state and per breakpoint. | D3 |
+| R1.2 | **Drivers and relationships.** Driven by scroll, pointer, speed and time; parent, links and expressions; follow, pins and helpers; connect anything. | D4 – D7 |
+| R1.3 | **Repeat.** Repeater, cloner, fields and effectors. | D8 – D10 |
+| R1.4 | **States and transitions.** States, smart animate, animated variants, and the States panel in the new editor. | 78–80, D15 |
+| R1.5 | **Scroll.** The scroll scrubber and section choreography; scroll scenes; image sequences; smooth scroll and parallax. | 82, D11, D13, D14 |
+| R1.6 | **Text.** Accessible splitting and text motion. | 83, 84, D12 |
+| R1.7 | **Speed effects.** | D18 |
+| R1.8 | **Reduced motion and accessibility rules.** | 93 |
+| R1.9 | **Motion export.** The export architecture; React, Next and Vite; the export matrix in CI. | 94–96 |
+| R1.10 | **Small export.** The size doctrine and budgets, export tiers, and zero-script export for 2D reactions. | 3D-010, 3D-191 – 3D-193 |
+
+**The five reference recipes** (fixed for R1; the size gates of 3D-191 measure the same five):
+1. A button with hover, press and focus states, and a spring between them.
+2. A hero whose headline splits into words and reveals on scroll.
+3. A card that tilts toward the pointer, with a label pinned to a point on its image.
+4. A pinned scroll scene: a section holds for three screens while layers move at different depths.
+5. A grid of cloned dots that a field pushes away from the pointer, and that stretches with scroll speed.
+
+**Gate R1:**
+1. Each recipe is built from an empty document in the new editor, in 30 minutes or less, by a person who did not build the features it uses. The runs are recorded.
+2. Each recipe exports to plain HTML, Next and Vite. The export builds, has no LazyLayout import, and matches the editor at five times in three browsers.
+3. Recipes 1 and 2 ship no script. Every recipe is under its budget from 3D-191.
+4. The reduced-motion run shows no movement in any recipe.
+5. Five people outside the team build recipes 1 and 2 with no help. What stopped them is written down and fixed, or listed.
+6. `main` is green and R1 has nothing open.
+
+### R2 · Public beta
+
+**Promise:** anyone can open the studio, get a first draft from a sentence, finish it by hand, export it, and lose nothing they make.
+**Budget (proposed):** 4 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R2.1 | **AI first draft.** The model integration, the validation loop, prompt to design and motion as a diff the person approves, evals, and the co-pilot for edits. | 241–245 |
+| R2.2 | **Performance.** The performance lab, workers and the hot path. | 101 |
+| R2.3 | **Security and operations.** Hardening, error reporting and kill switches. | 259, 260 |
+| R2.4 | **Devices and licences.** The real-device matrix; licence and notices automation. | 261, 262 |
+| R2.5 | **One editor.** The legacy editor and what earlier phases left behind are removed, with grep gates. | 263 |
+| R2.6 | **Docs, journeys and the gate.** | 264–266 |
+
+**Gate R2:** Phase 266, scoped to what R0 to R2 built (its entry says how). The tag is `v0.2.0-beta`.
+
+### R3 · The foil button (case 2)
+
+**Promise:** turn any 2D shape into a real 3D object, give it a material and studio light, inflate it like a foil balloon, press it and see it dent, light it from the pointer anywhere on the page, and export it in a few kilobytes.
+**Budget (proposed):** 10 weeks. This is the largest release. If the budget runs out, the path tracer and baked lighting (3D-056, 3D-057) are the first to move to Later, with 3D-059 and the gate re-scoped in writing.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R3.1 | **Surfaces closed.** Height from the shape, material and light, creases, cloth at rest, content on a surface, press and ripple, export, the reference harness. | S1, S2, S3, S3b, S4, S4b, S5, S6, S7, S8, S9 |
+| R3.2 | **GPU base and the 3D document.** | 3D-002, 3D-006, 3D-011 – 3D-013 |
+| R3.3 | **Viewport, outliner and properties.** | 3D-015, 3D-018, 3D-019, 3D-021 – 3D-024 |
+| R3.4 | **First shapes.** Primitives, 3D text, Make 3D, the modifier stack, subdivision, solidify. | 3D-025 – 3D-032 |
+| R3.5 | **Look.** Materials, textures, decals, lights, shadows, the world, colour management, the real-time renderer. | 3D-033 – 3D-043 |
+| R3.6 | **Simulation and the pointer.** Replay, cloth, pins and pressure, collisions, raycast events, pointer forces, baking. | 3D-048 – 3D-055 |
+| R3.7 | **First ship.** Rendered view, baked lighting, the interactive runtime, 3D export v1, the reference harness, Gate M1. | 3D-056 – 3D-062 |
+| R3.8 | **Small export and the pointer light.** The micro-renderer, one chunk per element, size gates, the pointer light, touch and tilt, Gate A. | 3D-194 – 3D-200 |
+
+**Gate R3:** Gate M1 (3D-062), then Gate A (3D-200), each run by a person beside the owner's reference video.
+
+### R4 · The watch page
+
+**Promise:** the benchmark page. A 3D watch pinned for four screens turns with scroll while a ring of elements turns the other way; it comes apart into parts with labels that follow; words stagger in; a field of dots reacts to scroll speed.
+**Budget (proposed):** 2 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R4.1 | **Model import.** GLTF and GLB. | 3D-158 |
+| R4.2 | **3D parts.** Model parts and explode; labels that follow parts. | D19, D20 |
+| R4.3 | **The gate.** | D21 |
+
+**Gate R4:** D21: the owner builds the page from an empty document in under an hour; it holds 60 fps on the mid tier, works on touch and with reduced motion, and exports under its budget.
+
+### Later · Themes, not promises
+
+Everything else in the catalogue, sorted by theme. The order below is the order they will most likely be cut into releases, and it is decided again at each gate. Nothing here is started.
+
+| Theme | What it holds | Phases |
+|---|---|---|
+| L1 | **Motion depth** (the rest of Stage 2): SVG morph and stroke drawing, motion along paths, the Motion adapter, motion per breakpoint, page transitions, the Playground, the motion library, more export targets, GSAP export, video and audio, the render queue, the Stage 2 gate. | 85–92, 97–100, 102 |
+| L2 | **The photo studio** (case 3): the AI gateway, vision models, corner pin, tracking, cutout, a surface from a photo, text wrapped on it, relighting, Gate B. | 3D-201 – 3D-203, 3D-208 – 3D-215, D16, D17 |
+| L3 | **Interaction and logic** (Stage 4, first half): scene awareness, more inputs, the reactivity card, gestures, drag, carousels, state machines, data-driven layers, Blueprints, 2D physics, the rules editor, sound. | 134, 135, 140, 142, 143, 145–150, 153, 155, 156, 158–171, 3D-146 – 3D-148 |
+| L4 | **Sites and platform** (Stage 10): accounts, share links, remote MCP, collections, forms, whole-site export, billing, general availability. | 267–276 |
+| L5 | **Design depth** (Stage 3). **Open since 2026-11-14 as Lane C** (§2.1), built beside the active release: live booleans, the Shape Builder, path operations, modifiers, generators, paint and stroke depth, text on paths, 2.5D. | 104–109, 111–131 |
+| L6 | **GPU effects** (Stage 4, second half): the scene rasteriser, effect layers, liquid glass, 2D lights, deformation, fracture, cursors, the effect SDK and libraries, code components, the embed script, the Stage 4 gate. | 172, 176, 179–182, 185–187, 191–196, 198–202 |
+| L7 | **3D studio depth** (M2, M3 and M4 of the 3D roadmap): curves, depth of field, post, render to video, cameras, 3D keyframes, actions, 3D interaction, page layers in 3D, 3D export v2, the simplicity pass and its gates, live animation mixing. | 3D-074, 3D-090, 3D-092 – 3D-094, 3D-096 – 3D-116, 3D-149 – 3D-157, 3D-159, 3D-164 – 3D-169, 3D-171 – 3D-173, 3D-175 – 3D-190, 3D-227 |
+| L8 | **AI depth and easy for everyone** (Stages 7 and 8): the interaction builder, the effect author, references, full MCP parity, familiar keymaps, Figma and After Effects import, shape recognition, sketch to elements, recipes, Simple mode. | 246–258 |
+| L9 | **Characters** (Stage 5): puppet pins, reactive rigs, blend trees, auto-rig, faces, tracking as an input, rig export. | 209–217 |
+| L10 | **The anime studio** (case 4) **and everything deferred** in the 3D roadmap: edit mode, modifier depth, node materials, rigging and physics depth, the asset browser, instancing, the camera solve, toon and ink, twos and smears, shots. | 3D-063 – 3D-073, 3D-075 – 3D-089, 3D-091, 3D-095, 3D-117 – 3D-145, 3D-160 – 3D-163, 3D-170, 3D-174, 3D-207, 3D-216 – 3D-226 |
+| L11 | **Apps** (Stage 11): the After-track audit and re-plan. | 277 |
+
+<!-- release-plan:end -->
+
+### 2.1 Changes to the plan
+
+One line per change, newest first: the date, what moved in, what moved out, and who decided.
+
+| Date | Change | Decided by |
+|---|---|---|
+| 2026-11-14 | **Lane C opened by the owner:** Stage 3, Design depth (Phases 103–131, theme L5), is built now by a third lane, beside the active release. It is the one exception to Law 21; 3D (R3, R4) stays after the beta. | Owner |
+| 2026-11-14 | v5 written. The watch page gate (D21) no longer needs corner pin and tracking (D16, D17): the page does not use them. The Needs lines of Phases 93, 94, 95, 101, 241 and 259 now name real dependencies. | Proposed in the v5 PR; the owner decides by merging it |
 
 ---
 
 ## 3. Architectural Laws
 
-Binding for every phase. A gate that passes while breaking a law doesn't count. Laws 1–17 are v3's, shortened; the full text with examples is in `ROADMAP_v3_ARCHIVE.md` §2.
+Binding for every phase. A gate that passes while breaking a law doesn't count. Laws 1–17 are v3's, shortened; the full text with examples is in `ROADMAP_v3_ARCHIVE.md` §2. Laws 21–25 are new in v5 and are about how the work is run.
 
 1. **Inside-Out:** types and schema → rules → diagnostics → UI. No control before the rule that governs it.
 2. **One Document:** every surface reads and writes the MDM through one store API. No parallel models.
@@ -144,9 +246,14 @@ Binding for every phase. A gate that passes while breaking a law doesn't count. 
 15. **Deterministic Replay:** simulations, particles and stateful operators replay exactly from `(seed, input tape, fixed step)`.
 16. **Untrusted Code:** user code (code components, raw shaders, expressions, imported files) runs only inside its sandbox and never with the editor origin's privileges.
 17. **Visual First (No Maths):** everything can be authored without typing a number or formula: canvas handles, plain-language choices, feel controls (Bounce, Time, Smoothness, Strength, Variety), or ranges dragged over live meters. Pro mode shows the numbers.
-18. **Sequential (new in v4):** a phase's "Needs" list contains only lower phase numbers. The phase number is the execution order. `scripts/check-roadmap-order.mts` fails if any phase needs a later one.
+18. **Release order (v5; was Sequential in v4):** the order of work is the release plan in §2. A phase's "Needs" line names only real dependencies, and only lower phase numbers inside this file. `scripts/check-release-plan.mts` fails if a phase in a release needs a phase in a later release or in Later, or if any phase is in no package. `scripts/check-roadmap-order.mts` still checks that Needs point backwards.
 19. **Visible Progress (new in v4):** from Phase 13 on, every phase states what changes for a user ("You'll see"). Phases with nothing visible are infrastructure, and no more than two run in a row.
 20. **Agent Parity (new in v4):** every user action is a typed command on the command bus (Phase 13), and the MCP server exposes every command (Phases 50, 250). A CI test fails if a menu item, button, shortcut or palette entry has no command. This is what lets Claude do everything a person can do in the editor.
+21. **One release at a time (v5):** work happens in the active release only. A phase of a later release is not started, and one that is already 🚧 is frozen until its release is active. The owner may open the next release early only by closing the active one at its gate.
+22. **Fixed scope: one in, one out (v5):** the phases of a release are fixed when it opens. A phase enters a release only at a gate, or when another of about the same size leaves it, and the change is one line in §2.1. A new phase is added to the catalogue only inside a Later theme.
+23. **Green main (v5):** `main` is green in three browsers. A PR merges only when CI is green. If `main` turns red, the next merge is the fix, and nothing else merges before it. A test is never skipped to make CI green without the phase that will turn it back on.
+24. **A person at every gate (v5):** a release gate is run in the real editor and the real export by a person who did not build what is being checked, and the run is recorded. Tests support a gate; they are not the gate.
+25. **Reviewable size (v5):** a PR holds one work package at most, and each phase in it has its own commit and its own test evidence, so that a person can read what changed.
 
 ---
 
@@ -154,18 +261,22 @@ Binding for every phase. A gate that passes while breaking a law doesn't count. 
 
 A phase is **✅** only when:
 1. Every checklist item is `[x]`.
-2. Its "Done when" gate passes in CI, not only locally.
+2. Its "Done when" gate passes **in CI on `main`**, not only locally. (v5: this is true for `ROADMAP_3D.md` too; the rule "do not wait for CI" of 2026-11-12 is withdrawn now that CI runs again.)
 3. `tsc` has 0 errors, ESLint has 0 errors within the warning budget, all tests pass, and `next build` succeeds.
 4. Nothing regresses in the Playwright suite, the export parity suite, or (from Phase 101) the performance budget suite.
 5. The "You'll see" line is true in the running editor (or the exported build), checked by a Playwright test or a recorded run.
 6. Every command the phase adds is registered with a typed argument schema (Law 20).
-7. Docs are updated: this roadmap (index and entry), `CHANGELOG.md`, any spec or decision record it touches, and `AUDIT.md` for the IDs it closes.
+7. Docs are updated: this roadmap (index and entry), a changelog fragment, any spec or decision record it touches, and `AUDIT.md` for the IDs it closes.
 8. Any legacy code the phase replaces is deleted in the same phase, or the phase names the later phase that deletes it.
+9. It can be reached in the new editor (`/editor`). An engine feature with no control is 🚧, with the missing control named.
 
+A release is **done** only when every phase in it is ✅ and its gate in §2 has passed (Law 24).
+
+---
 
 ## 5. Phase Index (the tracking list)
 
-One row per phase, in execution order. Update the Status column together with the phase's own entry; `npm run check:roadmap-order` fails if they disagree or if any phase needs a later one.
+One row per phase, in catalogue order. **The order of work is the release plan in §2, not this list.** Update the Status column together with the phase's own entry; `npm run check:roadmap-order` fails if they disagree or if any phase needs a later one, and `npm run check:release-plan` fails if the release plan and the Needs disagree.
 
 **Stage 0 · Foundation (Phases 1–12)**
 
@@ -273,22 +384,22 @@ One row per phase, in execution order. Update the Status column together with th
 | 90 | Animation Playground | 89 | v3 24.0–24.3, 24.5 | 2 | 📋 |
 | 91 | Motion library infrastructure | 90 | v3 25.1, 25.2, 21.3, 22.4 | 2 | 📋 |
 | 92 | Library: text, SVG & component motion | 91 | v3 25.3 (waves 1, 3, 4) | 2 | 📋 |
-| 93 | Reduced motion & accessibility rules | 92 | v3 29.1, 29.3, 11.4 | 2 | 📋 |
-| 94 | Motion export architecture | 49, 93 | v3 27.1 | 2 | 📋 |
-| 95 | Motion export: React, Next & Vite | 94 | v3 27.2, 27.3, 29.2 | 2 | 📋 |
+| 93 | Reduced motion & accessibility rules | 79, 82, 84 | v3 29.1, 29.3, 11.4 | 2 | 📋 |
+| 94 | Motion export architecture | 49, 68 | v3 27.1 | 2 | 📋 |
+| 95 | Motion export: React, Next & Vite | 80, 82, 84, 93, 94 | v3 27.2, 27.3, 29.2 | 2 | 📋 |
 | 96 | Export matrix in CI | 95 | v3 27.4 | 2 | 📋 |
 | 97 | More export targets | 96 | v3 28 | 2 | 📋 |
 | 98 | GSAP as an opt-in export target | 97 | v3 14 | 2 | 📋 |
 | 99 | Video & audio layers | 36, 98 | v3 54.3, 54.4 | 2 | 📋 |
 | 100 | Render queue: video, GIF, image sequences & Lottie | 99 | v3 55 | 2 | 📋 |
-| 101 | Performance lab, workers & hot path | 100 | v3 56, 26.1–26.4 | 2 | 📋 |
+| 101 | Performance lab, workers & hot path | 96 | v3 56, 26.1–26.4 | 2 | 📋 |
 | 102 | Stage 2 gate: the animation journey | 53–101 | v3 58.2, 58.3, 58.4 | 2 | 📋 |
 
 **Stage 3 · Design depth (Phases 103–131)**
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 📋 |
+| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 🚧 |
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 📋 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
@@ -446,7 +557,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 241 | LLM integration layer | 240 | v3 30.1, 30.2 | 7 | 📋 |
+| 241 | LLM integration layer | 13, 50 | v3 30.1, 30.2 | 7 | 📋 |
 | 242 | Validation loop & offline provider | 241 | v3 30.3, 30.4 | 7 | 📋 |
 | 243 | AI builder: prompt → design and motion | 242 | v3 31 | 7 | 📋 |
 | 244 | AI evals & visual self-check | 243 | v3 33 | 7 | 📋 |
@@ -474,7 +585,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 259 | Security hardening | 258 | v3 80.3–80.5 | 9 | 📋 |
+| 259 | Security hardening | 16, 96, 241 | v3 80.3–80.5 | 9 | 📋 |
 | 260 | Observability & kill switches | 259 | v3 82 | 9 | 📋 |
 | 261 | Real-device & browser matrix | 260 | v3 84 | 9 | 📋 |
 | 262 | Licensing & compliance automation | 261 | v3 85 | 9 | 📋 |
@@ -1286,25 +1397,27 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** each passes the Playground sweep and the parity check against the kernel.
 
 ### Phase 93 · Reduced motion & accessibility rules
-**Needs:** 92 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 📋
+**Needs:** 79, 82, 84 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 📋
 - [ ] Every animation has a reduced-motion variant (generated from the spec's §9 policy: keep opacity and colour, drop movement, stop loops, disable scroll scrub), editable in Pro. Rules: flash limits, pause controls for loops over 5 s, visible focus, 44 px touch targets. The Playground toggle uses the variants.
 
 **You'll see:** a reduced-motion preview that shows exactly what those users get.
 **Done when:** the reduced-motion Playwright run shows no spatial movement in any library effect.
+**v5 (R1):** until the library (Phases 91 and 92) is built, "any library effect" reads "each of the five reference recipes" (§2, R1). The Playground toggle arrives with Phase 90; until then the toggle is in Preview.
 
 ### Phase 94 · Motion export architecture
-**Needs:** 49, 93 · **Was:** v3 27.1 · **Status:** 📋
+**Needs:** 49, 68 · **Was:** v3 27.1 · **Status:** 📋
 - [ ] Exporters read the document and routing decisions only (never UI state). The per-engine code generators move out of `MultiEngineAnimationRuntime` into the exporters.
 
 **You'll see:** nothing new (refactor); 95 builds on it.
 **Done when:** the static export (49) still passes the harness with the new architecture.
 
 ### Phase 95 · Motion export: React, Next & Vite
-**Needs:** 94 · **Was:** v3 27.2, 27.3, 29.2 · **Status:** 📋
+**Needs:** 80, 82, 84, 93, 94 · **Was:** v3 27.2, 27.3, 29.2 · **Status:** 📋
 - [ ] Clips, states, transitions, scroll, text and SVG motion, links and expressions export as idiomatic code (CSS / Web Animations / `motion/react`, chosen by routing), with `prefers-reduced-motion` handling, typed props and defaults, Prettier formatting, no `any`, and a README listing only the engines used. No LazyLayout imports.
 
 **You'll see:** the Code tab and the ZIP include your animations.
 **Done when:** every library effect and reference animation builds in the Next and Vite fixtures.
+**v5 (R1):** exports what R0 and R1 can author: clips, states, transitions, scroll, text motion, links, expressions and drivers. SVG motion joins the exporters with Phases 85 and 86. "Every library effect" reads "each of the five reference recipes".
 
 ### Phase 96 · Export matrix in CI
 **Needs:** 95 · **Was:** v3 27.4 · **Closes:** AUD-15, AUD-16, AUD-40 · **Status:** 📋
@@ -1312,6 +1425,7 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** export is trustworthy: what you see is what ships.
 **Done when:** the full matrix is green in nightly CI (PRD §11 criterion 5).
+**v5 (R1):** the matrix is the five reference recipes × {Next, Vite} × {Tailwind, CSS Modules}. Library effects join it in Phase 92.
 
 ### Phase 97 · More export targets
 **Needs:** 96 · **Was:** v3 28 · **Status:** 📋
@@ -1342,12 +1456,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a 5-second 60 fps composition renders to MP4 with frames matching `evaluate()` above a PSNR threshold; eligible Lottie output plays in `lottie-web` within 2% pixels.
 
 ### Phase 101 · Performance lab, workers & hot path
-**Needs:** 100 · **Was:** v3 56, 26.1–26.4 · **Closes:** AUD-13 · **Status:** 📋
+**Needs:** 96 · **Was:** v3 56, 26.1–26.4 · **Closes:** AUD-13 · **Status:** 📋
 - [ ] A worker pool (path morph matching, arc-length tables, spring baking, spatial index, thumbnails, waveforms), content-hash caches, no per-frame sorting, JSON or string parsing in `evaluate()`, frame telemetry in the status bar.
 - [ ] A browser benchmark harness (Playwright + DevTools tracing), per-animation performance class checked against traces, auto-fixes (`left/top` → `transform`, pre-blurred layers, path simplification), and a CI budget per library effect.
 
 **You'll see:** frame-time readout in the status bar; one-click performance fixes.
 **Done when:** a scripted 60-second editing session shows 0 main-thread tasks ≥ 50 ms; a layout-thrashing test animation is flagged and auto-fixed within budget; every library effect meets its budget in CI.
+**v5 (R2):** the CI budget covers the five reference recipes; library effects join it in Phase 92. The worker jobs for path morph and waveforms arrive with Phases 85 and 99.
 
 ### Phase 102 · Stage 2 gate: the animation journey
 **Needs:** 53–101 · **Was:** v3 58.2, 58.3, 58.4 · **Status:** 📋
@@ -1370,12 +1485,14 @@ The document and World Environment have their own stores, After-track actions mo
 > Order inside the stage: shapes (103–108) → modifiers and generators (109–112) → paint (113–123) → type and assets (124–126) → 2.5D (127–129) → export and the gate (130–131).
 
 ### Phase 103 · Curve-exact path engine
-**Needs:** 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Booleans, offsets and outlines computed on the Bézier curves themselves (curve–curve intersection, winding, exact splitting), so results keep curves as curves instead of Phase 40's polygons. Decision record 0015 (path engine): in-house, paper.js (MIT) or Skia PathKit (BSD, Wasm), chosen by accuracy, size and speed.
 - [ ] Phase 40's Union, Subtract, Intersect, Exclude and Flatten move onto it; their tests keep passing.
 
 **You'll see:** Union two circles and get a path with a handful of curve points, not hundreds of straight ones.
 **Done when:** 200 random boolean cases match a high-resolution polygon reference within 0.25 px, with at most twice the minimal number of nodes; Phase 40's tests pass.
+
+**Status check (2026-11-14), 🚧:** built (Lane C). `src/core/paths/curveRefit.ts` turns the polygon clipper's answer back into pieces of the input curves, with joints refined onto the true crossings; `booleanPaths`, `simplifyPath`, `arrangementFaces` and `unionFaces` return curves, so live boolean groups, the Shape Builder and the paint bucket get them too; Phase 40's `booleanLayers` moved onto it (a single outline stays an editable path with handles). Decision 0015 is written: in-house, no new dependency. Verified: 200 seeded random cases, every point within 0.25 px of the polygon reference (`curveRefit.test.ts`); a union of two circles is 6 to 10 curves and no lines; all 3,416 core unit tests pass; Phase 40's and the FigCraft port's browser tests pass in Chromium (25 of 25). **Not done:** the node bound checked is "no more than twice the input segments that show in the result", not a computed minimum; tangent and overlapping curves keep the polygon's vertex at the joint; Firefox and WebKit were not run. ✅ once it passes in CI on `main`.
 
 ### Phase 104 · Live boolean groups
 **Needs:** 46, 103 · **Was:** — (new in v4.1) · **Status:** 📋
@@ -1581,6 +1698,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 # SURFACES TRACK — pulled forward (Phases S1–S8)
 
+> **v5 (2026-11-14):** this track is scheduled by the release plan (§2). S1 – S9 are package R3.1, and they are frozen until R3 is the active release.
+
 > **Why here (2026-11-11, Lane A, by the project owner's priority):** the glossy "inflated" button (the collectui reference) can't be made from fills and shadows: it is light on a curved, creased surface that dents where it is pressed. These eight phases pull forward small, generic parts of Phases 175 (distance fields), 182 (surfaces and lights), 223 (inflate) and 75/179 (displacement), and add three pieces no phase had: surface creases and wrinkles, pointer-driven surface physics, and a one-step reference image. They work on any shape or frame, not only buttons. They keep their **S** numbers so the 277 phases are not renumbered; when Stage 4 is built, 175/182/223 extend these instead of starting again. Rendering: one shared WebGL2 context for every surface, drawn into each surface's own 2D canvas (`DOCS/INITIAL/decisions/0018-surface-rendering.md`), so Law 13 holds until the Phase 173 compositor takes over. Stage 4+ is not assigned to a lane; Lane B is told in the PR.
 
 ### Phase S1 · Reference image
@@ -1661,6 +1780,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 # DESIGN MASTER TRACK — pulled forward (Phases D1–D21)
 
+> **v5 (2026-11-14):** this track is scheduled by the release plan (§2), not by the D number. D22 – D24 are in R0; D3 – D15 and D18 are in R1; D19 – D21 are R4; D16 and D17 are in Later (theme L2, the photo studio).
+
 > **Why here (2026-11-13, Lane A, by the project owner's priority):** the Design panel is about a fifth of what it must be (estimate of 2026-11-13: about 26% built and reachable, about 23% counting the controls that do nothing). The goal is a master tool for the most complex website animations, built by combining a few blocks: **drivers** (scroll, pointer, speed), **relationships** (parent, follow, links, opposite), **repeat** (cloners and effectors), **break apart** (split text, explode models), **choreography** (scroll scenes), **effects** (speed), **tracking**, and **code freedom** (write any CSS). The test is the watch page (D21). Like the Surfaces track, this track is **pulled forward** ahead of the number order. Numbered phases it takes over say *→ Design track D…* in the index. Lane B's phases in it (D11, D12, D15, and Main 99 for D17) stay Lane B's: agree before Lane A builds any of them.
 
 **Order:** D1 → D21. Lane B's items (D11, D12, D15) can run in parallel with Lane A's D3 – D10. `npm run check:design-track` checks this table against the entries.
@@ -1694,7 +1815,7 @@ The document and World Environment have their own stores, After-track actions mo
 | D19 | 3D model parts & explode | new (uses ROADMAP_3D 3D-158 import, 3D-033 materials, 3D-037 lights) | D4, 3D-158, 3D-033, 3D-037 | A | 📋 |
 | D20 | Labels that follow 3D parts | new | D19, D6 | A | 📋 |
 | | **Gate** |||||
-| D21 | Gate: the watch page | new | D1 – D20 | A | 📋 |
+| D21 | Gate: the watch page | new | D1 – D15, D18 – D20 | A | 📋 |
 | D22 | Variables, tokens & styles manager in the new editor | Main 45, 47 (core exists; no panel) | D1 | A | 📋 |
 | D23 | Variants & instances in the new editor | Main 46, 47 (core exists; authoring UI missing) | D1 | A | 📋 |
 | D24 | Open and save a project file from the new editor | Main 3, 36 (core exists; no UI) | D1 | A | 📋 |
@@ -1894,7 +2015,7 @@ The document and World Environment have their own stores, After-track actions mo
 ## Gate
 
 ### Phase D21 · Gate: the watch page
-**Needs:** D1 – D20 · **Was:** new · **Lane:** A · **Status:** 📋
+**Needs:** D1 – D15, D18 – D20 · **Was:** new · **Lane:** A · **Status:** 📋
 - [ ] The benchmark: a 3D watch pinned for four screens; it turns with scroll while a ring of elements turns the other way; then it explodes into parts with labels following; words stagger in; a dot field reacts to scroll speed. Built in about 10 steps, exported under its size budget.
 
 **You'll see:** the finished watch page, live.
@@ -2745,7 +2866,7 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** a real model builds the first version and helps refine it, always as a diff the user approves. Claude, through MCP, can do everything a person can do in the editor.
 
 ### Phase 241 · LLM integration layer
-**Needs:** 240 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 📋
+**Needs:** 13, 50 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 📋
 - [ ] A Next.js route handler calls the Claude API through `@anthropic-ai/sdk`; the key stays server-side. The model ID lives in one constant, checked against the current model lineup when this phase starts.
 - [ ] Schema-constrained output (the MDM JSON Schema and the command schemas from 13 as strict tool inputs); edits are MDM patches, graphs are `.nls`; streaming; prompt caching of the stable prefix; vision input; graceful handling of every stop reason.
 - [ ] The route is private (developer use) until Phases 259 and 260.
@@ -2886,7 +3007,7 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** a public beta that is secure, observable, tested on real devices and licence-clean, with the legacy systems gone.
 
 ### Phase 259 · Security hardening
-**Needs:** 258 · **Was:** v3 80.3–80.5 · **Closes:** AUD-51 (security) · **Status:** 📋
+**Needs:** 16, 96, 241 · **Was:** v3 80.3–80.5 · **Closes:** AUD-51 (security) · **Status:** 📋
 - [ ] A strict CSP with nonces and Trusted Types; sanitisers for SVG, GLTF and fonts re-verified; GPU compile limits and a watchdog; AI and MCP routes with authentication, authorisation, rate limits and prompt-injection handling for references; dependency audit, lockfile integrity and secret scanning in CI; exported code with no `eval`, no inline handlers, and working under a CSP.
 
 **You'll see:** nothing new; everything keeps working under a strict security policy.
@@ -2905,6 +3026,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** "tested on" tier badges backed by real devices.
 **Done when:** every library effect meets its tier budgets on the matrix; no crash or tab kill in a 10-minute soak on the low mobile tier; input-matrix journeys pass.
+**v5 (R2):** "every library effect" reads "each of the five reference recipes"; 3D scenes join the matrix in R3.
 
 ### Phase 262 · Licensing & compliance automation
 **Needs:** 261 · **Was:** v3 85 · **Status:** 📋
@@ -2933,6 +3055,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** a release candidate.
 **Done when:** all journeys are green on one tagged commit.
+**v5 (R2):** the journeys are the gates passed so far: Phase 52, the five recipes of Gate R1, and the AI and MCP journeys. The later stage gates (102, 202, 240) join when their releases close.
 
 ### Phase 266 · Public beta gate
 **Needs:** 259–265 · **Was:** v3 40 · **Status:** 📋
@@ -2940,6 +3063,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** the public beta.
 **Done when:** every item is green in CI at a tagged commit (`v0.2.0-beta`).
+**v5 (R2):** the PRD §11 criteria are checked for what R0 to R2 built. A criterion that needs a later release is listed as open in the go/no-go review, with its release.
 
 ---
 
