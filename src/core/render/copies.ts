@@ -27,22 +27,32 @@ export interface LiveInputs {
   progress?: number | null;
 }
 
+/** A layer's copies as made (before any live effect), each with where its centre is, in the coordinates of the layer's parent. */
+export interface BaseCopy extends CopyStyle {
+  centre: [number, number];
+}
+
+export function baseCopies(get: (path: string) => unknown, frame: Box, parent: { width: number; height: number }): BaseCopy[] {
+  const cloner = readCloner(get);
+  const repeater = cloner ? null : readRepeater(get);
+  const cx = frame.x + frame.width / 2;
+  const cy = frame.y + frame.height / 2;
+  if (cloner) {
+    return clonerCopies(cloner, frame, parent).map((c) => ({ index: c.index, transform: cloneTransform(c), origin: `${cx}px ${cy}px`, opacity: 1, centre: [cx + c.dx, cy + c.dy] as [number, number] }));
+  }
+  if (repeater) return repeatCopies(repeater, frame).map((c) => ({ ...c, centre: repeatPoint(repeater, frame, c.index, [cx, cy]) }));
+  return [];
+}
+
+const r4 = (n: number) => Math.round(n * 1e4) / 1e4;
+
 export function copyStyles(
   get: (path: string) => unknown,
   frame: Box,
   parent: { width: number; height: number },
   live: LiveInputs = {},
 ): CopyStyle[] {
-  const cloner = readCloner(get);
-  const repeater = cloner ? null : readRepeater(get);
-  const cx = frame.x + frame.width / 2;
-  const cy = frame.y + frame.height / 2;
-  let base: (CopyStyle & { centre: [number, number] })[] = [];
-  if (cloner) {
-    base = clonerCopies(cloner, frame, parent).map((c) => ({ index: c.index, transform: cloneTransform(c), origin: `${cx}px ${cy}px`, opacity: 1, centre: [cx + c.dx, cy + c.dy] }));
-  } else if (repeater) {
-    base = repeatCopies(repeater, frame).map((c) => ({ ...c, centre: repeatPoint(repeater, frame, c.index, [cx, cy]) }));
-  }
+  const base = baseCopies(get, frame, parent);
   const effector = readEffector(get);
   if (!effector || base.length === 0) return base.map(({ centre: _c, ...c }) => c);
   const count = base.length + 1;
@@ -52,7 +62,7 @@ export function copyStyles(
     if (f === 0) return c;
     const e = effectCopy(effector, f);
     // the shift first (outermost), then the copy's own transform, then the size change about the layer's centre
-    return { ...c, transform: `translate(${Math.round(e.dx * 1e4) / 1e4}px, ${Math.round(e.dy * 1e4) / 1e4}px) ${c.transform} scale(${Math.round(e.scale * 1e4) / 1e4})`, opacity: Math.round(c.opacity * e.opacity * 1e4) / 1e4, ...(e.hue !== 0 ? { filter: `hue-rotate(${Math.round(e.hue * 100) / 100}deg)` } : {}) };
+    return { ...c, transform: `translate(${r4(e.dx)}px, ${r4(e.dy)}px) ${c.transform} scale(${r4(e.scale)})`, opacity: r4(c.opacity * e.opacity), ...(e.hue !== 0 ? { filter: `hue-rotate(${Math.round(e.hue * 100) / 100}deg)` } : {}) };
   });
 }
 

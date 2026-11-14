@@ -9,6 +9,7 @@ import { buildPlan, type SitePlan, type Styling } from "./plan";
 import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targets";
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
+import { buildDriversExport } from "../runtime/drivers";
 
 export type { SiteFile, Styling, Target, SitePlan };
 export { buildPlan, exportedPages } from "./plan";
@@ -51,6 +52,21 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
     entries: doc.assets ?? {},
     assets,
   });
+  // Drivers (Design track D4): a standalone script for the plain HTML target, with only the operators the project uses.
+  const drivers = buildDriversExport(doc);
+  warnings.push(...drivers.warnings);
+  if (drivers.source) {
+    if (options.target === "html") {
+      files.push({ path: "lazylayout-drivers.js", content: drivers.source });
+      for (const f of files) {
+        if (!f.path.endsWith("index.html") || typeof f.content !== "string") continue;
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-drivers.js" defer></script>\n  </body>`);
+      }
+    } else {
+      warnings.push("Drivers are exported for the plain HTML target only; this target ships the page without them.");
+    }
+  }
   return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };
 }
 

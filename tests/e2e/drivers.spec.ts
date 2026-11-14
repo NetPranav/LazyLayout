@@ -3,6 +3,8 @@
  * the canvas shows the design itself.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; archetype: string; properties: Record<string, unknown> };
@@ -194,5 +196,117 @@ test.describe("Drivers (D4)", () => {
     expect(await turn()).toBeLessThan(55);
     await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = (e as HTMLElement).scrollHeight));
     await expect.poll(turn).toBe(90); // the bottom
+  });
+});
+
+test.describe("Drivers in the export (D4)", () => {
+  test("an exported page reacts to the mouse the way the editor does, and keeps still for a visitor who asked for less motion", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await page.getByRole("button", { name: "Add driver", exact: true }).click(); // pointer left to right drives Position X, 0..200
+    await expect(page.locator("[data-driver-id]")).toHaveCount(1);
+
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const script = built.files.find((f) => f.path === "lazylayout-drivers.js")!;
+    expect(script.text).toContain("remap: function"); // only what the project uses
+    expect(script.text).not.toContain("spring: function");
+    const dir = testInfo.outputPath("export");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    expect(existsSync(join(dir, "index.html"))).toBe(true);
+    expect(built.files.find((f) => f.path === "index.html")!.text).toContain('<script src="lazylayout-drivers.js" defer></script>');
+
+    const open = async (reduced: boolean) => {
+      const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 }, reducedMotion: reduced ? "reduce" : "no-preference" });
+      const p = await ctx.newPage();
+      await p.goto(`file://${join(dir, "index.html")}`);
+      return { ctx, p };
+    };
+    const shift = (p: Page) => p.locator(`[data-ll="${r.id}"]`).evaluate((e) => parseFloat((e as HTMLElement).style.translate || "0"));
+
+    const live = await open(false);
+    await expect(live.p.locator(`[data-ll="${r.id}"]`)).toHaveCount(1);
+    await live.p.mouse.move(60, 400, { steps: 5 });
+    await live.p.waitForTimeout(300);
+    const left = await shift(live.p);
+    await live.p.mouse.move(1140, 400, { steps: 8 });
+    await live.p.waitForTimeout(300);
+    const right = await shift(live.p);
+    expect(right - left, "moving the mouse right moves the layer right").toBeGreaterThan(100); // 0..200 across the page
+    expect(right).toBeLessThanOrEqual(200.001);
+    await live.ctx.close();
+
+    const still = await open(true);
+    await still.p.mouse.move(1140, 400, { steps: 8 });
+    await still.p.waitForTimeout(300);
+    expect(await shift(still.p), "reduced motion: the page as designed").toBe(0);
+    await still.ctx.close();
+  });
+
+  test("a project with no drivers exports no script", async ({ page }) => {
+    await setup(page);
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.files.some((f) => f.path.includes("drivers"))).toBe(false);
+    expect(built.files.find((f) => f.path === "index.html")!.text).not.toContain("<script");
+  });
+
+  test("an exported grid of dots grows under the mouse, and is as designed for a visitor who asked for less motion (D10)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await page.evaluate(
+      ([id]) =>
+        (window as unknown as { __LL_DOC__: { commands: { updateProps: (id: string, p: Record<string, unknown>) => void } } }).__LL_DOC__.commands.updateProps(id, {
+          "clone.mode": "grid", "clone.cols": 12, "clone.rows": 6, "clone.gapX": 70, "clone.gapY": 70,
+          "effector.mode": "pointer", "effector.scale": 3, "effector.radius": 220, "effector.falloff": "linear",
+        }),
+      [r.id],
+    );
+    await expect(page.locator("[data-repeat-copy]")).toHaveCount(71);
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain("data-ll-copy="); // the copies are findable by the script
+    expect(html).not.toContain("data-repeat-copy");
+    const dir = testInfo.outputPath("export-fx");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    const widths = (p: Page) => p.locator("[data-ll-copy]").evaluateAll((els) => els.map((e) => ((e.firstElementChild ?? e) as HTMLElement).getBoundingClientRect().width));
+    const open = async (reduced: boolean) => {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: reduced ? "reduce" : "no-preference" });
+      const p = await ctx.newPage();
+      await p.goto(`file://${join(dir, "index.html")}`);
+      return { ctx, p };
+    };
+    const live = await open(false);
+    const before = await widths(live.p);
+    expect(before.length).toBe(71);
+    expect(Math.max(...before) - Math.min(...before)).toBeLessThan(1); // as drawn
+    await live.p.mouse.move(700, 300, { steps: 6 });
+    await live.p.waitForTimeout(400);
+    const after = await widths(live.p);
+    expect(Math.max(...after)).toBeGreaterThan(Math.min(...after) * 1.8); // the dots near the mouse grew
+    await live.ctx.close();
+
+    const still = await open(true);
+    await still.p.mouse.move(700, 300, { steps: 6 });
+    await still.p.waitForTimeout(400);
+    const quiet = await widths(still.p);
+    expect(Math.max(...quiet) - Math.min(...quiet)).toBeLessThan(1);
+    await still.ctx.close();
   });
 });

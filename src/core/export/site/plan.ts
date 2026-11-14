@@ -295,6 +295,8 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
       }
     }
 
+    const drivenLayerIds = new Set(exportableDrivers(doc).drivers.map((d) => d.layer));
+    const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
     const nodeOfLayer = new Map<string, ENode>();
     const finalize = (nodes: ENode[]): ENode[] =>
       nodes.map((n) => {
@@ -302,10 +304,16 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         const key = keyOf.get(n)!;
         const attrs = { ...n.attrs };
         const layerId = attrs["data-element-id"];
+        const copyOf = attrs["data-repeat-of"];
+        const copyIndex = attrs["data-repeat-copy"];
         // the editor's own attributes never reach shipped code
         for (const name of EDITOR_ONLY_ATTRIBUTES) delete attrs[name];
         const cls = classOf.get(key);
         let out: ENode = { ...n, attrs, style: [], children: finalize(n.children), ...(layerId ? { layerId } : {}) };
+        // a layer a driver moves is found by the driver script through this mark (only layers drivers carry get one)
+        if (layerId && drivenLayerIds.has(layerId)) out.attrs["data-ll"] = layerId;
+        // and so is each copy of a layer whose copies react to the pointer or the scroll
+        if (copyOf && copyIndex && liveEffectorIds.has(copyOf)) out.attrs["data-ll-copy"] = `${copyOf}:${copyIndex}`;
         if (cls) out.attrs.class = cls;
         if (layerId) nodeOfLayer.set(layerId, out);
         const layer: Layer | undefined = layerId ? layers[layerId] : undefined;
@@ -399,6 +407,7 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
 import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
+import { exportableDrivers, exportableEffectors } from "../runtime/drivers";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";
