@@ -27,7 +27,7 @@ import { readLinks, resolveLayerRef } from "../../links/linkModel";
 import { readExpressions } from "../../expressions/exprModel";
 import { expressionRefs, parseExpression } from "../../expressions/parse";
 import { seedFromText } from "../../expressions/noise";
-import { EXPRESSION_RUNTIME_SOURCE } from "./generated/expressionRuntime";
+import { EXPRESSION_RUNTIME_SOURCE } from "./expressionRuntimeSource";
 
 /** The properties a driver may drive in an export, and the CSS each becomes. */
 const EXPORTABLE = ["transform.x", "transform.y", "transform.rotate", "transform.scale", "appearance.opacity"] as const;

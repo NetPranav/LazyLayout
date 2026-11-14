@@ -2,7 +2,7 @@
  * The expression engine's evaluator as plain JavaScript, for the exported page (Design track D5, FX-EXP-01: the export runs
  * readable source, and imports no LazyLayout package). It is made from the core's own `expressions/noise.ts` and
  * `expressions/evaluate.ts`, so the editor and the export run the same code; `npm run build:export-runtime` writes it to
- * `src/core/export/runtime/generated/expressionRuntime.ts`, and a unit test fails if that file is out of date.
+ * `src/core/export/runtime/expressionRuntimeSource.ts`, and a unit test fails if that file is out of date.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

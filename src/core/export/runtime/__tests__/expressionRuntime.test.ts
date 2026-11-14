@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { generatedModuleText } from "../../../../../scripts/export-runtime-source";
-import { EXPRESSION_RUNTIME_SOURCE } from "../generated/expressionRuntime";
+import { EXPRESSION_RUNTIME_SOURCE } from "../expressionRuntimeSource";
 import { evaluateExpression, type ExprContext } from "../../../expressions/evaluate";
 import { parseExpression } from "../../../expressions/parse";
 
