@@ -64,6 +64,92 @@ export function measureLettersOf(id: string): LetterMeasure | null {
   return letterMeasurer ? letterMeasurer(id) : null;
 }
 
+export type SplitKind = "letters" | "words" | "lines";
+
+const isSpace = (g: string) => g.trim() === "" || g === "\u200b";
+
+/**
+ * Groups measured letters into words or lines (Design track D12, Phase 83). `text` is the text as typed and `boxes` are the measured
+ * letters in reading order (the measurer leaves out spaces and line breaks), so the two are matched one letter at a time.
+ *
+ * - **words**: a run of letters the word segmenter calls one word, with the punctuation after it kept attached ("Hello," is one piece);
+ *   scripts written without spaces split where the segmenter says.
+ * - **lines**: the letters on one drawn line; a new line starts when a letter sits lower than the one before by more than half a letter.
+ *
+ * Each piece is one box (the union of its letters) whose `char` is its text, with the first letter's style. Returns null when the text
+ * and the boxes do not match (they would put pieces in the wrong places).
+ */
+export function groupLetterBoxes(text: string, boxes: readonly LetterBox[], kind: "words" | "lines"): LetterBox[] | null {
+  const graphemes = splitGraphemes(text).filter((g) => g.char !== "\u200b"); // (a line break stays: it is whitespace, and so a word boundary)
+  if (graphemes.filter((g) => !isSpace(g.char)).length !== boxes.length) return null;
+  // for each grapheme: the box it is, or null for a space
+  const boxOf: (number | null)[] = [];
+  let next = 0;
+  for (const g of graphemes) boxOf.push(isSpace(g.char) ? null : next++);
+
+  // pieces as runs of grapheme indices
+  const runs: [number, number][] = [];
+  if (kind === "words") {
+    const seg = typeof Intl !== "undefined" && "Segmenter" in Intl ? new Intl.Segmenter(undefined, { granularity: "word" }) : null;
+    // the text the graphemes make (newlines and zero-width spaces were dropped), so offsets agree with `gi`
+    const flat = graphemes.map((g) => g.char).join("");
+    const offsets: number[] = [];
+    let o = 0;
+    graphemes.forEach((g) => { offsets.push(o); o += g.char.length; });
+    const at = new Map<number, number>(offsets.map((off, i) => [off, i]));
+    let open: [number, number] | null = null;
+    let lastWord = false;
+    const close = () => { if (open) runs.push(open); open = null; lastWord = false; };
+    for (const part of seg ? Array.from(seg.segment(flat)) : [{ index: 0, segment: flat, isWordLike: true }]) {
+      const start = at.get(part.index);
+      if (start === undefined) continue;
+      const end = start + splitGraphemes(part.segment).length - 1;
+      if (part.segment.trim() === "") { close(); continue; }
+      if (part.isWordLike) {
+        if (open && lastWord) close(); // two words with nothing between them (no spaces in the script): two pieces
+        open = open ?? [start, end];
+        open[1] = end;
+        lastWord = true;
+      } else {
+        open = open ?? [start, end]; // punctuation stays with the word before it
+        open[1] = end;
+      }
+    }
+    close();
+  } else {
+    // lines: from the drawn boxes, one run per line
+    let lineStart = -1;
+    let prev: LetterBox | null = null;
+    let lastIdx = -1;
+    graphemes.forEach((_, i) => {
+      const b = boxOf[i] === null ? null : boxes[boxOf[i] as number];
+      if (!b) return;
+      if (prev && b.y + b.height / 2 - (prev.y + prev.height / 2) > 0.5 * Math.min(prev.height, b.height)) {
+        runs.push([lineStart, lastIdx]);
+        lineStart = -1;
+      }
+      if (lineStart < 0) lineStart = i;
+      lastIdx = i;
+      prev = b;
+    });
+    if (lineStart >= 0) runs.push([lineStart, lastIdx]);
+  }
+
+  const pieces: LetterBox[] = [];
+  for (const [a, b] of runs) {
+    const mine: LetterBox[] = [];
+    for (let i = a; i <= b; i++) if (boxOf[i] !== null) mine.push(boxes[boxOf[i] as number]);
+    if (mine.length === 0) continue;
+    const x0 = Math.min(...mine.map((m) => m.x));
+    const y0 = Math.min(...mine.map((m) => m.y));
+    const x1 = Math.max(...mine.map((m) => m.x + m.width));
+    const y1 = Math.max(...mine.map((m) => m.y + m.height));
+    const first = mine[0];
+    pieces.push({ ...first, char: graphemes.slice(a, b + 1).map((g) => g.char).join(""), x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
+  }
+  return pieces;
+}
+
 const num = (v: unknown, fallback = 0) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
 /** Why a text layer cannot be split, or null when it can. */
@@ -80,7 +166,7 @@ export function cannotSplit(id: string): string | null {
 }
 
 /** Replaces the text with a group of one layer per letter. Returns the group's id, or null when it cannot be done. */
-export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?: { width: number; height: number }): string | null {
+export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?: { width: number; height: number }, kind: SplitKind = "letters"): string | null {
   if (cannotSplit(id) !== null || boxes.length === 0) return null;
   const src = getDocument().layers[id];
   const p = src.properties;
@@ -120,13 +206,17 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?
     "frame.heightUnit": "px",
     // a word's depth and the mark of being split are the word's, set again on the letters by their own commands
     "text.depth": 0,
+    // a piece is left out of what a screen reader reads: its group carries the whole text, once
+    "a11y.hidden": true,
+    "a11y.label": "",
+    "a11y.role": "",
   } as typeof p;
   // a gradient or picture fill keeps running across the word: each letter shows its own part of the word's fill
   const fills = typeof p["paint.fills"] === "string" ? p["paint.fills"] : "";
   const sharedFill = fills !== "" && /"type"\s*:\s*"(?!solid)/.test(fills);
 
   let group: string | null = null;
-  transaction("Split into letters", () => {
+  transaction(`Split into ${kind}`, () => {
     const made: string[] = [];
     for (const b of boxes) {
       const specificProps: Record<string, PropValue> = { ...letterProps };
@@ -165,15 +255,17 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?
               "frame.height": Math.ceil(lineHeightPx),
             },
           },
-          "Letter",
+          kind === "letters" ? "Letter" : kind === "words" ? "Word" : "Line",
         ),
       );
     }
     group = groupLayers(made, "group");
     if (group) {
-      renameLayer(group, `${src.name} letters`);
-      // the group is found again by this mark, not by its name (which the user may change)
-      documentCommands.updateProps(group, { "group.role": "letters" });
+      renameLayer(group, `${src.name} ${kind}`);
+      // the group is found again by this mark, not by its name (which the user may change); it is named with the whole text for a screen reader
+      const wholeText = typeof p["content.text"] === "string" && p["content.text"] !== "" ? (p["content.text"] as string).replace(/\s*\n+\s*/g, " ") : boxes.map((b) => b.char).join("");
+      const srcRole = typeof p["a11y.role"] === "string" && p["a11y.role"] !== "" ? (p["a11y.role"] as string) : "group";
+      documentCommands.updateProps(group, { "group.role": kind, "a11y.label": wholeText, "a11y.role": srcRole });
       if (rot !== 0) {
         const groupLayer = getDocument().layers[group];
         const gp = groupLayer.properties;
@@ -223,7 +315,8 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?
  */
 export function isLettersGroup(layer: Layer | null | undefined, allLayers: Record<string, Layer>): boolean {
   if (!layer || layer.archetype !== "container") return false;
-  if (layer.properties["group.role"] === "letters") return true;
+  const role = layer.properties["group.role"];
+  if (role === "letters" || role === "words" || role === "lines") return true;
   if (!layer.name.endsWith(" letters") || layer.children.length === 0) return false;
   let letters = 0;
   for (const childId of layer.children) {
@@ -247,7 +340,7 @@ function isLetterEntrance(clip: { type: string; trigger: unknown; tracks: { prop
 }
 
 /** Gives the letters of a letters group a staggered entrance (fade and slide up, 40ms stagger). */
-export function animateLetters(targetId: string, stagger = 0.04): string[] | null {
+export function animateLetters(targetId: string, stagger?: number): string[] | null {
   const doc = getDocument();
   let groupLayer = doc.layers[targetId];
   if (!groupLayer) return null;
@@ -261,6 +354,9 @@ export function animateLetters(targetId: string, stagger = 0.04): string[] | nul
 
   const letterIds = groupLayer.children.filter((id) => doc.layers[id]?.archetype === "text");
   if (letterIds.length === 0) return null;
+  const role = groupLayer.properties["group.role"];
+  const label = role === "words" ? "Word" : role === "lines" ? "Line" : "Letter";
+  stagger = stagger ?? (role === "words" ? 0.1 : role === "lines" ? 0.18 : 0.04); // a word takes longer to read than a letter
 
   const clipIds: string[] = [];
   transaction("Animate letters", () => {
@@ -271,7 +367,7 @@ export function animateLetters(targetId: string, stagger = 0.04): string[] | nul
     letterIds.forEach((letterId, i) => {
       const delay = Math.round(i * stagger * 1000) / 1000;
       const template = hydrateClip({
-        name: `Letter ${i + 1} entrance`,
+        name: `${label} ${i + 1} entrance`,
         type: "entrance",
         trigger: "mount",
         duration: 0.6,
@@ -301,4 +397,25 @@ export function animateLetters(targetId: string, stagger = 0.04): string[] | nul
   });
 
   return clipIds;
+}
+
+/**
+ * Splits a drawn text layer into letters, words or lines (Design track D12, Phase 83), each a layer of its own at exactly its place, in
+ * a group named with the whole text. Returns the group's id, or null with the reason in `why` when it cannot be done.
+ */
+export function splitText(id: string, kind: SplitKind): { group: string | null; why: string | null } {
+  const reason = cannotSplit(id);
+  if (reason) return { group: null, why: reason.replace("into letters", kind === "letters" ? "into letters" : `into ${kind}`) };
+  const measure = measureLettersOf(id);
+  if (!measure || measure.boxes.length === 0) return { group: null, why: "The text has to be on the page to be measured." };
+  let boxes: readonly LetterBox[] = measure.boxes;
+  if (kind !== "letters") {
+    const layer = getDocument().layers[id];
+    const text = typeof layer.properties["content.text"] === "string" ? (layer.properties["content.text"] as string) : layer.name;
+    const grouped = groupLetterBoxes(text, measure.boxes, kind);
+    if (!grouped || grouped.length === 0) return { group: null, why: `The ${kind} could not be told apart from what is drawn (the text has styled runs or a line that does not match). Split it into letters instead.` };
+    boxes = grouped;
+  }
+  const group = splitIntoLetters(id, boxes, { width: measure.width, height: measure.height }, kind);
+  return { group, why: group ? null : "That text could not be split." };
 }

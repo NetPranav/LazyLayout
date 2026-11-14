@@ -604,6 +604,8 @@ const DEFS = {
   "interaction.disabled": flag(false, "paint", INTERACTIVE),
   "a11y.label": str("", null, "none", ALL),
   "a11y.role": str("", null, "none", ALL),
+  /** Left out of what assistive technology reads (`aria-hidden`): a piece of a split text, whose group carries the text. */
+  "a11y.hidden": flag(false, "none", ALL),
   /** Explicit semantic tag for export (overrides the archetype's inferred tag). */
   "export.tag": str("", null, "none", ALL),
   /** Repeater (Design track D8): copies of a layer, each stepped. Copy 0 is the layer; see `core/render/repeater.ts`. Absolute layers only. */

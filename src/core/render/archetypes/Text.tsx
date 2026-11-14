@@ -3,6 +3,7 @@ import { layerBoxStyle } from "../geometry";
 import { clampText } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
 import { textTypography } from "./textStyle";
+import { a11yAttrs } from "../a11y";
 import { useTextFillStyle } from "../paintStyle";
 import { mixWithBlack } from "../../paint/shade";
 import { runsOf, type TextRun } from "../../text/runs";
@@ -61,6 +62,7 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
       ref={nodeRef}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : "text"}
+      {...a11yAttrs(resolved)}
       style={{
         ...box,
         margin: 0,

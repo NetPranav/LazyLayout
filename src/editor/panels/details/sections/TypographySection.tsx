@@ -135,6 +135,14 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
               onClick={() => void invokeCommand("text.standLetters", { id: lettersGroupId ?? undefined })}
             />
           </div>
+          <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full">
+            <Button size="sm" variant="secondary" aria-label="Split into words" disabled={!isSingleText} title={isSingleText ? "Each word becomes a layer of its own, exactly where it was. The group is named with the whole text, and the words are hidden from screen readers." : "Already split"} onClick={() => void invokeCommand("text.splitWords")}>
+              Words
+            </Button>
+            <Button size="sm" variant="secondary" aria-label="Split into lines" disabled={!isSingleText} title={isSingleText ? "Each drawn line becomes a layer of its own, exactly where it was. The group is named with the whole text, and the lines are hidden from screen readers." : "Already split"} onClick={() => void invokeCommand("text.splitLines")}>
+              Lines
+            </Button>
+          </div>
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
               <Button

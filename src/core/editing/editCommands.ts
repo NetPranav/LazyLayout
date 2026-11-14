@@ -27,7 +27,7 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
-import { cannotSplit, measureLettersOf, splitIntoLetters, animateLetters } from "./splitText";
+import { cannotSplit, measureLettersOf, splitIntoLetters, splitText, animateLetters } from "./splitText";
 import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
 import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
@@ -175,6 +175,34 @@ export function registerEditingCommands(): () => void {
       return { groups: made };
     },
   }));
+  // Words and lines (Design track D12, Phase 83): the same split, in bigger pieces, each at exactly its place; the group is named with
+  // the whole text and every piece is hidden from a screen reader.
+  for (const [kind, title] of [["words", "Split Text into Words"], ["lines", "Split Text into Lines"]] as const) {
+    add(defineTypedCommand({
+      id: kind === "words" ? "text.splitWords" : "text.splitLines",
+      title,
+      category: "Text",
+      args: z.object({ id: z.string().optional() }).default({}),
+      run: ({ id }) => {
+        const targets = id ? [id] : ids();
+        if (targets.length === 0) {
+          showToast(`Select a text layer to split into ${kind}.`);
+          return { groups: [] };
+        }
+        const made: string[] = [];
+        for (const targetId of targets) {
+          const out = splitText(targetId, kind);
+          if (out.group) made.push(out.group);
+          else if (out.why) showToast(out.why);
+        }
+        if (made.length > 0) {
+          useLayersUiStore.getState().expandAll(made);
+          useSelectionStore.getState().selectMultiple(made, "element");
+        }
+        return { groups: made };
+      },
+    }));
+  }
   add(defineTypedCommand({
     id: "text.animateLetters",
     title: "Animate Letters",
@@ -188,7 +216,7 @@ export function registerEditingCommands(): () => void {
       }
       let totalClips = 0;
       for (const targetId of targets) {
-        const clips = animateLetters(targetId, stagger ?? 0.04);
+        const clips = animateLetters(targetId, stagger); // (undefined: the kind of piece chooses: letters 0.04, words 0.1, lines 0.18)
         if (clips && clips.length > 0) totalClips += clips.length;
       }
       if (totalClips === 0) {
