@@ -10,6 +10,8 @@ import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targ
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
 import { buildDriversExport } from "../runtime/drivers";
+import { hasLinks } from "../../links/linkModel";
+import { hasExpressions } from "../../expressions/exprModel";
 
 export type { SiteFile, Styling, Target, SitePlan };
 export { buildPlan, exportedPages } from "./plan";
@@ -52,6 +54,9 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
     entries: doc.assets ?? {},
     assets,
   });
+  // Links (Phase 76) and expressions (Phase 77) move layers at run time, and the static export has no runtime for them yet: say so.
+  const linked = Object.values(doc.layers).filter((l) => hasLinks(l.properties) || hasExpressions(l.properties));
+  if (linked.length > 0) warnings.push(`${linked.length === 1 ? "A layer has" : `${linked.length} layers have`} property links or expressions (${linked.slice(0, 3).map((l) => l.name).join(", ")}${linked.length > 3 ? ", ..." : ""}), which are not exported yet: the page keeps ${linked.length === 1 ? "it" : "them"} as designed.`);
   // Drivers (Design track D4): a standalone script for the plain HTML target, with only the operators the project uses.
   const drivers = buildDriversExport(doc);
   warnings.push(...drivers.warnings);

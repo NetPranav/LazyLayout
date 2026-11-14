@@ -9,6 +9,7 @@ import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
+import { registerDriverCommands } from "@/core/bindings/driverCommands";
 import { registerExpressionCommands } from "@/core/expressions/expressionCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
@@ -58,6 +59,7 @@ export function useLeftPanelData(
     const offFx = registerFxCommands(); // the effect stack and motion blur (Phase 75)
     const offLinks = registerLinkCommands(); // property links, the pick-whip (Phase 76)
     const offExpressions = registerExpressionCommands(); // expressions (Phase 77)
+    const offDrivers = registerDriverCommands(); // drivers: the pointer, scroll and time (Design track D4)
 
     return () => {
       offEditing();
@@ -68,6 +70,7 @@ export function useLeftPanelData(
       offFx();
       offLinks();
       offExpressions();
+      offDrivers();
     };
   }, []);
 

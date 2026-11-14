@@ -189,3 +189,16 @@ describe("the exported drivers script runs like the editor (D4)", () => {
     });
   });
 });
+
+import { buildSiteExport } from "../../site";
+import { setLayerPropsForTest } from "./linkFixture";
+
+describe("the export says what it leaves out", () => {
+  it("links and expressions are named in the warnings, not dropped silently", async () => {
+    const withLink = setLayerPropsForTest(doc, "a", { "link.1.target": "transform.rotate", "link.1.source": "b", "link.1.sourceProperty": "transform.rotate", "link.1.enabled": true });
+    const out = await buildSiteExport(withLink, { target: "html", styling: "css" });
+    assert.ok(out.warnings.some((w) => /links or expressions/.test(w)), out.warnings.join(" | "));
+    const clean = await buildSiteExport(doc, { target: "html", styling: "css" });
+    assert.ok(!clean.warnings.some((w) => /links or expressions/.test(w)));
+  });
+});
