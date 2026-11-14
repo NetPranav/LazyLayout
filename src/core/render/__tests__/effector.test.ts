@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { effectCopy, influence, readEffector, type EffectorSettings } from "../effector";
 
-const base: EffectorSettings = { mode: "pointer", scale: 3, fade: 0.5, offsetX: 10, offsetY: -20, radius: 100, falloff: "linear", seed: 1 };
+const base: EffectorSettings = { mode: "pointer", scale: 3, fade: 0.5, offsetX: 10, offsetY: -20, hue: 60, radius: 100, spread: 3, falloff: "linear", seed: 1 };
 const close = (a: number, b: number, msg: string, tol = 1e-9) => assert.ok(Math.abs(a - b) <= tol, `${msg}: ${a} vs ${b}`);
 
 describe("Effectors (D10)", () => {
@@ -59,8 +59,28 @@ describe("Effectors (D10)", () => {
   });
 
   it("the effect moves a copy from as-made (f = 0) to the full setting (f = 1)", () => {
-    assert.deepEqual(effectCopy(base, 0), { scale: 1, opacity: 1, dx: 0, dy: 0 });
-    assert.deepEqual(effectCopy(base, 1), { scale: 3, opacity: 0.5, dx: 10, dy: -20 });
-    assert.deepEqual(effectCopy(base, 0.5), { scale: 2, opacity: 0.75, dx: 5, dy: -10 });
+    assert.deepEqual(effectCopy(base, 0), { scale: 1, opacity: 1, dx: 0, dy: 0, hue: 0 });
+    assert.deepEqual(effectCopy(base, 1), { scale: 3, opacity: 0.5, dx: 10, dy: -20, hue: 60 });
+    assert.deepEqual(effectCopy(base, 0.5), { scale: 2, opacity: 0.75, dx: 5, dy: -10, hue: 30 });
+  });
+
+  it("scroll mode: a wave along the copies, 1 at the scroll position, falling off over `spread` copies", () => {
+    const s: EffectorSettings = { ...base, mode: "scroll", falloff: "linear", spread: 3 };
+    // 11 copies (0..10), scrolled halfway: the wave is on copy 5
+    close(influence(s, 5, 11, undefined, 0.5), 1, "at the wave");
+    close(influence(s, 6, 11, undefined, 0.5), 2 / 3, "one copy away");
+    close(influence(s, 4, 11, undefined, 0.5), 2 / 3, "one copy the other way");
+    close(influence(s, 7, 11, undefined, 0.5), 1 / 3, "two copies away");
+    close(influence(s, 8, 11, undefined, 0.5), 0, "three copies away: out of the wave");
+    // the wave moves with the scroll: at the top it is on the layer, at the bottom on the last copy
+    close(influence(s, 0, 11, undefined, 0), 1, "top");
+    close(influence(s, 10, 11, undefined, 1), 1, "bottom");
+    close(influence(s, 10, 11, undefined, 0), 0, "bottom copy at the top");
+  });
+
+  it("scroll mode with no scroll reading leaves the copies as made; progress is clamped", () => {
+    const s: EffectorSettings = { ...base, mode: "scroll", falloff: "linear" };
+    assert.equal(influence(s, 3, 11), 0);
+    close(influence(s, 10, 11, undefined, 7), 1, "past the bottom is the bottom");
   });
 });

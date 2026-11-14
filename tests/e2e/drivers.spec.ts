@@ -151,4 +151,48 @@ test.describe("Drivers (D4)", () => {
     await expect.poll(async () => (await layers(page))[r.id].properties["render.role"] ?? "").toBe("");
     expect((await exported()).length).toBe(before.length);
   });
+
+  test("scroll drives a layer in Preview: the frame's own scroll is the signal (D4)", async ({ page }) => {
+    await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+    await openEditor(page);
+    await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      const el = page.getByText(name, { exact: true }).first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.click();
+        await page.keyboard.press("Delete");
+      }
+    }
+    // a Desktop frame stretched by its content (a tall page), as the responsive-frames spec builds one
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    type Win = { __LL_DOC__: { get: () => { layers: Record<string, { id: string; archetype: string; parentId: string | null }> }; commands: { addLayer: (a: unknown) => string } } };
+    const ids = await page.evaluate(() => {
+      const w = window as unknown as Win;
+      const frame = Object.values(w.__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id; // the page frame, under the canvas root
+      const add = (name: string, x: number, y: number) => w.__LL_DOC__.commands.addLayer({ archetype: "rectangle", parentId: frame, name, properties: { positioning: "absolute", "frame.x": x, "frame.y": y, "frame.width": 200, "frame.height": 120 } });
+      return { top: add("Top", 100, 100), foot: add("Foot", 100, 1500) };
+    });
+    // preview the frame right on the canvas: it becomes the screen and the rest scrolls
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${await page.evaluate(() => Object.values((window as unknown as Win).__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id)}"]`).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+
+    // the top layer turns 0 to 90 degrees as the page scrolls from the top to the bottom
+    await page.evaluate(([id]) => (window as unknown as { __LL_ENGINE__: { addBinding: (t: string, o: string) => string } }).__LL_ENGINE__.addBinding(`scroll.progress |> remap(0, 1, 0, 90)\n-> ${id}.transform.rotate blend add`, id), [ids.top]);
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${ids.top}"]`).first();
+    const turn = () =>
+      el.evaluate((e) => {
+        const m = new DOMMatrix(getComputedStyle(e).transform === "none" ? undefined : getComputedStyle(e).transform);
+        return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
+      });
+    await page.waitForTimeout(300);
+    expect(await turn()).toBe(0); // at the top
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = ((e as HTMLElement).scrollHeight - (e as HTMLElement).clientHeight) / 2));
+    await expect.poll(turn).toBeGreaterThan(35); // halfway: about 45
+    expect(await turn()).toBeLessThan(55);
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = (e as HTMLElement).scrollHeight));
+    await expect.poll(turn).toBe(90); // the bottom
+  });
 });

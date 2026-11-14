@@ -16,13 +16,22 @@ export interface CopyStyle {
   transform: string;
   origin: string;
   opacity: number;
+  /** CSS `filter` for a hue turn, or undefined. */
+  filter?: string;
+}
+
+/** What the page is doing right now, for effectors that react to it. Absent: the copies are as made. */
+export interface LiveInputs {
+  pointer?: { x: number; y: number } | null;
+  /** How far the previewed frame is scrolled, 0..1. */
+  progress?: number | null;
 }
 
 export function copyStyles(
   get: (path: string) => unknown,
   frame: Box,
   parent: { width: number; height: number },
-  pointer?: { x: number; y: number } | null,
+  live: LiveInputs = {},
 ): CopyStyle[] {
   const cloner = readCloner(get);
   const repeater = cloner ? null : readRepeater(get);
@@ -38,17 +47,17 @@ export function copyStyles(
   if (!effector || base.length === 0) return base.map(({ centre: _c, ...c }) => c);
   const count = base.length + 1;
   return base.map(({ centre, ...c }) => {
-    const distance = pointer ? Math.hypot(centre[0] - pointer.x, centre[1] - pointer.y) : undefined;
-    const f = influence(effector, c.index, count, distance);
+    const distance = live.pointer ? Math.hypot(centre[0] - live.pointer.x, centre[1] - live.pointer.y) : undefined;
+    const f = influence(effector, c.index, count, distance, live.progress ?? undefined);
     if (f === 0) return c;
     const e = effectCopy(effector, f);
     // the shift first (outermost), then the copy's own transform, then the size change about the layer's centre
-    return { ...c, transform: `translate(${Math.round(e.dx * 1e4) / 1e4}px, ${Math.round(e.dy * 1e4) / 1e4}px) ${c.transform} scale(${Math.round(e.scale * 1e4) / 1e4})`, opacity: Math.round(c.opacity * e.opacity * 1e4) / 1e4 };
+    return { ...c, transform: `translate(${Math.round(e.dx * 1e4) / 1e4}px, ${Math.round(e.dy * 1e4) / 1e4}px) ${c.transform} scale(${Math.round(e.scale * 1e4) / 1e4})`, opacity: Math.round(c.opacity * e.opacity * 1e4) / 1e4, ...(e.hue !== 0 ? { filter: `hue-rotate(${Math.round(e.hue * 100) / 100}deg)` } : {}) };
   });
 }
 
-/** True when a layer has copies that react to the pointer (so the live driver must style them). */
-export const hasPointerEffector = (get: (path: string) => unknown): boolean => {
+/** True when a layer has copies that react to the pointer or the scroll (so the live driver must style them). */
+export const hasLiveEffector = (get: (path: string) => unknown): boolean => {
   const e = readEffector(get);
-  return !!e && e.mode === "pointer" && (readCloner(get) !== null || readRepeater(get) !== null);
+  return !!e && (e.mode === "pointer" || e.mode === "scroll") && (readCloner(get) !== null || readRepeater(get) !== null);
 };

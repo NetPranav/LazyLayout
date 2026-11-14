@@ -9,7 +9,7 @@
 import type { MotionDocument } from "../../document/schema";
 import { getLayerGeometry } from "../../document/properties";
 import type { InputSource } from "../../bindings/inputBus";
-import { copyStyles, hasPointerEffector } from "../../render/copies";
+import { copyStyles, hasLiveEffector, type LiveInputs } from "../../render/copies";
 import { resolveProps } from "../../render/resolve";
 
 export interface EffectorDriverHost {
@@ -19,7 +19,7 @@ export interface EffectorDriverHost {
 }
 
 interface Styled {
-  style: { transform: string; opacity: string };
+  style: { transform: string; opacity: string; filter: string };
   getAttribute(name: string): string | null;
 }
 
@@ -39,7 +39,7 @@ export class EffectorDriver {
       this.lastDoc = doc;
       this.lastPointer = "";
       this.layerIds = Object.values(doc.layers)
-        .filter((l) => hasPointerEffector(resolveProps(l).get))
+        .filter((l) => hasLiveEffector(resolveProps(l).get))
         .map((l) => l.id);
     }
     return this.layerIds;
@@ -55,13 +55,15 @@ export class EffectorDriver {
     const ids = this.layers();
     if (ids.length === 0) return;
     const p = this.host.source.pointer();
-    const key = p ? `${Math.round(p.x * 10)},${Math.round(p.y * 10)}` : "";
-    if (key === this.lastPointer) return; // nothing moved
+    const sc = this.host.source.scroll();
+    const progress = sc.max > 0 ? Math.min(1, Math.max(0, sc.y / sc.max)) : null;
+    const key = `${p ? `${Math.round(p.x * 10)},${Math.round(p.y * 10)}` : ""}|${progress === null ? "" : Math.round(progress * 1000)}`;
+    if (key === this.lastPointer) return; // neither the pointer nor the scroll moved
     this.lastPointer = key;
-    this.write(ids, p ? { x: p.x, y: p.y } : null);
+    this.write(ids, { pointer: p ? { x: p.x, y: p.y } : null, progress });
   }
 
-  private write(ids: readonly string[], pointer: { x: number; y: number } | null): void {
+  private write(ids: readonly string[], live: LiveInputs): void {
     const doc = this.host.getDocument();
     for (const id of ids) {
       const layer = doc.layers[id];
@@ -70,15 +72,16 @@ export class EffectorDriver {
       if (!layer || !parent) continue;
       const parentLayer = layer.parentId ? doc.layers[layer.parentId] : undefined;
       const pf = parentLayer ? getLayerGeometry(parentLayer).frame : null;
-      const styles = copyStyles(resolveProps(layer).get, getLayerGeometry(layer).frame, { width: pf?.width ?? 0, height: pf?.height ?? 0 }, pointer);
+      const styles = copyStyles(resolveProps(layer).get, getLayerGeometry(layer).frame, { width: pf?.width ?? 0, height: pf?.height ?? 0 }, live);
       for (const el of Array.from(parent.querySelectorAll(`:scope > [data-repeat-of="${CSS.escape(id)}"]`)) as unknown as Styled[]) {
         const c = styles[Number(el.getAttribute("data-repeat-copy")) - 1];
         if (!c) continue;
-        const next = `${c.transform}|${c.opacity}`;
+        const next = `${c.transform}|${c.opacity}|${c.filter ?? ""}`;
         if (this.written.get(el) === next) continue;
         this.written.set(el, next);
         el.style.transform = c.transform;
         el.style.opacity = String(c.opacity);
+        el.style.filter = c.filter ?? "";
         this.touched.add(el);
       }
     }
@@ -86,7 +89,7 @@ export class EffectorDriver {
 
   /** Put every copy back as the renderer drew it (no pointer). */
   dispose(): void {
-    if (this.layerIds.length > 0) this.write(this.layerIds, null);
+    if (this.layerIds.length > 0) this.write(this.layerIds, {});
     this.touched.clear();
     this.lastDoc = null;
     this.lastPointer = "";

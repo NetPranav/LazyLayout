@@ -8,6 +8,7 @@ import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
 import { getTransport, transport, transportStore } from "@/core/time/transport";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import { parityStore } from "@/core/engine/stage/parity";
 import type { InputSource } from "@/core/bindings/inputBus";
 import { addBinding } from "@/core/bindings/bindingCommands";
@@ -30,7 +31,9 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   const [renderer] = useState(() => new StageRenderer());
   const designing = useCanvasViewStore((s) => s.mode === "design");
   const playing = useStore(transportStore, (s) => s.playing);
-  const enabled = !designing || playing;
+  // a frame previewed in place (its Preview toggle) is a running page too: it scrolls, so drivers and effectors run
+  const framePreviewing = useFramePreviewStore((p) => Object.keys(p.previewing).length > 0);
+  const enabled = !designing || playing || framePreviewing;
 
   // keep the registry in step with what is drawn
   useLayoutEffect(() => {
@@ -94,7 +97,7 @@ function syncRegistry(page: HTMLElement, renderer: StageRenderer): void {
 /**
  * The input bus's eyes on the canvas (D4): where the pointer is over the stage, in the drawn page's own px (so zoom and
  * pan do not change what a driver reads), and the scroll of the frame. Pointer events on the stage viewport, not the
- * window; scroll is not served yet (the new canvas has no scroll host), so it reads as no scroll.
+ * window; scroll is the previewed frame's own scroll (`frame-preview-scroller`), and reads as none when nothing scrolls.
  */
 function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: () => void } {
   const view = page.closest<HTMLElement>('[data-testid="stage-viewport"]') ?? page;
@@ -116,7 +119,15 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     input: {
       pointer: () => pointer,
       pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
-      scroll: () => ({ y: 0, max: 0 }),
+      // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
+      // one that has anything to scroll; none means no scroll, which reads as 0
+      scroll: () => {
+        for (const el of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) {
+          const max = el.scrollHeight - el.clientHeight;
+          if (max > 0) return { y: el.scrollTop, max };
+        }
+        return { y: 0, max: 0 };
+      },
     },
     dispose: () => {
       view.removeEventListener("pointermove", onMove);
