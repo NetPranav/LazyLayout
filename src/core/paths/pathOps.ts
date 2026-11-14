@@ -152,25 +152,38 @@ export function regionToPath(region: Multi): BezPath {
   return out;
 }
 
-/** `a op b`, each read with its fill rule. The result fills the same under either rule. */
-export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: FillRule = "nonzero", ruleB: FillRule = "nonzero"): BezPath {
-  const ra = pathRegion(a, ruleA);
-  const rb = pathRegion(b, ruleB);
-  let out: Multi;
+/** The polygons a path fills (see `pathRegion`). */
+export type Region = Multi;
+
+/** Several regions as one: all of them united, intersected, or combined by exclusive or. */
+export function mergeRegions(how: "union" | "intersect" | "exclude", regions: readonly Region[]): Region {
+  if (regions.length === 0) return [];
+  if (how === "intersect") {
+    if (regions.some((r) => r.length === 0)) return [];
+    return regions.length === 1 ? regions[0] : polygonClipping.intersection(...(regions as [Multi, ...Multi[]]));
+  }
+  const full = regions.filter((r) => r.length > 0);
+  if (full.length <= 1) return full[0] ?? [];
+  return how === "union" ? polygonClipping.union(...(full as [Multi, ...Multi[]])) : polygonClipping.xor(...(full as [Multi, ...Multi[]]));
+}
+
+/** `a op b` on regions. */
+export function combineRegions(a: Region, b: Region, op: PathBoolOp): Region {
   switch (op) {
     case "union":
-      out = ra.length && rb.length ? polygonClipping.union(ra, rb) : ra.length ? ra : rb;
-      break;
+      return a.length && b.length ? polygonClipping.union(a, b) : a.length ? a : b;
     case "intersect":
-      out = ra.length && rb.length ? polygonClipping.intersection(ra, rb) : [];
-      break;
+      return a.length && b.length ? polygonClipping.intersection(a, b) : [];
     case "subtract":
-      out = ra.length && rb.length ? polygonClipping.difference(ra, rb) : ra;
-      break;
+      return a.length && b.length ? polygonClipping.difference(a, b) : a;
     case "exclude":
-      out = ra.length && rb.length ? polygonClipping.xor(ra, rb) : ra.length ? ra : rb;
-      break;
+      return a.length && b.length ? polygonClipping.xor(a, b) : a.length ? a : b;
   }
+}
+
+/** `a op b`, each read with its fill rule. The result fills the same under either rule. */
+export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: FillRule = "nonzero", ruleB: FillRule = "nonzero"): BezPath {
+  const out = combineRegions(pathRegion(a, ruleA), pathRegion(b, ruleB), op);
   return refitCurves(out, [a, b]);
 }
 

@@ -400,7 +400,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
 | 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 🚧 |
-| 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 📋 |
+| 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 🚧 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
 | 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
@@ -1495,12 +1495,14 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-14), 🚧:** built (Lane C). `src/core/paths/curveRefit.ts` turns the polygon clipper's answer back into pieces of the input curves, with joints refined onto the true crossings; `booleanPaths`, `simplifyPath`, `arrangementFaces` and `unionFaces` return curves, so live boolean groups, the Shape Builder and the paint bucket get them too; Phase 40's `booleanLayers` moved onto it (a single outline stays an editable path with handles). Decision 0015 is written: in-house, no new dependency. Verified: 200 seeded random cases, every point within 0.25 px of the polygon reference (`curveRefit.test.ts`); a union of two circles is 6 to 10 curves and no lines; all 3,416 core unit tests pass; Phase 40's and the FigCraft port's browser tests pass in Chromium (25 of 25). **Not done:** the node bound checked is "no more than twice the input segments that show in the result", not a computed minimum; tangent and overlapping curves keep the polygon's vertex at the joint; Firefox and WebKit were not run. ✅ once it passes in CI on `main`.
 
 ### Phase 104 · Live boolean groups
-**Needs:** 46, 103 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 46, 103 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Union, Subtract, Intersect and Exclude make a **boolean group** whose children stay editable: move, resize or edit a child and the result updates. Groups nest, can be flattened when wanted, and take one fill and stroke stack.
 - [ ] Export writes the computed path (one SVG `path`), so the site needs no runtime. **Simple face:** the four icons on the toolbar, and "Edit pieces" / "Flatten".
 
 **You'll see:** merge three triangles and a rectangle into one shape, then still move each piece.
 **Done when:** editing a child of a 50-child group updates the result in < 16 ms; the stage and the export match within 0.5 px in 3 browsers.
+
+**Status check (2026-11-14), 🚧:** live boolean groups were already built by the FigCraft port (`src/core/editing/booleanGroups.ts`: make, set operation per group and per operand, flatten, nesting, one undo step each; the group draws through the Container render definition, so the stage and the export use the same path). **Built now (Lane C):** the speed gate. A 50-child group took about 45 ms before Phase 103 and about 600 ms with curves refitted at every step; `booleanGroupResult` now combines the operands as polygons, merges runs of operands that combine the same way, remembers each run (and the run without the child that is moving), and turns the result into curves once. **Measured: 6.9 ms median** for moving one child of a 50-child group of ellipses and rectangles (`booleanGroupSpeed.test.ts`), and the result is curves. The FigCraft port's and Phase 40's browser tests pass in Chromium (25 of 25). **Not done:** the stage-against-export comparison within 0.5 px in three browsers has no test of its own; the Simple face ("Edit pieces" and "Flatten" beside the four icons) is in the legacy editor and has not been checked in the new one; Firefox and WebKit were not run.
 
 ### Phase 105 · Shape Builder tool
 **Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 📋

@@ -13,7 +13,8 @@ import { BezPath } from "../geometry/bezpath";
 import { ellipse, polygonPoints, roundedRect, smoothedPolygon, starPoints } from "../geometry/shapes";
 import { pathDataToBez } from "../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../paths/vectorNetwork";
-import { booleanPaths, type PathBoolOp } from "../paths/pathOps";
+import { refitCurves } from "../paths/curveRefit";
+import { combineRegions, mergeRegions, pathRegion, type PathBoolOp, type Region } from "../paths/pathOps";
 import { defaultStroke, parseSides, parseWidthProfile, strokeOutline, type StrokeProps } from "../paths/strokes";
 import { readCap } from "../render/strokePaint";
 import { parseColor } from "../paint/colorMath";
@@ -177,24 +178,85 @@ export function layerStrokeArea(l: Layer, layers: Readonly<Record<string, Layer>
 export function booleanGroupResult(group: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): BezPath | null {
   const op = group.properties["boolean.operation"];
   if (!isBooleanOp(op)) return null;
-  let acc: BezPath | null = null;
-  let accEvenOdd = false;
+  // Phase 104: the operands are combined as polygons and turned back into curves once, at the end. Operands that
+  // combine the same way, one after another, are merged first (a run), and a run remembers its answer, so moving one
+  // child of a large group redoes only that child's part.
+  const operands: Operand[] = [];
   for (const id of group.children) {
     const child = layers[id];
     if (!child || child.visible === false) continue;
-    const o = layerOutline(child, layers, depth);
-    if (!o) continue;
-    const placed = toParent(o.path, child);
-    if (!acc) {
-      acc = placed;
-      accEvenOdd = o.evenOdd;
-      continue;
-    }
     const own = child.properties["boolean.operandOp"];
-    acc = booleanPaths(acc, placed, isBooleanOp(own) ? own : op, accEvenOdd ? "evenodd" : "nonzero", o.evenOdd ? "evenodd" : "nonzero");
-    accEvenOdd = false;
+    const o = operandOf(child, layers, depth, isBooleanOp(own) ? own : op);
+    if (o) operands.push(o);
   }
-  return acc && !acc.isEmpty() ? acc : null;
+  if (operands.length === 0) return null;
+  const memo = runMemo.get(group) ?? [];
+  const next: RunMemo[] = [];
+  let acc = operands[0].region;
+  let i = 1;
+  while (i < operands.length) {
+    let j = i + 1;
+    while (j < operands.length && operands[j].op === operands[i].op) j++;
+    const run = operands.slice(i, j);
+    const merged = mergeRun(run, memo[next.length]);
+    next.push(merged);
+    acc = combineRegions(acc, merged.region, run[0].op);
+    i = j;
+  }
+  runMemo.set(group, next);
+  const out = refitCurves(acc, operands.map((o) => o.path));
+  return out.isEmpty() ? null : out;
+}
+
+/** One child of a boolean group, placed in the group's box: its path, what it fills, and how it combines. */
+interface Operand {
+  layer: Layer;
+  path: BezPath;
+  region: Region;
+  op: PathBoolOp;
+}
+
+/** A leaf operand's path and region depend on that layer alone, so they are kept by the layer's identity. */
+const operandCache = new WeakMap<Layer, { path: BezPath; region: Region }>();
+
+function operandOf(child: Layer, layers: Readonly<Record<string, Layer>>, depth: number, op: PathBoolOp): Operand | null {
+  const leaf = child.children.length === 0;
+  const hit = leaf ? operandCache.get(child) : undefined;
+  if (hit) return { layer: child, path: hit.path, region: hit.region, op };
+  const o = layerOutline(child, layers, depth);
+  if (!o) return null;
+  const path = toParent(o.path, child);
+  const region = pathRegion(path, o.evenOdd ? "evenodd" : "nonzero");
+  if (leaf) operandCache.set(child, { path, region });
+  return { layer: child, path, region, op };
+}
+
+/** What a run of operands with the same operation adds up to, and (once one of them starts changing) the rest without it. */
+interface RunMemo {
+  members: Layer[];
+  region: Region;
+  without?: { index: number; others: Region };
+}
+const runMemo = new WeakMap<Layer, RunMemo[]>();
+
+/** Subtracting several shapes subtracts their union; the other operations merge by themselves. */
+const mergeHow = (op: PathBoolOp): "union" | "intersect" | "exclude" => (op === "subtract" ? "union" : op);
+
+function mergeRun(run: readonly Operand[], before: RunMemo | undefined): RunMemo {
+  const members = run.map((o) => o.layer);
+  const how = mergeHow(run[0].op);
+  if (before && before.members.length === members.length) {
+    const changed: number[] = [];
+    for (let k = 0; k < members.length && changed.length < 2; k++) if (before.members[k] !== members[k]) changed.push(k);
+    if (changed.length === 0) return before;
+    // nested groups are left out: their region can change while the layer object stays the same
+    if (changed.length === 1 && members.length > 2 && run.every((o) => o.layer.children.length === 0)) {
+      const k = changed[0];
+      const others = before.without?.index === k ? before.without.others : mergeRegions(how, run.filter((_, n) => n !== k).map((o) => o.region));
+      return { members, region: mergeRegions(how, [others, run[k].region]), without: { index: k, others } };
+    }
+  }
+  return { members, region: mergeRegions(how, run.map((o) => o.region)) };
 }
 
 /** Cache for the stage: a group's result path text, recomputed only when the group or one of its descendants changed. */

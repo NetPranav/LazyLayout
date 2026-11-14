@@ -70,31 +70,58 @@ function sourcesOf(paths: readonly BezPath[]): Source[] {
 
 const inBox = (b: Rect, p: Pt): boolean => p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1;
 
-/** Which input segment an edge lies on (-1: none). The segment the edge before it lay on is tried first. */
-function ownerOf(a: Pt, b: Pt, sources: readonly Source[], prev: number): number {
+/**
+ * The squared distance from `p` to a segment, searched from a nearby parameter (a few Gauss–Newton steps). Much
+ * cheaper than a full search, and enough for the next vertex along a curve the last one was on.
+ */
+function nearFrom(s: Segment, p: Pt, hint: number): { t: number; distanceSq: number } {
+  let t = hint;
+  for (let i = 0; i < 4; i++) {
+    const q = segmentEval(s, t);
+    const d = derivative(s, t);
+    const len = d.x * d.x + d.y * d.y;
+    if (len < 1e-18) break;
+    const step = ((p.x - q.x) * d.x + (p.y - q.y) * d.y) / len;
+    t = Math.min(1, Math.max(0, t + step));
+    if (Math.abs(step) < 1e-7) break;
+  }
+  return { t, distanceSq: d2(segmentEval(s, t), p) };
+}
+
+/**
+ * Which input segment an edge lies on (-1: none), and where its far end is on that segment. The segment the edge
+ * before it lay on is tried first, from where that edge ended.
+ */
+function ownerOf(a: Pt, b: Pt, sources: readonly Source[], prev: number, prevT: number): { owner: number; t: number } {
   const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const lim = ON_SEGMENT * ON_SEGMENT;
-  const on = (k: number): number => {
-    const s = sources[k];
-    if (!inBox(s.box, m) || !inBox(s.box, a) || !inBox(s.box, b)) return Infinity;
-    const dm = segmentNearest(s.seg, m).distanceSq;
-    if (dm > lim) return Infinity;
-    // the ends too: an edge that only crosses a segment is not on it
-    if (segmentNearest(s.seg, a).distanceSq > lim || segmentNearest(s.seg, b).distanceSq > lim) return Infinity;
-    return dm;
-  };
-  if (prev >= 0 && on(prev) < Infinity) return prev;
-  let best = -1;
-  let bestD = Infinity;
-  for (let k = 0; k < sources.length; k++) {
-    if (k === prev) continue;
-    const d = on(k);
-    if (d < bestD) {
-      bestD = d;
-      best = k;
+  if (prev >= 0) {
+    const s = sources[prev];
+    if (inBox(s.box, m) && inBox(s.box, b)) {
+      const nm = nearFrom(s.seg, m, prevT);
+      if (nm.distanceSq <= lim) {
+        const nb = nearFrom(s.seg, b, nm.t);
+        if (nb.distanceSq <= lim) return { owner: prev, t: nb.t };
+      }
     }
   }
-  return best;
+  let best = -1;
+  let bestD = Infinity;
+  let bestT = 0;
+  for (let k = 0; k < sources.length; k++) {
+    const s = sources[k];
+    if (!inBox(s.box, m) || !inBox(s.box, a) || !inBox(s.box, b)) continue;
+    const dm = segmentNearest(s.seg, m).distanceSq;
+    if (dm > lim || dm >= bestD) continue;
+    // the ends too: an edge that only crosses a segment is not on it
+    if (segmentNearest(s.seg, a).distanceSq > lim) continue;
+    const nb = segmentNearest(s.seg, b);
+    if (nb.distanceSq > lim) continue;
+    bestD = dm;
+    best = k;
+    bestT = nb.t;
+  }
+  return { owner: best, t: bestT };
 }
 
 const snapT = (t: number): number => (t < END_T ? 0 : t > 1 - END_T ? 1 : t);
@@ -156,9 +183,11 @@ function refitRing(ring: Ring, sources: readonly Source[], out: BezPath): void {
 
   const owner: number[] = new Array(n);
   let prev = -1;
+  let prevT = 0;
   for (let i = 0; i < n; i++) {
-    owner[i] = ownerOf(at(i), at(i + 1), sources, prev);
-    prev = owner[i];
+    const o = ownerOf(at(i), at(i + 1), sources, prev, prevT);
+    owner[i] = prev = o.owner;
+    prevT = o.t;
   }
 
   // start at an edge whose owner differs from the edge before it, so no run wraps around the end of the list
