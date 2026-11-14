@@ -104,7 +104,7 @@ test.describe("Cloner (D9)", () => {
     expect(d.id).toBeTruthy();
   });
 
-  test("a 100 x 60 dot grid exports with no script, and has the same copies as the editor", async ({ page }) => {
+  test("a 100 x 60 dot grid exports with no script, as one element (the editor draws all 5,999 copies)", async ({ page }) => {
     test.setTimeout(180_000);
     await dot(page);
     await mode(page, "Grid");
@@ -118,7 +118,9 @@ test.describe("Cloner (D9)", () => {
     expect(html).not.toMatch(/<script/i);
     expect(files.some((f) => f.path.endsWith(".js"))).toBe(false);
     expect(html).not.toContain("data-repeat-copy");
-    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(5999);
+    // the 5,999 copies are one element with a repeating background (the cheapest form; the "cheapest export" test compares how it looks)
+    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(1);
+    expect((html.match(/<svg/g) ?? []).length).toBe(0);
   });
 
   test("the cheapest export: a static dot grid is one element, and looks the same as one element per dot (D9)", async ({ page, browser }, testInfo) => {
