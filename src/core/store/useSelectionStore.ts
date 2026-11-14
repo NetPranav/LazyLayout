@@ -126,7 +126,8 @@ documentStore.subscribe((state, prev) => {
   });
 });
 
-/** Test seam: with `window.__LL_TEST__` set before load, `window.__LL_SELECTION__()` is the ids of the selected layers. */
+/** Test seam: with `window.__LL_TEST__` set before load, `window.__LL_SELECTION__()` is the ids of the selected layers, and `window.__LL_SELECT__(id)` selects one (as a click on its row does). */
 if (typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__) {
   (window as unknown as Record<string, unknown>).__LL_SELECTION__ = () => useSelectionStore.getState().selectedIds;
+  (window as unknown as Record<string, unknown>).__LL_SELECT__ = (id: string) => useSelectionStore.getState().select(id, "element");
 }

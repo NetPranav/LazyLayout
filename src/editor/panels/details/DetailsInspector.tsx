@@ -31,6 +31,7 @@ import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
 import { EffectorSection } from "./sections/EffectorSection";
 import { SpeedSection } from "./sections/SpeedSection";
+import { ScrollSection } from "./sections/ScrollSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -320,6 +321,11 @@ export function getInspectorDesignSections(
       id: "clone",
       title: "Clone",
       children: <CloneSection {...sectionProps} />,
+    },
+    {
+      id: "scroll",
+      title: "Scroll",
+      children: <ScrollSection {...sectionProps} />,
     },
     {
       id: "speed",

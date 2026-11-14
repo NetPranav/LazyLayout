@@ -10,6 +10,7 @@ import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
 import { registerDriverCommands } from "@/core/bindings/driverCommands";
+import { registerScrollClipCommand, registerScrollCommands } from "@/core/scroll/scrollCommands";
 import { registerExpressionCommands } from "@/core/expressions/expressionCommands";
 import { useLayers, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
@@ -60,6 +61,8 @@ export function useLeftPanelData(
     const offLinks = registerLinkCommands(); // property links, the pick-whip (Phase 76)
     const offExpressions = registerExpressionCommands(); // expressions (Phase 77)
     const offDrivers = registerDriverCommands(); // drivers: the pointer, scroll and time (Design track D4)
+    const offScroll = registerScrollCommands(); // a clip's scroll range, scrub and pin (Phase 81; Design track D11)
+    const offScrollClip = registerScrollClipCommand(); // add a scroll animation to a layer
 
     return () => {
       offEditing();
@@ -71,6 +74,8 @@ export function useLeftPanelData(
       offLinks();
       offExpressions();
       offDrivers();
+      offScroll();
+      offScrollClip();
     };
   }, []);
 
