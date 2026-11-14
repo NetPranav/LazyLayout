@@ -6,6 +6,7 @@ import { baseFilterFunctions } from "../../render/geometry";
 import { hasLinks, readLinks } from "../../links/linkModel";
 import { hasExpressions, readExpressions } from "../../expressions/exprModel";
 import { fxStyle, hasFx, isFxPath, type FxFilterSpec } from "../../render/fxStack";
+import { speedEffectsOn } from "../../kernel/speedEffects";
 
 /**
  * ROADMAP Phase 57: the bridge from the kernel's output (property path → value) to CSS. Pure, so the mapping is
@@ -35,7 +36,9 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   if (own && typeof own["matte.source"] === "string" && own["matte.source"] !== "" && own["matte.mode"] !== undefined && own["matte.mode"] !== "none") paths.add("mask.path");
   if (mattesOf(doc).has(layerId)) paths.add("appearance.opacity");
   // Phase 75: a layer with an effect, or with motion blur on, has its filter written every frame (a parameter or the velocity may change).
-  if (own && hasFx(own, doc.layers[layerId]?.motionBlur === true)) paths.add("fx.stack");
+  if (own && hasFx(own, doc.layers[layerId]?.motionBlur === true || speedEffectsOn(own))) paths.add("fx.stack");
+  // Design track D18: a layer with a speed effect has its transform written every frame (its speed may change)
+  if (own && speedEffectsOn(own)) paths.add("transform.x");
   // Phase 76: a property a link drives is written every frame (its source may move), so it counts as animated.
   if (own) for (const link of readLinks(own)) if (link.enabled) paths.add(link.target);
   // Phase 77: so is a property an expression drives (it may move with time alone).
@@ -68,7 +71,7 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   const layerIds = new Set<string>();
   for (const clip of Object.values(doc.clips)) if (clip.enabled) layerIds.add(clip.layerId);
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
-  for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true) || hasLinks(layer.properties) || hasExpressions(layer.properties)) layerIds.add(layer.id);
+  for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true || speedEffectsOn(layer.properties)) || hasLinks(layer.properties) || hasExpressions(layer.properties)) layerIds.add(layer.id);
   for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer") layerIds.add(b.target.on.ref);
   for (const [source, targets] of mattesOf(doc)) {
     layerIds.add(source);

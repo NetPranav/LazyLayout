@@ -1839,6 +1839,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** a poster set onto a billboard in a photo in four drags.
 **Done when:** the four points are hit within 0.01 px; the export matches within 0.5 px at 5 sizes.
 
+**Status check (2026-11-14), 🚧:** the corner pin was already built (core maths `cornerPin.ts`, the **Pin corners** button in Position, four handles and a grid on the canvas, one undo step per drag). This round verified the Done-when: **a real handle drag moves a corner by exactly the drag to within 0.01 px** (Chromium), the CSS matrix sends the four corners onto the points within 0.01 px for 6 quads x 5 sizes from 1x1 to 4000x3000 (unit), and **an exported page draws five layers of five sizes onto their four points within 0.5 px** (Chromium, measured from the exported page's computed matrix). It applies to image, text, shape, container and button layers alike (unit), and a pin that would fold the layer is refused. **Not tested:** a video layer (Phase 99 is Lane B's, not built); the pin is not yet fed by the tracker (D17). Marked 🚧 until it is on `main`.
+
 ### Phase D17 · Tracking & parent to track
 **Needs:** D16, D5 · **Was:** ROADMAP_3D 3D-205, 3D-206 (needs Main 99, Lane B) · **Lane:** A · **Status:** 📋
 - [ ] Track one point, two points or a plane through a video; the track becomes a helper layer you can **parent anything to**; results are editable keys, baked small in the export. Needs video layers (Main 99, Lane B).
@@ -1852,6 +1854,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** a fast swipe leaves speed lines and a blur that fade as it stops.
 **Done when:** the effect amount matches the velocity curve at 5 times; it costs nothing at rest.
+
+**Status check (2026-11-14), 🚧:** built: `src/core/kernel/speedEffects.ts` (pure) and a kernel step after the motion blur: **squash and stretch along the motion** (area kept), **lean into the side it moves**, and a **speed-driven blur** (through the existing motion-blur filter), with the amounts linear in speed up to a reference speed; the **Speed** section in the Design panel, and a one-click **trail** (echo copies, each a set time behind, using the delayed copies). **Verified: the stretch follows the speed curve of a layer swinging as 300 sin(2t) at five times, in the kernel and in the real DOM in Chromium; at the turning point (speed 0) the layer is left exactly as it was; a layer with no speed effect set is not measured at all; lean and blur follow; Design shows the plain layer.** The Done-when is met. **Not done:** speed lines (the streaks behind a fast layer) are not built; trail echoes stay on the page, stacked, when the layer is at rest (the effect amount is zero, the copies are not); the effects are not in the static export (it plays no clips, Lane B's Phase 94); the 50-layer 60 fps check of Phase 144 is not measured.
 
 ## Wave 5 · 3D parts
 

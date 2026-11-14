@@ -49,3 +49,46 @@ describe("corner pin", () => {
     assert.equal(isConvex([[0, 0], [10, 0], [20, 0], [30, 0]]), false, "a line");
   });
 });
+
+describe("corner pin Done-when (D16): the four points are hit within 0.01 px, at five sizes", () => {
+  /** What the browser does with `matrix3d(...)`: a point (x, y) of the layer goes to (X / W, Y / W). */
+  const apply = (matrix: string, x: number, y: number): [number, number] => {
+    const m = matrix.slice(9, -1).split(",").map(Number); // column-major
+    const w = m[3] * x + m[7] * y + m[15];
+    return [(m[0] * x + m[4] * y + m[12]) / w, (m[1] * x + m[5] * y + m[13]) / w];
+  };
+  const SIZES: [number, number][] = [[1, 1], [24, 24], [320, 180], [1280, 720], [4000, 3000]];
+  // quads of every kind: a plain move, a trapezoid (a road), a strong perspective (a billboard), a skew, a tiny and a huge one
+  const QUADS: Quad[] = [
+    [[10, 10], [110, 10], [110, 70], [10, 70]],
+    [[40, 0], [160, 0], [200, 120], [0, 120]],
+    [[120.5, 33.25], [480.75, 61.5], [431.125, 402.875], [97.25, 350.5]],
+    [[0, 0], [300, 40], [340, 200], [30, 160]],
+    [[1000, 1000], [1000.5, 1000], [1000.5, 1000.5], [1000, 1000.5]],
+    [[-200, -50], [3000, 100], [2800, 2400], [-150, 2000]],
+  ];
+  for (const [w, h] of SIZES) {
+    it(`at ${w} x ${h}: every quad's corners land on its points`, () => {
+      for (const q of QUADS) {
+        const matrix = pinMatrix3d(w, h, q);
+        const corners: [number, number][] = [[0, 0], [w, 0], [w, h], [0, h]];
+        corners.forEach((c, i) => {
+          const [x, y] = apply(matrix, c[0], c[1]);
+          assert.ok(Math.hypot(x - q[i][0], y - q[i][1]) < 0.01, `${w}x${h} corner ${i} of ${JSON.stringify(q)}: landed at ${x}, ${y}`);
+        });
+      }
+    });
+  }
+  it("a point in the middle of the layer lands where the surface's own centre is (a perspective, not a blend)", () => {
+    const q = QUADS[1];
+    const [x, y] = apply(pinMatrix3d(200, 100, q), 100, 50);
+    const [mx, my] = mapUnit(q, 0.5, 0.5);
+    assert.ok(Math.hypot(x - mx, y - my) < 0.01);
+  });
+  it("the stored form survives a round trip with two-decimal rounding: the points come back within 0.005 px", () => {
+    for (const q of QUADS.slice(0, 4)) {
+      const back = parsePin(formatPin(q))!;
+      back.forEach((p, i) => assert.ok(Math.hypot(p[0] - q[i][0], p[1] - q[i][1]) <= 0.0071, `corner ${i}`));
+    }
+  });
+});

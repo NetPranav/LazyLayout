@@ -30,6 +30,7 @@ import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
 import { EffectorSection } from "./sections/EffectorSection";
+import { SpeedSection } from "./sections/SpeedSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -313,6 +314,11 @@ export function getInspectorDesignSections(
       id: "clone",
       title: "Clone",
       children: <CloneSection {...sectionProps} />,
+    },
+    {
+      id: "speed",
+      title: "Speed",
+      children: <SpeedSection {...sectionProps} />,
     },
     {
       id: "effector",

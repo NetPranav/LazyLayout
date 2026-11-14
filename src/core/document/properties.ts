@@ -615,6 +615,11 @@ const DEFS = {
   "repeat.opacity": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
   /** Seconds each copy of a repeated or cloned layer runs behind the one before, when the layer is animated (0: together). */
   "copy.delay": ranged(num(0, null, "paint", VISUAL, false), { min: -10, max: 10 }),
+  /** Speed effects (Design track D18): squash and stretch, lean and blur from how fast the layer moves; see `core/kernel/speedEffects.ts`. */
+  "speed.stretch": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 5 }),
+  "speed.lean": ranged(num(0, null, "paint", VISUAL, false), { min: -60, max: 60 }),
+  "speed.blur": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 0.2 }),
+  "speed.ref": ranged(num(1200, null, "paint", VISUAL, false), { min: 1, max: 20000 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
   "clone.cols": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),
