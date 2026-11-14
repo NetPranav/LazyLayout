@@ -144,4 +144,20 @@ test.describe("Parent & links (D5)", () => {
     expect(Number((await kernel(page, b.id, 1.5))["appearance.opacity"])).toBeCloseTo(0.5, 3); // 60 on a 0..120 range
     expect(Number((await kernel(page, b.id, 6))["appearance.opacity"])).toBeCloseTo(1, 3); // 240 is past the end: held at 1
   });
+
+  test("Pick on canvas: click the layer to follow instead of choosing it from a list (D5)", async ({ page }) => {
+    const { a, b } = await two(page);
+    await select(page, b.id);
+    await page.getByRole("button", { name: "Pick on canvas", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Pick on canvas", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await select(page, a.id); // the click on the canvas picks it
+    await expect(page.getByRole("button", { name: "Pick on canvas", exact: true })).toHaveAttribute("aria-pressed", "false");
+    // the selection is back on the layer being linked, not left on the one that was picked
+    await expect.poll(async () => await page.getByRole("button", { name: "Add link", exact: true }).isVisible()).toBe(true);
+    await page.getByRole("button", { name: "Add link", exact: true }).click();
+    await expect(page.locator("[data-link-slot]")).toHaveCount(1);
+    const l = await layers(page);
+    expect(l[b.id].properties["link.1.source"]).toBe(a.id); // b follows a, as picked
+    expect(l[a.id].properties["link.1.source"]).toBeUndefined(); // and a was not changed
+  });
 });
