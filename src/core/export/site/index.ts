@@ -22,6 +22,8 @@ export interface SiteExportOptions {
   readAsset?: (id: string) => Promise<AssetBytes | null>;
   /** The project's loading pages (see `PlanOptions.loading`). Only the Next.js target writes them, as `loading.tsx`. */
   loading?: { rootId: string; toRootId: string | null }[];
+  /** Write a grid of identical plain dots as one element (default true); false draws every dot, for a test to compare the two. */
+  dotGrids?: boolean;
 }
 
 export interface SiteExport {
@@ -32,7 +34,7 @@ export interface SiteExport {
 
 export async function buildSiteExport(doc: MotionDocument, options: SiteExportOptions): Promise<SiteExport> {
   const styling: Styling = options.target === "html" ? "css" : options.styling;
-  const plan = buildPlan(doc, { styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html", loading: options.loading });
+  const plan = buildPlan(doc, { dotGrids: options.dotGrids, styling: options.styling, hrefs: options.target === "html" ? "files" : "routes", components: options.target !== "html", loading: options.loading });
   const assets = new Map<string, AssetBytes>();
   const warnings = [...plan.warnings];
   if (options.target !== "next" && (options.loading?.length ?? 0) > 0) warnings.push("Loading pages are written for the Next.js target only (as loading.tsx); this export leaves them out.");

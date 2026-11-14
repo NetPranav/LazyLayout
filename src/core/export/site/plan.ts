@@ -17,6 +17,7 @@ import { anchorOf, pagesOf, resolveLink } from "../../pages/pages";
 import { modesOf, hasTokens } from "../../tokens/tokens";
 import { PRESENTATION_ATTRS, classNameFor, diffDecls, renderingOf, tailwindUtility, toCss, type CssBlock, type Decl, type Rule } from "./css";
 import { parseMarkup, walk, type ENode } from "./markup";
+import { collapseDotGrids } from "./dotGrid";
 import { renderLayerMarkup } from "./render";
 import { componentize, type ComponentDef } from "./components";
 
@@ -31,6 +32,8 @@ export interface PlanOptions {
    * `toRootId` is the frame of that page (null: the whole site, the home page's folder).
    */
   loading?: { rootId: string; toRootId: string | null }[];
+  /** Write a grid of identical plain dots as one element with a CSS background (default true). Off, for a test to compare the two. */
+  dotGrids?: boolean;
 }
 
 export interface PagePlan {
@@ -193,6 +196,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
   const modes = modesOf(doc);
   const useModes = hasTokens(doc) && Object.keys(doc.variables ?? {}).length > 0 && modes.length > 1;
   const modeIds = useModes ? modes.map((m) => m.id) : [modes[0].id];
+  const liveEffectorLayers = new Set(exportableEffectors(doc).map((e) => e.layer)); // their copies are restyled by the page script
   const siteAssets = new Set<string>();
   const routeOf = new Map(pagesList.map((p) => [p.id, p.route]));
   const used = new Set<string>(); // class names, across the whole site
@@ -206,7 +210,8 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     const render = (bpId: string | null, modeId: string | null) => {
       const view = resolveDocumentAt(doc, bpId, modeId === modes[0].id ? null : modeId);
       const html = renderLayerMarkup(view.layers, rootId, { assetUrl: (id) => (assets.add(id), siteAssets.add(id), `{{asset:${id}}}`) }, kind === "page");
-      const roots = parseMarkup(html);
+      const parsed = parseMarkup(html);
+      const roots = options.dotGrids === false ? parsed : collapseDotGrids(parsed, liveEffectorLayers);
       // (a layer that is hidden at a breakpoint draws nothing there)
       if (roots[0]) {
         if (kind === "page") normalizeRoot(roots[0]);
