@@ -308,6 +308,9 @@ function compileOperator(op: Operator): Compiled {
         },
         reset: () => undefined,
       };
+    case "lookAt":
+      // the angle from (x, y) to the input point, in degrees (page y grows downward, so 90 is down and turns read clockwise)
+      return { step: (x) => (isVec(x) ? (Math.atan2(x[1] - op.y, x[0] - op.x) * 180) / Math.PI : 0), reset: () => undefined };
     case "distance":
     case "angleTo": {
       const to = compileExpr(op.to);

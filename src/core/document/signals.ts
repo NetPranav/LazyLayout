@@ -102,6 +102,8 @@ export type Operator =
   | { op: "add" | "mul" | "min" | "max"; x: number }
   | { op: "abs" | "length" | "normalize" }
   | { op: "rotate"; degrees: number }
+  /** The angle in degrees from the point (x, y) to the input vector: 0 points right, 90 points down (a turn that faces the input). */
+  | { op: "lookAt"; x: number; y: number }
   | { op: "distance" | "angleTo"; to: SignalExpr }
   | { op: "select"; whenTrue: SignalExpr; whenFalse: SignalExpr }
   | { op: "component"; axis: "x" | "y" };
@@ -137,6 +139,7 @@ export const OperatorSchema: z.ZodType<Operator> = z.lazy(() =>
     z.strictObject({ op: z.enum(["add", "mul", "min", "max"]), x: Finite }),
     z.strictObject({ op: z.enum(["abs", "length", "normalize"]) }),
     z.strictObject({ op: z.literal("rotate"), degrees: Finite }),
+    z.strictObject({ op: z.literal("lookAt"), x: Finite, y: Finite }),
     z.strictObject({ op: z.enum(["distance", "angleTo"]), to: SignalExprSchema }),
     z.strictObject({ op: z.literal("select"), whenTrue: SignalExprSchema, whenFalse: SignalExprSchema }),
     z.strictObject({ op: z.literal("component"), axis: z.enum(["x", "y"]) }),
@@ -571,6 +574,9 @@ class Parser {
       case "rotate":
         arity(1);
         return { op: "rotate", degrees: n(0) };
+      case "lookAt":
+        arity(2);
+        return { op: "lookAt", x: n(0), y: n(1) };
       case "distance":
       case "angleTo":
         arity(1);
@@ -846,6 +852,8 @@ export function formatOperator(o: Operator): string {
       return `${o.op}(${o.x})`;
     case "rotate":
       return `rotate(${o.degrees})`;
+    case "lookAt":
+      return `lookAt(${o.x}, ${o.y})`;
     case "distance":
     case "angleTo":
       return `${o.op}(${formatExpr(o.to)})`;

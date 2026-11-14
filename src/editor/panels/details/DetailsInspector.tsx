@@ -30,11 +30,13 @@ import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
 import { EffectorSection } from "./sections/EffectorSection";
+import { SpeedSection } from "./sections/SpeedSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
   ConnectedPageSection,
   ConnectedPageBackground,
+  ConnectedPageScroll,
   ThemeTokensBody,
 } from "./sections/PageSection";
 import {
@@ -88,6 +90,11 @@ export function getInspectorDesignSections(
         id: "background",
         title: "Background",
         children: <ConnectedPageBackground />,
+      },
+      {
+        id: "page-scroll",
+        title: "Scrolling",
+        children: <ConnectedPageScroll />,
       },
       {
         id: "theme-tokens",
@@ -313,6 +320,11 @@ export function getInspectorDesignSections(
       id: "clone",
       title: "Clone",
       children: <CloneSection {...sectionProps} />,
+    },
+    {
+      id: "speed",
+      title: "Speed",
+      children: <SpeedSection {...sectionProps} />,
     },
     {
       id: "effector",

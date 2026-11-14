@@ -8,6 +8,7 @@ import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
 import { getTransport, transport, transportStore } from "@/core/time/transport";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import { parityStore } from "@/core/engine/stage/parity";
 import type { InputSource } from "@/core/bindings/inputBus";
 import { addBinding } from "@/core/bindings/bindingCommands";
@@ -30,7 +31,9 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   const [renderer] = useState(() => new StageRenderer());
   const designing = useCanvasViewStore((s) => s.mode === "design");
   const playing = useStore(transportStore, (s) => s.playing);
-  const enabled = !designing || playing;
+  // a frame previewed in place (its Preview toggle) is a running page too: it scrolls, so drivers and effectors run
+  const framePreviewing = useFramePreviewStore((p) => Object.keys(p.previewing).length > 0);
+  const enabled = !designing || playing || framePreviewing;
 
   // keep the registry in step with what is drawn
   useLayoutEffect(() => {
@@ -94,7 +97,7 @@ function syncRegistry(page: HTMLElement, renderer: StageRenderer): void {
 /**
  * The input bus's eyes on the canvas (D4): where the pointer is over the stage, in the drawn page's own px (so zoom and
  * pan do not change what a driver reads), and the scroll of the frame. Pointer events on the stage viewport, not the
- * window; scroll is not served yet (the new canvas has no scroll host), so it reads as no scroll.
+ * window; scroll is the previewed frame's own scroll (`frame-preview-scroller`), and reads as none when nothing scrolls.
  */
 function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: () => void } {
   const view = page.closest<HTMLElement>('[data-testid="stage-viewport"]') ?? page;
@@ -109,6 +112,11 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     const t: "mouse" | "pen" | "touch" = e.pointerType === "pen" ? "pen" : e.pointerType === "touch" ? "touch" : "mouse";
     pointer = { ...toPage(e), down: e.buttons !== 0, coarse: t === "touch", pressure: e.pressure, type: t };
   };
+  /** The first previewed frame that has anything to scroll. */
+  const scroller = (): HTMLElement | null => {
+    for (const el of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) if (el.scrollHeight - el.clientHeight > 0) return el;
+    return null;
+  };
   view.addEventListener("pointermove", onMove);
   view.addEventListener("pointerdown", onMove);
   view.addEventListener("pointerup", onMove);
@@ -116,7 +124,33 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     input: {
       pointer: () => pointer,
       pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
-      scroll: () => ({ y: 0, max: 0 }),
+      // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
+      // one that has anything to scroll; none means no scroll, which reads as 0
+      scroll: () => {
+        const el = scroller();
+        return el ? { y: el.scrollTop, max: el.scrollHeight - el.clientHeight, viewport: el.clientHeight } : { y: 0, max: 0 };
+      },
+      // where a layer is on the page, in the same px as the pointer (the page's own, whatever the zoom)
+      layerRect: (id) => {
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!el) return null;
+        const pr = page.getBoundingClientRect();
+        const k = page.offsetWidth > 0 ? pr.width / page.offsetWidth : 1;
+        const r = el.getBoundingClientRect();
+        return { x: (r.left - pr.left) / (k || 1), y: (r.top - pr.top) / (k || 1), width: r.width / (k || 1), height: r.height / (k || 1) };
+      },
+      // where a layer sits in the scrolled content, in the page's own px: its drawn position inside the (scrolled) frame, plus the scroll
+      layerBox: (id) => {
+        const sc = scroller();
+        const frameId = sc?.getAttribute("data-frame-id");
+        const frame = frameId ? page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(frameId)}"]`) : null;
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!sc || !frame || !el) return null;
+        const k = page.offsetWidth > 0 ? page.getBoundingClientRect().width / page.offsetWidth : 1;
+        const fr = frame.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { top: (r.top - fr.top) / (k || 1) + sc.scrollTop, height: r.height / (k || 1) };
+      },
     },
     dispose: () => {
       view.removeEventListener("pointermove", onMove);

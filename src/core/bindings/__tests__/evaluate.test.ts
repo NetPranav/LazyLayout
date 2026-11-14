@@ -161,3 +161,15 @@ describe("binding evaluator (D4)", () => {
     assert.throws(() => compileExpr(chain(pointer, { op: "trail", samples: 8 })), UnsupportedOperatorError);
   });
 });
+
+describe("lookAt (D6)", () => {
+  const uv: Signal = { kind: "pointerIn", channel: "px", space: "page" as never };
+  const at = (x: number, y: number) => toNumber(compileExpr(chain(uv, { op: "lookAt", x: 100, y: 100 })).step({ time: 0, dt: 1 / 60, seed: 0, read: () => [x, y] as Value }));
+  it("is the angle from the point to the input, at the eight compass directions (0 right, 90 down)", () => {
+    const cases: [number, number, number][] = [[200, 100, 0], [200, 200, 45], [100, 200, 90], [0, 200, 135], [0, 100, 180], [0, 0, -135], [100, 0, -90], [200, 0, -45]];
+    for (const [x, y, want] of cases) assert.ok(Math.abs(at(x, y) - want) < 1e-9, `(${x}, ${y}): ${at(x, y)} vs ${want}`);
+  });
+  it("a scalar input has no direction", () => {
+    assert.equal(toNumber(compileExpr(chain(constant(5), { op: "lookAt", x: 0, y: 0 })).step({ time: 0, dt: 1 / 60, seed: 0, read: () => 0 })), 0);
+  });
+});

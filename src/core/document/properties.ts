@@ -613,6 +613,15 @@ const DEFS = {
   "repeat.rotate": deg(0, null, "paint", VISUAL),
   "repeat.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 10 }),
   "repeat.opacity": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+  /** Seconds each copy of a repeated or cloned layer runs behind the one before, when the layer is animated (0: together). */
+  "copy.delay": ranged(num(0, null, "paint", VISUAL, false), { min: -10, max: 10 }),
+  /** Speed effects (Design track D18): squash and stretch, lean and blur from how fast the layer moves; see `core/kernel/speedEffects.ts`. */
+  "speed.stretch": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 5 }),
+  "speed.lean": ranged(num(0, null, "paint", VISUAL, false), { min: -60, max: 60 }),
+  "speed.blur": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 0.2 }),
+  "speed.ref": ranged(num(1200, null, "paint", VISUAL, false), { min: 1, max: 20000 }),
+  /** Smooth scrolling of the exported page (Design track D14): seconds to catch up with the wheel; 0 is the browser's own. Set on a page frame. */
+  "scroll.smooth": ranged(num(0, null, "none", ALL, false), { min: 0, max: 2 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
   "clone.cols": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),
@@ -624,7 +633,7 @@ const DEFS = {
   "clone.start": deg(0, null, "paint", VISUAL),
   "clone.faceOut": flag(false, "paint", VISUAL),
   /** Effector (Design track D10): varies each copy of a repeater or cloner by a field; see `core/render/effector.ts`. */
-  "effector.mode": oneOf(["off", "index", "noise", "pointer"], "off", null, "paint", VISUAL),
+  "effector.mode": oneOf(["off", "index", "noise", "pointer", "scroll"], "off", null, "paint", VISUAL),
   "effector.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 20 }),
   "effector.fade": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
   "effector.offsetX": px(0, null, "paint", VISUAL, false),
@@ -632,6 +641,8 @@ const DEFS = {
   "effector.radius": ranged(px(200, null, "paint", VISUAL, false), { min: 1 }),
   "effector.falloff": oneOf(["linear", "smoothstep", "gaussian", "inverse-square"], "smoothstep", null, "paint", VISUAL),
   "effector.seed": ranged(num(1, null, "paint", VISUAL, false), { integer: true }),
+  "effector.hue": deg(0, null, "paint", VISUAL),
+  "effector.spread": ranged(num(3, null, "paint", VISUAL, false), { min: 0.5, max: 200 }),
   /** Style code (Design track D3): CSS declarations written for this layer that are not a control, kept as written; see `core/style/styleCode.ts`. */
   "style.custom": typed(str("", null, "paint", ALL)),
 

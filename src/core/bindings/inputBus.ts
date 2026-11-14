@@ -4,9 +4,11 @@
  * real page, and a test supplies a fake one, so the same chains give the same values everywhere.
  *
  * Signals served today: the pointer (position in px and in uv / ndc of the page, motion, speed, button), scroll
- * (position, progress, velocity, direction), time and frame dt. Signals not served yet (`view`, `device`, `audio`,
- * `hover` and the other layer-state signals, `proximity`) read as 0 and are listed by `unservedSignals`, so the editor
- * can say so instead of silently showing nothing.
+ * (position, progress, velocity, direction), `view(layer)` (how far a layer has scrolled through the screen, and how much of it
+ * shows), `pointer.inside(layer)`, `hover(layer)` and `press(layer)` (edge-smoothed over 80 ms, as the spec says),
+ * `proximity(layer)` (distance to the layer's edge, 0 inside, or to its centre), time and frame dt. Signals not served yet
+ * (`device`, `audio`, `focus`) read as 0 and are listed by `unservedSignals`, so the editor can say so instead of silently
+ * showing nothing.
  */
 import type { Signal, SignalExpr } from "../document/signals";
 import type { Frame, Value, Vec2 } from "./evaluate";
@@ -17,8 +19,12 @@ export interface InputSource {
   pointer(): { x: number; y: number; down: boolean; coarse: boolean; pressure: number; type: "mouse" | "pen" | "touch" } | null;
   /** The page's size in px, for uv and ndc. */
   pageSize(): { width: number; height: number };
-  /** Scroll of the frame: position and the largest position (content height minus viewport), in px. */
-  scroll(): { y: number; max: number };
+  /** Scroll of the frame: position, the largest position (content height minus viewport) and the viewport's height, in px. */
+  scroll(): { y: number; max: number; viewport?: number };
+  /** Where a layer sits in the scrolled content: its top (from the top of the content, not the screen) and height, in px; null when it is not drawn. */
+  layerBox?(layerId: string): { top: number; height: number } | null;
+  /** Where a layer is on the page, in the same px as the pointer; null when it is not drawn. */
+  layerRect?(layerId: string): { x: number; y: number; width: number; height: number } | null;
 }
 
 /** Per-frame values that depend on the last frame (motion, speed, scroll velocity); owned by the bus, not the source. */
@@ -31,10 +37,39 @@ export interface BusState {
   angle: number;
   scrollVelocity: number;
   scrollDirection: number;
+  /** Frames run, so a signal read twice in one frame is smoothed once. */
+  frame: number;
+  /** The smoothed `hover` and `press` of each layer, with the frame it was last advanced on. */
+  smooth: Record<string, { frame: number; value: number }>;
 }
-export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0 });
+export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0, frame: 0, smooth: {} });
 
-const SERVED = new Set(["pointer", "pointerIn", "scroll", "time", "frameDt", "seed", "constant"]);
+/** Seconds a `hover` or `press` takes to settle (the spec's 80 ms edge smoothing). */
+export const EDGE_TAU = 0.08;
+
+/** Whether a point is inside a rectangle (edges count as inside). */
+export const insideRect = (r: { x: number; y: number; width: number; height: number }, x: number, y: number): boolean => x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
+
+/** Distance from a point to a rectangle's edge (0 when inside), or to its centre. */
+export function distanceToRect(r: { x: number; y: number; width: number; height: number }, x: number, y: number, measure: "edge" | "center" = "edge"): number {
+  if (measure === "center") return Math.hypot(x - (r.x + r.width / 2), y - (r.y + r.height / 2));
+  const dx = Math.max(r.x - x, 0, x - (r.x + r.width));
+  const dy = Math.max(r.y - y, 0, y - (r.y + r.height));
+  return Math.hypot(dx, dy);
+}
+
+const SERVED = new Set(["pointer", "pointerIn", "pointerInside", "layerState", "proximity", "scroll", "view", "time", "frameDt", "seed", "constant"]);
+
+/**
+ * How far a box has scrolled through the screen: 0 when its top reaches the bottom of the screen, 1 when its bottom leaves the
+ * top of it (like a CSS view timeline), and the share of the box that shows. Pure, so the export can use the same maths.
+ */
+export function viewOf(box: { top: number; height: number }, scrollY: number, viewport: number): { progress: number; visible: number } {
+  if (!(viewport > 0)) return { progress: 0, visible: 0 };
+  const progress = Math.min(1, Math.max(0, (scrollY + viewport - box.top) / (viewport + box.height)));
+  const overlap = Math.max(0, Math.min(box.top + box.height, scrollY + viewport) - Math.max(box.top, scrollY));
+  return { progress, visible: box.height > 0 ? overlap / box.height : 0 };
+}
 
 /** Advance the bus by one frame and return that frame's inputs. Call once per frame, in time order. */
 export function busFrame(source: InputSource, state: BusState, time: number, dt: number, seed = 0): Frame {
@@ -43,6 +78,7 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
   const sc = source.scroll();
   const x = p?.x ?? 0;
   const y = p?.y ?? 0;
+  state.frame++;
   if (state.last && dt > 0) {
     state.dx = x - state.last.x;
     state.dy = y - state.last.y;
@@ -77,6 +113,33 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
         return 0;
       case "pointerIn":
         return s.channel === "uv" ? [u, v] : s.channel === "ndc" ? [u * 2 - 1, v * 2 - 1] : [x, y];
+      case "pointerInside": {
+        const r = source.layerRect?.(s.layer);
+        return !!(p && r && insideRect(r, x, y));
+      }
+      case "layerState": {
+        if (s.channel === "focus") return 0; // keyboard focus is not measured
+        const r = source.layerRect?.(s.layer);
+        const on = !!(p && r && insideRect(r, x, y) && (s.channel === "hover" || p.down));
+        const key = `${s.channel}|${s.layer}`;
+        const cur = state.smooth[key] ?? { frame: -1, value: on ? 1 : 0 };
+        if (cur.frame !== state.frame) {
+          cur.value += ((on ? 1 : 0) - cur.value) * (1 - Math.exp(-Math.min(dt, 1 / 15) / EDGE_TAU));
+          cur.frame = state.frame;
+        }
+        state.smooth[key] = cur;
+        return cur.value;
+      }
+      case "proximity": {
+        const r = source.layerRect?.(s.layer);
+        return p && r ? distanceToRect(r, x, y, s.measure ?? "edge") : 0;
+      }
+      case "view": {
+        const box = source.layerBox?.(s.layer);
+        if (!box) return 0;
+        const v = viewOf(box, sc.y, sc.viewport ?? 0);
+        return s.channel === "progress" ? v.progress : v.visible;
+      }
       case "scroll":
         return s.channel === "y" ? sc.y : s.channel === "progress" ? progress : s.channel === "velocity" ? state.scrollVelocity : state.scrollDirection;
       default:
@@ -100,5 +163,5 @@ export function signalsOf(expr: SignalExpr): Signal[] {
 
 /** The signals an expression reads that the bus does not serve (they would read 0). */
 export function unservedSignals(expr: SignalExpr): Signal[] {
-  return signalsOf(expr).filter((s) => !SERVED.has(s.kind));
+  return signalsOf(expr).filter((s) => !SERVED.has(s.kind) || (s.kind === "layerState" && s.channel === "focus"));
 }

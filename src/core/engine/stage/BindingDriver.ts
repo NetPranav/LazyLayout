@@ -37,6 +37,11 @@ export class BindingDriver {
     return this.runtime?.idle ?? true;
   }
 
+  /** The CSS variables the last frame set (layer id -> name -> value). */
+  get vars(): ReadonlyMap<string, ReadonlyMap<string, number>> {
+    return this.runtime?.vars ?? new Map();
+  }
+
   get diagnostics() {
     this.ensure();
     return this.runtime?.diagnostics ?? [];

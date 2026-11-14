@@ -3,7 +3,9 @@
  * the canvas shows the design itself.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, pickShape } from "./support/editor";
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; archetype: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -106,10 +108,7 @@ test.describe("Drivers (D4)", () => {
 
   test("Follow: the chosen point of a layer follows the pointer (D6)", async ({ page }) => {
     const r = await setup(page);
-    await page.getByLabel("Follow pin", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: "Bottom", exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await chooseOption(page, "Follow pin", /^Bottom$/);
     const lag = page.getByLabel("Follow lag", { exact: true }).first();
     await lag.fill("0");
     await lag.press("Enter");
@@ -150,5 +149,377 @@ test.describe("Drivers (D4)", () => {
     await page.getByRole("button", { name: "Helper layer", exact: true }).click();
     await expect.poll(async () => (await layers(page))[r.id].properties["render.role"] ?? "").toBe("");
     expect((await exported()).length).toBe(before.length);
+  });
+
+  test("scroll drives a layer in Preview: the frame's own scroll is the signal (D4)", async ({ page }) => {
+    await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+    await openEditor(page);
+    await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      const el = page.getByText(name, { exact: true }).first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.click();
+        await page.keyboard.press("Delete");
+      }
+    }
+    // a Desktop frame stretched by its content (a tall page), as the responsive-frames spec builds one
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    type Win = { __LL_DOC__: { get: () => { layers: Record<string, { id: string; archetype: string; parentId: string | null }> }; commands: { addLayer: (a: unknown) => string } } };
+    const ids = await page.evaluate(() => {
+      const w = window as unknown as Win;
+      const frame = Object.values(w.__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id; // the page frame, under the canvas root
+      const add = (name: string, x: number, y: number) => w.__LL_DOC__.commands.addLayer({ archetype: "rectangle", parentId: frame, name, properties: { positioning: "absolute", "frame.x": x, "frame.y": y, "frame.width": 200, "frame.height": 120 } });
+      return { top: add("Top", 100, 100), foot: add("Foot", 100, 1500) };
+    });
+    // preview the frame right on the canvas: it becomes the screen and the rest scrolls
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${await page.evaluate(() => Object.values((window as unknown as Win).__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id)}"]`).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+
+    // the top layer turns 0 to 90 degrees as the page scrolls from the top to the bottom
+    await page.evaluate(([id]) => (window as unknown as { __LL_ENGINE__: { addBinding: (t: string, o: string) => string } }).__LL_ENGINE__.addBinding(`scroll.progress |> remap(0, 1, 0, 90)\n-> ${id}.transform.rotate blend add`, id), [ids.top]);
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${ids.top}"]`).first();
+    const turn = () =>
+      el.evaluate((e) => {
+        const m = new DOMMatrix(getComputedStyle(e).transform === "none" ? undefined : getComputedStyle(e).transform);
+        return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
+      });
+    await page.waitForTimeout(300);
+    expect(await turn()).toBe(0); // at the top
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = ((e as HTMLElement).scrollHeight - (e as HTMLElement).clientHeight) / 2));
+    await expect.poll(turn).toBeGreaterThan(35); // halfway: about 45
+    expect(await turn()).toBeLessThan(55);
+    await scroller.evaluate((e) => ((e as HTMLElement).scrollTop = (e as HTMLElement).scrollHeight));
+    await expect.poll(turn).toBe(90); // the bottom
+  });
+});
+
+test.describe("Drivers in the export (D4)", () => {
+  test("an exported page reacts to the mouse the way the editor does, and keeps still for a visitor who asked for less motion", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await page.getByRole("button", { name: "Add driver", exact: true }).click(); // pointer left to right drives Position X, 0..200
+    await expect(page.locator("[data-driver-id]")).toHaveCount(1);
+
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const script = built.files.find((f) => f.path === "lazylayout-drivers.js")!;
+    expect(script.text).toContain("remap: function"); // only what the project uses
+    expect(script.text).not.toContain("spring: function");
+    const dir = testInfo.outputPath("export");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    expect(existsSync(join(dir, "index.html"))).toBe(true);
+    expect(built.files.find((f) => f.path === "index.html")!.text).toContain('<script src="lazylayout-drivers.js" defer></script>');
+
+    const open = async (reduced: boolean) => {
+      const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 }, reducedMotion: reduced ? "reduce" : "no-preference" });
+      const p = await ctx.newPage();
+      await p.goto(`file://${join(dir, "index.html")}`);
+      return { ctx, p };
+    };
+    const shift = (p: Page) => p.locator(`[data-ll="${r.id}"]`).evaluate((e) => parseFloat((e as HTMLElement).style.translate || "0"));
+
+    const live = await open(false);
+    await expect(live.p.locator(`[data-ll="${r.id}"]`)).toHaveCount(1);
+    await live.p.mouse.move(60, 400, { steps: 5 });
+    await live.p.waitForTimeout(300);
+    const left = await shift(live.p);
+    await live.p.mouse.move(1140, 400, { steps: 8 });
+    await live.p.waitForTimeout(300);
+    const right = await shift(live.p);
+    expect(right - left, "moving the mouse right moves the layer right").toBeGreaterThan(100); // 0..200 across the page
+    expect(right).toBeLessThanOrEqual(200.001);
+    await live.ctx.close();
+
+    const still = await open(true);
+    await still.p.mouse.move(1140, 400, { steps: 8 });
+    await still.p.waitForTimeout(300);
+    expect(await shift(still.p), "reduced motion: the page as designed").toBe(0);
+    await still.ctx.close();
+  });
+
+  test("a project with no drivers exports no script", async ({ page }) => {
+    await setup(page);
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.files.some((f) => f.path.includes("drivers"))).toBe(false);
+    expect(built.files.find((f) => f.path === "index.html")!.text).not.toContain("<script");
+  });
+
+  test("an exported grid of dots grows under the mouse, and is as designed for a visitor who asked for less motion (D10)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await page.evaluate(
+      ([id]) =>
+        (window as unknown as { __LL_DOC__: { commands: { updateProps: (id: string, p: Record<string, unknown>) => void } } }).__LL_DOC__.commands.updateProps(id, {
+          "clone.mode": "grid", "clone.cols": 12, "clone.rows": 6, "clone.gapX": 70, "clone.gapY": 70,
+          "effector.mode": "pointer", "effector.scale": 3, "effector.radius": 220, "effector.falloff": "linear",
+        }),
+      [r.id],
+    );
+    await expect(page.locator("[data-repeat-copy]")).toHaveCount(71);
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain("data-ll-copy="); // the copies are findable by the script
+    expect(html).not.toContain("data-repeat-copy");
+    const dir = testInfo.outputPath("export-fx");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    const widths = (p: Page) => p.locator("[data-ll-copy]").evaluateAll((els) => els.map((e) => ((e.firstElementChild ?? e) as HTMLElement).getBoundingClientRect().width));
+    const open = async (reduced: boolean) => {
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: reduced ? "reduce" : "no-preference" });
+      const p = await ctx.newPage();
+      await p.goto(`file://${join(dir, "index.html")}`);
+      return { ctx, p };
+    };
+    const live = await open(false);
+    const before = await widths(live.p);
+    expect(before.length).toBe(71);
+    expect(Math.max(...before) - Math.min(...before)).toBeLessThan(1); // as drawn
+    await live.p.mouse.move(700, 300, { steps: 6 });
+    await live.p.waitForTimeout(400);
+    const after = await widths(live.p);
+    expect(Math.max(...after)).toBeGreaterThan(Math.min(...after) * 1.8); // the dots near the mouse grew
+    await live.ctx.close();
+
+    const still = await open(true);
+    await still.p.mouse.move(700, 300, { steps: 6 });
+    await still.p.waitForTimeout(400);
+    const quiet = await widths(still.p);
+    expect(Math.max(...quiet) - Math.min(...quiet)).toBeLessThan(1);
+    await still.ctx.close();
+  });
+
+  test("view: a layer turns as a section scrolls through the screen, in the editor and in the export (D4)", async ({ page, browser }, testInfo) => {
+    await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+    await openEditor(page);
+    await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      const el = page.getByText(name, { exact: true }).first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.click();
+        await page.keyboard.press("Delete");
+      }
+    }
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    type Win = { __LL_DOC__: { get: () => { layers: Record<string, { id: string; archetype: string; parentId: string | null }> }; commands: { addLayer: (a: unknown) => string } } };
+    const ids = await page.evaluate(() => {
+      const w = window as unknown as Win;
+      const frame = Object.values(w.__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id;
+      const add = (name: string, x: number, y: number, h: number) => w.__LL_DOC__.commands.addLayer({ archetype: "rectangle", parentId: frame, name, properties: { positioning: "absolute", "frame.x": x, "frame.y": y, "frame.width": 200, "frame.height": h } });
+      return { top: add("Top", 100, 100, 120), mid: add("Mid", 100, 700, 200), foot: add("Foot", 100, 1500, 120), frame };
+    });
+    // a driver made in the panel: Top turns 0..90 degrees with how far Mid has scrolled through the screen
+    await page.getByRole("button", { name: "Add driver", exact: true }).count(); // (the panel is for the selected layer; the seam below adds the same binding)
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${ids.frame}"]`).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+    await page.evaluate(([top, mid]) => (window as unknown as { __LL_ENGINE__: { addBinding: (t: string, o: string) => string } }).__LL_ENGINE__.addBinding(`view(${mid}).progress |> remap(0, 1, 0, 90)\n-> ${top}.transform.rotate blend add`, top), [ids.top, ids.mid]);
+
+    const turn = () =>
+      page.locator(`[data-testid="stage-page"] [data-element-id="${ids.top}"]`).first().evaluate((e) => {
+        const t = getComputedStyle(e).transform;
+        const m = new DOMMatrix(t === "none" ? undefined : t);
+        return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+      });
+    const viewport = await scroller.evaluate((e) => (e as HTMLElement).clientHeight);
+    const expected = (y: number) => 90 * Math.min(1, Math.max(0, (y + viewport - 700) / (viewport + 200)));
+    for (const y of [0, 300, 600, 5000]) {
+      await scroller.evaluate((e, top) => ((e as HTMLElement).scrollTop = top), y);
+      const at = await scroller.evaluate((e) => (e as HTMLElement).scrollTop); // the browser holds it to the real maximum
+      await expect.poll(async () => Math.abs((await turn()) - expected(at)), { message: `scrolled to ${at}` }).toBeLessThan(1.5);
+    }
+
+    // the export: the same section, the same maths, on a page of the same height
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${ids.frame}"]`).click();
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain(`data-ll-view="${ids.mid}"`);
+    const dir = testInfo.outputPath("export-view");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const exTurn = () =>
+      ex.locator(`[data-ll="${ids.top}"]`).evaluate((e) => parseFloat((e as HTMLElement).style.rotate || "0"));
+    const exBox = await ex.locator(`[data-ll-view="${ids.mid}"]`).evaluate((e) => { const r = e.getBoundingClientRect(); return { top: r.top + window.scrollY, height: r.height }; });
+    const vp = 900;
+    for (const y of [0, 300, 600, 5000]) {
+      await ex.evaluate((top) => window.scrollTo(0, top), y);
+      await ex.waitForTimeout(250);
+      const at = await ex.evaluate(() => window.scrollY);
+      const want = 90 * Math.min(1, Math.max(0, (at + vp - exBox.top) / (vp + exBox.height)));
+      expect(Math.abs((await exTurn()) - want), `exported page scrolled to ${at}`).toBeLessThan(1.5);
+    }
+    await ctx.close();
+  });
+
+  test("hover: a layer grows while the pointer is over it, in the editor and in the export (D4)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page); // a rectangle on the page
+    // choose the signal "Pointer over a layer" (the layer defaults to the selected one), drive Scale 1 to 1.5
+    await chooseOption(page, "Driver signal", "Pointer over a layer");
+    await chooseOption(page, "Driver property", "Scale");
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Pointer over a layer → Scale");
+
+    // in the editor: over the layer it grows, off it it goes back
+    await page.getByText("Motion", { exact: true }).first().click();
+    const width = async () => (await drawnBox(page, r.id))!.width;
+    const base = await width();
+    const box = (await drawnBox(page, r.id))!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 5 });
+    await expect.poll(width).toBeGreaterThan(base * 1.4); // about 1.5x
+    await page.mouse.move(box.x - 150, box.y - 100, { steps: 5 });
+    await expect.poll(width).toBeLessThan(base * 1.05);
+
+    // in the export
+    await page.getByText("Design", { exact: true }).first().click();
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain(`data-ll-view="${r.id}"`);
+    const dir = testInfo.outputPath("export-hover");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      mkdirSync(dirname(join(dir, f.path)), { recursive: true });
+      writeFileSync(join(dir, f.path), f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const el = ex.locator(`[data-ll="${r.id}"]`);
+    const scale = () => el.evaluate((e) => parseFloat((e as HTMLElement).style.scale || "1"));
+    const eb = (await el.boundingBox())!;
+    await ex.mouse.move(eb.x + eb.width / 2, eb.y + eb.height / 2, { steps: 5 });
+    await ex.waitForTimeout(500);
+    expect(await scale()).toBeGreaterThan(1.4);
+    await ex.mouse.move(5, 5, { steps: 5 });
+    await ex.waitForTimeout(500);
+    expect(await scale()).toBeLessThan(1.05);
+    await ctx.close();
+  });
+
+  test("a CSS variable follows the pointer, in the editor and in the export, and is taken off again (D4)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await chooseOption(page, "Driver property", "CSS variable");
+    const name = page.getByLabel("Driver CSS variable name", { exact: true });
+    await name.fill("glow");
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Pointer, left to right → --glow");
+
+    const glow = () => page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first().evaluate((e) => (e as HTMLElement).style.getPropertyValue("--glow"));
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    await page.mouse.move(page0.x + page0.width * 0.05, page0.y + page0.height * 0.8, { steps: 5 });
+    await expect.poll(async () => Number(await glow())).toBeLessThan(0.15);
+    await page.mouse.move(page0.x + page0.width * 0.95, page0.y + page0.height * 0.8, { steps: 8 });
+    await expect.poll(async () => Number(await glow())).toBeGreaterThan(0.85);
+    // out of Motion, the variable is taken off: what React drew is back
+    await page.getByText("Design", { exact: true }).first().click();
+    await expect.poll(glow).toBe("");
+
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const dir = testInfo.outputPath("export-cssvar");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      mkdirSync(dirname(join(dir, f.path)), { recursive: true });
+      writeFileSync(join(dir, f.path), f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const exGlow = () => ex.locator(`[data-ll="${r.id}"]`).evaluate((e) => (e as HTMLElement).style.getPropertyValue("--glow"));
+    await ex.mouse.move(40, 400, { steps: 5 });
+    await expect.poll(async () => Number(await exGlow())).toBeLessThan(0.1);
+    await ex.mouse.move(1160, 400, { steps: 8 });
+    await expect.poll(async () => Number(await exGlow())).toBeGreaterThan(0.9);
+    await ctx.close();
+  });
+
+  test("Look at the pointer: the layer turns to face the mouse (D6)", async ({ page }) => {
+    const r = await setup(page);
+    await page.getByRole("button", { name: "Look at the pointer", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Look at pointer");
+    await page.getByText("Motion", { exact: true }).first().click();
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first();
+    const angle = () =>
+      el.evaluate((e) => {
+        const t = getComputedStyle(e).transform;
+        const m = new DOMMatrix(t === "none" ? undefined : t);
+        return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+      });
+    const centre = async () => { const b = (await el.boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+    const c0 = await centre();
+    const diff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+    for (const [dx, dy] of [[200, 0], [0, 200], [-200, 0], [0, -200], [150, 150]]) {
+      await page.mouse.move(c0.x + dx, c0.y + dy, { steps: 4 });
+      const want = (Math.atan2(dy, dx) * 180) / Math.PI;
+      await expect.poll(async () => diff(await angle(), want), { message: `pointer at (${dx}, ${dy})` }).toBeLessThan(1.5);
+    }
+  });
+
+  test("Follow on a turned layer: the layer's own point lands on the pointer (D6)", async ({ page }) => {
+    const r = await setup(page);
+    const rot = page.getByLabel("Rotation", { exact: true }).first();
+    await rot.fill("90");
+    await rot.press("Enter");
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first();
+    await expect.poll(() => el.evaluate((e) => { const m = new DOMMatrix(getComputedStyle(e).transform); return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI); })).toBe(90);
+    const unturned = await el.evaluate((e) => ({ w: (e as unknown as SVGSVGElement).clientWidth || (e as HTMLElement).offsetWidth, h: (e as unknown as SVGSVGElement).clientHeight || (e as HTMLElement).offsetHeight }));
+    const k = (await page.locator('[data-testid="stage-page"]').boundingBox())!.width / (await page.locator('[data-testid="stage-page"]').evaluate((e) => (e as HTMLElement).offsetWidth));
+
+    await chooseOption(page, "Follow pin", /^Right$/);
+    const lag = page.getByLabel("Follow lag", { exact: true }).first();
+    await lag.fill("0");
+    await lag.press("Enter");
+    await page.getByRole("button", { name: "Follow the pointer", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toHaveCount(2);
+
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    const target = { x: page0.x + page0.width * 0.6, y: page0.y + page0.height * 0.5 };
+    await page.mouse.move(target.x - 60, target.y - 40, { steps: 3 });
+    await page.mouse.move(target.x, target.y, { steps: 6 });
+    await page.waitForTimeout(400);
+    // turned 90 degrees clockwise, the right-hand point is straight below the centre by half the layer's own width
+    const b = (await el.boundingBox())!;
+    const centre = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    expect(Math.abs(centre.x - target.x)).toBeLessThan(2.5);
+    expect(Math.abs(centre.y + (unturned.w * k) / 2 - target.y)).toBeLessThan(2.5);
   });
 });
