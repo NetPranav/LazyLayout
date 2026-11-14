@@ -45,6 +45,8 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   if (own) for (const expr of readExpressions(own)) if (expr.enabled) paths.add(expr.target);
   // Design track D4: and a property a binding drives (the pointer or scroll may move it).
   for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer" && b.target.on.ref === layerId) paths.add(b.target.path);
+  // Design track D15: a layer with states has every property a state sets written (a state may be on, or easing in or out).
+  for (const state of Object.values(doc.states ?? {})) if (state.layerId === layerId) for (const k of Object.keys(state.props)) paths.add(k);
   return paths;
 }
 
@@ -73,6 +75,7 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
   for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true || speedEffectsOn(layer.properties)) || hasLinks(layer.properties) || hasExpressions(layer.properties)) layerIds.add(layer.id);
   for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer") layerIds.add(b.target.on.ref);
+  for (const state of Object.values(doc.states ?? {})) layerIds.add(state.layerId);
   for (const [source, targets] of mattesOf(doc)) {
     layerIds.add(source);
     for (const id of targets) layerIds.add(id);

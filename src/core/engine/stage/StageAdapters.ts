@@ -75,6 +75,10 @@ export class StageAdapters implements EngineAdapter {
   setBound(bound: EvaluateInputs["bound"]): void {
     this.kernel.setBound(bound);
   }
+  /** This frame's states, for the kernel (Design track D15). */
+  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number> } | null): void {
+    this.kernel.setStates(frame);
+  }
   setInputs(inputs: EvaluateInputs): void {
     for (const a of this.all) a.setInputs(inputs);
   }

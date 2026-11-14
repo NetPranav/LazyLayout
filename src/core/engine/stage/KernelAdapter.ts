@@ -59,13 +59,19 @@ export class KernelAdapter implements EngineAdapter {
   }
 
   setInputs(inputs: EvaluateInputs): void {
-    this.inputs = inputs;
+    // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend };
     this.invalidate();
   }
 
   /** Design track D4: this frame's bound values. Not an `invalidate`: the plan is unchanged and only changed values are written. */
   setBound(bound: EvaluateInputs["bound"]): void {
     this.inputs = bound === this.inputs.bound ? this.inputs : { ...this.inputs, bound };
+  }
+
+  /** Design track D15: this frame's states and how far into them each layer is. Like `setBound`, not an `invalidate`. */
+  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number> } | null): void {
+    this.inputs = { ...this.inputs, activeStates: frame?.activeStates, stateBlend: frame?.stateBlend };
   }
 
   invalidate(): void {
