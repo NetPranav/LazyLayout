@@ -36,6 +36,9 @@ export const EffectorSection: React.FC<InspectorSectionProps> = ({ selectedId, i
   );
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
+      {copies && (
+        <OptionRow label="Delay">{field("Copy delay", "copy.delay", 0, "When the layer is animated, each copy follows it this many seconds behind the one before (0: all together; negative: ahead).", { step: 0.05 })}</OptionRow>
+      )}
       <OptionRow label="Vary by">
         <Select aria-label="Effector mode" size="sm" width="100%" options={MODES} value={mode} onChange={(v) => onUpdateProp?.("effector.mode", v)} />
       </OptionRow>

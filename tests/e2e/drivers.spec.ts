@@ -438,4 +438,48 @@ test.describe("Drivers in the export (D4)", () => {
     expect(await scale()).toBeLessThan(1.05);
     await ctx.close();
   });
+
+  test("a CSS variable follows the pointer, in the editor and in the export, and is taken off again (D4)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page);
+    await page.getByLabel("Driver property", { exact: true }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: /^CSS variable/ }).first().click();
+    await page.waitForTimeout(500);
+    const name = page.getByLabel("Driver CSS variable name", { exact: true });
+    await name.fill("glow");
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Pointer, left to right → --glow");
+
+    const glow = () => page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first().evaluate((e) => (e as HTMLElement).style.getPropertyValue("--glow"));
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    await page.mouse.move(page0.x + page0.width * 0.05, page0.y + page0.height * 0.8, { steps: 5 });
+    await expect.poll(async () => Number(await glow())).toBeLessThan(0.15);
+    await page.mouse.move(page0.x + page0.width * 0.95, page0.y + page0.height * 0.8, { steps: 8 });
+    await expect.poll(async () => Number(await glow())).toBeGreaterThan(0.85);
+    // out of Motion, the variable is taken off: what React drew is back
+    await page.getByText("Design", { exact: true }).first().click();
+    await expect.poll(glow).toBe("");
+
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const dir = testInfo.outputPath("export-cssvar");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      mkdirSync(dirname(join(dir, f.path)), { recursive: true });
+      writeFileSync(join(dir, f.path), f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const exGlow = () => ex.locator(`[data-ll="${r.id}"]`).evaluate((e) => (e as HTMLElement).style.getPropertyValue("--glow"));
+    await ex.mouse.move(40, 400, { steps: 5 });
+    await expect.poll(async () => Number(await exGlow())).toBeLessThan(0.1);
+    await ex.mouse.move(1160, 400, { steps: 8 });
+    await expect.poll(async () => Number(await exGlow())).toBeGreaterThan(0.9);
+    await ctx.close();
+  });
 });

@@ -613,6 +613,8 @@ const DEFS = {
   "repeat.rotate": deg(0, null, "paint", VISUAL),
   "repeat.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 10 }),
   "repeat.opacity": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+  /** Seconds each copy of a repeated or cloned layer runs behind the one before, when the layer is animated (0: together). */
+  "copy.delay": ranged(num(0, null, "paint", VISUAL, false), { min: -10, max: 10 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
   "clone.cols": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),

@@ -301,7 +301,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     }
 
     const exportedDrivers = exportableDrivers(doc).drivers;
-    const drivenLayerIds = new Set(exportableProps(doc).props.map((p) => p.layer));
+    const drivenLayerIds = exportableProps(doc).layerIds;
     const viewLayerIds = viewLayerIdsOf(exportedDrivers);
     const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
     const nodeOfLayer = new Map<string, ENode>();

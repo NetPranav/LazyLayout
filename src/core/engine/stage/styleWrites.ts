@@ -52,6 +52,16 @@ export function boundLayerIds(doc: MotionDocument): Set<string> {
   return out;
 }
 
+/** Layers drawn with copies (a repeater or a cloner): the kernel draws them, because the copies follow the layer's animation and a Web Animation on one element cannot. */
+export function copiedLayerIds(doc: MotionDocument): Set<string> {
+  const out = new Set<string>();
+  for (const layer of Object.values(doc.layers)) {
+    const p = layer.properties;
+    if ((typeof p["repeat.count"] === "number" && p["repeat.count"] > 1) || (typeof p["clone.mode"] === "string" && p["clone.mode"] !== "off" && p["clone.mode"] !== "")) out.add(layer.id);
+  }
+  return out;
+}
+
 /** Layers that animate anything, with the paths they animate. */
 export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();

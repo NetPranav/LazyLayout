@@ -130,14 +130,14 @@ describe("the exported drivers script runs like the editor (D4)", () => {
   });
 
   it("a driver the export cannot carry is left out, with a warning that says why", () => {
-    const odd = { ...doc, bindings: { ...doc.bindings, z1: BindingSchema.parse(make("pointer.x |> toggle\n-> a.transform.x", 91)), z2: BindingSchema.parse(make("pointer.x\n-> a.transform.x blend replace", 92)), z3: BindingSchema.parse(make("device.tiltX\n-> a.transform.rotate", 93)), z4: BindingSchema.parse(make("pointer.x\n-> a.cssvar.glow", 94)) } };
+    const odd = { ...doc, bindings: { ...doc.bindings, z1: BindingSchema.parse(make("pointer.x |> toggle\n-> a.transform.x", 91)), z2: BindingSchema.parse(make("pointer.x\n-> a.transform.x blend replace", 92)), z3: BindingSchema.parse(make("device.tiltX\n-> a.transform.rotate", 93)), z4: BindingSchema.parse(make("pointer.x\n-> a.uniform.uX", 94)) } };
     const { drivers, warnings } = exportableDrivers(odd);
     assert.equal(drivers.length, 27);
     assert.equal(warnings.length, 4);
     assert.ok(warnings.some((w) => /toggle/.test(w)));
     assert.ok(warnings.some((w) => /replace/.test(w)));
     assert.ok(warnings.some((w) => /device/.test(w)));
-    assert.ok(warnings.some((w) => /cssvar/.test(w)));
+    assert.ok(warnings.some((w) => /uniform/.test(w)));
   });
 
   it("only the operators the project uses are written out, and nothing is imported", () => {
@@ -239,6 +239,55 @@ describe("the React targets get the same script (D4)", () => {
       const out = await buildSiteExport({ ...doc, bindings: {} }, { target, styling: "css" });
       assert.ok(!out.files.some((f) => f.path.includes("lazylayout-drivers")), target);
     }
+  });
+});
+
+describe("CSS variable drivers in the export (D4)", () => {
+  const texts = [
+    "pointer.x |> remap(0, 1000, 0, 1)\n-> a.cssvar.glow",
+    "scroll.progress |> smooth(0.1) |> remap(0, 1, 0, 360)\n-> b.cssvar.hue",
+    "view(b).progress |> remap(0, 1, 0, 50)\n-> c.cssvar.shift",
+    "pointer.speed |> remap(0, 1500, 0, 1)\n-> c.cssvar.shift @3",
+    "hover(b) |> remap(0, 1, 0, 20)\n-> d.cssvar.lift",
+  ];
+  const bindings: Binding[] = texts.map((t, i) => ({ ...resolveLayerRefs(parseBinding(t), (n) => (LAYERS.map((l) => l.id).includes(n) ? n : undefined)), id: `cv${i}`, ownerLayerId: "a", enabled: true }));
+  const withVars = { ...doc, bindings: Object.fromEntries(bindings.map((b) => [b.id, BindingSchema.parse(b)])) };
+
+  it("every variable at every frame equals the editor's runtime", () => {
+    const out = buildDriversExport(withVars);
+    assert.ok(out.source);
+    assert.ok(out.propLayerIds.has("a") && out.propLayerIds.has("d"), "the layers are marked for the page script");
+    const ctxVm = vm.createContext({ Math, Number, Error, Array, JSON, Object, isFinite });
+    vm.runInContext(out.source!, ctxVm);
+    const c = ctxVm as unknown as { createLive: (c: unknown) => { step: (f: unknown) => unknown; vars: { layer: string; name: string; value: number }[] }; GRAPH: unknown; PROPS: unknown; CONFIG: unknown[]; busFrame: (s: unknown, st: unknown, t: number, dt: number) => unknown; newBus: () => unknown };
+    const live = c.createLive({ drivers: c.CONFIG, graph: c.GRAPH, props: c.PROPS });
+    const host: BindingHost = { layersOf: (s) => (s.kind === "layer" ? [s.ref] : []), base: () => undefined, env: { pointerCoarse: false, reducedMotion: false, breakpoint: "", states: new Set() } };
+    const runtime = createBindingRuntime(bindings, host);
+    const coreBus = newBusState();
+    const expBus = c.newBus();
+    let compared = 0;
+    for (let i = 0; i <= 180; i++) {
+      const t = i / 30;
+      runtime.step(coreBusFrame(source(t), coreBus, t, 1 / 30));
+      live.step(c.busFrame(source(t), expBus, t, 1 / 30));
+      const got = new Map(live.vars.map((v) => [`${v.layer}|${v.name}`, v.value]));
+      let wanted = 0;
+      for (const [layer, names] of runtime.vars) for (const [name, value] of names) {
+        wanted++;
+        const g = got.get(`${layer}|--${name}`);
+        assert.ok(g !== undefined && Math.abs(g - value) < 1e-6, `t ${t}: --${name} on ${layer}: export ${g} vs editor ${value}`);
+        compared++;
+      }
+      assert.equal(got.size, wanted, `t ${t}: the same variables are set`);
+    }
+    assert.ok(compared >= 181 * 4);
+  });
+
+  it("only the replace blend is exported for a variable; others are named in a warning", () => {
+    const odd = { ...doc, bindings: { z: BindingSchema.parse({ ...make("pointer.x -> a.cssvar.v blend add", 9) }) } };
+    const { drivers, warnings } = exportableDrivers(odd);
+    assert.equal(drivers.length, 0);
+    assert.ok(warnings.some((w) => /add blend/.test(w)));
   });
 });
 });

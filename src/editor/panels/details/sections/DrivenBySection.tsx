@@ -53,23 +53,29 @@ const PROPERTIES: Record<string, PropertyChoice> = {
   rotate: { label: "Rotation", path: "transform.rotate", out: [0, 360] },
   scale: { label: "Scale", path: "transform.scale", out: [1, 1.5] },
   opacity: { label: "Opacity", path: "appearance.opacity", out: [0, 1] },
+  cssvar: { label: "CSS variable", path: "", out: [0, 1] },
 };
 const PROPERTY_OPTIONS = Object.entries(PROPERTIES).map(([value, p]) => ({ value, label: p.label }));
 
 const PIN_LABEL: Record<PresetPinName, string> = { topLeft: "Top left", top: "Top", topRight: "Top right", left: "Left", center: "Center", right: "Right", bottomLeft: "Bottom left", bottom: "Bottom", bottomRight: "Bottom right" };
 
-const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: string } }): string => {
+const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => {
+  if (b.target.kind === "cssvar") {
+    const sg = Object.values(SIGNALS).find((x) => "layer" in x.signal ? x.signal.kind === b.expr.signal.kind : JSON.stringify(x.signal) === JSON.stringify(b.expr.signal));
+    return `${sg?.label ?? "Signal"} → --${b.target.name}`;
+  }
   const k = b.expr.signal.kind;
   const sig = k === "view" ? SIGNALS.view : k === "proximity" ? SIGNALS.proximity : k === "layerState" ? SIGNALS.hover : Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
-const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string } }): string => (b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
+const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => (b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
 
 export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
   const bindings = useStore(documentStore, (s) => s.document.bindings); // re-read when drivers change (undo, redo, another panel)
   const layers = useStore(documentStore, (s) => s.document.layers);
   const [viewLayer, setViewLayer] = useState("");
+  const [varName, setVarName] = useState("driven");
   const [signalKey, setSignalKey] = useState("pointerX");
   const [propKey, setPropKey] = useState("x");
   const [outRange, setOutRange] = useState<[number, number]>(PROPERTIES.x.out);
@@ -90,7 +96,9 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     const operators: Operator[] = [...sig.pre, { op: "remap", inMin: inRange[0], inMax: inRange[1], outMin: outRange[0], outMax: outRange[1], clamp: true }];
     if (smooth > 0) operators.push({ op: "smooth", tau: smooth });
     const signal: Signal = "layer" in sig.signal ? { ...sig.signal, layer: viewLayer || selectedId } : sig.signal;
-    const draft: BindingDraft = { expr: { signal, operators }, target: { kind: "property", on: { kind: "layer", ref: selectedId }, path: prop.path } };
+    const cleanVar = varName.trim().replace(/^--/, "");
+    if (propKey === "cssvar" && !/^[A-Za-z_][A-Za-z0-9_-]*$/.test(cleanVar)) return; // the name is shown as invalid below
+    const draft: BindingDraft = { expr: { signal, operators }, target: propKey === "cssvar" ? { kind: "cssvar", on: { kind: "layer", ref: selectedId }, name: cleanVar } : { kind: "property", on: { kind: "layer", ref: selectedId }, path: prop.path } };
     addBinding(draft, selectedId);
   };
 
@@ -172,6 +180,19 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
           }}
         />
       </OptionRow>
+      {propKey === "cssvar" && (
+        <OptionRow label="Name">
+          <input
+            aria-label="Driver CSS variable name"
+            title="The CSS variable this sets on the layer, without the leading --. Use it in your own CSS as var(--name)."
+            spellCheck={false}
+            value={varName}
+            onChange={(e) => setVarName(e.target.value)}
+            aria-invalid={!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(varName.trim().replace(/^--/, ""))}
+            className="ll-dfield ll:w-full ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-transparent ll:focus:border-primary ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+          />
+        </OptionRow>
+      )}
       <OptionRow label="From">
         <div className="ll:grid ll:grid-cols-2 ll:gap-1.5 ll:w-full">
           <NumberField size="sm" aria-label="Driver input from" title={`The input value that gives the first output (${sig.unit || "unitless"}).`} value={inRange[0]} step={sig.range[1] > 100 ? 10 : 0.1} onChange={(v) => setInRange([v, inRange[1]])} />

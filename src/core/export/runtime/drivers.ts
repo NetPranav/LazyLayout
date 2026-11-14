@@ -35,8 +35,10 @@ const EXPORTABLE = ["transform.x", "transform.y", "transform.rotate", "transform
 /** One driver, resolved to what the script needs: numbers only, spring terms already physical. */
 interface DriverJson {
   layer: string;
-  prop: (typeof EXPORTABLE)[number];
-  blend: "add" | "multiply";
+  /** A property path, or `--name` for a CSS variable. */
+  prop: string;
+  /** `set`: a CSS variable's value (the last driver wins). */
+  blend: "add" | "multiply" | "set";
   signal: Signal;
   ops: Record<string, unknown>[];
 }
@@ -76,17 +78,19 @@ export function exportableDrivers(doc: MotionDocument): { drivers: DriverJson[];
     if (!b.enabled) continue;
     const name = b.name ?? b.id;
     const skip = (why: string) => warnings.push(`The driver "${name}" is not in the export: ${why}.`);
-    if (b.target.kind !== "property") { skip(`${b.target.kind} targets are not exported yet`); continue; }
+    if (b.target.kind !== "property" && b.target.kind !== "cssvar") { skip(`${b.target.kind} targets are not exported yet`); continue; }
     if (b.target.on.kind !== "layer") { skip("only drivers on one layer are exported"); continue; }
-    if (!(EXPORTABLE as readonly string[]).includes(b.target.path)) { skip(`${b.target.path} cannot be driven in an export yet`); continue; }
-    const blend = b.blend ?? defaultBlend(b.target);
-    if (blend !== "add" && blend !== "multiply") { skip(`the ${blend} blend is not exported`); continue; }
+    if (b.target.kind === "property" && !(EXPORTABLE as readonly string[]).includes(b.target.path)) { skip(`${b.target.path} cannot be driven in an export yet`); continue; }
+    const blend = b.target.kind === "cssvar" ? (b.blend ?? "replace") : (b.blend ?? defaultBlend(b.target));
+    if (b.target.kind === "cssvar" ? blend !== "replace" : blend !== "add" && blend !== "multiply") { skip(`the ${blend} blend is not exported`); continue; }
     if (b.guard) { skip("a driver with a condition is not exported yet"); continue; }
     if (!SERVED_SIGNALS.has(b.expr.signal.kind) || (b.expr.signal.kind === "layerState" && b.expr.signal.channel === "focus")) { skip(`the ${b.expr.signal.kind === "layerState" ? b.expr.signal.channel : b.expr.signal.kind} signal is not exported yet`); continue; }
     const { ops, problem } = opsOf(b.expr);
     if (problem) { skip(problem); continue; }
     if (!doc.layers[b.target.on.ref]) { skip("its layer is gone"); continue; }
-    drivers.push({ layer: b.target.on.ref, prop: b.target.path as DriverJson["prop"], blend, signal: b.expr.signal, ops });
+    drivers.push(b.target.kind === "cssvar"
+      ? { layer: b.target.on.ref, prop: `--${b.target.name}`, blend: "set", signal: b.expr.signal, ops }
+      : { layer: b.target.on.ref, prop: b.target.path, blend: blend as "add" | "multiply", signal: b.expr.signal, ops });
   }
   return { drivers, warnings };
 }
@@ -178,17 +182,19 @@ export function exportableGraph(doc: MotionDocument): { graph: GraphJson | null;
 }
 
 /** Every (layer, property) the page script writes: the drivers' and the links' and expressions'. */
-export function exportableProps(doc: MotionDocument): { props: PropJson[]; warnings: string[]; graph: GraphJson | null; drivers: DriverJson[] } {
+export function exportableProps(doc: MotionDocument): { props: PropJson[]; warnings: string[]; graph: GraphJson | null; drivers: DriverJson[]; layerIds: Set<string> } {
   const d = exportableDrivers(doc);
   const g = exportableGraph(doc);
   const byKey = new Map<string, PropJson>();
   for (const n of g.nodeProps) byKey.set(n.key, n);
   for (const dr of d.drivers) {
+    if (dr.prop.startsWith("--")) continue; // a CSS variable has no base to write against
     const key = `${dr.layer}|${dr.prop}`;
     const base = designValue(doc, dr.layer, dr.prop).base;
-    if (!byKey.has(key) && base !== null) byKey.set(key, { key, layer: dr.layer, prop: dr.prop, base });
+    if (!byKey.has(key) && base !== null) byKey.set(key, { key, layer: dr.layer, prop: dr.prop as PropJson["prop"], base });
   }
-  return { props: [...byKey.values()], warnings: [...d.warnings, ...g.warnings], graph: g.graph, drivers: d.drivers };
+  const props = [...byKey.values()];
+  return { props, warnings: [...d.warnings, ...g.warnings], graph: g.graph, drivers: d.drivers, layerIds: new Set([...props.map((p) => p.layer), ...d.drivers.filter((x) => x.prop.startsWith("--")).map((x) => x.layer)]) };
 }
 
 /** The layers a driver reads the position of (`view`, `pointer.inside`, `hover`, `press`, `proximity`): the page script finds them by `data-ll-view`. */
@@ -421,15 +427,21 @@ function createGraph(g) {
 /* Everything the page moves or fades: the graph's value (or the layer's own), plus the drivers' adds, times their multiplies. */
 function createLive(cfg) {
   var drivers = cfg.drivers.length ? createDrivers(cfg.drivers) : null, graph = cfg.graph ? createGraph(cfg.graph) : null;
-  return { step: function (frame) {
+  var live = { vars: [], step: null };
+  live.step = function (frame) {
     var add = {}, mul = {};
-    if (drivers) drivers.step(frame).forEach(function (r) { var k = r.layer + "|" + r.prop; add[k] = r.add; mul[k] = r.mul; });
+    live.vars = [];
+    if (drivers) drivers.step(frame).forEach(function (r) {
+      if (r.set !== undefined) { live.vars.push({ layer: r.layer, name: r.prop, value: Math.round(r.set * 1e6) / 1e6 }); return; }
+      var k = r.layer + "|" + r.prop; add[k] = r.add; mul[k] = r.mul;
+    });
     var abs = graph ? graph.values(frame.time) : {};
     return cfg.props.map(function (p) {
       var v0 = abs[p.key] !== undefined ? abs[p.key] : p.base;
       return { layer: p.layer, prop: p.prop, base: p.base, value: (v0 + (add[p.key] || 0)) * (p.key in mul ? mul[p.key] : 1) };
     });
-  } };
+  };
+  return live;
 }
 
 /* Effectors: each copy of a repeater or cloner varied by the pointer's distance or by where the page is scrolled. */
@@ -465,7 +477,7 @@ function createDrivers(config) {
     runs.forEach(function (r) {
       var v = r.step(frame), d = r.d, key = d.layer + "|" + d.prop;
       if (!(key in out)) out[key] = { layer: d.layer, prop: d.prop, add: 0, mul: 1 };
-      if (d.blend === "add") out[key].add += v; else out[key].mul *= v;
+      if (d.blend === "set") out[key].set = v; else if (d.blend === "add") out[key].add += v; else out[key].mul *= v;
     });
     return Object.keys(out).map(function (k) { return out[k]; });
   } };
@@ -509,6 +521,7 @@ const GLUE = `/* The page: the pointer, the scroll and the clock in, CSS out. */
     if (live) {
       var per = {};
       live.step(f).forEach(function (r) { (per[r.layer] = per[r.layer] || {})[r.prop] = r; });
+      live.vars.forEach(function (v) { var el = find(v.layer); if (el) el.style.setProperty(v.name, String(v.value)); });
       Object.keys(per).forEach(function (id) {
         var el = find(id); if (!el) return;
         var p = per[id], tx = p["transform.x"], ty = p["transform.y"], rot = p["transform.rotate"], sc = p["transform.scale"], op = p["appearance.opacity"];
@@ -540,10 +553,10 @@ const GLUE = `/* The page: the pointer, the scroll and the clock in, CSS out. */
 
 /** The export's live script for this document (drivers, links, expressions and live effectors), with only the operators it uses. */
 export function buildDriversExport(doc: MotionDocument): DriversExport {
-  const { props, warnings, graph, drivers } = exportableProps(doc);
+  const { props, warnings, graph, drivers, layerIds } = exportableProps(doc);
   const effectors = exportableEffectors(doc);
   const none = { source: null, layerIds: new Set<string>(), propLayerIds: new Set<string>(), effectorLayerIds: new Set<string>(), warnings };
-  if (props.length === 0 && effectors.length === 0) return none;
+  if (props.length === 0 && drivers.length === 0 && effectors.length === 0) return none;
   const used = [...new Set(drivers.flatMap((d) => d.ops.map((o) => String(o.op))))].sort();
   const operators = `var OPERATORS = {\n${used.map((u) => OPERATORS[u]).join("\n")}\n};`;
   const needsExpressions = !!graph?.nodes.some((n) => n.expr);
@@ -556,5 +569,5 @@ export function buildDriversExport(doc: MotionDocument): DriversExport {
     `var PROPS = ${JSON.stringify(props)};`,
     `var EFFECTORS = ${JSON.stringify(effectors)};`, "", GLUE, "",
   ].join("\n");
-  return { source, layerIds: new Set(drivers.map((d) => d.layer)), propLayerIds: new Set(props.map((p) => p.layer)), effectorLayerIds: new Set(effectors.map((e) => e.layer)), warnings };
+  return { source, layerIds: new Set(drivers.map((d) => d.layer)), propLayerIds: layerIds, effectorLayerIds: new Set(effectors.map((e) => e.layer)), warnings };
 }
