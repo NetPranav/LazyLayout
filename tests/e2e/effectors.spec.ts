@@ -2,7 +2,7 @@
  * Design track D10: effectors vary the copies of a Repeat or Clone: a ramp, noise, or the pointer's distance.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { openEditor, pickShape } from "./support/editor";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -26,12 +26,7 @@ async function dot(page: Page) {
   await page.mouse.up();
   return Object.values(await layers(page)).find((l) => !before.has(l.id))!;
 }
-const choose = async (page: Page, label: string, name: string) => {
-  await page.getByLabel(label, { exact: true }).first().click();
-  await page.waitForTimeout(300);
-  await page.getByRole("option", { name: new RegExp(`^${name}`) }).first().click();
-  await page.waitForTimeout(500);
-};
+const choose = (page: Page, label: string, name: string) => chooseOption(page, label, name);
 const set = async (page: Page, label: string, v: number) => {
   const f = page.getByLabel(label, { exact: true }).first();
   await f.fill(String(v));

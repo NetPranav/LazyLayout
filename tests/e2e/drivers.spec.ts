@@ -5,7 +5,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { openEditor, pickShape } from "./support/editor";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; archetype: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -108,10 +108,7 @@ test.describe("Drivers (D4)", () => {
 
   test("Follow: the chosen point of a layer follows the pointer (D6)", async ({ page }) => {
     const r = await setup(page);
-    await page.getByLabel("Follow pin", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: "Bottom", exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await chooseOption(page, "Follow pin", /^Bottom$/);
     const lag = page.getByLabel("Follow lag", { exact: true }).first();
     await lag.fill("0");
     await lag.press("Enter");
@@ -388,14 +385,8 @@ test.describe("Drivers in the export (D4)", () => {
   test("hover: a layer grows while the pointer is over it, in the editor and in the export (D4)", async ({ page, browser }, testInfo) => {
     const r = await setup(page); // a rectangle on the page
     // choose the signal "Pointer over a layer" (the layer defaults to the selected one), drive Scale 1 to 1.5
-    await page.getByLabel("Driver signal", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: /^Pointer over a layer/ }).first().click();
-    await page.waitForTimeout(500);
-    await page.getByLabel("Driver property", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: /^Scale/ }).first().click();
-    await page.waitForTimeout(400);
+    await chooseOption(page, "Driver signal", "Pointer over a layer");
+    await chooseOption(page, "Driver property", "Scale");
     await page.getByRole("button", { name: "Add driver", exact: true }).click();
     await expect(page.locator("[data-driver-id]")).toContainText("Pointer over a layer → Scale");
 
@@ -441,10 +432,7 @@ test.describe("Drivers in the export (D4)", () => {
 
   test("a CSS variable follows the pointer, in the editor and in the export, and is taken off again (D4)", async ({ page, browser }, testInfo) => {
     const r = await setup(page);
-    await page.getByLabel("Driver property", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: /^CSS variable/ }).first().click();
-    await page.waitForTimeout(500);
+    await chooseOption(page, "Driver property", "CSS variable");
     const name = page.getByLabel("Driver CSS variable name", { exact: true });
     await name.fill("glow");
     await page.getByRole("button", { name: "Add driver", exact: true }).click();
@@ -515,10 +503,7 @@ test.describe("Drivers in the export (D4)", () => {
     const unturned = await el.evaluate((e) => ({ w: (e as unknown as SVGSVGElement).clientWidth || (e as HTMLElement).offsetWidth, h: (e as unknown as SVGSVGElement).clientHeight || (e as HTMLElement).offsetHeight }));
     const k = (await page.locator('[data-testid="stage-page"]').boundingBox())!.width / (await page.locator('[data-testid="stage-page"]').evaluate((e) => (e as HTMLElement).offsetWidth));
 
-    await page.getByLabel("Follow pin", { exact: true }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole("option", { name: /^Right$/ }).first().click();
-    await page.waitForTimeout(500);
+    await chooseOption(page, "Follow pin", /^Right$/);
     const lag = page.getByLabel("Follow lag", { exact: true }).first();
     await lag.fill("0");
     await lag.press("Enter");

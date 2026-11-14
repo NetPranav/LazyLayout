@@ -191,3 +191,25 @@ export async function pickShape(page: Page, name: string | RegExp) {
   }
   await item.click();
 }
+
+/**
+ * Chooses an option from one of the inspector's dropdowns, by the control's label and the option's name (a prefix).
+ * A second dropdown opened while the first is still closing never draws its list, and how long closing takes depends on the
+ * machine, so this waits for every open list to be gone before it opens one, and tries again if the list does not appear.
+ */
+export async function chooseOption(page: Page, label: string, name: string | RegExp): Promise<void> {
+  const option = page.getByRole("option", { name: typeof name === "string" ? new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) : name }).first();
+  const lists = page.getByRole("listbox");
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await expect(lists).toHaveCount(0, { timeout: 5000 }); // the last list has finished closing
+    await page.getByLabel(label, { exact: true }).first().click();
+    try {
+      await option.waitFor({ state: "visible", timeout: 2500 });
+      break;
+    } catch {
+      await page.waitForTimeout(500); // it did not open: let it settle and try again
+    }
+  }
+  await option.click();
+  await expect(lists).toHaveCount(0, { timeout: 5000 });
+}

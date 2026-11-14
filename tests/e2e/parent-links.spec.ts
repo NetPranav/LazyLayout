@@ -4,7 +4,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { openEditor, pickShape } from "./support/editor";
+import { chooseOption, openEditor, pickShape } from "./support/editor";
 
 type L = { id: string; name: string; archetype: string; properties: Record<string, unknown> };
 const layers = (page: Page) =>
@@ -33,12 +33,7 @@ async function two(page: Page) {
   return { a: made[0], b: made[1] };
 }
 const select = (page: Page, id: string) => page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`).click();
-const pick = async (page: Page, label: string, option: string) => {
-  await page.getByLabel(label, { exact: true }).first().click();
-  await page.waitForTimeout(250);
-  await page.getByRole("option", { name: new RegExp(`^${option}`) }).first().click();
-  await page.waitForTimeout(250);
-};
+const pick = (page: Page, label: string, option: string) => chooseOption(page, label, option);
 const set = async (page: Page, label: string, v: number) => {
   const f = page.getByLabel(label, { exact: true }).first();
   await f.fill(String(v));
