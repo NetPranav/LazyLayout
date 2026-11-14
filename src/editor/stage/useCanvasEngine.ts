@@ -130,6 +130,15 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
         const el = scroller();
         return el ? { y: el.scrollTop, max: el.scrollHeight - el.clientHeight, viewport: el.clientHeight } : { y: 0, max: 0 };
       },
+      // where a layer is on the page, in the same px as the pointer (the page's own, whatever the zoom)
+      layerRect: (id) => {
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!el) return null;
+        const pr = page.getBoundingClientRect();
+        const k = page.offsetWidth > 0 ? pr.width / page.offsetWidth : 1;
+        const r = el.getBoundingClientRect();
+        return { x: (r.left - pr.left) / (k || 1), y: (r.top - pr.top) / (k || 1), width: r.width / (k || 1), height: r.height / (k || 1) };
+      },
       // where a layer sits in the scrolled content, in the page's own px: its drawn position inside the (scrolled) frame, plus the scroll
       layerBox: (id) => {
         const sc = scroller();

@@ -66,7 +66,14 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
         f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-drivers.js" defer></script>\n  </body>`);
       }
     } else {
-      warnings.push("Drivers are exported for the plain HTML target only; this target ships the page without them.");
+      // The React targets serve the same standalone script from `public/`, linked from the app's HTML. The script finds its layers by
+      // `data-ll` each frame, so it also works for elements React draws after it has loaded. (Not run in a Vite or Next build here.)
+      files.push({ path: "public/lazylayout-drivers.js", content: drivers.source });
+      for (const f of files) {
+        if (typeof f.content !== "string") continue;
+        if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-drivers.js" defer></script>\n  </body>`);
+        if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("<body>{children}</body>", `<body>\n        {children}\n        <script src="/lazylayout-drivers.js" defer />\n      </body>`);
+      }
     }
   }
   return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };

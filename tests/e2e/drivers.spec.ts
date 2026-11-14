@@ -384,4 +384,58 @@ test.describe("Drivers in the export (D4)", () => {
     }
     await ctx.close();
   });
+
+  test("hover: a layer grows while the pointer is over it, in the editor and in the export (D4)", async ({ page, browser }, testInfo) => {
+    const r = await setup(page); // a rectangle on the page
+    // choose the signal "Pointer over a layer" (the layer defaults to the selected one), drive Scale 1 to 1.5
+    await page.getByLabel("Driver signal", { exact: true }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: /^Pointer over a layer/ }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByLabel("Driver property", { exact: true }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: /^Scale/ }).first().click();
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Add driver", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Pointer over a layer → Scale");
+
+    // in the editor: over the layer it grows, off it it goes back
+    await page.getByText("Motion", { exact: true }).first().click();
+    const width = async () => (await drawnBox(page, r.id))!.width;
+    const base = await width();
+    const box = (await drawnBox(page, r.id))!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 5 });
+    await expect.poll(width).toBeGreaterThan(base * 1.4); // about 1.5x
+    await page.mouse.move(box.x - 150, box.y - 100, { steps: 5 });
+    await expect.poll(width).toBeLessThan(base * 1.05);
+
+    // in the export
+    await page.getByText("Design", { exact: true }).first().click();
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain(`data-ll-view="${r.id}"`);
+    const dir = testInfo.outputPath("export-hover");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      mkdirSync(dirname(join(dir, f.path)), { recursive: true });
+      writeFileSync(join(dir, f.path), f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const el = ex.locator(`[data-ll="${r.id}"]`);
+    const scale = () => el.evaluate((e) => parseFloat((e as HTMLElement).style.scale || "1"));
+    const eb = (await el.boundingBox())!;
+    await ex.mouse.move(eb.x + eb.width / 2, eb.y + eb.height / 2, { steps: 5 });
+    await ex.waitForTimeout(500);
+    expect(await scale()).toBeGreaterThan(1.4);
+    await ex.mouse.move(5, 5, { steps: 5 });
+    await ex.waitForTimeout(500);
+    expect(await scale()).toBeLessThan(1.05);
+    await ctx.close();
+  });
 });

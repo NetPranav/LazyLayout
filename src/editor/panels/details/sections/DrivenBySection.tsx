@@ -36,6 +36,8 @@ const SIGNALS: Record<string, SignalChoice> = {
   speed: { label: "Pointer speed", hint: "How fast the pointer moves, in px per second", signal: { kind: "pointer", channel: "speed" }, pre: [], range: [0, 2000], unit: "px/s" },
   scroll: { label: "Scroll", hint: "How far the page is scrolled, 0 at the top to 1 at the bottom (the editor does not measure scroll yet)", signal: { kind: "scroll", channel: "progress" }, pre: [], range: [0, 1], unit: "" },
   view: { label: "Section in view", hint: "How far a section has scrolled through the screen: 0 as it enters at the bottom, 1 as it leaves at the top (a section of the page you choose below)", signal: { kind: "view", layer: "", channel: "progress" }, pre: [], range: [0, 1], unit: "" },
+  hover: { label: "Pointer over a layer", hint: "1 while the pointer is over the layer you choose, 0 when it is not, easing over 80 ms", signal: { kind: "layerState", channel: "hover", layer: "" }, pre: [], range: [0, 1], unit: "" },
+  proximity: { label: "Distance to a layer", hint: "How far the pointer is from the edge of the layer you choose, in px (0 when over it)", signal: { kind: "proximity", layer: "" }, pre: [], range: [0, 400], unit: "px" },
   time: { label: "Time", hint: "Seconds on the timeline", signal: { kind: "time" }, pre: [], range: [0, 10], unit: "s" },
 };
 const SIGNAL_OPTIONS = Object.entries(SIGNALS).map(([value, s]) => ({ value, label: s.label, hint: s.hint }));
@@ -57,7 +59,8 @@ const PROPERTY_OPTIONS = Object.entries(PROPERTIES).map(([value, p]) => ({ value
 const PIN_LABEL: Record<PresetPinName, string> = { topLeft: "Top left", top: "Top", topRight: "Top right", left: "Left", center: "Center", right: "Right", bottomLeft: "Bottom left", bottom: "Bottom", bottomRight: "Bottom right" };
 
 const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: string } }): string => {
-  const sig = b.expr.signal.kind === "view" ? SIGNALS.view : Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
+  const k = b.expr.signal.kind;
+  const sig = k === "view" ? SIGNALS.view : k === "proximity" ? SIGNALS.proximity : k === "layerState" ? SIGNALS.hover : Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
@@ -86,7 +89,7 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     const prop = PROPERTIES[propKey];
     const operators: Operator[] = [...sig.pre, { op: "remap", inMin: inRange[0], inMax: inRange[1], outMin: outRange[0], outMax: outRange[1], clamp: true }];
     if (smooth > 0) operators.push({ op: "smooth", tau: smooth });
-    const signal: Signal = sig.signal.kind === "view" ? { ...sig.signal, layer: viewLayer || selectedId } : sig.signal;
+    const signal: Signal = "layer" in sig.signal ? { ...sig.signal, layer: viewLayer || selectedId } : sig.signal;
     const draft: BindingDraft = { expr: { signal, operators }, target: { kind: "property", on: { kind: "layer", ref: selectedId }, path: prop.path } };
     addBinding(draft, selectedId);
   };
@@ -144,8 +147,8 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
           }}
         />
       </OptionRow>
-      {signalKey === "view" && (
-        <OptionRow label="Section">
+      {"layer" in sig.signal && (
+        <OptionRow label={signalKey === "view" ? "Section" : "Layer"}>
           <Select
             aria-label="Driver section"
             size="sm"

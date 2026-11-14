@@ -218,7 +218,6 @@ test.describe("Cloner (D9)", () => {
       requestAnimationFrame(tick);
     });
     const pageBox = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
-    if (cdp) { await cdp.send("Profiler.enable"); await cdp.send("Profiler.setSamplingInterval", { interval: 200 }); await cdp.send("Profiler.start"); }
     for (let pass = 0; pass < 3; pass++) {
       await page.mouse.move(pageBox.x + pageBox.width * 0.05, pageBox.y + pageBox.height * (0.2 + 0.2 * pass));
       await page.mouse.move(pageBox.x + pageBox.width * 0.95, pageBox.y + pageBox.height * (0.3 + 0.2 * pass), { steps: 90 });

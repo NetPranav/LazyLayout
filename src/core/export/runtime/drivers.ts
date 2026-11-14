@@ -53,7 +53,7 @@ export interface DriversExport {
   warnings: string[];
 }
 
-const SERVED_SIGNALS = new Set(["pointer", "pointerIn", "scroll", "view", "time", "frameDt", "seed", "constant"]);
+const SERVED_SIGNALS = new Set(["pointer", "pointerIn", "pointerInside", "layerState", "proximity", "scroll", "view", "time", "frameDt", "seed", "constant"]);
 const SUPPORTED_OPS = new Set(["smooth", "spring", "remap", "clamp", "add", "mul", "min", "max", "abs", "component", "quantize", "deadzone", "falloff", "length"]);
 
 function opsOf(expr: SignalExpr): { ops: Record<string, unknown>[]; problem: string | null } {
@@ -82,7 +82,7 @@ export function exportableDrivers(doc: MotionDocument): { drivers: DriverJson[];
     const blend = b.blend ?? defaultBlend(b.target);
     if (blend !== "add" && blend !== "multiply") { skip(`the ${blend} blend is not exported`); continue; }
     if (b.guard) { skip("a driver with a condition is not exported yet"); continue; }
-    if (!SERVED_SIGNALS.has(b.expr.signal.kind)) { skip(`the ${b.expr.signal.kind} signal is not exported yet`); continue; }
+    if (!SERVED_SIGNALS.has(b.expr.signal.kind) || (b.expr.signal.kind === "layerState" && b.expr.signal.channel === "focus")) { skip(`the ${b.expr.signal.kind === "layerState" ? b.expr.signal.channel : b.expr.signal.kind} signal is not exported yet`); continue; }
     const { ops, problem } = opsOf(b.expr);
     if (problem) { skip(problem); continue; }
     if (!doc.layers[b.target.on.ref]) { skip("its layer is gone"); continue; }
@@ -191,8 +191,9 @@ export function exportableProps(doc: MotionDocument): { props: PropJson[]; warni
   return { props: [...byKey.values()], warnings: [...d.warnings, ...g.warnings], graph: g.graph, drivers: d.drivers };
 }
 
-/** The layers a driver reads `view(layer)` of: the page script finds them by `data-ll-view`. */
-export const viewLayerIdsOf = (drivers: readonly { signal: Signal }[]): Set<string> => new Set(drivers.flatMap((d) => (d.signal.kind === "view" ? [d.signal.layer] : [])));
+/** The layers a driver reads the position of (`view`, `pointer.inside`, `hover`, `press`, `proximity`): the page script finds them by `data-ll-view`. */
+export const viewLayerIdsOf = (drivers: readonly { signal: Signal }[]): Set<string> =>
+  new Set(drivers.flatMap((d) => (d.signal.kind === "view" || d.signal.kind === "pointerInside" || d.signal.kind === "layerState" || d.signal.kind === "proximity" ? [d.signal.layer] : [])));
 
 /** One live effector, resolved to what the script needs: the copies as made (their centres, transforms, opacities) and the settings. */
 interface EffectorJson {
@@ -316,10 +317,17 @@ function falloffOf(shape, d, r) {
 }
 
 /* The input bus: the pointer, the scroll and what is worked out from how they move. */
-function newBus() { return { last: null, speed: 0, dx: 0, dy: 0, angle: 0, vel: 0, dir: 0 }; }
+function newBus() { return { last: null, speed: 0, dx: 0, dy: 0, angle: 0, vel: 0, dir: 0, frame: 0, smooth: {} }; }
+var EDGE_TAU = 0.08;
+function insideRect(r, x, y) { return x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height; }
+function distanceToRect(r, x, y, measure) {
+  if (measure === "center") return Math.hypot(x - (r.x + r.width / 2), y - (r.y + r.height / 2));
+  return Math.hypot(Math.max(r.x - x, 0, x - (r.x + r.width)), Math.max(r.y - y, 0, y - (r.y + r.height)));
+}
 function busFrame(src, st, time, dt) {
   var p = src.pointer(), size = src.pageSize(), sc = src.scroll();
   var x = p ? p.x : 0, y = p ? p.y : 0;
+  st.frame++;
   if (st.last && dt > 0) {
     st.dx = x - st.last.x; st.dy = y - st.last.y;
     st.speed += (Math.hypot(st.dx, st.dy) / dt - st.speed) * (1 - Math.exp(-dt / 0.05));
@@ -347,6 +355,18 @@ function busFrame(src, st, time, dt) {
       }
       return 0;
     }
+    if (s.kind === "pointerInside") { var ri = src.layerRect ? src.layerRect(s.layer) : null; return !!(p && ri && insideRect(ri, x, y)); }
+    if (s.kind === "layerState") {
+      if (s.channel === "focus") return 0;
+      var rs = src.layerRect ? src.layerRect(s.layer) : null;
+      var on = !!(p && rs && insideRect(rs, x, y) && (s.channel === "hover" || p.down));
+      var key = s.channel + "|" + s.layer;
+      var cur = st.smooth[key] || { frame: -1, value: on ? 1 : 0 };
+      if (cur.frame !== st.frame) { cur.value += ((on ? 1 : 0) - cur.value) * (1 - Math.exp(-Math.min(dt, MAX_DT) / EDGE_TAU)); cur.frame = st.frame; }
+      st.smooth[key] = cur;
+      return cur.value;
+    }
+    if (s.kind === "proximity") { var rp = src.layerRect ? src.layerRect(s.layer) : null; return p && rp ? distanceToRect(rp, x, y, s.measure || "edge") : 0; }
     if (s.kind === "view") {
       var b = src.layerBox ? src.layerBox(s.layer) : null;
       if (!b) return 0;
@@ -465,6 +485,11 @@ const GLUE = `/* The page: the pointer, the scroll and the clock in, CSS out. */
     pointer: function () { return pointer; },
     pageSize: function () { var r = root.getBoundingClientRect(); return { width: r.width, height: r.height }; },
     scroll: function () { return { y: window.scrollY, max: document.documentElement.scrollHeight - window.innerHeight, viewport: window.innerHeight }; },
+    layerRect: function (id) {
+      var e = document.querySelector('[data-ll-view="' + id + '"]'); if (!e) return null;
+      var r = e.getBoundingClientRect(), b = root.getBoundingClientRect();
+      return { x: r.left - b.left, y: r.top - b.top, width: r.width, height: r.height };
+    },
     layerBox: function (id) {
       var e = document.querySelector('[data-ll-view="' + id + '"]'); if (!e) return null;
       var r = e.getBoundingClientRect(); return { top: r.top + window.scrollY, height: r.height };

@@ -15,7 +15,7 @@ const layer = (id: string) => createLayer({ id, archetype: "rectangle", properti
 const LAYERS = ["a", "b", "c", "d"];
 const make = (text: string, n: number, extra: Partial<Binding> = {}): Binding => ({ ...resolveLayerRefs(parseBinding(text), (name) => (LAYERS.includes(name) ? name : undefined)), id: `b${n}`, ownerLayerId: "a", enabled: true, ...extra });
 
-/** Twenty-two drivers: every signal the export serves, every operator it carries, every property it can drive. */
+/** Twenty-seven drivers: every signal the export serves, every operator it carries, every property it can drive. */
 const TEXTS = [
   "pointer.x |> remap(0, 1000, 0, 300)\n-> a.transform.x",
   "pointer.y |> remap(0, 600, -50, 50) |> smooth(0.2)\n-> a.transform.y",
@@ -39,6 +39,11 @@ const TEXTS = [
   "scroll.progress |> remap(0, 1, 0, 200) |> quantize(10)\n-> c.transform.x",
   "view(b).progress |> remap(0, 1, 0, 180)\n-> a.transform.rotate",
   "view(c).visible |> smooth(0.1) |> remap(0, 1, 1, 0.3)\n-> d.appearance.opacity",
+  "hover(b) |> remap(0, 1, 0, 45)\n-> a.transform.rotate",
+  "proximity(c) |> falloff(smoothstep, 300) |> remap(0, 1, 1, 2)\n-> d.transform.scale",
+  "pointer.inside(b) |> mul(30)\n-> c.transform.x",
+  "press(c) |> remap(0, 1, 0, 20)\n-> b.transform.y",
+  "proximity(b, center) |> falloff(gaussian, 400) |> remap(0, 1, 0, 90)\n-> d.transform.rotate",
 ];
 const bindings = TEXTS.map((t, i) => make(t, i));
 
@@ -48,6 +53,7 @@ const source = (t: number): InputSource => ({
   pageSize: () => ({ width: 1000, height: 600 }),
   scroll: () => ({ y: 1200 * (0.5 - 0.5 * Math.cos(t * 0.9)), max: 1200, viewport: 700 }),
   layerBox: (id) => (id === "b" ? { top: 500, height: 300 } : id === "c" ? { top: 1100, height: 400 } : null),
+  layerRect: (id) => (id === "b" ? { x: 200, y: 100, width: 300, height: 150 } : id === "c" ? { x: 550, y: 300, width: 160, height: 120 } : null),
 });
 
 const doc = { ...createDocumentFromLayers(LAYERS.map(layer)), bindings: Object.fromEntries(bindings.map((b) => [b.id, BindingSchema.parse(b)])) };
@@ -63,13 +69,13 @@ function exportContext() {
 const host: BindingHost = { layersOf: (s) => (s.kind === "layer" ? [s.ref] : []), base: () => undefined, env: { pointerCoarse: false, reducedMotion: false, breakpoint: "", states: new Set() } };
 
 describe("the exported drivers script runs like the editor (D4)", () => {
-  it("carries all twenty-two drivers", () => {
+  it("carries all twenty-seven drivers", () => {
     const { drivers, warnings } = exportableDrivers(doc);
-    assert.equal(drivers.length, 22);
+    assert.equal(drivers.length, 27);
     assert.deepEqual(warnings, []);
   });
 
-  it("twenty-two drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
+  it("twenty-seven drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
     const { ctx } = exportContext();
     const core = createBindingRuntime(bindings, host);
     const exp = ctx.createDrivers(ctx.CONFIG);
@@ -107,6 +113,7 @@ describe("the exported drivers script runs like the editor (D4)", () => {
       { kind: "pointer", channel: "speed" }, { kind: "pointer", channel: "angle" }, { kind: "pointer", channel: "down" },
       { kind: "pointerIn", channel: "uv", space: "page" }, { kind: "pointerIn", channel: "ndc", space: "page" }, { kind: "pointerIn", channel: "px", space: "page" },
       { kind: "scroll", channel: "y" }, { kind: "scroll", channel: "progress" }, { kind: "scroll", channel: "velocity" }, { kind: "scroll", channel: "direction" },
+      { kind: "pointerInside", layer: "b" }, { kind: "layerState", channel: "hover", layer: "b" }, { kind: "layerState", channel: "press", layer: "c" }, { kind: "proximity", layer: "c" }, { kind: "proximity", layer: "b", measure: "center" }, { kind: "layerState", channel: "hover", layer: "ghost" },
       { kind: "view", layer: "b", channel: "progress" }, { kind: "view", layer: "b", channel: "visible" }, { kind: "view", layer: "c", channel: "visible" }, { kind: "view", layer: "ghost", channel: "progress" },
     ]; // (time and frameDt are answered by the evaluator itself, not the bus; the drivers on `time` are in the twenty above)
     for (let i = 0; i <= 120; i++) {
@@ -125,7 +132,7 @@ describe("the exported drivers script runs like the editor (D4)", () => {
   it("a driver the export cannot carry is left out, with a warning that says why", () => {
     const odd = { ...doc, bindings: { ...doc.bindings, z1: BindingSchema.parse(make("pointer.x |> toggle\n-> a.transform.x", 91)), z2: BindingSchema.parse(make("pointer.x\n-> a.transform.x blend replace", 92)), z3: BindingSchema.parse(make("device.tiltX\n-> a.transform.rotate", 93)), z4: BindingSchema.parse(make("pointer.x\n-> a.cssvar.glow", 94)) } };
     const { drivers, warnings } = exportableDrivers(odd);
-    assert.equal(drivers.length, 22);
+    assert.equal(drivers.length, 27);
     assert.equal(warnings.length, 4);
     assert.ok(warnings.some((w) => /toggle/.test(w)));
     assert.ok(warnings.some((w) => /replace/.test(w)));
@@ -207,4 +214,31 @@ describe("the export says what it leaves out", () => {
     assert.ok(!ok.warnings.some((w) => /link on|expression on/.test(w)), ok.warnings.join(" | "));
     assert.ok(ok.files.some((f) => f.path === "lazylayout-drivers.js"), "it is exported");
   });
+
+describe("the React targets get the same script (D4)", () => {
+  const page = createLayer({ id: "page", archetype: "container", children: ["a"], properties: { "frame.width": 1440, "frame.height": 900 } }) as Layer;
+  const inPage = createDocumentFromLayers([page, createLayer({ id: "a", name: "Watch", archetype: "rectangle", parentId: "page", properties: { positioning: "absolute", "frame.width": 100, "frame.height": 60 } } as never) as Layer]);
+  const withDriver = { ...inPage, bindings: { b0: BindingSchema.parse(make("pointer.x |> remap(0, 1000, 0, 100)\n-> a.transform.x", 0)) } };
+  it("Vite: the script is in public/ and linked from index.html; the driven layer carries data-ll in the JSX", async () => {
+    const out = await buildSiteExport(withDriver, { target: "vite", styling: "css" });
+    const js = out.files.find((f) => f.path === "public/lazylayout-drivers.js");
+    assert.ok(js && typeof js.content === "string" && js.content.includes("createLive"));
+    const index = out.files.find((f) => f.path === "index.html")!.content as string;
+    assert.ok(index.includes('<script src="/lazylayout-drivers.js" defer></script>'));
+    assert.ok(out.files.some((f) => typeof f.content === "string" && f.content.includes('data-ll="a"')), "a layer is marked in the app's markup");
+    assert.ok(!out.warnings.some((w) => /plain HTML target only/.test(w)));
+  });
+  it("Next.js: the script is in public/ and linked from the root layout", async () => {
+    const out = await buildSiteExport(withDriver, { target: "next", styling: "css" });
+    assert.ok(out.files.some((f) => f.path === "public/lazylayout-drivers.js"));
+    const layout = out.files.find((f) => f.path === "app/layout.tsx")!.content as string;
+    assert.ok(layout.includes('<script src="/lazylayout-drivers.js" defer />'), layout);
+  });
+  it("no drivers: no script in any target", async () => {
+    for (const target of ["html", "vite", "next"] as const) {
+      const out = await buildSiteExport({ ...doc, bindings: {} }, { target, styling: "css" });
+      assert.ok(!out.files.some((f) => f.path.includes("lazylayout-drivers")), target);
+    }
+  });
+});
 });
