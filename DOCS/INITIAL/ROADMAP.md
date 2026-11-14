@@ -1673,14 +1673,14 @@ The document and World Environment have their own stores, After-track actions mo
 | D9 | Cloner: grid, radial, line, path, fill | Main 154 | D8 | A | 📋 |
 | D10 | Fields & effectors | Main 157 | D9, D4 | A | 📋 |
 | | **Wave 3 · Scroll & choreography** |||||
-| D11 | Scroll scenes: pin, scrub, snap | Main 81, 82 | D4 | B | 📋 |
-| D12 | Split text & text motion | Main 83, 84 | D2 | B | 📋 |
+| D11 | Scroll scenes: pin, scrub, snap | Main 81, 82 | D4 | A | 📋 |
+| D12 | Split text & text motion | Main 83, 84 | D2 | A | 📋 |
 | D13 | Scroll-scrubbed image sequences & video | Main 188 | D11 | A | 📋 |
 | D14 | Smooth scroll & depth parallax | Main 189, 190 | D11, D4 | A | 📋 |
-| D15 | States: hover, press, focus choreography | Main 78 | D2 | B | 📋 |
+| D15 | States: hover, press, focus choreography | Main 78 | D2 | A | 📋 |
 | | **Wave 4 · Tracking & speed** |||||
 | D16 | Corner pin & perspective placement | ROADMAP_3D 3D-204 | D2 | A | 📋 |
-| D17 | Tracking & parent to track | ROADMAP_3D 3D-205, 3D-206 (needs Main 99, Lane B) | D16, D5 | A | 📋 |
+| D17 | Tracking & parent to track | ROADMAP_3D 3D-205, 3D-206 (needs Main 99, video layers: taken over by Lane A on 2026-11-14) | D16, D5 | A | 📋 |
 | D18 | Speed effects | Main 144 | D4 | A | 📋 |
 | | **Wave 5 · 3D parts** |||||
 | D19 | 3D model parts & explode | new (uses ROADMAP_3D 3D-158 import, 3D-033 materials, 3D-037 lights) | D4, 3D-158, 3D-033, 3D-037 | A | 📋 |
@@ -1796,15 +1796,15 @@ The document and World Environment have their own stores, After-track actions mo
 ## Wave 3 · Scroll & choreography
 
 ### Phase D11 · Scroll scenes: pin, scrub, snap
-**Needs:** D4 · **Was:** Main 81, 82 · **Lane:** B · **Status:** 📋
-- [ ] Sections pin for a number of screens; animations scrub with scroll progress; snap points; the scroll simulator in the editor. Lane B's phases; Lane A builds them only if Lane B agrees.
+**Needs:** D4 · **Was:** Main 81, 82 · **Lane:** A · **Status:** 📋
+- [ ] Sections pin for a number of screens; animations scrub with scroll progress; snap points; the scroll simulator in the editor. Lane B's phases, **taken over by Lane A on 2026-11-14 by the project owner's decision** (no agreement needed).
 
 **You'll see:** a section that holds still while its animation plays with the scroll.
 **Done when:** Main 81 and 82's own gates, plus scroll tapes matching the export.
 
 ### Phase D12 · Split text & text motion
-**Needs:** D2 · **Was:** Main 83, 84 · **Lane:** B · **Status:** 📋
-- [ ] Split text into characters, words or lines, accessibly, and animate them with stagger. Lane B's phases.
+**Needs:** D2 · **Was:** Main 83, 84 · **Lane:** A · **Status:** 📋
+- [ ] Split text into characters, words or lines, accessibly, and animate them with stagger. Lane B's phases, **taken over by Lane A on 2026-11-14 by the project owner's decision**.
 
 **You'll see:** a headline whose words rise one after another.
 **Done when:** Main 83 and 84's own gates.
@@ -1826,8 +1826,8 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-14), 🚧:** built, in the editor and in the plain HTML export. **Depth parallax:** a **Parallax** preset in Driven by (a depth from -1 near to 1 far, and a cursor shift) that writes ordinary drivers, so it exports, honours reduced motion and works in Preview like any driver; a layer at depth 0.3 scrolls at 0.7 of the page's speed (hand-computed at five scroll positions), and moves with the cursor by depth. **Smooth scrolling:** a **Smooth** field in the Page panel (`scroll.smooth`, seconds to catch up with the wheel; 0 is the browser's own) and a standalone script in the export (`lazylayout-smooth.js`, no imports) that eases the **mouse wheel only**; keyboard scrolling, find in page, anchor links, the scrollbar, touch, pinch zoom and scrollers inside the page stay native, and any scroll it did not make moves its target so it never fights the browser; it is linked from the HTML, Vite and Next.js targets. **Verified:** 8 unit tests of the script on a faked page (easing arrives, settles in about tau at 30, 60 and 144 fps, wheel clicks add and stay inside the page, every native case left alone); in Chromium, on an **exported page**: a layer at depth 0.3 is at 0.3 x the scroll at four positions, the wheel eases (on its way after 60 ms, arrived after 1.5 s), End, an anchor-style jump and the next wheel all work, and **for a visitor who asked for reduced motion the parallax does nothing and the wheel scrolls natively**; and **scroll tape parity: three parallax layers over a recorded 14 s scroll tape, 840 frames, every value equal in the editor's runtime and the exported script to 1e-9.** The Done-when is met. **Not done:** (1) parallax by the **tilt of a phone** (the `device` signal is not built); (2) the **editor** previews parallax from a previewed frame's scroll, not a smoothed page (smooth scrolling is an export feature); (3) snapping per section (Phase 189's snap) is not built; (4) the one-click presets named in Phase 190 (dolly on scroll, look-around) are not built beyond Parallax; (5) the export targets other than plain HTML are written but not run in a Vite or Next build here.
 
 ### Phase D15 · States: hover, press, focus choreography
-**Needs:** D2 · **Was:** Main 78 · **Lane:** B · **Status:** 📋
-- [ ] Named states and transitions on any layer. Lane B's phase.
+**Needs:** D2 · **Was:** Main 78 · **Lane:** A · **Status:** 📋
+- [ ] Named states and transitions on any layer. Lane B's phase, **taken over by Lane A on 2026-11-14 by the project owner's decision**.
 
 **You'll see:** a button with Hover and Press states, previewed live.
 **Done when:** Main 78's own gate.
