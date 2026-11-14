@@ -38,6 +38,7 @@ import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDataba
 import { embedAssets, restoreAssets } from "@/core/assets/embed";
 import { getAssetStore } from "@/core/assets/AssetStore";
 import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/lazyFile";
+import { showToast } from "@/core/store/useLayersUiStore";
 import { executeStagePreset, presetForBreakpoint } from "@/editor/stage/presetBreakpoints";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
@@ -292,7 +293,8 @@ export function useEditorActions(
         url.searchParams.set("projectId", newId);
         window.history.replaceState({}, "", url.pathname + url.search);
       } catch (err) {
-        console.error("Import project file failed:", err);
+        // Design track D24: say why, in words (a file from a newer version, a file that is not a project)
+        showToast(err instanceof Error ? err.message : "That file could not be opened.");
       }
     };
     input.click();

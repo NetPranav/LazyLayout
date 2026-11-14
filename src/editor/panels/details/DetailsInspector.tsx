@@ -29,6 +29,7 @@ import { DrivenBySection } from "./sections/DrivenBySection";
 import { LayerStatesSection } from "./sections/LayerStatesSection";
 import { SequenceSection } from "./sections/SequenceSection";
 import { VariablesSection } from "./sections/VariablesSection";
+import { ComponentsSection } from "./sections/ComponentsSection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
@@ -385,6 +386,11 @@ export function getInspectorDesignSections(
       id: "variables",
       title: "Variables & styles",
       children: <VariablesSection {...sectionProps} />,
+    },
+    {
+      id: "components",
+      title: "Component",
+      children: <ComponentsSection {...sectionProps} />,
     },
     {
       id: "layer-states",
