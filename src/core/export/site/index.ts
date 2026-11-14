@@ -10,6 +10,7 @@ import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targ
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
 import { buildDriversExport } from "../runtime/drivers";
+import { buildScrollClipsSource, exportableScrollClips } from "../runtime/scrollClips";
 import { buildSmoothScrollSource } from "../runtime/smoothScroll";
 import { exportedPages } from "./plan";
 
@@ -76,6 +77,22 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
         if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-drivers.js" defer></script>\n  </body>`);
         if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("<body>{children}</body>", `<body>\n        {children}\n        <script src="/lazylayout-drivers.js" defer />\n      </body>`);
       }
+    }
+  }
+  // Scroll animations (Design track D11): one script for the clips that scrub, reveal or pin
+  const scroll = exportableScrollClips(doc);
+  warnings.push(...scroll.warnings);
+  if (scroll.clips.length > 0) {
+    const place = options.target === "html" ? "" : "public/";
+    files.push({ path: `${place}lazylayout-scroll.js`, content: buildScrollClipsSource(scroll.clips) });
+    for (const f of files) {
+      if (typeof f.content !== "string") continue;
+      if (options.target === "html" && f.path.endsWith("index.html")) {
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-scroll.js" defer></script>\n  </body>`);
+      }
+      if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-scroll.js" defer></script>\n  </body>`);
+      if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("</body>", `  <script src="/lazylayout-scroll.js" defer />\n      </body>`);
     }
   }
   // Smooth scrolling (Design track D14): one small script for the site, when a page frame asks for it
