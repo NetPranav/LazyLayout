@@ -112,6 +112,11 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     const t: "mouse" | "pen" | "touch" = e.pointerType === "pen" ? "pen" : e.pointerType === "touch" ? "touch" : "mouse";
     pointer = { ...toPage(e), down: e.buttons !== 0, coarse: t === "touch", pressure: e.pressure, type: t };
   };
+  /** The first previewed frame that has anything to scroll. */
+  const scroller = (): HTMLElement | null => {
+    for (const el of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) if (el.scrollHeight - el.clientHeight > 0) return el;
+    return null;
+  };
   view.addEventListener("pointermove", onMove);
   view.addEventListener("pointerdown", onMove);
   view.addEventListener("pointerup", onMove);
@@ -122,11 +127,20 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
       // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
       // one that has anything to scroll; none means no scroll, which reads as 0
       scroll: () => {
-        for (const el of Array.from(view.querySelectorAll<HTMLElement>('[data-testid="frame-preview-scroller"]'))) {
-          const max = el.scrollHeight - el.clientHeight;
-          if (max > 0) return { y: el.scrollTop, max };
-        }
-        return { y: 0, max: 0 };
+        const el = scroller();
+        return el ? { y: el.scrollTop, max: el.scrollHeight - el.clientHeight, viewport: el.clientHeight } : { y: 0, max: 0 };
+      },
+      // where a layer sits in the scrolled content, in the page's own px: its drawn position inside the (scrolled) frame, plus the scroll
+      layerBox: (id) => {
+        const sc = scroller();
+        const frameId = sc?.getAttribute("data-frame-id");
+        const frame = frameId ? page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(frameId)}"]`) : null;
+        const el = page.querySelector<HTMLElement>(`[data-element-id="${CSS.escape(id)}"]`);
+        if (!sc || !frame || !el) return null;
+        const k = page.offsetWidth > 0 ? page.getBoundingClientRect().width / page.offsetWidth : 1;
+        const fr = frame.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { top: (r.top - fr.top) / (k || 1) + sc.scrollTop, height: r.height / (k || 1) };
       },
     },
     dispose: () => {

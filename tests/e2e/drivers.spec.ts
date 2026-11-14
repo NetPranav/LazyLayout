@@ -309,4 +309,79 @@ test.describe("Drivers in the export (D4)", () => {
     expect(Math.max(...quiet) - Math.min(...quiet)).toBeLessThan(1);
     await still.ctx.close();
   });
+
+  test("view: a layer turns as a section scrolls through the screen, in the editor and in the export (D4)", async ({ page, browser }, testInfo) => {
+    await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+    await openEditor(page);
+    await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+    for (const name of ["Hero", "Features", "Footer", "Other elements"]) {
+      const el = page.getByText(name, { exact: true }).first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.click();
+        await page.keyboard.press("Delete");
+      }
+    }
+    await page.getByText("Design", { exact: true }).click();
+    await page.getByRole("menuitem", { name: /Desktop/i }).click();
+    type Win = { __LL_DOC__: { get: () => { layers: Record<string, { id: string; archetype: string; parentId: string | null }> }; commands: { addLayer: (a: unknown) => string } } };
+    const ids = await page.evaluate(() => {
+      const w = window as unknown as Win;
+      const frame = Object.values(w.__LL_DOC__.get().layers).find((l) => l.archetype === "container" && l.parentId !== null)!.id;
+      const add = (name: string, x: number, y: number, h: number) => w.__LL_DOC__.commands.addLayer({ archetype: "rectangle", parentId: frame, name, properties: { positioning: "absolute", "frame.x": x, "frame.y": y, "frame.width": 200, "frame.height": h } });
+      return { top: add("Top", 100, 100, 120), mid: add("Mid", 100, 700, 200), foot: add("Foot", 100, 1500, 120), frame };
+    });
+    // a driver made in the panel: Top turns 0..90 degrees with how far Mid has scrolled through the screen
+    await page.getByRole("button", { name: "Add driver", exact: true }).count(); // (the panel is for the selected layer; the seam below adds the same binding)
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${ids.frame}"]`).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+    await page.evaluate(([top, mid]) => (window as unknown as { __LL_ENGINE__: { addBinding: (t: string, o: string) => string } }).__LL_ENGINE__.addBinding(`view(${mid}).progress |> remap(0, 1, 0, 90)\n-> ${top}.transform.rotate blend add`, top), [ids.top, ids.mid]);
+
+    const turn = () =>
+      page.locator(`[data-testid="stage-page"] [data-element-id="${ids.top}"]`).first().evaluate((e) => {
+        const t = getComputedStyle(e).transform;
+        const m = new DOMMatrix(t === "none" ? undefined : t);
+        return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+      });
+    const viewport = await scroller.evaluate((e) => (e as HTMLElement).clientHeight);
+    const expected = (y: number) => 90 * Math.min(1, Math.max(0, (y + viewport - 700) / (viewport + 200)));
+    for (const y of [0, 300, 600, 5000]) {
+      await scroller.evaluate((e, top) => ((e as HTMLElement).scrollTop = top), y);
+      const at = await scroller.evaluate((e) => (e as HTMLElement).scrollTop); // the browser holds it to the real maximum
+      await expect.poll(async () => Math.abs((await turn()) - expected(at)), { message: `scrolled to ${at}` }).toBeLessThan(1.5);
+    }
+
+    // the export: the same section, the same maths, on a page of the same height
+    await page.locator(`[data-testid="frame-preview-toggle"][data-frame-id="${ids.frame}"]`).click();
+    const built = await page.evaluate(async () => {
+      const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ warnings: string[]; files: { path: string; text?: string }[] }> } };
+      return w.__LL_EXPORT__.build({ target: "html", styling: "css" });
+    });
+    expect(built.warnings.filter((x) => /driver/i.test(x))).toEqual([]);
+    const html = built.files.find((f) => f.path === "index.html")!.text!;
+    expect(html).toContain(`data-ll-view="${ids.mid}"`);
+    const dir = testInfo.outputPath("export-view");
+    for (const f of built.files) {
+      if (f.text === undefined) continue;
+      const p = join(dir, f.path);
+      mkdirSync(dirname(p), { recursive: true });
+      writeFileSync(p, f.text);
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+    const ex = await ctx.newPage();
+    await ex.goto(`file://${join(dir, "index.html")}`);
+    const exTurn = () =>
+      ex.locator(`[data-ll="${ids.top}"]`).evaluate((e) => parseFloat((e as HTMLElement).style.rotate || "0"));
+    const exBox = await ex.locator(`[data-ll-view="${ids.mid}"]`).evaluate((e) => { const r = e.getBoundingClientRect(); return { top: r.top + window.scrollY, height: r.height }; });
+    const vp = 900;
+    for (const y of [0, 300, 600, 5000]) {
+      await ex.evaluate((top) => window.scrollTo(0, top), y);
+      await ex.waitForTimeout(250);
+      const at = await ex.evaluate(() => window.scrollY);
+      const want = 90 * Math.min(1, Math.max(0, (at + vp - exBox.top) / (vp + exBox.height)));
+      expect(Math.abs((await exTurn()) - want), `exported page scrolled to ${at}`).toBeLessThan(1.5);
+    }
+    await ctx.close();
+  });
 });

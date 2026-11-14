@@ -15,7 +15,7 @@ const layer = (id: string) => createLayer({ id, archetype: "rectangle", properti
 const LAYERS = ["a", "b", "c", "d"];
 const make = (text: string, n: number, extra: Partial<Binding> = {}): Binding => ({ ...resolveLayerRefs(parseBinding(text), (name) => (LAYERS.includes(name) ? name : undefined)), id: `b${n}`, ownerLayerId: "a", enabled: true, ...extra });
 
-/** Twenty drivers: every signal the export serves, every operator it carries, every property it can drive. */
+/** Twenty-two drivers: every signal the export serves, every operator it carries, every property it can drive. */
 const TEXTS = [
   "pointer.x |> remap(0, 1000, 0, 300)\n-> a.transform.x",
   "pointer.y |> remap(0, 600, -50, 50) |> smooth(0.2)\n-> a.transform.y",
@@ -37,6 +37,8 @@ const TEXTS = [
   "pointer.y |> spring(120, 14) |> remap(0, 600, 0, 1)\n-> d.appearance.opacity",
   "pointer.speed |> max(100) |> remap(100, 2000, 0, 25) |> spring(300, 30)\n-> a.transform.y",
   "scroll.progress |> remap(0, 1, 0, 200) |> quantize(10)\n-> c.transform.x",
+  "view(b).progress |> remap(0, 1, 0, 180)\n-> a.transform.rotate",
+  "view(c).visible |> smooth(0.1) |> remap(0, 1, 1, 0.3)\n-> d.appearance.opacity",
 ];
 const bindings = TEXTS.map((t, i) => make(t, i));
 
@@ -44,7 +46,8 @@ const bindings = TEXTS.map((t, i) => make(t, i));
 const source = (t: number): InputSource => ({
   pointer: () => ({ x: 500 + 450 * Math.sin(t * 1.7), y: 300 + 250 * Math.cos(t * 1.1), down: t > 1, coarse: false, pressure: 0.5, type: "mouse" }),
   pageSize: () => ({ width: 1000, height: 600 }),
-  scroll: () => ({ y: 1200 * (0.5 - 0.5 * Math.cos(t * 0.9)), max: 1200 }),
+  scroll: () => ({ y: 1200 * (0.5 - 0.5 * Math.cos(t * 0.9)), max: 1200, viewport: 700 }),
+  layerBox: (id) => (id === "b" ? { top: 500, height: 300 } : id === "c" ? { top: 1100, height: 400 } : null),
 });
 
 const doc = { ...createDocumentFromLayers(LAYERS.map(layer)), bindings: Object.fromEntries(bindings.map((b) => [b.id, BindingSchema.parse(b)])) };
@@ -60,13 +63,13 @@ function exportContext() {
 const host: BindingHost = { layersOf: (s) => (s.kind === "layer" ? [s.ref] : []), base: () => undefined, env: { pointerCoarse: false, reducedMotion: false, breakpoint: "", states: new Set() } };
 
 describe("the exported drivers script runs like the editor (D4)", () => {
-  it("carries all twenty drivers", () => {
+  it("carries all twenty-two drivers", () => {
     const { drivers, warnings } = exportableDrivers(doc);
-    assert.equal(drivers.length, 20);
+    assert.equal(drivers.length, 22);
     assert.deepEqual(warnings, []);
   });
 
-  it("twenty drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
+  it("twenty-two drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
     const { ctx } = exportContext();
     const core = createBindingRuntime(bindings, host);
     const exp = ctx.createDrivers(ctx.CONFIG);
@@ -104,6 +107,7 @@ describe("the exported drivers script runs like the editor (D4)", () => {
       { kind: "pointer", channel: "speed" }, { kind: "pointer", channel: "angle" }, { kind: "pointer", channel: "down" },
       { kind: "pointerIn", channel: "uv", space: "page" }, { kind: "pointerIn", channel: "ndc", space: "page" }, { kind: "pointerIn", channel: "px", space: "page" },
       { kind: "scroll", channel: "y" }, { kind: "scroll", channel: "progress" }, { kind: "scroll", channel: "velocity" }, { kind: "scroll", channel: "direction" },
+      { kind: "view", layer: "b", channel: "progress" }, { kind: "view", layer: "b", channel: "visible" }, { kind: "view", layer: "c", channel: "visible" }, { kind: "view", layer: "ghost", channel: "progress" },
     ]; // (time and frameDt are answered by the evaluator itself, not the bus; the drivers on `time` are in the twenty above)
     for (let i = 0; i <= 120; i++) {
       const t = i / 60;
@@ -121,7 +125,7 @@ describe("the exported drivers script runs like the editor (D4)", () => {
   it("a driver the export cannot carry is left out, with a warning that says why", () => {
     const odd = { ...doc, bindings: { ...doc.bindings, z1: BindingSchema.parse(make("pointer.x |> toggle\n-> a.transform.x", 91)), z2: BindingSchema.parse(make("pointer.x\n-> a.transform.x blend replace", 92)), z3: BindingSchema.parse(make("device.tiltX\n-> a.transform.rotate", 93)), z4: BindingSchema.parse(make("pointer.x\n-> a.cssvar.glow", 94)) } };
     const { drivers, warnings } = exportableDrivers(odd);
-    assert.equal(drivers.length, 20);
+    assert.equal(drivers.length, 22);
     assert.equal(warnings.length, 4);
     assert.ok(warnings.some((w) => /toggle/.test(w)));
     assert.ok(warnings.some((w) => /replace/.test(w)));

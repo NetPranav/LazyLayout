@@ -35,6 +35,7 @@ const SIGNALS: Record<string, SignalChoice> = {
   pointerY: { label: "Pointer, top to bottom", hint: "0 at the top of the page, 1 at the bottom", signal: { kind: "pointerIn", channel: "uv", space: "page" }, pre: [{ op: "component", axis: "y" }], range: [0, 1], unit: "" },
   speed: { label: "Pointer speed", hint: "How fast the pointer moves, in px per second", signal: { kind: "pointer", channel: "speed" }, pre: [], range: [0, 2000], unit: "px/s" },
   scroll: { label: "Scroll", hint: "How far the page is scrolled, 0 at the top to 1 at the bottom (the editor does not measure scroll yet)", signal: { kind: "scroll", channel: "progress" }, pre: [], range: [0, 1], unit: "" },
+  view: { label: "Section in view", hint: "How far a section has scrolled through the screen: 0 as it enters at the bottom, 1 as it leaves at the top (a section of the page you choose below)", signal: { kind: "view", layer: "", channel: "progress" }, pre: [], range: [0, 1], unit: "" },
   time: { label: "Time", hint: "Seconds on the timeline", signal: { kind: "time" }, pre: [], range: [0, 10], unit: "s" },
 };
 const SIGNAL_OPTIONS = Object.entries(SIGNALS).map(([value, s]) => ({ value, label: s.label, hint: s.hint }));
@@ -56,7 +57,7 @@ const PROPERTY_OPTIONS = Object.entries(PROPERTIES).map(([value, p]) => ({ value
 const PIN_LABEL: Record<PresetPinName, string> = { topLeft: "Top left", top: "Top", topRight: "Top right", left: "Left", center: "Center", right: "Right", bottomLeft: "Bottom left", bottom: "Bottom", bottomRight: "Bottom right" };
 
 const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: string } }): string => {
-  const sig = Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
+  const sig = b.expr.signal.kind === "view" ? SIGNALS.view : Object.values(SIGNALS).find((s) => JSON.stringify(s.signal) === JSON.stringify(b.expr.signal));
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
@@ -64,6 +65,8 @@ const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: 
 
 export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
   const bindings = useStore(documentStore, (s) => s.document.bindings); // re-read when drivers change (undo, redo, another panel)
+  const layers = useStore(documentStore, (s) => s.document.layers);
+  const [viewLayer, setViewLayer] = useState("");
   const [signalKey, setSignalKey] = useState("pointerX");
   const [propKey, setPropKey] = useState("x");
   const [outRange, setOutRange] = useState<[number, number]>(PROPERTIES.x.out);
@@ -83,7 +86,8 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     const prop = PROPERTIES[propKey];
     const operators: Operator[] = [...sig.pre, { op: "remap", inMin: inRange[0], inMax: inRange[1], outMin: outRange[0], outMax: outRange[1], clamp: true }];
     if (smooth > 0) operators.push({ op: "smooth", tau: smooth });
-    const draft: BindingDraft = { expr: { signal: sig.signal, operators }, target: { kind: "property", on: { kind: "layer", ref: selectedId }, path: prop.path } };
+    const signal: Signal = sig.signal.kind === "view" ? { ...sig.signal, layer: viewLayer || selectedId } : sig.signal;
+    const draft: BindingDraft = { expr: { signal, operators }, target: { kind: "property", on: { kind: "layer", ref: selectedId }, path: prop.path } };
     addBinding(draft, selectedId);
   };
 
@@ -140,6 +144,18 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
           }}
         />
       </OptionRow>
+      {signalKey === "view" && (
+        <OptionRow label="Section">
+          <Select
+            aria-label="Driver section"
+            size="sm"
+            width="100%"
+            options={Object.values(layers).filter((l) => l.parentId !== null).map((l) => ({ value: l.id, label: l.name }))}
+            value={viewLayer || selectedId}
+            onChange={setViewLayer}
+          />
+        </OptionRow>
+      )}
       <OptionRow label="Property">
         <Select
           aria-label="Driver property"

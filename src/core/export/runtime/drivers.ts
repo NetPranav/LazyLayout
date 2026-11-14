@@ -44,7 +44,7 @@ export interface DriversExport {
   warnings: string[];
 }
 
-const SERVED_SIGNALS = new Set(["pointer", "pointerIn", "scroll", "time", "frameDt", "seed", "constant"]);
+const SERVED_SIGNALS = new Set(["pointer", "pointerIn", "scroll", "view", "time", "frameDt", "seed", "constant"]);
 const SUPPORTED_OPS = new Set(["smooth", "spring", "remap", "clamp", "add", "mul", "min", "max", "abs", "component", "quantize", "deadzone", "falloff", "length"]);
 
 function opsOf(expr: SignalExpr): { ops: Record<string, unknown>[]; problem: string | null } {
@@ -81,6 +81,9 @@ export function exportableDrivers(doc: MotionDocument): { drivers: DriverJson[];
   }
   return { drivers, warnings };
 }
+
+/** The layers a driver reads `view(layer)` of: the page script finds them by `data-ll-view`. */
+export const viewLayerIdsOf = (drivers: readonly { signal: Signal }[]): Set<string> => new Set(drivers.flatMap((d) => (d.signal.kind === "view" ? [d.signal.layer] : [])));
 
 /** One live effector, resolved to what the script needs: the copies as made (their centres, transforms, opacities) and the settings. */
 interface EffectorJson {
@@ -187,6 +190,13 @@ function num(v) { return isVec(v) ? v[0] : typeof v === "boolean" ? (v ? 1 : 0) 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
 function lift(v, f) { return isVec(v) ? [f(v[0]), f(v[1])] : f(num(v)); }
+/* How far a box has scrolled through the screen: 0 when its top reaches the bottom of the screen, 1 when its bottom leaves the top. */
+function viewOf(box, scrollY, viewport) {
+  if (!(viewport > 0)) return { progress: 0, visible: 0 };
+  var progress = Math.min(1, Math.max(0, (scrollY + viewport - box.top) / (viewport + box.height)));
+  var overlap = Math.max(0, Math.min(box.top + box.height, scrollY + viewport) - Math.max(box.top, scrollY));
+  return { progress: progress, visible: box.height > 0 ? overlap / box.height : 0 };
+}
 function r4(n) { return Math.round(n * 1e4) / 1e4; }
 function falloffOf(shape, d, r) {
   var q = r > 0 ? Math.abs(d) / r : Infinity;
@@ -227,6 +237,12 @@ function busFrame(src, st, time, dt) {
         case "coarse": return p && p.coarse ? 1 : 0;
       }
       return 0;
+    }
+    if (s.kind === "view") {
+      var b = src.layerBox ? src.layerBox(s.layer) : null;
+      if (!b) return 0;
+      var vw = viewOf(b, sc.y, sc.viewport || 0);
+      return s.channel === "progress" ? vw.progress : vw.visible;
     }
     if (s.kind === "pointerIn") return s.channel === "uv" ? [u, v] : s.channel === "ndc" ? [u * 2 - 1, v * 2 - 1] : [x, y];
     if (s.kind === "scroll") return s.channel === "y" ? sc.y : s.channel === "progress" ? progress : s.channel === "velocity" ? st.vel : st.dir;
@@ -286,7 +302,11 @@ const GLUE = `/* The page: the pointer, the scroll and the clock in, CSS out. */
   var source = {
     pointer: function () { return pointer; },
     pageSize: function () { var r = root.getBoundingClientRect(); return { width: r.width, height: r.height }; },
-    scroll: function () { return { y: window.scrollY, max: document.documentElement.scrollHeight - window.innerHeight }; }
+    scroll: function () { return { y: window.scrollY, max: document.documentElement.scrollHeight - window.innerHeight, viewport: window.innerHeight }; },
+    layerBox: function (id) {
+      var e = document.querySelector('[data-ll-view="' + id + '"]'); if (!e) return null;
+      var r = e.getBoundingClientRect(); return { top: r.top + window.scrollY, height: r.height };
+    }
   };
   var els = {}, base = {}, copyEls = {}, wrote = {};
   function find(id) { return els[id] || (els[id] = document.querySelector('[data-ll="' + id + '"]')); }

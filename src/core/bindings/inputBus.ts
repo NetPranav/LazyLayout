@@ -4,9 +4,9 @@
  * real page, and a test supplies a fake one, so the same chains give the same values everywhere.
  *
  * Signals served today: the pointer (position in px and in uv / ndc of the page, motion, speed, button), scroll
- * (position, progress, velocity, direction), time and frame dt. Signals not served yet (`view`, `device`, `audio`,
- * `hover` and the other layer-state signals, `proximity`) read as 0 and are listed by `unservedSignals`, so the editor
- * can say so instead of silently showing nothing.
+ * (position, progress, velocity, direction), `view(layer)` (how far a layer has scrolled through the screen, and how much of it
+ * shows), time and frame dt. Signals not served yet (`device`, `audio`, `hover` and the other layer-state signals,
+ * `proximity`) read as 0 and are listed by `unservedSignals`, so the editor can say so instead of silently showing nothing.
  */
 import type { Signal, SignalExpr } from "../document/signals";
 import type { Frame, Value, Vec2 } from "./evaluate";
@@ -17,8 +17,10 @@ export interface InputSource {
   pointer(): { x: number; y: number; down: boolean; coarse: boolean; pressure: number; type: "mouse" | "pen" | "touch" } | null;
   /** The page's size in px, for uv and ndc. */
   pageSize(): { width: number; height: number };
-  /** Scroll of the frame: position and the largest position (content height minus viewport), in px. */
-  scroll(): { y: number; max: number };
+  /** Scroll of the frame: position, the largest position (content height minus viewport) and the viewport's height, in px. */
+  scroll(): { y: number; max: number; viewport?: number };
+  /** Where a layer sits in the scrolled content: its top (from the top of the content, not the screen) and height, in px; null when it is not drawn. */
+  layerBox?(layerId: string): { top: number; height: number } | null;
 }
 
 /** Per-frame values that depend on the last frame (motion, speed, scroll velocity); owned by the bus, not the source. */
@@ -34,7 +36,18 @@ export interface BusState {
 }
 export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0 });
 
-const SERVED = new Set(["pointer", "pointerIn", "scroll", "time", "frameDt", "seed", "constant"]);
+const SERVED = new Set(["pointer", "pointerIn", "scroll", "view", "time", "frameDt", "seed", "constant"]);
+
+/**
+ * How far a box has scrolled through the screen: 0 when its top reaches the bottom of the screen, 1 when its bottom leaves the
+ * top of it (like a CSS view timeline), and the share of the box that shows. Pure, so the export can use the same maths.
+ */
+export function viewOf(box: { top: number; height: number }, scrollY: number, viewport: number): { progress: number; visible: number } {
+  if (!(viewport > 0)) return { progress: 0, visible: 0 };
+  const progress = Math.min(1, Math.max(0, (scrollY + viewport - box.top) / (viewport + box.height)));
+  const overlap = Math.max(0, Math.min(box.top + box.height, scrollY + viewport) - Math.max(box.top, scrollY));
+  return { progress, visible: box.height > 0 ? overlap / box.height : 0 };
+}
 
 /** Advance the bus by one frame and return that frame's inputs. Call once per frame, in time order. */
 export function busFrame(source: InputSource, state: BusState, time: number, dt: number, seed = 0): Frame {
@@ -77,6 +90,12 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
         return 0;
       case "pointerIn":
         return s.channel === "uv" ? [u, v] : s.channel === "ndc" ? [u * 2 - 1, v * 2 - 1] : [x, y];
+      case "view": {
+        const box = source.layerBox?.(s.layer);
+        if (!box) return 0;
+        const v = viewOf(box, sc.y, sc.viewport ?? 0);
+        return s.channel === "progress" ? v.progress : v.visible;
+      }
       case "scroll":
         return s.channel === "y" ? sc.y : s.channel === "progress" ? progress : s.channel === "velocity" ? state.scrollVelocity : state.scrollDirection;
       default:

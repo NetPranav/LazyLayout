@@ -295,7 +295,9 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
       }
     }
 
-    const drivenLayerIds = new Set(exportableDrivers(doc).drivers.map((d) => d.layer));
+    const exportedDrivers = exportableDrivers(doc).drivers;
+    const drivenLayerIds = new Set(exportedDrivers.map((d) => d.layer));
+    const viewLayerIds = viewLayerIdsOf(exportedDrivers);
     const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
     const nodeOfLayer = new Map<string, ENode>();
     const finalize = (nodes: ENode[]): ENode[] =>
@@ -312,6 +314,8 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         let out: ENode = { ...n, attrs, style: [], children: finalize(n.children), ...(layerId ? { layerId } : {}) };
         // a layer a driver moves is found by the driver script through this mark (only layers drivers carry get one)
         if (layerId && drivenLayerIds.has(layerId)) out.attrs["data-ll"] = layerId;
+        // a layer a driver reads the scroll position of (view) is found by its box
+        if (layerId && viewLayerIds.has(layerId)) out.attrs["data-ll-view"] = layerId;
         // and so is each copy of a layer whose copies react to the pointer or the scroll
         if (copyOf && copyIndex && liveEffectorIds.has(copyOf)) out.attrs["data-ll-copy"] = `${copyOf}:${copyIndex}`;
         if (cls) out.attrs.class = cls;
@@ -407,7 +411,7 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
 import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
-import { exportableDrivers, exportableEffectors } from "../runtime/drivers";
+import { exportableDrivers, exportableEffectors, viewLayerIdsOf } from "../runtime/drivers";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";
