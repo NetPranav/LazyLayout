@@ -9,7 +9,8 @@
  * FigCraft uses the `linesweeper` sweep-line library (`crates/pathops/src/lib.rs`). We keep the `polygon-clipping`
  * library Phase 40 already uses: curves are flattened (`geometry/measure.ts`, 0.05 px), polygons are combined, and a
  * non-zero path whose rings don't all turn the same way is resolved face by face by its winding number, so a ring
- * drawn as an outer contour and a reversed inner one stays a ring. Results are polygons (straight segments).
+ * drawn as an outer contour and a reversed inner one stays a ring. The polygons are then turned back into pieces of
+ * the input curves (`curveRefit.ts`, Phase 103), so results keep curves as curves.
  *
  * Behaviour translated from FigCraft (`crates/pathops/src/lib.rs`), commit 6ea44e9. MIT, Copyright (c) 2026
  * ArtCraft Team and the FigCraft contributors. See THIRD_PARTY_NOTICES.md.
@@ -19,6 +20,7 @@
 import polygonClipping from "polygon-clipping";
 import { BezPath } from "../geometry/bezpath";
 import { MAX_SAMPLES, polylines } from "../geometry/measure";
+import { refitCurves } from "./curveRefit";
 
 type Ring = [number, number][];
 type Polygon = Ring[];
@@ -169,12 +171,12 @@ export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: Fill
       out = ra.length && rb.length ? polygonClipping.xor(ra, rb) : ra.length ? ra : rb;
       break;
   }
-  return regionToPath(out);
+  return refitCurves(out, [a, b]);
 }
 
-/** A path's fill as plain, non-overlapping polygons (FigCraft `simplify`). */
+/** A path's fill as plain, non-overlapping shapes (FigCraft `simplify`). */
 export function simplifyPath(path: BezPath, rule: FillRule = "nonzero"): BezPath {
-  return regionToPath(pathRegion(path, rule));
+  return refitCurves(pathRegion(path, rule), [path]);
 }
 
 /** One face of an arrangement: a connected area that the same set of inputs covers. */
@@ -198,6 +200,7 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
   if (shapes.length > MAX_ARRANGEMENT_INPUTS) return null;
   if (shapes.some((s) => polylines(s.path) === null)) return null;
   // every input is reduced to the plain polygons it fills first, so self-overlaps can't make faces overlap
+  const inputs = shapes.map((s) => s.path);
   const regions = shapes.map((s) => pathRegion(s.path, s.evenOdd ? "evenodd" : "nonzero"));
   const rings: Ring[] = regions.flatMap((m) => m.flatMap((poly) => poly));
   if (rings.length === 0) return [];
@@ -218,7 +221,7 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
   for (const g of [...groups.values()].sort((a, b) => a.cover.join(",").localeCompare(b.cover.join(",")))) {
     const merged = g.pieces.length === 1 ? g.pieces : polygonClipping.union(...(g.pieces.map((p) => [p]) as [Multi, ...Multi[]]));
     for (const poly of merged) {
-      out.push({ path: regionToPath([poly]), cover: g.cover });
+      out.push({ path: refitCurves([poly], inputs), cover: g.cover });
       if (out.length >= MAX_FACES) return out;
     }
   }
@@ -229,5 +232,5 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
 export function unionFaces(faces: readonly BezPath[]): BezPath {
   const regions = faces.map((f) => pathRegion(f, "nonzero")).filter((m) => m.length > 0);
   if (regions.length === 0) return new BezPath();
-  return regionToPath(regions.length === 1 ? regions[0] : polygonClipping.union(...(regions as [Multi, ...Multi[]])));
+  return refitCurves(regions.length === 1 ? regions[0] : polygonClipping.union(...(regions as [Multi, ...Multi[]])), faces);
 }
