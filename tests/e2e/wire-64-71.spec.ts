@@ -216,6 +216,23 @@ test("Phases 69 and 71 on the new editor: the selected animated layer shows its 
     return layerId;
   });
   await motion(page);
-  await page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`).click({ force: true });
+  // half way through the move, the box that takes the click is where the layer is drawn, and stays there when the pointer
+  // comes over it (the box used to be re-measured with the move in it and moved a second time, so the click fell through
+  // to the frame behind: seen in Firefox and WebKit, where the re-render lands before the press)
+  await page.evaluate(() => (window as unknown as Win).__LL_ENGINE__!.seek(1));
+  const hit = page.locator(`[data-testid="stage-element"][data-element-id="${id}"]`);
+  const drawn = page.locator(`[data-testid="stage-page"] [data-element-id="${id}"]`).first();
+  const gap = async () => {
+    const [a, b] = [await hit.boundingBox(), await drawn.boundingBox()];
+    return a && b ? Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) : 999;
+  };
+  await expect.poll(gap, "the click box is on the drawn layer").toBeLessThan(1.5);
+  const box = (await drawn.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(300); // the hover has re-rendered and re-measured by now
+  expect(await gap(), "and still is with the pointer over it").toBeLessThan(1.5);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(hit).toHaveAttribute("data-selected", "true");
   await expect(page.locator('[data-testid="motion-path-overlay"], [data-motion-path]').first()).toBeAttached({ timeout: 10_000 });
 });

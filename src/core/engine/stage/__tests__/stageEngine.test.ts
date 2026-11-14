@@ -100,6 +100,41 @@ describe("KernelAdapter", () => {
     }
   });
 
+  it("atRest shows what React drew while something is measured, then puts the pose back", () => {
+    const f = docWith([[track("transform.x", 0, 100), track("appearance.opacity", 0, 1)]]);
+    const { adapter, element } = setup(f, fakeElement({ transform: "rotate(10deg)" }));
+    adapter.seek(0.5);
+    const shown = { transform: element.values.get("transform"), opacity: element.values.get("opacity") };
+    assert.notEqual(shown.transform, "rotate(10deg)");
+    const during = adapter.atRest(() => ({ transform: element.values.get("transform"), opacity: element.values.get("opacity") }));
+    assert.deepEqual(during, { transform: "rotate(10deg)", opacity: undefined }, "the drawn values, and a property React never set is unset");
+    assert.deepEqual({ transform: element.values.get("transform"), opacity: element.values.get("opacity") }, shown, "the pose is back");
+    // the adapter's own book-keeping is untouched: the next seek to the same time writes nothing
+    const sets = element.sets;
+    adapter.seek(0.5);
+    assert.equal(element.sets, sets);
+    // and a throw while measuring still puts the pose back
+    assert.throws(() => adapter.atRest(() => { throw new Error("measure failed"); }));
+    assert.equal(element.values.get("transform"), shown.transform);
+  });
+
+  it("restores a property written under two names (mask-image and its -webkit- alias) to what was drawn", () => {
+    const b = new DocBuilder();
+    const id = b.layer("rectangle", "Masked", null, { "frame.width": 100, "frame.height": 80, "mask.mode": "alpha", "mask.shape": "ellipse" });
+    b.clip(id, { name: "Grow", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [track("mask.width", 0, 100)] });
+    const doc = b.build();
+    // an element where the two names are one property, as in a browser
+    const values = new Map<string, string>();
+    const alias = (name: string) => name.replace(/^-webkit-/, "");
+    const element = { style: { setProperty: (n: string, v: string) => void values.set(alias(n), v), removeProperty: (n: string) => (values.delete(alias(n)), ""), getPropertyValue: (n: string) => values.get(alias(n)) ?? "" } };
+    const adapter = new KernelAdapter();
+    adapter.mount({ node: () => element as unknown as Element, getDocument: () => doc, compositionId: () => MAIN_COMPOSITION_ID, fps: () => 60, duration: () => 5 });
+    adapter.seek(0.5);
+    assert.match(values.get("mask-image") ?? "", /^url\(/, "the mask is written while the engine draws");
+    adapter.dispose();
+    assert.equal(values.get("mask-image"), undefined, "and gone once it stops: React drew no mask image inline");
+  });
+
   it("applies the track's easing exactly as the kernel does", () => {
     const f = docWith([[track("transform.x", 0, 100, "power2.inOut")]]);
     const { adapter, element } = setup(f);

@@ -66,8 +66,13 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
   const graphContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Determine which layer to plot
+  // The layer whose keyframe is selected comes first (a keyframe can be selected while another layer, or none, is selected
+  // on the canvas), then the selected layer if it is animated, then the first animated layer.
+  const animated = (l: (typeof comp.layers)[number] | undefined | null) => (l && l.tr.length > 0 ? l : null);
   const targetLayer =
-    (selectedLayerId ? comp.layers.find((l) => l.id === selectedLayerId) : null) ??
+    comp.layers.find((l) => l.tr.some((t) => t.keys.some((k) => selectedKeys[k.id]))) ??
+    animated(selectedProp ? comp.layers.find((l) => l.id === selectedProp.layerId) : null) ??
+    animated(selectedLayerId ? comp.layers.find((l) => l.id === selectedLayerId) : null) ??
     comp.layers.find((l) => l.tr.length > 0) ??
     comp.layers[0];
 
@@ -89,7 +94,7 @@ export const TimelineCurveGraph: React.FC<TimelineCurveGraphProps> = ({
 
   // Active property track
   const currentPropId = selectedProp?.layerId === targetLayer.id ? selectedProp.p : activeProp;
-  const track = targetLayer.tr.find((t) => t.p === currentPropId) ?? targetLayer.tr[0];
+  const track = targetLayer.tr.find((t) => t.keys.some((k) => selectedKeys[k.id])) ?? targetLayer.tr.find((t) => t.p === currentPropId) ?? targetLayer.tr[0];
   const spec = PROPS[track.p];
   const ks = track.keys;
   // the engine's curve for this layer's property, in the timeline's units (opacity and scale in %)

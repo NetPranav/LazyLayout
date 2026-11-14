@@ -3,6 +3,7 @@ import { frameScheduler, type FrameScheduler } from "../../time/scheduler";
 import { getTransport, subscribeTransport } from "../../time/transport";
 import type { StageRenderer } from "../../render/StageRenderer";
 import { StageAdapters } from "./StageAdapters";
+import { KernelAdapter } from "./KernelAdapter";
 import { ParityMonitor, parityEnabled } from "./parity";
 import type { AdapterHost, EngineAdapter } from "./types";
 import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
@@ -28,6 +29,23 @@ export interface StageEngineOptions {
   scroll?: { host: ScrollHost; active: () => boolean };
   /** Design track D4: drivers (bindings). The host measures the page's inputs; `active` says whether they are live (Preview and Motion; in Design the page shows the design). */
   bindings?: { host: BindingDriverHost; active: () => boolean };
+}
+
+/** The installed engines' "measure at rest" steps (see `measureAtRest`). */
+const restSteps = new Set<<T>(read: () => T) => T>();
+
+/**
+ * Runs `read` with the animation taken off every layer the stage engines are drawing, then puts it back (nothing is
+ * painted in between). The canvas measures its layers with this, so a layer's box is where it rests whatever the
+ * playhead shows. With no engine installed it just runs `read`. Layers playing as Web Animations are not rested.
+ */
+export function measureAtRest<T>(read: () => T): T {
+  let run = read;
+  for (const step of restSteps) {
+    const inner = run;
+    run = () => step(inner);
+  }
+  return run();
 }
 
 export function installStageEngine(renderer: StageRenderer, options: StageEngineOptions = {}): () => void {
@@ -132,6 +150,8 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
 
   // Phase 60: while playing, compare what the engines show with `evaluate()` every 30 frames.
   const stageAdapters = adapter instanceof StageAdapters ? adapter : null;
+  const restStep = <T,>(read: () => T): T => (stageAdapters ? stageAdapters.kernel.atRest(read) : adapter instanceof KernelAdapter ? adapter.atRest(read) : read());
+  restSteps.add(restStep);
   const unmonitor =
     stageAdapters && (options.parity ?? parityEnabled())
       ? new ParityMonitor({
@@ -147,6 +167,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       : null;
 
   return () => {
+    restSteps.delete(restStep);
     effectorDriver?.dispose();
     cssVars.dispose();
     scrollDriver?.reset();

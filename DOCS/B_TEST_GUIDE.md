@@ -48,7 +48,9 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 5. **Precomp (3.13, T65.2–T65.5):** click **+ Precomp**, double-click the blue bar, add a keyframe inside, click **Main** in the breadcrumbs: the precomp's row says **1 key time**.
 6. **Animation panel (3.16, T68.1–T68.9):** select HeroHeading, click **Presets tool**, **Add Animation → Fade In Up**; reload the page. The animation is still there.
 7. **Scroll (3.17, T81.1–T81.6):** make the page tall, add a scroll animation with Ctrl+P → `Add a Scroll Animation to a Layer`, switch the frame bar to **Preview**, scroll: the layer moves with the scroll. Back in **Design** it is as drawn.
-8. Nothing in the console is red.
+8. **Compositing and effects in the inspector (3.19, 3.20):** in **Design**, draw two rectangles, select the second. In the right panel open **Effect stack**, choose **Add an effect… → Blur**: the rectangle goes soft and the row says **CSS**. Open **Compositing**, set **Mask** to **Alpha** and **Shape** to **Ellipse**: the rectangle becomes an oval. **Ctrl+Z** twice puts both back.
+9. **A layer half way through a move can be clicked (3.18, T69.9):** in **Motion**, give a rectangle two **Position X** keyframes, drag the needle to the middle, click the rectangle on the canvas: it is selected and its motion path shows (the click used to fall through to the frame behind).
+10. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -768,6 +770,14 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T72.7** Do: `npx tsx --test src/core/geometry/__tests__/pins.test.ts src/core/geometry/__tests__/anchorTransforms.test.ts src/core/geometry/__tests__/parentTransforms.test.ts src/core/kernel/__tests__/parentEvaluation.test.ts`. Expect: pass.
 - [ ] **T73.2** Do: `npm run test:canvas-contract`. Expect: pass. (`COLLABORATION.md` §10 requires this before merging anything drawn on the canvas.)
 
+**Fixed 2026-11-14 (Phases 64, 67, 69): three things to re-check in Motion**
+- [ ] **T69.9 (click box follows the animation)** Do: in **Motion**, select a rectangle, twirl it open, add **Position X** keyframes at 0 s (value 0) and 2 s (value 300). Drag the needle to **1 s**. Move the pointer over the rectangle where it is drawn now, wait a moment, then click it. Expect: the rectangle is selected (its outline is on it) and its motion path shows. Fails if: the frame behind it is selected instead, or the outline sits to the right of the rectangle (the box was measured with the move in it and then moved again).
+- [ ] **T67.10 (graph follows the selected keyframe)** Do: in **Motion**, click a keyframe diamond of a layer while **another** layer (or nothing) is selected on the canvas, then press the **graph** button in the timeline header. Expect: the curve of the keyframe's property. Fails if: the graph says "Select an animated layer to see its curves".
+- [ ] **T64.6 (scrub stays smooth)** Do: with a page of many animated layers (the automated test uses 200), drag the needle quickly. Expect: the layers follow without stutter. What changed: a seek no longer re-renders the canvas or the timeline, and the timecode label no longer makes the browser restyle the whole page (measured: 91 ms a frame before, about 25 ms after, in headless Chromium with 200 layers of 5 tracks).
+- [ ] **T64.7** Do: `npx playwright test tests/e2e/wire-64-71.spec.ts --project=chromium --workers=1`. Expect: 6 tests pass, and the line `[phase 64] 200 layers x 5 tracks: mean frame … ms` shows a number under 34.
+
+---
+
 ### 3.19 Phase 74: blend modes, adjustment layers and masks (NEW)
 
 **What changed:** three things a layer can now do that the stage actually draws (the inspector's Blend mode used to be saved but never drawn):
@@ -775,7 +785,18 @@ If any step fails, stop and report it. Everything else depends on them.
 - **Adjustment:** a layer filters what is **behind** it (blur, brightness, contrast, saturation, hue, grayscale, sepia, invert), like an After Effects adjustment layer.
 - **Masks:** a shape (rectangle, ellipse or path) decides what of the layer shows. **Alpha** shows where the shape is; **luma** shows as much as the shape is bright; the **inverted** modes show everything else. Soft edge (feather), grow (expansion) and opacity. The path morphs between keyframes.
 
-**Known gaps (don't report):** there are no inspector or timeline controls for isolation, adjustment, masks or mattes yet (the UI pipeline wires them; the commands exist), so the way to see them is the **stage lab** below, or the commands. A matte reads a box or an ellipse on the same absolute canvas; a source under a flow layout gives no matte.
+**Known gaps (don't report):** the timeline has no stopwatches for `adjust.*` and `mask.*` yet (keyframe them with Auto-key, or by command). A matte reads a box or an ellipse on the same absolute canvas; a source under a flow layout gives no matte. Masks and mattes are drawn by the engine on the stage and aren't in exported code yet. In Playwright's Firefox and WebKit a screenshot never shows a backdrop blur (even on a bare page), so the automated pixel check of the adjustment runs in Chromium only; the computed filter is checked in all three.
+
+**User test (the inspector, new 2026-11-14, covered by `tests/e2e/wire-74-77-inspector.spec.ts`)**
+- [ ] **T74.12** Do: open `/editor`, stay in **Design**. Draw two rectangles that don't overlap (press **R**, drag; twice). Click the second one. In the right panel scroll to the section **Compositing**. Expect: a button **Isolate group**, a button **Adjust what is behind**, a **Mask** menu showing **None**, and a **Matte** menu showing **None**.
+- [ ] **T74.13** Do: click **Isolate group**. Expect: it now reads **Isolated group: on**. Press **Ctrl+Z** (click the canvas background first if the cursor is in a field). Expect: it reads **Isolate group** again.
+- [ ] **T74.14** Do: open the **Mask** menu, choose **Alpha**. Expect: new rows appear under it: **Shape**, **Position**, **Size**, **Radius**, **Feather**, **Expand**, **Opacity**. The rectangle looks the same (the mask is the whole layer). Fails if: no rows appear.
+- [ ] **T74.15** Do: set **Shape** to **Ellipse**. Expect: the rectangle on the canvas becomes an oval (its corners are cut away). Type **6** in **Feather**, press Enter. Expect: the oval's edge goes soft.
+- [ ] **T74.16** Do: type **40** in **Opacity**, press Enter. Expect: the oval is fainter. Set **Mask** back to **None**. Expect: the rows disappear and the rectangle is whole again.
+- [ ] **T74.17** Do: drag the second rectangle so it half covers the first, keep it selected, open the **Matte** menu and pick the first rectangle by its name. Expect: two new controls appear, **Mode** and a button **Matte layer: hidden**, and a line saying a matte is drawn in Motion and Preview. Nothing changes on the canvas yet (Design shows the design at rest).
+- [ ] **T74.18** Do: click **Motion** in the top bar. Expect: the first rectangle disappears (a matte layer is hidden while it is used) and the second shows only where the first one's shape covers it. Go back to **Design**. Expect: both rectangles are whole again, with no leftover cut-out (this was a bug until 2026-11-14: the mask stayed). Select the second, click **Matte layer: hidden** so it reads **shown**, go to **Motion**: the first rectangle is drawn too. Set **Matte** back to **None**.
+- [ ] **T74.19** Do: drag the second rectangle so it half covers the first. Click **Adjust what is behind**; type **12** in **Blur**. Expect: the part of the first rectangle that is under the second goes blurry. Type **50** in **Saturation**. Expect: that part also loses half its colour.
+- [ ] **T74.20** Do: select both rectangles (Shift-click). Expect: the **Compositing** section is empty (it works on one layer at a time). Fails if: the editor shows an error.
 
 **User test (the stage lab, covered by `tests/e2e/compositing.spec.ts`)**
 - [ ] **T74.1** Do: run the app with `npm run dev` and open `http://localhost:3000/editor/stage-lab`. Click **Load 5 compositing scenes**. Expect: five boxes in a row on the page (left to right): a dark red box (multiply), a green box (isolated), a red-and-blue box, a red box with a small oval cut out of it, and a red box with a square cut out of it.
@@ -800,7 +821,18 @@ If any step fails, stop and report it. Everything else depends on them.
 
 **What changed:** a layer can carry up to **eight effects in order** (blur, glow, drop shadow, colour adjust, displacement, noise), each with settings that can be keyframed, and a layer can have **motion blur** from how fast it moves. For each effect the rules say **which backend draws it and why**.
 
-**Known gaps (don't report):** the inspector has no Effects section and the timeline has no stopwatches for effect settings yet (the commands exist; the UI pipeline wires them), so the way to see them is the **stage lab** below or the commands. Effects other than the CSS ones aren't in exported code yet.
+**Known gaps (don't report):** the timeline has no stopwatches for effect settings yet (keyframe them with Auto-key, or by command). Effects are reordered with the up and down arrows, not by dragging. The SVG effects (displacement, noise) and motion blur are drawn by the engine on the stage and aren't in exported code yet.
+
+**User test (the inspector, new 2026-11-14, covered by `tests/e2e/wire-74-77-inspector.spec.ts`)**
+- [ ] **T75.12** Do: open `/editor`, stay in **Design**, draw a rectangle (**R**, drag) and keep it selected. In the right panel scroll to **Effect stack** (not **Effects**, which is the design shadows and blurs). Expect: a menu reading **Add an effect…** and a button **Motion blur**.
+- [ ] **T75.13** Do: open the menu and choose **Blur**. Expect: the rectangle goes soft. A row **Blur** appears with a small **CSS** tag, four small buttons (up, down, eye, minus), a **Radius** field showing **8**, and a sentence explaining why a blur is drawn by CSS.
+- [ ] **T75.14** Do: type **12** in **Radius**, press Enter. Expect: the rectangle is blurrier.
+- [ ] **T75.15** Do: choose **Add an effect… → Drop shadow**. Expect: a second row, **Drop shadow**, with **X**, **Y**, **Radius**, **Colour** and **Opacity** (shown as 35%). The rectangle has a shadow below it.
+- [ ] **T75.16** Do: on the **Drop shadow** row click the **up** arrow. Expect: Drop shadow is now the first row and Blur the second. Press **Ctrl+Z** (click the canvas background first). Expect: Blur is first again.
+- [ ] **T75.17** Do: click the **eye** on the Drop shadow row. Expect: the row dims and the shadow is gone from the canvas. Click the **minus** on it. Expect: the row is gone.
+- [ ] **T75.18** Do: choose **Add an effect… → Noise**. Expect: its tag reads **SVG** and its sentence mentions `feTurbulence` and says it is drawn in Motion and Preview. Hover the tag: the reason shows as a tooltip. Click **Motion** in the top bar. Expect: the rectangle is grainy. Back in **Design** it is clean.
+- [ ] **T75.19** Do: keep adding effects until there are eight. Expect: the **Add an effect…** menu disappears (a layer holds at most eight).
+- [ ] **T75.20** Do: click **Motion blur**. Expect: it reads **Motion blur: on** and a **Shutter** field appears showing **180°**. Type **360**, press Enter. Expect: the field keeps 360. (To see the blur, animate the layer's Position X in **Motion** and scrub: it smears sideways while it moves and is sharp when it stops.)
 
 **User test (the stage lab, covered by `tests/e2e/effects.spec.ts`)**
 - [ ] **T75.1** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load effect scenes**. Expect: a red box near the top left, and two blue bars lower down at the left.
@@ -846,7 +878,14 @@ If any step fails, stop and report it. Everything else depends on them.
 
 **What changed:** a property can be driven by a short formula. Type `wiggle(2, 10)` and the property shakes around its value two times a second by up to 10. `loopOut("pingpong")` repeats its own keyframes back and forth. A wrong formula is **refused** with where the mistake is. A formula can be converted to keyframes.
 
-**Known gaps (don't report):** there is no expression field in the editor yet (the commands exist; the UI pipeline wires it), so use the **stage lab** below, or the commands. Exporters don't emit the compiled code yet.
+**Known gaps (don't report):** expressions are typed in the **Parent & links** section of the Design inspector (one line, a list of five properties); there is no expression field on the timeline's property rows yet. A wrong formula shows its message under the field, without underlining the character.
+
+**User test (the inspector, covered by `tests/e2e/parent-links.spec.ts` and `tests/e2e/wire-74-77-inspector.spec.ts`)**
+- [ ] **T77.12** Do: open `/editor`, **Design**, draw a rectangle and keep it selected. In the right panel scroll to **Parent & links**. Leave **Expression** on **Rotation**, type `time * 40` in the field under it, click **Set expression**. Expect: a line `Rotation = time * 40` appears with two buttons, **Bake** and a minus.
+- [ ] **T77.13** Do: switch to **Motion** and drag the needle. Expect: the rectangle turns, 40 degrees for every second.
+- [ ] **T77.14** Do: back in **Design**, select the rectangle, click **Bake** on that line. Expect: the line disappears (the expression is gone). In **Motion** the rectangle turns exactly as before, and its row in the timeline now has keyframes (one for every frame of the work area).
+- [ ] **T77.15** Do: press **Ctrl+Z** once. Expect: the keyframes are gone and the line `Rotation = time * 40` is back (a bake is one undo step).
+- [ ] **T77.16** Do: type `time *` and click **Set expression**. Expect: a message under the field starting `[EXPR_SYNTAX]`, and no new line in the list.
 
 **User test (the stage lab, covered by `tests/e2e/expressions.spec.ts`)**
 - [ ] **T77.1** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load expression scene**. Expect: a red bar in the middle and a small grey square at the lower left.

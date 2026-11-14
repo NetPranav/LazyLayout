@@ -270,6 +270,31 @@ function scrollDrawnFrame(frameId: string, top: number): void {
   if (node) node.scrollTop = top;
 }
 
+/** How long the playhead rests before every hit box is moved to the animated pose (Phase 64). */
+const HIT_BOX_REST_MS = 60;
+
+/**
+ * Where a layer's hit box sits at a moment of the animation: the transform, its origin and the opacity the kernel gives.
+ * One function for the render and for the per-seek update, so the two can never disagree.
+ */
+function hitBoxPose(
+  doc: ReturnType<typeof getDocument>,
+  layer: Layer,
+  el: { width: number; height: number; rotation?: number },
+  layers: Record<string, Layer> | undefined,
+  timeSec: number,
+): { transform?: string; transformOrigin?: string; opacity?: number } {
+  let props: Record<string, unknown> = layer.properties;
+  try {
+    props = evaluate(doc, MAIN_COMPOSITION_ID, layer.id, timeSec);
+  } catch {
+    // a layer the kernel can't evaluate keeps its resting pose
+  }
+  const t = designTransform(props, layer, el.width, el.height, layers);
+  const opacity = typeof props["appearance.opacity"] === "number" ? (props["appearance.opacity"] as number) : undefined;
+  return { transform: t.transform ?? (el.rotation ? `rotate(${el.rotation}deg)` : undefined), transformOrigin: t.transformOrigin, opacity };
+}
+
 export const Artboard: React.FC<ArtboardProps> = ({
   id = "artboard",
   activeTool,
@@ -327,9 +352,63 @@ export const Artboard: React.FC<ArtboardProps> = ({
   const canvasViewMode = useCanvasViewStore((s) => s.mode);
   // Phase 65: motion paths and onion skin show the composition the timeline has open
   const shownCompositionId = useZustandStore(transportStore, (t) => t.compositionId);
-  const playhead = useMotionModel((s) => s.playhead);
+  // The playhead is read, not subscribed to: a seek must not re-render the canvas (Phase 64: with 200 animated layers a
+  // re-render per seek took 90 ms a frame). The effect below moves the hit boxes to the animated pose on every seek.
+  const playhead = useMotionModel.getState().playhead;
   const fps = useMotionModel((s) => s.fps) || 60;
   const motionTimeSec = playhead / fps;
+  // During a scrub only the selected layers' boxes follow at once (their outline is on screen); the rest catch up when the
+  // playhead rests, or the moment the pointer moves (a box only matters once the pointer can reach it).
+  const hitBoxSync = useRef<(only?: readonly string[]) => void>(() => undefined);
+  useEffect(() => {
+    hitBoxSync.current = (only) => {
+      const root = artboardContainerRef.current;
+      if (!root || !layers) return;
+      const state = useMotionModel.getState();
+      const time = state.playhead / (state.fps || 60);
+      root.querySelector('[data-testid="stage-page"]')?.setAttribute("data-frame", String(state.playhead));
+      const doc = getDocument();
+      const byId = new Map(Object.values(elements).map((el) => [el.id, el]));
+      const nodes = only
+        ? only.flatMap((id) => Array.from(root.querySelectorAll<HTMLElement>(`[data-testid="stage-element"][data-element-id="${CSS.escape(id)}"]`)))
+        : Array.from(root.querySelectorAll<HTMLElement>('[data-testid="stage-element"][data-el-key]'));
+      for (const node of nodes) {
+        const el = byId.get(node.dataset.elKey ?? "");
+        const layer = el ? layers[el.targetId ?? el.id] ?? layers[el.id] : undefined;
+        if (!el || !layer) continue;
+        const pose = hitBoxPose(doc, layer, el, layers, time);
+        if (node.style.transform !== (pose.transform ?? "")) node.style.transform = pose.transform ?? "";
+        if (pose.transformOrigin !== undefined && node.style.transformOrigin !== pose.transformOrigin) node.style.transformOrigin = pose.transformOrigin;
+        const opacity = pose.opacity === undefined ? "" : String(pose.opacity);
+        if (node.style.opacity !== opacity) node.style.opacity = opacity;
+      }
+    };
+    // after any render too: a seek since the last render left the boxes at a pose React doesn't know about
+    hitBoxSync.current();
+  });
+  useEffect(() => {
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      if (pending === undefined) return;
+      clearTimeout(pending);
+      pending = undefined;
+      hitBoxSync.current();
+    };
+    const off = useMotionModel.subscribe((state, prev) => {
+      if (state.playhead === prev.playhead && state.fps === prev.fps) return;
+      hitBoxSync.current(useSelectionStore.getState().selectedIds);
+      if (pending !== undefined) clearTimeout(pending);
+      pending = setTimeout(flush, HIT_BOX_REST_MS);
+    });
+    document.addEventListener("pointermove", flush, true);
+    document.addEventListener("pointerdown", flush, true);
+    return () => {
+      off();
+      if (pending !== undefined) clearTimeout(pending);
+      document.removeEventListener("pointermove", flush, true);
+      document.removeEventListener("pointerdown", flush, true);
+    };
+  }, []);
 
   // The page is drawn at rest; the animation engine (useCanvasEngine, Phase 57) writes the animated values onto it in
   // Motion and Preview and while playing, without re-rendering.
@@ -779,27 +858,14 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
           const engineDrawn = !!layer;
           const isSelected = selectedIds.includes(targetDocId) || (el.id === "headline" && selectedIds.includes("subtitle"));
-          const doc = getDocument();
-          let evaluatedProps: Record<string, unknown> = layer?.properties ?? {};
-          try {
-            if (layer) {
-              evaluatedProps = evaluate(doc, MAIN_COMPOSITION_ID, targetDocId, motionTimeSec);
-            }
-          } catch {
-            // fallback
-          }
-          const elementTransform = layer
-            ? designTransform(evaluatedProps, layer, el.width, el.height, layers)
-            : {};
-          const animOpacity = typeof evaluatedProps["appearance.opacity"] === "number"
-            ? (evaluatedProps["appearance.opacity"] as number)
-            : undefined;
+          const pose = layer ? hitBoxPose(getDocument(), layer, el, layers, motionTimeSec) : el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {};
 
           return (
             <div
               key={el.id}
               id={el.id === "headline" ? "el-text" : el.id === "button" ? "el-button" : el.id === "image" ? "el-image" : `el-${el.id}`}
               data-sel={targetDocId}
+              data-el-key={el.id}
               data-element-id={targetDocId}
               data-mirror-id={el.mirrorId}
               data-testid="stage-element"
@@ -824,9 +890,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 top: el.y,
                 width: el.width,
                 height: el.height,
-                ...(elementTransform.transform ? elementTransform : el.rotation ? { transform: `rotate(${el.rotation}deg)` } : {}),
-                ...(elementTransform.transformOrigin ? { transformOrigin: elementTransform.transformOrigin } : {}),
-                ...(animOpacity !== undefined ? { opacity: animOpacity } : {}),
+                ...(pose.transform ? { transform: pose.transform } : {}),
+                ...(pose.transformOrigin ? { transformOrigin: pose.transformOrigin } : {}),
+                ...(pose.opacity !== undefined ? { opacity: pose.opacity } : {}),
                 ...(isHelper ? { border: "1.5px dashed var(--ll-accent, #6366f1)" } : {}),
                 ...(el.locked ? { pointerEvents: "none" as const } : {}),
                 ...(layer && typeof layer.properties["appearance.cursor"] === "string" && layer.properties["appearance.cursor"] !== "auto" ? { cursor: layer.properties["appearance.cursor"] as string } : {}),
