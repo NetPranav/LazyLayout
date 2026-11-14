@@ -9,7 +9,7 @@ import { chooseOption, openEditor } from "./support/editor";
 
 type Doc = {
   commands: { addLayer: (input: unknown, label?: string) => string; updateProps: (id: string, patch: Record<string, unknown>) => void };
-  get: () => { layers: Record<string, { id: string; parentId: string | null; page?: unknown; tokens?: Record<string, { variable: string; detached?: boolean }>; properties: Record<string, unknown> }>; variables?: Record<string, { id: string; name: string; values: Record<string, unknown> }>; styles?: Record<string, { id: string; name: string }> };
+  get: () => { layers: Record<string, { id: string; name: string; parentId: string | null; page?: unknown; tokens?: Record<string, { variable: string; detached?: boolean }>; properties: Record<string, unknown> }>; variables?: Record<string, { id: string; name: string; values: Record<string, unknown> }>; styles?: Record<string, { id: string; name: string }> };
 };
 type Reg = { all: () => { id: string; run: (a?: unknown) => unknown }[] };
 test.use({ viewport: { width: 1600, height: 1000 } });

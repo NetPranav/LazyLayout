@@ -17,7 +17,7 @@ beforeEach(() => {
   const b = new DocBuilder();
   btn = b.layer("container", "Button", null, { "appearance.opacity": 1, "transform.x": 0 });
   setDocument(b.build());
-  useSelectionStore.getState().select(btn, "layer");
+  useSelectionStore.getState().select(btn, "element");
   useStateEditStore.getState().edit(null, null);
   off = registerStateCommands();
 });
