@@ -250,6 +250,8 @@ function refitRing(ring: Ring, sources: readonly Source[], out: BezPath): void {
 
   out.moveTo(runs[0].start);
   for (const r of runs) {
+    // a piece shorter than a thousandth of a pixel (two stored shapes that meet a hair apart) is no piece at all
+    if (r.edges <= 2 && d2(r.start, r.end) < 1e-6 && runs.length > 2) continue;
     if (r.owner < 0) {
       for (let e = 1; e < r.edges; e++) out.lineTo(at(r.from + e));
       out.lineTo(r.end);
