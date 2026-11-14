@@ -1734,12 +1734,16 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** a **Driven by** menu on any property: Scroll, Pointer, Speed, Time.
 **Done when:** the same input tape gives the same values in the editor and in the export; drivers cost nothing when unused.
 
+**Status check (2026-11-14), 🚧:** **working end to end for the pointer and time.** Built: the engine (`src/core/bindings/`: `evaluate.ts` with every operator in the spec's catalogue except `trail`; `runtime.ts` with guards, blending, range clamps and the `SIG_LAYOUT` refusal; `tape.ts` with input tapes and a seeded autopilot pointer; `inputBus.ts` serving the pointer, scroll, time and dt), `bindingCommands.ts` (add, update, enable, remove: one undo step each), the kernel taking `inputs.bound` (so `evaluate` stays pure), the stage engine's `BindingDriver` (idle, so free, when no binding is enabled; bound layers stay on the kernel adapter, not a Web Animation), a pointer source on the new canvas, and the **Driven by** section in the Design panel (signal, property, range, smoothing; list with on/off and remove). Verified: 45 unit tests in `src/core/bindings`, kernel and stage tests, and 3 Chromium tests in `tests/e2e/drivers.spec.ts` (the real mouse moves a layer in Motion, the document is unchanged, Design shows the design, the panel adds, turns off, removes and undoes). **Still to build for the Done-when:** (1) the **export** of drivers: the evaluator copied in as readable source with only the operators a project uses, and a parity test that one tape gives the same values in the editor and the export; (2) a **scroll** source on the new canvas (the new canvas has no scroll host yet, so a Scroll driver reads 0 in the editor; the signal is served and tested with a fake source); (3) signals `view`, `device`, `hover`, `proximity` and `audio` (they read 0 and the panel flags them); (4) property targets only: CSS variables, uniforms and parameters are reported as unsupported; (5) group and tag targets; (6) the drivers are not yet registered as typed commands (palette, keybindings and the agent bridge cannot reach them); (7) the menu is a section for the selected layer with five properties, not yet a menu on every property (that is D7, Connect anything).
+
 ### Phase D5 · Parenting, pick-whip & expressions in the new editor
 **Needs:** D2 · **Was:** wiring Main 73, 76, 77 (Lane B's engine, merged) · **Lane:** A · **Status:** 📋
 - [ ] Parent any layer to another, including helper (null) layers; drag the pick-whip from one property to another; type an expression. Lane A wires the UI on Lane B's engine, as the wire-53–71 PRs did.
 
 **You'll see:** link a ring's rotation to the watch's at × −1 and it turns the other way.
 **Done when:** a parented layer keeps its place; links and expressions evaluate the same in the editor and in the export; Lane B's engine tests still pass.
+
+**Status check (2026-11-14), 🚧:** the new editor now reaches Lane B's engine through a **Parent & links** section in the Design panel (`ParentLinksSection.tsx`): a Parent picker (helpers included; the current parent stays in the list), a link form (property, layer, its property, a multiplier: -1 does the opposite) that adds `layer.setLink`, an expression box that runs `layer.setExpression`, a list of both with remove, and the engine's own refusal messages (`[LINK_CYCLE]`, a bad expression with its position). Verified in Chromium (`tests/e2e/parent-links.spec.ts`): a ring linked to a watch turned by an expression at x -1 turns the other way (-60 at 1.5 s when the watch is at +60); a cycle is refused with a message; a bad expression says why; parenting keeps the layer where it is, and so does clearing the parent. Lane B's engine tests still pass (388 in links, expressions, kernel and geometry). **Not yet verified:** (1) links and expressions in the **export** (do they evaluate the same there?); (2) pick-whip by **dragging** from one property to another (this is a form, not a drag); (3) only five properties are offered (X, Y, Rotation, Scale, Opacity, as motion offsets, not the design values the inspector fields write); (4) creating a **helper (null) layer** from the new editor.
 
 ### Phase D6 · Follow, pins & helpers
 **Needs:** D5 · **Was:** Main 152 · **Lane:** A · **Status:** 📋
@@ -1748,12 +1752,16 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** a label stays on the watch's crown while the image zooms.
 **Done when:** pinned points stay within 0.5 px through 10 different transforms.
 
+**Status check (2026-11-14), 🚧:** built on D4 and D5. **Pins:** a label parented to an image where it sits stays on that point: `src/core/kernel/__tests__/pinThroughTransforms.test.ts` checks 10 transforms (moves, rotations, scales, skews, three origins) to within 0.5 px, plus a control that a label 10 px off is caught. This is the Done-when. **Follow:** `src/core/bindings/follow.ts` builds the two drivers (X and Y) from the layer's measured box: a pin (the nine preset points), a lag, an offset; the **Follow** form in Driven by makes them as one undo step, and replaces them as one. Verified: unit tests (all nine pins land exactly on the pointer at lag 0; lag arrives and is frame-rate independent) and a Chromium test that the bottom edge of a layer follows the real mouse. **Helpers:** a **Helper layer** toggle in Parent & links; a helper is drawn while designing and absent from the export (tested). **Not done:** (1) Follow does not account for a layer that is itself rotated or scaled (its box is not the pin's place), and does not follow another layer or a point, only the pointer; (2) no look-at, no scale by speed, no bounds or touch policies; (3) the pin dots are a menu, not clickable dots on the canvas; (4) the helper cannot be made invisible in Motion, only left out of Preview and the export.
+
 ### Phase D7 · Connect anything
 **Needs:** D4, D5 · **Was:** Main 141 · **Lane:** A · **Status:** 📋
 - [ ] Drag any property onto a driver or onto another property; map ranges; multiply; one click for "opposite".
 
 **You'll see:** drag Rotation onto Scroll and the layer turns as the page scrolls.
 **Done when:** 20 connections evaluate identically in the editor and in the export.
+
+**Status check (2026-11-14), 🚧:** the D5 form now covers what D7 names except the drag: **Map** (Times, or Range: one span of values onto another, held at the ends) and a one-click **Opposite**. Verified in Chromium (`tests/e2e/parent-links.spec.ts`): Opposite turns the ring -60 against the watch's +60 at 1.5 s; a range maps the watch's rotation 0..120 to the ring's opacity 0..1 (0.5 at 60, held at 1 past the end). **Not done:** (1) **dragging** a property onto a driver or onto another property (it is a form); (2) linking **a driver** (a Driven by binding) from another property; (3) the export: 20 connections evaluating identically in the editor and the export is not tested; (4) only five properties are offered.
 
 ## Wave 2 · Repeat
 
@@ -1764,6 +1772,8 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** one petal becomes a flower of 12.
 **Done when:** golden positions for 10 settings; one undo step per change.
 
+**Status check (2026-11-14), 🚧:** built: the `repeat.*` properties (count, step X and Y, turn, scale, fade), `src/core/render/repeater.ts` (pure; copy 0 is the layer, copy i is stepped by i, turn and scale about its own centre), the renderer drawing the copies as editor-only wrappers (`data-repeat-copy`), and the **Repeat** section in the Design panel. Verified: golden positions for 10 settings, hand-computed (`repeater.test.ts`, 15 tests), and Chromium tests (`tests/e2e/repeater.spec.ts`): 5 copies at the right positions, rotation, scale and fade steps drawn, the export carries the copies and the steps and none of the editor's marks, one undo step. The Done-when is met. **Not done:** copies do not follow an animation of the layer (they are static duplicates of its design look); not for layers inside an auto-layout frame (the panel says so); Main 110's trim, offset and round stay in Main 110; the mesh-warped layer draws no copies.
+
 ### Phase D9 · Cloner: grid, radial, line, path, fill
 **Needs:** D8 · **Was:** Main 154 · **Lane:** A · **Status:** 📋
 - [ ] Rows × columns, a ring, a line, along a path, or **fill an area** (as many copies as fit at a spacing). Each copy knows its index, for links and expressions.
@@ -1772,12 +1782,16 @@ The document and World Environment have their own stores, After-track actions mo
 **You'll see:** draw a dot, choose Clone > Fill area, and the section fills with dots.
 **Done when:** a 100 × 60 dot grid exports with no script and matches the editor; 5,000 animated copies hold 60 fps on the mid tier.
 
+**Status check (2026-11-14), 🚧:** built: the `clone.*` properties, `src/core/render/cloner.ts` (pure: grid, ring with face-out, fill the parent's area tiled from the layer's own cell, each copy with its index, capped at 10,000), the renderer (shared with the repeater), and the **Clone** section (mode, columns and rows, gaps, count, radius, start angle, face out, and a live "N in all" for a fill). Verified: 10 unit tests with hand-computed positions, and Chromium tests (`tests/e2e/cloner.spec.ts`): a grid at the right pitch, a fill that covers the frame and says how many, a ring turned face-out, and **a 100 × 60 dot grid (5,999 copies) that exports with no script and has the same copies as the editor**. **Not done:** (1) the export always writes one element per copy; the **cheapest form** (a static dot grid as one CSS background line, thousands of animated copies as one canvas) is not built; (2) **5,000 animated copies at 60 fps** is not measured (copies are static and do not follow an animation); (3) path and line modes (a line is the Repeater); (4) copies know their index in the document model but links and expressions cannot read it yet; (5) the fill measures the parent's frame, not an arbitrary area.
+
 ### Phase D10 · Fields & effectors
 **Needs:** D9, D4 · **Was:** Main 157 · **Lane:** A · **Status:** 📋
 - [ ] Vary copies by distance to the pointer, scroll progress, noise or index: scale, colour, offset, delay (stagger).
 
 **You'll see:** dots grow near the cursor and ripple as you scroll.
 **Done when:** per-copy values match hand-computed falloffs at 5 positions.
+
+**Status check (2026-11-14), 🚧:** built: `src/core/render/effector.ts` (pure: a field gives each copy an influence 0..1; Scale, Fade and Shift take it from as made to the setting), `copies.ts` (one `copyStyles` used by the renderer and the live driver), the `effector.*` properties, the **Effector** section (Vary by: Ramp, Noise or Pointer; scale, fade, shift; radius and falloff for the pointer; seed for noise), and `EffectorDriver` in the stage engine (re-styles a pointer effector's copies every frame the pointer moves, writes only changes, puts them back when the engine stops, and does nothing when no layer has one). Verified: **hand-computed falloffs at 5 distances for all four shapes** (linear, smoothstep, gaussian, inverse-square), the ramp, seeded noise and the effect maths (`effector.test.ts`, 10 tests), and Chromium (`tests/e2e/effectors.spec.ts`): a ramp's copies are 1.5x, 2x, 2.5x, 3x the layer, noise varies the copies and is repeatable, and in Motion **dots grow near the pointer** (the biggest is the nearest) and are as drawn again in Design. The Done-when is met. **Not done:** (1) the **scroll** field (needs D4's scroll source); (2) **colour** variation; (3) a **delay** (stagger in time) per copy: the effector varies size, fade and shift, not timing; (4) the pointer effector's frame cost with thousands of copies is not measured; (5) an export of a pointer effector (the export ships the copies as made; the live behaviour is not exported yet).
 
 ## Wave 3 · Scroll & choreography
 

@@ -9,6 +9,9 @@ import { getDocument } from "@/core/store/documentState";
 import { getTransport, transport, transportStore } from "@/core/time/transport";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { parityStore } from "@/core/engine/stage/parity";
+import type { InputSource } from "@/core/bindings/inputBus";
+import { addBinding } from "@/core/bindings/bindingCommands";
+import { parseBinding, resolveLayerRefs } from "@/core/document/signals";
 
 /**
  * ROADMAP Phase 57 on the new canvas: the engine's stage adapters (`installStageEngine`, the kernel adapter) animate
@@ -45,7 +48,9 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
 
   useEffect(() => {
     if (!enabled) return undefined;
-    const uninstall = installStageEngine(renderer);
+    const page = pageRef.current;
+    const source = page ? pagePointerSource(page) : null;
+    const uninstall = installStageEngine(renderer, source ? { bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => true } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {
@@ -58,13 +63,19 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
         loop: (on: boolean) => transport.setLoop(on ? "loop" : "off"),
         parity: () => parityStore.getState(),
         document: () => getDocument(),
+        // D4: add a driver from its text form; layer names are looked up in the document
+        addBinding: (text: string, ownerLayerId: string) => {
+          const layers = Object.values(getDocument().layers);
+          return addBinding(resolveLayerRefs(parseBinding(text), (name) => layers.find((l) => l.name === name || l.id === name)?.id), ownerLayerId);
+        },
       };
     }
     return () => {
       uninstall();
+      source?.dispose();
       if (w.__LL_TEST__) delete w.__LL_ENGINE__;
     };
-  }, [enabled, renderer]);
+  }, [enabled, renderer, pageRef]);
 }
 
 function syncRegistry(page: HTMLElement, renderer: StageRenderer): void {
@@ -78,4 +89,39 @@ function syncRegistry(page: HTMLElement, renderer: StageRenderer): void {
     renderer.registry.register(id, el);
   }
   for (const id of renderer.registry.ids()) if (!seen.has(id)) renderer.registry.unregister(id);
+}
+
+/**
+ * The input bus's eyes on the canvas (D4): where the pointer is over the stage, in the drawn page's own px (so zoom and
+ * pan do not change what a driver reads), and the scroll of the frame. Pointer events on the stage viewport, not the
+ * window; scroll is not served yet (the new canvas has no scroll host), so it reads as no scroll.
+ */
+function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: () => void } {
+  const view = page.closest<HTMLElement>('[data-testid="stage-viewport"]') ?? page;
+  let pointer: { x: number; y: number; down: boolean; coarse: boolean; pressure: number; type: "mouse" | "pen" | "touch" } | null = null;
+  const toPage = (e: PointerEvent) => {
+    const r = page.getBoundingClientRect();
+    const sx = page.offsetWidth > 0 ? r.width / page.offsetWidth : 1;
+    const sy = page.offsetHeight > 0 ? r.height / page.offsetHeight : 1;
+    return { x: (e.clientX - r.left) / (sx || 1), y: (e.clientY - r.top) / (sy || 1) };
+  };
+  const onMove = (e: PointerEvent) => {
+    const t: "mouse" | "pen" | "touch" = e.pointerType === "pen" ? "pen" : e.pointerType === "touch" ? "touch" : "mouse";
+    pointer = { ...toPage(e), down: e.buttons !== 0, coarse: t === "touch", pressure: e.pressure, type: t };
+  };
+  view.addEventListener("pointermove", onMove);
+  view.addEventListener("pointerdown", onMove);
+  view.addEventListener("pointerup", onMove);
+  return {
+    input: {
+      pointer: () => pointer,
+      pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
+      scroll: () => ({ y: 0, max: 0 }),
+    },
+    dispose: () => {
+      view.removeEventListener("pointermove", onMove);
+      view.removeEventListener("pointerdown", onMove);
+      view.removeEventListener("pointerup", onMove);
+    },
+  };
 }

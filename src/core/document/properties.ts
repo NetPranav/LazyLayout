@@ -606,6 +606,32 @@ const DEFS = {
   "a11y.role": str("", null, "none", ALL),
   /** Explicit semantic tag for export (overrides the archetype's inferred tag). */
   "export.tag": str("", null, "none", ALL),
+  /** Repeater (Design track D8): copies of a layer, each stepped. Copy 0 is the layer; see `core/render/repeater.ts`. Absolute layers only. */
+  "repeat.count": ranged(num(1, null, "paint", VISUAL, false), { min: 1, max: 500, integer: true }),
+  "repeat.x": px(0, null, "paint", VISUAL, false),
+  "repeat.y": px(0, null, "paint", VISUAL, false),
+  "repeat.rotate": deg(0, null, "paint", VISUAL),
+  "repeat.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 10 }),
+  "repeat.opacity": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+  /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
+  "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
+  "clone.cols": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),
+  "clone.rows": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),
+  "clone.gapX": px(10, null, "paint", VISUAL, false),
+  "clone.gapY": px(10, null, "paint", VISUAL, false),
+  "clone.count": ranged(num(8, null, "paint", VISUAL, false), { min: 1, max: 5000, integer: true }),
+  "clone.radius": ranged(px(100, null, "paint", VISUAL, false), { min: 0 }),
+  "clone.start": deg(0, null, "paint", VISUAL),
+  "clone.faceOut": flag(false, "paint", VISUAL),
+  /** Effector (Design track D10): varies each copy of a repeater or cloner by a field; see `core/render/effector.ts`. */
+  "effector.mode": oneOf(["off", "index", "noise", "pointer"], "off", null, "paint", VISUAL),
+  "effector.scale": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 20 }),
+  "effector.fade": ranged(num(1, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+  "effector.offsetX": px(0, null, "paint", VISUAL, false),
+  "effector.offsetY": px(0, null, "paint", VISUAL, false),
+  "effector.radius": ranged(px(200, null, "paint", VISUAL, false), { min: 1 }),
+  "effector.falloff": oneOf(["linear", "smoothstep", "gaussian", "inverse-square"], "smoothstep", null, "paint", VISUAL),
+  "effector.seed": ranged(num(1, null, "paint", VISUAL, false), { integer: true }),
   /** Style code (Design track D3): CSS declarations written for this layer that are not a control, kept as written; see `core/style/styleCode.ts`. */
   "style.custom": typed(str("", null, "paint", ALL)),
 

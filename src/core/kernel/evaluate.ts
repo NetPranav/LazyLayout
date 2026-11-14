@@ -64,6 +64,12 @@ export interface EvaluateInputs {
   /** A virtual scroll progress, 0-1 — reserved the same way. */
   scrollProgress?: number;
   /**
+   * Design track D4: what the binding runtime (`core/bindings`) worked out for this frame, layer id -> property path ->
+   * value. A driven property takes this value, after links and expressions. The runtime is stepped by whoever owns the
+   * frame (the stage, a replay, an export), so evaluation stays a pure function of its inputs.
+   */
+  bound?: ReadonlyMap<string, ReadonlyMap<string, number>>;
+  /**
    * Phase 81: the clip-local time (seconds) the scroll driver says each scroll-driven clip is at. A scrubbed clip's is
    * progress × duration; a triggered clip's is the seconds since it was entered. A clip listed here plays at that time
    * wherever it is placed and whatever the composition's time; it is how scroll reaches the kernel without the kernel
@@ -378,8 +384,16 @@ export function evaluateLocalProps(
   const layer = doc.layers[layerId];
   if (!layer) return {};
   const base = evaluateBaseProps(doc, compositionId, layerId, t, inputs);
-  if (!hasLinks(layer.properties) && !hasExpressions(layer.properties)) return base;
-  return applyLinks({ doc, compositionId, t, inputs, base: new Map([[layerId, base]]) }, layerId, base);
+  const linked = !hasLinks(layer.properties) && !hasExpressions(layer.properties) ? base : applyLinks({ doc, compositionId, t, inputs, base: new Map([[layerId, base]]) }, layerId, base);
+  return applyBound(linked, inputs.bound?.get(layerId));
+}
+
+/** Design track D4: the binding runtime's values for this layer replace the properties they drive. Nothing bound: the same object back. */
+function applyBound(props: ResolvedProps, bound: ReadonlyMap<string, number> | undefined): ResolvedProps {
+  if (!bound || bound.size === 0) return props;
+  const out: ResolvedProps = { ...props };
+  for (const [path, value] of bound) out[path] = value;
+  return out;
 }
 
 // ---------------------------------------------------------------------------

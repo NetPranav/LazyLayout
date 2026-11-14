@@ -22,4 +22,4 @@ export function isEditorOnlyLayer(layer: LayerLike): boolean {
  * Attributes the editor puts on drawn elements for its own use (hit testing, measuring, linked views). The exporter
  * removes them; the export tests assert none of them reaches shipped code.
  */
-export const EDITOR_ONLY_ATTRIBUTES: readonly string[] = ["data-element-id", "data-archetype", "data-mirror-id", "data-mirror-of", "data-testid"];
+export const EDITOR_ONLY_ATTRIBUTES: readonly string[] = ["data-element-id", "data-archetype", "data-mirror-id", "data-mirror-of", "data-testid", "data-repeat-copy", "data-repeat-of"];

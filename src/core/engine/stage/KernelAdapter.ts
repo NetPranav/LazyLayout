@@ -57,6 +57,11 @@ export class KernelAdapter implements EngineAdapter {
     this.invalidate();
   }
 
+  /** Design track D4: this frame's bound values. Not an `invalidate`: the plan is unchanged and only changed values are written. */
+  setBound(bound: EvaluateInputs["bound"]): void {
+    this.inputs = bound === this.inputs.bound ? this.inputs : { ...this.inputs, bound };
+  }
+
   invalidate(): void {
     this.plannedFor = null;
     this.written.clear(); // React may have redrawn an element since; write everything again

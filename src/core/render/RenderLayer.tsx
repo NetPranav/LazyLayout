@@ -10,6 +10,7 @@ import { EffectDefs, effectEntries } from "./effectsRender";
 import { layerBoxStyle } from "./geometry";
 import { mirrorSourceId } from "../frames/devices";
 import { isEditorOnlyLayer } from "../document/editorOnly";
+import { copyStyles } from "./copies";
 
 /**
  * What may be drawn: each renderable layer id mapped to the ids of its renderable children, in paint
@@ -156,26 +157,57 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
     );
   }
 
-  return (
-    <Definition layer={layer} resolved={resolved} ctx={ctx.layers ? ctx : { ...ctx, layers }}>
-      {shown && shownLayers ? (
-        shown.children.map((childId) => (
-          <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
-            <RenderLayer
-              layerId={childId}
-              layers={shownLayers}
-              ctx={{ ...childCtx, layers: shownLayers, mirrorId: layer.id }}
-            />
-          </div>
-        ))
-      ) : (
-        childIds.map((childId) => (
-          <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
-        ))
-      )}
-      {(root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />}
+  const definitionCtx = ctx.layers ? ctx : { ...ctx, layers };
+  const kids =
+    shown && shownLayers ? (
+      shown.children.map((childId) => (
+        <div key={`mirror-wrap-${layer.id}-${childId}`} style={{ display: "contents" }} data-mirror-id={layer.id}>
+          <RenderLayer layerId={childId} layers={shownLayers} ctx={{ ...childCtx, layers: shownLayers, mirrorId: layer.id }} />
+        </div>
+      ))
+    ) : (
+      childIds.map((childId) => (
+        <RenderLayer key={childId} layerId={childId} layers={layers} ctx={reverseZ ? { ...childCtx, stackZ: layer.children.length - layer.children.indexOf(childId) } : childCtx} plan={permitted} />
+      ))
+    );
+  const effectDefs = (root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />;
+  const main = (
+    <Definition layer={layer} resolved={resolved} ctx={definitionCtx}>
+      {kids}
+      {effectDefs}
     </Definition>
   );
+
+  // Repeater, cloner and effector (Design track D8, D9, D10): copies of an absolutely placed layer, each in a zero-size wrapper at
+  // its parent's origin, so the layer's own left and top still apply. Copies are drawn, not selectable, and carry no layer id
+  // of their own (the editor and the export both treat `data-repeat-copy` and `data-repeat-of` as editor-only). A pointer
+  // effector is re-styled live by the stage's driver; here the copies are drawn as made.
+  const parentFrame = layer.parentId && layers[layer.parentId] ? getLayerGeometry(layers[layer.parentId]).frame : null;
+  const copies = g.positioning === "absolute" ? copyStyles(resolved.get, g.frame, { width: parentFrame?.width ?? 0, height: parentFrame?.height ?? 0 }) : [];
+  if (copies.length > 0) {
+    const copyProps = { ...layer.properties, "repeat.count": 1, "clone.mode": "off" };
+    const copyLayer = { ...layer, properties: copyProps };
+    const copyResolved = resolveProps({ archetype: layer.archetype, properties: copyProps });
+    return (
+      <>
+        {main}
+        {copies.map((c) => (
+          <div
+            key={`repeat-${layer.id}-${c.index}`}
+            data-repeat-copy={c.index}
+            data-repeat-of={layer.id}
+            aria-hidden="true"
+            style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, overflow: "visible", pointerEvents: "none", transform: c.transform, transformOrigin: c.origin, opacity: c.opacity }}
+          >
+            <Definition layer={copyLayer} resolved={copyResolved} ctx={definitionCtx}>
+              {kids}
+            </Definition>
+          </div>
+        ))}
+      </>
+    );
+  }
+  return main;
 };
 
 /** Every layer the plan draws under `rootId`, the root included. */

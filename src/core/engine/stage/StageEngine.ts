@@ -6,6 +6,9 @@ import { StageAdapters } from "./StageAdapters";
 import { ParityMonitor, parityEnabled } from "./parity";
 import type { AdapterHost, EngineAdapter } from "./types";
 import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
+import { BindingDriver, type BindingDriverHost } from "./BindingDriver";
+import { boundLayerIds } from "./styleWrites";
+import { EffectorDriver } from "./EffectorDriver";
 
 /**
  * ROADMAP Phase 57: puts the animation on the stage. Reads the transport (Phase 54), and each frame, in the
@@ -22,6 +25,8 @@ export interface StageEngineOptions {
   parity?: boolean;
   /** Scroll-driven clips (Phase 81): the frame's scroll, and whether it is live (Preview only; in Design the page isn't scrolled and reveals stay as drawn). */
   scroll?: { host: ScrollHost; active: () => boolean };
+  /** Design track D4: drivers (bindings). The host measures the page's inputs; `active` says whether they are live (Preview and Motion; in Design the page shows the design). */
+  bindings?: { host: BindingDriverHost; active: () => boolean };
 }
 
 export function installStageEngine(renderer: StageRenderer, options: StageEngineOptions = {}): () => void {
@@ -45,6 +50,8 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   const unsubscribeDocument = documentStore.subscribe((state, prev) => {
     if (state.document === prev.document) return;
     adapter.invalidate();
+    bindingDriver?.invalidate();
+    syncBoundLayers();
     dirty = true;
   });
   const unsubscribeNodes = renderer.registry.subscribe(() => {
@@ -59,6 +66,19 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   });
 
   const scrollDriver = options.scroll ? new ScrollDriver(options.scroll.host) : null;
+  const bindingDriver = options.bindings ? new BindingDriver(options.bindings.host) : null;
+  let bindingsWereLive = false;
+  // D10: pointer effectors restyle their copies live (same input source as the drivers)
+  const effectorDriver = options.bindings ? new EffectorDriver({ getDocument, node: (id) => renderer.registry.get(id), source: options.bindings.host.source }) : null;
+  let effectorsWereLive = false;
+  const setBound = (bound: ReturnType<BindingDriver["update"]>) => {
+    if (adapter instanceof StageAdapters) adapter.setBound(bound ?? undefined);
+    else adapter.setInputs({ bound: bound ?? undefined });
+  };
+  const syncBoundLayers = () => {
+    if (adapter instanceof StageAdapters) adapter.setBoundLayers(options.bindings ? boundLayerIds(getDocument()) : new Set());
+  };
+  syncBoundLayers();
   let scrollWasLive = false;
 
   const unregister = scheduler.register("apply", (frame) => {
@@ -75,6 +95,24 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (effectorDriver && options.bindings) {
+      const live = options.bindings.active() && !effectorDriver.idle;
+      if (live) effectorDriver.update();
+      else if (effectorsWereLive) effectorDriver.dispose(); // back to the copies as drawn
+      effectorsWereLive = live;
+    }
+    if (bindingDriver && options.bindings) {
+      // Drivers: nothing is measured or marked dirty while no binding is enabled. A frame with live bindings always redraws, because the pointer or the scroll may have moved.
+      const live = options.bindings.active() && !bindingDriver.idle;
+      if (live) {
+        setBound(bindingDriver.update(time, frame.dt));
+        dirty = true;
+      } else if (bindingsWereLive) {
+        setBound(null); // back to what the document says
+        dirty = true;
+      }
+      bindingsWereLive = live;
+    }
     if (playing !== lastPlaying || (playing && rate !== lastRate)) {
       if (playing) adapter.play(time, rate);
       else adapter.pause(time);
@@ -105,6 +143,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       : null;
 
   return () => {
+    effectorDriver?.dispose();
     scrollDriver?.reset();
     unmonitor?.();
     unregister();
