@@ -36,6 +36,7 @@ import {
   PageBackgroundBody,
   ConnectedPageSection,
   ConnectedPageBackground,
+  ConnectedPageScroll,
   ThemeTokensBody,
 } from "./sections/PageSection";
 import {
@@ -89,6 +90,11 @@ export function getInspectorDesignSections(
         id: "background",
         title: "Background",
         children: <ConnectedPageBackground />,
+      },
+      {
+        id: "page-scroll",
+        title: "Scrolling",
+        children: <ConnectedPageScroll />,
       },
       {
         id: "theme-tokens",

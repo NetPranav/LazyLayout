@@ -292,3 +292,70 @@ describe("CSS variable drivers in the export (D4)", () => {
   });
 });
 });
+
+describe("smooth scrolling in the site export (D14)", () => {
+  const pageDoc = (smooth: number) => {
+    const page = createLayer({ id: "page", archetype: "container", children: ["a"], properties: { "frame.width": 1440, "frame.height": 900, ...(smooth ? { "scroll.smooth": smooth } : {}) } }) as Layer;
+    return createDocumentFromLayers([page, createLayer({ id: "a", name: "Watch", archetype: "rectangle", parentId: "page", properties: { positioning: "absolute", "frame.width": 100, "frame.height": 60 } } as never) as Layer]);
+  };
+  it("a page that asks for it gets one script, linked from every target; one that does not gets none", async () => {
+    const html = await buildSiteExport(pageDoc(0.25), { target: "html", styling: "css" });
+    const js = html.files.find((f) => f.path === "lazylayout-smooth.js");
+    assert.ok(js && typeof js.content === "string" && js.content.includes("var TAU = 0.25"));
+    assert.ok((html.files.find((f) => f.path === "index.html")!.content as string).includes('<script src="lazylayout-smooth.js" defer></script>'));
+    const vite = await buildSiteExport(pageDoc(0.25), { target: "vite", styling: "css" });
+    assert.ok(vite.files.some((f) => f.path === "public/lazylayout-smooth.js"));
+    assert.ok((vite.files.find((f) => f.path === "index.html")!.content as string).includes('<script src="/lazylayout-smooth.js" defer></script>'));
+    const next = await buildSiteExport(pageDoc(0.25), { target: "next", styling: "css" });
+    assert.ok((next.files.find((f) => f.path === "app/layout.tsx")!.content as string).includes('<script src="/lazylayout-smooth.js" defer />'));
+    for (const target of ["html", "vite", "next"] as const) {
+      const none = await buildSiteExport(pageDoc(0), { target, styling: "css" });
+      assert.ok(!none.files.some((f) => f.path.includes("lazylayout-smooth")), target);
+    }
+  });
+});
+
+import { parallaxDrafts } from "../../../bindings/follow";
+import { tapeFrame } from "../../../bindings/tape";
+import type { InputTape } from "../../../document/effects";
+
+describe("parallax on a recorded scroll tape: the export matches the editor (D14)", () => {
+  // a visitor scrolling down, pausing, flicking back up and down again: 14 seconds of authored scroll positions
+  const tape: InputTape = {
+    id: "tape_scroll", name: "a visitor scrolling", origin: "authored", duration: 14,
+    channels: [{ signal: { kind: "scroll", channel: "y" }, samples: [{ t: 0, v: 0 }, { t: 3, v: 900 }, { t: 5, v: 900 }, { t: 6, v: 300 }, { t: 9, v: 2400 }, { t: 14, v: 2400 }] }],
+  };
+  const layersOf = (id: string) => (id === "a" || id === "b" || id === "c" ? id : undefined);
+  const drafts = [...parallaxDrafts("a", 0.3, 0), ...parallaxDrafts("b", -0.5, 60), ...parallaxDrafts("c", 1, 120)];
+  const bindings: Binding[] = drafts.map((d, i) => ({ ...resolveLayerRefs(d, layersOf), id: `px${i}`, ownerLayerId: "a", enabled: true }));
+  const withBindings = { ...doc, bindings: Object.fromEntries(bindings.map((b) => [b.id, BindingSchema.parse(b)])) };
+  const source = (t: number): InputSource => ({
+    pointer: () => ({ x: 500 + 450 * Math.sin(t * 0.8), y: 300 + 250 * Math.cos(t * 0.6), down: false, coarse: false, pressure: 0, type: "mouse" }),
+    pageSize: () => ({ width: 1000, height: 600 }),
+    scroll: () => ({ y: Number(tapeFrame(tape, t, 1 / 60).read({ kind: "scroll", channel: "y" })), max: 3000, viewport: 700 }),
+  });
+
+  it("every driver, on every one of 840 frames of the tape, is equal in the editor's runtime and in the exported script", () => {
+    const out = buildDriversExport(withBindings);
+    assert.ok(out.source);
+    const ctxVm = vm.createContext({ Math, Number, Error, Array, JSON, Object, isFinite });
+    vm.runInContext(out.source!, ctxVm);
+    const c = ctxVm as unknown as { createLive: (c: unknown) => { step: (f: unknown) => { layer: string; prop: string; value: number }[] }; GRAPH: unknown; PROPS: unknown; CONFIG: unknown[]; busFrame: (s: unknown, st: unknown, t: number, dt: number) => unknown; newBus: () => unknown };
+    const live = c.createLive({ drivers: c.CONFIG, graph: c.GRAPH, props: c.PROPS });
+    const host: BindingHost = { layersOf: (s) => (s.kind === "layer" ? [s.ref] : []), base: () => undefined, env: { pointerCoarse: false, reducedMotion: false, breakpoint: "", states: new Set() } };
+    const runtime = createBindingRuntime(bindings, host);
+    const coreBus = newBusState();
+    const expBus = c.newBus();
+    let compared = 0;
+    for (let i = 0; i < 14 * 60; i++) {
+      const t = i / 60;
+      const bound = runtime.step(coreBusFrame(source(t), coreBus, t, 1 / 60));
+      for (const r of live.step(c.busFrame(source(t), expBus, t, 1 / 60))) {
+        const want = bound.get(r.layer)?.get(r.prop);
+        assert.ok(want !== undefined && Math.abs(r.value - (want as number)) < 1e-9, `t ${t}: ${r.layer} ${r.prop}: export ${r.value} vs editor ${want}`);
+        compared++;
+      }
+    }
+    assert.ok(compared >= 840 * 5);
+  });
+});

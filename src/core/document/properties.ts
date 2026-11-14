@@ -620,6 +620,8 @@ const DEFS = {
   "speed.lean": ranged(num(0, null, "paint", VISUAL, false), { min: -60, max: 60 }),
   "speed.blur": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 0.2 }),
   "speed.ref": ranged(num(1200, null, "paint", VISUAL, false), { min: 1, max: 20000 }),
+  /** Smooth scrolling of the exported page (Design track D14): seconds to catch up with the wheel; 0 is the browser's own. Set on a page frame. */
+  "scroll.smooth": ranged(num(0, null, "none", ALL, false), { min: 0, max: 2 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
   "clone.cols": ranged(num(3, null, "paint", VISUAL, false), { min: 1, max: 200, integer: true }),

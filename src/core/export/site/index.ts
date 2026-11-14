@@ -10,6 +10,8 @@ import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targ
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
 import { buildDriversExport } from "../runtime/drivers";
+import { buildSmoothScrollSource } from "../runtime/smoothScroll";
+import { exportedPages } from "./plan";
 
 export type { SiteFile, Styling, Target, SitePlan };
 export { buildPlan, exportedPages } from "./plan";
@@ -74,6 +76,22 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
         if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-drivers.js" defer></script>\n  </body>`);
         if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("<body>{children}</body>", `<body>\n        {children}\n        <script src="/lazylayout-drivers.js" defer />\n      </body>`);
       }
+    }
+  }
+  // Smooth scrolling (Design track D14): one small script for the site, when a page frame asks for it
+  const tau = Math.max(0, ...exportedPages(doc).map((p) => { const v = doc.layers[p.id]?.properties["scroll.smooth"]; return typeof v === "number" && Number.isFinite(v) ? v : 0; }));
+  if (tau > 0) {
+    const place = options.target === "html" ? "" : "public/";
+    const href = options.target === "html" ? null : "/lazylayout-smooth.js";
+    files.push({ path: `${place}lazylayout-smooth.js`, content: buildSmoothScrollSource({ tau }) });
+    for (const f of files) {
+      if (typeof f.content !== "string") continue;
+      if (options.target === "html" && f.path.endsWith("index.html")) {
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-smooth.js" defer></script>\n  </body>`);
+      }
+      if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="${href}" defer></script>\n  </body>`);
+      if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("</body>", `  <script src="${href}" defer />\n      </body>`);
     }
   }
   return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };

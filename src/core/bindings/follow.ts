@@ -100,3 +100,33 @@ export function lookAtDrafts(layerId: string, box: PageBox, offset: number): Bin
     },
   ];
 }
+
+export const PARALLAX_NAME = "Parallax";
+
+/**
+ * Depth parallax (Design track D14): a layer that sits at a depth moves against the scroll and the cursor, so a page's layers drift at
+ * their own speeds. It is plain drivers (so the export, reduced motion and the scroll tapes all work as they do for any driver).
+ *
+ * `depth` is how far away the layer is, from -1 (near, it moves faster than the page) through 0 (on the page) to 1 (infinitely far,
+ * it stays on the screen): a layer at depth 0.3 scrolls at 0.7 of the page's speed. `cursor` is how far, in px, a layer at depth 1
+ * moves with the cursor across the whole page (it moves the same way as the cursor, scaled by depth).
+ */
+export function parallaxDrafts(layerId: string, depth: number, cursor: number): BindingDraft[] {
+  const on = (path: string): BindingDraft["target"] => ({ kind: "property", on: { kind: "layer", ref: layerId }, path });
+  const out: BindingDraft[] = [];
+  const d = Math.round(depth * 1e4) / 1e4;
+  if (d !== 0) {
+    out.push({ expr: { signal: { kind: "scroll", channel: "y" }, operators: [{ op: "mul", x: d }] }, target: on("transform.y"), blend: "add" });
+  }
+  const c = Math.round(cursor * d * 1e4) / 1e4;
+  if (c !== 0) {
+    for (const axis of ["x", "y"] as const) {
+      out.push({
+        expr: { signal: { kind: "pointerIn", channel: "ndc", space: "page" }, operators: [{ op: "component", axis }, { op: "mul", x: c }] },
+        target: on(axis === "x" ? "transform.x" : "transform.y"),
+        blend: "add",
+      });
+    }
+  }
+  return out;
+}

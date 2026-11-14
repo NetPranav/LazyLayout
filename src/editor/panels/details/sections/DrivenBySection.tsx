@@ -8,7 +8,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Button } from "@/editor/components/Button";
 import { documentStore } from "@/core/store/documentState";
 import { addBinding, bindingsOf, removeBinding, setBindingEnabled, setDriversNamed } from "@/core/bindings/bindingCommands";
-import { DEFAULT_FOLLOW, FOLLOW_NAME, LOOK_NAME, PRESET_PIN_NAMES, followDrafts, lookAtDrafts, type PresetPinName } from "@/core/bindings/follow";
+import { DEFAULT_FOLLOW, FOLLOW_NAME, LOOK_NAME, PARALLAX_NAME, PRESET_PIN_NAMES, followDrafts, lookAtDrafts, parallaxDrafts, type PresetPinName } from "@/core/bindings/follow";
 import { unservedSignals } from "@/core/bindings/inputBus";
 import type { BindingDraft, Operator, Signal } from "@/core/document/signals";
 import { OptionRow } from "../options/OptionRow";
@@ -69,7 +69,7 @@ const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: s
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
-const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => (b.name === LOOK_NAME ? LOOK_NAME : b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
+const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => (b.name === LOOK_NAME ? LOOK_NAME : b.name === PARALLAX_NAME ? `${PARALLAX_NAME} (${b.expr.signal.kind === "scroll" ? "scroll" : b.target.path === "transform.y" ? "cursor Y" : "cursor X"})` : b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
 
 export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, layer, className = "" }) => {
   const bindings = useStore(documentStore, (s) => s.document.bindings); // re-read when drivers change (undo, redo, another panel)
@@ -87,6 +87,8 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
   const [offY, setOffY] = useState(0);
   const [followNote, setFollowNote] = useState("");
   const [lookOffset, setLookOffset] = useState(0);
+  const [depth, setDepth] = useState(0.3);
+  const [cursorShift, setCursorShift] = useState(0);
   if (!selectedId || isMulti) return null;
   void bindings;
   const mine = bindingsOf(selectedId);
@@ -142,6 +144,11 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
   };
   const hasFollow = mine.some((b) => b.name === FOLLOW_NAME);
   const hasLook = mine.some((b) => b.name === LOOK_NAME);
+  const hasParallax = mine.some((b) => b.name === PARALLAX_NAME);
+  const parallax = () => {
+    setDriversNamed(selectedId, PARALLAX_NAME, parallaxDrafts(selectedId, depth, cursorShift), "Parallax");
+    setFollowNote("");
+  };
 
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
@@ -252,6 +259,15 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
       </OptionRow>
       <Button size="sm" aria-label={hasLook ? "Update look at" : "Look at the pointer"} onClick={look}>
         {hasLook ? "Update look at" : "Look at the pointer"}
+      </Button>
+      <OptionRow label="Depth">
+        <NumberField size="sm" aria-label="Parallax depth" title="How far away the layer is: 0 stays on the page, 0.3 scrolls at 0.7 of the page's speed, 1 stays on the screen, and below 0 it moves faster than the page." value={depth} step={0.05} onChange={setDepth} />
+      </OptionRow>
+      <OptionRow label="Cursor">
+        <NumberField size="sm" aria-label="Parallax cursor shift" title="How far, in px, a layer at depth 1 moves as the cursor crosses the page. 0 is scroll only." value={cursorShift} step={5} onChange={setCursorShift} />
+      </OptionRow>
+      <Button size="sm" aria-label={hasParallax ? "Update parallax" : "Add parallax"} onClick={parallax}>
+        {hasParallax ? "Update parallax" : "Add parallax"}
       </Button>
       {followNote && (
         <p role="alert" className="ll:m-0 ll:text-micro ll:text-primary">
