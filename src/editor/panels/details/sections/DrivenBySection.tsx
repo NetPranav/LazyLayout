@@ -8,7 +8,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { Button } from "@/editor/components/Button";
 import { documentStore } from "@/core/store/documentState";
 import { addBinding, bindingsOf, removeBinding, setBindingEnabled, setDriversNamed } from "@/core/bindings/bindingCommands";
-import { DEFAULT_FOLLOW, FOLLOW_NAME, PRESET_PIN_NAMES, followDrafts, type PresetPinName } from "@/core/bindings/follow";
+import { DEFAULT_FOLLOW, FOLLOW_NAME, LOOK_NAME, PRESET_PIN_NAMES, followDrafts, lookAtDrafts, type PresetPinName } from "@/core/bindings/follow";
 import { unservedSignals } from "@/core/bindings/inputBus";
 import type { BindingDraft, Operator, Signal } from "@/core/document/signals";
 import { OptionRow } from "../options/OptionRow";
@@ -69,9 +69,9 @@ const labelOf = (b: { expr: { signal: Signal }; target: { kind: string; path?: s
   const prop = Object.values(PROPERTIES).find((p) => p.path === b.target.path);
   return `${sig?.label ?? "Signal"} → ${prop?.label ?? b.target.path ?? b.target.kind}`;
 };
-const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => (b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
+const rowLabel = (b: { name?: string; expr: { signal: Signal }; target: { kind: string; path?: string; name?: string } }): string => (b.name === LOOK_NAME ? LOOK_NAME : b.name === FOLLOW_NAME ? `${FOLLOW_NAME} (${b.target.path === "transform.y" ? "Y" : "X"})` : labelOf(b));
 
-export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
+export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, layer, className = "" }) => {
   const bindings = useStore(documentStore, (s) => s.document.bindings); // re-read when drivers change (undo, redo, another panel)
   const layers = useStore(documentStore, (s) => s.document.layers);
   const [viewLayer, setViewLayer] = useState("");
@@ -86,6 +86,7 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
   const [offX, setOffX] = useState(0);
   const [offY, setOffY] = useState(0);
   const [followNote, setFollowNote] = useState("");
+  const [lookOffset, setLookOffset] = useState(0);
   if (!selectedId || isMulti) return null;
   void bindings;
   const mine = bindingsOf(selectedId);
@@ -102,7 +103,7 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     addBinding(draft, selectedId);
   };
 
-  /** The drawn box of the layer in page px, measured from the page (zoom and pan do not matter). */
+  /** The layer's own box and pose in page px, measured from the page (zoom and pan do not matter): its unturned, unscaled size, centred where it is drawn. */
   const measure = () => {
     const el = document.querySelector<HTMLElement>(`[data-testid="stage-page"] [data-element-id="${selectedId}"]`);
     const pageEl = el?.closest<HTMLElement>('[data-testid="stage-page"]');
@@ -110,18 +111,37 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
     const r = el.getBoundingClientRect();
     const pr = pageEl.getBoundingClientRect();
     const k = pageEl.offsetWidth > 0 ? pr.width / pageEl.offsetWidth : 1;
-    return { x: (r.left - pr.left) / k, y: (r.top - pr.top) / k, width: r.width / k, height: r.height / k };
+    const t = getComputedStyle(el).transform;
+    const m = new DOMMatrix(t === "none" ? undefined : t);
+    const fr = layer?.properties["frame.rotation"];
+    const pose = { rotate: (Math.atan2(m.b, m.a) * 180) / Math.PI, scaleX: Math.hypot(m.a, m.b) || 1, scaleY: Math.hypot(m.c, m.d) || 1, frameRotation: typeof fr === "number" ? fr : 0 };
+    // the box the layer fills before it is turned or scaled (a shape's own svg has no offsetWidth; its client size is the same)
+    const w = el.offsetWidth || el.clientWidth || parseFloat(el.getAttribute("width") ?? "") || r.width / k / pose.scaleX;
+    const h = el.offsetHeight || el.clientHeight || parseFloat(el.getAttribute("height") ?? "") || r.height / k / pose.scaleY;
+    const cx = (r.left + r.width / 2 - pr.left) / k;
+    const cy = (r.top + r.height / 2 - pr.top) / k;
+    return { box: { x: cx - w / 2, y: cy - h / 2, width: w, height: h }, pose };
   };
   const follow = () => {
-    const box = measure();
-    if (!box) {
+    const m = measure();
+    if (!m) {
       setFollowNote("The layer is not on the page right now.");
       return;
     }
-    setDriversNamed(selectedId, FOLLOW_NAME, followDrafts(selectedId, box, { pin, lag, offsetX: offX, offsetY: offY, axis: "both" }), "Follow pointer");
+    setDriversNamed(selectedId, FOLLOW_NAME, followDrafts(selectedId, m.box, { pin, lag, offsetX: offX, offsetY: offY, axis: "both" }, m.pose), "Follow pointer");
+    setFollowNote("");
+  };
+  const look = () => {
+    const m = measure();
+    if (!m) {
+      setFollowNote("The layer is not on the page right now.");
+      return;
+    }
+    setDriversNamed(selectedId, LOOK_NAME, lookAtDrafts(selectedId, m.box, lookOffset), "Look at pointer");
     setFollowNote("");
   };
   const hasFollow = mine.some((b) => b.name === FOLLOW_NAME);
+  const hasLook = mine.some((b) => b.name === LOOK_NAME);
 
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
@@ -226,6 +246,12 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
       </OptionRow>
       <Button size="sm" aria-label={hasFollow ? "Update follow" : "Follow the pointer"} onClick={follow}>
         {hasFollow ? "Update follow" : "Follow the pointer"}
+      </Button>
+      <OptionRow label="Face">
+        <NumberField size="sm" aria-label="Look at offset" title="Degrees added to the turn, for artwork that does not point right when it is not turned: 90 for artwork that points up." value={lookOffset} step={15} onChange={setLookOffset} />
+      </OptionRow>
+      <Button size="sm" aria-label={hasLook ? "Update look at" : "Look at the pointer"} onClick={look}>
+        {hasLook ? "Update look at" : "Look at the pointer"}
       </Button>
       {followNote && (
         <p role="alert" className="ll:m-0 ll:text-micro ll:text-primary">

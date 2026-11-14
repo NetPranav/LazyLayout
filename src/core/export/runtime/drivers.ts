@@ -56,7 +56,7 @@ export interface DriversExport {
 }
 
 const SERVED_SIGNALS = new Set(["pointer", "pointerIn", "pointerInside", "layerState", "proximity", "scroll", "view", "time", "frameDt", "seed", "constant"]);
-const SUPPORTED_OPS = new Set(["smooth", "spring", "remap", "clamp", "add", "mul", "min", "max", "abs", "component", "quantize", "deadzone", "falloff", "length"]);
+const SUPPORTED_OPS = new Set(["smooth", "spring", "remap", "clamp", "add", "mul", "min", "max", "abs", "component", "quantize", "deadzone", "falloff", "length", "lookAt"]);
 
 function opsOf(expr: SignalExpr): { ops: Record<string, unknown>[]; problem: string | null } {
   const ops: Record<string, unknown>[] = [];
@@ -291,6 +291,7 @@ const OPERATORS: Record<string, string> = {
     };
   },`,
   falloff: `  falloff: function (o) { return function (x) { return falloffOf(o.shape, num(x), o.radius); }; },`,
+  lookAt: `  lookAt: function (o) { return function (x) { return isVec(x) ? (Math.atan2(x[1] - o.y, x[0] - o.x) * 180) / Math.PI : 0; }; },`,
   length: `  length: function () { return function (x) { return isVec(x) ? Math.hypot(x[0], x[1]) : Math.abs(num(x)); }; },`,
 };
 

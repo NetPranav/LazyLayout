@@ -15,7 +15,7 @@ const layer = (id: string) => createLayer({ id, archetype: "rectangle", properti
 const LAYERS = ["a", "b", "c", "d"];
 const make = (text: string, n: number, extra: Partial<Binding> = {}): Binding => ({ ...resolveLayerRefs(parseBinding(text), (name) => (LAYERS.includes(name) ? name : undefined)), id: `b${n}`, ownerLayerId: "a", enabled: true, ...extra });
 
-/** Twenty-seven drivers: every signal the export serves, every operator it carries, every property it can drive. */
+/** Twenty-eight drivers: every signal the export serves, every operator it carries, every property it can drive. */
 const TEXTS = [
   "pointer.x |> remap(0, 1000, 0, 300)\n-> a.transform.x",
   "pointer.y |> remap(0, 600, -50, 50) |> smooth(0.2)\n-> a.transform.y",
@@ -44,6 +44,7 @@ const TEXTS = [
   "pointer.inside(b) |> mul(30)\n-> c.transform.x",
   "press(c) |> remap(0, 1, 0, 20)\n-> b.transform.y",
   "proximity(b, center) |> falloff(gaussian, 400) |> remap(0, 1, 0, 90)\n-> d.transform.rotate",
+  "pointer.px(page) |> lookAt(500, 300) |> add(90)\n-> b.transform.rotate",
 ];
 const bindings = TEXTS.map((t, i) => make(t, i));
 
@@ -69,13 +70,13 @@ function exportContext() {
 const host: BindingHost = { layersOf: (s) => (s.kind === "layer" ? [s.ref] : []), base: () => undefined, env: { pointerCoarse: false, reducedMotion: false, breakpoint: "", states: new Set() } };
 
 describe("the exported drivers script runs like the editor (D4)", () => {
-  it("carries all twenty-seven drivers", () => {
+  it("carries all twenty-eight drivers", () => {
     const { drivers, warnings } = exportableDrivers(doc);
-    assert.equal(drivers.length, 27);
+    assert.equal(drivers.length, 28);
     assert.deepEqual(warnings, []);
   });
 
-  it("twenty-seven drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
+  it("twenty-eight drivers over a wandering pointer and a scroll: every frame of 6 seconds at 60 fps matches the editor's evaluator", () => {
     const { ctx } = exportContext();
     const core = createBindingRuntime(bindings, host);
     const exp = ctx.createDrivers(ctx.CONFIG);
@@ -132,7 +133,7 @@ describe("the exported drivers script runs like the editor (D4)", () => {
   it("a driver the export cannot carry is left out, with a warning that says why", () => {
     const odd = { ...doc, bindings: { ...doc.bindings, z1: BindingSchema.parse(make("pointer.x |> toggle\n-> a.transform.x", 91)), z2: BindingSchema.parse(make("pointer.x\n-> a.transform.x blend replace", 92)), z3: BindingSchema.parse(make("device.tiltX\n-> a.transform.rotate", 93)), z4: BindingSchema.parse(make("pointer.x\n-> a.uniform.uX", 94)) } };
     const { drivers, warnings } = exportableDrivers(odd);
-    assert.equal(drivers.length, 27);
+    assert.equal(drivers.length, 28);
     assert.equal(warnings.length, 4);
     assert.ok(warnings.some((w) => /toggle/.test(w)));
     assert.ok(warnings.some((w) => /replace/.test(w)));
@@ -250,7 +251,7 @@ describe("CSS variable drivers in the export (D4)", () => {
     "pointer.speed |> remap(0, 1500, 0, 1)\n-> c.cssvar.shift @3",
     "hover(b) |> remap(0, 1, 0, 20)\n-> d.cssvar.lift",
   ];
-  const bindings: Binding[] = texts.map((t, i) => ({ ...resolveLayerRefs(parseBinding(t), (n) => (LAYERS.map((l) => l.id).includes(n) ? n : undefined)), id: `cv${i}`, ownerLayerId: "a", enabled: true }));
+  const bindings: Binding[] = texts.map((t, i) => ({ ...resolveLayerRefs(parseBinding(t), (n) => (LAYERS.includes(n) ? n : undefined)), id: `cv${i}`, ownerLayerId: "a", enabled: true }));
   const withVars = { ...doc, bindings: Object.fromEntries(bindings.map((b) => [b.id, BindingSchema.parse(b)])) };
 
   it("every variable at every frame equals the editor's runtime", () => {

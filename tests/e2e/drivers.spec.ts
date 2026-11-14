@@ -482,4 +482,59 @@ test.describe("Drivers in the export (D4)", () => {
     await expect.poll(async () => Number(await exGlow())).toBeGreaterThan(0.9);
     await ctx.close();
   });
+
+  test("Look at the pointer: the layer turns to face the mouse (D6)", async ({ page }) => {
+    const r = await setup(page);
+    await page.getByRole("button", { name: "Look at the pointer", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toContainText("Look at pointer");
+    await page.getByText("Motion", { exact: true }).first().click();
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first();
+    const angle = () =>
+      el.evaluate((e) => {
+        const t = getComputedStyle(e).transform;
+        const m = new DOMMatrix(t === "none" ? undefined : t);
+        return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+      });
+    const centre = async () => { const b = (await el.boundingBox())!; return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; };
+    const c0 = await centre();
+    const diff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+    for (const [dx, dy] of [[200, 0], [0, 200], [-200, 0], [0, -200], [150, 150]]) {
+      await page.mouse.move(c0.x + dx, c0.y + dy, { steps: 4 });
+      const want = (Math.atan2(dy, dx) * 180) / Math.PI;
+      await expect.poll(async () => diff(await angle(), want), { message: `pointer at (${dx}, ${dy})` }).toBeLessThan(1.5);
+    }
+  });
+
+  test("Follow on a turned layer: the layer's own point lands on the pointer (D6)", async ({ page }) => {
+    const r = await setup(page);
+    const rot = page.getByLabel("Rotation", { exact: true }).first();
+    await rot.fill("90");
+    await rot.press("Enter");
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${r.id}"]`).first();
+    await expect.poll(() => el.evaluate((e) => { const m = new DOMMatrix(getComputedStyle(e).transform); return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI); })).toBe(90);
+    const unturned = await el.evaluate((e) => ({ w: (e as unknown as SVGSVGElement).clientWidth || (e as HTMLElement).offsetWidth, h: (e as unknown as SVGSVGElement).clientHeight || (e as HTMLElement).offsetHeight }));
+    const k = (await page.locator('[data-testid="stage-page"]').boundingBox())!.width / (await page.locator('[data-testid="stage-page"]').evaluate((e) => (e as HTMLElement).offsetWidth));
+
+    await page.getByLabel("Follow pin", { exact: true }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("option", { name: /^Right$/ }).first().click();
+    await page.waitForTimeout(500);
+    const lag = page.getByLabel("Follow lag", { exact: true }).first();
+    await lag.fill("0");
+    await lag.press("Enter");
+    await page.getByRole("button", { name: "Follow the pointer", exact: true }).click();
+    await expect(page.locator("[data-driver-id]")).toHaveCount(2);
+
+    await page.getByText("Motion", { exact: true }).first().click();
+    const page0 = (await page.locator('[data-testid="stage-page"]').boundingBox())!;
+    const target = { x: page0.x + page0.width * 0.6, y: page0.y + page0.height * 0.5 };
+    await page.mouse.move(target.x - 60, target.y - 40, { steps: 3 });
+    await page.mouse.move(target.x, target.y, { steps: 6 });
+    await page.waitForTimeout(400);
+    // turned 90 degrees clockwise, the right-hand point is straight below the centre by half the layer's own width
+    const b = (await el.boundingBox())!;
+    const centre = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    expect(Math.abs(centre.x - target.x)).toBeLessThan(2.5);
+    expect(Math.abs(centre.y + (unturned.w * k) / 2 - target.y)).toBeLessThan(2.5);
+  });
 });
