@@ -30,7 +30,7 @@ import { seedFromText } from "../../expressions/noise";
 import { EXPRESSION_RUNTIME_SOURCE } from "./expressionRuntimeSource";
 
 /** The properties a driver may drive in an export, and the CSS each becomes. */
-const EXPORTABLE = ["transform.x", "transform.y", "transform.rotate", "transform.scale", "appearance.opacity"] as const;
+const EXPORTABLE = ["transform.x", "transform.y", "transform.rotate", "transform.scale", "appearance.opacity", "sequence.frame"] as const;
 
 /** One driver, resolved to what the script needs: numbers only, spring terms already physical. */
 interface DriverJson {
@@ -531,6 +531,9 @@ const GLUE = `/* The page: the pointer, the scroll and the clock in, CSS out. */
         if (rot) el.style.rotate = rot.value - rot.base + "deg";
         if (sc) el.style.scale = String(sc.base !== 0 ? sc.value / sc.base : sc.value);
         if (op) el.style.opacity = String(Math.min(1, Math.max(0, op.value)));
+        /* An image sequence: the sheet's grid is on the element (data-seq = columns, rows, frames); the frame is a background position. */
+        var fr = p["sequence.frame"];
+        if (fr) { var sq = (el.getAttribute("data-seq") || "").split(","); if (sq.length === 3) { var c = +sq[0], r = +sq[1], n = +sq[2], k = Math.min(n - 1, Math.max(0, Math.round(fr.value))); el.style.backgroundPosition = (c > 1 ? (k % c) / (c - 1) * 100 : 0) + "% " + (r > 1 ? Math.floor(k / c) / (r - 1) * 100 : 0) + "%"; } }
       });
     }
     if (effectors) {

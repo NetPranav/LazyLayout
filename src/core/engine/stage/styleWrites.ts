@@ -1,3 +1,4 @@
+import { sequenceGrid, sequencePosition } from "../../render/sequence";
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
 import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
@@ -143,6 +144,11 @@ export function styleWrites(paths: Iterable<string>, resolved: ResolvedProps, la
     const height = typeof resolved["frame.height"] === "number" ? resolved["frame.height"] : 0;
     const mask = maskStyle(read, { width, height });
     for (const key of ["mask-image", "-webkit-mask-image", "mask-size", "-webkit-mask-size", "mask-repeat", "-webkit-mask-repeat"]) out[key] = mask ? { "mask-image": mask.maskImage, "-webkit-mask-image": mask.WebkitMaskImage, "mask-size": mask.maskSize, "-webkit-mask-size": mask.WebkitMaskSize, "mask-repeat": mask.maskRepeat, "-webkit-mask-repeat": mask.WebkitMaskRepeat }[key]! : "none";
+  }
+  // Image sequence (Design track D13): the frame shown is a background position made from the grid and the frame number.
+  if (paths2.includes("sequence.frame")) {
+    const grid = sequenceGrid((p) => resolved[p]);
+    if (grid) out["background-position"] = sequencePosition(grid, resolved["sequence.frame"]);
   }
   // The effect stack and motion blur (Phase 75): one `filter` made of the layer's own filters, the stack's functions in order and
   // the `url()`s of its SVG filters (which the engine keeps in the frame, see `fxFilters.ts`).

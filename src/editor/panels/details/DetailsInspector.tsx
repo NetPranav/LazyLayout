@@ -27,6 +27,7 @@ import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { StyleCodeSection } from "./sections/StyleCodeSection";
 import { DrivenBySection } from "./sections/DrivenBySection";
 import { LayerStatesSection } from "./sections/LayerStatesSection";
+import { SequenceSection } from "./sections/SequenceSection";
 import { VariablesSection } from "./sections/VariablesSection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
@@ -344,6 +345,15 @@ export function getInspectorDesignSections(
       title: "Effector",
       children: <EffectorSection {...sectionProps} />,
     },
+    ...(archetype === "image"
+      ? [
+          {
+            id: "sequence",
+            title: "Image sequence",
+            children: <SequenceSection {...sectionProps} />,
+          },
+        ]
+      : []),
     {
       id: "repeat",
       title: "Repeat",

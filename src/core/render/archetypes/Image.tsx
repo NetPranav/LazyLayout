@@ -3,6 +3,7 @@ import { layerBoxStyle, px } from "../geometry";
 import { clampNumber, safeImageSrc } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
 import { useAssetUrl } from "../../assets/useAssetUrl";
+import { sequenceGrid, sequencePosition, sequenceSize } from "../sequence";
 
 const FITS = new Set(["cover", "contain", "fill", "none", "scale-down"]);
 
@@ -21,6 +22,31 @@ export const Image: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, no
   ].join(" ");
   const overlayOpacity = clampNumber(resolved.num("media.overlay.opacity", 0), 0, 1, 0);
   const box = layerBoxStyle(layer, resolved, ctx);
+  // Design track D13: a sheet of frames is drawn as a background shifted to the frame, so the engine, a driver and the export all move it the same way
+  const grid = sequenceGrid((p) => resolved.get(p));
+  if (grid && src) {
+    return (
+      <div
+        ref={nodeRef}
+        role="img"
+        aria-label={alt}
+        data-element-id={ctx.inMeshTile ? undefined : layer.id}
+        data-archetype={ctx.inMeshTile ? undefined : "image"}
+        data-seq={`${grid.cols},${grid.rows},${grid.frames}`}
+        style={{
+          ...box,
+          overflow: "hidden",
+          borderRadius: px(resolved.num("appearance.radius", 0)),
+          display: "inline-block",
+          backgroundImage: `url("${src}")`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: sequenceSize(grid),
+          backgroundPosition: sequencePosition(grid, resolved.num("sequence.frame", 0)),
+          filter: filters,
+        }}
+      />
+    );
+  }
   return (
     <div
       ref={nodeRef}
