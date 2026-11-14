@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { composeStyleCode, styleCodePatch, type StyleCodeError } from "@/core/style/styleCode";
+import { applySuggestion, suggest } from "@/core/style/cssSuggest";
 import type { InspectorSectionProps } from "../types";
 
 /**
@@ -13,6 +14,8 @@ import type { InspectorSectionProps } from "../types";
 export const StyleCodeSection: React.FC<InspectorSectionProps> = ({ layer, selectedId, isMulti, onUpdateProps, className = "" }) => {
   const [draft, setDraft] = useState<{ id: string; text: string } | null>(null);
   const [errors, setErrors] = useState<StyleCodeError[]>([]);
+  const [caret, setCaret] = useState(0);
+  const area = useRef<HTMLTextAreaElement>(null);
   if (!layer || isMulti || !selectedId) return null;
 
   const composed = composeStyleCode(layer);
@@ -28,16 +31,28 @@ export const StyleCodeSection: React.FC<InspectorSectionProps> = ({ layer, selec
     setDraft(null);
   };
 
+  const offer = editing ? suggest(text, caret) : null;
+  const choose = (choice: string) => {
+    if (!offer) return;
+    const next = applySuggestion(text, caret, offer, choice);
+    setDraft({ id: selectedId, text: next.text });
+    setCaret(next.caret);
+    setTimeout(() => area.current?.setSelectionRange(next.caret, next.caret), 0);
+  };
+
   return (
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`}>
       <textarea
+        ref={area}
         aria-label="Style code"
         title="CSS declarations for this layer, like padding: 24px; backdrop-filter: blur(8px). Known properties become the controls above; the rest are kept as written. Applies when you leave the box, or with Ctrl/Cmd+Enter."
         spellCheck={false}
         rows={Math.min(12, Math.max(4, text.split("\n").length + 1))}
         placeholder={"padding: 24px;\nbackdrop-filter: blur(8px);"}
         value={text}
+        onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
         onChange={(e) => {
+          setCaret(e.target.selectionStart);
           setDraft({ id: selectedId, text: e.target.value });
           if (errors.length > 0) setErrors([]);
         }}
@@ -52,6 +67,24 @@ export const StyleCodeSection: React.FC<InspectorSectionProps> = ({ layer, selec
           errors.length > 0 ? "ll:border-border-active" : "ll:border-transparent ll:focus:border-primary"
         }`}
       />
+      {offer && (
+        <div role="listbox" aria-label="Style code suggestions" className="ll:flex ll:flex-wrap ll:gap-1">
+          {offer.choices.map((c) => (
+            <button
+              key={c}
+              type="button"
+              role="option"
+              aria-selected={false}
+              // pressing a suggestion must not take focus from the box: leaving the box applies the text
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(c)}
+              className="ll:h-6 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:font-mono ll:text-micro ll:text-secondary ll:hover:text-primary ll:cursor-pointer"
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
       {errors.length > 0 && (
         <ul role="alert" aria-label="Style code errors" className="ll:flex ll:flex-col ll:gap-1 ll:m-0 ll:p-0 ll:list-none">
           {errors.map((e, i) => (

@@ -88,4 +88,22 @@ test.describe("Style code", () => {
     await expect.poll(async () => (await layers(page))[f.id].properties["appearance.radius"] ?? 0).toBe(0);
     expect((await layers(page))[f.id].properties["style.custom"]).toBe("transition: all 200ms ease");
   });
+
+  test("autocomplete offers property names and values, and choosing one does not apply half-typed text", async ({ page }) => {
+    const f = await frameLayer(page);
+    await code(page).fill(""); // the frame's own declarations (its radius) are in the box: start from an empty one
+    await code(page).pressSequentially("backg");
+    const list = page.getByRole("listbox", { name: "Style code suggestions" });
+    await expect(list.getByRole("option", { name: "background", exact: true })).toBeVisible();
+    await list.getByRole("option", { name: "background", exact: true }).click();
+    await expect(code(page)).toHaveValue(/background: $/);
+    expect((await layers(page))[f.id].properties["style.custom"] ?? "").toBe(""); // nothing was applied: the box kept focus
+
+    await code(page).clear();
+    await code(page).pressSequentially("display: fl");
+    await list.getByRole("option", { name: "flex", exact: true }).click();
+    await expect(code(page)).toHaveValue("display: flex;");
+    await code(page).blur();
+    await expect.poll(async () => (await layers(page))[f.id].properties["layout.display"]).toBe("flex"); // and it is a control
+  });
 });
