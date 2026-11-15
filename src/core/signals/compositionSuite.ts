@@ -362,8 +362,8 @@ function evaluateEditorCompositionMetric(
   if (spec.id === "hit_counter_composition_sound") {
     const sfx = createSoundAndHapticsEngine();
     sfx.unlockAudioFromUserGesture();
-    const ev = sfx.trigger("pop", { frame: 10, timeSec: 0.16, signals: { velocity: 0.7 } });
-    return ev ? Math.round(ev.modulated.freqHz * 100) / 100 : 0;
+    const ev = sfx.trigger("pop", { frame: 10, timeSec: 0.16, signals: { dragSpeedNorm: 0.7 } });
+    return ev ? Math.round(ev.modulated.startFreqHz * 100) / 100 : 0;
   }
 
   // Remaining interactive grids, parallax tilting, scatter, magnetic waves, eyes & jelly button

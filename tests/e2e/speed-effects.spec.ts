@@ -64,8 +64,9 @@ test.describe("Speed effects (D18)", () => {
     for (const t of [0, 0.5, 1.0, 1.5, 2.2]) {
       await seek(page, t);
       const along = 1 + Math.min(1, Math.abs(600 * Math.cos(2 * t)) / 1000);
-      await expect.poll(async () => lastScale(await written(page, id))?.[0] ?? 1, { message: `t = ${t}` }).toBeGreaterThan(along - 0.02);
-      expect(lastScale(await written(page, id))![0]).toBeLessThan(along + 0.02);
+      await expect
+        .poll(async () => Math.abs((lastScale(await written(page, id))?.[0] ?? 1) - along), { message: `t = ${t}` })
+        .toBeLessThan(0.02);
     }
     await seek(page, Math.PI / 4); // the turning point: speed 0
     await expect.poll(async () => lastScale(await written(page, id))).toBeNull();
