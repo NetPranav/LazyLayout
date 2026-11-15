@@ -1,4 +1,4 @@
-import type { Binding, BindingTarget, Condition, ExprOperator, SignalExpr, TargetSet } from "../document/signals";
+import type { Binding, BindingTarget, Condition, Operator, SignalExpr, TargetSet } from "../document/signals";
 import type { Diagnostic } from "./runtime";
 
 export interface PropertyLinkEdge {
@@ -28,7 +28,7 @@ export function isLayerLayoutIsolated(
   const seen = new Set<string>();
   while (cursor && !seen.has(cursor)) {
     seen.add(cursor);
-    const layer = layers[cursor];
+    const layer: LayoutAwareLayer | undefined = layers[cursor];
     if (!layer) break;
     const props = layer.properties ?? {};
     const contain = props["layout.contain"];
@@ -88,7 +88,7 @@ function collectExprReads(
     out.add(`sm:${ownerLayerId}:${sig.input}`);
   }
 
-  for (const op of expr.operators as readonly ExprOperator[]) {
+  for (const op of expr.operators as readonly Operator[]) {
     if (op.op === "mix") {
       collectExprReads(op.with, ownerLayerId, out, targetResolver);
     } else if (op.op === "select") {
