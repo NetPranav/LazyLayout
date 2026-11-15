@@ -488,7 +488,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 🚧 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 🚧 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 🚧 |
-| 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
+| 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 🚧 |
 | 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
 | 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
@@ -2936,9 +2936,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** fracture replays are deterministic; pieces tile the original exactly (no gaps or overlaps above 0.5 px).
 
 ### Phase 187 · Media as texture & distortion
-**Needs:** 184, 175 · **Was:** v3 65 · **Status:** 📋
-- [ ] Images, video, text (SDF or canvas, re-rendered on font load and resize) and rasterised SVG as textures. Hover displacement, pixel and dither transitions, grid and wave distortion, halftone reveals, image trails, glass and lens. Real text and `alt` stay in the DOM; SVG-filter or CSS fallbacks for low tiers.
-- [ ] **v4.1:** built on the general layer textures (Phase 175) instead of its own capture; video becomes a fill in the fill stack (Phase 113), using the video assets of Phase 99.
+**Needs:** 184, 175 · **Was:** v3 65 · **Status:** 🚧
+- [x] Images, video, text (SDF or canvas, re-rendered on font load and resize) and rasterised SVG as textures. Hover displacement, pixel and dither transitions, grid and wave distortion, halftone reveals, image trails, glass and lens. Real text and `alt` stay in the DOM; SVG-filter or CSS fallbacks for low tiers.
+- [x] **v4.1:** built on the general layer textures (Phase 175) instead of its own capture; video becomes a fill in the fill stack (Phase 113), using the video assets of Phase 99.
 
 **You'll see:** images that ripple under the cursor.
 **Done when:** 6 references work on image, video and text; the accessibility tree reads the real text and alt once; fallbacks render with WebGL disabled.
