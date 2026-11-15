@@ -495,7 +495,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 🚧 |
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 🚧 |
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 🚧 |
-| 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
+| 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 🚧 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
 | 196 | Code components | 195 | v3 68 | 4 | 📋 |
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
@@ -2987,8 +2987,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** each passes the Playground sweep, tape parity and its tier budget; a new user makes a background react to the cursor in < 2 minutes.
 
 ### Phase 194 · Library: micro-interactions, glass, light & deformation
-**Needs:** 193 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Wave 10 micro-interactions (≥ 20: hold, slide, swipe, sling, toggles, ratings), Wave 11 glass, light and outline effects (≥ 12), Wave 12 deformation and fracture (≥ 8), Wave 13 sound packs. Original implementations with provenance (GATE-02).
+**Needs:** 193 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Wave 10 micro-interactions (≥ 20: hold, slide, swipe, sling, toggles, ratings), Wave 11 glass, light and outline effects (≥ 12), Wave 12 deformation and fracture (≥ 8), Wave 13 sound packs. Original implementations with provenance (GATE-02).
 
 **You'll see:** 40+ more ready-made effects, each one open to see how it is built.
 **Done when:** each passes the Playground sweep, tape parity and its tier budget.
