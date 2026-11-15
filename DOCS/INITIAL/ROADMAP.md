@@ -425,7 +425,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 🚧 |
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 🚧 |
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 🚧 |
-| 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 📋 |
+| 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 🚧 |
 | 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 📋 |
 | 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 📋 |
 
@@ -2050,11 +2050,40 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 129 · Depth camera & parallax preview
-**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] A frame gets a camera: pan, dolly and focus; layers further away move less (parallax comes from depth, not from per-layer settings); depth-of-field blur by distance. Drag the camera to preview. Stage 4 binds it to scroll and the cursor.
 
 **You'll see:** set a depth on each layer and drag the camera to see the scene parallax.
 **Done when:** layer offsets match the projection formula at 10 camera positions; the export matches.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** there was no camera. Phase 127 (Lane C) made a frame a 2.5D space.
+
+**Built (Lane C):**
+- **A space gets a camera:**
+  - pan (`camera.x` / `camera.y`), dolly (`camera.z`), focus depth (`camera.focus`) and aperture (`camera.aperture`, px of blur per 100 px from the focus);
+  - moving the camera moves the world the other way: one `translate3d` on the space after its view angle, so layers further away move less. Parallax comes from depth, not from per-layer settings.
+- **Depth of field:** the space passes its camera to its children through the render context, on the stage's path and the export's alike. Each child blurs by |depth − focus| × aperture ÷ 100.
+- **Drag the camera:** with "Drag camera" on, a drag over the space pans the camera, and with Shift, up dollies in. One undo step per drag.
+- The inspector's Camera group has Pan X, Pan Y, Dolly, Focus and Aperture.
+- Command `space.setCamera`, and `cameraProject` (the projection formula).
+
+**Verified (`camera.test.ts`, 3 tests):**
+- The space draws `perspective(800px) translate3d(-40px, 20px, 100px)`.
+- The formula: near layers move more than the pan and far ones less; a dolly brings things closer.
+- Depth of field: −350 px from a focus at 150 with aperture 2 is `blur(10px)`; in focus is sharp; aperture 0 is all sharp.
+
+**In Chromium (`depth-camera.spec.ts`):**
+- Five cards at depths −600 … 300: at **10 camera positions** (pans and dollies, alone and together) every card's centre matches the projection formula **within 0.5 px** (worst 0.000 px).
+- The exported site places them the same (within 0.5 px) and blurs each card by the same amount; on the canvas the blur is `blur(9px)` at −600 with aperture 1.5, and none at the focus.
+- A camera drag on the canvas pans (−60, −20) as one undo step.
+- The 2.5D space and arrangement specs, the canvas contract, export, effects, strokes and FigCraft-port specs still pass (66). Design coverage's only failures are #102's ten controls, also on `main`.
+
+**Not done:**
+- Binding the camera to scroll and the cursor (Stage 4).
+- The camera's numbers aren't drawn by the motion engine yet, since they aren't CSS properties of their own.
+- Firefox and WebKit not run locally.
 
 ### Phase 130 · Design-depth export
 **Needs:** 49, 108, 111, 112, 125, 128, 129 · **Was:** — (new in v4.1) · **Status:** 📋
