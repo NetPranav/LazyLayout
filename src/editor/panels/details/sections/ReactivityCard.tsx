@@ -25,13 +25,14 @@ const REACTIVITY_DRIVER_NAME = "reactivity:simple";
  * meter feedback and plain-language descriptions.
  */
 export const ReactivityCard: React.FC<InspectorSectionProps> = ({ selectedId, className = "" }) => {
-  const layer = useStore(documentStore, (s) => s.document.layers[selectedId]);
+  const layerId = selectedId ?? "";
+  const layer = useStore(documentStore, (s) => (layerId ? s.document.layers[layerId] : undefined));
   const allLayers = useStore(documentStore, (s) => s.document.layers);
   const [source, setSource] = useState<ReactivitySource>("cursor");
   const [affordance, setAffordance] = useState<ReactivityAffordance>("follow");
   const [strength, setStrength] = useState<number>(60);
   const [smoothness, setSmoothness] = useState<number>(50);
-  const [hoverTargetId, setHoverTargetId] = useState<string>(selectedId);
+  const [hoverTargetId, setHoverTargetId] = useState<string>(layerId);
   const [liveSample, setLiveSample] = useState<number>(0.6);
 
   const availableAffordances = useMemo(
@@ -44,29 +45,30 @@ export const ReactivityCard: React.FC<InspectorSectionProps> = ({ selectedId, cl
 
   const config = useMemo(
     () => ({
-      ownerLayerId: selectedId,
+      ownerLayerId: layerId,
       layerName: layer?.name,
       source,
       affordance: activeAffordance,
       strength,
       smoothness,
-      hoverLayerId: source === "hover" ? hoverTargetId : undefined,
+      hoverLayerId: source === "hover" ? hoverTargetId || layerId : undefined,
     }),
-    [selectedId, layer?.name, source, activeAffordance, strength, smoothness, hoverTargetId]
+    [layerId, layer?.name, source, activeAffordance, strength, smoothness, hoverTargetId]
   );
 
   const sentence = useMemo(() => describeReactivity(config), [config]);
   const meterRatio = meterProgress(liveSample, 0, 1);
+  const layerOptions = useMemo(
+    () => Object.values(allLayers).map((l) => ({ value: l.id, label: l.name || l.id })),
+    [allLayers]
+  );
+
+  if (!selectedId) return null;
 
   const applyReaction = () => {
     const drafts = buildReactivityDrafts(config);
     setDriversNamed(selectedId, REACTIVITY_DRIVER_NAME, drafts, "Set reactivity");
   };
-
-  const layerOptions = useMemo(
-    () => Object.values(allLayers).map((l) => ({ value: l.id, label: l.name || l.id })),
-    [allLayers]
-  );
 
   return (
     <div data-testid="reactivity-card" className={`ll-dbody ll:flex ll:flex-col ll:gap-2 ll:-mx-1 ${className}`}>

@@ -1,5 +1,5 @@
 import { BindingSchema, type Binding, type Signal, type SignalExpr } from "../document/signals";
-import { compileExpr, compileTrailExpr, type Frame, type Value, type Vec2 } from "./evaluate";
+import { compileExpr, compileTrailExpr, type Frame, type Value } from "./evaluate";
 
 export interface ReferenceBindingCase {
   readonly id: string;
@@ -107,8 +107,8 @@ export const REFERENCE_CASES: readonly ReferenceBindingCase[] = [
         { op: "remap", inMin: 0, inMax: 1, outMin: 0, outMax: 100 },
       ],
     }, "transform.y"),
-    // power2.out(p) = 1 - (1 - p)^2; at t=30 p=0.5 -> 0.75 -> 75; t=60 -> 100
-    checkpoints: { 30: 75, 60: 100 },
+    // power2.out(p) = 1 - (1 - p)^3; at t=30 p=0.5 -> 0.875 -> 87.5; t=60 -> 100
+    checkpoints: { 30: 87.5, 60: 100 },
     tolerance: 1e-3,
   },
   {
@@ -130,9 +130,9 @@ export const REFERENCE_CASES: readonly ReferenceBindingCase[] = [
       signal: { kind: "pointer", channel: "x" },
       operators: [{ op: "smooth", tau: 0.25 }],
     }),
-    // Tracks 400 + 200*sin(pi*t/10) closely across frame rates
-    checkpoints: { 10: 384.3, 20: 415.7 },
-    tolerance: 3.5,
+    // Sinusoidal low-pass steady state: 400 ± 200*sin(atan(w*tau))/sqrt(1+(w*tau)^2), w=pi/10, tau=0.25 -> 415.10 at 10s, 384.90 at 20s
+    checkpoints: { 10: 415.1, 20: 384.9 },
+    tolerance: 1.5,
   },
   {
     id: "ref-05-spring-follow",
@@ -226,7 +226,7 @@ export const REFERENCE_CASES: readonly ReferenceBindingCase[] = [
         { op: "rotate", degrees: 0 },
         { op: "lookAt", x: 0, y: 0 },
       ],
-    }, "transform.rotation"),
+    }, "transform.rotate"),
     // pointerIn px returns [100 + 10*t, 50]; atan2(50, 100 + 10*t) in deg
     checkpoints: {
       10: (Math.atan2(50, 200) * 180) / Math.PI,
@@ -247,7 +247,9 @@ export const REFERENCE_TRAIL_EXPR: SignalExpr = {
 };
 
 function numericValue(value: Value): number {
-  return Array.isArray(value) ? (value as Vec2)[0] : value;
+  if (typeof value === "number") return value;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  return value[0];
 }
 
 /** Runs an expression across `[0, durationSec]` at a fixed frequency and samples checkpoints. */

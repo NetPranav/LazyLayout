@@ -1,5 +1,5 @@
 import { BindingDraftSchema, type BindingDraft, type Operator, type Signal } from "../document/signals";
-import type { LayerArchetype } from "../document/schema";
+import type { ArchetypeId } from "../document/registry";
 
 export type ReactivitySource = "cursor" | "scroll" | "hover" | "touch" | "keyboard" | "sound";
 
@@ -36,7 +36,7 @@ export interface AffordanceSpec {
   readonly maxAmplitude: number;
   readonly blend: "add" | "replace" | "multiply";
   readonly compatibleSources: readonly ReactivitySource[];
-  readonly excludedArchetypes?: readonly LayerArchetype[];
+  readonly excludedArchetypes?: readonly ArchetypeId[];
 }
 
 export const REACTIVITY_AFFORDANCES: readonly AffordanceSpec[] = [
@@ -53,7 +53,7 @@ export const REACTIVITY_AFFORDANCES: readonly AffordanceSpec[] = [
     id: "tilt",
     label: "Tilt",
     verb: "tilts with",
-    targetPath: "transform.rotation",
+    targetPath: "transform.rotate",
     maxAmplitude: 18,
     blend: "add",
     compatibleSources: ["cursor", "hover", "touch", "keyboard"],
@@ -118,7 +118,7 @@ export const REACTIVITY_AFFORDANCES: readonly AffordanceSpec[] = [
 
 /** Returns only the affordances supported for the given layer archetype & input source. */
 export function affordancesForLayer(
-  archetype: LayerArchetype | undefined,
+  archetype: ArchetypeId | undefined,
   source: ReactivitySource
 ): readonly AffordanceSpec[] {
   return REACTIVITY_AFFORDANCES.filter(

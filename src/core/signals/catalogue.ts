@@ -481,15 +481,22 @@ export function findCatalogueEntry(signal: Signal): SignalCatalogueEntry | undef
 }
 
 export function normalizeMeterFill(value: Value, range: readonly [number, number]): number {
-  const num = Array.isArray(value) ? Math.hypot(value[0], value[1]) : typeof value === "boolean" ? (value ? 1 : 0) : value;
+  const num =
+    typeof value === "number"
+      ? value
+      : typeof value === "boolean"
+        ? value
+          ? 1
+          : 0
+        : Math.hypot(value[0], value[1]);
   const span = range[1] - range[0];
   if (span <= 0) return 0;
   return Math.max(0, Math.min(1, (num - range[0]) / span));
 }
 
 export function formatSignalValue(value: Value, unit: SignalUnit): string {
-  if (Array.isArray(value)) return `[${value[0].toFixed(2)}, ${value[1].toFixed(2)}]`;
   if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value !== "number") return `[${value[0].toFixed(2)}, ${value[1].toFixed(2)}]`;
   if (unit === "bool") return value >= 0.5 ? "true" : "false";
   if (unit === "px" || unit === "px/s" || unit === "id") return `${Math.round(value)} ${unit === "id" ? "" : unit}`.trim();
   if (unit === "deg") return `${value.toFixed(1)}°`;
