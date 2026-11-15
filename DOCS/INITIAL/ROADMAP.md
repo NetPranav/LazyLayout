@@ -416,7 +416,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 🚧 |
 | 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 🚧 |
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 🚧 |
-| 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 📋 |
+| 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 🚧 |
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 📋 |
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 📋 |
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 📋 |
@@ -1670,11 +1670,49 @@ The document and World Environment have their own stores, After-track actions mo
 - Firefox and WebKit not run.
 
 ### Phase 120 · Brushes & pen pressure
-**Needs:** 39, 119 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 39, 119 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Pencil and brush tools that read pen pressure, tilt and speed (Pointer Events) into width profiles; smoothing; textured and pattern brushes; works with a mouse too (speed becomes width).
 
 **You'll see:** draw with a tablet pen and get strokes that thin and thicken like ink.
 **Done when:** recorded pen input produces the same paths in 3 browsers.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- Phase 39's pencil fitted drawn samples into a path. It recorded pressure but never used it.
+- The FigCraft port had stretch and scatter brushes (`stroke.brush`, `core/paths/brush.ts`) that follow a width profile.
+- There was no brush tool, and nothing turned pen input into width.
+
+**Built (Lane C):**
+- `core/paths/penInput.ts` turns a stroke's samples into a width profile:
+  - pressure (harder is wider), tilt (a flatter pen is wider), or speed (faster is thinner, like ink);
+  - smoothed along the stroke and sampled at 32 evenly spaced points, so the same input always gives the same profile;
+  - "Auto" picks pressure for a pen and speed for a mouse.
+- A **Brush tool** in the Pen flyout (shortcut **B**). It stays the tool stroke after stroke, and a settings bar on the canvas sets:
+  - size and colour;
+  - the brush: plain, or one of the eight stretch and scatter brushes;
+  - what drives the width: Auto, Pressure, Tilt, Speed or None;
+  - smoothing.
+- The canvas now reads every coalesced pointer sample and the pen's tilt.
+- The pencil keeps a pen's pressure; a mouse's pencil stroke is unchanged.
+- **Fixed:** the canvas's capture-phase tool handler also took presses on lists portaled out of it, so a Select opened from the bar couldn't be picked. Presses outside the stage's own DOM are now ignored.
+
+**Verified (`penInput.test.ts`, 7 tests):**
+- Harder is wider; the same input gives the same profile.
+- A mouse uses its speed, and a fast stretch is thinner.
+- A flatter pen is wider, and smoothing steadies a shaky hand.
+- A brush stroke is an open, unfilled path layer with its size, profile and brush; a mouse's pencil stroke is as before.
+
+**In Chromium (`brush-pressure.spec.ts`):**
+- A recorded pen stroke (48 samples with pressure and tilt), played back as pen pointer events, gives the same path and profile twice, and both equal the recording's expected result written in the spec. CI's Firefox and WebKit projects are held to the same result.
+- The settings bar sets the Ink brush and size 20.
+- A real mouse drag gets a speed profile.
+- Pen, tools, variable-width and the canvas contract still pass (53).
+
+**Not done:**
+- Firefox and WebKit not run locally.
+- No custom brushes made from a layer.
+- The preview while drawing is a thin line.
 
 ### Phase 121 · Layer effects II: glow, progressive blur, grain & frosted glass
 **Needs:** 35, 114 · **Was:** — (new in v4.1) · **Status:** 📋
