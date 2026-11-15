@@ -133,6 +133,12 @@ exists; this one records the *current status* of each gate, kept current as the 
   a possible 2D WebGL helper (Phase 61.1), and a permissively licensed rigid-body library
   (MIT/Apache-2.0) if one wins the Phase 64.2 benchmark. Each is recorded here with its licence
   before it is used, and the exporter includes its notice (Phase 85.2).
+- **On-device face & pose landmark solver (added 2026-11-15, Phase 214):** LazyLayout ships an
+  in-house pure geometry landmark-to-rig signal extractor (`src/core/rig/webcamFacePoseTracker.ts`,
+  MIT repo licence) compatible with standard 2D facial/pose keypoints (compatible with optional
+  Apache-2.0 local browser landmark runtimes such as MediaPipe Tasks Vision when supplied at runtime).
+  Video frames never leave the device (`videoLeavesDevice: false`), and denied camera permissions
+  degrade cleanly to pointer cursor signals.
 
 ## How to add a gate
 

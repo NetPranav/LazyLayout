@@ -1,0 +1,1 @@
+- [Lane E · Phase 203 · Rig model: bones & skins] Implemented pure hierarchical 2D rig model, topological sort, affine matrix composition, rigid layer binding, and Linear-Blend Skinning in `src/core/rig/rigModel.ts` with 20 hand-computed rig fixture tests and Decision Record `0017-rigging-and-deformation.md`.

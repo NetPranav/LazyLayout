@@ -1,0 +1,1 @@
+- [Lane E · Phase 206 · Mesh deformation & weights] Implemented density-controlled mesh triangulation, automatic heat-distance bone weights, radial weight brush painting, Laplacian smoothing, and vector/raster LBS deformation with strict sum=1.0 weight normalization in `src/core/rig/meshWeightsAndSkinning.ts`.

@@ -1,0 +1,1 @@
+- [Lane E · Phase 210 · Rigs that react] Implemented input-reactive rig evaluation with the Simple face ("Follow cursor: eyes / head / whole body"), scroll lean, arrow-key walking, click pulse, and arm IK reach in `src/core/rig/reactiveRig.ts`.

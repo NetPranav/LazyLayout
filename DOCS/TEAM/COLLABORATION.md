@@ -27,15 +27,16 @@ Those are the only kinds of branches. Anything else on GitHub is old and can be 
 
 ## 1. The lanes
 
-| | **Lane A** | **Lane B** | **Lane C** | **Lane D** |
-|---|---|---|---|---|
-| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` | Project owner (admin) | Stage 4 worker (opened 2026-11-15 by project owner) |
-| Phases | **13–52** + Design track (**D1–D24**): Stage 1 viewport & Design track | **53–102**: Stage 2 animation engine | **103–131**: Stage 3 Design depth | **132–202**: Stage 4 Interactive & complex animation |
-| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` | `c/phase-NN-short-name` | `d/phase-NN-short-name` |
-| Starts at | Phase 13 (in progress) | Phase 53 | Phase 103 (active in #107) | Phase 132 (active) |
+| | **Lane A** | **Lane B** | **Lane C** | **Lane D** | **Lane E** |
+|---|---|---|---|---|---|
+| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` | Project owner (admin) | Stage 4 worker (opened 2026-11-15 by project owner) | Stage 5 worker (opened 2026-11-15 by project owner) |
+| Phases | **13–52** + Design track (**D1–D24**): Stage 1 viewport & Design track | **53–102**: Stage 2 animation engine | **103–131**: Stage 3 Design depth | **132–202**: Stage 4 Interactive & complex animation | **203–217**: Stage 5 Characters & rigging |
+| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` | `c/phase-NN-short-name` | `d/phase-NN-short-name` | `e/stage-5-complete` |
+| Starts at | Phase 13 (in progress) | Phase 53 | Phase 103 (active in #107) | Phase 132 (active) | Phase 203 (active) |
 
 - **Lane C (since 2026-11-14, by the project owner):** Stage 3, Design depth (Phases 103–131), with branch prefix `c/`.
 - **Lane D (since 2026-11-15, by the project owner):** Stage 4, Interactive & complex animation (Phases 132–202), with branch prefix `d/`. Works step by step from 132 to 202 with batched verification every 10th phase (141, 151, 161, 171, 181, 191, 202).
+- **Lane E (since 2026-11-15, by the project owner):** Stage 5, Characters & rigging (Phases 203–217), with branch prefix `e/`. Builds Phases 203–217 sequentially on `e/stage-5-complete` and opens one consolidated PR when verified.
 - **Inside a lane, the phase number is still the order** (Law 18). Take the lowest phase in your lane that isn't ✅.
 - A phase may start only when **every phase in its "Needs" line is ✅ on `main`**. This is ROADMAP §0 rule 7, and it's the only thing that links the two lanes. §2 lists every place where it matters.
 - **Stage 3, Design depth (Phases 103–131, added in ROADMAP v4.1 on 2026-10-21), is proposed for Lane A** after Phase 52, with branch prefix `a/`. Every phase in it needs only Stage 1, so it never waits on Lane B. It becomes Lane A's once Lane B agrees, in the v4.1 PR or in a message.

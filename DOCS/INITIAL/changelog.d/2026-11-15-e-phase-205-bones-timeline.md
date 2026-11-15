@@ -1,0 +1,1 @@
+- [Lane E · Phase 205 · Bones on the timeline] Implemented keyframed bone pose tracks with shortest-arc angle interpolation, past/future onion-skin ghost generation, horizontal L/R pose mirroring, and PoseLibrary presets in `src/core/rig/boneTimeline.ts`.
