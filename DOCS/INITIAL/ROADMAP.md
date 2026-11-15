@@ -355,7 +355,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 🚧 |
 | 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 🚧 |
 | 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 🚧 |
-| 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 📋 |
+| 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 🚧 |
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 📋 |
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 📋 |
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 📋 |
@@ -2198,8 +2198,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** contact events fire at the expected tape frames in 3 browsers.
 
 ### Phase 165 · Joints, ropes & chains
-**Needs:** 164 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Hinge, spring, distance, rope and weld joints between bodies, to a fixed point or to the cursor; ropes and chains as generators.
+**Needs:** 164 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Hinge, spring, distance, rope and weld joints between bodies, to a fixed point or to the cursor; ropes and chains as generators.
 
 **You'll see:** a badge on a rope that you can throw around.
 **Done when:** joint references replay bit-identically and match stored snapshots at 5 checkpoints.
