@@ -487,7 +487,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 🚧 |
 | 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 🚧 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 🚧 |
-| 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
+| 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 🚧 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
 | 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
 | 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
@@ -2929,8 +2929,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** deformation references match within the GPU tolerance; the accessibility tree is unchanged.
 
 ### Phase 186 · Fracture: shatter, strips & tearing
-**Needs:** 112, 163, 185 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Break a layer into pieces along Voronoi cells, strips (a shredder), a grid or a drawn tear line; the pieces become physics bodies or spring home, and the layer can pull itself back together.
+**Needs:** 112, 163, 185 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Break a layer into pieces along Voronoi cells, strips (a shredder), a grid or a drawn tear line; the pieces become physics bodies or spring home, and the layer can pull itself back together.
 
 **You'll see:** click a card and it shatters, then reassembles.
 **Done when:** fracture replays are deterministic; pieces tile the original exactly (no gaps or overlaps above 0.5 px).
