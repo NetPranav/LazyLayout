@@ -10,10 +10,13 @@
 
 import type { Layer } from "../document/schema";
 import { BezPath } from "../geometry/bezpath";
-import { ellipse, polygonPoints, roundedRect, smoothedPolygon, starPoints } from "../geometry/shapes";
+import { ellipse, isCornerStyle, polygonPoints, roundedRect, smoothedPolygon, starPoints, type CornerStyle } from "../geometry/shapes";
 import { pathDataToBez } from "../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../paths/vectorNetwork";
-import { booleanPaths, type PathBoolOp } from "../paths/pathOps";
+import { refitCurves } from "../paths/curveRefit";
+import { softClose } from "../paths/pathTools";
+import { applyModifiers, hasActiveModifiers, parseModifiers, type ModPath } from "../paths/modifiers";
+import { combineRegions, mergeRegions, pathRegion, type PathBoolOp, type Region } from "../paths/pathOps";
 import { defaultStroke, parseSides, parseWidthProfile, strokeOutline, type StrokeProps } from "../paths/strokes";
 import { readCap } from "../render/strokePaint";
 import { parseColor } from "../paint/colorMath";
@@ -72,6 +75,8 @@ export function fromWorld(path: BezPath, box: { cx: number; cy: number; w: numbe
   });
 }
 
+const styleOf = (l: Layer): CornerStyle => (isCornerStyle(l.properties["shape.cornerStyle"]) ? (l.properties["shape.cornerStyle"] as CornerStyle) : "round");
+
 const radiiOf = (l: Layer): [number, number, number, number] => {
   const shared = Math.max(0, num(l.properties["shape.cornerRadius"], 0));
   const c = (n: string) => Math.max(0, num(l.properties[`shape.cornerRadius.${n}`], shared));
@@ -88,19 +93,65 @@ function pathLayerPath(l: Layer, kind: "fill" | "stroke"): { path: BezPath; even
   return { path: unit.map((p) => ({ x: (p.x * w) / 200, y: (p.y * h) / 200 })), evenOdd, closed: unit.els.some((e) => e.t === "Z") };
 }
 
+/** Layers a modifier stack can apply to (Phase 109). */
+export const MODIFIABLE = new Set(["rectangle", "ellipse", "polygon", "star", "svgPath", "line"]);
+
+/** Whether a layer has a modifier stack with at least one modifier switched on. */
+export const isModified = (l: Layer | undefined): boolean => !!l && MODIFIABLE.has(l.archetype) && typeof l.properties["shape.modifiers"] === "string" && hasActiveModifiers(parseModifiers(l.properties["shape.modifiers"]));
+
+/** Properties that place a layer without changing its outline. */
+const PLACEMENT = new Set(["frame.x", "frame.y", "frame.rotation", "positioning", "layout.zIndex"]);
+/** Modified geometry by everything but placement (at most 256 shapes kept). */
+const placedCache = new Map<string, ModPath | null>();
+
+/** The modified geometry of a layer, kept per layer object: the layer's identity changes whenever any of its properties do. */
+const modifiedCache = new WeakMap<Layer, ModPath | null>();
+
+/**
+ * A layer's geometry after its modifier stack, in its own box: a closed shape (from its outline) or an open line (from
+ * its spine). Null when it has no geometry. Without modifiers switched on, the layer's own geometry.
+ */
+export function modifiedGeometry(l: Layer, layers: Readonly<Record<string, Layer>>): ModPath | null {
+  if (modifiedCache.has(l)) return modifiedCache.get(l)!;
+  // moving or turning a layer doesn't change its outline: a second cache ignores where it is, so a drag doesn't
+  // regenerate (say) 2,000 scattered stars every frame
+  const key = l.archetype + JSON.stringify(Object.entries(l.properties).filter(([k]) => !PLACEMENT.has(k)).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const known = placedCache.get(key);
+  if (known !== undefined) {
+    modifiedCache.set(l, known);
+    return known;
+  }
+  const fill = baseOutline(l, layers);
+  const base: ModPath | null = fill ? { path: fill.path, closed: true } : (() => {
+    const s = baseSpine(l, layers);
+    return s ? { path: s, closed: false } : null;
+  })();
+  const out = base ? applyModifiers(base, parseModifiers(l.properties["shape.modifiers"]), layerSize(l)) : null;
+  modifiedCache.set(l, out);
+  if (placedCache.size >= 256) placedCache.delete(placedCache.keys().next().value!);
+  placedCache.set(key, out);
+  return out;
+}
+
 /** What a layer fills, in its own box, with its fill rule; null for layers with no closed area (lines, open paths, text). */
 export function layerOutline(l: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): { path: BezPath; evenOdd: boolean } | null {
+  if (!isModified(l)) return baseOutline(l, layers, depth);
+  const m = modifiedGeometry(l, layers);
+  return m && m.closed && !m.path.isEmpty() ? { path: m.path, evenOdd: false } : null;
+}
+
+function baseOutline(l: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): { path: BezPath; evenOdd: boolean } | null {
   const { w, h } = layerSize(l);
   const p = l.properties;
   switch (l.archetype) {
     case "rectangle":
-      return { path: roundedRect(w, h, radiiOf(l), Math.min(1, Math.max(0, num(p["shape.cornerSmoothing"], 0)))), evenOdd: false };
+      return { path: roundedRect(w, h, radiiOf(l), Math.min(1, Math.max(0, num(p["shape.cornerSmoothing"], 0))), styleOf(l)), evenOdd: false };
     case "ellipse":
       return { path: ellipse(w, h, (num(p["shape.arcStart"], 0) * Math.PI) / 180, (num(p["shape.arcSweep"], 360) * Math.PI) / 180, Math.min(1, Math.max(0, num(p["shape.arcInnerRatio"], 0)))), evenOdd: true };
     case "polygon":
-      return { path: smoothedPolygon(polygonPoints(w, h, num(p["shape.sides"], 6)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0)), evenOdd: false };
+      return { path: smoothedPolygon(polygonPoints(w, h, num(p["shape.sides"], 6)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0), styleOf(l)), evenOdd: false };
     case "star":
-      return { path: smoothedPolygon(starPoints(w, h, num(p["shape.points"], 5), num(p["shape.innerRadius"], 0.5)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0)), evenOdd: false };
+      return { path: smoothedPolygon(starPoints(w, h, num(p["shape.points"], 5), num(p["shape.innerRadius"], 0.5)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0), styleOf(l)), evenOdd: false };
     case "svgPath": {
       const r = pathLayerPath(l, "fill");
       return r && (r.closed || parseNetwork(p["svg.network"])) ? { path: r.path, evenOdd: r.evenOdd } : null;
@@ -123,10 +174,15 @@ export function layerOutline(l: Layer, layers: Readonly<Record<string, Layer>>, 
  * a path layer's path (open or closed), any other shape's outline. Null when it has none.
  */
 export function layerSpine(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
+  if (isModified(l)) return modifiedGeometry(l, layers)?.path ?? null;
+  return baseSpine(l, layers);
+}
+
+function baseSpine(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
   const { w, h } = layerSize(l);
   if (l.archetype === "line") return new BezPath().moveTo({ x: 0, y: h / 2 }).lineTo({ x: w, y: h / 2 });
   if (l.archetype === "svgPath") return pathLayerPath(l, "stroke")?.path ?? null;
-  return layerOutline(l, layers)?.path ?? null;
+  return baseOutline(l, layers)?.path ?? null;
 }
 
 /** The layer's stroke settings as the outliner takes them (an archetype without an explicit alignment keeps its older placement). */
@@ -157,6 +213,10 @@ function strokePropsOf(l: Layer): StrokeProps | null {
 export function layerStrokeArea(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
   const props = strokePropsOf(l);
   if (!props) return null;
+  if (isModified(l)) {
+    const m = modifiedGeometry(l, layers);
+    return m && !m.path.isEmpty() ? strokeOutline(m.path, m.closed ? props : { ...props, align: "center" }, m.closed) : null;
+  }
   const { w, h } = layerSize(l);
   if (l.archetype === "line") {
     const line = new BezPath().moveTo({ x: 0, y: h / 2 }).lineTo({ x: w, y: h / 2 });
@@ -177,24 +237,88 @@ export function layerStrokeArea(l: Layer, layers: Readonly<Record<string, Layer>
 export function booleanGroupResult(group: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): BezPath | null {
   const op = group.properties["boolean.operation"];
   if (!isBooleanOp(op)) return null;
-  let acc: BezPath | null = null;
-  let accEvenOdd = false;
+  // Phase 104: the operands are combined as polygons and turned back into curves once, at the end. Operands that
+  // combine the same way, one after another, are merged first (a run), and a run remembers its answer, so moving one
+  // child of a large group redoes only that child's part.
+  const operands: Operand[] = [];
   for (const id of group.children) {
     const child = layers[id];
     if (!child || child.visible === false) continue;
-    const o = layerOutline(child, layers, depth);
-    if (!o) continue;
-    const placed = toParent(o.path, child);
-    if (!acc) {
-      acc = placed;
-      accEvenOdd = o.evenOdd;
-      continue;
-    }
     const own = child.properties["boolean.operandOp"];
-    acc = booleanPaths(acc, placed, isBooleanOp(own) ? own : op, accEvenOdd ? "evenodd" : "nonzero", o.evenOdd ? "evenodd" : "nonzero");
-    accEvenOdd = false;
+    const o = operandOf(child, layers, depth, isBooleanOp(own) ? own : op);
+    if (o) operands.push(o);
   }
-  return acc && !acc.isEmpty() ? acc : null;
+  if (operands.length === 0) return null;
+  const memo = runMemo.get(group) ?? [];
+  const next: RunMemo[] = [];
+  let acc = operands[0].region;
+  let i = 1;
+  while (i < operands.length) {
+    let j = i + 1;
+    while (j < operands.length && operands[j].op === operands[i].op) j++;
+    const run = operands.slice(i, j);
+    const merged = mergeRun(run, memo[next.length]);
+    next.push(merged);
+    acc = combineRegions(acc, merged.region, run[0].op);
+    i = j;
+  }
+  runMemo.set(group, next);
+  let out = refitCurves(acc, operands.map((o) => o.path));
+  // Phase 108: a union group with softness melts its children together
+  const softness = num(group.properties["boolean.softness"], 0);
+  if (op === "union" && softness > 0 && !out.isEmpty()) out = softClose(out, softness);
+  return out.isEmpty() ? null : out;
+}
+
+/** One child of a boolean group, placed in the group's box: its path, what it fills, and how it combines. */
+interface Operand {
+  layer: Layer;
+  path: BezPath;
+  region: Region;
+  op: PathBoolOp;
+}
+
+/** A leaf operand's path and region depend on that layer alone, so they are kept by the layer's identity. */
+const operandCache = new WeakMap<Layer, { path: BezPath; region: Region }>();
+
+function operandOf(child: Layer, layers: Readonly<Record<string, Layer>>, depth: number, op: PathBoolOp): Operand | null {
+  const leaf = child.children.length === 0;
+  const hit = leaf ? operandCache.get(child) : undefined;
+  if (hit) return { layer: child, path: hit.path, region: hit.region, op };
+  const o = layerOutline(child, layers, depth);
+  if (!o) return null;
+  const path = toParent(o.path, child);
+  const region = pathRegion(path, o.evenOdd ? "evenodd" : "nonzero");
+  if (leaf) operandCache.set(child, { path, region });
+  return { layer: child, path, region, op };
+}
+
+/** What a run of operands with the same operation adds up to, and (once one of them starts changing) the rest without it. */
+interface RunMemo {
+  members: Layer[];
+  region: Region;
+  without?: { index: number; others: Region };
+}
+const runMemo = new WeakMap<Layer, RunMemo[]>();
+
+/** Subtracting several shapes subtracts their union; the other operations merge by themselves. */
+const mergeHow = (op: PathBoolOp): "union" | "intersect" | "exclude" => (op === "subtract" ? "union" : op);
+
+function mergeRun(run: readonly Operand[], before: RunMemo | undefined): RunMemo {
+  const members = run.map((o) => o.layer);
+  const how = mergeHow(run[0].op);
+  if (before && before.members.length === members.length) {
+    const changed: number[] = [];
+    for (let k = 0; k < members.length && changed.length < 2; k++) if (before.members[k] !== members[k]) changed.push(k);
+    if (changed.length === 0) return before;
+    // nested groups are left out: their region can change while the layer object stays the same
+    if (changed.length === 1 && members.length > 2 && run.every((o) => o.layer.children.length === 0)) {
+      const k = changed[0];
+      const others = before.without?.index === k ? before.without.others : mergeRegions(how, run.filter((_, n) => n !== k).map((o) => o.region));
+      return { members, region: mergeRegions(how, [others, run[k].region]), without: { index: k, others } };
+    }
+  }
+  return { members, region: mergeRegions(how, run.map((o) => o.region)) };
 }
 
 /** Cache for the stage: a group's result path text, recomputed only when the group or one of its descendants changed. */

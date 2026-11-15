@@ -1,4 +1,5 @@
 import { sequenceGrid, sequencePosition } from "../../render/sequence";
+import { sheenBackground, variationSettings } from "../../text/axis";
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
 import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
@@ -144,6 +145,16 @@ export function styleWrites(paths: Iterable<string>, resolved: ResolvedProps, la
     const height = typeof resolved["frame.height"] === "number" ? resolved["frame.height"] : 0;
     const mask = maskStyle(read, { width, height });
     for (const key of ["mask-image", "-webkit-mask-image", "mask-size", "-webkit-mask-size", "mask-repeat", "-webkit-mask-repeat"]) out[key] = mask ? { "mask-image": mask.maskImage, "-webkit-mask-image": mask.WebkitMaskImage, "mask-size": mask.maskSize, "-webkit-mask-size": mask.WebkitMaskSize, "mask-repeat": mask.maskRepeat, "-webkit-mask-repeat": mask.WebkitMaskRepeat }[key]! : "none";
+  }
+  // Variable-font axis animation (Design track D12)
+  if (paths2.includes("text.axisValue")) {
+    const v = variationSettings((p) => resolved[p]);
+    if (v) out["font-variation-settings"] = v;
+  }
+  // Gradient sheen (Design track D12)
+  if (paths2.includes("text.sheen")) {
+    const b = sheenBackground((p) => resolved[p]);
+    out["background-image"] = b ?? "none";
   }
   // Image sequence (Design track D13): the frame shown is a background position made from the grid and the frame number.
   if (paths2.includes("sequence.frame")) {

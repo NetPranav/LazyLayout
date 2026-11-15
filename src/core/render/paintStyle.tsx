@@ -42,7 +42,7 @@ export function useFillStyle(layer: Layer, resolved: ResolvedProps, plainColor: 
             <React.Fragment key={i}>
             {hasAdjustFilter(p) && (
               <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>
-                <defs><AdjustFilter id={adjustId} adjust={p.adjust!} /></defs>
+                <defs><AdjustFilter id={adjustId} adjust={p.adjust} look={p.look} /></defs>
               </svg>
             )}
             <span

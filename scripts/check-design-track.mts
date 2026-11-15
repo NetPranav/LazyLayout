@@ -12,8 +12,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const main = readFileSync(join(process.cwd(), "DOCS", "INITIAL", "ROADMAP.md"), "utf8");
-const r3d = readFileSync(join(process.cwd(), "DOCS", "INITIAL", "ROADMAP_3D.md"), "utf8");
+// Line endings are normalised so the checks also pass on a Windows checkout (CRLF).
+const main = readFileSync(join(process.cwd(), "DOCS", "INITIAL", "ROADMAP.md"), "utf8").replace(/\r\n/g, "\n");
+const r3d = readFileSync(join(process.cwd(), "DOCS", "INITIAL", "ROADMAP_3D.md"), "utf8").replace(/\r\n/g, "\n");
 const errors: string[] = [];
 
 const start = main.indexOf("# DESIGN MASTER TRACK");

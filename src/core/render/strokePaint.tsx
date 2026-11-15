@@ -106,6 +106,25 @@ export interface StrokeLayerProps {
 }
 
 /** The stroke paints of a shape, each laid through a mask of the stroke's area. */
+/**
+ * Several strokes (Phase 118): when any stroke has its own weight or alignment, each is drawn as a stroke layer of its
+ * own (its weight, its alignment, its paint), the first on top; otherwise they share one, as before.
+ */
+export function StrokeStack(props: StrokeLayerProps) {
+  const s = props.settings;
+  if (!s.paints.some((p) => p.weight !== undefined || p.align !== undefined)) return <StrokeLayer {...props} />;
+  return (
+    <>
+      {s.paints
+        .map((p, i) => ({ p, i }))
+        .reverse()
+        .map(({ p, i }) => (
+          <StrokeLayer key={i} {...props} id={`${props.id}__k${i}`} settings={{ ...s, paints: [p], weight: p.weight ?? s.weight, align: p.align ?? s.align }} />
+        ))}
+    </>
+  );
+}
+
 export function StrokeLayer({ id, settings: s, width, height, geometry, outline, closed, rect, toDrawing = (p) => p }: StrokeLayerProps) {
   if (s.weight <= 0 || s.paints.length === 0) return null;
   const align = closed ? (s.align ?? "center") : "center";

@@ -33,6 +33,7 @@ import { CATEGORY_PRIORITY_ORDER, type AnimationCategory } from "../types/elemen
 import { parseEasing } from "../document/motion";
 import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
+import { morphOptions, morphPath } from "../paths/morphMatch";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
@@ -106,8 +107,18 @@ function findActiveState(doc: MotionDocument, layerId: string, stateName: string
   return Object.values(doc.states).find((s) => s.layerId === layerId && s.name === stateName);
 }
 
-/** Finds the keyframe pair surrounding `time` and the eased, interpolated value between them. */
-export function sampleTrack(track: Track, time: number): PropValue | undefined {
+/** A layer's drawn path is morphed sub-path by sub-path with matched points (Phase 85), using the layer's own morph settings. */
+const MORPHED_PATH = "svg.path";
+function mix(property: string, method: Parameters<typeof interpolateValue>[0], from: PropValue, to: PropValue, t: number, own?: Readonly<Record<string, PropValue>>): PropValue {
+  if (property === MORPHED_PATH && method === "path" && typeof from === "string" && typeof to === "string") return morphPath(from, to, t, morphOptions(own));
+  return interpolateValue(method, from, to, t);
+}
+
+/**
+ * Finds the keyframe pair surrounding `time` and the eased, interpolated value between them. `own` is the layer's own
+ * properties, for the settings a mix depends on (how its path morphs).
+ */
+export function sampleTrack(track: Track, time: number, own?: Readonly<Record<string, PropValue>>): PropValue | undefined {
   const keyframes = track.keyframes;
   if (keyframes.length === 0) return undefined;
   if (keyframes.length === 1 || time <= keyframes[0].time) return keyframes[0].value;
@@ -133,7 +144,7 @@ export function sampleTrack(track: Track, time: number): PropValue | undefined {
     (is3DPath(track.property)
       ? get3DInterpolationMethod(track.property, k0.value, k1.value)
       : "discrete");
-  return interpolateValue(method, k0.value, k1.value, eased);
+  return mix(track.property, method, k0.value, k1.value, eased, own);
 }
 
 interface CategorizedSample {
@@ -253,7 +264,7 @@ export function sampleClip(
   const props: ResolvedProps = {};
   for (const track of clip.tracks) {
     if (track.muted) continue;
-    const value = sampleTrack(track, time);
+    const value = sampleTrack(track, time, fallbackProps);
     if (value !== undefined) props[track.property] = value;
   }
 
@@ -321,7 +332,8 @@ function applyLoopBehaviours(doc: MotionDocument, layerId: string, t: number, pr
     const easedT = sampleEasing(parseEasing(easing) ?? { kind: "linear" }, localT);
     const def = getPropertyDefinition(property);
     const method = def?.interpolation ?? "discrete";
-    const value = goingBack ? interpolateValue(method, to, from, easedT) : interpolateValue(method, from, to, easedT);
+    const own = doc.layers[layerId]?.properties;
+    const value = goingBack ? mix(property, method, to, from, easedT, own) : mix(property, method, from, to, easedT, own);
     out = { ...out, [property]: value };
   }
   return out;

@@ -211,6 +211,16 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
   const allLayerKeyframes = isGroup && childLayers
     ? childLayers.flatMap((c) => c.tr.flatMap((t) => t.keys))
     : layer.tr.flatMap((t) => t.keys);
+  /**
+   * The tick marks of a clip: one per pixel that has a keyframe, not one per keyframe. A group's clip holds the keyframes
+   * of every layer inside it, so 200 layers keyed at the same two times drew 2,000 marks on two pixels, and the browser
+   * laid them all out again on every playhead move (300 ms a frame in WebKit; Phase 64).
+   */
+  const ticksAt = (from: number, to: number, origin: number): number[] => {
+    const seen = new Set<number>();
+    for (const k of allLayerKeyframes) if (k.t >= from && k.t <= to) seen.add(Math.round(X(k.t, pps, t0, 24, fps) - origin));
+    return Array.from(seen);
+  };
 
   // Clip drag handler (move or trim)
   const handleClipPointerDown = (
@@ -689,11 +699,11 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
               }}
               className={`clip grp ${isSelected ? "on" : ""} ll-clip ll-grp ll:absolute ll:top-1 ll:bottom-1 ll:rounded-sm ll:overflow-hidden ll:cursor-default`}
             >
-              {allLayerKeyframes.map((k) => (
+              {ticksAt(-Infinity, Infinity, X(minStart, pps, t0, 24, fps)).map((x) => (
                 <i
-                  key={k.id}
+                  key={x}
                   style={{
-                    left: `${X(k.t, pps, t0, 24, fps) - X(minStart, pps, t0, 24, fps)}px`,
+                    left: `${x}px`,
                   }}
                   className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.25 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
                 />
@@ -749,13 +759,12 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
                   />
 
                   {/* Keyframe tick marks inside clip */}
-                  {allLayerKeyframes
-                    .filter((k) => k.t >= clip.s && k.t <= clip.e)
-                    .map((k) => (
+                  {ticksAt(clip.s, clip.e, x0)
+                    .map((x) => (
                       <i
-                        key={k.id}
+                        key={x}
                         style={{
-                          left: `${X(k.t, pps, t0, 24, fps) - x0}px`,
+                          left: `${x}px`,
                         }}
                         className="ckt ll-ckt ll:absolute ll:bottom-0 ll:w-0.5 ll:h-1.25 ll:bg-primary ll:opacity-55 ll:pointer-events-none"
                       />

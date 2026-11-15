@@ -16,6 +16,11 @@ import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
+import { MeshOverlay } from "./MeshOverlay";
+import { WidthOverlay } from "./WidthOverlay";
+import { TextPathOverlay } from "./TextPathOverlay";
+import { AxesOverlay } from "./AxesOverlay";
+import { SpaceOverlay } from "./SpaceOverlay";
 import { DraftPath } from "./DraftPath";
 import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
 import { PathEditLayer } from "./pen/PathEditLayer";
@@ -56,6 +61,9 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useBreakpointStore, useEditBreakpointId } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
+import { frameScheduler } from "@/core/time/scheduler";
+import { isPlain, runsOf, runsText, serializeRuns, toggleFlag, type RunFlag, type TextRun } from "@/core/text/runs";
+import { readRuns, renderRuns, selectionOffsets, setSelectionOffsets } from "@/legacy-editor/canvas/text/domText";
 import { ViewportInteraction } from "../viewport3d";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
@@ -115,13 +123,16 @@ function designTransform(
  * same capitals), so what you type, what is highlighted and what you see afterwards are the same lines. Leaving it (click
  * away, Escape, Ctrl+Enter) writes the words as one undo step.
  */
-const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[string]; onDone: (value: string) => void }> = ({ layer, onDone }) => {
+const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[string]; onDone: (value: string, runs?: TextRun[]) => void }> = ({ layer, onDone }) => {
   const ref = useRef<HTMLDivElement>(null);
   const key = layer.archetype === "button" ? "content.label" : "content.text";
+  // Phase 125: a text's styled ranges (bold, italic, underline, strike, colour) are shown, toggled and kept
+  const styled = layer.archetype === "text";
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.innerText = String(layer.properties[key] ?? "");
+    if (styled) renderRuns(el, runsOf(String(layer.properties[key] ?? ""), layer.properties["content.runs"]));
+    else el.innerText = String(layer.properties[key] ?? "");
     el.focus();
     const range = document.createRange();
     range.selectNodeContents(el);
@@ -130,6 +141,27 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
     sel?.addRange(range);
     // Take the look of the drawn text itself (whatever the engine computed), and hide the drawn copy while this one is open.
     const drawn = document.querySelector<HTMLElement>(`[data-archetype][data-element-id="${layer.id}"]`);
+    // Phase 124: text on a path is edited in place: the curve stays and shows each change as it is typed (this field is
+    // a small bar above it), and is put back as the document has it when editing ends
+    const onPath = drawn?.hasAttribute("data-text-path");
+    if (onPath) {
+      const node = drawn!.querySelector("textPath")?.firstChild;
+      const was = node && node.nodeType === 3 ? node.nodeValue : null;
+      const mirror = () => {
+        if (node && node.nodeType === 3) node.nodeValue = el.innerText.replace(/\n$/, "").replace(/\n/g, " ");
+      };
+      el.addEventListener("input", mirror);
+      return () => {
+        el.removeEventListener("input", mirror);
+        if (node && was !== null) node.nodeValue = was;
+        // what the document says now (the edit, or the words as they were), once React has drawn it
+        const off = frameScheduler.register("overlay", () => {
+          off();
+          const t = getDocument().layers[layer.id]?.properties["content.text"];
+          if (node && node.isConnected && typeof t === "string") node.nodeValue = t.replace(/\n/g, " ");
+        });
+      };
+    }
     if (drawn) {
       const cs = getComputedStyle(drawn);
       for (const prop of ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "color", "textAlign", "textTransform", "whiteSpace", "overflowWrap", "textDecorationLine", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
@@ -147,6 +179,7 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
   const chosen = p["typography.whiteSpace"];
   const space = chosen === "nowrap" || chosen === "pre" || chosen === "normal" ? chosen : null;
   const wraps = sizing !== "autoWidth" && space !== "nowrap" && space !== "pre";
+  const onPath = typeof p["typography.textPath"] === "string" && p["typography.textPath"] !== "";
   return (
     <div
       ref={ref}
@@ -162,28 +195,16 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
         const isMod = e.ctrlKey || e.metaKey;
         if (isMod && !e.altKey) {
           const k = e.key.toLowerCase();
-          if (k === "b") {
+          const flag: RunFlag | null = k === "b" ? "bold" : k === "i" ? "italic" : k === "u" ? "underline" : k === "x" && e.shiftKey ? "strike" : null;
+          if (flag) {
             e.preventDefault();
             e.stopPropagation();
-            document.execCommand("bold");
-            return;
-          }
-          if (k === "i") {
-            e.preventDefault();
-            e.stopPropagation();
-            document.execCommand("italic");
-            return;
-          }
-          if (k === "u") {
-            e.preventDefault();
-            e.stopPropagation();
-            document.execCommand("underline");
-            return;
-          }
-          if (k === "x" && e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            document.execCommand("strikeThrough");
+            const el = e.currentTarget;
+            const range = styled ? selectionOffsets(el) : null;
+            if (range && range.end > range.start) {
+              renderRuns(el, toggleFlag(readRuns(el), range.start, range.end, flag));
+              setSelectionOffsets(el, range.start, range.end);
+            }
             return;
           }
         }
@@ -194,7 +215,11 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
         e.preventDefault();
         document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
       }}
-      onBlur={(e) => onDone(e.currentTarget.innerText.replace(/\n$/, ""))}
+      onBlur={(e) => {
+        if (!styled) return onDone(e.currentTarget.innerText.replace(/\n$/, ""));
+        const runs = readRuns(e.currentTarget);
+        onDone(runsText(runs), runs);
+      }}
       style={{
         position: "absolute",
         left: 0,
@@ -217,6 +242,10 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
         textAlign: (p["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
         textTransform: (p["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
         textDecorationLine: p["typography.textDecoration"] && p["typography.textDecoration"] !== "none" ? String(p["typography.textDecoration"]) : undefined,
+        // Phase 124: on a path, a one-line bar above the text; the curve itself shows the words as they are typed
+        ...(onPath
+          ? { top: -40, height: "auto", minHeight: 28, width: "max-content", minWidth: 160, maxWidth: 480, whiteSpace: "pre" as const, fontSize: 14, lineHeight: "28px", padding: "0 8px", background: "var(--ll-surface-raised, #ffffff)", color: "var(--ll-text-primary, #111111)", borderRadius: 6, textAlign: "left" as const }
+          : {}),
       }}
     />
   );
@@ -974,10 +1003,12 @@ export const Artboard: React.FC<ArtboardProps> = ({
               {editingText === el.id && layer && (
                 <InlineTextEditor
                   layer={layer}
-                  onDone={(value) => {
+                  onDone={(value, runs) => {
                     setEditingText(null);
                     const key = layer.archetype === "button" ? "content.label" : "content.text";
-                    if (value !== String(layer.properties[key] ?? "")) setLayerProps([targetDocId], { [key]: value }, "Edit text");
+                    const json = runs && !isPlain(runs) ? serializeRuns(runs) : "";
+                    const runsChanged = runs !== undefined && json !== String(layer.properties["content.runs"] ?? "");
+                    if (value !== String(layer.properties[key] ?? "") || runsChanged) setLayerProps([targetDocId], { [key]: value, ...(runs !== undefined ? { "content.runs": json || null } : {}) }, "Edit text");
                   }}
                 />
               )}
@@ -1100,6 +1131,13 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* Warp mesh: control points and grid on the warped surface */}
       <WarpMeshOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
+
+      {/* Mesh gradient points (Phase 115), while a mesh fill is being edited */}
+      <MeshOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <WidthOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <TextPathOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} editingText={editingText} />
+      <AxesOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <SpaceOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

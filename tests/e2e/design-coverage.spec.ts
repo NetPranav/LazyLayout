@@ -26,6 +26,19 @@ export const deadControls = (rows: readonly Row[]): Row[] =>
 export const EXPECTED_QUIET: Record<string, string> = {
   // a name and notes live in the document and the outline, not on the canvas
   "Layer name": "the name is shown in the outline only",
+  // Phase 123: settings for a button next to them (the button saves tokens or fixes the colour; colour-tools.spec drives it)
+  "Colour token group": "names the tokens the Save buttons make",
+  "Harmony rule": "picks the rule the Save harmony button uses",
+  "Contrast target": "picks the target the Fix contrast button uses; the report shows it",
+  // Phase 128: settings for the Arrange button (arrange-3d.spec drives it)
+  "3D arrangement": "picks the arrangement the Arrange button makes",
+  "Arrangement radius": "sets the radius the Arrange button uses",
+  "Arrangement spacing": "sets the spacing the Arrange button uses",
+  "Arrangement facing": "picks the way the Arrange button turns each item",
+  // Phase 127: a look only, by design (nothing is saved)
+  "Orbit preview": "turns the view for a look; nothing in the page changes",
+  // Phase 129: a canvas mode (drags then move the camera; depth-camera.spec drives it)
+  "Drag the camera on the canvas": "switches what a drag on the space does; the drag changes the page",
 };
 
 async function ready(page: Page) {
@@ -107,7 +120,10 @@ async function collect(page: Page): Promise<Control[]> {
 }
 
 /** Controls the walker does not drive, with the reason: they swap the whole panel or leave the layer, or (the Driven by and Parent & links forms) only fill in a form that "Add driver", "Add link" or "Set expression" then writes (Follow too), or reparent the layer being walked, or make it a helper (it works, but it would leave the rest of the walk on a helper). */
-const SKIP = new Set(["Scroll property", "Scroll mode", "Scroll from", "Scroll to", "Scroll start", "Scroll end", "Pin while scrolling", "Parallax depth", "Parallax cursor shift", "Smooth scrolling", "Trail copies", "Trail gap", "Look at offset", "Driver CSS variable name", "Pick on canvas", "Driver section", "Link map", "Link range from min", "Link range from max", "Link range to min", "Link range to max", "Follow pin", "Follow lag", "Follow offset X", "Follow offset Y", "Helper layer", "Parent layer", "Link property", "Link source layer", "Link source property", "Link multiplier", "Expression property", "Expression text", "Driver signal", "Driver property", "Driver input from", "Driver input to", "Driver output from", "Driver output to", "Driver smoothing", "More Layout options", "More Appearance options", "More Position options", "More Typography options", "Settings: 2D or 3D", "Image file", "Search commands, layers, pages"]);
+const SKIP = new Set(["Scroll property", "Scroll mode", "Scroll from", "Scroll to", "Scroll start", "Scroll end", "Pin while scrolling", "Parallax depth", "Parallax cursor shift", "Smooth scrolling", "Trail copies", "Trail gap", "Look at offset", "Driver CSS variable name", "Pick on canvas", "Driver section", "Link map", "Link range from min", "Link range from max", "Link range to min", "Link range to max", "Follow pin", "Follow lag", "Follow offset X", "Follow offset Y", "Helper layer", "Parent layer", "Link property", "Link source layer", "Link source property", "Link multiplier", "Expression property", "Expression text", "Driver signal", "Driver property", "Driver input from", "Driver input to", "Driver output from", "Driver output to", "Driver smoothing", "More Layout options", "More Appearance options", "More Position options", "More Typography options", "Settings: 2D or 3D", "Image file", "Search commands, layers, pages",
+  // form fields that only fill in what a button then does, and view choices that change how the page is looked at, not the layer;
+  // each is checked by its own spec: variables.spec (modes, binding, styles), states.spec (states), scroll-scenes.spec (simulator), text-motion.spec (axis)
+  "New mode name", "New variable type", "Variable to bind", "Property to bind", "New style name", "New style kind", "Custom state name", "View Light", "View Dark", "Edit the base layer", "Preview the page to scrub its scroll", "Variable font axis"]);
 
 const locate = (page: Page, c: Control): Locator => {
   if (c.kind === "input") return page.locator(`input[aria-label="${c.label}"]`).nth(c.index);

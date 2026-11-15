@@ -34,6 +34,9 @@ import {
   TIMELINE_PADDING_PX,
 } from "./constants";
 
+/** How long the panel's width must stay the same before the timeline is redrawn to fit it. */
+const WIDTH_REST_MS = 90;
+
 export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   fullWidth,
   onToggleFullWidth,
@@ -103,14 +106,30 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
     const el = panelRef.current;
     if (!el) return;
 
-    const updateWidth = () => {
+    // The width sets the scale of every lane, tick and keyframe, so a new width redraws the whole timeline. While the
+    // panel is being animated or dragged to a new size its width changes every frame; redrawing 200 layers on each of
+    // those frames took longer than a frame, which stretched the workspace's opening animation to many seconds
+    // (WebKit: 400 ms a frame; Phase 64). The first change of a burst is applied at once, the rest when the width rests.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let lastApplied = -Infinity;
+    const apply = () => {
+      timer = undefined;
+      lastApplied = performance.now();
       setContainerWidth(el.clientWidth);
     };
-    updateWidth();
+    const updateWidth = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      if (performance.now() - lastApplied > WIDTH_REST_MS) apply();
+      else timer = setTimeout(apply, WIDTH_REST_MS);
+    };
+    apply();
 
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateWidth) : null;
     ro?.observe(el);
-    return () => ro?.disconnect();
+    return () => {
+      ro?.disconnect();
+      if (timer !== undefined) clearTimeout(timer);
+    };
   }, []);
 
   // Calculate pixels per second (pps)

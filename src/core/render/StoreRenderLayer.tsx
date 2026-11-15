@@ -9,6 +9,7 @@
  * edit re-renders the layer it touched and nothing else; adding or removing a layer re-renders its parent.
  */
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { cameraOf } from "./geometry";
 import { useLayerAt } from "@/core/store/useDocumentStore";
 import { RENDER_DEFINITIONS } from "./definitions";
 import { resolveProps } from "./resolve";
@@ -33,11 +34,14 @@ interface StoreRenderLayerProps {
   layerId: string;
   /** The parent's main axis; decides what `fill` means for this layer. */
   parentDirection?: "row" | "column" | "grid";
+  /** Phase 129: the camera of the 3D space this layer stands in (focus and aperture), when it blurs by distance. */
+  cameraFocus?: number;
+  cameraAperture?: number;
   /** Set by a parent that paints its first child on top (`layout.reverseZ`, FigCraft port F6). */
   stackZ?: number;
 }
 
-function StoreRenderLayerImpl({ layerId, parentDirection, stackZ }: StoreRenderLayerProps) {
+function StoreRenderLayerImpl({ layerId, parentDirection, stackZ, cameraFocus, cameraAperture }: StoreRenderLayerProps) {
   const stage = useContext(StageContext);
   if (!stage) throw new Error("StoreRenderLayer must be rendered inside a StageContext");
   const { plan, renderer, ctx: stageCtx, breakpointId } = stage;
@@ -45,7 +49,10 @@ function StoreRenderLayerImpl({ layerId, parentDirection, stackZ }: StoreRenderL
   const layer = useLayerAt(layerId, breakpointId);
   const childIds = useSyncExternalStore(plan.subscribe, () => plan.get(layerId), () => plan.get(layerId));
   const resolved = useMemo(() => (layer ? resolveProps(layer) : null), [layer]);
-  const ctx = useMemo<RenderContext>(() => ({ ...stageCtx, parentDirection, ...(stackZ !== undefined ? { stackZ } : {}) }), [stageCtx, parentDirection, stackZ]);
+  const ctx = useMemo<RenderContext>(
+    () => ({ ...stageCtx, parentDirection, ...(stackZ !== undefined ? { stackZ } : {}), ...(cameraAperture ? { parentCamera: { focus: cameraFocus ?? 0, aperture: cameraAperture } } : {}) }),
+    [stageCtx, parentDirection, stackZ, cameraFocus, cameraAperture],
+  );
 
   // The registry always holds the element this layer is currently drawn into.
   const lastElement = useRef<Element | null>(null);
@@ -68,11 +75,12 @@ function StoreRenderLayerImpl({ layerId, parentDirection, stackZ }: StoreRenderL
   const Definition = RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
+  const camera = cameraOf(resolved);
 
   return (
     <Definition layer={layer} resolved={resolved} ctx={ctx} nodeRef={nodeRef}>
       {childIds.map((childId, i) => (
-        <StoreRenderLayer key={childId} layerId={childId} parentDirection={childDirection} stackZ={resolved.bool("layout.reverseZ", false) ? childIds.length - i : undefined} />
+        <StoreRenderLayer key={childId} layerId={childId} parentDirection={childDirection} stackZ={resolved.bool("layout.reverseZ", false) ? childIds.length - i : undefined} cameraFocus={camera?.focus} cameraAperture={camera?.aperture} />
       ))}
       {/* a frame defines its layers' effect filters (FigCraft port F7) */}
       {layer.parentId === null && <StageEffectDefs rootId={layerId} breakpointId={breakpointId} />}

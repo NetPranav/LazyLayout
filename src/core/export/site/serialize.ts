@@ -14,13 +14,17 @@ function attrText(n: ENode): string {
     .join("");
 }
 
+const SVG_TEXT = new Set(["text", "textPath", "tspan"]);
+
 function nodeHtml(n: ENode, indent: string): string {
   if (n.tag === "#text") return n.text ?? "";
   const open = `<${n.tag}${attrText(n)}`;
   if (isVoid(n.tag)) return `${indent}${open}>\n`;
   // text mixed with elements (styled runs, a list marker before its words) is written as it is: an added line break
   // or indent would show in text that keeps its white space
-  if (n.children.length === 0 || n.children.some((c) => c.tag === "#text")) return `${indent}${open}>${n.children.map(inlineHtml).join("")}</${n.tag}>\n`;
+  // SVG text (Phase 124: text on a path is a <text> holding a <textPath>) counts its white space as words, so it is
+  // written inline even when its children are elements
+  if (n.children.length === 0 || SVG_TEXT.has(n.tag) || n.children.some((c) => c.tag === "#text")) return `${indent}${open}>${n.children.map(inlineHtml).join("")}</${n.tag}>\n`;
   return `${indent}${open}>\n${toHtml(n.children, `${indent}  `)}${indent}</${n.tag}>\n`;
 }
 

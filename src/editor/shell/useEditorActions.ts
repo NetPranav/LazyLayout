@@ -1,5 +1,6 @@
 "use client";
 
+import { useMediaLibraryStore } from "@/core/store/useMediaLibraryStore";
 import { pickReferenceImage } from "@/core/assets/reference";
 import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -38,6 +39,7 @@ import { ProjectDatabase, generateProjectId } from "@/core/storage/ProjectDataba
 import { embedAssets, restoreAssets } from "@/core/assets/embed";
 import { getAssetStore } from "@/core/assets/AssetStore";
 import { lazyFileName, parseLazyFile, serializeLazyFile } from "@/core/storage/lazyFile";
+import { showToast } from "@/core/store/useLayersUiStore";
 import { executeStagePreset, presetForBreakpoint } from "@/editor/stage/presetBreakpoints";
 import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
@@ -292,7 +294,8 @@ export function useEditorActions(
         url.searchParams.set("projectId", newId);
         window.history.replaceState({}, "", url.pathname + url.search);
       } catch (err) {
-        console.error("Import project file failed:", err);
+        // Design track D24: say why, in words (a file from a newer version, a file that is not a project)
+        showToast(err instanceof Error ? err.message : "That file could not be opened.");
       }
     };
     input.click();
@@ -328,6 +331,8 @@ export function useEditorActions(
   // Sync tool selection with core tool store
   const setActiveTool = useCallback((tool: CanvasTool) => {
     setActiveToolState(tool);
+    // Phase 126: the Image tool opens the icons-and-photos library
+    if (tool === "image") useMediaLibraryStore.getState().open();
     const shapeMap: Record<ShapeTool, string> = {
       box: "rectangle",
       circle: "ellipse",
@@ -345,6 +350,7 @@ export function useEditorActions(
       image: "select",
       pen: "pen",
       pencil: "pencil",
+      brush: "pencil",
       anchor: "select",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
@@ -1388,6 +1394,11 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           setActiveTool("text");
+          return;
+        }
+        if (key === "b" && !e.shiftKey) {
+          e.preventDefault();
+          setActiveTool("brush");
           return;
         }
         if (key === "p") {

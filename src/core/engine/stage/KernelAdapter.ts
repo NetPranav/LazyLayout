@@ -3,6 +3,8 @@ import { evaluate, type EvaluateInputs } from "../../kernel/evaluate";
 import type { AdapterHost, EngineAdapter, EngineCapabilities, LayerFilter, StyledElement } from "./types";
 import { animatedLayers, fxFilters, styleWrites } from "./styleWrites";
 import { FxFilterWriter } from "./fxFilters";
+import { SvgPathWriter, writesSvgPath } from "./svgPaths";
+import { textFxOf, textFxText } from "../../text/textFx";
 
 /** The most copies of one layer that follow its animation (each is one more `evaluate` when the copies are staggered). */
 export const MAX_FOLLOWING_COPIES = 600;
@@ -31,6 +33,8 @@ export class KernelAdapter implements EngineAdapter {
   private readonly elements = new Map<string, StyledElement>();
   /** The SVG filters of the effect stack and motion blur (Phase 75), kept in the frame document. */
   private readonly fx = new FxFilterWriter();
+  /** A morphing path and a stroke being drawn (Phase 85): attributes on the layer's path elements. */
+  readonly svgPaths = new SvgPathWriter();
 
   /** The element each copy of a layer draws (Design track D8), by copy number; found once per document and node set. */
   private readonly copyCache = new Map<string, { parent: Element; copies: Map<number, StyledElement> }>();
@@ -76,6 +80,7 @@ export class KernelAdapter implements EngineAdapter {
 
   invalidate(): void {
     this.plannedFor = null;
+    this.textWritten.clear();
     this.written.clear(); // React may have redrawn an element since; write everything again
     this.copyCache.clear();
   }
@@ -117,7 +122,9 @@ export class KernelAdapter implements EngineAdapter {
       this.stats.evaluations++;
       const resolved = evaluate(doc, compositionId, layerId, time, this.inputs);
       this.apply(layerId, element, styleWrites(paths, resolved, layerId));
+      if (paths.has("text.fxProgress")) this.writeText(doc, layerId, element, resolved);
       if (paths.has("fx.stack")) this.fx.sync(element as unknown as Element, layerId, fxFilters(layerId, resolved));
+      if (writesSvgPath(paths)) this.svgPaths.sync(element as unknown as Element, layerId, paths, resolved);
       this.followWithCopies(doc, compositionId, layerId, paths, resolved, element, time);
     }
   }
@@ -204,10 +211,37 @@ export class KernelAdapter implements EngineAdapter {
     }
   }
 
+  /** The text each layer's `data-fx` span held before the engine wrote to it, and what it wrote. */
+  private readonly textOriginals = new Map<string, string>();
+  private readonly textWritten = new Map<string, string>();
+
+  /** Design track D12: the text a scramble, typewriter, rotating word or count-up shows now, written into the layer's `data-fx` span. */
+  private writeText(doc: MotionDocument, layerId: string, element: StyledElement, resolved: ReturnType<typeof evaluate>): void {
+    const span = (element as unknown as { querySelector?: (s: string) => { textContent: string | null } | null }).querySelector?.("[data-fx]");
+    if (!span) return;
+    const stored = resolved["content.text"] ?? doc.layers[layerId]?.properties["content.text"];
+    const fx = textFxOf((p) => resolved[p], typeof resolved["text.fxProgress"] === "number" ? (resolved["text.fxProgress"] as number) : undefined);
+    if (!fx || typeof stored !== "string") return;
+    const shown = textFxText(stored, fx);
+    if (this.textWritten.get(layerId) === shown) return;
+    if (!this.textOriginals.has(layerId)) this.textOriginals.set(layerId, span.textContent ?? "");
+    span.textContent = shown;
+    this.textWritten.set(layerId, shown);
+    this.stats.writes++;
+  }
+
   /** Puts back what React drew on a layer's element and forgets it. */
   private restore(layerId: string): void {
     const element = this.elements.get(layerId);
+    const original = this.textOriginals.get(layerId);
+    if (element && original !== undefined) {
+      const span = (element as unknown as { querySelector?: (s: string) => { textContent: string | null } | null }).querySelector?.("[data-fx]");
+      if (span) span.textContent = original;
+    }
+    this.textOriginals.delete(layerId);
+    this.textWritten.delete(layerId);
     this.fx.remove(element as unknown as Element | undefined, layerId);
+    this.svgPaths.remove(layerId);
     const originals = this.originals.get(layerId);
     if (element && originals) {
       for (const [property, original] of originals) {

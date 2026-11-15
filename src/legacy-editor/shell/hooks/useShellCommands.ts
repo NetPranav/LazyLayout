@@ -24,6 +24,7 @@ import { installAutoKey } from "@/core/timeline/keyframeOps";
 import { registerScrollClipCommand, registerScrollCommands } from "@/core/scroll/scrollCommands";
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
+import { registerPathMotionCommands } from "@/core/paths/pathMotionCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
 import { registerExpressionCommands } from "@/core/expressions/expressionCommands";
 import { useSavedLayouts } from "@/core/workspace/useSavedLayouts";
@@ -259,6 +260,7 @@ export function useShellCommands(actions: ShellCommandActions) {
   useEffect(() => registerScrollCommands(), []);
   useEffect(() => registerCompositingCommands(), []);
   useEffect(() => registerFxCommands(), []);
+  useEffect(() => registerPathMotionCommands(), []);
   useEffect(() => registerLinkCommands(), []);
   useEffect(() => registerExpressionCommands(), []);
   useEffect(() => registerScrollClipCommand(), []);
