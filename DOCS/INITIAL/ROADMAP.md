@@ -422,7 +422,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 🚧 |
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 🚧 |
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 🚧 |
-| 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 📋 |
+| 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 🚧 |
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 📋 |
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 📋 |
 | 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 📋 |
@@ -1929,11 +1929,41 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 126 · Icons, illustrations & stock media
-**Needs:** 36 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 36 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] An icon panel with open-licence sets (licences recorded in `LICENSES.md`, Law 7), search, and insert as editable vectors; stock photo search through a provider, with attribution; everything goes into the asset store with its source.
 
 **You'll see:** search "arrow", drop an icon in, and recolour it like any shape.
 **Done when:** every inserted icon and photo has its licence and source in the asset store; the icon set is in `LICENSES.md`.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the asset store kept imported files, but not where they came from or their licence. There was no icon panel or stock search. Lucide was a dependency only for the editor's own interface icons.
+
+**Built (Lane C):**
+- **Icons & Photos**, opened from the toolbar's Image button or "Icons & Photos…" (`insert.media`).
+- **Icons:** Lucide's ~4,100 icons, loaded one by one as they are shown, with a ranked search. Inserting one turns its shapes into a clean SVG (geometry only, nothing that runs or links), keeps it in the asset store and places it as editable vector layers, recoloured like any shape.
+- **Photos:** Openverse's search (openly licensed images, no key). Each result shows its author and licence. Inserting one fetches the picture into the asset store and makes an image layer named after its title.
+- **Every inserted icon and photo** has `source` on its asset (kind, provider, id, title, page, licence, licence link, author and author link, and Openverse's credit line), and its layers point at the asset (`asset.source`).
+- Icon licences are exact: ISC, or "ISC and MIT (Feather)" for the 115 icons Lucide's licence lists as Feather-derived.
+- `DOCS/INITIAL/LICENSES.md` records Lucide and Openverse. The dialog says the search words go to Openverse.
+- **Fixed:** an imported icon lost its stroke width, which drew it invisible.
+
+**Verified (`mediaLibrary.test.ts`, 5 tests):**
+- The icon SVG keeps only geometry (no script, no `onclick`) and puts the stroke on each shape.
+- Search ranks exact name, then prefix, then a word prefix, then containing.
+- Licences per icon are right.
+- Openverse results are read with licence, author and credit, and bad ones are dropped (no id, no https picture, no licence).
+- An inserted icon's asset keeps its source through save and load; its layers point at it and are stroked.
+
+**In Chromium (`icons-photos.spec.ts`):**
+- Search "arrow", insert Arrow right from the Image button. Its asset has the Lucide source with "ISC and MIT (Feather)". It is recoloured in the Stroke section and the canvas draws the new colour.
+- Search photos, with Openverse answered by a recorded reply. The result shows "Ana · CC BY 4.0"; inserting it gives an image layer whose asset has the full source and credit line.
+- Tools and the canvas contract still pass (50).
+
+**Not done:**
+- Exported pages don't yet show credit lines (Phase 130).
+- No illustration sets.
+- Firefox and WebKit not run locally.
 
 ### Phase 127 · 2.5D spaces: perspective & depth
 **Needs:** 27, 41 · **Was:** — (new in v4.1) · **Status:** 📋
