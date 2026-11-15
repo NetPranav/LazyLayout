@@ -403,7 +403,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 🚧 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 🚧 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 🚧 |
-| 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
+| 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 🚧 |
 | 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 📋 |
 | 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 📋 |
 | 110 | Modifiers I: repeat, trim, offset & round → *Design track D8 (repeat)* | 109 | — (new in v4.1) | 3 | 📋 |
@@ -1523,11 +1523,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** built (Lane C). `src/core/paths/pathTools.ts`: offset with round, mitre and bevel corners (the result fitted back into curves), simplify and smooth by a strength, divide, knife (a straight or bent line, carried on past its ends), join and reverse; outline stroke was already `strokeOutline`. `src/core/editing/pathToolOps.ts` applies them to layers, one undo step each, and they are typed commands (`vector.offset`, `vector.simplify`, `vector.smooth`, `vector.reverse`, `vector.divide`, `vector.knife`, `vector.join`), so the palette and the agent bridge reach them. Verified (`pathTools.test.ts`, 13 tests; `pathToolOps.test.ts`, 5): **20 seeded shapes per operation**, checked against geometric facts instead of stored copies of our own output: every point of an offset is the offset distance from the shape within 0.25 px (outward and inward); an outlined stroke stays within half its width of the line and has length × width of area; a simplified path stays within its tolerance and loses at least three quarters of its points; divided pieces cover the union and the shared piece is the intersection; knife pieces add up to the shape and none crosses the line; reversing twice gives the path back. Exact areas for a rectangle grown with each corner style. **Not done:** no knife tool to draw the line on the canvas (the command takes the points), and no buttons or strength slider in the new editor's inspector; the operations reach the new editor only through the command palette.
 
 ### Phase 107 · Smooth corners & corner styles
-**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Corner smoothing (the iOS "squircle", 0–100%) on rectangles and on any vector point; per-corner radius on any path; corner styles: round, cut, scoop and inverted. Exported as CSS where CSS can draw it, otherwise as an SVG path or mask.
 
 **You'll see:** Figma-style smooth corners on any shape, even on a star.
 **Done when:** 60% smoothing matches the reference squircle within 0.5 px; stage and export match in 3 browsers.
+
+**Status check (2026-11-15), 🚧:** corner smoothing on rectangles, polygons and stars was built by the FigCraft port (`core/geometry/shapes.ts`) but had no control in the new editor. **Built now (Lane C):** corner styles, a new property `shape.cornerStyle` (round, cut, scoop, inverted: a square notch) on rectangles, polygons and stars, drawn by the shared render definition (so the stage and the export draw the same path) and read by the outline that booleans and the Shape Builder use; a **Style** select and a **Smoothing** field (0–100%) under Corners in the new editor's Appearance options. A round rectangle with one radius and no smoothing still draws as a plain `<rect>`; every other case is an SVG path (CSS cannot draw squircles, chamfers or scoops in every browser). Verified (`cornerStyles.test.ts`, 11 tests): **60% smoothing matches the reference squircle within 0.5 px** on four rectangle sizes, the reference being Figma's published construction written again as an SVG path with arc commands; 0% and 100% too; exact areas for cut, scoop and inverted corners; a scoop's points lie on the bite; the render definition and the layer outline give the same area. In Chromium the Design control walker passes with the new controls (rectangle: 31 of 31 controls change the document), and the vector and FigCraft browser tests pass (47 of 47). **Not done:** per-corner radius and style on any vector point (path layers have a per-vertex radius from the FigCraft port, without style or smoothing); Firefox and WebKit were not run; a pixel comparison of stage against export has no test of its own (both use the same render definition).
 
 ### Phase 108 · Soft union: gooey groups
 **Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 📋
