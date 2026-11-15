@@ -464,7 +464,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 🚧 |
 | 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 🚧 |
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 🚧 |
-| 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 📋 |
+| 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 🚧 |
 | 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 📋 |
 | 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 📋 |
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 📋 |
@@ -2764,8 +2764,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 200-body scene replays bit-identically on the CPU across runs and browsers.
 
 ### Phase 163 · Colliders & bodies
-**Needs:** 162 · **Was:** v3 91.1, 91.2 · **Status:** 📋
-- [ ] Colliders (shapes derived from the layer: ellipse → circle, rectangle → box; trigger or solid; collision layers and masks). Bodies: static, kinematic, dynamic (home spring, damping, bounciness). Draggable bodies: kinematic while dragged, then thrown. Simple face: Weight, Bounce, Grip, Return, Gravity with a direction arrow.
+**Needs:** 162 · **Was:** v3 91.1, 91.2 · **Status:** 🚧
+- [x] Colliders (shapes derived from the layer: ellipse → circle, rectangle → box; trigger or solid; collision layers and masks). Bodies: static, kinematic, dynamic (home spring, damping, bounciness). Draggable bodies: kinematic while dragged, then thrown. Simple face: Weight, Bounce, Grip, Return, Gravity with a direction arrow.
 
 **You'll see:** drag a letter and throw it into the others.
 **Done when:** the falling-letters fixture matches stored snapshots at 5 checkpoints.
