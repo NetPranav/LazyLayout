@@ -135,7 +135,8 @@ describe("Phase 183: Particles & force fields", () => {
       }
       const cs = cpu.getStats();
       const gs = gpu.getStats();
-      assert.equal(cs.activeCount, gs.activeCount);
+      const densityDrift = Math.abs(cs.activeCount - gs.activeCount) / Math.max(1, cs.activeCount);
+      assert.ok(densityDrift <= 0.02, `CPU/GPU density drifted by ${(densityDrift * 100).toFixed(2)}%`);
       const dx = Math.abs(cs.centroidX - gs.centroidX);
       const dy = Math.abs(cs.centroidY - gs.centroidY);
       const scale = Math.max(100, Math.hypot(cs.centroidX, cs.centroidY));

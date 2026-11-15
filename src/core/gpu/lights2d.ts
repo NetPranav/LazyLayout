@@ -116,6 +116,7 @@ function computeSoftShadow(
   if (dist <= 2) return 1;
   const ux = dx / dist;
   const uy = dy / dist;
+  const dHere = sampleSdfAt(sdf, lx, ly);
   let shade = 1;
   const maxMarch = Math.min(dist, 24);
   for (let t = 4; t <= maxMarch; t += 6) {
@@ -123,8 +124,12 @@ function computeSoftShadow(
     const sy = ly + uy * t;
     if (sx < 0 || sy < 0 || sx > sdf.width || sy > sdf.height) {
       // Penumbra attenuation beyond outer bezel
-      shade = Math.min(shade, 0.72 + 0.28 * Math.min(1, sampleSdfAt(sdf, sx, sy) / 8));
+      shade = Math.min(shade, 0.72 + 0.18 * Math.min(1, sampleSdfAt(sdf, sx, sy) / 8));
       break;
+    }
+    const dSample = sampleSdfAt(sdf, sx, sy);
+    if (dSample > dHere + 1.5) {
+      shade = Math.min(shade, 0.85);
     }
   }
   return Math.max(0.25, Math.min(1, shade));
