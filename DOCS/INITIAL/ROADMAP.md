@@ -412,7 +412,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 🚧 |
 | 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 🚧 |
 | 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 🚧 |
-| 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 📋 |
+| 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 🚧 |
 | 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 📋 |
 | 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 📋 |
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 📋 |
@@ -1605,11 +1605,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** built (Lane C). A `mesh` paint (`core/paint/mesh.ts`): a grid of 2–8 × 2–8 colour points, positions as fractions of the box, blended linearly (bilinear per cell) or smoothly (Catmull–Rom across the grid). CSS can't draw a mesh, so it is always drawn as the **image fallback**: the mesh is rasterised (each cell split into fine triangles) into a 96 × 96 picture the browser stretches smoothly over the box, wrapped in the same generated SVG as noise and patterns, so the canvas, a frame's CSS background, a shape and the export draw the same pixels. In the new editor: **Mesh** in the fill popover with Columns, Rows (re-gridding keeps the look), Smooth, **On canvas** (the points become handles on the canvas, `MeshOverlay.tsx`, only while switched on, so clicking the layer still selects it), and the picked point's colour. Verified (`mesh.test.ts`, 13 tests): **10 reference meshes** (2×2 to 8×8, linear and smooth) each follow their blending rule on at least 99% of pixels within 3 of 255; a 2×2 linear mesh is exactly the bilinear blend; a dragged point carries its colour; the picture stays opaque and is a valid BMP; stored safely. In Chromium (`mesh-gradients.spec.ts`): canvas against the exported site, **0.00% of pixels differ**; dragging a point on the canvas moves its colour, and undo puts it back. **Not done:** a per-point spread handle; handles don't follow a rotated layer; the picture is 96 × 96, so very large boxes show it slightly soft; Firefox and WebKit not run.
 
 ### Phase 116 · Live fills: a frame or component as a fill
-**Needs:** 46, 114 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 46, 114 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Use any frame or component as a fill: it is drawn inside the shape, mirrors every edit to its source, and can be offset, scaled and tiled.
 
 **You'll see:** a badge filled with a live copy of another design, which updates when you edit it.
 **Done when:** an edit to the source updates every fill within one frame; the export matches.
+
+**Status check (2026-11-15), 🚧:** built (Lane C). A `live` paint: any frame or component drawn inside a shape's outline (an SVG `foreignObject` clipped to it), with scale, offset (px) and tiling. It is drawn from the same document as everything else, so **every edit to the source shows in every fill in the same render**. The copy is a clone of the source's subtree with every id prefixed (`core/render/liveFill.ts`), so measuring and clicking on the canvas still find the source and the shape themselves; a fill whose source contains the shape draws nothing, and fills that would draw each other stop after one copy (`SubtreeContext` tracks what is being drawn). `RenderLayer` hands down a "draw this layer" function through context, so the paints never import the renderer. In the new editor: **Live** in the fill popover with Source (any layer that doesn't contain this one), Scale, Offset X and Y, Tile. Verified (`liveFill.test.ts`, 5 tests): stored safely; the copy has its own ids; an edit to the source shows; tiling at half scale gives 36 copies over 200 × 100; self- and mutual fills terminate. In Chromium (`live-fills.spec.ts`): a frame filling two shapes, **an edit to the frame shows in both fills by the next frame the browser draws**; a click inside a fill selects its own shape; the export draws both fills with the new text. The canvas contract suite passes (41 of 41). **Not done:** frames' fills are CSS backgrounds and can't hold layers, so live fills work on shapes only; a path layer's fill is drawn in its stretched 200 × 200 space, so a live fill there is stretched with it; Firefox and WebKit not run.
 
 ### Phase 117 · Fills & strokes on text
 **Needs:** 31, 38, 113 · **Was:** — (new in v4.1) · **Status:** 📋
