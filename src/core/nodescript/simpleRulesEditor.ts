@@ -319,20 +319,25 @@ export function compileSimpleRuleToBlueprint(rule: SimpleRuleEntry): BlueprintGr
     mapActionToNode(a, rule.feel, rule.intensity, rule.subjectLayerId, idx)
   );
   const wires: BlueprintWire[] = [];
+  const nodeRecord: Record<string, BlueprintNodeInstance> = { [evtNode.id]: evtNode };
   for (let i = 0; i < actionNodes.length; i++) {
+    const actNode = actionNodes[i]!;
+    nodeRecord[actNode.id] = actNode;
     const prevId = i === 0 ? evtNode.id : actionNodes[i - 1]!.id;
     wires.push({
       id: `w_${i}`,
       sourceNodeId: prevId,
       sourcePinId: "exec",
-      targetNodeId: actionNodes[i]!.id,
+      targetNodeId: actNode.id,
       targetPinId: "exec",
+      pinType: "exec",
+      isExec: true,
     });
   }
 
   return {
     ...graph,
-    nodes: [evtNode, ...actionNodes],
+    nodes: nodeRecord,
     wires,
   };
 }
