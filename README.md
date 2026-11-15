@@ -117,6 +117,7 @@ browser at 1440 px. Full details: `DOCS/UI/PROGRESS.md`.
 - Page share image has no engine field yet.
 - Some e2e specs are skipped (`test.fixme`) for features the new editor does not have yet; see `DOCS/UI/handoffs/2026-11-12-e2e.md`.
 - At 390 px the side panels are hidden by design; 1024 px is checked.
+- 3d tracking System.
 
 **Not designed yet**
 - Breakpoint bar and device views, Tokens panel, Components and variants, Graph editor, Agent pairing.
