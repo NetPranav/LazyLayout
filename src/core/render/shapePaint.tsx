@@ -182,8 +182,8 @@ function fillMask({ id, mask, width, height, owner, layers, toDrawing }: { id: s
       <mask id={id} {...region}>
         {Array.from({ length: n }, (_, i) => {
           const s0 = a0 + (i / n) * 2 * Math.PI;
-          const e0 = a0 + ((i + 1.02) / n) * 2 * Math.PI;
-          return <path key={i} d={`M${cx} ${cy}L${cx + Math.cos(s0) * R} ${cy + Math.sin(s0) * R}L${cx + Math.cos(e0) * R} ${cy + Math.sin(e0) * R}Z`} fill="#fff" fillOpacity={Number(value((i + 0.5) / n).toFixed(3))} />;
+          const e0 = a0 + ((i + 1) / n) * 2 * Math.PI;
+          return <path key={i} d={`M${cx} ${cy}L${cx + Math.cos(s0) * R} ${cy + Math.sin(s0) * R}L${cx + Math.cos(e0) * R} ${cy + Math.sin(e0) * R}Z`} fill="#fff" fillOpacity={Number(value((i + 0.5) / n).toFixed(3))} shapeRendering="crispEdges" />;
         })}
       </mask>
     );

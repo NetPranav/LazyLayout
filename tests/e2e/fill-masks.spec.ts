@@ -92,6 +92,9 @@ test("the export carries the masks and the blend", async ({ page }) => {
     const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ files: { path: string; text?: string }[] }> } };
     return (await w.__LL_EXPORT__.build({ target: "html", styling: "css" })).files.map((f) => f.text ?? "").join("\n");
   });
-  expect(html).toMatch(/<mask [^>]*mask-type:\s*alpha/);
+  // the export moves inline styles into classes: the mask's class must make it an alpha mask
+  const cls = /<mask [^>]*class="([^"]+)"/.exec(html)?.[1];
+  expect(cls, "the export draws the mask").toBeTruthy();
+  expect(html).toMatch(new RegExp(`\\.${cls}\\s*\\{[^}]*mask-type:\\s*alpha`));
   expect(html).toMatch(/mix-blend-mode:\s*multiply/);
 });
