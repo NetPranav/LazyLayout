@@ -1,0 +1,1 @@
+- [Phase 179] Implemented adjustment-style Effect Layers (`src/core/gpu/effectLayers.ts`): `dither`, `pixelate`, `chromatic_split`, `displacement`, `halftone`, `glitch`, `colour_grade`, and `threshold_ink` across `below_in_parent` / `target_layer` scopes with rectangular masks, blend modes, deterministic pixel output, and real DOM text preservation (`PR #155`).

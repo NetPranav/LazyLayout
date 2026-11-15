@@ -369,7 +369,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 🚧 |
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 🚧 |
 | 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 🚧 |
-| 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
+| 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 🚧 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
@@ -2299,8 +2299,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** an injected unbounded-loop shader is refused at compile time.
 
 ### Phase 179 · Effect layers
-**Needs:** 74, 175, 178 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] An effect layer applies a shader (from the graph or the library) to everything below it in its parent, or to one target layer, like an After Effects adjustment layer: dither, pixelate, chromatic split, displacement, halftone, glitch and colour grade. Masks and blend modes apply to it.
+**Needs:** 74, 175, 178 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] An effect layer applies a shader (from the graph or the library) to everything below it in its parent, or to one target layer, like an After Effects adjustment layer: dither, pixelate, chromatic split, displacement, halftone, glitch and colour grade. Masks and blend modes apply to it.
 
 **You'll see:** drop a Dither effect layer over a hero and everything under it is dithered.
 **Done when:** 8 effect-layer references match within the GPU tolerance in 3 browsers; text underneath stays real in the DOM.
