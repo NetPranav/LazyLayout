@@ -443,7 +443,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 🚧 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 🚧 |
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 🚧 |
-| 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
+| 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 🚧 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
@@ -2607,9 +2607,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 first-time users each connect 3 properties to 3 different inputs in < 1 minute per link.
 
 ### Phase 142 · Signals panel (Pro) & binding export
-**Needs:** 140 · **Was:** v3 60.4 · **Status:** 📋
+**Needs:** 140 · **Was:** v3 60.4 · **Status:** 🚧
 - [ ] A node view of bindings with live meters in Preview, and "Open in Playground with tape".
 - [ ] Export: bindings compile to plain TypeScript in the first vendored runtime modules (`ticker`, `signals`) copied into the user's project, or to CSS scroll/view timelines when expressible.
+**Status check (2026-11-15, Lane D), 🚧:** Added `src/core/bindings/exportCompiler.ts` (Pro signal DAG, playground tape session, CSS `scroll()`/`view()` timeline extraction, and Next/Vite vendored `ticker.ts` + `signals.ts` emitter), `src/editor/panels/signals/SignalsNodePanel.tsx`, and 12-binding export parity tests in `src/core/bindings/__tests__/exportCompiler.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a Pro graph of every reaction; exported pages react like the editor.
 **Done when:** the 12 reference bindings pass tape parity in the Next and Vite exports.
