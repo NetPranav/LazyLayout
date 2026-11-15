@@ -387,7 +387,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 🚧 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 🚧 |
 | 196 | Code components | 195 | v3 68 | 4 | 🚧 |
-| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
+| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 🚧 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
@@ -2428,9 +2428,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 10 real-world fixtures import, render, expose controls and export to a Next app that builds.
 
 ### Phase 197 · Interactive export runtime
-**Needs:** 196, 194 · **Was:** v3 69.1, 69.2 · **Status:** 📋
-- [ ] The exporter copies only the vendored modules an effect uses (`ticker`, `signals`, `kinetics`, `physics2d`, `blueprint`, `gl`, `particles`, `sims`, `cursor`) as readable source with an MIT notice. React for Next and Vite (client boundary, poster first, init after idle, cleanup releases contexts), Vue 3 and a Web Component. Memory discipline as in the editor.
-- [ ] **v4.1:** runtime modules for the new capabilities (`gestures`, `raster`, `deform`, `audio`), copied only when an effect uses them.
+**Needs:** 196, 194 · **Was:** v3 69.1, 69.2 · **Status:** 🚧
+- [x] The exporter copies only the vendored modules an effect uses (`ticker`, `signals`, `kinetics`, `physics2d`, `blueprint`, `gl`, `particles`, `sims`, `cursor`) as readable source with an MIT notice. React for Next and Vite (client boundary, poster first, init after idle, cleanup releases contexts), Vue 3 and a Web Component. Memory discipline as in the editor.
+- [x] **v4.1:** runtime modules for the new capabilities (`gestures`, `raster`, `deform`, `audio`), copied only when an effect uses them.
 
 **You'll see:** export any interactive effect and it runs in your own app with no LazyLayout package.
 **Done when:** every library effect builds in the Next, Vite, Vue and HTML fixtures and passes tape parity.
