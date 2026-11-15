@@ -468,7 +468,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 🚧 |
 | 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 🚧 |
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 🚧 |
-| 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 📋 |
+| 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 🚧 |
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 📋 |
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 📋 |
 | 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
@@ -2792,8 +2792,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the outline never self-intersects in 1,000 random impacts; replay is deterministic.
 
 ### Phase 167 · Simple rules editor
-**Needs:** 164 · **Was:** v3 73.1, 73.5, 73.6 · **Status:** 📋
-- [ ] An Interactions list in the Motion tab: "When [event] on [layer] → Do [actions]" in plain language, ≤ 7 controls. Rules that mention overlap, hit, field or drag add the colliders, fields and home springs they need (listed under the rule, editable, removable with it). Rule parameters are dragged on the canvas or chosen by feel (Law 17).
+**Needs:** 164 · **Was:** v3 73.1, 73.5, 73.6 · **Status:** 🚧
+- [x] An Interactions list in the Motion tab: "When [event] on [layer] → Do [actions]" in plain language, ≤ 7 controls. Rules that mention overlap, hit, field or drag add the colliders, fields and home springs they need (listed under the rule, editable, removable with it). Rule parameters are dragged on the canvas or chosen by feel (Law 17).
 
 **You'll see:** "When the button is hovered → the background glows" built from dropdowns.
 **Done when:** 5 people each build "hover → background glows; click → confetti and the card flips" in < 3 minutes.
