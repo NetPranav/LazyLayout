@@ -90,7 +90,14 @@ export const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({
       const write = (frame: number) => {
         if (!labelRef.current) return;
         const r = Math.round(frame);
-        labelRef.current.textContent = frames ? String(r) : timecode(r, fps);
+        const text = frames ? String(r) : timecode(r, fps);
+        // Change the text node that is there instead of replacing it: inserting a node anywhere makes the browser
+        // re-match the page-wide `html:has(.ll-editor-root) *` rules, which restyled every element on each seek
+        // (46 ms with 200 layers; Phase 64).
+        const node = labelRef.current.firstChild;
+        if (node && node.nodeType === Node.TEXT_NODE && node === labelRef.current.lastChild) {
+          if (node.nodeValue !== text) node.nodeValue = text;
+        } else labelRef.current.textContent = text;
       };
       if (labelTimerRef.current !== undefined) {
         clearTimeout(labelTimerRef.current);

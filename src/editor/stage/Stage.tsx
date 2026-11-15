@@ -39,6 +39,7 @@ import { documentOrder } from "@/core/selection/selectionOps";
 import { setLayerProps } from "@/core/editing/editOps";
 import { registerFrameRenderer, type StageRenderer } from "@/core/render/StageRenderer";
 import { measurePage, pageMeasurer } from "./pageMeasure";
+import { measureAtRest } from "@/core/engine/stage/StageEngine";
 import { activePageRootId } from "./activePage";
 import { marqueeHits } from "./marquee";
 import { useProjectStore } from "@/core/store/useProjectStore";
@@ -177,7 +178,9 @@ export const Stage: React.FC<StageProps> = ({
   const remeasure = useCallback(() => {
     const page = pageRef.current;
     if (!page || !storeLayersRef.current) return;
-    const next = measurePage(page, storeLayersRef.current);
+    // measured at rest: the hit boxes add the animated pose themselves, so a box read mid-move would be moved twice
+    const layersNow = storeLayersRef.current;
+    const next = measureAtRest(() => measurePage(page, layersNow));
     // applied at once, so a selection box never lags a frame behind what it surrounds
     const rootNode = page.firstElementChild as HTMLElement | null;
     flushSync(() => {

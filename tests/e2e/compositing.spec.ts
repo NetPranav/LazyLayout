@@ -53,6 +53,27 @@ async function pixel(page: Page, id: string, x: number, y: number): Promise<[num
   return [png.data[i], png.data[i + 1], png.data[i + 2], png.data[i + 3]];
 }
 const near = (a: number, b: number, tolerance = 40) => Math.abs(a - b) <= tolerance;
+/**
+ * Whether this browser's screenshots show `backdrop-filter` at all. Playwright's Firefox (and WebKit on Linux) draw a
+ * screenshot without it even on a bare page (a red and a blue block under a blurred pane read back pure red), so the
+ * pixel half of the adjustment check can only run where the screenshot can see a backdrop blur. The computed filter is
+ * checked against the kernel in every browser.
+ */
+async function screenshotsShowBackdropBlur(page: Page): Promise<boolean> {
+  const probe = await page.context().newPage();
+  try {
+    await probe.setViewportSize({ width: 200, height: 120 });
+    await probe.setContent(
+      '<body style="margin:0"><div style="position:absolute;left:0;top:0;width:60px;height:100px;background:#f00"></div><div style="position:absolute;left:60px;top:0;width:60px;height:100px;background:#00f"></div><div style="position:absolute;left:0;top:0;width:120px;height:100px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)"></div></body>',
+    );
+    await probe.waitForTimeout(200);
+    const png = PNG.sync.read(await probe.screenshot());
+    const i = (50 * png.width + 54) * 4;
+    return png.data[i] < 235;
+  } finally {
+    await probe.close();
+  }
+}
 /** The SVG inside a computed `mask-image: url("data:image/svg+xml;utf8,…")`. */
 const maskSvg = (css: string) => decodeURIComponent(/data:image\/svg\+xml;utf8,(.*)"\)\s*$/.exec(css)![1]);
 
@@ -80,7 +101,8 @@ test("Phase 74: five compositing scenes at five times match evaluate() in the re
     const [pr] = await pixel(page, sceneId("adjustment"), SCENE_BOX.width / 2 - 6, 50);
     softest = Math.max(softest, 255 - pr);
   }
-  expect(softest, "by the end the red side has picked up blue at the edge").toBeGreaterThan(20);
+  if (await screenshotsShowBackdropBlur(page)) expect(softest, "by the end the red side has picked up blue at the edge").toBeGreaterThan(20);
+  else console.log("[phase 74] this browser's screenshots don't draw backdrop-filter: the adjustment's pixels are not compared (its computed filter was)");
 
   // alpha mask: an ellipse as wide as the kernel says; the layer shows where the ellipse is
   for (const t of TIMES) {

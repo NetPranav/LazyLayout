@@ -118,7 +118,9 @@ const locate = (page: Page, c: Control): Locator => {
 
 /** Everything the three checks look at, as strings. */
 async function snapshot(page: Page, id: string) {
-  const doc = JSON.stringify((await layers(page))[id]?.properties ?? null);
+  // the layer's properties, and its motion blur switch (a flag on the layer itself, Phase 75)
+  const layer = (await layers(page))[id] as (L & { motionBlur?: boolean }) | undefined;
+  const doc = JSON.stringify([layer?.properties ?? null, layer?.motionBlur ?? false]);
   const canvas = await page
     .locator(`[data-testid="stage-page"] [data-element-id="${id}"]`)
     .first()

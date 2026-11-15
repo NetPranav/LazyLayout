@@ -141,7 +141,12 @@ function syncTransportToMotion(t: TransportState): void {
   const frame = Math.round(t.time * fps);
   const loopNum: 0 | 1 | 2 = t.loop === "off" ? 0 : t.loop === "loop" ? 1 : 2;
   const shuttleVal = t.playing && t.rate !== 1 ? t.rate : 0;
-  const curComp = useMotionModel.getState().comp;
+  const cur = useMotionModel.getState();
+  const curComp = cur.comp;
+  // the same object while the work area is unchanged: a new one on every seek re-rendered the whole timeline per frame
+  const waA = Math.round(t.workArea.start * fps);
+  const waB = Math.round(t.workArea.end * fps);
+  const wa = cur.wa.a === waA && cur.wa.b === waB ? cur.wa : { a: waA, b: waB };
   const compDurFrames = Math.round(t.duration * fps);
   const durChanged = curComp.dur !== compDurFrames || curComp.fps !== fps;
 
@@ -158,10 +163,7 @@ function syncTransportToMotion(t: TransportState): void {
     dir: (t.rate >= 0 ? 1 : -1) as 1 | -1,
     shuttle: shuttleVal,
     speed: Math.abs(t.rate) || 1,
-    wa: {
-      a: Math.round(t.workArea.start * fps),
-      b: Math.round(t.workArea.end * fps),
-    },
+    wa,
     ...(durChanged ? { comp: { ...curComp, dur: compDurFrames, fps } } : {}),
   });
 }

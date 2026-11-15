@@ -146,6 +146,32 @@ export class KernelAdapter implements EngineAdapter {
     }
   }
 
+  /**
+   * Runs `read` with every element as React drew it (the pose being shown taken off), then puts the pose back. For
+   * measuring where a layer rests: a box read while the layer is half way through a move would include the move, and
+   * whoever adds the animation to that box would add it twice.
+   */
+  atRest<T>(read: () => T): T {
+    const undo: Array<() => void> = [];
+    for (const [key, originals] of this.originals) {
+      const element = this.elements.get(key);
+      const written = this.written.get(key);
+      if (!element || !written) continue;
+      for (const [property, original] of originals) {
+        const shown = written.get(property);
+        if (shown === undefined) continue;
+        if (original) element.style.setProperty(property, original);
+        else element.style.removeProperty(property);
+        undo.push(() => element.style.setProperty(property, shown));
+      }
+    }
+    try {
+      return read();
+    } finally {
+      for (const put of undo) put();
+    }
+  }
+
   dispose(): void {
     for (const layerId of Array.from(this.elements.keys())) this.restore(layerId);
     this.host = null;
@@ -166,9 +192,12 @@ export class KernelAdapter implements EngineAdapter {
       originals.delete(property);
       written.delete(property);
     }
+    // What React drew is read for every new property before anything is written: `mask-image` and `-webkit-mask-image`
+    // are one property under two names, so reading the second after writing the first gave back our own value, and
+    // restoring "put it back" (a matte's mask stayed on the layer after leaving Motion).
+    for (const property of Object.keys(writes)) if (!originals.has(property)) originals.set(property, element.style.getPropertyValue(property));
     for (const [property, value] of Object.entries(writes)) {
       if (written.get(property) === value) continue;
-      if (!originals.has(property)) originals.set(property, element.style.getPropertyValue(property));
       element.style.setProperty(property, value);
       written.set(property, value);
       this.stats.writes++;

@@ -256,17 +256,30 @@ Click the **`+`** icon on the **Effects** header to add:
 - **Layer Blur:** Blurs the entire element and its contents (great for ambient glowing lights).
 - **Background Blur:** Creates a modern **frosted glass (glassmorphism)** effect by blurring everything sitting behind the layer.
 
-> [!NOTE]
-> **Blend modes, adjustment and masks.** A layer's **Blend mode** (Multiply, Screen, Overlay and the rest) now really mixes it with what is behind it on the canvas and in the exported code. The engine also supports **isolated groups**, **adjustment layers** (a layer that blurs, brightens, desaturates or tints everything behind it) and **masks** (a rectangle, oval or drawn path that decides what of a layer shows, with a soft edge, and a path that can morph over time). The editor has no buttons for isolation, adjustment or masks yet; they are planned.
+### 6. Effect stack (effects you can animate)
+The **Effect stack** section sits below **Effects**. It holds up to eight effects, applied from the top down.
+- Open **Add an effect…** and pick **Blur**, **Glow**, **Drop shadow**, **Colour adjust**, **Displacement** or **Noise**. The effect appears as a row with its settings under it.
+- Change a setting by typing in its field. Percent fields (Opacity, Brightness, Contrast, Saturation, Amount) use 100 for "unchanged".
+- The **up** and **down** arrows change the order, the **eye** switches an effect off without removing it, and the **minus** removes it.
+- The small tag beside the name (**CSS** or **SVG**) says how the browser draws the effect, and the sentence under the settings says why.
+- **Motion blur** smears a layer along the way it moves, more the faster it goes; a layer at rest stays sharp. Click **Motion blur** to turn it on, then set **Shutter** (180° is the film look, 360° is more blur).
 
-> [!NOTE]
-> **Effect stack and motion blur.** The engine now supports up to eight effects per layer, in order: **blur, glow, drop shadow, colour adjust, displacement and noise**, each with settings you can animate. A layer can also have **motion blur**, which smears it along the way it moves (turn it on with the layer's motion-blur switch in the timeline). The editor has no Effects section or effect keyframes yet; they are planned.
+Every setting can be animated: turn on record in the timeline, move the needle, and change the setting.
+
+### 7. Compositing (isolate, adjust, mask, matte)
+The **Compositing** section works on one selected layer.
+- **Isolate group:** the blend modes of the layers inside mix only with each other, not with what is behind the group.
+- **Adjust what is behind:** the layer filters everything behind it, inside its own box: Blur, Brightness, Contrast, Saturation, Hue, Grayscale, Sepia and Invert. **Make an adjustment layer** makes the layer draw nothing of its own, so it only filters.
+- **Mask:** a shape decides which part of the layer shows. Pick **Alpha** (show inside the shape) or **Alpha inverted** (show outside it); **Luma** uses the brightness of the shape's **Fill**. The shape is a **Rectangle**, an **Ellipse** or a **Path**, with a position, a size (−1 means "as big as the layer"), a corner radius, a soft edge (**Feather**), **Expand** and **Opacity**.
+- **Matte:** pick another layer in the **Matte** menu and its shape decides where this layer shows, following that layer as it moves. The matte layer itself is hidden unless you switch **Matte layer** to **shown**. A matte works with a rectangle or an ellipse that is placed freely on the page, not one inside an auto-layout stack.
+
+A mask you set shows straight away. A **matte**, the **Displacement** and **Noise** effects and **motion blur** show in **Motion** and in **Preview**, not in Design (Design shows the page at rest). None of these are in the exported code yet.
 
 > [!NOTE]
 > **Property links (pick-whip).** The engine now lets one property **follow** another: link a layer's rotation to another layer's position and it turns as that layer moves. A link can pass the number straight through, map a range onto another range (0 to 400 px onto 0 to 90 degrees), or ease it. A link that would loop back on itself is refused and the loop is shown. The editor has no pick-whip to drag yet; it is planned.
 
 > [!NOTE]
-> **Expressions.** The engine now understands short formulas on a property. `wiggle(2, 10)` makes it shake around its value two times a second by up to 10; `loopOut("pingpong")` repeats its animation back and forth; `value * 2` doubles whatever the animation gives. A formula that is wrong is refused and tells you where. You can also convert a formula into ordinary keyframes. The editor has no expression field yet; it is planned.
+> **Expressions.** A short formula can drive a property. In the **Parent & links** section choose the property under **Expression**, type the formula (`time * 40` turns a layer 40 degrees a second; `wiggle(2, 10)` shakes it around its value two times a second by up to 10; `loopOut("pingpong")` repeats its animation back and forth) and click **Set expression**. A formula that is wrong is refused with a message saying where. **Bake** on an expression's line turns it into ordinary keyframes (one per frame of the work area) that you can then edit; one **Ctrl+Z** brings the expression back.
 
 ---
 

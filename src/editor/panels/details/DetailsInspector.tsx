@@ -35,6 +35,8 @@ import { CloneSection } from "./sections/CloneSection";
 import { EffectorSection } from "./sections/EffectorSection";
 import { SpeedSection } from "./sections/SpeedSection";
 import { ScrollSection } from "./sections/ScrollSection";
+import { CompositingSection } from "./sections/CompositingSection";
+import { EffectStackSection } from "./sections/EffectStackSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -324,6 +326,16 @@ export function getInspectorDesignSections(
       title: "Effects",
       onAdd: () => effectsAddRef.current?.(),
       children: <EffectsSection {...sectionProps} onAddEffectRef={effectsAddRef} />,
+    },
+    {
+      id: "effect-stack",
+      title: "Effect stack",
+      children: <EffectStackSection {...sectionProps} />,
+    },
+    {
+      id: "compositing",
+      title: "Compositing",
+      children: <CompositingSection {...sectionProps} />,
     },
     {
       id: "clone",

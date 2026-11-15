@@ -201,6 +201,15 @@ export const ParentLinksSection: React.FC<InspectorSectionProps> = ({ selectedId
           <span className="ll:flex-1 ll:min-w-0 ll:truncate ll:text-small ll:font-mono ll:text-primary" title={e.text}>
             {PROPS[e.target] ?? e.target} = {e.text}
           </span>
+          <button
+            type="button"
+            aria-label={`Convert expression ${PROPS[e.target] ?? e.target} to keyframes`}
+            title="Convert to keyframes: writes a keyframe for every frame of the work area and removes the expression."
+            onClick={() => run("layer.bakeExpression", { id: selectedId, property: e.target })}
+            className="ll:h-7 ll:px-1.5 ll:shrink-0 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:text-micro ll:text-secondary ll:hover:text-primary ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+          >
+            Bake
+          </button>
           <button type="button" aria-label={`Remove expression ${PROPS[e.target] ?? e.target}`} title="Remove" onClick={() => run("layer.removeExpression", { id: selectedId, slot: e.slot })} className="ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:text-secondary ll:hover:text-primary">
             <Icon icon={Minus} size={14} />
           </button>
