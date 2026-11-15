@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowDown, ArrowUp, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Shuffle, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { NumberField } from "@/editor/components/NumberField";
@@ -73,6 +73,9 @@ const ModifierList: React.FC<InspectorSectionProps & { pro: boolean }> = ({ sele
           <div className="ll:flex ll:items-center ll:gap-1">
             <Toggle size="sm" aria-label={`${MODIFIER_DEFS[m.type].label} on`} checked={m.on} onChange={(on) => setModifier(id, m.id, { on })} />
             <span className="ll:flex-1 ll:text-small ll:text-primary">{MODIFIER_DEFS[m.type].label}</span>
+            {MODIFIER_DEFS[m.type].params.some((d) => d.key === "seed") && (
+              <IconButton size="sm" aria-label={`Shuffle ${MODIFIER_DEFS[m.type].label}`} tooltip="Shuffle: a new random layout" onClick={() => setModifier(id, m.id, { params: { seed: Math.floor(Math.random() * 1_000_000) } })} icon={<Icon icon={Shuffle} size={12} />} />
+            )}
             <IconButton size="sm" aria-label={`Move ${MODIFIER_DEFS[m.type].label} up`} tooltip="Apply earlier" disabled={i === 0} onClick={() => moveModifier(id, m.id, i - 1)} icon={<Icon icon={ArrowUp} size={12} />} />
             <IconButton size="sm" aria-label={`Move ${MODIFIER_DEFS[m.type].label} down`} tooltip="Apply later" disabled={i === stack.length - 1} onClick={() => moveModifier(id, m.id, i + 1)} icon={<Icon icon={ArrowDown} size={12} />} />
             <IconButton size="sm" aria-label={`Remove ${MODIFIER_DEFS[m.type].label}`} tooltip="Remove" onClick={() => removeModifier(id, m.id)} icon={<Icon icon={X} size={12} />} />

@@ -18,9 +18,10 @@
 import { BezPath, segmentEval, segmentStart, splitSubpaths, type Pt, type Segment } from "../geometry/bezpath";
 import { offsetPath } from "./pathTools";
 import { bend, puckerBloat, spherize, twist, wiggle, zigzag } from "./warps";
+import { cells, flow, grid, rings, scatter } from "./generators";
 
-export type ModifierType = "repeat" | "trim" | "offset" | "round" | "twist" | "bend" | "wiggle" | "zigzag" | "pucker" | "spherize";
-export const MODIFIER_TYPES: readonly ModifierType[] = ["repeat", "trim", "offset", "round", "twist", "bend", "wiggle", "zigzag", "pucker", "spherize"];
+export type ModifierType = "repeat" | "trim" | "offset" | "round" | "twist" | "bend" | "wiggle" | "zigzag" | "pucker" | "spherize" | "scatter" | "cells" | "grid" | "rings" | "flow";
+export const MODIFIER_TYPES: readonly ModifierType[] = ["repeat", "trim", "offset", "round", "twist", "bend", "wiggle", "zigzag", "pucker", "spherize", "scatter", "cells", "grid", "rings", "flow"];
 
 export interface Modifier {
   id: string;
@@ -408,6 +409,63 @@ export const MODIFIER_DEFS: Readonly<Record<ModifierType, ModifierDef>> = {
     label: "Spherize",
     params: [{ key: "amount", label: "Amount", kind: "number", min: -100, max: 100, default: 50, unit: "%", simple: true }],
     apply: spherize,
+  },
+  // Phase 112: generators (core/paths/generators.ts); Seed is the Shuffle
+  scatter: {
+    type: "scatter",
+    label: "Scatter",
+    params: [
+      { key: "count", label: "Copies", kind: "number", min: 1, max: 5000, default: 50, simple: true },
+      { key: "shape", label: "Shape", kind: "choice", choices: ["circle", "star", "square", "triangle"], default: "circle", simple: true },
+      { key: "size", label: "Size", kind: "number", min: 0.1, max: 1000, default: 8, unit: "px", simple: true },
+      { key: "place", label: "Place", kind: "choice", choices: ["inside", "along"], default: "inside", simple: true },
+      { key: "variety", label: "Variety", kind: "number", min: 0, max: 100, default: 50, unit: "%", simple: true },
+      { key: "seed", label: "Seed", kind: "number", min: 0, max: 1_000_000, default: 1, simple: true },
+    ],
+    apply: (i, p) => scatter(i, p),
+  },
+  cells: {
+    type: "cells",
+    label: "Cells",
+    params: [
+      { key: "mode", label: "Cells", kind: "choice", choices: ["voronoi", "triangles"], default: "voronoi", simple: true },
+      { key: "count", label: "Pieces", kind: "number", min: 2, max: 600, default: 24, simple: true },
+      { key: "gap", label: "Gap", kind: "number", min: 0, max: 200, default: 2, unit: "px", simple: true },
+      { key: "variety", label: "Variety", kind: "number", min: 0, max: 100, default: 100, unit: "%", simple: true },
+      { key: "seed", label: "Seed", kind: "number", min: 0, max: 1_000_000, default: 1, simple: true },
+    ],
+    apply: (i, p) => cells(i, p),
+  },
+  grid: {
+    type: "grid",
+    label: "Grid",
+    params: [
+      { key: "kind", label: "Cells", kind: "choice", choices: ["square", "hex", "triangle"], default: "square", simple: true },
+      { key: "size", label: "Size", kind: "number", min: 2, max: 2000, default: 20, unit: "px", simple: true },
+      { key: "gap", label: "Gap", kind: "number", min: 0, max: 200, default: 2, unit: "px", simple: true },
+    ],
+    apply: (i, p) => grid(i, p),
+  },
+  rings: {
+    type: "rings",
+    label: "Rings",
+    params: [
+      { key: "count", label: "Rings", kind: "number", min: 1, max: 200, default: 5, simple: true },
+      { key: "inner", label: "Smallest", kind: "number", min: 0, max: 100, default: 10, unit: "%", simple: true },
+    ],
+    apply: rings,
+  },
+  flow: {
+    type: "flow",
+    label: "Flow lines",
+    params: [
+      { key: "count", label: "Lines", kind: "number", min: 1, max: 2000, default: 40, simple: true },
+      { key: "length", label: "Length", kind: "number", min: 1, max: 5000, default: 80, unit: "px", simple: true },
+      { key: "scale", label: "Swirl size", kind: "number", min: 1, max: 5000, default: 60, unit: "px", simple: true },
+      { key: "variety", label: "Variety", kind: "number", min: 0, max: 100, default: 50, unit: "%", simple: true },
+      { key: "seed", label: "Seed", kind: "number", min: 0, max: 1_000_000, default: 1, simple: true },
+    ],
+    apply: (i, p) => flow(i, p),
   },
 };
 

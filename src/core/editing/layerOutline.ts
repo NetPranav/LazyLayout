@@ -99,6 +99,11 @@ export const MODIFIABLE = new Set(["rectangle", "ellipse", "polygon", "star", "s
 /** Whether a layer has a modifier stack with at least one modifier switched on. */
 export const isModified = (l: Layer | undefined): boolean => !!l && MODIFIABLE.has(l.archetype) && typeof l.properties["shape.modifiers"] === "string" && hasActiveModifiers(parseModifiers(l.properties["shape.modifiers"]));
 
+/** Properties that place a layer without changing its outline. */
+const PLACEMENT = new Set(["frame.x", "frame.y", "frame.rotation", "positioning", "layout.zIndex"]);
+/** Modified geometry by everything but placement (at most 256 shapes kept). */
+const placedCache = new Map<string, ModPath | null>();
+
 /** The modified geometry of a layer, kept per layer object: the layer's identity changes whenever any of its properties do. */
 const modifiedCache = new WeakMap<Layer, ModPath | null>();
 
@@ -108,6 +113,14 @@ const modifiedCache = new WeakMap<Layer, ModPath | null>();
  */
 export function modifiedGeometry(l: Layer, layers: Readonly<Record<string, Layer>>): ModPath | null {
   if (modifiedCache.has(l)) return modifiedCache.get(l)!;
+  // moving or turning a layer doesn't change its outline: a second cache ignores where it is, so a drag doesn't
+  // regenerate (say) 2,000 scattered stars every frame
+  const key = l.archetype + JSON.stringify(Object.entries(l.properties).filter(([k]) => !PLACEMENT.has(k)).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const known = placedCache.get(key);
+  if (known !== undefined) {
+    modifiedCache.set(l, known);
+    return known;
+  }
   const fill = baseOutline(l, layers);
   const base: ModPath | null = fill ? { path: fill.path, closed: true } : (() => {
     const s = baseSpine(l, layers);
@@ -115,6 +128,8 @@ export function modifiedGeometry(l: Layer, layers: Readonly<Record<string, Layer
   })();
   const out = base ? applyModifiers(base, parseModifiers(l.properties["shape.modifiers"]), layerSize(l)) : null;
   modifiedCache.set(l, out);
+  if (placedCache.size >= 256) placedCache.delete(placedCache.keys().next().value!);
+  placedCache.set(key, out);
   return out;
 }
 
