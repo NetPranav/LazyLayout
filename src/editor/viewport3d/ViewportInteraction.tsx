@@ -65,6 +65,7 @@ import { AddMenu3d, AddMenuButton } from "./AddMenu3d";
 import { PrimitiveHandles } from "./PrimitiveHandles";
 import { TextEditOverlay3d } from "./TextEditOverlay3d";
 import { registerTransformTrigger, registerBoxSelectTrigger } from "./viewCommands";
+import { usePropertiesTab } from "@/editor/panels/details/properties3d/propertiesFace";
 import type {
   ViewportInteractionProps,
   ModalTransformState,
@@ -809,6 +810,16 @@ export const ViewportInteraction: React.FC<ViewportInteractionProps> = ({
       >
         <div className="ll:pointer-events-auto">
           <AddMenuButton />
+        </div>
+        <div className="ll:pointer-events-auto">
+          <button
+            type="button"
+            data-testid="editor-viewport-studio-btn"
+            onClick={() => usePropertiesTab.getState().setActiveTab("studio")}
+            className="ll:px-2 ll:py-1 ll:rounded ll:border ll:border-border ll:bg-surface-panel ll:text-micro ll:font-semibold ll:text-primary ll:cursor-pointer"
+          >
+            3D Studio
+          </button>
         </div>
         <SnapBar />
       </div>

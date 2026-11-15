@@ -27,6 +27,7 @@ import {
   Lightbulb,
   Camera,
   Bone,
+  Wand2,
 } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
@@ -45,6 +46,7 @@ import { ObjectDataTab } from "./ObjectDataTab";
 import { ConstraintsTab } from "./ConstraintsTab";
 import { WorldTab } from "./WorldTab";
 import { RenderTab } from "./RenderTab";
+import { StudioTab } from "./StudioTab";
 
 export interface Properties3dProps {
   activeId?: string | null;
@@ -86,6 +88,7 @@ export const Properties3d: React.FC<Properties3dProps> = ({
     { id: "constraints", label: "Constraints", icon: Link2, title: "Object tracking & motion limits" },
     { id: "world", label: "World", icon: Globe, title: "Environment & background lighting" },
     { id: "render", label: "Render", icon: Gauge, title: "GPU quality tiers & budgets" },
+    { id: "studio", label: "Studio", icon: Wand2, title: "ROADMAP_3D Studio: Foil, Pointer Light, Photo Wrap, Anime & Mixer" },
   ];
 
   return (
@@ -160,6 +163,9 @@ export const Properties3d: React.FC<Properties3dProps> = ({
         )}
         {activeTab === "render" && (
           <RenderTab face={face} />
+        )}
+        {activeTab === "studio" && (
+          <StudioTab objectId={activeId ?? ""} face={face} />
         )}
       </div>
     </div>

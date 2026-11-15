@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Roadmap3dWorkbench } from "./Roadmap3dWorkbench";
 import {
   type BrowserEngineProfile,
   type Cloner3dLayoutMode,
@@ -970,6 +971,8 @@ export function Scene3dLab() {
           </div>
         </section>
       )}
+
+      <Roadmap3dWorkbench />
     </main>
   );
 }

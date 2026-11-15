@@ -17,7 +17,8 @@ export type Tab3dId =
   | "object-data"
   | "constraints"
   | "world"
-  | "render";
+  | "render"
+  | "studio";
 
 const FACE_KEY = "lazylayout:properties-face";
 const TAB_KEY = "lazylayout:properties-tab";
@@ -43,7 +44,8 @@ function initialTab(): Tab3dId {
       saved === "object-data" ||
       saved === "constraints" ||
       saved === "world" ||
-      saved === "render"
+      saved === "render" ||
+      saved === "studio"
     ) {
       return saved as Tab3dId;
     }
