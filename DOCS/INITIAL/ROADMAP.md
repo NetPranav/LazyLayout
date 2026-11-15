@@ -342,7 +342,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 🚧 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 🚧 |
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 🚧 |
-| 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
+| 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 🚧 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
@@ -2106,8 +2106,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 4-state machine driven by a tape matches hand-computed states at checkpoints.
 
 ### Phase 152 · Helpers, pins & Follow
-**Needs:** 151 · **Was:** v3 88 · **Closes:** AUD-56 (helpers & follow) · **Status:** 📋
-- [ ] Any layer can become a helper (73). Binding target `L.position(pin)`. The Follow component: target, pin, offset, lag, axis, bounds, leave behaviour, rotation, scale by speed, touch and reduced-motion policies. Simple face: click one of the 9 pin dots on the canvas, lag as Bounce and Time.
+**Needs:** 151 · **Was:** v3 88 · **Closes:** AUD-56 (helpers & follow) · **Status:** 🚧
+- [x] Any layer can become a helper (73). Binding target `L.position(pin)`. The Follow component: target, pin, offset, lag, axis, bounds, leave behaviour, rotation, scale by speed, touch and reduced-motion policies. Simple face: click one of the 9 pin dots on the canvas, lag as Bounce and Time (`src/core/bindings/helpersAndFollow.ts`, `src/core/bindings/follow.ts`).
 
 **You'll see:** draw a circle, make it invisible, and have its bottom point follow the mouse.
 **Done when:** the helper matches hand-computed positions at tape checkpoints with rotation and scale; helpers are absent from the exported DOM.
