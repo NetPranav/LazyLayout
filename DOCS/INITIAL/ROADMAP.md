@@ -421,7 +421,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 🚧 |
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 🚧 |
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 🚧 |
-| 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 📋 |
+| 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 🚧 |
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 📋 |
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 📋 |
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 📋 |
@@ -1880,11 +1880,53 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 125 · Text in shapes & typography depth
-**Needs:** 38, 124 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 38, 124 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Text that fills any shape (wraps inside a circle or a path), columns, OpenType features (ligatures, stylistic sets, tabular numbers), variable-font axes as sliders on the canvas, and styles per range of text.
 
 **You'll see:** a paragraph that wraps inside a circle, with true small caps.
 **Done when:** line breaks match the reference in 3 browsers for 5 shapes and 3 fonts.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port (F8) had OpenType feature toggles, small caps, variable-axis values and styled runs in the model and renderer. The new editor showed none of them.
+- Its in-place editor offered bold, italic, underline and strike but **saved only the plain words**, so range styles were lost.
+- Nothing put text inside a shape, and there were no columns.
+
+**Built (Lane C):**
+- **Text in a shape** (`text.shape`):
+  - The outline is cut into 2 px rows, each keeping its widest inside span, pulled in by the inset.
+  - The text lays out between two CSS floats whose `shape-outside` polygons follow the rows' left and right edges. The browser wraps live, the same on the stage and in the export.
+  - The first line starts where the shape is at least six ems wide. Text that doesn't fit runs on below the shape, where the box clips it.
+- **Columns.**
+- A **Type details** section:
+  - OpenType checkboxes, a stylistic set and small caps;
+  - variable-font axes as sliders, plus an axes bar **on the canvas** over the text;
+  - fill shape (with a shape selected too), inset, take out of shape;
+  - columns.
+- **Fixed:** the in-place editor now keeps styled ranges.
+
+**Verified (`textShape.test.ts`, 5 tests):**
+- A circle's rows are its chords; a line gets the narrowest span across its height.
+- The floats follow the rows, and the text starts at the first wide-enough line.
+- Pouring text into a circle draws the two shaped floats; inset and release work.
+- Columns are CSS columns.
+
+**In Chromium (`text-in-shapes.spec.ts`):** for **5 shapes** (circle, triangle, hexagon, diamond, pill) **× 3 fonts** (Arial, Georgia, Courier New), the browser's line breaks match the reference on all **161 lines**.
+- The reference gives each line the narrowest span across its height, from our own geometry, and puts words on it while the line, measured with a canvas in the same font, fits. A line overshooting by less than one browser layout unit (1/64 px) still fits; one tie, Courier's 96.0156 px on a 96 px line, needed it.
+- The text that doesn't fit is below the shape.
+- In the editor:
+  - text is poured into a circle (two `shape-outside` polygon floats);
+  - tabular numbers on, ligatures off, stylistic set 3 and small caps, all checked as computed styles;
+  - the weight axis is dragged to its end on the canvas bar;
+  - a bold range typed in place is saved as a run;
+  - two columns.
+- The text-editing, fonts and typography specs (27) still pass. `new-ui-canvas` "a new picture goes into the frame" failed under three workers and passed alone. Design coverage's only failures are #102's ten controls, also failing on `main`.
+
+**Not done:**
+- No overflow marker.
+- No per-range font size or family.
+- Firefox and WebKit not run locally.
 
 ### Phase 126 · Icons, illustrations & stock media
 **Needs:** 36 · **Was:** — (new in v4.1) · **Status:** 📋
