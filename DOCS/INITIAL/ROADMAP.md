@@ -420,7 +420,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 🚧 |
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 🚧 |
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 🚧 |
-| 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 📋 |
+| 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 🚧 |
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 📋 |
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 📋 |
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 📋 |
@@ -1842,11 +1842,42 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 124 · Text on a path
-**Needs:** 31, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 31, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Put text along any path or shape outline (start offset, alignment, side, letter spacing) and edit it in place on the canvas. Exported as real text (SVG `textPath`); the offset can be animated once keyframes exist (Phase 66).
 
 **You'll see:** text that follows a curve or runs around a circular logo.
 **Done when:** 5 fixtures place every glyph within 0.5 px of the reference in 3 browsers; the export matches.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the FigCraft port (F8) drew text on a path as an SVG `<textPath>` with a start, a side and the horizontal alignment, and had attach, set and detach commands. The new editor had none of it, the start lived inside a JSON property (not animatable), and double-clicking a text on a path opened a flat box over the hidden curve.
+
+**Built (Lane C):**
+- A **Text on path** section: Put on path, Start, Side, Align, Spacing, Take off path.
+- A start handle on the canvas, dragged along the path.
+- **In-place editing:** the curve stays and updates as you type. Escape or clicking away commits one undo step, and the curve is put back as the document says.
+- `typography.textPathStart`: the start as its own animatable number. The motion engine writes styles only, so it writes the start as `--ll-text-path-start` and the text moves its `startOffset` to follow it.
+- The path records the layer it came from.
+- **Fixed in the exporter:** SVG text is written inline. Indenting a `<text>`'s children had added white space to the words, shifting every glyph of exported text on a path.
+
+**Verified (`textOnPath.test.ts`, 5 tests):**
+- Putting text on a path records the source and the start; the drawn start follows the number, and old files read their stored start.
+- The start is animatable, and `styleWrites` writes it as the CSS variable.
+- Taking text off a path clears both.
+- The export writes SVG text inline.
+
+**In Chromium (`text-on-path.spec.ts`):**
+- Five fixtures place **every glyph within 0.5 px** of the reference (worst 0.43 px): an open arc, a circle starting a quarter round and centred, a wave with letter spacing, a line ending at its end, and an arc on its other side.
+  - The reference is independent of the browser's text-on-path layout. It follows SVG's rule (a glyph's midpoint on the path at its distance, turned to the path's direction), with prefix widths from a canvas and points from our own path geometry.
+- The exported site places every glyph the same, within 0.5 px.
+- In the editor: a text is put on a circle from the inspector; the start handle is dragged a quarter round; the words are edited in place, live on the curve.
+- The start follows the engine's CSS variable and goes back when it is removed. This was simulated by setting the variable by hand, not by playing real keyframes.
+- Text, fonts, export, stroke and canvas-contract specs still pass. Design coverage's only failures are the ten #102 controls also failing on `main`.
+
+**Not done:**
+- The text doesn't follow later edits to its source path.
+- An animated start isn't in the export yet (Phase 130).
+- Firefox and WebKit not run locally.
 
 ### Phase 125 · Text in shapes & typography depth
 **Needs:** 38, 124 · **Was:** — (new in v4.1) · **Status:** 📋
