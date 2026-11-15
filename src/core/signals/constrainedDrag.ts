@@ -213,7 +213,15 @@ export function createConstrainedDragController(config: ConstrainedDragConfig = 
       } else {
         if (dragging) {
           dragging = false;
-          pickReleaseTarget(x + vx * 0.08, y + vy * 0.08);
+          const releasePt = constrain(pointerX - grabOffsetX, pointerY - grabOffsetY, true);
+          const movedOnRelease = Math.hypot(releasePt.x - x, releasePt.y - y) > 1e-4;
+          if (!movedOnRelease) {
+            vx = 0;
+            vy = 0;
+          }
+          const projX = movedOnRelease ? x + vx * 0.08 : x;
+          const projY = movedOnRelease ? y + vy * 0.08 : y;
+          pickReleaseTarget(projX, projY);
         }
         if ((config.snapPoints && config.snapPoints.length > 0) || config.returnHome) {
           const k = 1 - Math.exp(-settleSpeed * safeDt);

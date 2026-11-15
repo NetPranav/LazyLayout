@@ -423,7 +423,8 @@ export function computeCarousel3DPoses(
       const cardOffset = shortestSignedMod(i - activeAngleDeg / stepDeg, safeCount);
       x = cardOffset * (safeRadius * 0.18);
       y = Math.abs(cardOffset) * 4;
-      z = -Math.abs(cardOffset) * (safeRadius * 0.22);
+      const rawZ = -Math.abs(cardOffset) * (safeRadius * 0.22);
+      z = Math.abs(rawZ) < 1e-12 ? 0 : rawZ;
       rotateYDeg = -cardOffset * 8;
       scale = Math.max(0.55, 1 - Math.abs(cardOffset) * 0.1);
       opacity = Math.max(0.15, 1 - Math.abs(cardOffset) * 0.22);

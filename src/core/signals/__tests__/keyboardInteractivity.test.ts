@@ -41,7 +41,7 @@ describe("Stage 4 Phase 146: keyboard & focus interactivity + grammar 6.11 parit
       id: "hover-lift",
       ownerLayerId: "card",
       enabled: true,
-      expr: { signal: { kind: "layerState", channel: "hover", layer: "card" }, operators: [{ op: "mul", by: -8 }] },
+      expr: { signal: { kind: "layerState", channel: "hover", layer: "card" }, operators: [{ op: "mul", x: -8 }] },
       target: { kind: "property", on: { kind: "layer", ref: "card" }, path: "transform.y" },
     });
 
@@ -53,7 +53,7 @@ describe("Stage 4 Phase 146: keyboard & focus interactivity + grammar 6.11 parit
       id: "focus-lift",
       ownerLayerId: "card",
       enabled: true,
-      expr: { signal: { kind: "focusVisible", layer: "card" }, operators: [{ op: "mul", by: -8 }] },
+      expr: { signal: { kind: "focusVisible", layer: "card" }, operators: [{ op: "mul", x: -8 }] },
       target: { kind: "property", on: { kind: "layer", ref: "card" }, path: "transform.y" },
     });
     assert.deepEqual(checkKeyboardFocusParity({ bindings: [pointerOnly, focusPair] }), []);

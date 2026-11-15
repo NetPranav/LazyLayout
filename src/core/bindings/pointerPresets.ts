@@ -169,8 +169,8 @@ export function stepPointerPreset(
       const amp = config.amplitudePx ?? 16;
       const freq = config.frequencyHz ?? 0.8;
       const seed = config.seed ?? 11;
-      state.x = noise1(input.time * freq + seed * 0.13) * amp;
-      state.y = noise1(input.time * freq + seed * 0.37 + 19.7) * amp;
+      state.x = noise1(input.time * freq, seed) * amp;
+      state.y = noise1(input.time * freq + 19.7, seed + 17) * amp;
       break;
     }
     case "wander": {
@@ -178,8 +178,8 @@ export function stepPointerPreset(
       const freq = config.frequencyHz ?? 0.5;
       const seed = config.seed ?? 5;
       const phi = seed * 1.1;
-      state.x = Math.sin(input.time * freq * Math.PI * 2 + phi) * amp * 0.7 + noise1(input.time * 0.4 + seed) * amp * 0.3;
-      state.y = Math.cos(input.time * freq * 1.3 * Math.PI * 2 + phi) * amp * 0.7 + noise1(input.time * 0.4 + seed + 7.1) * amp * 0.3;
+      state.x = Math.sin(input.time * freq * Math.PI * 2 + phi) * amp * 0.7 + noise1(input.time * 0.4, seed) * amp * 0.3;
+      state.y = Math.cos(input.time * freq * 1.3 * Math.PI * 2 + phi) * amp * 0.7 + noise1(input.time * 0.4 + 7.1, seed + 23) * amp * 0.3;
       break;
     }
   }
@@ -198,7 +198,7 @@ export function buildPointerPresetDrafts(
     case "magnet":
       return [
         BindingDraftSchema.parse({
-          expr: { signal: { kind: "proximity", layer: layerId, measure: "center" }, operators: [{ op: "falloff", shape: "smoothstep", radius: 200 }, { op: "mul", by: 16 * strength }, { op: "smooth", tau: 0.1 }] },
+          expr: { signal: { kind: "proximity", layer: layerId, measure: "center" }, operators: [{ op: "falloff", shape: "smoothstep", radius: 200 }, { op: "mul", x: 16 * strength }, { op: "smooth", tau: 0.1 }] },
           target: { kind: "property", on, path: "transform.x" },
           blend: "add",
         }),
@@ -251,7 +251,7 @@ export function buildPointerPresetDrafts(
     case "inertia":
       return [
         BindingDraftSchema.parse({
-          expr: { signal: { kind: "pointer", channel: "dx" }, operators: [{ op: "accumulate", decay: 5 }, { op: "mul", by: strength }] },
+          expr: { signal: { kind: "pointer", channel: "dx" }, operators: [{ op: "accumulate", decay: 5 }, { op: "mul", x: strength }] },
           target: { kind: "property", on, path: "transform.x" },
           blend: "add",
         }),
