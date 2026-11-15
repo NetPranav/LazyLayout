@@ -427,7 +427,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 🚧 |
 | 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 🚧 |
 | 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 🚧 |
-| 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 📋 |
+| 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 🚧 |
 
 **Stage 4 · Interactive & complex animation (Phases 132–202)**
 
@@ -2147,12 +2147,43 @@ The Phase 49 export spec, text-on-path and icons-and-photos still pass.
 - Firefox and WebKit not run locally.
 
 ### Phase 131 · Stage 3 gate: the design-depth journey
-**Needs:** 103–130 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 103–130 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] **Journey A (Illustrator user):** a logo built with the Shape Builder and live booleans, smooth corners, a repeater and a wiggle, a conic gradient over an image with a mask, a variable-width stroke and text on a path around it.
 - [ ] **Journey B (Web designer):** a hero with mesh and noise fills, a progressive-blur header, a 2.5D ring of cards and a depth camera, exported to Next, Vite and HTML with parity checked.
 
 **You'll see:** vector, paint and type tools past Figma's and Illustrator's, all non-destructive.
 **Done when:** the journeys pass in CI in 3 browsers, plus one recorded manual run.
+
+**Status check (2026-11-16), 🚧:**
+
+**Built (Lane C):** `tests/e2e/stage3-gate.spec.ts`, the two design-depth journeys. Each is a user's path through the editor: inspector sections, popovers, buttons and the canvas where they exist, the command bus for the rest.
+
+- **Journey A (an Illustrator user), a logo:**
+  - two shapes' overlap merged with the Shape Builder;
+  - a live boolean group (a ring cut from a disc, its operands kept);
+  - smooth corners;
+  - a repeater and a wiggle on a star;
+  - a conic gradient over a picture through a mask;
+  - a variable-width stroke ("Taper both ends" from the stroke popover);
+  - text put on a path around a circle from the Text on path section.
+- **Journey B (a web designer):**
+  - a hero with a mesh gradient and grain;
+  - a header made a progressive background blur in the Effects section (5 bands on the canvas);
+  - six cards arranged into a 3D ring with "Arrange 6 in 3D", and the depth camera panned and given an aperture in the inspector;
+  - exported to Next.js, Vite and plain HTML, each with the 3D space and the warnings;
+  - the HTML export checked against the canvas's own markup at 1440, 1024, 768, 480 and 375 px: **0.00% of pixels differ at every width** (budget 0.5%).
+
+**Fixed (found by the journeys):** `paint.setFills` and `paint.setStrokes`, called through the command bus with their schema, refused Stage 3's paints (noise, pattern, mesh and live fills) and dropped `mask`, `weight` and `align`. Agents and scripts couldn't set them; the inspector writes paints directly, so it wasn't affected. Both commands now take them and store each list as the renderer reads it. `registerEditingCommands` no longer needs a browser (the clipboard events are installed only where there is one), so the commands can be tested in Node.
+
+**Verified:**
+- `paintCommands.test.ts` (3 tests): a masked conic, noise, mesh and live fill; strokes with their own weight and position; nonsense refused.
+- In Chromium, both journeys pass.
+- The rest of Lane C's specs and the canvas contract pass with them: see the PR for the full run.
+
+**Not done:**
+- **Firefox and WebKit:** the journeys have run only in Chromium here; CI runs all three.
+- **The recorded manual run** the Done-when line asks for has not been made. It needs a person at the editor.
+- Every Lane C phase stays 🚧 until CI passes on `main`.
 
 ---
 

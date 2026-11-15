@@ -19,6 +19,7 @@ import { anchorName, anchorOf, scaleAnchor, scaleSelection, setScaleAnchor } fro
 import { renameLayers, reorderSelection, selectionColors, selectWithColor, setSelectionPaint, setSelectionSpacing } from "./selectionTools";
 import { isEditingPath } from "../store/useVectorEditStore";
 import { z } from "zod";
+import { parseFills } from "../paint/paints";
 import { registerTextCommands } from "../text/textCommands";
 import { registerLayoutCommands } from "./layoutCommands";
 import { registerBreakpointCommands } from "../breakpoints/breakpointCommands";
@@ -371,7 +372,15 @@ export function registerEditingCommands(): () => void {
   const stop = z.object({ at: z.number(), color: z.string() });
   const pt = z.object({ x: z.number(), y: z.number() });
   // FigCraft port F2: every paint may carry a blend mode; images take the seven adjustments; diamond is a gradient type
-  const paintBase = { opacity: z.number().min(0).max(1).default(1), visible: z.boolean().default(true), blend: z.enum(BLEND_MODES).optional() };
+  // Phases 113 and 117–118: any paint may carry a mask, and a stroke paint its own weight and position
+  const paintBase = {
+    opacity: z.number().min(0).max(1).default(1),
+    visible: z.boolean().default(true),
+    blend: z.enum(BLEND_MODES).optional(),
+    mask: z.object({ type: z.string() }).passthrough().optional(),
+    weight: z.number().min(0).max(1000).optional(),
+    align: z.enum(["inside", "center", "outside"]).optional(),
+  };
   const adjust = z.object({ exposure: z.number(), contrast: z.number(), saturation: z.number(), temperature: z.number(), tint: z.number(), highlights: z.number(), shadows: z.number() }).partial().optional();
   // Phase 122: a curve, a gradient map, sharpen, blur and "show original"
   const lookSchema = z.object({ curve: z.array(z.number()).length(5).optional(), map: z.array(stop).min(2).max(8).optional(), sharpen: z.number().min(0).max(1).optional(), blur: z.number().min(0).max(100).optional(), bypass: z.boolean().optional() }).optional();
@@ -386,10 +395,17 @@ export function registerEditingCommands(): () => void {
       crop: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).default({ x: 0, y: 0, w: 1, h: 1 }), scale: z.number().default(1),
       natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, look: lookSchema, ...paintBase,
     }),
+    // Phases 114–116: procedural, mesh and live fills (their own fields are checked by the paint reader below)
+    z.object({ type: z.literal("noise"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("pattern"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("mesh"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("live"), source: z.string(), ...paintBase }).passthrough(),
   ]);
-  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), fills as Paint[]) }) }));
+  /** A list as the renderer reads it: each paint's values made safe, anything it can't draw left out. */
+  const readPaints = (list: unknown[]): Paint[] => parseFills(JSON.stringify(list)) ?? [];
+  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), readPaints(fills)) }) }));
   // FigCraft port F3: several stroke paints, and the stroke's alignment, per-side weights, width profile, caps and miter limit
-  add(defineTypedCommand({ id: "paint.setStrokes", title: "Set Strokes", category: "Layer", args: z.object({ ids: targets, strokes: z.array(paintSchema).max(16) }), run: ({ ids: t, strokes }) => ({ changed: setStrokes(t ?? ids(), strokes as Paint[]) }) }));
+  add(defineTypedCommand({ id: "paint.setStrokes", title: "Set Strokes", category: "Layer", args: z.object({ ids: targets, strokes: z.array(paintSchema).max(16) }), run: ({ ids: t, strokes }) => ({ changed: setStrokes(t ?? ids(), readPaints(strokes)) }) }));
   const cap = z.enum(["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled"]);
   add(defineTypedCommand({
     id: "stroke.set",
@@ -653,7 +669,8 @@ export function registerEditingCommands(): () => void {
   add(registerViewport3dCommands());
   add(installAddAtCursorWrapper());
   add(registerTemplateCommands());
-  add(installClipboardEvents(window));
+  // (the browser's clipboard events only where there is a browser: tests register the commands in Node)
+  if (typeof window !== "undefined") add(installClipboardEvents(window));
   return () => offs.forEach((off) => off());
 }
 
