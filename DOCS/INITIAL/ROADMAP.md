@@ -419,7 +419,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 🚧 |
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 🚧 |
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 🚧 |
-| 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 📋 |
+| 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 🚧 |
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 📋 |
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 📋 |
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 📋 |
@@ -1801,11 +1801,45 @@ The document and World Environment have their own stores, After-track actions mo
 - Firefox and WebKit not run locally.
 
 ### Phase 123 · Colour tools: palettes, harmony & contrast
-**Needs:** 45 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 45 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Palettes from an image, harmony rules (complementary, triad, analogous), tints and shades as tokens, and a contrast check (WCAG and APCA) that suggests the nearest colour that passes.
 
 **You'll see:** pick a photo and get a matching palette saved as colour tokens.
 **Done when:** the contrast check agrees with the reference formulas on 50 pairs; suggestions always pass.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** a WCAG ratio function existed (`paint/color.ts`), used for picking white or black text. There was no APCA, no suggestion, no harmony, no scale and no palette.
+
+**Built (Lane C):** `core/paint/colorTools.ts`:
+- **Contrast:**
+  - the WCAG 2 contrast ratio with its levels (AAA, AA, AA large);
+  - APCA Lc (APCA-W3 0.0.98G-4g constants);
+  - `suggestPassing`, the nearest colour that reaches a target. It keeps the colour's OKLCH hue and chroma and moves only the lightness, searching towards black and towards white and taking the nearer passing one. The result is rounded to whole channels and checked again, so a suggestion always passes; there is none only when even black and white fail.
+- **Harmony:** complementary, split complementary, analogous, triad, tetrad and monochrome, turned in OKLCH.
+- **Tints and shades:** an 11-step scale (50–950) whose step nearest the base is the base.
+- **Palettes from a picture:** deterministic k-means in OKLab on at most ~4,000 pixels, started from farthest-apart pixels.
+
+All of it is saved as colour tokens named in a group (`color.savePalette`, `color.harmony`, `color.scale`). `color.fixContrast` checks against the nearest parent with a background (white when none has one).
+
+A **Colour** section in the inspector has Contrast with Fix on text, Palette from picture on images, and Harmony and Tints & shades for any coloured layer.
+
+**Verified (`colorTools.test.ts`, 8 tests):**
+- WCAG and APCA agree with the reference formulas, written out from the specs, on 50 pairs.
+- The published anchors hold: 21:1; #777 on white 4.48; Lc 106.04, −107.88, 63.06 and −68.54.
+- On 50 pairs × 6 targets, every suggestion passes, a passing colour is kept, and there is no suggestion only when black and white both fail.
+- Harmonies, scales and palettes are correct and the same every time; they are saved as tokens; a text on a dark card is fixed against the card.
+
+**In Chromium (`colour-tools.spec.ts`):**
+- A photo of three colour fields gives a 3-colour palette saved as `Beach palette/1–3`, with the exact colours.
+- A low-contrast text shows "fail", Fix makes it pass AA, then AAA.
+- A shape's colour gives a triad and an 11-step scale as tokens.
+
+The design-coverage walker now lists the section's three button settings as quiet, each with a reason. Its remaining failures are the ones also on `main` (#102's panels).
+
+**Not done:**
+- Contrast is not checked over gradients or images behind a text.
+- Firefox and WebKit not run locally.
 
 ### Phase 124 · Text on a path
 **Needs:** 31, 40 · **Was:** — (new in v4.1) · **Status:** 📋
