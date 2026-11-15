@@ -41,6 +41,7 @@ import { applyFrostedGlass } from "./effectsIIOps";
 import { setImageEdit } from "./imageEditOps";
 import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
 import { useMediaLibraryStore } from "../store/useMediaLibraryStore";
+import { makeSpace, releaseSpace, setDepth, setSpace } from "./spaceOps";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
@@ -388,6 +389,11 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
   add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
   add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
+  // Phase 127: 2.5D spaces: a frame or group a 3D space for its children, each child with a depth and a tilt
+  add(defineTypedCommand({ id: "space.make", title: "Make 3D Space", category: "Layer", args: z.object({ ids: targets, perspective: z.number().min(50).max(10_000).optional() }).default({}), run: ({ ids: t, perspective }) => ({ changed: makeSpace(t ?? ids(), perspective) }) }));
+  add(defineTypedCommand({ id: "space.release", title: "Flatten 3D Space", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: releaseSpace(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "space.set", title: "Set 3D Space", category: "Layer", args: z.object({ id: z.string().optional(), perspective: z.number().optional(), vanishX: z.number().optional(), vanishY: z.number().optional(), viewX: z.number().optional(), viewY: z.number().optional() }), run: ({ id, ...patch }) => ({ ok: setSpace(id ?? ids()[0] ?? "", patch) }) }));
+  add(defineTypedCommand({ id: "space.setDepth", title: "Set Depth in 3D Space", category: "Layer", args: z.object({ ids: targets, z: z.number().optional(), tiltX: z.number().optional(), tiltY: z.number().optional() }), run: ({ ids: t, ...patch }) => ({ changed: setDepth(t ?? ids(), patch) }) }));
   // Phase 126: icons and stock photos, each kept in the asset store with its source and licence
   add(defineTypedCommand({ id: "insert.media", title: "Icons & Photos…", category: "Insert", args: z.object({ tab: z.enum(["icons", "photos"]).optional() }).default({}), run: ({ tab }) => (useMediaLibraryStore.getState().open(tab), { ok: true }) }));
   // Phase 123: colour tools, saved as colour tokens; and a text's contrast fixed

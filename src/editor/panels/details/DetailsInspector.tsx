@@ -67,6 +67,8 @@ import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
 import { ColorToolsSection } from "./sections/ColorToolsSection";
+import { SpaceSection } from "./sections/SpaceSection";
+import { spaceOf } from "@/core/editing/spaceOps";
 import { TextPathSection } from "./sections/TextPathSection";
 import { TypeDetailsSection } from "./sections/TypeDetailsSection";
 import { isLettersGroup } from "@/core/editing/splitText";
@@ -363,6 +365,15 @@ export function getInspectorDesignSections(
             title: "Stroke",
             onAdd: () => strokeAddRef.current?.(),
             children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
+          },
+        ]
+      : []),
+    ...(archetype === "container" || archetype === "form" || (inspector.primaryLayer && spaceOf(inspector.primaryLayer.id))
+      ? [
+          {
+            id: "space",
+            title: "3D space",
+            children: <SpaceSection {...sectionProps} />,
           },
         ]
       : []),

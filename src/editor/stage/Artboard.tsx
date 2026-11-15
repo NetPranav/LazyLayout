@@ -20,6 +20,7 @@ import { MeshOverlay } from "./MeshOverlay";
 import { WidthOverlay } from "./WidthOverlay";
 import { TextPathOverlay } from "./TextPathOverlay";
 import { AxesOverlay } from "./AxesOverlay";
+import { SpaceOverlay } from "./SpaceOverlay";
 import { DraftPath } from "./DraftPath";
 import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
 import { PathEditLayer } from "./pen/PathEditLayer";
@@ -1136,6 +1137,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       <WidthOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
       <TextPathOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} editingText={editingText} />
       <AxesOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <SpaceOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay
