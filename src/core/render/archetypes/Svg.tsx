@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { modifiedGeometry } from "../../editing/layerOutline";
 import { layerBoxStyle } from "../geometry";
 import { clampNumber, clampText, safeFragmentHref, safePathData } from "../limits";
 import type { ArchetypeRenderProps } from "../types";
@@ -73,7 +74,7 @@ const SvgShell: React.FC<ArchetypeRenderProps & { inner: (nodeRef: ArchetypeRend
  * is authored in a 200 × 200 space stretched to the frame, but a stroke keeps its width in px: so the stroke's outline
  * is built in px (`core/paths/strokes.ts`) and mapped back into the 200 × 200 space.
  */
-function AdvancedSvgPath(p: ArchetypeRenderProps & { d: string; strokeD?: string; rule?: "nonzero" | "evenodd" }) {
+function AdvancedSvgPath(p: ArchetypeRenderProps & { d: string; strokeD?: string; rule?: "nonzero" | "evenodd"; defaults?: { fill: string; stroke: string; strokeWidth: number } }) {
   const width = clampNumber(p.resolved.num("frame.width", 100), 1, 10_000, 100);
   const height = clampNumber(p.resolved.num("frame.height", 100), 1, 10_000, 100);
   const unit = pathDataToBez(p.strokeD ?? p.d);
@@ -89,9 +90,9 @@ function AdvancedSvgPath(p: ArchetypeRenderProps & { d: string; strokeD?: string
           resolved={withProfile(p.resolved)}
           width={200}
           height={200}
-          defaultFill="none"
-          defaultStroke="#0f172a"
-          defaultStrokeWidth={2}
+          defaultFill={p.defaults?.fill ?? "none"}
+          defaultStroke={p.defaults?.stroke ?? "#0f172a"}
+          defaultStrokeWidth={p.defaults?.strokeWidth ?? 2}
           closed={closed}
           outline={px}
           toDrawing={toDrawing}
@@ -168,6 +169,21 @@ export const SvgPath: React.FC<ArchetypeRenderProps> = (p) => {
     )}
   />
   );
+};
+
+/**
+ * A shape, path or line whose modifier stack is switched on (Phases 109–110): the stack's result is drawn as a path in
+ * the layer's 200 × 200 space, with the layer's own paints (so the export bakes it into one SVG path). A shape that
+ * was not a path keeps its own defaults (a rectangle's grey fill and no stroke).
+ */
+export const ModifiedShape: React.FC<ArchetypeRenderProps> = (p) => {
+  const width = clampNumber(p.resolved.num("frame.width", 100), 1, 10_000, 100);
+  const height = clampNumber(p.resolved.num("frame.height", 100), 1, 10_000, 100);
+  const m = modifiedGeometry(p.layer, p.ctx.layers ?? {});
+  const d = m ? m.path.map((q) => ({ x: (q.x * 200) / width, y: (q.y * 200) / height })).toSvg(3) : "";
+  const isPath = p.layer.archetype === "svgPath" || p.layer.archetype === "line";
+  const defaults = isPath ? { fill: "none", stroke: "#0f172a", strokeWidth: 2 } : { fill: "#cbd5e1", stroke: "none", strokeWidth: 0 };
+  return <AdvancedSvgPath {...p} d={d || "M0 0"} rule="nonzero" defaults={defaults} />;
 };
 
 /** `svgText`: a text run in a group or on its own. */

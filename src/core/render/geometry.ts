@@ -40,6 +40,27 @@ function designTransform(resolved: ResolvedProps): string {
   return parts.join(" ");
 }
 
+/** A space's camera move, as CSS (empty when it hasn't moved). */
+function cameraMove(resolved: ResolvedProps): string {
+  const x = resolved.num("camera.x", 0);
+  const y = resolved.num("camera.y", 0);
+  const z = resolved.num("camera.z", 0);
+  return x || y || z ? `translate3d(${-x}px, ${-y}px, ${z}px)` : "";
+}
+
+/** The blur (px) of a layer at depth `z` under a camera: its distance from the focus, times the aperture per 100 px. */
+export function depthBlur(z: number, camera: { focus: number; aperture: number }): number {
+  const b = (Math.abs(z - camera.focus) * camera.aperture) / 100;
+  return Number.isFinite(b) ? Math.min(200, Math.round(b * 100) / 100) : 0;
+}
+
+/** The camera a space passes to its children, when it blurs by distance (Phase 129). */
+export function cameraOf(resolved: ResolvedProps): { focus: number; aperture: number } | undefined {
+  const aperture = resolved.num("camera.aperture", 0);
+  if (!(aperture > 0) || resolved.get("transform.style3d") !== "preserve3d") return undefined;
+  return { focus: resolved.num("camera.focus", 0), aperture };
+}
+
 export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: RenderContext, options: { shadow?: "box" | "none"; /** The archetype draws progressive blurs itself (a frame's backdrop layers). */ bands?: boolean } = {}): CSSProperties {
   const g = getLayerGeometry(layer);
   const style: CSSProperties = { boxSizing: "border-box" };
@@ -166,7 +187,9 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
     // 3D: the layer is tilted into the distance first and then turned on that plane, so Rotation steers text along a road, not across the screen
     const tilt = designed.split(" ").filter((t) => t.startsWith("rotateX") || t.startsWith("rotateY"));
     const rest = designed.split(" ").filter((t) => !t.startsWith("rotateX") && !t.startsWith("rotateY"));
-    style.transform = [`perspective(${perspective}px)`, ...tilt, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
+    // Phase 129: a space's camera: the world moves the other way (after the view, so far layers move less)
+    const camera = style3d === "preserve3d" ? cameraMove(resolved) : "";
+    style.transform = [`perspective(${perspective}px)`, ...tilt, camera, g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", ...rest].filter(Boolean).join(" ");
   } else if (g.frame.rotation !== 0 || designed) style.transform = [g.frame.rotation !== 0 ? `rotate(${g.frame.rotation}deg)` : "", designed].filter(Boolean).join(" ");
 
   // 3D stage preserve-3d contract (CSS Transforms Level 2):
@@ -235,6 +258,9 @@ export function layerBoxStyle(layer: Layer, resolved: ResolvedProps, ctx: Render
   // The layer's filters (FigCraft's effects and the plain blur), then the effect stack's CSS ones (Phase 75). The stack's
   // SVG effects and motion blur are added by the animation engine, which keeps their filters in the frame.
   const filters = [...baseFilterFunctions((path) => resolved.get(path), layer.id, options.bands === true), ...fxStyle(layer.id, (path) => resolved.get(path), { svg: false }).functions];
+  // Phase 129: depth of field: a layer in a space with a camera blurs by how far it stands from the focus
+  const dof = ctx.parentCamera ? depthBlur(resolved.num("transform.translateZ", 0), ctx.parentCamera) : 0;
+  if (dof > 0) filters.push(`blur(${dof}px)`);
   if (filters.length > 0 && style3d !== "preserve3d") style.filter = filters.join(" ");
   const bgBlur = blurOf(effects, "backgroundBlur");
   const backdrop = resolved.get("paint.backgroundBlur");

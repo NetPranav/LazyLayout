@@ -5,11 +5,13 @@
  */
 
 import type { MotionDocument } from "../../document/schema";
+import { creditsHtml, creditsMarkdown, designDepthWarnings, photoCredits } from "./designDepth";
 import { buildPlan, type SitePlan, type Styling } from "./plan";
 import { writeTarget, type AssetBytes, type SiteFile, type Target } from "./targets";
 import { cssText } from "./css";
 import { toHtml, toJsx } from "./serialize";
 import { buildDriversExport } from "../runtime/drivers";
+import { buildScrollClipsSource, exportableScrollClips } from "../runtime/scrollClips";
 import { buildSmoothScrollSource } from "../runtime/smoothScroll";
 import { exportedPages } from "./plan";
 
@@ -44,6 +46,8 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
   const twice = loadingRoutes.filter((r, i) => loadingRoutes.indexOf(r) !== i);
   if (twice.length > 0) warnings.push(`More than one loading page leads to ${[...new Set(twice)].join(", ")}; only the last is written.`);
   if (options.target === "html" && options.styling !== "css") warnings.push("Plain HTML is written with one stylesheet; Tailwind and CSS Modules are for the React targets.");
+  // Phase 130: what the design-depth features can't do exactly in an exported page
+  for (const w of designDepthWarnings(doc)) if (!warnings.includes(w)) warnings.push(w);
   for (const id of plan.assets) {
     const bytes = options.readAsset ? await options.readAsset(id) : null;
     if (bytes) assets.set(id, bytes);
@@ -78,6 +82,22 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
       }
     }
   }
+  // Scroll animations (Design track D11): one script for the clips that scrub, reveal or pin
+  const scroll = exportableScrollClips(doc);
+  warnings.push(...scroll.warnings);
+  if (scroll.clips.length > 0) {
+    const place = options.target === "html" ? "" : "public/";
+    files.push({ path: `${place}lazylayout-scroll.js`, content: buildScrollClipsSource(scroll.clips) });
+    for (const f of files) {
+      if (typeof f.content !== "string") continue;
+      if (options.target === "html" && f.path.endsWith("index.html")) {
+        const up = f.path === "index.html" ? "" : "../".repeat(f.path.split("/").length - 1);
+        f.content = f.content.replace("</body>", `    <script src="${up}lazylayout-scroll.js" defer></script>\n  </body>`);
+      }
+      if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="/lazylayout-scroll.js" defer></script>\n  </body>`);
+      if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("</body>", `  <script src="/lazylayout-scroll.js" defer />\n      </body>`);
+    }
+  }
   // Smooth scrolling (Design track D14): one small script for the site, when a page frame asks for it
   const tau = Math.max(0, ...exportedPages(doc).map((p) => { const v = doc.layers[p.id]?.properties["scroll.smooth"]; return typeof v === "number" && Number.isFinite(v) ? v : 0; }));
   if (tau > 0) {
@@ -93,6 +113,14 @@ export async function buildSiteExport(doc: MotionDocument, options: SiteExportOp
       if (options.target === "vite" && f.path === "index.html") f.content = f.content.replace("</body>", `    <script src="${href}" defer></script>\n  </body>`);
       if (options.target === "next" && f.path === "app/layout.tsx") f.content = f.content.replace("</body>", `  <script src="${href}" defer />\n      </body>`);
     }
+  }
+  // Phase 130: stock photos' credits, as their licences ask (Phase 126 kept them with each photo)
+  const credits = photoCredits(doc, plan.assets);
+  if (credits.length > 0) {
+    files.push({ path: "CREDITS.md", content: creditsMarkdown(credits) });
+    if (options.target === "html") {
+      for (const f of files) if (f.path.endsWith("index.html") && typeof f.content === "string") f.content = f.content.replace("</body>", `    ${creditsHtml(credits)}\n  </body>`);
+    } else warnings.push(`This site uses ${credits.length} openly licensed photo${credits.length === 1 ? "" : "s"}: show the credits in CREDITS.md where they are used.`);
   }
   return { files, warnings, pages: plan.pages.filter((p) => p.kind !== "loading").map((p) => ({ route: p.route, title: p.title })) };
 }

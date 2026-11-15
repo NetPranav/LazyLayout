@@ -100,10 +100,7 @@ export interface KernelGap {
 }
 
 /** What this kernel's composition order can't evaluate yet, and why — see the module header. */
-export const KERNEL_GAPS: KernelGap[] = [
-  { area: "behaviours", note: "Only `loop` is evaluated (a pure function of t). follow-pointer, magnet, tilt, proximity's spring, spring-to, inertia and noise all need pointer/scroll *history* (springs respond to a path, not a single sample) — that's the Deterministic Replay Law's territory (Phase 64) and Phase 12's behaviour runtime, not this kernel." },
-  { area: "signal bindings", note: "The v3.0 amendment slots signal bindings in after behaviours and before STA synthesis. Phase 60 (Signal Bindings) doesn't exist yet, so `doc.bindings` are not evaluated here." },
-];
+export const KERNEL_GAPS: KernelGap[] = [];
 
 function findActiveState(doc: MotionDocument, layerId: string, stateName: string | undefined) {
   if (!stateName) return undefined;

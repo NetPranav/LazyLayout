@@ -1,0 +1,1 @@
+- [Phase 170] Implemented pooled ephemeral Spawner (`src/core/physics2d/spawner.ts`): tier-capped object pooling (`T0..T3`), pointer/pin/point burst origins, seeded `Variety` spread, lifetime + exit fade transitions, optional physics bodies, document non-persistence filter, and click-confetti tape replay tests (`PR #146`).

@@ -263,3 +263,13 @@ export function styleCodePatch(layer: { archetype: string; properties: Record<st
   patch[CUSTOM_STYLE_PATH] = split.custom.length > 0 ? split.custom.map(([p, v]) => `${p}: ${v}`).join("; ") : null;
   return { patch, errors: [] };
 }
+
+/** The stored custom declarations with `prop` set to `value` (or removed with null), as the text `style.custom` holds. Null when nothing is left. */
+export function withCustomDeclaration(stored: unknown, prop: string, value: string | null): string | null {
+  const kept = customDeclarationsOf(stored).filter(([p]) => p !== prop);
+  if (value !== null) kept.push([prop, value]);
+  return kept.length > 0 ? kept.map(([p, v]) => `${p}: ${v}`).join("; ") : null;
+}
+
+/** The value of one custom declaration, or undefined. */
+export const customDeclaration = (stored: unknown, prop: string): string | undefined => customDeclarationsOf(stored).find(([p]) => p === prop)?.[1];

@@ -71,6 +71,11 @@ export const SignalSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("var"), name: Ident }),
   z.strictObject({ kind: z.literal("seed") }),
   z.strictObject({ kind: z.literal("constant"), value: Finite }),
+  z.strictObject({ kind: z.literal("keyDown"), code: z.string().min(1) }),
+  z.strictObject({ kind: z.literal("keyHeld"), code: z.string().min(1) }),
+  z.strictObject({ kind: z.literal("keyAxis"), preset: z.enum(["arrows", "wasd"]), axis: z.enum(["x", "y", "xy"]).optional() }),
+  z.strictObject({ kind: z.literal("keyLastPressed") }),
+  z.strictObject({ kind: z.literal("focusVisible"), layer: LayerRefSchema }),
 ]);
 export type Signal = z.infer<typeof SignalSchema>;
 
@@ -412,6 +417,31 @@ class Parser {
       case "press":
       case "focus":
         return { kind: "layerState", channel: head, layer: call() };
+      case "focusVisible":
+        return { kind: "focusVisible", layer: call() };
+      case "key": {
+        this.eatP(".");
+        const ch = this.eatId();
+        if (ch === "down") return { kind: "keyDown", code: call() };
+        if (ch === "held") return { kind: "keyHeld", code: call() };
+        if (ch === "axis") {
+          this.eatP("(");
+          const raw = this.eatId();
+          const preset = raw.toLowerCase();
+          if (preset !== "arrows" && preset !== "wasd") throw new BindingSyntaxError(`Unknown key.axis preset "${raw}".`);
+          let axis: "x" | "y" | "xy" | undefined;
+          if (this.isP(",")) {
+            this.i++;
+            const a = this.eatId();
+            if (a !== "x" && a !== "y" && a !== "xy") throw new BindingSyntaxError(`Unknown key.axis component "${a}".`);
+            axis = a;
+          }
+          this.eatP(")");
+          return axis ? { kind: "keyAxis", preset, axis } : { kind: "keyAxis", preset };
+        }
+        if (ch === "lastPressed") return { kind: "keyLastPressed" };
+        throw new BindingSyntaxError(`Unknown key channel "${ch}".`);
+      }
       case "proximity": {
         this.eatP("(");
         const layer = this.ref();
@@ -803,6 +833,16 @@ export function formatSignal(s: Signal): string {
       return "seed";
     case "constant":
       return fmtNum(s.value);
+    case "keyDown":
+      return `key.down(${fmtRef(s.code)})`;
+    case "keyHeld":
+      return `key.held(${fmtRef(s.code)})`;
+    case "keyAxis":
+      return `key.axis(${s.preset}${s.axis ? `, ${s.axis}` : ""})`;
+    case "keyLastPressed":
+      return "key.lastPressed";
+    case "focusVisible":
+      return `focusVisible(${fmtRef(s.layer)})`;
   }
 }
 

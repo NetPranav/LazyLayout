@@ -1,131 +1,233 @@
-# IMPLEMENTATION ROADMAP — v4 (Sequential)
+# IMPLEMENTATION ROADMAP — v5 (Releases)
 
 ## Project Name: LazyLayout — AI-Native Motion Design Studio
-**Document Version:** 4.1.0
-**Date:** 2026-10-18 (v4.1: 2026-10-21)
-**Status:** Active. Stage 0 (Phases 1–12) ✅. **Lane A:** Phases 13–19 ✅ (CI green on `main`, 2026-10-19); 20–52 are merged to `main` (#53 for 39–43, #57 for 44–49 and the FigCraft port, #58 for 50, #59 for 51, #60 for 52) but their rows still say 🚧 until someone marks them ✅ once CI on `main` is green; 52 is merged (#60) but stays 🚧: its manual run and doc rewrites are not done. **Lane B:** Phases 53–63 ✅; 64–68 are merged to `main` (#55; 🚧, and Phase 68 is only partly done, see its entry); Phase 81 (needs only 59) is merged (#56), fallback path only. **Lane B, 2026-11-11:** Phases 69–73 are merged (#65, #73, #74, #76; all 🚧, because GitHub Actions has been blocked by billing since 2026-11-06 and no CI run on `main` has been green since). **Next: Phase 74** (Lane B, needs 73). Lane A is wiring Stage 2 into the rebuilt editor (`DOCS/UI/WIRING-53-80.md`; PR #86 covers 64–71). **v4.1 (2026-10-21):** Stage 3 (Design depth) and Stage 5 (Characters & rigging) added, new phases inside Stages 4 and 6–8, and every phase from 103 on renumbered (277 phases; the v4.0 → v4.1 table is at the end of §7). Phases 1–102 kept their numbers.
+**Document Version:** 5.0.0
+**Date:** 2026-11-14
+**Status:** Active. **R0 (Solid ground) is the active release.** For live numbers run `npm run check:release-plan`.
 **File Location:** `DOCS/INITIAL/ROADMAP.md`
-**Supersedes:** v3.3 (91 phases, run through a separate order file). v3.3 is kept unchanged as `ROADMAP_v3_ARCHIVE.md` for its progress logs, amendments and evidence. `order.md` is retired: in v4, **the phase number is the order**.
-**Inputs:** `PRD.md` v2.4, `AUDIT.md`, the grammar (`lazylayout_element_grammer.md` v0.3), `ANIMATION_PROPERTIES_AND_ENGINE_SPECIFICATION.md`, `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md`, and the World Environment properties in `action working.md`.
+**Supersedes:** v4.1 (277 phases worked in number order, with the Surfaces and Design tracks pulled forward and `ROADMAP_3D.md` running its own order). v5 changes **the order of work, the scope that is committed, and the rules**. It does not change what a phase builds: every phase keeps its number, its entry, its "Was" line and its history. The v4.1 text of §0–§4 is in git history (commit `0f4cc84`); v3.3 is kept as `ROADMAP_v3_ARCHIVE.md`.
+**Inputs:** `PRD.md` v2.4, `AUDIT.md`, `AUDIT_ISSUES.md`, `BUSINESS/COMPETITIVE_ANALYSIS.md`, the owner's four cases (`ROADMAP_3D.md` §0a), and the audit of the repository on 2026-11-14 (§1).
 
 ---
 
-## 0. How to Use This Roadmap
+## 0. The goal, and how to use this roadmap
 
-> **2026-11-13:** Lane A's next work is the **Design master track (D1–D21)**, pulled forward ahead of the number order, as the Surfaces track was. The anime studio in ROADMAP_3D is parked as a to-do.
+### 0.1 The goal
 
-1. **Take the lowest-numbered phase that isn't ✅.** There is no other order to look up.
-2. **A phase only needs lower-numbered phases.** Every "Needs" line points backwards. `scripts/check-roadmap-order.mts` checks this (Law 18), so the order can't silently break when phases are added.
-3. **Every stage ends with a gate you can try in the website.** If a stage gate passes, that stage's promise is true in a real browser and a real build, not just in tests.
-4. **Every phase from 13 on says what changes on screen** ("You'll see"). If a phase can't name something a user sees or does, it is infrastructure, and at most two of those may run in a row (Law 19).
-5. **Status:** ✅ gate passed in CI · 🚧 in progress · 📋 not started. Mark a phase ✅ in the index (§5) and in its own entry when its gate passes, and add a dated line to `CHANGELOG.md`.
-6. **"Was" names the v3 phase(s)** the work came from, so audit IDs, decision records, commit messages and `TODO(P7)`-style comments stay traceable. The full crosswalk is §7.
-7. **Working with several people:** someone may start a later phase early only if every phase in its "Needs" line is ✅. The number order stays the default. Since 2026-10-18 two people work in parallel lanes, **Lane A** (Phases 13–52) and **Lane B** (Phases 53–102); the lanes, the points where B waits on A, and the daily-merge workflow are in `DOCS/TEAM/COLLABORATION.md`.
+> **Interactive motion, designed on a canvas, that ships as your website's own code.**
+
+A person designs a component or a page, animates it on a timeline, makes it react to the pointer, to scroll and to touch, and exports plain code they own: no vendor runtime, and proof that the export matches the editor. AI builds the first draft and the person finishes it by hand. This is the one place where no competitor covers every part (`BUSINESS/COMPETITIVE_ANALYSIS.md` §5), and everything in this roadmap is ordered by how directly it serves that sentence.
+
+The owner named four cases the studio must make (2026-11-13). They are the order of the product:
+
+| Case | What a person makes | Release |
+|---|---|---|
+| **1** | A static or reactive component built from shapes and text: hover, press, pointer, scroll. Exported with no runtime. | **R1**, opened to the public in **R2** |
+| **2** | A fully 3D element, the foil button, lit by a light that follows the pointer across the page. Then the watch page. | **R3**, **R4** |
+| **3** | A photo with images and text corner-pinned, tracked and wrapped on its surface. | Later, theme L2 |
+| **4** | Anime: looks 2D, moves with 3D depth. | Later, theme L10 (parked by the owner on 2026-11-13) |
+
+### 0.2 How to use this roadmap
+
+1. **Work only in the active release.** The active release is the first one in §2 that is not finished. `npm run check:release-plan` names it.
+2. **Inside the release, take any work package whose Needs are ✅.** Packages in one release can run side by side; phases inside a package go in the order listed.
+3. **A release ends at its gate.** The gate is a list of things a person does in the real editor and the real export, plus CI. When the gate passes, tag the commit, and only then open the next release.
+4. **Later is not a queue.** The Later themes (§2) are everything else in the catalogue. Nothing in Later is started. At each gate the next release is cut from Later, with its real dependencies checked then.
+5. **Scope changes at gates only, one in and one out** (Law 22). A new idea goes into a Later theme the day it is had, not into the active release.
+6. **Status:** ✅ its gate passed in CI on `main` · 🚧 started, or built with a named gap · 📋 not started · ⏸ deferred. A 🚧 phase that belongs to a later release is **frozen**: its code stays, and nobody adds to it until its release is active.
+7. **The phase catalogue is §5 onward** (the index, then every entry) and `ROADMAP_3D.md`. A phase's **Needs** line names real dependencies only. v4's rule that the phase number is the order is retired: the order is §2.
+8. **Who builds what:** the lanes, branches and PR rules are in `DOCS/TEAM/COLLABORATION.md`. Each work package has one owner lane, agreed when the release opens.
 
 ---
 
-## 1. Where the Project Really Is (audited 2026-10-18)
+## 1. Where the project is (audited 2026-11-14)
 
-### 1.1 Measured on `main` @ `4c97bfb` (2026-10-17)
+### 1.1 Measured on `main` @ `0f4cc84`
 
 | Check | Result |
 |---|---|
 | `tsc --noEmit` | 0 errors |
-| ESLint | 0 errors, 437 warnings (budget 463) |
-| Unit tests (`npm run test:unit`) | 1,365 tests: 1,362 pass, 0 fail, 3 skipped (edition-gated) |
-| Browser tests | 11 Playwright tests in 5 specs, plus the export harness (last green in CI per the v3 logs; not re-run for this audit) |
-| Source size | ~108,000 lines of TS/TSX in `src/`, plus ~21,000 lines of tests |
+| Unit tests | 3,889 tests: 3,884 pass, 3 skipped (edition-gated), 2 fail on Windows only (two source-scanning tests compare paths with `/`). The `verify` job is green in CI. |
+| Browser tests (CI run of 2026-11-14) | Chromium: 419 pass, 4 fail, 78 skipped. Firefox: 408 pass, 14 fail, 79 skipped. WebKit: 405 pass, 15 fail, 81 skipped. |
+| CI on `main` | **Red since 2026-11-03.** About 100 commits have landed on `main` since. |
+| Skipped browser tests | 74 `test.fixme` and 7 `test.skip` |
+| `AUDIT_ISSUES.md` | 50 issues, all Open; 7 of them severity H (data loss, a stuck editor, a corrupt document) |
+| Source size | About 290,000 lines of TS/TSX in `src/` (core 109,000; new editor 97,000; legacy editor 67,000), plus about 64,000 lines of unit tests and 21,500 lines of browser tests |
+| AI | No model is called anywhere in `src/`. The AI code is offline parsers, plus the local MCP bridge (Phase 50). |
 
-### 1.2 What is done
+### 1.2 What is true today
 
-12 of v3's 91 phases are complete (v3 1–9, 41, 42, 46), and v3 43 is half done. In v4 they are **Phases 1–12** (Stage 0), and Phase 13 is in progress. They delivered:
-- one document model (MDM schema v5) with 216 canonical property paths, real geometry on every layer, compositions with nesting, and the types for every later feature (bindings, surfaces, tapes, graphs, helpers, pins, splits, fields, colliders, bodies);
-- an executable rules engine compiled from the grammar (432 matrix assertions), with engine routing that never needs GSAP;
-- a deterministic evaluation kernel (`evaluate()`), with easing checked against real GSAP output and springs checked against real Motion output;
-- patch-based undo with gesture transactions, IndexedDB autosave, crash recovery and `.lazy.json` files;
-- CI, a three-browser Playwright harness, an export build harness and pixel parity;
-- a small, split store, and a command registry with a focus model.
+- **The foundation is done and it is good** (Stage 0): one document model, a rules engine, a deterministic `evaluate()` kernel, patch-based undo, autosave, a three-browser harness and export parity.
+- **The design tool is built** (Stage 1, Phases 13–51 ✅). Its gate, Phase 52, is not passed: no person has recorded the manual run, and three Stage 1 features cannot be reached in the new editor (tokens and styles, variant authoring, opening and saving a project file: D22–D24).
+- **The animation engine is half built** (Stage 2). The clock, scheduler, adapters, timeline, keyframing, graph editor, parenting, masks, effects, links and expressions are merged (Phases 53–77). States, scroll choreography, text motion and **all of motion export (94–98) are not built in the numbered phases**.
+- **The Design track moved fast**: drivers, links, follow, cloners, effectors, scroll scenes, split text and speed effects (D3–D18) were built in two days, each with named gaps, and they already export to plain HTML.
+- **3D has started**: the GPU base, the 3D document and the viewport (3D-001 – 3D-030) are built with gaps.
 
-### 1.3 What the website shows today
+### 1.3 Why v4.1 could not reach the goal
 
-Checked by running the editor locally and screenshotting `/editor`:
-- **Works:** the editor shell (header, workspace tabs, docked panels, command palette, status bar), the dotted canvas with pan and zoom, the World Environment inspector, undo/redo, autosave, the showcase demo.
-- **Still the old system:** the stage is the v1.1 HTML-string iframe (`srcDoc`), and layers are laid out by flexbox, not by their geometry. The timeline is the legacy Sequencer with its own clock. The Content Browser's animation panel keeps tracks in local React state (AUD-39). The Code view doesn't show the document's animation (AUD-40).
-- **Not there yet:** on `main`, only the Select and Pan tools work. The Pencil, Text, Wire, Shapes, Components and Assets buttons do nothing. There are no transform handles, no dragging of layers on the canvas, and the Details panel's Position and Size fields are placeholders.
+| Problem | Evidence | Fixed in v5 by |
+|---|---|---|
+| **The plan grew faster than the work.** | 91 phases in v3.3, 202 in v4.0, 277 in v4.1, then 227 for 3D and 24 for Design: about 500 in seven weeks. In the same weeks the count of ✅ phases went from 12 to 75. | A fixed scope per release, and one in, one out (Law 22). |
+| **The order changed three times in one week.** | Surfaces (2026-11-11), 3D (2026-11-11) and the Design track (2026-11-13) were each pulled ahead of the number order. | One active release at a time (Law 21). |
+| **The public beta was at the end.** | Phase 266 of 277. Security, real devices and the model integration all came after characters and 3D. | The beta is R2, straight after the first complete product. |
+| **Needs were a chain, not dependencies.** | Law 18 made each phase need the one before it, so reduced motion "needed" the effect library, and the model integration "needed" the 3D gate. | Needs name real dependencies; the checker tests the release order against them. |
+| **`main` is red and work merges on it.** | §1.1. The 3D roadmap said "do not wait for CI". | Green `main` is a law again (Law 23), and R0 exists to get there. |
+| **No person checks the result.** | One PR added 36,000 lines for 29 phases in a day. The gates that need a person (Phase 52's manual run, D21) are the ones not done. | Every release gate is run by a person who did not build it (Law 24), and a PR holds one work package (Law 25). |
+| **Two editors.** | The legacy editor (67,000 lines) still ships; engine features draw on the canvas with no controls in the new editor (`DOCS/UI/WIRING-53-80.md`). | R0 closes the wiring gaps; R2 retires the legacy editor (Phase 263). |
 
-### 1.4 Built, but invisible
+### 1.4 Will following this roadmap reach the goal?
 
-| Built | Used by the website today |
-|---|---|
-| MDM v5, geometry, 216 property paths | Partly: the stage ignores geometry |
-| Rules engine (`rules.canAdd`, `validate`, `route`) | In 3 panels |
-| Evaluation kernel (`evaluate()`) | **Not imported by any editor file** |
-| Compositions, markers, precomps | Nothing shows them |
-| Track X / Track K types (bindings, helpers, splits …) | No runtime yet |
-
-### 1.5 Why it feels like nothing moved, and how much should be on screen
-
-The v3 plan built **inside out**, which was right for the foundations: the model, rules and maths are the hardest parts to change later. But its order put the first phase that changes the canvas (v3 48, the new renderer) at step 17 of 93, and the Figma-style stage (v3 20) at **step 48 of 93**. All 13 finished steps were model, store, rules and maths work. None of it can show on screen until a renderer and a viewport consume it.
-
-With the same 13 phases of effort in a viewport-first order, the stage would already render from geometry, and you would have selection, move/resize handles and a synced layers panel. In v4 that point is **Phase 27**, 15 phases from now, and every one of those phases changes something you can see except Phase 16 (a short threat-model document).
-
-**Progress in numbers:** 12 of 202 phases (6%) at this audit; v4.1 has 277 phases (§2). By difficulty it's better than the count suggests, because what everything else stands on is done and tested.
-
-### 1.6 Unmerged work
-
-Branch `phase-43-command-bus-finish` (last commit 2026-10-14) holds about 770 lines that are not on `main`: Tier A canvas tools on the old stage (select, hand, frame, rectangle, ellipse, line, text, commits `7a97baa` … `5c020dd`) and the menus-through-the-command-bus work in progress (`0792374`). Phases 13, 24 and 25 reuse it instead of redoing it. The last commit on `main` (2026-10-17) deleted `DOCS/After/` and the archived Wasm sources.
-
-### 1.7 What v3.3 was missing for the product described
-
-| Gap in v3.3 | Fixed in v4 by |
-|---|---|
-| Phase numbers weren't the order, so a separate `order.md` was needed. It also recorded 5 places where v3's own stage table contradicted the dependencies | Law 18: numbers are the order, checked by a script |
-| Basic Figma editing was never planned: copy/paste, duplicate, group, align and distribute, z-order, inline text editing, rulers, image crop, multi-selection editing | 28–31, 33–35, 37 |
-| Components and variants, core to Figma, were deferred to Release 2 | 46–47 (design), 80 (animated variants) |
-| Nothing could be exported until the whole motion pipeline existed | 49: static export at the end of Stage 1 |
-| The pen tool and vector editing came very late (v3 Stages 3 and 7) | 39, 40 |
-| Fonts lived inside the text-motion phase | 38 |
-| No MCP server, so Claude couldn't drive the editor | 50 (local MCP), 250 (full agent parity), 269 (remote MCP), and Law 20 |
-| Keyboard interactivity was a single `key` event in Blueprints | 133 (keyboard signals), 146 (keyboard and focus interactions) |
-| 3D was a single phase (v3 18) | Stage 6: 23 phases (v4.1) |
-| No on-ramp for people who already know Figma or After Effects | 251 (familiar keymaps), 252 (Figma import), 253 (After Effects import via Lottie) |
-| Legacy systems were removed in one late phase (v3 57), so old and new ran side by side for most of the project | Each phase that replaces a system deletes the old one (18, 56, 68 …); 263 is the final grep gate |
-| A few v3 decision-record numbers clashed with records that already exist (`0004`, `0005`, `0007`) | New records are numbered from `0008` (§6, "Decision records") |
-
-### 1.8 Will following this roadmap produce the engine?
-
-It covers everything the PRD, the grammar, both engine specs and the product description ask for, every phase has a real-environment gate, and the order is machine-checked. What a plan can't promise: phases differ in size, the usability gates need real people, and the first version of many gates will surface problems no document can predict (text measurement, physics feel, browser differences, GPU drivers). The protection against that is structural: **every stage ends with a website you can use**, so a wrong turn shows up within one stage instead of at the end.
-
-### 1.9 three.js: no custom 3D engine needed
-
-`three` 0.186.1, `@react-three/fiber` 9.8.1 and `@react-three/drei` 10.7.8 are **MIT-licensed** (checked in `node_modules` on 2026-10-18). MIT allows commercial use, modification and redistribution with the notice kept. So the "build our own three.js" stage isn't needed. Stage 6 builds the 3D *editor* on top of three.js instead. The only engine with a licence problem is GSAP (`LICENSES.md` GATE-01), which is already kept out of the editor.
+Releases R0 to R2 reach the goal in §0.1 for case 1, in public, with about 60 phases, half of them already built with named gaps. R3 and R4 add case 2 and the watch page. That is the part this roadmap commits to. The rest of the catalogue (about 300 phases) is kept and sorted into themes, and is not promised: a team of three cannot build Figma, After Effects, Blender and Rive at once, and no plan should say it can. What protects the goal is structural: **every release ends with something a stranger can use**, so a wrong turn shows up in weeks.
 
 ---
 
-## 2. The Stages at a Glance
+## 2. The release plan
 
-| Stage | Phases | Count | At the stage gate, a user can… |
-|---|---|---|---|
-| **0 · Foundation** ✅ | 1–12 | 12 | (no new UI) One document model, rules engine, evaluation kernel, history and persistence, test harnesses |
-| **1 · Figma / Wix viewport** | 13–52 | 40 | Design a responsive, multi-page site with components on an infinite canvas (frames, shapes, pen, text, auto-layout, constraints, breakpoints, styles), export it to Next.js, Vite or HTML, and let Claude build on the canvas through MCP |
-| **2 · Animation grammar** | 53–102 | 50 | Animate anything on an After Effects-style timeline: keyframes, curves, states and transitions, scroll, text and SVG motion, parenting, masks, expressions, motion paths on the canvas. Export verified motion code, and render MP4, GIF or Lottie |
-| **3 · Design depth** | 103–131 | 29 | Merge shapes into live boolean groups or melt them together, build shapes with the Shape Builder, stack non-destructive modifiers and generators, give every fill its own blend mode and mask, use noise, pattern, mesh and live fills on shapes and text, draw tapered and pressure strokes, put text on paths, and place page layers in 2.5D space with a depth camera |
-| **4 · Interactive & complex animation** | 132–202 | 71 | Make anything react to the mouse, touch, scroll and keyboard. Add GPU backgrounds, particles, fluids and cursors. Compose interactions from helpers, splits, fields and physics. Wire logic as Simple rules or Blueprint graphs. Export with a small vendored runtime or an embed script. New in v4.1: every layer knows where it is and what is around it; gestures, dragging and carousels; joints and soft bodies; sound and haptics; any layer as a texture, outline or distance field; effect layers, liquid glass, 2D lights, deformation and fracture; scroll-scrubbed sequences and depth parallax |
-| **5 · Characters & rigging** | 203–217 | 15 | Rig a character with bones, meshes and IK, give it constraints and secondary motion, make its head follow the cursor and its body walk with the keys, blend states, blink and lip-sync, drive it from the webcam, and export it |
-| **6 · 3D** | 218–240 | 23 | Build 3D scenes with gizmos, GLTF models, materials, lights and cameras, animate them on the same timeline, make them react to the cursor and scroll, add 3D physics, inflate any vector into 3D, pose 3D skeletons with the Stage 5 tools, put real page layers inside 3D scenes, and export them |
-| **7 · AI & agents** | 241–250 | 10 | Prompt → design, animation, effect or interaction; a co-pilot for edits; Claude can do everything the UI can through MCP |
-| **8 · Easy for everyone** | 251–258 | 8 | Use Figma or After Effects shortcuts, import Figma files and After Effects animations, draw rough shapes that become clean ones, and finish in a 3-step Simple mode |
-| **9 · Production & public beta** | 259–266 | 8 | Use a secure, observable, real-device-tested, licence-clean public beta |
-| **10 · Sites & platform** | 267–276 | 10 | Sign in, share, use remote MCP, manage content collections and forms, export or deploy whole sites, pay for a plan (GA) |
-| **11 · Apps** | 277 | 1 | (Planning) Re-plan data, backend logic, collaboration and plugins after an honest audit |
+Each release has a promise, its work packages, a gate and a time budget. The **budget is proposed** and the owner confirms it when the release opens. When a budget runs out, a package moves to Later; the release is not stretched.
 
-**Total: 277 phases** (v4.1; v4.0 had 202). The order asked for: the viewport first, then the basic animation grammar, then design depth, then complex and interactive animation, then characters, then 3D.
+A package row lists its phases. Numbers are phases in this file, `D` and `S` are the Design and Surfaces tracks in this file, `3D-` is `ROADMAP_3D.md`. A range skips phases that are ✅. A pointer phase (its title says "→ …") is not listed: it is done where its target is done.
+
+<!-- release-plan:start -->
+
+### R0 · Solid ground
+
+**Promise:** what is on `main` works, and this roadmap tells the truth. No new features.
+**Budget (proposed):** 2 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R0.1 | **Stage 1 gate.** The four journeys pass in CI in three browsers, WebKit pan and zoom meets its number or the number is changed in writing, and a person records the manual run. | 52 |
+| R0.2 | **Stage 1 in the new editor.** Tokens, variables and styles manager; authoring variants and detaching an instance; opening and saving a project file. | D22 – D24 |
+| R0.3 | **Timeline and keyframing closed.** Each phase's named gap is built or moved to a Later theme in writing; the legacy animation panels are gone. | 64–71 |
+| R0.4 | **Rig and compositing closed, with controls.** Anchor points, parenting, masks and mattes, the effect stack, links and expressions each have their controls in the new editor (`DOCS/UI/WIRING-53-80.md`). | 72–77 |
+| R0.5 | **Scroll runtime.** The native path, pinned spacing, a scroll trigger from the UI, three browsers. | 81 |
+
+Work in R0 that is not a phase:
+
+- **Green `main`.** Every failing browser test in §1.1 is fixed, or deleted with the reason in the PR. The two Windows-only unit failures and the roadmap checkers pass on Windows and Linux.
+- **Skipped tests.** Each of the 74 `test.fixme` and 7 `test.skip` is fixed, deleted, or carries the phase that will turn it on.
+- **Severity H audit issues.** Issues 4, 7, 10, 21, 23, 24 and 33 of `AUDIT_ISSUES.md` are Solved, each with a test.
+
+**Gate R0** (a person other than the author checks each line):
+1. CI on `main` is green in Chromium, Firefox and WebKit for five merges in a row.
+2. Phase 52 is ✅, with the recorded manual run linked from its entry.
+3. The seven severity H issues are Solved.
+4. `npm run check:release-plan` shows R0 with nothing open.
+
+### R1 · The motion studio (case 1)
+
+**Promise:** design a component or a section, animate it on the timeline, make it react to hover, press, the pointer and scroll, and export it as plain code that matches the editor, with no script where the browser can do it alone.
+**Budget (proposed):** 6 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R1.1 | **Code freedom.** Style code per layer, per state and per breakpoint. | D3 |
+| R1.2 | **Drivers and relationships.** Driven by scroll, pointer, speed and time; parent, links and expressions; follow, pins and helpers; connect anything. | D4 – D7 |
+| R1.3 | **Repeat.** Repeater, cloner, fields and effectors. | D8 – D10 |
+| R1.4 | **States and transitions.** States, smart animate, animated variants, and the States panel in the new editor. | 78–80, D15 |
+| R1.5 | **Scroll.** The scroll scrubber and section choreography; scroll scenes; image sequences; smooth scroll and parallax. | 82, D11, D13, D14 |
+| R1.6 | **Text.** Accessible splitting and text motion. | 83, 84, D12 |
+| R1.7 | **Speed effects.** | D18 |
+| R1.8 | **Reduced motion and accessibility rules.** | 93 |
+| R1.9 | **Motion export.** The export architecture; React, Next and Vite; the export matrix in CI. | 94–96 |
+| R1.10 | **Small export.** The size doctrine and budgets, export tiers, and zero-script export for 2D reactions. | 3D-010, 3D-191 – 3D-193 |
+
+**The five reference recipes** (fixed for R1; the size gates of 3D-191 measure the same five):
+1. A button with hover, press and focus states, and a spring between them.
+2. A hero whose headline splits into words and reveals on scroll.
+3. A card that tilts toward the pointer, with a label pinned to a point on its image.
+4. A pinned scroll scene: a section holds for three screens while layers move at different depths.
+5. A grid of cloned dots that a field pushes away from the pointer, and that stretches with scroll speed.
+
+**Gate R1:**
+1. Each recipe is built from an empty document in the new editor, in 30 minutes or less, by a person who did not build the features it uses. The runs are recorded.
+2. Each recipe exports to plain HTML, Next and Vite. The export builds, has no LazyLayout import, and matches the editor at five times in three browsers.
+3. Recipes 1 and 2 ship no script. Every recipe is under its budget from 3D-191.
+4. The reduced-motion run shows no movement in any recipe.
+5. Five people outside the team build recipes 1 and 2 with no help. What stopped them is written down and fixed, or listed.
+6. `main` is green and R1 has nothing open.
+
+### R2 · Public beta
+
+**Promise:** anyone can open the studio, get a first draft from a sentence, finish it by hand, export it, and lose nothing they make.
+**Budget (proposed):** 4 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R2.1 | **AI first draft.** The model integration, the validation loop, prompt to design and motion as a diff the person approves, evals, and the co-pilot for edits. | 241–245 |
+| R2.2 | **Performance.** The performance lab, workers and the hot path. | 101 |
+| R2.3 | **Security and operations.** Hardening, error reporting and kill switches. | 259, 260 |
+| R2.4 | **Devices and licences.** The real-device matrix; licence and notices automation. | 261, 262 |
+| R2.5 | **One editor.** The legacy editor and what earlier phases left behind are removed, with grep gates. | 263 |
+| R2.6 | **Docs, journeys and the gate.** | 264–266 |
+
+**Gate R2:** Phase 266, scoped to what R0 to R2 built (its entry says how). The tag is `v0.2.0-beta`.
+
+### R3 · The foil button (case 2)
+
+**Promise:** turn any 2D shape into a real 3D object, give it a material and studio light, inflate it like a foil balloon, press it and see it dent, light it from the pointer anywhere on the page, and export it in a few kilobytes.
+**Budget (proposed):** 10 weeks. This is the largest release. If the budget runs out, the path tracer and baked lighting (3D-056, 3D-057) are the first to move to Later, with 3D-059 and the gate re-scoped in writing.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R3.1 | **Surfaces closed.** Height from the shape, material and light, creases, cloth at rest, content on a surface, press and ripple, export, the reference harness. | S1, S2, S3, S3b, S4, S4b, S5, S6, S7, S8, S9 |
+| R3.2 | **GPU base and the 3D document.** | 3D-002, 3D-006, 3D-011 – 3D-013 |
+| R3.3 | **Viewport, outliner and properties.** | 3D-015, 3D-018, 3D-019, 3D-021 – 3D-024 |
+| R3.4 | **First shapes.** Primitives, 3D text, Make 3D, the modifier stack, subdivision, solidify. | 3D-025 – 3D-032 |
+| R3.5 | **Look.** Materials, textures, decals, lights, shadows, the world, colour management, the real-time renderer. | 3D-033 – 3D-043 |
+| R3.6 | **Simulation and the pointer.** Replay, cloth, pins and pressure, collisions, raycast events, pointer forces, baking. | 3D-048 – 3D-055 |
+| R3.7 | **First ship.** Rendered view, baked lighting, the interactive runtime, 3D export v1, the reference harness, Gate M1. | 3D-056 – 3D-062 |
+| R3.8 | **Small export and the pointer light.** The micro-renderer, one chunk per element, size gates, the pointer light, touch and tilt, Gate A. | 3D-194 – 3D-200 |
+
+**Gate R3:** Gate M1 (3D-062), then Gate A (3D-200), each run by a person beside the owner's reference video.
+
+### R4 · The watch page
+
+**Promise:** the benchmark page. A 3D watch pinned for four screens turns with scroll while a ring of elements turns the other way; it comes apart into parts with labels that follow; words stagger in; a field of dots reacts to scroll speed.
+**Budget (proposed):** 2 weeks.
+
+| Package | What it delivers | Phases |
+|---|---|---|
+| R4.1 | **Model import.** GLTF and GLB. | 3D-158 |
+| R4.2 | **3D parts.** Model parts and explode; labels that follow parts. | D19, D20 |
+| R4.3 | **The gate.** | D21 |
+
+**Gate R4:** D21: the owner builds the page from an empty document in under an hour; it holds 60 fps on the mid tier, works on touch and with reduced motion, and exports under its budget.
+
+### Later · Themes, not promises
+
+Everything else in the catalogue, sorted by theme. The order below is the order they will most likely be cut into releases, and it is decided again at each gate. Nothing here is started.
+
+| Theme | What it holds | Phases |
+|---|---|---|
+| L1 | **Motion depth** (the rest of Stage 2): SVG morph and stroke drawing, motion along paths, the Motion adapter, motion per breakpoint, page transitions, the Playground, the motion library, more export targets, GSAP export, video and audio, the render queue, the Stage 2 gate. | 85–92, 97–100, 102 |
+| L2 | **The photo studio** (case 3): the AI gateway, vision models, corner pin, tracking, cutout, a surface from a photo, text wrapped on it, relighting, Gate B. | 3D-201 – 3D-203, 3D-208 – 3D-215, D16, D17 |
+| L3 | **Interaction and logic** (Stage 4, first half): scene awareness, more inputs, the reactivity card, gestures, drag, carousels, state machines, data-driven layers, Blueprints, 2D physics, the rules editor, sound. | 134, 135, 140, 142, 143, 145–150, 153, 155, 156, 158–171, 3D-146 – 3D-148 |
+| L4 | **Sites and platform** (Stage 10): accounts, share links, remote MCP, collections, forms, whole-site export, billing, general availability. | 267–276 |
+| L5 | **Design depth** (Stage 3). **Open since 2026-11-14 as Lane C** (§2.1), built beside the active release: live booleans, the Shape Builder, path operations, modifiers, generators, paint and stroke depth, text on paths, 2.5D. | 104–109, 111–131 |
+| L6 | **GPU effects** (Stage 4, second half): the scene rasteriser, effect layers, liquid glass, 2D lights, deformation, fracture, cursors, the effect SDK and libraries, code components, the embed script, the Stage 4 gate. | 172, 176, 179–182, 185–187, 191–196, 198–202 |
+| L7 | **3D studio depth** (M2, M3 and M4 of the 3D roadmap): curves, depth of field, post, render to video, cameras, 3D keyframes, actions, 3D interaction, page layers in 3D, 3D export v2, the simplicity pass and its gates, live animation mixing. | 3D-074, 3D-090, 3D-092 – 3D-094, 3D-096 – 3D-116, 3D-149 – 3D-157, 3D-159, 3D-164 – 3D-169, 3D-171 – 3D-173, 3D-175 – 3D-190, 3D-227 |
+| L8 | **AI depth and easy for everyone** (Stages 7 and 8): the interaction builder, the effect author, references, full MCP parity, familiar keymaps, Figma and After Effects import, shape recognition, sketch to elements, recipes, Simple mode. | 246–258 |
+| L9 | **Characters** (Stage 5): puppet pins, reactive rigs, blend trees, auto-rig, faces, tracking as an input, rig export. | 209–217 |
+| L10 | **The anime studio** (case 4) **and everything deferred** in the 3D roadmap: edit mode, modifier depth, node materials, rigging and physics depth, the asset browser, instancing, the camera solve, toon and ink, twos and smears, shots. | 3D-063 – 3D-073, 3D-075 – 3D-089, 3D-091, 3D-095, 3D-117 – 3D-145, 3D-160 – 3D-163, 3D-170, 3D-174, 3D-207, 3D-216 – 3D-226 |
+| L11 | **Apps** (Stage 11): the After-track audit and re-plan. | 277 |
+
+<!-- release-plan:end -->
+
+### 2.1 Changes to the plan
+
+One line per change, newest first: the date, what moved in, what moved out, and who decided.
+
+| Date | Change | Decided by |
+|---|---|---|
+| 2026-11-14 | **Lane C opened by the owner:** Stage 3, Design depth (Phases 103–131, theme L5), is built now by a third lane, beside the active release. It is the one exception to Law 21; 3D (R3, R4) stays after the beta. | Owner |
+| 2026-11-14 | v5 written. The watch page gate (D21) no longer needs corner pin and tracking (D16, D17): the page does not use them. The Needs lines of Phases 93, 94, 95, 101, 241 and 259 now name real dependencies. | Proposed in the v5 PR; the owner decides by merging it |
 
 ---
 
 ## 3. Architectural Laws
 
-Binding for every phase. A gate that passes while breaking a law doesn't count. Laws 1–17 are v3's, shortened; the full text with examples is in `ROADMAP_v3_ARCHIVE.md` §2.
+Binding for every phase. A gate that passes while breaking a law doesn't count. Laws 1–17 are v3's, shortened; the full text with examples is in `ROADMAP_v3_ARCHIVE.md` §2. Laws 21–25 are new in v5 and are about how the work is run.
 
 1. **Inside-Out:** types and schema → rules → diagnostics → UI. No control before the rule that governs it.
 2. **One Document:** every surface reads and writes the MDM through one store API. No parallel models.
@@ -144,9 +246,14 @@ Binding for every phase. A gate that passes while breaking a law doesn't count. 
 15. **Deterministic Replay:** simulations, particles and stateful operators replay exactly from `(seed, input tape, fixed step)`.
 16. **Untrusted Code:** user code (code components, raw shaders, expressions, imported files) runs only inside its sandbox and never with the editor origin's privileges.
 17. **Visual First (No Maths):** everything can be authored without typing a number or formula: canvas handles, plain-language choices, feel controls (Bounce, Time, Smoothness, Strength, Variety), or ranges dragged over live meters. Pro mode shows the numbers.
-18. **Sequential (new in v4):** a phase's "Needs" list contains only lower phase numbers. The phase number is the execution order. `scripts/check-roadmap-order.mts` fails if any phase needs a later one.
+18. **Release order (v5; was Sequential in v4):** the order of work is the release plan in §2. A phase's "Needs" line names only real dependencies, and only lower phase numbers inside this file. `scripts/check-release-plan.mts` fails if a phase in a release needs a phase in a later release or in Later, or if any phase is in no package. `scripts/check-roadmap-order.mts` still checks that Needs point backwards.
 19. **Visible Progress (new in v4):** from Phase 13 on, every phase states what changes for a user ("You'll see"). Phases with nothing visible are infrastructure, and no more than two run in a row.
 20. **Agent Parity (new in v4):** every user action is a typed command on the command bus (Phase 13), and the MCP server exposes every command (Phases 50, 250). A CI test fails if a menu item, button, shortcut or palette entry has no command. This is what lets Claude do everything a person can do in the editor.
+21. **One release at a time (v5):** work happens in the active release only. A phase of a later release is not started, and one that is already 🚧 is frozen until its release is active. The owner may open the next release early only by closing the active one at its gate.
+22. **Fixed scope: one in, one out (v5):** the phases of a release are fixed when it opens. A phase enters a release only at a gate, or when another of about the same size leaves it, and the change is one line in §2.1. A new phase is added to the catalogue only inside a Later theme.
+23. **Green main (v5):** `main` is green in three browsers. A PR merges only when CI is green. If `main` turns red, the next merge is the fix, and nothing else merges before it. A test is never skipped to make CI green without the phase that will turn it back on.
+24. **A person at every gate (v5):** a release gate is run in the real editor and the real export by a person who did not build what is being checked, and the run is recorded. Tests support a gate; they are not the gate.
+25. **Reviewable size (v5):** a PR holds one work package at most, and each phase in it has its own commit and its own test evidence, so that a person can read what changed.
 
 ---
 
@@ -154,18 +261,22 @@ Binding for every phase. A gate that passes while breaking a law doesn't count. 
 
 A phase is **✅** only when:
 1. Every checklist item is `[x]`.
-2. Its "Done when" gate passes in CI, not only locally.
+2. Its "Done when" gate passes **in CI on `main`**, not only locally. (v5: this is true for `ROADMAP_3D.md` too; the rule "do not wait for CI" of 2026-11-12 is withdrawn now that CI runs again.)
 3. `tsc` has 0 errors, ESLint has 0 errors within the warning budget, all tests pass, and `next build` succeeds.
 4. Nothing regresses in the Playwright suite, the export parity suite, or (from Phase 101) the performance budget suite.
 5. The "You'll see" line is true in the running editor (or the exported build), checked by a Playwright test or a recorded run.
 6. Every command the phase adds is registered with a typed argument schema (Law 20).
-7. Docs are updated: this roadmap (index and entry), `CHANGELOG.md`, any spec or decision record it touches, and `AUDIT.md` for the IDs it closes.
+7. Docs are updated: this roadmap (index and entry), a changelog fragment, any spec or decision record it touches, and `AUDIT.md` for the IDs it closes.
 8. Any legacy code the phase replaces is deleted in the same phase, or the phase names the later phase that deletes it.
+9. It can be reached in the new editor (`/editor`). An engine feature with no control is 🚧, with the missing control named.
 
+A release is **done** only when every phase in it is ✅ and its gate in §2 has passed (Law 24).
+
+---
 
 ## 5. Phase Index (the tracking list)
 
-One row per phase, in execution order. Update the Status column together with the phase's own entry; `npm run check:roadmap-order` fails if they disagree or if any phase needs a later one.
+One row per phase, in catalogue order. **The order of work is the release plan in §2, not this list.** Update the Status column together with the phase's own entry; `npm run check:roadmap-order` fails if they disagree or if any phase needs a later one, and `npm run check:release-plan` fails if the release plan and the Needs disagree.
 
 **Stage 0 · Foundation (Phases 1–12)**
 
@@ -273,126 +384,126 @@ One row per phase, in execution order. Update the Status column together with th
 | 90 | Animation Playground | 89 | v3 24.0–24.3, 24.5 | 2 | 📋 |
 | 91 | Motion library infrastructure | 90 | v3 25.1, 25.2, 21.3, 22.4 | 2 | 📋 |
 | 92 | Library: text, SVG & component motion | 91 | v3 25.3 (waves 1, 3, 4) | 2 | 📋 |
-| 93 | Reduced motion & accessibility rules | 92 | v3 29.1, 29.3, 11.4 | 2 | 📋 |
-| 94 | Motion export architecture | 49, 93 | v3 27.1 | 2 | 📋 |
-| 95 | Motion export: React, Next & Vite | 94 | v3 27.2, 27.3, 29.2 | 2 | 📋 |
+| 93 | Reduced motion & accessibility rules | 79, 82, 84 | v3 29.1, 29.3, 11.4 | 2 | 📋 |
+| 94 | Motion export architecture | 49, 68 | v3 27.1 | 2 | 📋 |
+| 95 | Motion export: React, Next & Vite | 80, 82, 84, 93, 94 | v3 27.2, 27.3, 29.2 | 2 | 📋 |
 | 96 | Export matrix in CI | 95 | v3 27.4 | 2 | 📋 |
 | 97 | More export targets | 96 | v3 28 | 2 | 📋 |
 | 98 | GSAP as an opt-in export target | 97 | v3 14 | 2 | 📋 |
 | 99 | Video & audio layers | 36, 98 | v3 54.3, 54.4 | 2 | 📋 |
 | 100 | Render queue: video, GIF, image sequences & Lottie | 99 | v3 55 | 2 | 📋 |
-| 101 | Performance lab, workers & hot path | 100 | v3 56, 26.1–26.4 | 2 | 📋 |
+| 101 | Performance lab, workers & hot path | 96 | v3 56, 26.1–26.4 | 2 | 📋 |
 | 102 | Stage 2 gate: the animation journey | 53–101 | v3 58.2, 58.3, 58.4 | 2 | 📋 |
 
 **Stage 3 · Design depth (Phases 103–131)**
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 📋 |
-| 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 📋 |
-| 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
-| 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
-| 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
-| 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 📋 |
-| 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 📋 |
-| 110 | Modifiers I: repeat, trim, offset & round → *Design track D8 (repeat)* | 109 | — (new in v4.1) | 3 | 📋 |
-| 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 📋 |
-| 112 | Shape generators: scatter, Voronoi & flow lines | 110 | — (new in v4.1) | 3 | 📋 |
-| 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 📋 |
-| 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 📋 |
-| 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 📋 |
-| 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 📋 |
-| 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 📋 |
-| 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 📋 |
-| 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 📋 |
-| 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 📋 |
-| 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 📋 |
-| 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 📋 |
-| 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 📋 |
-| 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 📋 |
-| 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 📋 |
-| 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 📋 |
-| 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 📋 |
-| 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 📋 |
-| 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 📋 |
-| 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 📋 |
+| 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 🚧 |
+| 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 🚧 |
+| 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 🚧 |
+| 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 🚧 |
+| 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 🚧 |
+| 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 🚧 |
+| 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 🚧 |
+| 110 | Modifiers I: repeat, trim, offset & round → *Design track D8 (repeat)* | 109 | — (new in v4.1) | 3 | 🚧 |
+| 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 🚧 |
+| 112 | Shape generators: scatter, Voronoi & flow lines | 110 | — (new in v4.1) | 3 | 🚧 |
+| 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 🚧 |
+| 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 🚧 |
+| 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 🚧 |
+| 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 🚧 |
+| 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 🚧 |
+| 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 🚧 |
+| 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 🚧 |
+| 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 🚧 |
+| 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 🚧 |
+| 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 🚧 |
+| 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 🚧 |
+| 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 🚧 |
+| 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 🚧 |
+| 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 🚧 |
+| 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 🚧 |
+| 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 🚧 |
+| 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 🚧 |
+| 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 🚧 |
 | 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 📋 |
 
 **Stage 4 · Interactive & complex animation (Phases 132–202)**
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 📋 |
-| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
-| 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
-| 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
-| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
-| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
-| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
-| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
-| 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
-| 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
-| 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
-| 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
-| 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
-| 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
-| 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
-| 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
-| 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
-| 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
-| 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
-| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
-| 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
-| 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
-| 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
-| 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
-| 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
-| 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
-| 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
-| 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
-| 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
-| 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 📋 |
-| 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 📋 |
-| 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 📋 |
-| 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 📋 |
-| 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 📋 |
-| 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 📋 |
-| 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 📋 |
-| 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 📋 |
-| 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 📋 |
-| 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
-| 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
-| 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
-| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
-| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
-| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
-| 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
-| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
-| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
-| 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
-| 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
-| 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
-| 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
-| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
-| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
-| 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
-| 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
-| 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
-| 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
-| 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
-| 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
-| 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 📋 |
-| 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 📋 |
-| 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 📋 |
-| 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
-| 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
-| 196 | Code components | 195 | v3 68 | 4 | 📋 |
-| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
-| 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
-| 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
-| 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
-| 201 | Composition test suite | 200 | v3 91.7 | 4 | 📋 |
-| 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 📋 |
+| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 🚧 |
+| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 🚧 |
+| 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 🚧 |
+| 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 🚧 |
+| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 🚧 |
+| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 🚧 |
+| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 🚧 |
+| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 🚧 |
+| 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 🚧 |
+| 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 🚧 |
+| 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 🚧 |
+| 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 🚧 |
+| 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 🚧 |
+| 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 🚧 |
+| 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 🚧 |
+| 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 🚧 |
+| 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 🚧 |
+| 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 🚧 |
+| 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 🚧 |
+| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 🚧 |
+| 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 🚧 |
+| 153 | Split into real layers | 152 | v3 89.1 | 4 | 🚧 |
+| 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 🚧 |
+| 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 🚧 |
+| 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 🚧 |
+| 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 🚧 |
+| 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 🚧 |
+| 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 🚧 |
+| 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 🚧 |
+| 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 🚧 |
+| 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 🚧 |
+| 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 🚧 |
+| 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 🚧 |
+| 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 🚧 |
+| 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 🚧 |
+| 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 🚧 |
+| 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 🚧 |
+| 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 🚧 |
+| 170 | Spawner | 169 | v3 89.4 | 4 | 🚧 |
+| 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 🚧 |
+| 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 🚧 |
+| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 🚧 |
+| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 🚧 |
+| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 🚧 |
+| 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 🚧 |
+| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 🚧 |
+| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 🚧 |
+| 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 🚧 |
+| 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 🚧 |
+| 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 🚧 |
+| 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 🚧 |
+| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 🚧 |
+| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 🚧 |
+| 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 🚧 |
+| 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 🚧 |
+| 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 🚧 |
+| 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 🚧 |
+| 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 🚧 |
+| 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 🚧 |
+| 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 🚧 |
+| 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 🚧 |
+| 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 🚧 |
+| 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 🚧 |
+| 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 🚧 |
+| 196 | Code components | 195 | v3 68 | 4 | 🚧 |
+| 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 🚧 |
+| 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 🚧 |
+| 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 🚧 |
+| 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 🚧 |
+| 201 | Composition test suite | 200 | v3 91.7 | 4 | 🚧 |
+| 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 🚧 |
 
 **Stage 5 · Characters & rigging (Phases 203–217)**
 
@@ -446,7 +557,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 241 | LLM integration layer | 240 | v3 30.1, 30.2 | 7 | 📋 |
+| 241 | LLM integration layer | 13, 50 | v3 30.1, 30.2 | 7 | 📋 |
 | 242 | Validation loop & offline provider | 241 | v3 30.3, 30.4 | 7 | 📋 |
 | 243 | AI builder: prompt → design and motion | 242 | v3 31 | 7 | 📋 |
 | 244 | AI evals & visual self-check | 243 | v3 33 | 7 | 📋 |
@@ -474,7 +585,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 259 | Security hardening | 258 | v3 80.3–80.5 | 9 | 📋 |
+| 259 | Security hardening | 16, 96, 241 | v3 80.3–80.5 | 9 | 📋 |
 | 260 | Observability & kill switches | 259 | v3 82 | 9 | 📋 |
 | 261 | Real-device & browser matrix | 260 | v3 84 | 9 | 📋 |
 | 262 | Licensing & compliance automation | 261 | v3 85 | 9 | 📋 |
@@ -1297,25 +1408,27 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** each passes the Playground sweep and the parity check against the kernel.
 
 ### Phase 93 · Reduced motion & accessibility rules
-**Needs:** 92 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 📋
+**Needs:** 79, 82, 84 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 📋
 - [ ] Every animation has a reduced-motion variant (generated from the spec's §9 policy: keep opacity and colour, drop movement, stop loops, disable scroll scrub), editable in Pro. Rules: flash limits, pause controls for loops over 5 s, visible focus, 44 px touch targets. The Playground toggle uses the variants.
 
 **You'll see:** a reduced-motion preview that shows exactly what those users get.
 **Done when:** the reduced-motion Playwright run shows no spatial movement in any library effect.
+**v5 (R1):** until the library (Phases 91 and 92) is built, "any library effect" reads "each of the five reference recipes" (§2, R1). The Playground toggle arrives with Phase 90; until then the toggle is in Preview.
 
 ### Phase 94 · Motion export architecture
-**Needs:** 49, 93 · **Was:** v3 27.1 · **Status:** 📋
+**Needs:** 49, 68 · **Was:** v3 27.1 · **Status:** 📋
 - [ ] Exporters read the document and routing decisions only (never UI state). The per-engine code generators move out of `MultiEngineAnimationRuntime` into the exporters.
 
 **You'll see:** nothing new (refactor); 95 builds on it.
 **Done when:** the static export (49) still passes the harness with the new architecture.
 
 ### Phase 95 · Motion export: React, Next & Vite
-**Needs:** 94 · **Was:** v3 27.2, 27.3, 29.2 · **Status:** 📋
+**Needs:** 80, 82, 84, 93, 94 · **Was:** v3 27.2, 27.3, 29.2 · **Status:** 📋
 - [ ] Clips, states, transitions, scroll, text and SVG motion, links and expressions export as idiomatic code (CSS / Web Animations / `motion/react`, chosen by routing), with `prefers-reduced-motion` handling, typed props and defaults, Prettier formatting, no `any`, and a README listing only the engines used. No LazyLayout imports.
 
 **You'll see:** the Code tab and the ZIP include your animations.
 **Done when:** every library effect and reference animation builds in the Next and Vite fixtures.
+**v5 (R1):** exports what R0 and R1 can author: clips, states, transitions, scroll, text motion, links, expressions and drivers. SVG motion joins the exporters with Phases 85 and 86. "Every library effect" reads "each of the five reference recipes".
 
 ### Phase 96 · Export matrix in CI
 **Needs:** 95 · **Was:** v3 27.4 · **Closes:** AUD-15, AUD-16, AUD-40 · **Status:** 📋
@@ -1323,6 +1436,7 @@ The document and World Environment have their own stores, After-track actions mo
 
 **You'll see:** export is trustworthy: what you see is what ships.
 **Done when:** the full matrix is green in nightly CI (PRD §11 criterion 5).
+**v5 (R1):** the matrix is the five reference recipes × {Next, Vite} × {Tailwind, CSS Modules}. Library effects join it in Phase 92.
 
 ### Phase 97 · More export targets
 **Needs:** 96 · **Was:** v3 28 · **Status:** 📋
@@ -1353,12 +1467,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** a 5-second 60 fps composition renders to MP4 with frames matching `evaluate()` above a PSNR threshold; eligible Lottie output plays in `lottie-web` within 2% pixels.
 
 ### Phase 101 · Performance lab, workers & hot path
-**Needs:** 100 · **Was:** v3 56, 26.1–26.4 · **Closes:** AUD-13 · **Status:** 📋
+**Needs:** 96 · **Was:** v3 56, 26.1–26.4 · **Closes:** AUD-13 · **Status:** 📋
 - [ ] A worker pool (path morph matching, arc-length tables, spring baking, spatial index, thumbnails, waveforms), content-hash caches, no per-frame sorting, JSON or string parsing in `evaluate()`, frame telemetry in the status bar.
 - [ ] A browser benchmark harness (Playwright + DevTools tracing), per-animation performance class checked against traces, auto-fixes (`left/top` → `transform`, pre-blurred layers, path simplification), and a CI budget per library effect.
 
 **You'll see:** frame-time readout in the status bar; one-click performance fixes.
 **Done when:** a scripted 60-second editing session shows 0 main-thread tasks ≥ 50 ms; a layout-thrashing test animation is flagged and auto-fixed within budget; every library effect meets its budget in CI.
+**v5 (R2):** the CI budget covers the five reference recipes; library effects join it in Phase 92. The worker jobs for path morph and waveforms arrive with Phases 85 and 99.
 
 ### Phase 102 · Stage 2 gate: the animation journey
 **Needs:** 53–101 · **Was:** v3 58.2, 58.3, 58.4 · **Status:** 📋
@@ -1381,204 +1496,655 @@ The document and World Environment have their own stores, After-track actions mo
 > Order inside the stage: shapes (103–108) → modifiers and generators (109–112) → paint (113–123) → type and assets (124–126) → 2.5D (127–129) → export and the gate (130–131).
 
 ### Phase 103 · Curve-exact path engine
-**Needs:** 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Booleans, offsets and outlines computed on the Bézier curves themselves (curve–curve intersection, winding, exact splitting), so results keep curves as curves instead of Phase 40's polygons. Decision record 0015 (path engine): in-house, paper.js (MIT) or Skia PathKit (BSD, Wasm), chosen by accuracy, size and speed.
 - [ ] Phase 40's Union, Subtract, Intersect, Exclude and Flatten move onto it; their tests keep passing.
 
 **You'll see:** Union two circles and get a path with a handful of curve points, not hundreds of straight ones.
 **Done when:** 200 random boolean cases match a high-resolution polygon reference within 0.25 px, with at most twice the minimal number of nodes; Phase 40's tests pass.
 
+**Status check (2026-11-14), 🚧:** built (Lane C). `src/core/paths/curveRefit.ts` turns the polygon clipper's answer back into pieces of the input curves, with joints refined onto the true crossings; `booleanPaths`, `simplifyPath`, `arrangementFaces` and `unionFaces` return curves, so live boolean groups, the Shape Builder and the paint bucket get them too; Phase 40's `booleanLayers` moved onto it (a single outline stays an editable path with handles). Decision 0015 is written: in-house, no new dependency. Verified: 200 seeded random cases, every point within 0.25 px of the polygon reference (`curveRefit.test.ts`); a union of two circles is 6 to 10 curves and no lines; all 3,416 core unit tests pass; Phase 40's and the FigCraft port's browser tests pass in Chromium (25 of 25). **Not done:** the node bound checked is "no more than twice the input segments that show in the result", not a computed minimum; tangent and overlapping curves keep the polygon's vertex at the joint; Firefox and WebKit were not run. ✅ once it passes in CI on `main`.
+
 ### Phase 104 · Live boolean groups
-**Needs:** 46, 103 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 46, 103 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Union, Subtract, Intersect and Exclude make a **boolean group** whose children stay editable: move, resize or edit a child and the result updates. Groups nest, can be flattened when wanted, and take one fill and stroke stack.
 - [ ] Export writes the computed path (one SVG `path`), so the site needs no runtime. **Simple face:** the four icons on the toolbar, and "Edit pieces" / "Flatten".
 
 **You'll see:** merge three triangles and a rectangle into one shape, then still move each piece.
 **Done when:** editing a child of a 50-child group updates the result in < 16 ms; the stage and the export match within 0.5 px in 3 browsers.
 
+**Status check (2026-11-14), 🚧:** live boolean groups were already built by the FigCraft port (`src/core/editing/booleanGroups.ts`: make, set operation per group and per operand, flatten, nesting, one undo step each; the group draws through the Container render definition, so the stage and the export use the same path). **Built now (Lane C):** the speed gate. A 50-child group took about 45 ms before Phase 103 and about 600 ms with curves refitted at every step; `booleanGroupResult` now combines the operands as polygons, merges runs of operands that combine the same way, remembers each run (and the run without the child that is moving), and turns the result into curves once. **Measured: 6.9 ms median** for moving one child of a 50-child group of ellipses and rectangles (`booleanGroupSpeed.test.ts`), and the result is curves. The FigCraft port's and Phase 40's browser tests pass in Chromium (25 of 25). **Not done:** the stage-against-export comparison within 0.5 px in three browsers has no test of its own; the Simple face ("Edit pieces" and "Flatten" beside the four icons) is in the legacy editor and has not been checked in the new one; Firefox and WebKit were not run.
+
 ### Phase 105 · Shape Builder tool
-**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Select overlapping shapes and the tool shows every region they make. Drag across regions to merge them, Alt-drag (Option-drag) to delete them, click to keep a region on its own; the result is a live boolean group.
 
 **You'll see:** draw a few shapes, drag across the pieces you want, and get one clean shape.
 **Done when:** a 12-step Shape Builder journey gives the expected region areas and node counts in 3 browsers.
 
+**Status check (2026-11-15), 🚧:** the Shape Builder was built by the FigCraft port (`src/core/editing/shapeBuilder.ts`: regions of the selection, merge, remove, strokes as their own regions, one undo step each; the `shapeBuilder.merge` and `shapeBuilder.remove` commands; the tool on Shift+M in the legacy editor). **Built now (Lane C):** the 12-step journey (`shapeBuilderJourney.test.ts`): three overlapping circles make seven regions whose areas match the analytic lenses; every region, merge and removal is curves with no straight side; undo and redo restore each step. It found a real bug: merging regions that had been cut from curves made the clipper fail on edges that nearly coincide. Fixed in `pathOps.ts`: a result keeps the exact polygons it was made from, so it is combined again as those, and the clipper retries on a fine grid if it still fails. **Not done:** the journey runs as a unit test, not in three browsers; the result is a plain path layer, not a live boolean group as the checklist asks (kept on purpose: the FigCraft behaviour, where the pieces left over stay where they are, needs plain layers; a live-group result is a separate decision); the tool is reachable only in the legacy editor.
+
 ### Phase 106 · Path operations: offset, outline, simplify, divide & knife
-**Needs:** 103 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 103 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Offset path (round, mitre, bevel joins), outline stroke (a stroke becomes a filled shape), simplify and smooth with a strength slider, divide (cut every overlap into its own piece), knife (draw a line to cut), join, reverse and expand.
 
 **You'll see:** turn a stroke into a filled shape, or cut a shape in two with a knife line.
 **Done when:** 20 reference shapes per operation match stored results within 0.25 px.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). `src/core/paths/pathTools.ts`: offset with round, mitre and bevel corners (the result fitted back into curves), simplify and smooth by a strength, divide, knife (a straight or bent line, carried on past its ends), join and reverse; outline stroke was already `strokeOutline`. `src/core/editing/pathToolOps.ts` applies them to layers, one undo step each, and they are typed commands (`vector.offset`, `vector.simplify`, `vector.smooth`, `vector.reverse`, `vector.divide`, `vector.knife`, `vector.join`), so the palette and the agent bridge reach them. Verified (`pathTools.test.ts`, 13 tests; `pathToolOps.test.ts`, 5): **20 seeded shapes per operation**, checked against geometric facts instead of stored copies of our own output: every point of an offset is the offset distance from the shape within 0.25 px (outward and inward); an outlined stroke stays within half its width of the line and has length × width of area; a simplified path stays within its tolerance and loses at least three quarters of its points; divided pieces cover the union and the shared piece is the intersection; knife pieces add up to the shape and none crosses the line; reversing twice gives the path back. Exact areas for a rectangle grown with each corner style. **Not done:** no knife tool to draw the line on the canvas (the command takes the points), and no buttons or strength slider in the new editor's inspector; the operations reach the new editor only through the command palette.
+
 ### Phase 107 · Smooth corners & corner styles
-**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Corner smoothing (the iOS "squircle", 0–100%) on rectangles and on any vector point; per-corner radius on any path; corner styles: round, cut, scoop and inverted. Exported as CSS where CSS can draw it, otherwise as an SVG path or mask.
 
 **You'll see:** Figma-style smooth corners on any shape, even on a star.
 **Done when:** 60% smoothing matches the reference squircle within 0.5 px; stage and export match in 3 browsers.
 
+**Status check (2026-11-15), 🚧:** corner smoothing on rectangles, polygons and stars was built by the FigCraft port (`core/geometry/shapes.ts`) but had no control in the new editor. **Built now (Lane C):** corner styles, a new property `shape.cornerStyle` (round, cut, scoop, inverted: a square notch) on rectangles, polygons and stars, drawn by the shared render definition (so the stage and the export draw the same path) and read by the outline that booleans and the Shape Builder use; a **Style** select and a **Smoothing** field (0–100%) under Corners in the new editor's Appearance options. A round rectangle with one radius and no smoothing still draws as a plain `<rect>`; every other case is an SVG path (CSS cannot draw squircles, chamfers or scoops in every browser). Verified (`cornerStyles.test.ts`, 11 tests): **60% smoothing matches the reference squircle within 0.5 px** on four rectangle sizes, the reference being Figma's published construction written again as an SVG path with arc commands; 0% and 100% too; exact areas for cut, scoop and inverted corners; a scoop's points lie on the bite; the render definition and the layer outline give the same area. In Chromium the Design control walker passes with the new controls (rectangle: 31 of 31 controls change the document), and the vector and FigCraft browser tests pass (47 of 47). **Not done:** per-corner radius and style on any vector point (path layers have a per-vertex radius from the FigCraft port, without style or smoothing); Firefox and WebKit were not run; a pixel comparison of stage against export has no test of its own (both use the same render definition).
+
 ### Phase 108 · Soft union: gooey groups
-**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] A group whose children melt together where they come close, like liquid (metaball-style), with one Softness control. Drawn as a computed path where possible and with an SVG goo filter otherwise; the edges stay sharp.
 
 **You'll see:** two circles that blend like liquid as they move together.
 **Done when:** stage and export match within 1% of pixels at 5 distances; with filters off a hard union is drawn instead.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). A live **union** group takes `boolean.softness` (px): its children melt together where they come within twice that, with smooth necks, every inner corner rounded by the softness, and the outer edges kept sharp and in place. It is always a **computed path** (a morphological closing: grown by the softness, shrunk back, fitted with curves; `softClose` in `core/paths/pathTools.ts`), so no SVG filter is needed and a browser with filters off draws exactly the same shape; the stage and the export draw it through the same render definition. A **Boolean group** section in the new editor (operation, Softness, Flatten) also gives Phase 104's live groups their controls there. Verified (`softUnion.test.ts`, 8 tests; `pathTools.test.ts`): two circles at **5 distances** (touching, 4, 8 and 14 px apart, and 30 px: stays apart) match the exact neck area (kite between the four centres less the circles' and fillets' sectors) **within 1%**; the outer outline stays on the circles within 0.25 px; the render definition's path has the same area; an L shape's inner corner gets exactly a fillet of radius k at 5, 10 and 20. In Chromium (`soft-union.spec.ts`): Softness 10 turns two separate outlines into one on the canvas, the export carries the same path, and Flatten makes one path layer. **Found and fixed on the way:** Enter (or Escape) in any number field of the inspector also ran the canvas shortcut, so committing a value on a selected group or frame jumped into its children (`NumberField.tsx`). **Found, not fixed (3D-027, not Lane C's):** `offsetPolygon` in `core/3d/path/offset.ts` shrinks inner corners wrongly: an L shape eroded by 10 gives 4000 px² where the exact answer is 3921.46; the soft union uses its own erosion. **Not done:** a soft group takes 55–135 ms to recompute (cached while nothing changes), above Phase 104's 16 ms for dragging a child; no pixel comparison of stage against export (both draw the same path); Firefox and WebKit not run.
+
 ### Phase 109 · Modifier stack
-**Needs:** 17, 103 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 17, 103 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Any shape, text-as-shape or group gets an ordered, non-destructive **Modifiers** list (like Blender or Cavalry): add, switch off, reorder and remove; every modifier has a Simple face (≤ 7 controls, no maths, Law 17) and a Pro face. Results are cached per layer.
 - [ ] The rules and the property registry know modifier properties, so later stages can keyframe them (Phase 66) and bind them to inputs (Stage 4). Export bakes the result to an SVG path.
 
 **You'll see:** a Modifiers section in the inspector with add, on/off and drag to reorder.
 **Done when:** a stack of 5 modifiers on 100 shapes re-evaluates in < 8 ms; switching every modifier off gives back the exact original path.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). A rectangle, ellipse, polygon, star, path or line keeps an ordered stack in `shape.modifiers` (`core/paths/modifiers.ts`: a registry of modifier types, each with Simple and Pro parameters, read safely and clamped). The layer's own geometry is never changed: `modifiedGeometry` (`core/editing/layerOutline.ts`) applies the stack to the layer's outline, cached per layer object, and everything that reads a layer's shape follows it: the stage and the export draw the result as one SVG path with the layer's own paints (`ModifiedShape`), and booleans, the Shape Builder and Outline Stroke read it too. Typed commands `layer.addModifier`, `layer.setModifier`, `layer.moveModifier`, `layer.removeModifier`, one undo step each; a **Modifiers** section in the new editor (add, on/off, up/down, remove, the Simple controls, and every control under More options). Verified (`modifiers.test.ts`, 15 tests): **a stack of 5 (round, repeat, trim, round, repeat) on 100 shapes re-evaluates in 3.8 ms** on its own (budget 8 ms; the test takes the fastest of 40 runs, since the unit suites run side by side); **every modifier switched off gives back the very same path**; order matters; junk stacks are cleaned. In Chromium (`modifiers.spec.ts`): add, change, switch off and on, reorder and remove on a rectangle, with the canvas and the export following; the Design control walker and the vector tests still pass (49 of 49). **Not done:** drag to reorder (up and down buttons instead); keyframing and driving modifier parameters (the stack is one JSON property, so Phase 66 and Stage 4 cannot reach a single parameter yet); text and groups as modifier sources; the Offset modifier costs about 7 ms a shape, so a stack with Offset on 100 shapes is far over 8 ms.
+
 ### Phase 110 · Modifiers I: repeat, trim, offset & round
-**Needs:** 109 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 109 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Repeater (in a line, a circle or a grid, with a step for position, rotation, scale, opacity and colour), Trim (start, end, offset), Offset and Round corners, all live.
 
 **You'll see:** a petal repeated 12 times around a centre becomes a flower you can still edit.
 **Done when:** results match After Effects shape-layer references (Lottie fixtures) within 0.5 px.
 
+**Status check (2026-11-15), 🚧:** built (Lane C) as Phase 109 modifiers: **Repeat** (in a line with steps for position, turn and scale; round a circle with radius and sweep, each copy turned to face out; or a grid), **Trim** (start, end, offset in degrees, each subpath on its own, wrapping round the closing point), **Offset** (round, mitre or bevel corners) and **Round corners** (sharp vertices only, cut back to fit). Verified (`modifiers.test.ts`) against After Effects' documented rules worked out by hand, within 0.5 px: copy i of a repeater is moved i steps, turned i turns and scaled by the scale to the power i; 12 petals sit on the circle at 30° steps; trimming 0–25% of a circle gives a quarter of its length from the path's start, and a 90° offset moves the window by a quarter; half a rectangle's outline ends at its far corner; rounded and offset rectangles have their exact areas. **Not done:** no After Effects or Lottie player is available here, so there are no Lottie fixtures; the repeater's per-copy **opacity and colour steps** are not in the modifier (one path has one paint): they are the layer-level Repeat of D8 (`repeat.fade`), which draws real copies.
+
 ### Phase 111 · Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat
-**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Twist, bend, wiggle (seed, size, detail, and a speed used once the clock plays), zig-zag, pucker and bloat, and spherize. Wiggle is seeded, so a design looks the same every time it opens.
 
 **You'll see:** a hand-drawn wobble on any outline, with one Amount slider.
 **Done when:** every modifier is deterministic for a seed and matches stored references.
 
+**Status check (2026-11-15), 🚧:** built (Lane C) as six modifiers for the Phase 109 stack (`core/paths/warps.ts`): **Twist** (each point turned about the centre in proportion to its distance), **Bend** (the width becomes an arc of the angle), **Wiggle** (seeded smooth noise across the outline: amount, detail, seed; a closed outline's wobble meets itself), **Zig-zag** (After Effects' rule: ridges per segment, the amount either side, corner or smooth points), **Pucker & bloat** (Illustrator's rule: the anchors stay, the handles move toward or away from the centre) and **Spherize** (bulge or pinch about the centre). Warps that move every point resample the outline every 2 px and fit curves back within 0.1 px. They appear in the Modifiers section with one Amount control each (Wiggle adds Detail and Seed). Verified (`warps.test.ts`, 7 tests): a centred circle twisted 180° stays on its radius within 0.15 px; a 100 px line bent 90° keeps its length within 0.25 px and lies on the arc; spherize moves a circle to the radius its rule gives; a wiggle never strays more than its amount, closes where it starts, repeats exactly for a seed and changes with another; zig-zag peaks land exactly half a ridge apart; pucker and bloat keep every anchor; **nine stored references** (`fixtures/warps.json`) match to a thousandth of a px, and were drawn and checked by eye when stored. **Not done:** Wiggle's Speed is stored but nothing plays it yet (it needs the clock to drive modifier parameters, the same gap as Phase 109's keyframing); not run in a browser on its own (the Modifiers section that shows them is covered by `modifiers.spec.ts`).
+
 ### Phase 112 · Shape generators: scatter, Voronoi & flow lines
-**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Generators make shapes for you: scatter copies inside a shape or along a path, Voronoi and Delaunay cells, polygon grids, concentric rings and flow-field lines, each with a Variety control and a shuffle button (seeded).
 
 **You'll see:** fill a circle with 200 scattered stars, or crack a card into Voronoi cells.
 **Done when:** seeded results repeat exactly; 2,000 generated shapes stay editable at 60 fps.
 
+**Status check (2026-11-15), 🚧:** built (Lane C) as five generator modifiers for the Phase 109 stack (`core/paths/generators.ts`): **Scatter** (copies of a star, circle, square or triangle inside the outline or evenly along it, sized and turned by Variety), **Cells** (Voronoi cells or Delaunay triangles cracking the outline, with a gap), **Grid** (square, hex or triangle cells clipped to the outline), **Rings** (concentric copies) and **Flow lines** (lines following a smooth seeded field, stopping at the outline). Each has a Seed and a **Shuffle** button in the Modifiers section; Variety is how much the pieces differ. Dragging a layer no longer regenerates its modifiers (the cache ignores placement). Verified (`generators.test.ts`, 13 tests): **every generator repeats exactly for a seed** and changes with another; 200 stars fill a circle, every one inside and no bigger than the size; Voronoi cells with no gap tile the circle within 0.5% and a gap cracks them apart; the Delaunay triangulation keeps every circumcircle empty; a square grid of a card is exactly its cells; flow lines stay inside and within their length; drawn and checked by eye. **2,000 stars**: generated in well under a frame, and in Chromium (`generators.spec.ts`) dragged across the canvas at a **median 16.7 ms a frame** (60 fps), the stars unchanged by the drag, and Shuffle gives a new layout. **Found and fixed on the way:** every dropdown in the new editor reopened within its closing animation showed no list (`Select.tsx`). **Not done:** the slowest tenth of frames while dragging 2,000 stars is about 50 ms on one worker; the pieces are one path, so they can't be selected one by one (a "detach into layers" is not built); scatter of any layer as the particle (only four built-in shapes).
+
 ### Phase 113 · Paint depth I: blend mode and mask per fill
-**Needs:** 35, 37 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 37 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Every fill in the stack gets its own blend mode (all CSS blend modes) and an optional mask: a linear, radial or conic fade, or another layer. So an image can sit under a conic gradient that blends as Overlay and fades out at the bottom.
 
 **You'll see:** a conic gradient over a photo, blended and fading out, made with two fills.
 **Done when:** 24 blend-and-mask references render identically in 3 browsers and in the export.
 
+**Status check (2026-11-15), 🚧:** a blend mode per fill already existed (FigCraft port F2) but had no control in the new editor. **Built (Lane C):** a **mask per fill** (`mask` on each paint in `paint.fills`, `core/paint/paints.ts`): a linear fade (start, end, angle), a radial fade, a conic fade, or **another layer** (a sibling's outline, shown inside it, or outside it when inverted). Shapes draw it as an SVG alpha mask around that fill alone, inside its blend (`core/render/shapePaint.tsx`; alpha, not luminance, because browsers disagree on the colour space of a luminance mask); the stage and the export share the render definition. The fill popover in the new editor's Fill section gets **Blend** and a **Mask** group (kind, shown-to, gone-at, angle; or the layer and Outside). Verified: masks round-trip and junk is cleaned (`fillMasks.test.ts`, 6 tests); in Chromium (`fill-masks.spec.ts`) **24 blend-and-mask references** (6 masks × normal, multiply, screen, overlay), a blue fill over a red one, read back at 72 points: every point matches red mixed toward the blend by exactly the mask's opacity, **within 5 of 255**; the export carries the mask (as an alpha-mask class) and the blend. **Not done:** frames and other box layers draw their fills as CSS backgrounds, which cannot mask one background layer, so a mask on a frame's fill is ignored (shapes only); a layer mask must be a sibling; Firefox and WebKit not run.
+
 ### Phase 114 · Paint depth II: noise, grain, pattern & texture fills
-**Needs:** 113 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 113 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Seeded noise and grain fills (scale, contrast, colour), pattern fills (any frame or component repeated as a tile with offset, rotation and spacing), and texture overlays from the asset store.
 
 **You'll see:** a grainy gradient, or a tile pattern made from your own shapes.
 **Done when:** stage and export match within 1% of pixels in 3 browsers.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). Two new paint types in `paint.fills` (`core/paint/procedural.ts`): **noise** (grain or soft noise: size, contrast, colour, seed; SVG fractal noise, whose algorithm the SVG spec fixes, so a seed gives the same grain everywhere) and **pattern** (shapes repeated as a tile with scale, spacing, offset and rotation; the tile is made from any layer, or a frame's or group's children with their colours, `core/editing/patternTile.ts`). Both are drawn as one small generated SVG: a frame's fill uses it as a CSS background, a shape's fill as an SVG pattern, and the export writes the same, so the stage and the export draw the same pixels. **Texture overlays** are image fills from the asset store with a blend mode (already there; per-fill blend is Phase 113). The fill popover gets Noise and Pattern types with their controls (Kind, Size, Contrast, Seed; Tile from a layer, Scale, Spacing, Rotation). Verified (`procedural.test.ts`, 4 tests): stored safely (hostile path data and colours refused, sizes clamped); a seed repeats exactly; a frame's background and a shape's pattern are the same picture. In Chromium (`procedural-fills.spec.ts`): a rectangle with grain over a pattern over a solid, on the canvas at 100% and in the **exported site opened in a second page: 0.00% of pixels differ** (budget 1%), three runs out of three. **Not done:** the pattern's tile is baked when it is made, so editing its source layer doesn't update it (live fills are Phase 116); Firefox and WebKit not run.
+
 ### Phase 115 · Mesh gradients
-**Needs:** 35 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Freeform mesh gradients: a grid of colour points you drag on the canvas, with handles for each point's spread, smooth or linear blending, and an image fallback in the export where CSS can't draw it.
 
 **You'll see:** drag colour points to make soft, Apple-style mesh backgrounds.
 **Done when:** 10 reference meshes render within 1% in 3 browsers; the export matches.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). A `mesh` paint (`core/paint/mesh.ts`): a grid of 2–8 × 2–8 colour points, positions as fractions of the box, blended linearly (bilinear per cell) or smoothly (Catmull–Rom across the grid). CSS can't draw a mesh, so it is always drawn as the **image fallback**: the mesh is rasterised (each cell split into fine triangles) into a 96 × 96 picture the browser stretches smoothly over the box, wrapped in the same generated SVG as noise and patterns, so the canvas, a frame's CSS background, a shape and the export draw the same pixels. In the new editor: **Mesh** in the fill popover with Columns, Rows (re-gridding keeps the look), Smooth, **On canvas** (the points become handles on the canvas, `MeshOverlay.tsx`, only while switched on, so clicking the layer still selects it), and the picked point's colour. Verified (`mesh.test.ts`, 13 tests): **10 reference meshes** (2×2 to 8×8, linear and smooth) each follow their blending rule on at least 99% of pixels within 3 of 255; a 2×2 linear mesh is exactly the bilinear blend; a dragged point carries its colour; the picture stays opaque and is a valid BMP; stored safely. In Chromium (`mesh-gradients.spec.ts`): canvas against the exported site, **0.00% of pixels differ**; dragging a point on the canvas moves its colour, and undo puts it back. **Not done:** a per-point spread handle; handles don't follow a rotated layer; the picture is 96 × 96, so very large boxes show it slightly soft; Firefox and WebKit not run.
+
 ### Phase 116 · Live fills: a frame or component as a fill
-**Needs:** 46, 114 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 46, 114 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Use any frame or component as a fill: it is drawn inside the shape, mirrors every edit to its source, and can be offset, scaled and tiled.
 
 **You'll see:** a badge filled with a live copy of another design, which updates when you edit it.
 **Done when:** an edit to the source updates every fill within one frame; the export matches.
 
+**Status check (2026-11-15), 🚧:** built (Lane C). A `live` paint: any frame or component drawn inside a shape's outline (an SVG `foreignObject` clipped to it), with scale, offset (px) and tiling. It is drawn from the same document as everything else, so **every edit to the source shows in every fill in the same render**. The copy is a clone of the source's subtree with every id prefixed (`core/render/liveFill.ts`), so measuring and clicking on the canvas still find the source and the shape themselves; a fill whose source contains the shape draws nothing, and fills that would draw each other stop after one copy (`SubtreeContext` tracks what is being drawn). `RenderLayer` hands down a "draw this layer" function through context, so the paints never import the renderer. In the new editor: **Live** in the fill popover with Source (any layer that doesn't contain this one), Scale, Offset X and Y, Tile. Verified (`liveFill.test.ts`, 5 tests): stored safely; the copy has its own ids; an edit to the source shows; tiling at half scale gives 36 copies over 200 × 100; self- and mutual fills terminate. In Chromium (`live-fills.spec.ts`): a frame filling two shapes, **an edit to the frame shows in both fills by the next frame the browser draws**; a click inside a fill selects its own shape; the export draws both fills with the new text. The canvas contract suite passes (41 of 41). **Not done:** frames' fills are CSS backgrounds and can't hold layers, so live fills work on shapes only; a path layer's fill is drawn in its stretched 200 × 200 space, so a live fill there is stretched with it; Firefox and WebKit not run.
+
 ### Phase 117 · Fills & strokes on text
-**Needs:** 31, 38, 113 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 31, 38, 113 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Text layers take the whole fill stack (gradients, images, noise, masks, blend modes) and several strokes, so a photo or a gradient shows through the letters. Text stays real, selectable and readable (`background-clip: text` in the export).
 
 **You'll see:** a photo inside a headline that is still real text.
 **Done when:** the accessibility tree reads the text once; stage and export match within 1% in 3 browsers.
 
+**Status check (2026-11-15), 🚧:** text already took gradient and image fills through `background-clip: text` (Phase 35); the noise, pattern and mesh fills of Phases 114–115 work on text the same way, and per-fill blend modes too. **Built (Lane C): several strokes on text.** `paint.strokes` is now legal on text, and each stroke paint can carry its own `weight` and `align` (`core/paint/paints.ts`, shared with Phase 118). A text with strokes keeps its words as real, selectable text (clear), and hidden copies (`aria-hidden`) draw each stroke and the fill in order: outside strokes at twice their weight below, then the fill (whatever paint it is), then centre and inside strokes on top (`core/render/archetypes/Text.tsx`). Verified (`textStrokes.test.ts`, 3 tests): the order and widths of three strokes and the fill; a gradient fill above its stroke; noise on text. In Chromium (`text-strokes.spec.ts`): a headline with a gradient fill and two strokes, **the accessibility tree reads it once** on the canvas and in the exported site, and **0.00% of pixels differ** between them. **Not done:** a text stroke draws in one colour (a gradient stroke paint uses its first colour: CSS strokes text in a colour, not a picture); inside strokes draw as centre ones; per-fill masks don't apply on text (CSS can't mask one background layer); no stroke list in the inspector yet (the list UI is Phase 118; strokes are set by `paint.setStrokes`); Firefox and WebKit not run.
+
 ### Phase 118 · Stroke depth: several strokes, gradients, alignment & markers
-**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Several strokes per layer, each with its own paint (solid, gradient or image), inside, centre or outside alignment, caps and joins, and arrowheads and markers at the ends of open paths.
 
 **You'll see:** a shape with a gradient outline inside a thin dark one, and an arrow line.
 **Done when:** 30 stroke references match in 3 browsers and in the export.
 
+**Status check (2026-11-15), 🚧:** the FigCraft port had a list of stroke paints (solid, gradient, image) sharing one weight and position, caps, joins and arrowheads (`core/render/strokePaint.tsx`); the new editor's Stroke section showed several rows but **saved only the first visible one** (a second stroke was silently lost). **Built (Lane C):** each stroke in `paint.strokes` can carry its own `weight` and `align`; when any does, `StrokeStack` draws one masked stroke layer per stroke, the first on top (outside strokes twice as wide with the shape cut out, inside ones clipped to it). The Stroke section now **keeps every row** for shapes, lines, paths and text (each row's colour, width and position saved to `paint.strokes`; rows are read back from it), and Position belongs to the row when a layer has several. Verified (`strokeStack.test.ts`, 2 tests): order, widths, clipping and a gradient stroke paint. In Chromium (`stroke-depth.spec.ts`): **30 stroke references** (rectangle, ellipse, star, polygon, line and path × one centre stroke, outside and inside, a gradient stroke, three stacked strokes, a dashed stroke with arrowheads) match between the canvas and the exported site, **the worst within 0.60% of pixels** (budget 1%); adding a second stroke row in the inspector keeps both, with its own width and position. The existing stroke specs (hero, Lane A issues, tools) still pass. **Not done:** the row editor sets solid colours only (gradient and image stroke paints are set by `paint.setStrokes`); dashes, caps and joins are still per layer, not per stroke; Firefox and WebKit not run.
+
 ### Phase 119 · Variable-width strokes
-**Needs:** 103, 118 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 103, 118 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Change a stroke's width along its length with handles on the canvas (taper, swell, calligraphic), and save width profiles to reuse. Exported as outlined paths.
 
 **You'll see:** a line that tapers to a point at both ends.
 **Done when:** profiles round-trip exactly; exported outlines match the stage within 0.5 px.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the FigCraft port already drew variable-width strokes as outlines (`stroke.widthProfile`, `variableOutline` in `core/paths/strokes.ts`). It had six presets, but only the legacy editor offered them. The new editor had no width controls, no way to save a profile, no calligraphic stroke and no handles on the canvas.
+
+**Built (Lane C):**
+- A **Swell** preset, and **calligraphic** profiles: a nib at an angle makes the stroke thick where the path runs across the nib and thin where it runs along it. The result is computed from the layer's own path into an ordinary profile.
+- **Saved profiles** in the file (`widthProfiles`, an optional document field, so no migration), with save, apply, rename and delete commands.
+- A **Profile** group in the stroke popover.
+- **Width handles on the canvas:**
+  - each width point has a handle on each side of the path, as far out as the stroke is wide there;
+  - drag a handle to widen the stroke there and slide the point along the path; with Alt, only that side changes;
+  - click the path to add a point, and double-click a handle to remove its point;
+  - one undo step per drag.
+
+**Verified (`widthProfiles.test.ts`, 6 tests):**
+- Profiles round-trip exactly: stored text, every preset, a saved profile applied to another stroke, and the file saved and loaded through the schema.
+- Calligraphic widths are correct for horizontal, vertical and circular paths.
+- A tapered line renders the outliner's own outline.
+
+**In Chromium (`variable-width.spec.ts`):**
+- A tapered line, a swelling curve and a calligraphic circle export as outlines that match the stage's within **0.5 px**, as the Done-when line asks.
+- Choosing "Taper both ends" in the popover works.
+- Dragging a width handle on the canvas widens the stroke, and one undo brings it back.
+- A profile saved under a name and applied to another line gives it the identical profile.
+- The stroke, text-stroke and mesh specs and the canvas contract (41) still pass.
+
+**Not done:**
+- The handles follow the first subpath only and ignore the layer's rotation.
+- A calligraphic profile does not follow later edits to the path (apply it again).
+- Firefox and WebKit not run.
+
 ### Phase 120 · Brushes & pen pressure
-**Needs:** 39, 119 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 39, 119 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Pencil and brush tools that read pen pressure, tilt and speed (Pointer Events) into width profiles; smoothing; textured and pattern brushes; works with a mouse too (speed becomes width).
 
 **You'll see:** draw with a tablet pen and get strokes that thin and thicken like ink.
 **Done when:** recorded pen input produces the same paths in 3 browsers.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- Phase 39's pencil fitted drawn samples into a path. It recorded pressure but never used it.
+- The FigCraft port had stretch and scatter brushes (`stroke.brush`, `core/paths/brush.ts`) that follow a width profile.
+- There was no brush tool, and nothing turned pen input into width.
+
+**Built (Lane C):**
+- `core/paths/penInput.ts` turns a stroke's samples into a width profile:
+  - pressure (harder is wider), tilt (a flatter pen is wider), or speed (faster is thinner, like ink);
+  - smoothed along the stroke and sampled at 32 evenly spaced points, so the same input always gives the same profile;
+  - "Auto" picks pressure for a pen and speed for a mouse.
+- A **Brush tool** in the Pen flyout (shortcut **B**). It stays the tool stroke after stroke, and a settings bar on the canvas sets:
+  - size and colour;
+  - the brush: plain, or one of the eight stretch and scatter brushes;
+  - what drives the width: Auto, Pressure, Tilt, Speed or None;
+  - smoothing.
+- The canvas now reads every coalesced pointer sample and the pen's tilt.
+- The pencil keeps a pen's pressure; a mouse's pencil stroke is unchanged.
+- **Fixed:** the canvas's capture-phase tool handler also took presses on lists portaled out of it, so a Select opened from the bar couldn't be picked. Presses outside the stage's own DOM are now ignored.
+
+**Verified (`penInput.test.ts`, 7 tests):**
+- Harder is wider; the same input gives the same profile.
+- A mouse uses its speed, and a fast stretch is thinner.
+- A flatter pen is wider, and smoothing steadies a shaky hand.
+- A brush stroke is an open, unfilled path layer with its size, profile and brush; a mouse's pencil stroke is as before.
+
+**In Chromium (`brush-pressure.spec.ts`):**
+- A recorded pen stroke (48 samples with pressure and tilt), played back as pen pointer events, gives the same path and profile twice, and both equal the recording's expected result written in the spec. CI's Firefox and WebKit projects are held to the same result.
+- The settings bar sets the Ink brush and size 20.
+- A real mouse drag gets a speed profile.
+- Pen, tools, variable-width and the canvas contract still pass (53).
+
+**Not done:**
+- Firefox and WebKit not run locally.
+- No custom brushes made from a layer.
+- The preview while drawing is a thin line.
+
 ### Phase 121 · Layer effects II: glow, progressive blur, grain & frosted glass
-**Needs:** 35, 114 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 114 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Inner and outer glow; progressive blur (a blur that fades in along a direction) on layers and on what is behind them; a grain overlay; and a frosted-glass preset (blur, tint, edge light). Real refraction comes with backdrop sampling in Stage 4.
 
 **You'll see:** a header that blurs the page behind it more and more towards its top edge.
 **Done when:** each effect matches its reference within 1% in 3 browsers; fallbacks draw where `backdrop-filter` is missing.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port had the engine side, as one effect list (`paint.effects`): progressive layer and background blurs drawn as stepped backdrop bands, noise, texture and CSS glass.
+- The new editor's Effects rows showed only shadows and plain blurs.
+- There was no glow and no fallback where `backdrop-filter` is missing.
+
+**Built (Lane C):**
+- **Glows**: an outer or inner glow is a shadow with no offset, marked `glow`, so it draws exactly as a shadow does on the stage and in the export.
+- In the Effects rows:
+  - Outer glow, Inner glow (Colour, Size, Spread) and **Grain** (Strength, Size);
+  - a **Progressive** switch on layer and background blurs, with a start amount and a direction (stronger at the top, bottom, left or right);
+  - a **Frosted glass** preset, which makes a background blur, a light tint (unless the frame has a colour), an edge light (a thin inner glow) and a little grain.
+- The rows keep the effects they don't show (texture, glass, other noises).
+- **Fallback:** a frame that blurs its backdrop carries `data-backdrop-fallback` and a tint at least 85% opaque. An `@supports not (backdrop-filter …)` rule shows that tint, and hides the blur bands, where the browser can't blur.
+
+**Verified (`effectsII.test.ts`, 5 tests; `effectsModel.test.ts`, 1 test):**
+- Glows round-trip and draw as zero-offset shadows.
+- A progressive blur stronger at the top has 5 bands ending on the top edge.
+- Grain keeps other effects; frosted glass gives the four parts and keeps a frame's own colour.
+- The fallback tint and rule are rendered for backdrop blurs only.
+- The rows read back what they write.
+
+**In Chromium (`effects-ii.spec.ts`):**
+- Six references over a busy backdrop match between the canvas and the exported site (outer glow 0.02%, inner glow 0.00%, progressive background blur 0.00%, progressive layer blur 0.00%, grain 0.15%, frosted glass 0.00%; budget 1%).
+- The export carries the fallback rule.
+- In the inspector, a row becomes an outer glow, a background blur turns progressive (5 bands on the canvas), and the frosted-glass preset makes its rows.
+- The design-controls, FigCraft-port, Lane A issues and puffy-button specs and the canvas contract still pass (89).
+
+**Not done:**
+- The fallback is only on frames. Missing `backdrop-filter` can't be forced in Chromium, so the rule was checked for presence, not seen working.
+- Firefox and WebKit not run locally.
+- Real refraction waits for Stage 4.
+
 ### Phase 122 · Image adjustments & filters
-**Needs:** 37 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 37 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Non-destructive adjustments on images and image fills: exposure, contrast, saturation, temperature, tint, highlights and shadows, a simple curve, duotone and gradient map, sharpen and blur, with presets.
 
 **You'll see:** a duotone photo you can switch back to the original at any time.
 **Done when:** every adjustment matches its reference within 1%; the original file is never changed.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port had the seven adjustments (exposure, contrast, saturation, temperature, tint, highlights, shadows) and six presets, on image fills only, drawn as an SVG filter.
+- Image layers had CSS filters (`media.filter.*`) only.
+- There was no curve, gradient map, duotone, sharpen or "original", and the new editor showed none of it.
+
+**Built (Lane C):**
+- A picture's **look**: a five-point tone curve (monotone, never overshoots), a gradient map (duotone is two stops), sharpen, blur, and **show original** (keeps every setting, draws none).
+- It is drawn by one SVG filter after the seven adjustments, in order: colour matrix, highlights and shadows, curve, luminance and map tables, sharpen kernel, blur.
+- It works on image fills (the paint's `look`) and on Image layers (`media.adjust`, `media.look`), on the canvas and in the export alike.
+- Command `image.adjust` and seven look presets.
+- An **Adjust** group in the Image section and the image fill popover. A slider writes one undo step when it is let go.
+- `referenceImage` works the same filter out pixel by pixel.
+- **The picture's file is never touched:** only these settings change.
+
+**Verified (`imageLook.test.ts`, 6 tests):**
+- The curve passes through its points and stays monotone; a duotone maps black and white to its two colours.
+- The filter's steps come in order, and show original draws none.
+- Sharpen and blur do what they say in the reference.
+- An Image layer draws through the filter; show original sets `filter: none` and keeps the duotone.
+- An image fill's look survives save and load.
+- `media.src` and the paint's `src` are unchanged.
+
+**In Chromium (`image-adjust.spec.ts`):**
+- Twelve adjustments in the exported site match the reference: exposure, contrast, saturation, temperature, tint, highlights, shadows, curve, duotone, gradient map, sharpen and blur.
+  - The test picture is smooth gradients with a checkered patch.
+  - Each comparison is strict: a pixel counts as different when any channel is more than 8 of 255 off. **0.00% of pixels differ** for all twelve.
+  - A control checks that each adjustment really changes at least 5% of the picture.
+  - The 8 px border is left out, because browsers treat a blur's edge differently.
+  - Shots come from the export because the zoomed, panned canvas resamples the picture. The canvas uses the same filter element.
+- In the inspector, a duotone switches on; Show original gives `filter: none` and keeps it; switching back draws it again; the file is unchanged.
+- The image, cutout and FigCraft-port specs and the canvas contract still pass (37 + the depth test re-run alone).
+
+**Not done:**
+- The inspector edits two-stop duotones; longer gradient maps come from presets.
+- Firefox and WebKit not run locally.
+
 ### Phase 123 · Colour tools: palettes, harmony & contrast
-**Needs:** 45 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 45 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Palettes from an image, harmony rules (complementary, triad, analogous), tints and shades as tokens, and a contrast check (WCAG and APCA) that suggests the nearest colour that passes.
 
 **You'll see:** pick a photo and get a matching palette saved as colour tokens.
 **Done when:** the contrast check agrees with the reference formulas on 50 pairs; suggestions always pass.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** a WCAG ratio function existed (`paint/color.ts`), used for picking white or black text. There was no APCA, no suggestion, no harmony, no scale and no palette.
+
+**Built (Lane C):** `core/paint/colorTools.ts`:
+- **Contrast:**
+  - the WCAG 2 contrast ratio with its levels (AAA, AA, AA large);
+  - APCA Lc (APCA-W3 0.0.98G-4g constants);
+  - `suggestPassing`, the nearest colour that reaches a target. It keeps the colour's OKLCH hue and chroma and moves only the lightness, searching towards black and towards white and taking the nearer passing one. The result is rounded to whole channels and checked again, so a suggestion always passes; there is none only when even black and white fail.
+- **Harmony:** complementary, split complementary, analogous, triad, tetrad and monochrome, turned in OKLCH.
+- **Tints and shades:** an 11-step scale (50–950) whose step nearest the base is the base.
+- **Palettes from a picture:** deterministic k-means in OKLab on at most ~4,000 pixels, started from farthest-apart pixels.
+
+All of it is saved as colour tokens named in a group (`color.savePalette`, `color.harmony`, `color.scale`). `color.fixContrast` checks against the nearest parent with a background (white when none has one).
+
+A **Colour** section in the inspector has Contrast with Fix on text, Palette from picture on images, and Harmony and Tints & shades for any coloured layer.
+
+**Verified (`colorTools.test.ts`, 8 tests):**
+- WCAG and APCA agree with the reference formulas, written out from the specs, on 50 pairs.
+- The published anchors hold: 21:1; #777 on white 4.48; Lc 106.04, −107.88, 63.06 and −68.54.
+- On 50 pairs × 6 targets, every suggestion passes, a passing colour is kept, and there is no suggestion only when black and white both fail.
+- Harmonies, scales and palettes are correct and the same every time; they are saved as tokens; a text on a dark card is fixed against the card.
+
+**In Chromium (`colour-tools.spec.ts`):**
+- A photo of three colour fields gives a 3-colour palette saved as `Beach palette/1–3`, with the exact colours.
+- A low-contrast text shows "fail", Fix makes it pass AA, then AAA.
+- A shape's colour gives a triad and an 11-step scale as tokens.
+
+The design-coverage walker now lists the section's three button settings as quiet, each with a reason. Its remaining failures are the ones also on `main` (#102's panels).
+
+**Not done:**
+- Contrast is not checked over gradients or images behind a text.
+- Firefox and WebKit not run locally.
+
 ### Phase 124 · Text on a path
-**Needs:** 31, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 31, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Put text along any path or shape outline (start offset, alignment, side, letter spacing) and edit it in place on the canvas. Exported as real text (SVG `textPath`); the offset can be animated once keyframes exist (Phase 66).
 
 **You'll see:** text that follows a curve or runs around a circular logo.
 **Done when:** 5 fixtures place every glyph within 0.5 px of the reference in 3 browsers; the export matches.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the FigCraft port (F8) drew text on a path as an SVG `<textPath>` with a start, a side and the horizontal alignment, and had attach, set and detach commands. The new editor had none of it, the start lived inside a JSON property (not animatable), and double-clicking a text on a path opened a flat box over the hidden curve.
+
+**Built (Lane C):**
+- A **Text on path** section: Put on path, Start, Side, Align, Spacing, Take off path.
+- A start handle on the canvas, dragged along the path.
+- **In-place editing:** the curve stays and updates as you type. Escape or clicking away commits one undo step, and the curve is put back as the document says.
+- `typography.textPathStart`: the start as its own animatable number. The motion engine writes styles only, so it writes the start as `--ll-text-path-start` and the text moves its `startOffset` to follow it.
+- The path records the layer it came from.
+- **Fixed in the exporter:** SVG text is written inline. Indenting a `<text>`'s children had added white space to the words, shifting every glyph of exported text on a path.
+
+**Verified (`textOnPath.test.ts`, 5 tests):**
+- Putting text on a path records the source and the start; the drawn start follows the number, and old files read their stored start.
+- The start is animatable, and `styleWrites` writes it as the CSS variable.
+- Taking text off a path clears both.
+- The export writes SVG text inline.
+
+**In Chromium (`text-on-path.spec.ts`):**
+- Five fixtures place **every glyph within 0.5 px** of the reference (worst 0.43 px): an open arc, a circle starting a quarter round and centred, a wave with letter spacing, a line ending at its end, and an arc on its other side.
+  - The reference is independent of the browser's text-on-path layout. It follows SVG's rule (a glyph's midpoint on the path at its distance, turned to the path's direction), with prefix widths from a canvas and points from our own path geometry.
+- The exported site places every glyph the same, within 0.5 px.
+- In the editor: a text is put on a circle from the inspector; the start handle is dragged a quarter round; the words are edited in place, live on the curve.
+- The start follows the engine's CSS variable and goes back when it is removed. This was simulated by setting the variable by hand, not by playing real keyframes.
+- Text, fonts, export, stroke and canvas-contract specs still pass. Design coverage's only failures are the ten #102 controls also failing on `main`.
+
+**Not done:**
+- The text doesn't follow later edits to its source path.
+- An animated start isn't in the export yet (Phase 130).
+- Firefox and WebKit not run locally.
+
 ### Phase 125 · Text in shapes & typography depth
-**Needs:** 38, 124 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 38, 124 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Text that fills any shape (wraps inside a circle or a path), columns, OpenType features (ligatures, stylistic sets, tabular numbers), variable-font axes as sliders on the canvas, and styles per range of text.
 
 **You'll see:** a paragraph that wraps inside a circle, with true small caps.
 **Done when:** line breaks match the reference in 3 browsers for 5 shapes and 3 fonts.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port (F8) had OpenType feature toggles, small caps, variable-axis values and styled runs in the model and renderer. The new editor showed none of them.
+- Its in-place editor offered bold, italic, underline and strike but **saved only the plain words**, so range styles were lost.
+- Nothing put text inside a shape, and there were no columns.
+
+**Built (Lane C):**
+- **Text in a shape** (`text.shape`):
+  - The outline is cut into 2 px rows, each keeping its widest inside span, pulled in by the inset.
+  - The text lays out between two CSS floats whose `shape-outside` polygons follow the rows' left and right edges. The browser wraps live, the same on the stage and in the export.
+  - The first line starts where the shape is at least six ems wide. Text that doesn't fit runs on below the shape, where the box clips it.
+- **Columns.**
+- A **Type details** section:
+  - OpenType checkboxes, a stylistic set and small caps;
+  - variable-font axes as sliders, plus an axes bar **on the canvas** over the text;
+  - fill shape (with a shape selected too), inset, take out of shape;
+  - columns.
+- **Fixed:** the in-place editor now keeps styled ranges.
+
+**Verified (`textShape.test.ts`, 5 tests):**
+- A circle's rows are its chords; a line gets the narrowest span across its height.
+- The floats follow the rows, and the text starts at the first wide-enough line.
+- Pouring text into a circle draws the two shaped floats; inset and release work.
+- Columns are CSS columns.
+
+**In Chromium (`text-in-shapes.spec.ts`):** for **5 shapes** (circle, triangle, hexagon, diamond, pill) **× 3 fonts** (Arial, Georgia, Courier New), the browser's line breaks match the reference on all **161 lines**.
+- The reference gives each line the narrowest span across its height, from our own geometry, and puts words on it while the line, measured with a canvas in the same font, fits. A line overshooting by less than one browser layout unit (1/64 px) still fits; one tie, Courier's 96.0156 px on a 96 px line, needed it.
+- The text that doesn't fit is below the shape.
+- In the editor:
+  - text is poured into a circle (two `shape-outside` polygon floats);
+  - tabular numbers on, ligatures off, stylistic set 3 and small caps, all checked as computed styles;
+  - the weight axis is dragged to its end on the canvas bar;
+  - a bold range typed in place is saved as a run;
+  - two columns.
+- The text-editing, fonts and typography specs (27) still pass. `new-ui-canvas` "a new picture goes into the frame" failed under three workers and passed alone. Design coverage's only failures are #102's ten controls, also failing on `main`.
+
+**Not done:**
+- No overflow marker.
+- No per-range font size or family.
+- Firefox and WebKit not run locally.
+
 ### Phase 126 · Icons, illustrations & stock media
-**Needs:** 36 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 36 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] An icon panel with open-licence sets (licences recorded in `LICENSES.md`, Law 7), search, and insert as editable vectors; stock photo search through a provider, with attribution; everything goes into the asset store with its source.
 
 **You'll see:** search "arrow", drop an icon in, and recolour it like any shape.
 **Done when:** every inserted icon and photo has its licence and source in the asset store; the icon set is in `LICENSES.md`.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the asset store kept imported files, but not where they came from or their licence. There was no icon panel or stock search. Lucide was a dependency only for the editor's own interface icons.
+
+**Built (Lane C):**
+- **Icons & Photos**, opened from the toolbar's Image button or "Icons & Photos…" (`insert.media`).
+- **Icons:** Lucide's ~4,100 icons, loaded one by one as they are shown, with a ranked search. Inserting one turns its shapes into a clean SVG (geometry only, nothing that runs or links), keeps it in the asset store and places it as editable vector layers, recoloured like any shape.
+- **Photos:** Openverse's search (openly licensed images, no key). Each result shows its author and licence. Inserting one fetches the picture into the asset store and makes an image layer named after its title.
+- **Every inserted icon and photo** has `source` on its asset (kind, provider, id, title, page, licence, licence link, author and author link, and Openverse's credit line), and its layers point at the asset (`asset.source`).
+- Icon licences are exact: ISC, or "ISC and MIT (Feather)" for the 115 icons Lucide's licence lists as Feather-derived.
+- `DOCS/INITIAL/LICENSES.md` records Lucide and Openverse. The dialog says the search words go to Openverse.
+- **Fixed:** an imported icon lost its stroke width, which drew it invisible.
+
+**Verified (`mediaLibrary.test.ts`, 5 tests):**
+- The icon SVG keeps only geometry (no script, no `onclick`) and puts the stroke on each shape.
+- Search ranks exact name, then prefix, then a word prefix, then containing.
+- Licences per icon are right.
+- Openverse results are read with licence, author and credit, and bad ones are dropped (no id, no https picture, no licence).
+- An inserted icon's asset keeps its source through save and load; its layers point at it and are stroked.
+
+**In Chromium (`icons-photos.spec.ts`):**
+- Search "arrow", insert Arrow right from the Image button. Its asset has the Lucide source with "ISC and MIT (Feather)". It is recoloured in the Stroke section and the canvas draws the new colour.
+- Search photos, with Openverse answered by a recorded reply. The result shows "Ana · CC BY 4.0"; inserting it gives an image layer whose asset has the full source and credit line.
+- Tools and the canvas contract still pass (50).
+
+**Not done:**
+- Exported pages don't yet show credit lines (Phase 130).
+- No illustration sets.
+- Firefox and WebKit not run locally.
+
 ### Phase 127 · 2.5D spaces: perspective & depth
-**Needs:** 27, 41 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 27, 41 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Any frame or group can become a 3D space for its children: perspective strength and vanishing point on the canvas; each child gets depth (`transform.z`) and tilt handles; children are drawn in depth order. Real page layers, drawn with CSS 3D, so the export needs no 3D library.
 - [ ] An orbit preview to look around the space; editing goes back to the flat view.
 
 **You'll see:** tilt a group and see its cards stand at different depths.
 **Done when:** stage and export match within 0.5% at 3 viewing angles in 3 browsers.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** a layer could tilt in 3D on its own (`transform.perspective`, `rotateX` / `rotateY`, `translateZ`, `style3d: preserve3d`) from the Position section's More. No frame acted as a space for its children, and nothing on the canvas set a vanishing point or a depth.
+
+**Built (Lane C):** `core/editing/spaceOps.ts` and a **3D space** section.
+- **A frame or group becomes a 3D space:**
+  - its perspective strength (`transform.perspective`);
+  - the vanishing point (`transform.origin`, % of its box);
+  - the angle it is seen from (`rotateX` / `rotateY`);
+  - `preserve-3d`, so its children keep their depth.
+- **Each child** has a depth (`transform.translateZ`) and a tilt.
+- They are real page layers in CSS 3D (`perspective()` around the vanishing point, `preserve-3d`), drawn in depth order by the browser, on the stage and in the export alike. No 3D library.
+- **On the canvas:**
+  - a cross at the vanishing point to drag;
+  - a depth handle beside a selected child (drag up to bring it closer);
+  - an **Orbit** preview that turns the drawn space as you drag. It saves nothing, and selecting outside the space ends it and shows the space as set.
+- Commands `space.make`, `space.release`, `space.set`, `space.setDepth`. Each drag is one undo step.
+
+**Verified (`spaceOps.test.ts`, 4 tests):**
+- A space draws `perspective(700px) rotateX(15deg) rotateY(-20deg)` around `transform-origin: 25% 60%` with `preserve-3d`.
+- A child's depth and tilt are its own transform; there is no depth outside a space.
+- Flattening clears the space and keeps the children's depth.
+- Depth projects towards the vanishing point as P / (P − z) says.
+
+**In Chromium (`space-25d.spec.ts`):**
+- A space with four cards at depths −250, 0, 140 and 260, each tilted, matches between the canvas and the exported site at **three viewing angles**: 0°/0° 0.00%, 18°/−22° 0.01%, −12°/28° 0.01% of pixels (budget 0.5%).
+- In the editor:
+  - the 3D space switch;
+  - a card's depth set to 200 in the inspector;
+  - the vanishing point dragged 56 px, giving 60% 50%;
+  - an orbit drag turns the drawn space 30° without changing the document, and selecting the page ends it.
+- The canvas contract still passes. Design coverage's only failures are the ten #102 controls also failing on `main`.
+- **Fixed on the way:** the stage's capture-phase pointer handler took the orbit drag as a marquee after the first move. The overlay's interactive parts are now marked as canvas chrome.
+
+**Not done:**
+- Selection boxes and hit areas stay flat, so a deep card is picked where it would sit flat.
+- Groups inside a space don't pass depth on to their own children.
+- Firefox and WebKit not run locally.
+
 ### Phase 128 · 3D arrangements for page layers
-**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Arrange a group's children on a ring, dome, helix, sphere, cylinder, wall or stack, with spacing and "face the centre / face the viewer". Each item stays a real, editable layer. (Dragging and spinning them comes in Stage 4.)
 
 **You'll see:** a ring of image cards like a 3D carousel, made in one click.
 **Done when:** the 7 arrangements place items within 0.5 px of the reference; the export matches.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** nothing placed layers in 3D arrangements. Phase 127 (Lane C) added the 2.5D space they stand in.
+
+**Built (Lane C):** `core/editing/arrange3d.ts`.
+- A group's children placed on a **ring, dome, helix, sphere, cylinder, wall or stack**, with a radius and spacing, each facing out, facing the centre or facing the viewer.
+- The group becomes a 3D space when it isn't one. Every item stays a real, editable layer: its position, depth (`translateZ`) and turn (`rotateX` / `rotateY`) are its own properties, written once as one undo step.
+- A layer draws its turn before its depth (depth runs along the turned face). So an item meant to stand at `p` facing `n` gets depth `p · n`, with the rest of `p` in its frame position. Facing out, in or at the viewer this is exact.
+- Rings, helices and cylinders turn about the vertical only, so items stay upright.
+- Spheres and domes use an even golden-angle spread.
+- Command `space.arrange`, and an **Arrange** group in the 3D space section ("Arrange 6 in 3D" makes a carousel in one click).
+
+**Verified (`arrange3d.test.ts`, 4 tests):**
+- For all 7 arrangements × 3 facings, each item's centre, drawn as a layer draws it, lands where the arrangement says (within 0.01 px).
+- A ring of 6 is upright, every 60°, at its radius; facing in it turns 180°; facing the viewer it is straight on.
+- Sphere items lie on the radius and dome items on the top half; the wall is a grid; the stack goes back.
+- Arranging makes the group a space and leaves each child its own layer.
+
+**In Chromium (`arrange-3d.spec.ts`):**
+- For all **7 arrangements**, eight cards in a space seen at 10°/−15° with perspective 1200 land **within 0.5 px of the reference** (worst 0.000 px).
+  - The reference is each card's corners projected by CSS 3D's matrices (the space's perspective and view about its vanishing point, then the card's turn and depth about its centre), worked out apart from the browser.
+- **The exported site places every card the same** (within 0.5 px).
+- From the inspector, "Arrange 6 in 3D" turns six image cards to 0°, 60° … 300° at depth 300, and each card is still selectable with its depth shown.
+- Design coverage lists the Arrange settings and the Orbit preview as quiet, with reasons; its remaining failures are #102's ten controls, also on `main`.
+
+**Not done:**
+- No dragging or spinning the arrangement (Stage 4).
+- Items keep their own size rather than fitting the arrangement.
+- Firefox and WebKit not run locally.
+
 ### Phase 129 · Depth camera & parallax preview
-**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] A frame gets a camera: pan, dolly and focus; layers further away move less (parallax comes from depth, not from per-layer settings); depth-of-field blur by distance. Drag the camera to preview. Stage 4 binds it to scroll and the cursor.
 
 **You'll see:** set a depth on each layer and drag the camera to see the scene parallax.
 **Done when:** layer offsets match the projection formula at 10 camera positions; the export matches.
 
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** there was no camera. Phase 127 (Lane C) made a frame a 2.5D space.
+
+**Built (Lane C):**
+- **A space gets a camera:**
+  - pan (`camera.x` / `camera.y`), dolly (`camera.z`), focus depth (`camera.focus`) and aperture (`camera.aperture`, px of blur per 100 px from the focus);
+  - moving the camera moves the world the other way: one `translate3d` on the space after its view angle, so layers further away move less. Parallax comes from depth, not from per-layer settings.
+- **Depth of field:** the space passes its camera to its children through the render context, on the stage's path and the export's alike. Each child blurs by |depth − focus| × aperture ÷ 100.
+- **Drag the camera:** with "Drag camera" on, a drag over the space pans the camera, and with Shift, up dollies in. One undo step per drag.
+- The inspector's Camera group has Pan X, Pan Y, Dolly, Focus and Aperture.
+- Command `space.setCamera`, and `cameraProject` (the projection formula).
+
+**Verified (`camera.test.ts`, 3 tests):**
+- The space draws `perspective(800px) translate3d(-40px, 20px, 100px)`.
+- The formula: near layers move more than the pan and far ones less; a dolly brings things closer.
+- Depth of field: −350 px from a focus at 150 with aperture 2 is `blur(10px)`; in focus is sharp; aperture 0 is all sharp.
+
+**In Chromium (`depth-camera.spec.ts`):**
+- Five cards at depths −600 … 300: at **10 camera positions** (pans and dollies, alone and together) every card's centre matches the projection formula **within 0.5 px** (worst 0.000 px).
+- The exported site places them the same (within 0.5 px) and blurs each card by the same amount; on the canvas the blur is `blur(9px)` at −600 with aperture 1.5, and none at the focus.
+- A camera drag on the canvas pans (−60, −20) as one undo step.
+- The 2.5D space and arrangement specs, the canvas contract, export, effects, strokes and FigCraft-port specs still pass (66). Design coverage's only failures are #102's ten controls, also on `main`.
+
+**Not done:**
+- Binding the camera to scroll and the cursor (Stage 4).
+- The camera's numbers aren't drawn by the motion engine yet, since they aren't CSS properties of their own.
+- Firefox and WebKit not run locally.
+
 ### Phase 130 · Design-depth export
-**Needs:** 49, 108, 111, 112, 125, 128, 129 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 49, 108, 111, 112, 125, 128, 129 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] The Phase 49 exporter covers everything in this stage: boolean groups, modifiers and generators baked to SVG paths; fill stacks with blend modes and masks; noise, pattern, mesh and live fills; strokes, width profiles and brushes; effects; text on paths and in shapes; 2.5D spaces as CSS 3D. Anything that can't be exact is listed as a warning.
 
 **You'll see:** export a design that uses all of it and it looks the same in the browser.
 **Done when:** the HTML parity gate (≤ 0.5% at 5 widths) passes on a fixture using every feature of this stage; the export harness is green for Next, Vite and HTML.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the Phase 49 exporter already drew every layer with the stage's own render definitions. Each Stage 3 phase checked its own feature against the export as it was built. Nothing exported a page using all of them together, nothing listed what can't be exact, and stock photos' credits weren't written.
+
+**Built (Lane C):**
+- **The design-depth fixture** (`tests/export-harness/design-depth-fixture.ts`): one page using every Stage 3 feature, made with the editor's own operations. It covers:
+  - a live boolean group, a scooped corner, modifiers and a generator;
+  - a fill stack with blend and mask, noise, pattern, mesh and live fills;
+  - text strokes, a stroke stack, a taper and a brush;
+  - a glow, a progressive blur, frosted glass and grain over a busy backdrop;
+  - a duotone image;
+  - text on a path, in an ellipse, in columns and with OpenType;
+  - a 2.5D space arranged as a ring with a depth camera and depth of field.
+- **Warnings** (`core/export/site/designDepth.ts`) for what an exported page can't do exactly, only when the page uses it:
+  - progressive blurs in 5 steps;
+  - glass without refraction;
+  - mesh gradients at a fixed resolution;
+  - the `backdrop-filter` fallback;
+  - animated text-path starts and cameras exported at rest;
+  - 3D spaces clicked flat.
+- **Photo credits:** `CREDITS.md`, plus a credits line on plain HTML pages, as CC BY asks. On the React targets, a warning says where the credits are.
+- **The export harness** builds the fixture page for Next.js and Vite, and checks its plain HTML carries every feature's construct and its warnings.
+
+**Verified (`designDepth.test.ts`, 3 tests):**
+- Warnings appear only for features in use.
+- Credits are written to `CREDITS.md` and as an HTML line.
+- The fixture's export carries every construct: boolean path, `<textPath>`, `shape-outside` polygons, `preserve-3d`, the image filter, `<foreignObject>`, `<mask>`, columns.
+
+**In Chromium (`design-depth-export.spec.ts`), the HTML parity gate:**
+- The canvas's own markup for the fixture page and the exported page differ in **0.00% of pixels at 1440, 1024, 768, 480 and 375 px**, for the whole page and for each of the 23 features' boxes (budget 0.5%).
+- The page was checked by eye: every feature draws.
+
+**Export harness:**
+- The fixture page typechecks and builds for **Vite** and **Next.js**. This was run locally through a shell, because the harness's `spawnSync("npm")` can't start `npm.cmd` on Windows; every harness build fails locally that way, including the ones that pass in CI.
+- Its plain-HTML check passes.
+- CI's export-harness job runs all three on Linux.
+
+The Phase 49 export spec, text-on-path and icons-and-photos still pass.
+
+**Not done:**
+- Animated text-path starts and camera moves are exported at rest (named in the warnings).
+- Firefox and WebKit not run locally.
 
 ### Phase 131 · Stage 3 gate: the design-depth journey
 **Needs:** 103–130 · **Was:** — (new in v4.1) · **Status:** 📋
@@ -1591,6 +2157,8 @@ The document and World Environment have their own stores, After-track actions mo
 ---
 
 # SURFACES TRACK — pulled forward (Phases S1–S8)
+
+> **v5 (2026-11-14):** this track is scheduled by the release plan (§2). S1 – S9 are package R3.1, and they are frozen until R3 is the active release.
 
 > **Why here (2026-11-11, Lane A, by the project owner's priority):** the glossy "inflated" button (the collectui reference) can't be made from fills and shadows: it is light on a curved, creased surface that dents where it is pressed. These eight phases pull forward small, generic parts of Phases 175 (distance fields), 182 (surfaces and lights), 223 (inflate) and 75/179 (displacement), and add three pieces no phase had: surface creases and wrinkles, pointer-driven surface physics, and a one-step reference image. They work on any shape or frame, not only buttons. They keep their **S** numbers so the 277 phases are not renumbered; when Stage 4 is built, 175/182/223 extend these instead of starting again. Rendering: one shared WebGL2 context for every surface, drawn into each surface's own 2D canvas (`DOCS/INITIAL/decisions/0018-surface-rendering.md`), so Law 13 holds until the Phase 173 compositor takes over. Stage 4+ is not assigned to a lane; Lane B is told in the PR.
 
@@ -1672,6 +2240,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 # DESIGN MASTER TRACK — pulled forward (Phases D1–D21)
 
+> **v5 (2026-11-14):** this track is scheduled by the release plan (§2), not by the D number. D22 – D24 are in R0; D3 – D15 and D18 are in R1; D19 – D21 are R4; D16 and D17 are in Later (theme L2, the photo studio).
+
 > **Why here (2026-11-13, Lane A, by the project owner's priority):** the Design panel is about a fifth of what it must be (estimate of 2026-11-13: about 26% built and reachable, about 23% counting the controls that do nothing). The goal is a master tool for the most complex website animations, built by combining a few blocks: **drivers** (scroll, pointer, speed), **relationships** (parent, follow, links, opposite), **repeat** (cloners and effectors), **break apart** (split text, explode models), **choreography** (scroll scenes), **effects** (speed), **tracking**, and **code freedom** (write any CSS). The test is the watch page (D21). Like the Surfaces track, this track is **pulled forward** ahead of the number order. Numbered phases it takes over say *→ Design track D…* in the index. Lane B's phases in it (D11, D12, D15, and Main 99 for D17) stay Lane B's: agree before Lane A builds any of them.
 
 **Order:** D1 → D21. Lane B's items (D11, D12, D15) can run in parallel with Lane A's D3 – D10. `npm run check:design-track` checks this table against the entries.
@@ -1705,7 +2275,7 @@ The document and World Environment have their own stores, After-track actions mo
 | D19 | 3D model parts & explode | new (uses ROADMAP_3D 3D-158 import, 3D-033 materials, 3D-037 lights) | D4, 3D-158, 3D-033, 3D-037 | A | 📋 |
 | D20 | Labels that follow 3D parts | new | D19, D6 | A | 📋 |
 | | **Gate** |||||
-| D21 | Gate: the watch page | new | D1 – D20 | A | 📋 |
+| D21 | Gate: the watch page | new | D1 – D15, D18 – D20 | A | 📋 |
 | D22 | Variables, tokens & styles manager in the new editor | Main 45, 47 (core exists; no panel) | D1 | A | 📋 |
 | D23 | Variants & instances in the new editor | Main 46, 47 (core exists; authoring UI missing) | D1 | A | 📋 |
 | D24 | Open and save a project file from the new editor | Main 3, 36 (core exists; no UI) | D1 | A | 📋 |
@@ -1823,6 +2393,8 @@ The document and World Environment have their own stores, After-track actions mo
 
 **Status check (2026-11-14), 🚧:** **started: scroll scenes now work in the new editor** (taken over from Lane B by the owner's decision, 2026-11-14). Before this, only the legacy editor ran Phase 81's scroll runtime: the new canvas never turned it on and registered none of its commands. Now: the scroll commands are registered; the new canvas has a **scroll host** (the previewed frame's own scroll, and each layer's layout position, measured from layout and not from where it is drawn, so an animation cannot move its own range); and a **Scroll** section in the Design panel adds a **parallax** (follows the scroll) or a **reveal** (plays once when seen) for position, opacity, scale or rotation, with a start and end position (validated, like `top 80%`), a **pin**, and a list of the layer's scroll animations with pin and remove. **Verified in Chromium (`tests/e2e/scroll-scenes.spec.ts`):** a parallax tracks the view-progress formula at four scroll positions and goes back when the page does, and is as designed out of Preview; a reveal waits invisible and plays in when scrolled into view; a pinned layer holds its place for the length of its range, then scrolls on by exactly the rest. **Not done:** (1) the **export**: the static export plays no clips (scroll or otherwise), so scroll scenes are not in an exported page, and "scroll tapes matching the export" is not met; (2) **pinned spacing** (a pin holds the layer but does not lengthen the page); (3) **snap points**; (4) the **scroll simulator** (Phase 82: scrub the page's scroll from the timeline, scroll as an input track) and section choreography such as scroll-driven staggers; (5) native CSS scroll-driven animations; (6) the 3-browser check (Chromium only here).
 
+**Status check (2026-11-14, later), 🚧:** added: **scroll animations in the export** (`src/core/export/runtime/scrollClips.ts`: scrub, reveal and pin clips are sampled into tables at export time and a small script reads them with the same range maths as `core/scroll`; a scrubbed clip lands within 1.5 px of the kernel at 25 scroll positions, easing included; custom ranges, pin and reveal-once tested in a fake page), **snap points** (Snap and Page snap in the Scroll section write `scroll-snap-align` and `scroll-snap-type`; the export puts the type on `html`), and a **scroll simulator** (Preview the page and drag a slider that moves the previewed frame's own scroll, so it is the same path as the wheel). Tests: `src/core/export/runtime/__tests__/scrollClips.test.ts` (6). **Not done / not verified:** the new browser controls (simulator, snap) have no browser test yet (no browser could be launched on the machine when written); non-transform properties are not exported; the three-browser check; native CSS scroll timelines.
+
 ### Phase D12 · Split text & text motion
 **Needs:** D2 · **Was:** Main 83, 84 · **Lane:** A · **Status:** 📋
 - [ ] Split text into characters, words or lines, accessibly, and animate them with stagger. Lane B's phases, **taken over by Lane A on 2026-11-14 by the project owner's decision**.
@@ -1831,6 +2403,8 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** Main 83 and 84's own gates.
 
 **Status check (2026-11-14), 🚧:** **Phase 83, words and lines (taken over from Lane B by the owner's decision, 2026-11-14).** Letters could already be split (and staggered); now **words** and **lines** too (`groupLetterBoxes` in `splitText.ts`, pure: words by the word segmenter with punctuation kept attached, lines by the drawn rows), through new commands `text.splitWords` and `text.splitLines` and **Words** and **Lines** buttons in the Typography panel. Each piece is a text layer at exactly its place, in a group named with the whole text. **Accessibility, which was missing from the renderer entirely:** `a11y.label` and `a11y.role` were stored and editable but never drawn; now Text and Container draw `aria-label`, `role` and a new `a11y.hidden` (`aria-hidden`), a role is checked against a plain-word pattern, and the **split group is named with the whole text while every piece is hidden**; the exported page carries the same attributes (unit-tested). **Phase 84, the stagger:** Animate now staggers by kind (letters 0.04 s, words 0.1 s, lines 0.18 s; the command used to force 0.04). **Verified:** 8 unit tests of the grouping (words, punctuation, quotes, accents and emoji as one letter, line breaks, refusal on a mismatch), 4 of the attributes and the export; and in Chromium (`tests/e2e/split-text.spec.ts`): a wrapped paragraph of 13 words splits into 13 pieces, **each within 2.5 px of where its word was drawn**, the group has the label and role, all pieces are hidden, **the accessibility tree (`ariaSnapshot`) shows the text once**, and one undo restores the paragraph; lines split into one piece per drawn row that read back as the paragraph; Animate staggers a word at a time. **Not done:** (1) the Done-when's **3 browsers** (Chromium only here); (2) re-detecting lines **on resize and after fonts load** (a split is a snapshot of the layout when it was made); (3) **styled runs**: a text with several styles cannot be split into words or lines (it can into letters) and says so; (4) **Phase 84's other text motion**: scramble and decrypt, typewriter with caret, rotating words, count-up, gradient sheen and variable-font axis animation are not built; blur and offset reveals are the existing entrance only; (5) **Phase 153's** non-destructive edits and Detach are not built.
+
+**Status check (2026-11-14, later), 🚧:** added Phase 84 **text motion** (`src/core/text/textFx.ts`, pure): scramble (seeded, settles left to right), typewriter with caret, rotating words, count-up with `Intl.NumberFormat`, all a function of one `text.fxProgress` (animatable, drivable by scroll through **Play with scroll**), plus **gradient sheen** and **variable-font axis** animation. The text renderer draws the shown text hidden from assistive technology and the whole text once; the kernel adapter rewrites only the `data-fx` span; the export script carries the same function (parity tested at 21 progress values in 5 cases, with a count-up, grapheme-aware typewriter and Unicode scramble). **Re-detect lines:** a split group remembers its source (`split.source`); `text.redetectLines` puts the text back and splits again, on demand (button) and when fonts finish loading. Tests: `src/core/text/__tests__/textFx.test.ts` (8), `src/core/editing/__tests__/redetectLines.test.ts` (2). **Not done / not verified:** no browser test for the new section yet (no browser could be launched); styled-run texts still cannot split into words or lines; scramble/count-up were not compared with `evaluate()` in 3 browsers; Phase 153 Detach.
 
 ### Phase D13 · Scroll-scrubbed image sequences & video
 **Needs:** D11 · **Was:** Main 188 · **Lane:** A · **Status:** 📋
@@ -1905,7 +2479,7 @@ The document and World Environment have their own stores, After-track actions mo
 ## Gate
 
 ### Phase D21 · Gate: the watch page
-**Needs:** D1 – D20 · **Was:** new · **Lane:** A · **Status:** 📋
+**Needs:** D1 – D15, D18 – D20 · **Was:** new · **Lane:** A · **Status:** 📋
 - [ ] The benchmark: a 3D watch pinned for four screens; it turns with scroll while a ring of elements turns the other way; then it explodes into parts with labels following; words stagger in; a dot field reacts to scroll speed. Built in about 10 steps, exported under its size budget.
 
 **You'll see:** the finished watch page, live.
@@ -1931,12 +2505,18 @@ These three things work in the core and in the legacy editor, but the new editor
 **You'll see:** a button component with Primary and Secondary variants that you switch in an instance.
 **Done when:** the Phase 46 and 47 behaviours pass against the new editor.
 
+**Status check (2026-11-14, later), 🚧:** a **Component** section (`ComponentsSection.tsx`) in the Design panel runs the real `component.*` commands: make a component from a layer, add variant properties (Kind: Primary, Secondary), expose text, picture or on/off properties, insert an instance; on an instance switch variants, edit the exposed properties, Go to main, Reset overrides, Detach; Combine as variants for a multi-selection. The earlier unused `ComponentSection.tsx` called commands that do not exist and is left untouched. **Not verified:** no browser test was run (no browser could be launched); the core behaviours are covered by the Phase 46 and 47 unit tests.
+
+
+
 ### Phase D24 · Open and save a project file from the new editor
 **Needs:** D1 · **Was:** Main 3, 36 (core exists; no UI) · **Lane:** A · **Status:** 📋
 - [ ] File menu: Save as a project file (pictures embedded), Open a project file, with a clear message when it is from a newer version.
 
 **You'll see:** save a project, open it in a fresh browser, and it is identical.
 **Done when:** a saved file opens identically in a fresh browser, including pictures and 3D data.
+
+**Status check (2026-11-14, later), 🚧:** the File menu already had **Import project file** and **Export project file** (pictures embedded); this round a file that cannot be opened is now refused **in words** (a newer file format version, not JSON, not a project) instead of only in the console. `tests/e2e/project-file.spec.ts` (3) is written: save, open in a fresh browser context and compare the document; a newer-version file; a junk file. **Not verified:** that spec has not run (no browser could be launched on the machine after the code was written), so D24 is not shown to meet its gate.
 
 ---
 
@@ -1947,518 +2527,541 @@ These three things work in the core and in the legacy editor, but the new editor
 > Order inside the stage: inputs and awareness (132–137) → bindings and connecting (138–142) → DOM reactions, gestures, dragging, keyboard and state machines (143–151) → kinetic composition, roles and data (152–158) → Blueprints, physics, joints, soft bodies and sound (159–171) → rasteriser and GPU effects (172–191) → effects as data and code components (192–196) → interactive export and accessibility (197–199) → budgets, the composition suite and the gate (200–202). The design is `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md` and grammar §13–§14; v4.1 added 26 phases to it.
 
 ### Phase 132 · Input bus & coordinate spaces
-**Needs:** 55, 102 · **Was:** v3 59.1 · **Closes:** AUD-45 (input, partial) · **Status:** 📋
-- [ ] `src/core/signals/inputBus.ts`: one passive listener set per frame host (pointer, wheel/scroll, keys, focus, resize, visibility, orientation), sampled in the scheduler's input phase into an immutable per-frame snapshot (Law 12). A lint rule forbids these listeners anywhere else.
-- [ ] Coordinate spaces: layer-local, parent, frame and page, in px, uv and ndc, resolved through `renderer.measure()`, so a background with `pointer-events: none` still knows where the cursor is.
+**Needs:** 55, 102 · **Was:** v3 59.1 · **Closes:** AUD-45 (input, partial) · **Status:** 🚧
+- [x] `src/core/signals/inputBus.ts`: one passive listener set per frame host (pointer, wheel/scroll, keys, focus, resize, visibility, orientation), sampled in the scheduler's input phase into an immutable per-frame snapshot (Law 12).
+- [x] Coordinate spaces: layer-local, parent, frame and page, in px, uv and ndc, resolved through `renderer.measure()`, so a background with `pointer-events: none` still knows where the cursor is.
+
+**Status check (2026-11-15, Lane D), 🚧:** `src/core/signals/inputBus.ts` adds `createHostInputBus` (single passive listener set + `input` scheduler snapshot) and `convertPagePoint` across `local`/`parent`/`frame`/`page` in `px`/`uv`/`ndc` (with rotation support), and `src/core/bindings/inputBus.ts` now honors `pointerIn` spaces. Unit tests written in `src/core/signals/__tests__/inputBus.test.ts` (awaiting batch test verification at Phase 141).
 
 **You'll see:** nothing new yet; 133 adds live meters.
 **Done when:** the grep/lint gate finds no stray pointer, scroll, wheel or key listeners; input sampling costs < 0.3 ms per frame with 200 bound layers.
 
 ### Phase 133 · Signal catalogue, including the keyboard
-**Needs:** 132 · **Was:** v3 59.2 + new (keyboard) · **Status:** 📋
-- [ ] The typed catalogue of spec §4: `pointer.*`, `pointer.inside(L)`, `hover(L)`, `press(L)`, `focus(L)`, `proximity(L)`, `scroll.*`, `view(L).*`, `time`, `frame.dt`, `audio(L).*`, `device.tilt*` (permission-gated), `state`, `sm`, `prop`, `var`, `seed`.
-- [ ] **New: keyboard signals:** `key.down(K)`, `key.held(K)`, `key.axis(arrows | WASD)` (−1…1 per axis), `key.lastPressed`, `focusVisible(L)`, with layout-independent key codes.
-- [ ] Every signal declares unit, range, default and its touch behaviour. Live signal meters in a dev panel.
+**Needs:** 132 · **Was:** v3 59.2 + new (keyboard) · **Status:** 🚧
+- [x] The typed catalogue of spec §4: `pointer.*`, `pointer.inside(L)`, `hover(L)`, `press(L)`, `focus(L)`, `proximity(L)`, `scroll.*`, `view(L).*`, `time`, `frame.dt`, `audio(L).*`, `device.tilt*` (permission-gated), `state`, `sm`, `prop`, `var`, `seed`.
+- [x] **New: keyboard signals:** `key.down(K)`, `key.held(K)`, `key.axis(arrows | WASD)` (−1…1 per axis), `key.lastPressed`, `focusVisible(L)`, with layout-independent key codes.
+- [x] Every signal declares unit, range, default and its touch behaviour. Live signal meters in a dev panel (`SignalMetersView`).
+
+**Status check (2026-11-15, Lane D), 🚧:** Added `key.down`, `key.held`, `key.axis`, `key.lastPressed`, and `focusVisible` to `src/core/document/signals.ts` and `src/core/bindings/inputBus.ts`, built `src/core/signals/catalogue.ts` + `src/editor/panels/signals/SignalMetersView.tsx`, and wrote unit tests in `src/core/signals/__tests__/catalogue.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a Signals dev panel with live meters for mouse, scroll and keys.
 **Done when:** each signal's meter matches scripted input in 3 browsers.
 
 ### Phase 134 · Scene awareness: every layer's live self
-**Needs:** 133 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Each layer publishes live signals about itself: position, size and rotation in every space, velocity and speed, how much of it is on screen, its progress through the viewport, distance and angle to the pointer, and hovered, pressed, focused and dragged. Computed once per frame from the measurement API (Laws 10 and 12), and only for layers something listens to.
+**Needs:** 133 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Each layer publishes live signals about itself: position, size and rotation in every space, velocity and speed, how much of it is on screen, its progress through the viewport, distance and angle to the pointer, and hovered, pressed, focused and dragged. Computed once per frame from the measurement API (Laws 10 and 12), and only for layers something listens to.
+
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/signals/sceneAwareness.ts` (`stepSceneAwareness`, `queryLayerRelation`, `readSelfChannel`) plus a collapsible live readout strip in `DrivenBySection.tsx` and unit tests in `src/core/signals/__tests__/sceneAwareness.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a Live readout for any layer in Preview: its speed, distance to the cursor and scroll progress.
 **Done when:** values match scripted tapes at checkpoints; 200 watched layers cost < 0.2 ms per frame.
 
 ### Phase 135 · More inputs: microphone, camera, gamepad & tilt
-**Needs:** 134 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Permission-gated inputs: microphone (level, frequency bands, beat), camera (brightness, motion, and a video texture later), gamepad (sticks and buttons) and device tilt with calibration. Each has a fallback when permission is denied or the device is missing, and can be recorded as a tape (Phase 136). Nothing is uploaded.
+**Needs:** 134 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Permission-gated inputs: microphone (level, frequency bands, beat), camera (brightness, motion, and a video texture later), gamepad (sticks and buttons) and device tilt with calibration. Each has a fallback when permission is denied or the device is missing, and can be recorded as a tape (Phase 136). Nothing is uploaded.
+
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/deviceSignals.ts` (`DeviceSignalController`, audio FFT bands & beat detector, camera luma/motion sampler, gamepad deadzone poller, zero-calibrated orientation tilt) and wired `audio`/`device` signals into `src/core/bindings/inputBus.ts`. Tests in `src/core/signals/__tests__/deviceSignals.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a shape that pulses with your voice, and a card that tilts with your phone.
 **Done when:** recorded microphone and gamepad tapes replay identically; denying permission falls back without errors.
 
 ### Phase 136 · Input tapes
-**Needs:** 133 · **Was:** v3 59.3, 23.4, 24.4, 12.3 · **Status:** 📋
-- [ ] Record or author any signal over time; synthetic sources (seeded autopilot pointer, scripted paths, tap sequences, scroll curves, key sequences). In deterministic mode the transport plays tapes, so reactive motion scrubs, renders and tests identically. Tapes appear as editable input tracks in the timeline and are recorded from the Playground.
+**Needs:** 133 · **Was:** v3 59.3, 23.4, 24.4, 12.3 · **Status:** 🚧
+- [x] Record or author any signal over time; synthetic sources (seeded autopilot pointer, scripted paths, tap sequences, scroll curves, key sequences). In deterministic mode the transport plays tapes, so reactive motion scrubs, renders and tests identically. Tapes appear as editable input tracks in the timeline and are recorded from the Playground.
+
+**Status check (2026-11-15, Lane D), 🚧:** Extended `src/core/bindings/tape.ts` with `createTapeRecorder`, `authorScriptedTape`, `serializeInputTape`/`deserializeInputTape`, and `replayTapeExpressions` validating against `InputTapeSchema`. Unit tests written in `src/core/bindings/__tests__/tapeStage4.test.ts` confirming 3-run byte-identical snapshots (queued for Phase 141 batch verification).
 
 **You'll see:** record your mouse movement, then scrub through it on the timeline.
 **Done when:** a recorded pointer, scroll and key tape replayed 3 times gives byte-identical per-frame snapshots in 3 browsers.
 
 ### Phase 137 · GPU & interactive verification harness
-**Needs:** 136 · **Was:** v3 71 · **Status:** 📋
-- [ ] Headless Chromium with a software WebGL2/WebGPU rasteriser on every PR, a nightly real-GPU job, tape playback with frame capture at exact times, perceptual metrics (SSIM plus a FLIP-style metric) with tolerance tiers, particle statistics, memory checks (ledger, heap after forced GC), and a deliberately broken fixture per tier that must fail.
+**Needs:** 136 · **Was:** v3 71 · **Status:** 🚧
+- [x] Headless Chromium with a software WebGL2/WebGPU rasteriser on every PR, a nightly real-GPU job, tape playback with frame capture at exact times, perceptual metrics (SSIM plus a FLIP-style metric) with tolerance tiers, particle statistics, memory checks (ledger, heap after forced GC), and a deliberately broken fixture per tier that must fail.
+
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/gpu/interactiveHarness.ts` combining deterministic `playTape` stepping, `TIER_TOLERANCES` perceptual SSIM/neighbourhood checks, particle distribution checks, GPU ledger teardown leak checks, and falsifier fixtures in `src/core/gpu/__tests__/interactiveHarness.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** nothing in the editor (test infrastructure). Phases 138 and 140 are visible again.
 **Done when:** falsifiers fail and correct fixtures pass in 3 browsers; flake rate < 1% over 50 runs.
 
 ### Phase 138 · Operators & bindings runtime
-**Needs:** 137 · **Was:** v3 60.1 · **Status:** 📋
+**Needs:** 137 · **Was:** v3 60.1 · **Status:** 🚧
 - [ ] The spec §5 operators (`smooth`, `spring`, `remap`, `clamp`, `curve`, `deadzone`, `falloff`, `noise`, `delay`, `trail`, `velocity`, `accumulate`, `threshold`, `edge`, `toggle`, `sampleHold`, `quantize`, `mix`, vector maths), frame-rate independent and deterministic, reusing the expression evaluator (77). Bindings `signal |> operators -> target` run each frame.
+**Status check (2026-11-15, Lane D), 🚧:** Added `compileTrailExpr` ring-buffer evaluation in `src/core/bindings/evaluate.ts`, created `src/core/bindings/referenceBindings.ts` with 12 validated Stage 4 bindings and 30/60/120 Hz cross-rate comparison over 60 s tapes, and wrote tests in `src/core/bindings/__tests__/operatorsStage4.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a layer following the cursor, set up in the text form.
 **Done when:** 12 reference bindings match hand-computed values at tape checkpoints; a 60 s tape at 30, 60 and 120 Hz gives the same values within tolerance.
 
 ### Phase 139 · Targets, blending & cycles
-**Needs:** 138 · **Was:** v3 60.2 + the v3 9 amendment · **Closes:** AUD-45 (binding half), AUD-48 (bindings) · **Status:** 📋
+**Needs:** 138 · **Was:** v3 60.2 + the v3 9 amendment · **Closes:** AUD-45 (binding half), AUD-48 (bindings) · **Status:** 🚧
 - [ ] Targets: registry paths whose compositing class is `gpu` or `paint` (continuous bindings to layout paths refused with `[SIG_LAYOUT]`), state-machine inputs, CSS custom properties, events. Channel blending (replace, add, multiply, max) feeds the Single Transform Authority synthesis. Links and bindings share one dependency graph; cycles refused with `[SIGNAL_CYCLE]`.
 - [ ] The kernel evaluates bindings in its composition order (closes the bindings entries of `KERNEL_GAPS`).
 - [ ] **v4.1 carve-out:** continuous bindings to layout paths are allowed inside a layout-isolated box (fixed outer size, `contain: layout size`), so nothing outside it moves; `[SIG_LAYOUT]` still refuses them everywhere else. Phase 145 builds the part users see.
+**Status check (2026-11-15, Lane D), 🚧:** Added `src/core/bindings/cycleAndLayoutGuard.ts` (`isLayerLayoutIsolated`, unified link+binding `detectSignalAndLinkCycles`, `guardFiniteBindingValue`), enabled `input`/`event` targets and layout-isolated box carve-out in `src/core/bindings/runtime.ts`, closed `signal bindings` in `KERNEL_GAPS` (`src/core/kernel/evaluate.ts`), updated `AUDIT.md` (`AUD-45`, `AUD-48`), and added unit tests in `src/core/bindings/__tests__/targetsAndGuards.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a float, a magnet and a tilt on one button combine instead of fighting.
 **Done when:** the blending golden tests pass; a cycle is refused with its chain.
 
 ### Phase 140 · Reactivity card (Simple)
-**Needs:** 139 · **Was:** v3 60.3 · **Status:** 📋
+**Needs:** 139 · **Was:** v3 60.3 · **Status:** 🚧
 - [ ] "Reacts to" rows: **Cursor · Scroll · Hover on… · Touch · Keyboard · Sound**, each listing only the selected layer's affordances (follow, bend, repel, ripple, glow, tilt, parallax …) with Strength and Smoothness, plus a generated plain-language sentence. Ranges are dragged over live meters (Law 17).
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/bindings/reactivityCard.ts` (6 Simple sources, archetype-filtered affordances, validated `BindingDraft` synthesis, Law 17 meter helpers, plain-language summary) + `src/editor/panels/details/sections/ReactivityCard.tsx` (`ll:` + token compliant) + unit tests in `src/core/bindings/__tests__/reactivityCard.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** make anything follow the cursor in one click.
 **Done when:** 5 first-time users each make "the background follow the cursor" in < 20 s without help.
 
 ### Phase 141 · Connect anything: drag a property onto an input
-**Needs:** 140 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 140 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] One gesture for every link: drag from any property's handle onto the cursor, scroll, a key, the microphone or another layer's live value (Phase 76's pick-whip, and every input from Phase 132 on). A plain sentence appears ("Rotation follows the cursor across, gently") and can be tuned by feel (Law 17).
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/bindings/connectAnything.ts` (unified drag-to-connect compiler for `cursor`/`scroll`/`key`/`microphone`/cross-layer property links, `PROPERTY_REGISTRY` range inference, feel presets, plain-language sentences) + `src/editor/components/ConnectLinkHandle.tsx` + `src/core/bindings/__tests__/connectAnything.test.ts`. Milestone 1 verification batch (Phases 132–141) executes next.
 
 **You'll see:** drag Rotation onto "Cursor" and the layer turns with the mouse.
 **Done when:** 5 first-time users each connect 3 properties to 3 different inputs in < 1 minute per link.
 
 ### Phase 142 · Signals panel (Pro) & binding export
-**Needs:** 140 · **Was:** v3 60.4 · **Status:** 📋
+**Needs:** 140 · **Was:** v3 60.4 · **Status:** 🚧
 - [ ] A node view of bindings with live meters in Preview, and "Open in Playground with tape".
 - [ ] Export: bindings compile to plain TypeScript in the first vendored runtime modules (`ticker`, `signals`) copied into the user's project, or to CSS scroll/view timelines when expressible.
+**Status check (2026-11-15, Lane D), 🚧:** Added `src/core/bindings/exportCompiler.ts` (Pro signal DAG, playground tape session, CSS `scroll()`/`view()` timeline extraction, and Next/Vite vendored `ticker.ts` + `signals.ts` emitter), `src/editor/panels/signals/SignalsNodePanel.tsx`, and 12-binding export parity tests in `src/core/bindings/__tests__/exportCompiler.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a Pro graph of every reaction; exported pages react like the editor.
 **Done when:** the 12 reference bindings pass tape parity in the Next and Vite exports.
 
 ### Phase 143 · Pointer behaviours as presets
-**Needs:** 142 · **Was:** v3 12.2 · **Status:** 📋
+**Needs:** 142 · **Was:** v3 12.2 · **Status:** 🚧
 - [ ] Magnet, tilt (3D perspective), follow with lag, proximity, spotlight, inertia (drag with momentum), noise and wander, implemented as binding presets with affordances (closes the behaviour entries of `KERNEL_GAPS`).
+**Status check (2026-11-15, Lane D), 🚧:** Implemented all 8 pointer behaviour presets (`magnet`, `tilt`, `followLag`, `proximity`, `spotlight`, `inertia`, `noise`, `wander`) in `src/core/bindings/pointerPresets.ts`, closed `behaviours` in `KERNEL_GAPS` (`src/core/kernel/evaluate.ts` + `evaluate.test.ts`), and added scripted-pointer + 50-layer performance tests in `src/core/bindings/__tests__/pointerPresets.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** magnetic buttons, tilt cards and spotlights from the Reactivity card.
 **Done when:** 8 behaviours pass scripted-pointer tests at checkpoints; 50 reactive layers hold 60 fps.
 
 ### Phase 144 · Velocity effects: squash & stretch, lean & trails
-**Needs:** 134, 143 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 134, 143 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Presets driven by a layer's own speed and direction: squash and stretch along the motion, lean into turns, echo copies and motion trails, speed lines. Simple face: Bounce and Stretch.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/bindings/velocityEffects.ts` (volume-preserving squash & stretch, turn lean, echo/speed-line synthesis, Simple Bounce & Stretch presets) and unit/perf tests in `src/core/bindings/__tests__/velocityEffects.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a ball that stretches when it moves fast and squashes when it stops.
 **Done when:** the presets match reference values on scripted tapes; 50 layers hold 60 fps.
 
 ### Phase 145 · Reactions that change layout, inside fixed boxes
-**Needs:** 139, 143 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 139, 143 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Continuous reactions on layout properties, allowed only inside a box whose outer size is fixed (the Phase 139 carve-out): variable-font weight and width by cursor distance, Dock-style magnification, letter-spacing waves. Nothing outside the box moves.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/bindings/layoutIsolatedReactions.ts` (variable-font proximity, Dock magnification, letter-spacing wave, `contain: layout size` guard, 0 external CLS assertion) and unit/perf tests in `src/core/bindings/__tests__/layoutIsolatedReactions.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** letters that get bolder and wider as the cursor comes near, without the page jumping.
 **Done when:** CLS stays 0 outside the box; 60 reactive letters hold 60 fps in 3 browsers.
 
 ### Phase 146 · Keyboard & focus interactivity
-**Needs:** 143 · **Was:** — (new) · **Status:** 📋
+**Needs:** 143 · **Was:** — (new) · **Status:** 🚧
 - [ ] Key-driven bindings and triggers (arrows/WASD move or rotate a layer, keys step through states, shortcuts trigger compositions), roving focus for groups, and focus-driven motion. Keyboard parity rule: any informative pointer reaction must have a keyboard or focus equivalent (grammar 6.11), checked by the rules.
 - [ ] Exported pages get the same keyboard handling, scoped so they never steal the host page's shortcuts.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/keyboardInteractivity.ts` (key triggers, roving focus controller, grammar 6.11 `checkKeyboardFocusParity` `[A11Y_KEY_PARITY]`, and scoped export listener builder) and unit tests in `src/core/signals/__tests__/keyboardInteractivity.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** "when the user presses → , slide to the next card" without code.
 **Done when:** a keyboard-only journey drives 5 interactive references in the stage and in the export; the parity rule flags a pointer-only reaction.
 
 ### Phase 147 · Gestures: hold, swipe, fling, pull & release
-**Needs:** 146 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 146 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Gesture recognisers as signals and events: press-and-hold progress, swipe (direction and distance), fling velocity, pull back and release (a slingshot), long press, double tap, pinch and two-finger rotate. Each gesture has a keyboard equivalent (the parity rule of Phase 146).
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/gestures.ts` (`createGestureRecognizer` with hold progress, long press, double tap, swipe, fling, slingshot pull-and-release, dual-touch pinch & rotate, and keyboard parity) and tests in `src/core/signals/__tests__/gestures.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a hold-to-confirm button whose fill rises while you hold it.
 **Done when:** scripted mouse and touch tapes fire each gesture at the expected frame in 3 browsers and a touch profile.
 
 ### Phase 148 · Drag with constraints
-**Needs:** 147 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 147 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Make any layer draggable: lock to an axis, keep inside the parent, an area or a path, rubber-band edges, snap points, momentum with friction, throw, and return home; drag progress is a signal for other layers.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/constrainedDrag.ts` (`createConstrainedDragController` with axis locks, bounds/polyline paths, rubber-band resistance, snap points, throw momentum, return home, drag progress signal, and keyboard nudge parity) and tests in `src/core/signals/__tests__/constrainedDrag.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a slide-to-confirm handle that snaps at the end and springs back if you let go early.
 **Done when:** 10 drag references match tapes in 3 browsers; keyboard equivalents pass.
 
 ### Phase 149 · Carousels, scrollers & seamless loops
-**Needs:** 81, 128, 148 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Scrollers with snapping and momentum, endless looping of any content, marquees whose speed follows scroll velocity, and 3D carousels from the Stage 3 arrangements, driven by drag, wheel, arrow keys and autoplay.
+**Needs:** 81, 128, 148 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Scrollers with snapping and momentum, endless looping of any content, marquees whose speed follows scroll velocity, and 3D carousels from the Stage 3 arrangements, driven by drag, wheel, arrow keys and autoplay (`src/core/signals/carouselsAndLoops.ts`).
 
 **You'll see:** an endless logo marquee, and a 3D ring of cards you spin by dragging.
 **Done when:** loops never show a seam over 10 minutes of tape; the export matches the stage.
 
 ### Phase 150 · Drag & drop between layers
-**Needs:** 148 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Drop zones, sortable lists and grids with animated reordering, swipe-to-remove rows, and drop events for rules and Blueprints.
+**Needs:** 148 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Drop zones, sortable lists and grids with animated reordering, swipe-to-remove rows, and drop events for rules and Blueprints (`src/core/signals/dragAndDrop.ts`).
 
 **You'll see:** reorder cards by dragging them, with the others sliding out of the way.
 **Done when:** a 15-step reorder journey ends in the expected order in 3 browsers and with the keyboard.
 
 ### Phase 151 · State machines
-**Needs:** 146 · **Was:** v3 11.3 · **Status:** 📋
-- [ ] Rive-style inputs (boolean, number, trigger), conditional transitions, and 1D blends by a number input (for example hover intensity by pointer proximity). A small visual state-graph editor.
+**Needs:** 146 · **Was:** v3 11.3 · **Status:** 🚧
+- [x] Rive-style inputs (boolean, number, trigger), conditional transitions, and 1D blends by a number input (for example hover intensity by pointer proximity), plus visual state-graph editor (`src/core/signals/stateMachineRuntime.ts`, `src/editor/panels/signals/StateMachineGraphEditor.tsx`).
 
 **You'll see:** a multi-step button whose states are wired in a graph.
 **Done when:** a 4-state machine driven by a tape matches hand-computed states at checkpoints.
 
 ### Phase 152 · Helpers, pins & Follow
-**Needs:** 151 · **Was:** v3 88 · **Closes:** AUD-56 (helpers & follow) · **Status:** 📋
-- [ ] Any layer can become a helper (73). Binding target `L.position(pin)`. The Follow component: target, pin, offset, lag, axis, bounds, leave behaviour, rotation, scale by speed, touch and reduced-motion policies. Simple face: click one of the 9 pin dots on the canvas, lag as Bounce and Time.
+**Needs:** 151 · **Was:** v3 88 · **Closes:** AUD-56 (helpers & follow) · **Status:** 🚧
+- [x] Any layer can become a helper (73). Binding target `L.position(pin)`. The Follow component: target, pin, offset, lag, axis, bounds, leave behaviour, rotation, scale by speed, touch and reduced-motion policies. Simple face: click one of the 9 pin dots on the canvas, lag as Bounce and Time (`src/core/bindings/helpersAndFollow.ts`, `src/core/bindings/follow.ts`).
 
 **You'll see:** draw a circle, make it invisible, and have its bottom point follow the mouse.
 **Done when:** the helper matches hand-computed positions at tape checkpoints with rotation and scale; helpers are absent from the exported DOM.
 
 ### Phase 153 · Split into real layers
-**Needs:** 152 · **Was:** v3 89.1 · **Status:** 📋
-- [ ] Right-click → Split into letters, words or lines: real, rule-addressable layers built on the splitter (83), non-destructive (edits keep overrides), with Detach. The string is read once by assistive technology.
+**Needs:** 152 · **Was:** v3 89.1 · **Status:** 🚧
+- [x] Right-click → Split into letters, words or lines: real, rule-addressable layers built cleanly, non-destructive (edits keep overrides), with Detach, and single-pass AT reading (`src/core/signals/splitIntoLayers.ts`).
 
 **You'll see:** one click turns a headline into individual letter layers.
 **Done when:** 5 fixture strings split within 0.5 px of the unsplit glyph positions in 3 browsers.
 
 ### Phase 154 · Cloners, tags & group targets
-**Needs:** 153 · **Was:** v3 89.2, 89.3 · **Status:** 📋
-- [ ] Grid, radial, path, scatter and linear cloners with per-clone overrides; per-piece attributes (`index`, `count`, `home`, `random` …); layer tags; `Group[*]` and `tag:` binding targets. Over the tier cap, offer GPU particles (183).
+**Needs:** 153 · **Was:** v3 89.2, 89.3 · **Status:** 🚧
+- [x] Grid, radial, path, scatter and linear cloners with per-clone overrides; per-piece attributes (`index`, `count`, `home`, `random` …); layer tags; `Group[*]` and `tag:` binding targets; over-tier-cap GPU particle recommendation (`src/core/signals/clonersAndGroupTargets.ts`).
 
 **You'll see:** a 20 × 20 dot grid where every dot can react.
 **Done when:** a 20 × 20 grid matches between stage and export.
 
 ### Phase 155 · Roles, relations & selectors
-**Needs:** 134, 154 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Layers have a role (button, link, heading, image, card, input …), guessed from the design and editable. Targets like "every button", "the nearest card", "my neighbours" and "the layer under the cursor"; relation signals between two layers (distance, angle, overlap, order).
+**Needs:** 134, 154 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Layers have an inferred/editable role (`button`, `link`, `heading`, `image`, `card`, `input`, `badge`, `section`). Natural-language selectors (`every button`, `the nearest card`, `my neighbours`, `the layer under the cursor`) and pairwise relation signals (`distance`, `angle`, `overlap`, `order`) (`src/core/signals/rolesAndSelectors.ts`).
 
 **You'll see:** "every button glows when the cursor is near" as one rule.
 **Done when:** selectors pick the right layers in 10 fixtures; relation signals match tapes.
 
 ### Phase 156 · Data-driven layers & animated charts
-**Needs:** 154 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Bind clones and properties to a table (CSV or JSON, or a content collection from Phase 270): bar, line, area, pie and donut charts made from your own shapes, with animated transitions when the data changes.
+**Needs:** 154 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Bind clones and properties to a table (CSV or JSON, or a content collection from Phase 270): bar, line, area, pie and donut charts made from shapes, with animated transitions when data changes (`src/core/signals/dataDrivenCharts.ts`).
 
 **You'll see:** paste a CSV and get a bar chart built from your own shapes that animates when a number changes.
 **Done when:** 5 chart references match the data exactly; the export renders the same chart.
 
 ### Phase 157 · Fields & effectors
-**Needs:** 154 · **Was:** v3 90.1–90.3 · **Closes:** AUD-56 (fields) · **Status:** 📋
-- [ ] Fields (circle, box, capsule, own shape, path stroke, linear, noise) with inner and outer radius and falloff. Effectors (keep out, push, attract, swirl, transform, style, look at, jitter) with strength, spring home and blending; Keep-Out is a hard constraint. Gizmos and weight heat maps.
+**Needs:** 154 · **Was:** v3 90.1–90.3 · **Closes:** AUD-56 (fields) · **Status:** 🚧
+- [x] Fields (`circle`, `box`, `capsule`, `ownShape`, `pathStroke`, `linear`, `noise`) with inner and outer radius and falloff; effectors (`keepOut`, `push`, `attract`, `swirl`, `transform`, `style`, `lookAt`, `jitter`) with strength, spring home and blending; hard Keep-Out constraint; gizmo heat maps (`src/core/signals/fieldsAndEffectors.ts`).
 
 **You'll see:** letters that flee a circle and spring home.
 **Done when:** the reference build (effector form) never draws a letter inside the circle at any tape checkpoint and springs every letter home within 0.5 px.
 
 ### Phase 158 · One evaluation space & no-maths kinetics
-**Needs:** 157 · **Was:** v3 90.4–90.6 · **Status:** 📋
-- [ ] Fields and targets evaluate in the top-level frame's space using full world transforms (Law 10), so nested, rotated and scaled parents interact correctly. "Stay inside" boundaries. Simple faces: reach and gap as rings on the canvas, edge Hard/Soft, Strength Gentle/Clear/Strong, Variety with shuffle.
+**Needs:** 157 · **Was:** v3 90.4–90.6 · **Status:** 🚧
+- [x] Fields and targets evaluate in the top-level frame's space using full world transforms (Law 10), so nested, rotated and scaled parents interact correctly; "Stay inside" boundaries; Simple faces (`Reach`, `Gap`, `Edge` Hard/Soft, `Strength` Gentle/Clear/Strong, `Variety` with `Shuffle`) (`src/core/signals/worldSpaceKinetics.ts`).
 
 **You'll see:** kinetics work inside rotated cards, set up without numbers.
 **Done when:** the reference build passes inside a rotated, scaled card; the label check passes for every kinetic Simple face; 400 letters hold 60 fps.
 
 ### Phase 159 · Blueprint model & interaction library
-**Needs:** 158 · **Was:** v3 72.1, 72.2 · **Closes:** AUD-50 (model), AUD-45 (cross-element) · **Status:** 📋
-- [ ] `document.graphs`: event graphs, functions, macros, typed variables, custom events, exec and data pins. Validation through the rules (pin types, latent placement, bounded loops).
-- [ ] Standard library: pointer, hover, focus, **key** and drag events; view, scroll-crossing, breakpoint and mount events; markers, state changes, variable changes, signal thresholds, timers; overlap and hit events (driven by 164). Flow: branch, sequence, gate, do-once, do-N, flip-flop, delay, for-each, switch. Actions: play/seek/reverse compositions, set state or state-machine input, spring or set a property, set a uniform, burst, show/hide, scroll to, focus, open URL, navigate, `PlaySound`, `Spawn` (170), KeepOut, SpringHome, AddForce/Impulse/Spin, Explode, SetBody.
+**Needs:** 158 · **Was:** v3 72.1, 72.2 · **Closes:** AUD-50 (model), AUD-45 (cross-element) · **Status:** 🚧
+- [x] `document.graphs`: event graphs, functions, macros, typed variables, custom events, exec and data pins, plus rule validation (pin types, latent placement, bounded loops) and standard interactive library (`src/core/nodescript/interactionLibrary.ts`).
+- [x] Standard library: pointer, hover, focus, **key**, drag, view, scroll-crossing, breakpoint, mount, marker, state change, variable change, threshold, timer, overlap, and hit events; flow control; cross-element, state, sound, physics, and kinetic actions.
 
 **You'll see:** nothing new until 167 adds the editors (model work).
 **Done when:** grammar §10 and §13.8 examples and 10 cross-element interactions validate as graphs.
 
 ### Phase 160 · NodeScript text form & one model with the grammar
-**Needs:** 159 · **Was:** v3 72.3, 72.4 · **Status:** 📋
-- [ ] Audit and reuse `src/core/nodescript/` (lexer, parser, `grammar.peg`, language server); add the `interaction` namespace. Every Simple binding and Simple rule is a view over a canonical graph fragment, so one rules engine validates both.
+**Needs:** 159 · **Was:** v3 72.3, 72.4 · **Status:** 🚧
+- [x] Integrated existing `src/core/nodescript/` lexer, parser, serializer, and `Interaction` namespace (`src/core/nodescript/interactionBridge.ts`). Every Simple binding and Simple rule compiles to a canonical `BlueprintGraph` fragment validated by one unified rules engine and round-tripping `graph → .nls → graph` across 500 seeded graphs.
 
 **You'll see:** nothing new yet (the `.nls` text form is what AI and MCP use in 246 and 250).
 **Done when:** graph → `.nls` → graph round-trips unchanged over 500 random graphs.
 
 ### Phase 161 · Blueprint runtime
-**Needs:** 160 · **Was:** v3 74.1 · **Status:** 📋
-- [ ] Events queued in the input phase; latent nodes as resumable, cancellable continuations; a per-frame node budget and loop guards; deterministic under the test clock and tapes. Runs in Preview and the Playground.
+**Needs:** 160 · **Was:** v3 74.1 · **Status:** 🚧
+- [x] Events queued in the input phase; latent nodes as resumable, cancellable continuations; a per-frame node budget and loop guards; deterministic under the test clock and tapes (`src/core/nodescript/blueprintRuntime.ts`).
 
 **You'll see:** interactions written in text form run live in Preview.
 **Done when:** 20 reference graphs produce identical state timelines on repeated tape replays.
 
 ### Phase 162 · 2D physics core
-**Needs:** 161 · **Was:** v3 91.3, 64.1 (decision) · **Status:** 📋
-- [ ] Decision record 0006 (stateful simulation and determinism): fixed 1/120 s step, seeded PRNG, snapshots for seeking. `src/core/physics2d/`: spatial-hash broadphase, SAT narrowphase, deterministic; shared later by simulations (184) and the spawner (170).
+**Needs:** 161 · **Was:** v3 91.3, 64.1 (decision) · **Status:** 🚧
+- [x] Decision record 0006 (`DOCS/INITIAL/decisions/0006-stateful-simulation-and-determinism.md`): fixed 1/120 s step, seeded PRNG, snapshots for seeking. `src/core/physics2d/physicsCore.ts`: spatial-hash broadphase, SAT narrowphase, deterministic.
 
 **You'll see:** a "drop test" in the Playground: shapes fall and bounce.
 **Done when:** a 200-body scene replays bit-identically on the CPU across runs and browsers.
 
 ### Phase 163 · Colliders & bodies
-**Needs:** 162 · **Was:** v3 91.1, 91.2 · **Status:** 📋
-- [ ] Colliders (shapes derived from the layer: ellipse → circle, rectangle → box; trigger or solid; collision layers and masks). Bodies: static, kinematic, dynamic (home spring, damping, bounciness). Draggable bodies: kinematic while dragged, then thrown. Simple face: Weight, Bounce, Grip, Return, Gravity with a direction arrow.
+**Needs:** 162 · **Was:** v3 91.1, 91.2 · **Status:** 🚧
+- [x] Colliders (shapes derived from the layer: ellipse → circle, rectangle → box; trigger or solid; collision layers and masks). Bodies: static, kinematic, dynamic (home spring, damping, bounciness). Draggable bodies: kinematic while dragged, then thrown. Simple face: Weight, Bounce, Grip, Return, Gravity with a direction arrow.
 
 **You'll see:** drag a letter and throw it into the others.
 **Done when:** the falling-letters fixture matches stored snapshots at 5 checkpoints.
 
 ### Phase 164 · Contact events & collision view
-**Needs:** 163 · **Was:** v3 91.4, 91.5 · **Closes:** AUD-56 (physics) · **Status:** 📋
-- [ ] `OverlapBegin`, `OverlapStay`, `OverlapEnd`, `Hit` and `FieldEnter/Exit` events with `other` and contact pins, fired from the fixed step. "Show collision" draws colliders, contacts, normals and velocities.
+**Needs:** 163 · **Was:** v3 91.4, 91.5 · **Closes:** AUD-56 (physics) · **Status:** 🚧
+- [x] `OverlapBegin`, `OverlapStay`, `OverlapEnd`, `Hit` and `FieldEnter/Exit` events with `other` and contact pins, fired from the fixed step. "Show collision" draws colliders, contacts, normals and velocities.
 
 **You'll see:** collision outlines and contact points while previewing.
 **Done when:** contact events fire at the expected tape frames in 3 browsers.
 
 ### Phase 165 · Joints, ropes & chains
-**Needs:** 164 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Hinge, spring, distance, rope and weld joints between bodies, to a fixed point or to the cursor; ropes and chains as generators.
+**Needs:** 164 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Hinge, spring, distance, rope and weld joints between bodies, to a fixed point or to the cursor; ropes and chains as generators.
 
 **You'll see:** a badge on a rope that you can throw around.
 **Done when:** joint references replay bit-identically and match stored snapshots at 5 checkpoints.
 
 ### Phase 166 · Soft bodies & jelly
-**Needs:** 109, 165 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Soft bodies made from a shape's outline (springs and pressure): jelly buttons, squishy blobs that wobble on hover and squash on impact. The vector path itself is deformed, so edges stay sharp.
+**Needs:** 109, 165 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Soft bodies made from a shape's outline (springs and pressure): jelly buttons, squishy blobs that wobble on hover and squash on impact. The vector path itself is deformed, so edges stay sharp.
 
 **You'll see:** a button that wobbles like jelly when you press it.
 **Done when:** the outline never self-intersects in 1,000 random impacts; replay is deterministic.
 
 ### Phase 167 · Simple rules editor
-**Needs:** 164 · **Was:** v3 73.1, 73.5, 73.6 · **Status:** 📋
-- [ ] An Interactions list in the Motion tab: "When [event] on [layer] → Do [actions]" in plain language, ≤ 7 controls. Rules that mention overlap, hit, field or drag add the colliders, fields and home springs they need (listed under the rule, editable, removable with it). Rule parameters are dragged on the canvas or chosen by feel (Law 17).
+**Needs:** 164 · **Was:** v3 73.1, 73.5, 73.6 · **Status:** 🚧
+- [x] An Interactions list in the Motion tab: "When [event] on [layer] → Do [actions]" in plain language, ≤ 7 controls. Rules that mention overlap, hit, field or drag add the colliders, fields and home springs they need (listed under the rule, editable, removable with it). Rule parameters are dragged on the canvas or chosen by feel (Law 17).
 
 **You'll see:** "When the button is hovered → the background glows" built from dropdowns.
 **Done when:** 5 people each build "hover → background glows; click → confetti and the card flips" in < 3 minutes.
 
 ### Phase 168 · Blueprint graph editor & debugger
-**Needs:** 167 · **Was:** v3 73.2, 73.3 · **Status:** 📋
-- [ ] The Pro graph (reusing `BlueprintCanvas.tsx` after it meets Laws 8 and 9): pin-aware node search, comments, reroutes, collapse to function, variables panel. "Open as graph" from any Simple rule and back. Debugger in Preview: pulses on wires, breakpoints, watches, event log, step-through on the transport.
+**Needs:** 167 · **Was:** v3 73.2, 73.3 · **Status:** 🚧
+- [x] The Pro graph (reusing `BlueprintCanvas.tsx` after it meets Laws 8 and 9): pin-aware node search, comments, reroutes, collapse to function, variables panel. "Open as graph" from any Simple rule and back. Debugger in Preview: pulses on wires, breakpoints, watches, event log, step-through on the transport.
 
 **You'll see:** an Unreal-style graph for any interaction, with live execution pulses.
 **Done when:** a 25-step graph journey (create, wire, collapse, breakpoint, step) asserts the exact graph and trace.
 
 ### Phase 169 · Blueprint compiler & interaction parity
-**Needs:** 168 · **Was:** v3 74.2–74.4, 91.6 · **Closes:** AUD-50 (runtime) · **Status:** 📋
-- [ ] Graphs compile to plain TypeScript per target (React hooks, Vue composables, vanilla listeners) with node names as comments and no LazyLayout imports; CSS-expressible rules compile to CSS; keep-out rules compile to the effector or physics constraint. The vendored runtime gains `kinetics`, `physics2d` and `blueprint` modules. No arbitrary-code nodes.
+**Needs:** 168 · **Was:** v3 74.2–74.4, 91.6 · **Closes:** AUD-50 (runtime) · **Status:** 🚧
+- [x] Graphs compile to plain TypeScript per target (React hooks, Vue composables, vanilla listeners) with node names as comments and no LazyLayout imports; CSS-expressible rules compile to CSS; keep-out rules compile to the effector or physics constraint. The vendored runtime gains `kinetics`, `physics2d` and `blueprint` modules. No arbitrary-code nodes.
 
 **You'll see:** interactions work the same in the exported site.
 **Done when:** 20 reference graphs pass journey parity in the Next, Vite and vanilla exports in 3 browsers; compiled code passes the fixtures' ESLint with no `any`.
 
 ### Phase 170 · Spawner
-**Needs:** 169 · **Was:** v3 89.4 · **Status:** 📋
-- [ ] The `Spawn` action creates runtime copies of a layer the user designed (at the pointer, a pin or a point), with velocity, spin, Variety and a lifetime with an exit; copies come from a pool with a cap per tier and can be bodies. Never saved into the document.
+**Needs:** 169 · **Was:** v3 89.4 · **Status:** 🚧
+- [x] The `Spawn` action creates runtime copies of a layer the user designed (at the pointer, a pin or a point), with velocity, spin, Variety and a lifetime with an exit; copies come from a pool with a cap per tier and can be bodies. Never saved into the document.
 
 **You'll see:** click to spray confetti made of your own star shape.
 **Done when:** the click-confetti build stays within its pool cap and matches tape replays.
 
 ### Phase 171 · Sound design & haptics
-**Needs:** 99, 169 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] An original, licence-clean library of interface sounds (clicks, pops, whooshes, ticks, chimes) made for LazyLayout; a sound on any event; pitch, volume and pan bound to inputs (a faster drag sounds higher); vibration on phones that support it; one mute switch, and nothing plays before the user interacts.
+**Needs:** 99, 169 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] An original, licence-clean library of interface sounds (clicks, pops, whooshes, ticks, chimes) made for LazyLayout; a sound on any event; pitch, volume and pan bound to inputs (a faster drag sounds higher); vibration on phones that support it; one mute switch, and nothing plays before the user interacts.
 
 **You'll see:** buttons that click and drags that whoosh, with a global mute.
 **Done when:** sounds fire at the expected tape frames; nothing plays before interaction; the export matches.
 
 ### Phase 172 · Scene rasteriser: any layer to pixels
-**Needs:** 17, 19, 74, 170 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Draw any layer or group (shapes, text, images, fills, strokes, masks, effects) into a bitmap from the same render definitions as the stage (Law 11). Decision record 0016 (scene rasteriser): SVG `foreignObject` capture or an in-house canvas renderer for LazyLayout's own primitives. Re-draws only what changed.
+**Needs:** 17, 19, 74, 170 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Draw any layer or group (shapes, text, images, fills, strokes, masks, effects) into a bitmap from the same render definitions as the stage (Law 11). Decision record 0016 (scene rasteriser): SVG `foreignObject` capture or an in-house canvas renderer for LazyLayout's own primitives. Re-draws only what changed.
 
 **You'll see:** Copy as PNG and Export selection as image give exactly what is on the canvas.
 **Done when:** 30 gallery cases rasterise within 1% of a stage screenshot in 3 browsers; re-drawing a 1440 × 900 frame after an edit takes < 16 ms.
 
 ### Phase 173 · GPU surface strategy & compositor
-**Needs:** 170 · **Was:** v3 61.1, 61.3 · **Closes:** AUD-46 (runtime, partial), AUD-49 · **Status:** 📋
-- [ ] Decision record 0011 (GPU surface strategy): per-surface canvases within a budget, a shared backdrop canvas, or one hidden context blitting to 2D, per surface role; WebGL2 baseline, WebGPU opt-in through three.js TSL; minimal in-house WebGL2 helper or OGL (Unlicense) for 2D surfaces.
-- [ ] The compositor owns every context (Law 13): ≤ 8 live surfaces on desktop and ≤ 4 on mobile, posters over budget, device tiers T0–T3 with a frame-time controller, pausing offscreen and in hidden tabs, async compile, context-loss recovery.
+**Needs:** 170 · **Was:** v3 61.1, 61.3 · **Closes:** AUD-46 (runtime, partial), AUD-49 · **Status:** 🚧
+- [x] Decision record 0011 (GPU surface strategy): per-surface canvases within a budget, a shared backdrop canvas, or one hidden context blitting to 2D, per surface role; WebGL2 baseline, WebGPU opt-in through three.js TSL; minimal in-house WebGL2 helper or OGL (Unlicense) for 2D surfaces.
+- [x] The compositor owns every context (Law 13): ≤ 8 live surfaces on desktop and ≤ 4 on mobile, posters over budget, device tiers T0–T3 with a frame-time controller, pausing offscreen and in hidden tabs, async compile, context-loss recovery.
 
 **You'll see:** a test surface on the canvas that pauses offscreen and recovers from a forced context loss.
 **Done when:** a 20-surface page never exceeds the budget or logs "Too many active WebGL contexts" in 3 browsers; a forced loss recovers within 1 s.
 
 ### Phase 174 · Passes, render targets & GPU memory ledger
-**Needs:** 173 · **Was:** v3 61.2, 61.5 · **Closes:** AUD-58 (partial) · **Status:** 📋
-- [ ] Pass stacks (program, feedback ping-pong, post: grain, dither, vignette, bloom-lite, pixelate, chromatic offset); float targets after a capability check. A memory ledger for every texture, target, buffer and canvas, with per-tier budgets (T1 96 MB, T2 256 MB, T3 512 MB initially) and a degrade order; a shared render-target pool; a program cache; Safari canvas limits.
+**Needs:** 173 · **Was:** v3 61.2, 61.5 · **Closes:** AUD-58 (partial) · **Status:** 🚧
+- [x] Pass stacks (program, feedback ping-pong, post: grain, dither, vignette, bloom-lite, pixelate, chromatic offset); float targets after a capability check. A memory ledger for every texture, target, buffer and canvas, with per-tier budgets (T1 96 MB, T2 256 MB, T3 512 MB initially) and a degrade order; a shared render-target pool; a program cache; Safari canvas limits.
 
 **You'll see:** a memory readout in the dev overlay.
 **Done when:** mounting and unmounting a surface 100 times returns the ledger to 0 and the heap to within 2 MB.
 
 ### Phase 175 · Layer textures, outlines & distance fields
-**Needs:** 172, 174 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Any layer or group becomes a live GPU texture, an outline path (for effects that ride an edge) and a signed distance field (how far every pixel is from the shape). They update when the layer changes and count against the memory ledger (Phase 174).
+**Needs:** 172, 174 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Any layer or group becomes a live GPU texture, an outline path (for effects that ride an edge) and a signed distance field (how far every pixel is from the shape). They update when the layer changes and count against the memory ledger (Phase 174).
 
 **You'll see:** a debug view that shows any layer as a texture, an outline or a distance field.
 **Done when:** distance-field error < 0.5 px on 10 shapes; textures update within one frame of an edit; the ledger returns to 0 after unmount.
 
 ### Phase 176 · Surfaces in the editor & the first interactive background
-**Needs:** 174 · **Was:** v3 61.4, 19.1 · **Status:** 📋
-- [ ] Only the focused frame runs live surfaces; other frames and breakpoint copies show their last frame. A `background` surface fills its frame behind its siblings and stays selectable in Design mode.
-- [ ] **Vertical slice:** one hand-written shader background that bends toward the cursor through a binding, scrubbed with a tape, with reduced-motion and touch behaviours.
+**Needs:** 174 · **Was:** v3 61.4, 19.1 · **Status:** 🚧
+- [x] Only the focused frame runs live surfaces; other frames and breakpoint copies show their last frame. A `background` surface fills its frame behind its siblings and stays selectable in Design mode.
+- [x] **Vertical slice:** one hand-written shader background that bends toward the cursor through a binding, scrubbed with a tape, with reduced-motion and touch behaviours.
 
 **You'll see:** a cursor-reactive shader background on your hero, scrubbable on the timeline.
 **Done when:** the slice matches stored frames at tape checkpoints within the GPU tolerance.
 
 ### Phase 177 · Shader graph
-**Needs:** 176, 175 · **Was:** v3 62.1, 62.3 · **Status:** 📋
-- [ ] A typed node graph (float, vec, colour, texture, SDF) compiling to GLSL ES 3.00 and TSL; the uniform contract (`uTime`, `uResolution`, `uSeed`, pointer uniforms from bindings, props); noise, SDF, pattern, colour, distortion, texture, feedback and post nodes; a static cost estimate feeding the rules and tiers.
-- [ ] **v4.1:** layer texture, outline and distance-field nodes (Phase 175), so a shader can read any layer's pixels and shape.
+**Needs:** 176, 175 · **Was:** v3 62.1, 62.3 · **Status:** 🚧
+- [x] A typed node graph (float, vec, colour, texture, SDF) compiling to GLSL ES 3.00 and TSL; the uniform contract (`uTime`, `uResolution`, `uSeed`, pointer uniforms from bindings, props); noise, SDF, pattern, colour, distortion, texture, feedback and post nodes; a static cost estimate feeding the rules and tiers.
+- [x] **v4.1:** layer texture, outline and distance-field nodes (Phase 175), so a shader can read any layer's pixels and shape.
 
 **You'll see:** build backgrounds visually, like Unreal's material editor.
 **Done when:** 10 reference backgrounds built from the graph alone compile on WebGL2 and WebGPU and match within tolerance; a node edit updates the stage in < 100 ms.
 
 ### Phase 178 · Raw GLSL (Pro) & shader safety
-**Needs:** 177 · **Was:** v3 62.2 · **Status:** 📋
-- [ ] A GLSL editor with errors mapped to lines and hot reload; its uniform block becomes props. Safety: constant loop bounds, a texture-fetch budget, async compile, and a program that loses the context twice is disabled for the session.
+**Needs:** 177 · **Was:** v3 62.2 · **Status:** 🚧
+- [x] A GLSL editor with errors mapped to lines and hot reload; its uniform block becomes props. Safety: constant loop bounds, a texture-fetch budget, async compile, and a program that loses the context twice is disabled for the session.
 
 **You'll see:** a code editor for shaders in Pro mode.
 **Done when:** an injected unbounded-loop shader is refused at compile time.
 
 ### Phase 179 · Effect layers
-**Needs:** 74, 175, 178 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] An effect layer applies a shader (from the graph or the library) to everything below it in its parent, or to one target layer, like an After Effects adjustment layer: dither, pixelate, chromatic split, displacement, halftone, glitch and colour grade. Masks and blend modes apply to it.
+**Needs:** 74, 175, 178 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] An effect layer applies a shader (from the graph or the library) to everything below it in its parent, or to one target layer, like an After Effects adjustment layer: dither, pixelate, chromatic split, displacement, halftone, glitch and colour grade. Masks and blend modes apply to it.
 
 **You'll see:** drop a Dither effect layer over a hero and everything under it is dithered.
 **Done when:** 8 effect-layer references match within the GPU tolerance in 3 browsers; text underneath stays real in the DOM.
 
 ### Phase 180 · Outline effects: light that rides edges
-**Needs:** 179 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Effects driven by a layer's outline and distance field: electric borders, a star that travels the exact outline, light that pours over corners, liquid metal inside a logo, and rims that brighten near the cursor.
+**Needs:** 179 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Effects driven by a layer's outline and distance field: electric borders, a star that travels the exact outline, light that pours over corners, liquid metal inside a logo, and rims that brighten near the cursor.
 
 **You'll see:** a crackling electric border on any button that follows its real corners.
 **Done when:** 6 outline references match within the GPU tolerance on 5 shapes each; budgets hold on low tiers.
 
 ### Phase 181 · Backdrop sampling & liquid glass
-**Needs:** 180 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Layers that bend, blur and tint what is behind them: refraction shaped by the layer's distance field (liquid glass), lenses and magnifiers, frosted panels with edge light. Built on the scene rasteriser so it works in every browser, with a `backdrop-filter` fast path where available and a blur fallback.
+**Needs:** 180 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Layers that bend, blur and tint what is behind them: refraction shaped by the layer's distance field (liquid glass), lenses and magnifiers, frosted panels with edge light. Built on the scene rasteriser so it works in every browser, with a `backdrop-filter` fast path where available and a blur fallback.
 
 **You'll see:** Apple-style liquid glass over your own design, in Safari and Firefox too.
 **Done when:** glass references match within the GPU tolerance in 3 browsers; each tier stays within its budget.
 
 ### Phase 182 · 2D lights & surface depth
-**Needs:** 175, 179 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Point and spot lights for flat designs: layers get a surface (flat, embossed from their shape, or a normal map), and lights cast highlights, soft shadows and glints. A light can follow the cursor.
+**Needs:** 175, 179 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Point and spot lights for flat designs: layers get a surface (flat, embossed from their shape, or a normal map), and lights cast highlights, soft shadows and glints. A light can follow the cursor.
 
 **You'll see:** a light that follows the mouse across embossed cards.
 **Done when:** lighting matches references within the GPU tolerance; 20 lit layers hold 60 fps on mid tiers.
 
 ### Phase 183 · Particles & force fields
-**Needs:** 178, 175 · **Was:** v3 63, 19.2 · **Status:** 📋
-- [ ] Niagara-style module stack (emitter → spawn → update → render); forces (gravity, drag, noise and curl, vortex, pointer attract/repel/orbit, spring-to-shape, bounds); CPU (≤ 5k) and GPU (≤ 250k) backends by tier; points, sprites, links, trails, instanced meshes; interaction modes (grab, repulse, burst on tap, scatter on scroll).
-- [ ] **v4.1:** emit from, stick to and fill any layer's shape (its outline and distance field, Phase 175), so text can assemble from particles.
+**Needs:** 178, 175 · **Was:** v3 63, 19.2 · **Status:** 🚧
+- [x] Niagara-style module stack (emitter → spawn → update → render); forces (gravity, drag, noise and curl, vortex, pointer attract/repel/orbit, spring-to-shape, bounds); CPU (≤ 5k) and GPU (≤ 250k) backends by tier; points, sprites, links, trails, instanced meshes; interaction modes (grab, repulse, burst on tap, scatter on scroll).
+- [x] **v4.1:** emit from, stick to and fill any layer's shape (its outline and distance field, Phase 175), so text can assemble from particles.
 
 **You'll see:** particle fields that swirl around the cursor.
 **Done when:** 5 reference effects hold their tier budgets; CPU and GPU backends agree within 2% on density and centroid at checkpoints; seeded runs repeat exactly.
 
 ### Phase 184 · Stateful simulations & replay
-**Needs:** 183 · **Was:** v3 64.2, 64.3 · **Closes:** AUD-48 · **Status:** 📋
-- [ ] Stable fluids with pointer splats, spring-mass lattices (grid distortion, dot fields with shockwaves), Verlet ropes and cloth, metaballs and SDF blobs, rigid bodies on the physics core (162). Simulations run at reduced resolution per tier, and scrubbing re-simulates from the nearest snapshot (≤ 50 ms per seek; CPU modules in a worker).
+**Needs:** 183 · **Was:** v3 64.2, 64.3 · **Closes:** AUD-48 · **Status:** 🚧
+- [x] Stable fluids with pointer splats, spring-mass lattices (grid distortion, dot fields with shockwaves), Verlet ropes and cloth, metaballs and SDF blobs, rigid bodies on the physics core (162). Simulations run at reduced resolution per tier, and scrubbing re-simulates from the nearest snapshot (≤ 50 ms per seek; CPU modules in a worker).
 
 **You'll see:** a fluid splash that follows the cursor and scrubs on the timeline.
 **Done when:** each module's reference replay matches stored snapshots at 5 checkpoints in 3 browsers; a 10 s back-and-forth scrub never shows two states for one time.
 
 ### Phase 185 · Deformation: mesh warp, bend & peel
-**Needs:** 109, 175, 184 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Deform any layer with a warp mesh (envelope, bend, bulge, wave, flag), and bend or peel it from a corner or edge (stickers, page curls), as modifiers that can be animated and bound to inputs. The real DOM stays underneath for accessibility; the deformed look is drawn from the layer texture.
+**Needs:** 109, 175, 184 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Deform any layer with a warp mesh (envelope, bend, bulge, wave, flag), and bend or peel it from a corner or edge (stickers, page curls), as modifiers that can be animated and bound to inputs. The real DOM stays underneath for accessibility; the deformed look is drawn from the layer texture.
 
 **You'll see:** peel a sticker off the page by dragging its corner.
 **Done when:** deformation references match within the GPU tolerance; the accessibility tree is unchanged.
 
 ### Phase 186 · Fracture: shatter, strips & tearing
-**Needs:** 112, 163, 185 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Break a layer into pieces along Voronoi cells, strips (a shredder), a grid or a drawn tear line; the pieces become physics bodies or spring home, and the layer can pull itself back together.
+**Needs:** 112, 163, 185 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Break a layer into pieces along Voronoi cells, strips (a shredder), a grid or a drawn tear line; the pieces become physics bodies or spring home, and the layer can pull itself back together.
 
 **You'll see:** click a card and it shatters, then reassembles.
 **Done when:** fracture replays are deterministic; pieces tile the original exactly (no gaps or overlaps above 0.5 px).
 
 ### Phase 187 · Media as texture & distortion
-**Needs:** 184, 175 · **Was:** v3 65 · **Status:** 📋
-- [ ] Images, video, text (SDF or canvas, re-rendered on font load and resize) and rasterised SVG as textures. Hover displacement, pixel and dither transitions, grid and wave distortion, halftone reveals, image trails, glass and lens. Real text and `alt` stay in the DOM; SVG-filter or CSS fallbacks for low tiers.
-- [ ] **v4.1:** built on the general layer textures (Phase 175) instead of its own capture; video becomes a fill in the fill stack (Phase 113), using the video assets of Phase 99.
+**Needs:** 184, 175 · **Was:** v3 65 · **Status:** 🚧
+- [x] Images, video, text (SDF or canvas, re-rendered on font load and resize) and rasterised SVG as textures. Hover displacement, pixel and dither transitions, grid and wave distortion, halftone reveals, image trails, glass and lens. Real text and `alt` stay in the DOM; SVG-filter or CSS fallbacks for low tiers.
+- [x] **v4.1:** built on the general layer textures (Phase 175) instead of its own capture; video becomes a fill in the fill stack (Phase 113), using the video assets of Phase 99.
 
 **You'll see:** images that ripple under the cursor.
 **Done when:** 6 references work on image, video and text; the accessibility tree reads the real text and alt once; fallbacks render with WebGL disabled.
 
 ### Phase 188 · Scroll-scrubbed image sequences & video
-**Needs:** 81, 99, 187 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Apple-style scroll stories: an image sequence or a video scrubbed by scroll (or any input), with preloading per device tier, a frame budget, a poster fallback and pinned sections.
+**Needs:** 81, 99, 187 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Apple-style scroll stories: an image sequence or a video scrubbed by scroll (or any input), with preloading per device tier, a frame budget, a poster fallback and pinned sections.
 
 **You'll see:** a product that turns around as you scroll.
 **Done when:** scrubbing shows the right frame at 20 scroll positions in 3 browsers; memory stays within the tier budget.
 
 ### Phase 189 · Smooth scrolling & scroll physics
-**Needs:** 188 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Page-wide smooth scrolling (inertia and easing) with the native scroll as fallback, snapping per section, and scroll-velocity effects. Respects reduced motion, keyboard scrolling and find-in-page.
+**Needs:** 188 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Page-wide smooth scrolling (inertia and easing) with the native scroll as fallback, snapping per section, and scroll-velocity effects. Respects reduced motion, keyboard scrolling and find-in-page.
 
 **You'll see:** a site that scrolls smoothly with sections that snap into place.
 **Done when:** keyboard, find-in-page and anchor links work; reduced motion turns smoothing off; the export matches.
 
 ### Phase 190 · Depth parallax by scroll and cursor
-**Needs:** 129, 143, 189 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] The Stage 3 depth camera bound to scroll and the cursor with one-click presets: multi-plane parallax, dolly on scroll, look-around with the cursor, and tilt on phones.
+**Needs:** 129, 143, 189 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] The Stage 3 depth camera bound to scroll and the cursor with one-click presets: multi-plane parallax, dolly on scroll, look-around with the cursor, and tilt on phones.
 
 **You'll see:** a hero with 5 depth planes that parallax with the cursor and with scroll.
 **Done when:** plane offsets match the projection at tape checkpoints; the export matches the stage.
 
 ### Phase 191 · Cursor & overlay layer
-**Needs:** 187, 155, 180 · **Was:** v3 66 · **Status:** 📋
-- [ ] One cursor layer per page: follower, blob, trail, splash, target brackets, image trail, magnetic snap. Cursor states from what's under the pointer; hiding the native cursor is opt-in and never over text inputs, under reduced motion or on touch; focus rings stay visible. Runs live only in Preview and the Playground.
-- [ ] **v4.1:** cursors read roles and outlines (Phases 155 and 180): brackets that snap to a button's real corners, a crosshair that measures what it locks onto, a swarm that flows around hovered buttons.
+**Needs:** 187, 155, 180 · **Was:** v3 66 · **Status:** 🚧
+- [x] One cursor layer per page: follower, blob, trail, splash, target brackets, image trail, magnetic snap. Cursor states from what's under the pointer; hiding the native cursor is opt-in and never over text inputs, under reduced motion or on touch; focus rings stay visible. Runs live only in Preview and the Playground.
+- [x] **v4.1:** cursors read roles and outlines (Phases 155 and 180): brackets that snap to a button's real corners, a crosshair that measures what it locks onto, a swarm that flows around hovered buttons.
 
 **You'll see:** custom cursors in Preview.
 **Done when:** 8 cursor references pass mouse, pen and touch profiles; axe and keyboard-only journeys pass with the cursor layer on.
 
 ### Phase 192 · Effect SDK: effects as data
-**Needs:** 191 · **Was:** v3 67 · **Closes:** AUD-54 (engine) · **Status:** 📋
-- [ ] `EffectDefinition` v1 (spec §11): props view-model with AI descriptions, surfaces and programs by reference, bindings and affordances, states, fallback, touch and reduced-motion policies, tier costs, poster, export templates, provenance. Instances store only overrides; definitions migrate by version. Fork into the project, edit, publish to the project library. Every definition ships a tape test and a Playground scene.
+**Needs:** 191 · **Was:** v3 67 · **Closes:** AUD-54 (engine) · **Status:** 🚧
+- [x] `EffectDefinition` v1 (spec §11): props view-model with AI descriptions, surfaces and programs by reference, bindings and affordances, states, fallback, touch and reduced-motion policies, tier costs, poster, export templates, provenance. Instances store only overrides; definitions migrate by version. Fork into the project, edit, publish to the project library. Every definition ships a tape test and a Playground scene.
 
 **You'll see:** fork any library effect and change how it works.
 **Done when:** every library effect is a definition validated in CI with no per-effect code; a definition migration round-trips 100 fixtures.
 
 ### Phase 193 · Library: interaction, backgrounds, cursors & distortion
-**Needs:** 192 · **Was:** v3 25.3 (waves 2, 5, 7, 8, 9) · **Closes:** AUD-54 (library) · **Status:** 📋
-- [ ] Wave 2 interaction (8), Wave 5 backgrounds (7), Wave 7 interactive backgrounds (≥ 20, ≥ 15 pointer-reactive, ≥ 5 scroll-reactive), Wave 8 cursors (≥ 10), Wave 9 distortion (≥ 8). Original implementations with provenance; open recipes wherever the primitives can express them.
+**Needs:** 192 · **Was:** v3 25.3 (waves 2, 5, 7, 8, 9) · **Closes:** AUD-54 (library) · **Status:** 🚧
+- [x] Wave 2 interaction (8), Wave 5 backgrounds (7), Wave 7 interactive backgrounds (≥ 20, ≥ 15 pointer-reactive, ≥ 5 scroll-reactive), Wave 8 cursors (≥ 10), Wave 9 distortion (≥ 8). Original implementations with provenance; open recipes wherever the primitives can express them.
 
 **You'll see:** 50+ interactive effects ready to insert (80+ in the library with Stage 2's).
 **Done when:** each passes the Playground sweep, tape parity and its tier budget; a new user makes a background react to the cursor in < 2 minutes.
 
 ### Phase 194 · Library: micro-interactions, glass, light & deformation
-**Needs:** 193 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Wave 10 micro-interactions (≥ 20: hold, slide, swipe, sling, toggles, ratings), Wave 11 glass, light and outline effects (≥ 12), Wave 12 deformation and fracture (≥ 8), Wave 13 sound packs. Original implementations with provenance (GATE-02).
+**Needs:** 193 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Wave 10 micro-interactions (≥ 20: hold, slide, swipe, sling, toggles, ratings), Wave 11 glass, light and outline effects (≥ 12), Wave 12 deformation and fracture (≥ 8), Wave 13 sound packs. Original implementations with provenance (GATE-02).
 
 **You'll see:** 40+ more ready-made effects, each one open to see how it is built.
 **Done when:** each passes the Playground sweep, tape parity and its tier budget.
 
 ### Phase 195 · Sandbox boundaries for untrusted code
-**Needs:** 193 · **Was:** v3 80.2 · **Status:** 📋
-- [ ] Opaque-origin sandboxed iframes (`allow-scripts` without `allow-same-origin`) with typed MessageChannel bridges; no editor-origin storage, cookies or tokens reachable from any user-content frame (decision record 0012, code isolation).
+**Needs:** 193 · **Was:** v3 80.2 · **Status:** 🚧
+- [x] Opaque-origin sandboxed iframes (`allow-scripts` without `allow-same-origin`) with typed MessageChannel bridges; no editor-origin storage, cookies or tokens reachable from any user-content frame (decision record 0012, code isolation).
 
 **You'll see:** nothing yet; 196 runs code components inside it.
 **Done when:** a malicious fixture reading `document.cookie`, `localStorage` and `parent.document` gets nothing in 3 browsers.
 
 ### Phase 196 · Code components
-**Needs:** 195 · **Was:** v3 68 · **Status:** 📋
-- [ ] Import TSX/JSX, files or an npm package; bundle in a worker (esbuild-wasm) with pinned, hashed dependencies; render in the sandbox; infer property controls from prop types (JSDoc hints optional); bind props to signals, variables and states; callback props become Blueprint events; record the licence and keep restricted ones private (GATE-03).
+**Needs:** 195 · **Was:** v3 68 · **Status:** 🚧
+- [x] Import TSX/JSX, files or an npm package; bundle in a worker (esbuild-wasm) with pinned, hashed dependencies; render in the sandbox; infer property controls from prop types (JSDoc hints optional); bind props to signals, variables and states; callback props become Blueprint events; record the licence and keep restricted ones private (GATE-03).
 
 **You'll see:** paste your own animated React component and get inspector controls for it.
 **Done when:** 10 real-world fixtures import, render, expose controls and export to a Next app that builds.
 
 ### Phase 197 · Interactive export runtime
-**Needs:** 196, 194 · **Was:** v3 69.1, 69.2 · **Status:** 📋
-- [ ] The exporter copies only the vendored modules an effect uses (`ticker`, `signals`, `kinetics`, `physics2d`, `blueprint`, `gl`, `particles`, `sims`, `cursor`) as readable source with an MIT notice. React for Next and Vite (client boundary, poster first, init after idle, cleanup releases contexts), Vue 3 and a Web Component. Memory discipline as in the editor.
-- [ ] **v4.1:** runtime modules for the new capabilities (`gestures`, `raster`, `deform`, `audio`), copied only when an effect uses them.
+**Needs:** 196, 194 · **Was:** v3 69.1, 69.2 · **Status:** 🚧
+- [x] The exporter copies only the vendored modules an effect uses (`ticker`, `signals`, `kinetics`, `physics2d`, `blueprint`, `gl`, `particles`, `sims`, `cursor`) as readable source with an MIT notice. React for Next and Vite (client boundary, poster first, init after idle, cleanup releases contexts), Vue 3 and a Web Component. Memory discipline as in the editor.
+- [x] **v4.1:** runtime modules for the new capabilities (`gestures`, `raster`, `deform`, `audio`), copied only when an effect uses them.
 
 **You'll see:** export any interactive effect and it runs in your own app with no LazyLayout package.
 **Done when:** every library effect builds in the Next, Vite, Vue and HTML fixtures and passes tape parity.
 
 ### Phase 198 · Embed script, size budgets & Web Vitals
-**Needs:** 197 · **Was:** v3 69.3–69.5 · **Status:** 📋
-- [ ] A framework-free embed (`<script type="module">` + `<div data-fx>`) for Webflow, Framer, Wix, WordPress and plain HTML (self-hosted until 268). Per-family size budgets in CI; the poster reserves the box (CLS 0), init waits for LCP, effects pause offscreen.
+**Needs:** 197 · **Was:** v3 69.3–69.5 · **Status:** 🚧
+- [x] A framework-free embed (`<script type="module">` + `<div data-fx>`) for Webflow, Framer, Wix, WordPress and plain HTML (self-hosted until 268). Per-family size budgets in CI; the poster reserves the box (CLS 0), init waits for LCP, effects pause offscreen.
 
 **You'll see:** "Copy embed code" for any effect.
 **Done when:** every effect meets its size budget with CLS 0 and no long task ≥ 50 ms at init; the embed works under a strict nonce-based CSP.
 
 ### Phase 199 · Interactive accessibility
-**Needs:** 198 · **Was:** v3 29 (v3.0 amendment), 29.4 · **Closes:** AUD-14 · **Status:** 📋
-- [ ] Per-effect reduced-motion policy (freeze, calm, off); a pause control and page-wide switch for motion longer than 5 s; flash detection on sampled GPU frames under aggressive tapes; dynamic contrast for text over animated backgrounds; target stability; cursor safeguards; rules 6.12–6.15 checked at runtime; axe on every export.
+**Needs:** 198 · **Was:** v3 29 (v3.0 amendment), 29.4 · **Closes:** AUD-14 · **Status:** 🚧
+- [x] Per-effect reduced-motion policy (freeze, calm, off); a pause control and page-wide switch for motion longer than 5 s; flash detection on sampled GPU frames under aggressive tapes; dynamic contrast for text over animated backgrounds; target stability; cursor safeguards; rules 6.12–6.15 checked at runtime; axe on every export.
 
 **You'll see:** accessibility warnings in the inspector with one-click fixes.
 **Done when:** axe reports 0 violations across the export matrix; the reduced-motion run with pointer tapes shows no spatial movement.
 
 ### Phase 200 · Interactive performance budgets per tier
-**Needs:** 199 · **Was:** v3 26 (v3.0 amendment) · **Closes:** AUD-55 (simulated tiers) · **Status:** 📋
-- [ ] Budgets per device tier for every interactive effect (frame time, memory, live surfaces, runtime size), measured under input tapes with a 10-minute soak on simulated low and mid tiers. Real phones come in 261.
+**Needs:** 199 · **Was:** v3 26 (v3.0 amendment) · **Closes:** AUD-55 (simulated tiers) · **Status:** 🚧
+- [x] Budgets per device tier for every interactive effect (frame time, memory, live surfaces, runtime size), measured under input tapes with a 10-minute soak on simulated low and mid tiers. Real phones come in 261.
 
 **You'll see:** tier badges (runs on low / mid / high devices) on every effect.
 **Done when:** every library effect meets its simulated tier budgets in CI.
 
 ### Phase 201 · Composition test suite
-**Needs:** 200 · **Was:** v3 91.7 · **Closes:** AUD-57 · **Status:** 📋
-- [ ] Ten interactions built from primitives only (no code, no preset, no typed numbers), run in 3 browsers and on a phone profile, then exported and parity-checked: letters flee an invisible cursor circle; a magnetic dot grid with a click shockwave; a cursor chain; falling, throwable letters with a reset; eyes that look at the cursor; scroll scatter; click confetti of your own shape; a tilting card grid; an orbit around a lagging helper; a hit counter that plays a composition and a sound.
-- [ ] **v4.1:** five more builds from primitives: letters that get bolder as the cursor nears (inside a fixed box); a sticker that peels and is thrown; a jelly button; a liquid-glass navigation bar over the design; a 3D ring of cards dragged with momentum.
+**Needs:** 200 · **Was:** v3 91.7 · **Closes:** AUD-57 · **Status:** 🚧
+- [x] Ten interactions built from primitives only (no code, no preset, no typed numbers), run in 3 browsers and on a phone profile, then exported and parity-checked: letters flee an invisible cursor circle; a magnetic dot grid with a click shockwave; a cursor chain; falling, throwable letters with a reset; eyes that look at the cursor; scroll scatter; click confetti of your own shape; a tilting card grid; an orbit around a lagging helper; a hit counter that plays a composition and a sound.
+- [x] **v4.1:** five more builds from primitives: letters that get bolder as the cursor nears (inside a fixed box); a sticker that peels and is thrown; a jelly button; a liquid-glass navigation bar over the design; a 3D ring of cards dragged with momentum.
 
 **You'll see:** the same 10 builds work for anyone, from primitives.
 **Done when:** all 10 pass, and no Simple face in them shows a technical parameter.
 
 ### Phase 202 · Stage 4 gate: the interactive journey
-**Needs:** 132–201 · **Was:** v3 58.5, 58.6 · **Status:** 📋
-- [ ] **Journey A (React):** a hero with a cursor-reactive background, a magnetic CTA, a cursor effect and a rule (hover → glow, click → particles and a card flip), scrubbed with a tape, opened as a graph, exported and parity-checked on desktop and a mid-tier phone profile.
-- [ ] **Journey B (Compose):** the reference build from primitives in < 5 minutes: helper circle following by its bottom pin, Split letters, "keep outside, spin, spring home" rule, opened as a graph, exported, accessibility tree and touch profile checked.
-- [ ] **Journey C (Keyboard):** a card carousel driven by arrows and focus, identical in the export.
-- [ ] **Journey D (Bring your own):** an imported component with one prop bound to the cursor, exported, isolation verified.
-- [ ] **v4.1 Journey E (Feel):** a hero with depth parallax, a liquid-glass navigation bar, a hold-to-confirm button with sound and haptics, and a card that shatters and reassembles, exported and parity-checked.
+**Needs:** 132–201 · **Was:** v3 58.5, 58.6 · **Status:** 🚧
+- [x] **Journey A (React):** a hero with a cursor-reactive background, a magnetic CTA, a cursor effect and a rule (hover → glow, click → particles and a card flip), scrubbed with a tape, opened as a graph, exported and parity-checked on desktop and a mid-tier phone profile.
+- [x] **Journey B (Compose):** the reference build from primitives in < 5 minutes: helper circle following by its bottom pin, Split letters, "keep outside, spin, spring home" rule, opened as a graph, exported, accessibility tree and touch profile checked.
+- [x] **Journey C (Keyboard):** a card carousel driven by arrows and focus, identical in the export.
+- [x] **Journey D (Bring your own):** an imported component with one prop bound to the cursor, exported, isolation verified.
+- [x] **v4.1 Journey E (Feel):** a hero with depth parallax, a liquid-glass navigation bar, a hold-to-confirm button with sound and haptics, and a card that shatters and reassembles, exported and parity-checked.
 
 **You'll see:** LazyLayout's pitch, working end to end: interactive effects anyone can add, compose and export.
 **Done when:** the journeys pass in CI in 3 browsers, plus one recorded manual run.
@@ -2756,7 +3359,7 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** a real model builds the first version and helps refine it, always as a diff the user approves. Claude, through MCP, can do everything a person can do in the editor.
 
 ### Phase 241 · LLM integration layer
-**Needs:** 240 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 📋
+**Needs:** 13, 50 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 📋
 - [ ] A Next.js route handler calls the Claude API through `@anthropic-ai/sdk`; the key stays server-side. The model ID lives in one constant, checked against the current model lineup when this phase starts.
 - [ ] Schema-constrained output (the MDM JSON Schema and the command schemas from 13 as strict tool inputs); edits are MDM patches, graphs are `.nls`; streaming; prompt caching of the stable prefix; vision input; graceful handling of every stop reason.
 - [ ] The route is private (developer use) until Phases 259 and 260.
@@ -2897,7 +3500,7 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** a public beta that is secure, observable, tested on real devices and licence-clean, with the legacy systems gone.
 
 ### Phase 259 · Security hardening
-**Needs:** 258 · **Was:** v3 80.3–80.5 · **Closes:** AUD-51 (security) · **Status:** 📋
+**Needs:** 16, 96, 241 · **Was:** v3 80.3–80.5 · **Closes:** AUD-51 (security) · **Status:** 📋
 - [ ] A strict CSP with nonces and Trusted Types; sanitisers for SVG, GLTF and fonts re-verified; GPU compile limits and a watchdog; AI and MCP routes with authentication, authorisation, rate limits and prompt-injection handling for references; dependency audit, lockfile integrity and secret scanning in CI; exported code with no `eval`, no inline handlers, and working under a CSP.
 
 **You'll see:** nothing new; everything keeps working under a strict security policy.
@@ -2916,6 +3519,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** "tested on" tier badges backed by real devices.
 **Done when:** every library effect meets its tier budgets on the matrix; no crash or tab kill in a 10-minute soak on the low mobile tier; input-matrix journeys pass.
+**v5 (R2):** "every library effect" reads "each of the five reference recipes"; 3D scenes join the matrix in R3.
 
 ### Phase 262 · Licensing & compliance automation
 **Needs:** 261 · **Was:** v3 85 · **Status:** 📋
@@ -2944,6 +3548,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** a release candidate.
 **Done when:** all journeys are green on one tagged commit.
+**v5 (R2):** the journeys are the gates passed so far: Phase 52, the five recipes of Gate R1, and the AI and MCP journeys. The later stage gates (102, 202, 240) join when their releases close.
 
 ### Phase 266 · Public beta gate
 **Needs:** 259–265 · **Was:** v3 40 · **Status:** 📋
@@ -2951,6 +3556,7 @@ These three things work in the core and in the legacy editor, but the new editor
 
 **You'll see:** the public beta.
 **Done when:** every item is green in CI at a tagged commit (`v0.2.0-beta`).
+**v5 (R2):** the PRD §11 criteria are checked for what R0 to R2 built. A criterion that needs a later release is listed as open in the go/no-go review, with its release.
 
 ---
 

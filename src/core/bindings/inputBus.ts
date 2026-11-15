@@ -13,6 +13,15 @@
 import type { Signal, SignalExpr } from "../document/signals";
 import type { Frame, Value, Vec2 } from "./evaluate";
 
+/** Coordinate-space rectangle measured for a frame, parent, or target layer. */
+export interface MeasuredRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotationDeg?: number;
+}
+
 /** What the host measures for one frame. */
 export interface InputSource {
   /** Pointer position in page px, or null when it has never been over the page. */
@@ -24,7 +33,25 @@ export interface InputSource {
   /** Where a layer sits in the scrolled content: its top (from the top of the content, not the screen) and height, in px; null when it is not drawn. */
   layerBox?(layerId: string): { top: number; height: number } | null;
   /** Where a layer is on the page, in the same px as the pointer; null when it is not drawn. */
-  layerRect?(layerId: string): { x: number; y: number; width: number; height: number } | null;
+  layerRect?(layerId: string): MeasuredRect | null;
+  /** Optional owning layer id for space-aware signals (`pointerIn` in `local` / `parent`). */
+  ownerLayerId?: string;
+  /** Optional enclosing parent rect for `pointerIn(..., parent)`. */
+  parentRect?(layerId: string): MeasuredRect | null;
+  /** Optional enclosing root frame rect for `pointerIn(..., frame)`. */
+  frameRect?(layerId?: string): MeasuredRect | null;
+  /** Currently held key codes (`event.code`). */
+  keysDown?(): ReadonlySet<string>;
+  /** Most recent key pressed (`event.code`), or null. */
+  lastPressedKey?(): string | null;
+  /** Currently focused layer id, or null. */
+  focusedLayerId?(): string | null;
+  /** Whether keyboard focus ring is currently visible. */
+  focusVisible?(): boolean;
+  /** Permission-gated device tilt orientation frame. */
+  device?(): { tiltX: number; tiltY: number; orientation: number } | null;
+  /** Permission-gated audio reactive frame (or layer audio element bands). */
+  audio?(layerId: string): { level: number; beat: boolean; bands?: readonly number[] } | null;
 }
 
 /** Per-frame values that depend on the last frame (motion, speed, scroll velocity); owned by the bus, not the source. */
@@ -39,10 +66,14 @@ export interface BusState {
   scrollDirection: number;
   /** Frames run, so a signal read twice in one frame is smoothed once. */
   frame: number;
-  /** The smoothed `hover` and `press` of each layer, with the frame it was last advanced on. */
+  /** The smoothed `hover`, `press`, and `focus` of each layer, with the frame it was last advanced on. */
   smooth: Record<string, { frame: number; value: number }>;
+  /** Duration in seconds each key code has been continuously held down. */
+  keyHeldSec?: Record<string, { frame: number; seconds: number }>;
+  /** Stable numeric hash of `lastPressedKey`. */
+  lastKeyHash?: number;
 }
-export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0, frame: 0, smooth: {} });
+export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0, frame: 0, smooth: {}, keyHeldSec: {}, lastKeyHash: 0 });
 
 /** Seconds a `hover` or `press` takes to settle (the spec's 80 ms edge smoothing). */
 export const EDGE_TAU = 0.08;
@@ -58,7 +89,26 @@ export function distanceToRect(r: { x: number; y: number; width: number; height:
   return Math.hypot(dx, dy);
 }
 
-const SERVED = new Set(["pointer", "pointerIn", "pointerInside", "layerState", "proximity", "scroll", "view", "time", "frameDt", "seed", "constant"]);
+const SERVED = new Set([
+  "pointer",
+  "pointerIn",
+  "pointerInside",
+  "layerState",
+  "proximity",
+  "scroll",
+  "view",
+  "time",
+  "frameDt",
+  "seed",
+  "constant",
+  "keyDown",
+  "keyHeld",
+  "keyAxis",
+  "keyLastPressed",
+  "focusVisible",
+  "device",
+  "audio",
+]);
 
 /**
  * How far a box has scrolled through the screen: 0 when its top reaches the bottom of the screen, 1 when its bottom leaves the
@@ -90,9 +140,34 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
     if (dScroll !== 0) state.scrollDirection = Math.sign(dScroll);
   }
   state.last = { x, y, scrollY: sc.y };
-  const u = size.width > 0 ? x / size.width : 0;
-  const v = size.height > 0 ? y / size.height : 0;
   const progress = sc.max > 0 ? Math.min(1, Math.max(0, sc.y / sc.max)) : 0;
+
+  const hashKey = (code: string | null): number => {
+    if (!code) return 0;
+    let h = 2166136261;
+    for (let i = 0; i < code.length; i++) {
+      h ^= code.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % 65536;
+  };
+  const keysDown = source.keysDown?.();
+  if (keysDown) {
+    state.keyHeldSec = state.keyHeldSec ?? {};
+    for (const [k, rec] of Object.entries(state.keyHeldSec)) {
+      if (!keysDown.has(k)) rec.seconds = 0;
+    }
+    for (const k of keysDown) {
+      const rec = state.keyHeldSec[k] ?? { frame: -1, seconds: 0 };
+      if (rec.frame !== state.frame && dt > 0) {
+        rec.seconds += Math.min(dt, 1 / 15);
+        rec.frame = state.frame;
+      }
+      state.keyHeldSec[k] = rec;
+    }
+  }
+  const lastKey = source.lastPressedKey?.() ?? null;
+  if (lastKey) state.lastKeyHash = hashKey(lastKey);
 
   const read = (s: Signal): Value => {
     switch (s.kind) {
@@ -111,14 +186,45 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
           case "coarse": return p?.coarse ?? false;
         }
         return 0;
-      case "pointerIn":
-        return s.channel === "uv" ? [u, v] : s.channel === "ndc" ? [u * 2 - 1, v * 2 - 1] : [x, y];
+      case "pointerIn": {
+        const owner = source.ownerLayerId;
+        const pageBox: MeasuredRect = { x: 0, y: 0, width: size.width, height: size.height };
+        let rect: MeasuredRect = pageBox;
+        if (s.space === "local" && owner) {
+          rect = source.layerRect?.(owner) ?? source.frameRect?.(owner) ?? pageBox;
+        } else if (s.space === "parent" && owner) {
+          rect = source.parentRect?.(owner) ?? source.frameRect?.(owner) ?? pageBox;
+        } else if (s.space === "frame") {
+          rect = source.frameRect?.(owner) ?? pageBox;
+        }
+        let px = x;
+        let py = y;
+        if (rect.rotationDeg) {
+          const cx = rect.x + rect.width / 2;
+          const cy = rect.y + rect.height / 2;
+          const rad = (-rect.rotationDeg * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const dx = px - cx;
+          const dy = py - cy;
+          px = cx + dx * cos - dy * sin;
+          py = cy + dx * sin + dy * cos;
+        }
+        const lx = px - rect.x;
+        const ly = py - rect.y;
+        const lu = rect.width > 0 ? lx / rect.width : 0;
+        const lv = rect.height > 0 ? ly / rect.height : 0;
+        return s.channel === "uv" ? [lu, lv] : s.channel === "ndc" ? [lu * 2 - 1, lv * 2 - 1] : [lx, ly];
+      }
       case "pointerInside": {
         const r = source.layerRect?.(s.layer);
         return !!(p && r && insideRect(r, x, y));
       }
       case "layerState": {
-        if (s.channel === "focus") return 0; // keyboard focus is not measured
+        if (s.channel === "focus") {
+          const focused = source.focusedLayerId?.();
+          return focused ? focused === s.layer : 0;
+        }
         const r = source.layerRect?.(s.layer);
         const on = !!(p && r && insideRect(r, x, y) && (s.channel === "hover" || p.down));
         const key = `${s.channel}|${s.layer}`;
@@ -130,6 +236,31 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
         state.smooth[key] = cur;
         return cur.value;
       }
+      case "focusVisible": {
+        const focused = source.focusedLayerId?.();
+        const visible = source.focusVisible?.() ?? false;
+        return !!(visible && focused && focused === s.layer);
+      }
+      case "keyDown": {
+        const down = source.keysDown?.();
+        return !!(down && down.has(s.code));
+      }
+      case "keyHeld": {
+        const down = source.keysDown?.();
+        if (!down || !down.has(s.code)) return 0;
+        return state.keyHeldSec?.[s.code]?.seconds ?? 0;
+      }
+      case "keyAxis": {
+        const down = source.keysDown?.();
+        const has = (code: string) => !!(down && down.has(code));
+        const axX = s.preset === "wasd" ? (has("KeyD") ? 1 : 0) - (has("KeyA") ? 1 : 0) : (has("ArrowRight") ? 1 : 0) - (has("ArrowLeft") ? 1 : 0);
+        const axY = s.preset === "wasd" ? (has("KeyS") ? 1 : 0) - (has("KeyW") ? 1 : 0) : (has("ArrowDown") ? 1 : 0) - (has("ArrowUp") ? 1 : 0);
+        if (s.axis === "x") return axX;
+        if (s.axis === "y") return axY;
+        return [axX, axY] as Vec2;
+      }
+      case "keyLastPressed":
+        return state.lastKeyHash ?? 0;
       case "proximity": {
         const r = source.layerRect?.(s.layer);
         return p && r ? distanceToRect(r, x, y, s.measure ?? "edge") : 0;
@@ -142,6 +273,18 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
       }
       case "scroll":
         return s.channel === "y" ? sc.y : s.channel === "progress" ? progress : s.channel === "velocity" ? state.scrollVelocity : state.scrollDirection;
+      case "device": {
+        const d = source.device?.();
+        if (!d) return 0;
+        return s.channel === "tiltX" ? d.tiltX : s.channel === "tiltY" ? d.tiltY : d.orientation;
+      }
+      case "audio": {
+        const a = source.audio?.(s.layer);
+        if (!a) return s.channel === "beat" ? false : 0;
+        if (s.channel === "beat") return a.beat;
+        if (s.channel === "band") return a.bands?.[s.band ?? 0] ?? 0;
+        return a.level;
+      }
       default:
         return 0;
     }

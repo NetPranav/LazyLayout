@@ -10,6 +10,8 @@ import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { RowColorField } from "../controls/RowColorField";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps, EffectItem } from "../types";
+import { Toggle } from "@/editor/components/Toggle";
+import { invokeCommand } from "@/core/commands";
 
 export interface EffectsSectionProps extends InspectorSectionProps {
   onAddEffectRef?: { current?: () => void };
@@ -18,15 +20,37 @@ export interface EffectsSectionProps extends InspectorSectionProps {
 const EFFECT_OPTIONS = [
   { value: "drop-shadow", label: "Drop shadow" },
   { value: "inner-shadow", label: "Inner shadow" },
+  { value: "outer-glow", label: "Outer glow" },
+  { value: "inner-glow", label: "Inner glow" },
   { value: "layer-blur", label: "Layer blur" },
   { value: "background-blur", label: "Background blur" },
+  { value: "grain", label: "Grain" },
+  { value: "frosted-glass", label: "Frosted glass (preset)" },
 ] as const;
+
+const DIRECTION_OPTIONS = [
+  { value: "up", label: "Stronger at the top" },
+  { value: "down", label: "Stronger at the bottom" },
+  { value: "left", label: "Stronger at the left" },
+  { value: "right", label: "Stronger at the right" },
+] as const;
+
+/** What a row gets when its kind changes (Phase 121): a glow sits on the layer, glows warm, grain at 15%. */
+function kindDefaults(e: EffectItem, type: EffectItem["type"]): Partial<EffectItem> {
+  if (type === "outer-glow" || type === "inner-glow") return { x: 0, y: 0, ...(e.type === "outer-glow" || e.type === "inner-glow" ? {} : { hex: "FFD24A", blur: 16, spread: 0 }) };
+  if (type === "grain") return { amount: e.type === "grain" ? e.amount : 15, size: e.size ?? 0.5 };
+  if ((type === "layer-blur" || type === "background-blur") && (e.amount === 0 || e.type === "grain")) return { amount: 8 };
+  return {};
+}
 
 const EFFECT_LABEL: Record<EffectItem["type"], string> = {
   "drop-shadow": "Drop shadow",
   "inner-shadow": "Inner shadow",
+  "outer-glow": "Outer glow",
+  "inner-glow": "Inner glow",
   "layer-blur": "Layer blur",
   "background-blur": "Background blur",
+  grain: "Grain",
 };
 
 const FIELD_TITLE: Record<string, string> = {
@@ -88,7 +112,7 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
 
   const updateEffect = (id: string, patch: Partial<EffectItem>) => {
     if (patch.type) setActivePopoverId(null); // a changed kind moves the row; close its popover
-    commit(effects.map((e) => (e.id === id ? { ...e, ...patch, ...(patch.type && (patch.type === "layer-blur" || patch.type === "background-blur") && e.amount === 0 ? { amount: 8 } : {}) } : e)));
+    commit(effects.map((e) => (e.id === id ? { ...e, ...patch, ...(patch.type ? kindDefaults(e, patch.type) : {}) } : e)));
   };
 
   const handleRemoveEffect = (id: string) => {
@@ -120,6 +144,7 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
         const isOpen = activePopoverId === effect.id;
         const effectNum = index + 1;
         const isShadow = effect.type === "drop-shadow" || effect.type === "inner-shadow";
+        const isGlow = effect.type === "outer-glow" || effect.type === "inner-glow";
         return (
           <div
             key={effect.id}
@@ -209,7 +234,16 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
                     value={effect.type}
                     width="100%"
                     size="sm"
-                    onChange={(value) => updateEffect(effect.id, { type: value as EffectItem["type"] })}
+                    onChange={(value) => {
+                      // a preset, not a row of its own: it makes the rows it needs (blur, glow, grain) and this row goes
+                      if (value === "frosted-glass") {
+                        setActivePopoverId(null);
+                        commit(effects.filter((e) => e.id !== effect.id));
+                        void invokeCommand("effects.frostedGlass", { ids });
+                        return;
+                      }
+                      updateEffect(effect.id, { type: value as EffectItem["type"] });
+                    }}
                   />
                 </OptionRow>
                 {isShadow ? (
@@ -222,8 +256,40 @@ export const EffectsSection: React.FC<EffectsSectionProps> = ({
                     <OptionRow label="Blur">{numberField("B", effect.blur, (v) => updateEffect(effect.id, { blur: v }))}</OptionRow>
                     <OptionRow label="Spread">{numberField("S", effect.spread, (v) => updateEffect(effect.id, { spread: v }))}</OptionRow>
                   </>
+                ) : isGlow ? (
+                  <>
+                    <OptionRow label="Colour">
+                      <RowColorField hex={effect.hex} label="Glow colour picker" hexLabel="Glow hex" onChange={(hex) => updateEffect(effect.id, { hex })} />
+                    </OptionRow>
+                    <OptionRow label="Size">{numberField("B", effect.blur, (v) => updateEffect(effect.id, { blur: v }))}</OptionRow>
+                    <OptionRow label="Spread">{numberField("S", effect.spread, (v) => updateEffect(effect.id, { spread: v }))}</OptionRow>
+                  </>
+                ) : effect.type === "grain" ? (
+                  <>
+                    <OptionRow label="Strength">
+                      <NumberField size="sm" aria-label="Grain strength" value={effect.amount} min={0} max={100} step={1} onChange={(v) => updateEffect(effect.id, { amount: v })} />
+                    </OptionRow>
+                    <OptionRow label="Size">
+                      <NumberField size="sm" aria-label="Grain size" value={effect.size ?? 0.5} min={0.05} max={100} step={0.25} onChange={(v) => updateEffect(effect.id, { size: v })} />
+                    </OptionRow>
+                  </>
                 ) : (
-                  <OptionRow label="Amount">{numberField("Amt", effect.amount, (v) => updateEffect(effect.id, { amount: v }))}</OptionRow>
+                  <>
+                    <OptionRow label="Amount">{numberField("Amt", effect.amount, (v) => updateEffect(effect.id, { amount: v }))}</OptionRow>
+                    <OptionRow label="Progressive">
+                      <Toggle size="sm" aria-label="Progressive blur" checked={!!effect.progressive} onChange={(on) => updateEffect(effect.id, { progressive: on, startAmount: effect.startAmount ?? 0, direction: effect.direction ?? "up" })} />
+                    </OptionRow>
+                    {effect.progressive && (
+                      <>
+                        <OptionRow label="Start">
+                          <NumberField size="sm" aria-label="Blur start amount" value={effect.startAmount ?? 0} min={0} step={1} onChange={(v) => updateEffect(effect.id, { startAmount: v })} />
+                        </OptionRow>
+                        <OptionRow label="Direction">
+                          <Select aria-label="Blur direction" options={DIRECTION_OPTIONS} value={effect.direction ?? "up"} width="100%" size="sm" onChange={(v) => updateEffect(effect.id, { direction: v as EffectItem["direction"] })} />
+                        </OptionRow>
+                      </>
+                    )}
+                  </>
                 )}
               </OptionGroup>
             </RowSettingsPopover>

@@ -44,7 +44,7 @@ export interface GradientStop {
 /** Fill item in repeatable list */
 export interface FillItem {
   id: string;
-  type: "solid" | "linear" | "radial" | "conic" | "image";
+  type: "solid" | "linear" | "radial" | "conic" | "image" | "noise" | "pattern" | "mesh" | "live";
   hex: string;
   opacity: number; // 0 to 100
   angle?: number;
@@ -62,19 +62,28 @@ export interface StrokeItem {
   style: "solid" | "dashed" | "dotted";
   sides: "all" | "top" | "right" | "bottom" | "left";
   hidden?: boolean;
+  /** This stroke's own position, for layers that keep a list of strokes (Phase 118). */
+  align?: "inside" | "center" | "outside";
 }
 
 /** Effect item in repeatable list */
 export interface EffectItem {
   id: string;
-  type: "drop-shadow" | "inner-shadow" | "layer-blur" | "background-blur";
+  type: "drop-shadow" | "inner-shadow" | "outer-glow" | "inner-glow" | "layer-blur" | "background-blur" | "grain";
   hex: string;
   x: number;
   y: number;
   blur: number;
   spread: number;
+  /** A blur's radius (at its strong end when progressive); a grain's strength in % (Phase 121). */
   amount: number;
   hidden?: boolean;
+  /** Phase 121: a blur that ramps from `startAmount` to `amount` towards `direction`. */
+  progressive?: boolean;
+  startAmount?: number;
+  direction?: "up" | "down" | "left" | "right";
+  /** Phase 121: a grain's size (px). */
+  size?: number;
 }
 
 /** Animation item in repeatable list */

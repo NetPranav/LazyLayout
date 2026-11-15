@@ -1,0 +1,1 @@
+- [Phase 172] Published Decision Record `DOCS/INITIAL/decisions/0016-scene-rasteriser.md` and implemented dirty-region incremental scene rasteriser (`src/core/gpu/sceneRasteriser.ts`) driven from Law 11 render definitions + 30-gallery fixture & 1440x900 cache-reuse tests (`PR #148`).

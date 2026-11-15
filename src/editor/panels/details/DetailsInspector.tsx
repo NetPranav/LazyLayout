@@ -15,6 +15,9 @@ import { BackgroundSection } from "./sections/BackgroundSection";
 import { IconSection } from "./sections/IconSection";
 import { ShapeSection } from "./sections/ShapeSection";
 import { VectorSection, VectorHeaderAction, VectorOptions } from "./sections/VectorSection";
+import { BooleanGroupSection } from "./sections/BooleanGroupSection";
+import { ModifiersSection, ModifiersOptions } from "./sections/ModifiersSection";
+import { isBooleanGroup, MODIFIABLE } from "@/core/editing/layerOutline";
 import { CounterSection } from "./sections/CounterSection";
 import { Object3DSection } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
@@ -28,7 +31,9 @@ import { StyleCodeSection } from "./sections/StyleCodeSection";
 import { DrivenBySection } from "./sections/DrivenBySection";
 import { LayerStatesSection } from "./sections/LayerStatesSection";
 import { SequenceSection } from "./sections/SequenceSection";
+import { TextMotionSection } from "./sections/TextMotionSection";
 import { VariablesSection } from "./sections/VariablesSection";
+import { ComponentsSection } from "./sections/ComponentsSection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
@@ -64,6 +69,11 @@ import {
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
+import { ColorToolsSection } from "./sections/ColorToolsSection";
+import { SpaceSection } from "./sections/SpaceSection";
+import { spaceOf } from "@/core/editing/spaceOps";
+import { TextPathSection } from "./sections/TextPathSection";
+import { TypeDetailsSection } from "./sections/TypeDetailsSection";
 import { isLettersGroup } from "@/core/editing/splitText";
 import { getDocument } from "@/core/store/documentState";
 
@@ -137,6 +147,8 @@ export function getInspectorDesignSections(
   const isIcon = archetype === "icon";
   const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
   const isPath = archetype === "svgPath";
+  const isBoolean = isBooleanGroup(inspector.primaryLayer ?? undefined);
+  const isModifiable = !inspector.isMulti && MODIFIABLE.has(archetype ?? "");
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
@@ -261,6 +273,25 @@ export function getInspectorDesignSections(
           },
         ]
       : []),
+    ...(isBoolean
+      ? [
+          {
+            id: "boolean-group",
+            title: "Boolean group",
+            children: <BooleanGroupSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isModifiable
+      ? [
+          {
+            id: "modifiers",
+            title: "Modifiers",
+            children: <ModifiersSection {...sectionProps} />,
+            moreContent: <ModifiersOptions {...sectionProps} />,
+          },
+        ]
+      : []),
     ...(isCounter
       ? [
           {
@@ -288,6 +319,24 @@ export function getInspectorDesignSections(
             title: "Typography",
             children: <TypographySection {...sectionProps} />,
             moreContent: <TypographyOptions {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "text"
+      ? [
+          {
+            id: "type-details",
+            title: "Type details",
+            children: <TypeDetailsSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "text"
+      ? [
+          {
+            id: "text-path",
+            title: "Text on path",
+            children: <TextPathSection {...sectionProps} />,
           },
         ]
       : []),
@@ -331,6 +380,24 @@ export function getInspectorDesignSections(
           },
         ]
       : []),
+    ...(archetype === "container" || archetype === "form" || (inspector.primaryLayer && spaceOf(inspector.primaryLayer.id))
+      ? [
+          {
+            id: "space",
+            title: "3D space",
+            children: <SpaceSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "text" || archetype === "image" || allowsFill
+      ? [
+          {
+            id: "colour-tools",
+            title: "Colour",
+            children: <ColorToolsSection {...sectionProps} />,
+          },
+        ]
+      : []),
     {
       id: "effects",
       title: "Effects",
@@ -367,6 +434,15 @@ export function getInspectorDesignSections(
       title: "Effector",
       children: <EffectorSection {...sectionProps} />,
     },
+    ...(archetype === "text"
+      ? [
+          {
+            id: "text-motion",
+            title: "Text motion",
+            children: <TextMotionSection {...sectionProps} />,
+          },
+        ]
+      : []),
     ...(archetype === "image"
       ? [
           {
@@ -395,6 +471,11 @@ export function getInspectorDesignSections(
       id: "variables",
       title: "Variables & styles",
       children: <VariablesSection {...sectionProps} />,
+    },
+    {
+      id: "components",
+      title: "Component",
+      children: <ComponentsSection {...sectionProps} />,
     },
     {
       id: "layer-states",

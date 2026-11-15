@@ -1,5 +1,6 @@
 "use client";
 
+import { ImageAdjustOptions } from "../options/ImageAdjustOptions";
 import React, { useState } from "react";
 import { CutoutDialog } from "../CutoutDialog";
 import { Select } from "@/editor/components/Select";
@@ -49,6 +50,7 @@ export const ImageSection: React.FC<InspectorSectionProps> = ({
   const fileName = src.startsWith("asset:") ? (getDocument().assets?.[src.slice(6)]?.name ?? "Image") : (src.split("/").pop() || "Image");
   const picker = React.useRef<HTMLInputElement>(null);
   const [cutting, setCutting] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const ids = selectedIds && selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
   const replace = async (file: File | undefined) => {
     if (!file) return;
@@ -112,6 +114,22 @@ export const ImageSection: React.FC<InspectorSectionProps> = ({
         value={altText}
         onChange={(e) => onUpdateProp?.("media.alt", e.target.value)}
       />
+
+      {/* Phase 122: adjustments and looks, drawn over the picture; its file is never changed */}
+      {selectedId && (
+        <>
+          <button
+            type="button"
+            aria-expanded={adjusting}
+            onClick={() => setAdjusting((v) => !v)}
+            className="ll:flex ll:items-center ll:justify-between ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer"
+          >
+            Adjust
+            <span aria-hidden="true" className="ll:text-muted">{adjusting ? "−" : "+"}</span>
+          </button>
+          {adjusting && <ImageAdjustOptions layerId={selectedId} />}
+        </>
+      )}
     </div>
   );
 };

@@ -103,6 +103,34 @@ exists; this one records the *current status* of each gate, kept current as the 
 - **Unblocks:** publishing imported components beyond the user's own project, if counsel allows
   it for specific licences.
 
+## Icon sets and media providers (ROADMAP Phase 126)
+
+Not gates: their licences are clear for how we use them. They are recorded here because Law 7 asks for every
+third-party set the editor ships or inserts, and because each item inserted carries its licence into the user's file.
+
+### Lucide icons (the Icons tab)
+
+- **What:** the icon set in **Icons & Photos**, from `lucide-react@1.41.0` (already a dependency for the editor's own
+  icons). An inserted icon becomes editable vector layers; its SVG goes into the asset store with
+  `source: { kind: "icon", provider: "Lucide", id, licence, licenceUrl }`.
+- **Licence:** **ISC**, Copyright (c) 2026 Lucide Icons and Contributors. 115 icons derived from the Feather project are
+  also under **MIT**, Copyright (c) 2013-present Cole Bemis; those record `"ISC and MIT (Feather)"`
+  (`FEATHER_DERIVED` in `src/core/assets/mediaLibrary.ts`, copied from the package's `LICENSE`). Both are permissive:
+  use, change and ship them, keeping the notice. The full text is `node_modules/lucide-react/LICENSE`.
+- **Status:** in use.
+
+### Openverse (the Photos tab)
+
+- **What:** the stock photo search in **Icons & Photos**, through Openverse's public API
+  (`https://api.openverse.org/v1/images/`, no key). Only openly licensed works come back (Creative Commons licences,
+  CC0 and the Public Domain Mark).
+- **Licence:** each photo's own, as Openverse reports it. An inserted photo goes into the asset store with
+  `source: { kind: "photo", provider: "Openverse", id, title, url, licence, licenceUrl, author, authorUrl,
+  attribution }`. The attribution is Openverse's credit line, which CC BY and BY-SA works require be shown where
+  they are used.
+- **Note:** the search words are sent to Openverse, and the dialog says so. Nothing else about the project is sent.
+- **Status:** in use. Showing the credit lines on an exported page is Phase 130's.
+
 ## What is not a gate
 
 - **Motion (`motion/react`, formerly Framer Motion), Three.js, `@react-three/fiber`,

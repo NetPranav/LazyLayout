@@ -18,7 +18,10 @@
 
 import { safeImageSrc } from "../render/limits";
 import { parseColor, toCss, withOpacity } from "./colorMath";
+import { MAX_MESH_SIDE, meshSvg, newMesh, type MeshSpec } from "./mesh";
+import { MAX_PATTERN_SHAPES, noiseSvg, patternSvg, safePathData, svgDataUrl, type NoiseSpec, type PatternSpec } from "./procedural";
 import { BLEND_MODES, blendCss, isIdentityAdjustment, sanitizeAdjustments, type BlendMode, type ImageAdjustments } from "./color";
+import { isIdentityLook, lookOf, needsImageFilter, type ImageLook } from "./imageLook";
 
 export interface Point {
   x: number;
@@ -30,12 +33,36 @@ export interface GradientStop {
   color: string;
 }
 
+/**
+ * A mask on one fill (Phase 113): a fade, fully shown at `start` and gone at `end` (fractions 0–1) along a linear
+ * direction (`angle` in degrees, 0 is downward), outward from the centre (radial), or round it (conic, from `angle`);
+ * or another layer's outline (a sibling), shown inside it, or outside it when `invert`.
+ */
+export type PaintMask =
+  | { type: "linear" | "radial" | "conic"; start: number; end: number; angle: number }
+  | { type: "layer"; id: string; invert: boolean };
+export const PAINT_MASK_TYPES = ["linear", "radial", "conic", "layer"] as const;
+
 interface PaintBase {
   /** 0 to 1. */
   opacity: number;
   visible: boolean;
   /** How the paint blends with what is under it (FigCraft port F2). Absent is normal. */
   blend?: BlendMode;
+  /** A mask on this fill alone (Phase 113). Absent is none. */
+  mask?: PaintMask;
+  /** In a stroke list only (Phases 117–118): this stroke's own weight in px and alignment; absent uses the layer's. */
+  weight?: number;
+  align?: "inside" | "center" | "outside";
+}
+
+/** A stored mask, read safely; null when absent or unusable. */
+export function parsePaintMask(v: unknown): PaintMask | null {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  if (o.type === "layer") return typeof o.id === "string" && o.id.length > 0 && o.id.length <= 64 ? { type: "layer", id: o.id, invert: o.invert === true } : null;
+  if (o.type !== "linear" && o.type !== "radial" && o.type !== "conic") return null;
+  return { type: o.type, start: num(o.start, 0, 0, 1), end: num(o.end, 1, 0, 1), angle: num(o.angle, 0, -720, 720) };
 }
 export type SolidPaint = PaintBase & { type: "solid"; color: string };
 export type LinearPaint = PaintBase & { type: "linear"; stops: GradientStop[]; from: Point; to: Point };
@@ -71,10 +98,31 @@ export type ImagePaint = PaintBase & {
   saturation: number;
   /** The seven adjustments, each -1..1 (FigCraft port F2); absent is none. Drawn by an SVG colour filter. */
   adjust?: ImageAdjustments;
+  /** Phase 122: a curve, a gradient map (duotone), sharpen and blur, and "show original"; drawn by the same filter. */
+  look?: ImageLook;
 };
-export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint;
+/** Seeded noise or grain (Phase 114), drawn by `core/paint/procedural.ts`. */
+export type NoisePaint = PaintBase & { type: "noise" } & NoiseSpec;
+/** Shapes repeated as a tile (Phase 114), baked from a layer when the pattern is made. */
+export type PatternPaint = PaintBase & { type: "pattern" } & PatternSpec;
+/** A mesh gradient (Phase 115), drawn by `core/paint/mesh.ts`. */
+export type MeshPaint = PaintBase & { type: "mesh" } & MeshSpec;
+/**
+ * A live fill (Phase 116): another frame or component drawn inside the shape, following every edit to it. `scale`
+ * sizes it, `offset` (px) moves it, `tile` repeats it across the shape.
+ */
+export type LivePaint = PaintBase & { type: "live"; source: string; scale: number; offset: Point; tile: boolean };
+export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint | NoisePaint | PatternPaint | MeshPaint | LivePaint;
 export type PaintType = Paint["type"];
-export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image"];
+export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image", "noise", "pattern", "mesh", "live"];
+
+/** The picture a procedural paint is drawn as, for a box of this size (null for other paints). */
+export function proceduralSvg(p: Paint, w: number, h: number): string | null {
+  if (p.type === "noise") return noiseSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  if (p.type === "pattern") return patternSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  if (p.type === "mesh") return meshSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  return null;
+}
 
 export const FULL_CROP: ImageCrop = { x: 0, y: 0, w: 1, h: 1 };
 
@@ -103,6 +151,10 @@ export const DEFAULT_STOPS: readonly GradientStop[] = [
 export function newPaint(type: PaintType, color = "#cbd5e1"): Paint {
   const base = { opacity: 1, visible: true };
   if (type === "image") return { ...base, type, src: "", mode: "fill", crop: { ...FULL_CROP }, scale: 1, brightness: 1, contrast: 1, saturation: 1 };
+  if (type === "live") return { ...base, type, source: "", scale: 1, offset: { x: 0, y: 0 }, tile: false };
+  if (type === "mesh") return { ...base, type, ...newMesh(3, 3, color) };
+  if (type === "noise") return { ...base, type, kind: "grain", scale: 2, contrast: 0.5, color: "#000000", seed: 1, opacity: 0.35 };
+  if (type === "pattern") return { ...base, type, tile: { w: 16, h: 16, shapes: [{ d: "M8 4A4 4 0 1 1 8 12A4 4 0 1 1 8 4Z", color: color }] }, scale: 1, spacing: 0, offset: { x: 0, y: 0 }, rotation: 0 };
   const stops: GradientStop[] = [{ at: 0, color }, { at: 1, color: parseColor(color) && (parseColor(color)!.r + parseColor(color)!.g + parseColor(color)!.b) / 3 > 128 ? "#0f172a" : "#ffffff" }];
   switch (type) {
     case "solid": return { ...base, type, color };
@@ -130,7 +182,10 @@ function parsePaint(v: unknown): Paint | null {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
   const blend = typeof o.blend === "string" && (BLEND_MODES as readonly string[]).includes(o.blend) && o.blend !== "normal" && o.blend !== "passThrough" ? (o.blend as BlendMode) : undefined;
-  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}) };
+  const mask = parsePaintMask(o.mask);
+  const weight = typeof o.weight === "number" && Number.isFinite(o.weight) ? clamp(o.weight, 0, 200) : undefined;
+  const align: PaintBase["align"] = o.align === "inside" || o.align === "center" || o.align === "outside" ? o.align : undefined;
+  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}), ...(mask ? { mask } : {}), ...(weight !== undefined ? { weight } : {}), ...(align ? { align } : {}) };
   switch (o.type) {
     case "solid": {
       const color = safeColor(o.color);
@@ -154,6 +209,44 @@ function parsePaint(v: unknown): Paint | null {
       const r = point(o.radius, { x: 0.5, y: 0.5 });
       return stops ? { ...base, type: "diamond", stops, center: point(o.center, { x: 0.5, y: 0.5 }), radius: { x: Math.abs(r.x) || 0.01, y: Math.abs(r.y) || 0.01 } } : null;
     }
+    case "live": {
+      if (typeof o.source !== "string" || o.source.length > 64) return null;
+      const off = typeof o.offset === "object" && o.offset !== null ? (o.offset as Record<string, unknown>) : {};
+      return { ...base, type: "live", source: o.source, scale: num(o.scale, 1, 0.05, 20), offset: { x: num(off.x, 0, -10_000, 10_000), y: num(off.y, 0, -10_000, 10_000) }, tile: o.tile === true };
+    }
+    case "mesh": {
+      const cols = Math.round(num(o.cols, 3, 2, MAX_MESH_SIDE));
+      const rows = Math.round(num(o.rows, 3, 2, MAX_MESH_SIDE));
+      const raw = Array.isArray(o.points) ? o.points : [];
+      if (raw.length !== cols * rows) return null;
+      const points = raw.map((q) => {
+        const r = typeof q === "object" && q !== null ? (q as Record<string, unknown>) : {};
+        return { x: num(r.x, 0, -1, 2), y: num(r.y, 0, -1, 2), color: safeColor(r.color) ?? "#000000" };
+      });
+      return { ...base, type: "mesh", cols, rows, points, smooth: o.smooth !== false };
+    }
+    case "noise": {
+      const color = safeColor(o.color) ?? "#000000";
+      return { ...base, type: "noise", kind: o.kind === "noise" ? "noise" : "grain", scale: num(o.scale, 2, 0.5, 2000), contrast: num(o.contrast, 0.5, 0, 1), color, seed: Math.round(num(o.seed, 1, 0, 1_000_000)) };
+    }
+    case "pattern": {
+      const tile = typeof o.tile === "object" && o.tile !== null ? (o.tile as Record<string, unknown>) : {};
+      const shapes = (Array.isArray(tile.shapes) ? tile.shapes : [])
+        .slice(0, MAX_PATTERN_SHAPES)
+        .map((s) => {
+          const r = typeof s === "object" && s !== null ? (s as Record<string, unknown>) : {};
+          const d = safePathData(r.d);
+          const color = safeColor(r.color);
+          return d && color ? { d, color } : null;
+        })
+        .filter((s): s is { d: string; color: string } => s !== null);
+      if (shapes.length === 0) return null;
+      const off = typeof o.offset === "object" && o.offset !== null ? (o.offset as Record<string, unknown>) : {};
+      return {
+        ...base, type: "pattern", tile: { w: num(tile.w, 16, 1, 5000), h: num(tile.h, 16, 1, 5000), shapes },
+        scale: num(o.scale, 1, 0.05, 20), spacing: num(o.spacing, 0, 0, 2000), offset: { x: num(off.x, 0, -5000, 5000), y: num(off.y, 0, -5000, 5000) }, rotation: num(o.rotation, 0, -360, 360),
+      };
+    }
     case "image": {
       const mode = IMAGE_MODES.includes(o.mode as ImageMode) ? (o.mode as ImageMode) : "fill";
       const c = typeof o.crop === "object" && o.crop !== null ? (o.crop as Record<string, unknown>) : {};
@@ -167,6 +260,7 @@ function parsePaint(v: unknown): Paint | null {
         scale: num(o.scale, 1, 0.05, 20), ...(natural ? { natural } : {}),
         brightness: num(o.brightness, 1, 0, 3), contrast: num(o.contrast, 1, 0, 3), saturation: num(o.saturation, 1, 0, 3),
         ...(adjustOf(o.adjust) ? { adjust: adjustOf(o.adjust)! } : {}),
+        ...(lookOf(o.look) ? { look: lookOf(o.look)! } : {}),
       };
     }
     default:
@@ -202,13 +296,17 @@ const pt = (p: Point) => ({ x: r3(p.x), y: r3(p.y) });
 export function serializeFills(fills: readonly Paint[]): string {
   return JSON.stringify(
     fills.slice(0, MAX_PAINTS).map((p) => {
-      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}) };
+      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}), ...(p.weight !== undefined ? { weight: r3(p.weight) } : {}), ...(p.align ? { align: p.align } : {}), ...(p.mask ? { mask: p.mask.type === "layer" ? { type: "layer", id: p.mask.id, ...(p.mask.invert ? { invert: true } : {}) } : { type: p.mask.type, start: r3(p.mask.start), end: r3(p.mask.end), angle: r3(p.mask.angle) } } : {}) };
       switch (p.type) {
         case "solid": return { ...base, color: p.color };
         case "linear": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), from: pt(p.from), to: pt(p.to) };
         case "radial": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
         case "conic": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), angle: r3(p.angle) };
         case "diamond": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
+        case "live": return { ...base, source: p.source, ...(p.scale !== 1 ? { scale: r3(p.scale) } : {}), ...(p.offset.x || p.offset.y ? { offset: { x: r3(p.offset.x), y: r3(p.offset.y) } } : {}), ...(p.tile ? { tile: true } : {}) };
+        case "mesh": return { ...base, cols: p.cols, rows: p.rows, points: p.points.map((q) => ({ x: r3(q.x), y: r3(q.y), color: q.color })), ...(p.smooth ? {} : { smooth: false }) };
+        case "noise": return { ...base, kind: p.kind, scale: r3(p.scale), contrast: r3(p.contrast), color: p.color, seed: p.seed };
+        case "pattern": return { ...base, tile: { w: r3(p.tile.w), h: r3(p.tile.h), shapes: p.tile.shapes }, scale: r3(p.scale), ...(p.spacing ? { spacing: r3(p.spacing) } : {}), ...(p.offset.x || p.offset.y ? { offset: pt(p.offset) } : {}), ...(p.rotation ? { rotation: r3(p.rotation) } : {}) };
         case "image":
           return {
             ...base, src: p.src, mode: p.mode,
@@ -216,6 +314,7 @@ export function serializeFills(fills: readonly Paint[]): string {
             ...(p.scale !== 1 ? { scale: r3(p.scale) } : {}), ...(p.natural ? { natural: p.natural } : {}),
             ...(p.brightness !== 1 ? { brightness: r3(p.brightness) } : {}), ...(p.contrast !== 1 ? { contrast: r3(p.contrast) } : {}), ...(p.saturation !== 1 ? { saturation: r3(p.saturation) } : {}),
             ...(p.adjust && !isIdentityAdjustment(p.adjust) ? { adjust: Object.fromEntries(Object.entries(p.adjust).filter(([, v]) => v !== 0).map(([k, v]) => [k, r3(v)])) } : {}),
+            ...(p.look && (!isIdentityLook(p.look) || p.look.bypass) ? { look: p.look } : {}),
           };
       }
     }),
@@ -271,6 +370,12 @@ export function paintCss(p: Paint, w: number, h: number, assetUrl?: (src: string
       return `conic-gradient(from ${f(p.angle)}deg at ${f(p.center.x * W)}px ${f(p.center.y * H)}px, ${stopList(p.stops, p.opacity, (s) => `${f(s.at * 360)}deg`)})`;
     case "diamond":
       return diamondCss(p, W, H).map((q) => q.image).join(", ");
+    case "noise":
+    case "pattern":
+    case "mesh":
+      return `url("${svgDataUrl(proceduralSvg(p, W, H)!)}")`;
+    case "live":
+      return null; // drawn by shapes only (a CSS background can't hold layers)
     case "image": {
       const url = p.src ? (assetUrl ? assetUrl(p.src) : p.src) : null;
       return url ? `url("${url.replace(/["\\]/g, "\\$&").replace(/[\n\r]/g, "")}")` : null;
@@ -317,10 +422,11 @@ export function diamondCss(p: DiamondPaint, W: number, H: number): { image: stri
 }
 
 /** Does this image paint change the picture's colours? Those can't be a `background-image`: they are drawn by a layer of their own. */
-export const hasImageFilter = (p: Paint): boolean => p.type === "image" && (p.brightness !== 1 || p.contrast !== 1 || p.saturation !== 1 || (!!p.adjust && !isIdentityAdjustment(p.adjust)));
+export const hasImageFilter = (p: Paint): boolean =>
+  p.type === "image" && !p.look?.bypass && (p.brightness !== 1 || p.contrast !== 1 || p.saturation !== 1 || needsImageFilter(p.adjust, p.look));
 
 /** Whether the paint needs the SVG adjustment filter (FigCraft's seven adjustments), not only CSS filter functions. */
-export const hasAdjustFilter = (p: Paint): p is ImagePaint => p.type === "image" && !!p.adjust && !isIdentityAdjustment(p.adjust);
+export const hasAdjustFilter = (p: Paint): p is ImagePaint => p.type === "image" && needsImageFilter(p.adjust, p.look);
 
 /**
  * The CSS filter for an image paint, or "" when it is unchanged: `brightness() contrast() saturate()`, then the
@@ -415,6 +521,8 @@ export interface Shadow {
   spread: number;
   color: string;
   visible: boolean;
+  /** A glow (Phase 121): a shadow with no offset, listed and edited as an outer or inner glow. */
+  glow?: boolean;
 }
 
 export const DEFAULT_SHADOW: Shadow = { kind: "drop", x: 0, y: 4, blur: 8, spread: 0, color: "rgba(0, 0, 0, 0.25)", visible: true };
@@ -437,13 +545,14 @@ export function parseShadows(json: unknown): Shadow[] {
       kind: o.kind === "inner" ? "inner" : "drop",
       x: num(o.x, 0, -1000, 1000), y: num(o.y, 0, -1000, 1000), blur: num(o.blur, 0, 0, 200), spread: num(o.spread, 0, -100, 100),
       color, visible: o.visible !== false,
+      ...(o.glow === true ? { glow: true } : {}),
     });
   }
   return out;
 }
 
 export function serializeShadows(shadows: readonly Shadow[]): string {
-  return shadows.length === 0 ? "" : JSON.stringify(shadows.slice(0, MAX_SHADOWS).map((s) => ({ kind: s.kind, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, ...(s.visible ? {} : { visible: false }) })));
+  return shadows.length === 0 ? "" : JSON.stringify(shadows.slice(0, MAX_SHADOWS).map((s) => ({ kind: s.kind, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, ...(s.visible ? {} : { visible: false }), ...(s.glow ? { glow: true } : {}) })));
 }
 
 /** CSS `box-shadow` for the visible shadows (inner ones are `inset`), or undefined. */

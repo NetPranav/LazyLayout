@@ -1,0 +1,1 @@
+- [Phase 165] Implemented 2D joints, ropes & chains (`src/core/physics2d/jointsAndRopes.ts`): deterministic `hinge`, `spring`, `distance`, `rope`, and `weld` constraint solver supporting body-to-body, fixed point, and live cursor endpoints, rope/chain generators, and 5-checkpoint badge-on-rope replay tests (`PR #141`).

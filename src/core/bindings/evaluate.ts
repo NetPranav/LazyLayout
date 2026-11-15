@@ -377,3 +377,34 @@ export function compileExpr(expr: SignalExpr): ExprRuntime {
     },
   };
 }
+
+export interface TrailRuntime {
+  step(frame: Frame): readonly Value[];
+  reset(): void;
+}
+
+/**
+ * Compiles a signal expression ending in (or containing) `trail` into a
+ * deterministic fixed-size history buffer for ribbon, comet, and particle emitters.
+ */
+export function compileTrailExpr(expr: SignalExpr, maxSamples = 16): TrailRuntime {
+  const trailIndex = expr.operators.findIndex((op) => op.op === "trail");
+  const prefixOps = (trailIndex >= 0 ? expr.operators.slice(0, trailIndex) : expr.operators).map(compileOperator);
+  const trailOp = trailIndex >= 0 ? expr.operators[trailIndex] : null;
+  const capacity = Math.max(1, Math.min(256, trailOp && trailOp.op === "trail" ? trailOp.samples : maxSamples));
+  let history: Value[] = [];
+
+  return {
+    step(frame) {
+      let v = readSignal(expr.signal, frame);
+      for (const o of prefixOps) v = o.step(v, frame);
+      const snapshot: Value = Array.isArray(v) ? [v[0], v[1]] : v;
+      history = [snapshot, ...history].slice(0, capacity);
+      return history;
+    },
+    reset() {
+      for (const o of prefixOps) o.reset();
+      history = [];
+    },
+  };
+}
