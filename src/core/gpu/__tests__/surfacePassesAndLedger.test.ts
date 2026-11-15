@@ -32,7 +32,7 @@ describe("Phase 174: Passes, render targets & GPU memory ledger", () => {
           { id: "vignette", kind: "vignette" },
           { id: "bloom", kind: "bloom_lite" },
         ],
-        { tier: "T2", supportsColorBufferFloat: true }
+        { tier: "T2", supportsFloatTargets: true }
       );
       assert.ok(mounted.totalOwnerBytes > 0);
       mgr.unmountOwner(ownerId);

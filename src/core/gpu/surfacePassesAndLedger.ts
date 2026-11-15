@@ -132,7 +132,7 @@ export function createSurfacePassStackManager(): SurfacePassStackManager {
       const tier = options.tier ?? "T2";
       const budgetBytes = TIER_MEMORY_BUDGET_MB[tier] * 1024 * 1024;
       const clamped = clampSurfaceDimensionsForSafari(rawWidth, rawHeight);
-      const supportsFloat = options.supportsColorBufferFloat ?? true;
+      const supportsFloat = options.supportsFloatTargets ?? true;
 
       const records: { readonly kind: GpuResourceKind; readonly handle: object }[] = [];
       const allocations: PooledSurfaceAllocation[] = [];
