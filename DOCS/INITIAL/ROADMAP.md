@@ -351,7 +351,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 🚧 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 🚧 |
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 🚧 |
-| 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 📋 |
+| 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 🚧 |
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 📋 |
 | 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 📋 |
 | 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 📋 |
@@ -2170,8 +2170,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** graph → `.nls` → graph round-trips unchanged over 500 random graphs.
 
 ### Phase 161 · Blueprint runtime
-**Needs:** 160 · **Was:** v3 74.1 · **Status:** 📋
-- [ ] Events queued in the input phase; latent nodes as resumable, cancellable continuations; a per-frame node budget and loop guards; deterministic under the test clock and tapes. Runs in Preview and the Playground.
+**Needs:** 160 · **Was:** v3 74.1 · **Status:** 🚧
+- [x] Events queued in the input phase; latent nodes as resumable, cancellable continuations; a per-frame node budget and loop guards; deterministic under the test clock and tapes (`src/core/nodescript/blueprintRuntime.ts`).
 
 **You'll see:** interactions written in text form run live in Preview.
 **Done when:** 20 reference graphs produce identical state timelines on repeated tape replays.
