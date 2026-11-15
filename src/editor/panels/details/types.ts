@@ -62,6 +62,8 @@ export interface StrokeItem {
   style: "solid" | "dashed" | "dotted";
   sides: "all" | "top" | "right" | "bottom" | "left";
   hidden?: boolean;
+  /** This stroke's own position, for layers that keep a list of strokes (Phase 118). */
+  align?: "inside" | "center" | "outside";
 }
 
 /** Effect item in repeatable list */

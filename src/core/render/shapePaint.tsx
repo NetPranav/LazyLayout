@@ -5,7 +5,7 @@ import { svgDataUrl } from "../paint/procedural";
 import { proceduralSvg, effectiveFills, hasAdjustFilter, imageFilterCss, paintBlendCss, paintCss, parseShadows, safeDashArray, type GradientStop, type ImagePaint, type Paint, type Shadow } from "../paint/paints";
 import { adjustmentMatrix, adjustmentToneTable, type ImageAdjustments } from "../paint/color";
 import type { BezPath } from "../geometry/bezpath";
-import { StrokeLayer, strokeSettings } from "./strokePaint";
+import { StrokeStack, strokeSettings } from "./strokePaint";
 import { useAssetUrlMap } from "../assets/useAssetUrl";
 import { SubtreeContext, useRenderLayers, useSubtreeRenderer } from "./layersContext";
 import { cloneSubtree, contains } from "./liveFill";
@@ -397,7 +397,7 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
   });
   const advanced = strokable ? strokeSettings(resolved, defaultStroke, defaultStrokeWidth, !closed) : null;
   if (advanced) {
-    painted.push(<StrokeLayer key="strokes" id={id} settings={advanced} width={width} height={height} geometry={geometry} outline={outline} closed={closed} rect={rect} toDrawing={toDrawing} />);
+    painted.push(<StrokeStack key="strokes" id={id} settings={advanced} width={width} height={height} geometry={geometry} outline={outline} closed={closed} rect={rect} toDrawing={toDrawing} />);
   } else if (strokable && strokeWidth > 0 && stroke !== "none" && parseColor(stroke) !== null) {
     painted.push(
       <React.Fragment key="stroke">
