@@ -360,7 +360,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 🚧 |
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 🚧 |
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 🚧 |
-| 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
+| 170 | Spawner | 169 | v3 89.4 | 4 | 🚧 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
@@ -2233,8 +2233,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 20 reference graphs pass journey parity in the Next, Vite and vanilla exports in 3 browsers; compiled code passes the fixtures' ESLint with no `any`.
 
 ### Phase 170 · Spawner
-**Needs:** 169 · **Was:** v3 89.4 · **Status:** 📋
-- [ ] The `Spawn` action creates runtime copies of a layer the user designed (at the pointer, a pin or a point), with velocity, spin, Variety and a lifetime with an exit; copies come from a pool with a cap per tier and can be bodies. Never saved into the document.
+**Needs:** 169 · **Was:** v3 89.4 · **Status:** 🚧
+- [x] The `Spawn` action creates runtime copies of a layer the user designed (at the pointer, a pin or a point), with velocity, spin, Variety and a lifetime with an exit; copies come from a pool with a cap per tier and can be bodies. Never saved into the document.
 
 **You'll see:** click to spray confetti made of your own star shape.
 **Done when:** the click-confetti build stays within its pool cap and matches tape replays.
