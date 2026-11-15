@@ -538,6 +538,8 @@ const DEFS = {
   "content.isRichText": flag(false, "layout", only("text")),
   "content.icon": str("plus", null, "layout", only("fab")),
   "content.iconName": str("Sparkles", null, "layout", only("icon")),
+  /** Phase 126: the asset a layer was made from (an icon or a stock photo), where its source and licence are kept. */
+  "asset.source": str("", null, "none", ALL),
   /** Count-up text (PRD §5.2): the displayed number, formatted by the fields below. */
   "content.counter.value": typed(num(0, null, "layout", only("text"))),
   "content.counter.decimals": ranged(num(0, null, "layout", only("text"), false), { min: 0, max: 6, integer: true }),

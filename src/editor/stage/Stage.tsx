@@ -35,6 +35,7 @@ import { createBrushStroke, createPathLayer, pencilStrokeProps, PENCIL_STYLE, PE
 import type { PenSample } from "@/core/paths/penInput";
 import { useBrushToolStore } from "./brushToolStore";
 import { BrushToolBar } from "./BrushToolBar";
+import { MediaLibraryDialog } from "./MediaLibraryDialog";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { placeReferenceFiles } from "@/core/assets/reference";
 import { getDocument } from "@/core/store/documentState";
@@ -926,6 +927,7 @@ export const Stage: React.FC<StageProps> = ({
       {/* View > Show keystrokes: keys, mouse buttons and the command that ran, bottom left (Blender's Screencast Keys) */}
       <ScreencastKeys />
       {activeTool === "brush" && <BrushToolBar />}
+      <MediaLibraryDialog />
     </div>
   );
 };

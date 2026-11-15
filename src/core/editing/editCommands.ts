@@ -40,6 +40,7 @@ import { addModifier, moveModifier, removeModifier, setModifier } from "./modifi
 import { applyFrostedGlass } from "./effectsIIOps";
 import { setImageEdit } from "./imageEditOps";
 import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
+import { useMediaLibraryStore } from "../store/useMediaLibraryStore";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
@@ -387,6 +388,8 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
   add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
   add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
+  // Phase 126: icons and stock photos, each kept in the asset store with its source and licence
+  add(defineTypedCommand({ id: "insert.media", title: "Icons & Photos…", category: "Insert", args: z.object({ tab: z.enum(["icons", "photos"]).optional() }).default({}), run: ({ tab }) => (useMediaLibraryStore.getState().open(tab), { ok: true }) }));
   // Phase 123: colour tools, saved as colour tokens; and a text's contrast fixed
   const harmonyRule = z.enum(["complementary", "splitComplementary", "analogous", "triad", "tetrad", "monochrome"]);
   add(defineTypedCommand({ id: "color.savePalette", title: "Save Palette as Tokens", category: "Layer", args: z.object({ name: z.string().min(1).max(80), colors: z.array(z.string().max(64)).min(1).max(16) }), run: ({ name, colors }) => ({ ids: savePalette(name, colors) }) }));
