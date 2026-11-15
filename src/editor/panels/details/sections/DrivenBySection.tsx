@@ -89,6 +89,7 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
   const [lookOffset, setLookOffset] = useState(0);
   const [depth, setDepth] = useState(0.3);
   const [cursorShift, setCursorShift] = useState(0);
+  const [readoutOpen, setReadoutOpen] = useState(false);
   if (!selectedId || isMulti) return null;
   void bindings;
   const mine = bindingsOf(selectedId);
@@ -274,6 +275,22 @@ export const DrivenBySection: React.FC<InspectorSectionProps> = ({ selectedId, i
           {followNote}
         </p>
       )}
+      <div className="ll:pt-1 ll:border-t ll:border-[var(--ll-border-subtle)] ll:flex ll:flex-col ll:gap-1">
+        <Button size="sm" aria-expanded={readoutOpen} onClick={() => setReadoutOpen((v) => !v)}>
+          {readoutOpen ? "Hide live readout" : "Live readout"}
+        </Button>
+        {readoutOpen && (
+          <div
+            data-testid="layer-live-readout"
+            className="ll:grid ll:grid-cols-2 ll:gap-1 ll:p-1.5 ll:rounded ll:bg-[var(--ll-surface-2)] ll:text-[10px] ll:font-mono ll:text-[var(--ll-text-secondary)]"
+          >
+            <span>x: {Math.round((layer?.properties["frame.x"] as number | undefined) ?? 0)} px</span>
+            <span>y: {Math.round((layer?.properties["frame.y"] as number | undefined) ?? 0)} px</span>
+            <span>w: {Math.round((layer?.properties["frame.width"] as number | undefined) ?? 0)} px</span>
+            <span>h: {Math.round((layer?.properties["frame.height"] as number | undefined) ?? 0)} px</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
