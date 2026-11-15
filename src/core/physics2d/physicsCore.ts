@@ -417,6 +417,11 @@ export function createPhysicsWorld2D(
     for (const [iA, iB] of pairs) {
       const a = working[iA]!;
       const b = working[iB]!;
+      const layerA = a.collisionLayer ?? 1;
+      const maskA = a.collisionMask ?? 0xffffffff;
+      const layerB = b.collisionLayer ?? 1;
+      const maskB = b.collisionMask ?? 0xffffffff;
+      if ((maskA & layerB) === 0 || (maskB & layerA) === 0) continue;
       const hit = detectSatCollision(a, b);
       if (!hit) continue;
 
