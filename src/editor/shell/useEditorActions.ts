@@ -1,5 +1,6 @@
 "use client";
 
+import { useMediaLibraryStore } from "@/core/store/useMediaLibraryStore";
 import { pickReferenceImage } from "@/core/assets/reference";
 import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -330,6 +331,8 @@ export function useEditorActions(
   // Sync tool selection with core tool store
   const setActiveTool = useCallback((tool: CanvasTool) => {
     setActiveToolState(tool);
+    // Phase 126: the Image tool opens the icons-and-photos library
+    if (tool === "image") useMediaLibraryStore.getState().open();
     const shapeMap: Record<ShapeTool, string> = {
       box: "rectangle",
       circle: "ellipse",
@@ -347,6 +350,7 @@ export function useEditorActions(
       image: "select",
       pen: "pen",
       pencil: "pencil",
+      brush: "pencil",
       anchor: "select",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
@@ -1390,6 +1394,11 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           setActiveTool("text");
+          return;
+        }
+        if (key === "b" && !e.shiftKey) {
+          e.preventDefault();
+          setActiveTool("brush");
           return;
         }
         if (key === "p") {

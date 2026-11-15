@@ -293,6 +293,8 @@ const DEFS = {
    */
   "boolean.operation": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("container", "form"))),
   /** In a boolean group, how this operand combines with the ones below it; empty takes the group's operation. */
+  /** Soft union (Phase 108): a union group's children melt together where they are closer than twice this, in px. */
+  "boolean.softness": ranged(px(0, null, "paint", only("container", "form")), { min: 0, max: 500 }),
   "boolean.operandOp": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "container", "form"))),
   "sizing.horizontal": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
   "sizing.vertical": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
@@ -312,6 +314,15 @@ const DEFS = {
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
   "transform.translateZ": px(0, "transform", "gpu", VISUAL),
   "transform.style3d": oneOf(["flat", "preserve3d"], "flat", "transform-style", "gpu", VISUAL),
+  /**
+   * Phase 129: a 3D space's camera. Pan (px across and down), dolly (px towards the scene: things come closer), the depth
+   * in focus (px) and the aperture (blur, px, for every 100 px a layer stands from the focus; 0: everything sharp).
+   */
+  "camera.x": px(0, null, "gpu", only("container", "form")),
+  "camera.y": px(0, null, "gpu", only("container", "form")),
+  "camera.z": px(0, null, "gpu", only("container", "form")),
+  "camera.focus": px(0, null, "paint", only("container", "form")),
+  "camera.aperture": ranged(num(0, null, "paint", only("container", "form")), { min: 0, max: 50 }),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
   /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */
@@ -465,7 +476,17 @@ const DEFS = {
   "typography.verticalAlign": oneOf(["top", "middle", "bottom"], "top", null, "layout", only("text")),
   "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
   /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
+  /** Phase 125: text that fills a shape, as JSON (`{"d": "M…", "inset": 8}`, the outline in the text box's own space). */
+  "text.shape": typed(str("", null, "layout", only("text"))),
+  /** Phase 125: the text in columns (1 is none), with a gap between them. */
+  "typography.columns": ranged(num(1, "column-count", "layout", only("text"), false), { min: 1, max: 8 }),
+  "typography.columnGap": ranged(px(24, "column-gap", "layout", only("text")), { min: 0, max: 500 }),
   "typography.textPath": typed(str("", null, "layout", only("text"))),
+  /**
+   * Phase 124: where text on a path starts along it, in % of its length (it wins over the start stored with the path).
+   * Animatable: the motion engine writes it as the CSS variable `--ll-text-path-start`, and the text follows.
+   */
+  "typography.textPathStart": ranged(num(0, "--ll-text-path-start", "paint", only("text")), { min: -100, max: 200 }),
 
   // --- Surfaces (ROADMAP S2–S6) ---------------------------------------------------
   /** Flat (a normal fill) or inflated: the layer is a surface with height, lit by a studio light, that dents when pressed. */
@@ -529,6 +550,8 @@ const DEFS = {
   "content.isRichText": flag(false, "layout", only("text")),
   "content.icon": str("plus", null, "layout", only("fab")),
   "content.iconName": str("Sparkles", null, "layout", only("icon")),
+  /** Phase 126: the asset a layer was made from (an icon or a stock photo), where its source and licence are kept. */
+  "asset.source": str("", null, "none", ALL),
   /** Count-up text (PRD §5.2): the displayed number, formatted by the fields below. */
   "content.counter.value": typed(num(0, null, "layout", only("text"))),
   "content.counter.decimals": ranged(num(0, null, "layout", only("text"), false), { min: 0, max: 6, integer: true }),
@@ -721,6 +744,10 @@ const DEFS = {
   "media.filter.brightness": num(1, "filter", "paint", IMAGE),
   "media.filter.contrast": num(1, "filter", "paint", IMAGE),
   "media.filter.saturate": num(1, "filter", "paint", IMAGE),
+  /** Phase 122: FigCraft's seven adjustments (each -1..1) as JSON, drawn by an SVG filter; the file is never changed. */
+  "media.adjust": typed(str("", null, "paint", IMAGE)),
+  /** Phase 122: a curve, a gradient map (duotone), sharpen, blur and "show original" as JSON (`paint/imageLook.ts`). */
+  "media.look": typed(str("", null, "paint", IMAGE)),
   "media.clipPath": { valueType: "clipPath", default: "none", css: "clip-path", compositing: "paint", animatable: true, scope: IMAGE },
   "media.overlay.color": color("#000000", "background-color", "paint", IMAGE),
   "media.overlay.opacity": num(0, "opacity", "gpu", IMAGE),
@@ -769,6 +796,10 @@ const DEFS = {
   "shape.vertexRadius": ranged(px(0, null, "paint", only("polygon", "star")), { min: 0 }),
   /** Corner smoothing, 0 to 1: the continuous-curvature corner (0.6 is the iOS look). FigCraft port F1 (`core/geometry/shapes.ts`). */
   "shape.cornerSmoothing": ranged(num(0, null, "paint", only("rectangle", "polygon", "star")), { min: 0, max: 1 }),
+  /** The modifier stack (Phases 109–110): an ordered JSON list of { id, type, on, params }; see core/paths/modifiers.ts. */
+  "shape.modifiers": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "line"))),
+  /** How corners are shaped (Phase 107): round (with smoothing), cut, scoop or inverted (a square notch). */
+  "shape.cornerStyle": typed(oneOf(["round", "cut", "scoop", "inverted"], "round", null, "paint", only("rectangle", "polygon", "star"))),
   /** Ellipse arcs, pies and rings (FigCraft port F1): where the arc starts, clockwise from 3 o'clock, and how far it sweeps. */
   "shape.arcStart": ranged(deg(0, null, "paint", only("ellipse")), { min: -360, max: 360 }),
   "shape.arcSweep": ranged(deg(360, null, "paint", only("ellipse")), { min: -360, max: 360 }),
@@ -794,7 +825,7 @@ const DEFS = {
   /** Corners sharper than this ratio bevel instead of mitring (default 4, about 29°). */
   "stroke.miterLimit": ranged(num(4, "stroke-miterlimit", "paint", SVG_STROKED), { min: 1, max: 100 }),
   /** More than one stroke: a list of paints like `paint.fills`, first on top. When set it replaces the plain stroke colour. */
-  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath"))),
+  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath", "text"))),
   "shape.headLength": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.headWidth": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.shaftWidth": ranged(px(4, null, "paint", only("arrow")), { min: 0 }),

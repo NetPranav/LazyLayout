@@ -89,7 +89,7 @@ function appendCorner(path: BezPath, corner: Pt, din: Pt, dout: Pt, prof: Corner
  * A rectangle at the origin with per-corner radii and corner smoothing (0..1). Radii are clamped so adjacent
  * corners never overlap; when smoothing doesn't fit, it is reduced first, then the radius.
  */
-export function roundedRect(width: number, height: number, radii: Radii, smoothing: number): BezPath {
+export function roundedRect(width: number, height: number, radii: Radii, smoothing: number, style: CornerStyle = "round"): BezPath {
   const w = Math.max(0, finite(width));
   const h = Math.max(0, finite(height));
   const path = new BezPath();
@@ -97,6 +97,7 @@ export function roundedRect(width: number, height: number, radii: Radii, smoothi
   const s = clamp(finite(smoothing), 0, 1);
   const maxR = Math.min(w, h) / 2;
   const rs = radii.map((r) => clamp(finite(r), 0, maxR)) as unknown as Radii;
+  if (style !== "round" && rs.some((r) => r > 0)) return styledPolygon([pt(0, 0), pt(w, 0), pt(w, h), pt(0, h)], rs, style);
   if (rs.every((r) => r <= 0)) return path.moveTo(pt(0, 0)).lineTo(pt(w, 0)).lineTo(pt(w, h)).lineTo(pt(0, h)).closePath();
   // corners clockwise starting top-right, each: (corner, incoming edge direction, outgoing, radius)
   const corners: [Pt, Pt, Pt, number][] = [
@@ -109,6 +110,53 @@ export function roundedRect(width: number, height: number, radii: Radii, smoothi
   // start on the top edge just after the top-left corner
   path.moveTo(pt(first.p, 0));
   for (const [c, din, dout, r] of corners) appendCorner(path, c, din, dout, cornerProfile(r, s, maxR));
+  return path.closePath();
+}
+
+// --- corner styles (ROADMAP Phase 107) ---------------------------------------------------
+
+/**
+ * How a corner is shaped: `round` (an arc, with smoothing if any), `cut` (a straight chamfer), `scoop` (a concave
+ * quarter-bite: an arc centred on the corner point) and `inverted` (a square notch).
+ */
+export type CornerStyle = "round" | "cut" | "scoop" | "inverted";
+export const CORNER_STYLES: readonly CornerStyle[] = ["round", "cut", "scoop", "inverted"];
+export const isCornerStyle = (v: unknown): v is CornerStyle => typeof v === "string" && (CORNER_STYLES as readonly string[]).includes(v);
+
+/**
+ * A closed polygon whose corners are cut, scooped or notched. For these styles a corner's size is the length it takes
+ * along each of its two edges (for a right angle, the same as a round corner's radius), clamped to half the shorter edge.
+ */
+export function styledPolygon(points: readonly Pt[], sizes: readonly number[], style: Exclude<CornerStyle, "round">): BezPath {
+  const path = new BezPath();
+  const n = points.length;
+  if (n < 3) return path;
+  for (let i = 0; i < n; i++) {
+    const prev = points[(i + n - 1) % n];
+    const cur = points[i];
+    const next = points[(i + 1) % n];
+    const v1 = sub(prev, cur);
+    const v2 = sub(next, cur);
+    const l1 = hypot(v1);
+    const l2 = hypot(v2);
+    const size = Math.min(Math.max(0, finite(sizes[i] ?? 0)), Math.min(l1, l2) / 2);
+    const angle = l1 < 1e-9 || l2 < 1e-9 ? 0 : Math.acos(clamp(dot(scale(v1, 1 / l1), scale(v2, 1 / l2)), -1, 1));
+    if (size <= 1e-9 || angle < 1e-6 || Math.PI - angle < 1e-6) {
+      lineOrMove(path, cur);
+      continue;
+    }
+    const a = add(cur, scale(v1, size / l1));
+    const b = add(cur, scale(v2, size / l2));
+    lineOrMove(path, a);
+    if (style === "cut") path.lineTo(b);
+    else if (style === "inverted") path.lineTo(add(a, sub(b, cur))).lineTo(b);
+    else {
+      // the arc round the corner point from one edge to the other, the short way: it bites into the shape
+      const a0 = atan2(sub(a, cur));
+      const sweep = wrapSweep(atan2(sub(b, cur)) - a0);
+      arcToCubics(cur, pt(size, size), a0, sweep, 0, 0.01, (q1, q2, q3) => path.curveTo(q1, q2, q3));
+    }
+  }
   return path.closePath();
 }
 
@@ -189,7 +237,9 @@ export function roundedPolygon(points: readonly Pt[], radius: number): BezPath {
   return path.closePath();
 }
 
-const lineOrMove = (path: BezPath, p: Pt) => (path.isEmpty() ? path.moveTo(p) : path.lineTo(p));
+function lineOrMove(path: BezPath, p: Pt): BezPath {
+  return path.isEmpty() ? path.moveTo(p) : path.lineTo(p);
+}
 
 /**
  * `roundedPolygon` with corner smoothing (0..1, as `roundedRect` takes it): each rounded vertex keeps a circular
@@ -197,10 +247,11 @@ const lineOrMove = (path: BezPath, p: Pt) => (path.isEmpty() ? path.moveTo(p) : 
  * plain corner's length from the vertex. When a smoothed corner doesn't fit in half of its shorter edge, smoothing
  * is reduced first, then the radius. Without smoothing this is `roundedPolygon`.
  */
-export function smoothedPolygon(points: readonly Pt[], radius: number, smoothing: number): BezPath {
+export function smoothedPolygon(points: readonly Pt[], radius: number, smoothing: number, style: CornerStyle = "round"): BezPath {
   const s = clamp(finite(smoothing), 0, 1);
   const rad = Math.max(0, finite(radius));
   const n = points.length;
+  if (style !== "round" && rad > 0 && n >= 3) return styledPolygon(points, points.map(() => rad), style);
   if (s <= 0 || rad <= 0 || n < 3) return roundedPolygon(points, rad);
   const path = new BezPath();
   for (let i = 0; i < n; i++) {

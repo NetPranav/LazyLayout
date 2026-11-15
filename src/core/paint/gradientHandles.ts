@@ -44,6 +44,12 @@ export function imageOutline(crop: { x: number; y: number; w: number; h: number 
 
 export function handlesFor(p: Paint, box: { w: number; h: number }): GradientHandle[] {
   switch (p.type) {
+    // noise and patterns have no handles on the canvas (Phase 114)
+    case "noise":
+    case "pattern":
+    case "mesh":
+    case "live":
+      return [];
     case "image": {
       if (p.mode !== "crop") return [];
       const o = imageOutline(p.crop);
@@ -88,6 +94,11 @@ export function handlesFor(p: Paint, box: { w: number; h: number }): GradientHan
 export function dragHandle(p: Paint, handle: Pick<GradientHandle, "kind" | "stopIndex">, to: Point, box: { w: number; h: number }, options: { shift?: boolean } = {}): Paint {
   const pt = { x: clamp(to.x, -4, 5), y: clamp(to.y, -4, 5) };
   switch (p.type) {
+    case "noise":
+    case "pattern":
+    case "mesh":
+    case "live":
+      return p;
     case "image": {
       if (p.mode !== "crop") return p;
       const o = imageOutline(p.crop);

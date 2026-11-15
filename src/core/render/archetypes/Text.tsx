@@ -9,7 +9,10 @@ import { sheenBackground, variationSettings } from "../../text/axis";
 import { useTextFillStyle } from "../paintStyle";
 import { mixWithBlack } from "../../paint/shade";
 import { runsOf, type TextRun } from "../../text/runs";
-import { parseShadows, textShadowCss } from "../../paint/paints";
+import { parseFills, parseShadows, textShadowCss } from "../../paint/paints";
+import { paintColor } from "../../paint/paintEdits";
+import { withOpacity } from "../../paint/colorMath";
+import { parseTextShape, shapeFloats, shapeRows } from "../../text/textShape";
 import { listGutter, listMarkers, paragraphLists, paragraphsOf, parseTextPath, runsByParagraph, textPathD, type TextPath } from "../../text/textFeatures";
 
 /** The inline style of one run. */
@@ -73,11 +76,58 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const depth = ctx.inMeshTile ? 0 : resolved.num("text.depth", 0);
   const steps = Math.max(1, Math.min(24, Math.round(resolved.num("text.depthSteps", 8))));
   const depthColor = resolved.str("text.depthColor", "") || mixWithBlack(resolved.str("typography.color", "#0f172a"), 0.35);
+  // Phase 117: several strokes. The words themselves turn clear (still real text, read once); hidden copies draw each
+  // stroke, bottom first (outside strokes at twice their weight behind, centre and inside ones on top), and one more
+  // copy draws the fill above the outside strokes.
+  const strokes = depth > 0 ? [] : (parseFills(resolved.get("paint.strokes")) ?? []).filter((p) => p.visible && (p.weight ?? 0) > 0);
+  if (strokes.length > 0) {
+    const fillColor = resolved.str("typography.color", "#0f172a");
+    const copy = (key: string, style: React.CSSProperties) => (
+      <span key={key} aria-hidden="true" data-text-stroke-copy="" style={{ position: "absolute", inset: 0, padding: "inherit", pointerEvents: "none", userSelect: "none", ...style }}>
+        {content}
+      </span>
+    );
+    const strokeCopy = (p: (typeof strokes)[number], i: number) => {
+      const w = p.weight ?? 0;
+      const color = withOpacity(paintColor(p), p.opacity);
+      return copy(`s${i}`, { color: "transparent", WebkitTextFillColor: "transparent", WebkitTextStroke: `${(p.align ?? "outside") === "outside" ? w * 2 : w}px ${color}` });
+    };
+    const below = strokes.map((p, i) => ({ p, i })).filter(({ p }) => (p.align ?? "outside") === "outside").reverse();
+    const above = strokes.map((p, i) => ({ p, i })).filter(({ p }) => (p.align ?? "outside") !== "outside").reverse();
+    return (
+      <div
+        ref={nodeRef}
+        data-element-id={ctx.inMeshTile ? undefined : layer.id}
+        data-archetype={ctx.inMeshTile ? undefined : "text"}
+        {...a11yAttrs(resolved)}
+        style={{
+          ...box,
+          margin: 0,
+          ...textTypography(resolved),
+          ...(textShadow ? { textShadow } : {}),
+          whiteSpace: paragraphs ? "normal" : space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
+          overflowWrap: sizing === "autoWidth" || space === "nowrap" || space === "pre" ? "normal" : "anywhere",
+          ...(sizing === "autoWidth" ? { width: "max-content" } : {}),
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        {below.map(({ p, i }) => strokeCopy(p, i))}
+        {copy("fill", textFill ? { ...textFill } : { color: fillColor, WebkitTextFillColor: fillColor })}
+        {above.map(({ p, i }) => strokeCopy(p, i))}
+        <span style={{ position: "relative" }}>{content}</span>
+      </div>
+    );
+  }
+  // Phase 125: text that fills a shape lays out between two floats shaped like the outline's edges; or in columns
+  const inShape = shapeLayout(resolved, sizing);
+  const columns = inShape ? 1 : Math.round(resolved.num("typography.columns", 1));
   return (
     <div
       ref={nodeRef}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : "text"}
+      data-text-shape={inShape ? "" : undefined}
       {...a11yAttrs(resolved)}
       style={{
         ...box,
@@ -96,8 +146,16 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         ...(maxLines <= 0 && (valign === "middle" || valign === "bottom") ? { alignContent: valign === "middle" ? "center" : "end" } : {}),
         ...(textFill ?? {}),
         ...(depth > 0 ? { transformStyle: "preserve-3d" as const } : {}),
+        ...(inShape ? { overflowWrap: "normal" as const, paddingTop: inShape.top, overflow: "hidden" } : {}),
+        ...(columns > 1 ? { columnCount: Math.min(8, columns), columnGap: Math.max(0, resolved.num("typography.columnGap", 24)), columnFill: "auto" as const } : {}),
       }}
     >
+      {inShape && (
+        <>
+          <span aria-hidden="true" data-text-shape-float="left" style={{ float: "left", width: inShape.left.width, height: inShape.height, shapeOutside: inShape.left.polygon }} />
+          <span aria-hidden="true" data-text-shape-float="right" style={{ float: "right", width: inShape.right.width, height: inShape.height, shapeOutside: inShape.right.polygon }} />
+        </>
+      )}
       {depth > 0 ? (
         <>
           {Array.from({ length: steps }, (_, i) => (
@@ -170,6 +228,44 @@ function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: str
   };
 }
 
+/** Phase 125: the floats that keep a fixed-size text inside its shape, or null. */
+function shapeLayout(resolved: ArchetypeRenderProps["resolved"], sizing: string) {
+  const shape = parseTextShape(resolved.get("text.shape"));
+  if (!shape || sizing !== "fixed") return null;
+  const w = Math.max(1, resolved.num("frame.width", 100));
+  const h = Math.max(1, resolved.num("frame.height", 100));
+  const typo = textTypography(resolved);
+  const size = resolved.num("typography.fontSize", 16);
+  const lh = typo.lineHeight;
+  const lineHeight = typeof lh === "number" ? lh * size : typeof lh === "string" && lh.endsWith("px") ? parseFloat(lh) : 1.5 * size;
+  // the first line is the first at least six ems wide: a narrower one holds hardly a word
+  const floats = shapeFloats(shapeRows(shape, w, h), w, h, lineHeight, 6 * size);
+  return { ...floats, height: Math.max(0.01, h - floats.top) };
+}
+
+/**
+ * Phase 124: an animated start. The motion engine writes styles, not SVG attributes, so it writes the start as the CSS
+ * variable `--ll-text-path-start` on the text's `<svg>`; this moves the `<textPath>`'s `startOffset` to follow it,
+ * and back to the drawn `offset` when the variable goes. Drawn inside the `<svg>`: it finds its own parent.
+ */
+function AnimatedStart({ offset }: { offset: string }) {
+  const ref = React.useRef<SVGGElement>(null);
+  React.useEffect(() => {
+    const svg = ref.current?.ownerSVGElement;
+    const tp = svg?.querySelector("textPath");
+    if (!svg || !tp || typeof MutationObserver === "undefined") return;
+    const sync = () => {
+      const v = parseFloat(svg.style.getPropertyValue("--ll-text-path-start"));
+      tp.setAttribute("startOffset", Number.isFinite(v) ? `${v}%` : offset);
+    };
+    sync();
+    const watch = new MutationObserver(sync);
+    watch.observe(svg, { attributes: true, attributeFilter: ["style"] });
+    return () => watch.disconnect();
+  }, [offset]);
+  return <g ref={ref} aria-hidden="true" />;
+}
+
 /**
  * Text on a path (FigCraft port F8): the baseline follows the path, the text starting at `start` along it and aligned
  * there by the horizontal alignment (left starts, centre centres, right ends at it); flipped, it runs along the other
@@ -182,16 +278,21 @@ function TextOnPath({ layer, resolved, nodeRef, path, text, runs, box }: Archety
   const align = resolved.str("typography.textAlign", "left");
   const anchor = align === "center" ? "middle" : align === "right" ? "end" : "start";
   const typo = textTypography(resolved);
+  // Phase 124: the start as its own number (in %) when set, else the one stored with the path
+  const own = resolved.get("typography.textPathStart");
+  const start = layer.properties["typography.textPathStart"] !== undefined && typeof own === "number" && Number.isFinite(own) ? own / 100 : path.start;
+  const offset = `${Math.round(start * 10000) / 100}%`;
   return (
-    <svg ref={nodeRef as React.Ref<SVGSVGElement>} data-element-id={layer.id} data-archetype="text" data-text-path="" width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ ...box, width, height, display: "block", overflow: "visible", color: typo.color }}>
+    <svg ref={nodeRef as React.Ref<SVGSVGElement>} data-element-id={layer.id} data-archetype="text" data-text-path="" data-text-path-start={offset} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ ...box, width, height, display: "block", overflow: "visible", color: typo.color }}>
       <defs>
         <path id={id} d={textPathD(path)} />
       </defs>
+      <AnimatedStart offset={offset} />
       <text
         fill="currentColor"
         style={{ fontSize: typo.fontSize, fontFamily: typo.fontFamily, fontWeight: typo.fontWeight, fontStyle: typo.fontStyle, letterSpacing: typo.letterSpacing, fontFeatureSettings: typo.fontFeatureSettings, fontVariationSettings: typo.fontVariationSettings, fontVariantCaps: typo.fontVariantCaps, textTransform: typo.textTransform, textDecorationLine: typo.textDecorationLine }}
       >
-        <textPath href={`#${id}`} startOffset={`${Math.round(path.start * 10000) / 100}%`} textAnchor={anchor}>
+        <textPath href={`#${id}`} startOffset={offset} textAnchor={anchor}>
           {runs
             ? runs.map((r, i) => (
                 <tspan key={i} fontWeight={r.bold ? 700 : undefined} fontStyle={r.italic ? "italic" : undefined} fill={r.color} textDecoration={r.underline || r.strike ? [r.underline ? "underline" : "", r.strike ? "line-through" : ""].join(" ").trim() : undefined}>

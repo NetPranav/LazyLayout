@@ -10,6 +10,7 @@ import { ShapePaint } from "../shapePaint";
 import { BlurBands } from "../effectsRender";
 import { SurfaceView } from "../surfaceView";
 import { isSurface } from "../../surface/settings";
+import { BACKDROP_FALLBACK_CSS, backdropFallback } from "../../paint/effectsII";
 
 /** `container` and `form`: a flex box that lays out its children. */
 export const Container: React.FC<ArchetypeRenderProps> = (props) => {
@@ -88,10 +89,13 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
   const kind = resolved.str("frame.kind", "frame");
   // Surfaces (S2–S6): an inflated frame draws its surface under its content and prints its text on it
   const surface = isSurface((path) => resolved.get(path));
+  // Phase 121: where the browser can't blur what's behind, a more opaque tint instead
+  const fallback = backdropFallback((path) => resolved.get(path));
   return (
     <div
       ref={nodeRef}
       data-surface-host={surface ? "" : undefined}
+      data-backdrop-fallback={fallback ? "" : undefined}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : layer.archetype}
       data-mirror-of={ctx.mode !== "export" && layer.properties["frame.mirrorOf"] ? String(layer.properties["frame.mirrorOf"]) : undefined}
@@ -115,6 +119,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
         // FigCraft port F6: wrapped lines sit where the cross alignment says (stretched for stretch), or spread out
         alignContent: wrap ? (resolved.str("layout.alignContent", "auto") === "space-between" ? "space-between" : align === "center" || align === "flex-end" || align === "stretch" ? align : "flex-start") : undefined,
         ...fill.style,
+        ...(fallback ? ({ "--ll-backdrop-fallback": fallback } as React.CSSProperties) : {}),
         borderRadius: px(resolved.num("appearance.radius", 0)),
         ...border,
         ...(surface ? { background: "transparent", backgroundImage: "none", isolation: "isolate" as const } : {}),
@@ -135,6 +140,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
           {layer.name}
         </span>
       )}
+      {fallback && <style data-backdrop-fallback-rule="">{BACKDROP_FALLBACK_CSS}</style>}
       {/* FigCraft port F7: a progressive background blur under the content, a progressive layer blur over it */}
       <BlurBands effects={effectsOf(resolved)} kind="backgroundBlur" />
       {children}
