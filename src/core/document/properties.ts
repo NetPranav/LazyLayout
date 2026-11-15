@@ -784,7 +784,7 @@ const DEFS = {
   /** Corners sharper than this ratio bevel instead of mitring (default 4, about 29°). */
   "stroke.miterLimit": ranged(num(4, "stroke-miterlimit", "paint", SVG_STROKED), { min: 1, max: 100 }),
   /** More than one stroke: a list of paints like `paint.fills`, first on top. When set it replaces the plain stroke colour. */
-  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath"))),
+  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath", "text"))),
   "shape.headLength": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.headWidth": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.shaftWidth": ranged(px(4, null, "paint", only("arrow")), { min: 0 }),

@@ -50,6 +50,9 @@ interface PaintBase {
   blend?: BlendMode;
   /** A mask on this fill alone (Phase 113). Absent is none. */
   mask?: PaintMask;
+  /** In a stroke list only (Phases 117–118): this stroke's own weight in px and alignment; absent uses the layer's. */
+  weight?: number;
+  align?: "inside" | "center" | "outside";
 }
 
 /** A stored mask, read safely; null when absent or unusable. */
@@ -177,7 +180,9 @@ function parsePaint(v: unknown): Paint | null {
   const o = v as Record<string, unknown>;
   const blend = typeof o.blend === "string" && (BLEND_MODES as readonly string[]).includes(o.blend) && o.blend !== "normal" && o.blend !== "passThrough" ? (o.blend as BlendMode) : undefined;
   const mask = parsePaintMask(o.mask);
-  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}), ...(mask ? { mask } : {}) };
+  const weight = typeof o.weight === "number" && Number.isFinite(o.weight) ? clamp(o.weight, 0, 200) : undefined;
+  const align: PaintBase["align"] = o.align === "inside" || o.align === "center" || o.align === "outside" ? o.align : undefined;
+  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}), ...(mask ? { mask } : {}), ...(weight !== undefined ? { weight } : {}), ...(align ? { align } : {}) };
   switch (o.type) {
     case "solid": {
       const color = safeColor(o.color);
@@ -287,7 +292,7 @@ const pt = (p: Point) => ({ x: r3(p.x), y: r3(p.y) });
 export function serializeFills(fills: readonly Paint[]): string {
   return JSON.stringify(
     fills.slice(0, MAX_PAINTS).map((p) => {
-      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}), ...(p.mask ? { mask: p.mask.type === "layer" ? { type: "layer", id: p.mask.id, ...(p.mask.invert ? { invert: true } : {}) } : { type: p.mask.type, start: r3(p.mask.start), end: r3(p.mask.end), angle: r3(p.mask.angle) } } : {}) };
+      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}), ...(p.weight !== undefined ? { weight: r3(p.weight) } : {}), ...(p.align ? { align: p.align } : {}), ...(p.mask ? { mask: p.mask.type === "layer" ? { type: "layer", id: p.mask.id, ...(p.mask.invert ? { invert: true } : {}) } : { type: p.mask.type, start: r3(p.mask.start), end: r3(p.mask.end), angle: r3(p.mask.angle) } } : {}) };
       switch (p.type) {
         case "solid": return { ...base, color: p.color };
         case "linear": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), from: pt(p.from), to: pt(p.to) };

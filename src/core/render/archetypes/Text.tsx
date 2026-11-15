@@ -7,7 +7,9 @@ import { a11yAttrs } from "../a11y";
 import { useTextFillStyle } from "../paintStyle";
 import { mixWithBlack } from "../../paint/shade";
 import { runsOf, type TextRun } from "../../text/runs";
-import { parseShadows, textShadowCss } from "../../paint/paints";
+import { parseFills, parseShadows, textShadowCss } from "../../paint/paints";
+import { paintColor } from "../../paint/paintEdits";
+import { withOpacity } from "../../paint/colorMath";
 import { listGutter, listMarkers, paragraphLists, paragraphsOf, parseTextPath, runsByParagraph, textPathD, type TextPath } from "../../text/textFeatures";
 
 /** The inline style of one run. */
@@ -57,6 +59,49 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
   const depth = ctx.inMeshTile ? 0 : resolved.num("text.depth", 0);
   const steps = Math.max(1, Math.min(24, Math.round(resolved.num("text.depthSteps", 8))));
   const depthColor = resolved.str("text.depthColor", "") || mixWithBlack(resolved.str("typography.color", "#0f172a"), 0.35);
+  // Phase 117: several strokes. The words themselves turn clear (still real text, read once); hidden copies draw each
+  // stroke, bottom first (outside strokes at twice their weight behind, centre and inside ones on top), and one more
+  // copy draws the fill above the outside strokes.
+  const strokes = depth > 0 ? [] : (parseFills(resolved.get("paint.strokes")) ?? []).filter((p) => p.visible && (p.weight ?? 0) > 0);
+  if (strokes.length > 0) {
+    const fillColor = resolved.str("typography.color", "#0f172a");
+    const copy = (key: string, style: React.CSSProperties) => (
+      <span key={key} aria-hidden="true" data-text-stroke-copy="" style={{ position: "absolute", inset: 0, padding: "inherit", pointerEvents: "none", userSelect: "none", ...style }}>
+        {content}
+      </span>
+    );
+    const strokeCopy = (p: (typeof strokes)[number], i: number) => {
+      const w = p.weight ?? 0;
+      const color = withOpacity(paintColor(p), p.opacity);
+      return copy(`s${i}`, { color: "transparent", WebkitTextFillColor: "transparent", WebkitTextStroke: `${(p.align ?? "outside") === "outside" ? w * 2 : w}px ${color}` });
+    };
+    const below = strokes.map((p, i) => ({ p, i })).filter(({ p }) => (p.align ?? "outside") === "outside").reverse();
+    const above = strokes.map((p, i) => ({ p, i })).filter(({ p }) => (p.align ?? "outside") !== "outside").reverse();
+    return (
+      <div
+        ref={nodeRef}
+        data-element-id={ctx.inMeshTile ? undefined : layer.id}
+        data-archetype={ctx.inMeshTile ? undefined : "text"}
+        {...a11yAttrs(resolved)}
+        style={{
+          ...box,
+          margin: 0,
+          ...textTypography(resolved),
+          ...(textShadow ? { textShadow } : {}),
+          whiteSpace: paragraphs ? "normal" : space ?? (sizing === "autoWidth" ? "pre" : "pre-wrap"),
+          overflowWrap: sizing === "autoWidth" || space === "nowrap" || space === "pre" ? "normal" : "anywhere",
+          ...(sizing === "autoWidth" ? { width: "max-content" } : {}),
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        {below.map(({ p, i }) => strokeCopy(p, i))}
+        {copy("fill", textFill ? { ...textFill } : { color: fillColor, WebkitTextFillColor: fillColor })}
+        {above.map(({ p, i }) => strokeCopy(p, i))}
+        <span style={{ position: "relative" }}>{content}</span>
+      </div>
+    );
+  }
   return (
     <div
       ref={nodeRef}
