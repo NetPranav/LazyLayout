@@ -37,6 +37,7 @@ import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
 import { outlineStrokes } from "./outlineStroke";
 import { addModifier, moveModifier, removeModifier, setModifier } from "./modifierOps";
+import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
 import { register3dCommands } from "../3d/commands";
@@ -374,6 +375,13 @@ export function registerEditingCommands(): () => void {
     }),
     run: ({ ids: t, ...patch }) => ({ changed: setStrokeSettings(t ?? ids(), patch) }),
   }));
+  // Phase 119: width profiles to reuse, and the calligraphic profile of a layer's own path
+  const widthPoints = z.array(z.object({ t: z.number(), scale: z.number(), bias: z.number().optional() })).min(1).max(64);
+  add(defineTypedCommand({ id: "stroke.saveWidthProfile", title: "Save Width Profile", category: "Layer", args: z.object({ name: z.string().min(1).max(60), points: widthPoints.optional(), layerId: z.string().optional() }), run: ({ name, points, layerId }) => ({ id: saveWidthProfile(name, { points, layerId: points ? undefined : (layerId ?? ids()[0]) }) }) }));
+  add(defineTypedCommand({ id: "stroke.applyWidthProfile", title: "Apply Width Profile", category: "Layer", args: z.object({ ids: targets, profile: z.string() }), run: ({ ids: t, profile }) => ({ changed: applyWidthProfile(t ?? ids(), profile) }) }));
+  add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
+  add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
+  add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
   // FigCraft port F4: vector networks on path layers
   add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));

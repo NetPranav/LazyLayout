@@ -17,6 +17,7 @@ import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { MeshOverlay } from "./MeshOverlay";
+import { WidthOverlay } from "./WidthOverlay";
 import { DraftPath } from "./DraftPath";
 import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
 import { PathEditLayer } from "./pen/PathEditLayer";
@@ -1104,6 +1105,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* Mesh gradient points (Phase 115), while a mesh fill is being edited */}
       <MeshOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <WidthOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

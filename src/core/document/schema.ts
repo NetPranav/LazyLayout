@@ -365,6 +365,11 @@ const MotionDocumentShape = z.object({
       }),
     )
     .optional(),
+  /** Saved stroke width profiles to reuse (Phase 119): a name and the points along the stroke (t 0..1, a width scale, a bias between the sides). */
+  widthProfiles: z
+    .array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(60), points: z.array(z.object({ t: z.number().min(0).max(1), scale: z.number().min(0).max(1000), bias: z.number().min(-1).max(1).optional() })).min(1).max(64) }))
+    .max(100)
+    .optional(),
   /** Dev Mode annotation categories (FigCraft port F13); absent: Development, Interaction, Accessibility, Content. */
   annotationCategories: z.array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(64), color: z.string().max(40) })).max(64).optional(),
   /** The breakpoints, widest (the base) first (Phase 43). Absent: Desktop 1440, Tablet 768, Mobile 375. */

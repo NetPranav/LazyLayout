@@ -216,9 +216,9 @@ export function setWidthSide(pts: readonly WidthPoint[], i: number, side: "left"
   return pts.map((x, j) => (j === i ? { ...x, scale: Math.min(WIDTH_MAX_SCALE, q.scale), bias: q.bias } : x));
 }
 
-export type WidthPreset = "uniform" | "wedge" | "taper" | "eye" | "rounded" | "pinch";
-export const WIDTH_PRESETS: readonly WidthPreset[] = ["uniform", "wedge", "taper", "eye", "rounded", "pinch"];
-const PRESET_LABEL: Record<WidthPreset, string> = { uniform: "Uniform", wedge: "Wedge", taper: "Taper both ends", eye: "Eye", rounded: "Rounded", pinch: "Pinch" };
+export type WidthPreset = "uniform" | "wedge" | "taper" | "eye" | "swell" | "rounded" | "pinch";
+export const WIDTH_PRESETS: readonly WidthPreset[] = ["uniform", "wedge", "taper", "eye", "swell", "rounded", "pinch"];
+const PRESET_LABEL: Record<WidthPreset, string> = { uniform: "Uniform", wedge: "Wedge", taper: "Taper both ends", eye: "Eye", swell: "Swell", rounded: "Rounded", pinch: "Pinch" };
 export const presetLabel = (p: WidthPreset): string => PRESET_LABEL[p];
 
 /** A preset's profile (null for uniform). */
@@ -227,6 +227,7 @@ export function presetProfile(p: WidthPreset): WidthPoint[] | null {
     wedge: [[0, 1], [1, 0]],
     taper: [[0, 0], [0.2, 1], [0.8, 1], [1, 0]],
     eye: [[0, 0], [0.5, 1], [1, 0]],
+    swell: [[0, 0.35], [0.5, 1], [1, 0.35]],
     rounded: [[0, 0.3], [0.05, 0.8], [0.15, 1], [0.85, 1], [0.95, 0.8], [1, 0.3]],
     pinch: [[0, 1], [0.5, 0.25], [1, 1]],
   };

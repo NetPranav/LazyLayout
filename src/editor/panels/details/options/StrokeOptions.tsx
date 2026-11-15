@@ -8,6 +8,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { RowColorField } from "../controls/RowColorField";
 import { isPropertyLegalFor } from "@/core/document/properties";
 import type { InspectorSectionProps, StrokeItem } from "../types";
+import { WidthProfileOptions } from "./WidthProfileOptions";
 
 const NO_SVG_STROKE = "Cap, join and dash apply to shapes, vectors and icons, not to this layer";
 const NO_MITER = "Miter limit is not in the document model yet";
@@ -125,6 +126,8 @@ export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onCh
           <SegmentedControl size="compact" ariaLabel="Stroke sides" options={SIDES_OPTIONS} value={stroke.sides} onChange={(sd) => onChangeStroke({ sides: sd })} className="ll:w-full" />
         </OptionRow>
       </OptionGroup>
+
+      {layer && isPropertyLegalFor("stroke.widthProfile", layer.archetype) && <WidthProfileOptions layer={layer} />}
 
       <OptionGroup>
         <OptionRow label="Cap">
