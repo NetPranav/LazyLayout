@@ -320,7 +320,8 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
         break;
       }
       case "noise":
-      case "pattern": {
+      case "pattern":
+      case "mesh": {
         // the same picture a frame's CSS background shows (Phase 114), as a pattern the size of the box
         defs.push(
           <pattern key={gid} id={gid} patternUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>

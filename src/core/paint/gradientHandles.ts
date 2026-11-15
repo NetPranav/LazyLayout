@@ -47,6 +47,7 @@ export function handlesFor(p: Paint, box: { w: number; h: number }): GradientHan
     // noise and patterns have no handles on the canvas (Phase 114)
     case "noise":
     case "pattern":
+    case "mesh":
       return [];
     case "image": {
       if (p.mode !== "crop") return [];
@@ -94,6 +95,7 @@ export function dragHandle(p: Paint, handle: Pick<GradientHandle, "kind" | "stop
   switch (p.type) {
     case "noise":
     case "pattern":
+    case "mesh":
       return p;
     case "image": {
       if (p.mode !== "crop") return p;

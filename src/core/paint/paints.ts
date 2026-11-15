@@ -18,6 +18,7 @@
 
 import { safeImageSrc } from "../render/limits";
 import { parseColor, toCss, withOpacity } from "./colorMath";
+import { MAX_MESH_SIDE, meshSvg, newMesh, type MeshSpec } from "./mesh";
 import { MAX_PATTERN_SHAPES, noiseSvg, patternSvg, safePathData, svgDataUrl, type NoiseSpec, type PatternSpec } from "./procedural";
 import { BLEND_MODES, blendCss, isIdentityAdjustment, sanitizeAdjustments, type BlendMode, type ImageAdjustments } from "./color";
 
@@ -98,14 +99,17 @@ export type ImagePaint = PaintBase & {
 export type NoisePaint = PaintBase & { type: "noise" } & NoiseSpec;
 /** Shapes repeated as a tile (Phase 114), baked from a layer when the pattern is made. */
 export type PatternPaint = PaintBase & { type: "pattern" } & PatternSpec;
-export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint | NoisePaint | PatternPaint;
+/** A mesh gradient (Phase 115), drawn by `core/paint/mesh.ts`. */
+export type MeshPaint = PaintBase & { type: "mesh" } & MeshSpec;
+export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint | NoisePaint | PatternPaint | MeshPaint;
 export type PaintType = Paint["type"];
-export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image", "noise", "pattern"];
+export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image", "noise", "pattern", "mesh"];
 
 /** The picture a procedural paint is drawn as, for a box of this size (null for other paints). */
 export function proceduralSvg(p: Paint, w: number, h: number): string | null {
   if (p.type === "noise") return noiseSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
   if (p.type === "pattern") return patternSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  if (p.type === "mesh") return meshSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
   return null;
 }
 
@@ -136,6 +140,7 @@ export const DEFAULT_STOPS: readonly GradientStop[] = [
 export function newPaint(type: PaintType, color = "#cbd5e1"): Paint {
   const base = { opacity: 1, visible: true };
   if (type === "image") return { ...base, type, src: "", mode: "fill", crop: { ...FULL_CROP }, scale: 1, brightness: 1, contrast: 1, saturation: 1 };
+  if (type === "mesh") return { ...base, type, ...newMesh(3, 3, color) };
   if (type === "noise") return { ...base, type, kind: "grain", scale: 2, contrast: 0.5, color: "#000000", seed: 1, opacity: 0.35 };
   if (type === "pattern") return { ...base, type, tile: { w: 16, h: 16, shapes: [{ d: "M8 4A4 4 0 1 1 8 12A4 4 0 1 1 8 4Z", color: color }] }, scale: 1, spacing: 0, offset: { x: 0, y: 0 }, rotation: 0 };
   const stops: GradientStop[] = [{ at: 0, color }, { at: 1, color: parseColor(color) && (parseColor(color)!.r + parseColor(color)!.g + parseColor(color)!.b) / 3 > 128 ? "#0f172a" : "#ffffff" }];
@@ -189,6 +194,17 @@ function parsePaint(v: unknown): Paint | null {
       const stops = parseStops(o.stops);
       const r = point(o.radius, { x: 0.5, y: 0.5 });
       return stops ? { ...base, type: "diamond", stops, center: point(o.center, { x: 0.5, y: 0.5 }), radius: { x: Math.abs(r.x) || 0.01, y: Math.abs(r.y) || 0.01 } } : null;
+    }
+    case "mesh": {
+      const cols = Math.round(num(o.cols, 3, 2, MAX_MESH_SIDE));
+      const rows = Math.round(num(o.rows, 3, 2, MAX_MESH_SIDE));
+      const raw = Array.isArray(o.points) ? o.points : [];
+      if (raw.length !== cols * rows) return null;
+      const points = raw.map((q) => {
+        const r = typeof q === "object" && q !== null ? (q as Record<string, unknown>) : {};
+        return { x: num(r.x, 0, -1, 2), y: num(r.y, 0, -1, 2), color: safeColor(r.color) ?? "#000000" };
+      });
+      return { ...base, type: "mesh", cols, rows, points, smooth: o.smooth !== false };
     }
     case "noise": {
       const color = safeColor(o.color) ?? "#000000";
@@ -267,6 +283,7 @@ export function serializeFills(fills: readonly Paint[]): string {
         case "radial": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
         case "conic": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), angle: r3(p.angle) };
         case "diamond": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
+        case "mesh": return { ...base, cols: p.cols, rows: p.rows, points: p.points.map((q) => ({ x: r3(q.x), y: r3(q.y), color: q.color })), ...(p.smooth ? {} : { smooth: false }) };
         case "noise": return { ...base, kind: p.kind, scale: r3(p.scale), contrast: r3(p.contrast), color: p.color, seed: p.seed };
         case "pattern": return { ...base, tile: { w: r3(p.tile.w), h: r3(p.tile.h), shapes: p.tile.shapes }, scale: r3(p.scale), ...(p.spacing ? { spacing: r3(p.spacing) } : {}), ...(p.offset.x || p.offset.y ? { offset: pt(p.offset) } : {}), ...(p.rotation ? { rotation: r3(p.rotation) } : {}) };
         case "image":
@@ -333,6 +350,7 @@ export function paintCss(p: Paint, w: number, h: number, assetUrl?: (src: string
       return diamondCss(p, W, H).map((q) => q.image).join(", ");
     case "noise":
     case "pattern":
+    case "mesh":
       return `url("${svgDataUrl(proceduralSvg(p, W, H)!)}")`;
     case "image": {
       const url = p.src ? (assetUrl ? assetUrl(p.src) : p.src) : null;

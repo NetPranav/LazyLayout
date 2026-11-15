@@ -22,7 +22,51 @@ import type { Paint, PaintMask, PaintType } from "@/core/paint/paints";
 import { BLEND_MODES, type BlendMode } from "@/core/paint/color";
 import { Toggle } from "@/editor/components/Toggle";
 import { tileFromLayer } from "@/core/editing/patternTile";
+import { meshAt, newMesh } from "@/core/paint/mesh";
+import { useMeshEditStore } from "@/editor/stage/meshEditStore";
 import type { Layer } from "@/core/document/schema";
+
+/** Mesh gradient controls (Phase 115): the grid, smooth or linear blending, editing the points on the canvas, the picked point's colour. */
+function MeshControls({ paint: p, layerId, index, onChange }: { paint: Extract<Paint, { type: "mesh" }>; layerId: string; index: number; onChange: (next: Paint) => void }) {
+  const editing = useMeshEditStore((s) => s.layerId === layerId && s.fill === index);
+  const picked = useMeshEditStore((s) => s.point);
+  const edit = useMeshEditStore((s) => s.edit);
+  const stop = useMeshEditStore((s) => s.stop);
+  // a new grid keeps the look: each new point takes the colour the old mesh had there
+  const regrid = (cols: number, rows: number) => {
+    const fresh = newMesh(cols, rows);
+    const points = fresh.points.map((q, i) => {
+      const c = (i % cols) / (cols - 1);
+      const r = Math.floor(i / cols) / (rows - 1);
+      const [R, G, B] = meshAt(p, c * (p.cols - 1), r * (p.rows - 1)).rgba;
+      const hex = (n: number) => Math.round(n).toString(16).padStart(2, "0");
+      return { ...q, color: `#${hex(R)}${hex(G)}${hex(B)}` };
+    });
+    onChange({ ...p, cols, rows, points });
+  };
+  const point = editing && picked !== null ? p.points[picked] : undefined;
+  return (
+    <OptionGroup>
+      <OptionRow label="Columns">
+        <NumberField size="sm" aria-label="Mesh columns" value={p.cols} min={2} max={8} step={1} onChange={(v) => regrid(Math.round(Math.min(8, Math.max(2, v))), p.rows)} />
+      </OptionRow>
+      <OptionRow label="Rows">
+        <NumberField size="sm" aria-label="Mesh rows" value={p.rows} min={2} max={8} step={1} onChange={(v) => regrid(p.cols, Math.round(Math.min(8, Math.max(2, v))))} />
+      </OptionRow>
+      <OptionRow label="Smooth">
+        <Toggle size="sm" aria-label="Mesh smooth" checked={p.smooth} onChange={(on) => onChange({ ...p, smooth: on })} />
+      </OptionRow>
+      <OptionRow label="On canvas">
+        <Toggle size="sm" aria-label="Edit mesh points on canvas" checked={editing} onChange={(on) => (on ? edit(layerId, index) : stop())} />
+      </OptionRow>
+      {point && picked !== null && (
+        <OptionRow label={`Point ${picked + 1}`}>
+          <RowColorField hex={point.color.replace("#", "").toUpperCase()} label="Mesh point colour picker" hexLabel="Mesh point hex" onChange={(hex) => onChange({ ...p, points: p.points.map((q, i) => (i === picked ? { ...q, color: `#${hex}` } : q)) })} />
+        </OptionRow>
+      )}
+    </OptionGroup>
+  );
+}
 
 /** Noise and pattern controls (Phase 114). */
 function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { paint: Paint; layers: Readonly<Record<string, Layer>>; layerOptions: { value: string; label: string }[]; onChange: (next: Paint) => void }) {
@@ -183,6 +227,7 @@ const PAINT_OPTIONS = [
   { value: "image", label: "Image" },
   { value: "noise", label: "Noise", hint: "Seeded grain or soft noise" },
   { value: "pattern", label: "Pattern", hint: "Shapes repeated as a tile" },
+  { value: "mesh", label: "Mesh", hint: "A grid of colour points you drag on the canvas" },
 ] as const;
 
 const IMAGE_FIT_OPTIONS = [
@@ -626,6 +671,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
               </OptionGroup>
               {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern") && (
                 <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
+              )}
+              {engine && primary && enginePaints[index]?.type === "mesh" && (
+                <MeshControls paint={enginePaints[index] as Extract<Paint, { type: "mesh" }>} layerId={primary} index={index} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
               )}
               {engine && enginePaints[index] && <FillMaskControls mask={enginePaints[index].mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />}
               {engine && fill.stops && fill.stops.length >= 2 && (

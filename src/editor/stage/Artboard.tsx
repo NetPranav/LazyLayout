@@ -16,6 +16,7 @@ import { OnionSkinOverlay } from "./OnionSkinOverlay";
 import { AnchorOverlay } from "./AnchorOverlay";
 import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
+import { MeshOverlay } from "./MeshOverlay";
 import { DraftPath } from "./DraftPath";
 import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
 import { PathEditLayer } from "./pen/PathEditLayer";
@@ -1100,6 +1101,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
 
       {/* Warp mesh: control points and grid on the warped surface */}
       <WarpMeshOverlay selectedIds={selectedIds} elements={elements} layers={layers} zoom={zoomScale} />
+
+      {/* Mesh gradient points (Phase 115), while a mesh fill is being edited */}
+      <MeshOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

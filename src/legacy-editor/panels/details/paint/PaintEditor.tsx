@@ -22,9 +22,9 @@ import { ImageFillControls } from "./ImageFillControls";
 import { useAssetUrlMap } from "@/core/assets/useAssetUrl";
 import { SwatchPopover } from "./SwatchPopover";
 
-const TYPE_LABEL: Record<PaintType, string> = { solid: "Solid", linear: "Linear", radial: "Radial", conic: "Conic", diamond: "Diamond", image: "Image", noise: "Noise", pattern: "Pattern" };
+const TYPE_LABEL: Record<PaintType, string> = { solid: "Solid", linear: "Linear", radial: "Radial", conic: "Conic", diamond: "Diamond", image: "Image", noise: "Noise", pattern: "Pattern", mesh: "Mesh" };
 
-type GradientPaint = Exclude<Paint, { type: "solid" | "image" | "noise" | "pattern" }>;
+type GradientPaint = Exclude<Paint, { type: "solid" | "image" | "noise" | "pattern" | "mesh" }>;
 
 /** CSS for a small preview of a paint. */
 function preview(p: Paint, url?: string | null): string {
