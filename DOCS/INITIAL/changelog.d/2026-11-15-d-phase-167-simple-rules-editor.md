@@ -1,0 +1,1 @@
+- [Phase 167] Implemented Simple rules editor (`src/core/nodescript/simpleRulesEditor.ts`, `src/editor/panels/signals/SimpleRulesPanel.tsx`): `"When [event] on [layer] → Do [actions]"` plain-language rule model (`<= 7` controls), automatic companion provisioning/cleanup for colliders/fields/home springs, Law 17 feel presets, and BlueprintGraph compilation (`PR #143`).
