@@ -483,7 +483,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 🚧 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 🚧 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 🚧 |
-| 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
+| 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 🚧 |
 | 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
 | 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
@@ -2900,8 +2900,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** glass references match within the GPU tolerance in 3 browsers; each tier stays within its budget.
 
 ### Phase 182 · 2D lights & surface depth
-**Needs:** 175, 179 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Point and spot lights for flat designs: layers get a surface (flat, embossed from their shape, or a normal map), and lights cast highlights, soft shadows and glints. A light can follow the cursor.
+**Needs:** 175, 179 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Point and spot lights for flat designs: layers get a surface (flat, embossed from their shape, or a normal map), and lights cast highlights, soft shadows and glints. A light can follow the cursor.
 
 **You'll see:** a light that follows the mouse across embossed cards.
 **Done when:** lighting matches references within the GPU tolerance; 20 lit layers hold 60 fps on mid tiers.
