@@ -392,7 +392,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 🚧 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 🚧 |
 | 201 | Composition test suite | 200 | v3 91.7 | 4 | 🚧 |
-| 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 📋 |
+| 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 🚧 |
 
 **Stage 5 · Characters & rigging (Phases 203–217)**
 
@@ -2465,12 +2465,12 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** all 10 pass, and no Simple face in them shows a technical parameter.
 
 ### Phase 202 · Stage 4 gate: the interactive journey
-**Needs:** 132–201 · **Was:** v3 58.5, 58.6 · **Status:** 📋
-- [ ] **Journey A (React):** a hero with a cursor-reactive background, a magnetic CTA, a cursor effect and a rule (hover → glow, click → particles and a card flip), scrubbed with a tape, opened as a graph, exported and parity-checked on desktop and a mid-tier phone profile.
-- [ ] **Journey B (Compose):** the reference build from primitives in < 5 minutes: helper circle following by its bottom pin, Split letters, "keep outside, spin, spring home" rule, opened as a graph, exported, accessibility tree and touch profile checked.
-- [ ] **Journey C (Keyboard):** a card carousel driven by arrows and focus, identical in the export.
-- [ ] **Journey D (Bring your own):** an imported component with one prop bound to the cursor, exported, isolation verified.
-- [ ] **v4.1 Journey E (Feel):** a hero with depth parallax, a liquid-glass navigation bar, a hold-to-confirm button with sound and haptics, and a card that shatters and reassembles, exported and parity-checked.
+**Needs:** 132–201 · **Was:** v3 58.5, 58.6 · **Status:** 🚧
+- [x] **Journey A (React):** a hero with a cursor-reactive background, a magnetic CTA, a cursor effect and a rule (hover → glow, click → particles and a card flip), scrubbed with a tape, opened as a graph, exported and parity-checked on desktop and a mid-tier phone profile.
+- [x] **Journey B (Compose):** the reference build from primitives in < 5 minutes: helper circle following by its bottom pin, Split letters, "keep outside, spin, spring home" rule, opened as a graph, exported, accessibility tree and touch profile checked.
+- [x] **Journey C (Keyboard):** a card carousel driven by arrows and focus, identical in the export.
+- [x] **Journey D (Bring your own):** an imported component with one prop bound to the cursor, exported, isolation verified.
+- [x] **v4.1 Journey E (Feel):** a hero with depth parallax, a liquid-glass navigation bar, a hold-to-confirm button with sound and haptics, and a card that shatters and reassembles, exported and parity-checked.
 
 **You'll see:** LazyLayout's pitch, working end to end: interactive effects anyone can add, compose and export.
 **Done when:** the journeys pass in CI in 3 browsers, plus one recorded manual run.
