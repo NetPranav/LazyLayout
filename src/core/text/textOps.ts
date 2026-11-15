@@ -12,7 +12,7 @@ import { getDocument } from "../store/documentState";
 import { documentCommands } from "../store/useDocumentStore";
 import { transaction } from "../editing/editOps";
 import { worldBox, writeBoxes } from "../editing/layerBoxes";
-import { layerSpine } from "../editing/layerOutline";
+import { layerOutline, layerSpine } from "../editing/layerOutline";
 import { MAX_LIST_INDENT, paragraphLists, paragraphsOf, serializeParagraphLists, type ListStyle, type ParaList } from "./textFeatures";
 
 const texts = (ids: readonly string[]) => ids.filter((id) => getDocument().layers[id]?.archetype === "text" && getDocument().layers[id].locked !== true);
@@ -120,6 +120,55 @@ export function detachFromPath(ids: readonly string[]): number {
   if (targets.length === 0) return 0;
   transaction("Text off path", () => {
     for (const id of targets) documentCommands.updateProps(id, { "typography.textPath": undefined, "typography.textPathStart": undefined });
+  });
+  return targets.length;
+}
+
+// --- Phase 125: text that fills a shape -----------------------------------------------------------
+
+/**
+ * Pours text into a shape: the text takes the shape's place and size and wraps inside its outline (a rectangle's,
+ * an ellipse's, a polygon's, a path's), kept `inset` px from it. The shape stays as it was. Returns whether it worked.
+ */
+export function fillShape(textId: string, shapeId: string, inset = 8): boolean {
+  const layers = getDocument().layers;
+  const text = layers[textId];
+  const shape = layers[shapeId];
+  if (!text || text.archetype !== "text" || text.locked === true || !shape || textId === shapeId) return false;
+  const outline = layerOutline(shape, layers);
+  const box = worldBox(shapeId);
+  if (!outline || outline.path.isEmpty() || !box) return false;
+  transaction("Text in shape", () => {
+    writeBoxes([textId], [box], undefined, { size: true });
+    documentCommands.updateProps(textId, {
+      "text.sizing": "fixed",
+      "typography.textPath": undefined,
+      "typography.columns": undefined,
+      "text.shape": JSON.stringify({ d: outline.path.toSvg(2), inset: Math.min(500, Math.max(0, inset)), source: shapeId }),
+    });
+  });
+  return true;
+}
+
+/** Changes how far text in a shape keeps from its outline. */
+export function setShapeInset(ids: readonly string[], inset: number): number {
+  const targets = texts(ids).filter((id) => typeof getDocument().layers[id].properties["text.shape"] === "string" && getDocument().layers[id].properties["text.shape"]);
+  if (targets.length === 0 || !Number.isFinite(inset)) return 0;
+  transaction("Text inset", () => {
+    for (const id of targets) {
+      const cur = JSON.parse(String(getDocument().layers[id].properties["text.shape"])) as Record<string, unknown>;
+      documentCommands.updateProps(id, { "text.shape": JSON.stringify({ ...cur, inset: Math.min(500, Math.max(0, inset)) }) });
+    }
+  });
+  return targets.length;
+}
+
+/** Lets text go of its shape: it wraps in its box again. */
+export function releaseShape(ids: readonly string[]): number {
+  const targets = texts(ids).filter((id) => getDocument().layers[id].properties["text.shape"]);
+  if (targets.length === 0) return 0;
+  transaction("Text out of shape", () => {
+    for (const id of targets) documentCommands.updateProps(id, { "text.shape": undefined });
   });
   return targets.length;
 }

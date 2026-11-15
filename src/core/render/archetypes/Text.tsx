@@ -10,6 +10,7 @@ import { runsOf, type TextRun } from "../../text/runs";
 import { parseFills, parseShadows, textShadowCss } from "../../paint/paints";
 import { paintColor } from "../../paint/paintEdits";
 import { withOpacity } from "../../paint/colorMath";
+import { parseTextShape, shapeFloats, shapeRows } from "../../text/textShape";
 import { listGutter, listMarkers, paragraphLists, paragraphsOf, parseTextPath, runsByParagraph, textPathD, type TextPath } from "../../text/textFeatures";
 
 /** The inline style of one run. */
@@ -102,11 +103,15 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
       </div>
     );
   }
+  // Phase 125: text that fills a shape lays out between two floats shaped like the outline's edges; or in columns
+  const inShape = shapeLayout(resolved, sizing);
+  const columns = inShape ? 1 : Math.round(resolved.num("typography.columns", 1));
   return (
     <div
       ref={nodeRef}
       data-element-id={ctx.inMeshTile ? undefined : layer.id}
       data-archetype={ctx.inMeshTile ? undefined : "text"}
+      data-text-shape={inShape ? "" : undefined}
       {...a11yAttrs(resolved)}
       style={{
         ...box,
@@ -123,8 +128,16 @@ export const Text: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
         ...(maxLines <= 0 && (valign === "middle" || valign === "bottom") ? { alignContent: valign === "middle" ? "center" : "end" } : {}),
         ...(textFill ?? {}),
         ...(depth > 0 ? { transformStyle: "preserve-3d" as const } : {}),
+        ...(inShape ? { overflowWrap: "normal" as const, paddingTop: inShape.top, overflow: "hidden" } : {}),
+        ...(columns > 1 ? { columnCount: Math.min(8, columns), columnGap: Math.max(0, resolved.num("typography.columnGap", 24)), columnFill: "auto" as const } : {}),
       }}
     >
+      {inShape && (
+        <>
+          <span aria-hidden="true" data-text-shape-float="left" style={{ float: "left", width: inShape.left.width, height: inShape.height, shapeOutside: inShape.left.polygon }} />
+          <span aria-hidden="true" data-text-shape-float="right" style={{ float: "right", width: inShape.right.width, height: inShape.height, shapeOutside: inShape.right.polygon }} />
+        </>
+      )}
       {depth > 0 ? (
         <>
           {Array.from({ length: steps }, (_, i) => (
@@ -195,6 +208,21 @@ function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: str
         );
       }),
   };
+}
+
+/** Phase 125: the floats that keep a fixed-size text inside its shape, or null. */
+function shapeLayout(resolved: ArchetypeRenderProps["resolved"], sizing: string) {
+  const shape = parseTextShape(resolved.get("text.shape"));
+  if (!shape || sizing !== "fixed") return null;
+  const w = Math.max(1, resolved.num("frame.width", 100));
+  const h = Math.max(1, resolved.num("frame.height", 100));
+  const typo = textTypography(resolved);
+  const size = resolved.num("typography.fontSize", 16);
+  const lh = typo.lineHeight;
+  const lineHeight = typeof lh === "number" ? lh * size : typeof lh === "string" && lh.endsWith("px") ? parseFloat(lh) : 1.5 * size;
+  // the first line is the first at least six ems wide: a narrower one holds hardly a word
+  const floats = shapeFloats(shapeRows(shape, w, h), w, h, lineHeight, 6 * size);
+  return { ...floats, height: Math.max(0.01, h - floats.top) };
 }
 
 /**

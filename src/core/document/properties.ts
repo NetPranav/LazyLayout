@@ -464,6 +464,11 @@ const DEFS = {
   "typography.verticalAlign": oneOf(["top", "middle", "bottom"], "top", null, "layout", only("text")),
   "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
   /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
+  /** Phase 125: text that fills a shape, as JSON (`{"d": "M…", "inset": 8}`, the outline in the text box's own space). */
+  "text.shape": typed(str("", null, "layout", only("text"))),
+  /** Phase 125: the text in columns (1 is none), with a gap between them. */
+  "typography.columns": ranged(num(1, "column-count", "layout", only("text"), false), { min: 1, max: 8 }),
+  "typography.columnGap": ranged(px(24, "column-gap", "layout", only("text")), { min: 0, max: 500 }),
   "typography.textPath": typed(str("", null, "layout", only("text"))),
   /**
    * Phase 124: where text on a path starts along it, in % of its length (it wins over the start stored with the path).
