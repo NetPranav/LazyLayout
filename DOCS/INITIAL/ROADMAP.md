@@ -470,7 +470,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 🚧 |
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 🚧 |
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 🚧 |
-| 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 📋 |
+| 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 🚧 |
 | 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
@@ -2806,8 +2806,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 25-step graph journey (create, wire, collapse, breakpoint, step) asserts the exact graph and trace.
 
 ### Phase 169 · Blueprint compiler & interaction parity
-**Needs:** 168 · **Was:** v3 74.2–74.4, 91.6 · **Closes:** AUD-50 (runtime) · **Status:** 📋
-- [ ] Graphs compile to plain TypeScript per target (React hooks, Vue composables, vanilla listeners) with node names as comments and no LazyLayout imports; CSS-expressible rules compile to CSS; keep-out rules compile to the effector or physics constraint. The vendored runtime gains `kinetics`, `physics2d` and `blueprint` modules. No arbitrary-code nodes.
+**Needs:** 168 · **Was:** v3 74.2–74.4, 91.6 · **Closes:** AUD-50 (runtime) · **Status:** 🚧
+- [x] Graphs compile to plain TypeScript per target (React hooks, Vue composables, vanilla listeners) with node names as comments and no LazyLayout imports; CSS-expressible rules compile to CSS; keep-out rules compile to the effector or physics constraint. The vendored runtime gains `kinetics`, `physics2d` and `blueprint` modules. No arbitrary-code nodes.
 
 **You'll see:** interactions work the same in the exported site.
 **Done when:** 20 reference graphs pass journey parity in the Next, Vite and vanilla exports in 3 browsers; compiled code passes the fixtures' ESLint with no `any`.
