@@ -439,7 +439,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 🚧 |
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 🚧 |
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 🚧 |
-| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
+| 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 🚧 |
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
@@ -2573,8 +2573,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** falsifiers fail and correct fixtures pass in 3 browsers; flake rate < 1% over 50 runs.
 
 ### Phase 138 · Operators & bindings runtime
-**Needs:** 137 · **Was:** v3 60.1 · **Status:** 📋
+**Needs:** 137 · **Was:** v3 60.1 · **Status:** 🚧
 - [ ] The spec §5 operators (`smooth`, `spring`, `remap`, `clamp`, `curve`, `deadzone`, `falloff`, `noise`, `delay`, `trail`, `velocity`, `accumulate`, `threshold`, `edge`, `toggle`, `sampleHold`, `quantize`, `mix`, vector maths), frame-rate independent and deterministic, reusing the expression evaluator (77). Bindings `signal |> operators -> target` run each frame.
+**Status check (2026-11-15, Lane D), 🚧:** Added `compileTrailExpr` ring-buffer evaluation in `src/core/bindings/evaluate.ts`, created `src/core/bindings/referenceBindings.ts` with 12 validated Stage 4 bindings and 30/60/120 Hz cross-rate comparison over 60 s tapes, and wrote tests in `src/core/bindings/__tests__/operatorsStage4.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a layer following the cursor, set up in the text form.
 **Done when:** 12 reference bindings match hand-computed values at tape checkpoints; a 60 s tape at 30, 60 and 120 Hz gives the same values within tolerance.
