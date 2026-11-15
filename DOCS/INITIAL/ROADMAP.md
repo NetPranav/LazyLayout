@@ -444,7 +444,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 🚧 |
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 🚧 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 🚧 |
-| 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
+| 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 🚧 |
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
@@ -2616,8 +2616,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the 12 reference bindings pass tape parity in the Next and Vite exports.
 
 ### Phase 143 · Pointer behaviours as presets
-**Needs:** 142 · **Was:** v3 12.2 · **Status:** 📋
+**Needs:** 142 · **Was:** v3 12.2 · **Status:** 🚧
 - [ ] Magnet, tilt (3D perspective), follow with lag, proximity, spotlight, inertia (drag with momentum), noise and wander, implemented as binding presets with affordances (closes the behaviour entries of `KERNEL_GAPS`).
+**Status check (2026-11-15, Lane D), 🚧:** Implemented all 8 pointer behaviour presets (`magnet`, `tilt`, `followLag`, `proximity`, `spotlight`, `inertia`, `noise`, `wander`) in `src/core/bindings/pointerPresets.ts`, closed `behaviours` in `KERNEL_GAPS` (`src/core/kernel/evaluate.ts` + `evaluate.test.ts`), and added scripted-pointer + 50-layer performance tests in `src/core/bindings/__tests__/pointerPresets.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** magnetic buttons, tilt cards and spotlights from the Reactivity card.
 **Done when:** 8 behaviours pass scripted-pointer tests at checkpoints; 50 reactive layers hold 60 fps.
