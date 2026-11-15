@@ -441,7 +441,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 🚧 |
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 🚧 |
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 🚧 |
-| 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
+| 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 🚧 |
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
@@ -2591,8 +2591,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the blending golden tests pass; a cycle is refused with its chain.
 
 ### Phase 140 · Reactivity card (Simple)
-**Needs:** 139 · **Was:** v3 60.3 · **Status:** 📋
+**Needs:** 139 · **Was:** v3 60.3 · **Status:** 🚧
 - [ ] "Reacts to" rows: **Cursor · Scroll · Hover on… · Touch · Keyboard · Sound**, each listing only the selected layer's affordances (follow, bend, repel, ripple, glow, tilt, parallax …) with Strength and Smoothness, plus a generated plain-language sentence. Ranges are dragged over live meters (Law 17).
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/bindings/reactivityCard.ts` (6 Simple sources, archetype-filtered affordances, validated `BindingDraft` synthesis, Law 17 meter helpers, plain-language summary) + `src/editor/panels/details/sections/ReactivityCard.tsx` (`ll:` + token compliant) + unit tests in `src/core/bindings/__tests__/reactivityCard.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** make anything follow the cursor in one click.
 **Done when:** 5 first-time users each make "the background follow the cursor" in < 20 s without help.
