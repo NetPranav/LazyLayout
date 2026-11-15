@@ -336,7 +336,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 🚧 |
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 🚧 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 🚧 |
-| 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
+| 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 🚧 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
@@ -2060,9 +2060,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** CLS stays 0 outside the box; 60 reactive letters hold 60 fps in 3 browsers.
 
 ### Phase 146 · Keyboard & focus interactivity
-**Needs:** 143 · **Was:** — (new) · **Status:** 📋
+**Needs:** 143 · **Was:** — (new) · **Status:** 🚧
 - [ ] Key-driven bindings and triggers (arrows/WASD move or rotate a layer, keys step through states, shortcuts trigger compositions), roving focus for groups, and focus-driven motion. Keyboard parity rule: any informative pointer reaction must have a keyboard or focus equivalent (grammar 6.11), checked by the rules.
 - [ ] Exported pages get the same keyboard handling, scoped so they never steal the host page's shortcuts.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/keyboardInteractivity.ts` (key triggers, roving focus controller, grammar 6.11 `checkKeyboardFocusParity` `[A11Y_KEY_PARITY]`, and scoped export listener builder) and unit tests in `src/core/signals/__tests__/keyboardInteractivity.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** "when the user presses → , slide to the next card" without code.
 **Done when:** a keyboard-only journey drives 5 interactive references in the stage and in the export; the parity rule flags a pointer-only reaction.
