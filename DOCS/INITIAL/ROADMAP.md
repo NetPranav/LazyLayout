@@ -426,7 +426,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 🚧 |
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 🚧 |
 | 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 🚧 |
-| 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 📋 |
+| 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 🚧 |
 | 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 📋 |
 
 **Stage 4 · Interactive & complex animation (Phases 132–202)**
@@ -2086,11 +2086,54 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 130 · Design-depth export
-**Needs:** 49, 108, 111, 112, 125, 128, 129 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 49, 108, 111, 112, 125, 128, 129 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] The Phase 49 exporter covers everything in this stage: boolean groups, modifiers and generators baked to SVG paths; fill stacks with blend modes and masks; noise, pattern, mesh and live fills; strokes, width profiles and brushes; effects; text on paths and in shapes; 2.5D spaces as CSS 3D. Anything that can't be exact is listed as a warning.
 
 **You'll see:** export a design that uses all of it and it looks the same in the browser.
 **Done when:** the HTML parity gate (≤ 0.5% at 5 widths) passes on a fixture using every feature of this stage; the export harness is green for Next, Vite and HTML.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the Phase 49 exporter already drew every layer with the stage's own render definitions. Each Stage 3 phase checked its own feature against the export as it was built. Nothing exported a page using all of them together, nothing listed what can't be exact, and stock photos' credits weren't written.
+
+**Built (Lane C):**
+- **The design-depth fixture** (`tests/export-harness/design-depth-fixture.ts`): one page using every Stage 3 feature, made with the editor's own operations. It covers:
+  - a live boolean group, a scooped corner, modifiers and a generator;
+  - a fill stack with blend and mask, noise, pattern, mesh and live fills;
+  - text strokes, a stroke stack, a taper and a brush;
+  - a glow, a progressive blur, frosted glass and grain over a busy backdrop;
+  - a duotone image;
+  - text on a path, in an ellipse, in columns and with OpenType;
+  - a 2.5D space arranged as a ring with a depth camera and depth of field.
+- **Warnings** (`core/export/site/designDepth.ts`) for what an exported page can't do exactly, only when the page uses it:
+  - progressive blurs in 5 steps;
+  - glass without refraction;
+  - mesh gradients at a fixed resolution;
+  - the `backdrop-filter` fallback;
+  - animated text-path starts and cameras exported at rest;
+  - 3D spaces clicked flat.
+- **Photo credits:** `CREDITS.md`, plus a credits line on plain HTML pages, as CC BY asks. On the React targets, a warning says where the credits are.
+- **The export harness** builds the fixture page for Next.js and Vite, and checks its plain HTML carries every feature's construct and its warnings.
+
+**Verified (`designDepth.test.ts`, 3 tests):**
+- Warnings appear only for features in use.
+- Credits are written to `CREDITS.md` and as an HTML line.
+- The fixture's export carries every construct: boolean path, `<textPath>`, `shape-outside` polygons, `preserve-3d`, the image filter, `<foreignObject>`, `<mask>`, columns.
+
+**In Chromium (`design-depth-export.spec.ts`), the HTML parity gate:**
+- The canvas's own markup for the fixture page and the exported page differ in **0.00% of pixels at 1440, 1024, 768, 480 and 375 px**, for the whole page and for each of the 23 features' boxes (budget 0.5%).
+- The page was checked by eye: every feature draws.
+
+**Export harness:**
+- The fixture page typechecks and builds for **Vite** and **Next.js**. This was run locally through a shell, because the harness's `spawnSync("npm")` can't start `npm.cmd` on Windows; every harness build fails locally that way, including the ones that pass in CI.
+- Its plain-HTML check passes.
+- CI's export-harness job runs all three on Linux.
+
+The Phase 49 export spec, text-on-path and icons-and-photos still pass.
+
+**Not done:**
+- Animated text-path starts and camera moves are exported at rest (named in the warnings).
+- Firefox and WebKit not run locally.
 
 ### Phase 131 · Stage 3 gate: the design-depth journey
 **Needs:** 103–130 · **Was:** — (new in v4.1) · **Status:** 📋
