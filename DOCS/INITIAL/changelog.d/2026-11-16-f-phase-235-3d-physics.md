@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 235 · 3D physics] Implemented deterministic 60 Hz 3D rigid-body & collider simulation (`box`, `sphere`, `capsule`, `plane`) with draggable forces, Blueprint contact events, and 100-body pile checkpoint replay (`src/core/3d/stage6/physicsPostExportAndGate.ts`).

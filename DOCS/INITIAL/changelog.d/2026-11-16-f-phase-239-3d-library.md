@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 239 · 3D library] Added 6 MIT Stage 6 3D library recipes (`floating-object`, `card-flip-3d`, `gltf-spin-showcase`, `depth-parallax-scene`, `physics-lanyard-badge`, `product-turntable`) verified <= 8 steps within budget.

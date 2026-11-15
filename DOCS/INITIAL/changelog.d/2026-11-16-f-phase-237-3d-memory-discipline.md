@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 237 · 3D memory discipline] Implemented `Gpu3dMemoryLedger` reference-counting geometries, materials, textures, and targets plus `verify20xGltfLoadUnloadBaseline()` returning memory to zero (`AUD-58` 3D).

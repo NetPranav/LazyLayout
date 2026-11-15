@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 229 · Animated GLTF playback] Implemented trimmed, looped, speed-adjusted GLTF skeletal and morph-target clip sampling (`evaluateGltfAnimationClip`).

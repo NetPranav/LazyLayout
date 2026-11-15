@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 224 · GLTF import pipeline] Implemented `importGltfAsset()` security sanitizer, Draco/meshopt decode adapters, KTX2/Basis worker transcode flags, T0–T3 tier variants, and 10 valid sample GLTF fixtures (`src/core/3d/stage6/gltfAndMaterials.ts`).

@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 236 · Post-processing] Implemented ordered post-processing stack (`bloom`, `dof`, `ssao`, `colorGrading`, `vignette`) with automatic per-tier downgrade order.

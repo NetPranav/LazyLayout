@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 225 · Materials & textures] Implemented PBR material specs (`baseColor`, `metalness`, `roughness`, `transmission`, `ior`, `clearcoat`), 6 built-in presets, and calibrated BSDF reflectance evaluator.

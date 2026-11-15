@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 221 · Scene hierarchy & 3D inspector] Implemented 3D hierarchy tree, Euler degree <-> quaternion storage, Simple/Pro inspector fields, and `reparentPreservingWorldTransform()`.

@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 222 · Primitives & 3D text] Implemented parametric `box`, `sphere`, `cylinder`, `torus`, `plane`, `capsule`, and extruded `text3d` generators with deterministic geometry hashing (`src/core/3d/stage6/primitivesAndInflate.ts`).

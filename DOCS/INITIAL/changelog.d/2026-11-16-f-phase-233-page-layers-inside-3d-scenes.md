@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 233 · Page layers inside 3D scenes] Implemented `projectDomLayerInto3dScene()` keeping CSS3D DOM controls in the accessibility tree with < 1 px projection alignment and depth occlusion flags.

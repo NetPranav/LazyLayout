@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 234 · Instancing, LOD & 3D cloners] Implemented typed-buffer `grid`, `radial`, `scatter`, and `path` 3D cloners with 3-tier LOD buckets holding 10,000 instances inside mid-tier budget.
