@@ -486,7 +486,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 🚧 |
 | 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 🚧 |
 | 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 🚧 |
-| 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
+| 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 🚧 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
 | 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
@@ -2922,8 +2922,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** each module's reference replay matches stored snapshots at 5 checkpoints in 3 browsers; a 10 s back-and-forth scrub never shows two states for one time.
 
 ### Phase 185 · Deformation: mesh warp, bend & peel
-**Needs:** 109, 175, 184 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Deform any layer with a warp mesh (envelope, bend, bulge, wave, flag), and bend or peel it from a corner or edge (stickers, page curls), as modifiers that can be animated and bound to inputs. The real DOM stays underneath for accessibility; the deformed look is drawn from the layer texture.
+**Needs:** 109, 175, 184 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Deform any layer with a warp mesh (envelope, bend, bulge, wave, flag), and bend or peel it from a corner or edge (stickers, page curls), as modifiers that can be animated and bound to inputs. The real DOM stays underneath for accessibility; the deformed look is drawn from the layer texture.
 
 **You'll see:** peel a sticker off the page by dragging its corner.
 **Done when:** deformation references match within the GPU tolerance; the accessibility tree is unchanged.
