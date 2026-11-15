@@ -382,7 +382,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 🚧 |
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 🚧 |
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 🚧 |
-| 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 📋 |
+| 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 🚧 |
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 📋 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
@@ -2393,8 +2393,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 8 cursor references pass mouse, pen and touch profiles; axe and keyboard-only journeys pass with the cursor layer on.
 
 ### Phase 192 · Effect SDK: effects as data
-**Needs:** 191 · **Was:** v3 67 · **Closes:** AUD-54 (engine) · **Status:** 📋
-- [ ] `EffectDefinition` v1 (spec §11): props view-model with AI descriptions, surfaces and programs by reference, bindings and affordances, states, fallback, touch and reduced-motion policies, tier costs, poster, export templates, provenance. Instances store only overrides; definitions migrate by version. Fork into the project, edit, publish to the project library. Every definition ships a tape test and a Playground scene.
+**Needs:** 191 · **Was:** v3 67 · **Closes:** AUD-54 (engine) · **Status:** 🚧
+- [x] `EffectDefinition` v1 (spec §11): props view-model with AI descriptions, surfaces and programs by reference, bindings and affordances, states, fallback, touch and reduced-motion policies, tier costs, poster, export templates, provenance. Instances store only overrides; definitions migrate by version. Fork into the project, edit, publish to the project library. Every definition ships a tape test and a Playground scene.
 
 **You'll see:** fork any library effect and change how it works.
 **Done when:** every library effect is a definition validated in CI with no per-effect code; a definition migration round-trips 100 fixtures.
