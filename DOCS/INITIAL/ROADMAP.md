@@ -434,7 +434,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
 | 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 🚧 |
-| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
+| 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 🚧 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
@@ -2526,10 +2526,12 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the grep/lint gate finds no stray pointer, scroll, wheel or key listeners; input sampling costs < 0.3 ms per frame with 200 bound layers.
 
 ### Phase 133 · Signal catalogue, including the keyboard
-**Needs:** 132 · **Was:** v3 59.2 + new (keyboard) · **Status:** 📋
-- [ ] The typed catalogue of spec §4: `pointer.*`, `pointer.inside(L)`, `hover(L)`, `press(L)`, `focus(L)`, `proximity(L)`, `scroll.*`, `view(L).*`, `time`, `frame.dt`, `audio(L).*`, `device.tilt*` (permission-gated), `state`, `sm`, `prop`, `var`, `seed`.
-- [ ] **New: keyboard signals:** `key.down(K)`, `key.held(K)`, `key.axis(arrows | WASD)` (−1…1 per axis), `key.lastPressed`, `focusVisible(L)`, with layout-independent key codes.
-- [ ] Every signal declares unit, range, default and its touch behaviour. Live signal meters in a dev panel.
+**Needs:** 132 · **Was:** v3 59.2 + new (keyboard) · **Status:** 🚧
+- [x] The typed catalogue of spec §4: `pointer.*`, `pointer.inside(L)`, `hover(L)`, `press(L)`, `focus(L)`, `proximity(L)`, `scroll.*`, `view(L).*`, `time`, `frame.dt`, `audio(L).*`, `device.tilt*` (permission-gated), `state`, `sm`, `prop`, `var`, `seed`.
+- [x] **New: keyboard signals:** `key.down(K)`, `key.held(K)`, `key.axis(arrows | WASD)` (−1…1 per axis), `key.lastPressed`, `focusVisible(L)`, with layout-independent key codes.
+- [x] Every signal declares unit, range, default and its touch behaviour. Live signal meters in a dev panel (`SignalMetersView`).
+
+**Status check (2026-11-15, Lane D), 🚧:** Added `key.down`, `key.held`, `key.axis`, `key.lastPressed`, and `focusVisible` to `src/core/document/signals.ts` and `src/core/bindings/inputBus.ts`, built `src/core/signals/catalogue.ts` + `src/editor/panels/signals/SignalMetersView.tsx`, and wrote unit tests in `src/core/signals/__tests__/catalogue.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a Signals dev panel with live meters for mouse, scroll and keys.
 **Done when:** each signal's meter matches scripted input in 3 browsers.

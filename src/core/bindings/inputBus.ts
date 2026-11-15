@@ -62,10 +62,14 @@ export interface BusState {
   scrollDirection: number;
   /** Frames run, so a signal read twice in one frame is smoothed once. */
   frame: number;
-  /** The smoothed `hover` and `press` of each layer, with the frame it was last advanced on. */
+  /** The smoothed `hover`, `press`, and `focus` of each layer, with the frame it was last advanced on. */
   smooth: Record<string, { frame: number; value: number }>;
+  /** Duration in seconds each key code has been continuously held down. */
+  keyHeldSec?: Record<string, { frame: number; seconds: number }>;
+  /** Stable numeric hash of `lastPressedKey`. */
+  lastKeyHash?: number;
 }
-export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0, frame: 0, smooth: {} });
+export const newBusState = (): BusState => ({ last: null, speed: 0, dx: 0, dy: 0, angle: 0, scrollVelocity: 0, scrollDirection: 0, frame: 0, smooth: {}, keyHeldSec: {}, lastKeyHash: 0 });
 
 /** Seconds a `hover` or `press` takes to settle (the spec's 80 ms edge smoothing). */
 export const EDGE_TAU = 0.08;
@@ -81,7 +85,24 @@ export function distanceToRect(r: { x: number; y: number; width: number; height:
   return Math.hypot(dx, dy);
 }
 
-const SERVED = new Set(["pointer", "pointerIn", "pointerInside", "layerState", "proximity", "scroll", "view", "time", "frameDt", "seed", "constant"]);
+const SERVED = new Set([
+  "pointer",
+  "pointerIn",
+  "pointerInside",
+  "layerState",
+  "proximity",
+  "scroll",
+  "view",
+  "time",
+  "frameDt",
+  "seed",
+  "constant",
+  "keyDown",
+  "keyHeld",
+  "keyAxis",
+  "keyLastPressed",
+  "focusVisible",
+]);
 
 /**
  * How far a box has scrolled through the screen: 0 when its top reaches the bottom of the screen, 1 when its bottom leaves the
@@ -114,6 +135,33 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
   }
   state.last = { x, y, scrollY: sc.y };
   const progress = sc.max > 0 ? Math.min(1, Math.max(0, sc.y / sc.max)) : 0;
+
+  const hashKey = (code: string | null): number => {
+    if (!code) return 0;
+    let h = 2166136261;
+    for (let i = 0; i < code.length; i++) {
+      h ^= code.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % 65536;
+  };
+  const keysDown = source.keysDown?.();
+  if (keysDown) {
+    state.keyHeldSec = state.keyHeldSec ?? {};
+    for (const [k, rec] of Object.entries(state.keyHeldSec)) {
+      if (!keysDown.has(k)) rec.seconds = 0;
+    }
+    for (const k of keysDown) {
+      const rec = state.keyHeldSec[k] ?? { frame: -1, seconds: 0 };
+      if (rec.frame !== state.frame && dt > 0) {
+        rec.seconds += Math.min(dt, 1 / 15);
+        rec.frame = state.frame;
+      }
+      state.keyHeldSec[k] = rec;
+    }
+  }
+  const lastKey = source.lastPressedKey?.() ?? null;
+  if (lastKey) state.lastKeyHash = hashKey(lastKey);
 
   const read = (s: Signal): Value => {
     switch (s.kind) {
@@ -167,7 +215,10 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
         return !!(p && r && insideRect(r, x, y));
       }
       case "layerState": {
-        if (s.channel === "focus") return 0; // keyboard focus is not measured
+        if (s.channel === "focus") {
+          const focused = source.focusedLayerId?.();
+          return focused ? focused === s.layer : 0;
+        }
         const r = source.layerRect?.(s.layer);
         const on = !!(p && r && insideRect(r, x, y) && (s.channel === "hover" || p.down));
         const key = `${s.channel}|${s.layer}`;
@@ -179,6 +230,31 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
         state.smooth[key] = cur;
         return cur.value;
       }
+      case "focusVisible": {
+        const focused = source.focusedLayerId?.();
+        const visible = source.focusVisible?.() ?? false;
+        return !!(visible && focused && focused === s.layer);
+      }
+      case "keyDown": {
+        const down = source.keysDown?.();
+        return !!(down && down.has(s.code));
+      }
+      case "keyHeld": {
+        const down = source.keysDown?.();
+        if (!down || !down.has(s.code)) return 0;
+        return state.keyHeldSec?.[s.code]?.seconds ?? 0;
+      }
+      case "keyAxis": {
+        const down = source.keysDown?.();
+        const has = (code: string) => !!(down && down.has(code));
+        const axX = s.preset === "wasd" ? (has("KeyD") ? 1 : 0) - (has("KeyA") ? 1 : 0) : (has("ArrowRight") ? 1 : 0) - (has("ArrowLeft") ? 1 : 0);
+        const axY = s.preset === "wasd" ? (has("KeyS") ? 1 : 0) - (has("KeyW") ? 1 : 0) : (has("ArrowDown") ? 1 : 0) - (has("ArrowUp") ? 1 : 0);
+        if (s.axis === "x") return axX;
+        if (s.axis === "y") return axY;
+        return [axX, axY] as Vec2;
+      }
+      case "keyLastPressed":
+        return state.lastKeyHash ?? 0;
       case "proximity": {
         const r = source.layerRect?.(s.layer);
         return p && r ? distanceToRect(r, x, y, s.measure ?? "edge") : 0;
