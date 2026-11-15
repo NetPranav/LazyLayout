@@ -78,3 +78,4 @@ describe("grouping letters into words and lines (D12)", () => {
     assert.deepEqual(texts(groupLetterBoxes("ab\ncd", boxes, "words")), ["ab", "cd"]);
   });
 });
+

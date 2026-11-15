@@ -27,7 +27,7 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
-import { cannotSplit, measureLettersOf, splitIntoLetters, splitText, animateLetters } from "./splitText";
+import { cannotSplit, measureLettersOf, splitIntoLetters, splitText, animateLetters, unsplitText } from "./splitText";
 import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
 import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
@@ -203,6 +203,29 @@ export function registerEditingCommands(): () => void {
       },
     }));
   }
+  // Design track D12: lines are detected from how the text wraps, so they are detected again after the fonts load or the box changes
+  add(defineTypedCommand({
+    id: "text.redetectLines",
+    title: "Re-detect Lines",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const doc = getDocument();
+      const targets = (id ? [id] : ids()).filter((t) => doc.layers[t]?.properties["group.role"] === "lines");
+      let n = 0;
+      for (const g of targets) {
+        const text = unsplitText(g);
+        if (!text) continue;
+        n++;
+        // the text has to be drawn before it can be measured
+        setTimeout(() => {
+          const out = splitText(text, "lines");
+          if (!out.group && out.why) showToast(out.why);
+        }, 120);
+      }
+      return { redetected: n };
+    },
+  }));
   add(defineTypedCommand({
     id: "text.animateLetters",
     title: "Animate Letters",

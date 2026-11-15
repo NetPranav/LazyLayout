@@ -265,7 +265,8 @@ export function splitIntoLetters(id: string, boxes: readonly LetterBox[], drawn?
       // the group is found again by this mark, not by its name (which the user may change); it is named with the whole text for a screen reader
       const wholeText = typeof p["content.text"] === "string" && p["content.text"] !== "" ? (p["content.text"] as string).replace(/\s*\n+\s*/g, " ") : boxes.map((b) => b.char).join("");
       const srcRole = typeof p["a11y.role"] === "string" && p["a11y.role"] !== "" ? (p["a11y.role"] as string) : "group";
-      documentCommands.updateProps(group, { "group.role": kind, "a11y.label": wholeText, "a11y.role": srcRole });
+      const source = JSON.stringify({ name: src.name, properties: p, index: Math.max(0, (src.parentId ? (getDocument().layers[src.parentId]?.children ?? []) : []).indexOf(id)) });
+      documentCommands.updateProps(group, { "group.role": kind, "a11y.label": wholeText, "a11y.role": srcRole, ...(source.length <= 20000 ? { "split.source": source } : {}) });
       if (rot !== 0) {
         const groupLayer = getDocument().layers[group];
         const gp = groupLayer.properties;
@@ -418,4 +419,28 @@ export function splitText(id: string, kind: SplitKind): { group: string | null; 
   }
   const group = splitIntoLetters(id, boxes, { width: measure.width, height: measure.height }, kind);
   return { group, why: group ? null : "That text could not be split." };
+}
+
+/**
+ * Puts a split group back as the one text it was made from (Design track D12): the whole text, with its own settings, where the group
+ * is. Returns the text's id, or null when the group has no record of its source (a group made before this, or by hand).
+ */
+export function unsplitText(groupId: string): string | null {
+  const group = getDocument().layers[groupId];
+  const raw = group?.properties["split.source"];
+  if (!group || typeof raw !== "string" || raw === "") return null;
+  let source: { name?: string; properties?: Record<string, PropValue>; index?: number };
+  try {
+    source = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!source.properties || typeof source.properties !== "object") return null;
+  let made: string | null = null;
+  transaction("Re-detect lines", () => {
+    const siblings = group.parentId ? (getDocument().layers[group.parentId]?.children ?? []) : [];
+    made = documentCommands.addLayer({ archetype: "text", parentId: group.parentId, name: source.name ?? "Text", properties: source.properties as Record<string, PropValue>, index: Math.max(0, siblings.indexOf(groupId)) });
+    deleteLayers([groupId]);
+  });
+  return made;
 }

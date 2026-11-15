@@ -61,6 +61,14 @@ export function useLeftPanelData(
     const offFx = registerFxCommands(); // the effect stack and motion blur (Phase 75)
     const offLinks = registerLinkCommands(); // property links, the pick-whip (Phase 76)
     const offExpressions = registerExpressionCommands(); // expressions (Phase 77)
+    // Design track D12: lines are re-detected when fonts finish loading (a text that wrapped with a fallback font wraps differently)
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    const onFonts = () => {
+      const doc = getDocument();
+      const groups = Object.values(doc.layers).filter((l) => l.properties["group.role"] === "lines" && typeof l.properties["split.source"] === "string" && l.properties["split.source"] !== "").map((l) => l.id);
+      for (const g of groups) invokeCommand("text.redetectLines", { id: g });
+    };
+    fonts?.addEventListener?.("loadingdone", onFonts);
     const offStates = registerStateCommands(); // states (Design track D15)
     const offDrivers = registerDriverCommands(); // drivers: the pointer, scroll and time (Design track D4)
     const offScroll = registerScrollCommands(); // a clip's scroll range, scrub and pin (Phase 81; Design track D11)
@@ -77,6 +85,7 @@ export function useLeftPanelData(
       offExpressions();
       offDrivers();
       offStates();
+      fonts?.removeEventListener?.("loadingdone", onFonts);
       offScroll();
       offScrollClip();
     };
