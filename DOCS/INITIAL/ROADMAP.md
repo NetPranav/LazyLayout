@@ -407,7 +407,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 🚧 |
 | 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 🚧 |
 | 110 | Modifiers I: repeat, trim, offset & round → *Design track D8 (repeat)* | 109 | — (new in v4.1) | 3 | 🚧 |
-| 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 📋 |
+| 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 🚧 |
 | 112 | Shape generators: scatter, Voronoi & flow lines | 110 | — (new in v4.1) | 3 | 📋 |
 | 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 📋 |
 | 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 📋 |
@@ -1560,11 +1560,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** built (Lane C) as Phase 109 modifiers: **Repeat** (in a line with steps for position, turn and scale; round a circle with radius and sweep, each copy turned to face out; or a grid), **Trim** (start, end, offset in degrees, each subpath on its own, wrapping round the closing point), **Offset** (round, mitre or bevel corners) and **Round corners** (sharp vertices only, cut back to fit). Verified (`modifiers.test.ts`) against After Effects' documented rules worked out by hand, within 0.5 px: copy i of a repeater is moved i steps, turned i turns and scaled by the scale to the power i; 12 petals sit on the circle at 30° steps; trimming 0–25% of a circle gives a quarter of its length from the path's start, and a 90° offset moves the window by a quarter; half a rectangle's outline ends at its far corner; rounded and offset rectangles have their exact areas. **Not done:** no After Effects or Lottie player is available here, so there are no Lottie fixtures; the repeater's per-copy **opacity and colour steps** are not in the modifier (one path has one paint): they are the layer-level Repeat of D8 (`repeat.fade`), which draws real copies.
 
 ### Phase 111 · Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat
-**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Twist, bend, wiggle (seed, size, detail, and a speed used once the clock plays), zig-zag, pucker and bloat, and spherize. Wiggle is seeded, so a design looks the same every time it opens.
 
 **You'll see:** a hand-drawn wobble on any outline, with one Amount slider.
 **Done when:** every modifier is deterministic for a seed and matches stored references.
+
+**Status check (2026-11-15), 🚧:** built (Lane C) as six modifiers for the Phase 109 stack (`core/paths/warps.ts`): **Twist** (each point turned about the centre in proportion to its distance), **Bend** (the width becomes an arc of the angle), **Wiggle** (seeded smooth noise across the outline: amount, detail, seed; a closed outline's wobble meets itself), **Zig-zag** (After Effects' rule: ridges per segment, the amount either side, corner or smooth points), **Pucker & bloat** (Illustrator's rule: the anchors stay, the handles move toward or away from the centre) and **Spherize** (bulge or pinch about the centre). Warps that move every point resample the outline every 2 px and fit curves back within 0.1 px. They appear in the Modifiers section with one Amount control each (Wiggle adds Detail and Seed). Verified (`warps.test.ts`, 7 tests): a centred circle twisted 180° stays on its radius within 0.15 px; a 100 px line bent 90° keeps its length within 0.25 px and lies on the arc; spherize moves a circle to the radius its rule gives; a wiggle never strays more than its amount, closes where it starts, repeats exactly for a seed and changes with another; zig-zag peaks land exactly half a ridge apart; pucker and bloat keep every anchor; **nine stored references** (`fixtures/warps.json`) match to a thousandth of a px, and were drawn and checked by eye when stored. **Not done:** Wiggle's Speed is stored but nothing plays it yet (it needs the clock to drive modifier parameters, the same gap as Phase 109's keyframing); not run in a browser on its own (the Modifiers section that shows them is covered by `modifiers.spec.ts`).
 
 ### Phase 112 · Shape generators: scatter, Voronoi & flow lines
 **Needs:** 110 · **Was:** — (new in v4.1) · **Status:** 📋

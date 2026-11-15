@@ -378,7 +378,7 @@ export function registerEditingCommands(): () => void {
   // FigCraft port F4: vector networks on path layers
   add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
   // Phase 109: the modifier stack
-  const modType = z.enum(["repeat", "trim", "offset", "round"]);
+  const modType = z.enum(["repeat", "trim", "offset", "round", "twist", "bend", "wiggle", "zigzag", "pucker", "spherize"]);
   const modParams = z.record(z.string(), z.union([z.number(), z.string()]));
   add(defineTypedCommand({ id: "layer.addModifier", title: "Add Modifier", category: "Layer", args: z.object({ id: z.string().optional(), type: modType, params: modParams.optional() }), run: ({ id, type, params }) => ({ id: addModifier(id ?? ids()[0] ?? "", type, params) }) }));
   add(defineTypedCommand({ id: "layer.setModifier", title: "Change Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string(), on: z.boolean().optional(), params: modParams.optional() }), run: ({ id, modifier, on, params }) => ({ ok: setModifier(id ?? ids()[0] ?? "", modifier, { on, params }) }) }));

@@ -17,9 +17,10 @@
 
 import { BezPath, segmentEval, segmentStart, splitSubpaths, type Pt, type Segment } from "../geometry/bezpath";
 import { offsetPath } from "./pathTools";
+import { bend, puckerBloat, spherize, twist, wiggle, zigzag } from "./warps";
 
-export type ModifierType = "repeat" | "trim" | "offset" | "round";
-export const MODIFIER_TYPES: readonly ModifierType[] = ["repeat", "trim", "offset", "round"];
+export type ModifierType = "repeat" | "trim" | "offset" | "round" | "twist" | "bend" | "wiggle" | "zigzag" | "pucker" | "spherize";
+export const MODIFIER_TYPES: readonly ModifierType[] = ["repeat", "trim", "offset", "round", "twist", "bend", "wiggle", "zigzag", "pucker", "spherize"];
 
 export interface Modifier {
   id: string;
@@ -361,6 +362,52 @@ export const MODIFIER_DEFS: Readonly<Record<ModifierType, ModifierDef>> = {
     label: "Round corners",
     params: [{ key: "radius", label: "Radius", kind: "number", min: 0, max: 5000, default: 8, unit: "px", simple: true }],
     apply: (i, p) => round(i, p),
+  },
+  // Phase 111: warps (core/paths/warps.ts)
+  twist: {
+    type: "twist",
+    label: "Twist",
+    params: [{ key: "angle", label: "Amount", kind: "number", min: -1080, max: 1080, default: 90, unit: "°", simple: true }],
+    apply: twist,
+  },
+  bend: {
+    type: "bend",
+    label: "Bend",
+    params: [{ key: "angle", label: "Amount", kind: "number", min: -359, max: 359, default: 45, unit: "°", simple: true }],
+    apply: bend,
+  },
+  wiggle: {
+    type: "wiggle",
+    label: "Wiggle",
+    params: [
+      { key: "size", label: "Amount", kind: "number", min: 0, max: 500, default: 4, unit: "px", simple: true },
+      { key: "detail", label: "Detail", kind: "number", min: 0.1, max: 200, default: 6, simple: true },
+      { key: "seed", label: "Seed", kind: "number", min: 0, max: 1_000_000, default: 1, simple: true },
+      { key: "speed", label: "Speed", kind: "number", min: 0, max: 100, default: 0, simple: false },
+    ],
+    apply: (i, p) => wiggle(i, p),
+  },
+  zigzag: {
+    type: "zigzag",
+    label: "Zig-zag",
+    params: [
+      { key: "size", label: "Amount", kind: "number", min: 0, max: 500, default: 6, unit: "px", simple: true },
+      { key: "ridges", label: "Ridges", kind: "number", min: 1, max: 200, default: 5, simple: true },
+      { key: "points", label: "Points", kind: "choice", choices: ["corner", "smooth"], default: "corner", simple: true },
+    ],
+    apply: (i, p) => zigzag(i, p),
+  },
+  pucker: {
+    type: "pucker",
+    label: "Pucker & bloat",
+    params: [{ key: "amount", label: "Amount", kind: "number", min: -200, max: 200, default: 30, unit: "%", simple: true }],
+    apply: puckerBloat,
+  },
+  spherize: {
+    type: "spherize",
+    label: "Spherize",
+    params: [{ key: "amount", label: "Amount", kind: "number", min: -100, max: 100, default: 50, unit: "%", simple: true }],
+    apply: spherize,
   },
 };
 
