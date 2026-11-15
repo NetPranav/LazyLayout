@@ -492,7 +492,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 🚧 |
 | 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 🚧 |
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 🚧 |
-| 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 📋 |
+| 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 🚧 |
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 📋 |
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 📋 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
@@ -2965,9 +2965,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** plane offsets match the projection at tape checkpoints; the export matches the stage.
 
 ### Phase 191 · Cursor & overlay layer
-**Needs:** 187, 155, 180 · **Was:** v3 66 · **Status:** 📋
-- [ ] One cursor layer per page: follower, blob, trail, splash, target brackets, image trail, magnetic snap. Cursor states from what's under the pointer; hiding the native cursor is opt-in and never over text inputs, under reduced motion or on touch; focus rings stay visible. Runs live only in Preview and the Playground.
-- [ ] **v4.1:** cursors read roles and outlines (Phases 155 and 180): brackets that snap to a button's real corners, a crosshair that measures what it locks onto, a swarm that flows around hovered buttons.
+**Needs:** 187, 155, 180 · **Was:** v3 66 · **Status:** 🚧
+- [x] One cursor layer per page: follower, blob, trail, splash, target brackets, image trail, magnetic snap. Cursor states from what's under the pointer; hiding the native cursor is opt-in and never over text inputs, under reduced motion or on touch; focus rings stay visible. Runs live only in Preview and the Playground.
+- [x] **v4.1:** cursors read roles and outlines (Phases 155 and 180): brackets that snap to a button's real corners, a crosshair that measures what it locks onto, a swarm that flows around hovered buttons.
 
 **You'll see:** custom cursors in Preview.
 **Done when:** 8 cursor references pass mouse, pen and touch profiles; axe and keyboard-only journeys pass with the cursor layer on.
