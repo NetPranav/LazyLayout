@@ -340,7 +340,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 🚧 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 🚧 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 🚧 |
-| 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
+| 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 🚧 |
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
@@ -2092,8 +2092,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** loops never show a seam over 10 minutes of tape; the export matches the stage.
 
 ### Phase 150 · Drag & drop between layers
-**Needs:** 148 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Drop zones, sortable lists and grids with animated reordering, swipe-to-remove rows, and drop events for rules and Blueprints.
+**Needs:** 148 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Drop zones, sortable lists and grids with animated reordering, swipe-to-remove rows, and drop events for rules and Blueprints (`src/core/signals/dragAndDrop.ts`).
 
 **You'll see:** reorder cards by dragging them, with the others sliding out of the way.
 **Done when:** a 15-step reorder journey ends in the expected order in 3 browsers and with the keyboard.
