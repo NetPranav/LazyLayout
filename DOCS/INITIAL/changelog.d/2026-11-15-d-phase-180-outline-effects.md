@@ -1,0 +1,1 @@
+- [Phase 180] Implemented outline & SDF-driven edge effects (`src/core/gpu/outlineEffects.ts`): `electric_border`, `travelling_star`, `corner_light_pour`, `liquid_metal_fill`, `cursor_rim_glow`, and `neon_pulse` across 5 shape presets with T0 low-tier quality scaling (`PR #156`).

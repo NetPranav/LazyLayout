@@ -481,7 +481,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 🚧 |
 | 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 🚧 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 🚧 |
-| 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
+| 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 🚧 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 📋 |
 | 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
@@ -2886,8 +2886,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 8 effect-layer references match within the GPU tolerance in 3 browsers; text underneath stays real in the DOM.
 
 ### Phase 180 · Outline effects: light that rides edges
-**Needs:** 179 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Effects driven by a layer's outline and distance field: electric borders, a star that travels the exact outline, light that pours over corners, liquid metal inside a logo, and rims that brighten near the cursor.
+**Needs:** 179 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Effects driven by a layer's outline and distance field: electric borders, a star that travels the exact outline, light that pours over corners, liquid metal inside a logo, and rims that brighten near the cursor.
 
 **You'll see:** a crackling electric border on any button that follows its real corners.
 **Done when:** 6 outline references match within the GPU tolerance on 5 shapes each; budgets hold on low tiers.
