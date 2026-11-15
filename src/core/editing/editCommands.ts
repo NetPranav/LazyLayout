@@ -36,6 +36,7 @@ import { BLEND_MODES } from "../paint/color";
 import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
 import { outlineStrokes } from "./outlineStroke";
+import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
 import { register3dCommands } from "../3d/commands";
 import { register3dPrimitiveCommands } from "../3d/primitives";
@@ -375,6 +376,15 @@ export function registerEditingCommands(): () => void {
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
   // FigCraft port F4: vector networks on path layers
   add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
+  // Phase 106: path operations
+  const strength = z.number().min(0).max(1);
+  add(defineTypedCommand({ id: "vector.offset", title: "Offset Path", category: "Layer", args: z.object({ ids: targets, distance: z.number().min(-2000).max(2000), join: z.enum(["round", "miter", "bevel"]).default("round") }), run: ({ ids: t, distance, join }) => ({ changed: offsetLayers(t ?? ids(), distance, join) }) }));
+  add(defineTypedCommand({ id: "vector.simplify", title: "Simplify Path", category: "Layer", args: z.object({ ids: targets, strength: strength.default(0.5) }).default({ strength: 0.5 }), run: ({ ids: t, strength: s }) => ({ changed: simplifyLayers(t ?? ids(), s) }) }));
+  add(defineTypedCommand({ id: "vector.smooth", title: "Smooth Path", category: "Layer", args: z.object({ ids: targets, strength: strength.default(0.5) }).default({ strength: 0.5 }), run: ({ ids: t, strength: s }) => ({ changed: smoothLayers(t ?? ids(), s) }) }));
+  add(defineTypedCommand({ id: "vector.reverse", title: "Reverse Path Direction", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: reverseLayers(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "vector.divide", title: "Divide", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: divideLayers(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "vector.knife", title: "Knife", category: "Layer", args: z.object({ ids: targets, points: z.array(z.tuple([z.number(), z.number()])).min(2).max(10_000) }), run: ({ ids: t, points }) => ({ ids: knifeLayers(t ?? ids(), points.map(([x, y]) => ({ x, y }))) }) }));
+  add(defineTypedCommand({ id: "vector.join", title: "Join Paths", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ id: joinLayers(t ?? ids()) }) }));
   add(defineTypedCommand({ id: "vector.makeNetwork", title: "Make Vector Network", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: makeNetwork(t ?? ids()) }) }));
   add(defineTypedCommand({
     id: "vector.paintBucket",

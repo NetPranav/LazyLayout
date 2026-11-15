@@ -226,6 +226,11 @@ export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: Fill
   return curved(out, [a, b]);
 }
 
+/** A path's separate pieces: each connected area (an outline with its holes) as a path of its own. */
+export function piecesOf(path: BezPath, rule: FillRule = "nonzero"): BezPath[] {
+  return pathRegion(path, rule).map((poly) => curved([poly], [path]));
+}
+
 /** A path's fill as plain, non-overlapping shapes (FigCraft `simplify`). */
 export function simplifyPath(path: BezPath, rule: FillRule = "nonzero"): BezPath {
   return curved(pathRegion(path, rule), [path]);

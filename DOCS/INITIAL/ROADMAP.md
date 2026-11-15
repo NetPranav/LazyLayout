@@ -402,7 +402,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 🚧 |
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 🚧 |
 | 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 🚧 |
-| 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
+| 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 🚧 |
 | 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
 | 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 📋 |
 | 109 | Modifier stack | 17, 103 | — (new in v4.1) | 3 | 📋 |
@@ -1514,11 +1514,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** the Shape Builder was built by the FigCraft port (`src/core/editing/shapeBuilder.ts`: regions of the selection, merge, remove, strokes as their own regions, one undo step each; the `shapeBuilder.merge` and `shapeBuilder.remove` commands; the tool on Shift+M in the legacy editor). **Built now (Lane C):** the 12-step journey (`shapeBuilderJourney.test.ts`): three overlapping circles make seven regions whose areas match the analytic lenses; every region, merge and removal is curves with no straight side; undo and redo restore each step. It found a real bug: merging regions that had been cut from curves made the clipper fail on edges that nearly coincide. Fixed in `pathOps.ts`: a result keeps the exact polygons it was made from, so it is combined again as those, and the clipper retries on a fine grid if it still fails. **Not done:** the journey runs as a unit test, not in three browsers; the result is a plain path layer, not a live boolean group as the checklist asks (kept on purpose: the FigCraft behaviour, where the pieces left over stay where they are, needs plain layers; a live-group result is a separate decision); the tool is reachable only in the legacy editor.
 
 ### Phase 106 · Path operations: offset, outline, simplify, divide & knife
-**Needs:** 103 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 103 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Offset path (round, mitre, bevel joins), outline stroke (a stroke becomes a filled shape), simplify and smooth with a strength slider, divide (cut every overlap into its own piece), knife (draw a line to cut), join, reverse and expand.
 
 **You'll see:** turn a stroke into a filled shape, or cut a shape in two with a knife line.
 **Done when:** 20 reference shapes per operation match stored results within 0.25 px.
+
+**Status check (2026-11-15), 🚧:** built (Lane C). `src/core/paths/pathTools.ts`: offset with round, mitre and bevel corners (the result fitted back into curves), simplify and smooth by a strength, divide, knife (a straight or bent line, carried on past its ends), join and reverse; outline stroke was already `strokeOutline`. `src/core/editing/pathToolOps.ts` applies them to layers, one undo step each, and they are typed commands (`vector.offset`, `vector.simplify`, `vector.smooth`, `vector.reverse`, `vector.divide`, `vector.knife`, `vector.join`), so the palette and the agent bridge reach them. Verified (`pathTools.test.ts`, 13 tests; `pathToolOps.test.ts`, 5): **20 seeded shapes per operation**, checked against geometric facts instead of stored copies of our own output: every point of an offset is the offset distance from the shape within 0.25 px (outward and inward); an outlined stroke stays within half its width of the line and has length × width of area; a simplified path stays within its tolerance and loses at least three quarters of its points; divided pieces cover the union and the shared piece is the intersection; knife pieces add up to the shape and none crosses the line; reversing twice gives the path back. Exact areas for a rectangle grown with each corner style. **Not done:** no knife tool to draw the line on the canvas (the command takes the points), and no buttons or strength slider in the new editor's inspector; the operations reach the new editor only through the command palette.
 
 ### Phase 107 · Smooth corners & corner styles
 **Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋

@@ -229,6 +229,20 @@ function reshape(id: string, area: BezPath): string | null {
   return created;
 }
 
+// --- shared with the path operations (Phase 106) ---------------------------------------
+
+/** A layer's filled area on the canvas, and whether it fills even-odd; null when it has none (lines, open paths, text). */
+export const layerCanvasArea = (id: string): { path: BezPath; evenOdd: boolean } | null => worldArea({ id, stroke: false });
+
+/** Whether a layer can be reshaped by a path operation (as the Shape Builder takes it: visible, unlocked, a shape). */
+export const canReshape = (id: string): boolean => usable(layers()[id], layers());
+
+/** Replaces a layer's shape with a canvas-space area, keeping its place and style. Returns the id that now holds it. */
+export const reshapeLayer = (id: string, area: BezPath): string | null => reshape(id, area);
+
+/** Adds a path layer for a canvas-space area just above `styleOf`, styled like its fill. */
+export const addShapeAbove = (styleOf: string, area: BezPath): string | null => createFrom({ id: styleOf, stroke: false }, area);
+
 export interface BuildResult {
   created: string | null;
   changed: string[];
