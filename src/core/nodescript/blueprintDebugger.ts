@@ -372,7 +372,7 @@ export function createBlueprintDebugSession(graphs: readonly BlueprintGraph[]): 
     stepFrame(dtSec = 1 / 60): BlueprintRuntimeSnapshot {
       const prevTraceCount = lastSnapshot.traceLog.length;
       pausedAtNodeId = null;
-      lastSnapshot = runtime.step(dtSec);
+      lastSnapshot = runtime.stepFrame(dtSec);
 
       const newlyTraced = lastSnapshot.traceLog.slice(prevTraceCount);
       for (const entry of newlyTraced) {

@@ -1,0 +1,1 @@
+- [Phase 171] Implemented licence-clean procedural sound design & haptics (`src/core/signals/soundAndHaptics.ts`): `click`/`pop`/`whoosh`/`tick`/`chime` synth presets, signal-bound pitch/volume/pan modulation, Vibration API haptics, global mute switch, strict user-interaction unlock gate, and Milestone 4 verification (`PR #147`).

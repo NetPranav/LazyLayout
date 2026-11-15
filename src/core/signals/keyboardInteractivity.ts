@@ -198,9 +198,10 @@ export function attachScopedKeyboardHandlers(rootEl, onKey) {
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable) return;
     onKey(e);
   };
+  const eventName = "keydown";
   rootEl.setAttribute("${rootAttr}", "1");
-  rootEl.addEventListener("keydown", onKeyDown);
-  return () => rootEl.removeEventListener("keydown", onKeyDown);
+  rootEl.addEventListener(eventName, onKeyDown);
+  return () => rootEl.removeEventListener(eventName, onKeyDown);
 }
 `;
 }

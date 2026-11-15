@@ -361,7 +361,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 🚧 |
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 🚧 |
 | 170 | Spawner | 169 | v3 89.4 | 4 | 🚧 |
-| 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
+| 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 🚧 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
@@ -2240,8 +2240,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the click-confetti build stays within its pool cap and matches tape replays.
 
 ### Phase 171 · Sound design & haptics
-**Needs:** 99, 169 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] An original, licence-clean library of interface sounds (clicks, pops, whooshes, ticks, chimes) made for LazyLayout; a sound on any event; pitch, volume and pan bound to inputs (a faster drag sounds higher); vibration on phones that support it; one mute switch, and nothing plays before the user interacts.
+**Needs:** 99, 169 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] An original, licence-clean library of interface sounds (clicks, pops, whooshes, ticks, chimes) made for LazyLayout; a sound on any event; pitch, volume and pan bound to inputs (a faster drag sounds higher); vibration on phones that support it; one mute switch, and nothing plays before the user interacts.
 
 **You'll see:** buttons that click and drags that whoosh, with a global mute.
 **Done when:** sounds fire at the expected tape frames; nothing plays before interaction; the export matches.

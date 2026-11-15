@@ -339,7 +339,7 @@ export interface PhysicsWorld2D {
   createSnapshot(): PhysicsSnapshot;
   restoreSnapshot(snapshot: PhysicsSnapshot): void;
   getSavedSnapshots(): readonly PhysicsSnapshot[];
-  seekToTime(targetTimeSec: number): readonly PhysicsSnapshot | PhysicsSnapshot;
+  seekToTime(targetTimeSec: number): PhysicsSnapshot;
 }
 
 /**
