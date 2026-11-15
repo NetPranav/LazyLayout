@@ -450,7 +450,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 🚧 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 🚧 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 🚧 |
-| 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
+| 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 🚧 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
@@ -2665,8 +2665,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 10 drag references match tapes in 3 browsers; keyboard equivalents pass.
 
 ### Phase 149 · Carousels, scrollers & seamless loops
-**Needs:** 81, 128, 148 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Scrollers with snapping and momentum, endless looping of any content, marquees whose speed follows scroll velocity, and 3D carousels from the Stage 3 arrangements, driven by drag, wheel, arrow keys and autoplay.
+**Needs:** 81, 128, 148 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Scrollers with snapping and momentum, endless looping of any content, marquees whose speed follows scroll velocity, and 3D carousels from the Stage 3 arrangements, driven by drag, wheel, arrow keys and autoplay (`src/core/signals/carouselsAndLoops.ts`).
 
 **You'll see:** an endless logo marquee, and a 3D ring of cards you spin by dragging.
 **Done when:** loops never show a seam over 10 minutes of tape; the export matches the stage.
