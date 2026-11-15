@@ -25,22 +25,23 @@ Every day:
 
 Those are the only kinds of branches. Anything else on GitHub is old and can be deleted.
 
-## 1. The two lanes
+## 1. The lanes
 
-| | **Lane A** | **Lane B** |
-|---|---|---|
-| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` |
-| Phases | **13–52**: Stage 1, the Figma / Wix-style viewport | **53–102**: Stage 2, the After Effects-style animation engine |
-| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` |
-| Starts at | Phase 13 (in progress) | Phase 53 |
+| | **Lane A** | **Lane B** | **Lane C** | **Lane D** |
+|---|---|---|---|---|
+| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` | Project owner (admin) | Stage 4 worker (opened 2026-11-15 by project owner) |
+| Phases | **13–52** + Design track (**D1–D24**): Stage 1 viewport & Design track | **53–102**: Stage 2 animation engine | **103–131**: Stage 3 Design depth | **132–202**: Stage 4 Interactive & complex animation |
+| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` | `c/phase-NN-short-name` | `d/phase-NN-short-name` |
+| Starts at | Phase 13 (in progress) | Phase 53 | Phase 103 (active in #107) | Phase 132 (active) |
 
 - **Since ROADMAP v5 (2026-11-14) the order of work is the release plan (ROADMAP §2), not the phase number.** Both lanes work in the active release only (Law 21). When a release opens, the two lanes split its work packages between them and say so in the PR that opens it. The bullets below say whose area a phase is in; they no longer say when it is built.
 - **Lane C (since 2026-11-14, by the owner):** Stage 3, Design depth (Phases 103–131), with branch prefix `c/`. It needs only Stage 1, so it waits on neither lane. It replaces the earlier proposal that Stage 3 be Lane A's.
+- **Lane D (since 2026-11-15, by the project owner):** Stage 4, Interactive & complex animation (Phases 132–202), with branch prefix `d/`. Works step by step from 132 to 202 with batched verification every 10th phase (141, 151, 161, 171, 181, 191, 202).
 - **Inside a lane, the phase number was the order until v5** (the old Law 18). Take the lowest phase in your lane that isn't ✅.
 - A phase may start only when **every phase in its "Needs" line is ✅ on `main`**. This is ROADMAP §0 rule 7, and it's the only thing that links the two lanes. §2 lists every place where it matters.
 - **Stage 3, Design depth (Phases 103–131, added in ROADMAP v4.1 on 2026-10-21), is proposed for Lane A** after Phase 52, with branch prefix `a/`. Every phase in it needs only Stage 1, so it never waits on Lane B. It becomes Lane A's once Lane B agrees, in the v4.1 PR or in a message.
 - **Since 2026-11-13 Lane A works the Design master track (D1–D21 in ROADMAP.md)**, pulled forward by the project owner. It takes over Phases 110 (repeat), 141, 144, 152, 154, 157 and 188–190, and wires the UI for Lane B's merged engine work (73, 76, 77). **On 2026-11-14 the project owner (admin) took over D11 to D20 for Lane A**, including the items that were Lane B's: **D11** (Phases 81, 82), **D12** (83, 84), **D15** (78) and Phase 99 (video layers, needed by tracking). Lane A builds them without waiting for agreement from Lane B. Lane B's work already on `main` is built on, not replaced; the hot-spot rules (§3, §4) and the Definition of Done still apply.
-- Stage 4 onward (132+) isn't assigned yet. Agree on it before either of you starts it. v4.1 renumbered every phase from 103 on; Phases 1–102 kept their numbers, and the old-to-new table is at the end of ROADMAP §7.
+- **Lane D coordinates with Lane A's Design track (D4, D6, D7, D9, D10, D13, D14, D18)** already landed on `main` / PR #106, building directly on `src/core/bindings/*`, `src/core/text/splitText.ts`, `src/core/render/sequence.ts`, and `src/core/export/runtime/smoothScroll.ts` rather than replacing them.
 - Laws 1–25 and the Definition of Done (ROADMAP §3, §4) apply to both lanes. Nothing in this file relaxes them.
 
 ## 2. Where Lane B waits on Lane A
