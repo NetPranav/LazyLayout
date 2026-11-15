@@ -67,6 +67,7 @@ import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
 import { ColorToolsSection } from "./sections/ColorToolsSection";
+import { TextPathSection } from "./sections/TextPathSection";
 import { isLettersGroup } from "@/core/editing/splitText";
 import { getDocument } from "@/core/store/documentState";
 
@@ -303,6 +304,15 @@ export function getInspectorDesignSections(
             title: "Typography",
             children: <TypographySection {...sectionProps} />,
             moreContent: <TypographyOptions {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(archetype === "text"
+      ? [
+          {
+            id: "text-path",
+            title: "Text on path",
+            children: <TextPathSection {...sectionProps} />,
           },
         ]
       : []),

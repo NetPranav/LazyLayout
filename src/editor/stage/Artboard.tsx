@@ -18,6 +18,7 @@ import { CornerPinOverlay } from "./CornerPinOverlay";
 import { WarpMeshOverlay } from "./WarpMeshOverlay";
 import { MeshOverlay } from "./MeshOverlay";
 import { WidthOverlay } from "./WidthOverlay";
+import { TextPathOverlay } from "./TextPathOverlay";
 import { DraftPath } from "./DraftPath";
 import { LayoutOverlay, FlowDropLine } from "./layout-overlay";
 import { PathEditLayer } from "./pen/PathEditLayer";
@@ -58,6 +59,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useBreakpointStore, useEditBreakpointId } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { getDocument } from "@/core/store/documentState";
+import { frameScheduler } from "@/core/time/scheduler";
 import { ViewportInteraction } from "../viewport3d";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
@@ -132,6 +134,27 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
     sel?.addRange(range);
     // Take the look of the drawn text itself (whatever the engine computed), and hide the drawn copy while this one is open.
     const drawn = document.querySelector<HTMLElement>(`[data-archetype][data-element-id="${layer.id}"]`);
+    // Phase 124: text on a path is edited in place: the curve stays and shows each change as it is typed (this field is
+    // a small bar above it), and is put back as the document has it when editing ends
+    const onPath = drawn?.hasAttribute("data-text-path");
+    if (onPath) {
+      const node = drawn!.querySelector("textPath")?.firstChild;
+      const was = node && node.nodeType === 3 ? node.nodeValue : null;
+      const mirror = () => {
+        if (node && node.nodeType === 3) node.nodeValue = el.innerText.replace(/\n/g, " ");
+      };
+      el.addEventListener("input", mirror);
+      return () => {
+        el.removeEventListener("input", mirror);
+        if (node && was !== null) node.nodeValue = was;
+        // what the document says now (the edit, or the words as they were), once React has drawn it
+        const off = frameScheduler.register("overlay", () => {
+          off();
+          const t = getDocument().layers[layer.id]?.properties["content.text"];
+          if (node && node.isConnected && typeof t === "string") node.nodeValue = t.replace(/\n/g, " ");
+        });
+      };
+    }
     if (drawn) {
       const cs = getComputedStyle(drawn);
       for (const prop of ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "color", "textAlign", "textTransform", "whiteSpace", "overflowWrap", "textDecorationLine", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
@@ -149,6 +172,7 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
   const chosen = p["typography.whiteSpace"];
   const space = chosen === "nowrap" || chosen === "pre" || chosen === "normal" ? chosen : null;
   const wraps = sizing !== "autoWidth" && space !== "nowrap" && space !== "pre";
+  const onPath = typeof p["typography.textPath"] === "string" && p["typography.textPath"] !== "";
   return (
     <div
       ref={ref}
@@ -219,6 +243,10 @@ const InlineTextEditor: React.FC<{ layer: NonNullable<ArtboardProps["layers"]>[s
         textAlign: (p["typography.textAlign"] as React.CSSProperties["textAlign"]) ?? "left",
         textTransform: (p["typography.textTransform"] as React.CSSProperties["textTransform"]) ?? "none",
         textDecorationLine: p["typography.textDecoration"] && p["typography.textDecoration"] !== "none" ? String(p["typography.textDecoration"]) : undefined,
+        // Phase 124: on a path, a one-line bar above the text; the curve itself shows the words as they are typed
+        ...(onPath
+          ? { top: -40, height: "auto", minHeight: 28, width: "max-content", minWidth: 160, maxWidth: 480, whiteSpace: "pre" as const, fontSize: 14, lineHeight: "28px", padding: "0 8px", background: "var(--ll-surface-raised, #ffffff)", color: "var(--ll-text-primary, #111111)", borderRadius: 6, textAlign: "left" as const }
+          : {}),
       }}
     />
   );
@@ -1106,6 +1134,7 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {/* Mesh gradient points (Phase 115), while a mesh fill is being edited */}
       <MeshOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
       <WidthOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} />
+      <TextPathOverlay selectedIds={selectedIds} elements={elements} zoom={zoomScale} editingText={editingText} />
 
       {/* 6a. Motion Path Overlay (ROADMAP Phase 69: Motion paths on the canvas) */}
       <MotionPathOverlay

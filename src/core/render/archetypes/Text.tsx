@@ -198,6 +198,29 @@ function paragraphSettings(resolved: ArchetypeRenderProps["resolved"], text: str
 }
 
 /**
+ * Phase 124: an animated start. The motion engine writes styles, not SVG attributes, so it writes the start as the CSS
+ * variable `--ll-text-path-start` on the text's `<svg>`; this moves the `<textPath>`'s `startOffset` to follow it,
+ * and back to the drawn `offset` when the variable goes. Drawn inside the `<svg>`: it finds its own parent.
+ */
+function AnimatedStart({ offset }: { offset: string }) {
+  const ref = React.useRef<SVGGElement>(null);
+  React.useEffect(() => {
+    const svg = ref.current?.ownerSVGElement;
+    const tp = svg?.querySelector("textPath");
+    if (!svg || !tp || typeof MutationObserver === "undefined") return;
+    const sync = () => {
+      const v = parseFloat(svg.style.getPropertyValue("--ll-text-path-start"));
+      tp.setAttribute("startOffset", Number.isFinite(v) ? `${v}%` : offset);
+    };
+    sync();
+    const watch = new MutationObserver(sync);
+    watch.observe(svg, { attributes: true, attributeFilter: ["style"] });
+    return () => watch.disconnect();
+  }, [offset]);
+  return <g ref={ref} aria-hidden="true" />;
+}
+
+/**
  * Text on a path (FigCraft port F8): the baseline follows the path, the text starting at `start` along it and aligned
  * there by the horizontal alignment (left starts, centre centres, right ends at it); flipped, it runs along the other
  * side. The browser places the glyphs (SVG `<textPath>`); glyphs past an open path's end are hidden.
@@ -209,16 +232,21 @@ function TextOnPath({ layer, resolved, nodeRef, path, text, runs, box }: Archety
   const align = resolved.str("typography.textAlign", "left");
   const anchor = align === "center" ? "middle" : align === "right" ? "end" : "start";
   const typo = textTypography(resolved);
+  // Phase 124: the start as its own number (in %) when set, else the one stored with the path
+  const own = resolved.get("typography.textPathStart");
+  const start = layer.properties["typography.textPathStart"] !== undefined && typeof own === "number" && Number.isFinite(own) ? own / 100 : path.start;
+  const offset = `${Math.round(start * 10000) / 100}%`;
   return (
-    <svg ref={nodeRef as React.Ref<SVGSVGElement>} data-element-id={layer.id} data-archetype="text" data-text-path="" width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ ...box, width, height, display: "block", overflow: "visible", color: typo.color }}>
+    <svg ref={nodeRef as React.Ref<SVGSVGElement>} data-element-id={layer.id} data-archetype="text" data-text-path="" data-text-path-start={offset} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ ...box, width, height, display: "block", overflow: "visible", color: typo.color }}>
       <defs>
         <path id={id} d={textPathD(path)} />
       </defs>
+      <AnimatedStart offset={offset} />
       <text
         fill="currentColor"
         style={{ fontSize: typo.fontSize, fontFamily: typo.fontFamily, fontWeight: typo.fontWeight, fontStyle: typo.fontStyle, letterSpacing: typo.letterSpacing, fontFeatureSettings: typo.fontFeatureSettings, fontVariationSettings: typo.fontVariationSettings, fontVariantCaps: typo.fontVariantCaps, textTransform: typo.textTransform, textDecorationLine: typo.textDecorationLine }}
       >
-        <textPath href={`#${id}`} startOffset={`${Math.round(path.start * 10000) / 100}%`} textAnchor={anchor}>
+        <textPath href={`#${id}`} startOffset={offset} textAnchor={anchor}>
           {runs
             ? runs.map((r, i) => (
                 <tspan key={i} fontWeight={r.bold ? 700 : undefined} fontStyle={r.italic ? "italic" : undefined} fill={r.color} textDecoration={r.underline || r.strike ? [r.underline ? "underline" : "", r.strike ? "line-through" : ""].join(" ").trim() : undefined}>

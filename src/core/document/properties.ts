@@ -465,6 +465,11 @@ const DEFS = {
   "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
   /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
   "typography.textPath": typed(str("", null, "layout", only("text"))),
+  /**
+   * Phase 124: where text on a path starts along it, in % of its length (it wins over the start stored with the path).
+   * Animatable: the motion engine writes it as the CSS variable `--ll-text-path-start`, and the text follows.
+   */
+  "typography.textPathStart": ranged(num(0, "--ll-text-path-start", "paint", only("text")), { min: -100, max: 200 }),
 
   // --- Surfaces (ROADMAP S2–S6) ---------------------------------------------------
   /** Flat (a normal fill) or inflated: the layer is a surface with height, lit by a studio light, that dents when pressed. */
