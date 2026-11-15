@@ -313,6 +313,15 @@ const DEFS = {
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
   "transform.translateZ": px(0, "transform", "gpu", VISUAL),
   "transform.style3d": oneOf(["flat", "preserve3d"], "flat", "transform-style", "gpu", VISUAL),
+  /**
+   * Phase 129: a 3D space's camera. Pan (px across and down), dolly (px towards the scene: things come closer), the depth
+   * in focus (px) and the aperture (blur, px, for every 100 px a layer stands from the focus; 0: everything sharp).
+   */
+  "camera.x": px(0, null, "gpu", only("container", "form")),
+  "camera.y": px(0, null, "gpu", only("container", "form")),
+  "camera.z": px(0, null, "gpu", only("container", "form")),
+  "camera.focus": px(0, null, "paint", only("container", "form")),
+  "camera.aperture": ranged(num(0, null, "paint", only("container", "form")), { min: 0, max: 50 }),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
   /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */

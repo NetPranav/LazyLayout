@@ -37,6 +37,8 @@ export const EXPECTED_QUIET: Record<string, string> = {
   "Arrangement facing": "picks the way the Arrange button turns each item",
   // Phase 127: a look only, by design (nothing is saved)
   "Orbit preview": "turns the view for a look; nothing in the page changes",
+  // Phase 129: a canvas mode (drags then move the camera; depth-camera.spec drives it)
+  "Drag the camera on the canvas": "switches what a drag on the space does; the drag changes the page",
 };
 
 async function ready(page: Page) {

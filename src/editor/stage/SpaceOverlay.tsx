@@ -12,7 +12,7 @@
 import React, { useEffect, useRef } from "react";
 import { documentCommands, useDocument } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
-import { isSpace, setDepth, setSpace, spaceOf, vanishingPoint } from "@/core/editing/spaceOps";
+import { isSpace, setCamera, setDepth, setSpace, spaceOf, vanishingPoint } from "@/core/editing/spaceOps";
 import { useSpaceViewStore } from "./spaceViewStore";
 import type { StageElement } from "./types";
 
@@ -89,6 +89,15 @@ export const SpaceOverlay: React.FC<Props> = ({ selectedIds, elements, zoom }) =
     if (id && spaceOf(id)) setDepth([id], { z: Math.round(startZ.current - (dy / zoom) * 2) });
   }, "Change depth");
   const orbitDrag = useDrag((dx, dy) => turn(startTurn.current.x + dx / 3, startTurn.current.y + dy / 3), "");
+  // Phase 129: dragging the camera pans it (the world moves with the pointer); with Shift, up dollies in
+  const cameraOn = useSpaceViewStore((s) => s.camera);
+  const startCam = useRef({ x: 0, y: 0, z: 0, shift: false });
+  const cameraDrag = useDrag((dx, dy) => {
+    if (!spaceId) return;
+    const c = startCam.current;
+    if (c.shift) setCamera(spaceId, { z: c.z - (dy / zoom) * 2 });
+    else setCamera(spaceId, { x: c.x - dx / zoom, y: c.y - dy / zoom });
+  }, "Move camera");
 
   const el = spaceId ? elements[spaceId] : undefined;
   if (!spaceId || !space || !el) return null;
@@ -99,6 +108,21 @@ export const SpaceOverlay: React.FC<Props> = ({ selectedIds, elements, zoom }) =
   const child = id && id !== spaceId ? elements[id] : undefined;
   return (
     <div data-testid="space-overlay" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 40 }}>
+      {cameraOn === spaceId && orbiting !== spaceId && (
+        <div
+          aria-label="Drag the camera"
+          data-space-camera-area=""
+          data-stage-chrome=""
+          {...cameraDrag}
+          onPointerDown={(e) => {
+            const p = getDocument().layers[spaceId]?.properties ?? {};
+            const n = (v: unknown) => (typeof v === "number" ? v : 0);
+            startCam.current = { x: n(p["camera.x"]), y: n(p["camera.y"]), z: n(p["camera.z"]), shift: e.shiftKey };
+            cameraDrag.onPointerDown(e);
+          }}
+          style={{ position: "absolute", left: el.x, top: el.y, width: el.width, height: el.height, pointerEvents: "auto", cursor: "move", outline: `${1 / zoom}px dashed #10b981` }}
+        />
+      )}
       {orbiting === spaceId && (
         <div
           aria-label="Orbit around the space"

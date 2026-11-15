@@ -83,6 +83,8 @@ export const SpaceSection: React.FC<InspectorSectionProps> = ({ selectedId }) =>
   const orbiting = useSpaceViewStore((s) => s.orbiting);
   const startOrbit = useSpaceViewStore((s) => s.start);
   const stopOrbit = useSpaceViewStore((s) => s.stop);
+  const cameraOn = useSpaceViewStore((s) => s.camera);
+  const setCameraOn = useSpaceViewStore((s) => s.setCamera);
   const layer = selectedId ? getDocument().layers[selectedId] : undefined;
   if (!layer || !selectedId) return null;
   const space = isSpace(layer);
@@ -112,6 +114,24 @@ export const SpaceSection: React.FC<InspectorSectionProps> = ({ selectedId }) =>
               </OptionRow>
               <OptionRow label="View Y">
                 <Committed label="Space view angle Y" value={num(p["transform.rotateY"], 0)} min={-60} max={60} onCommit={(v) => void invokeCommand("space.set", { id: selectedId, viewY: v })} />
+              </OptionRow>
+              <OptionRow label="Pan X">
+                <NumberField size="sm" aria-label="Camera pan X" value={num(p["camera.x"], 0)} step={5} onChange={(v) => void invokeCommand("space.setCamera", { id: selectedId, x: v })} />
+              </OptionRow>
+              <OptionRow label="Pan Y">
+                <NumberField size="sm" aria-label="Camera pan Y" value={num(p["camera.y"], 0)} step={5} onChange={(v) => void invokeCommand("space.setCamera", { id: selectedId, y: v })} />
+              </OptionRow>
+              <OptionRow label="Dolly">
+                <NumberField size="sm" aria-label="Camera dolly" value={num(p["camera.z"], 0)} step={10} onChange={(v) => void invokeCommand("space.setCamera", { id: selectedId, z: v })} />
+              </OptionRow>
+              <OptionRow label="Focus">
+                <NumberField size="sm" aria-label="Camera focus depth" value={num(p["camera.focus"], 0)} step={10} onChange={(v) => void invokeCommand("space.setCamera", { id: selectedId, focus: v })} />
+              </OptionRow>
+              <OptionRow label="Aperture">
+                <NumberField size="sm" aria-label="Camera aperture" value={num(p["camera.aperture"], 0)} min={0} max={50} step={0.5} onChange={(v) => void invokeCommand("space.setCamera", { id: selectedId, aperture: v })} />
+              </OptionRow>
+              <OptionRow label="Drag camera">
+                <Toggle size="sm" aria-label="Drag the camera on the canvas" checked={cameraOn === selectedId} onChange={(on) => setCameraOn(on ? selectedId : null)} />
               </OptionRow>
               <OptionRow label="Orbit">
                 <Toggle size="sm" aria-label="Orbit preview" checked={orbiting === selectedId} onChange={(on) => (on ? startOrbit(selectedId) : stopOrbit())} />

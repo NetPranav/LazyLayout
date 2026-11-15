@@ -1,4 +1,5 @@
 import React, { useContext, useMemo } from "react";
+import { cameraOf } from "./geometry";
 import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
 import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
@@ -105,7 +106,8 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const Definition = isModified(layer) ? ModifiedShape : RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
-  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
+  const camera = cameraOf(resolved);
+  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined, parentCamera: camera };
   const reverseZ = resolved.bool("layout.reverseZ", false);
 
   if (isMeshed) {

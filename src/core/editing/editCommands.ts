@@ -41,7 +41,7 @@ import { applyFrostedGlass } from "./effectsIIOps";
 import { setImageEdit } from "./imageEditOps";
 import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
 import { useMediaLibraryStore } from "../store/useMediaLibraryStore";
-import { makeSpace, releaseSpace, setDepth, setSpace } from "./spaceOps";
+import { makeSpace, releaseSpace, setCamera, setDepth, setSpace } from "./spaceOps";
 import { arrange3d } from "./arrange3d";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
@@ -395,6 +395,8 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "space.release", title: "Flatten 3D Space", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: releaseSpace(t ?? ids()) }) }));
   add(defineTypedCommand({ id: "space.set", title: "Set 3D Space", category: "Layer", args: z.object({ id: z.string().optional(), perspective: z.number().optional(), vanishX: z.number().optional(), vanishY: z.number().optional(), viewX: z.number().optional(), viewY: z.number().optional() }), run: ({ id, ...patch }) => ({ ok: setSpace(id ?? ids()[0] ?? "", patch) }) }));
   add(defineTypedCommand({ id: "space.setDepth", title: "Set Depth in 3D Space", category: "Layer", args: z.object({ ids: targets, z: z.number().optional(), tiltX: z.number().optional(), tiltY: z.number().optional() }), run: ({ ids: t, ...patch }) => ({ changed: setDepth(t ?? ids(), patch) }) }));
+  // Phase 129: a space's depth camera: pan, dolly, focus and aperture
+  add(defineTypedCommand({ id: "space.setCamera", title: "Move Camera", category: "Layer", args: z.object({ id: z.string().optional(), x: z.number().optional(), y: z.number().optional(), z: z.number().optional(), focus: z.number().optional(), aperture: z.number().min(0).max(50).optional() }), run: ({ id, ...patch }) => ({ ok: setCamera(id ?? ids()[0] ?? "", patch) }) }));
   // Phase 128: a group's children arranged in 3D (each stays a real layer)
   add(defineTypedCommand({
     id: "space.arrange",

@@ -95,3 +95,43 @@ export function projectAtDepth(p: { x: number; y: number }, z: number, vanish: {
   const k = perspective / Math.max(1e-6, perspective - z);
   return { x: vanish.x + (p.x - vanish.x) * k, y: vanish.y + (p.y - vanish.y) * k };
 }
+
+// --- Phase 129: the depth camera -------------------------------------------------------------------
+
+export interface CameraPatch {
+  /** Pan across and down (px). */
+  x?: number;
+  y?: number;
+  /** Dolly towards the scene (px). */
+  z?: number;
+  /** The depth in focus (px). */
+  focus?: number;
+  /** Blur (px) for every 100 px from the focus; 0 keeps everything sharp. */
+  aperture?: number;
+}
+
+/** Moves a space's camera and sets its focus. Layers further away move less: parallax comes from depth alone. */
+export function setCamera(id: string, patch: CameraPatch): boolean {
+  const l = getDocument().layers[id];
+  if (!l || !isSpace(l)) return false;
+  const props: Record<string, number> = {};
+  const put = (key: string, v: number | undefined, lo: number, hi: number) => {
+    if (v !== undefined && Number.isFinite(v)) props[key] = Math.round(clamp(v, lo, hi) * 100) / 100;
+  };
+  put("camera.x", patch.x, -10_000, 10_000);
+  put("camera.y", patch.y, -10_000, 10_000);
+  put("camera.z", patch.z, -10_000, 5000);
+  put("camera.focus", patch.focus, -5000, 5000);
+  put("camera.aperture", patch.aperture, 0, 50);
+  return Object.keys(props).length > 0 && setLayerProps([id], props, "Camera") > 0;
+}
+
+/**
+ * Where a point of a space appears through its camera, seen straight on (the projection formula): a point `p` (px,
+ * in the space's box) at depth `z`, with the camera panned to (cx, cy) and dollied `cz` closer, lands at
+ * `vanish + (p − vanish − c) · P / (P − z − cz)`. The further back, the less it moves.
+ */
+export function cameraProject(p: { x: number; y: number }, z: number, vanish: { x: number; y: number }, perspective: number, camera: { x: number; y: number; z: number }): { x: number; y: number } {
+  const k = perspective / Math.max(1e-6, perspective - z - camera.z);
+  return { x: vanish.x + (p.x - vanish.x - camera.x) * k, y: vanish.y + (p.y - vanish.y - camera.y) * k };
+}

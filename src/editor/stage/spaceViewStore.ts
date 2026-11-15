@@ -9,6 +9,9 @@ interface SpaceViewState {
   /** The preview turn, degrees, added to the space's own viewing angle. */
   x: number;
   y: number;
+  /** Phase 129: the space whose camera a drag on the canvas moves (pan; with Shift, dolly). */
+  camera: string | null;
+  setCamera: (id: string | null) => void;
   start: (id: string) => void;
   turn: (x: number, y: number) => void;
   stop: () => void;
@@ -16,6 +19,8 @@ interface SpaceViewState {
 
 export const useSpaceViewStore = create<SpaceViewState>((set) => ({
   orbiting: null,
+  camera: null,
+  setCamera: (camera) => set({ camera }),
   x: 0,
   y: 0,
   start: (id) => set({ orbiting: id, x: 0, y: 0 }),
