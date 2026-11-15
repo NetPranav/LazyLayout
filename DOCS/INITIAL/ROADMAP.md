@@ -414,7 +414,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 🚧 |
 | 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 🚧 |
 | 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 🚧 |
-| 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 📋 |
+| 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 🚧 |
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 📋 |
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 📋 |
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 📋 |
@@ -1623,11 +1623,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** text already took gradient and image fills through `background-clip: text` (Phase 35); the noise, pattern and mesh fills of Phases 114–115 work on text the same way, and per-fill blend modes too. **Built (Lane C): several strokes on text.** `paint.strokes` is now legal on text, and each stroke paint can carry its own `weight` and `align` (`core/paint/paints.ts`, shared with Phase 118). A text with strokes keeps its words as real, selectable text (clear), and hidden copies (`aria-hidden`) draw each stroke and the fill in order: outside strokes at twice their weight below, then the fill (whatever paint it is), then centre and inside strokes on top (`core/render/archetypes/Text.tsx`). Verified (`textStrokes.test.ts`, 3 tests): the order and widths of three strokes and the fill; a gradient fill above its stroke; noise on text. In Chromium (`text-strokes.spec.ts`): a headline with a gradient fill and two strokes, **the accessibility tree reads it once** on the canvas and in the exported site, and **0.00% of pixels differ** between them. **Not done:** a text stroke draws in one colour (a gradient stroke paint uses its first colour: CSS strokes text in a colour, not a picture); inside strokes draw as centre ones; per-fill masks don't apply on text (CSS can't mask one background layer); no stroke list in the inspector yet (the list UI is Phase 118; strokes are set by `paint.setStrokes`); Firefox and WebKit not run.
 
 ### Phase 118 · Stroke depth: several strokes, gradients, alignment & markers
-**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Several strokes per layer, each with its own paint (solid, gradient or image), inside, centre or outside alignment, caps and joins, and arrowheads and markers at the ends of open paths.
 
 **You'll see:** a shape with a gradient outline inside a thin dark one, and an arrow line.
 **Done when:** 30 stroke references match in 3 browsers and in the export.
+
+**Status check (2026-11-15), 🚧:** the FigCraft port had a list of stroke paints (solid, gradient, image) sharing one weight and position, caps, joins and arrowheads (`core/render/strokePaint.tsx`); the new editor's Stroke section showed several rows but **saved only the first visible one** (a second stroke was silently lost). **Built (Lane C):** each stroke in `paint.strokes` can carry its own `weight` and `align`; when any does, `StrokeStack` draws one masked stroke layer per stroke, the first on top (outside strokes twice as wide with the shape cut out, inside ones clipped to it). The Stroke section now **keeps every row** for shapes, lines, paths and text (each row's colour, width and position saved to `paint.strokes`; rows are read back from it), and Position belongs to the row when a layer has several. Verified (`strokeStack.test.ts`, 2 tests): order, widths, clipping and a gradient stroke paint. In Chromium (`stroke-depth.spec.ts`): **30 stroke references** (rectangle, ellipse, star, polygon, line and path × one centre stroke, outside and inside, a gradient stroke, three stacked strokes, a dashed stroke with arrowheads) match between the canvas and the exported site, **the worst within 0.60% of pixels** (budget 1%); adding a second stroke row in the inspector keeps both, with its own width and position. The existing stroke specs (hero, Lane A issues, tools) still pass. **Not done:** the row editor sets solid colours only (gradient and image stroke paints are set by `paint.setStrokes`); dashes, caps and joins are still per layer, not per stroke; Firefox and WebKit not run.
 
 ### Phase 119 · Variable-width strokes
 **Needs:** 103, 118 · **Was:** — (new in v4.1) · **Status:** 📋
