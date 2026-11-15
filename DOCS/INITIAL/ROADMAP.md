@@ -413,7 +413,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 🚧 |
 | 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 🚧 |
 | 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 🚧 |
-| 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 📋 |
+| 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 🚧 |
 | 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 📋 |
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 📋 |
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 📋 |
@@ -1614,11 +1614,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** built (Lane C). A `live` paint: any frame or component drawn inside a shape's outline (an SVG `foreignObject` clipped to it), with scale, offset (px) and tiling. It is drawn from the same document as everything else, so **every edit to the source shows in every fill in the same render**. The copy is a clone of the source's subtree with every id prefixed (`core/render/liveFill.ts`), so measuring and clicking on the canvas still find the source and the shape themselves; a fill whose source contains the shape draws nothing, and fills that would draw each other stop after one copy (`SubtreeContext` tracks what is being drawn). `RenderLayer` hands down a "draw this layer" function through context, so the paints never import the renderer. In the new editor: **Live** in the fill popover with Source (any layer that doesn't contain this one), Scale, Offset X and Y, Tile. Verified (`liveFill.test.ts`, 5 tests): stored safely; the copy has its own ids; an edit to the source shows; tiling at half scale gives 36 copies over 200 × 100; self- and mutual fills terminate. In Chromium (`live-fills.spec.ts`): a frame filling two shapes, **an edit to the frame shows in both fills by the next frame the browser draws**; a click inside a fill selects its own shape; the export draws both fills with the new text. The canvas contract suite passes (41 of 41). **Not done:** frames' fills are CSS backgrounds and can't hold layers, so live fills work on shapes only; a path layer's fill is drawn in its stretched 200 × 200 space, so a live fill there is stretched with it; Firefox and WebKit not run.
 
 ### Phase 117 · Fills & strokes on text
-**Needs:** 31, 38, 113 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 31, 38, 113 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Text layers take the whole fill stack (gradients, images, noise, masks, blend modes) and several strokes, so a photo or a gradient shows through the letters. Text stays real, selectable and readable (`background-clip: text` in the export).
 
 **You'll see:** a photo inside a headline that is still real text.
 **Done when:** the accessibility tree reads the text once; stage and export match within 1% in 3 browsers.
+
+**Status check (2026-11-15), 🚧:** text already took gradient and image fills through `background-clip: text` (Phase 35); the noise, pattern and mesh fills of Phases 114–115 work on text the same way, and per-fill blend modes too. **Built (Lane C): several strokes on text.** `paint.strokes` is now legal on text, and each stroke paint can carry its own `weight` and `align` (`core/paint/paints.ts`, shared with Phase 118). A text with strokes keeps its words as real, selectable text (clear), and hidden copies (`aria-hidden`) draw each stroke and the fill in order: outside strokes at twice their weight below, then the fill (whatever paint it is), then centre and inside strokes on top (`core/render/archetypes/Text.tsx`). Verified (`textStrokes.test.ts`, 3 tests): the order and widths of three strokes and the fill; a gradient fill above its stroke; noise on text. In Chromium (`text-strokes.spec.ts`): a headline with a gradient fill and two strokes, **the accessibility tree reads it once** on the canvas and in the exported site, and **0.00% of pixels differ** between them. **Not done:** a text stroke draws in one colour (a gradient stroke paint uses its first colour: CSS strokes text in a colour, not a picture); inside strokes draw as centre ones; per-fill masks don't apply on text (CSS can't mask one background layer); no stroke list in the inspector yet (the list UI is Phase 118; strokes are set by `paint.setStrokes`); Firefox and WebKit not run.
 
 ### Phase 118 · Stroke depth: several strokes, gradients, alignment & markers
 **Needs:** 35, 40 · **Was:** — (new in v4.1) · **Status:** 📋
