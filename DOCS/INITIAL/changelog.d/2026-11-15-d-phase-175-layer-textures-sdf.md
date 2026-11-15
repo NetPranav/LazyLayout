@@ -1,0 +1,1 @@
+- [Phase 175] Implemented live layer textures, sampled outline paths & signed distance fields (`src/core/gpu/layerTexturesAndSdf.ts`): analytical/grid SDF sampling within `< 0.5 px` error across 10 shapes, single-frame invalidation updates, and `gpuLedger` zero-leak cleanup on unmount (`PR #151`).
