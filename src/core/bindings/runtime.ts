@@ -11,6 +11,11 @@ import type { Binding, BindingTarget, BlendMode, Condition, Guard } from "../doc
 import { defaultBlend } from "../document/signals";
 import { PROPERTY_REGISTRY } from "../document/properties";
 import { compileExpr, toNumber, type ExprRuntime, type Frame } from "./evaluate";
+import {
+  detectSignalAndLinkCycles,
+  guardFiniteBindingValue,
+  type PropertyLinkEdge,
+} from "./cycleAndLayoutGuard";
 
 /** What the runtime needs to know about the document and the page. */
 export interface BindingHost {
@@ -20,9 +25,20 @@ export interface BindingHost {
   base(layerId: string, path: string): number | undefined;
   /** Condition inputs. */
   env: { pointerCoarse: boolean; reducedMotion: boolean; breakpoint: string; states: ReadonlySet<string> };
+  /** Phase 139 carve-out: true if `layerId` sits inside a fixed `contain: layout size` isolated box. */
+  isLayoutIsolated?: (layerId: string) => boolean;
+  /** Optional Phase 76 property link edges checked alongside bindings in the shared cycle graph. */
+  links?: readonly PropertyLinkEdge[];
 }
 
-export type DiagnosticCode = "SIG_LAYOUT" | "unsupported-target" | "unknown-path" | "not-animatable" | "unsupported-operator";
+export type DiagnosticCode =
+  | "SIG_LAYOUT"
+  | "SIGNAL_CYCLE"
+  | "SIGNAL_NAN_GUARD"
+  | "unsupported-target"
+  | "unknown-path"
+  | "not-animatable"
+  | "unsupported-operator";
 export interface Diagnostic {
   bindingId: string;
   code: DiagnosticCode;
@@ -47,27 +63,45 @@ export interface BindingRuntime {
   readonly diagnostics: readonly Diagnostic[];
   /** The CSS variables the last `step` set: layer id -> name (without `--`) -> value. */
   readonly vars: ReadonlyMap<string, ReadonlyMap<string, number>>;
+  /** State-machine inputs written on the last `step`: layer id -> input name -> value. */
+  readonly inputs: ReadonlyMap<string, ReadonlyMap<string, number>>;
+  /** Events fired during the last `step`. */
+  readonly events: ReadonlySet<string>;
   /** True when there is nothing to evaluate: the host can skip the frame loop entirely. */
   readonly idle: boolean;
 }
 
-function checkTarget(b: Binding): Diagnostic | null {
+function checkTarget(b: Binding, host: BindingHost): Diagnostic | null {
   const t = b.target;
-  if (t.kind === "cssvar") return null;
+  if (t.kind === "cssvar" || t.kind === "input" || t.kind === "event") return null;
   if (t.kind !== "property") return { bindingId: b.id, code: "unsupported-target", message: `${t.kind} targets are not applied yet.` };
   const def = PROPERTY_REGISTRY[t.path];
   if (!def) return { bindingId: b.id, code: "unknown-path", message: `${t.path} is not a property.` };
-  if (def.compositing === "layout") return { bindingId: b.id, code: "SIG_LAYOUT", message: `${t.path} changes layout; drive transform.* instead.` };
+  if (def.compositing === "layout") {
+    const targets = host.layersOf(t.on);
+    const isolated = targets.length > 0 && typeof host.isLayoutIsolated === "function" && targets.every((id) => host.isLayoutIsolated!(id));
+    if (!isolated) {
+      return { bindingId: b.id, code: "SIG_LAYOUT", message: `${t.path} changes layout; drive transform.* or isolate inside a fixed box.` };
+    }
+  }
   if (!def.animatable) return { bindingId: b.id, code: "not-animatable", message: `${t.path} cannot be driven.` };
   return null;
 }
 
 export function createBindingRuntime(bindings: readonly Binding[], host: BindingHost): BindingRuntime {
   const diagnostics: Diagnostic[] = [];
+  const cycleReport = detectSignalAndLinkCycles({
+    bindings,
+    links: host.links,
+    resolveLayers: (on) => host.layersOf(on),
+  });
+  diagnostics.push(...cycleReport.diagnostics);
+
   const live: { binding: Binding; expr: ExprRuntime; guard: GuardRuntime | null; order: number }[] = [];
   bindings.forEach((binding, order) => {
     if (!binding.enabled) return;
-    const bad = checkTarget(binding);
+    if (cycleReport.cyclicBindingIds.has(binding.id)) return;
+    const bad = checkTarget(binding, host);
     if (bad) {
       diagnostics.push(bad);
       return;
@@ -80,10 +114,20 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
   });
 
   let vars: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map();
+  let inputs: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map();
+  let events: ReadonlySet<string> = new Set();
+  const nanReported = new Set<string>();
+
   return {
     diagnostics,
     get vars() {
       return vars;
+    },
+    get inputs() {
+      return inputs;
+    },
+    get events() {
+      return events;
     },
     idle: live.length === 0,
     reset() {
@@ -91,13 +135,25 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
         l.expr.reset();
         l.guard?.reset();
       }
+      vars = new Map();
+      inputs = new Map();
+      events = new Set();
     },
     step(frame) {
       const perProperty = new Map<string, Map<string, Contribution[]>>();
       const perVar = new Map<string, Map<string, { value: number; priority: number; order: number }>>();
+      const perInput = new Map<string, Map<string, { value: number; priority: number; order: number }>>();
+      const firedEvents = new Set<string>();
+
       for (const { binding, expr, guard, order } of live) {
-        const value = toNumber(expr.step(frame)); // always advance state, even when guarded off, so it stays continuous
+        const guarded = guardFiniteBindingValue(binding.id, toNumber(expr.step(frame)), 0);
+        if (guarded.diagnostic && !nanReported.has(binding.id)) {
+          nanReported.add(binding.id);
+          diagnostics.push(guarded.diagnostic);
+        }
+        const value = guarded.value; // always advance state, even when guarded off, so it stays continuous
         if (guard && !guard.holds(host, frame)) continue;
+
         if (binding.target.kind === "cssvar") {
           for (const layerId of host.layersOf(binding.target.on)) {
             const byName = perVar.get(layerId) ?? new Map();
@@ -106,6 +162,20 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
             if (!prev || next.priority > prev.priority || (next.priority === prev.priority && next.order > prev.order)) byName.set(binding.target.name, next); // the highest priority wins; a later binding wins a tie
             perVar.set(layerId, byName);
           }
+          continue;
+        }
+        if (binding.target.kind === "input") {
+          for (const layerId of host.layersOf(binding.target.on)) {
+            const byName = perInput.get(layerId) ?? new Map();
+            const prev = byName.get(binding.target.name);
+            const next = { value, priority: binding.priority ?? 0, order };
+            if (!prev || next.priority > prev.priority || (next.priority === prev.priority && next.order > prev.order)) byName.set(binding.target.name, next);
+            perInput.set(layerId, byName);
+          }
+          continue;
+        }
+        if (binding.target.kind === "event") {
+          if (value >= 0.5) firedEvents.add(binding.target.name);
           continue;
         }
         const target = binding.target as Extract<BindingTarget, { kind: "property" }>;
@@ -119,6 +189,8 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
         }
       }
       vars = new Map([...perVar].map(([layerId, byName]) => [layerId, new Map([...byName].map(([n, v]) => [n, v.value]))]));
+      inputs = new Map([...perInput].map(([layerId, byName]) => [layerId, new Map([...byName].map(([n, v]) => [n, v.value]))]));
+      events = firedEvents;
       const out: BoundValues = new Map();
       for (const [layerId, byPath] of perProperty) {
         const written = new Map<string, number>();

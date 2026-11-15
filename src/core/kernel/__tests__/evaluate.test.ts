@@ -294,10 +294,10 @@ describe("Phase 53: Exit and LayoutTransition clips (golden values)", () => {
 });
 
 describe("Phase 9.3: what the kernel does not evaluate yet", () => {
-  it("names its gaps rather than silently faking Phase 12/60's territory", () => {
+  it("names its gaps rather than silently faking Phase 12's territory", () => {
     const areas = KERNEL_GAPS.map((g) => g.area);
     assert.ok(areas.includes("behaviours"));
-    assert.ok(areas.includes("signal bindings"));
+    assert.ok(!areas.includes("signal bindings"), "closed by Phase 139");
     assert.ok(!areas.includes("stateful clip categories"), "closed by Phase 53");
   });
 });

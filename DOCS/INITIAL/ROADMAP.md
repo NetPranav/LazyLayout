@@ -440,7 +440,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 🚧 |
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 🚧 |
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 🚧 |
-| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
+| 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 🚧 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
@@ -2581,10 +2581,11 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 12 reference bindings match hand-computed values at tape checkpoints; a 60 s tape at 30, 60 and 120 Hz gives the same values within tolerance.
 
 ### Phase 139 · Targets, blending & cycles
-**Needs:** 138 · **Was:** v3 60.2 + the v3 9 amendment · **Closes:** AUD-45 (binding half), AUD-48 (bindings) · **Status:** 📋
+**Needs:** 138 · **Was:** v3 60.2 + the v3 9 amendment · **Closes:** AUD-45 (binding half), AUD-48 (bindings) · **Status:** 🚧
 - [ ] Targets: registry paths whose compositing class is `gpu` or `paint` (continuous bindings to layout paths refused with `[SIG_LAYOUT]`), state-machine inputs, CSS custom properties, events. Channel blending (replace, add, multiply, max) feeds the Single Transform Authority synthesis. Links and bindings share one dependency graph; cycles refused with `[SIGNAL_CYCLE]`.
 - [ ] The kernel evaluates bindings in its composition order (closes the bindings entries of `KERNEL_GAPS`).
 - [ ] **v4.1 carve-out:** continuous bindings to layout paths are allowed inside a layout-isolated box (fixed outer size, `contain: layout size`), so nothing outside it moves; `[SIG_LAYOUT]` still refuses them everywhere else. Phase 145 builds the part users see.
+**Status check (2026-11-15, Lane D), 🚧:** Added `src/core/bindings/cycleAndLayoutGuard.ts` (`isLayerLayoutIsolated`, unified link+binding `detectSignalAndLinkCycles`, `guardFiniteBindingValue`), enabled `input`/`event` targets and layout-isolated box carve-out in `src/core/bindings/runtime.ts`, closed `signal bindings` in `KERNEL_GAPS` (`src/core/kernel/evaluate.ts`), updated `AUDIT.md` (`AUD-45`, `AUD-48`), and added unit tests in `src/core/bindings/__tests__/targetsAndGuards.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a float, a magnet and a tilt on one button combine instead of fighting.
 **Done when:** the blending golden tests pass; a cycle is refused with its chain.
