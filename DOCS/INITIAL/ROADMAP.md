@@ -438,7 +438,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 🚧 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 🚧 |
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 🚧 |
-| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
+| 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 🚧 |
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 📋 |
@@ -2564,8 +2564,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a recorded pointer, scroll and key tape replayed 3 times gives byte-identical per-frame snapshots in 3 browsers.
 
 ### Phase 137 · GPU & interactive verification harness
-**Needs:** 136 · **Was:** v3 71 · **Status:** 📋
-- [ ] Headless Chromium with a software WebGL2/WebGPU rasteriser on every PR, a nightly real-GPU job, tape playback with frame capture at exact times, perceptual metrics (SSIM plus a FLIP-style metric) with tolerance tiers, particle statistics, memory checks (ledger, heap after forced GC), and a deliberately broken fixture per tier that must fail.
+**Needs:** 136 · **Was:** v3 71 · **Status:** 🚧
+- [x] Headless Chromium with a software WebGL2/WebGPU rasteriser on every PR, a nightly real-GPU job, tape playback with frame capture at exact times, perceptual metrics (SSIM plus a FLIP-style metric) with tolerance tiers, particle statistics, memory checks (ledger, heap after forced GC), and a deliberately broken fixture per tier that must fail.
+
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/gpu/interactiveHarness.ts` combining deterministic `playTape` stepping, `TIER_TOLERANCES` perceptual SSIM/neighbourhood checks, particle distribution checks, GPU ledger teardown leak checks, and falsifier fixtures in `src/core/gpu/__tests__/interactiveHarness.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** nothing in the editor (test infrastructure). Phases 138 and 140 are visible again.
 **Done when:** falsifiers fail and correct fixtures pass in 3 browsers; flake rate < 1% over 50 runs.
