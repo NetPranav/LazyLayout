@@ -459,7 +459,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 🚧 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 🚧 |
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 🚧 |
-| 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
+| 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 🚧 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
 | 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 📋 |
@@ -2728,8 +2728,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the reference build (effector form) never draws a letter inside the circle at any tape checkpoint and springs every letter home within 0.5 px.
 
 ### Phase 158 · One evaluation space & no-maths kinetics
-**Needs:** 157 · **Was:** v3 90.4–90.6 · **Status:** 📋
-- [ ] Fields and targets evaluate in the top-level frame's space using full world transforms (Law 10), so nested, rotated and scaled parents interact correctly. "Stay inside" boundaries. Simple faces: reach and gap as rings on the canvas, edge Hard/Soft, Strength Gentle/Clear/Strong, Variety with shuffle.
+**Needs:** 157 · **Was:** v3 90.4–90.6 · **Status:** 🚧
+- [x] Fields and targets evaluate in the top-level frame's space using full world transforms (Law 10), so nested, rotated and scaled parents interact correctly; "Stay inside" boundaries; Simple faces (`Reach`, `Gap`, `Edge` Hard/Soft, `Strength` Gentle/Clear/Strong, `Variety` with `Shuffle`) (`src/core/signals/worldSpaceKinetics.ts`).
 
 **You'll see:** kinetics work inside rotated cards, set up without numbers.
 **Done when:** the reference build passes inside a rotated, scaled card; the label check passes for every kinetic Simple face; 400 letters hold 60 fps.
