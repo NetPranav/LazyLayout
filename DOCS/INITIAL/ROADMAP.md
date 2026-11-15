@@ -374,7 +374,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 🚧 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 🚧 |
 | 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 🚧 |
-| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
+| 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 🚧 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 📋 |
@@ -2335,8 +2335,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 reference effects hold their tier budgets; CPU and GPU backends agree within 2% on density and centroid at checkpoints; seeded runs repeat exactly.
 
 ### Phase 184 · Stateful simulations & replay
-**Needs:** 183 · **Was:** v3 64.2, 64.3 · **Closes:** AUD-48 · **Status:** 📋
-- [ ] Stable fluids with pointer splats, spring-mass lattices (grid distortion, dot fields with shockwaves), Verlet ropes and cloth, metaballs and SDF blobs, rigid bodies on the physics core (162). Simulations run at reduced resolution per tier, and scrubbing re-simulates from the nearest snapshot (≤ 50 ms per seek; CPU modules in a worker).
+**Needs:** 183 · **Was:** v3 64.2, 64.3 · **Closes:** AUD-48 · **Status:** 🚧
+- [x] Stable fluids with pointer splats, spring-mass lattices (grid distortion, dot fields with shockwaves), Verlet ropes and cloth, metaballs and SDF blobs, rigid bodies on the physics core (162). Simulations run at reduced resolution per tier, and scrubbing re-simulates from the nearest snapshot (≤ 50 ms per seek; CPU modules in a worker).
 
 **You'll see:** a fluid splash that follows the cursor and scrubs on the timeline.
 **Done when:** each module's reference replay matches stored snapshots at 5 checkpoints in 3 browsers; a 10 s back-and-forth scrub never shows two states for one time.
