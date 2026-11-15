@@ -335,7 +335,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 🚧 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 🚧 |
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 🚧 |
-| 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
+| 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 🚧 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
@@ -2052,8 +2052,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the presets match reference values on scripted tapes; 50 layers hold 60 fps.
 
 ### Phase 145 · Reactions that change layout, inside fixed boxes
-**Needs:** 139, 143 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 139, 143 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Continuous reactions on layout properties, allowed only inside a box whose outer size is fixed (the Phase 139 carve-out): variable-font weight and width by cursor distance, Dock-style magnification, letter-spacing waves. Nothing outside the box moves.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/bindings/layoutIsolatedReactions.ts` (variable-font proximity, Dock magnification, letter-spacing wave, `contain: layout size` guard, 0 external CLS assertion) and unit/perf tests in `src/core/bindings/__tests__/layoutIsolatedReactions.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** letters that get bolder and wider as the cursor comes near, without the page jumping.
 **Done when:** CLS stays 0 outside the box; 60 reactive letters hold 60 fps in 3 browsers.
