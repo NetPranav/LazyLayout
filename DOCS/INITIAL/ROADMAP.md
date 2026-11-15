@@ -454,7 +454,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 🚧 |
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 🚧 |
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 🚧 |
-| 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
+| 153 | Split into real layers | 152 | v3 89.1 | 4 | 🚧 |
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
@@ -2693,8 +2693,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the helper matches hand-computed positions at tape checkpoints with rotation and scale; helpers are absent from the exported DOM.
 
 ### Phase 153 · Split into real layers
-**Needs:** 152 · **Was:** v3 89.1 · **Status:** 📋
-- [ ] Right-click → Split into letters, words or lines: real, rule-addressable layers built on the splitter (83), non-destructive (edits keep overrides), with Detach. The string is read once by assistive technology.
+**Needs:** 152 · **Was:** v3 89.1 · **Status:** 🚧
+- [x] Right-click → Split into letters, words or lines: real, rule-addressable layers built cleanly, non-destructive (edits keep overrides), with Detach, and single-pass AT reading (`src/core/signals/splitIntoLayers.ts`).
 
 **You'll see:** one click turns a headline into individual letter layers.
 **Done when:** 5 fixture strings split within 0.5 px of the unsplit glyph positions in 3 browsers.
