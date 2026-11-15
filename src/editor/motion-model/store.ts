@@ -1280,7 +1280,7 @@ export const motionActions = {
         } else if (preset === "Pop") {
           setKeyframeAt(layerId, "appearance.opacity", sSec, { value: 0 });
           setKeyframeAt(layerId, "appearance.opacity", sSec + 24 / fps, { value: 1 });
-          setKeyframeAt(layerId, "transform.scale", sSec, { value: 0.86, ease: "back-out" });
+          setKeyframeAt(layerId, "transform.scale", sSec, { value: 0.86, ease: "back.out" });
           setKeyframeAt(layerId, "transform.scale", sSec + 36 / fps, { value: 1 });
         }
       });
