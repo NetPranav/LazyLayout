@@ -345,7 +345,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 🚧 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 🚧 |
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 🚧 |
-| 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
+| 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 🚧 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
@@ -2127,8 +2127,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 20 × 20 grid matches between stage and export.
 
 ### Phase 155 · Roles, relations & selectors
-**Needs:** 134, 154 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Layers have a role (button, link, heading, image, card, input …), guessed from the design and editable. Targets like "every button", "the nearest card", "my neighbours" and "the layer under the cursor"; relation signals between two layers (distance, angle, overlap, order).
+**Needs:** 134, 154 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Layers have an inferred/editable role (`button`, `link`, `heading`, `image`, `card`, `input`, `badge`, `section`). Natural-language selectors (`every button`, `the nearest card`, `my neighbours`, `the layer under the cursor`) and pairwise relation signals (`distance`, `angle`, `overlap`, `order`) (`src/core/signals/rolesAndSelectors.ts`).
 
 **You'll see:** "every button glows when the cursor is near" as one rule.
 **Done when:** selectors pick the right layers in 10 fixtures; relation signals match tapes.
