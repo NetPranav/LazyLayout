@@ -16,7 +16,8 @@ import { IconSection } from "./sections/IconSection";
 import { ShapeSection } from "./sections/ShapeSection";
 import { VectorSection, VectorHeaderAction, VectorOptions } from "./sections/VectorSection";
 import { BooleanGroupSection } from "./sections/BooleanGroupSection";
-import { isBooleanGroup } from "@/core/editing/layerOutline";
+import { ModifiersSection, ModifiersOptions } from "./sections/ModifiersSection";
+import { isBooleanGroup, MODIFIABLE } from "@/core/editing/layerOutline";
 import { CounterSection } from "./sections/CounterSection";
 import { Object3DSection } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
@@ -139,6 +140,7 @@ export function getInspectorDesignSections(
   const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
   const isPath = archetype === "svgPath";
   const isBoolean = isBooleanGroup(inspector.primaryLayer ?? undefined);
+  const isModifiable = !inspector.isMulti && MODIFIABLE.has(archetype ?? "");
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
@@ -260,6 +262,16 @@ export function getInspectorDesignSections(
             id: "boolean-group",
             title: "Boolean group",
             children: <BooleanGroupSection {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isModifiable
+      ? [
+          {
+            id: "modifiers",
+            title: "Modifiers",
+            children: <ModifiersSection {...sectionProps} />,
+            moreContent: <ModifiersOptions {...sectionProps} />,
           },
         ]
       : []),

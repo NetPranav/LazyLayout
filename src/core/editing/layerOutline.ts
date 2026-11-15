@@ -15,6 +15,7 @@ import { pathDataToBez } from "../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../paths/vectorNetwork";
 import { refitCurves } from "../paths/curveRefit";
 import { softClose } from "../paths/pathTools";
+import { applyModifiers, hasActiveModifiers, parseModifiers, type ModPath } from "../paths/modifiers";
 import { combineRegions, mergeRegions, pathRegion, type PathBoolOp, type Region } from "../paths/pathOps";
 import { defaultStroke, parseSides, parseWidthProfile, strokeOutline, type StrokeProps } from "../paths/strokes";
 import { readCap } from "../render/strokePaint";
@@ -92,8 +93,39 @@ function pathLayerPath(l: Layer, kind: "fill" | "stroke"): { path: BezPath; even
   return { path: unit.map((p) => ({ x: (p.x * w) / 200, y: (p.y * h) / 200 })), evenOdd, closed: unit.els.some((e) => e.t === "Z") };
 }
 
+/** Layers a modifier stack can apply to (Phase 109). */
+export const MODIFIABLE = new Set(["rectangle", "ellipse", "polygon", "star", "svgPath", "line"]);
+
+/** Whether a layer has a modifier stack with at least one modifier switched on. */
+export const isModified = (l: Layer | undefined): boolean => !!l && MODIFIABLE.has(l.archetype) && typeof l.properties["shape.modifiers"] === "string" && hasActiveModifiers(parseModifiers(l.properties["shape.modifiers"]));
+
+/** The modified geometry of a layer, kept per layer object: the layer's identity changes whenever any of its properties do. */
+const modifiedCache = new WeakMap<Layer, ModPath | null>();
+
+/**
+ * A layer's geometry after its modifier stack, in its own box: a closed shape (from its outline) or an open line (from
+ * its spine). Null when it has no geometry. Without modifiers switched on, the layer's own geometry.
+ */
+export function modifiedGeometry(l: Layer, layers: Readonly<Record<string, Layer>>): ModPath | null {
+  if (modifiedCache.has(l)) return modifiedCache.get(l)!;
+  const fill = baseOutline(l, layers);
+  const base: ModPath | null = fill ? { path: fill.path, closed: true } : (() => {
+    const s = baseSpine(l, layers);
+    return s ? { path: s, closed: false } : null;
+  })();
+  const out = base ? applyModifiers(base, parseModifiers(l.properties["shape.modifiers"]), layerSize(l)) : null;
+  modifiedCache.set(l, out);
+  return out;
+}
+
 /** What a layer fills, in its own box, with its fill rule; null for layers with no closed area (lines, open paths, text). */
 export function layerOutline(l: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): { path: BezPath; evenOdd: boolean } | null {
+  if (!isModified(l)) return baseOutline(l, layers, depth);
+  const m = modifiedGeometry(l, layers);
+  return m && m.closed && !m.path.isEmpty() ? { path: m.path, evenOdd: false } : null;
+}
+
+function baseOutline(l: Layer, layers: Readonly<Record<string, Layer>>, depth = 0): { path: BezPath; evenOdd: boolean } | null {
   const { w, h } = layerSize(l);
   const p = l.properties;
   switch (l.archetype) {
@@ -127,10 +159,15 @@ export function layerOutline(l: Layer, layers: Readonly<Record<string, Layer>>, 
  * a path layer's path (open or closed), any other shape's outline. Null when it has none.
  */
 export function layerSpine(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
+  if (isModified(l)) return modifiedGeometry(l, layers)?.path ?? null;
+  return baseSpine(l, layers);
+}
+
+function baseSpine(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
   const { w, h } = layerSize(l);
   if (l.archetype === "line") return new BezPath().moveTo({ x: 0, y: h / 2 }).lineTo({ x: w, y: h / 2 });
   if (l.archetype === "svgPath") return pathLayerPath(l, "stroke")?.path ?? null;
-  return layerOutline(l, layers)?.path ?? null;
+  return baseOutline(l, layers)?.path ?? null;
 }
 
 /** The layer's stroke settings as the outliner takes them (an archetype without an explicit alignment keeps its older placement). */
@@ -161,6 +198,10 @@ function strokePropsOf(l: Layer): StrokeProps | null {
 export function layerStrokeArea(l: Layer, layers: Readonly<Record<string, Layer>>): BezPath | null {
   const props = strokePropsOf(l);
   if (!props) return null;
+  if (isModified(l)) {
+    const m = modifiedGeometry(l, layers);
+    return m && !m.path.isEmpty() ? strokeOutline(m.path, m.closed ? props : { ...props, align: "center" }, m.closed) : null;
+  }
   const { w, h } = layerSize(l);
   if (l.archetype === "line") {
     const line = new BezPath().moveTo({ x: 0, y: h / 2 }).lineTo({ x: w, y: h / 2 });

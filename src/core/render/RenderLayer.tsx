@@ -4,6 +4,8 @@ import { getLayerGeometry } from "../document/properties";
 import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
+import { ModifiedShape } from "./archetypes/Svg";
+import { isModified } from "../editing/layerOutline";
 import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
 import { EffectDefs, effectEntries } from "./effectsRender";
@@ -94,7 +96,8 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const mesh = meshInLayer(resolved.get("transform.mesh"), [g.frame.x, g.frame.y]);
   const isMeshed = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0 && !ctx.inMeshTile;
 
-  const Definition = RENDER_DEFINITIONS[layer.archetype];
+  // a layer whose modifier stack is on draws the stack's result (Phase 109)
+  const Definition = isModified(layer) ? ModifiedShape : RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
   const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };

@@ -755,6 +755,8 @@ const DEFS = {
   "shape.vertexRadius": ranged(px(0, null, "paint", only("polygon", "star")), { min: 0 }),
   /** Corner smoothing, 0 to 1: the continuous-curvature corner (0.6 is the iOS look). FigCraft port F1 (`core/geometry/shapes.ts`). */
   "shape.cornerSmoothing": ranged(num(0, null, "paint", only("rectangle", "polygon", "star")), { min: 0, max: 1 }),
+  /** The modifier stack (Phases 109–110): an ordered JSON list of { id, type, on, params }; see core/paths/modifiers.ts. */
+  "shape.modifiers": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "line"))),
   /** How corners are shaped (Phase 107): round (with smoothing), cut, scoop or inverted (a square notch). */
   "shape.cornerStyle": typed(oneOf(["round", "cut", "scoop", "inverted"], "round", null, "paint", only("rectangle", "polygon", "star"))),
   /** Ellipse arcs, pies and rings (FigCraft port F1): where the arc starts, clockwise from 3 o'clock, and how far it sweeps. */

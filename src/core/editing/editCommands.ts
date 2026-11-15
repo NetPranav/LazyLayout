@@ -36,6 +36,7 @@ import { BLEND_MODES } from "../paint/color";
 import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
 import { outlineStrokes } from "./outlineStroke";
+import { addModifier, moveModifier, removeModifier, setModifier } from "./modifierOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
 import { register3dCommands } from "../3d/commands";
@@ -376,6 +377,13 @@ export function registerEditingCommands(): () => void {
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
   // FigCraft port F4: vector networks on path layers
   add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
+  // Phase 109: the modifier stack
+  const modType = z.enum(["repeat", "trim", "offset", "round"]);
+  const modParams = z.record(z.string(), z.union([z.number(), z.string()]));
+  add(defineTypedCommand({ id: "layer.addModifier", title: "Add Modifier", category: "Layer", args: z.object({ id: z.string().optional(), type: modType, params: modParams.optional() }), run: ({ id, type, params }) => ({ id: addModifier(id ?? ids()[0] ?? "", type, params) }) }));
+  add(defineTypedCommand({ id: "layer.setModifier", title: "Change Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string(), on: z.boolean().optional(), params: modParams.optional() }), run: ({ id, modifier, on, params }) => ({ ok: setModifier(id ?? ids()[0] ?? "", modifier, { on, params }) }) }));
+  add(defineTypedCommand({ id: "layer.moveModifier", title: "Move Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string(), to: z.number().int().min(0).max(31) }), run: ({ id, modifier, to }) => ({ ok: moveModifier(id ?? ids()[0] ?? "", modifier, to) }) }));
+  add(defineTypedCommand({ id: "layer.removeModifier", title: "Remove Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string() }), run: ({ id, modifier }) => ({ ok: removeModifier(id ?? ids()[0] ?? "", modifier) }) }));
   // Phase 106: path operations
   const strength = z.number().min(0).max(1);
   add(defineTypedCommand({ id: "vector.offset", title: "Offset Path", category: "Layer", args: z.object({ ids: targets, distance: z.number().min(-2000).max(2000), join: z.enum(["round", "miter", "bevel"]).default("round") }), run: ({ ids: t, distance, join }) => ({ changed: offsetLayers(t ?? ids(), distance, join) }) }));
