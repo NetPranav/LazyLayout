@@ -376,7 +376,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 82 | Scroll simulator & section choreography | 48, 81 | v3 13.3, 76.2 | 2 | 📋 |
 | 83 | Accessible text splitting | 31, 38, 82 | v3 17.1 | 2 | 📋 |
 | 84 | Text motion | 83 | v3 17.2 | 2 | 📋 |
-| 85 | SVG morph & stroke drawing | 84 | v3 16.2, 16.3 (stroke) | 2 | 📋 |
+| 85 | SVG morph & stroke drawing | 84 | v3 16.2, 16.3 (stroke) | 2 | 🚧 |
 | 86 | Motion along paths & SVG filters | 85 | v3 16.3 (motion path), 16.4 | 2 | 📋 |
 | 87 | Motion engine adapter | 86 | v3 15 | 2 | 📋 |
 | 88 | Motion per breakpoint | 43, 87 | v3 50.3 (motion half) | 2 | 📋 |
@@ -1339,11 +1339,20 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** split, scramble and count-up match `evaluate()` in 3 browsers.
 
 ### Phase 85 · SVG morph & stroke drawing
-**Needs:** 84 · **Was:** v3 16.2, 16.3 (stroke) · **Status:** 📋
-- [ ] Morph between paths with automatic point matching (`PathMorphSolver`) plus manual start-point and direction fixes; stroke draw per path with direction and multi-subpath staggers.
+**Needs:** 84 · **Was:** v3 16.2, 16.3 (stroke) · **Status:** 🚧
+- [x] Morph between paths with automatic point matching (`PathMorphSolver`) plus manual start-point and direction fixes; stroke draw per path with direction and multi-subpath staggers.
+
+**Started before its Need (2026-11-15):** Phase 84 (text motion) is Lane A's since the owner's takeover of D12 and is not ✅ on `main`. Phase 85 uses nothing from it (paths, not text), so Lane B built it while waiting; the status stays 🚧 until 84 is ✅ and this phase's gate has passed in CI.
+**Morph (`src/core/paths/morphMatch.ts`):** `PathMorphSolver.morph` treated a path as one run of segments, so a menu's three bars were joined into one line on the way to a cross, and a closed shape started its morph wherever each path happened to begin. `morphPath` matches sub-path with sub-path (one with no partner grows from its own centre), cuts both sides to the same number of cubics without changing either shape, and for a closed pair picks the start point and direction that move the points least (the sum of squared distances), which is what stops the twist. The kernel uses it for `svg.path` (`sampleTrack` and the `loop` behaviour in `evaluate.ts`); `mask.path` and every other path value keep `PathMorphSolver`. The fixes are layer properties: `morph.match` (`auto`, or `order` to morph the paths as written), `morph.startOffset` (points) and `morph.reverse`.
+**Stroke drawing (`src/core/paths/strokeDraw.ts`):** `draw.start`, `draw.end` (0 to 1, keyframed), `draw.offset` (turns, keyframed), `draw.reverse` and `draw.stagger`. The drawn part is one dash on a path whose length is called 1 (`pathLength="1"`), so the numbers don't depend on the shape. A path of several sub-paths with drawing settings is drawn as one fill and one stroke element per sub-path (`StrokedPath` in `src/core/render/archetypes/Svg.tsx`), so the sub-paths draw together (stagger 0) or one after another (stagger 1) instead of along one long line. A path without drawing settings is the one `<path>` it always was.
+**Engine (`src/core/engine/stage/svgPaths.ts`):** `SvgPathWriter` writes `d`, `pathLength`, `stroke-dasharray` and `stroke-dashoffset` as attributes on the layer's path elements, only when they change, and puts back what React drew when the layer stops animating (`d` is not a CSS property in Safari, so it is never written as a style). Before this an animated `svg.path` was evaluated but never drawn: `styleWrites` has no CSS value for path data. A layer that animates either stays on the kernel adapter (never a Web Animation).
+**Commands (`src/core/paths/pathMotionCommands.ts`):** `path.setMorph`, `path.setDraw` (and `clear`), `path.animateDraw` (two keyframes that draw the stroke on, or off, over a length from the playhead) and `path.morphTo` (two keyframes that morph the layer's path into another layer's or a given path; refused with a code for a different kind of layer, a vector network, or a path that can't be read). One undo step each.
+**In the editor:** a **Morph & draw** section (`src/editor/panels/details/sections/MorphDrawSection.tsx`) for a path or an icon, in the Design inspector and under the Motion inspector: Length, **Draw the stroke on**, **Trim stroke** (Start, End, Offset, From the other end, Stagger when the path has several strokes), **Morph into…** (another layer of the same kind), and, once the path morphs, Matching, Start point and Reverse direction. The animations it makes are listed with their times and removed there.
+**Not built, so the phase stays 🚧:** rows and stopwatches for `draw.*` and `svg.path` in the new editor's timeline (it shows five properties; the keyframes are in the document, played by the engine and listed in the section); drawing and morphing a stroke that uses a brush, an alignment, a width profile or arrowheads (those are drawn as outlines), a vector network, or a parametric shape (rectangle, ellipse, polygon: convert it to a path first); a stroke that is being drawn is not dashed; morph and draw in the exported code (the export has no animation yet, Phase 94; a stroke trimmed at rest is exported). WebKit can't be run on this machine; CI runs it.
 
 **You'll see:** a menu icon morphing into a close icon; a logo drawing itself.
 **Done when:** the icon-morph and logo-draw references match `evaluate()`.
+**Evidence (2026-11-15):** `src/core/paths/__tests__/morphDraw.test.ts` (29 tests: the properties, matching, the manual fixes, unequal point counts, dashes with reverse, offset and stagger, the kernel at five times for both references, the engine's writes on a stand-in element and their restore, the render definition's markup, the four commands with undo). `tests/e2e/path-morph-draw.spec.ts` on `/editor/stage-lab` (**Load path scenes**): the icon's drawn `d` equals `evaluate()` at 0, 0.25, 0.5, 0.75 and 1 and stays three strokes; each of the logo's four strokes carries the kernel's dash at the same five times and the dark pixels grow from none to the whole logo; and on `/editor` the section's controls are driven end to end. Passing in Chromium and Firefox here.
 
 ### Phase 86 · Motion along paths & SVG filters
 **Needs:** 85 · **Was:** v3 16.3 (motion path), 16.4 · **Status:** 📋

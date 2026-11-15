@@ -42,6 +42,7 @@ import { SpeedSection } from "./sections/SpeedSection";
 import { ScrollSection } from "./sections/ScrollSection";
 import { CompositingSection } from "./sections/CompositingSection";
 import { EffectStackSection } from "./sections/EffectStackSection";
+import { MorphDrawSection } from "./sections/MorphDrawSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -260,6 +261,15 @@ export function getInspectorDesignSections(
             headerAction: <VectorHeaderAction {...sectionProps} />,
             children: <VectorSection {...sectionProps} />,
             moreContent: <VectorOptions {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isPath || archetype === "icon"
+      ? [
+          {
+            id: "morph-draw",
+            title: "Morph & draw",
+            children: <MorphDrawSection {...sectionProps} />,
           },
         ]
       : []),
@@ -515,6 +525,10 @@ export function getInspectorExtraSections(
         onAdd: () => animAddRef.current?.(),
         children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
       },
+      // Phase 85: a path or an icon is drawn on and morphed from the playhead, so the section is in Motion too
+      ...(inspector.primaryLayer?.archetype === "svgPath" || inspector.primaryLayer?.archetype === "icon"
+        ? [{ id: "morph-draw", title: "Morph & draw", children: <MorphDrawSection {...sectionProps} /> }]
+        : []),
     ];
   }
   return [

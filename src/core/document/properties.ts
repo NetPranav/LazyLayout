@@ -187,6 +187,8 @@ const SURFACE = only("container", "rectangle", "ellipse");
 /** Parametric shape archetypes (Phase 7.6). */
 export const SHAPE_ARCHETYPES = ["rectangle", "ellipse", "line", "polygon", "star", "arrow"] as const satisfies readonly ArchetypeId[];
 const SVG_STROKED = only("icon", "svgPath", "svgGroup", "svgUse", "svgText", ...SHAPE_ARCHETYPES);
+/** Layers drawn from one `svg.path`: the ones a morph and a stroke drawing apply to (Phase 85). */
+const PATH_DRAWN = only("icon", "svgPath");
 const INTERACTIVE = only("button", "toggle", "fab", "input", "form");
 const OBJECT3D = only("object3D");
 const CAMERA3D = only("camera3D");
@@ -778,6 +780,26 @@ const DEFS = {
   "svg.filter.displacementScale": num(0, "filter", "paint", SVG_STROKED),
   "svg.strokeLinecap": typed(oneOf(["butt", "round", "square"], "butt", "stroke-linecap", "paint", SVG_STROKED)),
   "svg.strokeLinejoin": typed(oneOf(["miter", "round", "bevel"], "miter", "stroke-linejoin", "paint", SVG_STROKED)),
+
+  // --- Path morph and stroke drawing (Phase 85) ---------------------------------
+  // How a keyframed `svg.path` morphs (`core/paths/morphMatch.ts`), and how much of the stroke is drawn
+  // (`core/paths/strokeDraw.ts`). None has a CSS property of its own: the render definition and the engine make the
+  // path data and the dashes from them.
+  /** `auto` picks the start point and direction that move the points least; `order` morphs the paths as written. */
+  "morph.match": typed(oneOf(["auto", "order"], "auto", null, "paint", PATH_DRAWN)),
+  /** Moves the second path's start point on by this many points, after the automatic choice (closed paths). */
+  "morph.startOffset": ranged(num(0, null, "paint", PATH_DRAWN, false), { min: -256, max: 256, integer: true }),
+  /** Flips the second path's direction, after the automatic choice. */
+  "morph.reverse": typed(flag(false, "paint", PATH_DRAWN)),
+  /** The part of the stroke that is drawn, 0 to 1 along its length (After Effects' Trim Paths). */
+  "draw.start": ranged(num(0, null, "paint", PATH_DRAWN), { min: 0, max: 1 }),
+  "draw.end": ranged(num(1, null, "paint", PATH_DRAWN), { min: 0, max: 1 }),
+  /** Slides the drawn part along the path, in turns: 1 is once round. */
+  "draw.offset": typed(num(0, null, "paint", PATH_DRAWN)),
+  /** Draws from the path's other end. */
+  "draw.reverse": typed(flag(false, "paint", PATH_DRAWN)),
+  /** With several sub-paths: 0 draws them together, 1 one after another. */
+  "draw.stagger": ranged(num(0, null, "paint", PATH_DRAWN, false), { min: 0, max: 1 }),
 
   // --- Parametric shapes (Phase 7.6) -------------------------------------------
   // Geometry is the layer's frame; these are the shape's own parameters. Fill,

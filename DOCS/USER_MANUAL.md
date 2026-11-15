@@ -275,6 +275,15 @@ The **Compositing** section works on one selected layer.
 
 A mask you set shows straight away. A **matte**, the **Displacement** and **Noise** effects and **motion blur** show in **Motion** and in **Preview**, not in Design (Design shows the page at rest). None of these are in the exported code yet.
 
+### 8. Morph & draw (paths and icons)
+A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
+
+- **Draw the stroke on:** put the needle where the drawing should start, set **Length** (seconds) and click the button. The stroke starts undrawn and is whole after that time. The section then lists **Stroke draws on** with its times; the minus beside it removes it.
+- **Trim stroke:** shows only part of the stroke. **Start** and **End** are percentages of its length, **Offset** slides the drawn part along the path (100 is once round), **From the other end** draws from the path's last point. When the path has several separate strokes, **Stagger** decides whether they draw together (0) or one after another (100).
+- **Morph into…:** pick another path (or, for an icon, another icon). The layer's path turns into that one over **Length**, starting at the needle. Each separate stroke morphs into the stroke with the same number in the other path, and the points are matched so the shape doesn't twist. If it still turns or folds on the way, change **Matching** to **As drawn**, move the **Start point** on by a few points, or click **Reverse direction**.
+
+Drawing and morphing are seen in **Motion** and in **Preview**. The timeline has no rows for their keyframes yet; they are listed in the section. A rectangle, ellipse, polygon or star can't be drawn on or morphed (only paths and icons), a stroke with a brush, an alignment or arrowheads isn't trimmed, and none of the animation is in the exported code yet.
+
 > [!NOTE]
 > **Property links (pick-whip).** The engine now lets one property **follow** another: link a layer's rotation to another layer's position and it turns as that layer moves. A link can pass the number straight through, map a range onto another range (0 to 400 px onto 0 to 90 degrees), or ease it. A link that would loop back on itself is refused and the loop is shown. The editor has no pick-whip to drag yet; it is planned.
 

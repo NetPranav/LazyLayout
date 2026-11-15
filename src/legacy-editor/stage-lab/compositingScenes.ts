@@ -22,3 +22,11 @@ export const LINK_HERO = "scene_link_hero";
 /** Phase 77 scene: a layer that wiggles, and one that loops its own slide. */
 export const EXPR_WIGGLE = "scene_expr_wiggle";
 export const EXPR_LOOP = "scene_expr_loop";
+
+/** Phase 85's two references: a menu icon morphing into a close icon, and a logo (an outline and three bars) drawing itself. */
+export const MORPH_ICON = "scene_morph_icon";
+export const DRAW_LOGO = "scene_draw_logo";
+export const ICON_MENU = "M4 6 L20 6 M4 12 L20 12 M4 18 L20 18";
+export const ICON_CLOSE = "M6 6 L18 18 M12 12 L12 12 M6 18 L18 6";
+export const LOGO_PATH = "M20 20 L180 20 L180 180 L20 180 Z M60 60 L140 60 M60 100 L140 100 M60 140 L140 140";
+export const LOGO_STAGGER = 0.5;

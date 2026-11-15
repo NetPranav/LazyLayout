@@ -8,6 +8,7 @@ import { registerFrameCommands } from "@/core/frames/frameCommands";
 import { registerTimelineCommands } from "@/core/timeline/timelineCommands";
 import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
+import { registerPathMotionCommands } from "@/core/paths/pathMotionCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
 import { registerDriverCommands } from "@/core/bindings/driverCommands";
 import { registerStateCommands } from "@/core/states/stateCommands";
@@ -59,6 +60,7 @@ export function useLeftPanelData(
     const offTimeline = registerTimelineCommands();
     const offCompositing = registerCompositingCommands(); // blend, adjustment, mask and matte (Phase 74)
     const offFx = registerFxCommands(); // the effect stack and motion blur (Phase 75)
+    const offPathMotion = registerPathMotionCommands(); // path morph and stroke drawing (Phase 85)
     const offLinks = registerLinkCommands(); // property links, the pick-whip (Phase 76)
     const offExpressions = registerExpressionCommands(); // expressions (Phase 77)
     // Design track D12: lines are re-detected when fonts finish loading (a text that wrapped with a fallback font wraps differently)
@@ -81,6 +83,7 @@ export function useLeftPanelData(
       offTimeline();
       offCompositing();
       offFx();
+      offPathMotion();
       offLinks();
       offExpressions();
       offDrivers();

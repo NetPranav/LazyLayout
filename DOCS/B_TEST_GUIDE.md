@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | this branch (NEW) | 3.23 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
 ## The 10-minute quick pass (start here)
@@ -50,7 +51,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 7. **Scroll (3.17, T81.1–T81.6):** make the page tall, add a scroll animation with Ctrl+P → `Add a Scroll Animation to a Layer`, switch the frame bar to **Preview**, scroll: the layer moves with the scroll. Back in **Design** it is as drawn.
 8. **Compositing and effects in the inspector (3.19, 3.20):** in **Design**, draw two rectangles, select the second. In the right panel open **Effect stack**, choose **Add an effect… → Blur**: the rectangle goes soft and the row says **CSS**. Open **Compositing**, set **Mask** to **Alpha** and **Shape** to **Ellipse**: the rectangle becomes an oval. **Ctrl+Z** twice puts both back.
 9. **A layer half way through a move can be clicked (3.18, T69.9):** in **Motion**, give a rectangle two **Position X** keyframes, drag the needle to the middle, click the rectangle on the canvas: it is selected and its motion path shows (the click used to fall through to the frame behind).
-10. Nothing in the console is red.
+10. **A stroke draws itself, a path morphs (3.23):** press **P**, click three points, press **Enter** (a path); do it again somewhere else with four points. Select the first, switch to **Motion**, scroll the right panel to **Morph & draw**, click **Draw the stroke on**, then drag the needle from 0 to 1 s: the stroke grows from nothing to whole. Choose **Morph into… → (the other path)** and drag the needle again: the first shape turns into the second.
+11. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -905,6 +907,35 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T77.11** Do: `grep -rnE "eval\(|new Function" src/core/expressions --include=*.ts --exclude-dir=__tests__`. Expect: nothing outside comments (the one place a function is built from the compiled source is in the test).
 
 ---
+
+### 3.23 Phase 85: path morph and stroke drawing (NEW)
+
+**What changed:** a layer drawn from one path (a pen or pencil path, an imported SVG path, an icon) can do two new things. Its **stroke can draw itself on** (After Effects calls it Trim Paths): only the part between a start and an end shows, and those can be keyframed. And its **path can morph into another path**: the points of the two shapes are matched automatically, each separate stroke with its partner, so a menu icon's three bars become a cross instead of a scribble.
+
+**Known gaps (don't report):** the new editor's timeline has no rows for these keyframes yet (it shows Opacity, Position, Scale and Rotation). The **Morph & draw** section lists the animations it made with their times, and removes them. A rectangle, ellipse, polygon or star has no Morph & draw section (only paths and icons). A stroke with a brush, an alignment or arrowheads is not trimmed. A stroke that is being drawn is not dashed. Nothing of this is in the exported code yet, except a stroke trimmed at rest. Drawing and morphing are seen in **Motion** and **Preview**; **Design** shows the layer at rest.
+
+**User test (the new editor, covered by `tests/e2e/path-morph-draw.spec.ts`)**
+- [ ] **T85.1** Do: open `/editor`, **Design**. Press **P**, click three points on the page to make a triangle-like line, press **Enter**. Expect: a path layer, selected. Fails if: nothing is drawn.
+- [ ] **T85.2** Do: press **P** again, click four points somewhere else, press **Enter**. Rename nothing. Expect: a second path layer.
+- [ ] **T85.3** Do: click the first path. Scroll the right panel down. Expect: a section **Morph & draw** with **Length** (1 s), **Draw the stroke on**, **Trim stroke** and a menu **Morph into…**. Fails if: the section is missing for a path, or present for a rectangle.
+- [ ] **T85.4** Do: switch to **Motion** (top bar). Select the first path on the canvas. Scroll the right panel to **Morph & draw** (below Animation). Drag the needle to **0 s**. Click **Draw the stroke on**. Expect: a line appears in the section: **Stroke draws on · 0.00s to 1.00s**, and **Trim stroke: on** with Start 0 %, End 100 %.
+- [ ] **T85.5** Do: drag the needle slowly from 0 s to 1 s. Expect: at 0 s the stroke is **gone**; it grows from the path's first point; at 0.5 s about half of it shows; at 1 s it is whole. Fails if: the whole stroke shows all the time, or a dot stays at 0 s.
+- [ ] **T85.6** Do: press **Space** to play. Expect: the same drawing, smoothly.
+- [ ] **T85.7** Do: click **From the other end**. Drag the needle. Expect: the stroke now grows from the path's **last** point. Click it again to switch it off.
+- [ ] **T85.8** Do: set **Offset** to **25**. Expect: at 0.5 s the drawn half sits a quarter of the way further along the path. Set it back to 0.
+- [ ] **T85.9** Do: press **Ctrl+Z** until **Stroke draws on** disappears from the section. Expect: one press removes the Offset change, and so on; the press that undoes **Draw the stroke on** removes both keyframes at once and **Trim stroke** goes off (one undo step). Press **Ctrl+Shift+Z** to bring it back.
+- [ ] **T85.10** Do: drag the needle to 0 s. In **Morph into…** choose the second path (it is listed by its layer name). Expect: a line **Path morphs · 0.00s to 1.00s**, and three new controls: **Matching**, **Start point**, **Reverse direction**.
+- [ ] **T85.11** Do: drag the needle from 0 s to 1 s. Expect: the first path changes shape smoothly into the second path's shape (stretched to the first layer's own box). At 0 s it is exactly the first shape, at 1 s exactly the second. Fails if: it jumps at the end, or does not change.
+- [ ] **T85.12** Do: at 0.5 s, set **Matching** to **As drawn**, then back to **Automatic**. Expect: the half-way shape changes (unless both paths were drawn from the same corner in the same direction). Set **Start point** to 1, then 2: for closed shapes the half-way shape turns; for open ones nothing changes. Click **Reverse direction**: the half-way shape changes. Fails if: none of the three ever changes anything on two closed shapes.
+- [ ] **T85.13** Do: click the minus beside **Path morphs**. Expect: the line and the three controls disappear; the path is its own shape at every time. **Ctrl+Z** brings the morph back.
+- [ ] **T85.14** Do: click **Trim stroke: on**. Expect: it goes off and Start, End, Offset disappear. (The **Stroke draws on** keyframes stay; remove them with their minus.)
+- [ ] **T85.15** Do: select a rectangle (press **R**, drag) and look for the section. Expect: no **Morph & draw** section.
+
+**User test (the stage lab: the two reference animations, covered by `tests/e2e/path-morph-draw.spec.ts`)**
+- [ ] **T85.20** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load path scenes**. Expect: a menu icon (three bars) on the left and nothing yet where the logo will be (it starts undrawn).
+- [ ] **T85.21** Do: drag **Time** slowly from 0 to 1. Expect: the three bars turn into a **cross**: the top and bottom bars tilt into the two diagonals and the middle bar shrinks to nothing. They stay three separate strokes all the way. Fails if: the bars are joined by extra lines on the way.
+- [ ] **T85.22** Do: watch the logo while dragging. Expect: a square outline starts drawing first, then three bars inside it start one after another, each a little later than the one before; at 1 everything is whole. Fails if: all four strokes are always at the same stage (no stagger), or the outline and bars are drawn as one long line.
+- [ ] **T85.23** Do: drag **Time** back to a moment you looked at. Expect: exactly the same picture (scrubbing is exact).
 
 ## 4. Regression checks (things that must still work)
 
