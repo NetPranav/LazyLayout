@@ -1,0 +1,1 @@
+- [Phase 164] Implemented physics contact events & collision debug view (`src/core/physics2d/contactEvents.ts`): fixed-step `OverlapBegin`, `OverlapStay`, `OverlapEnd`, `Hit`, `FieldEnter`, `FieldExit` event tracker with `selfId`/`otherId`/contact pins and `buildCollisionDebugView` (`PR #140`); closes `AUD-56`.
