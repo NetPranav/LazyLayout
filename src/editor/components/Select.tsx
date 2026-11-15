@@ -168,6 +168,8 @@ export const Select: React.FC<SelectProps> = ({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isRendered, setIsRendered] = useState(false);
+  // the timer that unmounts the list once it has animated out; a reopen before then cancels it
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const motionRef = useRef<SelectMotion | null>(null);
   const getMotion = useCallback((): SelectMotion => {
@@ -298,7 +300,9 @@ export const Select: React.FC<SelectProps> = ({
     }
 
     const exitDuration = prefersReducedMotion() ? MENU_FALLBACKS.reducedMotionDuration : MOT.exitDelay + MOT.exitMs;
-    setTimeout(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
       setIsRendered(false);
       setQuery("");
       isBusyRef.current = false;
@@ -310,6 +314,11 @@ export const Select: React.FC<SelectProps> = ({
 
   const openDropdown = useCallback((kb = false) => {
     if (disabled || isOpen) return;
+    // reopened while the last close was still animating out: keep the list mounted
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
     setIsRendered(true);
     setIsOpen(true);
     isBusyRef.current = false;

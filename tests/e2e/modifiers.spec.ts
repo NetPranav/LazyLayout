@@ -31,7 +31,7 @@ test("a rectangle's Repeat and Round corners modifiers: add, change, switch off,
   await expect(page.getByTestId("modifiers-section")).toBeVisible();
 
   // add a Repeat: the rectangle is drawn as a path with three copies
-  await page.getByLabel("Add modifier", { exact: true }).click();
+  await page.getByRole("combobox", { name: "Add modifier" }).click();
   await page.getByRole("option", { name: "Repeat" }).click();
   await expect.poll(async () => (await stack(page, id)).map((m) => m.type)).toEqual(["repeat"]);
   await page.getByLabel("Repeat Step X", { exact: true }).fill("80");
@@ -57,7 +57,7 @@ test("a rectangle's Repeat and Round corners modifiers: add, change, switch off,
   await expect.poll(async () => ((await pathD()) ?? "").match(/M/g)?.length ?? 0).toBe(5);
 
   // a Round corners below it, moved above it; then removed
-  await page.getByLabel("Add modifier", { exact: true }).click();
+  await page.getByRole("combobox", { name: "Add modifier" }).click();
   await page.getByRole("option", { name: "Round corners" }).click();
   await expect.poll(async () => (await stack(page, id)).map((m) => m.type)).toEqual(["repeat", "round"]);
   await page.getByRole("button", { name: "Move Round corners up" }).click();
