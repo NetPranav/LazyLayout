@@ -445,7 +445,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 🚧 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 🚧 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 🚧 |
-| 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
+| 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 🚧 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 📋 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 📋 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
@@ -2624,8 +2624,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 8 behaviours pass scripted-pointer tests at checkpoints; 50 reactive layers hold 60 fps.
 
 ### Phase 144 · Velocity effects: squash & stretch, lean & trails
-**Needs:** 134, 143 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 134, 143 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Presets driven by a layer's own speed and direction: squash and stretch along the motion, lean into turns, echo copies and motion trails, speed lines. Simple face: Bounce and Stretch.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/bindings/velocityEffects.ts` (volume-preserving squash & stretch, turn lean, echo/speed-line synthesis, Simple Bounce & Stretch presets) and unit/perf tests in `src/core/bindings/__tests__/velocityEffects.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a ball that stretches when it moves fast and squashes when it stops.
 **Done when:** the presets match reference values on scripted tapes; 50 layers hold 60 fps.
