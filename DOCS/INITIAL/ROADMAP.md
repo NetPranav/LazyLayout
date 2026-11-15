@@ -401,7 +401,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 |---|---|---|---|---|---|
 | 103 | Curve-exact path engine → *ROADMAP_3D 3D-027 (the path engine part)* | 40 | — (new in v4.1) | 3 | 🚧 |
 | 104 | Live boolean groups | 46, 103 | — (new in v4.1) | 3 | 🚧 |
-| 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 📋 |
+| 105 | Shape Builder tool | 104 | — (new in v4.1) | 3 | 🚧 |
 | 106 | Path operations: offset, outline, simplify, divide & knife | 103 | — (new in v4.1) | 3 | 📋 |
 | 107 | Smooth corners & corner styles | 35, 40 | — (new in v4.1) | 3 | 📋 |
 | 108 | Soft union: gooey groups | 104 | — (new in v4.1) | 3 | 📋 |
@@ -1505,11 +1505,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-14), 🚧:** live boolean groups were already built by the FigCraft port (`src/core/editing/booleanGroups.ts`: make, set operation per group and per operand, flatten, nesting, one undo step each; the group draws through the Container render definition, so the stage and the export use the same path). **Built now (Lane C):** the speed gate. A 50-child group took about 45 ms before Phase 103 and about 600 ms with curves refitted at every step; `booleanGroupResult` now combines the operands as polygons, merges runs of operands that combine the same way, remembers each run (and the run without the child that is moving), and turns the result into curves once. **Measured: 6.9 ms median** for moving one child of a 50-child group of ellipses and rectangles (`booleanGroupSpeed.test.ts`), and the result is curves. The FigCraft port's and Phase 40's browser tests pass in Chromium (25 of 25). **Not done:** the stage-against-export comparison within 0.5 px in three browsers has no test of its own; the Simple face ("Edit pieces" and "Flatten" beside the four icons) is in the legacy editor and has not been checked in the new one; Firefox and WebKit were not run.
 
 ### Phase 105 · Shape Builder tool
-**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 104 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Select overlapping shapes and the tool shows every region they make. Drag across regions to merge them, Alt-drag (Option-drag) to delete them, click to keep a region on its own; the result is a live boolean group.
 
 **You'll see:** draw a few shapes, drag across the pieces you want, and get one clean shape.
 **Done when:** a 12-step Shape Builder journey gives the expected region areas and node counts in 3 browsers.
+
+**Status check (2026-11-15), 🚧:** the Shape Builder was built by the FigCraft port (`src/core/editing/shapeBuilder.ts`: regions of the selection, merge, remove, strokes as their own regions, one undo step each; the `shapeBuilder.merge` and `shapeBuilder.remove` commands; the tool on Shift+M in the legacy editor). **Built now (Lane C):** the 12-step journey (`shapeBuilderJourney.test.ts`): three overlapping circles make seven regions whose areas match the analytic lenses; every region, merge and removal is curves with no straight side; undo and redo restore each step. It found a real bug: merging regions that had been cut from curves made the clipper fail on edges that nearly coincide. Fixed in `pathOps.ts`: a result keeps the exact polygons it was made from, so it is combined again as those, and the clipper retries on a fine grid if it still fails. **Not done:** the journey runs as a unit test, not in three browsers; the result is a plain path layer, not a live boolean group as the checklist asks (kept on purpose: the FigCraft behaviour, where the pieces left over stay where they are, needs plain layers; a live-group result is a separate decision); the tool is reachable only in the legacy editor.
 
 ### Phase 106 · Path operations: offset, outline, simplify, divide & knife
 **Needs:** 103 · **Was:** — (new in v4.1) · **Status:** 📋
