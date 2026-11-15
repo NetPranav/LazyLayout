@@ -1,5 +1,6 @@
 "use client";
 
+import { useStateEditStore } from "@/core/states/stateEdit";
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { useStore } from "zustand";
 import { StageRenderer } from "@/core/render/StageRenderer";
@@ -28,13 +29,18 @@ import { parseBinding, resolveLayerRefs } from "@/core/document/signals";
  * The engine runs where the canvas should show motion: in Motion and Preview, and while playing. In Design (paused)
  * it is not installed, so the canvas shows the design itself; uninstalling puts back exactly what React drew.
  */
+/** Drivers and effectors are live where the canvas shows motion: Motion, Preview, and while playing. Design shows the design itself. */
+const driversLive = (): boolean => useCanvasViewStore.getState().mode !== "design" || getTransport().playing || Object.keys(useFramePreviewStore.getState().previewing).length > 0;
+
 export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   const [renderer] = useState(() => new StageRenderer());
   const designing = useCanvasViewStore((s) => s.mode === "design");
   const playing = useStore(transportStore, (s) => s.playing);
   // a frame previewed in place (its Preview toggle) is a running page too: it scrolls, so drivers and effectors run
   const framePreviewing = useFramePreviewStore((p) => Object.keys(p.previewing).length > 0);
-  const enabled = !designing || playing || framePreviewing;
+  // Design track D15: a state being edited, or states shown live, are drawn by the engine even in Design
+  const statesShown = useStateEditStore((s) => s.layerId !== null || s.live);
+  const enabled = !designing || playing || framePreviewing || statesShown;
 
   // keep the registry in step with what is drawn
   useLayoutEffect(() => {
@@ -54,7 +60,7 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
     if (!enabled) return undefined;
     const page = pageRef.current;
     const source = page ? pagePointerSource(page) : null;
-    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => true } } : {});
+    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {

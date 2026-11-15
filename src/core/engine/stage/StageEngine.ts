@@ -8,6 +8,8 @@ import type { AdapterHost, EngineAdapter } from "./types";
 import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
 import { BindingDriver, type BindingDriverHost } from "./BindingDriver";
 import { boundLayerIds, copiedLayerIds } from "./styleWrites";
+import { StateDriver, type StateDriverHost } from "./StateDriver";
+import { stateLayerIds } from "../../states/states";
 import { EffectorDriver } from "./EffectorDriver";
 import { CssVarWriter } from "./CssVarWriter";
 
@@ -28,6 +30,8 @@ export interface StageEngineOptions {
   scroll?: { host: ScrollHost; active: () => boolean };
   /** Design track D4: drivers (bindings). The host measures the page's inputs; `active` says whether they are live (Preview and Motion; in Design the page shows the design). */
   bindings?: { host: BindingDriverHost; active: () => boolean };
+  /** Design track D15: states. Hover and press come from the same input source; `editing` and `live` say what to show. */
+  states?: StateDriverHost;
 }
 
 export function installStageEngine(renderer: StageRenderer, options: StageEngineOptions = {}): () => void {
@@ -78,10 +82,12 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     else adapter.setInputs({ bound: bound ?? undefined });
   };
   const syncBoundLayers = () => {
-    if (adapter instanceof StageAdapters) adapter.setBoundLayers(new Set([...(options.bindings ? boundLayerIds(getDocument()) : []), ...copiedLayerIds(getDocument())]));
+    if (adapter instanceof StageAdapters) adapter.setBoundLayers(new Set([...(options.bindings ? boundLayerIds(getDocument()) : []), ...copiedLayerIds(getDocument()), ...(options.states ? stateLayerIds(getDocument()) : [])]));
   };
   syncBoundLayers();
   let scrollWasLive = false;
+  const stateDriver = options.states ? new StateDriver(options.states) : null;
+  let statesWereLive = false;
 
   const unregister = scheduler.register("apply", (frame) => {
     if (scrollDriver && options.scroll) {
@@ -97,6 +103,19 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (stateDriver && adapter instanceof StageAdapters && !stateDriver.idle) {
+      const states = stateDriver.update(frame.dt);
+      if (stateDriver.changed || !statesWereLive) {
+        adapter.setStates(states);
+        dirty = true;
+      }
+      statesWereLive = true;
+    } else if (statesWereLive && adapter instanceof StageAdapters) {
+      adapter.setStates(null); // back to what the document says
+      stateDriver?.dispose();
+      statesWereLive = false;
+      dirty = true;
+    }
     if (effectorDriver && options.bindings) {
       const live = options.bindings.active() && !effectorDriver.idle;
       if (live) effectorDriver.update();
@@ -148,6 +167,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
 
   return () => {
     effectorDriver?.dispose();
+    stateDriver?.dispose();
     cssVars.dispose();
     scrollDriver?.reset();
     unmonitor?.();

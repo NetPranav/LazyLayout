@@ -207,9 +207,9 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
    * fluid; a component root loses its place (the instance has its own).
    */
   const planRoot = (rootId: string, kind: "page" | "component", fromRoute: string, hrefs: PlanOptions["hrefs"], assets: Set<string>): RootPlan => {
-    const render = (bpId: string | null, modeId: string | null) => {
+    const render = (bpId: string | null, modeId: string | null, override?: (layers: Record<string, Layer>) => Record<string, Layer>) => {
       const view = resolveDocumentAt(doc, bpId, modeId === modes[0].id ? null : modeId);
-      const html = renderLayerMarkup(view.layers, rootId, { assetUrl: (id) => (assets.add(id), siteAssets.add(id), `{{asset:${id}}}`) }, kind === "page");
+      const html = renderLayerMarkup(override ? override(view.layers) : view.layers, rootId, { assetUrl: (id) => (assets.add(id), siteAssets.add(id), `{{asset:${id}}}`) }, kind === "page");
       const parsed = parseMarkup(html);
       const roots = options.dotGrids === false ? parsed : collapseDotGrids(parsed, liveEffectorLayers);
       // (a layer that is hidden at a breakpoint draws nothing there)
@@ -246,7 +246,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
       }
       return cls;
     };
-    const emitDiff = (selectorPrefix: string, prev: Map<string, Decl[] | null>, next: ReturnType<typeof render>, warnKey: string): Rule[] => {
+    const emitDiff = (selectorPrefix: string, prev: Map<string, Decl[] | null>, next: ReturnType<typeof render>, warnKey: string, suffix = ""): Rule[] => {
       const rules: Rule[] = [];
       const seen = new Set<string>();
       for (const [key, decls] of next.rendering.styles) {
@@ -255,10 +255,10 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         if (before === undefined) continue;
         if (before === null) {
           const display = decls.find(([k]) => k === "display")?.[1] ?? "revert";
-          rules.push({ selector: `${selectorPrefix}.${classFor(key)}`, decls: [...decls.filter(([k]) => k !== "display").map(toCss), ["display", display]] });
+          rules.push({ selector: `${selectorPrefix}.${classFor(key)}${suffix}`, decls: [...decls.filter(([k]) => k !== "display").map(toCss), ["display", display]] });
         } else {
           const d = diffDecls(before, decls);
-          if (d.length > 0) rules.push({ selector: `${selectorPrefix}.${classFor(key)}`, decls: d.map(toCss) });
+          if (d.length > 0) rules.push({ selector: `${selectorPrefix}.${classFor(key)}${suffix}`, decls: d.map(toCss) });
         }
         prev.set(key, decls);
       }
@@ -279,6 +279,37 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     };
     for (const { bp, rendering } of bpStates) {
       blocks.push({ wrapper: `@media (max-width: ${bp.width}px)`, rules: emitDiff("", state, rendering, `Text or attributes of an element differ at ${bp.name} and are exported as at ${base.name}`) });
+    }
+    // Design track D15: a layer's hover, pressed and focus states become :hover, :active and :focus-within rules, eased by a transition
+    const STATE_SELECTOR: Record<string, string> = { hover: ":hover", pressed: ":active", focus: ":focus-within" };
+    const rootIds = new Set<string>();
+    walk(baseView.roots, (n) => {
+      if (n.tag !== "#text" && n.attrs["data-element-id"]) rootIds.add(n.attrs["data-element-id"]);
+    });
+    const easeBy = new Map<string, Set<string>>();
+    const stateRules: Rule[] = [];
+    for (const row of Object.values(doc.states ?? {})) {
+      if (!rootIds.has(row.layerId)) continue;
+      const suffix = STATE_SELECTOR[row.name];
+      if (!suffix) {
+        const note = `State "${row.name}" is not exported: only Hover, Pressed and Focus become CSS`;
+        if (!warnings.includes(note)) warnings.push(note);
+        continue;
+      }
+      const shown = render(null, modeIds[0], (ls) => (ls[row.layerId] ? { ...ls, [row.layerId]: { ...ls[row.layerId], properties: { ...ls[row.layerId].properties, ...row.props } } as Layer } : ls));
+      const rules = emitDiff("", new Map<string, Decl[] | null>(baseView.rendering.styles), shown, `State ${row.name}`, suffix);
+      for (const r of rules) {
+        stateRules.push(r);
+        const cls = r.selector.slice(1, r.selector.length - suffix.length);
+        const set = easeBy.get(cls) ?? new Set<string>();
+        for (const [k] of r.decls) if (k !== "display") set.add(k);
+        easeBy.set(cls, set);
+      }
+    }
+    if (stateRules.length > 0) {
+      const easing: Rule[] = [...easeBy].map(([cls, props]) => ({ selector: `.${cls}`, decls: [["transition", [...props].map((k) => `${k} 0.14s ease`).join(", ")]] as Decl[] }));
+      blocks.push({ wrapper: null, rules: [...easing, ...stateRules] });
+      blocks.push({ wrapper: "@media (prefers-reduced-motion: reduce)", rules: [...easeBy.keys()].map((cls) => ({ selector: `.${cls}`, decls: [["transition", "none"]] as Decl[] })) });
     }
     if (modeIds.length > 1) {
       for (const modeId of modeIds.slice(1)) {
@@ -397,11 +428,11 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
 function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
   const utilities = new Map<string, string[]>();
   for (const b of blocks) {
-    const variant = b.wrapper ? `max-[${b.wrapper.replace(/^@media \(max-width: /, "").replace(/px\)$/, "")}px]:` : "";
+    const variant = !b.wrapper ? "" : b.wrapper.includes("prefers-reduced-motion") ? "motion-reduce:" : `max-[${b.wrapper.replace(/^@media \(max-width: /, "").replace(/px\)$/, "")}px]:`;
     for (const r of b.rules) {
-      const m = /^(?:\[data-mode="([^"]+)"\] )?\.(.+)$/.exec(r.selector);
+      const m = /^(?:\[data-mode="([^"]+)"\] )?\.([^:]+)(:hover|:active|:focus-within)?$/.exec(r.selector);
       if (!m) continue;
-      const modeVariant = m[1] ? `[[data-mode=${m[1]}]_&]:` : "";
+      const modeVariant = (m[1] ? `[[data-mode=${m[1]}]_&]:` : "") + (m[3] ? `${m[3].slice(1)}:` : "");
       const list = utilities.get(m[2]) ?? [];
       for (const [k, v] of r.decls) list.push(tailwindUtility(k, v, `${variant}${modeVariant}`));
       utilities.set(m[2], list);

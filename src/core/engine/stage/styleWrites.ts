@@ -1,3 +1,4 @@
+import { sequenceGrid, sequencePosition } from "../../render/sequence";
 import type { MotionDocument } from "../../document/schema";
 import { getPropertyDefinition, type PropertyDefinition } from "../../document/properties";
 import { mattesOf, type ResolvedProps } from "../../kernel/evaluate";
@@ -45,6 +46,8 @@ export function animatedPaths(doc: MotionDocument, layerId: string): Set<string>
   if (own) for (const expr of readExpressions(own)) if (expr.enabled) paths.add(expr.target);
   // Design track D4: and a property a binding drives (the pointer or scroll may move it).
   for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer" && b.target.on.ref === layerId) paths.add(b.target.path);
+  // Design track D15: a layer with states has every property a state sets written (a state may be on, or easing in or out).
+  for (const state of Object.values(doc.states ?? {})) if (state.layerId === layerId) for (const k of Object.keys(state.props)) paths.add(k);
   return paths;
 }
 
@@ -73,6 +76,7 @@ export function animatedLayers(doc: MotionDocument): Map<string, Set<string>> {
   for (const behaviour of Object.values(doc.behaviours)) if (behaviour.enabled && behaviour.type === "loop") layerIds.add(behaviour.layerId);
   for (const layer of Object.values(doc.layers)) if (hasFx(layer.properties, layer.motionBlur === true || speedEffectsOn(layer.properties)) || hasLinks(layer.properties) || hasExpressions(layer.properties)) layerIds.add(layer.id);
   for (const b of Object.values(doc.bindings ?? {})) if (b.enabled && b.target.kind === "property" && b.target.on.kind === "layer") layerIds.add(b.target.on.ref);
+  for (const state of Object.values(doc.states ?? {})) layerIds.add(state.layerId);
   for (const [source, targets] of mattesOf(doc)) {
     layerIds.add(source);
     for (const id of targets) layerIds.add(id);
@@ -140,6 +144,11 @@ export function styleWrites(paths: Iterable<string>, resolved: ResolvedProps, la
     const height = typeof resolved["frame.height"] === "number" ? resolved["frame.height"] : 0;
     const mask = maskStyle(read, { width, height });
     for (const key of ["mask-image", "-webkit-mask-image", "mask-size", "-webkit-mask-size", "mask-repeat", "-webkit-mask-repeat"]) out[key] = mask ? { "mask-image": mask.maskImage, "-webkit-mask-image": mask.WebkitMaskImage, "mask-size": mask.maskSize, "-webkit-mask-size": mask.WebkitMaskSize, "mask-repeat": mask.maskRepeat, "-webkit-mask-repeat": mask.WebkitMaskRepeat }[key]! : "none";
+  }
+  // Image sequence (Design track D13): the frame shown is a background position made from the grid and the frame number.
+  if (paths2.includes("sequence.frame")) {
+    const grid = sequenceGrid((p) => resolved[p]);
+    if (grid) out["background-position"] = sequencePosition(grid, resolved["sequence.frame"]);
   }
   // The effect stack and motion blur (Phase 75): one `filter` made of the layer's own filters, the stack's functions in order and
   // the `url()`s of its SVG filters (which the engine keeps in the frame, see `fxFilters.ts`).

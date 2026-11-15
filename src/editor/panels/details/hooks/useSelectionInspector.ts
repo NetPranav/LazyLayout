@@ -15,7 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
-import { useLayers } from "@/core/store/useDocumentStore";
+import { useLayers, useDocument } from "@/core/store/useDocumentStore";
+import { useStateEditStore } from "@/core/states/stateEdit";
 import type { Layer } from "@/core/document/schema";
 import type { PropValue } from "@/core/document/registry";
 import {
@@ -90,12 +91,22 @@ export function useSelectionInspector(options: UseSelectionInspectorOptions = {}
   const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   const isMulti = selectedIds.length > 1;
 
+  // Design track D15: while a state is being edited, the fields show the layer as it is in that state
+  const editLayerId = useStateEditStore((s) => s.layerId);
+  const editStateName = useStateEditStore((s) => s.name);
+  const allStates = useDocument((d) => d.states);
+
   // Selected layer objects: map directly from document layers
   const selectedLayers = useMemo(() => {
     return selectedIds
-      .map((id) => layers[id])
+      .map((id) => {
+        const layer = layers[id];
+        if (!layer || id !== editLayerId || !editStateName) return layer;
+        const row = Object.values(allStates ?? {}).find((s) => s.layerId === id && s.name === editStateName);
+        return row ? ({ ...layer, properties: { ...layer.properties, ...row.props } } as Layer) : layer;
+      })
       .filter(Boolean) as Layer[];
-  }, [selectedIds, layers]);
+  }, [selectedIds, layers, editLayerId, editStateName, allStates]);
 
   const primaryLayer: Layer | undefined = selectedLayers[0];
   const hasSelection = selectedIds.length > 0;
