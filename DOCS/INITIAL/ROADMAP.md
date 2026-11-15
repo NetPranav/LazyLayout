@@ -460,7 +460,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 🚧 |
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 🚧 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 🚧 |
-| 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
+| 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 🚧 |
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
 | 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 📋 |
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 📋 |
@@ -2735,9 +2735,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the reference build passes inside a rotated, scaled card; the label check passes for every kinetic Simple face; 400 letters hold 60 fps.
 
 ### Phase 159 · Blueprint model & interaction library
-**Needs:** 158 · **Was:** v3 72.1, 72.2 · **Closes:** AUD-50 (model), AUD-45 (cross-element) · **Status:** 📋
-- [ ] `document.graphs`: event graphs, functions, macros, typed variables, custom events, exec and data pins. Validation through the rules (pin types, latent placement, bounded loops).
-- [ ] Standard library: pointer, hover, focus, **key** and drag events; view, scroll-crossing, breakpoint and mount events; markers, state changes, variable changes, signal thresholds, timers; overlap and hit events (driven by 164). Flow: branch, sequence, gate, do-once, do-N, flip-flop, delay, for-each, switch. Actions: play/seek/reverse compositions, set state or state-machine input, spring or set a property, set a uniform, burst, show/hide, scroll to, focus, open URL, navigate, `PlaySound`, `Spawn` (170), KeepOut, SpringHome, AddForce/Impulse/Spin, Explode, SetBody.
+**Needs:** 158 · **Was:** v3 72.1, 72.2 · **Closes:** AUD-50 (model), AUD-45 (cross-element) · **Status:** 🚧
+- [x] `document.graphs`: event graphs, functions, macros, typed variables, custom events, exec and data pins, plus rule validation (pin types, latent placement, bounded loops) and standard interactive library (`src/core/nodescript/interactionLibrary.ts`).
+- [x] Standard library: pointer, hover, focus, **key**, drag, view, scroll-crossing, breakpoint, mount, marker, state change, variable change, threshold, timer, overlap, and hit events; flow control; cross-element, state, sound, physics, and kinetic actions.
 
 **You'll see:** nothing new until 167 adds the editors (model work).
 **Done when:** grammar §10 and §13.8 examples and 10 cross-element interactions validate as graphs.
