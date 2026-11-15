@@ -354,7 +354,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 🚧 |
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 🚧 |
 | 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 🚧 |
-| 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 📋 |
+| 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 🚧 |
 | 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 📋 |
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 📋 |
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 📋 |
@@ -2191,8 +2191,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the falling-letters fixture matches stored snapshots at 5 checkpoints.
 
 ### Phase 164 · Contact events & collision view
-**Needs:** 163 · **Was:** v3 91.4, 91.5 · **Closes:** AUD-56 (physics) · **Status:** 📋
-- [ ] `OverlapBegin`, `OverlapStay`, `OverlapEnd`, `Hit` and `FieldEnter/Exit` events with `other` and contact pins, fired from the fixed step. "Show collision" draws colliders, contacts, normals and velocities.
+**Needs:** 163 · **Was:** v3 91.4, 91.5 · **Closes:** AUD-56 (physics) · **Status:** 🚧
+- [x] `OverlapBegin`, `OverlapStay`, `OverlapEnd`, `Hit` and `FieldEnter/Exit` events with `other` and contact pins, fired from the fixed step. "Show collision" draws colliders, contacts, normals and velocities.
 
 **You'll see:** collision outlines and contact points while previewing.
 **Done when:** contact events fire at the expected tape frames in 3 browsers.
