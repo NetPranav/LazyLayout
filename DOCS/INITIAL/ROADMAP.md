@@ -338,7 +338,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 🚧 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 🚧 |
 | 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 🚧 |
-| 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
+| 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 🚧 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
@@ -2077,8 +2077,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** scripted mouse and touch tapes fire each gesture at the expected frame in 3 browsers and a touch profile.
 
 ### Phase 148 · Drag with constraints
-**Needs:** 147 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 147 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Make any layer draggable: lock to an axis, keep inside the parent, an area or a path, rubber-band edges, snap points, momentum with friction, throw, and return home; drag progress is a signal for other layers.
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/constrainedDrag.ts` (`createConstrainedDragController` with axis locks, bounds/polyline paths, rubber-band resistance, snap points, throw momentum, return home, drag progress signal, and keyboard nudge parity) and tests in `src/core/signals/__tests__/constrainedDrag.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a slide-to-confirm handle that snaps at the end and springs back if you let go early.
 **Done when:** 10 drag references match tapes in 3 browsers; keyboard equivalents pass.
