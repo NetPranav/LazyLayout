@@ -30,6 +30,13 @@ export const EXPECTED_QUIET: Record<string, string> = {
   "Colour token group": "names the tokens the Save buttons make",
   "Harmony rule": "picks the rule the Save harmony button uses",
   "Contrast target": "picks the target the Fix contrast button uses; the report shows it",
+  // Phase 128: settings for the Arrange button (arrange-3d.spec drives it)
+  "3D arrangement": "picks the arrangement the Arrange button makes",
+  "Arrangement radius": "sets the radius the Arrange button uses",
+  "Arrangement spacing": "sets the spacing the Arrange button uses",
+  "Arrangement facing": "picks the way the Arrange button turns each item",
+  // Phase 127: a look only, by design (nothing is saved)
+  "Orbit preview": "turns the view for a look; nothing in the page changes",
 };
 
 async function ready(page: Page) {

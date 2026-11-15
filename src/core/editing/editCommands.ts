@@ -42,6 +42,7 @@ import { setImageEdit } from "./imageEditOps";
 import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
 import { useMediaLibraryStore } from "../store/useMediaLibraryStore";
 import { makeSpace, releaseSpace, setDepth, setSpace } from "./spaceOps";
+import { arrange3d } from "./arrange3d";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
@@ -394,6 +395,14 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "space.release", title: "Flatten 3D Space", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: releaseSpace(t ?? ids()) }) }));
   add(defineTypedCommand({ id: "space.set", title: "Set 3D Space", category: "Layer", args: z.object({ id: z.string().optional(), perspective: z.number().optional(), vanishX: z.number().optional(), vanishY: z.number().optional(), viewX: z.number().optional(), viewY: z.number().optional() }), run: ({ id, ...patch }) => ({ ok: setSpace(id ?? ids()[0] ?? "", patch) }) }));
   add(defineTypedCommand({ id: "space.setDepth", title: "Set Depth in 3D Space", category: "Layer", args: z.object({ ids: targets, z: z.number().optional(), tiltX: z.number().optional(), tiltY: z.number().optional() }), run: ({ ids: t, ...patch }) => ({ changed: setDepth(t ?? ids(), patch) }) }));
+  // Phase 128: a group's children arranged in 3D (each stays a real layer)
+  add(defineTypedCommand({
+    id: "space.arrange",
+    title: "Arrange in 3D",
+    category: "Layer",
+    args: z.object({ id: z.string().optional(), kind: z.enum(["ring", "dome", "helix", "sphere", "cylinder", "wall", "stack"]), radius: z.number().min(1).max(10_000).optional(), spacing: z.number().min(0).max(10_000).optional(), facing: z.enum(["centre", "viewer", "outward"]).optional() }),
+    run: ({ id, kind, ...options }) => ({ moved: arrange3d(id ?? ids()[0] ?? "", kind, options) }),
+  }));
   // Phase 126: icons and stock photos, each kept in the asset store with its source and licence
   add(defineTypedCommand({ id: "insert.media", title: "Icons & Photos…", category: "Insert", args: z.object({ tab: z.enum(["icons", "photos"]).optional() }).default({}), run: ({ tab }) => (useMediaLibraryStore.getState().open(tab), { ok: true }) }));
   // Phase 123: colour tools, saved as colour tokens; and a text's contrast fixed

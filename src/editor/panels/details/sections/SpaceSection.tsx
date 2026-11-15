@@ -11,6 +11,9 @@ import { invokeCommand } from "@/core/commands";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { getDocument } from "@/core/store/documentState";
 import { isSpace, spaceOf, vanishingPoint } from "@/core/editing/spaceOps";
+import { ARRANGEMENTS, ARRANGEMENT_LABEL, type ArrangementKind, type Facing } from "@/core/editing/arrange3d";
+import { Select } from "@/editor/components/Select";
+import { Button } from "@/editor/components/Button";
 import { Slider } from "@/editor/components/Slider";
 import { Toggle } from "@/editor/components/Toggle";
 import { NumberField } from "@/editor/components/NumberField";
@@ -19,6 +22,41 @@ import { OptionGroup, OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps } from "../types";
 
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+const KINDS = ARRANGEMENTS.map((k) => ({ value: k, label: ARRANGEMENT_LABEL[k] }));
+const FACINGS = [
+  { value: "outward", label: "Face out" },
+  { value: "centre", label: "Face the centre" },
+  { value: "viewer", label: "Face the viewer" },
+];
+
+/** Phase 128: a group's children on a ring, dome, helix, sphere, cylinder, wall or stack, each still its own layer. */
+function ArrangeGroup({ id, count }: { id: string; count: number }) {
+  const [kind, setKind] = useState<ArrangementKind>("ring");
+  const [radius, setRadius] = useState(300);
+  const [spacing, setSpacing] = useState(60);
+  const [facing, setFacing] = useState<Facing>("outward");
+  return (
+    <OptionGroup>
+      <OptionRow label="Arrange">
+        <Select size="sm" aria-label="3D arrangement" value={kind} options={KINDS} width="100%" onChange={(v) => setKind(v as ArrangementKind)} />
+      </OptionRow>
+      <OptionRow label="Radius">
+        <NumberField size="sm" aria-label="Arrangement radius" value={radius} min={1} max={10000} step={10} onChange={setRadius} />
+      </OptionRow>
+      <OptionRow label="Spacing">
+        <NumberField size="sm" aria-label="Arrangement spacing" value={spacing} min={0} max={10000} step={5} onChange={setSpacing} />
+      </OptionRow>
+      <OptionRow label="Facing">
+        <Select size="sm" aria-label="Arrangement facing" value={facing} options={FACINGS} width="100%" onChange={(v) => setFacing(v as Facing)} />
+      </OptionRow>
+      <OptionRow label="">
+        <Button size="sm" variant="secondary" disabled={count === 0} onClick={() => void invokeCommand("space.arrange", { id, kind, radius, spacing, facing })}>
+          {`Arrange ${count} in 3D`}
+        </Button>
+      </OptionRow>
+    </OptionGroup>
+  );
+}
 
 /** A slider that writes one undo step when it is let go. */
 function Committed({ label, value, min, max, step = 1, onCommit }: { label: string; value: number; min: number; max: number; step?: number; onCommit: (v: number) => void }) {
@@ -82,6 +120,7 @@ export const SpaceSection: React.FC<InspectorSectionProps> = ({ selectedId }) =>
           )}
         </OptionGroup>
       )}
+      {canBeSpace && <ArrangeGroup id={selectedId} count={layer.children.length} />}
       {inSpace && (
         <OptionGroup>
           <OptionRow label="Depth">
