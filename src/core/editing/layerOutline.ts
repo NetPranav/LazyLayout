@@ -10,7 +10,7 @@
 
 import type { Layer } from "../document/schema";
 import { BezPath } from "../geometry/bezpath";
-import { ellipse, polygonPoints, roundedRect, smoothedPolygon, starPoints } from "../geometry/shapes";
+import { ellipse, isCornerStyle, polygonPoints, roundedRect, smoothedPolygon, starPoints, type CornerStyle } from "../geometry/shapes";
 import { pathDataToBez } from "../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../paths/vectorNetwork";
 import { refitCurves } from "../paths/curveRefit";
@@ -73,6 +73,8 @@ export function fromWorld(path: BezPath, box: { cx: number; cy: number; w: numbe
   });
 }
 
+const styleOf = (l: Layer): CornerStyle => (isCornerStyle(l.properties["shape.cornerStyle"]) ? (l.properties["shape.cornerStyle"] as CornerStyle) : "round");
+
 const radiiOf = (l: Layer): [number, number, number, number] => {
   const shared = Math.max(0, num(l.properties["shape.cornerRadius"], 0));
   const c = (n: string) => Math.max(0, num(l.properties[`shape.cornerRadius.${n}`], shared));
@@ -95,13 +97,13 @@ export function layerOutline(l: Layer, layers: Readonly<Record<string, Layer>>, 
   const p = l.properties;
   switch (l.archetype) {
     case "rectangle":
-      return { path: roundedRect(w, h, radiiOf(l), Math.min(1, Math.max(0, num(p["shape.cornerSmoothing"], 0)))), evenOdd: false };
+      return { path: roundedRect(w, h, radiiOf(l), Math.min(1, Math.max(0, num(p["shape.cornerSmoothing"], 0))), styleOf(l)), evenOdd: false };
     case "ellipse":
       return { path: ellipse(w, h, (num(p["shape.arcStart"], 0) * Math.PI) / 180, (num(p["shape.arcSweep"], 360) * Math.PI) / 180, Math.min(1, Math.max(0, num(p["shape.arcInnerRatio"], 0)))), evenOdd: true };
     case "polygon":
-      return { path: smoothedPolygon(polygonPoints(w, h, num(p["shape.sides"], 6)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0)), evenOdd: false };
+      return { path: smoothedPolygon(polygonPoints(w, h, num(p["shape.sides"], 6)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0), styleOf(l)), evenOdd: false };
     case "star":
-      return { path: smoothedPolygon(starPoints(w, h, num(p["shape.points"], 5), num(p["shape.innerRadius"], 0.5)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0)), evenOdd: false };
+      return { path: smoothedPolygon(starPoints(w, h, num(p["shape.points"], 5), num(p["shape.innerRadius"], 0.5)), num(p["shape.vertexRadius"], 0), num(p["shape.cornerSmoothing"], 0), styleOf(l)), evenOdd: false };
     case "svgPath": {
       const r = pathLayerPath(l, "fill");
       return r && (r.closed || parseNetwork(p["svg.network"])) ? { path: r.path, evenOdd: r.evenOdd } : null;
