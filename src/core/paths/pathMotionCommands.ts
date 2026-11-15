@@ -8,6 +8,7 @@ import { getTransport } from "../time/transport";
 import { setKeyframeAt } from "../timeline/keyframeOps";
 import { MORPH_MATCHES, matchPaths, morphOptions } from "./morphMatch";
 import { DRAW_PATHS } from "./strokeDraw";
+import { FOLLOW_PATHS, followsPath, pathSampler } from "./pathFollow";
 
 /**
  * Path morph and stroke drawing commands (ROADMAP Phase 85, Law 20). A layer drawn from one path (`svgPath`, `icon`)
@@ -129,6 +130,69 @@ export function registerPathMotionCommands(): () => void {
         if (b) keys.push(b);
       });
       return keys.length === 2 ? { ok: true, keyframes: keys } : { ok: false, code: "NO_KEYFRAMES", message: "No keyframes could be added here." };
+    },
+  }));
+
+  // --- Phase 86: travelling along a path ------------------------------------------------------------------------
+
+  offs.push(defineTypedCommand({
+    id: "path.follow", title: "Put a Layer on a Path", category: "Paths",
+    args: z.object({
+      ids: targets,
+      /** The path layer to travel along; null takes the layer off its path. */
+      source: z.string().nullable().optional(),
+      /** A path of the layer's own, in px from where it rests (used when no source is given). */
+      path: z.string().max(200_000).optional(),
+      progress: z.number().min(-100).max(100).optional(),
+      offset: z.number().min(-100).max(100).optional(),
+      autoRotate: z.boolean().optional(),
+      rotate: z.number().min(-3600).max(3600).optional(),
+    }),
+    run: ({ ids, source, path, progress, offset, autoRotate, rotate }) => {
+      const doc = getDocument();
+      const chosen = (ids ?? selected()).filter((id) => doc.layers[id] && doc.layers[id].locked !== true);
+      if (chosen.length === 0) return { ok: false, code: "NO_LAYER", message: "Select a layer to put on a path." };
+      const patch: Record<string, PropValue | null> = {};
+      if (source === null) for (const p of FOLLOW_PATHS) patch[p] = null;
+      else if (source !== undefined) {
+        const track = doc.layers[source];
+        if (!track || track.archetype !== "svgPath" || typeof track.properties[PATH] !== "string" || !pathSampler(track.properties[PATH] as string)) return { ok: false, code: "BAD_SOURCE", message: "Pick a path layer to travel along." };
+        if (chosen.includes(source)) return { ok: false, code: "SELF", message: "A path can't travel along itself." };
+        patch["motionPath.source"] = source;
+      }
+      if (path !== undefined) {
+        if (path !== "" && !pathSampler(path)) return { ok: false, code: "BAD_PATH", message: "That path can't be read." };
+        patch["transform.motionPath"] = path === "" ? null : path;
+      }
+      if (source !== null) {
+        if (progress !== undefined) patch["motionPath.progress"] = progress;
+        if (offset !== undefined) patch["motionPath.offset"] = offset;
+        if (autoRotate !== undefined) patch["motionPath.autoRotate"] = autoRotate;
+        if (rotate !== undefined) patch["motionPath.rotate"] = rotate;
+      }
+      if (Object.keys(patch).length === 0) return { ok: true, changed: 0 };
+      return { ok: true, changed: setLayerProps(chosen, patch, source === null ? "Take off the path" : "Follow a path") };
+    },
+  }));
+
+  offs.push(defineTypedCommand({
+    id: "path.animateFollow", title: "Animate a Layer Travelling Along Its Path", category: "Paths",
+    args: z.object({ ids: targets, duration: z.number().min(0.05).max(600).optional(), at: z.number().min(0).optional(), from: z.number().min(-100).max(100).optional(), to: z.number().min(-100).max(100).optional(), ease: z.string().optional() }),
+    run: ({ ids, duration = 2, at, from = 0, to = 1, ease }) => {
+      const doc = getDocument();
+      const chosen = (ids ?? selected()).filter((id) => doc.layers[id] && doc.layers[id].locked !== true && followsPath(doc.layers[id].properties));
+      if (chosen.length === 0) return { ok: false, code: "NO_PATH", message: "Put the layer on a path first." };
+      const start = at ?? getTransport().time;
+      const keys: string[] = [];
+      transaction("Travel along the path", () => {
+        for (const id of chosen) {
+          const a = setKeyframeAt(id, "motionPath.progress", start, { value: from });
+          const b = setKeyframeAt(id, "motionPath.progress", start + duration, { value: to, ...(ease ? { ease } : {}) });
+          if (a) keys.push(a);
+          if (b) keys.push(b);
+        }
+      });
+      return keys.length > 0 ? { ok: true, keyframes: keys } : { ok: false, code: "NO_KEYFRAMES", message: "No keyframes could be added here." };
     },
   }));
 

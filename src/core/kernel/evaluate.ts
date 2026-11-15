@@ -34,6 +34,7 @@ import { parseEasing } from "../document/motion";
 import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { morphOptions, morphPath } from "../paths/morphMatch";
+import { followSettings, followsPath, pathSampler } from "../paths/pathFollow";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
@@ -397,7 +398,60 @@ export function evaluateLocalProps(
   if (!layer) return {};
   const base = evaluateBaseProps(doc, compositionId, layerId, t, inputs);
   const linked = !hasLinks(layer.properties) && !hasExpressions(layer.properties) ? base : applyLinks({ doc, compositionId, t, inputs, base: new Map([[layerId, base]]) }, layerId, base);
-  return applyBound(linked, inputs.bound?.get(layerId));
+  return withPathFollow(doc, compositionId, layerId, t, inputs, applyBound(linked, inputs.bound?.get(layerId)));
+}
+
+/**
+ * Phase 86: a layer on a path is moved to its place on it. The place is a share of the path's length (constant speed),
+ * and the move is added to `transform.x` / `transform.y` (and the path's direction to `transform.rotate` when the layer
+ * turns along it), so everything after this (the single transform, parents, motion blur) sees an ordinary move.
+ *
+ * With `motionPath.source` the path is another layer's, followed where that layer draws it: its 200 x 200 drawing
+ * stretched to its frame, at its place on the canvas (with its own `transform.x` / `transform.y`), so a path that moves
+ * carries its follower. Both layers must be placed freely (not in a flow layout), as for a matte. Without a source the
+ * layer's own `transform.motionPath` is followed, in px from where the layer rests.
+ */
+function withPathFollow(doc: MotionDocument, compositionId: string, layerId: string, t: number, inputs: EvaluateInputs, props: ResolvedProps): ResolvedProps {
+  if (!followsPath(props)) return props;
+  const settings = followSettings((path) => props[path]);
+  const n = (p: ResolvedProps, path: string): number => (typeof p[path] === "number" && Number.isFinite(p[path] as number) ? (p[path] as number) : 0);
+  let dx: number;
+  let dy: number;
+  let angle: number;
+  const sourceId = props["motionPath.source"];
+  if (typeof sourceId === "string" && sourceId !== "" && sourceId !== layerId && doc.layers[sourceId]) {
+    // the source's properties before any path of its own: a path following a path following this layer can't loop
+    const local = new Map<string, ResolvedProps>([[layerId, props]]);
+    const baseOf = (id: string): ResolvedProps => {
+      let p = local.get(id);
+      if (!p) local.set(id, (p = evaluateBaseProps(doc, compositionId, id, t, inputs)));
+      return p;
+    };
+    const source = baseOf(sourceId);
+    const d = source["svg.path"];
+    const from = canvasOrigin(doc.layers, sourceId, baseOf);
+    const own = canvasOrigin(doc.layers, layerId, baseOf);
+    if (typeof d !== "string" || !from || !own) return props;
+    const sampler = pathSampler(d, n(source, "frame.width") / 200, n(source, "frame.height") / 200);
+    if (!sampler) return props;
+    const at = sampler.at(settings.share);
+    dx = from.x + n(source, "transform.x") + at.x - (own.x + n(props, "frame.width") / 2);
+    dy = from.y + n(source, "transform.y") + at.y - (own.y + n(props, "frame.height") / 2);
+    angle = at.angle;
+  } else {
+    const d = props["transform.motionPath"];
+    const sampler = typeof d === "string" && d !== "" ? pathSampler(d) : null;
+    if (!sampler) return props;
+    const at = sampler.at(settings.share);
+    dx = at.x;
+    dy = at.y;
+    angle = at.angle;
+  }
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  const out: ResolvedProps = { ...props, "transform.x": round(n(props, "transform.x") + dx), "transform.y": round(n(props, "transform.y") + dy) };
+  const turn = (settings.autoRotate ? angle : 0) + settings.rotate;
+  if (turn !== 0) out["transform.rotate"] = round(n(props, "transform.rotate") + turn);
+  return synthesizeTransform(out);
 }
 
 /** Design track D4: the binding runtime's values for this layer replace the properties they drive. Nothing bound: the same object back. */
