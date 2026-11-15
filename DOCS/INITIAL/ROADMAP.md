@@ -467,7 +467,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 🚧 |
 | 164 | Contact events & collision view | 163 | v3 91.4, 91.5 | 4 | 🚧 |
 | 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 🚧 |
-| 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 📋 |
+| 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 🚧 |
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 📋 |
 | 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 📋 |
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 📋 |
@@ -2785,8 +2785,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** joint references replay bit-identically and match stored snapshots at 5 checkpoints.
 
 ### Phase 166 · Soft bodies & jelly
-**Needs:** 109, 165 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Soft bodies made from a shape's outline (springs and pressure): jelly buttons, squishy blobs that wobble on hover and squash on impact. The vector path itself is deformed, so edges stay sharp.
+**Needs:** 109, 165 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Soft bodies made from a shape's outline (springs and pressure): jelly buttons, squishy blobs that wobble on hover and squash on impact. The vector path itself is deformed, so edges stay sharp.
 
 **You'll see:** a button that wobbles like jelly when you press it.
 **Done when:** the outline never self-intersects in 1,000 random impacts; replay is deterministic.

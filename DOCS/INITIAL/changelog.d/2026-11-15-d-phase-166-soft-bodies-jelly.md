@@ -1,0 +1,1 @@
+- [Phase 166] Implemented vector-outline soft bodies & jelly deformation (`src/core/physics2d/softBodies.ts`): structural PBD perimeter springs, area-preserving internal pressure, hover wobble & impact squash, sharp SVG `d` path output, and strict non-self-intersection guard tested across 1,000 random impacts (`PR #142`).
