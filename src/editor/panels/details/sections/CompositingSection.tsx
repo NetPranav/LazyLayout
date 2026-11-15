@@ -88,7 +88,7 @@ export const CompositingSection: React.FC<InspectorSectionProps> = ({ selectedId
 
       <button
         type="button"
-        aria-pressed={showAdjust}
+        aria-expanded={showAdjust}
         aria-label="Adjust what is behind"
         title="Filters everything behind this layer, inside its box: blur, brightness, contrast, saturation and more."
         disabled={isAdjustment || adjusted}
