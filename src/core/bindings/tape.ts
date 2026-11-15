@@ -114,7 +114,15 @@ export function createTapeRecorder(id: string, name: string, fps = 60, seed = 1)
         duration: Math.max(1 / fps, maxT),
         fps,
         seed,
-        channels: Array.from(map.values()).filter((c) => c.samples.length > 0),
+        channels: Array.from(map.values())
+          .filter((c) => c.samples.length > 0)
+          .map((ch) => ({
+            signal: ch.signal,
+            samples: ch.samples.map((s) => ({
+              t: s.t,
+              v: typeof s.v === "number" || typeof s.v === "boolean" ? s.v : ([s.v[0], s.v[1]] as [number, number]),
+            })),
+          })),
       };
       return InputTapeSchema.parse(tape);
     },
@@ -142,7 +150,10 @@ export function authorScriptedTape(options: {
     seed: options.seed ?? 0,
     channels: options.channels.map((ch) => ({
       signal: ch.signal,
-      samples: ch.samples.map((s) => ({ t: s.t, v: Array.isArray(s.v) ? [s.v[0], s.v[1]] as [number, number] : s.v })),
+      samples: ch.samples.map((s) => ({
+        t: s.t,
+        v: typeof s.v === "number" || typeof s.v === "boolean" ? s.v : ([s.v[0], s.v[1]] as [number, number]),
+      })),
     })),
   };
   return InputTapeSchema.parse(tape);

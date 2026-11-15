@@ -4,8 +4,7 @@ import { BindingSchema, type Binding } from "../../document/signals";
 import { createBindingRuntime, type BindingHost } from "../runtime";
 import { detectSignalAndLinkCycles, isLayerLayoutIsolated } from "../cycleAndLayoutGuard";
 import { evaluate, KERNEL_GAPS } from "../../kernel/evaluate";
-import type { MotionDocument } from "../../document/schema";
-import { SCHEMA_VERSION } from "../../document/versions";
+import { createDocumentFromLayers, createLayer } from "../../document/factories";
 
 function binding(partial: Omit<Binding, "enabled" | "ownerLayerId"> & { ownerLayerId?: string; enabled?: boolean }): Binding {
   return BindingSchema.parse({
@@ -18,7 +17,7 @@ function binding(partial: Omit<Binding, "enabled" | "ownerLayerId"> & { ownerLay
 function makeHost(overrides: Partial<BindingHost> = {}): BindingHost {
   return {
     layersOf: (on) => (on.kind === "layer" ? [on.ref] : ["btn"]),
-    base: (_id, path) => (path === "transform.x" ? 10 : path === "transform.rotation" ? 0 : path === "appearance.opacity" ? 1 : 0),
+    base: (_id, path) => (path === "transform.x" ? 10 : path === "transform.rotate" ? 0 : path === "appearance.opacity" ? 1 : 0),
     env: { pointerCoarse: false, reducedMotion: false, breakpoint: "desktop", states: new Set() },
     ...overrides,
   };
@@ -41,7 +40,7 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
     const tiltRot = binding({
       id: "b-tilt",
       expr: { signal: { kind: "constant", value: 7 }, operators: [] },
-      target: { kind: "property", on: { kind: "layer", ref: "btn" }, path: "transform.rotation" },
+      target: { kind: "property", on: { kind: "layer", ref: "btn" }, path: "transform.rotate" },
       blend: "add",
     });
 
@@ -50,30 +49,18 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
     const bound = rt.step({ time: 0.5, dt: 1 / 60, seed: 1, read: () => 0 });
     assert.equal(bound.get("btn")?.get("transform.x"), 22);
     assert.equal(bound.get("btn")?.get("transform.y"), 4);
-    assert.equal(bound.get("btn")?.get("transform.rotation"), 7);
+    assert.equal(bound.get("btn")?.get("transform.rotate"), 7);
 
-    const doc: MotionDocument = {
-      version: SCHEMA_VERSION,
-      meta: { name: "Test", id: "doc_1" },
-      compositions: { comp_1: { id: "comp_1", name: "Main", width: 1280, height: 720, fps: 60, duration: 5, clips: [] } },
-      rootIds: ["btn"],
-      layers: {
-        btn: {
-          id: "btn",
-          name: "Button",
-          archetype: "shape",
-          parentId: null,
-          childIds: [],
-          properties: { "transform.x": 10, "transform.y": 0, "transform.rotation": 0 },
-        },
-      },
-      clips: {},
-      states: {},
-      behaviours: {},
-      bindings: {},
-      effects: {},
-    };
-    const resolved = evaluate(doc, "comp_1", "btn", 0.5, { bound });
+    const doc = createDocumentFromLayers([
+      createLayer({
+        id: "btn",
+        name: "Button",
+        archetype: "button",
+        properties: { "transform.x": 10, "transform.y": 0, "transform.rotate": 0 },
+      }),
+    ]);
+    const compId = Object.keys(doc.compositions)[0]!;
+    const resolved = evaluate(doc, compId, "btn", 0.5, { bound });
     assert.equal(resolved["transform.x"], 22);
     assert.ok(String(resolved.transform).includes("22"));
     assert.ok(!KERNEL_GAPS.some((g) => g.area === "signal bindings"));
@@ -128,7 +115,7 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
   it("detects and refuses cycles across links + bindings with SIGNAL_CYCLE and the exact chain", () => {
     const b1 = binding({
       id: "b-var-write",
-      expr: { signal: { kind: "prop", name: "transform.x" }, operators: [] },
+      expr: { signal: { kind: "prop", name: "posX" }, operators: [] },
       target: { kind: "input", on: { kind: "layer", ref: "btn" }, name: "speed" },
     });
     const b2 = binding({
@@ -140,7 +127,7 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
     const report = detectSignalAndLinkCycles({
       bindings: [b1, b2],
       links: [
-        { sourceLayerId: "btn", sourcePath: "transform.y", targetLayerId: "btn", targetPath: "transform.x" },
+        { sourceLayerId: "btn", sourcePath: "transform.y", targetLayerId: "btn", targetPath: "posX" },
       ],
     });
     assert.equal(report.ok, false);
@@ -149,7 +136,7 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
 
     const rt = createBindingRuntime([b1, b2], {
       ...makeHost(),
-      links: [{ sourceLayerId: "btn", sourcePath: "transform.y", targetLayerId: "btn", targetPath: "transform.x" }],
+      links: [{ sourceLayerId: "btn", sourcePath: "transform.y", targetLayerId: "btn", targetPath: "posX" }],
     });
     assert.equal(rt.diagnostics[0]?.code, "SIGNAL_CYCLE");
     assert.equal(rt.idle, true);

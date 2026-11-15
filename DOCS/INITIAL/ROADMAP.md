@@ -331,7 +331,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 🚧 |
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 🚧 |
 | 140 | Reactivity card (Simple) | 139 | v3 60.3 | 4 | 🚧 |
-| 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 📋 |
+| 141 | Connect anything: drag a property onto an input → *Design track D7* | 140 | — (new in v4.1) | 4 | 🚧 |
 | 142 | Signals panel (Pro) & binding export | 140 | v3 60.4 | 4 | 📋 |
 | 143 | Pointer behaviours as presets | 142 | v3 12.2 | 4 | 📋 |
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 📋 |
@@ -2019,8 +2019,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 first-time users each make "the background follow the cursor" in < 20 s without help.
 
 ### Phase 141 · Connect anything: drag a property onto an input
-**Needs:** 140 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 140 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] One gesture for every link: drag from any property's handle onto the cursor, scroll, a key, the microphone or another layer's live value (Phase 76's pick-whip, and every input from Phase 132 on). A plain sentence appears ("Rotation follows the cursor across, gently") and can be tuned by feel (Law 17).
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/bindings/connectAnything.ts` (unified drag-to-connect compiler for `cursor`/`scroll`/`key`/`microphone`/cross-layer property links, `PROPERTY_REGISTRY` range inference, feel presets, plain-language sentences) + `src/editor/components/ConnectLinkHandle.tsx` + `src/core/bindings/__tests__/connectAnything.test.ts`. Milestone 1 verification batch (Phases 132–141) executes next.
 
 **You'll see:** drag Rotation onto "Cursor" and the layer turns with the mouse.
 **Done when:** 5 first-time users each connect 3 properties to 3 different inputs in < 1 minute per link.
