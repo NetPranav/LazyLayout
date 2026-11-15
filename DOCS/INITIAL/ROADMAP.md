@@ -500,7 +500,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 196 | Code components | 195 | v3 68 | 4 | 🚧 |
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 🚧 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 🚧 |
-| 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
+| 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 🚧 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
 | 201 | Composition test suite | 200 | v3 91.7 | 4 | 📋 |
 | 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 📋 |
@@ -3023,8 +3023,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** every effect meets its size budget with CLS 0 and no long task ≥ 50 ms at init; the embed works under a strict nonce-based CSP.
 
 ### Phase 199 · Interactive accessibility
-**Needs:** 198 · **Was:** v3 29 (v3.0 amendment), 29.4 · **Closes:** AUD-14 · **Status:** 📋
-- [ ] Per-effect reduced-motion policy (freeze, calm, off); a pause control and page-wide switch for motion longer than 5 s; flash detection on sampled GPU frames under aggressive tapes; dynamic contrast for text over animated backgrounds; target stability; cursor safeguards; rules 6.12–6.15 checked at runtime; axe on every export.
+**Needs:** 198 · **Was:** v3 29 (v3.0 amendment), 29.4 · **Closes:** AUD-14 · **Status:** 🚧
+- [x] Per-effect reduced-motion policy (freeze, calm, off); a pause control and page-wide switch for motion longer than 5 s; flash detection on sampled GPU frames under aggressive tapes; dynamic contrast for text over animated backgrounds; target stability; cursor safeguards; rules 6.12–6.15 checked at runtime; axe on every export.
 
 **You'll see:** accessibility warnings in the inspector with one-click fixes.
 **Done when:** axe reports 0 violations across the export matrix; the reduced-motion run with pointer tapes shows no spatial movement.
