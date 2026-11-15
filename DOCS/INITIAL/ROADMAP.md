@@ -497,7 +497,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 🚧 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 🚧 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 🚧 |
-| 196 | Code components | 195 | v3 68 | 4 | 📋 |
+| 196 | Code components | 195 | v3 68 | 4 | 🚧 |
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
@@ -3001,8 +3001,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a malicious fixture reading `document.cookie`, `localStorage` and `parent.document` gets nothing in 3 browsers.
 
 ### Phase 196 · Code components
-**Needs:** 195 · **Was:** v3 68 · **Status:** 📋
-- [ ] Import TSX/JSX, files or an npm package; bundle in a worker (esbuild-wasm) with pinned, hashed dependencies; render in the sandbox; infer property controls from prop types (JSDoc hints optional); bind props to signals, variables and states; callback props become Blueprint events; record the licence and keep restricted ones private (GATE-03).
+**Needs:** 195 · **Was:** v3 68 · **Status:** 🚧
+- [x] Import TSX/JSX, files or an npm package; bundle in a worker (esbuild-wasm) with pinned, hashed dependencies; render in the sandbox; infer property controls from prop types (JSDoc hints optional); bind props to signals, variables and states; callback props become Blueprint events; record the licence and keep restricted ones private (GATE-03).
 
 **You'll see:** paste your own animated React component and get inspector controls for it.
 **Done when:** 10 real-world fixtures import, render, expose controls and export to a Next app that builds.
