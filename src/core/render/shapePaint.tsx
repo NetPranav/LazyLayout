@@ -7,7 +7,8 @@ import { adjustmentMatrix, adjustmentToneTable, type ImageAdjustments } from "..
 import type { BezPath } from "../geometry/bezpath";
 import { StrokeLayer, strokeSettings } from "./strokePaint";
 import { useAssetUrlMap } from "../assets/useAssetUrl";
-import { useRenderLayers } from "./layersContext";
+import { SubtreeContext, useRenderLayers, useSubtreeRenderer } from "./layersContext";
+import { cloneSubtree, contains } from "./liveFill";
 import { fromWorld, layerOutline, layerSize, toParent } from "../editing/layerOutline";
 import type { PaintMask } from "../paint/paints";
 import type { ResolvedProps } from "./types";
@@ -255,6 +256,7 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
   const join = resolved.str("svg.strokeLinejoin", "miter");
   const shadows = parseShadows(resolved.get("paint.shadows")).filter((s) => s.visible);
   const allLayers = useRenderLayers();
+  const subtree = useSubtreeRenderer();
   const filterId = `${id}__shadow`;
 
   const defs: React.ReactNode[] = [];
@@ -329,6 +331,38 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
           </pattern>,
         );
         painted.push(<React.Fragment key={`f${i}`}>{geometry({ fill: `url(#${gid})`, stroke: "none" })}</React.Fragment>);
+        break;
+      }
+      case "live": {
+        // another frame or component drawn inside the shape (Phase 116); refused when it contains this shape, or is
+        // already being drawn around it (so a fill can never draw itself forever)
+        const src = allLayers?.[p.source];
+        if (!subtree || !allLayers || !src || contains(allLayers, p.source, layer.id) || subtree.inside.includes(p.source)) break;
+        const { w: sw, h: sh } = layerSize(src);
+        if (!(sw > 0 && sh > 0)) break;
+        const copy = cloneSubtree(allLayers, p.source, `live-${id}-${i}-`);
+        const stepX = sw * p.scale;
+        const stepY = sh * p.scale;
+        const spots: { x: number; y: number }[] = [];
+        if (p.tile) {
+          const x0 = ((p.offset.x % stepX) + stepX) % stepX - stepX;
+          const y0 = ((p.offset.y % stepY) + stepY) % stepY - stepY;
+          for (let y = y0; y < height && spots.length < 400; y += stepY) for (let x = x0; x < width && spots.length < 400; x += stepX) spots.push({ x, y });
+        } else spots.push(p.offset);
+        defs.push(<clipPath key={gid} id={gid}>{geometry({ fill: "#000", stroke: "none" })}</clipPath>);
+        painted.push(
+          <foreignObject key={`f${i}`} x={0} y={0} width={width} height={height} clipPath={`url(#${gid})`} opacity={p.opacity}>
+            <div data-live-fill={p.source} style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", pointerEvents: "none" }}>
+              <SubtreeContext.Provider value={{ ...subtree, inside: [...subtree.inside, layer.id, p.source] }}>
+                {spots.map((s, k) => (
+                  <div key={k} style={{ position: "absolute", left: s.x, top: s.y, width: sw, height: sh, transform: p.scale !== 1 ? `scale(${p.scale})` : undefined, transformOrigin: "0 0" }}>
+                    {subtree.draw(copy.rootId, copy.layers, { ...subtree.ctx, parentDirection: undefined })}
+                  </div>
+                ))}
+              </SubtreeContext.Provider>
+            </div>
+          </foreignObject>,
+        );
         break;
       }
       case "conic":

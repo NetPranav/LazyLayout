@@ -26,6 +26,16 @@ import { meshAt, newMesh } from "@/core/paint/mesh";
 import { useMeshEditStore } from "@/editor/stage/meshEditStore";
 import type { Layer } from "@/core/document/schema";
 
+/** Whether `ancestor` contains `id`. */
+const isAncestor = (layers: Readonly<Record<string, Layer>>, ancestor: string, id: string | null): boolean => {
+  let cur = id ? layers[id]?.parentId ?? null : null;
+  for (let g = 0; cur && g < 10_000; g++) {
+    if (cur === ancestor) return true;
+    cur = layers[cur]?.parentId ?? null;
+  }
+  return false;
+};
+
 /** Mesh gradient controls (Phase 115): the grid, smooth or linear blending, editing the points on the canvas, the picked point's colour. */
 function MeshControls({ paint: p, layerId, index, onChange }: { paint: Extract<Paint, { type: "mesh" }>; layerId: string; index: number; onChange: (next: Paint) => void }) {
   const editing = useMeshEditStore((s) => s.layerId === layerId && s.fill === index);
@@ -84,6 +94,27 @@ function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { pain
         </OptionRow>
         <OptionRow label="Seed">
           <NumberField size="sm" aria-label="Noise seed" value={p.seed} min={0} max={1_000_000} step={1} onChange={(v) => onChange({ ...p, seed: Math.round(v) })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  if (p.type === "live") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Source">
+          <Select aria-label="Live fill source" size="sm" width="100%" placeholder="Choose a frame or component" options={layerOptions} value={p.source} onChange={(v) => onChange({ ...p, source: v })} />
+        </OptionRow>
+        <OptionRow label="Scale">
+          <NumberField size="sm" aria-label="Live fill scale" unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        </OptionRow>
+        <OptionRow label="Offset X">
+          <NumberField size="sm" aria-label="Live fill offset X" suffix="px" value={p.offset.x} onChange={(v) => onChange({ ...p, offset: { ...p.offset, x: v } })} />
+        </OptionRow>
+        <OptionRow label="Offset Y">
+          <NumberField size="sm" aria-label="Live fill offset Y" suffix="px" value={p.offset.y} onChange={(v) => onChange({ ...p, offset: { ...p.offset, y: v } })} />
+        </OptionRow>
+        <OptionRow label="Tile">
+          <Toggle size="sm" aria-label="Live fill tile" checked={p.tile} onChange={(on) => onChange({ ...p, tile: on })} />
         </OptionRow>
       </OptionGroup>
     );
@@ -228,6 +259,7 @@ const PAINT_OPTIONS = [
   { value: "noise", label: "Noise", hint: "Seeded grain or soft noise" },
   { value: "pattern", label: "Pattern", hint: "Shapes repeated as a tile" },
   { value: "mesh", label: "Mesh", hint: "A grid of colour points you drag on the canvas" },
+  { value: "live", label: "Live", hint: "Another frame or component, drawn inside and kept up to date" },
 ] as const;
 
 const IMAGE_FIT_OPTIONS = [
@@ -669,8 +701,8 @@ export const FillSection: React.FC<FillSectionProps> = ({
                   </OptionRow>
                 )}
               </OptionGroup>
-              {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern") && (
-                <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
+              {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern" || enginePaints[index].type === "live") && (
+                <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary && !isAncestor(allLayers, l.id, primary)).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
               )}
               {engine && primary && enginePaints[index]?.type === "mesh" && (
                 <MeshControls paint={enginePaints[index] as Extract<Paint, { type: "mesh" }>} layerId={primary} index={index} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />

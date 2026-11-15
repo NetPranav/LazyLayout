@@ -44,7 +44,7 @@ export interface GradientStop {
 /** Fill item in repeatable list */
 export interface FillItem {
   id: string;
-  type: "solid" | "linear" | "radial" | "conic" | "image" | "noise" | "pattern" | "mesh";
+  type: "solid" | "linear" | "radial" | "conic" | "image" | "noise" | "pattern" | "mesh" | "live";
   hex: string;
   opacity: number; // 0 to 100
   angle?: number;

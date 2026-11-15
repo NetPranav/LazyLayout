@@ -48,6 +48,7 @@ export function handlesFor(p: Paint, box: { w: number; h: number }): GradientHan
     case "noise":
     case "pattern":
     case "mesh":
+    case "live":
       return [];
     case "image": {
       if (p.mode !== "crop") return [];
@@ -96,6 +97,7 @@ export function dragHandle(p: Paint, handle: Pick<GradientHandle, "kind" | "stop
     case "noise":
     case "pattern":
     case "mesh":
+    case "live":
       return p;
     case "image": {
       if (p.mode !== "crop") return p;
