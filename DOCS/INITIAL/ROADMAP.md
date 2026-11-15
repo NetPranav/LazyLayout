@@ -457,7 +457,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 🚧 |
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 🚧 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 🚧 |
-| 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
+| 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 🚧 |
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
@@ -2714,8 +2714,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** selectors pick the right layers in 10 fixtures; relation signals match tapes.
 
 ### Phase 156 · Data-driven layers & animated charts
-**Needs:** 154 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Bind clones and properties to a table (CSV or JSON, or a content collection from Phase 270): bar, line, area, pie and donut charts made from your own shapes, with animated transitions when the data changes.
+**Needs:** 154 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Bind clones and properties to a table (CSV or JSON, or a content collection from Phase 270): bar, line, area, pie and donut charts made from shapes, with animated transitions when data changes (`src/core/signals/dataDrivenCharts.ts`).
 
 **You'll see:** paste a CSV and get a bar chart built from your own shapes that animates when a number changes.
 **Done when:** 5 chart references match the data exactly; the export renders the same chart.
