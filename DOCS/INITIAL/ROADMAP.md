@@ -364,7 +364,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 🚧 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 🚧 |
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 🚧 |
-| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
+| 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 🚧 |
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
@@ -2262,8 +2262,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 20-surface page never exceeds the budget or logs "Too many active WebGL contexts" in 3 browsers; a forced loss recovers within 1 s.
 
 ### Phase 174 · Passes, render targets & GPU memory ledger
-**Needs:** 173 · **Was:** v3 61.2, 61.5 · **Closes:** AUD-58 (partial) · **Status:** 📋
-- [ ] Pass stacks (program, feedback ping-pong, post: grain, dither, vignette, bloom-lite, pixelate, chromatic offset); float targets after a capability check. A memory ledger for every texture, target, buffer and canvas, with per-tier budgets (T1 96 MB, T2 256 MB, T3 512 MB initially) and a degrade order; a shared render-target pool; a program cache; Safari canvas limits.
+**Needs:** 173 · **Was:** v3 61.2, 61.5 · **Closes:** AUD-58 (partial) · **Status:** 🚧
+- [x] Pass stacks (program, feedback ping-pong, post: grain, dither, vignette, bloom-lite, pixelate, chromatic offset); float targets after a capability check. A memory ledger for every texture, target, buffer and canvas, with per-tier budgets (T1 96 MB, T2 256 MB, T3 512 MB initially) and a degrade order; a shared render-target pool; a program cache; Safari canvas limits.
 
 **You'll see:** a memory readout in the dev overlay.
 **Done when:** mounting and unmounting a surface 100 times returns the ledger to 0 and the heap to within 2 MB.
