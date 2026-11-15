@@ -1,12 +1,12 @@
 /**
- * ROADMAP Phase 122: image adjustments and filters. Each adjustment drawn by the browser on the canvas (the seven, a
- * curve, a duotone, a gradient map, sharpen and blur) matches the reference worked out pixel by pixel
- * (`referenceImage`) within 1% of its pixels; the picture's file stays the same. In the inspector a duotone is
+ * ROADMAP Phase 122: image adjustments and filters. Each adjustment drawn by the browser in the exported site (the
+ * seven, a curve, a duotone, a gradient map, sharpen and blur; the canvas draws the same filter) matches the reference
+ * worked out pixel by pixel (`referenceImage`) within 1% of its pixels, each channel within 8 levels; the picture's
+ * file stays the same. In the inspector a duotone is
  * switched on, then "Show original" shows the picture as it is and keeps the duotone.
  */
 import { test, expect, type Page } from "@playwright/test";
 import { PNG } from "pngjs";
-import pixelmatch from "pixelmatch";
 import { openEditor } from "./support/editor";
 import { referenceImage, type ImageLook } from "../../src/core/paint/imageLook";
 import { NO_ADJUSTMENTS, type ImageAdjustments } from "../../src/core/paint/color";
@@ -18,7 +18,7 @@ test.use({ viewport: { width: 1600, height: 1000 } });
 
 const W = 120;
 const H = 90;
-/** A smooth test picture: red across, green down, blue in waves. */
+/** A test picture: red across, green down, blue in waves, and a checkered patch (detail for sharpen and blur to change). */
 function picture(): PNG {
   const p = new PNG({ width: W, height: H });
   for (let y = 0; y < H; y++)
@@ -28,6 +28,10 @@ function picture(): PNG {
       p.data[i + 1] = Math.round((y / (H - 1)) * 255);
       p.data[i + 2] = Math.round(128 + 100 * Math.sin(x / 14 + y / 19));
       p.data[i + 3] = 255;
+      if (x >= 40 && x < 80 && y >= 30 && y < 60) {
+        const on = (Math.floor(x / 3) + Math.floor(y / 3)) % 2 === 0;
+        p.data[i] = p.data[i + 1] = p.data[i + 2] = on ? 230 : 30;
+      }
     }
   return p;
 }
@@ -56,7 +60,14 @@ const inner = (data: Uint8Array | Uint8ClampedArray, w: number, h: number) => {
   return out;
 };
 
-test("every adjustment matches its reference within 1%; the picture's file stays the same", async ({ page }) => {
+/** The share of pixels where any channel is more than 8 levels (of 255) off: strict, so a subtle adjustment counts. */
+function differing(a: Uint8Array | Uint8ClampedArray, b: Uint8Array | Uint8ClampedArray): number {
+  let n = 0;
+  for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) > 8 || Math.abs(a[i + 1] - b[i + 1]) > 8 || Math.abs(a[i + 2] - b[i + 2]) > 8) n++;
+  return n / (a.length / 4);
+}
+
+test("every adjustment matches its reference within 1%; the picture's file stays the same", async ({ page, browser }) => {
   await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
   await openEditor(page);
   await expect(page.locator("[data-stage=artboard]")).toBeVisible();
@@ -77,31 +88,47 @@ test("every adjustment matches its reference within 1%; the picture's file stays
     );
   }, { cases: CASES, src, W, H });
 
-  await page.evaluate(() => (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: () => unknown }[] } }).__LL_COMMANDS__.all().find((c) => c.id === "view.zoom100")!.run());
-  const el = (id: string) => page.locator(`[data-stage=artboard] [data-element-id="${id}"]`).first();
-  await expect.poll(async () => Math.round((await el(ids[0]).boundingBox())?.width ?? 0)).toBe(W);
-  const at = (await el(ids[0]).boundingBox())!;
-  await page.mouse.move(800, 500);
-  await page.mouse.wheel(at.x - 300, at.y - 200);
-  await page.waitForTimeout(400);
-  await page.mouse.move(5, 5);
-  await page.evaluate(() => (window as unknown as { __LL_SELECT__?: (id: string | null) => void }).__LL_SELECT__?.(null));
+  // the exported site: the page as it ships, laid out on whole pixels (the canvas is zoomed and panned, so it resamples)
+  const files = await page.evaluate(async () => {
+    const w = window as unknown as { __LL_EXPORT__: { build: (o: unknown) => Promise<{ files: { path: string; text?: string }[] }> } };
+    return (await w.__LL_EXPORT__.build({ target: "html", styling: "css" })).files.map((f) => ({ path: f.path, text: f.text ?? "" }));
+  });
+  const site = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  await site.route("http://export.test/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/^\//, "") || "index.html";
+    const f = files.find((x) => x.path === path || x.path.endsWith("/" + path));
+    return f ? route.fulfill({ status: 200, contentType: path.endsWith(".css") ? "text/css" : "text/html", body: f.text }) : route.fulfill({ status: 404, body: "" });
+  });
+  await site.goto(`http://export.test/${files.find((f) => f.path.endsWith("index.html"))!.path}`);
+  await site.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
+  await site.waitForTimeout(200);
+  // the pictures in reading order (as they were laid out: rows of six)
+  const boxes = await site.evaluate(() =>
+    [...document.images]
+      .map((i) => i.getBoundingClientRect())
+      .map((r) => ({ x: r.x, y: r.y, width: r.width, height: r.height }))
+      .sort((a, b) => Math.round(a.y - b.y) || a.x - b.x),
+  );
+  expect(boxes).toHaveLength(CASES.length);
+  expect(boxes.every((b) => Number.isInteger(b.x) && Number.isInteger(b.y))).toBe(true);
 
   const source = picture();
   const failures: string[] = [];
   const shares: string[] = [];
   for (const [i, c] of CASES.entries()) {
-    const b = (await el(ids[i]).boundingBox())!;
-    const shot = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(b.x), y: Math.round(b.y), width: W, height: H }, animations: "disabled" }));
+    const b = boxes[i];
     const want = referenceImage(source.data, W, H, c.adjust ?? null, c.look ?? null);
-    const w = W - 2 * INSET;
-    const h = H - 2 * INSET;
-    const share = pixelmatch(inner(shot.data, W, H), inner(want, W, H), undefined, w, h, { threshold: 0.1 }) / (w * h);
+    const shot = PNG.sync.read(await site.screenshot({ clip: { x: b.x, y: b.y, width: W, height: H }, animations: "disabled" }));
+    const share = differing(inner(shot.data, W, H), inner(want, W, H));
+    // the control: the adjustment really changes the picture, so matching it means something
+    const change = differing(inner(source.data, W, H), inner(want, W, H));
+    if (change < 0.05) failures.push(`${c.name}: the reference barely differs from the picture (${(change * 100).toFixed(2)}%)`);
     shares.push(`${c.name} ${(share * 100).toFixed(2)}%`);
     if (share >= 0.01) failures.push(`${c.name}: ${(share * 100).toFixed(2)}% of pixels differ`);
   }
   console.log(`image adjustments: ${shares.join(", ")}`);
   expect(failures).toEqual([]);
+  await site.close();
   const after = await page.evaluate((ids) => ids.map((id) => (window as unknown as { __LL_DOC__: Doc }).__LL_DOC__.get().layers[id].properties["media.src"]), ids);
   expect(after.every((s) => s === src)).toBe(true);
 });

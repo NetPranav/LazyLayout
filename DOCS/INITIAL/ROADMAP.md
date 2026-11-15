@@ -418,7 +418,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 🚧 |
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 🚧 |
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 🚧 |
-| 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 📋 |
+| 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 🚧 |
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 📋 |
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 📋 |
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 📋 |
@@ -1756,11 +1756,49 @@ The document and World Environment have their own stores, After-track actions mo
 - Real refraction waits for Stage 4.
 
 ### Phase 122 · Image adjustments & filters
-**Needs:** 37 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 37 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Non-destructive adjustments on images and image fills: exposure, contrast, saturation, temperature, tint, highlights and shadows, a simple curve, duotone and gradient map, sharpen and blur, with presets.
 
 **You'll see:** a duotone photo you can switch back to the original at any time.
 **Done when:** every adjustment matches its reference within 1%; the original file is never changed.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port had the seven adjustments (exposure, contrast, saturation, temperature, tint, highlights, shadows) and six presets, on image fills only, drawn as an SVG filter.
+- Image layers had CSS filters (`media.filter.*`) only.
+- There was no curve, gradient map, duotone, sharpen or "original", and the new editor showed none of it.
+
+**Built (Lane C):**
+- A picture's **look**: a five-point tone curve (monotone, never overshoots), a gradient map (duotone is two stops), sharpen, blur, and **show original** (keeps every setting, draws none).
+- It is drawn by one SVG filter after the seven adjustments, in order: colour matrix, highlights and shadows, curve, luminance and map tables, sharpen kernel, blur.
+- It works on image fills (the paint's `look`) and on Image layers (`media.adjust`, `media.look`), on the canvas and in the export alike.
+- Command `image.adjust` and seven look presets.
+- An **Adjust** group in the Image section and the image fill popover. A slider writes one undo step when it is let go.
+- `referenceImage` works the same filter out pixel by pixel.
+- **The picture's file is never touched:** only these settings change.
+
+**Verified (`imageLook.test.ts`, 6 tests):**
+- The curve passes through its points and stays monotone; a duotone maps black and white to its two colours.
+- The filter's steps come in order, and show original draws none.
+- Sharpen and blur do what they say in the reference.
+- An Image layer draws through the filter; show original sets `filter: none` and keeps the duotone.
+- An image fill's look survives save and load.
+- `media.src` and the paint's `src` are unchanged.
+
+**In Chromium (`image-adjust.spec.ts`):**
+- Twelve adjustments in the exported site match the reference: exposure, contrast, saturation, temperature, tint, highlights, shadows, curve, duotone, gradient map, sharpen and blur.
+  - The test picture is smooth gradients with a checkered patch.
+  - Each comparison is strict: a pixel counts as different when any channel is more than 8 of 255 off. **0.00% of pixels differ** for all twelve.
+  - A control checks that each adjustment really changes at least 5% of the picture.
+  - The 8 px border is left out, because browsers treat a blur's edge differently.
+  - Shots come from the export because the zoomed, panned canvas resamples the picture. The canvas uses the same filter element.
+- In the inspector, a duotone switches on; Show original gives `filter: none` and keeps it; switching back draws it again; the file is unchanged.
+- The image, cutout and FigCraft-port specs and the canvas contract still pass (37 + the depth test re-run alone).
+
+**Not done:**
+- The inspector edits two-stop duotones; longer gradient maps come from presets.
+- Firefox and WebKit not run locally.
 
 ### Phase 123 · Colour tools: palettes, harmony & contrast
 **Needs:** 45 · **Was:** — (new in v4.1) · **Status:** 📋
