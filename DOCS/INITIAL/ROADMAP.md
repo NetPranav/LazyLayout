@@ -489,7 +489,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 🚧 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 🚧 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 🚧 |
-| 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 📋 |
+| 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 🚧 |
 | 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 📋 |
@@ -2944,8 +2944,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 6 references work on image, video and text; the accessibility tree reads the real text and alt once; fallbacks render with WebGL disabled.
 
 ### Phase 188 · Scroll-scrubbed image sequences & video
-**Needs:** 81, 99, 187 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Apple-style scroll stories: an image sequence or a video scrubbed by scroll (or any input), with preloading per device tier, a frame budget, a poster fallback and pinned sections.
+**Needs:** 81, 99, 187 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Apple-style scroll stories: an image sequence or a video scrubbed by scroll (or any input), with preloading per device tier, a frame budget, a poster fallback and pinned sections.
 
 **You'll see:** a product that turns around as you scroll.
 **Done when:** scrubbing shows the right frame at 20 scroll positions in 3 browsers; memory stays within the tier budget.
