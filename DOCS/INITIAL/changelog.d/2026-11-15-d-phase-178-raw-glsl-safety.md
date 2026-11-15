@@ -1,0 +1,1 @@
+- [Phase 178] Implemented Raw GLSL Pro validation & shader safety (`src/core/gpu/rawGlslSafety.ts`): line-mapped GLSL log parser, uniform-to-prop inspector extraction, static refusal of unbounded `while`/`for` loops and excess texture fetches, and 2-strike context-loss session circuit breaker (`PR #154`).

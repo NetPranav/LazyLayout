@@ -368,7 +368,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 🚧 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 🚧 |
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 🚧 |
-| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
+| 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 🚧 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 📋 |
@@ -2292,8 +2292,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 10 reference backgrounds built from the graph alone compile on WebGL2 and WebGPU and match within tolerance; a node edit updates the stage in < 100 ms.
 
 ### Phase 178 · Raw GLSL (Pro) & shader safety
-**Needs:** 177 · **Was:** v3 62.2 · **Status:** 📋
-- [ ] A GLSL editor with errors mapped to lines and hot reload; its uniform block becomes props. Safety: constant loop bounds, a texture-fetch budget, async compile, and a program that loses the context twice is disabled for the session.
+**Needs:** 177 · **Was:** v3 62.2 · **Status:** 🚧
+- [x] A GLSL editor with errors mapped to lines and hot reload; its uniform block becomes props. Safety: constant loop bounds, a texture-fetch budget, async compile, and a program that loses the context twice is disabled for the session.
 
 **You'll see:** a code editor for shaders in Pro mode.
 **Done when:** an injected unbounded-loop shader is refused at compile time.
