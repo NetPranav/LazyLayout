@@ -4,6 +4,7 @@ import { getLayerGeometry } from "../document/properties";
 import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
+import { LayersContext } from "./layersContext";
 import { ModifiedShape } from "./archetypes/Svg";
 import { isModified } from "../editing/layerOutline";
 import { resolveProps } from "./resolve";
@@ -175,10 +176,12 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
     );
   const effectDefs = (root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />;
   const main = (
-    <Definition layer={layer} resolved={resolved} ctx={definitionCtx}>
-      {kids}
-      {effectDefs}
-    </Definition>
+    <LayersContext.Provider value={layers}>
+      <Definition layer={layer} resolved={resolved} ctx={definitionCtx}>
+        {kids}
+        {effectDefs}
+      </Definition>
+    </LayersContext.Provider>
   );
 
   // Repeater, cloner and effector (Design track D8, D9, D10): copies of an absolutely placed layer, each in a zero-size wrapper at

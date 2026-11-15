@@ -18,7 +18,56 @@ import { useLayers } from "@/core/store/useDocumentStore";
 import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
 import { addPaint, changeType, movePaint, paintColor, removePaint, updatePaint } from "@/core/paint/paintEdits";
 import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
-import type { Paint, PaintType } from "@/core/paint/paints";
+import type { Paint, PaintMask, PaintType } from "@/core/paint/paints";
+import { BLEND_MODES, type BlendMode } from "@/core/paint/color";
+import { Toggle } from "@/editor/components/Toggle";
+
+/** Per-fill blend modes (FigCraft port F2), as the select lists them. */
+const FILL_BLEND_OPTIONS = BLEND_MODES.filter((b) => b !== "passThrough").map((b) => ({ value: b, label: b.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()) }));
+/** A fill's mask controls (Phase 113): the kind, then the fade's range and angle, or the layer and Outside. */
+function FillMaskControls({ mask: m, siblings, onSet }: { mask: PaintMask | undefined; siblings: { value: string; label: string }[]; onSet: (kind: string, patch?: Partial<{ start: number; end: number; angle: number; id: string; invert: boolean }>) => void }) {
+  return (
+    <OptionGroup>
+      <OptionRow label="Mask">
+        <Select aria-label="Fill mask" options={MASK_OPTIONS} value={m?.type ?? "none"} width="100%" size="sm" onChange={(v) => onSet(v)} />
+      </OptionRow>
+      {m && m.type !== "layer" && (
+        <>
+          <OptionRow label="Shown to">
+            <NumberField size="sm" aria-label="Mask start" title="Fully shown up to here" unit="%" value={Math.round(m.start * 100)} min={0} max={100} onChange={(v) => onSet(m.type, { start: v / 100 })} />
+          </OptionRow>
+          <OptionRow label="Gone at">
+            <NumberField size="sm" aria-label="Mask end" title="Faded out completely by here" unit="%" value={Math.round(m.end * 100)} min={0} max={100} onChange={(v) => onSet(m.type, { end: v / 100 })} />
+          </OptionRow>
+          {m.type !== "radial" && (
+            <OptionRow label="Angle">
+              <NumberField size="sm" aria-label="Mask angle" title={m.type === "linear" ? "0 fades downward, 90 to the right" : "Where the fade starts round the centre"} suffix="°" value={m.angle} step={1} onChange={(v) => onSet(m.type, { angle: v })} />
+            </OptionRow>
+          )}
+        </>
+      )}
+      {m && m.type === "layer" && (
+        <>
+          <OptionRow label="Layer">
+            <Select aria-label="Mask layer" options={siblings} value={m.id} width="100%" size="sm" placeholder="No sibling layer" onChange={(v) => onSet("layer", { id: v })} />
+          </OptionRow>
+          <OptionRow label="Outside">
+            <Toggle size="sm" aria-label="Mask invert" checked={m.invert} onChange={(on) => onSet("layer", { invert: on })} />
+          </OptionRow>
+        </>
+      )}
+    </OptionGroup>
+  );
+}
+
+/** Per-fill masks (Phase 113). */
+const MASK_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "linear", label: "Linear fade", hint: "Fades out along a direction" },
+  { value: "radial", label: "Radial fade", hint: "Fades out from the centre" },
+  { value: "conic", label: "Conic fade", hint: "Fades out round the centre" },
+  { value: "layer", label: "Another layer", hint: "Shows the fill inside (or outside) a sibling layer" },
+];
 
 const hexOf = (css: string): string => {
   const c = parseCss(css);
@@ -119,6 +168,31 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const engine = Boolean(layer && hasFills(layer.archetype) && primary);
   const enginePaints: Paint[] = engine && primary ? fillsOf(primary) : [];
   const writeEngine = (next: Paint[]) => setEngineFills(engineIds, next);
+  const allLayers = useLayers();
+  /** The layers a fill can be masked by: this layer's siblings. */
+  const siblingOptions = (() => {
+    const me = primary ? allLayers[primary] : undefined;
+    const parent = me?.parentId ? allLayers[me.parentId] : undefined;
+    return (parent?.children ?? []).filter((c) => c !== primary && allLayers[c]).map((c) => ({ value: c, label: allLayers[c].name || c }));
+  })();
+  /** Sets one fill's mask (Phase 113); "none" removes it. */
+  const setMask = (index: number, kind: string, patch: Partial<{ start: number; end: number; angle: number; id: string; invert: boolean }> = {}) => {
+    writeEngine(
+      updatePaint(enginePaints, index, (p) => {
+        if (kind === "none") {
+          const { mask: _drop, ...rest } = p;
+          void _drop;
+          return rest as Paint;
+        }
+        const was = p.mask;
+        const mask: PaintMask =
+          kind === "layer"
+            ? { type: "layer", id: patch.id ?? (was?.type === "layer" ? was.id : siblingOptions[0]?.value ?? ""), invert: patch.invert ?? (was?.type === "layer" ? was.invert : false) }
+            : { type: kind as "linear" | "radial" | "conic", start: patch.start ?? (was && was.type !== "layer" ? was.start : 0.4), end: patch.end ?? (was && was.type !== "layer" ? was.end : 1), angle: patch.angle ?? (was && was.type !== "layer" ? was.angle : 0) };
+        return { ...p, mask };
+      }),
+    );
+  };
 
   const [localFills, setFills] = useState<FillItem[]>([
     {
@@ -487,7 +561,13 @@ export const FillSection: React.FC<FillSectionProps> = ({
                     onChange={(v) => handleUpdateFill(fill.id, { opacity: Math.max(0, Math.min(100, Math.round(v))) })}
                   />
                 </OptionRow>
+                {engine && enginePaints[index] && (
+                  <OptionRow label="Blend">
+                    <Select aria-label="Fill blend mode" options={FILL_BLEND_OPTIONS} value={enginePaints[index].blend ?? "normal"} width="100%" size="sm" onChange={(v) => writeEngine(updatePaint(enginePaints, index, (p) => (v === "normal" ? (({ blend: _b, ...rest }) => (void _b, rest as Paint))(p) : { ...p, blend: v as BlendMode })))} />
+                  </OptionRow>
+                )}
               </OptionGroup>
+              {engine && enginePaints[index] && <FillMaskControls mask={enginePaints[index].mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />}
               {engine && fill.stops && fill.stops.length >= 2 && (
                 <OptionGroup>
                   <div className="ll:flex ll:items-center ll:justify-between ll:min-h-7">

@@ -6,6 +6,9 @@ import { adjustmentMatrix, adjustmentToneTable, type ImageAdjustments } from "..
 import type { BezPath } from "../geometry/bezpath";
 import { StrokeLayer, strokeSettings } from "./strokePaint";
 import { useAssetUrlMap } from "../assets/useAssetUrl";
+import { useRenderLayers } from "./layersContext";
+import { fromWorld, layerOutline, layerSize, toParent } from "../editing/layerOutline";
+import type { PaintMask } from "../paint/paints";
 import type { ResolvedProps } from "./types";
 
 /**
@@ -135,6 +138,110 @@ export interface ShapePaintProps {
   toDrawing?: (p: BezPath) => BezPath;
 }
 
+/**
+ * A fill's mask (Phase 113) as an SVG alpha mask: where the mask is opaque the fill shows, where it is clear the fill
+ * is hidden. (Alpha, not luminance: browsers disagree on the colour space a luminance mask is read in.) Null when
+ * the mask can't be drawn (a layer mask whose layer is gone or isn't a sibling); the fill is then drawn unmasked.
+ */
+function fillMask({ id, mask, width, height, owner, layers, toDrawing }: { id: string; mask: PaintMask; width: number; height: number; owner: Layer; layers: Readonly<Record<string, Layer>> | null; toDrawing?: (p: BezPath) => BezPath }): React.ReactElement | null {
+  const reach = Math.hypot(width, height);
+  const region = { maskUnits: "userSpaceOnUse" as const, x: -reach, y: -reach, width: width + 2 * reach, height: height + 2 * reach, style: { maskType: "alpha" as const } };
+  const big = `M${-reach} ${-reach}H${width + reach}V${height + reach}H${-reach}Z`;
+  if (mask.type === "layer") {
+    const other = layers?.[mask.id];
+    if (!other || !layers || other.id === owner.id || other.parentId !== owner.parentId) return null;
+    const o = layerOutline(other, layers);
+    if (!o) return null;
+    const { w, h } = layerSize(owner);
+    const num = (k: string) => (typeof owner.properties[k] === "number" ? (owner.properties[k] as number) : 0);
+    let path = fromWorld(toParent(o.path, other), { cx: num("frame.x") + w / 2, cy: num("frame.y") + h / 2, w, h, rot: num("frame.rotation") });
+    if (toDrawing) path = toDrawing(path);
+    // inverted: the whole region with the layer cut out of it, in one even-odd path
+    return (
+      <mask id={id} {...region}>
+        <path d={mask.invert ? big + path.toSvg(2) : path.toSvg(2)} fill="#fff" fillRule={mask.invert || o.evenOdd ? "evenodd" : "nonzero"} />
+      </mask>
+    );
+  }
+  // a fade: shown fully at `start`, gone at `end`
+  const lo = Math.min(mask.start, mask.end);
+  const hi = Math.max(mask.start, mask.end);
+  const shownFirst = mask.start <= mask.end;
+  const value = (t: number) => {
+    const k = t <= lo ? 0 : t >= hi ? 1 : (t - lo) / (hi - lo || 1);
+    return shownFirst ? 1 - k : k;
+  };
+  const cx = width / 2;
+  const cy = height / 2;
+  if (mask.type === "conic") {
+    // as wedges round the centre, each as opaque as the fade is at its middle (SVG has no conic gradient)
+    const n = 96;
+    const R = reach;
+    const a0 = ((mask.angle - 90) * Math.PI) / 180;
+    return (
+      <mask id={id} {...region}>
+        {Array.from({ length: n }, (_, i) => {
+          const s0 = a0 + (i / n) * 2 * Math.PI;
+          const e0 = a0 + ((i + 1.02) / n) * 2 * Math.PI;
+          return <path key={i} d={`M${cx} ${cy}L${cx + Math.cos(s0) * R} ${cy + Math.sin(s0) * R}L${cx + Math.cos(e0) * R} ${cy + Math.sin(e0) * R}Z`} fill="#fff" fillOpacity={Number(value((i + 0.5) / n).toFixed(3))} />;
+        })}
+      </mask>
+    );
+  }
+  const gid = `${id}__g`;
+  const stops = (
+    <>
+      <stop offset={lo} stopColor="#fff" stopOpacity={value(lo)} />
+      <stop offset={hi} stopColor="#fff" stopOpacity={value(hi)} />
+    </>
+  );
+  let grad: React.ReactElement;
+  if (mask.type === "radial") {
+    grad = (
+      <radialGradient id={gid} gradientUnits="userSpaceOnUse" cx={cx} cy={cy} r={Math.hypot(width, height) / 2}>
+        {stops}
+      </radialGradient>
+    );
+  } else {
+    const a = (mask.angle * Math.PI) / 180;
+    const d = { x: Math.sin(a), y: Math.cos(a) };
+    const half = (Math.abs(width * d.x) + Math.abs(height * d.y)) / 2;
+    grad = (
+      <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={cx - d.x * half} y1={cy - d.y * half} x2={cx + d.x * half} y2={cy + d.y * half}>
+        {stops}
+      </linearGradient>
+    );
+  }
+  return (
+    <mask id={id} {...region}>
+      {grad}
+      <path d={big} fill={`url(#${gid})`} />
+    </mask>
+  );
+}
+
+/** How opaque a fade mask is at a point of the box (0–1): the same rule `fillMask` draws, for tests and tools. */
+export function fadeAt(mask: Exclude<PaintMask, { type: "layer" }>, width: number, height: number, x: number, y: number): number {
+  const lo = Math.min(mask.start, mask.end);
+  const hi = Math.max(mask.start, mask.end);
+  const cx = width / 2;
+  const cy = height / 2;
+  let t: number;
+  if (mask.type === "radial") t = Math.hypot(x - cx, y - cy) / (Math.hypot(width, height) / 2);
+  else if (mask.type === "conic") {
+    let a = Math.atan2(y - cy, x - cx) - ((mask.angle - 90) * Math.PI) / 180;
+    a = ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    t = a / (2 * Math.PI);
+  } else {
+    const a = (mask.angle * Math.PI) / 180;
+    const d = { x: Math.sin(a), y: Math.cos(a) };
+    const half = (Math.abs(width * d.x) + Math.abs(height * d.y)) / 2;
+    t = ((x - cx) * d.x + (y - cy) * d.y + half) / (2 * half || 1);
+  }
+  const k = t <= lo ? 0 : t >= hi ? 1 : (t - lo) / (hi - lo || 1);
+  return mask.start <= mask.end ? 1 - k : k;
+}
+
 /** The fills, stroke and shadows of a shape, as the children of its `<svg>`. */
 export function ShapePaint({ layer, resolved, width, height, defaultFill, defaultStroke, defaultStrokeWidth, geometry, fillable = true, strokable = true, outline = null, closed = true, rect, toDrawing }: ShapePaintProps) {
   const id = layer.id.replace(/[^A-Za-z0-9_-]/g, "_");
@@ -146,6 +253,7 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
   const cap = resolved.str("svg.strokeLinecap", "butt");
   const join = resolved.str("svg.strokeLinejoin", "miter");
   const shadows = parseShadows(resolved.get("paint.shadows")).filter((s) => s.visible);
+  const allLayers = useRenderLayers();
   const filterId = `${id}__shadow`;
 
   const defs: React.ReactNode[] = [];
@@ -220,6 +328,17 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
           </foreignObject>,
         );
         break;
+      }
+    }
+    // a fill with a mask shows only where its mask is white (Phase 113)
+    if (p.mask && painted.length > before) {
+      const maskId = `${gid}__mask`;
+      // a plain function (no hooks), called directly so a mask that can't be drawn leaves the fill unmasked
+      const m = fillMask({ id: maskId, mask: p.mask, width, height, owner: layer, layers: allLayers, toDrawing });
+      if (m) {
+        defs.push(<React.Fragment key={maskId}>{m}</React.Fragment>);
+        const node = painted.pop();
+        painted.push(<g key={`m${i}`} mask={`url(#${maskId})`}>{node}</g>);
       }
     }
     // a fill with a blend mode blends with everything drawn under it (FigCraft port F2)

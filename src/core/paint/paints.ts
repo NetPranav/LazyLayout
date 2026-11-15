@@ -30,12 +30,33 @@ export interface GradientStop {
   color: string;
 }
 
+/**
+ * A mask on one fill (Phase 113): a fade, fully shown at `start` and gone at `end` (fractions 0–1) along a linear
+ * direction (`angle` in degrees, 0 is downward), outward from the centre (radial), or round it (conic, from `angle`);
+ * or another layer's outline (a sibling), shown inside it, or outside it when `invert`.
+ */
+export type PaintMask =
+  | { type: "linear" | "radial" | "conic"; start: number; end: number; angle: number }
+  | { type: "layer"; id: string; invert: boolean };
+export const PAINT_MASK_TYPES = ["linear", "radial", "conic", "layer"] as const;
+
 interface PaintBase {
   /** 0 to 1. */
   opacity: number;
   visible: boolean;
   /** How the paint blends with what is under it (FigCraft port F2). Absent is normal. */
   blend?: BlendMode;
+  /** A mask on this fill alone (Phase 113). Absent is none. */
+  mask?: PaintMask;
+}
+
+/** A stored mask, read safely; null when absent or unusable. */
+export function parsePaintMask(v: unknown): PaintMask | null {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  if (o.type === "layer") return typeof o.id === "string" && o.id.length > 0 && o.id.length <= 64 ? { type: "layer", id: o.id, invert: o.invert === true } : null;
+  if (o.type !== "linear" && o.type !== "radial" && o.type !== "conic") return null;
+  return { type: o.type, start: num(o.start, 0, 0, 1), end: num(o.end, 1, 0, 1), angle: num(o.angle, 0, -720, 720) };
 }
 export type SolidPaint = PaintBase & { type: "solid"; color: string };
 export type LinearPaint = PaintBase & { type: "linear"; stops: GradientStop[]; from: Point; to: Point };
@@ -130,7 +151,8 @@ function parsePaint(v: unknown): Paint | null {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
   const blend = typeof o.blend === "string" && (BLEND_MODES as readonly string[]).includes(o.blend) && o.blend !== "normal" && o.blend !== "passThrough" ? (o.blend as BlendMode) : undefined;
-  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}) };
+  const mask = parsePaintMask(o.mask);
+  const base = { opacity: num(o.opacity, 1, 0, 1), visible: o.visible !== false, ...(blend ? { blend } : {}), ...(mask ? { mask } : {}) };
   switch (o.type) {
     case "solid": {
       const color = safeColor(o.color);
@@ -202,7 +224,7 @@ const pt = (p: Point) => ({ x: r3(p.x), y: r3(p.y) });
 export function serializeFills(fills: readonly Paint[]): string {
   return JSON.stringify(
     fills.slice(0, MAX_PAINTS).map((p) => {
-      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}) };
+      const base = { type: p.type, ...(p.opacity !== 1 ? { opacity: r3(p.opacity) } : {}), ...(p.visible ? {} : { visible: false }), ...(p.blend && p.blend !== "normal" ? { blend: p.blend } : {}), ...(p.mask ? { mask: p.mask.type === "layer" ? { type: "layer", id: p.mask.id, ...(p.mask.invert ? { invert: true } : {}) } : { type: p.mask.type, start: r3(p.mask.start), end: r3(p.mask.end), angle: r3(p.mask.angle) } } : {}) };
       switch (p.type) {
         case "solid": return { ...base, color: p.color };
         case "linear": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), from: pt(p.from), to: pt(p.to) };
