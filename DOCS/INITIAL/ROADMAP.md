@@ -477,7 +477,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 🚧 |
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 🚧 |
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 🚧 |
-| 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
+| 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 🚧 |
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
 | 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
@@ -2856,9 +2856,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** distance-field error < 0.5 px on 10 shapes; textures update within one frame of an edit; the ledger returns to 0 after unmount.
 
 ### Phase 176 · Surfaces in the editor & the first interactive background
-**Needs:** 174 · **Was:** v3 61.4, 19.1 · **Status:** 📋
-- [ ] Only the focused frame runs live surfaces; other frames and breakpoint copies show their last frame. A `background` surface fills its frame behind its siblings and stays selectable in Design mode.
-- [ ] **Vertical slice:** one hand-written shader background that bends toward the cursor through a binding, scrubbed with a tape, with reduced-motion and touch behaviours.
+**Needs:** 174 · **Was:** v3 61.4, 19.1 · **Status:** 🚧
+- [x] Only the focused frame runs live surfaces; other frames and breakpoint copies show their last frame. A `background` surface fills its frame behind its siblings and stays selectable in Design mode.
+- [x] **Vertical slice:** one hand-written shader background that bends toward the cursor through a binding, scrubbed with a tape, with reduced-motion and touch behaviours.
 
 **You'll see:** a cursor-reactive shader background on your hero, scrubbable on the timeline.
 **Done when:** the slice matches stored frames at tape checkpoints within the GPU tolerance.
