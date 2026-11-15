@@ -28,8 +28,20 @@ async function drag(page: Page, from: { x: number; y: number }, dx: number) {
   for (let i = 1; i <= 6; i++) await page.mouse.move(from.x + (dx * i) / 6, from.y);
   await page.mouse.up();
 }
+/**
+ * The middle of an element, once it has stopped moving. The Motion workspace springs into place for a second or so after
+ * the tab is clicked; a box read during that (WebKit is slow enough to do it) is where the element was, and the drag
+ * that follows lands on the row below.
+ */
 const centre = async (locator: ReturnType<Page["locator"]>) => {
-  const box = (await locator.boundingBox())!;
+  let box = (await locator.boundingBox())!;
+  for (let i = 0; i < 40; i++) {
+    await locator.page().waitForTimeout(100);
+    const next = (await locator.boundingBox())!;
+    const still = Math.abs(next.x - box.x) < 0.01 && Math.abs(next.y - box.y) < 0.01 && Math.abs(next.width - box.width) < 0.01;
+    box = next;
+    if (still) break;
+  }
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 };
 
