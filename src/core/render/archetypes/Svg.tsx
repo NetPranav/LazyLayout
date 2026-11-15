@@ -9,10 +9,40 @@ import { strokeSettings } from "../strokePaint";
 import { pathDataToBez } from "../../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../../paths/vectorNetwork";
 import type { BezPath } from "../../geometry/bezpath";
+import { drawDashes, drawSettings, hasDraw } from "../../paths/strokeDraw";
+import { subpathData } from "../../paths/morphMatch";
+import type { Layer } from "../../document/schema";
 
 const pick = <T extends string>(value: string, allowed: readonly T[], fallback: T): T => ((allowed as readonly string[]).includes(value) ? (value as T) : fallback);
 const CAPS = ["butt", "round", "square"] as const;
 const JOINS = ["miter", "round", "bevel"] as const;
+
+/**
+ * A plain stroked path, with its stroke drawing (ROADMAP Phase 85, `core/paths/strokeDraw.ts`). Without drawing settings
+ * it is the one `<path>` it always was. With them, the part of the stroke between `draw.start` and `draw.end` is one
+ * dash on a path whose length is called 1; and a path of several sub-paths is drawn as a fill and one stroke per
+ * sub-path, so they draw together or one after another (`draw.stagger`) instead of along one long line. The animation
+ * engine writes the same attributes on the same elements (`core/engine/stage/svgPaths.ts`).
+ */
+function StrokedPath({ layer, resolved, d, attrs, pathRef, marked }: { layer: Layer; resolved: ArchetypeRenderProps["resolved"]; d: string; attrs: React.SVGProps<SVGPathElement>; pathRef?: ArchetypeRenderProps["nodeRef"]; marked: boolean }) {
+  const id = marked ? { "data-element-id": layer.id } : {};
+  const settings = hasDraw(layer.properties) ? drawSettings((path) => resolved.get(path)) : null;
+  const parts = settings ? subpathData(d) : [];
+  if (!settings || parts.length <= 1) {
+    const dash = settings ? drawDashes(settings, 1)?.[0] : undefined;
+    return <path ref={pathRef as React.Ref<SVGPathElement>} {...id} d={d} {...attrs} {...(dash ? { pathLength: 1, strokeDasharray: dash.array, strokeDashoffset: dash.offset } : {})} />;
+  }
+  const dashes = drawDashes(settings, parts.length);
+  return (
+    <g ref={pathRef as React.Ref<SVGGElement>} {...id} data-path-parts="">
+      <path data-path-fill="" d={d} {...attrs} stroke="none" strokeDasharray={undefined} />
+      {parts.map((part, i) => {
+        const dash = dashes?.[i];
+        return <path key={i} data-path-part={i} d={part} {...attrs} fill="none" {...(dash ? { pathLength: 1, strokeDasharray: dash.array, strokeDashoffset: dash.offset } : {})} />;
+      })}
+    </g>
+  );
+}
 
 /**
  * Draws `inner` as an SVG child inside an `svgGroup`, or inside its own `<svg>` standing alone.
@@ -117,19 +147,23 @@ export const SvgPath: React.FC<ArchetypeRenderProps> = (p) => {
   <SvgShell
     {...p}
     inner={(ref) => (
-      <path
-        ref={ref as React.Ref<SVGPathElement>}
-        data-element-id={p.layer.id}
+      <StrokedPath
+        layer={p.layer}
+        resolved={p.resolved}
+        pathRef={ref}
+        marked
         d={safePathData(p.resolved.str("svg.path", "M0 0 L100 100"))}
-        stroke={p.resolved.str("svg.stroke", "#0f172a")}
-        strokeWidth={clampNumber(p.resolved.num("svg.strokeWidth", 2), 0, 200, 2)}
-        fill={p.resolved.str("svg.fill", "none")}
-        fillRule={p.resolved.str("svg.fillRule", "nonzero") === "evenodd" ? "evenodd" : "nonzero"}
-        strokeLinecap={pick<(typeof CAPS)[number]>(p.resolved.str("svg.strokeLinecap", "butt"), CAPS, "butt")}
-        strokeLinejoin={pick<(typeof JOINS)[number]>(p.resolved.str("svg.strokeLinejoin", "miter"), JOINS, "miter")}
-        strokeDasharray={safeDashArray(p.resolved.str("svg.strokeDasharray", "none"))}
-        // the path is drawn in a 200 x 200 space stretched to the frame: the stroke must keep its width in px however it is stretched
-        vectorEffect="non-scaling-stroke"
+        attrs={{
+          stroke: p.resolved.str("svg.stroke", "#0f172a"),
+          strokeWidth: clampNumber(p.resolved.num("svg.strokeWidth", 2), 0, 200, 2),
+          fill: p.resolved.str("svg.fill", "none"),
+          fillRule: p.resolved.str("svg.fillRule", "nonzero") === "evenodd" ? "evenodd" : "nonzero",
+          strokeLinecap: pick<(typeof CAPS)[number]>(p.resolved.str("svg.strokeLinecap", "butt"), CAPS, "butt"),
+          strokeLinejoin: pick<(typeof JOINS)[number]>(p.resolved.str("svg.strokeLinejoin", "miter"), JOINS, "miter"),
+          strokeDasharray: safeDashArray(p.resolved.str("svg.strokeDasharray", "none")),
+          // the path is drawn in a 200 x 200 space stretched to the frame: the stroke must keep its width in px however it is stretched
+          vectorEffect: "non-scaling-stroke",
+        }}
       />
     )}
   />
@@ -189,13 +223,12 @@ export const Icon: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, nod
       aria-label={resolved.str("content.iconName", layer.name)}
       style={{ ...layerBoxStyle(layer, resolved, ctx), width: size, height: size, display: "inline-block", flexShrink: 0, color: resolved.str("typography.color", "#0f172a") }}
     >
-      <path
+      <StrokedPath
+        layer={layer}
+        resolved={resolved}
+        marked={false}
         d={safePathData(resolved.str("svg.path", ""))}
-        stroke={resolved.str("svg.stroke", "currentColor")}
-        strokeWidth={clampNumber(resolved.num("svg.strokeWidth", 2), 0, 24, 2)}
-        fill={resolved.str("svg.fill", "none")}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        attrs={{ stroke: resolved.str("svg.stroke", "currentColor"), strokeWidth: clampNumber(resolved.num("svg.strokeWidth", 2), 0, 24, 2), fill: resolved.str("svg.fill", "none"), strokeLinecap: "round", strokeLinejoin: "round" }}
       />
     </svg>
   );

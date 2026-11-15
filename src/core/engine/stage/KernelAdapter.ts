@@ -3,6 +3,7 @@ import { evaluate, type EvaluateInputs } from "../../kernel/evaluate";
 import type { AdapterHost, EngineAdapter, EngineCapabilities, LayerFilter, StyledElement } from "./types";
 import { animatedLayers, fxFilters, styleWrites } from "./styleWrites";
 import { FxFilterWriter } from "./fxFilters";
+import { SvgPathWriter, writesSvgPath } from "./svgPaths";
 
 /** The most copies of one layer that follow its animation (each is one more `evaluate` when the copies are staggered). */
 export const MAX_FOLLOWING_COPIES = 600;
@@ -31,6 +32,8 @@ export class KernelAdapter implements EngineAdapter {
   private readonly elements = new Map<string, StyledElement>();
   /** The SVG filters of the effect stack and motion blur (Phase 75), kept in the frame document. */
   private readonly fx = new FxFilterWriter();
+  /** A morphing path and a stroke being drawn (Phase 85): attributes on the layer's path elements. */
+  readonly svgPaths = new SvgPathWriter();
 
   /** The element each copy of a layer draws (Design track D8), by copy number; found once per document and node set. */
   private readonly copyCache = new Map<string, { parent: Element; copies: Map<number, StyledElement> }>();
@@ -112,6 +115,7 @@ export class KernelAdapter implements EngineAdapter {
       const resolved = evaluate(doc, compositionId, layerId, time, this.inputs);
       this.apply(layerId, element, styleWrites(paths, resolved, layerId));
       if (paths.has("fx.stack")) this.fx.sync(element as unknown as Element, layerId, fxFilters(layerId, resolved));
+      if (writesSvgPath(paths)) this.svgPaths.sync(element as unknown as Element, layerId, paths, resolved);
       this.followWithCopies(doc, compositionId, layerId, paths, resolved, element, time);
     }
   }
@@ -202,6 +206,7 @@ export class KernelAdapter implements EngineAdapter {
   private restore(layerId: string): void {
     const element = this.elements.get(layerId);
     this.fx.remove(element as unknown as Element | undefined, layerId);
+    this.svgPaths.remove(layerId);
     const originals = this.originals.get(layerId);
     if (element && originals) {
       for (const [property, original] of originals) {
