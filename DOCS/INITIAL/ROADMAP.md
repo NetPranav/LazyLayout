@@ -455,7 +455,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 🚧 |
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 🚧 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 🚧 |
-| 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
+| 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 🚧 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 📋 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 📋 |
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
@@ -2700,8 +2700,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 fixture strings split within 0.5 px of the unsplit glyph positions in 3 browsers.
 
 ### Phase 154 · Cloners, tags & group targets
-**Needs:** 153 · **Was:** v3 89.2, 89.3 · **Status:** 📋
-- [ ] Grid, radial, path, scatter and linear cloners with per-clone overrides; per-piece attributes (`index`, `count`, `home`, `random` …); layer tags; `Group[*]` and `tag:` binding targets. Over the tier cap, offer GPU particles (183).
+**Needs:** 153 · **Was:** v3 89.2, 89.3 · **Status:** 🚧
+- [x] Grid, radial, path, scatter and linear cloners with per-clone overrides; per-piece attributes (`index`, `count`, `home`, `random` …); layer tags; `Group[*]` and `tag:` binding targets; over-tier-cap GPU particle recommendation (`src/core/signals/clonersAndGroupTargets.ts`).
 
 **You'll see:** a 20 × 20 dot grid where every dot can react.
 **Done when:** a 20 × 20 grid matches between stage and export.
