@@ -70,7 +70,12 @@ interface MenuContextValue {
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
-function placeSub(parentEl: HTMLElement, rowEl: HTMLElement, w: number, h: number) {
+/**
+ * `parentW` is the parent menu's own width once it has finished opening. The menu opens by growing from a small seed,
+ * and a submenu can open during that (the pointer is already over a row with a submenu when the menu appears under it):
+ * measured then, the parent is a few pixels wide and the submenu was placed on top of it, covering its own row.
+ */
+function placeSub(parentEl: HTMLElement, rowEl: HTMLElement, w: number, h: number, parentW = 0) {
   const pad =
     parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue(
@@ -87,7 +92,7 @@ function placeSub(parentEl: HTMLElement, rowEl: HTMLElement, w: number, h: numbe
   const parentRect = parentEl.getBoundingClientRect();
   const r = rowEl.getBoundingClientRect();
   const parentLeft = parentRect.left;
-  const parentWidth = parentRect.width;
+  const parentWidth = Math.max(parentRect.width, parentW);
 
   let x = parentLeft + parentWidth + edgeGap;
   const flip = x + w > window.innerWidth - pad;
@@ -319,7 +324,7 @@ export const Menu: React.FC<MenuProps> = ({
         openFrameRef.current = null;
         if (!sbm || !ss) return;
         const m = ss.measure();
-        const g = placeSub(mm, rowEl, m.w, m.h);
+        const g = placeSub(mm, rowEl, m.w, m.h, surfRef.current?.measure().w ?? 0);
         if (g.flip) {
           sbm.dataset.flip = "true";
         } else {
@@ -362,7 +367,7 @@ export const Menu: React.FC<MenuProps> = ({
       openFrameRef.current = null;
       if (!sbm || !ss) return;
       const m = ss.measure();
-      const g = placeSub(mm, rowEl, m.w, m.h);
+      const g = placeSub(mm, rowEl, m.w, m.h, surfRef.current?.measure().w ?? 0);
       if (g.flip) {
         sbm.dataset.flip = "true";
       } else {

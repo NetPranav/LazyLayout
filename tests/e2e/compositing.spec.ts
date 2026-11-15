@@ -154,8 +154,8 @@ test("Phase 74: a layer used as a matte masks another layer, follows its animati
   for (const t of TIMES) {
     await seek(page, t);
     const kernelPath = (await kernel(page, MATTE_TARGET, t))["mask.path"] as string;
-    const svg = maskSvg(await computed(page, MATTE_TARGET, "mask-image"));
-    expect(/<path d="([^"]*)"/.exec(svg)![1], `matte path at ${t}`).toBe(kernelPath);
+    // the engine draws on the frame after the seek; a slow browser may not have got there in the seek's fixed wait
+    await expect.poll(async () => /<path d="([^"]*)"/.exec(maskSvg(await computed(page, MATTE_TARGET, "mask-image")))?.[1], { message: `matte path at ${t}` }).toBe(kernelPath);
     // the matte layer itself is not drawn
     expect(Number(await computed(page, MATTE_SOURCE, "opacity")), `the source is hidden at ${t}`).toBe(0);
   }
