@@ -458,7 +458,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 🚧 |
 | 155 | Roles, relations & selectors | 134, 154 | — (new in v4.1) | 4 | 🚧 |
 | 156 | Data-driven layers & animated charts | 154 | — (new in v4.1) | 4 | 🚧 |
-| 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 📋 |
+| 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 🚧 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 📋 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 📋 |
 | 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
@@ -2721,8 +2721,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 chart references match the data exactly; the export renders the same chart.
 
 ### Phase 157 · Fields & effectors
-**Needs:** 154 · **Was:** v3 90.1–90.3 · **Closes:** AUD-56 (fields) · **Status:** 📋
-- [ ] Fields (circle, box, capsule, own shape, path stroke, linear, noise) with inner and outer radius and falloff. Effectors (keep out, push, attract, swirl, transform, style, look at, jitter) with strength, spring home and blending; Keep-Out is a hard constraint. Gizmos and weight heat maps.
+**Needs:** 154 · **Was:** v3 90.1–90.3 · **Closes:** AUD-56 (fields) · **Status:** 🚧
+- [x] Fields (`circle`, `box`, `capsule`, `ownShape`, `pathStroke`, `linear`, `noise`) with inner and outer radius and falloff; effectors (`keepOut`, `push`, `attract`, `swirl`, `transform`, `style`, `lookAt`, `jitter`) with strength, spring home and blending; hard Keep-Out constraint; gizmo heat maps (`src/core/signals/fieldsAndEffectors.ts`).
 
 **You'll see:** letters that flee a circle and spring home.
 **Done when:** the reference build (effector form) never draws a letter inside the circle at any tape checkpoint and springs every letter home within 0.5 px.
