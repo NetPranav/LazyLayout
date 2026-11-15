@@ -385,7 +385,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 🚧 |
 | 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 🚧 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 🚧 |
-| 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
+| 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 🚧 |
 | 196 | Code components | 195 | v3 68 | 4 | 📋 |
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 📋 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
@@ -2414,8 +2414,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** each passes the Playground sweep, tape parity and its tier budget.
 
 ### Phase 195 · Sandbox boundaries for untrusted code
-**Needs:** 193 · **Was:** v3 80.2 · **Status:** 📋
-- [ ] Opaque-origin sandboxed iframes (`allow-scripts` without `allow-same-origin`) with typed MessageChannel bridges; no editor-origin storage, cookies or tokens reachable from any user-content frame (decision record 0012, code isolation).
+**Needs:** 193 · **Was:** v3 80.2 · **Status:** 🚧
+- [x] Opaque-origin sandboxed iframes (`allow-scripts` without `allow-same-origin`) with typed MessageChannel bridges; no editor-origin storage, cookies or tokens reachable from any user-content frame (decision record 0012, code isolation).
 
 **You'll see:** nothing yet; 196 runs code components inside it.
 **Done when:** a malicious fixture reading `document.cookie`, `localStorage` and `parent.document` gets nothing in 3 browsers.
