@@ -436,7 +436,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 🚧 |
 | 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 🚧 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 🚧 |
-| 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
+| 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 🚧 |
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
@@ -2546,8 +2546,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** values match scripted tapes at checkpoints; 200 watched layers cost < 0.2 ms per frame.
 
 ### Phase 135 · More inputs: microphone, camera, gamepad & tilt
-**Needs:** 134 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Permission-gated inputs: microphone (level, frequency bands, beat), camera (brightness, motion, and a video texture later), gamepad (sticks and buttons) and device tilt with calibration. Each has a fallback when permission is denied or the device is missing, and can be recorded as a tape (Phase 136). Nothing is uploaded.
+**Needs:** 134 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Permission-gated inputs: microphone (level, frequency bands, beat), camera (brightness, motion, and a video texture later), gamepad (sticks and buttons) and device tilt with calibration. Each has a fallback when permission is denied or the device is missing, and can be recorded as a tape (Phase 136). Nothing is uploaded.
+
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/deviceSignals.ts` (`DeviceSignalController`, audio FFT bands & beat detector, camera luma/motion sampler, gamepad deadzone poller, zero-calibrated orientation tilt) and wired `audio`/`device` signals into `src/core/bindings/inputBus.ts`. Tests in `src/core/signals/__tests__/deviceSignals.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a shape that pulses with your voice, and a card that tilts with your phone.
 **Done when:** recorded microphone and gamepad tapes replay identically; denying permission falls back without errors.

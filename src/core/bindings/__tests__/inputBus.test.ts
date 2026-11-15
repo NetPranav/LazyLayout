@@ -50,7 +50,8 @@ describe("input bus (D4)", () => {
 
   it("names the signals it does not serve yet, so the editor can say so", () => {
     assert.deepEqual(unservedSignals(parseBinding("scroll.progress -> hero.transform.x").expr), []);
-    assert.equal(unservedSignals(parseBinding("device.tiltX -> hero.transform.rotate").expr)[0]?.kind, "device");
+    assert.deepEqual(unservedSignals(parseBinding("device.tiltX -> hero.transform.rotate").expr), []);
+    assert.equal(unservedSignals(parseBinding("sm(progress) -> hero.transform.rotate").expr)[0]?.kind, "sm");
   });
 
   describe("view(layer): how far a section has scrolled through the screen", () => {

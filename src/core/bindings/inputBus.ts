@@ -48,6 +48,10 @@ export interface InputSource {
   focusedLayerId?(): string | null;
   /** Whether keyboard focus ring is currently visible. */
   focusVisible?(): boolean;
+  /** Permission-gated device tilt orientation frame. */
+  device?(): { tiltX: number; tiltY: number; orientation: number } | null;
+  /** Permission-gated audio reactive frame (or layer audio element bands). */
+  audio?(layerId: string): { level: number; beat: boolean; bands?: readonly number[] } | null;
 }
 
 /** Per-frame values that depend on the last frame (motion, speed, scroll velocity); owned by the bus, not the source. */
@@ -102,6 +106,8 @@ const SERVED = new Set([
   "keyAxis",
   "keyLastPressed",
   "focusVisible",
+  "device",
+  "audio",
 ]);
 
 /**
@@ -267,6 +273,18 @@ export function busFrame(source: InputSource, state: BusState, time: number, dt:
       }
       case "scroll":
         return s.channel === "y" ? sc.y : s.channel === "progress" ? progress : s.channel === "velocity" ? state.scrollVelocity : state.scrollDirection;
+      case "device": {
+        const d = source.device?.();
+        if (!d) return 0;
+        return s.channel === "tiltX" ? d.tiltX : s.channel === "tiltY" ? d.tiltY : d.orientation;
+      }
+      case "audio": {
+        const a = source.audio?.(s.layer);
+        if (!a) return s.channel === "beat" ? false : 0;
+        if (s.channel === "beat") return a.beat;
+        if (s.channel === "band") return a.bands?.[s.band ?? 0] ?? 0;
+        return a.level;
+      }
       default:
         return 0;
     }
