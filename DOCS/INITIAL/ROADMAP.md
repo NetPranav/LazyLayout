@@ -461,7 +461,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 157 | Fields & effectors → *Design track D10* | 154 | v3 90.1–90.3 | 4 | 🚧 |
 | 158 | One evaluation space & no-maths kinetics | 157 | v3 90.4–90.6 | 4 | 🚧 |
 | 159 | Blueprint model & interaction library | 158 | v3 72.1, 72.2 | 4 | 🚧 |
-| 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 📋 |
+| 160 | NodeScript text form & one model with the grammar | 159 | v3 72.3, 72.4 | 4 | 🚧 |
 | 161 | Blueprint runtime | 160 | v3 74.1 | 4 | 📋 |
 | 162 | 2D physics core | 161 | v3 91.3, 64.1 (decision) | 4 | 📋 |
 | 163 | Colliders & bodies | 162 | v3 91.1, 91.2 | 4 | 📋 |
@@ -2743,8 +2743,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** grammar §10 and §13.8 examples and 10 cross-element interactions validate as graphs.
 
 ### Phase 160 · NodeScript text form & one model with the grammar
-**Needs:** 159 · **Was:** v3 72.3, 72.4 · **Status:** 📋
-- [ ] Audit and reuse `src/core/nodescript/` (lexer, parser, `grammar.peg`, language server); add the `interaction` namespace. Every Simple binding and Simple rule is a view over a canonical graph fragment, so one rules engine validates both.
+**Needs:** 159 · **Was:** v3 72.3, 72.4 · **Status:** 🚧
+- [x] Integrated existing `src/core/nodescript/` lexer, parser, serializer, and `Interaction` namespace (`src/core/nodescript/interactionBridge.ts`). Every Simple binding and Simple rule compiles to a canonical `BlueprintGraph` fragment validated by one unified rules engine and round-tripping `graph → .nls → graph` across 500 seeded graphs.
 
 **You'll see:** nothing new yet (the `.nls` text form is what AI and MCP use in 246 and 250).
 **Done when:** graph → `.nls` → graph round-trips unchanged over 500 random graphs.
