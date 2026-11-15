@@ -337,7 +337,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 144 | Velocity effects: squash & stretch, lean & trails → *Design track D18* | 134, 143 | — (new in v4.1) | 4 | 🚧 |
 | 145 | Reactions that change layout, inside fixed boxes | 139, 143 | — (new in v4.1) | 4 | 🚧 |
 | 146 | Keyboard & focus interactivity | 143 | — (new) | 4 | 🚧 |
-| 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 📋 |
+| 147 | Gestures: hold, swipe, fling, pull & release | 146 | — (new in v4.1) | 4 | 🚧 |
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 📋 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 📋 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 📋 |
@@ -2069,8 +2069,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a keyboard-only journey drives 5 interactive references in the stage and in the export; the parity rule flags a pointer-only reaction.
 
 ### Phase 147 · Gestures: hold, swipe, fling, pull & release
-**Needs:** 146 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 146 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Gesture recognisers as signals and events: press-and-hold progress, swipe (direction and distance), fling velocity, pull back and release (a slingshot), long press, double tap, pinch and two-finger rotate. Each gesture has a keyboard equivalent (the parity rule of Phase 146).
+**Status check (2026-11-15, Lane D), 🚧:** Implemented `src/core/signals/gestures.ts` (`createGestureRecognizer` with hold progress, long press, double tap, swipe, fling, slingshot pull-and-release, dual-touch pinch & rotate, and keyboard parity) and tests in `src/core/signals/__tests__/gestures.test.ts` (queued for Phase 151 verification).
 
 **You'll see:** a hold-to-confirm button whose fill rises while you hold it.
 **Done when:** scripted mouse and touch tapes fire each gesture at the expected frame in 3 browsers and a touch profile.
