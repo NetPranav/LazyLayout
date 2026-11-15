@@ -388,7 +388,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 🚧 |
 | 196 | Code components | 195 | v3 68 | 4 | 🚧 |
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 🚧 |
-| 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 📋 |
+| 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 🚧 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 📋 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
 | 201 | Composition test suite | 200 | v3 91.7 | 4 | 📋 |
@@ -2436,8 +2436,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** every library effect builds in the Next, Vite, Vue and HTML fixtures and passes tape parity.
 
 ### Phase 198 · Embed script, size budgets & Web Vitals
-**Needs:** 197 · **Was:** v3 69.3–69.5 · **Status:** 📋
-- [ ] A framework-free embed (`<script type="module">` + `<div data-fx>`) for Webflow, Framer, Wix, WordPress and plain HTML (self-hosted until 268). Per-family size budgets in CI; the poster reserves the box (CLS 0), init waits for LCP, effects pause offscreen.
+**Needs:** 197 · **Was:** v3 69.3–69.5 · **Status:** 🚧
+- [x] A framework-free embed (`<script type="module">` + `<div data-fx>`) for Webflow, Framer, Wix, WordPress and plain HTML (self-hosted until 268). Per-family size budgets in CI; the poster reserves the box (CLS 0), init waits for LCP, effects pause offscreen.
 
 **You'll see:** "Copy embed code" for any effect.
 **Done when:** every effect meets its size budget with CLS 0 and no long task ≥ 50 ms at init; the embed works under a strict nonce-based CSP.
