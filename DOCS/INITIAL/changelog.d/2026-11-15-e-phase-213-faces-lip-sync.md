@@ -1,0 +1,1 @@
+- [Lane E · Phase 213 · Faces: expressions, blinks & lip sync] Implemented audio-band & transcript-compiled viseme lip-sync evaluation within 1 frame, automatic blinking, brow expression curves, and idle breathing in `src/core/rig/faceLipSync.ts`.

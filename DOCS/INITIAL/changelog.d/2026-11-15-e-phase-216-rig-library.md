@@ -1,0 +1,1 @@
+- [Lane E · Phase 216 · Rig library & recipes] Added 8 original MIT-licensed rigged character/part recipes with 1-click cursor follow, export parity, and tier budgets in `src/core/rig/rigLibrary.ts`.

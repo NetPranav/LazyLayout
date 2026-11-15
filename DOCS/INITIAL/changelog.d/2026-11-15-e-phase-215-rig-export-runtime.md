@@ -1,0 +1,1 @@
+- [Lane E · Phase 215 · Rig export runtime] Implemented tree-shaken SVG/Canvas/WebGL rig export runtimes, Next/Vite/HTML export bundles with tape parity verification (`< 0.01 px`), and Lottie v5.7.4 bone hierarchy JSON export in `src/core/rig/rigExportRuntime.ts`.

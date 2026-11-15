@@ -1,0 +1,1 @@
+- [Lane E · Phase 211 · Character states & blend trees] Implemented 1D speed blend trees, 2D directional pose blends, bone-masked layered animation composition, and crossfaded 5-state locomotion machine evaluation in `src/core/rig/characterBlendTrees.ts`.

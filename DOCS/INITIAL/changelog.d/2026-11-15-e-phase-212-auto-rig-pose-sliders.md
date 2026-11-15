@@ -1,0 +1,1 @@
+- [Lane E · Phase 212 · Auto-rig & pose sliders] Implemented one-click semantic/topological auto-rigging across person, animal, face, and mascot illustrations with additive/blended pose sliders in `src/core/rig/autoRigAndPoseSliders.ts`.
