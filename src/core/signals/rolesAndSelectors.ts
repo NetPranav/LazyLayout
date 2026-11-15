@@ -139,8 +139,8 @@ export function selectNeighbours(
   const oy = origin.y + origin.height * 0.5;
   return layers.filter((candidate) => {
     if (candidate.id === origin.id) return false;
-    if (origin.parentId != null && candidate.parentId === origin.parentId) {
-      return true;
+    if (origin.parentId != null) {
+      return candidate.parentId === origin.parentId;
     }
     const cx = candidate.x + candidate.width * 0.5;
     const cy = candidate.y + candidate.height * 0.5;

@@ -59,8 +59,13 @@ export interface SimpleRuleDescriptor {
  * Compiles a Simple rule or binding into a canonical `BlueprintGraph` fragment,
  * ensuring Simple rules and Pro Blueprints share one underlying AST and validator.
  */
+function sanitizeGraphIdentifier(raw: string): string {
+  return raw.replace(/[^A-Za-z0-9_]/g, "_");
+}
+
 export function compileSimpleRuleToGraphFragment(rule: SimpleRuleDescriptor): BlueprintGraph {
-  const graph = ASTManager.createGraph(`graph_${rule.id}`, `SimpleRule_${rule.id}`, "event");
+  const safeId = sanitizeGraphIdentifier(rule.id);
+  const graph = ASTManager.createGraph(`graph_${safeId}`, `SimpleRule_${safeId}`, "event");
 
   const eventType =
     rule.trigger === "hover"
@@ -120,9 +125,15 @@ export function compileSimpleRuleToGraphFragment(rule: SimpleRuleDescriptor): Bl
  * so binding expressions validate and serialize alongside interactive Blueprints.
  */
 export function compileBindingToGraphFragment(binding: Binding): BlueprintGraph {
-  const graph = ASTManager.createGraph(`graph_${binding.id}`, `Binding_${binding.id}`, "event");
+  const safeId = sanitizeGraphIdentifier(binding.id);
+  const graph = ASTManager.createGraph(`graph_${safeId}`, `Binding_${safeId}`, "event");
   const sigKind = binding.expr.signal.kind;
-  const targetRef = binding.target.kind === "property" ? binding.target.on.ref : binding.ownerLayerId;
+  const targetRef =
+    binding.target.kind === "property"
+      ? binding.target.on.kind === "tag"
+        ? `tag:${binding.target.on.tag}`
+        : binding.target.on.ref
+      : binding.ownerLayerId;
   const targetPath = binding.target.kind === "property" ? binding.target.path : binding.target.kind;
 
   graph.variables.push({
