@@ -9,7 +9,7 @@ import { describe, it } from "node:test";
 import { BezPath, ellipsePath, type Pt } from "../../geometry/bezpath";
 import { polylines, winding } from "../../geometry/measure";
 import { defaultStroke, strokeOutline } from "../strokes";
-import { dividePaths, joinPaths, knifeCut, offsetPath, reversePath, simplifyCurves, simplifyTolerance, smoothCurves } from "../pathTools";
+import { dividePaths, joinPaths, knifeCut, offsetPath, reversePath, simplifyCurves, simplifyTolerance, smoothCurves, softClose } from "../pathTools";
 import { booleanPaths } from "../pathOps";
 
 function rng(seed: number): () => number {
@@ -255,6 +255,19 @@ describe("Phase 106: join and reverse", () => {
       const segs = edges(s);
       // the reference outline is itself flattened to 0.01 px
       for (const q of points(back, 0.1)) assert.ok(outlineDistance(segs, q) < 0.02);
+    }
+  });
+});
+
+describe("Phase 108: soft close", () => {
+  it("an L shape's inner corner is filled with a fillet of radius k, and its outer edges stay", () => {
+    const L = new BezPath().moveTo({ x: 0, y: 0 }).lineTo({ x: 50, y: 0 }).lineTo({ x: 50, y: 50 }).lineTo({ x: 100, y: 50 }).lineTo({ x: 100, y: 100 }).lineTo({ x: 0, y: 100 }).closePath();
+    for (const k of [5, 10, 20]) {
+      const s = softClose(L, k);
+      near(area(s), 7500 + (1 - Math.PI / 4) * k * k, 0.005 * 400, `k = ${k}`);
+      const bb = s.boundingBox();
+      near(bb.x1 - bb.x0, 100, 0.1, "width");
+      near(bb.y1 - bb.y0, 100, 0.1, "height");
     }
   });
 });

@@ -15,6 +15,8 @@ import { BackgroundSection } from "./sections/BackgroundSection";
 import { IconSection } from "./sections/IconSection";
 import { ShapeSection } from "./sections/ShapeSection";
 import { VectorSection, VectorHeaderAction, VectorOptions } from "./sections/VectorSection";
+import { BooleanGroupSection } from "./sections/BooleanGroupSection";
+import { isBooleanGroup } from "@/core/editing/layerOutline";
 import { CounterSection } from "./sections/CounterSection";
 import { Object3DSection } from "./sections/Object3DSection";
 import { FillSection } from "./sections/FillSection";
@@ -136,6 +138,7 @@ export function getInspectorDesignSections(
   const isIcon = archetype === "icon";
   const isShape = ["shape", "star", "polygon", "circle", "arrow"].includes(archetype || "");
   const isPath = archetype === "svgPath";
+  const isBoolean = isBooleanGroup(inspector.primaryLayer ?? undefined);
   const isCounter = (archetype as string) === "counter";
   const isObject3D = archetype === "object3D" || (archetype as string) === "object3d";
 
@@ -248,6 +251,15 @@ export function getInspectorDesignSections(
             headerAction: <VectorHeaderAction {...sectionProps} />,
             children: <VectorSection {...sectionProps} />,
             moreContent: <VectorOptions {...sectionProps} />,
+          },
+        ]
+      : []),
+    ...(isBoolean
+      ? [
+          {
+            id: "boolean-group",
+            title: "Boolean group",
+            children: <BooleanGroupSection {...sectionProps} />,
           },
         ]
       : []),

@@ -14,6 +14,7 @@ import { ellipse, isCornerStyle, polygonPoints, roundedRect, smoothedPolygon, st
 import { pathDataToBez } from "../paths/bezBridge";
 import { fillPath as networkFill, fillRule as networkRule, parseNetwork, strokePath as networkStroke } from "../paths/vectorNetwork";
 import { refitCurves } from "../paths/curveRefit";
+import { softClose } from "../paths/pathTools";
 import { combineRegions, mergeRegions, pathRegion, type PathBoolOp, type Region } from "../paths/pathOps";
 import { defaultStroke, parseSides, parseWidthProfile, strokeOutline, type StrokeProps } from "../paths/strokes";
 import { readCap } from "../render/strokePaint";
@@ -206,7 +207,10 @@ export function booleanGroupResult(group: Layer, layers: Readonly<Record<string,
     i = j;
   }
   runMemo.set(group, next);
-  const out = refitCurves(acc, operands.map((o) => o.path));
+  let out = refitCurves(acc, operands.map((o) => o.path));
+  // Phase 108: a union group with softness melts its children together
+  const softness = num(group.properties["boolean.softness"], 0);
+  if (op === "union" && softness > 0 && !out.isEmpty()) out = softClose(out, softness);
   return out.isEmpty() ? null : out;
 }
 

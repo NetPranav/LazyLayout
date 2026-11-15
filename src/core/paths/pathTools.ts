@@ -12,7 +12,8 @@
 import { BezPath, segmentEnd, segmentEval, segmentStart, splitSubpaths, type Pt, type Segment } from "../geometry/bezpath";
 import { winding } from "../geometry/measure";
 import { fitCurve } from "./pathFit";
-import { arrangementFaces, booleanPaths, piecesOf, type FillRule } from "./pathOps";
+import { offsetPolygon } from "../3d/path/offset";
+import { arrangementFaces, booleanPaths, combineRegions, mergeRegions, pathRegion, piecesOf, regionToPath, type FillRule } from "./pathOps";
 import { defaultStroke, strokeOutline, type StrokeJoin } from "./strokes";
 
 const clamp01 = (n: number): number => Math.min(1, Math.max(0, Number.isFinite(n) ? n : 0));
@@ -37,6 +38,147 @@ export function offsetPath(path: BezPath, distance: number, join: StrokeJoin = "
   // The band's edges are the stroker's short straight pieces: fitted back into curves (within 0.05 px), with the
   // corners of a mitre or bevel join kept as corners.
   return refit(raw, 0.05, 30, 0);
+}
+
+/**
+ * A soft union (Phase 108): the shape grown by `softness` and shrunk back (a morphological closing). Parts closer
+ * than twice the softness melt together with smooth necks, every inner corner is rounded by the softness, and the
+ * outer edges stay where they were and stay sharp. 0 gives the shape back.
+ */
+export function softClose(path: BezPath, softness: number, rule: FillRule = "nonzero"): BezPath {
+  const k = Math.min(MAX_OFFSET / 2, Number.isFinite(softness) ? softness : 0);
+  if (k <= 1e-6 || path.isEmpty()) return path;
+  const region = pathRegion(path, rule);
+  if (region.length === 0) return path;
+  // Grown and shrunk as polygons (the 3D work's polygon offsetter, round joins within 0.05 px), on outlines thinned to
+  // within 0.05 px first, so it stays fast
+  const offset = (r: Region, d: number): Region =>
+    r.flatMap((poly) => offsetPolygon({ outer: poly[0], holes: poly.slice(1) }, d, { join: "round", arcTolerance: 0.005 }).map((p) => [p.outer, ...p.holes]));
+  const grown = mergeRegions("union", offset(coarsen(region, 0.05), k).map((poly) => [poly]));
+  // shrunk with our own erosion: the offsetter's inward offset leaves inner corners unrounded (reported, 3D-027)
+  const ringArea = (r: [number, number][]) => {
+    let s = 0;
+    for (let i = 0; i + 1 < r.length; i++) s += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
+    return Math.abs(s / 2);
+  };
+  // slivers where the shrinking strips meet the grown arcs not quite exactly (thousandths of a px²) are dropped
+  const closed = erode(grown, k)
+    .filter((poly) => ringArea(poly[0]) > 0.5)
+    .map((poly) => [poly[0], ...poly.slice(1).filter((h) => ringArea(h) > 0.5)]);
+  if (closed.length === 0) return path;
+  // fitted with curves once, within 0.1 px
+  // thinned first, so the cluster of tiny edges the shrink leaves at a sharp corner becomes one corner the fit keeps
+  return refit(regionToPath(coarsen(closed, 0.05)), 0.1, 30, 0);
+}
+
+type Region = ReturnType<typeof pathRegion>;
+
+/** Fewer points: a vertex is dropped while the outline stays within `tol` px (Ramer–Douglas–Peucker per ring). */
+function coarsen(region: Region, tol: number): Region {
+  const thin = (ring: [number, number][]): [number, number][] => {
+    const pts = ring.slice(0, -1);
+    if (pts.length <= 8) return ring;
+    const keep = new Array<boolean>(pts.length).fill(false);
+    const dp = (i: number, j: number) => {
+      const [ax, ay] = pts[i];
+      const [bx, by] = pts[j % pts.length];
+      const dx = bx - ax;
+      const dy = by - ay;
+      const l = Math.hypot(dx, dy) || 1;
+      let worst = -1;
+      let at = -1;
+      for (let m = i + 1; m < j; m++) {
+        const d = Math.abs((pts[m][0] - ax) * dy - (pts[m][1] - ay) * dx) / l;
+        if (d > worst) {
+          worst = d;
+          at = m;
+        }
+      }
+      if (worst > tol && at > 0) {
+        keep[at] = true;
+        dp(i, at);
+        dp(at, j);
+      }
+    };
+    keep[0] = true;
+    const half = Math.floor(pts.length / 2);
+    keep[half] = true;
+    dp(0, half);
+    dp(half, pts.length);
+    const out = pts.filter((_, m) => keep[m]);
+    out.push(out[0]);
+    return out.length >= 4 ? out : ring;
+  };
+  return region.map((poly) => poly.map(thin));
+}
+
+/**
+ * A region shrunk by `k` (morphological erosion): what is left after removing every point closer than `k` to its
+ * outline. The removed band is a strip `k` deep inside each edge, plus a round fan at each inner (reflex) corner,
+ * where the two strips leave a gap. Fans thinner than 0.02 px are skipped: they would only be slivers.
+ */
+function erode(region: Region, k: number): Region {
+  const pieces: Region[] = [];
+  const inside = (poly: [number, number][][], x: number, y: number): boolean => {
+    let w = 0;
+    for (const r of poly) {
+      for (let i = 0; i + 1 < r.length; i++) {
+        const [ax, ay] = r[i];
+        const [bx, by] = r[i + 1];
+        if ((ay <= y) !== (by <= y) && x < ax + ((y - ay) / (by - ay)) * (bx - ax)) w++;
+      }
+    }
+    return w % 2 === 1;
+  };
+  const step = 2 * Math.acos(Math.max(-1, 1 - 0.05 / k));
+  for (const poly of region) {
+    for (const ring of poly) {
+      const n = ring.length - 1;
+      if (n < 3) continue;
+      // which side of this ring's edges is inside the shape (the same for the whole ring)
+      let side = 0;
+      for (let i = 0; i < n && side === 0; i++) {
+        const [ax, ay] = ring[i];
+        const [bx, by] = ring[i + 1];
+        const l = Math.hypot(bx - ax, by - ay);
+        if (l < 1e-6) continue;
+        const e = Math.min(0.01, l / 4);
+        side = inside(poly, (ax + bx) / 2 - ((by - ay) / l) * e, (ay + by) / 2 + ((bx - ax) / l) * e) ? 1 : -1;
+      }
+      if (side === 0) continue;
+      const normal = (i: number): [number, number] | null => {
+        const [ax, ay] = ring[i];
+        const [bx, by] = ring[i + 1];
+        const l = Math.hypot(bx - ax, by - ay);
+        return l < 1e-9 ? null : [(-(by - ay) / l) * side, ((bx - ax) / l) * side];
+      };
+      for (let i = 0; i < n; i++) {
+        const nm = normal(i);
+        if (!nm) continue;
+        const [ax, ay] = ring[i];
+        const [bx, by] = ring[i + 1];
+        pieces.push([[[[ax, ay], [bx, by], [bx + nm[0] * k, by + nm[1] * k], [ax + nm[0] * k, ay + nm[1] * k], [ax, ay]]]]);
+        // the fan at b, between this edge's inward normal and the next one's, the short way
+        const nx = normal((i + 1) % n);
+        if (!nx) continue;
+        // only an inner corner leaves a gap between the strips: there the next edge turns away from the inside
+        const [cx, cy] = ring[(i + 2) % n === 0 ? n : (i + 2) % n];
+        if ((cx - bx) * nm[0] + (cy - by) * nm[1] >= 0) continue;
+        const a0 = Math.atan2(nm[1], nm[0]);
+        let turn = Math.atan2(nx[1], nx[0]) - a0;
+        while (turn <= -Math.PI) turn += 2 * Math.PI;
+        while (turn > Math.PI) turn -= 2 * Math.PI;
+        if (Math.abs(turn) * k < 0.02) continue;
+        const m = Math.max(1, Math.ceil(Math.abs(turn) / step));
+        const fan: [number, number][] = [[bx, by]];
+        for (let s = 0; s <= m; s++) fan.push([bx + Math.cos(a0 + (turn * s) / m) * k, by + Math.sin(a0 + (turn * s) / m) * k]);
+        fan.push([bx, by]);
+        pieces.push([[fan]]);
+      }
+    }
+  }
+  if (pieces.length === 0) return region;
+  return combineRegions(region, mergeRegions("union", pieces), "subtract");
 }
 
 // --- simplify and smooth -------------------------------------------------------------
@@ -102,6 +244,16 @@ function relax(pts: Pt[], radius: number, passes: number, loop: boolean): Pt[] {
   return cur;
 }
 
+/** Whether every point lies within `tol` px of the straight line from the first to the last. */
+function straightWithin(pts: readonly Pt[], tol: number): boolean {
+  const a = pts[0];
+  const b = pts[pts.length - 1];
+  const l = dist(a, b);
+  if (l < 1e-9) return false;
+  for (const q of pts) if (Math.abs((q.x - a.x) * (b.y - a.y) - (q.y - a.y) * (b.x - a.x)) / l > tol) return false;
+  return true;
+}
+
 function refit(path: BezPath, tolerance: number, cornerAngle: number, smoothRadius: number): BezPath {
   const out = new BezPath();
   for (const sp of splitSubpaths(path)) {
@@ -134,7 +286,7 @@ function refit(path: BezPath, tolerance: number, cornerAngle: number, smoothRadi
         if (smoothRadius > 0) pts = relax(pts, Math.round(smoothRadius / step), 3, loop);
         if (!started) out.moveTo(pts[0]);
         started = true;
-        if (pts.length < 2) out.lineTo(end);
+        if (pts.length < 2 || straightWithin(pts, tolerance)) out.lineTo(pts[pts.length - 1] ?? end);
         else for (const fit of fitCurve(pts, tolerance)) out.curveTo(fit.c1, fit.c2, pts[fit.to]);
       }
       i += len;

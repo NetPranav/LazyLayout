@@ -292,6 +292,8 @@ const DEFS = {
    */
   "boolean.operation": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("container", "form"))),
   /** In a boolean group, how this operand combines with the ones below it; empty takes the group's operation. */
+  /** Soft union (Phase 108): a union group's children melt together where they are closer than twice this, in px. */
+  "boolean.softness": ranged(px(0, null, "paint", only("container", "form")), { min: 0, max: 500 }),
   "boolean.operandOp": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "container", "form"))),
   "sizing.horizontal": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
   "sizing.vertical": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
