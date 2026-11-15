@@ -373,7 +373,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 🚧 |
 | 181 | Backdrop sampling & liquid glass | 180 | — (new in v4.1) | 4 | 🚧 |
 | 182 | 2D lights & surface depth | 175, 179 | — (new in v4.1) | 4 | 🚧 |
-| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 📋 |
+| 183 | Particles & force fields → *ROADMAP_3D 3D-140, 3D-141 (the 3D part, deferred)* | 178, 175 | v3 63, 19.2 | 4 | 🚧 |
 | 184 | Stateful simulations & replay → *ROADMAP_3D 3D-048* | 183 | v3 64.2, 64.3 | 4 | 📋 |
 | 185 | Deformation: mesh warp, bend & peel | 109, 175, 184 | — (new in v4.1) | 4 | 📋 |
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 📋 |
@@ -2327,9 +2327,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** lighting matches references within the GPU tolerance; 20 lit layers hold 60 fps on mid tiers.
 
 ### Phase 183 · Particles & force fields
-**Needs:** 178, 175 · **Was:** v3 63, 19.2 · **Status:** 📋
-- [ ] Niagara-style module stack (emitter → spawn → update → render); forces (gravity, drag, noise and curl, vortex, pointer attract/repel/orbit, spring-to-shape, bounds); CPU (≤ 5k) and GPU (≤ 250k) backends by tier; points, sprites, links, trails, instanced meshes; interaction modes (grab, repulse, burst on tap, scatter on scroll).
-- [ ] **v4.1:** emit from, stick to and fill any layer's shape (its outline and distance field, Phase 175), so text can assemble from particles.
+**Needs:** 178, 175 · **Was:** v3 63, 19.2 · **Status:** 🚧
+- [x] Niagara-style module stack (emitter → spawn → update → render); forces (gravity, drag, noise and curl, vortex, pointer attract/repel/orbit, spring-to-shape, bounds); CPU (≤ 5k) and GPU (≤ 250k) backends by tier; points, sprites, links, trails, instanced meshes; interaction modes (grab, repulse, burst on tap, scatter on scroll).
+- [x] **v4.1:** emit from, stick to and fill any layer's shape (its outline and distance field, Phase 175), so text can assemble from particles.
 
 **You'll see:** particle fields that swirl around the cursor.
 **Done when:** 5 reference effects hold their tier budgets; CPU and GPU backends agree within 2% on density and centroid at checkpoints; seeded runs repeat exactly.
