@@ -39,6 +39,7 @@ import { outlineStrokes } from "./outlineStroke";
 import { addModifier, moveModifier, removeModifier, setModifier } from "./modifierOps";
 import { applyFrostedGlass } from "./effectsIIOps";
 import { setImageEdit } from "./imageEditOps";
+import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
@@ -386,6 +387,12 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
   add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
   add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
+  // Phase 123: colour tools, saved as colour tokens; and a text's contrast fixed
+  const harmonyRule = z.enum(["complementary", "splitComplementary", "analogous", "triad", "tetrad", "monochrome"]);
+  add(defineTypedCommand({ id: "color.savePalette", title: "Save Palette as Tokens", category: "Layer", args: z.object({ name: z.string().min(1).max(80), colors: z.array(z.string().max(64)).min(1).max(16) }), run: ({ name, colors }) => ({ ids: savePalette(name, colors) }) }));
+  add(defineTypedCommand({ id: "color.harmony", title: "Save Colour Harmony", category: "Layer", args: z.object({ name: z.string().min(1).max(80), color: z.string().max(64), rule: harmonyRule }), run: ({ name, color, rule }) => ({ ids: saveHarmony(name, color, rule) }) }));
+  add(defineTypedCommand({ id: "color.scale", title: "Save Tints and Shades", category: "Layer", args: z.object({ name: z.string().min(1).max(80), color: z.string().max(64) }), run: ({ name, color }) => ({ ids: saveScale(name, color) }) }));
+  add(defineTypedCommand({ id: "color.fixContrast", title: "Fix Text Contrast", category: "Layer", args: z.object({ ids: targets, wcag: z.number().min(1).max(21).optional(), apca: z.number().min(0).max(110).optional() }), run: ({ ids: t, wcag, apca }) => ({ changed: fixContrast(t ?? ids(), wcag === undefined && apca === undefined ? { wcag: 4.5 } : { wcag, apca }) }) }));
   // Phase 122: image adjustments and looks, on an image layer or an image fill; the file is never changed
   add(defineTypedCommand({
     id: "image.adjust",

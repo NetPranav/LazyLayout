@@ -26,6 +26,10 @@ export const deadControls = (rows: readonly Row[]): Row[] =>
 export const EXPECTED_QUIET: Record<string, string> = {
   // a name and notes live in the document and the outline, not on the canvas
   "Layer name": "the name is shown in the outline only",
+  // Phase 123: settings for a button next to them (the button saves tokens or fixes the colour; colour-tools.spec drives it)
+  "Colour token group": "names the tokens the Save buttons make",
+  "Harmony rule": "picks the rule the Save harmony button uses",
+  "Contrast target": "picks the target the Fix contrast button uses; the report shows it",
 };
 
 async function ready(page: Page) {

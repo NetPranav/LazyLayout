@@ -66,6 +66,7 @@ import {
 import type { DetailsInspectorProps } from "./types";
 import type { DesignSectionConfig } from "@/editor/shell/right-panel/types";
 import { RightPanelSection } from "@/editor/shell/right-panel/RightPanelSection";
+import { ColorToolsSection } from "./sections/ColorToolsSection";
 import { isLettersGroup } from "@/core/editing/splitText";
 import { getDocument } from "@/core/store/documentState";
 
@@ -342,6 +343,15 @@ export function getInspectorDesignSections(
             title: "Stroke",
             onAdd: () => strokeAddRef.current?.(),
             children: <StrokeSection {...sectionProps} onAddStrokeRef={strokeAddRef} />,
+          },
+        ]
+      : []),
+    ...(archetype === "text" || archetype === "image" || allowsFill
+      ? [
+          {
+            id: "colour-tools",
+            title: "Colour",
+            children: <ColorToolsSection {...sectionProps} />,
           },
         ]
       : []),
