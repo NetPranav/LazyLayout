@@ -391,7 +391,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 🚧 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 🚧 |
 | 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 🚧 |
-| 201 | Composition test suite | 200 | v3 91.7 | 4 | 📋 |
+| 201 | Composition test suite | 200 | v3 91.7 | 4 | 🚧 |
 | 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 📋 |
 
 **Stage 5 · Characters & rigging (Phases 203–217)**
@@ -2457,9 +2457,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** every library effect meets its simulated tier budgets in CI.
 
 ### Phase 201 · Composition test suite
-**Needs:** 200 · **Was:** v3 91.7 · **Closes:** AUD-57 · **Status:** 📋
-- [ ] Ten interactions built from primitives only (no code, no preset, no typed numbers), run in 3 browsers and on a phone profile, then exported and parity-checked: letters flee an invisible cursor circle; a magnetic dot grid with a click shockwave; a cursor chain; falling, throwable letters with a reset; eyes that look at the cursor; scroll scatter; click confetti of your own shape; a tilting card grid; an orbit around a lagging helper; a hit counter that plays a composition and a sound.
-- [ ] **v4.1:** five more builds from primitives: letters that get bolder as the cursor nears (inside a fixed box); a sticker that peels and is thrown; a jelly button; a liquid-glass navigation bar over the design; a 3D ring of cards dragged with momentum.
+**Needs:** 200 · **Was:** v3 91.7 · **Closes:** AUD-57 · **Status:** 🚧
+- [x] Ten interactions built from primitives only (no code, no preset, no typed numbers), run in 3 browsers and on a phone profile, then exported and parity-checked: letters flee an invisible cursor circle; a magnetic dot grid with a click shockwave; a cursor chain; falling, throwable letters with a reset; eyes that look at the cursor; scroll scatter; click confetti of your own shape; a tilting card grid; an orbit around a lagging helper; a hit counter that plays a composition and a sound.
+- [x] **v4.1:** five more builds from primitives: letters that get bolder as the cursor nears (inside a fixed box); a sticker that peels and is thrown; a jelly button; a liquid-glass navigation bar over the design; a 3D ring of cards dragged with momentum.
 
 **You'll see:** the same 10 builds work for anyone, from primitives.
 **Done when:** all 10 pass, and no Simple face in them shows a technical parameter.
