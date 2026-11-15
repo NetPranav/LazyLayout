@@ -6,9 +6,9 @@
  * - `autopilot` tapes are generated from their seed: a pointer that wanders the page (uv or ndc), the same every run.
  * - A signal the tape has no channel for reads as 0 (false), so a partial tape still plays.
  */
-import type { InputTape } from "../document/effects";
+import { InputTapeSchema, type InputTape } from "../document/effects";
 import { formatSignal, type Signal } from "../document/signals";
-import { noise1, type Frame, type Value, type Vec2 } from "./evaluate";
+import { noise1, type ExprRuntime, type Frame, type Value, type Vec2 } from "./evaluate";
 
 type Sample = { t: number; v: number | boolean | readonly [number, number] };
 
@@ -75,4 +75,100 @@ export function* playTape(tape: InputTape, fps = 60, seed?: number): Generator<F
   const dt = 1 / fps;
   const steps = Math.round(tape.duration * fps);
   for (let i = 0; i <= steps; i++) yield tapeFrame(tape, i * dt, dt, seed);
+}
+
+export interface TapeRecorder {
+  record(t: number, values: readonly { signal: Signal; value: number | boolean | readonly [number, number] }[]): void;
+  finish(): InputTape;
+}
+
+/** Records live pointer, scroll, key, device, and audio samples into a schema-valid `InputTape`. */
+export function createTapeRecorder(id: string, name: string, fps = 60, seed = 1): TapeRecorder {
+  const map = new Map<string, { signal: Signal; samples: Sample[] }>();
+  let maxT = 1 / fps;
+  return {
+    record(t, values) {
+      const safeT = Math.max(0, t);
+      if (safeT > maxT) maxT = safeT;
+      for (const item of values) {
+        const key = channelKey(item.signal);
+        let ch = map.get(key);
+        if (!ch) {
+          ch = { signal: item.signal, samples: [] };
+          map.set(key, ch);
+        }
+        const prev = ch.samples[ch.samples.length - 1];
+        if (prev && safeT <= prev.t) {
+          // Ensure strictly monotonic sample timestamps per InputTapeSchema
+          ch.samples[ch.samples.length - 1] = { t: prev.t, v: item.value };
+        } else {
+          ch.samples.push({ t: safeT, v: item.value });
+        }
+      }
+    },
+    finish() {
+      const tape: InputTape = {
+        id,
+        name,
+        origin: "recorded",
+        duration: Math.max(1 / fps, maxT),
+        fps,
+        seed,
+        channels: Array.from(map.values()).filter((c) => c.samples.length > 0),
+      };
+      return InputTapeSchema.parse(tape);
+    },
+  };
+}
+
+/** Creates a deterministic synthetic tape for pointer paths, scroll sweeps, and key presses. */
+export function authorScriptedTape(options: {
+  id: string;
+  name: string;
+  duration: number;
+  fps?: number;
+  seed?: number;
+  channels: readonly {
+    signal: Signal;
+    samples: readonly { t: number; v: number | boolean | readonly [number, number] }[];
+  }[];
+}): InputTape {
+  const tape: InputTape = {
+    id: options.id,
+    name: options.name,
+    origin: "authored",
+    duration: options.duration,
+    fps: options.fps ?? 60,
+    seed: options.seed ?? 0,
+    channels: options.channels.map((ch) => ({
+      signal: ch.signal,
+      samples: ch.samples.map((s) => ({ t: s.t, v: Array.isArray(s.v) ? [s.v[0], s.v[1]] as [number, number] : s.v })),
+    })),
+  };
+  return InputTapeSchema.parse(tape);
+}
+
+export function serializeInputTape(tape: InputTape): string {
+  return JSON.stringify(InputTapeSchema.parse(tape));
+}
+
+export function deserializeInputTape(json: string): InputTape {
+  return InputTapeSchema.parse(JSON.parse(json));
+}
+
+/** Runs an expression evaluator over every frame of a tape deterministically and returns snapshots. */
+export function replayTapeExpressions(
+  tape: InputTape,
+  factories: Record<string, () => ExprRuntime>,
+  fps = tape.fps ?? 60
+): readonly { t: number; values: Record<string, Value> }[] {
+  const runtimes = Object.entries(factories).map(([k, mk]) => [k, mk()] as const);
+  for (const [, rt] of runtimes) rt.reset();
+  const snapshots: { t: number; values: Record<string, Value> }[] = [];
+  for (const frame of playTape(tape, fps, tape.seed ?? 0)) {
+    const values: Record<string, Value> = {};
+    for (const [k, rt] of runtimes) values[k] = rt.step(frame);
+    snapshots.push({ t: frame.time, values });
+  }
+  return snapshots;
 }

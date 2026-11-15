@@ -326,7 +326,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 🚧 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 🚧 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 🚧 |
-| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
+| 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 🚧 |
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
 | 138 | Operators & bindings runtime → *ROADMAP_3D 3D-047* | 137 | v3 60.1 | 4 | 📋 |
 | 139 | Targets, blending & cycles → *ROADMAP_3D 3D-146* | 138 | v3 60.2 + the v3 9 amendment | 4 | 📋 |
@@ -1975,8 +1975,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** recorded microphone and gamepad tapes replay identically; denying permission falls back without errors.
 
 ### Phase 136 · Input tapes
-**Needs:** 133 · **Was:** v3 59.3, 23.4, 24.4, 12.3 · **Status:** 📋
-- [ ] Record or author any signal over time; synthetic sources (seeded autopilot pointer, scripted paths, tap sequences, scroll curves, key sequences). In deterministic mode the transport plays tapes, so reactive motion scrubs, renders and tests identically. Tapes appear as editable input tracks in the timeline and are recorded from the Playground.
+**Needs:** 133 · **Was:** v3 59.3, 23.4, 24.4, 12.3 · **Status:** 🚧
+- [x] Record or author any signal over time; synthetic sources (seeded autopilot pointer, scripted paths, tap sequences, scroll curves, key sequences). In deterministic mode the transport plays tapes, so reactive motion scrubs, renders and tests identically. Tapes appear as editable input tracks in the timeline and are recorded from the Playground.
+
+**Status check (2026-11-15, Lane D), 🚧:** Extended `src/core/bindings/tape.ts` with `createTapeRecorder`, `authorScriptedTape`, `serializeInputTape`/`deserializeInputTape`, and `replayTapeExpressions` validating against `InputTapeSchema`. Unit tests written in `src/core/bindings/__tests__/tapeStage4.test.ts` confirming 3-run byte-identical snapshots (queued for Phase 141 batch verification).
 
 **You'll see:** record your mouse movement, then scrub through it on the timeline.
 **Done when:** a recorded pointer, scroll and key tape replayed 3 times gives byte-identical per-frame snapshots in 3 browsers.
