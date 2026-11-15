@@ -69,14 +69,21 @@ export interface StrokeItem {
 /** Effect item in repeatable list */
 export interface EffectItem {
   id: string;
-  type: "drop-shadow" | "inner-shadow" | "layer-blur" | "background-blur";
+  type: "drop-shadow" | "inner-shadow" | "outer-glow" | "inner-glow" | "layer-blur" | "background-blur" | "grain";
   hex: string;
   x: number;
   y: number;
   blur: number;
   spread: number;
+  /** A blur's radius (at its strong end when progressive); a grain's strength in % (Phase 121). */
   amount: number;
   hidden?: boolean;
+  /** Phase 121: a blur that ramps from `startAmount` to `amount` towards `direction`. */
+  progressive?: boolean;
+  startAmount?: number;
+  direction?: "up" | "down" | "left" | "right";
+  /** Phase 121: a grain's size (px). */
+  size?: number;
 }
 
 /** Animation item in repeatable list */

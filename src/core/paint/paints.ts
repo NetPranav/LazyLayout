@@ -515,6 +515,8 @@ export interface Shadow {
   spread: number;
   color: string;
   visible: boolean;
+  /** A glow (Phase 121): a shadow with no offset, listed and edited as an outer or inner glow. */
+  glow?: boolean;
 }
 
 export const DEFAULT_SHADOW: Shadow = { kind: "drop", x: 0, y: 4, blur: 8, spread: 0, color: "rgba(0, 0, 0, 0.25)", visible: true };
@@ -537,13 +539,14 @@ export function parseShadows(json: unknown): Shadow[] {
       kind: o.kind === "inner" ? "inner" : "drop",
       x: num(o.x, 0, -1000, 1000), y: num(o.y, 0, -1000, 1000), blur: num(o.blur, 0, 0, 200), spread: num(o.spread, 0, -100, 100),
       color, visible: o.visible !== false,
+      ...(o.glow === true ? { glow: true } : {}),
     });
   }
   return out;
 }
 
 export function serializeShadows(shadows: readonly Shadow[]): string {
-  return shadows.length === 0 ? "" : JSON.stringify(shadows.slice(0, MAX_SHADOWS).map((s) => ({ kind: s.kind, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, ...(s.visible ? {} : { visible: false }) })));
+  return shadows.length === 0 ? "" : JSON.stringify(shadows.slice(0, MAX_SHADOWS).map((s) => ({ kind: s.kind, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, ...(s.visible ? {} : { visible: false }), ...(s.glow ? { glow: true } : {}) })));
 }
 
 /** CSS `box-shadow` for the visible shadows (inner ones are `inset`), or undefined. */
