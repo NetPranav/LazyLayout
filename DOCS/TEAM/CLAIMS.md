@@ -17,7 +17,7 @@ Next free number: **0026** (0008 is the threat model and 0009 the render host; 0
 
 | Number | Lane | Title | PR |
 |---|---|---|---|
-| 0006 | D | Stateful simulation and deterministic 2D physics (Phase 162) | |
+| 0006 | D | Stateful simulation and deterministic 2D physics (Phase 162, PR pending) | `0006-stateful-simulation-and-determinism.md` |
 | 0008 | A | Threat model for the stage and user content (Phase 16) | |
 | 0009 | A | Render host: live DOM frames, no HTML strings (Phase 18) | |
 | 0012 | D | Code component isolation: opaque-origin sandboxed iframe bridge (Phase 195) | |
