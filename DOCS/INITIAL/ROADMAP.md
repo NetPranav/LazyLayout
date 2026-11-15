@@ -452,7 +452,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 148 | Drag with constraints | 147 | — (new in v4.1) | 4 | 🚧 |
 | 149 | Carousels, scrollers & seamless loops | 81, 128, 148 | — (new in v4.1) | 4 | 🚧 |
 | 150 | Drag & drop between layers | 148 | — (new in v4.1) | 4 | 🚧 |
-| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 📋 |
+| 151 | State machines → *ROADMAP_3D 3D-148* | 146 | v3 11.3 | 4 | 🚧 |
 | 152 | Helpers, pins & Follow → *Design track D6* | 151 | v3 88 | 4 | 📋 |
 | 153 | Split into real layers | 152 | v3 89.1 | 4 | 📋 |
 | 154 | Cloners, tags & group targets → *Design track D9* | 153 | v3 89.2, 89.3 | 4 | 📋 |
@@ -2679,8 +2679,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** a 15-step reorder journey ends in the expected order in 3 browsers and with the keyboard.
 
 ### Phase 151 · State machines
-**Needs:** 146 · **Was:** v3 11.3 · **Status:** 📋
-- [ ] Rive-style inputs (boolean, number, trigger), conditional transitions, and 1D blends by a number input (for example hover intensity by pointer proximity). A small visual state-graph editor.
+**Needs:** 146 · **Was:** v3 11.3 · **Status:** 🚧
+- [x] Rive-style inputs (boolean, number, trigger), conditional transitions, and 1D blends by a number input (for example hover intensity by pointer proximity), plus visual state-graph editor (`src/core/signals/stateMachineRuntime.ts`, `src/editor/panels/signals/StateMachineGraphEditor.tsx`).
 
 **You'll see:** a multi-step button whose states are wired in a graph.
 **Done when:** a 4-state machine driven by a tape matches hand-computed states at checkpoints.
