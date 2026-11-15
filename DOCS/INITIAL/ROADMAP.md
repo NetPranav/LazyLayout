@@ -410,7 +410,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 111 | Modifiers II: twist, bend, wiggle, zig-zag, pucker & bloat | 110 | — (new in v4.1) | 3 | 🚧 |
 | 112 | Shape generators: scatter, Voronoi & flow lines | 110 | — (new in v4.1) | 3 | 🚧 |
 | 113 | Paint depth I: blend mode and mask per fill | 35, 37 | — (new in v4.1) | 3 | 🚧 |
-| 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 📋 |
+| 114 | Paint depth II: noise, grain, pattern & texture fills | 113 | — (new in v4.1) | 3 | 🚧 |
 | 115 | Mesh gradients | 35 | — (new in v4.1) | 3 | 📋 |
 | 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 📋 |
 | 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 📋 |
@@ -1587,11 +1587,13 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** a blend mode per fill already existed (FigCraft port F2) but had no control in the new editor. **Built (Lane C):** a **mask per fill** (`mask` on each paint in `paint.fills`, `core/paint/paints.ts`): a linear fade (start, end, angle), a radial fade, a conic fade, or **another layer** (a sibling's outline, shown inside it, or outside it when inverted). Shapes draw it as an SVG alpha mask around that fill alone, inside its blend (`core/render/shapePaint.tsx`; alpha, not luminance, because browsers disagree on the colour space of a luminance mask); the stage and the export share the render definition. The fill popover in the new editor's Fill section gets **Blend** and a **Mask** group (kind, shown-to, gone-at, angle; or the layer and Outside). Verified: masks round-trip and junk is cleaned (`fillMasks.test.ts`, 6 tests); in Chromium (`fill-masks.spec.ts`) **24 blend-and-mask references** (6 masks × normal, multiply, screen, overlay), a blue fill over a red one, read back at 72 points: every point matches red mixed toward the blend by exactly the mask's opacity, **within 5 of 255**; the export carries the mask (as an alpha-mask class) and the blend. **Not done:** frames and other box layers draw their fills as CSS backgrounds, which cannot mask one background layer, so a mask on a frame's fill is ignored (shapes only); a layer mask must be a sibling; Firefox and WebKit not run.
 
 ### Phase 114 · Paint depth II: noise, grain, pattern & texture fills
-**Needs:** 113 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 113 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Seeded noise and grain fills (scale, contrast, colour), pattern fills (any frame or component repeated as a tile with offset, rotation and spacing), and texture overlays from the asset store.
 
 **You'll see:** a grainy gradient, or a tile pattern made from your own shapes.
 **Done when:** stage and export match within 1% of pixels in 3 browsers.
+
+**Status check (2026-11-15), 🚧:** built (Lane C). Two new paint types in `paint.fills` (`core/paint/procedural.ts`): **noise** (grain or soft noise: size, contrast, colour, seed; SVG fractal noise, whose algorithm the SVG spec fixes, so a seed gives the same grain everywhere) and **pattern** (shapes repeated as a tile with scale, spacing, offset and rotation; the tile is made from any layer, or a frame's or group's children with their colours, `core/editing/patternTile.ts`). Both are drawn as one small generated SVG: a frame's fill uses it as a CSS background, a shape's fill as an SVG pattern, and the export writes the same, so the stage and the export draw the same pixels. **Texture overlays** are image fills from the asset store with a blend mode (already there; per-fill blend is Phase 113). The fill popover gets Noise and Pattern types with their controls (Kind, Size, Contrast, Seed; Tile from a layer, Scale, Spacing, Rotation). Verified (`procedural.test.ts`, 4 tests): stored safely (hostile path data and colours refused, sizes clamped); a seed repeats exactly; a frame's background and a shape's pattern are the same picture. In Chromium (`procedural-fills.spec.ts`): a rectangle with grain over a pattern over a solid, on the canvas at 100% and in the **exported site opened in a second page: 0.00% of pixels differ** (budget 1%), three runs out of three. **Not done:** the pattern's tile is baked when it is made, so editing its source layer doesn't update it (live fills are Phase 116); Firefox and WebKit not run.
 
 ### Phase 115 · Mesh gradients
 **Needs:** 35 · **Was:** — (new in v4.1) · **Status:** 📋
