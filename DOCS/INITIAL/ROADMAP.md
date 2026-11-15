@@ -415,7 +415,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 116 | Live fills: a frame or component as a fill | 46, 114 | — (new in v4.1) | 3 | 🚧 |
 | 117 | Fills & strokes on text | 31, 38, 113 | — (new in v4.1) | 3 | 🚧 |
 | 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 🚧 |
-| 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 📋 |
+| 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 🚧 |
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 📋 |
 | 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 📋 |
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 📋 |
@@ -1632,11 +1632,42 @@ The document and World Environment have their own stores, After-track actions mo
 **Status check (2026-11-15), 🚧:** the FigCraft port had a list of stroke paints (solid, gradient, image) sharing one weight and position, caps, joins and arrowheads (`core/render/strokePaint.tsx`); the new editor's Stroke section showed several rows but **saved only the first visible one** (a second stroke was silently lost). **Built (Lane C):** each stroke in `paint.strokes` can carry its own `weight` and `align`; when any does, `StrokeStack` draws one masked stroke layer per stroke, the first on top (outside strokes twice as wide with the shape cut out, inside ones clipped to it). The Stroke section now **keeps every row** for shapes, lines, paths and text (each row's colour, width and position saved to `paint.strokes`; rows are read back from it), and Position belongs to the row when a layer has several. Verified (`strokeStack.test.ts`, 2 tests): order, widths, clipping and a gradient stroke paint. In Chromium (`stroke-depth.spec.ts`): **30 stroke references** (rectangle, ellipse, star, polygon, line and path × one centre stroke, outside and inside, a gradient stroke, three stacked strokes, a dashed stroke with arrowheads) match between the canvas and the exported site, **the worst within 0.60% of pixels** (budget 1%); adding a second stroke row in the inspector keeps both, with its own width and position. The existing stroke specs (hero, Lane A issues, tools) still pass. **Not done:** the row editor sets solid colours only (gradient and image stroke paints are set by `paint.setStrokes`); dashes, caps and joins are still per layer, not per stroke; Firefox and WebKit not run.
 
 ### Phase 119 · Variable-width strokes
-**Needs:** 103, 118 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 103, 118 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Change a stroke's width along its length with handles on the canvas (taper, swell, calligraphic), and save width profiles to reuse. Exported as outlined paths.
 
 **You'll see:** a line that tapers to a point at both ends.
 **Done when:** profiles round-trip exactly; exported outlines match the stage within 0.5 px.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** the FigCraft port already drew variable-width strokes as outlines (`stroke.widthProfile`, `variableOutline` in `core/paths/strokes.ts`). It had six presets, but only the legacy editor offered them. The new editor had no width controls, no way to save a profile, no calligraphic stroke and no handles on the canvas.
+
+**Built (Lane C):**
+- A **Swell** preset, and **calligraphic** profiles: a nib at an angle makes the stroke thick where the path runs across the nib and thin where it runs along it. The result is computed from the layer's own path into an ordinary profile.
+- **Saved profiles** in the file (`widthProfiles`, an optional document field, so no migration), with save, apply, rename and delete commands.
+- A **Profile** group in the stroke popover.
+- **Width handles on the canvas:**
+  - each width point has a handle on each side of the path, as far out as the stroke is wide there;
+  - drag a handle to widen the stroke there and slide the point along the path; with Alt, only that side changes;
+  - click the path to add a point, and double-click a handle to remove its point;
+  - one undo step per drag.
+
+**Verified (`widthProfiles.test.ts`, 6 tests):**
+- Profiles round-trip exactly: stored text, every preset, a saved profile applied to another stroke, and the file saved and loaded through the schema.
+- Calligraphic widths are correct for horizontal, vertical and circular paths.
+- A tapered line renders the outliner's own outline.
+
+**In Chromium (`variable-width.spec.ts`):**
+- A tapered line, a swelling curve and a calligraphic circle export as outlines that match the stage's within **0.5 px**, as the Done-when line asks.
+- Choosing "Taper both ends" in the popover works.
+- Dragging a width handle on the canvas widens the stroke, and one undo brings it back.
+- A profile saved under a name and applied to another line gives it the identical profile.
+- The stroke, text-stroke and mesh specs and the canvas contract (41) still pass.
+
+**Not done:**
+- The handles follow the first subpath only and ignore the layer's rotation.
+- A calligraphic profile does not follow later edits to the path (apply it again).
+- Firefox and WebKit not run.
 
 ### Phase 120 · Brushes & pen pressure
 **Needs:** 39, 119 · **Was:** — (new in v4.1) · **Status:** 📋
