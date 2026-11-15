@@ -423,7 +423,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 🚧 |
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 🚧 |
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 🚧 |
-| 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 📋 |
+| 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 🚧 |
 | 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 📋 |
 | 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 📋 |
 | 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 📋 |
@@ -1966,12 +1966,51 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 127 · 2.5D spaces: perspective & depth
-**Needs:** 27, 41 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 27, 41 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Any frame or group can become a 3D space for its children: perspective strength and vanishing point on the canvas; each child gets depth (`transform.z`) and tilt handles; children are drawn in depth order. Real page layers, drawn with CSS 3D, so the export needs no 3D library.
 - [ ] An orbit preview to look around the space; editing goes back to the flat view.
 
 **You'll see:** tilt a group and see its cards stand at different depths.
 **Done when:** stage and export match within 0.5% at 3 viewing angles in 3 browsers.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** a layer could tilt in 3D on its own (`transform.perspective`, `rotateX` / `rotateY`, `translateZ`, `style3d: preserve3d`) from the Position section's More. No frame acted as a space for its children, and nothing on the canvas set a vanishing point or a depth.
+
+**Built (Lane C):** `core/editing/spaceOps.ts` and a **3D space** section.
+- **A frame or group becomes a 3D space:**
+  - its perspective strength (`transform.perspective`);
+  - the vanishing point (`transform.origin`, % of its box);
+  - the angle it is seen from (`rotateX` / `rotateY`);
+  - `preserve-3d`, so its children keep their depth.
+- **Each child** has a depth (`transform.translateZ`) and a tilt.
+- They are real page layers in CSS 3D (`perspective()` around the vanishing point, `preserve-3d`), drawn in depth order by the browser, on the stage and in the export alike. No 3D library.
+- **On the canvas:**
+  - a cross at the vanishing point to drag;
+  - a depth handle beside a selected child (drag up to bring it closer);
+  - an **Orbit** preview that turns the drawn space as you drag. It saves nothing, and selecting outside the space ends it and shows the space as set.
+- Commands `space.make`, `space.release`, `space.set`, `space.setDepth`. Each drag is one undo step.
+
+**Verified (`spaceOps.test.ts`, 4 tests):**
+- A space draws `perspective(700px) rotateX(15deg) rotateY(-20deg)` around `transform-origin: 25% 60%` with `preserve-3d`.
+- A child's depth and tilt are its own transform; there is no depth outside a space.
+- Flattening clears the space and keeps the children's depth.
+- Depth projects towards the vanishing point as P / (P − z) says.
+
+**In Chromium (`space-25d.spec.ts`):**
+- A space with four cards at depths −250, 0, 140 and 260, each tilted, matches between the canvas and the exported site at **three viewing angles**: 0°/0° 0.00%, 18°/−22° 0.01%, −12°/28° 0.01% of pixels (budget 0.5%).
+- In the editor:
+  - the 3D space switch;
+  - a card's depth set to 200 in the inspector;
+  - the vanishing point dragged 56 px, giving 60% 50%;
+  - an orbit drag turns the drawn space 30° without changing the document, and selecting the page ends it.
+- The canvas contract still passes. Design coverage's only failures are the ten #102 controls also failing on `main`.
+- **Fixed on the way:** the stage's capture-phase pointer handler took the orbit drag as a marquee after the first move. The overlay's interactive parts are now marked as canvas chrome.
+
+**Not done:**
+- Selection boxes and hit areas stay flat, so a deep card is picked where it would sit flat.
+- Groups inside a space don't pass depth on to their own children.
+- Firefox and WebKit not run locally.
 
 ### Phase 128 · 3D arrangements for page layers
 **Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
