@@ -324,7 +324,7 @@ One row per phase, in execution order. Update the Status column together with th
 |---|---|---|---|---|---|
 | 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 🚧 |
 | 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 🚧 |
-| 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
+| 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 🚧 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
 | 136 | Input tapes → *ROADMAP_3D 3D-046* | 133 | v3 59.3, 23.4, 24.4, 12.3 | 4 | 📋 |
 | 137 | GPU & interactive verification harness → *ROADMAP_3D 3D-004* | 136 | v3 71 | 4 | 📋 |
@@ -1957,8 +1957,10 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** each signal's meter matches scripted input in 3 browsers.
 
 ### Phase 134 · Scene awareness: every layer's live self
-**Needs:** 133 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Each layer publishes live signals about itself: position, size and rotation in every space, velocity and speed, how much of it is on screen, its progress through the viewport, distance and angle to the pointer, and hovered, pressed, focused and dragged. Computed once per frame from the measurement API (Laws 10 and 12), and only for layers something listens to.
+**Needs:** 133 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Each layer publishes live signals about itself: position, size and rotation in every space, velocity and speed, how much of it is on screen, its progress through the viewport, distance and angle to the pointer, and hovered, pressed, focused and dragged. Computed once per frame from the measurement API (Laws 10 and 12), and only for layers something listens to.
+
+**Status check (2026-11-15, Lane D), 🚧:** Created `src/core/signals/sceneAwareness.ts` (`stepSceneAwareness`, `queryLayerRelation`, `readSelfChannel`) plus a collapsible live readout strip in `DrivenBySection.tsx` and unit tests in `src/core/signals/__tests__/sceneAwareness.test.ts` (queued for Phase 141 batch verification).
 
 **You'll see:** a Live readout for any layer in Preview: its speed, distance to the cursor and scroll progress.
 **Done when:** values match scripted tapes at checkpoints; 200 watched layers cost < 0.2 ms per frame.
