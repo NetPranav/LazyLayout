@@ -80,8 +80,8 @@ test("Phase 54: single clock transport controls, step frame, play/pause, loop cy
   const expectedFrame = Math.round((pausedTime?.time ?? 0) * fps);
   const playheadEl = page.locator('[data-testid="timeline-playhead"]');
   await expect(playheadEl).toBeVisible();
-  const rulerFrameStr = await playheadEl.getAttribute("data-time");
-  expect(Number(rulerFrameStr)).toBe(expectedFrame);
+  // the head glides to where it stopped on a spring, which may pass the frame by one on the way: wait for it to settle
+  await expect.poll(async () => Number(await playheadEl.getAttribute("data-time"))).toBe(expectedFrame);
 
   // 4. Loop button cycles three modes
   // Reset to start first

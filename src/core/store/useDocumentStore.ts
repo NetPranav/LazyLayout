@@ -46,6 +46,8 @@ import { applyConstraintsToChildren } from "../layout/constrainChildren";
 import { validateParentLink, getLayerParentRef, computeReparentedLocalTransform } from "../geometry/parentTransforms";
 import { appliedBreakpoints, breakpointsOf, isBase, resolveDocumentAt, resolveLayerAt, VISIBLE_KEY } from "../breakpoints/breakpoints";
 import { editBreakpointId, useBreakpointStore, useEditBreakpointId } from "./useBreakpointStore";
+import { editingStateOf } from "../states/stateEdit";
+import { mergeStateProps } from "../states/states";
 import { relativizeLegacyPoints } from "../geometry/cornerPin";
 
 const pick = (o: Record<string, unknown>, keys: readonly string[]): Record<string, PropValue> => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k] as PropValue]));
@@ -632,6 +634,21 @@ export const documentCommands = {
   updateProps(layerId: string, patch: Record<string, PropValue | undefined>, label?: string) {
     commit(label, (draft) => {
       const layer = requireLayer(draft, layerId);
+      // Design track D15: while a state of this layer is being edited, the change goes to the state (only the difference from the base is kept)
+      const editingState = editingStateOf(layerId);
+      if (editingState) {
+        const row = Object.values(draft.states).find((s) => s.layerId === layerId && s.name === editingState);
+        if (row) {
+          const canonical: Record<string, PropValue | undefined> = {};
+          for (const [key, value] of Object.entries(patch)) {
+            const res = resolvePropertyPath(key, layer.archetype);
+            const path = res.ok ? res.path : key;
+            canonical[path] = value === undefined ? undefined : (canonicalProps(layer.archetype, { [path]: value }, "updateProps")[path] as PropValue | undefined);
+          }
+          row.props = mergeStateProps(layer.properties, row.props as Record<string, PropValue>, canonical);
+          return;
+        }
+      }
       const props = layer.properties;
       const list = breakpointsOf(draft);
       const activeId = editBreakpointId();

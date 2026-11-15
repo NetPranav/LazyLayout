@@ -687,6 +687,12 @@ const DEFS = {
   "media.src": held(str("", null, "paint", IMAGE)),
   "media.fallbackSrc": str("", null, "none", IMAGE),
   "media.alt": str("", null, "none", IMAGE),
+  /** Image sequence (Design track D13): the picture is a sheet of frames, `cols` x `rows`; `frame` picks one (drive it by scroll, the pointer or time). 0 columns: an ordinary picture. */
+  "sequence.cols": ranged(num(0, null, "paint", IMAGE, false), { min: 0, max: 64, integer: true }),
+  "sequence.rows": ranged(num(0, null, "paint", IMAGE, false), { min: 0, max: 64, integer: true }),
+  /** How many frames the sheet holds (the last row may be short); 0: all cols x rows. */
+  "sequence.frames": ranged(num(0, null, "paint", IMAGE, false), { min: 0, max: 4096, integer: true }),
+  "sequence.frame": ranged(num(0, null, "paint", IMAGE, true), { min: 0, max: 4095 }),
   /** Where a piece cut from a picture belongs, "x,y" in its parent's px: a piece dragged close to it snaps back there. */
   "media.cutHome": str("", null, "none", IMAGE),
   "media.objectFit": held(oneOf(["cover", "contain", "fill", "none", "scale-down"], "cover", "object-fit", "paint", IMAGE)),

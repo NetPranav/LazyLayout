@@ -26,6 +26,9 @@ import { LogicSection } from "./sections/LogicSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { StyleCodeSection } from "./sections/StyleCodeSection";
 import { DrivenBySection } from "./sections/DrivenBySection";
+import { LayerStatesSection } from "./sections/LayerStatesSection";
+import { SequenceSection } from "./sections/SequenceSection";
+import { VariablesSection } from "./sections/VariablesSection";
 import { ParentLinksSection } from "./sections/ParentLinksSection";
 import { RepeatSection } from "./sections/RepeatSection";
 import { CloneSection } from "./sections/CloneSection";
@@ -99,6 +102,11 @@ export function getInspectorDesignSections(
         id: "page-scroll",
         title: "Scrolling",
         children: <ConnectedPageScroll />,
+      },
+      {
+        id: "variables",
+        title: "Variables & styles",
+        children: <VariablesSection />,
       },
       {
         id: "theme-tokens",
@@ -359,6 +367,15 @@ export function getInspectorDesignSections(
       title: "Effector",
       children: <EffectorSection {...sectionProps} />,
     },
+    ...(archetype === "image"
+      ? [
+          {
+            id: "sequence",
+            title: "Image sequence",
+            children: <SequenceSection {...sectionProps} />,
+          },
+        ]
+      : []),
     {
       id: "repeat",
       title: "Repeat",
@@ -373,6 +390,16 @@ export function getInspectorDesignSections(
       id: "driven-by",
       title: "Driven by",
       children: <DrivenBySection {...sectionProps} />,
+    },
+    {
+      id: "variables",
+      title: "Variables & styles",
+      children: <VariablesSection {...sectionProps} />,
+    },
+    {
+      id: "layer-states",
+      title: "States",
+      children: <LayerStatesSection {...sectionProps} />,
     },
     {
       id: "style-code",

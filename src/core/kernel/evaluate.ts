@@ -60,6 +60,8 @@ import { quatFromEuler, eulerFromQuat } from "../3d/math";
 export interface EvaluateInputs {
   /** Which named state (if any) is active on each layer — e.g. `{ [buttonId]: "hover" }`. */
   activeStates?: Record<string, string>;
+  /** Design track D15: how far into its active state each layer is, 0-1 (default 1). Numbers blend; anything else switches at one half. */
+  stateBlend?: Record<string, number>;
   reducedMotion?: boolean;
   /** A virtual pointer position, layer-local px — for the behaviours this kernel does evaluate (`loop` needs none; reserved for Phase 12's expansion). */
   pointer?: { x: number; y: number } | null;
@@ -531,7 +533,19 @@ function evaluateBaseProps(
 
   // 2. State.
   const activeState = findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
-  if (activeState) resolved = { ...resolved, ...activeState.props };
+  if (activeState) {
+    const amount = inputs.stateBlend?.[layerId];
+    if (amount === undefined || amount >= 1) resolved = { ...resolved, ...activeState.props };
+    else if (amount > 0) {
+      const next: ResolvedProps = { ...resolved };
+      for (const [path, to] of Object.entries(activeState.props)) {
+        const from = resolved[path];
+        if (typeof to === "number" && typeof from === "number") next[path] = from + (to - from) * amount;
+        else if (amount >= 0.5) next[path] = to;
+      }
+      resolved = next;
+    }
+  }
 
   // 3. Clips, by grammar §6.2 priority.
   const comp = doc.compositions[compositionId];
