@@ -424,7 +424,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 125 | Text in shapes & typography depth | 38, 124 | — (new in v4.1) | 3 | 🚧 |
 | 126 | Icons, illustrations & stock media | 36 | — (new in v4.1) | 3 | 🚧 |
 | 127 | 2.5D spaces: perspective & depth | 27, 41 | — (new in v4.1) | 3 | 🚧 |
-| 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 📋 |
+| 128 | 3D arrangements for page layers | 127 | — (new in v4.1) | 3 | 🚧 |
 | 129 | Depth camera & parallax preview | 127 | — (new in v4.1) | 3 | 📋 |
 | 130 | Design-depth export | 49, 108, 111, 112, 125, 128, 129 | — (new in v4.1) | 3 | 📋 |
 | 131 | Stage 3 gate: the design-depth journey | 103–130 | — (new in v4.1) | 3 | 📋 |
@@ -2013,11 +2013,41 @@ The design-coverage walker now lists the section's three button settings as quie
 - Firefox and WebKit not run locally.
 
 ### Phase 128 · 3D arrangements for page layers
-**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Arrange a group's children on a ring, dome, helix, sphere, cylinder, wall or stack, with spacing and "face the centre / face the viewer". Each item stays a real, editable layer. (Dragging and spinning them comes in Stage 4.)
 
 **You'll see:** a ring of image cards like a 3D carousel, made in one click.
 **Done when:** the 7 arrangements place items within 0.5 px of the reference; the export matches.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:** nothing placed layers in 3D arrangements. Phase 127 (Lane C) added the 2.5D space they stand in.
+
+**Built (Lane C):** `core/editing/arrange3d.ts`.
+- A group's children placed on a **ring, dome, helix, sphere, cylinder, wall or stack**, with a radius and spacing, each facing out, facing the centre or facing the viewer.
+- The group becomes a 3D space when it isn't one. Every item stays a real, editable layer: its position, depth (`translateZ`) and turn (`rotateX` / `rotateY`) are its own properties, written once as one undo step.
+- A layer draws its turn before its depth (depth runs along the turned face). So an item meant to stand at `p` facing `n` gets depth `p · n`, with the rest of `p` in its frame position. Facing out, in or at the viewer this is exact.
+- Rings, helices and cylinders turn about the vertical only, so items stay upright.
+- Spheres and domes use an even golden-angle spread.
+- Command `space.arrange`, and an **Arrange** group in the 3D space section ("Arrange 6 in 3D" makes a carousel in one click).
+
+**Verified (`arrange3d.test.ts`, 4 tests):**
+- For all 7 arrangements × 3 facings, each item's centre, drawn as a layer draws it, lands where the arrangement says (within 0.01 px).
+- A ring of 6 is upright, every 60°, at its radius; facing in it turns 180°; facing the viewer it is straight on.
+- Sphere items lie on the radius and dome items on the top half; the wall is a grid; the stack goes back.
+- Arranging makes the group a space and leaves each child its own layer.
+
+**In Chromium (`arrange-3d.spec.ts`):**
+- For all **7 arrangements**, eight cards in a space seen at 10°/−15° with perspective 1200 land **within 0.5 px of the reference** (worst 0.000 px).
+  - The reference is each card's corners projected by CSS 3D's matrices (the space's perspective and view about its vanishing point, then the card's turn and depth about its centre), worked out apart from the browser.
+- **The exported site places every card the same** (within 0.5 px).
+- From the inspector, "Arrange 6 in 3D" turns six image cards to 0°, 60° … 300° at depth 300, and each card is still selectable with its depth shown.
+- Design coverage lists the Arrange settings and the Orbit preview as quiet, with reasons; its remaining failures are #102's ten controls, also on `main`.
+
+**Not done:**
+- No dragging or spinning the arrangement (Stage 4).
+- Items keep their own size rather than fitting the arrangement.
+- Firefox and WebKit not run locally.
 
 ### Phase 129 · Depth camera & parallax preview
 **Needs:** 127 · **Was:** — (new in v4.1) · **Status:** 📋
