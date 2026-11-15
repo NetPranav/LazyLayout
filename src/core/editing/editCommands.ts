@@ -38,6 +38,7 @@ import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./b
 import { outlineStrokes } from "./outlineStroke";
 import { addModifier, moveModifier, removeModifier, setModifier } from "./modifierOps";
 import { applyFrostedGlass } from "./effectsIIOps";
+import { setImageEdit } from "./imageEditOps";
 import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
 import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
@@ -345,6 +346,8 @@ export function registerEditingCommands(): () => void {
   // FigCraft port F2: every paint may carry a blend mode; images take the seven adjustments; diamond is a gradient type
   const paintBase = { opacity: z.number().min(0).max(1).default(1), visible: z.boolean().default(true), blend: z.enum(BLEND_MODES).optional() };
   const adjust = z.object({ exposure: z.number(), contrast: z.number(), saturation: z.number(), temperature: z.number(), tint: z.number(), highlights: z.number(), shadows: z.number() }).partial().optional();
+  // Phase 122: a curve, a gradient map, sharpen, blur and "show original"
+  const lookSchema = z.object({ curve: z.array(z.number()).length(5).optional(), map: z.array(stop).min(2).max(8).optional(), sharpen: z.number().min(0).max(1).optional(), blur: z.number().min(0).max(100).optional(), bypass: z.boolean().optional() }).optional();
   const paintSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("solid"), color: z.string(), ...paintBase }),
     z.object({ type: z.literal("linear"), stops: z.array(stop).min(2).max(32), from: pt, to: pt, ...paintBase }),
@@ -354,7 +357,7 @@ export function registerEditingCommands(): () => void {
     z.object({
       type: z.literal("image"), src: z.string().max(200_000), mode: z.enum(["fill", "fit", "crop", "tile"]).default("fill"),
       crop: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).default({ x: 0, y: 0, w: 1, h: 1 }), scale: z.number().default(1),
-      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, ...paintBase,
+      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, look: lookSchema, ...paintBase,
     }),
   ]);
   add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), fills as Paint[]) }) }));
@@ -383,6 +386,14 @@ export function registerEditingCommands(): () => void {
   add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
   add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
   add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
+  // Phase 122: image adjustments and looks, on an image layer or an image fill; the file is never changed
+  add(defineTypedCommand({
+    id: "image.adjust",
+    title: "Adjust Image",
+    category: "Layer",
+    args: z.object({ ids: targets, fill: z.number().int().min(0).max(15).optional(), adjust: adjust.nullable(), look: lookSchema.nullable() }),
+    run: ({ ids: t, fill, adjust: a, look }) => ({ changed: setImageEdit(t ?? ids(), { adjust: a, look }, fill) }),
+  }));
   // Phase 121: the frosted-glass preset
   add(defineTypedCommand({ id: "effects.frostedGlass", title: "Frosted Glass", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: applyFrostedGlass(t ?? ids()) }) }));
   const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true), glow: z.boolean().optional() });

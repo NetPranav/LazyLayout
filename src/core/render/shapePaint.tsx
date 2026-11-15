@@ -3,7 +3,8 @@ import type { Layer } from "../document/schema";
 import { parseColor, toCss } from "../paint/colorMath";
 import { svgDataUrl } from "../paint/procedural";
 import { proceduralSvg, effectiveFills, hasAdjustFilter, imageFilterCss, paintBlendCss, paintCss, parseShadows, safeDashArray, type GradientStop, type ImagePaint, type Paint, type Shadow } from "../paint/paints";
-import { adjustmentMatrix, adjustmentToneTable, type ImageAdjustments } from "../paint/color";
+import type { ImageAdjustments } from "../paint/color";
+import { imageFilterPrimitives, type ImageLook, type Primitive } from "../paint/imageLook";
 import type { BezPath } from "../geometry/bezpath";
 import { StrokeStack, strokeSettings } from "./strokePaint";
 import { useAssetUrlMap } from "../assets/useAssetUrl";
@@ -96,23 +97,19 @@ function ShadowFilter({ id, shadows, width, height }: { id: string; shadows: rea
 }
 
 /**
- * FigCraft's seven image adjustments as an SVG filter (FigCraft port F2): the exact colour matrix for exposure,
- * contrast, saturation, temperature and tint, then a tone table for highlights and shadows.
+ * A picture's adjustments as one SVG filter: FigCraft's seven (port F2: the exact colour matrix, then a tone table for
+ * highlights and shadows), then Phase 122's curve, gradient map, sharpen and blur (`imageFilterPrimitives`).
  */
-export function AdjustFilter({ id, adjust }: { id: string; adjust: ImageAdjustments }) {
-  const table = adjustmentToneTable(adjust);
+export function AdjustFilter({ id, adjust, look }: { id: string; adjust?: ImageAdjustments | null; look?: ImageLook | null }) {
   return (
     <filter id={id} colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
-      <feColorMatrix type="matrix" values={adjustmentMatrix(adjust).join(" ")} />
-      {table && (
-        <feComponentTransfer>
-          <feFuncR type="table" tableValues={table.join(" ")} />
-          <feFuncG type="table" tableValues={table.join(" ")} />
-          <feFuncB type="table" tableValues={table.join(" ")} />
-        </feComponentTransfer>
-      )}
+      {imageFilterPrimitives(adjust, look).map((p, i) => filterPrimitive(p, i))}
     </filter>
   );
+}
+
+function filterPrimitive(p: Primitive, key: React.Key): React.ReactElement {
+  return React.createElement(p.tag, { key, ...p.attrs }, p.children?.map((c, i) => filterPrimitive(c, i)));
 }
 
 export interface ShapePaintProps {
@@ -291,7 +288,7 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
         const url = p.src ? urlOf(p.src) : null;
         if (!url) break;
         const adjustId = `${gid}__adjust`;
-        if (hasAdjustFilter(p)) defs.push(<AdjustFilter key={adjustId} id={adjustId} adjust={p.adjust!} />);
+        if (hasAdjustFilter(p)) defs.push(<AdjustFilter key={adjustId} id={adjustId} adjust={p.adjust} look={p.look} />);
         const filter = imageFilterCss(p, adjustId) || undefined;
         const W = width;
         const H = height;

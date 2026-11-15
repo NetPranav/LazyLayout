@@ -707,6 +707,10 @@ const DEFS = {
   "media.filter.brightness": num(1, "filter", "paint", IMAGE),
   "media.filter.contrast": num(1, "filter", "paint", IMAGE),
   "media.filter.saturate": num(1, "filter", "paint", IMAGE),
+  /** Phase 122: FigCraft's seven adjustments (each -1..1) as JSON, drawn by an SVG filter; the file is never changed. */
+  "media.adjust": typed(str("", null, "paint", IMAGE)),
+  /** Phase 122: a curve, a gradient map (duotone), sharpen, blur and "show original" as JSON (`paint/imageLook.ts`). */
+  "media.look": typed(str("", null, "paint", IMAGE)),
   "media.clipPath": { valueType: "clipPath", default: "none", css: "clip-path", compositing: "paint", animatable: true, scope: IMAGE },
   "media.overlay.color": color("#000000", "background-color", "paint", IMAGE),
   "media.overlay.opacity": num(0, "opacity", "gpu", IMAGE),

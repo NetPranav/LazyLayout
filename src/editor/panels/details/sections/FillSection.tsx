@@ -13,6 +13,7 @@ import { assetSrc } from "@/core/assets/useAssetUrl";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { RowColorField } from "../controls/RowColorField";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
+import { ImageAdjustOptions } from "../options/ImageAdjustOptions";
 import type { InspectorSectionProps, FillItem } from "../types";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
@@ -765,6 +766,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
                     <CutoutDialog layerId={primary as string} fill={pictureOf(fill.id)!} onClose={() => setCuttingFill(null)} />
                   )}
                 </OptionGroup>
+              )}
+              {engine && fill.type === "image" && primary && (
+                <ImageAdjustOptions layerId={primary as string} fill={indexOf(fill.id)} />
               )}
             </RowSettingsPopover>
           </div>

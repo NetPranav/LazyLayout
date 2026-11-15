@@ -21,6 +21,7 @@ import { parseColor, toCss, withOpacity } from "./colorMath";
 import { MAX_MESH_SIDE, meshSvg, newMesh, type MeshSpec } from "./mesh";
 import { MAX_PATTERN_SHAPES, noiseSvg, patternSvg, safePathData, svgDataUrl, type NoiseSpec, type PatternSpec } from "./procedural";
 import { BLEND_MODES, blendCss, isIdentityAdjustment, sanitizeAdjustments, type BlendMode, type ImageAdjustments } from "./color";
+import { isIdentityLook, lookOf, needsImageFilter, type ImageLook } from "./imageLook";
 
 export interface Point {
   x: number;
@@ -97,6 +98,8 @@ export type ImagePaint = PaintBase & {
   saturation: number;
   /** The seven adjustments, each -1..1 (FigCraft port F2); absent is none. Drawn by an SVG colour filter. */
   adjust?: ImageAdjustments;
+  /** Phase 122: a curve, a gradient map (duotone), sharpen and blur, and "show original"; drawn by the same filter. */
+  look?: ImageLook;
 };
 /** Seeded noise or grain (Phase 114), drawn by `core/paint/procedural.ts`. */
 export type NoisePaint = PaintBase & { type: "noise" } & NoiseSpec;
@@ -257,6 +260,7 @@ function parsePaint(v: unknown): Paint | null {
         scale: num(o.scale, 1, 0.05, 20), ...(natural ? { natural } : {}),
         brightness: num(o.brightness, 1, 0, 3), contrast: num(o.contrast, 1, 0, 3), saturation: num(o.saturation, 1, 0, 3),
         ...(adjustOf(o.adjust) ? { adjust: adjustOf(o.adjust)! } : {}),
+        ...(lookOf(o.look) ? { look: lookOf(o.look)! } : {}),
       };
     }
     default:
@@ -310,6 +314,7 @@ export function serializeFills(fills: readonly Paint[]): string {
             ...(p.scale !== 1 ? { scale: r3(p.scale) } : {}), ...(p.natural ? { natural: p.natural } : {}),
             ...(p.brightness !== 1 ? { brightness: r3(p.brightness) } : {}), ...(p.contrast !== 1 ? { contrast: r3(p.contrast) } : {}), ...(p.saturation !== 1 ? { saturation: r3(p.saturation) } : {}),
             ...(p.adjust && !isIdentityAdjustment(p.adjust) ? { adjust: Object.fromEntries(Object.entries(p.adjust).filter(([, v]) => v !== 0).map(([k, v]) => [k, r3(v)])) } : {}),
+            ...(p.look && (!isIdentityLook(p.look) || p.look.bypass) ? { look: p.look } : {}),
           };
       }
     }),
@@ -417,10 +422,11 @@ export function diamondCss(p: DiamondPaint, W: number, H: number): { image: stri
 }
 
 /** Does this image paint change the picture's colours? Those can't be a `background-image`: they are drawn by a layer of their own. */
-export const hasImageFilter = (p: Paint): boolean => p.type === "image" && (p.brightness !== 1 || p.contrast !== 1 || p.saturation !== 1 || (!!p.adjust && !isIdentityAdjustment(p.adjust)));
+export const hasImageFilter = (p: Paint): boolean =>
+  p.type === "image" && !p.look?.bypass && (p.brightness !== 1 || p.contrast !== 1 || p.saturation !== 1 || needsImageFilter(p.adjust, p.look));
 
 /** Whether the paint needs the SVG adjustment filter (FigCraft's seven adjustments), not only CSS filter functions. */
-export const hasAdjustFilter = (p: Paint): p is ImagePaint => p.type === "image" && !!p.adjust && !isIdentityAdjustment(p.adjust);
+export const hasAdjustFilter = (p: Paint): p is ImagePaint => p.type === "image" && needsImageFilter(p.adjust, p.look);
 
 /**
  * The CSS filter for an image paint, or "" when it is unchanged: `brightness() contrast() saturate()`, then the
