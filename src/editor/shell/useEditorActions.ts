@@ -345,6 +345,7 @@ export function useEditorActions(
       image: "select",
       pen: "pen",
       pencil: "pencil",
+      brush: "pencil",
       anchor: "select",
     };
     useToolStore.getState().setActive(toolMap[tool] ?? "select");
@@ -1388,6 +1389,11 @@ export function useEditorActions(
         if (key === "t") {
           e.preventDefault();
           setActiveTool("text");
+          return;
+        }
+        if (key === "b" && !e.shiftKey) {
+          e.preventDefault();
+          setActiveTool("brush");
           return;
         }
         if (key === "p") {
