@@ -390,7 +390,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 197 | Interactive export runtime → *ROADMAP_3D 3D-058* | 196, 194 | v3 69.1, 69.2 | 4 | 🚧 |
 | 198 | Embed script, size budgets & Web Vitals | 197 | v3 69.3–69.5 | 4 | 🚧 |
 | 199 | Interactive accessibility | 198 | v3 29 (v3.0 amendment), 29.4 | 4 | 🚧 |
-| 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 📋 |
+| 200 | Interactive performance budgets per tier | 199 | v3 26 (v3.0 amendment) | 4 | 🚧 |
 | 201 | Composition test suite | 200 | v3 91.7 | 4 | 📋 |
 | 202 | Stage 4 gate: the interactive journey | 132–201 | v3 58.5, 58.6 | 4 | 📋 |
 
@@ -2450,8 +2450,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** axe reports 0 violations across the export matrix; the reduced-motion run with pointer tapes shows no spatial movement.
 
 ### Phase 200 · Interactive performance budgets per tier
-**Needs:** 199 · **Was:** v3 26 (v3.0 amendment) · **Closes:** AUD-55 (simulated tiers) · **Status:** 📋
-- [ ] Budgets per device tier for every interactive effect (frame time, memory, live surfaces, runtime size), measured under input tapes with a 10-minute soak on simulated low and mid tiers. Real phones come in 261.
+**Needs:** 199 · **Was:** v3 26 (v3.0 amendment) · **Closes:** AUD-55 (simulated tiers) · **Status:** 🚧
+- [x] Budgets per device tier for every interactive effect (frame time, memory, live surfaces, runtime size), measured under input tapes with a 10-minute soak on simulated low and mid tiers. Real phones come in 261.
 
 **You'll see:** tier badges (runs on low / mid / high devices) on every effect.
 **Done when:** every library effect meets its simulated tier budgets in CI.
