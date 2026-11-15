@@ -1,0 +1,1 @@
+- [Phase 176] Implemented editor surface liveness rules & cursor-reactive background shader vertical slice (`src/core/gpu/interactiveBackgroundSlice.ts`): focused-frame live vs frozen breakpoint/sibling frames, selectable behind-sibling `background` role, WebGL2 GLSL shader + deterministic tape checkpoint evaluator, and reduced-motion freeze (`PR #152`).
