@@ -379,7 +379,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 186 | Fracture: shatter, strips & tearing | 112, 163, 185 | — (new in v4.1) | 4 | 🚧 |
 | 187 | Media as texture & distortion | 184, 175 | v3 65 | 4 | 🚧 |
 | 188 | Scroll-scrubbed image sequences & video → *Design track D13* | 81, 99, 187 | — (new in v4.1) | 4 | 🚧 |
-| 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 📋 |
+| 189 | Smooth scrolling & scroll physics → *Design track D14* | 188 | — (new in v4.1) | 4 | 🚧 |
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 📋 |
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 📋 |
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 📋 |
@@ -2371,8 +2371,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** scrubbing shows the right frame at 20 scroll positions in 3 browsers; memory stays within the tier budget.
 
 ### Phase 189 · Smooth scrolling & scroll physics
-**Needs:** 188 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Page-wide smooth scrolling (inertia and easing) with the native scroll as fallback, snapping per section, and scroll-velocity effects. Respects reduced motion, keyboard scrolling and find-in-page.
+**Needs:** 188 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Page-wide smooth scrolling (inertia and easing) with the native scroll as fallback, snapping per section, and scroll-velocity effects. Respects reduced motion, keyboard scrolling and find-in-page.
 
 **You'll see:** a site that scrolls smoothly with sections that snap into place.
 **Done when:** keyboard, find-in-page and anchor links work; reduced motion turns smoothing off; the export matches.
