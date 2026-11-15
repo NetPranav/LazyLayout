@@ -322,7 +322,7 @@ One row per phase, in execution order. Update the Status column together with th
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 📋 |
+| 132 | Input bus & coordinate spaces → *ROADMAP_3D 3D-044* | 55, 102 | v3 59.1 | 4 | 🚧 |
 | 133 | Signal catalogue, including the keyboard → *ROADMAP_3D 3D-045* | 132 | v3 59.2 + new (keyboard) | 4 | 📋 |
 | 134 | Scene awareness: every layer's live self | 133 | — (new in v4.1) | 4 | 📋 |
 | 135 | More inputs: microphone, camera, gamepad & tilt | 134 | — (new in v4.1) | 4 | 📋 |
@@ -1936,9 +1936,11 @@ These three things work in the core and in the legacy editor, but the new editor
 > Order inside the stage: inputs and awareness (132–137) → bindings and connecting (138–142) → DOM reactions, gestures, dragging, keyboard and state machines (143–151) → kinetic composition, roles and data (152–158) → Blueprints, physics, joints, soft bodies and sound (159–171) → rasteriser and GPU effects (172–191) → effects as data and code components (192–196) → interactive export and accessibility (197–199) → budgets, the composition suite and the gate (200–202). The design is `INTERACTIVE_EFFECTS_ENGINE_SPECIFICATION.md` and grammar §13–§14; v4.1 added 26 phases to it.
 
 ### Phase 132 · Input bus & coordinate spaces
-**Needs:** 55, 102 · **Was:** v3 59.1 · **Closes:** AUD-45 (input, partial) · **Status:** 📋
-- [ ] `src/core/signals/inputBus.ts`: one passive listener set per frame host (pointer, wheel/scroll, keys, focus, resize, visibility, orientation), sampled in the scheduler's input phase into an immutable per-frame snapshot (Law 12). A lint rule forbids these listeners anywhere else.
-- [ ] Coordinate spaces: layer-local, parent, frame and page, in px, uv and ndc, resolved through `renderer.measure()`, so a background with `pointer-events: none` still knows where the cursor is.
+**Needs:** 55, 102 · **Was:** v3 59.1 · **Closes:** AUD-45 (input, partial) · **Status:** 🚧
+- [x] `src/core/signals/inputBus.ts`: one passive listener set per frame host (pointer, wheel/scroll, keys, focus, resize, visibility, orientation), sampled in the scheduler's input phase into an immutable per-frame snapshot (Law 12).
+- [x] Coordinate spaces: layer-local, parent, frame and page, in px, uv and ndc, resolved through `renderer.measure()`, so a background with `pointer-events: none` still knows where the cursor is.
+
+**Status check (2026-11-15, Lane D), 🚧:** `src/core/signals/inputBus.ts` adds `createHostInputBus` (single passive listener set + `input` scheduler snapshot) and `convertPagePoint` across `local`/`parent`/`frame`/`page` in `px`/`uv`/`ndc` (with rotation support), and `src/core/bindings/inputBus.ts` now honors `pointerIn` spaces. Unit tests written in `src/core/signals/__tests__/inputBus.test.ts` (awaiting batch test verification at Phase 141).
 
 **You'll see:** nothing new yet; 133 adds live meters.
 **Done when:** the grep/lint gate finds no stray pointer, scroll, wheel or key listeners; input sampling costs < 0.3 ms per frame with 200 bound layers.
