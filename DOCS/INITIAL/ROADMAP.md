@@ -473,7 +473,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 🚧 |
 | 170 | Spawner | 169 | v3 89.4 | 4 | 🚧 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 🚧 |
-| 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 📋 |
+| 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 🚧 |
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
@@ -2827,8 +2827,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** sounds fire at the expected tape frames; nothing plays before interaction; the export matches.
 
 ### Phase 172 · Scene rasteriser: any layer to pixels
-**Needs:** 17, 19, 74, 170 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Draw any layer or group (shapes, text, images, fills, strokes, masks, effects) into a bitmap from the same render definitions as the stage (Law 11). Decision record 0016 (scene rasteriser): SVG `foreignObject` capture or an in-house canvas renderer for LazyLayout's own primitives. Re-draws only what changed.
+**Needs:** 17, 19, 74, 170 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Draw any layer or group (shapes, text, images, fills, strokes, masks, effects) into a bitmap from the same render definitions as the stage (Law 11). Decision record 0016 (scene rasteriser): SVG `foreignObject` capture or an in-house canvas renderer for LazyLayout's own primitives. Re-draws only what changed.
 
 **You'll see:** Copy as PNG and Export selection as image give exactly what is on the canvas.
 **Done when:** 30 gallery cases rasterise within 1% of a stage screenshot in 3 browsers; re-drawing a 1440 × 900 frame after an edit takes < 16 ms.
