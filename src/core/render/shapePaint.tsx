@@ -1,7 +1,8 @@
 import React from "react";
 import type { Layer } from "../document/schema";
 import { parseColor, toCss } from "../paint/colorMath";
-import { effectiveFills, hasAdjustFilter, imageFilterCss, paintBlendCss, paintCss, parseShadows, safeDashArray, type GradientStop, type ImagePaint, type Paint, type Shadow } from "../paint/paints";
+import { svgDataUrl } from "../paint/procedural";
+import { proceduralSvg, effectiveFills, hasAdjustFilter, imageFilterCss, paintBlendCss, paintCss, parseShadows, safeDashArray, type GradientStop, type ImagePaint, type Paint, type Shadow } from "../paint/paints";
 import { adjustmentMatrix, adjustmentToneTable, type ImageAdjustments } from "../paint/color";
 import type { BezPath } from "../geometry/bezpath";
 import { StrokeLayer, strokeSettings } from "./strokePaint";
@@ -313,6 +314,17 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
         defs.push(
           <pattern key={gid} id={gid} patternUnits="userSpaceOnUse" x={0} y={0} width={pw} height={ph}>
             <image href={url} x={place.x} y={place.y} width={place.width} height={place.height} preserveAspectRatio={place.par} opacity={p.opacity} style={filter ? { filter } : undefined} />
+          </pattern>,
+        );
+        painted.push(<React.Fragment key={`f${i}`}>{geometry({ fill: `url(#${gid})`, stroke: "none" })}</React.Fragment>);
+        break;
+      }
+      case "noise":
+      case "pattern": {
+        // the same picture a frame's CSS background shows (Phase 114), as a pattern the size of the box
+        defs.push(
+          <pattern key={gid} id={gid} patternUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>
+            <image href={svgDataUrl(proceduralSvg(p, width, height)!)} x={0} y={0} width={width} height={height} />
           </pattern>,
         );
         painted.push(<React.Fragment key={`f${i}`}>{geometry({ fill: `url(#${gid})`, stroke: "none" })}</React.Fragment>);

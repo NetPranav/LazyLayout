@@ -18,6 +18,7 @@
 
 import { safeImageSrc } from "../render/limits";
 import { parseColor, toCss, withOpacity } from "./colorMath";
+import { MAX_PATTERN_SHAPES, noiseSvg, patternSvg, safePathData, svgDataUrl, type NoiseSpec, type PatternSpec } from "./procedural";
 import { BLEND_MODES, blendCss, isIdentityAdjustment, sanitizeAdjustments, type BlendMode, type ImageAdjustments } from "./color";
 
 export interface Point {
@@ -93,9 +94,20 @@ export type ImagePaint = PaintBase & {
   /** The seven adjustments, each -1..1 (FigCraft port F2); absent is none. Drawn by an SVG colour filter. */
   adjust?: ImageAdjustments;
 };
-export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint;
+/** Seeded noise or grain (Phase 114), drawn by `core/paint/procedural.ts`. */
+export type NoisePaint = PaintBase & { type: "noise" } & NoiseSpec;
+/** Shapes repeated as a tile (Phase 114), baked from a layer when the pattern is made. */
+export type PatternPaint = PaintBase & { type: "pattern" } & PatternSpec;
+export type Paint = SolidPaint | LinearPaint | RadialPaint | ConicPaint | DiamondPaint | ImagePaint | NoisePaint | PatternPaint;
 export type PaintType = Paint["type"];
-export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image"];
+export const PAINT_TYPES: readonly PaintType[] = ["solid", "linear", "radial", "conic", "diamond", "image", "noise", "pattern"];
+
+/** The picture a procedural paint is drawn as, for a box of this size (null for other paints). */
+export function proceduralSvg(p: Paint, w: number, h: number): string | null {
+  if (p.type === "noise") return noiseSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  if (p.type === "pattern") return patternSvg(p, w > 0 ? w : 100, h > 0 ? h : 100, p.opacity);
+  return null;
+}
 
 export const FULL_CROP: ImageCrop = { x: 0, y: 0, w: 1, h: 1 };
 
@@ -124,6 +136,8 @@ export const DEFAULT_STOPS: readonly GradientStop[] = [
 export function newPaint(type: PaintType, color = "#cbd5e1"): Paint {
   const base = { opacity: 1, visible: true };
   if (type === "image") return { ...base, type, src: "", mode: "fill", crop: { ...FULL_CROP }, scale: 1, brightness: 1, contrast: 1, saturation: 1 };
+  if (type === "noise") return { ...base, type, kind: "grain", scale: 2, contrast: 0.5, color: "#000000", seed: 1, opacity: 0.35 };
+  if (type === "pattern") return { ...base, type, tile: { w: 16, h: 16, shapes: [{ d: "M8 4A4 4 0 1 1 8 12A4 4 0 1 1 8 4Z", color: color }] }, scale: 1, spacing: 0, offset: { x: 0, y: 0 }, rotation: 0 };
   const stops: GradientStop[] = [{ at: 0, color }, { at: 1, color: parseColor(color) && (parseColor(color)!.r + parseColor(color)!.g + parseColor(color)!.b) / 3 > 128 ? "#0f172a" : "#ffffff" }];
   switch (type) {
     case "solid": return { ...base, type, color };
@@ -175,6 +189,28 @@ function parsePaint(v: unknown): Paint | null {
       const stops = parseStops(o.stops);
       const r = point(o.radius, { x: 0.5, y: 0.5 });
       return stops ? { ...base, type: "diamond", stops, center: point(o.center, { x: 0.5, y: 0.5 }), radius: { x: Math.abs(r.x) || 0.01, y: Math.abs(r.y) || 0.01 } } : null;
+    }
+    case "noise": {
+      const color = safeColor(o.color) ?? "#000000";
+      return { ...base, type: "noise", kind: o.kind === "noise" ? "noise" : "grain", scale: num(o.scale, 2, 0.5, 2000), contrast: num(o.contrast, 0.5, 0, 1), color, seed: Math.round(num(o.seed, 1, 0, 1_000_000)) };
+    }
+    case "pattern": {
+      const tile = typeof o.tile === "object" && o.tile !== null ? (o.tile as Record<string, unknown>) : {};
+      const shapes = (Array.isArray(tile.shapes) ? tile.shapes : [])
+        .slice(0, MAX_PATTERN_SHAPES)
+        .map((s) => {
+          const r = typeof s === "object" && s !== null ? (s as Record<string, unknown>) : {};
+          const d = safePathData(r.d);
+          const color = safeColor(r.color);
+          return d && color ? { d, color } : null;
+        })
+        .filter((s): s is { d: string; color: string } => s !== null);
+      if (shapes.length === 0) return null;
+      const off = typeof o.offset === "object" && o.offset !== null ? (o.offset as Record<string, unknown>) : {};
+      return {
+        ...base, type: "pattern", tile: { w: num(tile.w, 16, 1, 5000), h: num(tile.h, 16, 1, 5000), shapes },
+        scale: num(o.scale, 1, 0.05, 20), spacing: num(o.spacing, 0, 0, 2000), offset: { x: num(off.x, 0, -5000, 5000), y: num(off.y, 0, -5000, 5000) }, rotation: num(o.rotation, 0, -360, 360),
+      };
     }
     case "image": {
       const mode = IMAGE_MODES.includes(o.mode as ImageMode) ? (o.mode as ImageMode) : "fill";
@@ -231,6 +267,8 @@ export function serializeFills(fills: readonly Paint[]): string {
         case "radial": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
         case "conic": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), angle: r3(p.angle) };
         case "diamond": return { ...base, stops: p.stops.map((s) => ({ at: r3(s.at), color: s.color })), center: pt(p.center), radius: pt(p.radius) };
+        case "noise": return { ...base, kind: p.kind, scale: r3(p.scale), contrast: r3(p.contrast), color: p.color, seed: p.seed };
+        case "pattern": return { ...base, tile: { w: r3(p.tile.w), h: r3(p.tile.h), shapes: p.tile.shapes }, scale: r3(p.scale), ...(p.spacing ? { spacing: r3(p.spacing) } : {}), ...(p.offset.x || p.offset.y ? { offset: pt(p.offset) } : {}), ...(p.rotation ? { rotation: r3(p.rotation) } : {}) };
         case "image":
           return {
             ...base, src: p.src, mode: p.mode,
@@ -293,6 +331,9 @@ export function paintCss(p: Paint, w: number, h: number, assetUrl?: (src: string
       return `conic-gradient(from ${f(p.angle)}deg at ${f(p.center.x * W)}px ${f(p.center.y * H)}px, ${stopList(p.stops, p.opacity, (s) => `${f(s.at * 360)}deg`)})`;
     case "diamond":
       return diamondCss(p, W, H).map((q) => q.image).join(", ");
+    case "noise":
+    case "pattern":
+      return `url("${svgDataUrl(proceduralSvg(p, W, H)!)}")`;
     case "image": {
       const url = p.src ? (assetUrl ? assetUrl(p.src) : p.src) : null;
       return url ? `url("${url.replace(/["\\]/g, "\\$&").replace(/[\n\r]/g, "")}")` : null;

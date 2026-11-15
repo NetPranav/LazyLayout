@@ -143,6 +143,8 @@ export function inspectLayer(doc: Doc, own: Layer, resolved: Layer, size?: { w: 
       .map((x) => {
         if (x.type === "solid") return row("Solid", formatColor(x.color, fmt), { color: x.color });
         if (x.type === "image") return row("Image", `${Math.round((x.opacity ?? 1) * 100)}%`);
+        if (x.type === "noise") return row(x.kind === "grain" ? "Grain" : "Noise", formatColor(x.color, fmt), { color: x.color });
+        if (x.type === "pattern") return row("Pattern", `${x.tile.shapes.length} shapes`, { color: x.tile.shapes[0]?.color });
         const kind = x.type[0].toUpperCase() + x.type.slice(1);
         return row(kind, x.stops.map((s) => `${formatColor(s.color, fmt)} ${Math.round(s.at * 100)}%`).join(", "), { color: x.stops[0]?.color });
       });

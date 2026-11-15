@@ -21,6 +21,60 @@ import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
 import type { Paint, PaintMask, PaintType } from "@/core/paint/paints";
 import { BLEND_MODES, type BlendMode } from "@/core/paint/color";
 import { Toggle } from "@/editor/components/Toggle";
+import { tileFromLayer } from "@/core/editing/patternTile";
+import type { Layer } from "@/core/document/schema";
+
+/** Noise and pattern controls (Phase 114). */
+function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { paint: Paint; layers: Readonly<Record<string, Layer>>; layerOptions: { value: string; label: string }[]; onChange: (next: Paint) => void }) {
+  if (p.type === "noise") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Kind">
+          <Select aria-label="Noise kind" size="sm" width="100%" options={[{ value: "grain", label: "Grain" }, { value: "noise", label: "Soft noise" }]} value={p.kind} onChange={(v) => onChange({ ...p, kind: v === "noise" ? "noise" : "grain" })} />
+        </OptionRow>
+        <OptionRow label="Size">
+          <NumberField size="sm" aria-label="Noise size" suffix="px" value={p.scale} min={0.5} max={2000} step={0.5} onChange={(v) => onChange({ ...p, scale: Math.max(0.5, v) })} />
+        </OptionRow>
+        <OptionRow label="Contrast">
+          <NumberField size="sm" aria-label="Noise contrast" unit="%" value={Math.round(p.contrast * 100)} min={0} max={100} onChange={(v) => onChange({ ...p, contrast: Math.min(1, Math.max(0, v / 100)) })} />
+        </OptionRow>
+        <OptionRow label="Seed">
+          <NumberField size="sm" aria-label="Noise seed" value={p.seed} min={0} max={1_000_000} step={1} onChange={(v) => onChange({ ...p, seed: Math.round(v) })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  if (p.type === "pattern") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Tile">
+          <Select
+            aria-label="Pattern tile from layer"
+            size="sm"
+            width="100%"
+            placeholder="Make the tile from a layer"
+            options={layerOptions}
+            value=""
+            onChange={(id) => {
+              const tile = tileFromLayer(id, layers);
+              if (tile) onChange({ ...p, tile });
+            }}
+          />
+        </OptionRow>
+        <OptionRow label="Scale">
+          <NumberField size="sm" aria-label="Pattern scale" unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        </OptionRow>
+        <OptionRow label="Spacing">
+          <NumberField size="sm" aria-label="Pattern spacing" suffix="px" value={p.spacing} min={0} max={2000} onChange={(v) => onChange({ ...p, spacing: Math.max(0, v) })} />
+        </OptionRow>
+        <OptionRow label="Rotation">
+          <NumberField size="sm" aria-label="Pattern rotation" suffix="°" value={p.rotation} min={-360} max={360} onChange={(v) => onChange({ ...p, rotation: v })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  return null;
+}
 
 /** Per-fill blend modes (FigCraft port F2), as the select lists them. */
 const FILL_BLEND_OPTIONS = BLEND_MODES.filter((b) => b !== "passThrough").map((b) => ({ value: b, label: b.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()) }));
@@ -99,6 +153,7 @@ const applyItem = (p: Paint, patch: Partial<FillItem>): Paint => {
   if (patch.type && patch.type !== (p.type === "diamond" ? "radial" : p.type)) next = changeType(next, patch.type as PaintType);
   if (patch.hex !== undefined && patch.hex.length === 6) {
     if (next.type === "solid") next = { ...next, color: cssOfHex(patch.hex, next.color) };
+    else if (next.type === "noise") next = { ...next, color: cssOfHex(patch.hex, next.color) };
     else if ("stops" in next) next = { ...next, stops: next.stops.map((s, k) => (k === 0 ? { ...s, color: cssOfHex(patch.hex!, s.color) } : s)) } as Paint;
   }
   if (patch.opacity !== undefined) next = { ...next, opacity: patch.opacity / 100 };
@@ -126,6 +181,8 @@ const PAINT_OPTIONS = [
   { value: "radial", label: "Radial" },
   { value: "conic", label: "Conic" },
   { value: "image", label: "Image" },
+  { value: "noise", label: "Noise", hint: "Seeded grain or soft noise" },
+  { value: "pattern", label: "Pattern", hint: "Shapes repeated as a tile" },
 ] as const;
 
 const IMAGE_FIT_OPTIONS = [
@@ -567,6 +624,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
                   </OptionRow>
                 )}
               </OptionGroup>
+              {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern") && (
+                <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
+              )}
               {engine && enginePaints[index] && <FillMaskControls mask={enginePaints[index].mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />}
               {engine && fill.stops && fill.stops.length >= 2 && (
                 <OptionGroup>
