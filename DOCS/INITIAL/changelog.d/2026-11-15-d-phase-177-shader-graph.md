@@ -1,0 +1,1 @@
+- [Phase 177] Implemented typed shader node graph & dual backend compiler (`src/core/gpu/shaderGraph.ts`): compiles `noise`/`sdf`/`pattern`/`color`/`distortion`/`texture`/`feedback`/`post` + Phase 175 `layerTexture`/`layerOutline`/`layerSdf` nodes into GLSL ES 3.00 and WebGPU TSL with static cost estimation (`PR #153`).

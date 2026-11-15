@@ -478,7 +478,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 🚧 |
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 🚧 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 🚧 |
-| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
+| 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 🚧 |
 | 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
 | 179 | Effect layers | 74, 175, 178 | — (new in v4.1) | 4 | 📋 |
 | 180 | Outline effects: light that rides edges | 179 | — (new in v4.1) | 4 | 📋 |
@@ -2864,9 +2864,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** the slice matches stored frames at tape checkpoints within the GPU tolerance.
 
 ### Phase 177 · Shader graph
-**Needs:** 176, 175 · **Was:** v3 62.1, 62.3 · **Status:** 📋
-- [ ] A typed node graph (float, vec, colour, texture, SDF) compiling to GLSL ES 3.00 and TSL; the uniform contract (`uTime`, `uResolution`, `uSeed`, pointer uniforms from bindings, props); noise, SDF, pattern, colour, distortion, texture, feedback and post nodes; a static cost estimate feeding the rules and tiers.
-- [ ] **v4.1:** layer texture, outline and distance-field nodes (Phase 175), so a shader can read any layer's pixels and shape.
+**Needs:** 176, 175 · **Was:** v3 62.1, 62.3 · **Status:** 🚧
+- [x] A typed node graph (float, vec, colour, texture, SDF) compiling to GLSL ES 3.00 and TSL; the uniform contract (`uTime`, `uResolution`, `uSeed`, pointer uniforms from bindings, props); noise, SDF, pattern, colour, distortion, texture, feedback and post nodes; a static cost estimate feeding the rules and tiers.
+- [x] **v4.1:** layer texture, outline and distance-field nodes (Phase 175), so a shader can read any layer's pixels and shape.
 
 **You'll see:** build backgrounds visually, like Unreal's material editor.
 **Done when:** 10 reference backgrounds built from the graph alone compile on WebGL2 and WebGPU and match within tolerance; a node edit updates the stage in < 100 ms.
