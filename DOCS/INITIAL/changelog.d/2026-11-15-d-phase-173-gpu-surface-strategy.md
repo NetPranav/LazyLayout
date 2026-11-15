@@ -1,0 +1,1 @@
+- [Phase 173] Implemented Law 13 Surface Budget Controller (`src/core/gpu/surfaceStrategy.ts`): desktop `<= 8` / mobile `<= 4` live slot budget, shared `surface` vs `scene` context caps, offscreen & hidden-tab pausing, poster fallbacks, frame-time throttling, `< 1 s` context-loss recovery, and closed `AUD-46` + `AUD-49` (`PR #149`).

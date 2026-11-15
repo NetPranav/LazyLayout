@@ -363,7 +363,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 170 | Spawner | 169 | v3 89.4 | 4 | 🚧 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 🚧 |
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 🚧 |
-| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 📋 |
+| 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 🚧 |
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 📋 |
 | 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
@@ -2254,9 +2254,9 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 30 gallery cases rasterise within 1% of a stage screenshot in 3 browsers; re-drawing a 1440 × 900 frame after an edit takes < 16 ms.
 
 ### Phase 173 · GPU surface strategy & compositor
-**Needs:** 170 · **Was:** v3 61.1, 61.3 · **Closes:** AUD-46 (runtime, partial), AUD-49 · **Status:** 📋
-- [ ] Decision record 0011 (GPU surface strategy): per-surface canvases within a budget, a shared backdrop canvas, or one hidden context blitting to 2D, per surface role; WebGL2 baseline, WebGPU opt-in through three.js TSL; minimal in-house WebGL2 helper or OGL (Unlicense) for 2D surfaces.
-- [ ] The compositor owns every context (Law 13): ≤ 8 live surfaces on desktop and ≤ 4 on mobile, posters over budget, device tiers T0–T3 with a frame-time controller, pausing offscreen and in hidden tabs, async compile, context-loss recovery.
+**Needs:** 170 · **Was:** v3 61.1, 61.3 · **Closes:** AUD-46 (runtime, partial), AUD-49 · **Status:** 🚧
+- [x] Decision record 0011 (GPU surface strategy): per-surface canvases within a budget, a shared backdrop canvas, or one hidden context blitting to 2D, per surface role; WebGL2 baseline, WebGPU opt-in through three.js TSL; minimal in-house WebGL2 helper or OGL (Unlicense) for 2D surfaces.
+- [x] The compositor owns every context (Law 13): ≤ 8 live surfaces on desktop and ≤ 4 on mobile, posters over budget, device tiers T0–T3 with a frame-time controller, pausing offscreen and in hidden tabs, async compile, context-loss recovery.
 
 **You'll see:** a test surface on the canvas that pauses offscreen and recovers from a forced context loss.
 **Done when:** a 20-surface page never exceeds the budget or logs "Too many active WebGL contexts" in 3 browsers; a forced loss recovers within 1 s.
