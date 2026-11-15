@@ -16,6 +16,7 @@ import {
   Scissors,
   Spline,
   Pencil,
+  Brush,
   Download,
   Undo2,
   Redo2,
@@ -146,15 +147,16 @@ const ToolbarAnchor: LucideIcon = Object.assign(
   { displayName: "ToolbarAnchor" }
 );
 
-type PenFlyoutTool = "pen" | "pencil" | "anchor";
+type PenFlyoutTool = "pen" | "pencil" | "brush" | "anchor";
 
-/** The pen flyout: the three ways into a vector path. */
+/** The pen flyout: the ways into a vector path (Phase 120 added the brush). */
 const PEN_TOOLS: ReadonlyArray<{ id: PenFlyoutTool; label: string; icon: LucideIcon; shortcut: string }> = [
   { id: "pen", label: "Pen", icon: ToolbarPenNib, shortcut: "P" },
   { id: "pencil", label: "Pencil", icon: Pencil, shortcut: "Shift+P" },
+  { id: "brush", label: "Brush", icon: Brush, shortcut: "B" },
   { id: "anchor", label: "Anchor", icon: ToolbarAnchor, shortcut: "Shift+C" },
 ];
-const isPenFlyoutTool = (t: string): t is PenFlyoutTool => t === "pen" || t === "pencil" || t === "anchor";
+const isPenFlyoutTool = (t: string): t is PenFlyoutTool => t === "pen" || t === "pencil" || t === "brush" || t === "anchor";
 
 const SHAPES: ReadonlyArray<{
   id: ShapeTool;
@@ -567,7 +569,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               icon={<Icon icon={shapeIcon} size={CANVAS_CHROME_SIZES.iconLg} />}
             />
 
-            {/* Pen flyout: Pen (P), Pencil (Shift+P), Anchor (Shift+C) */}
+            {/* Pen flyout: Pen (P), Pencil (Shift+P), Brush (B), Anchor (Shift+C) */}
             <IconButton
               ref={penButtonRef}
               size="lg"

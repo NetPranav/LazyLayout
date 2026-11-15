@@ -8,13 +8,22 @@ import { ColorPicker } from "@/editor/components/ColorPicker";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { StrokeRowOptions } from "../options/StrokeOptions";
 import type { InspectorSectionProps, StrokeItem } from "../types";
+import { parseFills, serializeFills } from "@/core/paint/paints";
+import { paintColor } from "@/core/paint/paintEdits";
 
 export interface StrokeSectionProps extends InspectorSectionProps {
   onAddStrokeRef?: { current?: () => void };
 }
 
-/** The stroke a layer already has, as a row: any border width above 0 (a shape's stroke width, through the same fields). */
+/** Layers that keep every stroke in `paint.strokes` (Phase 118): shapes, lines, paths and text. */
+const STROKE_LIST = new Set(["rectangle", "ellipse", "polygon", "star", "line", "svgPath", "text"]);
+
+/** A layer's strokes as rows: its stroke list when it has one with weights, else its one stroke. */
 function strokeFromDocument(get: InspectorSectionProps["getValue"]): StrokeItem[] {
+  const list = parseFills(get?.("paint.strokes"));
+  if (list && list.length > 0 && list.some((p) => p.weight !== undefined)) {
+    return list.map((p, i) => ({ id: `stroke-doc-${i}`, hex: paintColor(p).replace(/^#/, "").slice(0, 6).toUpperCase(), width: p.weight ?? 1, style: "solid", sides: "all", ...(p.visible ? {} : { hidden: true }), ...(p.align ? { align: p.align } : {}) }));
+  }
   const width = get?.("appearance.border.width");
   if (typeof width !== "number" || width <= 0) return [];
   const color = get?.("appearance.border.color");
@@ -76,7 +85,19 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
                 ? `0 0 ${w} 0`
                 : `0 0 0 ${w}`;
     }
-    if (visible) {
+    // Phase 118: shapes, lines, paths and text keep every row (several strokes, each its weight and position);
+    // text always does (a text's border is its box, not its letters)
+    const list = Boolean(layer && STROKE_LIST.has(layer.archetype));
+    const shown = updatedStrokes.filter((s) => !s.hidden && s.width > 0);
+    const isText = layer?.archetype === "text";
+    if (list && (isText || shown.length > 1 || shown.some((s) => s.align))) {
+      patch["paint.strokes"] = shown.length ? serializeFills(shown.map((s) => ({ type: "solid", color: `#${s.hex}`, opacity: 1, visible: true, weight: s.width, ...(s.align ? { align: s.align } : {}) }))) : null;
+    } else if (list) {
+      patch["paint.strokes"] = null;
+    }
+    if (isText) {
+      // the strokes are the list's; the box keeps no border
+    } else if (visible) {
       patch["appearance.border.color"] = `#${visible.hex}`;
       patch["appearance.border.width"] = visible.width;
       patch["appearance.border.style"] = visible.style;
@@ -268,6 +289,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
                 getValue={getValue}
                 onUpdateProp={onUpdateProp}
                 stroke={stroke}
+                perStroke={Boolean(layer && STROKE_LIST.has(layer.archetype) && (strokes.length > 1 || layer.archetype === "text"))}
                 onChangeStroke={(patch) => handleUpdateStroke(stroke.id, patch)}
               />
             </RowSettingsPopover>

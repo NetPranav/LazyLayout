@@ -32,6 +32,7 @@ import { referenceElements } from "./reference-elements";
 import type { Layer } from "../../src/core/document/schema";
 import { buildSiteExport, type SiteFile, type Styling } from "../../src/core/export/site";
 import { buildSiteFixture } from "./site-fixture";
+import { buildDesignDepthDocument } from "./design-depth-fixture";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, "fixtures");
@@ -178,12 +179,12 @@ const SITE_PATHS = {
   vite: { keep: /^(src|public)\//, restore: ["src/main.tsx"], remove: ["src/App.tsx", "src/pages", "src/styles.css", "src/components", "public", "dist"] },
 } as const;
 
-async function buildSite(target: "next" | "vite", styling: Styling): Promise<{ ok: boolean; output: string }> {
+async function buildSite(target: "next" | "vite", styling: Styling, make: () => ReturnType<typeof buildSiteFixture> = buildSiteFixture): Promise<{ ok: boolean; output: string }> {
   const spec = SITE_PATHS[target];
   const fixture = new Fixture(join(FIXTURES, target === "next" ? "nextjs-app" : "vite-react"));
   const originals = spec.restore.map((rel) => [rel, readFileSync(join(fixture.dir, rel), "utf8")] as const);
   try {
-    const doc = buildSiteFixture();
+    const doc = make();
     const res = await buildSiteExport(doc, { target, styling });
     const files: SiteFile[] = res.files.filter((f) => spec.keep.test(f.path));
     for (const f of files) {
@@ -199,6 +200,30 @@ async function buildSite(target: "next" | "vite", styling: Styling): Promise<{ o
     for (const [rel, content] of originals) writeFileSync(join(fixture.dir, rel), content);
     for (const rel of spec.remove) rmSync(join(fixture.dir, rel), { recursive: true, force: true });
   }
+}
+
+// ---------------------------------------------------------------- Design depth, plain HTML (Phase 130)
+// No build step: the page and its stylesheet must carry what each Stage 3 feature draws with, and the warnings must
+// name what can't be exact. (The browser gate, tests/e2e/design-depth-export.spec.ts, compares its pixels.)
+async function designDepthHtml(): Promise<{ ok: boolean; output: string }> {
+  const res = await buildSiteExport(buildDesignDepthDocument(), { target: "html", styling: "css" });
+  const html = String(res.files.find((f) => f.path === "index.html")?.content ?? "");
+  const css = String(res.files.find((f) => f.path === "styles.css")?.content ?? "");
+  const all = html + css;
+  const needs: [string, RegExp][] = [
+    ["a live boolean group's path", /data-boolean="union"/],
+    ["text on a path", /<textPath /],
+    ["text in a shape", /shape-outside:\s*polygon\(/],
+    ["a 3D space", /preserve-3d/],
+    ["depth of field", /blur\(\d/],
+    ["an image look", /<feComponentTransfer/],
+    ["a live fill", /<foreignObject/],
+    ["a mask", /<mask /],
+    ["columns", /column-count:\s*2/],
+  ];
+  const missing = needs.filter(([, re]) => !re.test(all)).map(([name]) => name);
+  const warned = res.warnings.some((w) => w.includes("progressive blur")) && res.warnings.some((w) => w.includes("2.5D space"));
+  return { ok: missing.length === 0 && warned, output: [missing.length ? `missing: ${missing.join(", ")}` : "", warned ? "" : `warnings: ${JSON.stringify(res.warnings)}`].filter(Boolean).join("\n") };
 }
 
 // ---------------------------------------------------------------- Vanilla
@@ -242,6 +267,17 @@ async function main() {
     const v = await buildSite("vite", styling);
     check("the exported site compiles and builds", v.ok, v.output);
   }
+
+  // Phase 130: a page using every Stage 3 feature, exported to all three targets
+  console.log("\n== design-depth export: Next.js (css)");
+  const dn = await buildSite("next", "css", buildDesignDepthDocument);
+  check("the design-depth page compiles and builds", dn.ok, dn.output);
+  console.log("\n== design-depth export: Vite + React (css)");
+  const dv = await buildSite("vite", "css", buildDesignDepthDocument);
+  check("the design-depth page compiles and builds", dv.ok, dv.output);
+  console.log("\n== design-depth export: plain HTML");
+  const dh = await designDepthHtml();
+  check("the design-depth page is written with every Stage 3 construct", dh.ok, dh.output);
 
   console.log("\n== vue (Vite + Vue 3)");
   const vueResult = buildVue(referenceElements);

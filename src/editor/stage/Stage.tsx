@@ -29,9 +29,13 @@ import type { StageProps, StageElement, StagePreset, DrawPreview } from "./types
 import { createLayerFromBox, creationSpecFor, drawBox, frameAt, pictureHome, type CreationSpec } from "./createFromDrag";
 import { useDraftPathStore } from "@/core/store/useDraftPathStore";
 import { EMPTY_PEN, penClose, penDrag, penFinishable, penNearFirst, penPress, penUndo, type PenState } from "@/core/paths/penModel";
-import { fitStroke, type Sample } from "@/core/paths/pathFit";
+import { fitStroke } from "@/core/paths/pathFit";
 import { markPenFinished, registerDraftControls } from "./pen/penAdapter";
-import { createPathLayer, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
+import { createBrushStroke, createPathLayer, pencilStrokeProps, PENCIL_STYLE, PEN_STYLE } from "@/core/paths/createPath";
+import type { PenSample } from "@/core/paths/penInput";
+import { useBrushToolStore } from "./brushToolStore";
+import { BrushToolBar } from "./BrushToolBar";
+import { MediaLibraryDialog } from "./MediaLibraryDialog";
 import { importFiles, placeImage } from "@/core/assets/assetImport";
 import { placeReferenceFiles } from "@/core/assets/reference";
 import { getDocument } from "@/core/store/documentState";
@@ -496,13 +500,13 @@ export const Stage: React.FC<StageProps> = ({
   >(null);
   const justDragged = useRef(false);
   const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
-  const toolCursor = activeTool === "hand" ? "grab" : activeTool === "pen" || activeTool === "pencil" ? "crosshair" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
+  const toolCursor = activeTool === "hand" ? "grab" : activeTool === "pen" || activeTool === "pencil" || activeTool === "brush" ? "crosshair" : creationSpecFor(activeTool, activeShape) ? "crosshair" : undefined;
 
   // Vector Pen & Pencil tool state
   const penStateRef = useRef<PenState>(EMPTY_PEN);
   const penParentRef = useRef<{ id: string; origin: { x: number; y: number } } | null>(null);
   const penDownRef = useRef<{ x: number; y: number } | null>(null);
-  const pencilSamplesRef = useRef<Sample[]>([]);
+  const pencilSamplesRef = useRef<PenSample[]>([]);
   const pencilParentRef = useRef<{ id: string; origin: { x: number; y: number } } | null>(null);
   const pencilT0Ref = useRef<number>(0);
 
@@ -533,7 +537,7 @@ export const Stage: React.FC<StageProps> = ({
 
   // Clean up draft path on tool change
   useEffect(() => {
-    if (activeTool !== "pen" && activeTool !== "pencil") {
+    if (activeTool !== "pen" && activeTool !== "pencil" && activeTool !== "brush") {
       penStateRef.current = EMPTY_PEN;
       penParentRef.current = null;
       penDownRef.current = null;
@@ -573,6 +577,10 @@ export const Stage: React.FC<StageProps> = ({
   }, []);
 
   const handleToolPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // a bar over the canvas (the brush settings) is not the canvas, and neither is a list it opens (portaled
+    // elsewhere in the page, but React still passes its events through here): their presses aren't strokes
+    const target = e.target as Element | null;
+    if (target?.closest?.("[data-stage-chrome]") || (target && !e.currentTarget.contains(target))) return;
     justDragged.current = false;
     if (e.button !== 0) return; // the right button only opens the canvas menu: it never pans or switches tools
     if (activeTool === "hand") {
@@ -582,7 +590,7 @@ export const Stage: React.FC<StageProps> = ({
       e.stopPropagation();
       return;
     }
-    if (activeTool === "pencil") {
+    if (activeTool === "pencil" || activeTool === "brush") {
       const at = toArtboard(e.clientX, e.clientY);
       if (!at) return;
       const inside = frameAt({ x: at.x, y: at.y }, undefined, elements);
@@ -590,7 +598,7 @@ export const Stage: React.FC<StageProps> = ({
       const parentOrigin = inside ? { x: inside.x, y: inside.y } : { x: 0, y: 0 };
       pencilParentRef.current = parentId ? { id: parentId, origin: parentOrigin } : null;
       pencilT0Ref.current = Date.now();
-      pencilSamplesRef.current = [{ x: at.x, y: at.y, t: 0, p: e.pressure || 0.5 }];
+      pencilSamplesRef.current = [penSample(at, e, 0)];
       useDraftPathStore.getState().setPencil([{ x: at.x, y: at.y }]);
       e.currentTarget.setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -655,13 +663,16 @@ export const Stage: React.FC<StageProps> = ({
   };
 
   const handleToolPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activeTool === "pencil") {
+    if (activeTool === "pencil" || activeTool === "brush") {
       if (pencilSamplesRef.current.length > 0) {
-        const at = toArtboard(e.clientX, e.clientY);
-        if (at) {
-          pencilSamplesRef.current.push({ x: at.x, y: at.y, t: Date.now() - pencilT0Ref.current, p: e.pressure || 0.5 });
-          useDraftPathStore.getState().setPencil(pencilSamplesRef.current.map((pt) => ({ x: pt.x, y: pt.y })));
+        // every sample the pen made since the last event (a fast pen sends several per frame)
+        const native = e.nativeEvent as PointerEvent;
+        const all = native.getCoalescedEvents?.() ?? [];
+        for (const ev of all.length > 0 ? all : [native]) {
+          const at = toArtboard(ev.clientX, ev.clientY);
+          if (at) pencilSamplesRef.current.push(penSample(at, ev, Date.now() - pencilT0Ref.current));
         }
+        useDraftPathStore.getState().setPencil(pencilSamplesRef.current.map((pt) => ({ x: pt.x, y: pt.y })));
       }
       return;
     }
@@ -698,7 +709,7 @@ export const Stage: React.FC<StageProps> = ({
   };
 
   const handleToolPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activeTool === "pencil") {
+    if (activeTool === "pencil" || activeTool === "brush") {
       const samples = pencilSamplesRef.current;
       const parent = pencilParentRef.current;
       pencilSamplesRef.current = [];
@@ -708,11 +719,16 @@ export const Stage: React.FC<StageProps> = ({
       if (samples.length >= 2 && parent) {
         const at = toArtboard(e.clientX, e.clientY);
         const scale = at?.scale ?? 1;
-        const { nodes, closed } = fitStroke(samples, {}, 8 / scale);
-        const newId = createPathLayer(nodes, closed, parent, PENCIL_STYLE, "Pencil");
+        let newId: string | null;
+        if (activeTool === "brush") newId = createBrushStroke(samples, parent, useBrushToolStore.getState());
+        else {
+          const { nodes, closed } = fitStroke(samples, {}, 8 / scale);
+          newId = createPathLayer(nodes, closed, parent, PENCIL_STYLE, "Pencil", closed ? {} : pencilStrokeProps(samples));
+        }
         if (newId) selectStore(newId, "element");
       }
-      onToolDone?.();
+      // the brush stays the tool, stroke after stroke; the pencil draws one
+      if (activeTool !== "brush") onToolDone?.();
       return;
     }
     if (activeTool === "pen") {
@@ -910,6 +926,18 @@ export const Stage: React.FC<StageProps> = ({
       </React.Profiler>
       {/* View > Show keystrokes: keys, mouse buttons and the command that ran, bottom left (Blender's Screencast Keys) */}
       <ScreencastKeys />
+      {activeTool === "brush" && <BrushToolBar />}
+      <MediaLibraryDialog />
     </div>
   );
 };
+
+/**
+ * One drawn sample (Phase 120): where, when, and what the pen reported. A mouse reports pressure 0.5 while pressed
+ * (0 for some pens at first contact, which counts as the lightest touch, not as no pressure).
+ */
+function penSample(at: { x: number; y: number }, e: { pressure: number; tiltX?: number; tiltY?: number; pointerType?: string; timeStamp?: number }, t: number): PenSample {
+  const pen = e.pointerType === "pen";
+  const p = pen ? Math.max(0.02, Math.min(1, e.pressure)) : e.pressure || 0.5;
+  return { x: at.x, y: at.y, t, p, ...(pen && (e.tiltX || e.tiltY) ? { tiltX: e.tiltX ?? 0, tiltY: e.tiltY ?? 0 } : {}) };
+}

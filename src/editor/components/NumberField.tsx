@@ -213,9 +213,13 @@ export const NumberField: React.FC<NumberFieldProps> = ({
 
   // Keyboard arrow step handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Enter commits and Escape cancels here; marked handled so the canvas shortcuts (Enter: select children) don't
+    // also act on the keypress once the field has let go of focus
     if (e.key === "Enter") {
+      e.preventDefault();
       e.currentTarget.blur();
     } else if (e.key === "Escape") {
+      e.preventDefault();
       setDraft(null);
       e.currentTarget.blur();
     } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {

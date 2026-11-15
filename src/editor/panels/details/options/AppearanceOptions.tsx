@@ -9,6 +9,14 @@ import { NumberField } from "@/editor/components/NumberField";
 import { isPropertyLegalFor } from "@/core/document/properties";
 import type { InspectorSectionProps } from "../types";
 
+const CORNER_STYLE_OPTIONS = [
+  { value: "round", label: "Round", hint: "An arc; smoothing eases it into the edges" },
+  { value: "cut", label: "Cut", hint: "A straight chamfer across the corner" },
+  { value: "scoop", label: "Scoop", hint: "A concave bite centred on the corner" },
+  { value: "inverted", label: "Inverted", hint: "A square notch" },
+] as const;
+type CornerStyleValue = (typeof CORNER_STYLE_OPTIONS)[number]["value"];
+
 const ONE_RADIUS = "This layer takes one radius for all corners; per-corner radius is for rectangles";
 
 export interface AppearanceOptionsProps extends InspectorSectionProps {
@@ -89,6 +97,13 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
   const currentCursor = (getValue?.("appearance.cursor") as typeof propCursor) ?? propCursor;
   const currentPe = (getValue?.("appearance.pointerEvents") as typeof propPe) ?? propPe;
 
+  // corner smoothing and style (Phase 107): rectangles, polygons and stars
+  const shaped = !!layer && isPropertyLegalFor("shape.cornerSmoothing", layer.archetype);
+  const smoothingRaw = getValue?.("shape.cornerSmoothing");
+  const smoothing = typeof smoothingRaw === "number" && Number.isFinite(smoothingRaw) ? smoothingRaw : 0;
+  const styleRaw = getValue?.("shape.cornerStyle");
+  const cornerStyle: CornerStyleValue = CORNER_STYLE_OPTIONS.some((o) => o.value === styleRaw) ? (styleRaw as CornerStyleValue) : "round";
+
   const tl = currentTl;
   const tr = currentTr;
   const br = currentBr;
@@ -155,6 +170,33 @@ export const AppearanceOptions: React.FC<AppearanceOptionsProps> = ({
             />
           </OptionGrid4>
         </OptionGridLabel>
+        {shaped ? (
+          <>
+            <OptionRow label="Style">
+              <Select
+                size="sm"
+                aria-label="Corner style"
+                value={cornerStyle}
+                options={CORNER_STYLE_OPTIONS}
+                onChange={(v) => onUpdateProp?.("shape.cornerStyle", v)}
+                className="ll:w-full"
+              />
+            </OptionRow>
+            <OptionRow label="Smoothing">
+              <NumberField
+                size="sm"
+                aria-label="Corner smoothing"
+                value={Math.round(smoothing * 100)}
+                min={0}
+                max={100}
+                suffix="%"
+                disabled={cornerStyle !== "round"}
+                title={cornerStyle !== "round" ? "Smoothing applies to round corners" : "60% is the iOS look"}
+                onChange={(v) => onUpdateProp?.("shape.cornerSmoothing", Math.min(1, Math.max(0, v / 100)))}
+              />
+            </OptionRow>
+          </>
+        ) : null}
       </OptionGroup>
 
       {/* Group 2: Blend mode, Cursor, Pointer events */}

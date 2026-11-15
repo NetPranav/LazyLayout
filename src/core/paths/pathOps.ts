@@ -9,7 +9,8 @@
  * FigCraft uses the `linesweeper` sweep-line library (`crates/pathops/src/lib.rs`). We keep the `polygon-clipping`
  * library Phase 40 already uses: curves are flattened (`geometry/measure.ts`, 0.05 px), polygons are combined, and a
  * non-zero path whose rings don't all turn the same way is resolved face by face by its winding number, so a ring
- * drawn as an outer contour and a reversed inner one stays a ring. Results are polygons (straight segments).
+ * drawn as an outer contour and a reversed inner one stays a ring. The polygons are then turned back into pieces of
+ * the input curves (`curveRefit.ts`, Phase 103), so results keep curves as curves.
  *
  * Behaviour translated from FigCraft (`crates/pathops/src/lib.rs`), commit 6ea44e9. MIT, Copyright (c) 2026
  * ArtCraft Team and the FigCraft contributors. See THIRD_PARTY_NOTICES.md.
@@ -19,6 +20,7 @@
 import polygonClipping from "polygon-clipping";
 import { BezPath } from "../geometry/bezpath";
 import { MAX_SAMPLES, polylines } from "../geometry/measure";
+import { refitCurves } from "./curveRefit";
 
 type Ring = [number, number][];
 type Polygon = Ring[];
@@ -29,6 +31,43 @@ export type PathBoolOp = "union" | "subtract" | "intersect" | "exclude";
 
 /** Booleans flatten curves finer than drawing does, so a result's edges sit within 0.002 px of the curves they came from. */
 export const BOOLEAN_TOL = 0.002;
+
+/**
+ * The polygons a result was made from, kept by the result path's identity. A result used again (a face merged with its
+ * neighbour, a boolean of a boolean) is then combined as those exact polygons: flattening its curves afresh would put
+ * the points of a shared edge in slightly different places on each side, and the clipper fails on such near-misses.
+ * A result path is not changed in place after it is returned.
+ */
+const polygonsOf = new WeakMap<BezPath, Multi>();
+const curved = (region: Multi, inputs: readonly BezPath[]): BezPath => {
+  const out = refitCurves(region, inputs);
+  polygonsOf.set(out, region);
+  return out;
+};
+
+/** Coordinates snapped to a grid of `1 / k` px. */
+const snapped = (m: Multi, k: number): Multi => m.map((poly) => poly.map((ring) => ring.map(([x, y]) => [Math.round(x * k) / k, Math.round(y * k) / k] as [number, number])));
+
+/**
+ * Runs a clipper operation. The clipper can fail on edges that nearly coincide; when it does, the inputs are snapped
+ * to a fine grid (1/1024 px, then 1/64 px), which makes near-misses exact, and it is tried again.
+ */
+function clip(op: (first: Multi, ...rest: Multi[]) => Multi, geoms: readonly Multi[]): Multi {
+  const [first, ...rest] = geoms;
+  try {
+    return op(first, ...rest);
+  } catch {
+    for (const k of [1024, 64]) {
+      try {
+        const [f, ...r] = geoms.map((g) => snapped(g, k));
+        return op(f, ...r);
+      } catch {
+        // try the coarser grid
+      }
+    }
+    throw new Error("PATH_BOOLEAN_FAILED: the shapes could not be combined");
+  }
+}
 
 /** The closed rings of a path: each subpath flattened and closed (open ones are closed by a straight line). */
 export function pathRings(path: BezPath): Ring[] {
@@ -122,6 +161,8 @@ function overlay(rings: readonly Ring[]): Multi {
 
 /** The region a path fills under its fill rule, as plain polygons. */
 export function pathRegion(path: BezPath, rule: FillRule): Multi {
+  const made = polygonsOf.get(path);
+  if (made) return made;
   const rings = pathRings(path);
   if (rings.length === 0) return [];
   if (rule === "evenodd") return rings.length === 1 ? asPolys(rings) : polygonClipping.xor(...(asPolys(rings).map((p) => [p]) as [Multi, ...Multi[]]));
@@ -150,31 +191,49 @@ export function regionToPath(region: Multi): BezPath {
   return out;
 }
 
-/** `a op b`, each read with its fill rule. The result fills the same under either rule. */
-export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: FillRule = "nonzero", ruleB: FillRule = "nonzero"): BezPath {
-  const ra = pathRegion(a, ruleA);
-  const rb = pathRegion(b, ruleB);
-  let out: Multi;
-  switch (op) {
-    case "union":
-      out = ra.length && rb.length ? polygonClipping.union(ra, rb) : ra.length ? ra : rb;
-      break;
-    case "intersect":
-      out = ra.length && rb.length ? polygonClipping.intersection(ra, rb) : [];
-      break;
-    case "subtract":
-      out = ra.length && rb.length ? polygonClipping.difference(ra, rb) : ra;
-      break;
-    case "exclude":
-      out = ra.length && rb.length ? polygonClipping.xor(ra, rb) : ra.length ? ra : rb;
-      break;
+/** The polygons a path fills (see `pathRegion`). */
+export type Region = Multi;
+
+/** Several regions as one: all of them united, intersected, or combined by exclusive or. */
+export function mergeRegions(how: "union" | "intersect" | "exclude", regions: readonly Region[]): Region {
+  if (regions.length === 0) return [];
+  if (how === "intersect") {
+    if (regions.some((r) => r.length === 0)) return [];
+    return regions.length === 1 ? regions[0] : clip(polygonClipping.intersection, regions);
   }
-  return regionToPath(out);
+  const full = regions.filter((r) => r.length > 0);
+  if (full.length <= 1) return full[0] ?? [];
+  return clip(how === "union" ? polygonClipping.union : polygonClipping.xor, full);
 }
 
-/** A path's fill as plain, non-overlapping polygons (FigCraft `simplify`). */
+/** `a op b` on regions. */
+export function combineRegions(a: Region, b: Region, op: PathBoolOp): Region {
+  switch (op) {
+    case "union":
+      return a.length && b.length ? clip(polygonClipping.union, [a, b]) : a.length ? a : b;
+    case "intersect":
+      return a.length && b.length ? clip(polygonClipping.intersection, [a, b]) : [];
+    case "subtract":
+      return a.length && b.length ? clip(polygonClipping.difference, [a, b]) : a;
+    case "exclude":
+      return a.length && b.length ? clip(polygonClipping.xor, [a, b]) : a.length ? a : b;
+  }
+}
+
+/** `a op b`, each read with its fill rule. The result fills the same under either rule. */
+export function booleanPaths(a: BezPath, b: BezPath, op: PathBoolOp, ruleA: FillRule = "nonzero", ruleB: FillRule = "nonzero"): BezPath {
+  const out = combineRegions(pathRegion(a, ruleA), pathRegion(b, ruleB), op);
+  return curved(out, [a, b]);
+}
+
+/** A path's separate pieces: each connected area (an outline with its holes) as a path of its own. */
+export function piecesOf(path: BezPath, rule: FillRule = "nonzero"): BezPath[] {
+  return pathRegion(path, rule).map((poly) => curved([poly], [path]));
+}
+
+/** A path's fill as plain, non-overlapping shapes (FigCraft `simplify`). */
 export function simplifyPath(path: BezPath, rule: FillRule = "nonzero"): BezPath {
-  return regionToPath(pathRegion(path, rule));
+  return curved(pathRegion(path, rule), [path]);
 }
 
 /** One face of an arrangement: a connected area that the same set of inputs covers. */
@@ -198,6 +257,7 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
   if (shapes.length > MAX_ARRANGEMENT_INPUTS) return null;
   if (shapes.some((s) => polylines(s.path) === null)) return null;
   // every input is reduced to the plain polygons it fills first, so self-overlaps can't make faces overlap
+  const inputs = shapes.map((s) => s.path);
   const regions = shapes.map((s) => pathRegion(s.path, s.evenOdd ? "evenodd" : "nonzero"));
   const rings: Ring[] = regions.flatMap((m) => m.flatMap((poly) => poly));
   if (rings.length === 0) return [];
@@ -218,7 +278,7 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
   for (const g of [...groups.values()].sort((a, b) => a.cover.join(",").localeCompare(b.cover.join(",")))) {
     const merged = g.pieces.length === 1 ? g.pieces : polygonClipping.union(...(g.pieces.map((p) => [p]) as [Multi, ...Multi[]]));
     for (const poly of merged) {
-      out.push({ path: regionToPath([poly]), cover: g.cover });
+      out.push({ path: curved([poly], inputs), cover: g.cover });
       if (out.length >= MAX_FACES) return out;
     }
   }
@@ -229,5 +289,5 @@ export function arrangementFaces(shapes: readonly { path: BezPath; evenOdd?: boo
 export function unionFaces(faces: readonly BezPath[]): BezPath {
   const regions = faces.map((f) => pathRegion(f, "nonzero")).filter((m) => m.length > 0);
   if (regions.length === 0) return new BezPath();
-  return regionToPath(regions.length === 1 ? regions[0] : polygonClipping.union(...(regions as [Multi, ...Multi[]])));
+  return curved(mergeRegions("union", regions), faces);
 }

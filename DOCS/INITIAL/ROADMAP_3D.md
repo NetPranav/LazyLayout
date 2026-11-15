@@ -1,11 +1,11 @@
 # LazyLayout — 3D Engine Roadmap (Blender for the web builder)
 
-**Version:** 3D-1.1 (2026-11-13) · **Owner:** Lane A (proposed; see §8) · **Status:** In progress. Takes priority over the main roadmap's remaining order (owner, 2026-11-11). **Re-ordered on 2026-11-13 around four cases (§0a).**
+**Version:** 3D-1.1 (2026-11-13) · **Owner:** Lane A (proposed; see §8) · **Status:** In progress. **Since ROADMAP.md v5 (2026-11-14) the order of this work is the release plan in ROADMAP.md §2:** 3D-010 and 3D-191 – 3D-193 are in R1, M1 and M1+ are R3, 3D-158 is in R4, and everything else is in a Later theme. Until R3 is the active release, the 3D phases that are 🚧 are frozen. Re-ordered on 2026-11-13 around four cases (§0a).
 **Phases:** 227, numbered **3D-001 … 3D-227**: the original 190 plus **37 added on 2026-11-13** (3D-191 – 3D-227). **75** are deferred (⏸), the anime studio among them as a to-do. **24** of the original 190 are main-roadmap phases pulled in because the 3D work needs them. Each says where it came from (`Was: Main 173`), and the main roadmap's row points here.
 **Relationship to ROADMAP.md:**
 - This file replaces the main roadmap's Stage 6 (Phases 218–240) and takes over the 24 phases listed in §7.
 - Everything else in ROADMAP.md is unchanged: its laws, Definition of Done and lane rules apply here too.
-- A phase is ✅ when its **Done when** is met by tests that were run **and** it is on `main` (the owner's rule of 2026-11-12: do not wait for CI). Anything the Done-when names that was not run stays in the phase's *Status check* line and keeps it 🚧.
+- A phase is ✅ when its **Done when** is met by tests that were run **and** it is on `main` (the owner's rule of 2026-11-12: do not wait for CI). **Withdrawn by ROADMAP.md v5 (§4, item 2):** CI runs again, so a phase is ✅ only when its gate passes in CI on `main`. Anything the Done-when names that was not run stays in the phase's *Status check* line and keeps it 🚧.
 
 > **Why a separate roadmap.** A page builder that wants the best websites on the market needs real 3D: objects that turn, light that bounces, cloth that inflates, characters that look at the cursor. Blender shows how to make that powerful. This roadmap brings in Blender's ideas a website needs, makes them simple enough to use in 8 steps, and ships them to a fast exported site.
 
@@ -38,6 +38,8 @@ M2, M3 and M4 keep their numbers. The phases marked ⏸ in §6 are deferred, and
 ---
 
 ## 0a. Direction of 2026-11-13: four cases, one order
+
+> **v5 (2026-11-14):** the build order in this section is replaced by the release plan in ROADMAP.md §2. The four cases and the owner's decisions below stand.
 
 The project owner named four things the studio must make. Everything is ordered by them.
 

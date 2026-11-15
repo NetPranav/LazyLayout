@@ -1,9 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useContext, useMemo } from "react";
+import { cameraOf } from "./geometry";
 import type { Layer } from "../document/schema";
 import { getLayerGeometry } from "../document/properties";
 import { isMeshConvex, meshInLayer, meshTiles } from "../geometry/meshWarp";
 import { MAX_RENDERED_LAYERS, MAX_TREE_DEPTH } from "./limits";
 import { RENDER_DEFINITIONS } from "./definitions";
+import { LayersContext, SubtreeContext } from "./layersContext";
+import { ModifiedShape } from "./archetypes/Svg";
+import { isModified } from "../editing/layerOutline";
 import { resolveProps } from "./resolve";
 import type { RenderContext } from "./types";
 import { EffectDefs, effectEntries } from "./effectsRender";
@@ -67,9 +71,13 @@ interface RenderLayerProps {
   root?: boolean;
 }
 
+/** Draws a layer from a set of layers, for a live fill (Phase 116; see `SubtreeContext`). */
+const drawSubtree = (layerId: string, layers: Record<string, Layer>, ctx: RenderContext) => <RenderLayer layerId={layerId} layers={layers} ctx={ctx} root />;
+
 /** Draws one layer and its children through the archetype's render definition. */
 export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx = {}, plan, root }) => {
   const own = useMemo(() => (plan ? null : selectRenderable(layers, [layerId])), [plan, layers, layerId]);
+  const outerSubtree = useContext(SubtreeContext);
   const permitted = plan ?? own!;
   const stored = layers[layerId];
   const childIds = permitted.get(layerId);
@@ -94,10 +102,12 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
   const mesh = meshInLayer(resolved.get("transform.mesh"), [g.frame.x, g.frame.y]);
   const isMeshed = mesh !== null && isMeshConvex(mesh) && g.frame.width > 0 && g.frame.height > 0 && !ctx.inMeshTile;
 
-  const Definition = RENDER_DEFINITIONS[layer.archetype];
+  // a layer whose modifier stack is on draws the stack's result (Phase 109)
+  const Definition = isModified(layer) ? ModifiedShape : RENDER_DEFINITIONS[layer.archetype];
   const isFlexContainer = layer.archetype === "container" || layer.archetype === "form";
   const childDirection = isFlexContainer && resolved.str("layout.display", "flex") === "grid" ? "grid" : isFlexContainer && resolved.str("layout.flexDirection", "column") === "row" ? "row" : "column";
-  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined };
+  const camera = cameraOf(resolved);
+  const childCtx: RenderContext = { ...ctx, parentDirection: childDirection, layers, stackZ: undefined, parentCamera: camera };
   const reverseZ = resolved.bool("layout.reverseZ", false);
 
   if (isMeshed) {
@@ -172,10 +182,14 @@ export const RenderLayer: React.FC<RenderLayerProps> = ({ layerId, layers, ctx =
     );
   const effectDefs = (root || !plan) && <EffectDefs entries={effectEntries(layers, subtreeOf(permitted, layerId))} />;
   const main = (
-    <Definition layer={layer} resolved={resolved} ctx={definitionCtx}>
-      {kids}
-      {effectDefs}
-    </Definition>
+    <LayersContext.Provider value={layers}>
+      <SubtreeContext.Provider value={{ draw: drawSubtree, ctx: definitionCtx, inside: outerSubtree?.inside ?? [] }}>
+        <Definition layer={layer} resolved={resolved} ctx={definitionCtx}>
+          {kids}
+          {effectDefs}
+        </Definition>
+      </SubtreeContext.Provider>
+    </LayersContext.Provider>
   );
 
   // Repeater, cloner and effector (Design track D8, D9, D10): copies of an absolutely placed layer, each in a zero-size wrapper at

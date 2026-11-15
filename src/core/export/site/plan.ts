@@ -233,6 +233,11 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
       baseRules.push({ selector: `.${cls}`, decls: n.style });
     });
     blocks.push({ wrapper: null, rules: baseRules });
+    // Snap scrolling (Design track D11): the page's `scroll-snap-type` belongs to the scrolling element, which is the document
+    if (kind === "page") {
+      const snapType = customDeclaration(layers[rootId]?.properties[CUSTOM_STYLE_PATH], "scroll-snap-type");
+      if (snapType) blocks.push({ wrapper: null, rules: [{ selector: "html", decls: [["scroll-snap-type", snapType]] }] });
+    }
 
     const state = new Map<string, Decl[] | null>();
     for (const [k, v] of baseView.rendering.styles) state.set(k, v);
@@ -335,6 +340,7 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
     const drivenLayerIds = exportableProps(doc).layerIds;
     const viewLayerIds = viewLayerIdsOf(exportedDrivers);
     const liveEffectorIds = new Set(exportableEffectors(doc).map((e) => e.layer));
+    const scrollLayerIds = exportableScrollClips(doc).layerIds;
     const nodeOfLayer = new Map<string, ENode>();
     const finalize = (nodes: ENode[]): ENode[] =>
       nodes.map((n) => {
@@ -352,6 +358,13 @@ export function buildPlan(source: MotionDocument, options: PlanOptions & { compo
         if (layerId && drivenLayerIds.has(layerId)) out.attrs["data-ll"] = layerId;
         // a layer a driver reads the scroll position of (view) is found by its box
         if (layerId && viewLayerIds.has(layerId)) out.attrs["data-ll-view"] = layerId;
+        // a text with motion carries its words and settings for the script to compute from
+        if (layerId && layers[layerId]?.archetype === "text") {
+          const cfg = textFxOf((p) => layers[layerId].properties[p]);
+          if (cfg) out.attrs["data-ll-fx"] = JSON.stringify({ mode: cfg.mode, text: String(layers[layerId].properties["content.text"] ?? ""), seed: cfg.seed, caret: cfg.caret, words: cfg.words, decimals: cfg.decimals });
+        }
+        // a layer a scroll animation moves is found by the scroll script
+        if (layerId && scrollLayerIds.has(layerId)) out.attrs["data-ll-scroll"] = layerId;
         // and so is each copy of a layer whose copies react to the pointer or the scroll
         if (copyOf && copyIndex && liveEffectorIds.has(copyOf)) out.attrs["data-ll-copy"] = `${copyOf}:${copyIndex}`;
         if (cls) out.attrs.class = cls;
@@ -448,6 +461,9 @@ function applyTailwind(trees: ENode[][] | ENode[], blocks: CssBlock[]): void {
 import { fontPlan, googleFontsUrl } from "../../fonts/families";
 import { EDITOR_ONLY_ATTRIBUTES } from "../../document/editorOnly";
 import { exportableDrivers, exportableEffectors, exportableProps, viewLayerIdsOf } from "../runtime/drivers";
+import { exportableScrollClips } from "../runtime/scrollClips";
+import { textFxOf } from "../../text/textFx";
+import { CUSTOM_STYLE_PATH, customDeclaration } from "../../style/styleCode";
 
 function finishFonts(doc: MotionDocument, pages: PagePlan[], layers: Record<string, Layer>, uploads: { id: string; family: string; mime: string }[], siteAssets: Set<string>, warnings: string[], extraModes: string[], components: ComponentPlan[] = []): SitePlan {
   const display: FontDisplay = doc.fontDisplay ?? "swap";

@@ -11,6 +11,8 @@ import { documentStore } from "@/core/store/documentState";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { isScrollPosition } from "@/core/scroll/model";
 import { OptionRow } from "../options/OptionRow";
+import { ScrollSimulator } from "./ScrollSimulator";
+import { CUSTOM_STYLE_PATH, customDeclaration, withCustomDeclaration } from "@/core/style/styleCode";
 import type { InspectorSectionProps } from "../types";
 
 /**
@@ -33,8 +35,9 @@ const MODES = [
 
 const inputClass = "ll-dfield ll:w-full ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-transparent ll:focus:border-primary ll:font-mono ll:text-micro ll:text-primary ll:outline-none ll:placeholder:text-muted";
 
-export const ScrollSection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
+export const ScrollSection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, layer, getValue, onUpdateProp, className = "" }) => {
   const clips = useStore(documentStore, (s) => s.document.clips);
+  const allLayers = useStore(documentStore, (s) => s.document.layers);
   const [prop, setProp] = useState("transform.y");
   const [mode, setMode] = useState<"scrub" | "reveal">("scrub");
   const [from, setFrom] = useState(PROPS["transform.y"].from);
@@ -134,6 +137,30 @@ export const ScrollSection: React.FC<InspectorSectionProps> = ({ selectedId, isM
           {message}
         </p>
       )}
+      <OptionRow label="Snap">
+        <button
+          type="button"
+          aria-pressed={customDeclaration(getValue?.(CUSTOM_STYLE_PATH), "scroll-snap-align") === "start"}
+          aria-label="Snap the page to this layer"
+          title="While scrolling stops near it, the page settles with this layer's top at the top of the screen."
+          onClick={() => onUpdateProp?.(CUSTOM_STYLE_PATH, withCustomDeclaration(getValue?.(CUSTOM_STYLE_PATH), "scroll-snap-align", customDeclaration(getValue?.(CUSTOM_STYLE_PATH), "scroll-snap-align") === "start" ? null : "start"))}
+          className="ll:h-7 ll:px-2 ll:text-small ll:rounded-sm ll:border ll:cursor-pointer ll:outline-none ll:bg-surface-bar ll:text-primary ll:border-transparent"
+        >
+          {customDeclaration(getValue?.(CUSTOM_STYLE_PATH), "scroll-snap-align") === "start" ? "On" : "Off"}
+        </button>
+      </OptionRow>
+      {layer?.parentId && allLayers[layer.parentId]?.parentId === null && (
+        <OptionRow label="Page snap">
+          <div className="ll:flex ll:gap-1.5">
+            {(["none", "proximity", "mandatory"] as const).map((m) => (
+              <Button key={m} size="sm" aria-label={`Page snap ${m}`} onClick={() => onUpdateProp?.(CUSTOM_STYLE_PATH, withCustomDeclaration(getValue?.(CUSTOM_STYLE_PATH), "scroll-snap-type", m === "none" ? null : `y ${m}`))}>
+                {m === "none" ? "Off" : m === "proximity" ? "Loose" : "Strict"}
+              </Button>
+            ))}
+          </div>
+        </OptionRow>
+      )}
+      <ScrollSimulator layerId={selectedId} />
     </div>
   );
 };
