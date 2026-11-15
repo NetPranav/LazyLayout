@@ -1,0 +1,1 @@
+- [Lane E · Phase 207 · Inverse kinematics] Implemented analytical 2-bone Law-of-Cosines IK and multi-bone FABRIK solver with bend flip, optional stretch, strict per-bone angle limits, and FK/IK blend in `src/core/rig/ikSolver.ts`.

@@ -509,21 +509,21 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 203 | Rig model: bones & skins → *ROADMAP_3D 3D-117 (deferred)* | 72, 73, 185, 202 | — (new in v4.1) | 5 | 📋 |
-| 204 | Bone tool & posing → *ROADMAP_3D 3D-118 (deferred)* | 203 | — (new in v4.1) | 5 | 📋 |
-| 205 | Bones on the timeline → *ROADMAP_3D 3D-119 (deferred)* | 66, 67, 71, 204 | — (new in v4.1) | 5 | 📋 |
-| 206 | Mesh deformation & weights → *ROADMAP_3D 3D-120 (deferred)* | 205 | — (new in v4.1) | 5 | 📋 |
-| 207 | Inverse kinematics → *ROADMAP_3D 3D-121 (deferred)* | 206 | — (new in v4.1) | 5 | 📋 |
-| 208 | Constraints & secondary motion → *ROADMAP_3D 3D-122 (deferred)* | 207 | — (new in v4.1) | 5 | 📋 |
-| 209 | Puppet pins | 206 | — (new in v4.1) | 5 | 📋 |
-| 210 | Rigs that react | 135, 208, 209 | — (new in v4.1) | 5 | 📋 |
-| 211 | Character states & blend trees | 151, 210 | — (new in v4.1) | 5 | 📋 |
-| 212 | Auto-rig & pose sliders | 211 | — (new in v4.1) | 5 | 📋 |
-| 213 | Faces: expressions, blinks & lip sync | 99, 212 | — (new in v4.1) | 5 | 📋 |
-| 214 | Face & pose tracking as an input | 135, 213 | — (new in v4.1) | 5 | 📋 |
-| 215 | Rig export runtime | 197, 214 | — (new in v4.1) | 5 | 📋 |
-| 216 | Rig library & recipes | 215 | — (new in v4.1) | 5 | 📋 |
-| 217 | Stage 5 gate: the character journey | 203–216 | — (new in v4.1) | 5 | 📋 |
+| 203 | Rig model: bones & skins → *ROADMAP_3D 3D-117 (deferred)* | 72, 73, 185, 202 | — (new in v4.1) | 5 | 🚧 |
+| 204 | Bone tool & posing → *ROADMAP_3D 3D-118 (deferred)* | 203 | — (new in v4.1) | 5 | 🚧 |
+| 205 | Bones on the timeline → *ROADMAP_3D 3D-119 (deferred)* | 66, 67, 71, 204 | — (new in v4.1) | 5 | 🚧 |
+| 206 | Mesh deformation & weights → *ROADMAP_3D 3D-120 (deferred)* | 205 | — (new in v4.1) | 5 | 🚧 |
+| 207 | Inverse kinematics → *ROADMAP_3D 3D-121 (deferred)* | 206 | — (new in v4.1) | 5 | 🚧 |
+| 208 | Constraints & secondary motion → *ROADMAP_3D 3D-122 (deferred)* | 207 | — (new in v4.1) | 5 | 🚧 |
+| 209 | Puppet pins | 206 | — (new in v4.1) | 5 | 🚧 |
+| 210 | Rigs that react | 135, 208, 209 | — (new in v4.1) | 5 | 🚧 |
+| 211 | Character states & blend trees | 151, 210 | — (new in v4.1) | 5 | 🚧 |
+| 212 | Auto-rig & pose sliders | 211 | — (new in v4.1) | 5 | 🚧 |
+| 213 | Faces: expressions, blinks & lip sync | 99, 212 | — (new in v4.1) | 5 | 🚧 |
+| 214 | Face & pose tracking as an input | 135, 213 | — (new in v4.1) | 5 | 🚧 |
+| 215 | Rig export runtime | 197, 214 | — (new in v4.1) | 5 | 🚧 |
+| 216 | Rig library & recipes | 215 | — (new in v4.1) | 5 | 🚧 |
+| 217 | Stage 5 gate: the character journey | 203–216 | — (new in v4.1) | 5 | 🚧 |
 
 **Stage 6 · 3D (Phases 218–240)**
 
@@ -3075,106 +3075,106 @@ These three things work in the core and in the legacy editor, but the new editor
 > Order inside the stage: model and posing (203–205) → deformation, IK and constraints (206–209) → reactive rigs and states (210–211) → auto-rig, faces and tracking (212–214) → export, library and the gate (215–217).
 
 ### Phase 203 · Rig model: bones & skins
-**Needs:** 72, 73, 185, 202 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Bones (length, rest pose, parent) in the document, with layers bound to bones rigidly or through mesh weights; claim the schema version in `CLAIMS.md`. Evaluated in the kernel (Law 3) and deterministic. Decision record 0017 (rigging): the skinning maths and how vectors and images deform.
+**Needs:** 72, 73, 185, 202 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Bones (length, rest pose, parent) in the document, with layers bound to bones rigidly or through mesh weights; claim the schema version in `CLAIMS.md`. Evaluated in the kernel (Law 3) and deterministic. Decision record 0017 (rigging): the skinning maths and how vectors and images deform.
 
 **You'll see:** nothing new yet; Phase 204 adds the bone tool (model work).
 **Done when:** 20 rig fixtures evaluate to hand-computed poses.
 
 ### Phase 204 · Bone tool & posing
-**Needs:** 203 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Draw bone chains on the canvas, attach layers, rotate bones to pose (forward kinematics), switch to the rest pose, and show or hide the bone overlay.
+**Needs:** 203 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Draw bone chains on the canvas, attach layers, rotate bones to pose (forward kinematics), switch to the rest pose, and show or hide the bone overlay.
 
 **You'll see:** draw an arm with 3 bones and pose it.
 **Done when:** a 15-step posing journey gives exact transforms and one undo step per gesture.
 
 ### Phase 205 · Bones on the timeline
-**Needs:** 66, 67, 71, 204 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Keyframe poses, with onion skin for poses, copy and mirror poses, and a pose library.
+**Needs:** 66, 67, 71, 204 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Keyframe poses, with onion skin for poses, copy and mirror poses, and a pose library.
 
 **You'll see:** a 3-pose wave keyframed in a few clicks.
 **Done when:** keyed poses match `evaluate()` at 10 times; the export matches.
 
 ### Phase 206 · Mesh deformation & weights
-**Needs:** 205 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Turn an image or a vector into a deformable mesh (automatic triangulation with a density control), bind it to bones with automatic weights, paint weights with a brush and smooth them. Vectors deform as paths (crisp); images deform through textures.
+**Needs:** 205 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Turn an image or a vector into a deformable mesh (automatic triangulation with a density control), bind it to bones with automatic weights, paint weights with a brush and smooth them. Vectors deform as paths (crisp); images deform through textures.
 
 **You'll see:** a character's body bends smoothly when its spine bone turns.
 **Done when:** deformed vertices match references within 0.5 px; weights always add up to 1.
 
 ### Phase 207 · Inverse kinematics
-**Needs:** 206 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] IK chains (two-bone and multi-bone), targets you drag, bend direction, stretch, and angle limits per bone; switch and blend between FK and IK.
+**Needs:** 206 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] IK chains (two-bone and multi-bone), targets you drag, bend direction, stretch, and angle limits per bone; switch and blend between FK and IK.
 
 **You'll see:** drag a hand and the whole arm follows naturally.
 **Done when:** IK solutions match references at 50 target positions; limits are never exceeded.
 
 ### Phase 208 · Constraints & secondary motion
-**Needs:** 207 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Look at (with angle limits and smoothing), copy position, rotation or scale, stay at a distance, follow a path, limit rotation, and jiggle: springs that make hair, ears and antennae wobble after a move.
+**Needs:** 207 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Look at (with angle limits and smoothing), copy position, rotation or scale, stay at a distance, follow a path, limit rotation, and jiggle: springs that make hair, ears and antennae wobble after a move.
 
 **You'll see:** eyes and a head that turn towards a target within natural limits, and ears that wobble.
 **Done when:** constraints match references at tape checkpoints; jiggle replays deterministically.
 
 ### Phase 209 · Puppet pins
-**Needs:** 206 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] After Effects-style puppet pins for quick deformation without bones: drop pins on any layer, drag and keyframe them, mark areas that stay stiff, and set overlap order.
+**Needs:** 206 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] After Effects-style puppet pins for quick deformation without bones: drop pins on any layer, drag and keyframe them, mark areas that stay stiff, and set overlap order.
 
 **You'll see:** make a flag wave by dragging three pins.
 **Done when:** pin deformations match references; keyframed pins match `evaluate()`.
 
 ### Phase 210 · Rigs that react
-**Needs:** 135, 208, 209 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Bind IK targets, look-at targets and bone rotations to inputs: the head and eyes follow the cursor, the body leans with scroll speed, the character walks with the arrow keys and reacts to clicks. Simple face: "Follow the cursor with: eyes · head · whole body".
+**Needs:** 135, 208, 209 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Bind IK targets, look-at targets and bone rotations to inputs: the head and eyes follow the cursor, the body leans with scroll speed, the character walks with the arrow keys and reacts to clicks. Simple face: "Follow the cursor with: eyes · head · whole body".
 
 **You'll see:** a character whose head follows the cursor while its neck bends.
 **Done when:** 5 reactive rigs match tapes at checkpoints in 3 browsers; keyboard equivalents pass.
 
 ### Phase 211 · Character states & blend trees
-**Needs:** 151, 210 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Animation states for rigs (idle, walk, run, jump) with 1D and 2D blends by inputs such as speed and direction, crossfaded transitions, and layered states (wave with the arms while the legs walk).
+**Needs:** 151, 210 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Animation states for rigs (idle, walk, run, jump) with 1D and 2D blends by inputs such as speed and direction, crossfaded transitions, and layered states (wave with the arms while the legs walk).
 
 **You'll see:** a character that blends from walking to running as you hold the arrow key longer.
 **Done when:** a 5-state machine driven by a tape matches hand-computed poses.
 
 ### Phase 212 · Auto-rig & pose sliders
-**Needs:** 211 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] One click "Rig this character" for common shapes (person, animal, face, simple mascots), using layer names and geometry; pose presets (happy, sad, wave, point) as sliders that blend.
+**Needs:** 211 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] One click "Rig this character" for common shapes (person, animal, face, simple mascots), using layer names and geometry; pose presets (happy, sad, wave, point) as sliders that blend.
 
 **You'll see:** a ready rig and expression sliders on an imported illustration.
 **Done when:** auto-rig succeeds on 8 of 10 fixture illustrations without manual fixes.
 
 ### Phase 213 · Faces: expressions, blinks & lip sync
-**Needs:** 99, 212 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Face rigs with blinks, brows and mouth shapes; mouth shapes from an audio track's levels or a transcript; automatic blinking and breathing for idle life.
+**Needs:** 99, 212 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Face rigs with blinks, brows and mouth shapes; mouth shapes from an audio track's levels or a transcript; automatic blinking and breathing for idle life.
 
 **You'll see:** a character that blinks on its own and moves its mouth with a voice line.
 **Done when:** mouth shapes follow the reference timing within one frame on 3 voice clips.
 
 ### Phase 214 · Face & pose tracking as an input
-**Needs:** 135, 213 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Webcam face and body tracking on the device (an ML model with its licence recorded, Law 7) as inputs: head turn, blinks, mouth open, hand position. They drive rigs live or record as tapes. Video never leaves the device.
+**Needs:** 135, 213 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Webcam face and body tracking on the device (an ML model with its licence recorded, Law 7) as inputs: head turn, blinks, mouth open, hand position. They drive rigs live or record as tapes. Video never leaves the device.
 
 **You'll see:** your character copies your head movements through the webcam.
 **Done when:** recorded tracking tapes replay identically; with the camera denied, the rig falls back to the cursor.
 
 ### Phase 215 · Rig export runtime
-**Needs:** 197, 214 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] A `rig` runtime module (skinning for SVG paths, canvas and WebGL), copied only when used; parity with the editor under tapes; Lottie export of bone animation where Lottie can express it.
+**Needs:** 197, 214 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] A `rig` runtime module (skinning for SVG paths, canvas and WebGL), copied only when used; parity with the editor under tapes; Lottie export of bone animation where Lottie can express it.
 
 **You'll see:** export a rigged, reactive character and it behaves the same on your own site.
 **Done when:** 5 rigged references pass tape parity in the Next, Vite and HTML exports.
 
 ### Phase 216 · Rig library & recipes
-**Needs:** 215 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Original rigged characters and parts (eyes, faces, hands, mascots) as open recipes with provenance.
+**Needs:** 215 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Original rigged characters and parts (eyes, faces, hands, mascots) as open recipes with provenance.
 
 **You'll see:** drop in a ready mascot and make it look at the cursor in one click.
 **Done when:** every library rig passes tape parity and its tier budget.
 
 ### Phase 217 · Stage 5 gate: the character journey
-**Needs:** 203–216 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Import an illustration, auto-rig it, fix the weights, give it a head that follows the cursor and blinks, a walk and run on the arrow keys, lip sync to a voice line, then export to Next and Vite with parity checked.
+**Needs:** 203–216 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Import an illustration, auto-rig it, fix the weights, give it a head that follows the cursor and blinks, a walk and run on the arrow keys, lip sync to a voice line, then export to Next and Vite with parity checked.
 
 **You'll see:** Rive-style characters inside a real website, made without code.
 **Done when:** the journey passes in CI in 3 browsers, plus one recorded manual run.

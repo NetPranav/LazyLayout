@@ -1,0 +1,1 @@
+- [Lane E · Phase 217 · Stage 5 gate: the character journey] Implemented the complete Stage 5 Character Gate runner (`src/core/rig/stage5CharacterGate.ts`), `/editor/rig-lab` interactive browser lab, and `tests/e2e/stage5-rig-e2e.spec.ts` Playwright E2E suite.

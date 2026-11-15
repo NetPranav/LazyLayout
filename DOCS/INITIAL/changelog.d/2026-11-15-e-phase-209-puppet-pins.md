@@ -1,0 +1,1 @@
+- [Lane E · Phase 209 · Puppet pins] Implemented free-form puppet pin weighting, stiff-area preservation, triangle overlap Z sorting, and keyframed pin evaluation in `src/core/rig/puppetPins.ts`.

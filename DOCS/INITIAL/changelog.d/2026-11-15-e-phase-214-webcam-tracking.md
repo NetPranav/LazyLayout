@@ -1,0 +1,1 @@
+- [Lane E · Phase 214 · Face & pose tracking as an input] Implemented pure on-device face/wrist landmark geometry tracking, deterministic tracking tape record/replay, and camera-denied cursor fallback in `src/core/rig/webcamFacePoseTracker.ts`.

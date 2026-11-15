@@ -28,7 +28,7 @@ Next free number: **0026** (0008 is the threat model and 0009 the render host; 0
 | 0023 | A | AI services and privacy: browser and server models, one gateway (ROADMAP_3D 3D-201) | |
 | 0024 | A | Photo to surface: proxy, depth, creases, text wrap (ROADMAP_3D 3D-209 – 3D-212) | |
 | 0025 | A | The anime pipeline: toon, ink, twos, smears, effects, shots (ROADMAP_3D 3D-216 – 3D-226) | |
-| 0017 | unassigned | Rigging and deformation (Phase 203) | |
+| 0017 | E | Rigging and deformation (Phase 203) | `0017-rigging-and-deformation.md` |
 | 0018 | A | Surface rendering: one shared WebGL2 context, drawn into each surface's 2D canvas (Phases S2–S7) | |
 | 0019 | A | 3D document model: shared data blocks (ROADMAP_3D 3D-007) | |
 | 0020 | A | Simulation and baking (ROADMAP_3D 3D-049) | |

@@ -1,0 +1,1 @@
+- [Lane E · Phase 208 · Constraints & secondary motion] Implemented bone constraints (lookAt, copyTransform, distance, pathFollow, rotationLimit) and deterministic fixed-step jiggle spring secondary motion in `src/core/rig/constraintsAndJiggle.ts`.

@@ -1,0 +1,1 @@
+- [Lane E · Phase 204 · Bone tool & posing] Implemented interactive Bone Tool canvas drawing, rigid layer binding, single-undo-step FK posing gestures, undo/redo, rest-pose reset, and bone overlay hit-testing in `src/core/rig/boneToolAndPosing.ts`.
