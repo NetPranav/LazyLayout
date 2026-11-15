@@ -417,7 +417,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 118 | Stroke depth: several strokes, gradients, alignment & markers | 35, 40 | — (new in v4.1) | 3 | 🚧 |
 | 119 | Variable-width strokes | 103, 118 | — (new in v4.1) | 3 | 🚧 |
 | 120 | Brushes & pen pressure | 39, 119 | — (new in v4.1) | 3 | 🚧 |
-| 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 📋 |
+| 121 | Layer effects II: glow, progressive blur, grain & frosted glass | 35, 114 | — (new in v4.1) | 3 | 🚧 |
 | 122 | Image adjustments & filters | 37 | — (new in v4.1) | 3 | 📋 |
 | 123 | Colour tools: palettes, harmony & contrast | 45 | — (new in v4.1) | 3 | 📋 |
 | 124 | Text on a path | 31, 40 | — (new in v4.1) | 3 | 📋 |
@@ -1715,11 +1715,45 @@ The document and World Environment have their own stores, After-track actions mo
 - The preview while drawing is a thin line.
 
 ### Phase 121 · Layer effects II: glow, progressive blur, grain & frosted glass
-**Needs:** 35, 114 · **Was:** — (new in v4.1) · **Status:** 📋
+**Needs:** 35, 114 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [ ] Inner and outer glow; progressive blur (a blur that fades in along a direction) on layers and on what is behind them; a grain overlay; and a frosted-glass preset (blur, tint, edge light). Real refraction comes with backdrop sampling in Stage 4.
 
 **You'll see:** a header that blurs the page behind it more and more towards its top edge.
 **Done when:** each effect matches its reference within 1% in 3 browsers; fallbacks draw where `backdrop-filter` is missing.
+
+**Status check (2026-11-15), 🚧:**
+
+**Before Lane C:**
+- The FigCraft port had the engine side, as one effect list (`paint.effects`): progressive layer and background blurs drawn as stepped backdrop bands, noise, texture and CSS glass.
+- The new editor's Effects rows showed only shadows and plain blurs.
+- There was no glow and no fallback where `backdrop-filter` is missing.
+
+**Built (Lane C):**
+- **Glows**: an outer or inner glow is a shadow with no offset, marked `glow`, so it draws exactly as a shadow does on the stage and in the export.
+- In the Effects rows:
+  - Outer glow, Inner glow (Colour, Size, Spread) and **Grain** (Strength, Size);
+  - a **Progressive** switch on layer and background blurs, with a start amount and a direction (stronger at the top, bottom, left or right);
+  - a **Frosted glass** preset, which makes a background blur, a light tint (unless the frame has a colour), an edge light (a thin inner glow) and a little grain.
+- The rows keep the effects they don't show (texture, glass, other noises).
+- **Fallback:** a frame that blurs its backdrop carries `data-backdrop-fallback` and a tint at least 85% opaque. An `@supports not (backdrop-filter …)` rule shows that tint, and hides the blur bands, where the browser can't blur.
+
+**Verified (`effectsII.test.ts`, 5 tests; `effectsModel.test.ts`, 1 test):**
+- Glows round-trip and draw as zero-offset shadows.
+- A progressive blur stronger at the top has 5 bands ending on the top edge.
+- Grain keeps other effects; frosted glass gives the four parts and keeps a frame's own colour.
+- The fallback tint and rule are rendered for backdrop blurs only.
+- The rows read back what they write.
+
+**In Chromium (`effects-ii.spec.ts`):**
+- Six references over a busy backdrop match between the canvas and the exported site (outer glow 0.02%, inner glow 0.00%, progressive background blur 0.00%, progressive layer blur 0.00%, grain 0.15%, frosted glass 0.00%; budget 1%).
+- The export carries the fallback rule.
+- In the inspector, a row becomes an outer glow, a background blur turns progressive (5 bands on the canvas), and the frosted-glass preset makes its rows.
+- The design-controls, FigCraft-port, Lane A issues and puffy-button specs and the canvas contract still pass (89).
+
+**Not done:**
+- The fallback is only on frames. Missing `backdrop-filter` can't be forced in Chromium, so the rule was checked for presence, not seen working.
+- Firefox and WebKit not run locally.
+- Real refraction waits for Stage 4.
 
 ### Phase 122 · Image adjustments & filters
 **Needs:** 37 · **Was:** — (new in v4.1) · **Status:** 📋
