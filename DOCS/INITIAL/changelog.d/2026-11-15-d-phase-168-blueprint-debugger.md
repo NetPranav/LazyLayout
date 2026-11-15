@@ -1,0 +1,1 @@
+- [Phase 168] Implemented Blueprint graph editor tools & Preview debugger (`src/core/nodescript/blueprintDebugger.ts`): pin-aware node search, comment boxes, reroute wire splitting, variables CRUD, collapse-to-function, bidirectional Simple rule conversion, wire pulses, breakpoints, pin watches, event log, and 25-step journey test (`PR #144`).

@@ -358,7 +358,7 @@ One row per phase, in execution order. Update the Status column together with th
 | 165 | Joints, ropes & chains | 164 | — (new in v4.1) | 4 | 🚧 |
 | 166 | Soft bodies & jelly | 109, 165 | — (new in v4.1) | 4 | 🚧 |
 | 167 | Simple rules editor | 164 | v3 73.1, 73.5, 73.6 | 4 | 🚧 |
-| 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 📋 |
+| 168 | Blueprint graph editor & debugger | 167 | v3 73.2, 73.3 | 4 | 🚧 |
 | 169 | Blueprint compiler & interaction parity | 168 | v3 74.2–74.4, 91.6 | 4 | 📋 |
 | 170 | Spawner | 169 | v3 89.4 | 4 | 📋 |
 | 171 | Sound design & haptics | 99, 169 | — (new in v4.1) | 4 | 📋 |
@@ -2219,8 +2219,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** 5 people each build "hover → background glows; click → confetti and the card flips" in < 3 minutes.
 
 ### Phase 168 · Blueprint graph editor & debugger
-**Needs:** 167 · **Was:** v3 73.2, 73.3 · **Status:** 📋
-- [ ] The Pro graph (reusing `BlueprintCanvas.tsx` after it meets Laws 8 and 9): pin-aware node search, comments, reroutes, collapse to function, variables panel. "Open as graph" from any Simple rule and back. Debugger in Preview: pulses on wires, breakpoints, watches, event log, step-through on the transport.
+**Needs:** 167 · **Was:** v3 73.2, 73.3 · **Status:** 🚧
+- [x] The Pro graph (reusing `BlueprintCanvas.tsx` after it meets Laws 8 and 9): pin-aware node search, comments, reroutes, collapse to function, variables panel. "Open as graph" from any Simple rule and back. Debugger in Preview: pulses on wires, breakpoints, watches, event log, step-through on the transport.
 
 **You'll see:** an Unreal-style graph for any interaction, with live execution pulses.
 **Done when:** a 25-step graph journey (create, wire, collapse, breakpoint, step) asserts the exact graph and trace.

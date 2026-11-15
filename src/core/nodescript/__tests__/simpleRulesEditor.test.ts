@@ -76,7 +76,7 @@ describe("Phase 167: Simple rules editor", () => {
       intensity: "medium",
       enabled: true,
     });
-    assert.equal(graph.nodes.length, 3);
+    assert.equal(Object.keys(graph.nodes).length, 3);
     assert.equal(graph.wires.length, 2);
   });
 });

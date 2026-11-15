@@ -365,6 +365,11 @@ export function createBlueprintRuntime(
           followWires("exec");
           break;
         }
+        case "interaction/reroute": {
+          followWires("exec");
+          followWires("out");
+          break;
+        }
         default: {
           // Record action emission (play, seek, reverse, burst, playSound, spawn, physics, etc.)
           const params = { ...(node.customParams ?? node.pinValues ?? {}) };
