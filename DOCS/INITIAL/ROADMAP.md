@@ -476,7 +476,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 172 | Scene rasteriser: any layer to pixels | 17, 19, 74, 170 | — (new in v4.1) | 4 | 🚧 |
 | 173 | GPU surface strategy & compositor → *ROADMAP_3D 3D-002* | 170 | v3 61.1, 61.3 | 4 | 🚧 |
 | 174 | Passes, render targets & GPU memory ledger → *ROADMAP_3D 3D-003* | 173 | v3 61.2, 61.5 | 4 | 🚧 |
-| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 📋 |
+| 175 | Layer textures, outlines & distance fields → *ROADMAP_3D 3D-028* | 172, 174 | — (new in v4.1) | 4 | 🚧 |
 | 176 | Surfaces in the editor & the first interactive background | 174 | v3 61.4, 19.1 | 4 | 📋 |
 | 177 | Shader graph → *ROADMAP_3D 3D-083 (deferred)* | 176, 175 | v3 62.1, 62.3 | 4 | 📋 |
 | 178 | Raw GLSL (Pro) & shader safety → *ROADMAP_3D 3D-084 (deferred)* | 177 | v3 62.2 | 4 | 📋 |
@@ -2849,8 +2849,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** mounting and unmounting a surface 100 times returns the ledger to 0 and the heap to within 2 MB.
 
 ### Phase 175 · Layer textures, outlines & distance fields
-**Needs:** 172, 174 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Any layer or group becomes a live GPU texture, an outline path (for effects that ride an edge) and a signed distance field (how far every pixel is from the shape). They update when the layer changes and count against the memory ledger (Phase 174).
+**Needs:** 172, 174 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Any layer or group becomes a live GPU texture, an outline path (for effects that ride an edge) and a signed distance field (how far every pixel is from the shape). They update when the layer changes and count against the memory ledger (Phase 174).
 
 **You'll see:** a debug view that shows any layer as a texture, an outline or a distance field.
 **Done when:** distance-field error < 0.5 px on 10 shapes; textures update within one frame of an edit; the ledger returns to 0 after unmount.
