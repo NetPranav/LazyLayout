@@ -494,7 +494,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 190 | Depth parallax by scroll and cursor → *Design track D14* | 129, 143, 189 | — (new in v4.1) | 4 | 🚧 |
 | 191 | Cursor & overlay layer | 187, 155, 180 | v3 66 | 4 | 🚧 |
 | 192 | Effect SDK: effects as data | 191 | v3 67 | 4 | 🚧 |
-| 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 📋 |
+| 193 | Library: interaction, backgrounds, cursors & distortion | 192 | v3 25.3 (waves 2, 5, 7, 8, 9) | 4 | 🚧 |
 | 194 | Library: micro-interactions, glass, light & deformation | 193 | — (new in v4.1) | 4 | 📋 |
 | 195 | Sandbox boundaries for untrusted code | 193 | v3 80.2 | 4 | 📋 |
 | 196 | Code components | 195 | v3 68 | 4 | 📋 |
@@ -2980,8 +2980,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** every library effect is a definition validated in CI with no per-effect code; a definition migration round-trips 100 fixtures.
 
 ### Phase 193 · Library: interaction, backgrounds, cursors & distortion
-**Needs:** 192 · **Was:** v3 25.3 (waves 2, 5, 7, 8, 9) · **Closes:** AUD-54 (library) · **Status:** 📋
-- [ ] Wave 2 interaction (8), Wave 5 backgrounds (7), Wave 7 interactive backgrounds (≥ 20, ≥ 15 pointer-reactive, ≥ 5 scroll-reactive), Wave 8 cursors (≥ 10), Wave 9 distortion (≥ 8). Original implementations with provenance; open recipes wherever the primitives can express them.
+**Needs:** 192 · **Was:** v3 25.3 (waves 2, 5, 7, 8, 9) · **Closes:** AUD-54 (library) · **Status:** 🚧
+- [x] Wave 2 interaction (8), Wave 5 backgrounds (7), Wave 7 interactive backgrounds (≥ 20, ≥ 15 pointer-reactive, ≥ 5 scroll-reactive), Wave 8 cursors (≥ 10), Wave 9 distortion (≥ 8). Original implementations with provenance; open recipes wherever the primitives can express them.
 
 **You'll see:** 50+ interactive effects ready to insert (80+ in the library with Stage 2's).
 **Done when:** each passes the Playground sweep, tape parity and its tier budget; a new user makes a background react to the cursor in < 2 minutes.
