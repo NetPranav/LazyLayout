@@ -154,6 +154,16 @@ export {
   type CharacterKeyframeStep,
 } from "./characterAnimator";
 export {
+  detectActiveMentionQuery,
+  filterMentionCandidates,
+  formatMentionToken,
+  getLayerMentionCandidates,
+  resolvePromptMentions,
+  type ActiveMentionQuery,
+  type LayerMentionCandidate,
+  type ResolvedPromptTargets,
+} from "./mentions";
+export {
   authorFromImageReference,
   classifySampledReferenceFrames,
   type ImageReferenceLayoutProposal,

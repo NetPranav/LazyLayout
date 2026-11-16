@@ -9,7 +9,8 @@ import { LeftPanelConnected } from "@/editor/panels/layers";
 import { Stage } from "@/editor/stage";
 import { TimelinePanel } from "@/editor/panels/timeline";
 import { CodePanel } from "@/editor/panels/code-view";
-import { documentStore, useLayers } from "@/core/store/useDocumentStore";
+import { documentStore, useDocument, useLayers } from "@/core/store/useDocumentStore";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { runCode } from "@/editor/panels/console";
 import { useProjectMetaStore } from "@/core/store/useProjectMetaStore";
 import { useCollabStore } from "@/core/store/useCollabStore";
@@ -70,6 +71,31 @@ export function EditorShell({
 }: EditorShellProps) {
   const saving = propSaving;
   const projectName = useProjectMetaStore((s) => s.projectName);
+  const selectedIds = useSelectionStore((s) => s.selectedIds);
+  const liveDoc = useDocument((d) => d);
+
+  const aiContext = React.useMemo(() => {
+    const validSelected = selectedIds
+      .map((id) => liveDoc.layers?.[id])
+      .filter((l): l is NonNullable<typeof l> => Boolean(l));
+    if (validSelected.length === 1) {
+      return {
+        name: validSelected[0].name || validSelected[0].id,
+        type: validSelected[0].archetype,
+      };
+    }
+    if (validSelected.length > 1) {
+      return {
+        name: `${validSelected.length} selected`,
+        type: "multi",
+      };
+    }
+    const rootLayer = Object.values(liveDoc.layers ?? {}).find((l) => l.parentId === null);
+    return {
+      name: rootLayer?.name || "Canvas",
+      type: "frame",
+    };
+  }, [selectedIds, liveDoc]);
 
   // Core shell actions and keyboard shortcut layer
   const [aiPanelOpen, setAiPanelOpen] = React.useState(false);
@@ -407,6 +433,7 @@ export function EditorShell({
             onAiStop={aiChat.stop}
             aiState={aiChat.isLoading ? "work" : "idle"}
             aiLoading={aiChat.isLoading}
+            aiContext={aiContext}
             mode={actions.mode}
             activeTool={actions.activeTool}
             onSelectTool={actions.setActiveTool}

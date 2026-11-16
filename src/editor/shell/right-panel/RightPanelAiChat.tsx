@@ -26,6 +26,7 @@ import {
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { LogoMark } from "@/editor/components/LogoMark";
+import { MentionPopover, useMentionAutocomplete } from "@/editor/components/MentionPopover";
 import type { AiChatMessage, AiProviderId, AiProviderStatusMap } from "./types";
 
 export interface RightPanelAiChatProps {
@@ -98,7 +99,13 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   const keyInputId = `${baseId}-apikey`;
   const modelInputId = `${baseId}-model`;
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const copilotSeqRef = useRef(0);
+  const mention = useMentionAutocomplete({
+    value: inputValue,
+    onChange: setInputValue,
+    inputRef,
+  });
   const pendingGhost = useGhostDiffStore((s) => s.pending);
   const stageGhostProposal = useGhostDiffStore((s) => s.stageProposal);
   const acceptAllGhost = useGhostDiffStore((s) => s.acceptAll);
@@ -809,16 +816,42 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
       )}
 
       {/* Footer / Input row */}
-      <div className="ll-aichatfoot ll:shrink-0 ll:p-3 ll:border-t ll:border-border">
+      <div className="ll-aichatfoot ll:relative ll:shrink-0 ll:p-3 ll:border-t ll:border-border ll:flex ll:flex-col ll:gap-1.5">
+        <MentionPopover
+          open={mention.isOpen}
+          matches={mention.matches}
+          activeIndex={mention.activeIndex}
+          onSelect={mention.applySelection}
+          className="ll:absolute ll:left-3 ll:right-3 ll:bottom-full ll:mb-1"
+        />
+        <div className="ll:flex ll:items-center ll:justify-between ll:gap-2 ll:text-nano ll:text-muted">
+          <span className="ll:truncate">
+            {selectedIdsSet.length === 1
+              ? `Selected: ${getDocument().layers?.[selectedIdsSet[0]]?.name ?? selectedIdsSet[0]}`
+              : selectedIdsSet.length > 1
+                ? `Selected: ${selectedIdsSet.length} layers`
+                : "Tip: type @ to mention any element"}
+          </span>
+          {selectedIdsSet.length > 0 && <span className="ll:shrink-0">@ to mention</span>}
+        </div>
         <form
           onSubmit={handleSubmit}
           className="ll-airow ll:flex ll:items-center ll:gap-2 ll:min-w-0"
         >
           <input
+            ref={inputRef}
             id={inputId}
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              mention.syncCursor(e.target.selectionStart);
+            }}
+            onClick={(e) => mention.syncCursor(e.currentTarget.selectionStart)}
+            onKeyUp={(e) => mention.syncCursor(e.currentTarget.selectionStart)}
+            onKeyDown={(e) => {
+              mention.handleMentionKeyDown(e);
+            }}
             placeholder={aiInputPlaceholder}
             aria-label={aiInputPlaceholder.replace(/…$/, "")}
             autoComplete="off"
