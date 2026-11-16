@@ -5,6 +5,7 @@ export { RightPanelAccordionRow } from "./RightPanelAccordionRow";
 export { RightPanelAiChat } from "./RightPanelAiChat";
 export { RightPanelLabView } from "./RightPanelLabView";
 export { RightPanelEmptyPlaceholder } from "./RightPanelEmptyPlaceholder";
+export { useAiChat, type UseAiChatOptions, type UseAiChatResult } from "./useAiChat";
 
 export type {
   RightPanelMode,
@@ -12,6 +13,8 @@ export type {
   DesignSectionConfig,
   AccordionRowConfig,
   AiChatMessage,
+  AiProviderId,
+  AiProviderStatusMap,
   StatusChip,
 } from "./types";
 export type { RightPanelHeaderProps } from "./RightPanelHeader";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useId } from "react";
-import { ArrowUp, Check, Frame, X } from "lucide-react";
+import { ArrowUp, Check, Frame, PanelRightOpen, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
@@ -31,6 +31,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
   open,
   onClose,
   onSubmit,
+  onExpand,
   onStop,
   onUndo,
   onKeep,
@@ -290,6 +291,18 @@ export const AiBox: React.FC<AiBoxProps> = ({
               autoComplete="off"
               className="ll:flex-1 ll:min-w-0 ll:h-7 ll:py-1 ll:px-1 ll:bg-transparent ll:border-0 ll:outline-none ll:resize-none ll:text-body ll:font-sans ll:text-primary ll:placeholder:text-muted "
             />
+
+            {onExpand && (
+              <IconButton
+                size="sm"
+                aria-label="Open AI chat panel"
+                tooltip="Open AI chat"
+                onClick={() => onExpand(prompt)}
+                variant="ghost"
+                className="ll:w-7 ll:h-7 ll:shrink-0 ll:text-muted hover:ll:text-primary"
+                icon={<Icon icon={PanelRightOpen} size={CANVAS_CHROME_SIZES.iconMd} />}
+              />
+            )}
 
             {/* Send button using IconButton */}
             <IconButton

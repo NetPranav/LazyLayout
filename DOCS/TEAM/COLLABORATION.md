@@ -27,18 +27,19 @@ Those are the only kinds of branches. Anything else on GitHub is old and can be 
 
 ## 1. The lanes
 
-| | **Lane A** | **Lane B** | **Lane C** | **Lane D** | **Lane E** | **Lane F** |
-|---|---|---|---|---|---|---|
-| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` | Project owner (admin) | Stage 4 worker (opened 2026-11-15 by project owner) | Stage 5 worker (opened 2026-11-15 by project owner) | Stage 6 worker (opened 2026-11-16 by project owner) |
-| Phases | **13–52** + Design track (**D1–D24**): Stage 1 viewport & Design track | **53–102**: Stage 2 animation engine | **103–131**: Stage 3 Design depth | **132–202**: Stage 4 Interactive & complex animation | **203–217**: Stage 5 Characters & rigging | **218–240**: Stage 6 3D |
-| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` | `c/phase-NN-short-name` | `d/phase-NN-short-name` | `e/stage-5-complete` | `f/stage-6-complete` |
-| Starts at | Phase 13 (in progress) | Phase 53 | Phase 103 (active in #107) | Phase 132 (active) | Phase 203 (active) | Phase 218 (active) |
+| | **Lane A** | **Lane B** | **Lane C** | **Lane D** | **Lane E** | **Lane F** | **Lane G** |
+|---|---|---|---|---|---|---|---|
+| Who | NetPranav (`@NetPranav`) | `@OVERxPOWERED` | Project owner (admin) | Stage 4 worker (opened 2026-11-15 by project owner) | Stage 5 worker (opened 2026-11-15 by project owner) | Stage 6 worker (opened 2026-11-16 by project owner) | Stage 7 worker (opened 2026-11-15 by project owner) |
+| Phases | **13–52** + Design track (**D1–D24**): Stage 1 viewport & Design track | **53–102**: Stage 2 animation engine | **103–131**: Stage 3 Design depth | **132–202**: Stage 4 Interactive & complex animation | **203–217**: Stage 5 Characters & rigging | **218–240**: Stage 6 3D | **241–250**: Stage 7 AI & agents |
+| Branch names | `a/phase-NN-short-name` | `b/phase-NN-short-name` | `c/phase-NN-short-name` | `d/phase-NN-short-name` | `e/stage-5-complete` | `f/stage-6-complete` | `g/phase-NN-short-name` |
+| Starts at | Phase 13 (in progress) | Phase 53 | Phase 103 (active in #107) | Phase 132 (active) | Phase 203 (active) | Phase 218 (active) | Phase 241 (active) |
 
 - **Since ROADMAP v5 (2026-11-14) the order of work is the release plan (ROADMAP §2), not the phase number.** Both lanes work in the active release only (Law 21). When a release opens, the two lanes split its work packages between them and say so in the PR that opens it. The bullets below say whose area a phase is in; they no longer say when it is built.
 - **Lane C (since 2026-11-14, by the owner):** Stage 3, Design depth (Phases 103–131), with branch prefix `c/`. It needs only Stage 1, so it waits on neither lane. It replaces the earlier proposal that Stage 3 be Lane A's.
 - **Lane D (since 2026-11-15, by the project owner):** Stage 4, Interactive & complex animation (Phases 132–202), with branch prefix `d/`. Works step by step from 132 to 202 with batched verification every 10th phase (141, 151, 161, 171, 181, 191, 202).
 - **Lane E (since 2026-11-15, by the project owner):** Stage 5, Characters & rigging (Phases 203–217), with branch prefix `e/`. Builds Phases 203–217 sequentially on `e/stage-5-complete` and opens one consolidated PR when verified.
 - **Lane F (since 2026-11-16, by the project owner):** Stage 6, 3D (Phases 218–240), with branch prefix `f/`. Builds Phases 218–240 sequentially on `f/stage-6-complete`, verifies CI + Playwright E2E locally, and opens one consolidated PR.
+- **Lane G (since 2026-11-15, by the project owner):** Stage 7, AI & agents (Phases 241–250), with branch prefix `g/`. Builds Phase 241 first (starting LLM integration via server-side `@anthropic-ai/sdk` while external agent runtimes such as Codex and Antigravity connect over MCP via Phases 50 & 250).
 - **Inside a lane, the phase number was the order until v5** (the old Law 18). Take the lowest phase in your lane that isn't ✅.
 - A phase may start only when **every phase in its "Needs" line is ✅ on `main`**. This is ROADMAP §0 rule 7, and it's the only thing that links the two lanes. §2 lists every place where it matters.
 - **Stage 3, Design depth (Phases 103–131, added in ROADMAP v4.1 on 2026-10-21), is proposed for Lane A** after Phase 52, with branch prefix `a/`. Every phase in it needs only Stage 1, so it never waits on Lane B. It becomes Lane A's once Lane B agrees, in the v4.1 PR or in a message.

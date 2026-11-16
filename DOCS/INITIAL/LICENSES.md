@@ -167,6 +167,10 @@ third-party set the editor ships or inserts, and because each item inserted carr
   Apache-2.0 local browser landmark runtimes such as MediaPipe Tasks Vision when supplied at runtime).
   Video frames never leave the device (`videoLeavesDevice: false`), and denied camera permissions
   degrade cleanly to pointer cursor signals.
+- **`@anthropic-ai/sdk` (added 2026-11-15, Phase 241):** Anthropic TypeScript SDK `1.8.0` (Apache-2.0,
+  licence read from `node_modules/@anthropic-ai/sdk/LICENSE`), used exclusively in server-side Next.js
+  route handlers (`src/ai/llm/` and `src/app/api/ai/`), never bundled into the client editor. Apache-2.0
+  is permissive with no competitive-use restriction.
 
 ## How to add a gate
 

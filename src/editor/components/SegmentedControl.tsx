@@ -17,6 +17,8 @@ export interface SegmentedControlProps<T extends string = string> {
   value: T;
   onChange: (value: T) => void;
   size?: "compact" | "sm" | "md";
+  /** Whether the segmented control stretches to 100% width. Defaults to true. */
+  fullWidth?: boolean;
   disabled?: boolean;
   className?: string;
   ariaLabel?: string;
@@ -27,6 +29,7 @@ export function SegmentedControl<T extends string = string>({
   value,
   onChange,
   size = "md",
+  fullWidth = true,
   disabled = false,
   className = "",
   ariaLabel,
@@ -103,7 +106,7 @@ export function SegmentedControl<T extends string = string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-disabled={disabled ? "true" : undefined}
-      className={`ll:relative ll:flex ll:w-full ll:items-center ll:box-border ll:border ll:border-border ll:rounded-md ll:gap-px ll:select-none ll:shrink-0 ${containerSizeStyles} ${
+      className={`ll:relative ll:flex ${fullWidth ? "ll:w-full" : "ll:w-fit"} ll:items-center ll:box-border ll:border ll:border-border ll:rounded-md ll:gap-px ll:select-none ll:shrink-0 ${containerSizeStyles} ${
         disabled ? "ll:opacity-40 ll:pointer-events-none" : ""
       } ${className}`}
     >

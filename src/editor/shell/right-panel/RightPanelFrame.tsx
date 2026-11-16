@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useRef, useId } from "react";
+import { MessageSquare } from "lucide-react";
 import { RightPanelHeader } from "./RightPanelHeader";
+import { Icon, IconButton } from "@/editor/components";
 import { useInspectorDimension } from "@/editor/panels/details/inspectorDimension";
 import { RightPanelSection } from "./RightPanelSection";
 import { RightPanelAccordionRow } from "./RightPanelAccordionRow";
@@ -61,10 +63,20 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   statusChips: propStatusChips,
   onSelectStatusChip,
   aiOpen = false,
+  onAiOpen,
   onAiClose,
   aiMessages,
   onAiSendMessage,
+  aiProvider,
+  onAiProviderChange,
+  onAiModelChange,
+  aiProviderStatus,
+  aiUserKeys,
+  aiCustomModels,
+  onAiSaveCredentials,
   aiInputPlaceholder,
+  aiLoading = false,
+  onAiStop,
   dimension: propDimension,
   designSections = DEFAULT_DESIGN_SECTIONS,
   motionRows = DEFAULT_MOTION_ROWS,
@@ -125,18 +137,28 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
           onAiClose={onAiClose}
           aiMessages={aiMessages}
           onAiSendMessage={onAiSendMessage}
+          aiProvider={aiProvider}
+          onAiProviderChange={onAiProviderChange}
+          onAiModelChange={onAiModelChange}
+          aiProviderStatus={aiProviderStatus}
+          aiUserKeys={aiUserKeys}
+          aiCustomModels={aiCustomModels}
+          onAiSaveCredentials={onAiSaveCredentials}
           aiInputPlaceholder={aiInputPlaceholder}
+          aiLoading={aiLoading}
+          onAiStop={onAiStop}
         />
       ) : (
         <>
-          {/* Header: visible only in design mode */}
-          {mode === "design" && (
+          {/* Header: visible in design mode, or compact AI trigger bar in other modes */}
+          {mode === "design" ? (
             <RightPanelHeader
               selectionName={activeSelectionName}
               selectionIcon={activeSelectionIcon}
               isMulti={inspector.isMulti}
               isLayerHidden={activeIsHidden}
               onToggleHideLayer={activeToggleHide}
+              onOpenAi={onAiOpen}
               onReset={onReset}
               onDelete={onDelete}
               statusChips={activeStatusChips}
@@ -144,7 +166,21 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               dimension={propDimension !== undefined ? propDimension : (inspector.hasSelection ? dimension : undefined)}
               onDimensionChange={setDimension}
             />
-          )}
+          ) : onAiOpen ? (
+            <div className="ll:flex ll:items-center ll:justify-between ll:h-8 ll:px-2 ll:border-b ll:border-border ll:bg-surface-bar ll:shrink-0">
+              <span className="ll:text-[11px] ll:font-medium ll:text-secondary ll:capitalize">
+                {mode}
+              </span>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                aria-label="Open AI chat"
+                tooltip="Open AI chat"
+                onClick={onAiOpen}
+                icon={<Icon icon={MessageSquare} size={14} />}
+              />
+            </div>
+          ) : null}
 
           {/* Inspector Body */}
           <div

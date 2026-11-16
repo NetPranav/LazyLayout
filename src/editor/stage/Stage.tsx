@@ -18,6 +18,7 @@ import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
 import { CanvasCursor } from "./CanvasCursor";
+import { GhostDiffOverlay } from "./GhostDiffOverlay";
 import { TransitionReferences, TRANSITION_GAP } from "./TransitionReferences";
 import { isLoadingPage } from "@/core/pages/loadingPages";
 import { useStageTransform } from "./useStageTransform";
@@ -924,6 +925,8 @@ export const Stage: React.FC<StageProps> = ({
           isGesturing={isGesturing}
         />
       </React.Profiler>
+      {/* Phase 243: Pending AI Ghost Diff overlay */}
+      <GhostDiffOverlay />
       {/* View > Show keystrokes: keys, mouse buttons and the command that ran, bottom left (Blender's Screencast Keys) */}
       <ScreencastKeys />
       {activeTool === "brush" && <BrushToolBar />}

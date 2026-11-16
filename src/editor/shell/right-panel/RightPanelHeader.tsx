@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Eye, EyeOff, Frame, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, Frame, MessageSquare, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -26,6 +26,7 @@ export interface RightPanelHeaderProps {
   /** The 2D / 3D switch (top right): 2D is the Figma-style settings, 3D the Blender-style ones for the same layer. Hidden when omitted. */
   dimension?: "2d" | "3d";
   onDimensionChange?: (d: "2d" | "3d") => void;
+  onOpenAi?: () => void;
   className?: string;
 }
 
@@ -41,6 +42,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   onSelectStatusChip,
   dimension,
   onDimensionChange,
+  onOpenAi,
   className = "",
 }) => {
   const headRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,7 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
         {dimension && onDimensionChange && (
           <SegmentedControl
             size="compact"
+            fullWidth={false}
             ariaLabel="Settings: 2D or 3D"
             value={dimension}
             options={[
@@ -109,6 +112,18 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
             ]}
             onChange={onDimensionChange}
             className="ll-rdim ll:shrink-0"
+          />
+        )}
+
+        {onOpenAi && (
+          <IconButton
+            size="sm"
+            variant="ghost"
+            aria-label="Open AI chat"
+            tooltip="Open AI chat"
+            onClick={onOpenAi}
+            icon={<Icon icon={MessageSquare} size={14} />}
+            className="ll-ib"
           />
         )}
 

@@ -1,0 +1,524 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { z, type ZodType } from "zod";
+import { useGhostDiffStore } from "@/ai/llm/ghostDiffStore";
+import { readSseFrames } from "@/ai/llm/sse";
+import type { LlmStreamEvent } from "@/ai/llm/types";
+import { validateStreamOutput } from "@/ai/llm/validationLoop";
+import { getAllCommands } from "@/core/commands/registry";
+import { rules } from "@/core/rules";
+import { getDocument } from "@/core/store/documentState";
+import { useSelectionStore } from "@/core/store/useSelectionStore";
+import type { AiChatMessage, AiProviderId, AiProviderStatusMap, RightPanelMode } from "./types";
+
+interface StreamMetaPayload {
+  provider: string;
+  model: string;
+  cachePrefixHash: string;
+}
+
+interface StreamUsagePayload {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationInputTokens: number;
+  cacheReadInputTokens: number;
+}
+
+type OnlineProviderId = Exclude<AiProviderId, "offline">;
+
+interface StoredAiSettings {
+  provider: AiProviderId;
+  keys: Partial<Record<OnlineProviderId, string>>;
+  models: Partial<Record<AiProviderId, string>>;
+}
+
+const STORAGE_KEY = "lazylayout.ai.settings.v1";
+
+const DEFAULT_PROVIDER_STATUS: AiProviderStatusMap = {
+  anthropic: { configured: false, defaultModel: "claude-sonnet-5-5" },
+  gemini: { configured: false, defaultModel: "gemini-2.5-flash" },
+  nvidia: { configured: false, defaultModel: "nvidia/nemotron-3.5-super-vl-120b-a12b" },
+  offline: { configured: true, defaultModel: "lazylayout-deterministic-v1.1" },
+};
+
+const EMPTY_SETTINGS: StoredAiSettings = { provider: "anthropic", keys: {}, models: {} };
+let cachedRawSettings: string | null = null;
+let cachedParsedSettings: StoredAiSettings = EMPTY_SETTINGS;
+const settingsListeners = new Set<() => void>();
+
+function readStoredSettings(): StoredAiSettings {
+  if (typeof window === "undefined") return EMPTY_SETTINGS;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw === cachedRawSettings) return cachedParsedSettings;
+    cachedRawSettings = raw;
+    if (!raw) {
+      cachedParsedSettings = EMPTY_SETTINGS;
+      return cachedParsedSettings;
+    }
+    const parsed = JSON.parse(raw) as Partial<StoredAiSettings>;
+    const provider =
+      parsed.provider === "anthropic" ||
+      parsed.provider === "gemini" ||
+      parsed.provider === "nvidia" ||
+      parsed.provider === "offline"
+        ? parsed.provider
+        : "anthropic";
+    cachedParsedSettings = {
+      provider,
+      keys: parsed.keys && typeof parsed.keys === "object" ? parsed.keys : {},
+      models: parsed.models && typeof parsed.models === "object" ? parsed.models : {},
+    };
+    return cachedParsedSettings;
+  } catch {
+    return EMPTY_SETTINGS;
+  }
+}
+
+function writeStoredSettings(next: StoredAiSettings): void {
+  if (typeof window === "undefined") return;
+  try {
+    const serialized = JSON.stringify(next);
+    cachedRawSettings = serialized;
+    cachedParsedSettings = next;
+    window.localStorage.setItem(STORAGE_KEY, serialized);
+  } catch {
+    // Ignore storage quota/privacy mode failures.
+  }
+  for (const listener of settingsListeners) {
+    listener();
+  }
+}
+
+function subscribeStoredSettings(listener: () => void): () => void {
+  settingsListeners.add(listener);
+  if (typeof window !== "undefined") {
+    const onStorage = (evt: StorageEvent) => {
+      if (evt.key === STORAGE_KEY) listener();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      settingsListeners.delete(listener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }
+  return () => {
+    settingsListeners.delete(listener);
+  };
+}
+
+function getServerSettingsSnapshot(): StoredAiSettings {
+  return EMPTY_SETTINGS;
+}
+
+export interface UseAiChatOptions {
+  mode?: RightPanelMode;
+  documentName?: string;
+  endpoint?: string;
+}
+
+export interface UseAiChatResult {
+  messages: AiChatMessage[];
+  isLoading: boolean;
+  error: string | null;
+  lastUsage: StreamUsagePayload | null;
+  lastMeta: StreamMetaPayload | null;
+  provider: AiProviderId;
+  setProvider: (provider: AiProviderId) => void;
+  setModel: (provider: AiProviderId, model: string) => void;
+  providerStatus: AiProviderStatusMap;
+  userKeys: Partial<Record<OnlineProviderId, string>>;
+  customModels: Partial<Record<AiProviderId, string>>;
+  saveCredentials: (provider: OnlineProviderId, apiKey: string, customModel?: string) => void;
+  sendMessage: (content: string) => Promise<void>;
+  stop: () => void;
+  clearMessages: () => void;
+}
+
+function buildClientDocumentSnapshot(mode?: RightPanelMode, documentName?: string) {
+  const doc = getDocument();
+  const selectedIds = [...useSelectionStore.getState().selectedIds];
+  const allLayers = Object.values(doc.layers ?? {});
+  const rootIds = allLayers.filter((layer) => layer.parentId === null).map((layer) => layer.id);
+  const pageCount = allLayers.filter((layer) => Boolean(layer.page)).length;
+  const clips = Object.values(doc.clips ?? {});
+  const trackCount = clips.reduce((acc, clip) => acc + (clip.tracks?.length ?? 0), 0);
+
+  const layers = allLayers.slice(0, 120).map((layer) => {
+    const propsEntries = Object.entries(layer.properties ?? {}).slice(0, 12);
+    const propsSample = Object.fromEntries(propsEntries);
+    return {
+      id: layer.id,
+      name: layer.name,
+      type: layer.archetype,
+      parentId: layer.parentId,
+      childCount: layer.children.length,
+      ...(propsEntries.length > 0 ? { propsSample } : {}),
+    };
+  });
+
+  return {
+    ...(documentName ? { documentName } : {}),
+    ...(mode ? { activeMode: mode } : {}),
+    pageCount,
+    layerCount: allLayers.length,
+    clipCount: clips.length,
+    trackCount,
+    selectedIds: selectedIds.slice(0, 100),
+    rootIds: rootIds.slice(0, 100),
+    layers,
+    ...(doc.tokens ? { tokensSummary: doc.tokens } : {}),
+  };
+}
+
+function buildClientCommandCatalog() {
+  return getAllCommands()
+    .slice(0, 120)
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((cmd) => {
+      let inputSchema: Record<string, unknown> | undefined;
+      if (cmd.args) {
+        try {
+          const converted = z.toJSONSchema(cmd.args as ZodType, {
+            unrepresentable: "any",
+            io: "input",
+            target: "draft-2020-12",
+          });
+          if (converted && typeof converted === "object" && !Array.isArray(converted)) {
+            inputSchema = converted as Record<string, unknown>;
+          }
+        } catch {
+          inputSchema = undefined;
+        }
+      }
+      return {
+        id: cmd.id,
+        title: cmd.title,
+        ...(cmd.category ? { category: cmd.category } : {}),
+        ...(cmd.description ? { description: cmd.description } : {}),
+        inputSchema: inputSchema ?? { type: "object", properties: {}, additionalProperties: false },
+      };
+    });
+}
+
+function formatToolProposal(name: string, input: unknown): string {
+  const payload = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+  if (name === "answer_about_document" && typeof payload.answer === "string") {
+    return payload.answer;
+  }
+  if (name === "propose_mdm_patches") {
+    const summary = typeof payload.summary === "string" ? payload.summary : "Proposed MDM edit";
+    const patches = Array.isArray(payload.patches) ? payload.patches : [];
+    return `${summary} (${patches.length} pending patch${patches.length === 1 ? "" : "es"}, awaiting approval).`;
+  }
+  if (name === "propose_nodescript_graph") {
+    const graphName = typeof payload.graphName === "string" ? payload.graphName : "Graph";
+    const summary = typeof payload.summary === "string" ? payload.summary : "";
+    const source = typeof payload.source === "string" ? payload.source : "";
+    return `${graphName}.nls${summary ? ` — ${summary}` : ""}${source ? `\n\n${source}` : ""}`;
+  }
+  if (name === "invoke_editor_command") {
+    const commandId = typeof payload.commandId === "string" ? payload.commandId : "command";
+    const rationale = typeof payload.rationale === "string" ? ` — ${payload.rationale}` : "";
+    return `Suggested command \`${commandId}\`${rationale} (awaiting approval).`;
+  }
+  return `[Tool: ${name}]`;
+}
+
+let messageCounter = 0;
+function nextMessageId(prefix: string): string {
+  messageCounter += 1;
+  return `${prefix}-${Date.now()}-${messageCounter}`;
+}
+
+export function useAiChat({
+  mode,
+  documentName,
+  endpoint = "/api/ai/chat",
+}: UseAiChatOptions = {}): UseAiChatResult {
+  const [messages, setMessages] = useState<AiChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUsage, setLastUsage] = useState<StreamUsagePayload | null>(null);
+  const [lastMeta, setLastMeta] = useState<StreamMetaPayload | null>(null);
+  const settings = useSyncExternalStore(
+    subscribeStoredSettings,
+    readStoredSettings,
+    getServerSettingsSnapshot,
+  );
+  const { provider, keys: userKeys, models: customModels } = settings;
+  const [providerStatus, setProviderStatus] = useState<AiProviderStatusMap>(DEFAULT_PROVIDER_STATUS);
+
+  const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<AiChatMessage[]>([]);
+  const settingsRef = useRef<StoredAiSettings>(settings);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(endpoint, { method: "GET" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { providers?: AiProviderStatusMap } | null) => {
+        if (active && json?.providers) {
+          setProviderStatus(json.providers);
+        }
+      })
+      .catch(() => {
+        // Ignore offline/unavailable metadata checks cleanly.
+      });
+    return () => {
+      active = false;
+    };
+  }, [endpoint]);
+
+  const setProvider = useCallback((nextProvider: AiProviderId) => {
+    const updated: StoredAiSettings = {
+      ...settingsRef.current,
+      provider: nextProvider,
+    };
+    writeStoredSettings(updated);
+  }, []);
+
+  const setModel = useCallback((targetProvider: AiProviderId, model: string) => {
+    const nextModels = { ...settingsRef.current.models };
+    const trimmed = model.trim();
+    if (trimmed) nextModels[targetProvider] = trimmed;
+    else delete nextModels[targetProvider];
+    writeStoredSettings({
+      ...settingsRef.current,
+      models: nextModels,
+    });
+  }, []);
+
+  const saveCredentials = useCallback(
+    (targetProvider: OnlineProviderId, apiKey: string, customModel?: string) => {
+      const nextKeys = { ...settingsRef.current.keys };
+      const trimmedKey = apiKey.trim();
+      if (trimmedKey) nextKeys[targetProvider] = trimmedKey;
+      else delete nextKeys[targetProvider];
+
+      const nextModels = { ...settingsRef.current.models };
+      const trimmedModel = customModel?.trim();
+      if (trimmedModel) nextModels[targetProvider] = trimmedModel;
+      else delete nextModels[targetProvider];
+
+      const updated: StoredAiSettings = {
+        ...settingsRef.current,
+        keys: nextKeys,
+        models: nextModels,
+      };
+      writeStoredSettings(updated);
+    },
+    [],
+  );
+
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
+
+  const clearMessages = useCallback(() => {
+    stop();
+    setMessages([]);
+    setError(null);
+  }, [stop]);
+
+  const sendMessage = useCallback(
+    async (rawContent: string) => {
+      const content = rawContent.trim();
+      if (!content) return;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const userMsg: AiChatMessage = {
+        id: nextMessageId("user"),
+        role: "user",
+        content,
+      };
+      const assistantId = nextMessageId("assistant");
+      const assistantPlaceholder: AiChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+      };
+
+      const historyPayload = [...messagesRef.current, userMsg]
+        .filter((m) => m.content.trim().length > 0)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
+      setIsLoading(true);
+      setError(null);
+
+      const updateAssistant = (updater: (current: string) => string) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: updater(m.content) } : m)),
+        );
+      };
+
+      const activeProvider = settingsRef.current.provider;
+      const byokKey =
+        activeProvider !== "offline" ? settingsRef.current.keys[activeProvider]?.trim() : undefined;
+      const modelOverride = settingsRef.current.models[activeProvider]?.trim();
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: activeProvider,
+            ...(modelOverride ? { model: modelOverride } : {}),
+            ...(byokKey ? { apiKey: byokKey } : {}),
+            messages: historyPayload,
+            documentContext: buildClientDocumentSnapshot(mode, documentName),
+            commandSchemas: buildClientCommandCatalog(),
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          let errMsg = `AI service returned HTTP ${res.status}.`;
+          try {
+            const data = (await res.json()) as { error?: string };
+            if (typeof data?.error === "string" && data.error) errMsg = data.error;
+          } catch {
+            // Keep default HTTP status message.
+          }
+          setError(errMsg);
+          updateAssistant(() => errMsg);
+          return;
+        }
+
+        if (!res.body) {
+          const fallback = "AI service returned an empty stream.";
+          setError(fallback);
+          updateAssistant(() => fallback);
+          return;
+        }
+
+        const collectedEvents: LlmStreamEvent[] = [];
+        let patchProposalSummary = "";
+
+        for await (const frame of readSseFrames(res.body)) {
+          if (!frame.data) continue;
+
+          let evt: Record<string, unknown>;
+          try {
+            evt = JSON.parse(frame.data) as Record<string, unknown>;
+          } catch {
+            continue;
+          }
+
+          if (evt.type === "meta") {
+            setLastMeta({
+              provider: String(evt.provider ?? activeProvider),
+              model: String(evt.model ?? ""),
+              cachePrefixHash: String(evt.cachePrefixHash ?? ""),
+            });
+          } else if (evt.type === "text_delta" && typeof evt.delta === "string") {
+            const chunkText = evt.delta;
+            collectedEvents.push({ type: "text_delta", delta: chunkText });
+            updateAssistant((cur) => cur + chunkText);
+          } else if (evt.type === "tool_use" && typeof evt.name === "string") {
+            collectedEvents.push({
+              type: "tool_use",
+              id: typeof evt.id === "string" ? evt.id : "tool_1",
+              name: evt.name,
+              input: evt.input,
+            });
+            if (
+              evt.name === "propose_mdm_patches" &&
+              evt.input &&
+              typeof evt.input === "object" &&
+              typeof (evt.input as { summary?: unknown }).summary === "string"
+            ) {
+              patchProposalSummary = (evt.input as { summary: string }).summary;
+            }
+            const formatted = formatToolProposal(evt.name, evt.input);
+            updateAssistant((cur) => {
+              if (!cur) return formatted;
+              return cur.includes(formatted) ? cur : `${cur}\n\n${formatted}`;
+            });
+          } else if (evt.type === "usage" && evt.usage && typeof evt.usage === "object") {
+            setLastUsage(evt.usage as StreamUsagePayload);
+          } else if (
+            evt.type === "stop" &&
+            evt.handling &&
+            typeof evt.handling === "object" &&
+            typeof (evt.handling as { userMessage?: unknown }).userMessage === "string"
+          ) {
+            const note = (evt.handling as { userMessage: string }).userMessage;
+            updateAssistant((cur) => (cur ? `${cur}\n\n${note}` : note));
+          } else if (evt.type === "error" && typeof evt.message === "string") {
+            const errText = evt.message;
+            setError(errText);
+            updateAssistant((cur) => (cur ? `${cur}\n\n${errText}` : errText));
+          }
+        }
+
+        // Phase 242/243: Validate patch proposals against MDM schema + rules.validate and stage ghost diff
+        if (collectedEvents.some((e) => e.type === "tool_use" && e.name === "propose_mdm_patches")) {
+          const check = validateStreamOutput(getDocument(), collectedEvents, rules.validate);
+          if (check.valid && check.patches && check.candidateDocument) {
+            useGhostDiffStore.getState().stageProposal({
+              proposalId: assistantId,
+              prompt: content,
+              summary: patchProposalSummary || "AI proposal",
+              patches: check.patches,
+              candidateDocument: check.candidateDocument,
+            });
+          } else if (!check.valid && check.issues.length > 0) {
+            const diagNote = check.issues
+              .map((i) => `[${i.code}] ${i.message}`)
+              .join("; ");
+            setError(diagNote);
+            updateAssistant((cur) => `${cur}\n\nValidation blocked: ${diagNote}`);
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          updateAssistant((cur) => (cur ? `${cur}\n\n(Stopped)` : "Stopped."));
+          return;
+        }
+        const message = err instanceof Error ? err.message : "Failed to reach AI service.";
+        setError(message);
+        updateAssistant((cur) => (cur ? `${cur}\n\n${message}` : message));
+      } finally {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsLoading(false);
+        }
+      }
+    },
+    [documentName, endpoint, mode],
+  );
+
+  return {
+    messages,
+    isLoading,
+    error,
+    lastUsage,
+    lastMeta,
+    provider,
+    setProvider,
+    setModel,
+    providerStatus,
+    userKeys,
+    customModels,
+    saveCredentials,
+    sendMessage,
+    stop,
+    clearMessages,
+  };
+}
