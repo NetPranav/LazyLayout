@@ -7,6 +7,7 @@ import {
   exportRigForFramework,
   verifyRigExportParity,
   exportRigToLottieJson,
+  loadExportedRigRuntime,
 } from "../rigExportRuntime";
 import type { BonePoseTrack } from "../boneTimeline";
 
@@ -55,5 +56,37 @@ describe("Phase 215 · Rig export runtime (5 reference rigs across Next/Vite/HTM
     assert.equal(lottie.layers[1].parent, lottie.layers[0].ind);
     assert.equal(lottie.layers[2].parent, lottie.layers[1].ind);
     assert.equal(lottie.layers[0].ks.r.k.length, 3);
+  });
+});
+
+describe("Phase 215 · the parity check runs the exported runtime (audit 2026-11-16)", () => {
+  const track: BonePoseTrack = [
+    { timeSec: 0, pose: { root: { rotationDeg: 0 }, child: { rotationDeg: 10 } } },
+    { timeSec: 1.0, pose: { root: { rotationDeg: 40 }, child: { rotationDeg: -35 } } },
+  ];
+
+  it("a rig whose bones are listed child first still exports with parity", () => {
+    // Built by hand: createRigDefinition sorts the bones, but bones added later by the bone tool can arrive in any order.
+    const sorted = createRigDefinition("unordered", "Unordered", "layer_u", [
+      { id: "root", name: "Root", parentId: null, length: 50, restX: 100, restY: 120, restRotationDeg: -90 },
+      { id: "child", name: "Child", parentId: "root", length: 35, restX: 0, restY: 0, restRotationDeg: 15 },
+      { id: "tip", name: "Tip", parentId: "child", length: 20, restX: 0, restY: 0, restRotationDeg: 0 },
+    ]);
+    const rig = { ...sorted, bones: [...sorted.bones].reverse() };
+    for (const target of ["nextjs", "vite", "html"] as const) {
+      const res = verifyRigExportParity(rig, track, target, "svg");
+      assert.ok(res.maxDiffPx < 0.01, `${target}: ${res.maxDiffPx}`);
+    }
+  });
+
+  it("a broken exported runtime fails the parity check", () => {
+    const rig = createRigDefinition("r", "R", "layer_r", [
+      { id: "root", name: "Root", parentId: null, length: 50, restX: 100, restY: 120, restRotationDeg: -90 },
+      { id: "child", name: "Child", parentId: "root", length: 35, restX: 0, restY: 0, restRotationDeg: 0 },
+    ]);
+    const broken = emitRigRuntimeSource("svg").replace("const ax = (parent ? parent.length : 0)", "const ax = (parent ? parent.length * 2 : 0)");
+    const evalRig = loadExportedRigRuntime(broken);
+    const good = loadExportedRigRuntime(emitRigRuntimeSource("svg"));
+    assert.notDeepEqual(evalRig(rig, {}).child.head, good(rig, {}).child.head);
   });
 });

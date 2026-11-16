@@ -191,6 +191,14 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
       >
         Tidy up
       </MenuItem>
+      <MenuItem
+        icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
+        shortcut="F2"
+        disabled={selectionCount !== 1}
+        onClick={() => onAction("rename")}
+      >
+        Rename
+      </MenuItem>
 
       <MenuSeparator />
 
@@ -256,13 +264,6 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
           onClick={() => onAction("animate-letters")}
         >
           Animate letters
-        </MenuItem>
-        <MenuItem
-          icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
-          shortcut="F2"
-          onClick={() => onAction("rename")}
-        >
-          Rename
         </MenuItem>
         <MenuItem
           icon={<Icon icon={Eye} size={MENU_ICON_SIZE} />}

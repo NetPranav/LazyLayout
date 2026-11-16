@@ -748,7 +748,7 @@ export function ColorPicker({
       aria-hidden={!open ? "true" : undefined}
       inert={!open ? true : undefined}
       tabIndex={-1}
-      className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
+      className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
     >
       <div className="cp-in ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
         {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */}

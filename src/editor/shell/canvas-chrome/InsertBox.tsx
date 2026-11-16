@@ -13,6 +13,15 @@ import { SECTION_TEMPLATES, type SectionTemplate } from "@/core/templates/sectio
 import { CATEGORIES, categoryOf } from "./sectionCategories";
 import { insertSectionBelowSelection } from "./insertSection";
 import { SectionThumb } from "./SectionThumb";
+import { searchIcons, titleOf, type IconNode } from "@/core/assets/mediaLibrary";
+import { insertIcon } from "@/core/assets/mediaOps";
+
+type IconLoader = Record<string, () => Promise<{ __iconNode?: IconNode }>>;
+let iconLoaderPromise: Promise<IconLoader> | null = null;
+const loadLucideIcons = () =>
+  (iconLoaderPromise ??= import("lucide-react/dynamicIconImports").then(
+    (m) => (m.default ?? m) as unknown as IconLoader
+  ));
 
 export interface InsertBoxProps {
   open: boolean;
@@ -31,6 +40,19 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isRendered, setIsRendered] = useState<boolean>(open);
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
+  const [iconLoader, setIconLoader] = useState<IconLoader | null>(null);
+
+  useEffect(() => {
+    if (!open || iconLoader) return;
+    if (activeCategory !== "Icons" && !searchQuery.trim()) return;
+    let live = true;
+    void loadLucideIcons().then((loaded) => {
+      if (live) setIconLoader(loaded);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, activeCategory, searchQuery, iconLoader]);
 
   const boxRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -150,6 +172,33 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
     [onClose, triggerRef]
   );
 
+  const handleSelectIcon = useCallback(
+    async (name: string, node: IconNode) => {
+      if (onInsertItem && onInsertItem !== insertCatalogItem) {
+        onInsertItem(titleOf(name));
+      } else {
+        await insertIcon(name, node);
+      }
+      onClose();
+      triggerRef?.current?.focus();
+    },
+    [onInsertItem, onClose, triggerRef]
+  );
+
+  const iconNames = React.useMemo(
+    () => (iconLoader ? Object.keys(iconLoader) : []),
+    [iconLoader]
+  );
+
+  const matchedIcons = React.useMemo(() => {
+    if (!iconLoader) return [];
+    const q = searchQuery.trim();
+    if (!q) {
+      return activeCategory === "Icons" ? searchIcons(iconNames, "", 48) : [];
+    }
+    return searchIcons(iconNames, q, 36);
+  }, [iconLoader, iconNames, searchQuery, activeCategory]);
+
   const matchedSections = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
@@ -218,8 +267,8 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
                 }
               }
             }}
-            placeholder="Search elements, blocks, assets"
-            aria-label="Search elements, blocks, assets"
+            placeholder="Search elements, blocks, assets, icons"
+            aria-label="Search elements, blocks, assets, icons"
             autoComplete="off"
             className="ll:flex-1 ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:text-body ll:text-primary ll:placeholder:text-muted ll:font-sans"
           />
@@ -285,30 +334,73 @@ export const InsertBox: React.FC<InsertBoxProps> = ({
             className="ll-insr ll:flex-1 ll:min-w-0 ll:overflow-y-auto ll:p-4"
           >
             {filteredItems !== null ? (
-              filteredItems.length + matchedSections.length > 0 ? (
+              filteredItems.length + matchedSections.length + matchedIcons.length > 0 ? (
                 <>
                   {matchedSections.length > 0 && (
-                    <div className={filteredItems.length > 0 ? "ll:mb-4" : ""}>
+                    <div className={filteredItems.length > 0 || matchedIcons.length > 0 ? "ll:mb-4" : ""}>
                       <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">Sections</h4>
                       <SectionGrid templates={matchedSections} onSelect={handleSelectSection} />
                     </div>
                   )}
                   {filteredItems.length > 0 && (
-                    <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
-                      {filteredItems.map((item) => (
-                        <CardItem
-                          key={item.name}
-                          enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
-                          item={item}
-                          onSelect={handleSelectCard}
-                        />
-                      ))}
+                    <div className={matchedIcons.length > 0 ? "ll:mb-4" : ""}>
+                      <div className="ll-insgrid ll:grid ll:grid-cols-3 ll:gap-3">
+                        {filteredItems.map((item) => (
+                          <CardItem
+                            key={item.name}
+                            enabled={Boolean(onInsertItem) || canInsertCatalogItem(item.name)}
+                            item={item}
+                            onSelect={handleSelectCard}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {matchedIcons.length > 0 && iconLoader && (
+                    <div>
+                      <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">Icons</h4>
+                      <div className="ll-insgrid ll:grid ll:grid-cols-4 ll:gap-2">
+                        {matchedIcons.map((name) => (
+                          <IconCardItem
+                            key={name}
+                            name={name}
+                            load={iconLoader}
+                            onSelect={handleSelectIcon}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
+              ) : !iconLoader && searchQuery.trim() ? (
+                <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted">
+                  Searching icons…
+                </div>
               ) : (
                 <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted">
                   Nothing found
+                </div>
+              )
+            ) : activeCategory === "Icons" ? (
+              iconLoader ? (
+                <div>
+                  <h4 className="ll-insg ll:m-0 ll:mb-2 ll:text-body ll:font-medium ll:text-primary">
+                    Icons ({iconNames.length})
+                  </h4>
+                  <div className="ll-insgrid ll:grid ll:grid-cols-4 ll:gap-2">
+                    {matchedIcons.map((name) => (
+                      <IconCardItem
+                        key={name}
+                        name={name}
+                        load={iconLoader}
+                        onSelect={handleSelectIcon}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="ll-insnone ll:py-8 ll:text-center ll:text-muted">
+                  Loading icons…
                 </div>
               )
             ) : activeCategory === "Sections" ? (
@@ -440,6 +532,68 @@ const CardItem: React.FC<CardItemProps> = ({ item, enabled, onSelect }) => {
       </span>
       <span className="ll-cname ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
         {item.name}
+      </span>
+    </button>
+  );
+};
+
+interface IconCardItemProps {
+  name: string;
+  load: IconLoader;
+  onSelect: (name: string, node: IconNode) => void;
+}
+
+const IconCardItem: React.FC<IconCardItemProps> = ({ name, load, onSelect }) => {
+  const [node, setNode] = useState<IconNode | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void load[name]?.().then((m) => {
+      if (live) setNode(m.__iconNode ?? null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [name, load]);
+
+  return (
+    <button
+      type="button"
+      data-card
+      data-cols={4}
+      data-icon-name={name}
+      aria-label={`Insert icon ${titleOf(name)}`}
+      title={titleOf(name)}
+      disabled={!node}
+      onClick={() => {
+        if (node) void onSelect(name, node);
+      }}
+      className="ll-card ll:group ll:flex ll:flex-col ll:items-center ll:gap-1 ll:min-w-0 ll:p-1.5 ll:border-0 ll:font-sans ll:bg-transparent ll:text-center ll:text-secondary ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset ll:cursor-pointer ll:disabled:opacity-50"
+    >
+      <span className="ll-thumb ll:grid ll:place-items-center ll:w-full ll:h-11 ll:bg-thumb-bg ll:border ll:border-border ll:group-hover:border-muted ll:rounded-sm ll:box-border ll:text-primary">
+        {node && (
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {node.map(([tag, attrs], i) =>
+              React.createElement(tag, {
+                ...Object.fromEntries(Object.entries(attrs).filter(([k]) => k !== "key")),
+                key: i,
+              })
+            )}
+          </svg>
+        )}
+      </span>
+      <span className="ll-cname ll:text-micro ll:text-secondary ll:group-hover:text-primary ll:truncate ll:w-full ll:font-sans">
+        {titleOf(name)}
       </span>
     </button>
   );

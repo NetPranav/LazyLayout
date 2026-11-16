@@ -328,9 +328,11 @@ function buildLiveSandboxSrcDoc(): string {
     "    }, parentOrigin);",
     "  }",
     "}",
+    // The page may not be listening yet when the frame starts, so the frame repeats the probe for a few seconds (the
+    // page can't ask: an opaque-origin frame can only be addressed with targetOrigin "*", which the repo forbids).
     "runSandboxProbe();",
-    "setTimeout(runSandboxProbe, 50);",
-    "setTimeout(runSandboxProbe, 200);",
+    "var probeRuns = 0;",
+    "var probeTimer = setInterval(function () { runSandboxProbe(); if (++probeRuns >= 40) clearInterval(probeTimer); }, 100);",
     "</script>",
     "</body>",
     "</html>",

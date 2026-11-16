@@ -714,8 +714,8 @@ test.describe("menus", () => {
     for (let i = 0; i < 4; i++) await layer.hover();
     const sub = page.locator("[data-submenu]");
     await expect.poll(async () => Math.round((await sub.boundingBox())?.width ?? 0), "the submenu is as wide as its menu").toBeGreaterThan(200);
-    await expect(sub.getByRole("menuitem", { name: /^Rename/ })).toBeVisible();
-    expect((await sub.getByRole("menuitem", { name: /^Rename/ }).boundingBox())!.width, "its rows are as wide as the menu").toBeGreaterThan(150);
+    await expect(sub.getByRole("menuitem", { name: /^Hide/ })).toBeVisible();
+    expect((await sub.getByRole("menuitem", { name: /^Hide/ }).boundingBox())!.width, "its rows are as wide as the menu").toBeGreaterThan(150);
     await page.waitForTimeout(800); // the spring has settled
     expect(Math.round((await sub.boundingBox())!.width)).toBeGreaterThan(200);
   });

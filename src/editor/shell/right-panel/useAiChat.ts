@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { z, type ZodType } from "zod";
+import { planBuilderTurn } from "@/ai/llm/builderPlanner";
 import { useGhostDiffStore } from "@/ai/llm/ghostDiffStore";
+import { resolvePromptMentions } from "@/ai/llm/mentions";
 import { readSseFrames } from "@/ai/llm/sse";
 import type { LlmStreamEvent } from "@/ai/llm/types";
-import { validateStreamOutput } from "@/ai/llm/validationLoop";
+import { applyMdmJsonPatches, validateStreamOutput } from "@/ai/llm/validationLoop";
+import { validateMotionDocument } from "@/core/document/schema";
 import { getAllCommands } from "@/core/commands/registry";
 import { rules } from "@/core/rules";
 import { getDocument } from "@/core/store/documentState";
@@ -16,6 +19,7 @@ interface StreamMetaPayload {
   provider: string;
   model: string;
   cachePrefixHash: string;
+  keySource?: "byok" | "server" | "offline";
 }
 
 interface StreamUsagePayload {
@@ -30,6 +34,7 @@ type OnlineProviderId = Exclude<AiProviderId, "offline">;
 interface StoredAiSettings {
   provider: AiProviderId;
   keys: Partial<Record<OnlineProviderId, string>>;
+  useUserKey: Partial<Record<OnlineProviderId, boolean>>;
   models: Partial<Record<AiProviderId, string>>;
 }
 
@@ -42,7 +47,11 @@ const DEFAULT_PROVIDER_STATUS: AiProviderStatusMap = {
   offline: { configured: true, defaultModel: "lazylayout-deterministic-v1.1" },
 };
 
-const EMPTY_SETTINGS: StoredAiSettings = { provider: "anthropic", keys: {}, models: {} };
+const EMPTY_SETTINGS: StoredAiSettings = { provider: "anthropic", keys: {}, useUserKey: {}, models: {} };
+
+function sanitizePastedApiKey(raw: string): string {
+  return raw.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
+}
 let cachedRawSettings: string | null = null;
 let cachedParsedSettings: StoredAiSettings = EMPTY_SETTINGS;
 const settingsListeners = new Set<() => void>();
@@ -68,6 +77,7 @@ function readStoredSettings(): StoredAiSettings {
     cachedParsedSettings = {
       provider,
       keys: parsed.keys && typeof parsed.keys === "object" ? parsed.keys : {},
+      useUserKey: parsed.useUserKey && typeof parsed.useUserKey === "object" ? parsed.useUserKey : {},
       models: parsed.models && typeof parsed.models === "object" ? parsed.models : {},
     };
     return cachedParsedSettings;
@@ -129,6 +139,8 @@ export interface UseAiChatResult {
   setModel: (provider: AiProviderId, model: string) => void;
   providerStatus: AiProviderStatusMap;
   userKeys: Partial<Record<OnlineProviderId, string>>;
+  useUserKey: Partial<Record<OnlineProviderId, boolean>>;
+  setUseUserKey: (provider: OnlineProviderId, useOwn: boolean) => void;
   customModels: Partial<Record<AiProviderId, string>>;
   saveCredentials: (provider: OnlineProviderId, apiKey: string, customModel?: string) => void;
   sendMessage: (content: string) => Promise<void>;
@@ -247,7 +259,7 @@ export function useAiChat({
     readStoredSettings,
     getServerSettingsSnapshot,
   );
-  const { provider, keys: userKeys, models: customModels } = settings;
+  const { provider, keys: userKeys, useUserKey, models: customModels } = settings;
   const [providerStatus, setProviderStatus] = useState<AiProviderStatusMap>(DEFAULT_PROVIDER_STATUS);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -298,12 +310,23 @@ export function useAiChat({
     });
   }, []);
 
+  const setUseUserKey = useCallback((targetProvider: OnlineProviderId, useOwn: boolean) => {
+    const nextUseUserKey = { ...settingsRef.current.useUserKey, [targetProvider]: useOwn };
+    writeStoredSettings({
+      ...settingsRef.current,
+      useUserKey: nextUseUserKey,
+    });
+  }, []);
+
   const saveCredentials = useCallback(
     (targetProvider: OnlineProviderId, apiKey: string, customModel?: string) => {
       const nextKeys = { ...settingsRef.current.keys };
-      const trimmedKey = apiKey.trim();
+      const trimmedKey = sanitizePastedApiKey(apiKey);
       if (trimmedKey) nextKeys[targetProvider] = trimmedKey;
       else delete nextKeys[targetProvider];
+
+      const nextUseUserKey = { ...settingsRef.current.useUserKey };
+      nextUseUserKey[targetProvider] = Boolean(trimmedKey);
 
       const nextModels = { ...settingsRef.current.models };
       const trimmedModel = customModel?.trim();
@@ -313,6 +336,7 @@ export function useAiChat({
       const updated: StoredAiSettings = {
         ...settingsRef.current,
         keys: nextKeys,
+        useUserKey: nextUseUserKey,
         models: nextModels,
       };
       writeStoredSettings(updated);
@@ -353,7 +377,21 @@ export function useAiChat({
         content: "",
       };
 
-      const historyPayload = [...messagesRef.current, userMsg]
+      const docNow = getDocument();
+      const rawSelectedIds = [...useSelectionStore.getState().selectedIds];
+      const resolvedTargets = resolvePromptMentions(content, docNow, rawSelectedIds);
+      const snapshot = {
+        ...buildClientDocumentSnapshot(mode, documentName),
+        selectedIds: resolvedTargets.targetLayerIds.slice(0, 100),
+      };
+      const targetTag =
+        resolvedTargets.matchedCandidates.length > 0
+          ? `[Targeted elements — apply edits to these exact layer IDs: ${resolvedTargets.matchedCandidates
+              .map((c) => `${c.name} (id: "${c.id}", type: ${c.archetype})`)
+              .join(", ")}]\n`
+          : "";
+
+      const historyPayload = [...messagesRef.current, { ...userMsg, content: `${targetTag}${content}` }]
         .filter((m) => m.content.trim().length > 0)
         .map((m) => ({ role: m.role, content: m.content }));
 
@@ -368,8 +406,15 @@ export function useAiChat({
       };
 
       const activeProvider = settingsRef.current.provider;
-      const byokKey =
-        activeProvider !== "offline" ? settingsRef.current.keys[activeProvider]?.trim() : undefined;
+      const storedKey =
+        activeProvider !== "offline"
+          ? sanitizePastedApiKey(settingsRef.current.keys[activeProvider] ?? "")
+          : "";
+      const wantUserKey =
+        activeProvider !== "offline" &&
+        Boolean(storedKey) &&
+        (settingsRef.current.useUserKey?.[activeProvider] ?? true);
+      const byokKey = wantUserKey ? storedKey : undefined;
       const modelOverride = settingsRef.current.models[activeProvider]?.trim();
 
       try {
@@ -381,7 +426,7 @@ export function useAiChat({
             ...(modelOverride ? { model: modelOverride } : {}),
             ...(byokKey ? { apiKey: byokKey } : {}),
             messages: historyPayload,
-            documentContext: buildClientDocumentSnapshot(mode, documentName),
+            documentContext: snapshot,
             commandSchemas: buildClientCommandCatalog(),
           }),
           signal: controller.signal,
@@ -421,10 +466,15 @@ export function useAiChat({
           }
 
           if (evt.type === "meta") {
+            const ks =
+              evt.keySource === "byok" || evt.keySource === "server" || evt.keySource === "offline"
+                ? evt.keySource
+                : undefined;
             setLastMeta({
               provider: String(evt.provider ?? activeProvider),
               model: String(evt.model ?? ""),
               cachePrefixHash: String(evt.cachePrefixHash ?? ""),
+              keySource: ks,
             });
           } else if (evt.type === "text_delta" && typeof evt.delta === "string") {
             const chunkText = evt.delta;
@@ -468,6 +518,8 @@ export function useAiChat({
         }
 
         // Phase 242/243: Validate patch proposals against MDM schema + rules.validate and stage ghost diff
+        let stagedValidProposal = false;
+        const hasErrorEvent = collectedEvents.some((e) => e.type === "error");
         if (collectedEvents.some((e) => e.type === "tool_use" && e.name === "propose_mdm_patches")) {
           const check = validateStreamOutput(getDocument(), collectedEvents, rules.validate);
           if (check.valid && check.patches && check.candidateDocument) {
@@ -478,12 +530,54 @@ export function useAiChat({
               patches: check.patches,
               candidateDocument: check.candidateDocument,
             });
+            stagedValidProposal = true;
           } else if (!check.valid && check.issues.length > 0) {
             const diagNote = check.issues
               .map((i) => `[${i.code}] ${i.message}`)
               .join("; ");
             setError(diagNote);
             updateAssistant((cur) => `${cur}\n\nValidation blocked: ${diagNote}`);
+          }
+        }
+
+        // If the model emitted text / unapplied .nls instead of propose_mdm_patches on a visual/cursor/motion request,
+        // synthesize and stage a real runnable Ghost Diff (bindings / effects / clips) so Preview works immediately.
+        const isVisualBuilderRequest =
+          /\b(add|make|apply|animate|create|megnatic|magnetic|pull|cursor|pointer|hover|tilt|glow|bounce|fade|slide|scale|rotate|pulse|float|stagger|repel)\b/i.test(
+            content,
+          );
+        if (!stagedValidProposal && !hasErrorEvent && isVisualBuilderRequest) {
+          const latestDoc = getDocument();
+          const latestTargets = resolvePromptMentions(
+            content,
+            latestDoc,
+            [...useSelectionStore.getState().selectedIds],
+          );
+          const plan = planBuilderTurn({
+            prompt: content,
+            documentContext: {
+              ...buildClientDocumentSnapshot(mode, documentName),
+              selectedIds: latestTargets.targetLayerIds,
+            },
+            targetLayerIds: latestTargets.targetLayerIds,
+          });
+          if (plan.patches.length > 0) {
+            const applied = applyMdmJsonPatches(latestDoc, plan.patches);
+            const check = applied.ok ? validateMotionDocument(applied.document) : null;
+            if (check?.ok && rules.validate(check.document).length === 0) {
+              useGhostDiffStore.getState().stageProposal({
+                proposalId: assistantId,
+                prompt: content,
+                summary: plan.summary,
+                patches: plan.patches,
+                candidateDocument: check.document,
+                effectChoices: plan.matchedEffects,
+              });
+              updateAssistant(
+                (cur) =>
+                  `${cur ? `${cur}\n\n` : ""}Staged runnable changes: ${plan.summary}. Click "Accept all" below, then click the top-right Preview (▶) button to test it on the canvas.`,
+              );
+            }
           }
         }
       } catch (err) {
@@ -515,6 +609,8 @@ export function useAiChat({
     setModel,
     providerStatus,
     userKeys,
+    useUserKey,
+    setUseUserKey,
     customModels,
     saveCredentials,
     sendMessage,

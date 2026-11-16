@@ -1,4 +1,5 @@
 import type { MotionDocument } from "@/core/document/schema";
+import type { Clip } from "@/core/document/motion";
 import type { MdmJsonPatch } from "./types";
 import { applyMdmJsonPatches, type RulesValidatorFn } from "./validationLoop";
 
@@ -32,7 +33,7 @@ function extractTargetLayerIdFromPatchPath(path: string): string | null {
 
 /**
  * Enforces the Phase 245 selection-scope invariant:
- * every patch MUST target one of `selectedLayerIds` (never unselected layers).
+ * every layer patch MUST target one of `selectedLayerIds` (never unselected layers).
  */
 export function filterPatchesToSelection(
   patches: readonly MdmJsonPatch[],
@@ -43,10 +44,28 @@ export function filterPatchesToSelection(
   let rejectedCount = 0;
 
   for (const patch of patches) {
-    const targetId = extractTargetLayerIdFromPatchPath(patch.path);
-    if (!targetId || !allowed.has(targetId)) {
-      rejectedCount += 1;
+    if (patch.path.startsWith("/layers/")) {
+      const targetId = extractTargetLayerIdFromPatchPath(patch.path);
+      if (!targetId || !allowed.has(targetId)) {
+        rejectedCount += 1;
+        continue;
+      }
+      scoped.push(patch);
       continue;
+    }
+    if (patch.path.startsWith("/clips/") && patch.value && typeof patch.value === "object") {
+      const clipLayerId = (patch.value as { layerId?: unknown }).layerId;
+      if (typeof clipLayerId === "string" && !allowed.has(clipLayerId)) {
+        rejectedCount += 1;
+        continue;
+      }
+    }
+    if (patch.path.startsWith("/bindings/") && patch.value && typeof patch.value === "object") {
+      const ownerLayerId = (patch.value as { ownerLayerId?: unknown }).ownerLayerId;
+      if (typeof ownerLayerId === "string" && !allowed.has(ownerLayerId)) {
+        rejectedCount += 1;
+        continue;
+      }
     }
     scoped.push(patch);
   }
@@ -54,9 +73,11 @@ export function filterPatchesToSelection(
   return { scoped, rejectedCount };
 }
 
+let copilotClipSeq = 0;
+
 /**
  * Phase 245 selection-scoped AI edit (`"bouncier"`, `"stagger from the centre"`, `"calmer on mobile"`, etc.).
- * Guaranteed never to modify unselected layers.
+ * Creates/updates real animated `Clip` keyframes & compositions strictly on `selectedLayerIds`.
  */
 export function runSelectionScopedEdit(
   doc: MotionDocument,
@@ -78,54 +99,130 @@ export function runSelectionScopedEdit(
 
   const normalized = prompt.toLowerCase();
   const rawPatches: MdmJsonPatch[] = [];
+  const hasCompMain = Boolean(doc.compositions?.comp_main);
   let summary = "";
 
-  if (/\bbounc(y|ier|e)\b|\bspring\b/.test(normalized)) {
-    for (const id of validSelected) {
-      rawPatches.push(
-        {
-          op: "add",
-          path: `/layers/${id}/properties/transform.scaleX`,
-          value: 1.06,
-        },
-        {
-          op: "add",
-          path: `/layers/${id}/properties/transform.scaleY`,
-          value: 1.06,
-        },
-      );
+  const pushClipForLayer = (
+    layerId: string,
+    clipName: string,
+    duration: number,
+    easing: string,
+    offsetSec: number,
+    tracks: Clip["tracks"],
+  ) => {
+    copilotClipSeq += 1;
+    const suffix = `${Date.now().toString(36)}_${copilotClipSeq}`;
+    const clipId = `clip_cp_${suffix}`;
+    const clip: Clip = {
+      id: clipId,
+      layerId,
+      name: clipName,
+      type: "entrance",
+      trigger: "mount",
+      duration,
+      easing,
+      enabled: true,
+      tracks,
+    };
+    rawPatches.push({ op: "add", path: `/clips/${clipId}`, value: clip });
+    if (hasCompMain) {
+      rawPatches.push({
+        op: "add",
+        path: "/compositions/comp_main/clips/-",
+        value: { clipId, offset: offsetSec },
+      });
     }
-    summary = `Made ${validSelected.length} selected layer(s) bouncier with GPU-composited spring scale (1.06x).`;
+  };
+
+  if (/\bbounc(y|ier|e)\b|\bspring\b/.test(normalized)) {
+    const existingClips = Object.values(doc.clips).filter((c) => validSelected.includes(c.layerId));
+    for (const c of existingClips) {
+      rawPatches.push({
+        op: "replace",
+        path: `/clips/${c.id}/easing`,
+        value: "spring(bounce: 0.45, time: 0.6)",
+      });
+    }
+    for (const id of validSelected) {
+      const name = doc.layers[id]?.name ?? id;
+      pushClipForLayer(id, `${name} Bounce`, 0.6, "spring(bounce: 0.45, time: 0.6)", 0, [
+        {
+          id: `trk_by_${id}_${copilotClipSeq}`,
+          property: "transform.y",
+          keyframes: [
+            { id: `kf_by0_${copilotClipSeq}`, time: 0, value: 0 },
+            { id: `kf_by1_${copilotClipSeq}`, time: 0.25, value: -16 },
+            { id: `kf_by2_${copilotClipSeq}`, time: 0.6, value: 0 },
+          ],
+        },
+        {
+          id: `trk_bs_${id}_${copilotClipSeq}`,
+          property: "transform.scale",
+          keyframes: [
+            { id: `kf_bs0_${copilotClipSeq}`, time: 0, value: 0.94 },
+            { id: `kf_bs1_${copilotClipSeq}`, time: 0.28, value: 1.08 },
+            { id: `kf_bs2_${copilotClipSeq}`, time: 0.6, value: 1 },
+          ],
+        },
+      ]);
+    }
+    summary = `Added spring bounce animation (bounce 0.45, 0.6s) to ${validSelected.length} selected layer(s). Press Play / Preview to see it bounce.`;
   } else if (/\bstagger\b/.test(normalized)) {
     const center = (validSelected.length - 1) / 2;
     validSelected.forEach((id, idx) => {
       const distanceFromCenter = /\bcent(re|er)\b/.test(normalized)
         ? Math.abs(idx - center)
         : idx;
-      const offsetY = Math.round(distanceFromCenter * 8);
-      rawPatches.push({
-        op: "add",
-        path: `/layers/${id}/properties/transform.y`,
-        value: offsetY,
-      });
+      const offsetSec = Number((distanceFromCenter * 0.09).toFixed(3));
+      const name = doc.layers[id]?.name ?? id;
+      pushClipForLayer(id, `${name} Stagger`, 0.5, "power2.out", offsetSec, [
+        {
+          id: `trk_sy_${id}_${copilotClipSeq}`,
+          property: "transform.y",
+          keyframes: [
+            { id: `kf_sy0_${copilotClipSeq}`, time: 0, value: 24 },
+            { id: `kf_sy1_${copilotClipSeq}`, time: 0.5, value: 0 },
+          ],
+        },
+        {
+          id: `trk_so_${id}_${copilotClipSeq}`,
+          property: "appearance.opacity",
+          keyframes: [
+            { id: `kf_so0_${copilotClipSeq}`, time: 0, value: 0 },
+            { id: `kf_so1_${copilotClipSeq}`, time: 0.5, value: 1 },
+          ],
+        },
+      ]);
     });
-    summary = `Applied ${/\bcent(re|er)\b/.test(normalized) ? "center-out " : ""}stagger offsets across ${validSelected.length} selected layer(s).`;
+    summary = `Added ${/\bcent(re|er)\b/.test(normalized) ? "center-out " : ""}staggered entrance clips across ${validSelected.length} selected layer(s).`;
   } else if (/\bcalm(er)?\b|\bmobile\b|\breduced?\b/.test(normalized)) {
-    for (const id of validSelected) {
-      rawPatches.push(
-        {
-          op: "add",
-          path: `/layers/${id}/properties/transform.scaleX`,
-          value: 1,
-        },
-        {
-          op: "add",
-          path: `/layers/${id}/properties/transform.scaleY`,
-          value: 1,
-        },
-      );
+    const existingClips = Object.values(doc.clips).filter((c) => validSelected.includes(c.layerId));
+    for (const c of existingClips) {
+      rawPatches.push({ op: "replace", path: `/clips/${c.id}/easing`, value: "power2.out" });
+      rawPatches.push({ op: "replace", path: `/clips/${c.id}/duration`, value: 0.85 });
     }
-    summary = `Calmed motion amplitude on mobile for ${validSelected.length} selected layer(s).`;
+    for (const id of validSelected) {
+      const name = doc.layers[id]?.name ?? id;
+      pushClipForLayer(id, `${name} Calm Float`, 0.85, "power2.out", 0, [
+        {
+          id: `trk_cy_${id}_${copilotClipSeq}`,
+          property: "transform.y",
+          keyframes: [
+            { id: `kf_cy0_${copilotClipSeq}`, time: 0, value: 8 },
+            { id: `kf_cy1_${copilotClipSeq}`, time: 0.85, value: 0 },
+          ],
+        },
+        {
+          id: `trk_co_${id}_${copilotClipSeq}`,
+          property: "appearance.opacity",
+          keyframes: [
+            { id: `kf_co0_${copilotClipSeq}`, time: 0, value: 0.65 },
+            { id: `kf_co1_${copilotClipSeq}`, time: 0.85, value: 1 },
+          ],
+        },
+      ]);
+    }
+    summary = `Applied calm 0.85s ease-out motion to ${validSelected.length} selected layer(s). Press Play / Preview to view.`;
   } else {
     for (const id of validSelected) {
       rawPatches.push({

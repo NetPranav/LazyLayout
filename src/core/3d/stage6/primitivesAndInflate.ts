@@ -9,6 +9,8 @@
  * ============================================================================
  */
 
+import { cylinder, torus, uvSphere, type PrimitiveMesh } from "../commands/primitives";
+
 export type Primitive3dKind = "box" | "sphere" | "cylinder" | "torus" | "plane" | "capsule" | "text3d";
 
 export interface MeshGeometry3d {
@@ -113,6 +115,23 @@ function buildClosedPrismFromContour(
   return { vertices: verts, indices: idx, hash: hashMeshNumbers(verts, idx) };
 }
 
+function fromPrimitiveMesh(m: PrimitiveMesh): MeshGeometry3d {
+  const vertices = Array.from(m.positions, (v) => Math.round(v * 1e6) / 1e6);
+  const indices = Array.from(m.indices);
+  return { vertices, indices, hash: hashMeshNumbers(vertices, indices) };
+}
+
+/**
+ * A capsule along Y: a UV sphere with an odd number of rings (so no ring sits on the equator) whose upper half moves
+ * up and lower half moves down by half the straight length. The band joining the two middle rings is the cylinder.
+ */
+function capsuleMesh(radius: number, straightLength: number, segments: number): MeshGeometry3d {
+  const sphere = uvSphere({ radius, segments, rings: 17 });
+  const positions = Float32Array.from(sphere.positions);
+  for (let i = 1; i < positions.length; i += 3) positions[i] += positions[i] > 0 ? straightLength / 2 : -straightLength / 2;
+  return fromPrimitiveMesh({ positions, indices: sphere.indices });
+}
+
 function makeRegularPolygon(sides: number, radius: number): readonly { x: number; y: number }[] {
   const pts: { x: number; y: number }[] = [];
   for (let i = 0; i < sides; i++) {
@@ -147,15 +166,30 @@ export function createParametricPrimitive(
     };
   }
   if (kind === "cylinder" || kind === "sphere" || kind === "capsule" || kind === "torus") {
-    const sides = kind === "cylinder" ? 16 : 20;
-    const bulge = kind === "sphere" ? size * 0.45 : kind === "capsule" ? size * 0.35 : 0;
-    const contour = makeRegularPolygon(sides, size * 0.5);
+    // Real solids from the Phase 3D-011 generators (watertight, outward winding). Before, all four were the same disc
+    // extruded and bulged: the torus had no hole, the sphere was a puck.
+    const r = size * 0.5;
+    let mesh: MeshGeometry3d;
+    let segments: number;
+    if (kind === "sphere") {
+      segments = 24;
+      mesh = fromPrimitiveMesh(uvSphere({ radius: r, segments, rings: 16 }));
+    } else if (kind === "cylinder") {
+      segments = 24;
+      mesh = fromPrimitiveMesh(cylinder({ vertices: segments, depth: Math.max(depth, 1e-3), radius: r }));
+    } else if (kind === "torus") {
+      segments = 32;
+      mesh = fromPrimitiveMesh(torus({ radius: r * 0.7, tube: r * 0.3, radialSegments: 16, tubularSegments: segments }));
+    } else {
+      segments = 24;
+      mesh = capsuleMesh(r * 0.6, Math.max(depth, 1e-3) + r * 0.8, segments);
+    }
     return {
       kind,
-      mesh: buildClosedPrismFromContour(contour, depth / 2, -depth / 2, 0.08, bulge),
+      mesh,
       handles: [
-        { id: "radius", label: "Radius", value: size * 0.5 },
-        { id: "segments", label: "Segments", value: sides },
+        { id: "radius", label: "Radius", value: r },
+        { id: "segments", label: "Segments", value: segments },
       ],
     };
   }

@@ -127,13 +127,6 @@ export function runStage4JourneyA(): JourneyAResult {
   const bgEffect = FULL_EFFECT_LIBRARY.find((e) => e.id === "w7_cursor_nebula") ?? FULL_EFFECT_LIBRARY[0]!;
   const ctaEffect = FULL_EFFECT_LIBRARY.find((e) => e.id === "w2_magnetic_pull") ?? FULL_EFFECT_LIBRARY[0]!;
 
-  const cursor = createCursorOverlayController({
-    preset: "target_brackets",
-    surfaceMode: "preview",
-    hideNativeCursorOptIn: false,
-    reducedMotion: false,
-  });
-
   const hoverRule: SimpleRuleEntry = {
     id: "cta_hover_click",
     event: "hovered",
@@ -149,35 +142,45 @@ export function runStage4JourneyA(): JourneyAResult {
   };
   const compiledGraph = compileSimpleRuleToBlueprint(hoverRule);
 
-  // Scrub deterministically across 5 tape timestamps for desktop and mid-tier phone
-  let desktopAcc = 0;
-  let phoneAcc = 0;
-  let cursorActive = false;
-
-  for (let i = 0; i < 5; i += 1) {
-    const t = i * 0.25;
-    const [u, v] = autopilotUv(42, t);
-    const frameDesktop = cursor.step(1 / 60, {
-      x: u * 1200,
-      y: v * 800,
-      vx: 140,
-      vy: 60,
-      pointerType: "mouse",
-      tapped: i === 3,
-      hoveredTarget: { id: "hero_cta", role: "cta_button", x: 480, y: 360, width: 180, height: 52 },
+  // Scrub the same 5-step tape through the cursor overlay: once on desktop (mouse), once again on a fresh controller
+  // (the replay must give identical output), and once as a phone (touch).
+  const runTape = (pointerType: "mouse" | "touch"): { checksum: number; active: boolean } => {
+    const controller = createCursorOverlayController({
+      preset: "target_brackets",
+      surfaceMode: "preview",
+      hideNativeCursorOptIn: false,
+      reducedMotion: false,
     });
-    cursorActive = cursorActive || frameDesktop.active;
-    desktopAcc += frameDesktop.renderX + frameDesktop.renderY;
-
-    // In exported React bundle, identical deterministic autopilot tape yields identical coordinates
-    const [eu, ev] = autopilotUv(42, t);
-    phoneAcc += (eu * 1200) * 0.5 + (ev * 800) * 0.5;
-  }
+    let acc = 0;
+    let active = false;
+    for (let i = 0; i < 5; i += 1) {
+      const [u, v] = autopilotUv(42, i * 0.25);
+      const frame = controller.step(1 / 60, {
+        x: u * 1200,
+        y: v * 800,
+        vx: 140,
+        vy: 60,
+        pointerType,
+        tapped: i === 3,
+        hoveredTarget: { id: "hero_cta", role: "cta_button", x: 480, y: 360, width: 180, height: 52 },
+      });
+      active = active || frame.active;
+      acc += frame.renderX + frame.renderY;
+    }
+    return { checksum: Number(acc.toFixed(6)), active };
+  };
+  const desktop = runTape("mouse");
+  const replay = runTape("mouse");
+  const phone = runTape("touch");
+  const cursorActive = desktop.active;
+  const desktopAcc = desktop.checksum;
+  const phoneAcc = phone.checksum;
 
   const bundle = buildInteractiveExportBundle(ctaEffect, "next");
   const zeroLazy = bundle.zeroLazyLayoutImports && !bundle.entrySource.includes("@lazylayout/");
-  // Re-evaluate desktop checksum against export pipeline
-  const exportDesktopParity = Number(desktopAcc.toFixed(6)) === Number(desktopAcc.toFixed(6));
+  // What this checks: replaying the tape gives byte-identical cursor output. It does not run the exported bundle; that
+  // needs the export to carry the cursor overlay, which it does not yet (see the Phase 202 status check).
+  const exportDesktopParity = replay.checksum === desktop.checksum;
 
   return {
     backgroundEffectId: bgEffect.id,
@@ -313,7 +316,8 @@ export function runStage4JourneyC(): JourneyCResult {
     editorCardSequence.push(editorFocus.activeId);
   }
 
-  // Standalone Export evaluation via exported keyboard controller
+  // A second, fresh run of the same keyboard controller: the replay must match step for step. (The export does not
+  // ship this controller yet, so this is a determinism check, not editor-vs-export parity.)
   const exportFocus = createRovingFocusGroup(cardIds, { orientation: "horizontal", loop: true, initialId: "card_0" });
   const exportCardSequence: (string | null)[] = [];
   for (const key of keySequence) {
@@ -381,7 +385,7 @@ export function MagneticBadge({ tiltX, label = "New" }: MagneticBadgeProps) {
     zeroLazyLayoutImportsInExport,
     passedIsolation:
       !imported.sandbox.sandboxAttr.includes("allow-same-origin") &&
-      hostileProbe.cookieResult === "" &&
+      hostileProbe.cookieResult === "unreadable" &&
       sandboxLocalStorageBlocked &&
       sandboxParentDomBlocked &&
       !hostileProbe.editorTokenLeaked &&

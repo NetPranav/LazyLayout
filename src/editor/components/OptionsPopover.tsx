@@ -393,7 +393,7 @@ export function OptionsPopover({
         {/* Body content with hairline fields styling */}
         <div
           ref={bodyRef}
-          className="pbody ll-pbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overscroll-contain ll:scrollbar-none ll:px-4 ll:pt-3 ll:pb-4 ll:flex ll:flex-col ll:gap-0 [&_.field]:ll:border [&_.field]:ll:border-border [&_.dfield]:ll:border [&_.dfield]:ll:border-border"
+          className="pbody ll-pbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain ll:scrollbar-none ll:px-4 ll:pt-3 ll:pb-4 ll:flex ll:flex-col ll:gap-0 [&_.field]:ll:border [&_.field]:ll:border-border [&_.dfield]:ll:border [&_.dfield]:ll:border-border"
         >
           {children}
         </div>

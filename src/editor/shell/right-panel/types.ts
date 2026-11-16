@@ -84,6 +84,12 @@ export interface RightPanelFrameProps {
   aiProviderStatus?: AiProviderStatusMap;
   /** Stored user BYOK keys per online provider (browser-local only). */
   aiUserKeys?: Partial<Record<Exclude<AiProviderId, "offline">, string>>;
+  /** Whether the user's BYOK key (true) or built-in server key (false) is active per provider. */
+  aiUseUserKey?: Partial<Record<Exclude<AiProviderId, "offline">, boolean>>;
+  /** Switches between using the user's BYOK key vs the built-in server key. */
+  onAiToggleUseUserKey?: (provider: Exclude<AiProviderId, "offline">, useOwn: boolean) => void;
+  /** Optional key source used on the latest server response ("byok" | "server" | "offline"). */
+  aiLastKeySource?: "byok" | "server" | "offline";
   /** Optional custom model overrides per provider. */
   aiCustomModels?: Partial<Record<AiProviderId, string>>;
   /** Callback when a user attaches/clears a BYOK key or model override. */

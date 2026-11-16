@@ -677,6 +677,24 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
             {/* Content Slot for Artboard and stage handles */}
             {children}
+
+            {canvasViewMode === "preview" && (
+              <div
+                role="status"
+                aria-label="Preview mode active"
+                className="ll:absolute ll:top-3 ll:left-1/2 ll:-translate-x-1/2 ll:z-40 ll:h-7 ll:px-3 ll:flex ll:items-center ll:gap-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:text-nano ll:text-primary ll:shadow-md"
+              >
+                <span className="ll:w-2 ll:h-2 ll:rounded-full ll:bg-control-primary-bg" />
+                <span>Preview active — hover or interact on canvas</span>
+                <button
+                  type="button"
+                  onClick={() => useCanvasViewStore.getState().setMode("design")}
+                  className="ll:ml-1 ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:bg-surface-bar ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+                >
+                  Exit (Esc)
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 3D Viewport Chrome & Last Operation Host */}

@@ -112,3 +112,35 @@ describe("Stage 6 Phases 218–223 · Stack, Scene Layer, Viewport, Hierarchy, P
     assert.equal(checkMeshWatertight(surface.getMesh()).watertight, true);
   });
 });
+
+describe("Phase 222 · primitives have the right shape (audit 2026-11-16)", () => {
+  const pts = (k: Parameters<typeof createParametricPrimitive>[0], p = {}) => {
+    const v = createParametricPrimitive(k, p).mesh.vertices;
+    return Array.from({ length: v.length / 3 }, (_, i) => ({ x: v[i * 3]!, y: v[i * 3 + 1]!, z: v[i * 3 + 2]! }));
+  };
+
+  it("a sphere's every vertex is one radius from its centre", () => {
+    for (const p of pts("sphere", { size: 2 })) assert.ok(Math.abs(Math.hypot(p.x, p.y, p.z) - 1) < 1e-4, JSON.stringify(p));
+  });
+
+  it("a torus (lying flat, around Y) has a hole: no vertex is nearer its axis than the major minus the minor radius", () => {
+    const ps = pts("torus", { size: 2 });
+    const minAxis = Math.min(...ps.map((p) => Math.hypot(p.x, p.z)));
+    const maxAxis = Math.max(...ps.map((p) => Math.hypot(p.x, p.z)));
+    // size 2 → r 1, major 0.7, tube 0.3: the ring spans 0.4 … 1.0 from the axis.
+    assert.ok(Math.abs(minAxis - 0.4) < 1e-3 && Math.abs(maxAxis - 1.0) < 1e-3, `${minAxis} … ${maxAxis}`);
+  });
+
+  it("a capsule is longer than it is wide, with round ends", () => {
+    const ps = pts("capsule", { size: 1, depth: 1 });
+    const h = Math.max(...ps.map((p) => p.y)) - Math.min(...ps.map((p) => p.y));
+    const w = Math.max(...ps.map((p) => p.x)) - Math.min(...ps.map((p) => p.x));
+    assert.ok(h > w * 1.5, `h ${h} w ${w}`);
+  });
+
+  it("every solid primitive is watertight", () => {
+    for (const k of ["box", "sphere", "cylinder", "torus", "capsule"] as const) {
+      assert.equal(checkMeshWatertight(createParametricPrimitive(k).mesh).watertight, true, k);
+    }
+  });
+});

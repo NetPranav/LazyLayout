@@ -72,6 +72,9 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   onAiModelChange,
   aiProviderStatus,
   aiUserKeys,
+  aiUseUserKey,
+  onAiToggleUseUserKey,
+  aiLastKeySource,
   aiCustomModels,
   onAiSaveCredentials,
   aiInputPlaceholder,
@@ -142,6 +145,9 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
           onAiModelChange={onAiModelChange}
           aiProviderStatus={aiProviderStatus}
           aiUserKeys={aiUserKeys}
+          aiUseUserKey={aiUseUserKey}
+          onAiToggleUseUserKey={onAiToggleUseUserKey}
+          aiLastKeySource={aiLastKeySource}
           aiCustomModels={aiCustomModels}
           onAiSaveCredentials={onAiSaveCredentials}
           aiInputPlaceholder={aiInputPlaceholder}
@@ -186,12 +192,12 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
           <div
             id={bodyId}
             ref={bodyRef}
-            className="ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto"
+            className="ll-zbody ll:flex-1 ll:min-h-0 ll:overflow-y-auto ll:overflow-x-hidden"
           >
             {children ? (
               children
             ) : mode === "design" ? (
-              <div id={designContainerId} className="ll:flex ll:flex-col">
+              <div id={designContainerId} className="ll:flex ll:flex-col ll:min-w-0">
                 {designSections.map((sec) => (
                   <RightPanelSection
                     key={sec.id}
@@ -206,7 +212,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
                 ))}
               </div>
             ) : mode === "motion" ? (
-              <div id={motionContainerId} className="ll:flex ll:flex-col">
+              <div id={motionContainerId} className="ll:flex ll:flex-col ll:min-w-0">
                 {motionRows.map((row) => (
                   <RightPanelAccordionRow
                     key={row.id}
@@ -221,7 +227,7 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
                 ))}
               </div>
             ) : (
-              <div id={codeContainerId} className="ll:flex ll:flex-col">
+              <div id={codeContainerId} className="ll:flex ll:flex-col ll:min-w-0">
                 {codeRows.map((row) => (
                   <RightPanelAccordionRow
                     key={row.id}
