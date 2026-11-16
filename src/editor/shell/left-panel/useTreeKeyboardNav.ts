@@ -47,6 +47,7 @@ export function useTreeKeyboardNav<T extends NavigableTreeNode>({
       switch (e.key) {
         case "ArrowDown": {
           e.preventDefault();
+          e.stopPropagation();
           const nextIndex = Math.min(currentIndex + 1, visibleNodes.length - 1);
           const nextNode = visibleNodes[nextIndex];
           if (nextNode) {
@@ -57,6 +58,7 @@ export function useTreeKeyboardNav<T extends NavigableTreeNode>({
         }
         case "ArrowUp": {
           e.preventDefault();
+          e.stopPropagation();
           const prevIndex = Math.max(currentIndex - 1, 0);
           const prevNode = visibleNodes[prevIndex];
           if (prevNode) {
@@ -67,6 +69,7 @@ export function useTreeKeyboardNav<T extends NavigableTreeNode>({
         }
         case "ArrowRight": {
           e.preventDefault();
+          e.stopPropagation();
           const currNode = visibleNodes[currentIndex];
           if (currNode && currNode.hasChildren) {
             if (!currNode.expanded) {
@@ -81,6 +84,7 @@ export function useTreeKeyboardNav<T extends NavigableTreeNode>({
         }
         case "ArrowLeft": {
           e.preventDefault();
+          e.stopPropagation();
           const currNode = visibleNodes[currentIndex];
           if (currNode) {
             if (currNode.hasChildren && currNode.expanded) {
@@ -94,6 +98,7 @@ export function useTreeKeyboardNav<T extends NavigableTreeNode>({
         }
         case "Home": {
           e.preventDefault();
+          e.stopPropagation();
           if (visibleNodes[0]) {
             onSelect?.(visibleNodes[0].id, e);
             focusNode(visibleNodes[0].id);

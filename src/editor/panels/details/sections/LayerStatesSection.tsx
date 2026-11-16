@@ -71,18 +71,19 @@ export const LayerStatesSection: React.FC<InspectorSectionProps> = ({ selectedId
         </OptionRow>
       )}
       <OptionRow label="Custom">
-        <div className="ll:flex ll:gap-1.5 ll:w-full">
+        <div className="ll:flex ll:gap-1.5 ll:w-full ll:min-w-0">
           <input
             aria-label="Custom state name"
             title="A name for your own state, such as open or loading. It is shown by picking it."
             spellCheck={false}
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
-            className="ll-dfield ll:flex-1 ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-transparent ll:focus:border-primary ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+            className="ll-dfield ll:flex-1 ll:min-w-0 ll:w-full ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-transparent ll:focus:border-primary ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
           />
           <Button
             size="sm"
             aria-label="Add custom state"
+            className="ll:shrink-0"
             onClick={() => {
               if (!custom.trim()) return;
               run("layer.addState", { id: selectedId, name: custom.trim() });

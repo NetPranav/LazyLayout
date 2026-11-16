@@ -191,6 +191,14 @@ export const LayerContextMenuContent: React.FC<LayerContextMenuContentProps> = (
       >
         Tidy up
       </MenuItem>
+      <MenuItem
+        icon={<Icon icon={Type} size={MENU_ICON_SIZE} />}
+        shortcut="F2"
+        disabled={selectionCount !== 1}
+        onClick={() => onAction("rename")}
+      >
+        Rename
+      </MenuItem>
 
       <MenuSeparator />
 

@@ -44,6 +44,7 @@ import {
   BAND_STRETCH_FACTOR,
 } from "./constants";
 import { useLayersUiStore } from "@/core/store/useLayersUiStore";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 
 export interface LayersTreeProps {
   layers: LayerItem[];
@@ -142,8 +143,11 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   const hovBandRef = useRef<HTMLElement>(null);
   const dropLineRef = useRef<HTMLDivElement>(null);
 
+  const storeRenamingId = useCanvasViewStore((s) => s.renamingId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState<string>("");
+  const [prevStoreRenamingId, setPrevStoreRenamingId] = useState<string | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const storeToastMsg = useLayersUiStore((s) => s.toastMsg);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -424,18 +428,47 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
   const handleTreeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "F2") {
       e.preventDefault();
+      e.stopPropagation();
       const target = visibleNodes.find((n) => n.id === activeId);
       if (target && !target.locked && onRename) {
         setEditingId(target.id);
         setDraftName(target.name);
+        useCanvasViewStore.getState().startRename(target.id);
       }
       return;
     }
     baseKeyNav(e);
   };
 
+  if (storeRenamingId !== prevStoreRenamingId) {
+    setPrevStoreRenamingId(storeRenamingId);
+    if (storeRenamingId) {
+      const target = visibleNodes.find((n) => n.id === storeRenamingId);
+      if (target && !target.locked && onRename) {
+        setEditingId(target.id);
+        setDraftName(target.name);
+      }
+    } else {
+      setEditingId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!editingId) return;
+    const t = window.setTimeout(() => {
+      const input = renameInputRef.current;
+      if (!input) return;
+      input.focus();
+      input.select();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [editingId]);
+
   const handleCommitRename = (id: string, originalName: string, nameEl: HTMLElement | null) => {
     setEditingId(null);
+    if (useCanvasViewStore.getState().renamingId === id) {
+      useCanvasViewStore.getState().stopRename();
+    }
     const trimmed = draftName.trim();
     if (trimmed && trimmed !== originalName) {
       onRename?.(id, trimmed);
@@ -940,6 +973,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                     if (!node.locked && onRename) {
                       setEditingId(node.id);
                       setDraftName(node.name);
+                      useCanvasViewStore.getState().startRename(node.id);
                     }
                   }}
                   className={`row ll-row ll:group ll:relative ll:flex ll:items-center ll:h-8 ll:pr-2 ll:text-left ll:w-full ll:whitespace-nowrap ll:select-none ll:outline-none ll:cursor-pointer ll:text-body ll:font-normal ll:box-border ${
@@ -984,6 +1018,7 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                   >
                     {editingId === node.id ? (
                       <input
+                        ref={renameInputRef}
                         type="text"
                         value={draftName}
                         autoFocus
@@ -996,7 +1031,12 @@ export const LayersTree: React.FC<LayersTreeProps> = ({
                           if (e.key === "Enter") {
                             handleCommitRename(node.id, node.name, e.currentTarget.parentElement);
                           }
-                          if (e.key === "Escape") setEditingId(null);
+                          if (e.key === "Escape") {
+                            setEditingId(null);
+                            if (useCanvasViewStore.getState().renamingId === node.id) {
+                              useCanvasViewStore.getState().stopRename();
+                            }
+                          }
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="rnin ll-rnin"

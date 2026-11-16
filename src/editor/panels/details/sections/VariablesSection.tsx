@@ -227,14 +227,14 @@ export const VariablesSection: React.FC<InspectorSectionProps> = ({ selectedId, 
         </div>
       </OptionRow>
       {styles.map((s) => (
-        <div key={s.id} className="ll:flex ll:items-center ll:gap-1.5" data-style-id={s.id}>
-          <span className="ll:flex-1 ll:truncate ll:text-micro">
+        <div key={s.id} className="ll:flex ll:items-center ll:gap-1.5 ll:w-full ll:min-w-0" data-style-id={s.id}>
+          <span className="ll:flex-1 ll:min-w-0 ll:truncate ll:text-micro">
             {s.name} <span className="ll:text-text-muted">({s.kind === "paint" ? "fill" : s.kind})</span>
           </span>
-          <Button size="sm" aria-label={`Apply ${s.name}`} disabled={ids.length === 0} onClick={() => run("style.apply", { id: s.id })}>
+          <Button size="sm" aria-label={`Apply ${s.name}`} disabled={ids.length === 0} onClick={() => run("style.apply", { id: s.id })} className="ll:shrink-0">
             Apply
           </Button>
-          <Button size="sm" aria-label={`Delete style ${s.name}`} onClick={() => run("style.delete", { id: s.id })}>
+          <Button size="sm" aria-label={`Delete style ${s.name}`} onClick={() => run("style.delete", { id: s.id })} className="ll:shrink-0">
             <Icon icon={Minus} size={12} />
           </Button>
         </div>
