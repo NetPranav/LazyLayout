@@ -328,9 +328,11 @@ function buildLiveSandboxSrcDoc(): string {
     "    }, parentOrigin);",
     "  }",
     "}",
-    // The page may not be listening yet when the frame starts, so it also asks for the probe once it is.
-    "window.addEventListener('message', function (e) { if (e.data && e.data.type === 's4-run-probe') runSandboxProbe(); });",
+    // The page may not be listening yet when the frame starts, so the frame repeats the probe for a few seconds (the
+    // page can't ask: an opaque-origin frame can only be addressed with targetOrigin "*", which the repo forbids).
     "runSandboxProbe();",
+    "var probeRuns = 0;",
+    "var probeTimer = setInterval(function () { runSandboxProbe(); if (++probeRuns >= 40) clearInterval(probeTimer); }, 100);",
     "</script>",
     "</body>",
     "</html>",
@@ -385,7 +387,6 @@ export function InteractiveLab() {
 
   const splitResult = useMemo(() => splitTextIntoRealLayers("headline-hero", "HELLO", "letters"), []);
   const sandboxSrcDoc = useMemo(() => buildLiveSandboxSrcDoc(), []);
-  const sandboxFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const [pointerCoords, setPointerCoords] = useState({ x: 320, y: 110, down: false });
   const [busMetrics, setBusMetrics] = useState({ frameCount: 0, speed: 0 });
@@ -446,8 +447,6 @@ export function InteractiveLab() {
       });
     };
     window.addEventListener("message", onWindowMessage);
-    // Ask the frame now that we listen: its own first run may have posted before this listener existed.
-    sandboxFrameRef.current?.contentWindow?.postMessage({ type: "s4-run-probe" }, "*");
     return () => {
       window.removeEventListener("message", onWindowMessage);
     };
@@ -1275,8 +1274,6 @@ export function InteractiveLab() {
           </div>
           <iframe
             data-testid="s4-sandbox-iframe"
-            ref={sandboxFrameRef}
-            onLoad={(e) => e.currentTarget.contentWindow?.postMessage({ type: "s4-run-probe" }, "*")}
             title="Stage 4 Opaque Origin Sandbox Probe"
             sandbox="allow-scripts"
             srcDoc={sandboxSrcDoc}
