@@ -7,9 +7,31 @@
  */
 
 import { z } from "zod";
-import { LayerSchema } from "../document/schema";
-import { ClipSchema } from "../document/motion";
-import type { Clip, Layer } from "../document/schema";
+import {
+  AssetEntrySchema,
+  LayerSchema,
+  StyleEntrySchema,
+  VariableEntrySchema,
+  type AssetEntry,
+  type Clip,
+  type Layer,
+  type StyleEntry,
+  type VariableEntry,
+} from "../document/schema";
+import {
+  BehaviourSchema,
+  ClipSchema,
+  SequenceSchema,
+  StateSchema,
+  TransitionSchema,
+  type Behaviour,
+  type LayerState,
+  type Sequence,
+  type Transition,
+} from "../document/motion";
+import { BindingSchema, type Binding } from "../document/signals";
+import { EffectInstanceSchema, SurfaceSchema, type EffectInstance, type Surface } from "../document/effects";
+import { InteractionGraphSchema, type InteractionGraph } from "../document/graph";
 
 export const CLIP_MARK = "lazylayout:clip:1";
 export const CLIP_STORAGE_KEY = "lazylayout:clipboard";
@@ -23,6 +45,17 @@ const PayloadSchema = z.object({
   clips: z.array(ClipSchema).max(MAX_CLIP_LAYERS),
   roots: z.array(z.string()).min(1),
   source: z.object({ projectId: z.string().optional(), parentId: z.string().nullable(), at: z.number() }),
+  states: z.array(StateSchema).max(MAX_CLIP_LAYERS).optional(),
+  behaviours: z.array(BehaviourSchema).max(MAX_CLIP_LAYERS).optional(),
+  transitions: z.array(TransitionSchema).max(MAX_CLIP_LAYERS).optional(),
+  surfaces: z.array(SurfaceSchema).max(MAX_CLIP_LAYERS).optional(),
+  effects: z.array(EffectInstanceSchema).max(MAX_CLIP_LAYERS).optional(),
+  bindings: z.array(BindingSchema).max(MAX_CLIP_LAYERS).optional(),
+  graphs: z.array(InteractionGraphSchema).max(MAX_CLIP_LAYERS).optional(),
+  sequences: z.array(SequenceSchema).max(MAX_CLIP_LAYERS).optional(),
+  assets: z.record(z.string(), AssetEntrySchema).optional(),
+  variables: z.record(z.string(), VariableEntrySchema).optional(),
+  styles: z.record(z.string(), StyleEntrySchema).optional(),
 });
 
 export interface ClipPayload {
@@ -33,17 +66,50 @@ export interface ClipPayload {
   roots: string[];
   /** Where they came from: the parent they were copied out of (null for a frame) and when. */
   source: { projectId?: string; parentId: string | null; at: number };
+  states?: LayerState[];
+  behaviours?: Behaviour[];
+  transitions?: Transition[];
+  surfaces?: Surface[];
+  effects?: EffectInstance[];
+  bindings?: Binding[];
+  graphs?: InteractionGraph[];
+  sequences?: Sequence[];
+  assets?: Record<string, AssetEntry>;
+  variables?: Record<string, VariableEntry>;
+  styles?: Record<string, StyleEntry>;
 }
 
 export function serializeClip(payload: ClipPayload): string {
   return `${CLIP_MARK}\n${JSON.stringify(payload)}`;
 }
 
-/** The payload in `text`, or null if it isn't ours or doesn't pass the schema. */
-export function parseClip(text: string | null | undefined): ClipPayload | null {
-  if (!text || text.length > MAX_CLIP_CHARS || !text.startsWith(CLIP_MARK)) return null;
+/** Extracts a balanced `{...}` JSON object starting at `openIdx` (respecting strings/escapes). */
+function extractJsonObject(source: string, openIdx: number): string | null {
+  if (source[openIdx] !== "{") return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = openIdx; i < source.length; i++) {
+    const ch = source[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === "\\") escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return source.slice(openIdx, i + 1);
+    }
+  }
+  return null;
+}
+
+function validateClipObject(rawJson: string): ClipPayload | null {
   try {
-    const json: unknown = JSON.parse(text.slice(CLIP_MARK.length));
+    const json: unknown = JSON.parse(rawJson);
     const parsed = PayloadSchema.safeParse(json);
     if (!parsed.success) return null;
     const { layers, roots } = parsed.data;
@@ -53,6 +119,38 @@ export function parseClip(text: string | null | undefined): ClipPayload | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Extracts and validates the payload in `text`, accepting either direct `lazylayout:clip:1` text
+ * or saved plain-text / Markdown snippets wrapping the payload in prose or code fences.
+ */
+export function parseClip(text: string | null | undefined): ClipPayload | null {
+  if (!text || text.length > MAX_CLIP_CHARS) return null;
+  let searchFrom = 0;
+  while (searchFrom < text.length) {
+    const markerIdx = text.indexOf(CLIP_MARK, searchFrom);
+    if (markerIdx === -1) break;
+    const afterMark = text.slice(markerIdx + CLIP_MARK.length);
+    const wsMatch = /^\s*/.exec(afterMark);
+    const openOffset = wsMatch ? wsMatch[0].length : 0;
+    if (afterMark[openOffset] === "{") {
+      const jsonBlock = extractJsonObject(afterMark, openOffset);
+      if (jsonBlock) {
+        const parsed = validateClipObject(jsonBlock);
+        if (parsed) return parsed;
+      }
+    }
+    searchFrom = markerIdx + CLIP_MARK.length;
+  }
+  // Fallback for Markdown/text files where a user copied a fenced JSON block without the header line.
+  const trimmed = text.trim();
+  const bareMatch = /```(?:lazylayout|json)?\s*\r?\n(\{[\s\S]*\})\s*\r?\n```/i.exec(trimmed);
+  if (bareMatch) {
+    const jsonBlock = extractJsonObject(bareMatch[1], 0);
+    if (jsonBlock) return validateClipObject(jsonBlock);
+  }
+  return null;
 }
 
 /** Mirrors the clip to localStorage. Returns false when storage is full or blocked, so a cut knows nothing was kept. */

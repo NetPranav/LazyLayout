@@ -288,6 +288,29 @@ export const AssetEntrySchema = z.object({
 });
 export type AssetEntry = z.infer<typeof AssetEntrySchema>;
 
+export const VariableEntrySchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(120),
+  type: z.enum(["color", "number", "string", "boolean"]),
+  values: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.object({ alias: z.string() })])),
+  collection: z.string().max(40).optional(),
+  description: z.string().max(2000).optional(),
+  scopes: z.array(z.string().max(40)).max(20).optional(),
+  codeSyntax: z.object({ WEB: z.string().max(200).optional(), iOS: z.string().max(200).optional(), ANDROID: z.string().max(200).optional() }).optional(),
+  hidden: z.boolean().optional(),
+});
+export type VariableEntry = z.infer<typeof VariableEntrySchema>;
+
+export const StyleEntrySchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(120),
+  kind: z.enum(["text", "effect", "paint", "grid"]),
+  props: z.record(z.string(), PropValueSchema),
+  description: z.string().max(2000).optional(),
+  bound: z.record(z.string().max(120), z.string()).optional(),
+});
+export type StyleEntry = z.infer<typeof StyleEntrySchema>;
+
 const MotionDocumentShape = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   layers: z.record(IdSchema, LayerSchema),
@@ -357,36 +380,9 @@ const MotionDocumentShape = z.object({
    * Variables with a value for each mode (Phase 45: colour and number). FigCraft port F10: string and boolean types, a
    * value that is an alias of another variable, a collection, a description, scopes, code syntax.
    */
-  variables: z
-    .record(
-      z.string(),
-      z.object({
-        id: z.string(),
-        name: z.string().min(1).max(120),
-        type: z.enum(["color", "number", "string", "boolean"]),
-        values: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.object({ alias: z.string() })])),
-        collection: z.string().max(40).optional(),
-        description: z.string().max(2000).optional(),
-        scopes: z.array(z.string().max(40)).max(20).optional(),
-        codeSyntax: z.object({ WEB: z.string().max(200).optional(), iOS: z.string().max(200).optional(), ANDROID: z.string().max(200).optional() }).optional(),
-        hidden: z.boolean().optional(),
-      }),
-    )
-    .optional(),
+  variables: z.record(z.string(), VariableEntrySchema).optional(),
   /** Styles (Phase 45: text and effect; FigCraft port F10: paint and grid, a description, and variables bound inside them). */
-  styles: z
-    .record(
-      z.string(),
-      z.object({
-        id: z.string(),
-        name: z.string().min(1).max(120),
-        kind: z.enum(["text", "effect", "paint", "grid"]),
-        props: z.record(z.string(), PropValueSchema),
-        description: z.string().max(2000).optional(),
-        bound: z.record(z.string().max(120), z.string()).optional(),
-      }),
-    )
-    .optional(),
+  styles: z.record(z.string(), StyleEntrySchema).optional(),
   /** Saved stroke width profiles to reuse (Phase 119): a name and the points along the stroke (t 0..1, a width scale, a bias between the sides). */
   widthProfiles: z
     .array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(60), points: z.array(z.object({ t: z.number().min(0).max(1), scale: z.number().min(0).max(1000), bias: z.number().min(-1).max(1).optional() })).min(1).max(64) }))

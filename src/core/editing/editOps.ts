@@ -23,6 +23,7 @@ import { useCanvasViewStore } from "../store/useCanvasViewStore";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { cloneLayers, subtreeIds, topmost } from "./cloneLayers";
 import { MAX_CLIP_LAYERS, parseClip, serializeClip, type ClipPayload } from "./clipboard";
+import { cloneClipboardExtras, collectClipboardExtras } from "./clipboardExtras";
 import { parentOrigin, worldBox, writeBoxes } from "./layerBoxes";
 import { documentOrder, isSelectable } from "../selection/selectionOps";
 import { repairPageRoots } from "../frames/pageRoots";
@@ -82,12 +83,17 @@ export function copyText(ids: readonly string[], projectId?: string): string | n
   for (const r of roots) subtreeIds(doc.layers, r).forEach((id) => include.add(id));
   // More than a paste will take: copy nothing rather than put a clip on the clipboard that pastes nothing.
   if (include.size > MAX_CLIP_LAYERS) return null;
+  const layers = documentOrder(doc.layers).filter((id) => include.has(id)).map((id) => structuredClone(doc.layers[id]));
+  const clips = Object.values(doc.clips).filter((c) => include.has(c.layerId)).map((c) => structuredClone(c));
+  const clipIds = new Set(clips.map((c) => c.id));
+  const extras = collectClipboardExtras(doc, include, layers, clipIds);
   const payload: ClipPayload = {
     v: 1,
-    layers: documentOrder(doc.layers).filter((id) => include.has(id)).map((id) => structuredClone(doc.layers[id])),
-    clips: Object.values(doc.clips).filter((c) => include.has(c.layerId)).map((c) => structuredClone(c)),
+    layers,
+    clips,
     roots,
     source: { projectId, parentId: doc.layers[roots[0]].parentId, at: Date.now() },
+    ...extras,
   };
   return serializeClip(payload);
 }
@@ -138,7 +144,8 @@ export function pasteText(text: string | null | undefined, options: PasteOptions
       }
       clone.properties = props;
     });
-    documentCommands.insertLayers(bundle.layers, bundle.clips, "Paste");
+    const extras = cloneClipboardExtras(payload, doc, bundle.idMap, bundle.clipIdMap);
+    documentCommands.insertLayers(bundle.layers, bundle.clips, "Paste", extras);
     select(bundle.roots);
     return bundle.roots;
   });

@@ -62,7 +62,7 @@ import { arrangement, buildShapes } from "./shapeBuilder";
 import type { Paint } from "../paint/paints";
 import { setFill, setFrame, setOpacity, setRadius, setSimpleText, setStroke } from "../inspector/simpleOps";
 import { ALIGN_MODES, type AlignMode } from "../geometry/align";
-import { defineCommand, defineTypedCommand, getContextKeys, type ContextKeys } from "../commands";
+import { defineCommand, defineTypedCommand, getContextKeys, isTextEditingTarget, type ContextKeys } from "../commands";
 import { getDocument } from "../store/documentState";
 import { documentCommands } from "../store/useDocumentStore";
 import { useCanvasViewStore } from "../store/useCanvasViewStore";
@@ -674,11 +674,33 @@ export function registerEditingCommands(): () => void {
   return () => offs.forEach((off) => off());
 }
 
-/** The browser's own copy, cut and paste events: what Ctrl/Cmd+C, X and V fire. Only while the canvas has focus and a layer is selected (copy, cut) or a layer clip is on the clipboard (paste). */
+const clipboardDocs = new WeakMap<Document, { count: number; detach: () => void }>();
+
+/** The browser's own copy, cut and paste events: what Ctrl/Cmd+C, X and V fire. Works anywhere outside text inputs, timeline, and blueprint. */
 export function installClipboardEvents(target: Window): () => void {
-  const canvas = () => getContextKeys().canvasFocus && !getContextKeys().textEditing;
+  const doc = target.document;
+  const existing = clipboardDocs.get(doc);
+  if (existing) {
+    existing.count += 1;
+    return () => {
+      existing.count -= 1;
+      if (existing.count <= 0) {
+        existing.detach();
+        clipboardDocs.delete(doc);
+      }
+    };
+  }
+
+  const canUseClipboard = (e: ClipboardEvent, forCopy: boolean): boolean => {
+    if (e.defaultPrevented) return false;
+    const ctx = getContextKeys();
+    if (ctx.textEditing || isTextEditingTarget(e.target) || ctx.timelineFocus || ctx.blueprintFocus) return false;
+    if (useToolStore.getState().gesturing || useCanvasViewStore.getState().mode !== "design") return false;
+    if (forCopy && !ctx.canvasFocus && target.getSelection?.()?.toString()) return false;
+    return true;
+  };
   const onCopy = (e: ClipboardEvent, cut: boolean) => {
-    if (!canvas() || !hasSelection() || !e.clipboardData) return;
+    if (!canUseClipboard(e, true) || !hasSelection() || !e.clipboardData) return;
     const text = copyText(ids());
     if (!text) return;
     e.clipboardData.setData("text/plain", text); // the system clipboard has it now: a cut can go ahead
@@ -690,7 +712,7 @@ export function installClipboardEvents(target: Window): () => void {
   const cut = (e: Event) => onCopy(e as ClipboardEvent, true);
   const paste = (e: Event) => {
     const ev = e as ClipboardEvent;
-    if (!canvas()) return;
+    if (!canUseClipboard(ev, false)) return;
     // a picture copied from elsewhere pastes as an image layer (Phase 36)
     const pictures = Array.from(ev.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
     if (pictures.length > 0) {
@@ -705,12 +727,21 @@ export function installClipboardEvents(target: Window): () => void {
     ev.preventDefault();
     pasteText(text, { into: pasteTarget() });
   };
-  target.document.addEventListener("copy", copy);
-  target.document.addEventListener("cut", cut);
-  target.document.addEventListener("paste", paste);
+  doc.addEventListener("copy", copy);
+  doc.addEventListener("cut", cut);
+  doc.addEventListener("paste", paste);
+  const detach = () => {
+    doc.removeEventListener("copy", copy);
+    doc.removeEventListener("cut", cut);
+    doc.removeEventListener("paste", paste);
+  };
+  const entry = { count: 1, detach };
+  clipboardDocs.set(doc, entry);
   return () => {
-    target.document.removeEventListener("copy", copy);
-    target.document.removeEventListener("cut", cut);
-    target.document.removeEventListener("paste", paste);
+    entry.count -= 1;
+    if (entry.count <= 0) {
+      entry.detach();
+      clipboardDocs.delete(doc);
+    }
   };
 }

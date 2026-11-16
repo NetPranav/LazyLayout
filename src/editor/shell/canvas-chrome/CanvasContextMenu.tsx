@@ -30,7 +30,6 @@ import {
   ThemeSwatch,
 } from "@/editor/components/Menu";
 import { MENU_ICON_SIZE } from "@/editor/components/topbar-constants";
-import { Tooltip } from "@/editor/components/Tooltip";
 import { invokeCommand } from "@/core/commands";
 import { addFrame } from "@/core/frames/frameCommands";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -198,23 +197,18 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
       >
         Redo
       </MenuItem>
-      <Tooltip content="Clipboard is empty" side="right">
-        <div className="ll:w-full">
-          <MenuItem
-            icon={<Icon icon={ClipboardPaste} size={MENU_ICON_SIZE} />}
-            shortcut="Ctrl+V"
-            disabled={true}
-            onClick={() => {
-              onPaste?.();
-              try {
-                invokeCommand("edit.paste");
-              } catch {}
-            }}
-          >
-            Paste here
-          </MenuItem>
-        </div>
-      </Tooltip>
+      <MenuItem
+        icon={<Icon icon={ClipboardPaste} size={MENU_ICON_SIZE} />}
+        shortcut="Ctrl+V"
+        onClick={() => {
+          onPaste?.();
+          try {
+            invokeCommand("edit.paste");
+          } catch {}
+        }}
+      >
+        Paste here
+      </MenuItem>
 
       <MenuSeparator />
 

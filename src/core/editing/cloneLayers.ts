@@ -13,6 +13,8 @@ export interface LayerBundle {
   roots: string[];
   /** Old id to new id, for every cloned layer. */
   idMap: Map<string, string>;
+  /** Old id to new id, for every cloned clip. */
+  clipIdMap: Map<string, string>;
 }
 
 /** The ids of `rootId` and everything under it, parents before children. */
@@ -65,20 +67,31 @@ export function cloneLayers(
   }
   const copies = order.map((id): Layer => {
     const layer = structuredClone(layers[id]);
+    const parentRef =
+      layer.parentRef == null
+        ? layer.parentRef
+        : idMap.has(layer.parentRef)
+          ? idMap.get(layer.parentRef)!
+          : existing.layers && Object.prototype.hasOwnProperty.call(existing.layers, layer.parentRef)
+            ? layer.parentRef
+            : null;
     return {
       ...layer,
       id: idMap.get(id)!,
       parentId: layer.parentId !== null && idMap.has(layer.parentId) ? idMap.get(layer.parentId)! : null,
+      parentRef,
       children: layer.children.filter((c) => idMap.has(c)).map((c) => idMap.get(c)!),
     };
   });
   const clipIds = new Set<string>([...Object.keys(clips), ...Object.keys(existing.clips ?? {})]);
+  const clipIdMap = new Map<string, string>();
   const clipCopies: Clip[] = Object.values(clips)
     .filter((c) => idMap.has(c.layerId))
     .map((c) => {
       const id = createUniqueId("clip", clipIds);
       clipIds.add(id);
+      clipIdMap.set(c.id, id);
       return { ...structuredClone(c), id, layerId: idMap.get(c.layerId)! };
     });
-  return { layers: copies, clips: clipCopies, roots: rootIds.map((r) => idMap.get(r)!), idMap };
+  return { layers: copies, clips: clipCopies, roots: rootIds.map((r) => idMap.get(r)!), idMap, clipIdMap };
 }
