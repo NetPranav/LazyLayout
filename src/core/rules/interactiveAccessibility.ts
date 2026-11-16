@@ -71,9 +71,11 @@ export function contrastRatio(a: RgbaColor, b: RgbaColor): number {
 export function detectGpuFrameFlashes(
   frames: readonly RasterBitmap[],
   totalDurationSec: number
-): { readonly flashesPerSec: number; readonly safe: boolean } {
+): { readonly flashesPerSec: number; readonly safe: boolean; readonly measured: boolean } {
+  // Fewer than 3 frames, or no duration: nothing to measure. `safe` stays true so it raises no diagnostic, and
+  // `measured: false` says the check did not run (it is not a pass).
   if (frames.length < 3 || totalDurationSec <= 0) {
-    return { flashesPerSec: 0, safe: true };
+    return { flashesPerSec: 0, safe: true, measured: false };
   }
 
   const lums: number[] = frames.map((bmp) => {
@@ -119,6 +121,7 @@ export function detectGpuFrameFlashes(
   return {
     flashesPerSec,
     safe: flashesPerSec <= MAX_FLASHES_PER_SECOND,
+    measured: true,
   };
 }
 

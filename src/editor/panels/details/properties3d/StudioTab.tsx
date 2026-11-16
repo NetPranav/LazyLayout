@@ -270,7 +270,7 @@ export const StudioTab: React.FC<StudioTabProps> = ({
           data-testid="editor-r3d-gates-summary"
           className="ll:text-micro ll:font-mono ll:text-primary ll:leading-relaxed"
         >
-          ALL GATES ({gateReport.phasesCoveredCount}/227): {gateReport.allPassed ? "PASS" : "FAIL"} | M1=
+          3D model checks ({gateReport.checksRun}, simulated, not the ROADMAP_3D gates): {gateReport.allPassed ? "PASS" : "FAIL"} | M1=
           {String(gateReport.gateM1.passed)} A={String(gateReport.gateA.passed)} M2=
           {String(gateReport.gateM2.passed)} M3={String(gateReport.gateM3.passed)} M4=
           {String(gateReport.gateM4.passed)} B={String(gateReport.gateB.passed)} C=

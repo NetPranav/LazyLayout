@@ -291,37 +291,135 @@ export interface Scene3dExportArtifact {
   readonly target: Scene3dExportTarget;
   readonly lazyLoaded: boolean;
   readonly hasNoWebGlPosterFallback: boolean;
+  /** The entry file's source (the widget for R3F, the mount function for three.js). */
   readonly code: string;
-  readonly parityDiffPercent: number;
+  /** Every file the export writes, by path. The R3F widget's lazy import points at a file in here. */
+  readonly files: Readonly<Record<string, string>>;
+  /** npm packages the exported files import. */
+  readonly dependencies: readonly string[];
+  /**
+   * How far the exported scene's pixels are from the editor's, in percent. `null`: not measured. Nothing renders both
+   * and compares them yet, so no number is claimed.
+   */
+  readonly parityDiffPercent: number | null;
 }
 
-/** Export a 3D scene to lazy-loaded React Three Fiber or plain three.js with poster fallback. */
-export function exportScene3dToCode(
-  sceneName: string,
-  target: Scene3dExportTarget,
-): Scene3dExportArtifact {
-  const hasPoster = true;
+/** A scene name as a PascalCase identifier that is safe in code and file names ("hero stage!" → "HeroStage"). */
+export function sceneExportIdentifier(sceneName: string): string {
+  const words = sceneName.replace(/[^A-Za-z0-9]+/g, " ").trim().split(/\s+/).filter(Boolean);
+  const ident = words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join("");
+  return /^[A-Za-z]/.test(ident) ? ident : `Scene${ident}`;
+}
+
+/**
+ * Export a 3D scene as a lazy-loaded React Three Fiber widget or a plain three.js mount function. Both load the scene's
+ * model from `/models/<Name>.glb`, show `/posters/<Name>.webp` while loading and when WebGL2 is missing, and clean up.
+ */
+export function exportScene3dToCode(sceneName: string, target: Scene3dExportTarget): Scene3dExportArtifact {
+  const name = sceneExportIdentifier(sceneName);
+  const poster = `/posters/${name}.webp`;
+  const model = `/models/${name}.glb`;
+  const alt = JSON.stringify(`${sceneName} poster`);
   if (target === "r3f") {
-    const code = `"use client";
+    const widget = `"use client";
 import dynamic from "next/dynamic";
-const LazyCanvas = dynamic(() => import("./${sceneName}R3fInner"), {
-  ssr: false,
-  loading: () => <img src="/posters/${sceneName}.webp" alt="${sceneName} poster" />,
-});
-export function ${sceneName}Widget() {
-  return <LazyCanvas fallbackPoster="/posters/${sceneName}.webp" runtimeBindings="vendored-3d-runtime" />;
-}`;
-    return { target, lazyLoaded: true, hasNoWebGlPosterFallback: hasPoster, code, parityDiffPercent: 0.42 };
+
+const supportsWebGl2 = () => typeof window !== "undefined" && !!document.createElement("canvas").getContext("webgl2");
+const Poster = () => <img src="${poster}" alt={${alt}} style={{ width: "100%", height: "100%", objectFit: "cover" }} />;
+const LazyScene = dynamic(() => import("./${name}R3fInner"), { ssr: false, loading: Poster });
+
+export function ${name}Widget() {
+  return supportsWebGl2() ? <LazyScene /> : <Poster />;
+}
+`;
+    const inner = `"use client";
+import { Suspense } from "react";
+import { Canvas, useLoader } from "@react-three/fiber";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+function Model() {
+  const gltf = useLoader(GLTFLoader, "${model}");
+  return <primitive object={gltf.scene} />;
+}
+
+export default function ${name}R3fInner() {
+  return (
+    <Canvas camera={{ position: [0, 1.2, 4], fov: 45 }} dpr={[1, 2]}>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[4, 6, 4]} intensity={2.2} />
+      <Suspense fallback={null}>
+        <Model />
+      </Suspense>
+    </Canvas>
+  );
+}
+`;
+    return {
+      target,
+      lazyLoaded: true,
+      hasNoWebGlPosterFallback: true,
+      code: widget,
+      files: { [`${name}Widget.tsx`]: widget, [`${name}R3fInner.tsx`]: inner },
+      dependencies: ["three", "@react-three/fiber"],
+      parityDiffPercent: null,
+    };
   }
-  const code = `export async function mount${sceneName}(container, posterUrl) {
-  if (!container.getContext && typeof WebGL2RenderingContext === "undefined") {
-    container.innerHTML = '<img src="' + posterUrl + '" alt="${sceneName} poster" />';
-    return;
+  const mount = `export async function mount${name}(container, { posterUrl = "${poster}", modelUrl = "${model}" } = {}) {
+  const showPoster = () => {
+    const img = document.createElement("img");
+    img.src = posterUrl;
+    img.alt = ${alt};
+    img.style.cssText = "width:100%;height:100%;object-fit:cover";
+    container.replaceChildren(img);
+  };
+  if (!document.createElement("canvas").getContext("webgl2")) {
+    showPoster();
+    return { dispose() {} };
   }
+  showPoster();
   const THREE = await import("three");
-  return { renderer: new THREE.WebGLRenderer({ antialias: true }), runtime: "vendored-3d-runtime" };
-}`;
-  return { target, lazyLoaded: true, hasNoWebGlPosterFallback: hasPoster, code, parityDiffPercent: 0.38 };
+  const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 1.2, 4);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  const key = new THREE.DirectionalLight(0xffffff, 2.2);
+  key.position.set(4, 6, 4);
+  scene.add(key);
+  const gltf = await new GLTFLoader().loadAsync(modelUrl);
+  scene.add(gltf.scene);
+  const resize = () => {
+    const w = container.clientWidth || 1, h = container.clientHeight || 1;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  };
+  container.replaceChildren(renderer.domElement);
+  const observer = new ResizeObserver(resize);
+  observer.observe(container);
+  resize();
+  renderer.setAnimationLoop(() => renderer.render(scene, camera));
+  return {
+    dispose() {
+      renderer.setAnimationLoop(null);
+      observer.disconnect();
+      scene.traverse((o) => { o.geometry?.dispose?.(); [].concat(o.material || []).forEach((m) => m.dispose?.()); });
+      renderer.dispose();
+    },
+  };
+}
+`;
+  return {
+    target,
+    lazyLoaded: true,
+    hasNoWebGlPosterFallback: true,
+    code: mount,
+    files: { [`mount${name}.js`]: mount },
+    dependencies: ["three"],
+    parityDiffPercent: null,
+  };
 }
 
 export interface LibraryRecipe3dSpec {
@@ -329,18 +427,20 @@ export interface LibraryRecipe3dSpec {
   readonly name: string;
   readonly steps: number;
   readonly category: "hero" | "card" | "showcase" | "physics";
+  /** Frame-time budget the recipe must meet on its tier, in ms (a target, not a measurement). */
   readonly tierBudgetMs: number;
-  readonly parityDiffPercent: number;
+  /** Measured editor-vs-export pixel difference; `null` until a render comparison exists. */
+  readonly parityDiffPercent: number | null;
   readonly license: "MIT";
 }
 
 export const STAGE6_3D_LIBRARY_RECIPES: readonly LibraryRecipe3dSpec[] = [
-  { id: "floating-object", name: "Floating Hero Object", steps: 4, category: "hero", tierBudgetMs: 3.1, parityDiffPercent: 0.35, license: "MIT" },
-  { id: "card-flip-3d", name: "3D Interactive Card Flip", steps: 5, category: "card", tierBudgetMs: 2.2, parityDiffPercent: 0.28, license: "MIT" },
-  { id: "gltf-spin-showcase", name: "GLTF Spin Showcase", steps: 6, category: "showcase", tierBudgetMs: 4.4, parityDiffPercent: 0.51, license: "MIT" },
-  { id: "depth-parallax-scene", name: "Depth-Parallax 3D Stage", steps: 5, category: "hero", tierBudgetMs: 3.6, parityDiffPercent: 0.44, license: "MIT" },
-  { id: "physics-lanyard-badge", name: "Physics Badge on Lanyard", steps: 7, category: "physics", tierBudgetMs: 4.9, parityDiffPercent: 0.62, license: "MIT" },
-  { id: "product-turntable", name: "Studio Product Turntable", steps: 5, category: "showcase", tierBudgetMs: 3.8, parityDiffPercent: 0.41, license: "MIT" },
+  { id: "floating-object", name: "Floating Hero Object", steps: 4, category: "hero", tierBudgetMs: 3.1, parityDiffPercent: null, license: "MIT" },
+  { id: "card-flip-3d", name: "3D Interactive Card Flip", steps: 5, category: "card", tierBudgetMs: 2.2, parityDiffPercent: null, license: "MIT" },
+  { id: "gltf-spin-showcase", name: "GLTF Spin Showcase", steps: 6, category: "showcase", tierBudgetMs: 4.4, parityDiffPercent: null, license: "MIT" },
+  { id: "depth-parallax-scene", name: "Depth-Parallax 3D Stage", steps: 5, category: "hero", tierBudgetMs: 3.6, parityDiffPercent: null, license: "MIT" },
+  { id: "physics-lanyard-badge", name: "Physics Badge on Lanyard", steps: 7, category: "physics", tierBudgetMs: 4.9, parityDiffPercent: null, license: "MIT" },
+  { id: "product-turntable", name: "Studio Product Turntable", steps: 5, category: "showcase", tierBudgetMs: 3.8, parityDiffPercent: null, license: "MIT" },
 ];
 
 export interface Stage6GateReport {
@@ -356,9 +456,13 @@ export interface Stage6GateReport {
   readonly pile100BodiesHashMatch: boolean;
   readonly memoryZeroLeak: boolean;
   readonly domIn3dProjectionErrorPx: number;
-  readonly r3fExportDiffPercent: number;
-  readonly threejsExportDiffPercent: number;
+  readonly r3fExportDiffPercent: number | null;
+  readonly threejsExportDiffPercent: number | null;
   readonly libraryRecipesPassed: number;
+  /**
+   * Gate items nothing measures yet. The gate cannot pass while this is not empty: an unmeasured item is not a pass.
+   */
+  readonly unmeasured: readonly string[];
 }
 
 /** Phase 240 Stage 6 Gate: complete end-to-end 3D journey verification. */
@@ -468,7 +572,15 @@ export function runStage6ThreeDJourneyGate(): Stage6GateReport {
   const memBaseline = verify20xGltfLoadUnloadBaseline();
   const r3f = exportScene3dToCode("ProductHero", "r3f");
   const threejs = exportScene3dToCode("ProductHero", "threejs");
-  const libraryRecipesPassed = STAGE6_3D_LIBRARY_RECIPES.filter((r) => r.steps <= 8 && r.parityDiffPercent < 2.0).length;
+  const measuredUnder2 = (d: number | null): boolean => d !== null && d < 2;
+  const libraryRecipesPassed = STAGE6_3D_LIBRARY_RECIPES.filter((r) => r.steps <= 8 && measuredUnder2(r.parityDiffPercent)).length;
+  const unmeasured = [
+    ...(r3f.parityDiffPercent === null ? ["R3F export vs editor pixel parity"] : []),
+    ...(threejs.parityDiffPercent === null ? ["three.js export vs editor pixel parity"] : []),
+    ...STAGE6_3D_LIBRARY_RECIPES.filter((r) => r.parityDiffPercent === null).map((r) => `recipe ${r.id}: export parity`),
+    "WebGL context loss and recovery in real Chromium, Firefox and WebKit (only simulated)",
+    "glTF import of real .glb files through the editor (the gate's fixtures are descriptions, not files)",
+  ];
 
   const passed =
     stack.valid &&
@@ -495,9 +607,10 @@ export function runStage6ThreeDJourneyGate(): Stage6GateReport {
     pile100BodiesHashMatch &&
     postPhone.withinBudget &&
     memBaseline.zeroLeakBaselineRestored &&
-    r3f.parityDiffPercent < 2 &&
-    threejs.parityDiffPercent < 2 &&
-    libraryRecipesPassed === 6;
+    measuredUnder2(r3f.parityDiffPercent) &&
+    measuredUnder2(threejs.parityDiffPercent) &&
+    libraryRecipesPassed === 6 &&
+    unmeasured.length === 0;
 
   return {
     passed,
@@ -515,5 +628,6 @@ export function runStage6ThreeDJourneyGate(): Stage6GateReport {
     r3fExportDiffPercent: r3f.parityDiffPercent,
     threejsExportDiffPercent: threejs.parityDiffPercent,
     libraryRecipesPassed,
+    unmeasured,
   };
 }

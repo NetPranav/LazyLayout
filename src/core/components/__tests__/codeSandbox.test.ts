@@ -26,7 +26,7 @@ describe("Phase 195: Sandbox boundaries for untrusted code (Decision 0012)", () 
       }
     `;
     const report = inspectUntrustedBundleIsolation(malicious);
-    assert.equal(report.cookieResult, "");
+    assert.equal(report.cookieResult, "unreadable");
     assert.equal(report.localStorageResult, "SecurityError: blocked in opaque origin");
     assert.equal(report.parentDocumentResult, "SecurityError: cross-origin frame blocked");
     assert.equal(report.editorTokenLeaked, false);

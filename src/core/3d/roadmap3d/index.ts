@@ -14,7 +14,11 @@ import { type GateBReport, type GateCReport, runGateBPhotoStudio, runGateCAnimeS
 
 export interface Roadmap3dMasterGateReport {
   readonly allPassed: boolean;
-  readonly phasesCoveredCount: number;
+  /**
+   * How many model checks ran (the seven milestone gates and the recipe-size gate). These run the pure models with
+   * built-in inputs; they are not the ROADMAP_3D phase gates, which need the editor and real browsers.
+   */
+  readonly checksRun: number;
   readonly gateM1: GateM1Report;
   readonly gateA: GateAReport;
   readonly gateM2: GateM2Report;
@@ -47,7 +51,7 @@ export function runAllRoadmap3dGates(): Roadmap3dMasterGateReport {
 
   return {
     allPassed,
-    phasesCoveredCount: 227,
+    checksRun: 8,
     gateM1,
     gateA,
     gateM2,

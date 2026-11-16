@@ -27,6 +27,7 @@ export interface RigExportBundle {
   readonly checkpoints: readonly {
     readonly timeSec: number;
     readonly boneWorldHeads: Record<string, { x: number; y: number }>;
+    readonly boneWorldTails: Record<string, { x: number; y: number }>;
   }[];
 }
 
@@ -83,9 +84,20 @@ export function mul2d(m1, m2) {
 }
 export function evalRig(rig, pose = {}) {
   const out = {};
-  for (const b of rig.bones) {
+  const byId = {};
+  for (const b of rig.bones) byId[b.id] = b;
+  const order = [];
+  const seen = {};
+  const visit = (b) => {
+    if (seen[b.id]) return;
+    seen[b.id] = true;
+    if (b.parentId && byId[b.parentId]) visit(byId[b.parentId]);
+    order.push(b);
+  };
+  for (const b of rig.bones) visit(b);
+  for (const b of order) {
     const p = pose[b.id] || {};
-    const parent = b.parentId ? rig.bones.find(x => x.id === b.parentId) : null;
+    const parent = b.parentId ? byId[b.parentId] : null;
     const pw = b.parentId ? out[b.parentId] : null;
     const ax = (parent ? parent.length : 0) + b.restX + (p.dx || 0);
     const ay = b.restY + (p.dy || 0);
@@ -105,6 +117,21 @@ export function evalRig(rig, pose = {}) {
 }
 ${renderAdapter}
 `;
+}
+
+type ExportedEvalRig = (
+  rig: unknown,
+  pose: RigPoseMap,
+) => Record<string, { head: { x: number; y: number }; tail: { x: number; y: number } }>;
+
+/**
+ * Turn the emitted runtime source (an ES module) into a callable `evalRig`. The source is generated here, never user
+ * input; running it is how parity is checked against the code a site actually ships.
+ */
+export function loadExportedRigRuntime(runtimeSrc: string): ExportedEvalRig {
+  const body = runtimeSrc.replace(/^export\s+/gm, "");
+  const factory = new Function(`${body}\nreturn evalRig;`) as () => ExportedEvalRig;
+  return factory();
 }
 
 /** Export a rigged character for Next.js, Vite, or plain HTML with checkpoint parity data. */
@@ -153,14 +180,18 @@ window.__LAZY_RIG__ = evalRig(${rigJson}, {});
       ? { "index.html": entryFile }
       : { "rig-runtime.js": runtimeSrc, [`Character.${target === "nextjs" ? "tsx" : "ts"}`]: entryFile };
 
+  // The checkpoints come from running the exported runtime itself, so the parity check compares two implementations.
+  const exportedEvalRig = loadExportedRigRuntime(runtimeSrc);
   const checkpoints = sampleTimes.map((timeSec) => {
     const pose = evaluatePoseTrackAtTime(poseTrack, timeSec);
-    const world = evaluateRigWorldTransforms(rig, pose);
+    const world = exportedEvalRig(JSON.parse(rigJson), pose);
     const boneWorldHeads: Record<string, { x: number; y: number }> = {};
+    const boneWorldTails: Record<string, { x: number; y: number }> = {};
     for (const [id, wt] of Object.entries(world)) {
       boneWorldHeads[id] = { x: wt.head.x, y: wt.head.y };
+      boneWorldTails[id] = { x: wt.tail.x, y: wt.tail.y };
     }
-    return { timeSec, boneWorldHeads };
+    return { timeSec, boneWorldHeads, boneWorldTails };
   });
 
   return {
@@ -192,12 +223,13 @@ export function verifyRigExportParity(
     for (const bone of rig.bones) {
       const ew = editorWorld[bone.id];
       const xw = exportedHeads[bone.id];
-      if (!ew || !xw) {
+      const xt = bundle.checkpoints[i].boneWorldTails[bone.id];
+      if (!ew || !xw || !xt) {
         maxDiffPx = Infinity;
         continue;
       }
-      const d = Math.hypot(ew.head.x - xw.x, ew.head.y - xw.y);
-      if (d > maxDiffPx) maxDiffPx = d;
+      const d = Math.max(Math.hypot(ew.head.x - xw.x, ew.head.y - xw.y), Math.hypot(ew.tail.x - xt.x, ew.tail.y - xt.y));
+      if (!(d <= maxDiffPx)) maxDiffPx = Number.isNaN(d) ? Infinity : Math.max(maxDiffPx, d);
     }
   }
 

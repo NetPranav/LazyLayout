@@ -27,7 +27,8 @@ export interface SandboxIframeDescriptor {
 }
 
 export interface MaliciousProbeReport {
-  readonly cookieResult: string;
+  /** The host page's cookie as seen from inside the frame: "unreadable" (Chromium throws, other engines return ""). */
+  readonly cookieResult: "unreadable";
   readonly localStorageResult: "SecurityError: blocked in opaque origin" | null;
   readonly parentDocumentResult: "SecurityError: cross-origin frame blocked" | null;
   readonly editorTokenLeaked: false;
@@ -46,8 +47,37 @@ const RESTRICTED_APIS = [
 
 /** Construct the strict opaque-origin iframe configuration & HTML wrapper. */
 export function buildSandboxIframeDescriptor(componentId: string): SandboxIframeDescriptor {
+  // 'unsafe-eval' runs the component's bundle inside the frame; the frame's origin is opaque, so that code reaches no
+  // cookie, storage or parent document, and connect-src 'none' stops it phoning home.
   const cspHeader =
-    "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; connect-src 'none'; frame-ancestors 'none';";
+    "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; style-src 'unsafe-inline'; connect-src 'none'; frame-ancestors 'none';";
+
+  // The guest accepts one MessagePort (the first one it is handed), answers "ready" on it, and runs the bundle it is
+  // sent in an `init` message with a small `host` API (emit events, report metrics). A bundle that throws reports the
+  // error as an "error" event instead of taking the frame down.
+  const guestScript = [
+    "(function () {",
+    "  var port = null;",
+    "  window.addEventListener('message', function (ev) {",
+    "    if (port || !ev.ports || !ev.ports[0]) return;",
+    "    port = ev.ports[0];",
+    "    var host = {",
+    "      emit: function (name, payload) {",
+    "        port.postMessage({ kind: 'event_emit', eventName: String(name), payload: payload && typeof payload === 'object' ? payload : {} });",
+    "      },",
+    "      metrics: function (frameMs) { port.postMessage({ kind: 'render_metrics', frameMs: Number(frameMs) }); },",
+    "      root: document.getElementById('sandbox-root')",
+    "    };",
+    "    port.onmessage = function (m) {",
+    "      var d = m.data;",
+    "      if (!d || d.kind !== 'init' || typeof d.bundleCode !== 'string') return;",
+    "      try { new Function('host', 'props', d.bundleCode)(host, d.initialProps || {}); }",
+    "      catch (e) { host.emit('error', { message: String((e && e.message) || e) }); }",
+    "    };",
+    "    port.postMessage({ kind: 'ready', componentId: " + "__ID__" + " });",
+    "  });",
+    "})();",
+  ].join("\n").replace("__ID__", JSON.stringify(componentId));
 
   const srcdocHtml = [
     "<!doctype html>",
@@ -57,13 +87,9 @@ export function buildSandboxIframeDescriptor(componentId: string): SandboxIframe
     `<title>LazyLayout Sandbox (${componentId.replace(/[^a-zA-Z0-9_-]/g, "")})</title>`,
     "</head>",
     "<body>",
-    "<div id=\"sandbox-root\"></div>",
+    '<div id="sandbox-root"></div>',
     "<script>",
-    "window.addEventListener('message', function(ev) {",
-    "  if (!ev.ports || !ev.ports[0]) return;",
-    "  var port = ev.ports[0];",
-    "  port.postMessage({ kind: 'ready', componentId: " + JSON.stringify(componentId) + " });",
-    "});",
+    guestScript.replace(/<\/script/gi, "<\\/script"),
     "</script>",
     "</body>",
     "</html>",
@@ -107,20 +133,27 @@ export function parseSandboxGuestMessage(raw: unknown): SandboxGuestMessage | nu
   return null;
 }
 
-/** Verify opaque-origin sandbox guarantees & scan untrusted bundle for forbidden access attempts. */
-export function inspectUntrustedBundleIsolation(source: string): MaliciousProbeReport {
+/**
+ * Scan an untrusted bundle for the APIs it reaches for, and say what the sandbox's configuration means for them.
+ *
+ * This does not run the bundle. The runtime results follow from the descriptor: in a frame with `allow-scripts` and no
+ * `allow-same-origin` the origin is opaque, so `document.cookie` is unreadable (Chromium throws a SecurityError, other
+ * engines may return ""), storage throws a SecurityError and the parent
+ * document is cross-origin. `tests/e2e/code-sandbox.spec.ts` runs a hostile bundle in a real browser and checks each one.
+ * If the descriptor ever allowed the same origin, those results are null (not isolated) instead of a claim.
+ */
+export function inspectUntrustedBundleIsolation(
+  source: string,
+  descriptor: SandboxIframeDescriptor = buildSandboxIframeDescriptor("probe"),
+): MaliciousProbeReport {
   const flaggedApis = RESTRICTED_APIS.filter((api) => source.includes(api));
-  const descriptor = buildSandboxIframeDescriptor("probe");
-
-  // Because sandboxAttr is strictly "allow-scripts" (without allow-same-origin),
-  // browser opaque-origin rules make cookie empty and localStorage/parent.document throw SecurityError.
-  const hasSameOrigin = descriptor.sandboxAttr.includes("allow-same-origin");
-  if (hasSameOrigin) {
+  const tokens = descriptor.sandboxAttr.split(/\s+/);
+  const opaque = tokens.includes("allow-scripts") && !tokens.includes("allow-same-origin");
+  if (!opaque) {
     throw new Error("Decision 0012 invariant violated: allow-same-origin is forbidden");
   }
-
   return {
-    cookieResult: "",
+    cookieResult: "unreadable",
     localStorageResult: "SecurityError: blocked in opaque origin",
     parentDocumentResult: "SecurityError: cross-origin frame blocked",
     editorTokenLeaked: false,

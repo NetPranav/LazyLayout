@@ -3055,6 +3055,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **You'll see:** nothing yet; 196 runs code components inside it.
 **Done when:** a malicious fixture reading `document.cookie`, `localStorage` and `parent.document` gets nothing in 3 browsers.
 
+**Status check (2026-11-16, audit), 🚧:** before this the sandbox frame never ran the component (its script only answered `ready`) and the "malicious access" report was fixed strings. Now the frame runs the bundle it is sent, and `tests/e2e/code-sandbox.spec.ts` runs a hostile bundle in a real Chromium frame: the host's cookie, localStorage, parent document and network are out of reach and the token never arrives (the test fails if `allow-same-origin` is added). Still missing: no code component is mounted in the editor through this frame yet.
+
 ### Phase 196 · Code components
 **Needs:** 195 · **Was:** v3 68 · **Status:** 🚧
 - [x] Import TSX/JSX, files or an npm package; bundle in a worker (esbuild-wasm) with pinned, hashed dependencies; render in the sandbox; infer property controls from prop types (JSDoc hints optional); bind props to signals, variables and states; callback props become Blueprint events; record the licence and keep restricted ones private (GATE-03).
@@ -3117,6 +3119,8 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output (new in v4.1):** Rive-style characters inside real websites. Bones drawn on the canvas, poses on the timeline, meshes with painted weights so images and vectors bend smoothly, IK, constraints with natural limits and secondary motion (jiggle), puppet pins, and rigs that react: a head that follows the cursor while the neck bends, a character that walks with the arrow keys, blends between states, blinks, breathes and lip-syncs, and even copies your own head through the webcam. Auto-rig gets an illustration moving in one click, and the `rig` runtime exports it with parity.
 >
 > Order inside the stage: model and posing (203–205) → deformation, IK and constraints (206–209) → reactive rigs and states (210–211) → auto-rig, faces and tracking (212–214) → export, library and the gate (215–217).
+
+**Status check (2026-11-16, audit), 🚧:** the gate ran pure modules, not the editor. Journey A's "export parity" compared a number with itself and its phone figure was a formula; it now replays the tape on a fresh controller (and a real touch run). Journeys C and E compare two runs of the same code, so they check determinism, not export parity. Of the 78 new Stage 4 source files, 4 are reachable from `/editor`; 38 only from `/editor/interactive-lab` and 36 from nothing. The Signals, Simple rules and state-machine panels are mounted nowhere. Not ✅ until the journeys run in the editor and the export.
 
 ### Phase 203 · Rig model: bones & skins
 **Needs:** 72, 73, 185, 202 · **Was:** — (new in v4.1) · **Status:** 🚧
@@ -3209,6 +3213,8 @@ These three things work in the core and in the legacy editor, but the new editor
 **You'll see:** export a rigged, reactive character and it behaves the same on your own site.
 **Done when:** 5 rigged references pass tape parity in the Next, Vite and HTML exports.
 
+**Status check (2026-11-16, audit), 🚧:** the parity check compared the editor's rig evaluation with itself. It now runs the emitted `rig-runtime` source and compares heads and tails; doing so found that the exported runtime placed a bone wrong when it was listed before its parent (fixed). Rigs are not in the editor: Stage 5 is reachable only from `/editor/rig-lab`.
+
 ### Phase 216 · Rig library & recipes
 **Needs:** 215 · **Was:** — (new in v4.1) · **Status:** 🚧
 - [x] Original rigged characters and parts (eyes, faces, hands, mascots) as open recipes with provenance.
@@ -3232,6 +3238,8 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** real 3D inside the same documents, timeline and interactions: a scene layer drawn through the GPU compositor, Spline-style editing with gizmos, primitives and 3D text, GLTF models (including their animations), PBR materials, lights, shadows and environments, cameras and camera paths, 3D keyframes, cursor and scroll reactions, raycast events for Blueprints, instancing, 3D physics, post-processing, and export to React Three Fiber or plain three.js.
 >
 > **Why three.js and not our own engine:** three.js, React Three Fiber and drei are MIT-licensed (§1.9), which allows commercial use. Building a custom 3D engine would cost years and add nothing a user would see. If that ever changed, Phase 218's decision record names the fallback.
+
+**Status check (2026-11-16, audit), 🚧:** the gate runs the rig modules with built-in inputs; none of it runs in `/editor`. The rig maths is real (breaking the IK law of cosines fails its tests); export parity is now checked against the exported code (Phase 215).
 
 ### Phase 218 · 3D stack decision & licences
 **Needs:** 202 · **Was:** v3 18 (v3.0, v3.3 amendments) · **Status:** 🚧
@@ -3401,6 +3409,8 @@ These three things work in the core and in the legacy editor, but the new editor
 # STAGE 7 — AI & AGENTS (Phases 241–250)
 
 > **Stage output:** a real model builds the first version and helps refine it, always as a diff the user approves. Claude, through MCP, can do everything a person can do in the editor.
+
+**Status check (2026-11-16, audit), 🚧:** the export "parity" (0.42 %, 0.38 %) and the recipe parity values were typed-in numbers, the R3F export imported a file it never wrote, and sphere, torus and capsule were one bulged disc. Fixed: the export writes and compiles its files, primitives use the 3D-011 generators, unmeasured parity is `null`, and the gate lists what nothing measures (export pixel parity, real-browser context loss, real `.glb` import) and does not pass while that list has entries. The Studio tab's "ALL GATES (227/227): PASS" came from a constant 227; it now says it ran 8 simulated model checks.
 
 ### Phase 241 · LLM integration layer
 **Needs:** 13, 50 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 🚧

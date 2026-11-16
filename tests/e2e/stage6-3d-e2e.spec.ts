@@ -109,10 +109,14 @@ test.describe("Stage 6 · 3D Engine & Viewport E2E (Phases 218–240)", () => {
 
     await page.getByTestId("s6-recipe-select").selectOption("product-turntable");
     await page.getByTestId("s6-run-gate-btn").click();
-    await expect(page.getByTestId("s6-gate-readout")).toContainText("Stage 6 3D Gate: PASSED");
+    // The gate lists what nothing measures yet (export pixel parity, real-browser context loss, real .glb files) and
+    // does not pass while that list is not empty.
+    await expect(page.getByTestId("s6-gate-readout")).toContainText("Stage 6 3D Gate: NOT PASSED (unmeasured items)");
+    await expect(page.getByTestId("s6-gate-unmeasured")).toContainText("R3F export vs editor pixel parity");
 
     const gate = await page.evaluate(() => window.__LL_STAGE6_LAB__!.runGate());
-    expect(gate.passed).toBe(true);
+    expect(gate.passed).toBe(false);
+    expect(gate.unmeasured.length).toBeGreaterThan(0);
     expect(gate.stackVerified).toBe(true);
     expect(gate.gizmoJourneySteps).toBe(15);
     expect(gate.watertightShapesPassed).toBe(10);
@@ -123,8 +127,8 @@ test.describe("Stage 6 · 3D Engine & Viewport E2E (Phases 218–240)", () => {
     expect(gate.pile100BodiesHashMatch).toBe(true);
     expect(gate.memoryZeroLeak).toBe(true);
     expect(gate.domIn3dProjectionErrorPx).toBeLessThan(1);
-    expect(gate.r3fExportDiffPercent).toBeLessThan(2);
-    expect(gate.threejsExportDiffPercent).toBeLessThan(2);
-    expect(gate.libraryRecipesPassed).toBe(6);
+    expect(gate.r3fExportDiffPercent).toBeNull();
+    expect(gate.threejsExportDiffPercent).toBeNull();
+    expect(gate.libraryRecipesPassed).toBe(0);
   });
 });

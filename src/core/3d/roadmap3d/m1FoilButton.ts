@@ -931,7 +931,8 @@ export function runGateM1FoilButton(): GateM1Report {
   // Step 6: Editor path trace & bake
   const pt = runProgressivePathTracer(64);
   const bake = bakeClothSimulation(24, "restPoseWithPressClips");
-  // Step 7: Export (< 60 KB gzip)
+  // Step 7: Export (< 60 KB gzip). An estimate from the bake size plus a fixed runtime allowance; no export is built
+  // or gzipped here, so this is a budget check on the estimate, not a measurement.
   const exportGzipBytes = 24800 + Math.round(bake.estimatedGzipBytes * 0.5);
 
   const passed =

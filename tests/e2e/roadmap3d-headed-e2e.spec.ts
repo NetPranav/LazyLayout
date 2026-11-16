@@ -52,7 +52,7 @@ test.describe("Main /editor ROADMAP_3D Integration Headed E2E (3D-001 – 3D-227
 
     await page.getByTestId("editor-r3d-run-gates-btn").click();
     const summary = page.getByTestId("editor-r3d-gates-summary");
-    await expect(summary).toContainText("ALL GATES (227/227): PASS");
+    await expect(summary).toContainText("3D model checks (8, simulated, not the ROADMAP_3D gates): PASS");
     await expect(summary).toContainText("M1=true");
     await expect(summary).toContainText("A=true");
     await expect(summary).toContainText("M2=true");
