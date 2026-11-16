@@ -72,6 +72,9 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   onAiModelChange,
   aiProviderStatus,
   aiUserKeys,
+  aiUseUserKey,
+  onAiToggleUseUserKey,
+  aiLastKeySource,
   aiCustomModels,
   onAiSaveCredentials,
   aiInputPlaceholder,
@@ -142,6 +145,9 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
           onAiModelChange={onAiModelChange}
           aiProviderStatus={aiProviderStatus}
           aiUserKeys={aiUserKeys}
+          aiUseUserKey={aiUseUserKey}
+          onAiToggleUseUserKey={onAiToggleUseUserKey}
+          aiLastKeySource={aiLastKeySource}
           aiCustomModels={aiCustomModels}
           onAiSaveCredentials={onAiSaveCredentials}
           aiInputPlaceholder={aiInputPlaceholder}

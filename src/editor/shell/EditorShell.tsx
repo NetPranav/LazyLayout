@@ -551,6 +551,9 @@ export function EditorShell({
             onAiModelChange={aiChat.setModel}
             aiProviderStatus={aiChat.providerStatus}
             aiUserKeys={aiChat.userKeys}
+            aiUseUserKey={aiChat.useUserKey}
+            onAiToggleUseUserKey={aiChat.setUseUserKey}
+            aiLastKeySource={aiChat.lastMeta?.keySource}
             aiCustomModels={aiChat.customModels}
             onAiSaveCredentials={aiChat.saveCredentials}
             aiLoading={aiChat.isLoading}

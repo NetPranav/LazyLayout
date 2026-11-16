@@ -11,11 +11,12 @@ const STATIC_ARCHITECTURE_PREFIX = [
   "",
   "Architectural Laws you must follow strictly:",
   "1. One Document (Law 2): All design, animation, state, and interaction data lives in the canonical MotionDocument (MDM v2).",
-  "2. No Silent Writes (Law 4): Every document edit MUST be proposed via `propose_mdm_patches` (RFC 6902 JSON Patch) or `invoke_editor_command` so the user approves before applying.",
-  "3. NodeScript Format: Every logic/interaction/blueprint graph MUST be authored as `.nls` NodeScript text via `propose_nodescript_graph` (syntax: `#nls-version: 1.0`, `graph <Name> (type: event|function|macro) { node ..., wire ..., var ... }`), NEVER as raw JSON blueprint dumps.",
-  "4. Canonical Property Paths: Reference properties using MDM dot-paths (e.g. `transform.x`, `transform.y`, `appearance.opacity`, `appearance.background.color`, `typography.fontSize`).",
-  "5. Grounded Answers: When answering questions about the document, reference exact layer IDs, types, hierarchy, timeline counts, and inspected values supplied in the runtime document context. If a detail is absent from the context, state that clearly instead of guessing.",
-  "6. Library Effects & Engine Routing: Prefer curated library effects (`doc.effects` / `fx_*`) and GPU-composited CSS/WAAPI transforms or opacity when they fit, and briefly state your engine choice (`CSS`, `SVG`, or `three.js`) in plain language.",
+  "2. No Silent Writes (Law 4): Every document edit MUST be proposed via `propose_mdm_patches` (RFC 6902 JSON Patch) or `invoke_editor_command` so the user approves before applying. NEVER paste raw code or `.nls` blocks as plain chat text without calling a proposal tool.",
+  "3. Visual Motion, Hover, Magnetic/Cursor Pull & Effects: Propose runnable MDM `/bindings/...`, `/clips/...`, `/compositions/...`, and `/effects/...` patches via `propose_mdm_patches` so Preview (`Play`) executes them live on canvas.",
+  "4. NodeScript Format: When proposing logic/workflow graphs, author `.nls` NodeScript text via `propose_nodescript_graph` (syntax: `#nls-version: 1.0`, `graph <Name> (type: event|function|macro) { node ..., wire ..., var ... }`), NEVER as raw JSON blueprint dumps.",
+  "5. Canonical Property Paths: Reference properties using MDM dot-paths (e.g. `transform.x`, `transform.y`, `transform.scaleX`, `transform.scaleY`, `appearance.opacity`, `appearance.background.color`, `typography.fontSize`).",
+  "6. Grounded Answers: When answering questions about the document, reference exact layer IDs, types, hierarchy, timeline counts, and inspected values supplied in the runtime document context. If a detail is absent from the context, state that clearly instead of guessing.",
+  "7. Library Effects & Engine Routing: Prefer curated library effects (`doc.effects` / `fx_*` / `w2_*`) and GPU-composited CSS/WAAPI transforms or opacity when they fit, and briefly state your engine choice (`CSS`, `SVG`, or `three.js`) in plain language.",
 ].join("\n");
 
 const NODESCRIPT_GRAMMAR_SUMMARY = [

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useId, useRef, useEffect } from "react";
-import { ArrowUp, Key, Loader2, Square, X } from "lucide-react";
+import React, { useState, useId, useRef, useEffect, useSyncExternalStore } from "react";
+import { ArrowUp, Check, Copy, Key, Loader2, Play, Square, X } from "lucide-react";
 import { DEFAULT_MODELS_BY_PROVIDER, PROVIDER_MODEL_OPTIONS } from "@/ai/llm/constants";
 import {
   explainSelectionMotion,
@@ -12,8 +12,17 @@ import { useGhostDiffStore } from "@/ai/llm/ghostDiffStore";
 import { applyMdmJsonPatches } from "@/ai/llm/validationLoop";
 import { useMcpActivityStore } from "@/ai/mcp/mcpActivityStore";
 import { rules } from "@/core/rules";
+import { useAgentUiStore } from "@/core/store/useAgentUiStore";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { getDocument } from "@/core/store/documentState";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
+import { transport } from "@/core/time/transport";
+import {
+  getAgentHost,
+  startAgentLink,
+  stopAgentLink,
+  useAgentLinkStore,
+} from "@/legacy-editor/agent/agentConnection";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { LogoMark } from "@/editor/components/LogoMark";
@@ -28,6 +37,9 @@ export interface RightPanelAiChatProps {
   onAiModelChange?: (provider: AiProviderId, model: string) => void;
   aiProviderStatus?: AiProviderStatusMap;
   aiUserKeys?: Partial<Record<Exclude<AiProviderId, "offline">, string>>;
+  aiUseUserKey?: Partial<Record<Exclude<AiProviderId, "offline">, boolean>>;
+  onAiToggleUseUserKey?: (provider: Exclude<AiProviderId, "offline">, useOwn: boolean) => void;
+  aiLastKeySource?: "byok" | "server" | "offline";
   aiCustomModels?: Partial<Record<AiProviderId, string>>;
   onAiSaveCredentials?: (
     provider: Exclude<AiProviderId, "offline">,
@@ -62,6 +74,9 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   onAiModelChange,
   aiProviderStatus,
   aiUserKeys,
+  aiUseUserKey,
+  onAiToggleUseUserKey,
+  aiLastKeySource,
   aiCustomModels,
   onAiSaveCredentials,
   aiInputPlaceholder = "Ask anything about this…",
@@ -72,6 +87,9 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   const [inputValue, setInputValue] = useState("");
   const [keysOpen, setKeysOpen] = useState(false);
   const [mcpLogOpen, setMcpLogOpen] = useState(false);
+  const [mcpClientTab, setMcpClientTab] = useState<"claude" | "antigravity" | "codex">("claude");
+  const [copiedMcp, setCopiedMcp] = useState(false);
+  const [appliedBanner, setAppliedBanner] = useState<string | null>(null);
   const [copilotNote, setCopilotNote] = useState<string | null>(null);
   const [draftKey, setDraftKey] = useState("");
   const [draftModel, setDraftModel] = useState("");
@@ -89,6 +107,13 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   const discardAllGhost = useGhostDiffStore((s) => s.discardAll);
   const mcpEntries = useMcpActivityStore((s) => s.entries);
   const setMcpStatus = useMcpActivityStore((s) => s.setStatus);
+  const agentHost = getAgentHost();
+  const agentState = useSyncExternalStore(
+    agentHost.subscribe,
+    agentHost.getState,
+    agentHost.getState,
+  );
+  const agentLinkStatus = useAgentLinkStore((s) => s.status);
   const selectedIdsSet = useSelectionStore((s) => s.selectedIds);
 
   const handleCopilotAction = (action: "bouncier" | "stagger" | "calmer" | "explain" | "fix") => {
@@ -179,6 +204,10 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
 
   const hasUserKey = aiProvider !== "offline" && Boolean(aiUserKeys?.[aiProvider]);
   const hasServerKey = aiProvider === "offline" || Boolean(aiProviderStatus?.[aiProvider]?.configured);
+  const usingUserKey =
+    aiProvider !== "offline" &&
+    hasUserKey &&
+    (aiUseUserKey?.[aiProvider] ?? true);
   const defaultModel =
     aiProviderStatus?.[aiProvider]?.defaultModel ?? DEFAULT_MODELS_BY_PROVIDER[aiProvider];
   const modelOptions = PROVIDER_MODEL_OPTIONS[aiProvider] ?? [];
@@ -226,24 +255,26 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
             aria-label="API key settings"
             aria-pressed={keysOpen}
             title={
-              hasUserKey
-                ? "Using your API key (click to edit)"
-                : hasServerKey
-                  ? "Using studio built-in key (click to attach your own)"
-                  : "Attach your API key"
+              usingUserKey
+                ? "Active: Your attached API key (click to switch or edit)"
+                : hasUserKey && hasServerKey
+                  ? "Active: Built-in server key (click to switch to your key)"
+                  : hasServerKey
+                    ? "Active: Studio built-in key (click to attach your own)"
+                    : "Attach your API key"
             }
             onClick={() => {
               if (!keysOpen) syncDraftForProvider(aiProvider);
               setKeysOpen((open) => !open);
             }}
             className={`ll:h-6 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:rounded-sm ll:border ll:text-nano ll:font-medium ll:cursor-pointer ll:shrink-0 ${
-              keysOpen || hasUserKey
+              keysOpen || usingUserKey
                 ? "ll:border-border-active ll:bg-surface-hover ll:text-primary"
                 : "ll:border-border ll:bg-surface-bar ll:text-secondary ll:hover:text-primary"
             }`}
           >
             <Icon icon={Key} size={12} />
-            <span>{hasUserKey ? "Key ✓" : "API Key"}</span>
+            <span>{usingUserKey ? "Key: Yours ✓" : hasServerKey ? "Key: Built-in" : "API Key"}</span>
           </button>
         )}
 
@@ -342,51 +373,190 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
         </div>
       )}
 
-      {/* Phase 250: MCP Activity Log Drawer */}
+      {/* Phase 50 / 250: Live MCP Connection & Activity Drawer */}
       {mcpLogOpen && (
         <div
           aria-label="MCP activity log"
-          className="ll:max-h-36 ll:overflow-y-auto ll:p-2.5 ll:bg-surface-bar ll:border-b ll:border-border ll:flex ll:flex-col ll:gap-1.5 ll:shrink-0"
+          className="ll:max-h-72 ll:overflow-y-auto ll:p-3 ll:bg-surface-bar ll:border-b ll:border-border ll:flex ll:flex-col ll:gap-2 ll:shrink-0"
         >
-          <div className="ll:flex ll:items-center ll:justify-between">
-            <span className="ll:text-nano ll:font-medium ll:text-primary">MCP Activity Log</span>
-            <span className="ll:text-nano ll:text-muted">{mcpEntries.length} action(s)</span>
-          </div>
-          {mcpEntries.length === 0 ? (
-            <span className="ll:text-nano ll:text-muted">No MCP agent actions recorded yet.</span>
-          ) : (
-            mcpEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="ll:p-1.5 ll:rounded-xs ll:border ll:border-border ll:bg-surface-panel ll:flex ll:items-center ll:justify-between ll:gap-2"
+          <div className="ll:flex ll:items-center ll:justify-between gap-2">
+            <span className="ll:text-small ll:font-medium ll:text-primary">MCP External Agent</span>
+            <div className="ll:flex ll:items-center ll:gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (agentLinkStatus === "off") startAgentLink();
+                  else stopAgentLink();
+                }}
+                className="ll:h-6 ll:px-2 ll:rounded-xs ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:font-medium ll:cursor-pointer"
               >
-                <div className="ll:min-w-0">
-                  <div className="ll:text-nano ll:font-medium ll:text-primary ll:truncate">
-                    {entry.toolName} · {entry.status}
-                  </div>
-                  <div className="ll:text-nano ll:text-secondary ll:truncate">{entry.summary}</div>
-                </div>
-                {entry.status === "pending" && (
-                  <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setMcpStatus(entry.id, "rejected")}
-                      className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:text-nano ll:text-secondary ll:cursor-pointer"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMcpStatus(entry.id, "approved")}
-                      className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:cursor-pointer"
-                    >
-                      Approve
-                    </button>
-                  </div>
-                )}
+                {agentLinkStatus === "off" ? "Connect Bridge" : "Disconnect"}
+              </button>
+              <button
+                type="button"
+                onClick={() => useAgentUiStore.getState().open()}
+                className="ll:h-6 ll:px-2 ll:rounded-xs ll:border ll:border-border ll:bg-surface-panel ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+              >
+                Pair Dialog
+              </button>
+            </div>
+          </div>
+
+          <div className="ll:text-nano ll:text-secondary">
+            {agentState.paired
+              ? "Paired with external MCP client."
+              : agentLinkStatus === "connected"
+                ? "Bridge connected (ws://127.0.0.1:7117). Give your AI client the code below:"
+                : agentLinkStatus === "connecting"
+                  ? "Waiting for local MCP bridge (`npm run mcp` or MCP client launch) on port 7117…"
+                  : "Click Connect Bridge, then add LazyLayout MCP to Claude Code, Antigravity, or Codex:"}
+          </div>
+
+          {!agentState.paired && (
+            <div className="ll:p-2 ll:rounded-xs ll:border ll:border-dashed ll:border-border ll:bg-surface-panel ll:flex ll:items-center ll:justify-between ll:gap-2">
+              <div className="ll:flex ll:items-center ll:gap-2">
+                <span className="ll:text-nano ll:text-muted">Code:</span>
+                <code aria-label="MCP pairing code" className="ll:text-small ll:font-semibold ll:tracking-widest ll:text-primary">
+                  {agentState.locked ? "LOCKED" : agentState.code}
+                </code>
               </div>
-            ))
+              <button
+                type="button"
+                onClick={() => agentHost.newCode()}
+                className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+              >
+                New code
+              </button>
+            </div>
           )}
+
+          {/* Client setup instructions for Claude Code / Antigravity / Codex */}
+          <div className="ll:p-2 ll:rounded-xs ll:border ll:border-border ll:bg-surface-panel ll:flex ll:flex-col ll:gap-1.5">
+            <div className="ll:flex ll:items-center ll:justify-between ll:gap-1">
+              <div className="ll:flex ll:items-center ll:gap-1">
+                {(
+                  [
+                    { id: "claude", label: "Claude Code" },
+                    { id: "antigravity", label: "Antigravity" },
+                    { id: "codex", label: "Codex" },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setMcpClientTab(tab.id);
+                      setCopiedMcp(false);
+                    }}
+                    className={`ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:text-nano ll:cursor-pointer ${
+                      mcpClientTab === tab.id
+                        ? "ll:bg-surface-hover ll:text-primary ll:font-medium"
+                        : "ll:text-secondary hover:ll:text-primary"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const snippet =
+                    mcpClientTab === "claude"
+                      ? "claude mcp add lazylayout -- npm run mcp"
+                      : mcpClientTab === "codex"
+                        ? 'codex mcp add lazylayout -- npm run mcp'
+                        : '{\n  "mcpServers": {\n    "lazylayout": {\n      "command": "npm",\n      "args": ["run", "mcp"]\n    }\n  }\n}';
+                  if (typeof navigator !== "undefined" && navigator.clipboard) {
+                    void navigator.clipboard.writeText(snippet);
+                  }
+                  setCopiedMcp(true);
+                }}
+                className="ll:flex ll:items-center ll:gap-1 ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+              >
+                <Icon icon={copiedMcp ? Check : Copy} size={10} />
+                <span>{copiedMcp ? "Copied" : "Copy"}</span>
+              </button>
+            </div>
+            <pre className="ll:m-0 ll:p-1.5 ll:rounded-xs ll:bg-surface-bar ll:text-nano ll:text-primary ll:overflow-x-auto ll:whitespace-pre-wrap">
+              {mcpClientTab === "claude"
+                ? "claude mcp add lazylayout -- npm run mcp\n# Run inside repo root, then tell Claude the 8-digit pairing code."
+                : mcpClientTab === "codex"
+                  ? "codex mcp add lazylayout -- npm run mcp\n# Or configure stdio command `npx tsx bin/lazylayout-mcp.ts` in repo root."
+                  : '{\n  "mcpServers": {\n    "lazylayout": {\n      "command": "npx",\n      "args": ["tsx", "bin/lazylayout-mcp.ts"]\n    }\n  }\n}'}
+            </pre>
+          </div>
+
+          <label className="ll:flex ll:items-center ll:gap-1.5 ll:text-nano ll:text-secondary ll:cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agentState.autoApprove}
+              onChange={(e) => agentHost.setAutoApprove(e.target.checked)}
+            />
+            <span>Auto-approve external MCP commands</span>
+          </label>
+
+          {agentState.pending.map((p) => (
+            <div
+              key={p.id}
+              className="ll:p-1.5 ll:rounded-xs ll:border ll:border-border-active ll:bg-surface-panel ll:flex ll:items-center ll:justify-between ll:gap-2"
+            >
+              <div className="ll:min-w-0">
+                <div className="ll:text-nano ll:font-medium ll:text-primary ll:truncate">
+                  Pending: {p.title}
+                </div>
+                <div className="ll:text-nano ll:text-secondary ll:truncate">{p.commandId}</div>
+              </div>
+              <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
+                <button
+                  type="button"
+                  onClick={() => agentHost.reject(p.id)}
+                  className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:text-nano ll:text-secondary ll:cursor-pointer"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void agentHost.approve(p.id)}
+                  className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:cursor-pointer"
+                >
+                  Approve
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {mcpEntries.map((entry) => (
+            <div
+              key={entry.id}
+              className="ll:p-1.5 ll:rounded-xs ll:border ll:border-border ll:bg-surface-panel ll:flex ll:items-center ll:justify-between ll:gap-2"
+            >
+              <div className="ll:min-w-0">
+                <div className="ll:text-nano ll:font-medium ll:text-primary ll:truncate">
+                  {entry.toolName} · {entry.status}
+                </div>
+                <div className="ll:text-nano ll:text-secondary ll:truncate">{entry.summary}</div>
+              </div>
+              {entry.status === "pending" && (
+                <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMcpStatus(entry.id, "rejected")}
+                    className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:text-nano ll:text-secondary ll:cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMcpStatus(entry.id, "approved")}
+                    className="ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:cursor-pointer"
+                  >
+                    Approve
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -421,9 +591,46 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
               {PROVIDER_LABELS[aiProvider]} API key
             </label>
             <span className="ll:text-nano ll:text-muted">
-              {hasUserKey ? "Your key saved locally" : hasServerKey ? "Built-in active" : "Key required"}
+              {usingUserKey
+                ? "Active: Your key"
+                : hasServerKey
+                  ? "Active: Built-in key"
+                  : "Key required"}
             </span>
           </div>
+
+          {hasUserKey && hasServerKey && onAiToggleUseUserKey && (
+            <div className="ll:flex ll:items-center ll:gap-1">
+              <button
+                type="button"
+                onClick={() => onAiToggleUseUserKey(aiProvider, true)}
+                className={`ll:flex-1 ll:h-6 ll:px-2 ll:rounded-xs ll:border ll:text-nano ll:cursor-pointer ${
+                  usingUserKey
+                    ? "ll:border-border-active ll:bg-control-primary-bg ll:text-control-primary-fg ll:font-medium"
+                    : "ll:border-border ll:bg-surface-panel ll:text-secondary hover:ll:text-primary"
+                }`}
+              >
+                Use My Key
+              </button>
+              <button
+                type="button"
+                onClick={() => onAiToggleUseUserKey(aiProvider, false)}
+                className={`ll:flex-1 ll:h-6 ll:px-2 ll:rounded-xs ll:border ll:text-nano ll:cursor-pointer ${
+                  !usingUserKey
+                    ? "ll:border-border-active ll:bg-control-primary-bg ll:text-control-primary-fg ll:font-medium"
+                    : "ll:border-border ll:bg-surface-panel ll:text-secondary hover:ll:text-primary"
+                }`}
+              >
+                Use Built-in Key
+              </button>
+            </div>
+          )}
+
+          {aiLastKeySource && aiLastKeySource !== "offline" && (
+            <span className="ll:text-nano ll:text-secondary">
+              Last request used: {aiLastKeySource === "byok" ? "Your attached API key" : "Studio built-in key (.env.local)"}
+            </span>
+          )}
 
           <input
             id={keyInputId}
@@ -520,7 +727,12 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => acceptAllGhost()}
+                onClick={() => {
+                  const s = pendingGhost.summary;
+                  if (acceptAllGhost()) {
+                    setAppliedBanner(s);
+                  }
+                }}
                 className="ll:h-6 ll:px-2 ll:rounded-sm ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:font-medium ll:cursor-pointer"
               >
                 Accept all
@@ -562,6 +774,37 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Post-apply Preview launch bar */}
+      {!pendingGhost && appliedBanner && (
+        <div className="ll:px-3 ll:py-2 ll:bg-surface-bar ll:border-t ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:shrink-0">
+          <span className="ll:text-nano ll:text-primary ll:truncate">
+            Applied: {appliedBanner}
+          </span>
+          <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                useCanvasViewStore.getState().setMode("preview");
+                transport.seek(0);
+                transport.play();
+              }}
+              className="ll:h-6 ll:px-2 ll:flex ll:items-center ll:gap-1 ll:rounded-xs ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:font-medium ll:cursor-pointer"
+            >
+              <Icon icon={Play} size={10} />
+              <span>Preview</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Dismiss applied banner"
+              onClick={() => setAppliedBanner(null)}
+              className="ll:text-nano ll:text-muted hover:ll:text-primary ll:cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

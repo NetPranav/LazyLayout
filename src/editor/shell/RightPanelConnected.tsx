@@ -35,6 +35,9 @@ export interface RightPanelConnectedProps {
   onAiModelChange?: (provider: AiProviderId, model: string) => void;
   aiProviderStatus?: AiProviderStatusMap;
   aiUserKeys?: Partial<Record<Exclude<AiProviderId, "offline">, string>>;
+  aiUseUserKey?: Partial<Record<Exclude<AiProviderId, "offline">, boolean>>;
+  onAiToggleUseUserKey?: (provider: Exclude<AiProviderId, "offline">, useOwn: boolean) => void;
+  aiLastKeySource?: "byok" | "server" | "offline";
   aiCustomModels?: Partial<Record<AiProviderId, string>>;
   onAiSaveCredentials?: (
     provider: Exclude<AiProviderId, "offline">,
@@ -58,6 +61,9 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
   onAiModelChange: controlledOnAiModelChange,
   aiProviderStatus: controlledAiProviderStatus,
   aiUserKeys: controlledAiUserKeys,
+  aiUseUserKey: controlledAiUseUserKey,
+  onAiToggleUseUserKey: controlledOnAiToggleUseUserKey,
+  aiLastKeySource: controlledAiLastKeySource,
   aiCustomModels: controlledAiCustomModels,
   onAiSaveCredentials: controlledOnAiSaveCredentials,
   aiLoading: controlledAiLoading,
@@ -76,6 +82,9 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
     onAiModelChange: controlledOnAiModelChange ?? internalAiChat.setModel,
     aiProviderStatus: controlledAiProviderStatus ?? internalAiChat.providerStatus,
     aiUserKeys: controlledAiUserKeys ?? internalAiChat.userKeys,
+    aiUseUserKey: controlledAiUseUserKey ?? internalAiChat.useUserKey,
+    onAiToggleUseUserKey: controlledOnAiToggleUseUserKey ?? internalAiChat.setUseUserKey,
+    aiLastKeySource: controlledAiLastKeySource ?? internalAiChat.lastMeta?.keySource,
     aiCustomModels: controlledAiCustomModels ?? internalAiChat.customModels,
     onAiSaveCredentials: controlledOnAiSaveCredentials ?? internalAiChat.saveCredentials,
     aiLoading: controlledAiLoading ?? internalAiChat.isLoading,
