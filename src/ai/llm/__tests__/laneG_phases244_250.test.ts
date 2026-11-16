@@ -15,11 +15,15 @@ import {
   buildInteractionFromPrompt,
   classifySampledReferenceFrames,
   computeEvalDashboard,
+  detectActiveMentionQuery,
   explainSelectionMotion,
+  filterMentionCandidates,
   filterPatchesToSelection,
   fixDiagnosticsForDocument,
+  getLayerMentionCandidates,
   planBuilderTurn,
   remixEffectAuthoring,
+  resolvePromptMentions,
   runEvalSuite,
   runSelectionScopedEdit,
 } from "../index";
@@ -327,5 +331,57 @@ describe("Lane G · Phases 244–250", () => {
     const calmer = runSelectionScopedEdit(doc, ["button"], "Make this motion calmer on mobile", rules.validate);
     assert.equal(calmer.accepted, true);
     assert.ok(calmer.patches.some((p) => p.path.startsWith("/clips/")));
+  });
+
+  it("resolves single and multi-element @mentions and scopes planner edits across all mentioned layers", () => {
+    const cta = createLayer({ id: "button", name: "Get started", archetype: "button" });
+    const title = createLayer({ id: "title", name: "Headline", archetype: "text" });
+    const root = createLayer({ id: "elem_canvas_root", name: "Home", archetype: "container" });
+    const doc = createDocumentFromLayers([root, cta, title]);
+
+    // Autocomplete query detection while typing `@get`
+    const active = detectActiveMentionQuery("Add magnetic pull to @get", 25);
+    assert.ok(active && active.query === "get");
+    const cands = filterMentionCandidates(getLayerMentionCandidates(doc), active.query);
+    assert.equal(cands[0]?.id, "button");
+    assert.equal(cands[0]?.insertText, '@"Get started"');
+
+    // Multi-element @mention resolution overrides fallback/selection cleanly
+    const resolved = resolvePromptMentions(
+      'Make @"Get started" and @Headline fade up',
+      doc,
+      ["elem_canvas_root"],
+    );
+    assert.equal(resolved.hasExplicitMentions, true);
+    assert.deepEqual(resolved.targetLayerIds, ["button", "title"]);
+
+    // Unquoted multi-word `@Get started` also resolves cleanly
+    const unquoted = resolvePromptMentions("Add fade in on @Get started", doc, []);
+    assert.deepEqual(unquoted.targetLayerIds, ["button"]);
+
+    // Planner emits valid clips for EVERY mentioned target layer
+    const layers = Object.values(doc.layers).map((layer) => ({
+      id: layer.id,
+      name: layer.name,
+      type: layer.archetype,
+      parentId: layer.parentId,
+      childCount: layer.children.length,
+      propsSample: layer.properties,
+    }));
+    const multiPlan = planBuilderTurn({
+      prompt: 'Make @"Get started" and @Headline fade in',
+      documentContext: {
+        documentName: "Mention Test",
+        activeMode: "design",
+        layerCount: layers.length,
+        clipCount: 0,
+        selectedIds: resolved.targetLayerIds,
+        layers,
+      },
+      targetLayerIds: resolved.targetLayerIds,
+    });
+    assert.deepEqual(multiPlan.targetLayerIds, ["button", "title"]);
+    const clipPatches = multiPlan.patches.filter((p) => p.path.startsWith("/clips/"));
+    assert.equal(clipPatches.length, 2);
   });
 });

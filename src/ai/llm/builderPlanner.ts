@@ -155,28 +155,40 @@ export function planBuilderTurn(input: {
   prompt: string;
   documentContext?: AiDocumentContext;
   messages?: readonly AiChatMessageInput[];
+  targetLayerIds?: readonly string[];
 }): BuilderPlanResult {
   const { prompt, documentContext: ctx, messages = [] } = input;
   const lower = prompt.toLowerCase();
   const layers = ctx?.layers ?? [];
-  const selectedId = ctx?.selectedIds?.[0];
+  const requestedIds =
+    input.targetLayerIds && input.targetLayerIds.length > 0
+      ? input.targetLayerIds
+      : (ctx?.selectedIds ?? []);
+  const explicitTargetLayers = requestedIds
+    .map((id) => layers.find((l) => l.id === id))
+    .filter((l): l is NonNullable<typeof l> => Boolean(l));
+
   const mentionsButton = /\bbutton|btn|cta|get started\b/.test(lower);
   const mentionsCard = /\bcard|panel|box|container\b/.test(lower);
   const mentionsTitle = /\btitle|headline|heading|text\b/.test(lower);
-  const namedLayer = layers.find((l) => l.name && lower.includes(l.name.toLowerCase()));
+  const namedLayer = layers.find(
+    (l) => l.name && l.id !== "elem_canvas_root" && lower.includes(l.name.toLowerCase()),
+  );
   const roleMatchedLayer = mentionsButton
     ? layers.find((l) => l.type === "button" || /button|cta|get started/i.test(l.name))
     : mentionsTitle
       ? layers.find((l) => l.type === "text" || /title|headline/i.test(l.name))
       : mentionsCard
-        ? layers.find((l) => l.type === "container" || /card|hero/i.test(l.name))
+        ? layers.find((l) => (l.type === "container" && l.parentId !== null) || /card|hero/i.test(l.name))
         : undefined;
-  const preferredLayer =
-    (selectedId ? layers.find((l) => l.id === selectedId) : undefined) ??
+  const fallbackLayer =
     namedLayer ??
     roleMatchedLayer ??
+    layers.find((l) => l.type !== "page" && l.id !== "elem_canvas_root" && l.parentId !== null) ??
     layers.find((l) => l.type !== "page") ??
     layers[0];
+  const targetLayers = explicitTargetLayers.length > 0 ? explicitTargetLayers : fallbackLayer ? [fallbackLayer] : [];
+  const preferredLayer = targetLayers[0];
 
   // Combine follow-up context clues if user says "make it faster/slower/stronger"
   const priorUserText = messages
@@ -263,282 +275,290 @@ export function planBuilderTurn(input: {
     };
   }
 
-  const targetId = preferredLayer.id;
   const patches: MdmJsonPatch[] = [];
   const matchedEffects: PlannedEffectChoice[] = [];
   const engineChoices: EngineChoiceSummary[] = [];
 
-  // 1. Prefer curated library effect instances when they fit the prompt
-  for (let i = 0; i < effectMatches.length; i += 1) {
-    const def = effectMatches[i];
-    const instId = `eff_${suffix}_${i}`;
-    const mdmEffectId = toMdmEffectId(def.id);
-    const propOverrides: Record<string, number | string | boolean> = {};
-    for (const [k, spec] of Object.entries(def.props)) {
-      if (spec.simpleFaceVisible) {
-        propOverrides[k] = spec.defaultValue;
+  for (let tIdx = 0; tIdx < targetLayers.length; tIdx += 1) {
+    const curTarget = targetLayers[tIdx];
+    const targetId = curTarget.id;
+    const layerSuffix = targetLayers.length === 1 ? suffix : `${suffix}_${tIdx}`;
+
+    // 1. Prefer curated library effect instances when they fit the prompt
+    for (let i = 0; i < effectMatches.length; i += 1) {
+      const def = effectMatches[i];
+      const instId = `eff_${layerSuffix}_${i}`;
+      const mdmEffectId = toMdmEffectId(def.id);
+      const propOverrides: Record<string, number | string | boolean> = {};
+      for (const [k, spec] of Object.entries(def.props)) {
+        if (spec.simpleFaceVisible) {
+          propOverrides[k] = spec.defaultValue;
+        }
+      }
+      const bindingOverrides: Record<string, { enabled?: boolean; strength?: number }> = {};
+      if (def.bindings[0]) {
+        bindingOverrides[def.bindings[0].signal] = { enabled: true, strength: 1 };
+      }
+
+      patches.push({
+        op: "add",
+        path: `/effects/${instId}`,
+        value: {
+          id: instId,
+          layerId: targetId,
+          effectId: mdmEffectId,
+          version: "1.0.0",
+          propOverrides,
+          bindingOverrides,
+          seed: 1,
+        },
+      });
+
+      if (tIdx === 0) {
+        matchedEffects.push({
+          definitionId: def.id,
+          mdmEffectId,
+          name: def.name,
+          family: def.family,
+          fallbackMode: def.fallback.mode,
+          propOverrides,
+          bindingOverrides,
+        });
       }
     }
-    const bindingOverrides: Record<string, { enabled?: boolean; strength?: number }> = {};
-    if (def.bindings[0]) {
-      bindingOverrides[def.bindings[0].signal] = { enabled: true, strength: 1 };
-    }
 
-    patches.push({
-      op: "add",
-      path: `/effects/${instId}`,
-      value: {
-        id: instId,
-        layerId: targetId,
-        effectId: mdmEffectId,
-        version: "1.0.0",
-        propOverrides,
-        bindingOverrides,
-        seed: 1,
-      },
-    });
-
-    matchedEffects.push({
-      definitionId: def.id,
-      mdmEffectId,
-      name: def.name,
-      family: def.family,
-      fallbackMode: def.fallback.mode,
-      propOverrides,
-      bindingOverrides,
-    });
-  }
-
-  // 1b. Cursor / hover reactive driver bindings so Preview executes magnetic pull / tilt / glow live!
-  if (wantsMagneticOrCursor) {
-    const source: ReactivitySource = /\bscroll\b/.test(lower) ? "scroll" : "cursor";
-    const affordance: ReactivityAffordance = /\brepel|push\b/.test(lower)
-      ? "repel"
-      : /\btilt\b/.test(lower)
-        ? "tilt"
-        : /\bglow|bright\b/.test(lower)
-          ? "glow"
-          : "follow";
-    const drafts = buildReactivityDrafts({
-      ownerLayerId: targetId,
-      layerName: preferredLayer.name,
-      source,
-      affordance,
-      strength: 55,
-      smoothness: 45,
-    });
-    const driverLabel = /\b(megnatic|magnetic|pull)\b/.test(lower) ? "Magnetic Pull" : `Cursor ${affordance}`;
-    const isAlreadySurface = preferredLayer.type === "effectSurface";
-    const surfaceLayerId = isAlreadySurface ? targetId : `lay_srf_${suffix}`;
-    if (!isAlreadySurface) {
-      patches.push({
-        op: "add",
-        path: `/layers/${surfaceLayerId}`,
-        value: {
-          id: surfaceLayerId,
-          name: `${preferredLayer.name} ${driverLabel} Surface`,
-          archetype: "effectSurface",
-          parentId: null,
-          children: [],
-          properties: {
-            "transform.x": 0,
-            "transform.y": 0,
-            "frame.width": 1,
-            "frame.height": 1,
-          },
-        },
+    // 1b. Cursor / hover reactive driver bindings so Preview executes magnetic pull / tilt / glow live!
+    if (wantsMagneticOrCursor) {
+      const source: ReactivitySource = /\bscroll\b/.test(lower) ? "scroll" : "cursor";
+      const affordance: ReactivityAffordance = /\brepel|push\b/.test(lower)
+        ? "repel"
+        : /\btilt\b/.test(lower)
+          ? "tilt"
+          : /\bglow|bright\b/.test(lower)
+            ? "glow"
+            : "follow";
+      const drafts = buildReactivityDrafts({
+        ownerLayerId: targetId,
+        layerName: curTarget.name,
+        source,
+        affordance,
+        strength: 55,
+        smoothness: 45,
       });
-    }
-    const surfaceId = `srf_${suffix}`;
-    const surface = SurfaceSchema.parse({
-      id: surfaceId,
-      layerId: surfaceLayerId,
-      role: "inline",
-      program: { kind: "css", ref: driverLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
-      fallback: ["css", "poster"],
-      cost: { tier: "T0", estimateMsAt1080p: 0.45 },
-      policies: {
-        touch: "tap",
-        reducedMotion: { mode: "calm", at: 0 },
-      },
-      poster: { at: 0 },
-    });
-    patches.push({
-      op: "add",
-      path: `/surfaces/${surfaceId}`,
-      value: surface,
-    });
-    drafts.forEach((draft, idx) => {
-      const bindingId = `bnd_${suffix}_${idx}`;
-      const binding: Binding = BindingSchema.parse({
-        ...draft,
-        id: bindingId,
-        ownerLayerId: surfaceLayerId,
-        enabled: true,
-        name: driverLabel,
-      });
-      patches.push({
-        op: "add",
-        path: `/bindings/${bindingId}`,
-        value: binding,
-      });
-    });
-  }
-
-  // 2. Motion / reaction clip planning (when prompt asks for motion or no effect matched)
-  const isButtonOrInteractive =
-    preferredLayer.type === "button" ||
-    preferredLayer.type === "link" ||
-    preferredLayer.type === "input";
-
-  if (wantsMotion) {
-    const effectiveLower = `${priorUserText} ${lower}`;
-    const isTap = /\b(tap|press|click)\b/.test(lower) || (isFollowUpSpeed && /\b(tap|press|click)\b/.test(effectiveLower));
-    const isHover = /\b(hover)\b/.test(lower) || (isFollowUpSpeed && /\b(hover)\b/.test(effectiveLower));
-    const isScroll = /\b(scroll|in view|reveal)\b/.test(lower);
-    const isLoop = /\b(loop|pulse|float)\b/.test(lower);
-
-    const clipType =
-      isTap && isButtonOrInteractive
-        ? "tap"
-        : isHover && isButtonOrInteractive
-          ? "hover"
-          : isScroll
-            ? "scroll"
-            : isLoop
-              ? "loop"
-              : "entrance";
-    const trigger =
-      clipType === "tap"
-        ? "press"
-        : clipType === "hover"
-          ? "hover"
-          : clipType === "scroll"
-            ? "inView"
-            : "mount";
-
-    const clipId = `clip_${suffix}`;
-    const trackId = `trk_${suffix}`;
-    const isSlide = /\b(slide|move|enter|float)\b/.test(lower);
-    const isScale = /\b(scale|zoom|bounce|pop|pulse|tap)\b/.test(lower);
-    const isRotate = /\b(rotate|spin|turn)\b/.test(lower);
-
-    const property = isRotate
-      ? "transform.rotate"
-      : isScale
-        ? "transform.scale"
-        : isSlide
-          ? "transform.y"
-          : "appearance.opacity";
-    const fromVal = isRotate ? 0 : isScale ? (clipType === "tap" ? 1 : 0.92) : isSlide ? 24 : 0;
-    const toVal = isRotate ? 12 : isScale ? (clipType === "tap" ? 0.96 : 1.04) : isSlide ? 0 : 1;
-
-    const clip: Clip = {
-      id: clipId,
-      layerId: targetId,
-      name: `${preferredLayer.name} ${clipType}`,
-      type: clipType,
-      trigger,
-      duration,
-      easing: "power2.out",
-      enabled: true,
-      tracks: [
-        {
-          id: trackId,
-          property,
-          keyframes: [
-            { id: `kf_${suffix}_0`, time: 0, value: fromVal },
-            { id: `kf_${suffix}_1`, time: duration, value: toVal },
-          ],
-        },
-      ],
-    };
-
-    patches.push({ op: "add", path: `/clips/${clipId}`, value: clip });
-    patches.push(
-      trigger === "mount"
-        ? { op: "add", path: "/compositions/comp_main/clips/-", value: { clipId, offset: 0 } }
-        : {
-            op: "add",
-            path: `/compositions/comp_${clipId}`,
-            value: {
-              id: `comp_${clipId}`,
-              name: `${preferredLayer.name} ${clipType}`,
-              kind: "interaction",
-              duration: Math.max(duration, 1),
-              fps: 60,
-              workArea: { start: 0, end: Math.max(duration, 1) },
-              trigger: {
-                on: trigger,
-                layerId: targetId,
-                playback:
-                  trigger === "hover" ? "play-reverse" : trigger === "press" ? "restart" : "play",
-              },
-              markers: [],
-              layers: {},
-              clips: [{ clipId, offset: 0 }],
-              nested: [],
+      const driverLabel = /\b(megnatic|magnetic|pull)\b/.test(lower) ? "Magnetic Pull" : `Cursor ${affordance}`;
+      const isAlreadySurface = curTarget.type === "effectSurface";
+      const surfaceLayerId = isAlreadySurface ? targetId : `lay_srf_${layerSuffix}`;
+      if (!isAlreadySurface) {
+        patches.push({
+          op: "add",
+          path: `/layers/${surfaceLayerId}`,
+          value: {
+            id: surfaceLayerId,
+            name: `${curTarget.name} ${driverLabel} Surface`,
+            archetype: "effectSurface",
+            parentId: null,
+            children: [],
+            properties: {
+              "transform.x": 0,
+              "transform.y": 0,
+              "frame.width": 1,
+              "frame.height": 1,
             },
           },
-    );
-
-    engineChoices.push(inferClipEngineChoice(clip, preferredLayer.name));
-  }
-
-  // 3. Direct design property edits if no motion/effect patch emitted yet
-  if (patches.length === 0) {
-    if (/\bhide|invisible\b/.test(lower)) {
-      patches.push({ op: "replace", path: `/layers/${targetId}/visible`, value: false });
-    } else if (/\bshow|visible\b/.test(lower)) {
-      patches.push({ op: "replace", path: `/layers/${targetId}/visible`, value: true });
-    } else if (/\bopacity|transparent|translucent\b/.test(lower)) {
-      const numMatch = lower.match(/\b(0(?:\.\d+)?|1(?:\.0+)?|\d{1,3}%)\b/);
-      let nextOpacity = 0.5;
-      if (numMatch) {
-        nextOpacity = numMatch[1].endsWith("%")
-          ? Math.min(1, Math.max(0, parseFloat(numMatch[1]) / 100))
-          : Math.min(1, Math.max(0, parseFloat(numMatch[1])));
+        });
       }
-      patches.push({
-        op: "replace",
-        path: `/layers/${targetId}/properties/appearance.opacity`,
-        value: nextOpacity,
+      const surfaceId = `srf_${layerSuffix}`;
+      const surface = SurfaceSchema.parse({
+        id: surfaceId,
+        layerId: surfaceLayerId,
+        role: "inline",
+        program: { kind: "css", ref: driverLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
+        fallback: ["css", "poster"],
+        cost: { tier: "T0", estimateMsAt1080p: 0.45 },
+        policies: {
+          touch: "tap",
+          reducedMotion: { mode: "calm", at: 0 },
+        },
+        poster: { at: 0 },
       });
-    } else if (/\bmove|shift|nudge|right|left|down|up\b/.test(lower)) {
-      const curX = Number(preferredLayer.propsSample?.["transform.x"] ?? 0);
-      const delta = /\bleft\b/.test(lower) ? -40 : 40;
       patches.push({
-        op: "replace",
-        path: `/layers/${targetId}/properties/transform.x`,
-        value: curX + delta,
+        op: "add",
+        path: `/surfaces/${surfaceId}`,
+        value: surface,
       });
-    } else if (/\bradius|round|corner\b/.test(lower)) {
-      patches.push({
-        op: "replace",
-        path: `/layers/${targetId}/properties/appearance.radius`,
-        value: 16,
+      drafts.forEach((draft, idx) => {
+        const bindingId = `bnd_${layerSuffix}_${idx}`;
+        const binding: Binding = BindingSchema.parse({
+          ...draft,
+          id: bindingId,
+          ownerLayerId: surfaceLayerId,
+          enabled: true,
+          name: driverLabel,
+        });
+        patches.push({
+          op: "add",
+          path: `/bindings/${bindingId}`,
+          value: binding,
+        });
       });
-    } else {
-      patches.push({
-        op: "replace",
-        path: `/layers/${targetId}/name`,
-        value: `${preferredLayer.name} (Edited)`,
-      });
+    }
+
+    // 2. Motion / reaction clip planning (when prompt asks for motion or no effect matched)
+    const isButtonOrInteractive =
+      curTarget.type === "button" ||
+      curTarget.type === "link" ||
+      curTarget.type === "input";
+
+    if (wantsMotion) {
+      const effectiveLower = `${priorUserText} ${lower}`;
+      const isTap = /\b(tap|press|click)\b/.test(lower) || (isFollowUpSpeed && /\b(tap|press|click)\b/.test(effectiveLower));
+      const isHover = /\b(hover)\b/.test(lower) || (isFollowUpSpeed && /\b(hover)\b/.test(effectiveLower));
+      const isScroll = /\b(scroll|in view|reveal)\b/.test(lower);
+      const isLoop = /\b(loop|pulse|float)\b/.test(lower);
+
+      const clipType =
+        isTap && isButtonOrInteractive
+          ? "tap"
+          : isHover && isButtonOrInteractive
+            ? "hover"
+            : isScroll
+              ? "scroll"
+              : isLoop
+                ? "loop"
+                : "entrance";
+      const trigger =
+        clipType === "tap"
+          ? "press"
+          : clipType === "hover"
+            ? "hover"
+            : clipType === "scroll"
+              ? "inView"
+              : "mount";
+
+      const clipId = `clip_${layerSuffix}`;
+      const trackId = `trk_${layerSuffix}`;
+      const isSlide = /\b(slide|move|enter|float)\b/.test(lower);
+      const isScale = /\b(scale|zoom|bounce|pop|pulse|tap)\b/.test(lower);
+      const isRotate = /\b(rotate|spin|turn)\b/.test(lower);
+
+      const property = isRotate
+        ? "transform.rotate"
+        : isScale
+          ? "transform.scale"
+          : isSlide
+            ? "transform.y"
+            : "appearance.opacity";
+      const fromVal = isRotate ? 0 : isScale ? (clipType === "tap" ? 1 : 0.92) : isSlide ? 24 : 0;
+      const toVal = isRotate ? 12 : isScale ? (clipType === "tap" ? 0.96 : 1.04) : isSlide ? 0 : 1;
+
+      const clip: Clip = {
+        id: clipId,
+        layerId: targetId,
+        name: `${curTarget.name} ${clipType}`,
+        type: clipType,
+        trigger,
+        duration,
+        easing: "power2.out",
+        enabled: true,
+        tracks: [
+          {
+            id: trackId,
+            property,
+            keyframes: [
+              { id: `kf_${layerSuffix}_0`, time: 0, value: fromVal },
+              { id: `kf_${layerSuffix}_1`, time: duration, value: toVal },
+            ],
+          },
+        ],
+      };
+
+      patches.push({ op: "add", path: `/clips/${clipId}`, value: clip });
+      patches.push(
+        trigger === "mount"
+          ? { op: "add", path: "/compositions/comp_main/clips/-", value: { clipId, offset: Number((tIdx * 0.08).toFixed(2)) } }
+          : {
+              op: "add",
+              path: `/compositions/comp_${clipId}`,
+              value: {
+                id: `comp_${clipId}`,
+                name: `${curTarget.name} ${clipType}`,
+                kind: "interaction",
+                duration: Math.max(duration, 1),
+                fps: 60,
+                workArea: { start: 0, end: Math.max(duration, 1) },
+                trigger: {
+                  on: trigger,
+                  layerId: targetId,
+                  playback:
+                    trigger === "hover" ? "play-reverse" : trigger === "press" ? "restart" : "play",
+                },
+                markers: [],
+                layers: {},
+                clips: [{ clipId, offset: 0 }],
+                nested: [],
+              },
+            },
+      );
+
+      engineChoices.push(inferClipEngineChoice(clip, curTarget.name));
+    }
+
+    // 3. Direct design property edits if no motion/effect patch emitted yet
+    if (effectMatches.length === 0 && !wantsMagneticOrCursor && !wantsMotion) {
+      if (/\bhide|invisible\b/.test(lower)) {
+        patches.push({ op: "replace", path: `/layers/${targetId}/visible`, value: false });
+      } else if (/\bshow|visible\b/.test(lower)) {
+        patches.push({ op: "replace", path: `/layers/${targetId}/visible`, value: true });
+      } else if (/\bopacity|transparent|translucent\b/.test(lower)) {
+        const numMatch = lower.match(/\b(0(?:\.\d+)?|1(?:\.0+)?|\d{1,3}%)\b/);
+        let nextOpacity = 0.5;
+        if (numMatch) {
+          nextOpacity = numMatch[1].endsWith("%")
+            ? Math.min(1, Math.max(0, parseFloat(numMatch[1]) / 100))
+            : Math.min(1, Math.max(0, parseFloat(numMatch[1])));
+        }
+        patches.push({
+          op: "replace",
+          path: `/layers/${targetId}/properties/appearance.opacity`,
+          value: nextOpacity,
+        });
+      } else if (/\bmove|shift|nudge|right|left|down|up\b/.test(lower)) {
+        const curX = Number(curTarget.propsSample?.["transform.x"] ?? 0);
+        const delta = /\bleft\b/.test(lower) ? -40 : 40;
+        patches.push({
+          op: "replace",
+          path: `/layers/${targetId}/properties/transform.x`,
+          value: curX + delta,
+        });
+      } else if (/\bradius|round|corner\b/.test(lower)) {
+        patches.push({
+          op: "replace",
+          path: `/layers/${targetId}/properties/appearance.radius`,
+          value: 16,
+        });
+      } else {
+        patches.push({
+          op: "replace",
+          path: `/layers/${targetId}/name`,
+          value: `${curTarget.name} (Edited)`,
+        });
+      }
     }
   }
 
+  const targetNames = targetLayers.map((l) => l.name).join(", ");
   const engineNote = formatEngineSummary(engineChoices, matchedEffects);
   const summary =
     matchedEffects.length > 0 && engineChoices.length > 0
-      ? `Add ${matchedEffects[0].name} effect & ${engineChoices[0].backend.toUpperCase()} motion on ${preferredLayer.name}`
+      ? `Add ${matchedEffects[0].name} effect & ${engineChoices[0].backend.toUpperCase()} motion on ${targetNames}`
       : matchedEffects.length > 0
-        ? `Apply library effect ${matchedEffects[0].name} on ${preferredLayer.name}`
+        ? `Apply library effect ${matchedEffects[0].name} on ${targetNames}`
         : engineChoices.length > 0
-          ? `Add ${engineChoices[0].backend.toUpperCase()} motion on ${preferredLayer.name}`
-          : `Update ${preferredLayer.name}`;
+          ? `Add ${engineChoices[0].backend.toUpperCase()} motion on ${targetNames}`
+          : `Update ${targetNames}`;
 
   const explanation = [
-    `Planned changes for "${preferredLayer.name}".`,
+    `Planned changes for ${targetLayers.map((l) => `"${l.name}"`).join(", ")}.`,
     engineNote,
   ]
     .filter(Boolean)
@@ -550,6 +570,6 @@ export function planBuilderTurn(input: {
     explanation,
     matchedEffects,
     engineChoices,
-    targetLayerIds: [targetId],
+    targetLayerIds: targetLayers.map((l) => l.id),
   };
 }

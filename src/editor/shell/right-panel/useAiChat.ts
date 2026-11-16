@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { z, type ZodType } from "zod";
 import { planBuilderTurn } from "@/ai/llm/builderPlanner";
 import { useGhostDiffStore } from "@/ai/llm/ghostDiffStore";
+import { resolvePromptMentions } from "@/ai/llm/mentions";
 import { readSseFrames } from "@/ai/llm/sse";
 import type { LlmStreamEvent } from "@/ai/llm/types";
 import { applyMdmJsonPatches, validateStreamOutput } from "@/ai/llm/validationLoop";
@@ -376,7 +377,21 @@ export function useAiChat({
         content: "",
       };
 
-      const historyPayload = [...messagesRef.current, userMsg]
+      const docNow = getDocument();
+      const rawSelectedIds = [...useSelectionStore.getState().selectedIds];
+      const resolvedTargets = resolvePromptMentions(content, docNow, rawSelectedIds);
+      const snapshot = {
+        ...buildClientDocumentSnapshot(mode, documentName),
+        selectedIds: resolvedTargets.targetLayerIds.slice(0, 100),
+      };
+      const targetTag =
+        resolvedTargets.matchedCandidates.length > 0
+          ? `[Targeted elements — apply edits to these exact layer IDs: ${resolvedTargets.matchedCandidates
+              .map((c) => `${c.name} (id: "${c.id}", type: ${c.archetype})`)
+              .join(", ")}]\n`
+          : "";
+
+      const historyPayload = [...messagesRef.current, { ...userMsg, content: `${targetTag}${content}` }]
         .filter((m) => m.content.trim().length > 0)
         .map((m) => ({ role: m.role, content: m.content }));
 
@@ -411,7 +426,7 @@ export function useAiChat({
             ...(modelOverride ? { model: modelOverride } : {}),
             ...(byokKey ? { apiKey: byokKey } : {}),
             messages: historyPayload,
-            documentContext: buildClientDocumentSnapshot(mode, documentName),
+            documentContext: snapshot,
             commandSchemas: buildClientCommandCatalog(),
           }),
           signal: controller.signal,
@@ -532,11 +547,22 @@ export function useAiChat({
             content,
           );
         if (!stagedValidProposal && !hasErrorEvent && isVisualBuilderRequest) {
-          const docNow = getDocument();
-          const snapshot = buildClientDocumentSnapshot(mode, documentName);
-          const plan = planBuilderTurn({ prompt: content, documentContext: snapshot });
+          const latestDoc = getDocument();
+          const latestTargets = resolvePromptMentions(
+            content,
+            latestDoc,
+            [...useSelectionStore.getState().selectedIds],
+          );
+          const plan = planBuilderTurn({
+            prompt: content,
+            documentContext: {
+              ...buildClientDocumentSnapshot(mode, documentName),
+              selectedIds: latestTargets.targetLayerIds,
+            },
+            targetLayerIds: latestTargets.targetLayerIds,
+          });
           if (plan.patches.length > 0) {
-            const applied = applyMdmJsonPatches(docNow, plan.patches);
+            const applied = applyMdmJsonPatches(latestDoc, plan.patches);
             const check = applied.ok ? validateMotionDocument(applied.document) : null;
             if (check?.ok && rules.validate(check.document).length === 0) {
               useGhostDiffStore.getState().stageProposal({

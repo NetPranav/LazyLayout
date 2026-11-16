@@ -5,6 +5,7 @@ import { ArrowUp, Check, Frame, PanelRightOpen, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
+import { MentionPopover, useMentionAutocomplete } from "@/editor/components/MentionPopover";
 import { surf, type Surf } from "@/editor/motion/surface";
 import { MENU_FALLBACKS, MOT } from "@/editor/motion/presets";
 import { prefersReducedMotion } from "@/editor/motion/feel";
@@ -46,6 +47,7 @@ export const AiBox: React.FC<AiBoxProps> = ({
 
   const [prompt, setPrompt] = useState<string>("");
   const [hasContext, setHasContext] = useState<boolean>(true);
+  const [prevContextKey, setPrevContextKey] = useState<string>(`${context.type}:${context.name}`);
   const [isRendered, setIsRendered] = useState<boolean>(open);
   const [prevOpen, setPrevOpen] = useState<boolean>(open);
 
@@ -54,10 +56,22 @@ export const AiBox: React.FC<AiBoxProps> = ({
   const surfRef = useRef<Surf | null>(null);
   const lastSentPromptRef = useRef<string>("");
   const textareaId = useId();
+  const mention = useMentionAutocomplete({
+    value: prompt,
+    onChange: setPrompt,
+    inputRef: textareaRef,
+  });
+
+  const nextContextKey = `${context.type}:${context.name}`;
+  if (nextContextKey !== prevContextKey) {
+    setPrevContextKey(nextContextKey);
+    setHasContext(true);
+  }
 
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
+      setHasContext(true);
       setIsRendered(true);
     }
   }
@@ -130,8 +144,10 @@ export const AiBox: React.FC<AiBoxProps> = ({
     if (!open || !isRendered) return;
 
     const handlePointerDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
-        if (triggerRef?.current && triggerRef.current.contains(e.target as Node))
+      const target = e.target as Node | null;
+      if (target && !target.isConnected) return;
+      if (boxRef.current && !boxRef.current.contains(target)) {
+        if (triggerRef?.current && triggerRef.current.contains(target))
           return;
         onClose();
       }
@@ -239,7 +255,14 @@ export const AiBox: React.FC<AiBoxProps> = ({
 
         {/* Input Row (.ll-aiinrow) - shown when idle or done */}
         {aiState !== "work" && (
-          <div className="ll-aiinrow ll:flex ll:items-end ll:gap-2 ll:min-w-0 ll:w-full">
+          <div className="ll-aiinrow ll:relative ll:flex ll:items-end ll:gap-2 ll:min-w-0 ll:w-full">
+            <MentionPopover
+              open={mention.isOpen}
+              matches={mention.matches}
+              activeIndex={mention.activeIndex}
+              onSelect={mention.applySelection}
+              className="ll:absolute ll:left-0 ll:right-0 ll:bottom-full ll:mb-2"
+            />
             {/* Context tag (.ll-aitag) */}
             {hasContext && (
               <span className="ll-aitag ll:flex ll:items-center ll:gap-1 ll:shrink-0 ll:h-7 ll:mb-0 ll:pl-1.5 ll:pr-0.5 ll:rounded-sm ll:bg-surface-bar ll:text-secondary ll:text-nano ll:font-medium ll:select-none">
@@ -274,9 +297,13 @@ export const AiBox: React.FC<AiBoxProps> = ({
               }}
               onChange={(e) => {
                 setPrompt(e.target.value);
+                mention.syncCursor(e.target.selectionStart);
                 fitTextarea();
               }}
+              onClick={(e) => mention.syncCursor(e.currentTarget.selectionStart)}
+              onKeyUp={(e) => mention.syncCursor(e.currentTarget.selectionStart)}
               onKeyDown={(e) => {
+                if (mention.handleMentionKeyDown(e)) return;
                 if (
                   e.key === "Enter" &&
                   !e.shiftKey &&
