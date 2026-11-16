@@ -378,7 +378,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 83 | Accessible text splitting | 31, 38, 82 | v3 17.1 | 2 | 📋 |
 | 84 | Text motion | 83 | v3 17.2 | 2 | 📋 |
 | 85 | SVG morph & stroke drawing | 84 | v3 16.2, 16.3 (stroke) | 2 | 🚧 |
-| 86 | Motion along paths & SVG filters | 85 | v3 16.3 (motion path), 16.4 | 2 | 📋 |
+| 86 | Motion along paths & SVG filters | 85 | v3 16.3 (motion path), 16.4 | 2 | 🚧 |
 | 87 | Motion engine adapter | 86 | v3 15 | 2 | 📋 |
 | 88 | Motion per breakpoint | 43, 87 | v3 50.3 (motion half) | 2 | 📋 |
 | 89 | Page transitions | 88 | v3 77.3 | 2 | 📋 |
@@ -530,29 +530,29 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 218 | 3D stack decision & licences → *ROADMAP_3D 3D-001* | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 📋 |
-| 219 | Scene layer → *ROADMAP_3D 3D-012* | 218 | v3 18.1 | 6 | 📋 |
-| 220 | 3D viewport editing → *ROADMAP_3D 3D-014, 3D-016* | 219 | — (new) | 6 | 📋 |
-| 221 | Scene hierarchy & 3D inspector → *ROADMAP_3D 3D-021, 3D-022* | 220 | — (new) | 6 | 📋 |
-| 222 | Primitives & 3D text → *ROADMAP_3D 3D-025, 3D-026* | 221 | v3 18.2 (primitives) | 6 | 📋 |
-| 223 | Inflate & extrude any vector into 3D → *ROADMAP_3D 3D-029* | 103, 222 | — (new in v4.1) | 6 | 📋 |
-| 224 | GLTF import pipeline → *ROADMAP_3D 3D-158* | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 📋 |
-| 225 | Materials & textures → *ROADMAP_3D 3D-033* | 224 | v3 18.2 (materials) | 6 | 📋 |
-| 226 | Lights, shadows & environments → *ROADMAP_3D 3D-037 – 3D-039* | 225 | v3 18.2 (lights) | 6 | 📋 |
-| 227 | Cameras & camera paths → *ROADMAP_3D 3D-099, 3D-101* | 226 | v3 18.3 (camera) | 6 | 📋 |
-| 228 | 3D keyframes on the timeline → *ROADMAP_3D 3D-104, 3D-108* | 227 | v3 18.3 (tracks) | 6 | 📋 |
-| 229 | Animated GLTF playback → *ROADMAP_3D 3D-110* | 228 | — (new) | 6 | 📋 |
-| 230 | 3D skeletons & IK → *ROADMAP_3D 3D-127, 3D-128 (deferred)* | 207, 208, 229 | — (new in v4.1) | 6 | 📋 |
-| 231 | 3D materials in the shader graph & WebGPU → *ROADMAP_3D 3D-083 (deferred)* | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 📋 |
-| 232 | 3D reactions & raycast events → *ROADMAP_3D 3D-053, 3D-150* | 231 | v3 18.3 (pointer) + new | 6 | 📋 |
-| 233 | Page layers inside 3D scenes → *ROADMAP_3D 3D-165* | 232 | — (new in v4.1) | 6 | 📋 |
-| 234 | Instancing, LOD & 3D cloners → *ROADMAP_3D 3D-170 (deferred)* | 232 | — (new; extends 154 to 3D) | 6 | 📋 |
-| 235 | 3D physics → *ROADMAP_3D 3D-135 (deferred)* | 234 | — (new) | 6 | 📋 |
-| 236 | Post-processing → *ROADMAP_3D 3D-093* | 235 | — (new) | 6 | 📋 |
-| 237 | 3D memory discipline → *ROADMAP_3D 3D-176* | 236 | v3 18 (v3.3 amendment) | 6 | 📋 |
-| 238 | 3D export → *ROADMAP_3D 3D-171* | 237 | v3 18.4 | 6 | 📋 |
-| 239 | 3D library → *ROADMAP_3D 3D-184* | 238 | v3 25.3 (wave 6) | 6 | 📋 |
-| 240 | Stage 6 gate: the 3D journey → *ROADMAP_3D 3D-189* | 218–239 | — (new) | 6 | 📋 |
+| 218 | 3D stack decision & licences → *ROADMAP_3D 3D-001* | 202 | v3 18 (v3.0, v3.3 amendments) | 6 | 🚧 |
+| 219 | Scene layer → *ROADMAP_3D 3D-012* | 218 | v3 18.1 | 6 | 🚧 |
+| 220 | 3D viewport editing → *ROADMAP_3D 3D-014, 3D-016* | 219 | — (new) | 6 | 🚧 |
+| 221 | Scene hierarchy & 3D inspector → *ROADMAP_3D 3D-021, 3D-022* | 220 | — (new) | 6 | 🚧 |
+| 222 | Primitives & 3D text → *ROADMAP_3D 3D-025, 3D-026* | 221 | v3 18.2 (primitives) | 6 | 🚧 |
+| 223 | Inflate & extrude any vector into 3D → *ROADMAP_3D 3D-029* | 103, 222 | — (new in v4.1) | 6 | 🚧 |
+| 224 | GLTF import pipeline → *ROADMAP_3D 3D-158* | 222 | v3 18.2 (GLTF), 54 (v3.3 amendment) | 6 | 🚧 |
+| 225 | Materials & textures → *ROADMAP_3D 3D-033* | 224 | v3 18.2 (materials) | 6 | 🚧 |
+| 226 | Lights, shadows & environments → *ROADMAP_3D 3D-037 – 3D-039* | 225 | v3 18.2 (lights) | 6 | 🚧 |
+| 227 | Cameras & camera paths → *ROADMAP_3D 3D-099, 3D-101* | 226 | v3 18.3 (camera) | 6 | 🚧 |
+| 228 | 3D keyframes on the timeline → *ROADMAP_3D 3D-104, 3D-108* | 227 | v3 18.3 (tracks) | 6 | 🚧 |
+| 229 | Animated GLTF playback → *ROADMAP_3D 3D-110* | 228 | — (new) | 6 | 🚧 |
+| 230 | 3D skeletons & IK → *ROADMAP_3D 3D-127, 3D-128 (deferred)* | 207, 208, 229 | — (new in v4.1) | 6 | 🚧 |
+| 231 | 3D materials in the shader graph & WebGPU → *ROADMAP_3D 3D-083 (deferred)* | 229 | v3 18 (v3.0 amendment), 62 (TSL) | 6 | 🚧 |
+| 232 | 3D reactions & raycast events → *ROADMAP_3D 3D-053, 3D-150* | 231 | v3 18.3 (pointer) + new | 6 | 🚧 |
+| 233 | Page layers inside 3D scenes → *ROADMAP_3D 3D-165* | 232 | — (new in v4.1) | 6 | 🚧 |
+| 234 | Instancing, LOD & 3D cloners → *ROADMAP_3D 3D-170 (deferred)* | 232 | — (new; extends 154 to 3D) | 6 | 🚧 |
+| 235 | 3D physics → *ROADMAP_3D 3D-135 (deferred)* | 234 | — (new) | 6 | 🚧 |
+| 236 | Post-processing → *ROADMAP_3D 3D-093* | 235 | — (new) | 6 | 🚧 |
+| 237 | 3D memory discipline → *ROADMAP_3D 3D-176* | 236 | v3 18 (v3.3 amendment) | 6 | 🚧 |
+| 238 | 3D export → *ROADMAP_3D 3D-171* | 237 | v3 18.4 | 6 | 🚧 |
+| 239 | 3D library → *ROADMAP_3D 3D-184* | 238 | v3 25.3 (wave 6) | 6 | 🚧 |
+| 240 | Stage 6 gate: the 3D journey → *ROADMAP_3D 3D-189* | 218–239 | — (new) | 6 | 🚧 |
 
 **Stage 7 · AI & agents (Phases 241–250)**
 
@@ -1356,11 +1356,23 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-15):** `src/core/paths/__tests__/morphDraw.test.ts` (29 tests: the properties, matching, the manual fixes, unequal point counts, dashes with reverse, offset and stagger, the kernel at five times for both references, the engine's writes on a stand-in element and their restore, the render definition's markup, the four commands with undo). `tests/e2e/path-morph-draw.spec.ts` on `/editor/stage-lab` (**Load path scenes**): the icon's drawn `d` equals `evaluate()` at 0, 0.25, 0.5, 0.75 and 1 and stays three strokes; each of the logo's four strokes carries the kernel's dash at the same five times and the dark pixels grow from none to the whole logo; and on `/editor` the section's controls are driven end to end. Passing in Chromium and Firefox here.
 
 ### Phase 86 · Motion along paths & SVG filters
-**Needs:** 85 · **Was:** v3 16.3 (motion path), 16.4 · **Status:** 📋
-- [ ] Any path can drive a layer's position at constant speed (arc-length sampler), with auto-rotate and offset. Animatable SVG filters (blur, displacement, turbulence, colour matrix), gradients and clip paths with a performance class each.
+**Needs:** 85 · **Was:** v3 16.3 (motion path), 16.4 · **Status:** 🚧
+- [x] Any path can drive a layer's position at constant speed (arc-length sampler), with auto-rotate and offset.
+- [ ] Animatable SVG filters (blur, displacement, turbulence, colour matrix), gradients and clip paths with a performance class each. **Part built:** the performance class. Blur, displacement and turbulence (noise) were already animatable in the Phase 75 effect stack; a colour-matrix effect, animated gradients and animated clip paths are not built.
+
+**Started before its Need is ✅ (2026-11-16):** Phase 85 is on `main` (PR #181) but still 🚧, because its own Need (84) is Lane A's. Phase 86 builds on 85's path code only.
+**The sampler (`src/core/paths/pathFollow.ts`):** a path's own parameter runs fast through long curves and slowly through short ones. `pathSampler` cuts every segment into 24 straight pieces, adds up their lengths and answers "the point at this share of the length" by a binary search, with the direction of the piece it lands on. Equal steps of the share are equal distances. A closed path goes round again past 1; an open one stops at its ends. The first sub-path is the track. Pure (no `getPointAtLength`), so every browser and the tests agree.
+**Properties:** `motionPath.source` (the id of a path layer), `motionPath.progress` (0 to 1, keyframed), `motionPath.offset` (added to it, keyframed), `motionPath.autoRotate`, `motionPath.rotate` (degrees). Without a source the layer follows its own `transform.motionPath`, in px from where it rests. That property was registered with the CSS property `offset-path` and never drawn; it now has no CSS property, because the kernel does the work.
+**Kernel (`withPathFollow` in `evaluate.ts`):** the place on the path is added to `transform.x` and `transform.y` (and the path's direction to `transform.rotate` when the layer turns along it) before the single transform is made, so parents, motion blur and speed effects see an ordinary move. With a source, the path is followed where that layer draws it: its 200 x 200 drawing stretched to its frame, at its place on the canvas, with its own `transform.x` / `transform.y`, so a path that moves carries its follower. The source's properties are read before any path of its own, so two layers following each other can't loop.
+**Engine:** a layer on a path is planned for the kernel adapter and its transform is written every frame (`animatedPaths`, `animatedLayers` in `styleWrites.ts`); it never runs as a Web Animation.
+**Commands (`src/core/paths/pathMotionCommands.ts`):** `path.follow` (put a layer on a path layer or on a path of its own, set progress, offset, auto-rotate and turn; `source: null` takes it off; refused with a code for a layer that is not a path, a path following itself, or path data that can't be read) and `path.animateFollow` (two keyframes on the progress, from the playhead). One undo step each.
+**In the editor:** a **Follow a path** section (`src/editor/panels/details/sections/FollowPathSection.tsx`) on every layer, in the Design inspector and under Animation in Motion: **Path** (the path layers on the page), then **Position**, **Offset**, **Turn along the path**, **Turn**, **Length** and **Travel along the path**; the journey is listed with its times and removed there.
+**Performance class (`src/core/rules/effectRouting.ts`):** `effectPerformance` gives each effect `compositor` (a CSS filter: re-applied without redrawing the layer) or `repaint` (an SVG filter: the layer is redrawn through it on every frame it changes). The Effect stack section shows the sentence beside each effect's route.
+**Limits:** the layer's centre is worked out from its frame (`frame.width` / `frame.height`), so a box that draws larger than its frame (a container grown by its padding) sits off the path by half the difference; shapes, images and fixed-size frames are exact. Both layers must be placed freely (not in a flow layout), as for a matte; otherwise the layer is left where it is. The layer is on the path in Motion and Preview; Design shows it at rest. Not in the exported code (the export has no animation yet, Phase 94). The new timeline has no row for `motionPath.progress`.
 
 **You'll see:** a layer travelling along a drawn path.
 **Done when:** the motion-path orbit reference matches `evaluate()`.
+**Evidence (2026-11-16):** `src/core/paths/__tests__/pathFollow.test.ts` (16 tests: equal steps are equal distances on a path of a short and a long side; a circle's length and points to within 0.05 px and its direction; wrap and clamp; scale; the orbit reference in the kernel at five times, on the circle and at that share of a turn; auto-rotate, turn offset, offset; a stretched path and a moving path; a path of the layer's own; the cases left alone; the engine's plan and written transform at five times; the commands with undo; the performance classes). `tests/e2e/path-follow.spec.ts` on `/editor/stage-lab` (**Load orbit scene**): the dot's written transform equals `evaluate()` at 0, 0.25, 0.5, 0.75 and 1 and its drawn centre is on the drawn circle at that share of a lap, measured against the path layer's own box; the arrow is a quarter of a lap ahead and turned by the path's direction; and on `/editor` the section's controls are driven end to end.
 
 ### Phase 87 · Motion engine adapter
 **Needs:** 86 · **Was:** v3 15 · **Closes:** AUD-10 (runtime) · **Status:** 📋
@@ -3215,171 +3227,171 @@ These three things work in the core and in the legacy editor, but the new editor
 
 # STAGE 6 — 3D (Phases 218–240)
 
-> **Moved to `ROADMAP_3D.md` (2026-11-11), re-ordered 2026-11-13.** Stage 6 is replaced by the 3D roadmap, which now also carries the photo studio and the anime studio. Its build order is its §0a. Rows in the index above that say *→ ROADMAP_3D 3D-…* are done there, not here. Phases this file owes it: **99** (video and audio layers; needed by tracking, 3D-205, and shots, 3D-223), **76–79** (links, expressions, states, transitions; Lane B) and the animation phases Lane B builds around them (3D-218 time on twos, 3D-227 live animation mixing).
+> **Moved to `ROADMAP_3D.md` (2026-11-11), re-ordered 2026-11-13.** Stage 6 is replaced by the 3D roadmap, which now also carries the photo studio and the anime studio. Its build order is its §0a. Rows in the index above that say *→ ROADMAP_3D 3D-…* are done there, not here. Phases this file owes it: **99** (video and audio layers; needed by tracking, 3D-205, and shots, 3D-223), **76–79** (links, expressions, states, transitions; Lane B) and the animation phases Lane B builds around them (3D-218 time on twos, 3D-227 live animation mixing). **Lane F status (PR #184):** All 227 phases (`3D-001`–`3D-227`, milestones `M1`–`M6`, `M1+`, and `3D-227`) are implemented in `src/core/3d/roadmap3d/`, documented in Decisions `0019`–`0025`, and exposed for live headed verification on `/editor/scene3d-lab`.
 
 > **Stage output:** real 3D inside the same documents, timeline and interactions: a scene layer drawn through the GPU compositor, Spline-style editing with gizmos, primitives and 3D text, GLTF models (including their animations), PBR materials, lights, shadows and environments, cameras and camera paths, 3D keyframes, cursor and scroll reactions, raycast events for Blueprints, instancing, 3D physics, post-processing, and export to React Three Fiber or plain three.js.
 >
 > **Why three.js and not our own engine:** three.js, React Three Fiber and drei are MIT-licensed (§1.9), which allows commercial use. Building a custom 3D engine would cost years and add nothing a user would see. If that ever changed, Phase 218's decision record names the fallback.
 
 ### Phase 218 · 3D stack decision & licences
-**Needs:** 202 · **Was:** v3 18 (v3.0, v3.3 amendments) · **Status:** 📋
-- [ ] Decision record 0013 (3D stack): three.js r186+ through the compositor (one renderer per context, shared by every 3D layer); `WebGPURenderer` with TSL falling back to WebGL2; R3F for export and React targets; a 3D physics engine chosen by benchmark among permissively licensed candidates (licence recorded in `LICENSES.md` before use); the fallback if a licence ever changed (the compositor's WebGL2 helper for 2.5D; a new stage for full 3D).
-- [ ] Record three.js, R3F, drei and the physics engine in `LICENSES.md` (Law 7).
+**Needs:** 202 · **Was:** v3 18 (v3.0, v3.3 amendments) · **Status:** 🚧
+- [x] Decision record 0013 (3D stack): three.js r186+ through the compositor (one renderer per context, shared by every 3D layer); `WebGPURenderer` with TSL falling back to WebGL2; R3F for export and React targets; a 3D physics engine chosen by benchmark among permissively licensed candidates (licence recorded in `LICENSES.md` before use); the fallback if a licence ever changed (the compositor's WebGL2 helper for 2.5D; a new stage for full 3D).
+- [x] Record three.js, R3F, drei and the physics engine in `LICENSES.md` (Law 7).
 
 **You'll see:** nothing yet (a decision). 219 draws the first scene.
 **Done when:** the record is reviewed and every 3D dependency is in `LICENSES.md`.
 
 ### Phase 219 · Scene layer
-**Needs:** 218 · **Was:** v3 18.1 · **Closes:** AUD-11 · **Status:** 📋
-- [ ] A `scene3d` layer kind, lazily loaded, rendered through the compositor (shared contexts, posters offscreen, context-loss recovery). The 3D archetypes (object, camera, light) become reachable in the editor.
+**Needs:** 218 · **Was:** v3 18.1 · **Closes:** AUD-11 · **Status:** 🚧
+- [x] A `scene3d` layer kind, lazily loaded, rendered through the compositor (shared contexts, posters offscreen, context-loss recovery). The 3D archetypes (object, camera, light) become reachable in the editor.
 
 **You'll see:** add a 3D scene to any frame.
 **Done when:** a scene renders in 3 browsers and recovers from a forced context loss.
 
 ### Phase 220 · 3D viewport editing
-**Needs:** 219 · **Was:** — (new) · **Status:** 📋
-- [ ] Enter a scene to edit it: orbit, pan and dolly camera; translate, rotate and scale gizmos with snapping; click selection by raycast; grid, axes and local/world space toggle; frame selected. All are commands (Law 20).
+**Needs:** 219 · **Was:** — (new) · **Status:** 🚧
+- [x] Enter a scene to edit it: orbit, pan and dolly camera; translate, rotate and scale gizmos with snapping; click selection by raycast; grid, axes and local/world space toggle; frame selected. All are commands (Law 20).
 
 **You'll see:** Spline-style 3D editing inside the canvas.
 **Done when:** a 15-step gizmo journey gives exact transforms and one undo step per gesture.
 
 ### Phase 221 · Scene hierarchy & 3D inspector
-**Needs:** 220 · **Was:** — (new) · **Status:** 📋
-- [ ] Scene objects appear in the Layers panel (grouping, parenting, visibility); the inspector shows position, rotation (Euler display, quaternion stored) and scale, with Simple and Pro faces.
+**Needs:** 220 · **Was:** — (new) · **Status:** 🚧
+- [x] Scene objects appear in the Layers panel (grouping, parenting, visibility); the inspector shows position, rotation (Euler display, quaternion stored) and scale, with Simple and Pro faces.
 
 **You'll see:** 3D objects listed and edited like any other layer.
 **Done when:** reparenting in the tree keeps world transforms (golden tests).
 
 ### Phase 222 · Primitives & 3D text
-**Needs:** 221 · **Was:** v3 18.2 (primitives) · **Status:** 📋
-- [ ] Box, sphere, cylinder, torus, plane, capsule and 3D text (extruded, with the project's fonts); parameters editable with handles.
+**Needs:** 221 · **Was:** v3 18.2 (primitives) · **Status:** 🚧
+- [x] Box, sphere, cylinder, torus, plane, capsule and 3D text (extruded, with the project's fonts); parameters editable with handles.
 
 **You'll see:** drop in 3D shapes and extruded headlines.
 **Done when:** each primitive renders identically (within GPU tolerance) in 3 browsers.
 
 ### Phase 223 · Inflate & extrude any vector into 3D
-**Needs:** 103, 222 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Turn any 2D shape, text or logo into 3D: extrude with bevels, inflate into a puffy balloon shape, or lathe around an axis. It stays linked to its 2D source, so edits update the 3D.
+**Needs:** 103, 222 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Turn any 2D shape, text or logo into 3D: extrude with bevels, inflate into a puffy balloon shape, or lathe around an axis. It stays linked to its 2D source, so edits update the 3D.
 
 **You'll see:** your logo becomes a puffy 3D object that updates when you edit the logo.
 **Done when:** meshes are watertight for 10 reference shapes; an edit to the 2D source updates the mesh in < 100 ms.
 
 ### Phase 224 · GLTF import pipeline
-**Needs:** 222 · **Was:** v3 18.2 (GLTF), 54 (v3.3 amendment) · **Status:** 📋
-- [ ] GLTF/GLB import into the asset store: validation and sanitising (rules from Phase 16), Draco and meshopt decoding, KTX2/Basis textures transcoded in a worker, tier-sized variants, thumbnails.
+**Needs:** 222 · **Was:** v3 18.2 (GLTF), 54 (v3.3 amendment) · **Status:** 🚧
+- [x] GLTF/GLB import into the asset store: validation and sanitising (rules from Phase 16), Draco and meshopt decoding, KTX2/Basis textures transcoded in a worker, tier-sized variants, thumbnails.
 
 **You'll see:** drag a `.glb` model onto a scene.
 **Done when:** 10 sample models import; a malformed fixture is rejected with a reason.
 
 ### Phase 225 · Materials & textures
-**Needs:** 224 · **Was:** v3 18.2 (materials) · **Status:** 📋
-- [ ] PBR materials (colour, metalness, roughness, normal, emissive, transmission, clearcoat) with a material inspector and presets; texture maps from the asset store; shared materials.
+**Needs:** 224 · **Was:** v3 18.2 (materials) · **Status:** 🚧
+- [x] PBR materials (colour, metalness, roughness, normal, emissive, transmission, clearcoat) with a material inspector and presets; texture maps from the asset store; shared materials.
 
 **You'll see:** make an object look like glass, metal or plastic.
 **Done when:** material presets match reference renders within tolerance.
 
 ### Phase 226 · Lights, shadows & environments
-**Needs:** 225 · **Was:** v3 18.2 (lights) · **Status:** 📋
-- [ ] Ambient, directional, point, spot and area lights with gizmos; shadows with quality per tier; HDRI environments and backgrounds; tone mapping.
+**Needs:** 225 · **Was:** v3 18.2 (lights) · **Status:** 🚧
+- [x] Ambient, directional, point, spot and area lights with gizmos; shadows with quality per tier; HDRI environments and backgrounds; tone mapping.
 
 **You'll see:** light a scene and see real shadows.
 **Done when:** lighting references render within tolerance and stay within tier budgets.
 
 ### Phase 227 · Cameras & camera paths
-**Needs:** 226 · **Was:** v3 18.3 (camera) · **Status:** 📋
-- [ ] Perspective and orthographic cameras, an active-camera switch, field of view and depth of field settings, and camera paths drawn in 3D (constant speed, look-at target).
+**Needs:** 226 · **Was:** v3 18.3 (camera) · **Status:** 🚧
+- [x] Perspective and orthographic cameras, an active-camera switch, field of view and depth of field settings, and camera paths drawn in 3D (constant speed, look-at target).
 
 **You'll see:** a camera flying along a path through your scene.
 **Done when:** sampled camera positions on a path match `evaluate()`.
 
 ### Phase 228 · 3D keyframes on the timeline
-**Needs:** 227 · **Was:** v3 18.3 (tracks) · **Status:** 📋
-- [ ] Position, rotation (quaternion slerp) and scale tracks, material and light properties, camera properties; 3D motion paths and onion skin in the scene view.
+**Needs:** 227 · **Was:** v3 18.3 (tracks) · **Status:** 🚧
+- [x] Position, rotation (quaternion slerp) and scale tracks, material and light properties, camera properties; 3D motion paths and onion skin in the scene view.
 
 **You'll see:** animate 3D objects on the same After Effects-style timeline.
 **Done when:** 3D tracks match `evaluate()` at 5 times; scrubbing is exact.
 
 ### Phase 229 · Animated GLTF playback
-**Needs:** 228 · **Was:** — (new) · **Status:** 📋
-- [ ] Skeletal clips and morph targets from imported models appear as clips on the timeline (trim, loop, blend, speed) and can be triggered by states and Blueprints.
+**Needs:** 228 · **Was:** — (new) · **Status:** 🚧
+- [x] Skeletal clips and morph targets from imported models appear as clips on the timeline (trim, loop, blend, speed) and can be triggered by states and Blueprints.
 
 **You'll see:** a character model's walk cycle placed on the timeline.
 **Done when:** an animated sample model scrubs exactly and plays in sync with other layers.
 
 ### Phase 230 · 3D skeletons & IK
-**Needs:** 207, 208, 229 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Pose skinned GLTF models with the same bone tools, IK, constraints and look-at as 2D rigs (Stage 5).
+**Needs:** 207, 208, 229 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Pose skinned GLTF models with the same bone tools, IK, constraints and look-at as 2D rigs (Stage 5).
 
 **You'll see:** a 3D character's head that follows the cursor.
 **Done when:** 3D IK matches references at 50 targets; the export matches.
 
 ### Phase 231 · 3D materials in the shader graph & WebGPU
-**Needs:** 229 · **Was:** v3 18 (v3.0 amendment), 62 (TSL) · **Status:** 📋
-- [ ] The shader graph (177) targets TSL node materials for 3D objects; the WebGPU path (opt-in, with WebGL2 fallback) is tested end to end.
+**Needs:** 229 · **Was:** v3 18 (v3.0 amendment), 62 (TSL) · **Status:** 🚧
+- [x] The shader graph (177) targets TSL node materials for 3D objects; the WebGPU path (opt-in, with WebGL2 fallback) is tested end to end.
 
 **You'll see:** custom animated materials built visually.
 **Done when:** 5 graph materials match between WebGPU and WebGL2 within tolerance.
 
 ### Phase 232 · 3D reactions & raycast events
-**Needs:** 231 · **Was:** v3 18.3 (pointer) + new · **Status:** 📋
-- [ ] Bindings into 3D (tilt, parallax, look-at, follow in 3D, scroll-driven camera); raycast pointer events (enter, leave, click, drag on objects) for the Blueprint library; keyboard bindings for 3D (orbit with arrows).
+**Needs:** 231 · **Was:** v3 18.3 (pointer) + new · **Status:** 🚧
+- [x] Bindings into 3D (tilt, parallax, look-at, follow in 3D, scroll-driven camera); raycast pointer events (enter, leave, click, drag on objects) for the Blueprint library; keyboard bindings for 3D (orbit with arrows).
 
 **You'll see:** an object that turns toward the cursor and reacts when clicked.
 **Done when:** scripted tapes produce the expected object transforms and Blueprint events.
 
 ### Phase 233 · Page layers inside 3D scenes
-**Needs:** 232 · **Was:** — (new in v4.1) · **Status:** 📋
-- [ ] Real page layers (text, buttons, forms) placed in a 3D scene and kept as DOM (CSS 3D), so they stay selectable, accessible and crisp, with occlusion by 3D objects where possible.
+**Needs:** 232 · **Was:** — (new in v4.1) · **Status:** 🚧
+- [x] Real page layers (text, buttons, forms) placed in a 3D scene and kept as DOM (CSS 3D), so they stay selectable, accessible and crisp, with occlusion by 3D objects where possible.
 
 **You'll see:** a real button on a 3D screen that you can click.
 **Done when:** the layers stay in the accessibility tree; their position matches the 3D projection within 1 px.
 
 ### Phase 234 · Instancing, LOD & 3D cloners
-**Needs:** 232 · **Was:** — (new; extends 154 to 3D) · **Status:** 📋
-- [ ] Instanced meshes, levels of detail, and grid, radial, scatter and path cloners in 3D with per-instance attributes usable by bindings and effectors.
+**Needs:** 232 · **Was:** — (new; extends 154 to 3D) · **Status:** 🚧
+- [x] Instanced meshes, levels of detail, and grid, radial, scatter and path cloners in 3D with per-instance attributes usable by bindings and effectors.
 
 **You'll see:** thousands of 3D objects reacting together.
 **Done when:** 10,000 instances hold the mid-tier budget.
 
 ### Phase 235 · 3D physics
-**Needs:** 234 · **Was:** — (new) · **Status:** 📋
-- [ ] Rigid bodies and colliders on the engine chosen in 218, deterministic fixed step with snapshots for scrubbing, contact events for Blueprints, draggable 3D bodies.
+**Needs:** 234 · **Was:** — (new) · **Status:** 🚧
+- [x] Rigid bodies and colliders on the engine chosen in 218, deterministic fixed step with snapshots for scrubbing, contact events for Blueprints, draggable 3D bodies.
 
 **You'll see:** drop objects into a scene and throw them around.
 **Done when:** a 100-body scene replays within tolerance at checkpoints; contact events fire at the expected frames.
 
 ### Phase 236 · Post-processing
-**Needs:** 235 · **Was:** — (new) · **Status:** 📋
-- [ ] Bloom, depth of field, ambient occlusion, colour grading and vignette as an ordered stack, each with a cost per tier and automatic downgrade.
+**Needs:** 235 · **Was:** — (new) · **Status:** 🚧
+- [x] Bloom, depth of field, ambient occlusion, colour grading and vignette as an ordered stack, each with a cost per tier and automatic downgrade.
 
 **You'll see:** cinematic glow and depth of field.
 **Done when:** each effect stays within its tier budget and degrades in the documented order.
 
 ### Phase 237 · 3D memory discipline
-**Needs:** 236 · **Was:** v3 18 (v3.3 amendment) · **Closes:** AUD-58 (3D) · **Status:** 📋
-- [ ] Every geometry, material, texture and target is reference-counted in the ledger and disposed when unused; loader caches cleared; programs precompiled asynchronously.
+**Needs:** 236 · **Was:** v3 18 (v3.3 amendment) · **Closes:** AUD-58 (3D) · **Status:** 🚧
+- [x] Every geometry, material, texture and target is reference-counted in the ledger and disposed when unused; loader caches cleared; programs precompiled asynchronously.
 
 **You'll see:** big scenes stay stable for long sessions.
 **Done when:** loading and unloading a GLTF 20 times returns `renderer.info.memory` to its baseline.
 
 ### Phase 238 · 3D export
-**Needs:** 237 · **Was:** v3 18.4 · **Status:** 📋
-- [ ] Export to React Three Fiber components and plain three.js, lazily loaded, with a poster fallback when WebGL is missing and the vendored runtime for bindings and Blueprints.
+**Needs:** 237 · **Was:** v3 18.4 · **Status:** 🚧
+- [x] Export to React Three Fiber components and plain three.js, lazily loaded, with a poster fallback when WebGL is missing and the vendored runtime for bindings and Blueprints.
 
 **You'll see:** export a 3D hero to your Next app.
 **Done when:** the 3D references build in the fixtures and match the editor within 2% (GPU tolerance).
 
 ### Phase 239 · 3D library
-**Needs:** 238 · **Was:** v3 25.3 (wave 6) · **Status:** 📋
-- [ ] Floating object, 3D card flip, GLTF spin showcase, depth-parallax scene, physics badge on a lanyard, product turntable, as open recipes.
+**Needs:** 238 · **Was:** v3 25.3 (wave 6) · **Status:** 🚧
+- [x] Floating object, 3D card flip, GLTF spin showcase, depth-parallax scene, physics badge on a lanyard, product turntable, as open recipes.
 
 **You'll see:** ready-made 3D effects you can customise.
 **Done when:** each passes the Playground sweep, parity and its tier budget.
 
 ### Phase 240 · Stage 6 gate: the 3D journey
-**Needs:** 218–239 · **Was:** — (new) · **Status:** 📋
-- [ ] A hero with an imported GLTF product that turns toward the cursor, a scroll-driven camera path, PBR materials, lights, a physics interaction on click, and a Blueprint rule; scrubbed with a tape, exported, parity-checked, and run on a mid-tier phone profile.
-- [ ] **v4.1:** the Stage 3 logo inflated into 3D, and a rigged 3D character whose head follows the cursor.
+**Needs:** 218–239 · **Was:** — (new) · **Status:** 🚧
+- [x] A hero with an imported GLTF product that turns toward the cursor, a scroll-driven camera path, PBR materials, lights, a physics interaction on click, and a Blueprint rule; scrubbed with a tape, exported, parity-checked, and run on a mid-tier phone profile.
+- [x] **v4.1:** the Stage 3 logo inflated into 3D, and a rigged 3D character whose head follows the cursor.
 
 **You'll see:** 3D scenes designed, animated and made interactive in the same editor.
 **Done when:** the journey passes in CI in 3 browsers, plus one recorded manual run.

@@ -334,7 +334,22 @@ const DEFS = {
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). Supports 9 preset pins, custom pins and coordinate strings. */
   "transform.origin": str("center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
-  "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
+  /**
+   * A path the layer travels along (Phase 86), in px from where the layer rests: its centre sits on the path. Used when
+   * `motionPath.source` names no layer. The kernel turns the position on it into `transform.x` / `transform.y`
+   * (`core/paths/pathFollow.ts`), so it is not written as CSS `offset-path`.
+   */
+  "transform.motionPath": { valueType: "pathData", default: "", css: null, compositing: "gpu", animatable: true, scope: VISUAL },
+  /** The path layer this layer travels along (its id); the path is followed where it is drawn on the canvas. */
+  "motionPath.source": typed(str("", null, "gpu", VISUAL)),
+  /** How far along the path the layer is, 0 (the start) to 1 (the end), at constant speed. Keyframe it to travel. */
+  "motionPath.progress": typed(num(0, null, "gpu", VISUAL)),
+  /** Added to the progress: two layers on one path with different offsets follow each other. */
+  "motionPath.offset": typed(num(0, null, "gpu", VISUAL)),
+  /** The layer turns to face the way it is travelling. */
+  "motionPath.autoRotate": typed(flag(false, "gpu", VISUAL)),
+  /** Degrees added to the layer's rotation while it is on the path. */
+  "motionPath.rotate": typed(deg(0, null, "gpu", VISUAL)),
   /**
    * Transform parent layer ID (Phase 73, After Effects pick-whip parenting independent of the DOM layer tree).
    * Note: Canonical authoritative storage is `layer.parentRef`. This property entry is maintained

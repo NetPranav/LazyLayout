@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 226 · Lights, shadows & environments] Implemented ambient/directional/point/spot/area lights, HDRI environments, ACESFilmic/AgX/Neutral/Linear tone mapping, and per-tier shadow budgets (`src/core/3d/stage6/lightsAndCameras.ts`).

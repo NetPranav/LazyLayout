@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 220 · 3D viewport editing] Implemented orbit/pan/dolly camera controls, translate/rotate/scale gizmos with snapping, raycast picking, and `run15StepGizmoJourney()` with 1 undo step per gesture (`src/core/3d/stage6/viewportAndHierarchy.ts`).

@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 231 · 3D shader graph & WebGPU] Implemented dual TSL/WGSL + WebGL2 GLSL shader graph compiler verified across 5 procedural graph materials within tolerance.

@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 228 · 3D keyframes on the timeline] Implemented 3D position/quaternion-SLERP/scale plus material/light/camera keyframe tracks, motion path trajectories, and onion-skin ghosts (`src/core/3d/stage6/timelineAnimIkAndShaders.ts`).

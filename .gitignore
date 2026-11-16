@@ -75,3 +75,9 @@ tests/export-harness/report/
 
 # per-person Claude instructions (lane), see DOCS/TEAM/ONBOARDING-LANE-B.md
 CLAUDE.local.md
+
+# local output that is not part of the software (test-run recordings, scratch notes and scripts, a generated code graph)
+/recordings/
+/public/recordings/
+/scratch/
+/graphify-out/

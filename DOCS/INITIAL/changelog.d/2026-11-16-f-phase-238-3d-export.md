@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 238 · 3D export] Implemented lazy-loaded React Three Fiber and plain three.js scene exporters with no-WebGL poster fallback within 2% parity tolerance.
