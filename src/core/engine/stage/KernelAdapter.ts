@@ -69,7 +69,14 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint };
+    this.invalidate();
+  }
+
+  /** Phase 88: the breakpoint being viewed; a layer's motion plays as that breakpoint says. */
+  setBreakpoint(id: string | null): void {
+    if ((this.inputs.breakpoint ?? null) === id) return;
+    this.inputs = { ...this.inputs, breakpoint: id };
     this.invalidate();
   }
 

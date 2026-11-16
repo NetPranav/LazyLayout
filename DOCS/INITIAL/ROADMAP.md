@@ -380,7 +380,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 85 | SVG morph & stroke drawing | 84 | v3 16.2, 16.3 (stroke) | 2 | 🚧 |
 | 86 | Motion along paths & SVG filters | 85 | v3 16.3 (motion path), 16.4 | 2 | 🚧 |
 | 87 | Motion engine adapter | 86 | v3 15 | 2 | 🚧 |
-| 88 | Motion per breakpoint | 43, 87 | v3 50.3 (motion half) | 2 | 📋 |
+| 88 | Motion per breakpoint | 43, 87 | v3 50.3 (motion half) | 2 | 🚧 |
 | 89 | Page transitions | 88 | v3 77.3 | 2 | 📋 |
 | 90 | Animation Playground | 89 | v3 24.0–24.3, 24.5 | 2 | 📋 |
 | 91 | Motion library infrastructure | 90 | v3 25.1, 25.2, 21.3, 22.4 | 2 | 📋 |
@@ -1412,11 +1412,20 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-16):** `src/core/engine/motion/__tests__/motionAdapter.test.ts` (12 tests: lazy loading and the fallback; Motion's spring and tween equal to the kernel's frame for frame; an interruption and a shift keep the speed; the three references on Motion's generators, each with every step and every change of speed bounded by what the spring can do by itself: the toggle hovered 10 times, a five-item dock swept three times, three stacked cards reordered three times before arriving; the jump rule; the command with undo; a jump drawn from where the layer was and a carried layer left alone; entrance on going live and on creation, skipped under reduced motion; the exit copy; the mapping to Motion's props). `tests/e2e/layout-motion.spec.ts` on `/editor`: Motion reported loaded once the engine runs; a card moved 200 px travels (frames caught on the way, no step above 40 px), three more moves 120 ms apart never snap and it ends with no `translate` left; an entrance sampled from nearly invisible to 1 while rising; a deleted card's copy appears and goes. Passing in Chromium here.
 
 ### Phase 88 · Motion per breakpoint
-**Needs:** 43, 87 · **Was:** v3 50.3 (motion half) · **Status:** 📋
-- [ ] Clips on or off, durations, distances and behaviour settings can be overridden per breakpoint.
+**Needs:** 43, 87 · **Was:** v3 50.3 (motion half) · **Status:** 🚧
+- [x] Clips on or off, durations, distances and behaviour settings can be overridden per breakpoint. **Per layer:** the four settings below apply to all of a layer's clips and loops together; one clip of several can't be switched off by itself, and a loop's own numbers (from, to) can't differ per breakpoint.
+
+**Stays 🚧 (2026-11-16):** Phase 87 is 🚧, and this gate has not run in CI.
+**The settings (`src/core/breakpoints/breakpointMotion.ts`):** four layer properties, `motion.plays` (on), `motion.timeScale` (1: every delay and duration is multiplied by it), `motion.distance` (1: how far the layer goes from where it rests, for places, turns and sizes; opacity and colour are not movement) and `motion.loops` (on). They are ordinary properties, so Phase 43's overrides carry them: set while a smaller breakpoint is viewed they are stored in that breakpoint's overrides, they cascade (Tablet's apply on Mobile until Mobile says otherwise), and set at the base they are the layer's everywhere. No schema change.
+**Kernel:** a new input `EvaluateInputs.breakpoint`. `evaluateBaseProps` starts from the layer as that breakpoint sees it (`layerAtBreakpoint`; the same object when nothing is overridden), so an animation at Mobile also starts from Mobile's own values, which it did not before. Clips are skipped when it doesn't play; a slower clip is the same clip with its delay, duration and repeat delay stretched; a sample's movement is scaled from the layer's rest value; loops are skipped, slowed and scaled the same way.
+**Engine:** `KernelAdapter.setBreakpoint` and `WaapiAdapter.setBreakpoint` (the Web Animations are baked again for the breakpoint), kept through `setInputs`. `installStageEngine` takes `breakpoint`, read every frame; the editor passes the breakpoint being viewed.
+**Command:** `layer.setMotionAt` (`plays`, `timeScale`, `distance`, `loops`, `reset`): writes only what differs from what the layer already does at the breakpoint being viewed; `reset` takes that breakpoint's four off. One undo step.
+**In the editor:** a **Motion at this size** section under **Animation** in the Motion inspector: it says which size it is setting (**At every size**, or **At Mobile and smaller**), with **Plays**, **Time** (%), **Distance** (%), **Loops** and, when this size has settings of its own, **Same as larger sizes**.
+**Limits:** device-view mirrors (the same frame shown at several sizes side by side) are not animated by the stage, so the difference is seen by switching the frame's size, not side by side. Not in the exported code (Phase 95).
 
 **You'll see:** a calmer animation on Mobile than on Desktop.
 **Done when:** a per-breakpoint override plays only at its width in the stage.
+**Evidence (2026-11-16):** `src/core/breakpoints/__tests__/breakpointMotion.test.ts` (8 tests: the defaults and what counts as movement; the command at the base and at a breakpoint, storing only what differs, undo, reset; the reference at Desktop, Tablet and Mobile; the cascade; off; time; the adapter's written transform at the base and at Mobile, kept through another driver's `setInputs`). `tests/e2e/breakpoint-motion.spec.ts` on `/editor` in Motion: a 100 px slide is drawn at 50 px at 1 s at the base; viewed at Mobile with **Distance 25 %** it is drawn at 12.5 px, with **Time 200 %** at 12.5 px at 2 s; at the base again 50 and 100 px; **Plays** off draws 0; **Same as larger sizes** puts it back. Passing in Chromium here.
 
 ### Phase 89 · Page transitions
 **Needs:** 88 · **Was:** v3 77.3 · **Status:** 📋

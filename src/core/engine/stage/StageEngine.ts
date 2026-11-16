@@ -38,6 +38,8 @@ export interface StageEngineOptions {
   states?: StateDriverHost;
   /** Phase 80: animated variants (a variant switch moves on the instance's transition; an instance's own click, hover or press). */
   variants?: VariantDriverHost;
+  /** Phase 88: the breakpoint being viewed (null: the base); motion plays as that breakpoint says. */
+  breakpoint?: () => string | null;
   /** Phase 87: layout motion and presence (the element of each layer comes from the renderer's registry). */
   layout?: Omit<LayoutDriverHost, "node" | "getDocument">;
 }
@@ -156,6 +158,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   let scrollWasLive = false;
   const stateDriver = options.states ? new StateDriver(options.states) : null;
   let statesWereLive = false;
+  let lastBreakpoint: string | null | undefined;
   const variantDriver = options.variants ? new VariantDriver(options.variants) : null;
   let variantsWereLive = false;
   const layoutDriver = options.layout ? new LayoutDriver({ ...options.layout, getDocument, node: (id) => renderer.registry.get(id) as unknown as ReturnType<LayoutDriverHost["node"]> }) : null;
@@ -174,6 +177,14 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (options.breakpoint && adapter instanceof StageAdapters) {
+      const viewed = options.breakpoint();
+      if (viewed !== lastBreakpoint) {
+        lastBreakpoint = viewed;
+        adapter.setBreakpoint(viewed);
+        dirty = true;
+      }
+    }
     if (stateDriver && adapter instanceof StageAdapters && !stateDriver.idle) {
       const states = stateDriver.update(frame.dt);
       if (stateDriver.changed || !statesWereLive) {

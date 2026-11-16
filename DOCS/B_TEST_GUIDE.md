@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
 | 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
 | 80 | A component's variant switch animates; an instance can switch on a click, hover or press | this branch (NEW) | 3.26 |
 | 79 | A layer moves between its states on a spring or a tween; quick hovers never snap | this branch (NEW) | 3.25 |
@@ -60,7 +61,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 12. **Hover that never snaps (3.25):** in **Design**, draw a rectangle, open **States** in the right panel and add **Hover**; with Hover picked, set the opacity to 20 %; pick the base state again. Turn on **Show states live on the canvas**, then wave the pointer on and off the rectangle quickly: it fades towards 20 % and back smoothly, never jumping.
 13. **A toggle that animates (3.26):** follow T80.1 to T80.5: a two-variant toggle component whose instance slides its knob when you change **On** in the right panel, and flips by itself when clicked once **Switches on** is **A click**.
 14. **Layout motion (3.27):** draw a rectangle, switch on **Layout** in **Transition** and **Show states live on the canvas** in **States**, then type a new **Y** for it: it glides to the new place.
-15. Nothing in the console is red.
+15. **Calmer on Mobile (3.28):** in **Motion**, select an animated layer, switch the frame to **Mobile**, set **Distance** to 25 in **Motion at this size**, and scrub: it moves a quarter as far. Switch back to Desktop: the whole way.
+16. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -1033,6 +1035,26 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T87.9** Do: redo 3.25's hover test (T79.3, T79.4). Expect: exactly as before (the spring now comes from Motion).
 
 **Developer test:** `npx tsx --test src/core/engine/motion/__tests__/motionAdapter.test.ts` (12 tests pass).
+
+### 3.28 Phase 88: motion per breakpoint (NEW)
+
+**What changed:** the Motion inspector has a section **Motion at this size**. It sets, for the size of the frame you are looking at, whether the selected layer's animation **plays**, how long it takes (**Time**, a percentage: 200 % is twice as slow), how far it moves (**Distance**: 50 % is half the travel, turn and growth; fades are untouched) and whether its **loops** run. Set while looking at Mobile, they hold for Mobile and anything smaller, and Desktop is unchanged.
+
+**Known gaps (don't report):** the settings are for the whole layer, not one of its animations. Device views side by side (a Tablet and a Mobile copy of the frame next to the main one) don't play the animation, so compare by switching the frame's own size. Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/breakpoint-motion.spec.ts`)**
+- [ ] **T88.1** Do: open `/editor`, **Motion**. Select a layer that has an animation that moves it (or make one: select a rectangle, turn on **Auto-key**, move it at 0 s and at 2 s). Scroll the right panel to **Motion at this size**. Expect: a line **At every size (Desktop and smaller)**, then **Plays** (on), **Time 100 %**, **Distance 100 %**, **Loops** (on).
+- [ ] **T88.2** Do: drag the needle to the middle of the animation and note where the layer is.
+- [ ] **T88.3** Do: switch the frame to **Mobile** (the size control of the frame, as in the breakpoint tests of the A guide) and select the layer again. Expect: the line now says **At Mobile and smaller**. The layer is at the same share of its move as before.
+- [ ] **T88.4** Do: type **25** in **Distance**. Expect: the layer jumps back towards its start: it is now a quarter as far along as in T88.2. Drag the needle to the end: it stops a quarter of the way. A button **Same as larger sizes** has appeared.
+- [ ] **T88.5** Do: type **200** in **Time**. Drag the needle. Expect: the move takes twice as long (at the old end time it is half done).
+- [ ] **T88.6** Do: switch the frame back to **Desktop**. Expect: the line says **At every size**, Distance and Time read 100 %, and the layer moves the whole way at the written speed.
+- [ ] **T88.7** Do: switch to **Mobile** again, select the layer, switch **Plays** off. Drag the needle. Expect: the layer doesn't move at all, and looks as you drew it (not stuck at its first keyframe's look).
+- [ ] **T88.8** Do: click **Same as larger sizes**. Expect: the button goes, all four read as at Desktop, and the layer animates fully again.
+- [ ] **T88.9** Do: at **Tablet**, set **Distance 50**. Switch to **Mobile**. Expect: Mobile shows **50 %** too (it inherits Tablet's) until you type its own.
+- [ ] **T88.10** Do: **Ctrl+Z** a few times. Expect: each press undoes one setting.
+
+**Developer test:** `npx tsx --test src/core/breakpoints/__tests__/breakpointMotion.test.ts` (8 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

@@ -45,6 +45,7 @@ import { EffectStackSection } from "./sections/EffectStackSection";
 import { MorphDrawSection } from "./sections/MorphDrawSection";
 import { FollowPathSection } from "./sections/FollowPathSection";
 import { TransitionSection } from "./sections/TransitionSection";
+import { MotionAtSection } from "./sections/MotionAtSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -537,6 +538,8 @@ export function getInspectorExtraSections(
         onAdd: () => animAddRef.current?.(),
         children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
       },
+      // Phase 88: how the animation plays at the breakpoint being viewed
+      { id: "motion-at", title: "Motion at this size", children: <MotionAtSection {...sectionProps} /> },
       // Phase 86: a layer travels along its path from the playhead, so the section is in Motion too
       { id: "follow-path", title: "Follow a path", children: <FollowPathSection {...sectionProps} /> },
       // Phase 85: a path or an icon is drawn on and morphed from the playhead, so the section is in Motion too

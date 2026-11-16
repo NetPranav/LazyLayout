@@ -109,12 +109,21 @@ export class WaapiAdapter implements EngineAdapter {
     this.dirty = true;
   }
 
+  /** Phase 88: the breakpoint being viewed; the animations are baked again for it. */
+  setBreakpoint(id: string | null): void {
+    if ((this.inputs.breakpoint ?? null) === id) return;
+    this.inputs = { ...this.inputs, breakpoint: id };
+    this.inputsKey = inputsKey(this.inputs);
+    this.invalidate();
+  }
+
   setInputs(inputs: EvaluateInputs): void {
     // Compared by value: the scroll driver and others pass a new object even when nothing in it changed (opening Motion
-    // did), and a new identity used to throw away every cached bake.
-    const key = inputsKey(inputs);
+    // did), and a new identity used to throw away every cached bake. The breakpoint (Phase 88) is kept when not given.
+    const next = { ...inputs, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint };
+    const key = inputsKey(next);
     if (key === this.inputsKey) return;
-    this.inputs = inputs;
+    this.inputs = next;
     this.inputsKey = key;
     this.invalidate();
   }

@@ -2,11 +2,14 @@
 import { z } from "zod";
 import { defineTypedCommand } from "../commands";
 import type { PropValue } from "../document/registry";
-import { setLayerProps } from "../editing/editOps";
+import { setLayerProps, transaction } from "../editing/editOps";
 import { getDocument } from "../store/documentState";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { statePaths } from "./states";
 import { PRESENCE_KINDS } from "../engine/motion/layoutMotion";
+import { MOTION_AT_PATHS, layerAtBreakpoint, motionAtOf } from "../breakpoints/breakpointMotion";
+import { editBreakpointId } from "../store/useBreakpointStore";
+import { documentCommands } from "../store/useDocumentStore";
 import { TRANSITION_CURVES, TRANSITION_OVERRIDES, TRANSITION_TYPES, overridePath } from "./transitions";
 
 const selected = () => useSelectionStore.getState().selectedIds;
@@ -82,6 +85,45 @@ export function registerTransitionCommands(): () => void {
       if (exit !== undefined) patch["presence.exit"] = exit === "none" ? null : exit;
       if (chosen.length === 0 || Object.keys(patch).length === 0) return { ok: true, changed: 0 };
       return { ok: true, changed: setLayerProps(chosen, patch, "Set layout motion") };
+    },
+  }));
+
+  // Phase 88: how a layer's motion plays, at the breakpoint being viewed (the base when none is)
+  offs.push(defineTypedCommand({
+    id: "layer.setMotionAt", title: "Set How a Layer's Motion Plays at This Breakpoint", category: "Motion",
+    args: z.object({
+      ids: z.array(z.string()).optional(),
+      plays: z.boolean().optional(),
+      timeScale: z.number().min(0.1).max(10).optional(),
+      distance: z.number().min(0).max(4).optional(),
+      loops: z.boolean().optional(),
+      /** Takes the four settings off at this breakpoint: it plays as the larger one does. */
+      reset: z.boolean().optional(),
+    }),
+    run: ({ ids, plays, timeScale, distance, loops, reset }) => {
+      const doc = getDocument();
+      const chosen = (ids ?? selected()).filter((id) => doc.layers[id] && doc.layers[id].locked !== true);
+      if (chosen.length === 0) return { ok: true, changed: 0 };
+      const viewed = editBreakpointId();
+      let changed = 0;
+      transaction("Set motion at breakpoint", () => {
+        if (reset) {
+          if (viewed) documentCommands.resetOverrides(chosen, viewed, [...MOTION_AT_PATHS]);
+          else changed += setLayerProps(chosen, Object.fromEntries(MOTION_AT_PATHS.map((path) => [path, null])), "Set motion at breakpoint");
+          if (viewed) changed = chosen.length;
+        }
+        for (const id of chosen) {
+          // only what differs from what the layer already does here is written, so nothing is stored that says "as before"
+          const now = motionAtOf(layerAtBreakpoint(getDocument(), getDocument().layers[id], viewed).properties);
+          const patch: Record<string, PropValue | null> = {};
+          if (plays !== undefined && plays !== now.plays) patch["motion.plays"] = plays;
+          if (timeScale !== undefined && timeScale !== now.timeScale) patch["motion.timeScale"] = timeScale;
+          if (distance !== undefined && distance !== now.distance) patch["motion.distance"] = distance;
+          if (loops !== undefined && loops !== now.loops) patch["motion.loops"] = loops;
+          if (Object.keys(patch).length > 0) changed += setLayerProps([id], patch, "Set motion at breakpoint") > 0 && !reset ? 1 : 0;
+        }
+      });
+      return { ok: true, changed };
     },
   }));
 

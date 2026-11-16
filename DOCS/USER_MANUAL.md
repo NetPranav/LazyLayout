@@ -318,6 +318,17 @@ The **Transition** section (right panel, under States) is on every layer:
 
 **Type**, **Time** and **Bounce** above set the feel, the same as for states. These play in **Motion** and **Preview**, and in Design while **Show states live on the canvas** is on. Only the place is animated, not a change of size. Not in the exported code yet.
 
+### 13. A calmer animation on small screens
+Big moves that look good on a desktop can be too much on a phone. In **Motion**, select an animated layer and open **Motion at this size** in the right panel. The first line says which size you are setting: **At every size**, or, after you switch the frame to a smaller size, **At Mobile and smaller**.
+
+- **Plays:** off, and the layer doesn't animate at this size; it looks as you drew it.
+- **Time:** 200 % is twice as slow, 50 % twice as fast.
+- **Distance:** how far it travels, turns and grows. 50 % is half the movement; 0 % keeps only fades and colour changes.
+- **Loops:** off, and looping motion stops at this size.
+- **Same as larger sizes:** takes this size's settings off again.
+
+What you set at Tablet also holds at Mobile until you set Mobile's own. Not in the exported code yet.
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

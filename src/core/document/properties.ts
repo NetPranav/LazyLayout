@@ -955,6 +955,11 @@ const DEFS = {
   // --- Editor metadata stored on layers ------------------------------------------
   "motion.attachedSampleId": str("", null, "none", ALL),
   "motion.trigger": str("", null, "none", ALL),
+  /** Motion per breakpoint (Phase 88, `core/breakpoints/breakpointMotion.ts`): whether the layer's clips play, how slow, how far, and whether its loops run. Overridden at a breakpoint like any property. */
+  "motion.plays": typed(flag(true, "none", ALL)),
+  "motion.timeScale": typed(ranged(num(1, null, "none", ALL, false), { min: 0.1, max: 10 })),
+  "motion.distance": typed(ranged(num(1, null, "none", ALL, false), { min: 0, max: 4 })),
+  "motion.loops": typed(flag(true, "none", ALL)),
   /** Motion blur (Phase 75), when the layer's motion blur switch is on: the shutter angle in degrees (180 is half a frame's time open, After Effects' default). */
   "motion.shutterAngle": ranged(num(180, null, "paint", VISUAL), { min: 1, max: 720 }),
   /** Logic Blueprint graph this layer's events run (After-track; read by the dependency graph). */

@@ -90,6 +90,11 @@ export class StageAdapters implements EngineAdapter {
     }
     this.kernel.setPropMix(frame);
   }
+  /** Phase 88: the breakpoint being viewed. */
+  setBreakpoint(id: string | null): void {
+    this.waapi.setBreakpoint(id);
+    this.kernel.setBreakpoint(id);
+  }
   setInputs(inputs: EvaluateInputs): void {
     for (const a of this.all) a.setInputs(inputs);
   }
