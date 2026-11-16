@@ -1,6 +1,41 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useId } from "react";
+import { Tooltip } from "./Tooltip";
+
+function getFieldTooltip(
+  label: React.ReactNode,
+  ariaLabel?: string,
+  title?: string,
+  tooltip?: string
+): string {
+  if (tooltip) return tooltip;
+  if (title) return `${title} (drag to scrub)`;
+
+  const key = (ariaLabel || (typeof label === "string" ? label : "")).toLowerCase().trim();
+  if (key === "x" || key === "frame.x") return "X position — Horizontal canvas coordinate (drag to scrub)";
+  if (key === "y" || key === "frame.y") return "Y position — Vertical canvas coordinate (drag to scrub)";
+  if (key === "w" || key === "width" || key === "frame.width") return "Width — Object width in pixels (drag to scrub)";
+  if (key === "h" || key === "height" || key === "frame.height") return "Height — Object height in pixels (drag to scrub)";
+  if (key.includes("rotation") || key === "r" || key === "°") return "Rotation — Angle in degrees (drag to scrub)";
+  if (key.includes("opacity") || key === "%") return "Opacity — Layer visibility percentage (drag to scrub)";
+  if (key.includes("corner") || key.includes("radius")) return "Corner radius — Roundness of corners in pixels (drag to scrub)";
+  if (key === "gap") return "Gap — Space between auto-layout children (drag to scrub)";
+  if (key.includes("padding horizontal")) return "Horizontal padding — Left and right inner space in pixels (drag to scrub)";
+  if (key.includes("padding vertical")) return "Vertical padding — Top and bottom inner space in pixels (drag to scrub)";
+  if (key === "s" || key === "size" || key.includes("font size")) return "Font size — Text size in pixels (drag to scrub)";
+  if (key.includes("line height")) return "Line height — Vertical spacing between lines (drag to scrub)";
+  if (key.includes("tracking") || key.includes("letter spacing")) return "Letter spacing — Space between characters (drag to scrub)";
+  if (key.includes("column span") || key === "col span") return "Column span — Grid columns to occupy (drag to scrub)";
+  if (key.includes("row span")) return "Row span — Grid rows to occupy (drag to scrub)";
+  if (key === "grow") return "Flex grow — Share of free space in auto-layout (drag to scrub)";
+  if (key === "shrink") return "Flex shrink — Rate of shrinking in auto-layout (drag to scrub)";
+  if (key === "z" || key === "z-index") return "Z-index — Stacking order priority (drag to scrub)";
+
+  if (ariaLabel) return `${ariaLabel} (drag to scrub)`;
+  if (typeof label === "string" && label) return `${label} (drag to scrub)`;
+  return "Drag horizontally to scrub value (Shift: x10, Alt: x0.1)";
+}
 
 export interface NumberFieldProps {
   label?: React.ReactNode;
@@ -20,6 +55,8 @@ export interface NumberFieldProps {
   "aria-label"?: string;
   /** What the field is, in a sentence: shown before the scrub hint when the pointer rests on its label. */
   title?: string;
+  /** Custom tooltip text shown on 1s hover. */
+  tooltip?: string;
 }
 
 export const NumberField: React.FC<NumberFieldProps> = ({
@@ -39,6 +76,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
   id: propId,
   "aria-label": ariaLabel,
   title,
+  tooltip,
 }) => {
   const generatedId = useId();
   const inputId = propId ?? generatedId;
@@ -253,21 +291,22 @@ export const NumberField: React.FC<NumberFieldProps> = ({
     >
       {/* Scrub label */}
       {label != null && label !== "" && (
-        <span
-          role="presentation"
-          data-scrub
-          title={`${title ? `${title} ` : ""}Drag horizontally to scrub value (Shift: x10, Alt: x0.1)`}
-          onPointerDown={handleLabelPointerDown}
-          className={`ll-pf ${
-            typeof label !== "string"
-              ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
-              : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
-          } ll:select-none ll:shrink-0 ${
-            isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
-          } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
-        >
-          {label}
-        </span>
+        <Tooltip content={getFieldTooltip(label, ariaLabel, title, tooltip)} side="top">
+          <span
+            role="presentation"
+            data-scrub
+            onPointerDown={handleLabelPointerDown}
+            className={`ll-pf ${
+              typeof label !== "string"
+                ? "ll-pi ll:inline-flex ll:items-center ll:justify-center"
+                : "ll:text-micro ll:font-mono ll:font-medium ll:tracking-normal"
+            } ll:select-none ll:shrink-0 ${
+              isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"
+            } ${disabled ? "ll:cursor-not-allowed" : "ll:cursor-ew-resize"}`}
+          >
+            {label}
+          </span>
+        </Tooltip>
       )}
 
       <div className="ll:flex ll:flex-1 ll:items-center ll:justify-between ll:min-w-0 ll:h-full">
@@ -294,7 +333,6 @@ export const NumberField: React.FC<NumberFieldProps> = ({
           <span
             role="presentation"
             data-scrub
-            title="Drag horizontally to scrub value (Shift: x10, Alt: x0.1)"
             onPointerDown={handleLabelPointerDown}
             className={`ll:text-nano ll:font-mono ll:font-medium ll:tracking-wider ll:select-none ll:shrink-0 ll:ml-1.5 ${
               isScrubbing ? "ll:text-primary" : "ll:text-muted ll:hover:text-primary"

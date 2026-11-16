@@ -4,6 +4,7 @@ import React from "react";
 import { GripVertical, Eye, EyeOff, Minus } from "lucide-react";
 import { IconButton } from "@/editor/components/IconButton";
 import { Icon } from "@/editor/components/Icon";
+import { Tooltip } from "@/editor/components/Tooltip";
 
 export interface RepeatableRowProps {
   id: string;
@@ -43,25 +44,27 @@ export const RepeatableRow: React.FC<RepeatableRowProps> = ({
       } ${isHidden ? "ll:opacity-40" : ""} ${className}`}
     >
       {/* Reorder Grip */}
-      <span
-        aria-hidden="true"
-        title="Drag to reorder"
-        className="ll:w-3.5 ll:h-6 ll:flex ll:items-center ll:justify-center ll:text-muted ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:cursor-grab ll:shrink-0 ll:transition-opacity ll:duration-100"
-      >
-        <Icon icon={GripVertical} size={12} />
-      </span>
+      <Tooltip content="Reorder — Drag up or down to change layer stack order" side="left">
+        <span
+          aria-hidden="true"
+          className="ll:w-3.5 ll:h-6 ll:flex ll:items-center ll:justify-center ll:text-muted ll:opacity-0 ll:group-hover:opacity-100 ll:group-focus-within:opacity-100 ll:cursor-grab ll:shrink-0 ll:transition-opacity ll:duration-100"
+        >
+          <Icon icon={GripVertical} size={12} />
+        </span>
+      </Tooltip>
 
       {/* Lead button (Thumbnail or icon) that toggles Settings Popover */}
-      <button
-        type="button"
-        aria-label={leadTitle}
-        title={leadTitle}
-        aria-expanded={isOpen}
-        onClick={onOpenSettings}
-        className="lead ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:shrink-0 ll:transition-colors ll:duration-100 ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:outline-none"
-      >
-        {leadContent}
-      </button>
+      <Tooltip content={`${leadTitle} — Open color picker and layer settings`} side="top">
+        <button
+          type="button"
+          aria-label={leadTitle}
+          aria-expanded={isOpen}
+          onClick={onOpenSettings}
+          className="lead ll:w-7 ll:h-7 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:shrink-0 ll:transition-colors ll:duration-100 ll:hover:bg-surface-hover ll:focus-visible:ring-1 ll:focus-visible:ring-primary ll:outline-none"
+        >
+          {leadContent}
+        </button>
+      </Tooltip>
 
       {/* Summary Field Area */}
       <div className="sum ll:flex-1 ll:min-w-0 ll:flex ll:items-center ll:gap-1.5">
@@ -73,7 +76,7 @@ export const RepeatableRow: React.FC<RepeatableRowProps> = ({
         <IconButton
           size="sm"
           aria-label={isHidden ? "Show item" : "Hide item"}
-          tooltip={isHidden ? "Show item" : "Hide item"}
+          tooltip={isHidden ? "Show layer — Make this layer visible" : "Hide layer — Temporarily hide this layer"}
           onClick={onToggleHide}
           icon={<Icon icon={isHidden ? EyeOff : Eye} size={14} />}
         />
@@ -84,7 +87,7 @@ export const RepeatableRow: React.FC<RepeatableRowProps> = ({
         <IconButton
           size="sm"
           aria-label="Remove item"
-          tooltip="Remove item"
+          tooltip="Remove — Delete this layer item"
           onClick={onRemove}
           icon={<Icon icon={Minus} size={14} />}
         />

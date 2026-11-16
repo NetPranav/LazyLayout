@@ -35,6 +35,7 @@ import { consoleStore, useConsoleLogs } from "@/editor/panels/console";
 import { LogoMark } from "@/editor/components/LogoMark";
 import { IconButton } from "@/editor/components/IconButton";
 import { Button } from "@/editor/components/Button";
+import { Tooltip } from "@/editor/components/Tooltip";
 import { Menu, MenuItem, MenuSeparator } from "@/editor/components/Menu";
 import { getActivePreset } from "@/editor/motion/feel";
 import { springAnim } from "@/editor/motion/ease";
@@ -508,7 +509,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="select"
               data-tb="vsel"
               aria-label="Select (V)"
-              tooltip="Select (V)"
+              tooltip="Select & Move (V) — Select, reposition, and transform layers on canvas"
               pressed={activeTool === "select"}
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
@@ -522,7 +523,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="hand"
               data-tb="vhand"
               aria-label="Hand (H)"
-              tooltip="Hand (H)"
+              tooltip="Hand Tool (H) — Pan and navigate freely across the canvas"
               pressed={activeTool === "hand"}
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
@@ -536,7 +537,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tool="frame"
               aria-label="Frame (F)"
-              tooltip="Frame (F)"
+              tooltip="Frame (F) — Create artboards, responsive layouts, and containers"
               aria-haspopup="dialog"
               aria-expanded={isFramePresetsOpen}
               pressed={activeTool === "frame" || isFramePresetsOpen}
@@ -556,7 +557,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               id="shapebtn"
               data-tool="shape"
               aria-label="Shape"
-              tooltip="Shape"
+              tooltip="Shapes (R) — Draw rectangles, circles, polygons, lines, and stars"
               aria-haspopup="menu"
               aria-expanded={isShapeMenuOpen}
               pressed={activeTool === "shape" || isShapeMenuOpen}
@@ -575,7 +576,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tool="pen"
               aria-label="Pen tools"
-              tooltip="Pen (P)"
+              tooltip="Pen Tools (P) — Draw custom vector paths and edit bezier anchor points"
               aria-haspopup="menu"
               aria-expanded={isPenMenuOpen}
               pressed={isPenFlyoutTool(activeTool) || isPenMenuOpen}
@@ -593,7 +594,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tool="text"
               aria-label="Text (T)"
-              tooltip="Text (T)"
+              tooltip="Text (T) — Add typography and formatted editable text layers"
               pressed={activeTool === "text"}
               tabIndex={focusedIndex === 5 ? 0 : -1}
               onFocus={() => setFocusedIndex(5)}
@@ -606,7 +607,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tool="image"
               aria-label="Image"
-              tooltip="Image"
+              tooltip="Image — Place and upload pictures, photos, or graphics"
               pressed={activeTool === "image"}
               tabIndex={focusedIndex === 6 ? 0 : -1}
               onFocus={() => setFocusedIndex(6)}
@@ -627,7 +628,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               id="plusbtn"
               data-testid="toolbar-insert"
               aria-label="Insert"
-              tooltip="Insert (I)"
+              tooltip="Insert (+) — Add components, icons, sections, and prebuilt UI elements"
               aria-haspopup="dialog"
               aria-expanded={isInsertOpen}
               pressed={isInsertOpen}
@@ -643,7 +644,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               id="aibtn"
               aria-label="Ask AI (/)"
-              tooltip="Ask AI (/)"
+              tooltip="Ask AI (/) — Generate, modify, or layout elements using AI prompts"
               aria-haspopup="dialog"
               aria-expanded={isAiBoxOpen}
               pressed={isAiBoxOpen}
@@ -664,7 +665,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="select"
               data-tb="vsel"
               aria-label="Select (V)"
-              tooltip="Select (V)"
+              tooltip="Select (V) — Pick and move layers or keyframes"
               pressed={activeTool === "select"}
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
@@ -678,7 +679,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="hand"
               data-tb="vhand"
               aria-label="Hand (H)"
-              tooltip="Hand (H)"
+              tooltip="Hand (H) — Pan across canvas and timeline"
               pressed={activeTool === "hand"}
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
@@ -697,7 +698,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="kf"
               aria-label="Add keyframe (K)"
-              tooltip="Add keyframe (K)"
+              tooltip="Add Keyframe (K) — Insert a motion keyframe at playhead"
               onClick={() => timelineOpsAdapter.addKeyframeAtPlayhead()}
               tabIndex={-1}
               icon={<Icon icon={KeyframeAddSvg} size={CANVAS_CHROME_SIZES.iconLg} />}
@@ -709,7 +710,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tb="split"
               data-mtool="split"
               aria-label="Split clip (C)"
-              tooltip="Split clip (C)"
+              tooltip="Split Clip (C) — Cut active clip at current playhead"
               pressed={activeTool === "split"}
               tabIndex={focusedIndex === 2 ? 0 : -1}
               onFocus={() => setFocusedIndex(2)}
@@ -727,7 +728,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tb="ease"
               aria-label="Easing"
-              tooltip="Easing"
+              tooltip="Easing — Choose animation timing curve and spring feel"
               aria-haspopup="menu"
               aria-expanded={isEasingMenuOpen}
               pressed={isEasingMenuOpen}
@@ -748,7 +749,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="marker"
               aria-label="Add marker (M)"
-              tooltip="Add marker (M)"
+              tooltip="Add Marker (M) — Place a timeline marker at playhead"
               tabIndex={focusedIndex === 20 ? 0 : -1}
               onFocus={() => setFocusedIndex(20)}
               onClick={() => motionActions.addMarker(useMotionModel.getState().playhead)}
@@ -760,7 +761,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="wa-in"
               aria-label="Work area starts at playhead (B)"
-              tooltip="Work area starts at playhead (B)"
+              tooltip="Set In Point (B) — Set work area start at playhead"
               tabIndex={focusedIndex === 21 ? 0 : -1}
               onFocus={() => setFocusedIndex(21)}
               onClick={() => {
@@ -775,7 +776,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="wa-out"
               aria-label="Work area ends at playhead (N)"
-              tooltip="Work area ends at playhead (N)"
+              tooltip="Set Out Point (N) — Set work area end at playhead"
               tabIndex={focusedIndex === 22 ? 0 : -1}
               onFocus={() => setFocusedIndex(22)}
               onClick={() => {
@@ -790,7 +791,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-mact="dupkeys"
               aria-label="Duplicate keyframes (Ctrl+D)"
-              tooltip="Duplicate keyframes (Ctrl+D)"
+              tooltip="Duplicate Keyframes (Ctrl+D) — Clone selected keyframes"
               disabled={selectedKeyCount === 0}
               tabIndex={focusedIndex === 23 ? 0 : -1}
               onFocus={() => setFocusedIndex(23)}
@@ -809,7 +810,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="select"
               data-tb="vsel"
               aria-label="Inspect (V)"
-              tooltip="Inspect (V)"
+              tooltip="Inspect (V) — Click elements to view generated React code and styles"
               pressed={activeTool === "select"}
               tabIndex={focusedIndex === 0 ? 0 : -1}
               onFocus={() => setFocusedIndex(0)}
@@ -823,7 +824,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               data-tool="hand"
               data-tb="vhand"
               aria-label="Hand (H)"
-              tooltip="Hand (H)"
+              tooltip="Hand Tool (H) — Pan and navigate canvas"
               pressed={activeTool === "hand"}
               tabIndex={focusedIndex === 1 ? 0 : -1}
               onFocus={() => setFocusedIndex(1)}
@@ -842,7 +843,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tb="run"
               aria-label="Run"
-              tooltip="Run"
+              tooltip="Run Code — Compile and execute the current project"
               aria-busy={isRunningCode}
               tabIndex={focusedIndex === 2 ? 0 : -1}
               onFocus={() => setFocusedIndex(2)}
@@ -856,7 +857,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tb="exp"
               aria-label="Export"
-              tooltip="Export"
+              tooltip="Export — Export production React and HTML code"
               tabIndex={focusedIndex === 3 ? 0 : -1}
               onFocus={() => setFocusedIndex(3)}
               onClick={revealExportSection}
@@ -874,7 +875,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tb="fit"
               aria-label="Fit to screen (Shift+1)"
-              tooltip="Fit to screen (Shift+1)"
+              tooltip="Fit to Screen (Shift+1) — Zoom canvas to fit all elements"
               tabIndex={focusedIndex === 20 ? 0 : -1}
               onFocus={() => setFocusedIndex(20)}
               onClick={onZoomFit}
@@ -886,7 +887,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               size="lg"
               data-tb="clearlog"
               aria-label="Clear console"
-              tooltip="Clear console"
+              tooltip="Clear Console — Clear all output and diagnostic logs"
               disabled={consoleLineCount === 0}
               tabIndex={focusedIndex === 21 ? 0 : -1}
               onFocus={() => setFocusedIndex(21)}
@@ -910,7 +911,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           size="tall"
           id="panelbtn"
           aria-label="Show or hide panels (Ctrl+\)"
-          tooltip="Show or hide panels (Ctrl+\)"
+          tooltip="Toggle Panels (Ctrl+\) — Show or hide sidebars for a distraction-free canvas"
           pressed={panelsCollapsed}
           tabIndex={focusedIndex === 9 ? 0 : -1}
           onFocus={() => setFocusedIndex(9)}
@@ -923,7 +924,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           size="md"
           id="undobtn"
           aria-label="Undo (Ctrl+Z)"
-          tooltip="Undo (Ctrl+Z)"
+          tooltip="Undo (Ctrl+Z) — Revert your last action"
           disabled={!canUndo}
           tabIndex={focusedIndex === 10 ? 0 : -1}
           onFocus={() => setFocusedIndex(10)}
@@ -936,7 +937,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           size="md"
           id="redobtn"
           aria-label="Redo (Ctrl+Shift+Z)"
-          tooltip="Redo (Ctrl+Shift+Z)"
+          tooltip="Redo (Ctrl+Shift+Z) — Reapply the previously undone action"
           disabled={!canRedo}
           tabIndex={focusedIndex === 11 ? 0 : -1}
           onFocus={() => setFocusedIndex(11)}
@@ -951,22 +952,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         />
 
         {/* Zoom Trigger Button */}
-        <Button
-          ref={zoomButtonRef}
-          id="zoombtn"
-          variant="ghost"
-          size="sm"
-          title="Zoom"
-          aria-haspopup="menu"
-          aria-expanded={isZoomMenuOpen}
-          tabIndex={focusedIndex === 12 ? 0 : -1}
-          onFocus={() => setFocusedIndex(12)}
-          onClick={() => setIsZoomMenuOpen((prev) => !prev)}
-          rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
-          className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-body ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
-        >
-          <span className="ll-mono ll:font-mono" id="pct">{zoomPercentage}</span>
-        </Button>
+        <Tooltip content="Zoom Options — Adjust canvas scale, fit to screen, or 100% view" side="top">
+          <Button
+            ref={zoomButtonRef}
+            id="zoombtn"
+            variant="ghost"
+            size="sm"
+            aria-haspopup="menu"
+            aria-expanded={isZoomMenuOpen}
+            tabIndex={focusedIndex === 12 ? 0 : -1}
+            onFocus={() => setFocusedIndex(12)}
+            onClick={() => setIsZoomMenuOpen((prev) => !prev)}
+            rightIcon={<Icon icon={ChevronDown} size={CANVAS_CHROME_SIZES.iconSm} className="ll:text-muted" />}
+            className="ll-zb ll:h-10 ll:px-2 ll:font-mono ll:text-body ll:font-medium ll:text-secondary ll:hover:text-primary ll:hover:bg-surface-hover ll:focus-visible:outline-2 ll:focus-visible:outline-primary ll:focus-visible:outline-offset-inset"
+          >
+            <span className="ll-mono ll:font-mono" id="pct">{zoomPercentage}</span>
+          </Button>
+        </Tooltip>
       </div>
 
       {/* Shape Picker Menu (Design mode) */}
