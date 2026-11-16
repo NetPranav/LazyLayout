@@ -16,7 +16,9 @@ body .center.ll-on .stagewrap *::after,
 .ll-stage-viewport.ll-stage-cursor-active *::before,
 .ll-stage-viewport.ll-stage-cursor-active *::after,
 html.ll-drag,
-html.ll-drag * {
+html.ll-drag *,
+html.ll-cur-menu .ll-menu,
+html.ll-cur-menu .ll-menu * {
   cursor: none !important;
 }
 
