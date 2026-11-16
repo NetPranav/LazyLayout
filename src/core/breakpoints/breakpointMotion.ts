@@ -29,6 +29,20 @@ const num = (v: unknown, fallback: number, min: number, max: number): number => 
 export function motionAtOf(props: Readonly<Record<string, unknown>>): MotionAt {
   return { plays: props["motion.plays"] !== false, timeScale: num(props["motion.timeScale"], 1, 0.1, 10), distance: num(props["motion.distance"], 1, 0, 4), loops: props["motion.loops"] !== false };
 }
+/**
+ * ROADMAP Phase 93: what a layer's animation becomes for someone who asked for reduced motion. `motion.reduced` is the
+ * layer's choice: `auto` (the policy: opacity and colour still animate, movement doesn't, loops stop, a scroll-scrubbed
+ * animation shows its end), `full` (it plays as written: the author says this one is safe) or `off` (it doesn't play).
+ */
+export const REDUCED_POLICIES = ["auto", "full", "off"] as const;
+export type ReducedPolicy = (typeof REDUCED_POLICIES)[number];
+export const reducedPolicyOf = (props: Readonly<Record<string, unknown>>): ReducedPolicy => (props["motion.reduced"] === "full" || props["motion.reduced"] === "off" ? props["motion.reduced"] : "auto");
+export function reduceMotion(motion: MotionAt, policy: ReducedPolicy): MotionAt {
+  if (policy === "full") return motion;
+  if (policy === "off") return { ...motion, plays: false, loops: false };
+  return { ...motion, distance: 0, loops: false };
+}
+
 export const isDefaultMotionAt = (m: MotionAt): boolean => m.plays && m.loops && m.timeScale === 1 && m.distance === 1;
 
 const appliedCache = new WeakMap<object, Map<string, Breakpoint[]>>();

@@ -90,6 +90,11 @@ export class StageAdapters implements EngineAdapter {
     }
     this.kernel.setPropMix(frame);
   }
+  /** Phase 93: reduced motion on or off. */
+  setReducedMotion(on: boolean): void {
+    this.waapi.setReducedMotion(on);
+    this.kernel.setReducedMotion(on);
+  }
   /** Phase 88: the breakpoint being viewed. */
   setBreakpoint(id: string | null): void {
     this.waapi.setBreakpoint(id);

@@ -8,7 +8,9 @@ import { tryRunCommand } from "@/core/commands";
 import { documentStore } from "@/core/store/documentState";
 import { useEditBreakpointId } from "@/core/store/useBreakpointStore";
 import { appliedBreakpoints, breakpointsOf, isBase, resolveLayerAt } from "@/core/breakpoints/breakpoints";
-import { MOTION_AT_PATHS, motionAtOf } from "@/core/breakpoints/breakpointMotion";
+import { MOTION_AT_PATHS, motionAtOf, reducedPolicyOf } from "@/core/breakpoints/breakpointMotion";
+import { useMotionPreferenceStore } from "@/core/store/useMotionPreferenceStore";
+import { Select } from "@/editor/components/Select";
 import { OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps } from "../types";
 
@@ -17,12 +19,19 @@ import type { InspectorSectionProps } from "../types";
  * slow and how far. Set while viewing Mobile, they are Mobile's (and anything smaller); set at the largest size they
  * are the layer's everywhere. Every control calls `layer.setMotionAt`.
  */
+/** Phase 93: what is left of the animation for someone who asked for reduced motion. */
+const REDUCED = [
+  { value: "auto", label: "Fades only", hint: "Opacity and colour still animate; movement and loops don't" },
+  { value: "full", label: "Plays in full", hint: "This animation is safe for everyone" },
+  { value: "off", label: "Doesn't play" },
+];
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 export const MotionAtSection: React.FC<InspectorSectionProps> = ({ selectedId, isMulti, className = "" }) => {
   const doc = useStore(documentStore, (s) => s.document);
   const editing = useEditBreakpointId();
   const [message, setMessage] = useState("");
+  const reducedView = useMotionPreferenceStore((p) => p.reduced);
   const layer = selectedId && !isMulti ? doc.layers[selectedId] : undefined;
   if (!layer || !selectedId) return null;
 
@@ -53,6 +62,12 @@ export const MotionAtSection: React.FC<InspectorSectionProps> = ({ selectedId, i
       </OptionRow>
       <OptionRow label="Loops">
         <Toggle size="sm" aria-label="Loops run at this size" checked={m.loops} onChange={(loops) => run({ loops })} />
+      </OptionRow>
+      <OptionRow label="Reduced">
+        <Select aria-label="Animation under reduced motion" size="sm" width="100%" options={REDUCED} value={reducedPolicyOf(seen.properties)} onChange={(v) => run({ reduced: v })} />
+      </OptionRow>
+      <OptionRow label="Show it">
+        <Toggle size="sm" aria-label="Show the canvas as reduced motion" checked={reducedView} onChange={(on) => void tryRunCommand("view.reducedMotion", { on })} />
       </OptionRow>
       {ownHere && (
         <Button size="sm" aria-label="Same motion as larger sizes" title={`Takes off what was set for ${here.name}`} onClick={() => run({ reset: true })}>

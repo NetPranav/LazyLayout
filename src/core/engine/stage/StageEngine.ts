@@ -38,6 +38,8 @@ export interface StageEngineOptions {
   states?: StateDriverHost;
   /** Phase 80: animated variants (a variant switch moves on the instance's transition; an instance's own click, hover or press). */
   variants?: VariantDriverHost;
+  /** Phase 93: whether to draw the page as reduced motion gets it (the canvas's switch or the system's setting). */
+  reducedMotion?: () => boolean;
   /** Phase 88: the breakpoint being viewed (null: the base); motion plays as that breakpoint says. */
   breakpoint?: () => string | null;
   /** Phase 87: layout motion and presence (the element of each layer comes from the renderer's registry). */
@@ -159,6 +161,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   const stateDriver = options.states ? new StateDriver(options.states) : null;
   let statesWereLive = false;
   let lastBreakpoint: string | null | undefined;
+  let lastReduced: boolean | undefined;
   const variantDriver = options.variants ? new VariantDriver(options.variants) : null;
   let variantsWereLive = false;
   const layoutDriver = options.layout ? new LayoutDriver({ ...options.layout, getDocument, node: (id) => renderer.registry.get(id) as unknown as ReturnType<LayoutDriverHost["node"]> }) : null;
@@ -177,6 +180,14 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (options.reducedMotion && adapter instanceof StageAdapters) {
+      const reduced = options.reducedMotion();
+      if (reduced !== lastReduced) {
+        lastReduced = reduced;
+        adapter.setReducedMotion(reduced);
+        dirty = true;
+      }
+    }
     if (options.breakpoint && adapter instanceof StageAdapters) {
       const viewed = options.breakpoint();
       if (viewed !== lastBreakpoint) {

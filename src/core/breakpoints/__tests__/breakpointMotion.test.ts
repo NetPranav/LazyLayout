@@ -9,7 +9,8 @@ import { evaluate } from "../../kernel/evaluate";
 import { KernelAdapter } from "../../engine/stage/KernelAdapter";
 import type { AdapterHost } from "../../engine/stage/types";
 import { registerTransitionCommands } from "../../states/transitionCommands";
-import { isMovement, layerAtBreakpoint, motionAtOf, scaleDistance } from "../breakpointMotion";
+import { isMovement, layerAtBreakpoint, motionAtOf, reduceMotion, scaleDistance } from "../breakpointMotion";
+import { reducedMotionNow, useMotionPreferenceStore } from "../../store/useMotionPreferenceStore";
 
 /** ROADMAP Phase 88: motion per breakpoint. A card slides 200 px and fades in over a second; Mobile is calmer. */
 const run = (id: string, args: Record<string, unknown>) => (tryRunCommand(id, args) as { result?: unknown }).result as { ok?: boolean; changed?: number };
@@ -124,5 +125,67 @@ describe("Phase 88: the kernel plays a layer as the breakpoint says", () => {
     adapter.setBreakpoint(null);
     adapter.seek(1);
     assert.equal(x(), 200);
+  });
+});
+
+describe("Phase 93: reduced motion", () => {
+  const reducedAt = (t: number, extra: Record<string, unknown> = {}) => evaluate(getDocument(), comp, card, t, { reducedMotion: true, ...extra });
+  it("the policy: fades still play, nothing moves, at any time", () => {
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      assert.equal(reducedAt(t)["transform.x"], 0, `no movement at ${t}`);
+      assert.equal(reducedAt(t)["appearance.opacity"], t, "the fade is as written");
+    }
+    assert.equal(at(0.5)["transform.x"], 100, "without the preference it moves");
+  });
+  it("a layer can say it plays in full, or not at all", () => {
+    run("layer.setMotionAt", { ids: [card], reduced: "full" });
+    assert.equal(L().properties["motion.reduced"], "full");
+    assert.equal(reducedAt(0.5)["transform.x"], 100);
+    run("layer.setMotionAt", { ids: [card], reduced: "off" });
+    assert.equal(reducedAt(0.5)["transform.x"], 0);
+    assert.equal(reducedAt(0)["appearance.opacity"], 1, "off: as drawn, not even the fade");
+    run("layer.setMotionAt", { ids: [card], reduced: "auto" });
+    assert.equal(L().properties["motion.reduced"], undefined, "the default is not stored");
+    assert.deepEqual(reduceMotion({ plays: true, timeScale: 2, distance: 1, loops: true }, "auto"), { plays: true, timeScale: 2, distance: 0, loops: false });
+  });
+  it("loops stop", () => {
+    const b = new DocBuilder();
+    const dot = b.layer("container", "Dot", null, { "transform.y": 0 });
+    b.behaviour(dot, { type: "loop", enabled: true, params: { property: "transform.y", from: 0, to: 40, duration: 1, easing: "linear", yoyo: true } } as never);
+    setDocument(b.build());
+    const c = Object.keys(getDocument().compositions)[0];
+    assert.equal(evaluate(getDocument(), c, dot, 0.5)["transform.y"], 20);
+    assert.equal(evaluate(getDocument(), c, dot, 0.5, { reducedMotion: true })["transform.y"], 0);
+  });
+  it("a scroll-scrubbed animation doesn't follow the scroll: its fade is done and it hasn't moved", () => {
+    const clipId = Object.keys(getDocument().clips)[0];
+    assert.equal(evaluate(getDocument(), comp, card, 0, { scrollClipTime: { [clipId]: 0.3 } })["transform.x"], 60, "scrubbed: 30 % of the way");
+    for (const scrolled of [0, 0.3, 1]) {
+      const r = reducedAt(0, { scrollClipTime: { [clipId]: scrolled } });
+      assert.equal(r["transform.x"], 0);
+      assert.equal(r["appearance.opacity"], 1);
+    }
+  });
+  it("the stage's adapter draws it when the preference turns on, and the canvas's switch is a command", () => {
+    const values = new Map<string, string>();
+    const element = { style: { setProperty: (n: string, v: string) => void values.set(n, v), removeProperty: (n: string) => (values.delete(n), ""), getPropertyValue: (n: string) => values.get(n) ?? "" } };
+    const adapter = new KernelAdapter();
+    adapter.mount({ node: (id: string) => (id === card ? element : undefined), getDocument, compositionId: () => comp, fps: () => 60, duration: () => 1 } as unknown as AdapterHost);
+    const x = () => { const m = /translate3d\(([-\d.e]+)px/.exec(values.get("transform") ?? ""); return m ? Number(m[1]) : 0; };
+    adapter.seek(0.5);
+    assert.equal(x(), 100);
+    adapter.setReducedMotion(true);
+    adapter.seek(0.5);
+    assert.equal(x(), 0);
+    assert.equal(values.get("opacity"), "0.5");
+    adapter.setInputs({ scrollClipTime: {} });
+    adapter.seek(0.75);
+    assert.equal(x(), 0, "kept through another driver's inputs");
+    assert.equal(useMotionPreferenceStore.getState().reduced, false);
+    assert.equal(reducedMotionNow(), false);
+    tryRunCommand("view.reducedMotion", { on: true });
+    assert.equal(reducedMotionNow(), true);
+    tryRunCommand("view.reducedMotion", {});
+    assert.equal(useMotionPreferenceStore.getState().reduced, false, "without an argument it toggles");
   });
 });

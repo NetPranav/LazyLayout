@@ -7,7 +7,8 @@ import { getDocument } from "../store/documentState";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { statePaths } from "./states";
 import { PRESENCE_KINDS } from "../engine/motion/layoutMotion";
-import { MOTION_AT_PATHS, layerAtBreakpoint, motionAtOf } from "../breakpoints/breakpointMotion";
+import { MOTION_AT_PATHS, REDUCED_POLICIES, layerAtBreakpoint, motionAtOf, reducedPolicyOf } from "../breakpoints/breakpointMotion";
+import { useMotionPreferenceStore } from "../store/useMotionPreferenceStore";
 import { editBreakpointId } from "../store/useBreakpointStore";
 import { documentCommands } from "../store/useDocumentStore";
 import { TRANSITION_CURVES, TRANSITION_OVERRIDES, TRANSITION_TYPES, overridePath } from "./transitions";
@@ -97,10 +98,12 @@ export function registerTransitionCommands(): () => void {
       timeScale: z.number().min(0.1).max(10).optional(),
       distance: z.number().min(0).max(4).optional(),
       loops: z.boolean().optional(),
+      /** Phase 93: what is left of the animation under reduced motion. */
+      reduced: z.enum(REDUCED_POLICIES).optional(),
       /** Takes the four settings off at this breakpoint: it plays as the larger one does. */
       reset: z.boolean().optional(),
     }),
-    run: ({ ids, plays, timeScale, distance, loops, reset }) => {
+    run: ({ ids, plays, timeScale, distance, loops, reduced, reset }) => {
       const doc = getDocument();
       const chosen = (ids ?? selected()).filter((id) => doc.layers[id] && doc.layers[id].locked !== true);
       if (chosen.length === 0) return { ok: true, changed: 0 };
@@ -120,10 +123,22 @@ export function registerTransitionCommands(): () => void {
           if (timeScale !== undefined && timeScale !== now.timeScale) patch["motion.timeScale"] = timeScale;
           if (distance !== undefined && distance !== now.distance) patch["motion.distance"] = distance;
           if (loops !== undefined && loops !== now.loops) patch["motion.loops"] = loops;
+          if (reduced !== undefined && reduced !== reducedPolicyOf(layerAtBreakpoint(getDocument(), getDocument().layers[id], viewed).properties)) patch["motion.reduced"] = reduced === "auto" ? null : reduced;
           if (Object.keys(patch).length > 0) changed += setLayerProps([id], patch, "Set motion at breakpoint") > 0 && !reset ? 1 : 0;
         }
       });
       return { ok: true, changed };
+    },
+  }));
+
+  // Phase 93: draw the canvas as reduced motion gets it
+  offs.push(defineTypedCommand({
+    id: "view.reducedMotion", title: "Preview: Show as Reduced Motion", category: "View",
+    args: z.object({ on: z.boolean().optional() }).default({}),
+    run: ({ on }) => {
+      const next = on ?? !useMotionPreferenceStore.getState().reduced;
+      useMotionPreferenceStore.getState().setReduced(next);
+      return { ok: true, on: next };
     },
   }));
 

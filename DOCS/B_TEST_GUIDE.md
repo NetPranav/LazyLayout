@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
 | 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
 | 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
 | 80 | A component's variant switch animates; an instance can switch on a click, hover or press | this branch (NEW) | 3.26 |
@@ -1055,6 +1056,20 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T88.10** Do: **Ctrl+Z** a few times. Expect: each press undoes one setting.
 
 **Developer test:** `npx tsx --test src/core/breakpoints/__tests__/breakpointMotion.test.ts` (8 tests pass).
+
+### 3.29 Phase 93: reduced motion (NEW, first half)
+
+**What changed:** for people who ask their computer for reduced motion, an animation now keeps its fades and colour changes but drops movement, turns, growth and loops. Each layer chooses in **Motion at this size → Reduced**: **Fades only** (default), **Plays in full** (you say this one is safe) or **Doesn't play**. The **Show it** switch in the same section previews exactly that on the canvas.
+
+**Known gaps (don't report):** flash limits, loop pause controls, focus rings and touch-target sizes are not built; there is no library of effects yet. Not in the exported code.
+
+**User test (covered by `tests/e2e/breakpoint-motion.spec.ts`)**
+- [ ] **T93.1** Do: in **Motion**, select a layer that slides and fades in (a keyframed X and opacity). Scrub to the middle. Expect: it is half way across and half faded.
+- [ ] **T93.2** Do: in **Motion at this size** switch **Show it** on. Expect: the layer goes back to its resting place but is still half faded. Scrub: it only fades, never moves.
+- [ ] **T93.3** Do: set **Reduced** to **Plays in full**. Expect: it moves again while **Show it** is on. Set **Doesn't play**: it is neither moving nor fading.
+- [ ] **T93.4** Do: switch **Show it** off. Expect: all layers animate normally.
+- [ ] **T93.5** Do: if your computer is set to reduce motion, reload the editor. Expect: the canvas behaves as in T93.2 without touching the switch.
+- [ ] **T93.6** Do: Ctrl+Z after changing **Reduced**. Expect: it goes back one step. (The **Show it** switch is not undoable: it is a way of looking.)
 
 ## 4. Regression checks (things that must still work)
 

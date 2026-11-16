@@ -960,6 +960,8 @@ const DEFS = {
   "motion.timeScale": typed(ranged(num(1, null, "none", ALL, false), { min: 0.1, max: 10 })),
   "motion.distance": typed(ranged(num(1, null, "none", ALL, false), { min: 0, max: 4 })),
   "motion.loops": typed(flag(true, "none", ALL)),
+  /** Reduced motion (Phase 93): `auto` keeps fades and drops movement, `full` plays as written, `off` doesn't play. */
+  "motion.reduced": typed(oneOf(["auto", "full", "off"], "auto", null, "none", ALL)),
   /** Motion blur (Phase 75), when the layer's motion blur switch is on: the shutter angle in degrees (180 is half a frame's time open, After Effects' default). */
   "motion.shutterAngle": ranged(num(180, null, "paint", VISUAL), { min: 1, max: 720 }),
   /** Logic Blueprint graph this layer's events run (After-track; read by the dependency graph). */

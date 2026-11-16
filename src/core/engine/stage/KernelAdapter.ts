@@ -69,7 +69,14 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint, reducedMotion: inputs.reducedMotion ?? this.inputs.reducedMotion };
+    this.invalidate();
+  }
+
+  /** Phase 93: whether the page is drawn as reduced motion gets it. */
+  setReducedMotion(on: boolean): void {
+    if ((this.inputs.reducedMotion ?? false) === on) return;
+    this.inputs = { ...this.inputs, reducedMotion: on };
     this.invalidate();
   }
 

@@ -80,3 +80,33 @@ test("Phase 88: a calmer animation on Mobile plays only there", async ({ page })
   await expect(page.getByRole("button", { name: "Same motion as larger sizes", exact: true })).toHaveCount(0);
   expect(await drawnAt(page, id, 1)).toBe(50);
 });
+
+test("Phase 93: showing the canvas as reduced motion drops the movement and keeps the fade", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as Win).__LL_TEST__ = true));
+  await openEditor(page);
+  await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+  await page.getByRole("tab", { name: "Motion" }).click();
+  await page.waitForFunction(() => !!(window as unknown as Win).__LL_ENGINE__ && !!(window as unknown as Win).__LL_COMMANDS__);
+  const id = await page.evaluate(() => {
+    const c = (window as unknown as Win).__LL_DOC__.commands;
+    const layerId = c.addLayer({ archetype: "rectangle", parentId: "hero", name: "Slider", properties: { positioning: "absolute", "frame.x": 20, "frame.y": 40, "frame.width": 80, "frame.height": 60 } });
+    c.addClip(layerId, { id: "clip_fade", name: "Slide", type: "entrance", trigger: "mount", duration: 2, easing: "linear", enabled: true, tracks: [{ id: "trk_x", property: "transform.x", keyframes: [{ id: "k0", time: 0, value: 0 }, { id: "k1", time: 2, value: 100 }] }, { id: "trk_o", property: "appearance.opacity", keyframes: [{ id: "o0", time: 0, value: 0 }, { id: "o1", time: 2, value: 1 }] }] }, "Test animation", { compositionId: "comp_main" });
+    return layerId;
+  });
+  await page.evaluate((i) => (window as unknown as Win).__LL_SELECT__(i), id);
+  const el = page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${id}"]`).first();
+  const state = async (t: number) => {
+    await page.evaluate((x) => (window as unknown as Win).__LL_ENGINE__!.seek(x), t);
+    await page.waitForTimeout(150);
+    return el.evaluate((e) => ({ x: Math.round(new DOMMatrixReadOnly(getComputedStyle(e as HTMLElement).transform).m41), o: Number(getComputedStyle(e as HTMLElement).opacity) }));
+  };
+  expect(await state(1)).toEqual({ x: 50, o: 0.5 });
+  await page.locator('[data-section="motion-at"]').scrollIntoViewIfNeeded();
+  await page.getByLabel("Show the canvas as reduced motion", { exact: true }).click();
+  expect(await state(1), "no movement, the fade as written").toEqual({ x: 0, o: 0.5 });
+  await page.getByLabel("Animation under reduced motion", { exact: true }).click();
+  await page.getByRole("option", { name: "Plays in full" }).click();
+  expect((await state(1)).x, "this one is marked safe").toBe(50);
+  await page.getByLabel("Show the canvas as reduced motion", { exact: true }).click();
+  expect((await state(1)).x).toBe(50);
+});

@@ -36,7 +36,7 @@ import { interpolateValue } from "./interpolators";
 import { morphOptions, morphPath } from "../paths/morphMatch";
 import { followSettings, followsPath, pathSampler } from "../paths/pathFollow";
 import type { StateShare } from "../states/transitions";
-import { isDefaultMotionAt, layerAtBreakpoint, motionAtOf, scaleDistance } from "../breakpoints/breakpointMotion";
+import { isDefaultMotionAt, layerAtBreakpoint, motionAtOf, reduceMotion, reducedPolicyOf, scaleDistance } from "../breakpoints/breakpointMotion";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
@@ -643,7 +643,9 @@ function evaluateBaseProps(
   if (!stored) return {};
   // 0. The layer as the breakpoint being viewed sees it (Phase 88), and how its motion plays there.
   const layer = layerAtBreakpoint(doc, stored, inputs.breakpoint);
-  const motion = motionAtOf(layer.properties);
+  // Phase 93: under reduced motion the layer's own policy decides what is left of its animation
+  const reduced = inputs.reducedMotion === true ? reducedPolicyOf(layer.properties) : null;
+  const motion = reduced ? reduceMotion(motionAtOf(layer.properties), reduced) : motionAtOf(layer.properties);
   const calm = !isDefaultMotionAt(motion);
 
   // 1. Base props.
@@ -712,7 +714,8 @@ function evaluateBaseProps(
           category: CLIP_TYPE_TO_CATEGORY[clip.type],
           props: far(sampleClip(
             clip,
-            Math.min(clip.duration, Math.max(0, driven)),
+            // a scroll-scrubbed animation doesn't follow the scroll under reduced motion: it shows its end (the fades done)
+            reduced === "auto" ? clip.duration : Math.min(clip.duration, Math.max(0, driven)),
             layer.properties,
             inputs.diagnosticsSink,
             inputs.spatialTolerance

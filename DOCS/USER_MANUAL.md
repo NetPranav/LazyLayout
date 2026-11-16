@@ -329,6 +329,9 @@ Big moves that look good on a desktop can be too much on a phone. In **Motion**,
 
 What you set at Tablet also holds at Mobile until you set Mobile's own. Not in the exported code yet.
 
+### 14. Reduced motion
+Some people get ill from screens that move a lot, and ask their computer to reduce motion. Your animations respect that. By default a layer then keeps its fades and colour changes but stops moving, turning, growing and looping. In **Motion at this size**, **Reduced** lets you choose per layer: **Fades only**, **Plays in full** (for something harmless) or **Doesn't play**. **Show it** previews the whole canvas that way. Only this part of accessibility is built so far.
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

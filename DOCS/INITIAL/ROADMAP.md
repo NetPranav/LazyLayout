@@ -385,7 +385,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 90 | Animation Playground | 89 | v3 24.0–24.3, 24.5 | 2 | 📋 |
 | 91 | Motion library infrastructure | 90 | v3 25.1, 25.2, 21.3, 22.4 | 2 | 📋 |
 | 92 | Library: text, SVG & component motion | 91 | v3 25.3 (waves 1, 3, 4) | 2 | 📋 |
-| 93 | Reduced motion & accessibility rules | 79, 82, 84 | v3 29.1, 29.3, 11.4 | 2 | 📋 |
+| 93 | Reduced motion & accessibility rules | 79, 82, 84 | v3 29.1, 29.3, 11.4 | 2 | 🚧 |
 | 94 | Motion export architecture | 49, 68 | v3 27.1 | 2 | 📋 |
 | 95 | Motion export: React, Next & Vite | 80, 82, 84, 93, 94 | v3 27.2, 27.3, 29.2 | 2 | 📋 |
 | 96 | Export matrix in CI | 95 | v3 27.4 | 2 | 📋 |
@@ -1460,11 +1460,16 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** each passes the Playground sweep and the parity check against the kernel.
 
 ### Phase 93 · Reduced motion & accessibility rules
-**Needs:** 79, 82, 84 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 📋
+**Needs:** 79, 82, 84 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 🚧
+**Part built (2026-11-16), the reduced-motion half only:** Phases 82 and 84 (Lane A's) are not ✅, and the flash limits, pause controls for loops over 5 s, visible focus and 44 px touch targets are not built (some exist in `src/core/rules/interactiveAccessibility.ts` from Phase 199).
+**Policy (`src/core/breakpoints/breakpointMotion.ts`):** `motion.reduced` on a layer: `auto` (default: opacity and colour animate as written; movement, turns and growth don't; loops stop; a scroll-scrubbed animation shows its end instead of following the scroll), `full` (plays as written) or `off` (doesn't play). The kernel applies it when `EvaluateInputs.reducedMotion` is set. `layer.setMotionAt { reduced }` sets it (the default is not stored).
+**Preview of it:** `view.reducedMotion` (a command, toggles) and a **Show it** switch in **Motion at this size** draw the whole stage as reduced motion gets it (`useMotionPreferenceStore`, not saved or exported). The system's `prefers-reduced-motion` counts too (`reducedMotionNow`), and the drivers (states, variants, layout) use the same answer.
+**Not built:** generating a variant per library effect (the library, Phases 91–92, isn't built); the Playground toggle (Phase 90).
 - [ ] Every animation has a reduced-motion variant (generated from the spec's §9 policy: keep opacity and colour, drop movement, stop loops, disable scroll scrub), editable in Pro. Rules: flash limits, pause controls for loops over 5 s, visible focus, 44 px touch targets. The Playground toggle uses the variants.
 
 **You'll see:** a reduced-motion preview that shows exactly what those users get.
 **Done when:** the reduced-motion Playwright run shows no spatial movement in any library effect.
+**Evidence (2026-11-16):** `src/core/breakpoints/__tests__/breakpointMotion.test.ts` (5 tests for this phase: the policy at five times, full and off, loops, scroll-scrubbed, the adapter and the command) and `tests/e2e/breakpoint-motion.spec.ts` (the switch: drawn x 50 px becomes 0 while the opacity stays 0.5; **Plays in full** brings the 50 px back). Chromium here.
 **v5 (R1):** until the library (Phases 91 and 92) is built, "any library effect" reads "each of the five reference recipes" (§2, R1). The Playground toggle arrives with Phase 90; until then the toggle is in Preview.
 
 ### Phase 94 · Motion export architecture

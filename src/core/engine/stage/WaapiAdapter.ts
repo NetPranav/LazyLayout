@@ -109,6 +109,14 @@ export class WaapiAdapter implements EngineAdapter {
     this.dirty = true;
   }
 
+  /** Phase 93: whether the page is drawn as reduced motion gets it. */
+  setReducedMotion(on: boolean): void {
+    if ((this.inputs.reducedMotion ?? false) === on) return;
+    this.inputs = { ...this.inputs, reducedMotion: on };
+    this.inputsKey = inputsKey(this.inputs);
+    this.invalidate();
+  }
+
   /** Phase 88: the breakpoint being viewed; the animations are baked again for it. */
   setBreakpoint(id: string | null): void {
     if ((this.inputs.breakpoint ?? null) === id) return;
@@ -119,8 +127,9 @@ export class WaapiAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // Compared by value: the scroll driver and others pass a new object even when nothing in it changed (opening Motion
-    // did), and a new identity used to throw away every cached bake. The breakpoint (Phase 88) is kept when not given.
-    const next = { ...inputs, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint };
+    // did), and a new identity used to throw away every cached bake. The breakpoint (Phase 88) and reduced motion
+    // (Phase 93) are kept when not given.
+    const next = { ...inputs, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint, reducedMotion: inputs.reducedMotion ?? this.inputs.reducedMotion };
     const key = inputsKey(next);
     if (key === this.inputsKey) return;
     this.inputs = next;
