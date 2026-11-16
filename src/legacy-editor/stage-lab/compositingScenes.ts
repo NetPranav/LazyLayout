@@ -22,3 +22,20 @@ export const LINK_HERO = "scene_link_hero";
 /** Phase 77 scene: a layer that wiggles, and one that loops its own slide. */
 export const EXPR_WIGGLE = "scene_expr_wiggle";
 export const EXPR_LOOP = "scene_expr_loop";
+
+/** Phase 85's two references: a menu icon morphing into a close icon, and a logo (an outline and three bars) drawing itself. */
+export const MORPH_ICON = "scene_morph_icon";
+export const DRAW_LOGO = "scene_draw_logo";
+export const ICON_MENU = "M4 6 L20 6 M4 12 L20 12 M4 18 L20 18";
+export const ICON_CLOSE = "M6 6 L18 18 M12 12 L12 12 M6 18 L18 6";
+export const LOGO_PATH = "M20 20 L180 20 L180 180 L20 180 Z M60 60 L140 60 M60 100 L140 100 M60 140 L140 140";
+export const LOGO_STAGGER = 0.5;
+
+/** Phase 86's reference: a dot orbiting a circle drawn on the page (radius 80 about the middle of a 200 x 200 path layer). */
+export const ORBIT_TRACK = "scene_orbit_track";
+export const ORBIT_DOT = "scene_orbit_dot";
+export const ORBIT_ARROW = "scene_orbit_arrow";
+const ORBIT_K = 80 * 0.5522847498307936;
+export const ORBIT_CIRCLE = `M180 100 C180 ${100 + ORBIT_K} ${100 + ORBIT_K} 180 100 180 C${100 - ORBIT_K} 180 20 ${100 + ORBIT_K} 20 100 C20 ${100 - ORBIT_K} ${100 - ORBIT_K} 20 100 20 C${100 + ORBIT_K} 20 180 ${100 - ORBIT_K} 180 100 Z`;
+/** Where the track is drawn, and its size. */
+export const ORBIT_FRAME = { x: 300, y: 40, width: 200, height: 200 } as const;

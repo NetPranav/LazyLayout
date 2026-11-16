@@ -14,7 +14,7 @@ import { createDocumentFromLayers, createLayer, hydrateClip, attachClip } from "
 import type { Clip, Layer } from "@/core/document/schema";
 import { documentCommands } from "@/core/store/useDocumentStore";
 import { StageHost } from "@/legacy-editor/stage/StageHost";
-import { EXPR_LOOP, EXPR_WIGGLE, LINK_HERO, LINK_NULL, FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
+import { ORBIT_ARROW, ORBIT_CIRCLE, ORBIT_DOT, ORBIT_FRAME, ORBIT_TRACK, DRAW_LOGO, ICON_CLOSE, ICON_MENU, LOGO_PATH, LOGO_STAGGER, MORPH_ICON, EXPR_LOOP, EXPR_WIGGLE, LINK_HERO, LINK_NULL, FX_STACK_LAYER, MB_OFF_LAYER, MB_ON_LAYER, MATTE_SOURCE, MATTE_TARGET, SCENE_BOX, SCENE_DIAMOND, SCENE_SQUARE, sceneId } from "./compositingScenes";
 
 export const LAB_ROOT = "el_root_container";
 export const LAB_COUNT = 500;
@@ -150,6 +150,35 @@ function expressionsDocument() {
   return createDocumentFromLayers([root, ...layers], [clip]);
 }
 
+/** Phase 86: a dot orbits a drawn circle once in a second; an arrow a quarter of a lap ahead turns along the path. */
+function orbitDocument() {
+  // rectangles, not boxes: a shape is drawn at exactly its frame's size (a box grows by its padding), and the layer's
+  // centre is worked out from its frame
+  const free = (id: string, archetype: "rectangle" | "svgPath", extra: Layer["properties"]) => createLayer({ id, archetype, parentId: LAB_ROOT, properties: { positioning: "absolute", ...extra } }) as Layer;
+  const layers: Layer[] = [
+    free(ORBIT_TRACK, "svgPath", { "frame.x": ORBIT_FRAME.x, "frame.y": ORBIT_FRAME.y, "frame.width": ORBIT_FRAME.width, "frame.height": ORBIT_FRAME.height, "svg.path": ORBIT_CIRCLE, "svg.stroke": "#94a3b8", "svg.strokeWidth": 2, "svg.fill": "none" }),
+    free(ORBIT_DOT, "rectangle", { "frame.x": 20, "frame.y": 20, "frame.width": 24, "frame.height": 24, "svg.fill": "#ff0000", "svg.stroke": "none", "shape.cornerRadius": 12, "motionPath.source": ORBIT_TRACK }),
+    free(ORBIT_ARROW, "rectangle", { "frame.x": 60, "frame.y": 20, "frame.width": 40, "frame.height": 12, "svg.fill": "#0000ff", "svg.stroke": "none", "motionPath.source": ORBIT_TRACK, "motionPath.offset": 0.25, "motionPath.autoRotate": true }),
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
+  const lap = (id: string) => attachClip(hydrateClip({ name: "Orbit", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [{ property: "motionPath.progress", keyframes: [{ time: 0, value: 0 }, { time: 1, value: 1 }] }] }), id);
+  return createDocumentFromLayers([root, ...layers], [lap(ORBIT_DOT), lap(ORBIT_ARROW)]);
+}
+
+/** Phase 85: the icon-morph and logo-draw references, each over one second. */
+function pathsDocument() {
+  const layers: Layer[] = [
+    createLayer({ id: MORPH_ICON, archetype: "icon", parentId: LAB_ROOT, properties: { positioning: "absolute", "frame.x": 40, "frame.y": 40, "svg.size": 120, "svg.path": ICON_MENU, "svg.stroke": "#0f172a", "svg.strokeWidth": 2 } }) as Layer,
+    createLayer({ id: DRAW_LOGO, archetype: "svgPath", parentId: LAB_ROOT, properties: { positioning: "absolute", "frame.x": 240, "frame.y": 40, "frame.width": 200, "frame.height": 200, "svg.path": LOGO_PATH, "svg.stroke": "#0f172a", "svg.strokeWidth": 6, "svg.fill": "none", "draw.start": 0, "draw.end": 1, "draw.stagger": LOGO_STAGGER } }) as Layer,
+  ];
+  const root = createLayer({ id: LAB_ROOT, archetype: "container", parentId: null, children: layers.map((l) => l.id), properties: { "frame.width": 800, "frame.height": 320 } }) as Layer;
+  const clips = [
+    attachClip(hydrateClip({ name: "Morph", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [{ property: "svg.path", keyframes: [{ time: 0, value: ICON_MENU }, { time: 1, value: ICON_CLOSE }] }] }), MORPH_ICON),
+    attachClip(hydrateClip({ name: "Draw", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [{ property: "draw.end", keyframes: [{ time: 0, value: 0 }, { time: 1, value: 1 }] }] }), DRAW_LOGO),
+  ];
+  return createDocumentFromLayers([root, ...layers], clips);
+}
+
 function labLayers(): Layer[] {
   const children = Array.from({ length: LAB_COUNT }, (_, i) => labId(i));
   const kids = children.map(
@@ -192,6 +221,8 @@ export const StageLab: React.FC = () => {
   const loadEffects = useCallback(() => documentCommands.replaceDocument(effectsDocument(), "Load effect scenes"), []);
   const loadLinks = useCallback(() => documentCommands.replaceDocument(linksDocument(), "Load link scene"), []);
   const loadExpressions = useCallback(() => documentCommands.replaceDocument(expressionsDocument(), "Load expression scene"), []);
+  const loadOrbit = useCallback(() => documentCommands.replaceDocument(orbitDocument(), "Load orbit scene"), []);
+  const loadPaths = useCallback(() => documentCommands.replaceDocument(pathsDocument(), "Load path scenes"), []);
   const loadCompositing = useCallback(() => documentCommands.replaceDocument(compositingDocument(), "Load compositing scenes"), []);
 
   const editOne = useCallback(() => {
@@ -217,6 +248,8 @@ export const StageLab: React.FC = () => {
           <button type="button" style={button} onClick={loadEffects}>Load effect scenes</button>
           <button type="button" style={button} onClick={loadLinks}>Load link scene</button>
           <button type="button" style={button} onClick={loadExpressions}>Load expression scene</button>
+          <button type="button" style={button} onClick={loadPaths}>Load path scenes</button>
+          <button type="button" style={button} onClick={loadOrbit}>Load orbit scene</button>
           <button type="button" style={button} onClick={editOne}>Edit one layer</button>
           <button type="button" style={button} onClick={addOne}>Add one layer</button>
           <button type="button" style={button} onClick={removeOne}>Remove one layer</button>

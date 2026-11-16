@@ -248,7 +248,7 @@ export function seedPrototypeDocument(): void {
 
     setKeyframeAt("button", "appearance.opacity", 0.8, { value: 0 });
     setKeyframeAt("button", "appearance.opacity", 1.2, { value: 1 });
-    setKeyframeAt("button", "transform.scale", 0.8, { value: 0.86, ease: "back-out" });
+    setKeyframeAt("button", "transform.scale", 0.8, { value: 0.86, ease: "back.out" });
     setKeyframeAt("button", "transform.scale", 1.4, { value: 1.0 });
 
     setKeyframeAt("image", "appearance.opacity", 0.2, { value: 0 });

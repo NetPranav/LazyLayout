@@ -9,7 +9,7 @@ import { tryRunCommand } from "@/core/commands";
 import { documentStore } from "@/core/store/documentState";
 import { readerOf } from "@/core/render/compositing";
 import { FX_LABELS, FX_PARAMS, FX_SLOTS, FX_TYPES, fxPath, readStack, type FxType } from "@/core/render/fxStack";
-import { MOTION_BLUR_ROUTE, routeEffect } from "@/core/rules/effectRouting";
+import { MOTION_BLUR_ROUTE, PERFORMANCE_NOTES, performanceOf, routeEffect } from "@/core/rules/effectRouting";
 import type { PropValue } from "@/core/document/registry";
 import { RowColorField } from "../controls/RowColorField";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
@@ -116,7 +116,8 @@ export const EffectStackSection: React.FC<InspectorSectionProps> = ({ selectedId
             })}
             <p className="ll:m-0 ll:text-micro ll:text-muted">
               {route.reason}
-              {route.backend === "svg" ? " It is drawn in Motion and Preview, not in Design." : ""}
+              {route.backend === "svg" ? " It is drawn in Motion and Preview, not in Design." : ""}{" "}
+              <span data-fx-performance={performanceOf(route)}>{PERFORMANCE_NOTES[performanceOf(route)]}</span>
             </p>
           </OptionGroup>
         );

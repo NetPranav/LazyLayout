@@ -254,6 +254,27 @@ export const ExportSettingsSchema = z.object({
 });
 
 /** One imported file the document uses (Phase 36). The bytes live in the asset store, keyed by `id` (their SHA-256); the document keeps this description. */
+/**
+ * Where an asset came from and the licence it is used under (Phase 126): an icon from an open-licence set, or a stock
+ * photo from a provider, with what its attribution must say. Absent for the user's own files.
+ */
+export const AssetSourceSchema = z.object({
+  kind: z.enum(["icon", "photo"]),
+  provider: z.string().min(1).max(60),
+  /** The item's id at the provider (an icon's name, a photo's id). */
+  id: z.string().min(1).max(200),
+  title: z.string().max(300).optional(),
+  /** The item's page at the provider. */
+  url: z.string().max(2000).optional(),
+  licence: z.string().min(1).max(100),
+  licenceUrl: z.string().max(2000).optional(),
+  author: z.string().max(300).optional(),
+  authorUrl: z.string().max(2000).optional(),
+  /** The credit line to show with it, when its licence asks for one. */
+  attribution: z.string().max(1000).optional(),
+});
+export type AssetSource = z.infer<typeof AssetSourceSchema>;
+
 export const AssetEntrySchema = z.object({
   id: z.string().regex(/^[0-9a-f]{64}$/, "An asset id is a SHA-256 in hex."),
   name: z.string().max(200),
@@ -263,6 +284,7 @@ export const AssetEntrySchema = z.object({
   width: z.number().positive().optional(),
   height: z.number().positive().optional(),
   addedAt: z.number().int().nonnegative(),
+  source: AssetSourceSchema.optional(),
 });
 export type AssetEntry = z.infer<typeof AssetEntrySchema>;
 
@@ -364,6 +386,11 @@ const MotionDocumentShape = z.object({
         bound: z.record(z.string().max(120), z.string()).optional(),
       }),
     )
+    .optional(),
+  /** Saved stroke width profiles to reuse (Phase 119): a name and the points along the stroke (t 0..1, a width scale, a bias between the sides). */
+  widthProfiles: z
+    .array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(60), points: z.array(z.object({ t: z.number().min(0).max(1), scale: z.number().min(0).max(1000), bias: z.number().min(-1).max(1).optional() })).min(1).max(64) }))
+    .max(100)
     .optional(),
   /** Dev Mode annotation categories (FigCraft port F13); absent: Development, Interaction, Accessibility, Content. */
   annotationCategories: z.array(z.object({ id: z.string().min(1).max(64), name: z.string().min(1).max(64), color: z.string().max(40) })).max(64).optional(),

@@ -143,6 +143,11 @@ export const TypographySection: React.FC<InspectorSectionProps> = ({
               Lines
             </Button>
           </div>
+          {layer?.properties["group.role"] === "lines" && typeof layer.properties["split.source"] === "string" && layer.properties["split.source"] !== "" && (
+            <Button size="sm" variant="secondary" aria-label="Re-detect lines" title="Puts the text back and splits it into lines again, for when the text, its box or its font changed." onClick={() => void invokeCommand("text.redetectLines", { id: layer.id })}>
+              Re-detect lines
+            </Button>
+          )}
           {isLetters && (
             <div className="ll:flex ll:items-center ll:gap-2 ll:w-full">
               <Button

@@ -188,7 +188,7 @@ export function replaceImage(ids: readonly string[], src: string, natural?: { w:
 // --- Strokes (FigCraft port F3) ---------------------------------------------------
 
 /** Which kinds of layer take a list of stroke paints (`paint.strokes`). */
-const STROKE_LIST_ARCHETYPES = new Set(["rectangle", "ellipse", "polygon", "star", "line", "svgPath"]);
+const STROKE_LIST_ARCHETYPES = new Set(["rectangle", "ellipse", "polygon", "star", "line", "svgPath", "text"]);
 
 /** The stroke paints of a layer: its `paint.strokes`, else its plain stroke colour as one solid paint (none for `none`). */
 export function strokesOf(id: string): Paint[] {

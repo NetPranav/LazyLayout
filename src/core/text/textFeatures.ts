@@ -197,6 +197,8 @@ export interface TextPath {
   start: number;
   /** On the other side of the path, running the other way. */
   flip: boolean;
+  /** Phase 124: the layer the path was taken from, when it was put on one. */
+  source?: string;
 }
 
 /** A text path from its stored JSON, or null (no path, or path data that doesn't parse). */
@@ -205,7 +207,7 @@ export function parseTextPath(json: unknown): TextPath | null {
   try {
     const v = JSON.parse(json) as Record<string, unknown>;
     if (!v || typeof v.d !== "string" || !pathDataToBez(v.d)) return null;
-    return { d: v.d, start: typeof v.start === "number" && Number.isFinite(v.start) ? Math.min(1, Math.max(0, v.start)) : 0, flip: v.flip === true };
+    return { d: v.d, start: typeof v.start === "number" && Number.isFinite(v.start) ? Math.min(1, Math.max(0, v.start)) : 0, flip: v.flip === true, ...(typeof v.source === "string" && v.source.length <= 64 ? { source: v.source } : {}) };
   } catch {
     return null;
   }

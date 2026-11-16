@@ -182,10 +182,13 @@ const LAYOUT = section("layout", "container_layout");
 const FLEX = section("container_layout");
 const BUTTON = only("button", "fab");
 const IMAGE = only("image");
+const TEXT_ONLY = only("text");
 const SURFACE = only("container", "rectangle", "ellipse");
 /** Parametric shape archetypes (Phase 7.6). */
 export const SHAPE_ARCHETYPES = ["rectangle", "ellipse", "line", "polygon", "star", "arrow"] as const satisfies readonly ArchetypeId[];
 const SVG_STROKED = only("icon", "svgPath", "svgGroup", "svgUse", "svgText", ...SHAPE_ARCHETYPES);
+/** Layers drawn from one `svg.path`: the ones a morph and a stroke drawing apply to (Phase 85). */
+const PATH_DRAWN = only("icon", "svgPath");
 const INTERACTIVE = only("button", "toggle", "fab", "input", "form");
 const OBJECT3D = only("object3D");
 const CAMERA3D = only("camera3D");
@@ -292,6 +295,8 @@ const DEFS = {
    */
   "boolean.operation": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("container", "form"))),
   /** In a boolean group, how this operand combines with the ones below it; empty takes the group's operation. */
+  /** Soft union (Phase 108): a union group's children melt together where they are closer than twice this, in px. */
+  "boolean.softness": ranged(px(0, null, "paint", only("container", "form")), { min: 0, max: 500 }),
   "boolean.operandOp": typed(oneOf(["", "union", "subtract", "intersect", "exclude"], "", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "container", "form"))),
   "sizing.horizontal": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
   "sizing.vertical": oneOf(["fixed", "hug", "fill"], "hug", null, "layout", VISUAL),
@@ -311,6 +316,15 @@ const DEFS = {
   "transform.perspective": px(0, "transform", "gpu", VISUAL),
   "transform.translateZ": px(0, "transform", "gpu", VISUAL),
   "transform.style3d": oneOf(["flat", "preserve3d"], "flat", "transform-style", "gpu", VISUAL),
+  /**
+   * Phase 129: a 3D space's camera. Pan (px across and down), dolly (px towards the scene: things come closer), the depth
+   * in focus (px) and the aperture (blur, px, for every 100 px a layer stands from the focus; 0: everything sharp).
+   */
+  "camera.x": px(0, null, "gpu", only("container", "form")),
+  "camera.y": px(0, null, "gpu", only("container", "form")),
+  "camera.z": px(0, null, "gpu", only("container", "form")),
+  "camera.focus": px(0, null, "paint", only("container", "form")),
+  "camera.aperture": ranged(num(0, null, "paint", only("container", "form")), { min: 0, max: 50 }),
   /** Corner pin: "x0,y0,x1,y1,x2,y2,x3,y3", the layer's top left, top right, bottom right and bottom left corners in its parent's px. Empty: not pinned. */
   "transform.pin": str("", null, "gpu", VISUAL),
   /** Warp mesh: "cols,rows;x,y;x,y;...", control points of a cols x rows grid, row-major, in the layer's parent px. Empty: off. */
@@ -320,7 +334,22 @@ const DEFS = {
   /** The point a rotation, scale or skew turns about (CSS `transform-origin`). Supports 9 preset pins, custom pins and coordinate strings. */
   "transform.origin": str("center", "transform-origin", "paint", VISUAL),
   /** CSS motion path (`offset-path`); the layer travels along it as `transform` does. */
-  "transform.motionPath": { valueType: "pathData", default: "", css: "offset-path", compositing: "gpu", animatable: true, scope: VISUAL },
+  /**
+   * A path the layer travels along (Phase 86), in px from where the layer rests: its centre sits on the path. Used when
+   * `motionPath.source` names no layer. The kernel turns the position on it into `transform.x` / `transform.y`
+   * (`core/paths/pathFollow.ts`), so it is not written as CSS `offset-path`.
+   */
+  "transform.motionPath": { valueType: "pathData", default: "", css: null, compositing: "gpu", animatable: true, scope: VISUAL },
+  /** The path layer this layer travels along (its id); the path is followed where it is drawn on the canvas. */
+  "motionPath.source": typed(str("", null, "gpu", VISUAL)),
+  /** How far along the path the layer is, 0 (the start) to 1 (the end), at constant speed. Keyframe it to travel. */
+  "motionPath.progress": typed(num(0, null, "gpu", VISUAL)),
+  /** Added to the progress: two layers on one path with different offsets follow each other. */
+  "motionPath.offset": typed(num(0, null, "gpu", VISUAL)),
+  /** The layer turns to face the way it is travelling. */
+  "motionPath.autoRotate": typed(flag(false, "gpu", VISUAL)),
+  /** Degrees added to the layer's rotation while it is on the path. */
+  "motionPath.rotate": typed(deg(0, null, "gpu", VISUAL)),
   /**
    * Transform parent layer ID (Phase 73, After Effects pick-whip parenting independent of the DOM layer tree).
    * Note: Canonical authoritative storage is `layer.parentRef`. This property entry is maintained
@@ -403,7 +432,9 @@ const DEFS = {
   "matte.mode": typed(oneOf(["none", "alpha", "alphaInverted", "luma", "lumaInverted"], "none", null, "paint", VISUAL)),
   "matte.showSource": typed(flag(false, "paint", VISUAL)),
   /** What a group was made for, so commands find it by this mark rather than by its name: `letters` (a text split into letters). */
-  "group.role": oneOf(["none", "letters"], "none", null, "none", only("container")),
+  "group.role": oneOf(["none", "letters", "words", "lines"], "none", null, "none", only("container")),
+  /** The text a letters, words or lines group was split from (Design track D12): what Re-detect puts back before it splits again. */
+  "split.source": str("", null, "none", only("container")),
   "filter.blur": px(0, "filter", "paint", VISUAL),
 
   // --- Typography (CONVENTIONS §4.2) ----------------------------------------
@@ -462,7 +493,17 @@ const DEFS = {
   "typography.verticalAlign": oneOf(["top", "middle", "bottom"], "top", null, "layout", only("text")),
   "typography.leadingTrim": oneOf(["none", "capHeight"], "none", null, "layout", only("text")),
   /** Text on a path as JSON (`{"d": "M…", "start": 0, "flip": false}`, the path in the layer's own space). */
+  /** Phase 125: text that fills a shape, as JSON (`{"d": "M…", "inset": 8}`, the outline in the text box's own space). */
+  "text.shape": typed(str("", null, "layout", only("text"))),
+  /** Phase 125: the text in columns (1 is none), with a gap between them. */
+  "typography.columns": ranged(num(1, "column-count", "layout", only("text"), false), { min: 1, max: 8 }),
+  "typography.columnGap": ranged(px(24, "column-gap", "layout", only("text")), { min: 0, max: 500 }),
   "typography.textPath": typed(str("", null, "layout", only("text"))),
+  /**
+   * Phase 124: where text on a path starts along it, in % of its length (it wins over the start stored with the path).
+   * Animatable: the motion engine writes it as the CSS variable `--ll-text-path-start`, and the text follows.
+   */
+  "typography.textPathStart": ranged(num(0, "--ll-text-path-start", "paint", only("text")), { min: -100, max: 200 }),
 
   // --- Surfaces (ROADMAP S2–S6) ---------------------------------------------------
   /** Flat (a normal fill) or inflated: the layer is a surface with height, lit by a studio light, that dents when pressed. */
@@ -526,6 +567,8 @@ const DEFS = {
   "content.isRichText": flag(false, "layout", only("text")),
   "content.icon": str("plus", null, "layout", only("fab")),
   "content.iconName": str("Sparkles", null, "layout", only("icon")),
+  /** Phase 126: the asset a layer was made from (an icon or a stock photo), where its source and licence are kept. */
+  "asset.source": str("", null, "none", ALL),
   /** Count-up text (PRD §5.2): the displayed number, formatted by the fields below. */
   "content.counter.value": typed(num(0, null, "layout", only("text"))),
   "content.counter.decimals": ranged(num(0, null, "layout", only("text"), false), { min: 0, max: 6, integer: true }),
@@ -623,6 +666,19 @@ const DEFS = {
   "speed.blur": ranged(num(0, null, "paint", VISUAL, false), { min: 0, max: 0.2 }),
   "speed.ref": ranged(num(1200, null, "paint", VISUAL, false), { min: 1, max: 20000 }),
   /** Smooth scrolling of the exported page (Design track D14): seconds to catch up with the wheel; 0 is the browser's own. Set on a page frame. */
+  /** Text motion (Design track D12): what a text shows as `text.fxProgress` goes 0 to 1; see `core/text/textFx.ts`. */
+  "text.fx": oneOf(["off", "scramble", "typewriter", "rotate", "countup"], "off", null, "none", TEXT_ONLY),
+  "text.fxProgress": ranged(num(1, null, "none", TEXT_ONLY, true), { min: 0, max: 1 }),
+  "text.fxSeed": ranged(num(0, null, "none", TEXT_ONLY, false), { min: 0, max: 100000, integer: true }),
+  "text.fxCaret": flag(false, "none", TEXT_ONLY),
+  "text.fxWords": str("", null, "none", TEXT_ONLY),
+  "text.fxDecimals": ranged(num(0, null, "none", TEXT_ONLY, false), { min: 0, max: 8, integer: true }),
+  /** Variable-font axis animation (Design track D12): the axis tag (wght, wdth, slnt, opsz) and its value. */
+  /** Gradient sheen (Design track D12): a band of light crossing the text, 0 to 1; below 0 is off. */
+  "text.sheen": ranged(num(-1, null, "none", TEXT_ONLY, true), { min: -1, max: 1 }),
+  "text.sheenColor": str("#ffffff", null, "none", TEXT_ONLY),
+  "text.axis": str("", null, "none", TEXT_ONLY),
+  "text.axisValue": ranged(num(400, null, "none", TEXT_ONLY, true), { min: -1000, max: 1000 }),
   "scroll.smooth": ranged(num(0, null, "none", ALL, false), { min: 0, max: 2 }),
   /** Cloner (Design track D9): copies as a grid, a ring, or filling the parent; see `core/render/cloner.ts`. Absolute layers only. */
   "clone.mode": oneOf(["off", "grid", "radial", "fill"], "off", null, "paint", VISUAL),
@@ -705,6 +761,10 @@ const DEFS = {
   "media.filter.brightness": num(1, "filter", "paint", IMAGE),
   "media.filter.contrast": num(1, "filter", "paint", IMAGE),
   "media.filter.saturate": num(1, "filter", "paint", IMAGE),
+  /** Phase 122: FigCraft's seven adjustments (each -1..1) as JSON, drawn by an SVG filter; the file is never changed. */
+  "media.adjust": typed(str("", null, "paint", IMAGE)),
+  /** Phase 122: a curve, a gradient map (duotone), sharpen, blur and "show original" as JSON (`paint/imageLook.ts`). */
+  "media.look": typed(str("", null, "paint", IMAGE)),
   "media.clipPath": { valueType: "clipPath", default: "none", css: "clip-path", compositing: "paint", animatable: true, scope: IMAGE },
   "media.overlay.color": color("#000000", "background-color", "paint", IMAGE),
   "media.overlay.opacity": num(0, "opacity", "gpu", IMAGE),
@@ -736,6 +796,26 @@ const DEFS = {
   "svg.strokeLinecap": typed(oneOf(["butt", "round", "square"], "butt", "stroke-linecap", "paint", SVG_STROKED)),
   "svg.strokeLinejoin": typed(oneOf(["miter", "round", "bevel"], "miter", "stroke-linejoin", "paint", SVG_STROKED)),
 
+  // --- Path morph and stroke drawing (Phase 85) ---------------------------------
+  // How a keyframed `svg.path` morphs (`core/paths/morphMatch.ts`), and how much of the stroke is drawn
+  // (`core/paths/strokeDraw.ts`). None has a CSS property of its own: the render definition and the engine make the
+  // path data and the dashes from them.
+  /** `auto` picks the start point and direction that move the points least; `order` morphs the paths as written. */
+  "morph.match": typed(oneOf(["auto", "order"], "auto", null, "paint", PATH_DRAWN)),
+  /** Moves the second path's start point on by this many points, after the automatic choice (closed paths). */
+  "morph.startOffset": ranged(num(0, null, "paint", PATH_DRAWN, false), { min: -256, max: 256, integer: true }),
+  /** Flips the second path's direction, after the automatic choice. */
+  "morph.reverse": typed(flag(false, "paint", PATH_DRAWN)),
+  /** The part of the stroke that is drawn, 0 to 1 along its length (After Effects' Trim Paths). */
+  "draw.start": ranged(num(0, null, "paint", PATH_DRAWN), { min: 0, max: 1 }),
+  "draw.end": ranged(num(1, null, "paint", PATH_DRAWN), { min: 0, max: 1 }),
+  /** Slides the drawn part along the path, in turns: 1 is once round. */
+  "draw.offset": typed(num(0, null, "paint", PATH_DRAWN)),
+  /** Draws from the path's other end. */
+  "draw.reverse": typed(flag(false, "paint", PATH_DRAWN)),
+  /** With several sub-paths: 0 draws them together, 1 one after another. */
+  "draw.stagger": ranged(num(0, null, "paint", PATH_DRAWN, false), { min: 0, max: 1 }),
+
   // --- Parametric shapes (Phase 7.6) -------------------------------------------
   // Geometry is the layer's frame; these are the shape's own parameters. Fill,
   // stroke and dash are the `svg.*` paths above. Render definitions: Phase 48.
@@ -753,6 +833,10 @@ const DEFS = {
   "shape.vertexRadius": ranged(px(0, null, "paint", only("polygon", "star")), { min: 0 }),
   /** Corner smoothing, 0 to 1: the continuous-curvature corner (0.6 is the iOS look). FigCraft port F1 (`core/geometry/shapes.ts`). */
   "shape.cornerSmoothing": ranged(num(0, null, "paint", only("rectangle", "polygon", "star")), { min: 0, max: 1 }),
+  /** The modifier stack (Phases 109–110): an ordered JSON list of { id, type, on, params }; see core/paths/modifiers.ts. */
+  "shape.modifiers": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "svgPath", "line"))),
+  /** How corners are shaped (Phase 107): round (with smoothing), cut, scoop or inverted (a square notch). */
+  "shape.cornerStyle": typed(oneOf(["round", "cut", "scoop", "inverted"], "round", null, "paint", only("rectangle", "polygon", "star"))),
   /** Ellipse arcs, pies and rings (FigCraft port F1): where the arc starts, clockwise from 3 o'clock, and how far it sweeps. */
   "shape.arcStart": ranged(deg(0, null, "paint", only("ellipse")), { min: -360, max: 360 }),
   "shape.arcSweep": ranged(deg(360, null, "paint", only("ellipse")), { min: -360, max: 360 }),
@@ -778,7 +862,7 @@ const DEFS = {
   /** Corners sharper than this ratio bevel instead of mitring (default 4, about 29°). */
   "stroke.miterLimit": ranged(num(4, "stroke-miterlimit", "paint", SVG_STROKED), { min: 1, max: 100 }),
   /** More than one stroke: a list of paints like `paint.fills`, first on top. When set it replaces the plain stroke colour. */
-  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath"))),
+  "paint.strokes": typed(str("", null, "paint", only("rectangle", "ellipse", "polygon", "star", "line", "svgPath", "text"))),
   "shape.headLength": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.headWidth": ranged(px(16, null, "paint", only("arrow")), { min: 0 }),
   "shape.shaftWidth": ranged(px(4, null, "paint", only("arrow")), { min: 0 }),

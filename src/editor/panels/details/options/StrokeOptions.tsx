@@ -8,6 +8,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { RowColorField } from "../controls/RowColorField";
 import { isPropertyLegalFor } from "@/core/document/properties";
 import type { InspectorSectionProps, StrokeItem } from "../types";
+import { WidthProfileOptions } from "./WidthProfileOptions";
 
 const NO_SVG_STROKE = "Cap, join and dash apply to shapes, vectors and icons, not to this layer";
 const NO_MITER = "Miter limit is not in the document model yet";
@@ -76,15 +77,17 @@ const JOIN_OPTIONS = [
 export interface StrokeRowOptionsProps extends InspectorSectionProps {
   stroke: StrokeItem;
   onChangeStroke: (patch: Partial<StrokeItem>) => void;
+  /** The layer keeps several strokes (Phase 118): the position belongs to this row. */
+  perStroke?: boolean;
 }
 
 /**
  * Everything one stroke row has, in the row's own popover: colour, width, style and sides belong to the row; position, cap,
  * join, miter and dash are the layer's single stroke settings, so they read and write the layer.
  */
-export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onChangeStroke, getValue, onUpdateProp, layer }) => {
+export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onChangeStroke, getValue, onUpdateProp, layer, perStroke = false }) => {
   const svgStroke = !layer || isPropertyLegalFor("svg.strokeLinecap", layer.archetype);
-  const position = (getValue?.("stroke.align") as "inside" | "center" | "outside") ?? "inside";
+  const position = (perStroke && stroke.align) || ((getValue?.("stroke.align") as "inside" | "center" | "outside") ?? "inside");
   const cap = (getValue?.("svg.strokeLinecap") as "butt" | "round" | "square") ?? "round";
   const join = (getValue?.("svg.strokeLinejoin") as "miter" | "round" | "bevel") ?? "round";
   const rawMiter = getValue?.("svg.strokeMiterlimit");
@@ -100,7 +103,7 @@ export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onCh
           <RowColorField hex={stroke.hex} label="Stroke colour picker" hexLabel="Stroke hex" onChange={(hex) => onChangeStroke({ hex })} />
         </OptionRow>
         <OptionRow label="Position">
-          <Select size="sm" aria-label="Stroke position" value={position} options={POSITION_OPTIONS} onChange={(val) => onUpdateProp?.("stroke.align", val as typeof position)} className="ll:w-full" />
+          <Select size="sm" aria-label="Stroke position" value={position} options={POSITION_OPTIONS} onChange={(val) => (perStroke ? onChangeStroke({ align: val as typeof position }) : onUpdateProp?.("stroke.align", val as typeof position))} className="ll:w-full" />
         </OptionRow>
         <OptionRow label="Width">
           <NumberField
@@ -123,6 +126,8 @@ export const StrokeRowOptions: React.FC<StrokeRowOptionsProps> = ({ stroke, onCh
           <SegmentedControl size="compact" ariaLabel="Stroke sides" options={SIDES_OPTIONS} value={stroke.sides} onChange={(sd) => onChangeStroke({ sides: sd })} className="ll:w-full" />
         </OptionRow>
       </OptionGroup>
+
+      {layer && isPropertyLegalFor("stroke.widthProfile", layer.archetype) && <WidthProfileOptions layer={layer} />}
 
       <OptionGroup>
         <OptionRow label="Cap">

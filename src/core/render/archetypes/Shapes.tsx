@@ -6,7 +6,7 @@ import { clampNumber } from "../limits";
 import { safeDashArray } from "../../paint/paints";
 import { ShapePaint, type Geometry } from "../shapePaint";
 import { strokeSettings } from "../strokePaint";
-import { ellipse as ellipseOutline, polygonPoints, smoothedPolygon, starPoints, roundedRect } from "../../geometry/shapes";
+import { ellipse as ellipseOutline, isCornerStyle, polygonPoints, smoothedPolygon, starPoints, roundedRect, type CornerStyle } from "../../geometry/shapes";
 import { BezPath } from "../../geometry/bezpath";
 
 /** Whether the layer sets its stroke's alignment (FigCraft port F3): then a rectangle or ellipse is drawn at its full box and the stroke placed by the alignment. */
@@ -75,17 +75,18 @@ export const Rectangle: React.FC<ArchetypeRenderProps> = (p) => {
   const h = Math.max(0, height - strokeWidth);
   const radii = rectangleRadii(p.resolved);
   const smoothing = clampNumber(p.resolved.num("shape.cornerSmoothing", 0), 0, 1, 0);
+  const style = cornerStyleOf(p.resolved);
   const uniform = radii.every((r) => r === radii[0]);
-  // a plain `<rect>` when it can say it (one radius, no smoothing); otherwise the outline from the shape geometry
-  const d = uniform && smoothing === 0 ? null : roundedRect(w, h, radii, smoothing).map((q) => ({ x: q.x + inset, y: q.y + inset })).toSvg();
+  // a plain `<rect>` when it can say it (one radius, no smoothing, round corners); otherwise the outline from the shape geometry
+  const d = uniform && smoothing === 0 && (style === "round" || radii[0] === 0) ? null : roundedRect(w, h, radii, smoothing, style).map((q) => ({ x: q.x + inset, y: q.y + inset })).toSvg();
   const radius = Math.min(radii[0], Math.min(w, h) / 2);
   return (
     <ShapeSvg {...p} width={width} height={height}>
       <ShapePaint
         layer={p.layer} resolved={p.resolved} width={width} height={height} defaultFill="#cbd5e1" defaultStroke="none" defaultStrokeWidth={0}
         geometry={(a) => (d ? <path {...a} d={d} /> : <rect {...a} x={inset} y={inset} width={w} height={h} rx={radius} />)}
-        outline={roundedRect(w, h, radii, smoothing).map((q) => ({ x: q.x + inset, y: q.y + inset }))}
-        rect={{ radii, smoothing }}
+        outline={roundedRect(w, h, radii, smoothing, style).map((q) => ({ x: q.x + inset, y: q.y + inset }))}
+        {...(style === "round" ? { rect: { radii, smoothing } } : {})}
       />
     </ShapeSvg>
   );
@@ -142,6 +143,12 @@ export const Line: React.FC<ArchetypeRenderProps> = (p) => {
   );
 };
 
+/** A shape's corner style (Phase 107); anything unknown is round. */
+export const cornerStyleOf = (resolved: ResolvedProps): CornerStyle => {
+  const v = resolved.str("shape.cornerStyle", "round");
+  return isCornerStyle(v) ? v : "round";
+};
+
 /** A polygon or star outline: plain points when it has no rounding, else the rounded (and smoothed) path. */
 function vertexGeometry(points: { x: number; y: number }[], resolved: ResolvedProps): Geometry {
   const radius = Math.max(0, resolved.num("shape.vertexRadius", 0));
@@ -152,7 +159,7 @@ function vertexGeometry(points: { x: number; y: number }[], resolved: ResolvedPr
       return <polygon {...a} points={pts} />;
     };
   }
-  const d = smoothedPolygon(points, radius, smoothing).toSvg();
+  const d = smoothedPolygon(points, radius, smoothing, cornerStyleOf(resolved)).toSvg();
   return function roundedOutline(a) {
     return <path {...a} d={d} />;
   };
@@ -160,7 +167,7 @@ function vertexGeometry(points: { x: number; y: number }[], resolved: ResolvedPr
 
 /** A polygon or star's outline as a path (its rounded and smoothed vertices included). */
 function vertexOutline(points: { x: number; y: number }[], resolved: ResolvedProps): BezPath {
-  return smoothedPolygon(points, Math.max(0, resolved.num("shape.vertexRadius", 0)), clampNumber(resolved.num("shape.cornerSmoothing", 0), 0, 1, 0));
+  return smoothedPolygon(points, Math.max(0, resolved.num("shape.vertexRadius", 0)), clampNumber(resolved.num("shape.cornerSmoothing", 0), 0, 1, 0), cornerStyleOf(resolved));
 }
 
 export const Polygon: React.FC<ArchetypeRenderProps> = (p) => {

@@ -13,12 +13,191 @@ import { assetSrc } from "@/core/assets/useAssetUrl";
 import { RowSettingsPopover } from "../controls/RowSettingsPopover";
 import { RowColorField } from "../controls/RowColorField";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
+import { ImageAdjustOptions } from "../options/ImageAdjustOptions";
 import type { InspectorSectionProps, FillItem } from "../types";
 import { useLayers } from "@/core/store/useDocumentStore";
 import { fillsOf, hasFills, setFills as setEngineFills } from "@/core/paint/paintOps";
 import { addPaint, changeType, movePaint, paintColor, removePaint, updatePaint } from "@/core/paint/paintEdits";
 import { parseCss, toHex, fromHex, toCss } from "@/core/paint/color";
-import type { Paint, PaintType } from "@/core/paint/paints";
+import type { Paint, PaintMask, PaintType } from "@/core/paint/paints";
+import { BLEND_MODES, type BlendMode } from "@/core/paint/color";
+import { Toggle } from "@/editor/components/Toggle";
+import { tileFromLayer } from "@/core/editing/patternTile";
+import { meshAt, newMesh } from "@/core/paint/mesh";
+import { useMeshEditStore } from "@/editor/stage/meshEditStore";
+import type { Layer } from "@/core/document/schema";
+
+/** Whether `ancestor` contains `id`. */
+const isAncestor = (layers: Readonly<Record<string, Layer>>, ancestor: string, id: string | null): boolean => {
+  let cur = id ? layers[id]?.parentId ?? null : null;
+  for (let g = 0; cur && g < 10_000; g++) {
+    if (cur === ancestor) return true;
+    cur = layers[cur]?.parentId ?? null;
+  }
+  return false;
+};
+
+/** Mesh gradient controls (Phase 115): the grid, smooth or linear blending, editing the points on the canvas, the picked point's colour. */
+function MeshControls({ paint: p, layerId, index, onChange }: { paint: Extract<Paint, { type: "mesh" }>; layerId: string; index: number; onChange: (next: Paint) => void }) {
+  const editing = useMeshEditStore((s) => s.layerId === layerId && s.fill === index);
+  const picked = useMeshEditStore((s) => s.point);
+  const edit = useMeshEditStore((s) => s.edit);
+  const stop = useMeshEditStore((s) => s.stop);
+  // a new grid keeps the look: each new point takes the colour the old mesh had there
+  const regrid = (cols: number, rows: number) => {
+    const fresh = newMesh(cols, rows);
+    const points = fresh.points.map((q, i) => {
+      const c = (i % cols) / (cols - 1);
+      const r = Math.floor(i / cols) / (rows - 1);
+      const [R, G, B] = meshAt(p, c * (p.cols - 1), r * (p.rows - 1)).rgba;
+      const hex = (n: number) => Math.round(n).toString(16).padStart(2, "0");
+      return { ...q, color: `#${hex(R)}${hex(G)}${hex(B)}` };
+    });
+    onChange({ ...p, cols, rows, points });
+  };
+  const point = editing && picked !== null ? p.points[picked] : undefined;
+  return (
+    <OptionGroup>
+      <OptionRow label="Columns">
+        <NumberField size="sm" aria-label="Mesh columns" value={p.cols} min={2} max={8} step={1} onChange={(v) => regrid(Math.round(Math.min(8, Math.max(2, v))), p.rows)} />
+      </OptionRow>
+      <OptionRow label="Rows">
+        <NumberField size="sm" aria-label="Mesh rows" value={p.rows} min={2} max={8} step={1} onChange={(v) => regrid(p.cols, Math.round(Math.min(8, Math.max(2, v))))} />
+      </OptionRow>
+      <OptionRow label="Smooth">
+        <Toggle size="sm" aria-label="Mesh smooth" checked={p.smooth} onChange={(on) => onChange({ ...p, smooth: on })} />
+      </OptionRow>
+      <OptionRow label="On canvas">
+        <Toggle size="sm" aria-label="Edit mesh points on canvas" checked={editing} onChange={(on) => (on ? edit(layerId, index) : stop())} />
+      </OptionRow>
+      {point && picked !== null && (
+        <OptionRow label={`Point ${picked + 1}`}>
+          <RowColorField hex={point.color.replace("#", "").toUpperCase()} label="Mesh point colour picker" hexLabel="Mesh point hex" onChange={(hex) => onChange({ ...p, points: p.points.map((q, i) => (i === picked ? { ...q, color: `#${hex}` } : q)) })} />
+        </OptionRow>
+      )}
+    </OptionGroup>
+  );
+}
+
+/** Noise and pattern controls (Phase 114). */
+function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { paint: Paint; layers: Readonly<Record<string, Layer>>; layerOptions: { value: string; label: string }[]; onChange: (next: Paint) => void }) {
+  if (p.type === "noise") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Kind">
+          <Select aria-label="Noise kind" size="sm" width="100%" options={[{ value: "grain", label: "Grain" }, { value: "noise", label: "Soft noise" }]} value={p.kind} onChange={(v) => onChange({ ...p, kind: v === "noise" ? "noise" : "grain" })} />
+        </OptionRow>
+        <OptionRow label="Size">
+          <NumberField size="sm" aria-label="Noise size" suffix="px" value={p.scale} min={0.5} max={2000} step={0.5} onChange={(v) => onChange({ ...p, scale: Math.max(0.5, v) })} />
+        </OptionRow>
+        <OptionRow label="Contrast">
+          <NumberField size="sm" aria-label="Noise contrast" unit="%" value={Math.round(p.contrast * 100)} min={0} max={100} onChange={(v) => onChange({ ...p, contrast: Math.min(1, Math.max(0, v / 100)) })} />
+        </OptionRow>
+        <OptionRow label="Seed">
+          <NumberField size="sm" aria-label="Noise seed" value={p.seed} min={0} max={1_000_000} step={1} onChange={(v) => onChange({ ...p, seed: Math.round(v) })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  if (p.type === "live") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Source">
+          <Select aria-label="Live fill source" size="sm" width="100%" placeholder="Choose a frame or component" options={layerOptions} value={p.source} onChange={(v) => onChange({ ...p, source: v })} />
+        </OptionRow>
+        <OptionRow label="Scale">
+          <NumberField size="sm" aria-label="Live fill scale" unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        </OptionRow>
+        <OptionRow label="Offset X">
+          <NumberField size="sm" aria-label="Live fill offset X" suffix="px" value={p.offset.x} onChange={(v) => onChange({ ...p, offset: { ...p.offset, x: v } })} />
+        </OptionRow>
+        <OptionRow label="Offset Y">
+          <NumberField size="sm" aria-label="Live fill offset Y" suffix="px" value={p.offset.y} onChange={(v) => onChange({ ...p, offset: { ...p.offset, y: v } })} />
+        </OptionRow>
+        <OptionRow label="Tile">
+          <Toggle size="sm" aria-label="Live fill tile" checked={p.tile} onChange={(on) => onChange({ ...p, tile: on })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  if (p.type === "pattern") {
+    return (
+      <OptionGroup>
+        <OptionRow label="Tile">
+          <Select
+            aria-label="Pattern tile from layer"
+            size="sm"
+            width="100%"
+            placeholder="Make the tile from a layer"
+            options={layerOptions}
+            value=""
+            onChange={(id) => {
+              const tile = tileFromLayer(id, layers);
+              if (tile) onChange({ ...p, tile });
+            }}
+          />
+        </OptionRow>
+        <OptionRow label="Scale">
+          <NumberField size="sm" aria-label="Pattern scale" unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        </OptionRow>
+        <OptionRow label="Spacing">
+          <NumberField size="sm" aria-label="Pattern spacing" suffix="px" value={p.spacing} min={0} max={2000} onChange={(v) => onChange({ ...p, spacing: Math.max(0, v) })} />
+        </OptionRow>
+        <OptionRow label="Rotation">
+          <NumberField size="sm" aria-label="Pattern rotation" suffix="°" value={p.rotation} min={-360} max={360} onChange={(v) => onChange({ ...p, rotation: v })} />
+        </OptionRow>
+      </OptionGroup>
+    );
+  }
+  return null;
+}
+
+/** Per-fill blend modes (FigCraft port F2), as the select lists them. */
+const FILL_BLEND_OPTIONS = BLEND_MODES.filter((b) => b !== "passThrough").map((b) => ({ value: b, label: b.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()) }));
+/** A fill's mask controls (Phase 113): the kind, then the fade's range and angle, or the layer and Outside. */
+function FillMaskControls({ mask: m, siblings, onSet }: { mask: PaintMask | undefined; siblings: { value: string; label: string }[]; onSet: (kind: string, patch?: Partial<{ start: number; end: number; angle: number; id: string; invert: boolean }>) => void }) {
+  return (
+    <OptionGroup>
+      <OptionRow label="Mask">
+        <Select aria-label="Fill mask" options={MASK_OPTIONS} value={m?.type ?? "none"} width="100%" size="sm" onChange={(v) => onSet(v)} />
+      </OptionRow>
+      {m && m.type !== "layer" && (
+        <>
+          <OptionRow label="Shown to">
+            <NumberField size="sm" aria-label="Mask start" title="Fully shown up to here" unit="%" value={Math.round(m.start * 100)} min={0} max={100} onChange={(v) => onSet(m.type, { start: v / 100 })} />
+          </OptionRow>
+          <OptionRow label="Gone at">
+            <NumberField size="sm" aria-label="Mask end" title="Faded out completely by here" unit="%" value={Math.round(m.end * 100)} min={0} max={100} onChange={(v) => onSet(m.type, { end: v / 100 })} />
+          </OptionRow>
+          {m.type !== "radial" && (
+            <OptionRow label="Angle">
+              <NumberField size="sm" aria-label="Mask angle" title={m.type === "linear" ? "0 fades downward, 90 to the right" : "Where the fade starts round the centre"} suffix="°" value={m.angle} step={1} onChange={(v) => onSet(m.type, { angle: v })} />
+            </OptionRow>
+          )}
+        </>
+      )}
+      {m && m.type === "layer" && (
+        <>
+          <OptionRow label="Layer">
+            <Select aria-label="Mask layer" options={siblings} value={m.id} width="100%" size="sm" placeholder="No sibling layer" onChange={(v) => onSet("layer", { id: v })} />
+          </OptionRow>
+          <OptionRow label="Outside">
+            <Toggle size="sm" aria-label="Mask invert" checked={m.invert} onChange={(on) => onSet("layer", { invert: on })} />
+          </OptionRow>
+        </>
+      )}
+    </OptionGroup>
+  );
+}
+
+/** Per-fill masks (Phase 113). */
+const MASK_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "linear", label: "Linear fade", hint: "Fades out along a direction" },
+  { value: "radial", label: "Radial fade", hint: "Fades out from the centre" },
+  { value: "conic", label: "Conic fade", hint: "Fades out round the centre" },
+  { value: "layer", label: "Another layer", hint: "Shows the fill inside (or outside) a sibling layer" },
+];
 
 const hexOf = (css: string): string => {
   const c = parseCss(css);
@@ -50,6 +229,7 @@ const applyItem = (p: Paint, patch: Partial<FillItem>): Paint => {
   if (patch.type && patch.type !== (p.type === "diamond" ? "radial" : p.type)) next = changeType(next, patch.type as PaintType);
   if (patch.hex !== undefined && patch.hex.length === 6) {
     if (next.type === "solid") next = { ...next, color: cssOfHex(patch.hex, next.color) };
+    else if (next.type === "noise") next = { ...next, color: cssOfHex(patch.hex, next.color) };
     else if ("stops" in next) next = { ...next, stops: next.stops.map((s, k) => (k === 0 ? { ...s, color: cssOfHex(patch.hex!, s.color) } : s)) } as Paint;
   }
   if (patch.opacity !== undefined) next = { ...next, opacity: patch.opacity / 100 };
@@ -77,6 +257,10 @@ const PAINT_OPTIONS = [
   { value: "radial", label: "Radial" },
   { value: "conic", label: "Conic" },
   { value: "image", label: "Image" },
+  { value: "noise", label: "Noise", hint: "Seeded grain or soft noise" },
+  { value: "pattern", label: "Pattern", hint: "Shapes repeated as a tile" },
+  { value: "mesh", label: "Mesh", hint: "A grid of colour points you drag on the canvas" },
+  { value: "live", label: "Live", hint: "Another frame or component, drawn inside and kept up to date" },
 ] as const;
 
 const IMAGE_FIT_OPTIONS = [
@@ -119,6 +303,31 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const engine = Boolean(layer && hasFills(layer.archetype) && primary);
   const enginePaints: Paint[] = engine && primary ? fillsOf(primary) : [];
   const writeEngine = (next: Paint[]) => setEngineFills(engineIds, next);
+  const allLayers = useLayers();
+  /** The layers a fill can be masked by: this layer's siblings. */
+  const siblingOptions = (() => {
+    const me = primary ? allLayers[primary] : undefined;
+    const parent = me?.parentId ? allLayers[me.parentId] : undefined;
+    return (parent?.children ?? []).filter((c) => c !== primary && allLayers[c]).map((c) => ({ value: c, label: allLayers[c].name || c }));
+  })();
+  /** Sets one fill's mask (Phase 113); "none" removes it. */
+  const setMask = (index: number, kind: string, patch: Partial<{ start: number; end: number; angle: number; id: string; invert: boolean }> = {}) => {
+    writeEngine(
+      updatePaint(enginePaints, index, (p) => {
+        if (kind === "none") {
+          const { mask: _drop, ...rest } = p;
+          void _drop;
+          return rest as Paint;
+        }
+        const was = p.mask;
+        const mask: PaintMask =
+          kind === "layer"
+            ? { type: "layer", id: patch.id ?? (was?.type === "layer" ? was.id : siblingOptions[0]?.value ?? ""), invert: patch.invert ?? (was?.type === "layer" ? was.invert : false) }
+            : { type: kind as "linear" | "radial" | "conic", start: patch.start ?? (was && was.type !== "layer" ? was.start : 0.4), end: patch.end ?? (was && was.type !== "layer" ? was.end : 1), angle: patch.angle ?? (was && was.type !== "layer" ? was.angle : 0) };
+        return { ...p, mask };
+      }),
+    );
+  };
 
   const [localFills, setFills] = useState<FillItem[]>([
     {
@@ -487,7 +696,19 @@ export const FillSection: React.FC<FillSectionProps> = ({
                     onChange={(v) => handleUpdateFill(fill.id, { opacity: Math.max(0, Math.min(100, Math.round(v))) })}
                   />
                 </OptionRow>
+                {engine && enginePaints[index] && (
+                  <OptionRow label="Blend">
+                    <Select aria-label="Fill blend mode" options={FILL_BLEND_OPTIONS} value={enginePaints[index].blend ?? "normal"} width="100%" size="sm" onChange={(v) => writeEngine(updatePaint(enginePaints, index, (p) => (v === "normal" ? (({ blend: _b, ...rest }) => (void _b, rest as Paint))(p) : { ...p, blend: v as BlendMode })))} />
+                  </OptionRow>
+                )}
               </OptionGroup>
+              {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern" || enginePaints[index].type === "live") && (
+                <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary && !isAncestor(allLayers, l.id, primary)).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
+              )}
+              {engine && primary && enginePaints[index]?.type === "mesh" && (
+                <MeshControls paint={enginePaints[index] as Extract<Paint, { type: "mesh" }>} layerId={primary} index={index} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
+              )}
+              {engine && enginePaints[index] && <FillMaskControls mask={enginePaints[index].mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />}
               {engine && fill.stops && fill.stops.length >= 2 && (
                 <OptionGroup>
                   <div className="ll:flex ll:items-center ll:justify-between ll:min-h-7">
@@ -545,6 +766,9 @@ export const FillSection: React.FC<FillSectionProps> = ({
                     <CutoutDialog layerId={primary as string} fill={pictureOf(fill.id)!} onClose={() => setCuttingFill(null)} />
                   )}
                 </OptionGroup>
+              )}
+              {engine && fill.type === "image" && primary && (
+                <ImageAdjustOptions layerId={primary as string} fill={indexOf(fill.id)} />
               )}
             </RowSettingsPopover>
           </div>

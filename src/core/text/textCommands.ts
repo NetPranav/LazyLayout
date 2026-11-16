@@ -12,7 +12,7 @@ import { useCanvasViewStore } from "../store/useCanvasViewStore";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { useToolStore } from "../store/useToolStore";
 import { runsText, serializeRuns, type TextRun } from "./runs";
-import { attachToPath, detachFromPath, indentList, setList, setListStart, setTextPath } from "./textOps";
+import { attachToPath, detachFromPath, fillShape, indentList, releaseShape, setList, setListStart, setShapeInset, setTextPath } from "./textOps";
 
 /** The one selected text layer that can be edited (not locked, not hidden inside a locked parent), or null. */
 export function editableTextSelection(): string | null {
@@ -121,6 +121,22 @@ export function registerTextCommands(): () => void {
       },
     }),
     defineTypedCommand({ id: "text.setPath", title: "Set Text Path", category, args: z.object({ start: z.number().min(0).max(1).optional(), flip: z.boolean().optional(), ids: z.array(z.string()).optional() }), run: ({ start, flip, ids }) => ({ changed: setTextPath(ids ?? useSelectionStore.getState().selectedIds, { start, flip }) }) }),
+    // Phase 125: text that fills a shape
+    defineTypedCommand({
+      id: "text.fillShape",
+      title: "Fill Shape with Text",
+      category,
+      args: z.object({ text: z.string().optional(), shape: z.string().optional(), inset: z.number().min(0).max(500).optional() }).default({}),
+      run: ({ text, shape, inset }) => {
+        const sel = useSelectionStore.getState().selectedIds;
+        const layers = getDocument().layers;
+        const t = text ?? sel.find((id) => layers[id]?.archetype === "text");
+        const s = shape ?? sel.find((id) => layers[id] && layers[id].archetype !== "text");
+        return { ok: !!t && !!s && fillShape(t, s, inset) };
+      },
+    }),
+    defineTypedCommand({ id: "text.setShapeInset", title: "Set Text Inset in Shape", category, args: z.object({ inset: z.number().min(0).max(500), ids: z.array(z.string()).optional() }), run: ({ inset, ids }) => ({ changed: setShapeInset(ids ?? useSelectionStore.getState().selectedIds, inset) }) }),
+    defineTypedCommand({ id: "text.releaseShape", title: "Take Text out of Shape", category, args: z.object({ ids: z.array(z.string()).optional() }).default({}), run: ({ ids }) => ({ changed: releaseShape(ids ?? useSelectionStore.getState().selectedIds) }) }),
     defineTypedCommand({ id: "text.detachFromPath", title: "Take Text off Path", category, args: z.object({ ids: z.array(z.string()).optional() }).default({}), run: ({ ids }) => ({ changed: detachFromPath(ids ?? useSelectionStore.getState().selectedIds) }) }),
   ];
   return () => offs.forEach((off) => off());

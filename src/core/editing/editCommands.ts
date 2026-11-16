@@ -19,6 +19,7 @@ import { anchorName, anchorOf, scaleAnchor, scaleSelection, setScaleAnchor } fro
 import { renameLayers, reorderSelection, selectionColors, selectWithColor, setSelectionPaint, setSelectionSpacing } from "./selectionTools";
 import { isEditingPath } from "../store/useVectorEditStore";
 import { z } from "zod";
+import { parseFills } from "../paint/paints";
 import { registerTextCommands } from "../text/textCommands";
 import { registerLayoutCommands } from "./layoutCommands";
 import { registerBreakpointCommands } from "../breakpoints/breakpointCommands";
@@ -27,7 +28,7 @@ import { registerComponentCommands } from "../components/componentCommands";
 import { registerPageCommands } from "../pages/pageCommands";
 import { registerExportCommands } from "../export/site/exportCommands";
 import { moveLayers } from "../layers/reparent";
-import { cannotSplit, measureLettersOf, splitIntoLetters, splitText, animateLetters } from "./splitText";
+import { cannotSplit, measureLettersOf, splitIntoLetters, splitText, animateLetters, unsplitText } from "./splitText";
 import { standLetters, extrudeLetters, removeDepth } from "./standingLetters";
 import { showToast, useLayersUiStore } from "../store/useLayersUiStore";
 import { importAndPlace } from "../assets/assetImport";
@@ -36,6 +37,15 @@ import { BLEND_MODES } from "../paint/color";
 import { makeNetwork, paintBucket, setNetworkPoint } from "./networkOps";
 import { flattenBooleanGroups, makeBooleanGroup, setBooleanOperation } from "./booleanGroups";
 import { outlineStrokes } from "./outlineStroke";
+import { addModifier, moveModifier, removeModifier, setModifier } from "./modifierOps";
+import { applyFrostedGlass } from "./effectsIIOps";
+import { setImageEdit } from "./imageEditOps";
+import { fixContrast, savePalette, saveHarmony, saveScale } from "./colorToolOps";
+import { useMediaLibraryStore } from "../store/useMediaLibraryStore";
+import { makeSpace, releaseSpace, setCamera, setDepth, setSpace } from "./spaceOps";
+import { arrange3d } from "./arrange3d";
+import { applyCalligraphic, applyWidthProfile, removeWidthProfile, renameWidthProfile, saveWidthProfile } from "./widthProfileOps";
+import { divideLayers, joinLayers, knifeLayers, offsetLayers, reverseLayers, simplifyLayers, smoothLayers } from "./pathToolOps";
 import { registerAgentCommands } from "../agent/agentCommands";
 import { register3dCommands } from "../3d/commands";
 import { register3dPrimitiveCommands } from "../3d/primitives";
@@ -203,6 +213,29 @@ export function registerEditingCommands(): () => void {
       },
     }));
   }
+  // Design track D12: lines are detected from how the text wraps, so they are detected again after the fonts load or the box changes
+  add(defineTypedCommand({
+    id: "text.redetectLines",
+    title: "Re-detect Lines",
+    category: "Text",
+    args: z.object({ id: z.string().optional() }).default({}),
+    run: ({ id }) => {
+      const doc = getDocument();
+      const targets = (id ? [id] : ids()).filter((t) => doc.layers[t]?.properties["group.role"] === "lines");
+      let n = 0;
+      for (const g of targets) {
+        const text = unsplitText(g);
+        if (!text) continue;
+        n++;
+        // the text has to be drawn before it can be measured
+        setTimeout(() => {
+          const out = splitText(text, "lines");
+          if (!out.group && out.why) showToast(out.why);
+        }, 120);
+      }
+      return { redetected: n };
+    },
+  }));
   add(defineTypedCommand({
     id: "text.animateLetters",
     title: "Animate Letters",
@@ -339,8 +372,18 @@ export function registerEditingCommands(): () => void {
   const stop = z.object({ at: z.number(), color: z.string() });
   const pt = z.object({ x: z.number(), y: z.number() });
   // FigCraft port F2: every paint may carry a blend mode; images take the seven adjustments; diamond is a gradient type
-  const paintBase = { opacity: z.number().min(0).max(1).default(1), visible: z.boolean().default(true), blend: z.enum(BLEND_MODES).optional() };
+  // Phases 113 and 117–118: any paint may carry a mask, and a stroke paint its own weight and position
+  const paintBase = {
+    opacity: z.number().min(0).max(1).default(1),
+    visible: z.boolean().default(true),
+    blend: z.enum(BLEND_MODES).optional(),
+    mask: z.object({ type: z.string() }).passthrough().optional(),
+    weight: z.number().min(0).max(1000).optional(),
+    align: z.enum(["inside", "center", "outside"]).optional(),
+  };
   const adjust = z.object({ exposure: z.number(), contrast: z.number(), saturation: z.number(), temperature: z.number(), tint: z.number(), highlights: z.number(), shadows: z.number() }).partial().optional();
+  // Phase 122: a curve, a gradient map, sharpen, blur and "show original"
+  const lookSchema = z.object({ curve: z.array(z.number()).length(5).optional(), map: z.array(stop).min(2).max(8).optional(), sharpen: z.number().min(0).max(1).optional(), blur: z.number().min(0).max(100).optional(), bypass: z.boolean().optional() }).optional();
   const paintSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("solid"), color: z.string(), ...paintBase }),
     z.object({ type: z.literal("linear"), stops: z.array(stop).min(2).max(32), from: pt, to: pt, ...paintBase }),
@@ -350,12 +393,19 @@ export function registerEditingCommands(): () => void {
     z.object({
       type: z.literal("image"), src: z.string().max(200_000), mode: z.enum(["fill", "fit", "crop", "tile"]).default("fill"),
       crop: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).default({ x: 0, y: 0, w: 1, h: 1 }), scale: z.number().default(1),
-      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, ...paintBase,
+      natural: z.object({ w: z.number(), h: z.number() }).optional(), brightness: z.number().default(1), contrast: z.number().default(1), saturation: z.number().default(1), adjust, look: lookSchema, ...paintBase,
     }),
+    // Phases 114–116: procedural, mesh and live fills (their own fields are checked by the paint reader below)
+    z.object({ type: z.literal("noise"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("pattern"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("mesh"), ...paintBase }).passthrough(),
+    z.object({ type: z.literal("live"), source: z.string(), ...paintBase }).passthrough(),
   ]);
-  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), fills as Paint[]) }) }));
+  /** A list as the renderer reads it: each paint's values made safe, anything it can't draw left out. */
+  const readPaints = (list: unknown[]): Paint[] => parseFills(JSON.stringify(list)) ?? [];
+  add(defineTypedCommand({ id: "paint.setFills", title: "Set Fills", category: "Layer", args: z.object({ ids: targets, fills: z.array(paintSchema).max(16) }), run: ({ ids: t, fills }) => ({ changed: setFills(t ?? ids(), readPaints(fills)) }) }));
   // FigCraft port F3: several stroke paints, and the stroke's alignment, per-side weights, width profile, caps and miter limit
-  add(defineTypedCommand({ id: "paint.setStrokes", title: "Set Strokes", category: "Layer", args: z.object({ ids: targets, strokes: z.array(paintSchema).max(16) }), run: ({ ids: t, strokes }) => ({ changed: setStrokes(t ?? ids(), strokes as Paint[]) }) }));
+  add(defineTypedCommand({ id: "paint.setStrokes", title: "Set Strokes", category: "Layer", args: z.object({ ids: targets, strokes: z.array(paintSchema).max(16) }), run: ({ ids: t, strokes }) => ({ changed: setStrokes(t ?? ids(), readPaints(strokes)) }) }));
   const cap = z.enum(["none", "round", "square", "lineArrow", "triangleArrow", "reversedTriangle", "circleFilled", "diamondFilled"]);
   add(defineTypedCommand({
     id: "stroke.set",
@@ -372,9 +422,65 @@ export function registerEditingCommands(): () => void {
     }),
     run: ({ ids: t, ...patch }) => ({ changed: setStrokeSettings(t ?? ids(), patch) }),
   }));
-  const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true) });
+  // Phase 119: width profiles to reuse, and the calligraphic profile of a layer's own path
+  const widthPoints = z.array(z.object({ t: z.number(), scale: z.number(), bias: z.number().optional() })).min(1).max(64);
+  add(defineTypedCommand({ id: "stroke.saveWidthProfile", title: "Save Width Profile", category: "Layer", args: z.object({ name: z.string().min(1).max(60), points: widthPoints.optional(), layerId: z.string().optional() }), run: ({ name, points, layerId }) => ({ id: saveWidthProfile(name, { points, layerId: points ? undefined : (layerId ?? ids()[0]) }) }) }));
+  add(defineTypedCommand({ id: "stroke.applyWidthProfile", title: "Apply Width Profile", category: "Layer", args: z.object({ ids: targets, profile: z.string() }), run: ({ ids: t, profile }) => ({ changed: applyWidthProfile(t ?? ids(), profile) }) }));
+  add(defineTypedCommand({ id: "stroke.renameWidthProfile", title: "Rename Width Profile", category: "Layer", args: z.object({ profile: z.string(), name: z.string().min(1).max(60) }), run: ({ profile, name }) => ({ ok: renameWidthProfile(profile, name) }) }));
+  add(defineTypedCommand({ id: "stroke.removeWidthProfile", title: "Delete Width Profile", category: "Layer", args: z.object({ profile: z.string() }), run: ({ profile }) => ({ ok: removeWidthProfile(profile) }) }));
+  add(defineTypedCommand({ id: "stroke.calligraphic", title: "Calligraphic Stroke", category: "Layer", args: z.object({ ids: targets, angle: z.number().min(-360).max(360).default(45), thin: z.number().min(0).max(1).default(0.15) }), run: ({ ids: t, angle, thin }) => ({ changed: applyCalligraphic(t ?? ids(), angle, thin) }) }));
+  // Phase 127: 2.5D spaces: a frame or group a 3D space for its children, each child with a depth and a tilt
+  add(defineTypedCommand({ id: "space.make", title: "Make 3D Space", category: "Layer", args: z.object({ ids: targets, perspective: z.number().min(50).max(10_000).optional() }).default({}), run: ({ ids: t, perspective }) => ({ changed: makeSpace(t ?? ids(), perspective) }) }));
+  add(defineTypedCommand({ id: "space.release", title: "Flatten 3D Space", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: releaseSpace(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "space.set", title: "Set 3D Space", category: "Layer", args: z.object({ id: z.string().optional(), perspective: z.number().optional(), vanishX: z.number().optional(), vanishY: z.number().optional(), viewX: z.number().optional(), viewY: z.number().optional() }), run: ({ id, ...patch }) => ({ ok: setSpace(id ?? ids()[0] ?? "", patch) }) }));
+  add(defineTypedCommand({ id: "space.setDepth", title: "Set Depth in 3D Space", category: "Layer", args: z.object({ ids: targets, z: z.number().optional(), tiltX: z.number().optional(), tiltY: z.number().optional() }), run: ({ ids: t, ...patch }) => ({ changed: setDepth(t ?? ids(), patch) }) }));
+  // Phase 129: a space's depth camera: pan, dolly, focus and aperture
+  add(defineTypedCommand({ id: "space.setCamera", title: "Move Camera", category: "Layer", args: z.object({ id: z.string().optional(), x: z.number().optional(), y: z.number().optional(), z: z.number().optional(), focus: z.number().optional(), aperture: z.number().min(0).max(50).optional() }), run: ({ id, ...patch }) => ({ ok: setCamera(id ?? ids()[0] ?? "", patch) }) }));
+  // Phase 128: a group's children arranged in 3D (each stays a real layer)
+  add(defineTypedCommand({
+    id: "space.arrange",
+    title: "Arrange in 3D",
+    category: "Layer",
+    args: z.object({ id: z.string().optional(), kind: z.enum(["ring", "dome", "helix", "sphere", "cylinder", "wall", "stack"]), radius: z.number().min(1).max(10_000).optional(), spacing: z.number().min(0).max(10_000).optional(), facing: z.enum(["centre", "viewer", "outward"]).optional() }),
+    run: ({ id, kind, ...options }) => ({ moved: arrange3d(id ?? ids()[0] ?? "", kind, options) }),
+  }));
+  // Phase 126: icons and stock photos, each kept in the asset store with its source and licence
+  add(defineTypedCommand({ id: "insert.media", title: "Icons & Photos…", category: "Insert", args: z.object({ tab: z.enum(["icons", "photos"]).optional() }).default({}), run: ({ tab }) => (useMediaLibraryStore.getState().open(tab), { ok: true }) }));
+  // Phase 123: colour tools, saved as colour tokens; and a text's contrast fixed
+  const harmonyRule = z.enum(["complementary", "splitComplementary", "analogous", "triad", "tetrad", "monochrome"]);
+  add(defineTypedCommand({ id: "color.savePalette", title: "Save Palette as Tokens", category: "Layer", args: z.object({ name: z.string().min(1).max(80), colors: z.array(z.string().max(64)).min(1).max(16) }), run: ({ name, colors }) => ({ ids: savePalette(name, colors) }) }));
+  add(defineTypedCommand({ id: "color.harmony", title: "Save Colour Harmony", category: "Layer", args: z.object({ name: z.string().min(1).max(80), color: z.string().max(64), rule: harmonyRule }), run: ({ name, color, rule }) => ({ ids: saveHarmony(name, color, rule) }) }));
+  add(defineTypedCommand({ id: "color.scale", title: "Save Tints and Shades", category: "Layer", args: z.object({ name: z.string().min(1).max(80), color: z.string().max(64) }), run: ({ name, color }) => ({ ids: saveScale(name, color) }) }));
+  add(defineTypedCommand({ id: "color.fixContrast", title: "Fix Text Contrast", category: "Layer", args: z.object({ ids: targets, wcag: z.number().min(1).max(21).optional(), apca: z.number().min(0).max(110).optional() }), run: ({ ids: t, wcag, apca }) => ({ changed: fixContrast(t ?? ids(), wcag === undefined && apca === undefined ? { wcag: 4.5 } : { wcag, apca }) }) }));
+  // Phase 122: image adjustments and looks, on an image layer or an image fill; the file is never changed
+  add(defineTypedCommand({
+    id: "image.adjust",
+    title: "Adjust Image",
+    category: "Layer",
+    args: z.object({ ids: targets, fill: z.number().int().min(0).max(15).optional(), adjust: adjust.nullable(), look: lookSchema.nullable() }),
+    run: ({ ids: t, fill, adjust: a, look }) => ({ changed: setImageEdit(t ?? ids(), { adjust: a, look }, fill) }),
+  }));
+  // Phase 121: the frosted-glass preset
+  add(defineTypedCommand({ id: "effects.frostedGlass", title: "Frosted Glass", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: applyFrostedGlass(t ?? ids()) }) }));
+  const shadowSchema = z.object({ kind: z.enum(["drop", "inner"]), x: z.number(), y: z.number(), blur: z.number().min(0), spread: z.number(), color: z.string(), visible: z.boolean().default(true), glow: z.boolean().optional() });
   // FigCraft port F4: vector networks on path layers
   add(defineTypedCommand({ id: "vector.outlineStroke", title: "Outline Stroke", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: outlineStrokes(t ?? ids()) }) }));
+  // Phase 109: the modifier stack
+  const modType = z.enum(["repeat", "trim", "offset", "round", "twist", "bend", "wiggle", "zigzag", "pucker", "spherize", "scatter", "cells", "grid", "rings", "flow"]);
+  const modParams = z.record(z.string(), z.union([z.number(), z.string()]));
+  add(defineTypedCommand({ id: "layer.addModifier", title: "Add Modifier", category: "Layer", args: z.object({ id: z.string().optional(), type: modType, params: modParams.optional() }), run: ({ id, type, params }) => ({ id: addModifier(id ?? ids()[0] ?? "", type, params) }) }));
+  add(defineTypedCommand({ id: "layer.setModifier", title: "Change Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string(), on: z.boolean().optional(), params: modParams.optional() }), run: ({ id, modifier, on, params }) => ({ ok: setModifier(id ?? ids()[0] ?? "", modifier, { on, params }) }) }));
+  add(defineTypedCommand({ id: "layer.moveModifier", title: "Move Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string(), to: z.number().int().min(0).max(31) }), run: ({ id, modifier, to }) => ({ ok: moveModifier(id ?? ids()[0] ?? "", modifier, to) }) }));
+  add(defineTypedCommand({ id: "layer.removeModifier", title: "Remove Modifier", category: "Layer", args: z.object({ id: z.string().optional(), modifier: z.string() }), run: ({ id, modifier }) => ({ ok: removeModifier(id ?? ids()[0] ?? "", modifier) }) }));
+  // Phase 106: path operations
+  const strength = z.number().min(0).max(1);
+  add(defineTypedCommand({ id: "vector.offset", title: "Offset Path", category: "Layer", args: z.object({ ids: targets, distance: z.number().min(-2000).max(2000), join: z.enum(["round", "miter", "bevel"]).default("round") }), run: ({ ids: t, distance, join }) => ({ changed: offsetLayers(t ?? ids(), distance, join) }) }));
+  add(defineTypedCommand({ id: "vector.simplify", title: "Simplify Path", category: "Layer", args: z.object({ ids: targets, strength: strength.default(0.5) }).default({ strength: 0.5 }), run: ({ ids: t, strength: s }) => ({ changed: simplifyLayers(t ?? ids(), s) }) }));
+  add(defineTypedCommand({ id: "vector.smooth", title: "Smooth Path", category: "Layer", args: z.object({ ids: targets, strength: strength.default(0.5) }).default({ strength: 0.5 }), run: ({ ids: t, strength: s }) => ({ changed: smoothLayers(t ?? ids(), s) }) }));
+  add(defineTypedCommand({ id: "vector.reverse", title: "Reverse Path Direction", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: reverseLayers(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "vector.divide", title: "Divide", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ ids: divideLayers(t ?? ids()) }) }));
+  add(defineTypedCommand({ id: "vector.knife", title: "Knife", category: "Layer", args: z.object({ ids: targets, points: z.array(z.tuple([z.number(), z.number()])).min(2).max(10_000) }), run: ({ ids: t, points }) => ({ ids: knifeLayers(t ?? ids(), points.map(([x, y]) => ({ x, y }))) }) }));
+  add(defineTypedCommand({ id: "vector.join", title: "Join Paths", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ id: joinLayers(t ?? ids()) }) }));
   add(defineTypedCommand({ id: "vector.makeNetwork", title: "Make Vector Network", category: "Layer", args: z.object({ ids: targets }).default({}), run: ({ ids: t }) => ({ changed: makeNetwork(t ?? ids()) }) }));
   add(defineTypedCommand({
     id: "vector.paintBucket",
@@ -563,7 +669,8 @@ export function registerEditingCommands(): () => void {
   add(registerViewport3dCommands());
   add(installAddAtCursorWrapper());
   add(registerTemplateCommands());
-  add(installClipboardEvents(window));
+  // (the browser's clipboard events only where there is a browser: tests register the commands in Node)
+  if (typeof window !== "undefined") add(installClipboardEvents(window));
   return () => offs.forEach((off) => off());
 }
 

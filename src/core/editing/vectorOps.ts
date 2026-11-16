@@ -12,7 +12,10 @@
 import type { Layer } from "../document/schema";
 import type { PropValue } from "../document/registry";
 import { effectiveFills } from "../paint/paints";
-import { booleanShapes, flatten, ringsToPathData, type BooleanOp, type Ring } from "../paths/booleans";
+import type { BooleanOp } from "../paths/booleans";
+import { bezToSubPaths, subPathsToBez } from "../paths/bezBridge";
+import { booleanPaths, simplifyPath } from "../paths/pathOps";
+import { toPathSpace } from "../paths/pathLayer";
 import { ellipseSubPath, nodeCountOf, parsePathData, parsePoints, polySubPath, rectSubPath, type SubPath } from "../paths/pathData";
 import { PATH_SPACE, pathFrame, serializePathNodes, buildPath } from "../paths/pathLayer";
 import { nodesToPathData, type PathNode, type Vec } from "../paths/pathFit";
@@ -121,11 +124,19 @@ export function booleanLayers(op: BooleanOp, ids: readonly string[], boxOf: (id:
   const layers = getDocument().layers;
   const usable = ids.filter((id) => isVectorSource(layers[id]) && layers[id].locked !== true && boxOf(id));
   if (usable.length < 2) return null;
-  const shapes = usable.map((id) => {
-    const subs = layerSubPaths(layers[id], boxOf(id)!) ?? [];
-    return { rings: subs.map((s) => flatten(s.nodes, s.closed)) };
-  });
-  const result = booleanShapes(op, shapes);
+  // Phase 103: combined on the curves themselves, so the result's curves are pieces of the layers' own curves.
+  // A layer's subpaths fill by the even-odd rule (an inner ring is a hole), as in Phase 40.
+  const shapes = usable.map((id) => subPathsToBez((layerSubPaths(layers[id], boxOf(id)!) ?? []).map((s) => ({ ...s, closed: true }))));
+  if (shapes[0].isEmpty()) return null;
+  let combined = simplifyPath(shapes[0], "evenodd");
+  for (const next of shapes.slice(1)) {
+    if (next.isEmpty()) {
+      if (op === "intersect") return null;
+      continue;
+    }
+    combined = booleanPaths(combined, next, op, "evenodd", "evenodd");
+  }
+  const result = bezToSubPaths(combined).filter((s) => s.nodes.length >= 2);
   if (result.length === 0) return null;
   const first = layers[usable[0]];
   const parentId = first.parentId;
@@ -135,21 +146,17 @@ export function booleanLayers(op: BooleanOp, ids: readonly string[], boxOf: (id:
   const style = styleProps(first);
   const sw = num(style["svg.strokeWidth"], 2);
   // one outline and no hole is a plain editable path; anything else is a compound path drawn with the even-odd rule
-  const simple = result.length === 1 && result[0].length === 1;
-  const flatNodes: PathNode[] = result.flat().flat().map((p) => ({ x: p.x, y: p.y }));
-  const frame = pathFrame(flatNodes, false, sw);
   let props: Record<string, PropValue>;
-  if (simple) {
-    props = pathProps(result[0][0].map((p) => ({ x: p.x, y: p.y })), true, sw, origin);
+  if (result.length === 1) {
+    props = pathProps(result[0].nodes, true, sw, origin);
   } else {
-    const k = PATH_SPACE;
-    const unit: Ring[][] = result.map((poly) => poly.map((ring) => ring.map((p) => ({ x: ((p.x - frame.x) / frame.width) * k, y: ((p.y - frame.y) / frame.height) * k }))));
+    const frame = pathFrame(result.flatMap((s) => s.nodes), false, sw);
     props = {
       "frame.x": r2(frame.x - origin.x),
       "frame.y": r2(frame.y - origin.y),
       "frame.width": frame.width,
       "frame.height": frame.height,
-      "svg.path": ringsToPathData(unit),
+      "svg.path": result.map((s) => nodesToPathData(toPathSpace(s.nodes, frame), true)).join(""),
       "svg.nodes": "",
       "svg.network": "",
       "svg.fillRule": "evenodd",

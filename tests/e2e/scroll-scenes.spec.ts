@@ -109,4 +109,46 @@ test.describe("Scroll scenes (D11)", () => {
     await scrollTo(scroller, 1500); // 300 px past the end of the hold: it has scrolled 300 up
     await expect.poll(async () => Math.abs((await top()) - -300 * k), { message: "scrolls on", timeout: 8000 }).toBeLessThan(4 * k + 1);
   });
+
+  test("the scroll simulator scrubs the page: the slider and real scrolling give the same result", async ({ page }) => {
+    const ids = await tallPage(page);
+    await selectRow(page, ids.a);
+    await chooseOption(page, "Scroll property", "Position Y");
+    await num(page, "Scroll to", -300);
+    await page.getByRole("button", { name: "Add scroll animation", exact: true }).click();
+    await page.getByRole("button", { name: "Preview the page to scrub its scroll", exact: true }).click();
+    const scroller = page.locator('[data-testid="frame-preview-scroller"]').first();
+    await expect(scroller).toBeAttached({ timeout: 15000 });
+    await page.waitForFunction(() => !!(window as unknown as { __LL_ENGINE__?: unknown }).__LL_ENGINE__);
+    const el = page.locator(`[data-testid="stage-page"] [data-element-id="${ids.a}"]`).first();
+    const dy = () => el.evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).f);
+    const slider = page.getByLabel("Scroll position", { exact: true });
+    await slider.fill("400");
+    await expect.poll(() => scroller.evaluate((e) => (e as HTMLElement).scrollTop), { timeout: 5000 }).toBeGreaterThan(0);
+    const top = await scroller.evaluate((e) => (e as HTMLElement).scrollTop);
+    await page.waitForTimeout(300);
+    const fromSlider = await dy();
+    // scroll away and back to the same place by hand
+    await scrollTo(scroller, 0);
+    await page.waitForTimeout(300);
+    await scrollTo(scroller, top);
+    await expect.poll(async () => Math.abs((await dy()) - fromSlider), { timeout: 5000 }).toBeLessThan(0.5);
+    expect(Math.abs(fromSlider)).toBeGreaterThan(1); // it really moved
+  });
+
+  test("snap: a section snaps and the page frame gets a snap type", async ({ page }) => {
+    const ids = await tallPage(page);
+    await selectRow(page, ids.b);
+    await page.getByRole("button", { name: "Snap the page to this layer", exact: true }).click();
+    await selectRow(page, ids.frame);
+    await page.getByRole("button", { name: "Page snap mandatory", exact: true }).click();
+    const props = await page.evaluate((i) => {
+      const l = (window as unknown as { __LL_DOC__: { get: () => { layers: Record<string, { properties: Record<string, unknown> }> } } }).__LL_DOC__.get().layers;
+      return [l[i.b].properties["style.custom"], l[i.frame].properties["style.custom"]];
+    }, ids);
+    expect(props[0]).toContain("scroll-snap-align: start");
+    expect(props[1]).toContain("scroll-snap-type: y mandatory");
+    const drawn = await page.locator(`[data-testid="stage-page"] [data-element-id="${ids.b}"]`).first().evaluate((e) => getComputedStyle(e).scrollSnapAlign);
+    expect(drawn).toContain("start");
+  });
 });
