@@ -30,7 +30,7 @@ import {
   ALIGN_SELF_OPTIONS,
 } from "../constants";
 import type { InspectorSectionProps } from "../types";
-import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing, setGridCell, setStack } from "@/core/editing/layoutOps";
+import { addAutoLayout, addGridLayout, isAutoLayout, isGrid, removeAutoLayout, removeGridLayout, setChildSizing, setGrid, setGridCell, setStack } from "@/core/editing/layoutOps";
 import { useDocument } from "@/core/store/useDocumentStore";
 import { transaction } from "@/core/editing/editOps";
 
@@ -121,8 +121,11 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
   const alignItems = (getValue?.("layout.alignItems") as string) || "flex-start";
   const isSpaceBetween = justifyContent === "space-between";
 
-  // The 3x3 grid is read as the screen: across is left to right, down is top to bottom. In a column the main axis (justify) runs down.
-  const matrixIndex = isVertical ? getAlignmentMatrixIndex(alignItems, justifyContent) : getAlignmentMatrixIndex(justifyContent, alignItems);
+  // The 3x3 grid is read as the screen: across is left to right, down is top to bottom. In a column stack the main axis (justify) runs down.
+  const matrixIndex =
+    layoutMode === "stack" && isVertical
+      ? getAlignmentMatrixIndex(alignItems, justifyContent)
+      : getAlignmentMatrixIndex(justifyContent, alignItems);
   const alignSelf = (getValue?.("layout.alignSelf") as string) || "auto";
   const flexGrow = (getValue?.("layout.flexGrow") as number) ?? 0;
   const flexShrink = (getValue?.("layout.flexShrink") as number) ?? 1;
@@ -447,7 +450,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               value={gridCols}
               min={1}
               step={1}
-              onChange={(v) => onUpdateProp?.("layout.gridColumns", v)}
+              onChange={(v) => setGrid(ids, { columns: v })}
             />
             <NumberField
               size="sm"
@@ -457,7 +460,7 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
               value={gridRows}
               min={1}
               step={1}
-              onChange={(v) => onUpdateProp?.("layout.gridRows", v)}
+              onChange={(v) => setGrid(ids, { rows: v })}
             />
           </div>
 

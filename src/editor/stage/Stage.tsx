@@ -12,7 +12,7 @@ import { framesOfPage } from "@/core/frames/devices";
 import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
-import { clampZoom } from "@/core/viewport/camera";
+import { clampZoom, wheelZoomFactor } from "@/core/viewport/camera";
 import { reportStagePan, usePanRequestStore } from "./panRequest";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
@@ -479,7 +479,8 @@ export const Stage: React.FC<StageProps> = ({
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         const { camera, setCamera } = useCameraStore.getState();
-        setCamera({ ...camera, zoom: clampZoom(camera.zoom * Math.exp(-e.deltaY * 0.01)) });
+        const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+        setCamera({ ...camera, zoom: clampZoom(camera.zoom * wheelZoomFactor(dy, 0.65)) });
       } else if (wheelPans) {
         // Shift with the wheel moves sideways (browsers that send it as a vertical wheel are turned around here)
         const sideways = e.shiftKey && e.deltaX === 0;
