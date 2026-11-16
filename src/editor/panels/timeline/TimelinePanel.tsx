@@ -18,6 +18,7 @@ import { TimelineRuler } from "./TimelineRuler";
 import { TimelineLane } from "./TimelineLane";
 import { LazyRow } from "./LazyRow";
 import { TimelineCompositionTabs, TimelineNestedRows } from "./TimelineCompositions";
+import { useBottomCollapsed } from "@/editor/shell/shellFx";
 
 /** Phase 64: past this many layers, rows out of view are not built. */
 const LAZY_ROWS_FROM = 40;
@@ -75,6 +76,7 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const onSelectLayer = useCallback((id: string) => selectElement(id, "element"), [selectElement]);
   const [isDropOver, setIsDropOver] = useState(false);
+  const isCollapsed = useBottomCollapsed("motion");
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -378,8 +380,8 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
         }`}
       />}
 
-      {/* Phase 65: the composition tabs and breadcrumbs */}
-      <TimelineCompositionTabs />
+      {/* Phase 65: the composition tabs and breadcrumbs (hidden when collapsed so the 44px transport bar & expand button remain visible) */}
+      {!isCollapsed && <TimelineCompositionTabs />}
 
       {/* 1. Header Toolbar (44px) */}
       <TimelineTransport
