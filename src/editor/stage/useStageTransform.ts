@@ -1,7 +1,8 @@
 "use client";
 
 import { getDocument } from "@/core/store/documentState";
-import { duplicateLayers, reorderLayers } from "@/core/editing/editOps";
+import { duplicateLayers, nudgeLayers, reorderLayers } from "@/core/editing/editOps";
+import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { useSelectionStore, type SelectionView } from "@/core/store/useSelectionStore";
 import type { PropValue } from "@/core/document/registry";
 import { worldBox } from "@/core/editing/layerBoxes";
@@ -619,9 +620,15 @@ export function useStageTransform({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedIds.length === 0) return;
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (useCanvasViewStore.getState().mode !== "design") return;
+      const target = e.target as HTMLElement | null;
       if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable ||
+        target?.closest?.('[role="tree"], [role="menu"], [role="listbox"], [role="slider"], [role="separator"], [role="combobox"], [role="dialog"]')
       ) {
         return;
       }
@@ -660,24 +667,27 @@ export function useStageTransform({
       e.preventDefault();
 
       const selectedMirrorId = useSelectionStore.getState().selectedMirrorId;
+      const docLayers = getDocument().layers;
+      const docIds: string[] = [];
+      const localOnlyIds: string[] = [];
 
       selectedIds.forEach((id) => {
+        if (docLayers[id]) {
+          docIds.push(id);
+        } else {
+          localOnlyIds.push(id);
+        }
+      });
+
+      if (docIds.length > 0) {
+        nudgeLayers(docIds, dx, dy);
+      }
+
+      localOnlyIds.forEach((id) => {
         const key = selectedMirrorId && elements[`${selectedMirrorId}::${id}`] ? `${selectedMirrorId}::${id}` : id;
         const el = elements[key] ?? elements[id];
         if (!el) return;
-        const nextX = el.x + dx;
-        const nextY = el.y + dy;
-
-        onElementChange?.(key, { x: nextX, y: nextY });
-
-        try {
-          documentCommands.updateProps(id, {
-            "frame.x": nextX - (el.ox ?? 0),
-            "frame.y": nextY - (el.oy ?? 0),
-          });
-        } catch {
-          // Document update fallback
-        }
+        onElementChange?.(key, { x: el.x + dx, y: el.y + dy });
       });
     };
 

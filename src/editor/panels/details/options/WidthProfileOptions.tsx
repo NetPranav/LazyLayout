@@ -57,9 +57,9 @@ export const WidthProfileOptions: React.FC<{ layer: Layer }> = ({ layer }) => {
         <Select size="sm" aria-label="Width profile" value={value} options={options} onChange={choose} className="ll:w-full" />
       </OptionRow>
       <OptionRow label="Nib">
-        <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
-          <NumberField size="sm" aria-label="Nib angle" value={nib} min={-180} max={180} step={5} onChange={setNib} className="ll:w-full" />
-          <Button size="sm" variant="secondary" aria-label="Make calligraphic" onClick={() => void invokeCommand("stroke.calligraphic", { ids: [layer.id], angle: nib })}>
+        <div className="ll:flex ll:items-center ll:gap-1 ll:w-full ll:min-w-0">
+          <NumberField size="sm" aria-label="Nib angle" value={nib} min={-180} max={180} step={5} onChange={setNib} className="ll:flex-1 ll:min-w-0" />
+          <Button size="sm" variant="secondary" aria-label="Make calligraphic" onClick={() => void invokeCommand("stroke.calligraphic", { ids: [layer.id], angle: nib })} className="ll:shrink-0">
             Apply
           </Button>
         </div>
@@ -80,13 +80,14 @@ export const WidthProfileOptions: React.FC<{ layer: Layer }> = ({ layer }) => {
             )}
           </div>
         ) : (
-          <div className="ll:flex ll:items-center ll:gap-1 ll:w-full">
+          <div className="ll:flex ll:items-center ll:gap-1 ll:w-full ll:min-w-0">
             <TextField
               size="sm"
               aria-label="Width profile name"
               autoFocus
               value={naming}
               onChange={(e) => setNaming(e.target.value)}
+              className="ll:flex-1 ll:min-w-0"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -98,7 +99,7 @@ export const WidthProfileOptions: React.FC<{ layer: Layer }> = ({ layer }) => {
                 }
               }}
             />
-            <Button size="sm" variant="primary" onClick={save}>
+            <Button size="sm" variant="primary" onClick={save} className="ll:shrink-0">
               Save
             </Button>
           </div>

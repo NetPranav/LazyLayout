@@ -70,6 +70,8 @@ export const INSERT_CATALOG: Record<string, InsertGroup[]> = {
       ],
     },
   ],
+  // The Icons cards are loaded dynamically from lucide-react and searched by name (see InsertBox).
+  Icons: [],
   Assets: [
     {
       groupName: "",

@@ -239,8 +239,8 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
         />
       </div>
 
-      {/* Sizing & Clip Row: Width sizing, Height sizing, Clip toggle */}
-      <div className="ll:grid ll:grid-cols-layout-dual ll:gap-2 ll:w-full ll:items-center">
+      {/* Sizing Row: Width sizing, Height sizing */}
+      <div className="ll:grid ll:grid-cols-2 ll:gap-2 ll:w-full ll:items-center">
         <Select
           size="sm"
           aria-label="Width sizing"
@@ -261,24 +261,38 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           mixed={isHeightSizingMixed}
           onChange={(val) => setChildSizing(ids, { vertical: val as "fixed" | "hug" | "fill" })}
         />
-        <button
-          type="button"
-          aria-pressed={isClipped}
-          aria-label="Clip content"
-          title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
-          onClick={() => {
-            const v = isClipped ? "visible" : "hidden";
-            onUpdateProps?.({ "layout.overflowX": v, "layout.overflowY": v });
-          }}
-          className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+      </div>
+
+      {/* Clip content toggle with clear enabled/disabled visual feedback */}
+      <button
+        type="button"
+        aria-pressed={isClipped}
+        aria-label="Clip content"
+        title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
+        onClick={() => {
+          const v = isClipped ? "visible" : "hidden";
+          onUpdateProps?.({ "layout.overflowX": v, "layout.overflowY": v });
+        }}
+        className={`ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:text-micro ll:font-sans ${
+          isClipped
+            ? "ll:bg-select-bg ll:text-select-fg ll:border-primary"
+            : "ll:bg-surface-bar ll:text-secondary ll:border-border ll:hover:text-primary ll:hover:border-muted"
+        }`}
+      >
+        <span className="ll:flex ll:items-center ll:gap-1.5 ll:min-w-0">
+          <Icon icon={Crop} size={13} className="ll:shrink-0" />
+          <span className="ll:truncate">Clip content</span>
+        </span>
+        <span
+          className={`ll:font-mono ll:text-nano ll:uppercase ll:tracking-wider ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:shrink-0 ${
             isClipped
-              ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-              : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
+              ? "ll:bg-surface-raised ll:text-primary"
+              : "ll:bg-surface-panel ll:text-muted"
           }`}
         >
-          <Icon icon={Crop} size={14} />
-        </button>
-      </div>
+          {isClipped ? "On" : "Off"}
+        </span>
+      </button>
 
       {/* A child of a stack: how it fills the line. A child of a grid: how many cells it covers. */}
       {inFlow && parentKind === "stack" && (

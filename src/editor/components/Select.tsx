@@ -859,7 +859,7 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           onClick={() => (isOpen ? closeDropdown() : openDropdown(false))}
           onKeyDown={handleTriggerKeyDown}
-          className={`ll-dfield ll-dd ll:relative ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ${
+          className={`ll-dfield ll-dd ll:relative ll:box-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:w-full ll:min-w-0 ll:overflow-hidden ${
             size === "sm" ? "ll:h-7" : "ll:h-8"
           } ll:px-2 ll:rounded-sm ll:border ll:border-solid ${
             variant === "floating"
