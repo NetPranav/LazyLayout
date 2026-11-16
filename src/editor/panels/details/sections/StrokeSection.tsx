@@ -249,7 +249,7 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
               variant="ghost"
               pressed={isOpen}
               aria-label={`Stroke ${strokeNum} settings`}
-              tooltip={`Stroke ${strokeNum} settings`}
+              tooltip="Stroke options — Advanced stroke caps, joins, and alignments"
               aria-haspopup="dialog"
               aria-expanded={isOpen}
               icon={<Icon icon={Sliders} size={14} />}
@@ -258,28 +258,22 @@ export const StrokeSection: React.FC<StrokeSectionProps> = ({
             />
 
             {/* Visibility Toggle */}
-            <button
-              type="button"
-              data-eye
+            <IconButton
+              size="sm"
               aria-label={stroke.hidden ? `Show stroke ${strokeNum}` : `Hide stroke ${strokeNum}`}
-              title={stroke.hidden ? `Show stroke ${strokeNum}` : `Hide stroke ${strokeNum}`}
+              tooltip={stroke.hidden ? "Show stroke — Make this border stroke visible" : "Hide stroke — Temporarily hide this border stroke"}
               onClick={() => handleToggleHide(stroke.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
-            >
-              <Icon icon={stroke.hidden ? EyeOff : Eye} size={14} />
-            </button>
+              icon={<Icon icon={stroke.hidden ? EyeOff : Eye} size={14} />}
+            />
 
             {/* Remove Button */}
-            <button
-              type="button"
-              data-rm
+            <IconButton
+              size="sm"
               aria-label={`Remove stroke ${strokeNum}`}
-              title={`Remove stroke ${strokeNum}`}
+              tooltip="Remove stroke — Delete this border stroke"
               onClick={() => handleRemoveStroke(stroke.id)}
-              className="ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none"
-            >
-              <Icon icon={Minus} size={14} />
-            </button>
+              icon={<Icon icon={Minus} size={14} />}
+            />
 
             {/* Settings Popover */}
             <RowSettingsPopover isOpen={isOpen} title="Stroke" onClose={() => setActivePopoverId((cur) => (cur === stroke.id ? null : cur))}>

@@ -20,6 +20,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   variant?: IconButtonVariant;
   /** Pressed / toggled active state. */
   pressed?: boolean;
+  /** Side where tooltip should appear: defaults to top. */
+  tooltipSide?: "top" | "bottom" | "left" | "right";
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
@@ -28,6 +30,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     icon,
     children,
     tooltip,
+    tooltipSide,
     size = "md",
     variant = "ghost",
     pressed = false,
@@ -110,10 +113,14 @@ const buttonElement = (
   </button>
 );
 
-const tooltipText = typeof tooltip === "string" ? tooltip : tooltip === true ? ariaLabel : null;
+const tooltipText = typeof tooltip === "string" ? tooltip : tooltip !== false ? ariaLabel : null;
 
 if (tooltipText && !disabled) {
-  return <Tooltip content={tooltipText}>{buttonElement}</Tooltip>;
+  return (
+    <Tooltip content={tooltipText} side={tooltipSide}>
+      {buttonElement}
+    </Tooltip>
+  );
 }
 
 return buttonElement;

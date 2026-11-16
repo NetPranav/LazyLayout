@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback } from "react";
+import { Tooltip } from "@/editor/components/Tooltip";
 
 export type AlignmentMatrixIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -105,26 +106,30 @@ export const AlignmentGrid: React.FC<AlignmentGridProps> = ({
         const indexTyped = i as AlignmentMatrixIndex;
 
         return (
-          <button
+          <Tooltip
             key={label}
-            type="button"
-            disabled={disabled}
-            aria-label={label}
-            title={label}
-            aria-pressed={isPressed}
-            onClick={() => handleSelect(indexTyped)}
-            onKeyDown={(e) => handleKeyDown(e, i)}
-            className="ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ll:duration-100 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            content={`${label} — Align auto-layout children to ${label.toLowerCase()}`}
+            side="top"
           >
-            <i
-              aria-hidden="true"
-              className={`ll:rounded-xs ll:transition-all ll:duration-100 ${
-                isPressed
-                  ? "ll:w-2.5 ll:h-1.5 ll:bg-primary"
-                  : "ll:w-1 ll:h-1 ll:bg-muted ll:hover:bg-primary"
-              }`}
-            />
-          </button>
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label={label}
+              aria-pressed={isPressed}
+              onClick={() => handleSelect(indexTyped)}
+              onKeyDown={(e) => handleKeyDown(e, i)}
+              className="ll:w-full ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:transition-colors ll:duration-100 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary"
+            >
+              <i
+                aria-hidden="true"
+                className={`ll:rounded-xs ll:transition-all ll:duration-100 ${
+                  isPressed
+                    ? "ll:w-2.5 ll:h-1.5 ll:bg-primary"
+                    : "ll:w-1 ll:h-1 ll:bg-muted ll:hover:bg-primary"
+                }`}
+              />
+            </button>
+          </Tooltip>
         );
       })}
     </div>

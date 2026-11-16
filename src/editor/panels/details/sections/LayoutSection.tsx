@@ -17,6 +17,7 @@ import { Select } from "@/editor/components/Select";
 import { SegmentedControl } from "@/editor/components/SegmentedControl";
 import { Icon } from "@/editor/components/Icon";
 import { Checkbox } from "@/editor/components/Checkbox";
+import { Tooltip } from "@/editor/components/Tooltip";
 import {
   AlignmentGrid,
   getAlignmentMatrixIndex,
@@ -261,23 +262,24 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
           mixed={isHeightSizingMixed}
           onChange={(val) => setChildSizing(ids, { vertical: val as "fixed" | "hug" | "fill" })}
         />
-        <button
-          type="button"
-          aria-pressed={isClipped}
-          aria-label="Clip content"
-          title="Clip content: anything that sticks out of this layer's box is cut off (the same as Overflow: Hidden under More)."
-          onClick={() => {
-            const v = isClipped ? "visible" : "hidden";
-            onUpdateProps?.({ "layout.overflowX": v, "layout.overflowY": v });
-          }}
-          className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-            isClipped
-              ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-              : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-          }`}
-        >
-          <Icon icon={Crop} size={14} />
-        </button>
+        <Tooltip content="Clip content — Hide elements that overflow outside this layer's bounds" side="top">
+          <button
+            type="button"
+            aria-pressed={isClipped}
+            aria-label="Clip content"
+            onClick={() => {
+              const v = isClipped ? "visible" : "hidden";
+              onUpdateProps?.({ "layout.overflowX": v, "layout.overflowY": v });
+            }}
+            className={`ll:w-7 ll:h-7 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+              isClipped
+                ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
+                : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
+            }`}
+          >
+            <Icon icon={Crop} size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* A child of a stack: how it fills the line. A child of a grid: how many cells it covers. */}
@@ -401,22 +403,23 @@ export const LayoutSection: React.FC<LayoutSectionProps> = ({
                 ]}
               />
             </div>
-            <button
-              type="button"
-              aria-pressed={isWrapped}
-              aria-label="Wrap"
-              title="Wrap"
-              onClick={() =>
-                onUpdateProp?.("layout.flexWrap", isWrapped ? "nowrap" : "wrap")
-              }
-              className={`ll:w-7 ll:h-7 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
-                isWrapped
-                  ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
-                  : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
-              }`}
-            >
-              <Icon icon={WrapText} size={14} />
-            </button>
+            <Tooltip content="Wrap items — Allow auto-layout items to wrap onto multiple rows or columns" side="top">
+              <button
+                type="button"
+                aria-pressed={isWrapped}
+                aria-label="Wrap"
+                onClick={() =>
+                  onUpdateProp?.("layout.flexWrap", isWrapped ? "nowrap" : "wrap")
+                }
+                className={`ll:w-7 ll:h-7 ll:shrink-0 ll:grid ll:place-items-center ll:rounded-sm ll:border ll:border-border ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ${
+                  isWrapped
+                    ? "ll:bg-control-secondary-bg ll:text-primary ll:border-border-active"
+                    : "ll:bg-surface-bar ll:text-muted ll:hover:text-primary"
+                }`}
+              >
+                <Icon icon={WrapText} size={14} />
+              </button>
+            </Tooltip>
           </div>
         </div>
       )}

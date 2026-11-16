@@ -40,8 +40,8 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const autoId = useId();
   const sectionId = propId ?? autoId;
-  const [showMore, setShowMoreState] = useState(() => (propId ? openMore.has(propId) : false));
-  const setShowMore = (update: (prev: boolean) => boolean) => {
+  const [_showMore, setShowMoreState] = useState(() => (propId ? openMore.has(propId) : false));
+  const _setShowMore = (update: (prev: boolean) => boolean) => {
     setShowMoreState((prev) => {
       const next = update(prev);
       if (propId) {
@@ -94,7 +94,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               size="sm"
               variant="ghost"
               aria-label={`Add ${title.toLowerCase()}`}
-              tooltip="Add"
+              tooltip={`Add ${title.toLowerCase()} — Add a new ${title.toLowerCase()} layer`}
               onClick={onAdd}
               icon={<Icon icon={Plus} size={14} />}
               className={`ll-dic ll-add ll:!rounded-full ${!hasMore ? "ll:-mr-1" : ""}`}
@@ -110,7 +110,7 @@ export const RightPanelSection: React.FC<RightPanelSectionProps> = ({
               aria-expanded={isPopoverOpen}
               aria-controls={moreId}
               aria-label={`More ${title} options`}
-              tooltip={`More ${title} options`}
+              tooltip={`More ${title} options — Open advanced settings and properties`}
               data-more
               onClick={(e) => {
                 e.stopPropagation();

@@ -936,7 +936,7 @@ export function ColorPicker({
                 size="md"
                 variant="ghost"
                 aria-label="Pick a colour from the screen"
-                tooltip="Eyedropper"
+                tooltip="Eyedropper — Sample any color from your screen"
                 icon={<Icon icon={Pipette} size={14} />}
                 onClick={handleEyedropper}
                 className="cp-eye"
