@@ -232,6 +232,13 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     let unregisterMloop: (() => void) | null = null;
     let hoverN: Element | null = null;
     let tcur = "";
+    /** True while the open menu is the one a right-click on the canvas opened: the canvas cursor is drawn over it. */
+    let canvasMenu = false;
+
+    /** Hides the system cursor over open menus while the canvas cursor is drawn there. */
+    function menuCursor(over: boolean) {
+      document.documentElement.classList.toggle("ll-cur-menu", over);
+    }
 
     function on() {
       if (shown) return;
@@ -247,6 +254,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     function off() {
       if (!shown) return;
       shown = false;
+      menuCursor(false);
       cur?.classList.remove("on");
       viewport?.classList.remove("ll-stage-cursor-active");
       const c = document.getElementById("center");
@@ -525,11 +533,27 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
         return;
       }
 
-      // Check context menu / popover presence: only suppress canvas cursor if an active, non-closing menu is in the DOM
+      // Check element under pointer. If the target is disconnected or belonged to a closed menu, probe current DOM element
+      let t = e.target as Element | null;
+      if (!t || !t.isConnected || t.closest(NAT)) {
+        const probed = document.elementFromPoint(e.clientX, e.clientY);
+        if (probed) t = probed;
+      }
+
+      // The canvas's own right-click menu (and its submenus) keeps the canvas cursor: the arrow, over the menu too
+      if (canvasMenu && t?.closest(".ll-menu")) {
+        menuCursor(true);
+        apply("sel", 0);
+        on();
+        return;
+      }
+      menuCursor(false);
+
+      // Any other menu or popover that is open (and not closing) hands the pointer back to the system cursor
       const hasActiveMenu = !!document.querySelector(
         ".ll-menu.ll-open, .menu.ll-open, .menu.open, .tbpop.ll-open, .tbpop.open, [data-popover-open='true']"
       );
-      if (hasActiveMenu) {
+      if (hasActiveMenu && !canvasMenu) {
         off();
         return;
       }
@@ -537,13 +561,6 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       // If held from context menu or blur, release if no active menu is open
       if (held) {
         held = false;
-      }
-
-      // Check element under pointer. If the target is disconnected or belonged to a closed menu, probe current DOM element
-      let t = e.target as Element | null;
-      if (!t || !t.isConnected || t.closest(NAT)) {
-        const probed = document.elementFromPoint(e.clientX, e.clientY);
-        if (probed) t = probed;
       }
 
       if (!drag && !inRegion(t)) {
@@ -631,6 +648,8 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
     const onPointerDown = (e: PointerEvent) => {
       last = e;
       if (e.pointerType !== "mouse") return;
+      // a left click outside the canvas menu closes it (and may open another menu, which uses the system cursor)
+      if (e.button !== 2 && !(e.target as Element | null)?.closest?.(".ll-menu")) canvasMenu = false;
       const h = (e.target as Element | null)?.closest("[data-handle],[data-r]");
       if (h) {
         const info = getHandleInfo(h);
@@ -653,9 +672,15 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       sched();
     };
 
-    const onContextMenu = () => {
-      held = true;
+    const onContextMenu = (e: MouseEvent) => {
+      // a right-click on the canvas opens the canvas menu, which keeps this cursor; anywhere else hands it back
+      canvasMenu = inRegion(e.target);
       endDrag();
+      if (canvasMenu) {
+        setTimeout(sched, 50); // once the menu is drawn
+        return;
+      }
+      held = true;
       off();
     };
 
@@ -770,7 +795,7 @@ export const CanvasCursor: React.FC<CanvasCursorProps> = ({ viewportRef }) => {
       document.removeEventListener("keyup", onKeyUp, true);
       unsubTool();
       modeObserver.disconnect();
-      document.documentElement.classList.remove("ll-drag");
+      document.documentElement.classList.remove("ll-drag", "ll-cur-menu");
       viewport?.classList.remove("ll-stage-cursor-active");
       if (unregisterSched) {
         unregisterSched();

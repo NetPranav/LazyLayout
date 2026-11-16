@@ -13,7 +13,7 @@ import { useFramePreviewStore } from "@/core/store/useFramePreviewStore";
 import "./measureLetters"; // lets Split into letters measure the drawn text
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { clampZoom, wheelZoomFactor } from "@/core/viewport/camera";
-import { reportStagePan, usePanRequestStore } from "./panRequest";
+import { panKeeping, reportStagePan, reportStagePointer, stageArtboardBase, usePanRequestStore } from "./panRequest";
 import { invokeCommand, useFocusScope } from "@/core/commands";
 import type { LayerMenuAction } from "@/editor/shell/left-panel/types";
 import { Artboard } from "./Artboard";
@@ -478,9 +478,13 @@ export const Stage: React.FC<StageProps> = ({
       if (!e.ctrlKey && !e.metaKey && (e.target as Element | null)?.closest?.('[data-testid="frame-preview-scroller"]')) return;
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
+        // zoom around the mouse: the page point under it stays under it
         const { camera, setCamera } = useCameraStore.getState();
         const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
-        setCamera({ ...camera, zoom: clampZoom(camera.zoom * wheelZoomFactor(dy, 0.65)) });
+        const to = clampZoom(camera.zoom * wheelZoomFactor(dy, 0.65));
+        setCamera({ ...camera, zoom: to });
+        const base = wheelPans ? stageArtboardBase(el.querySelector<HTMLElement>('[data-stage="artboard"]')) : null;
+        if (base) setDragPan((p) => panKeeping({ x: e.clientX, y: e.clientY }, base, p, camera.zoom, to));
       } else if (wheelPans) {
         // Shift with the wheel moves sideways (browsers that send it as a vertical wheel are turned around here)
         const sideways = e.shiftKey && e.deltaX === 0;
@@ -490,6 +494,23 @@ export const Stage: React.FC<StageProps> = ({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [wheelPans]);
+
+  // Where the mouse is over the stage, so Cmd/Ctrl + / - zooms around it (and around the middle once it has left)
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return undefined;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") reportStagePointer({ x: e.clientX, y: e.clientY });
+    };
+    const onLeave = () => reportStagePointer(null);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      reportStagePointer(null);
+    };
+  }, []);
 
   // The active tool at work (the old editor's tools, on this stage): Hand moves the artboard; Frame, Shape and Text draw a layer by dragging
   // (click for the default size, Shift constrains, Alt draws from the centre) and then hand back to Select. Select is the stage's own

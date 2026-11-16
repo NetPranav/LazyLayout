@@ -10,7 +10,7 @@ import type { EditorMode } from "@/editor/components";
 import type { CanvasTool, ShapeTool } from "@/editor/shell/canvas-chrome/types";
 import { worldBox } from "@/core/editing/layerBoxes";
 import { fitRect } from "@/core/viewport/camera";
-import { panToCentre, requestStagePan } from "@/editor/stage/panRequest";
+import { panToCentre, requestStagePan, stepStageZoom } from "@/editor/stage/panRequest";
 import { useCameraStore } from "@/core/store/useCameraStore";
 import { useSnapStore } from "@/core/store/useSnapStore";
 import { useToolStore } from "@/core/store/useToolStore";
@@ -436,13 +436,13 @@ export function useEditorActions(
     });
   }, []);
 
-  // Camera zoom actions
+  // Camera zoom actions: one step, around the mouse when it is over the canvas (the middle of the canvas otherwise)
   const zoomIn = useCallback(() => {
-    useCameraStore.getState().stepZoom(1);
+    stepStageZoom(1);
   }, []);
 
   const zoomOut = useCallback(() => {
-    useCameraStore.getState().stepZoom(-1);
+    stepStageZoom(-1);
   }, []);
 
   const zoom100 = useCallback(() => {
