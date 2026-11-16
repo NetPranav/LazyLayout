@@ -965,10 +965,17 @@ export function Scene3dLab() {
       {gateReport && (
         <section data-testid="s6-gate-readout" style={{ ...panelStyle, borderColor: gateReport.passed ? "#059669" : "#dc2626" }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: gateReport.passed ? "#34d399" : "#f87171" }}>
-            Stage 6 3D Gate: {gateReport.passed ? "PASSED" : "FAILED"} | gizmo={gateReport.gizmoJourneySteps} | watertight=
+            Stage 6 3D Gate: {gateReport.passed ? "PASSED" : gateReport.unmeasured.length > 0 ? "NOT PASSED (unmeasured items)" : "FAILED"} | gizmo={gateReport.gizmoJourneySteps} | watertight=
             {gateReport.watertightShapesPassed}/10 | gltf={gateReport.gltfModelsImported}/10 | ik={gateReport.ikTargetsSolved}/50 | shaders=
             {gateReport.shaderGraphMaterialsMatched}/5 | recipes={gateReport.libraryRecipesPassed}/6
           </div>
+          {gateReport.unmeasured.length > 0 && (
+            <ul data-testid="s6-gate-unmeasured" style={{ margin: "6px 0 0", paddingLeft: "16px", fontSize: "11px" }}>
+              {gateReport.unmeasured.map((u) => (
+                <li key={u}>Not measured: {u}</li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 

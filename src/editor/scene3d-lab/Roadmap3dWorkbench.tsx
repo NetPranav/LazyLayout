@@ -319,7 +319,7 @@ export function Roadmap3dWorkbench() {
           }}
         >
           <span style={{ color: "#34d399", fontWeight: 700 }}>
-            ALL GATES ({gateReport.phasesCoveredCount}/227): {gateReport.allPassed ? "PASS" : "FAIL"}
+            3D model checks ({gateReport.checksRun}, simulated, not the ROADMAP_3D gates): {gateReport.allPassed ? "PASS" : "FAIL"}
           </span>
           <span style={{ color: "#cbd5e1" }}>Gate M1 Foil: {String(gateReport.gateM1.passed)}</span>
           <span style={{ color: "#cbd5e1" }}>Gate A (M1+): {String(gateReport.gateA.passed)}</span>
