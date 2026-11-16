@@ -76,3 +76,50 @@ describe("Phase 162 · 2D physics core (Decision 0006 determinism)", () => {
     assert.deepEqual(seekedBack, at60);
   });
 });
+
+describe("Phase 162 · the physics is right, not only repeatable (audit 2026-11-16)", () => {
+  const ball = (over: Partial<PhysicsBodyState> = {}): PhysicsBodyState => ({
+    id: "ball",
+    kind: "dynamic",
+    shape: { kind: "circle", radius: 10 },
+    x: 100,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    angleRad: 0,
+    angularVel: 0,
+    mass: 1,
+    restitution: 0,
+    friction: 0,
+    linearDamping: 0,
+    angularDamping: 0,
+    ...over,
+  });
+
+  it("a body in free fall drops ½·g·t² (980 px/s², 0.5 s → 122.5 px)", () => {
+    const world = createPhysicsWorld2D([ball()], { seed: 1 });
+    for (let f = 0; f < 30; f++) world.step(1 / 60);
+    const y = world.getBody("ball")!.y;
+    // Semi-implicit Euler at a fixed step lands within g·dt·t/2 of the exact value.
+    assert.ok(Math.abs(y - 122.5) < 3, `fell ${y} px`);
+    assert.ok(Math.abs(world.getBody("ball")!.vy - 490) < 1, `vy ${world.getBody("ball")!.vy}`);
+  });
+
+  it("gravity follows the config, and a sideways throw keeps its horizontal speed", () => {
+    const world = createPhysicsWorld2D([ball({ vx: 200 })], { seed: 1, gravityY: 0 });
+    for (let f = 0; f < 30; f++) world.step(1 / 60);
+    const b = world.getBody("ball")!;
+    assert.ok(Math.abs(b.y) < 1e-9, `y ${b.y}`);
+    assert.ok(Math.abs(b.x - 200) < 1, `x ${b.x}`);
+  });
+
+  it("a ball dropped on the floor comes to rest on it, not through it", () => {
+    const floor: PhysicsBodyState = { ...ball({ id: "floor", kind: "static", mass: 0 }), shape: { kind: "box", halfWidth: 400, halfHeight: 20 }, x: 100, y: 300 };
+    const world = createPhysicsWorld2D([floor, ball({ y: 100 })], { seed: 1 });
+    for (let f = 0; f < 180; f++) world.step(1 / 60);
+    const b = world.getBody("ball")!;
+    // Resting: the ball's bottom (y + 10) sits on the floor's top (300 - 20), give or take the solver's slop.
+    assert.ok(Math.abs(b.y + 10 - 280) < 3, `ball at ${b.y}`);
+    assert.ok(Math.abs(b.vy) < 20, `still moving ${b.vy}`);
+  });
+});
