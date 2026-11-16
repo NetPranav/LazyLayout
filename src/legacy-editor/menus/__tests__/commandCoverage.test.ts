@@ -82,6 +82,8 @@ describe("Phase 13: menu → command coverage", () => {
       "editor/shell/canvas-chrome/Spotlight.tsx",
       "editor/shell/canvas-chrome/Toolbar.tsx",
       "editor/shell/export-dialog/ExportDialog.tsx",
+      // Phase 126: Escape closes the open Icons & photos dialog
+      "editor/stage/MediaLibraryDialog.tsx",
       "editor/stage/CanvasCursor.tsx",
       "editor/stage/layout-overlay/useValueDrag.ts",
       "editor/stage/pen/PathEditLayer.tsx",
