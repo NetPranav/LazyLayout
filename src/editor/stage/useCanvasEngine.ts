@@ -68,7 +68,7 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
     if (!enabled) return undefined;
     const page = pageRef.current;
     const source = page ? pagePointerSource(page) : null;
-    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 } } : {});
+    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, variants: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {
@@ -133,11 +133,18 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     return null;
   };
   view.addEventListener("pointermove", onMove);
-  view.addEventListener("pointerdown", onMove);
+  // a press and release inside one frame would never be seen as "down": count the presses too (Phase 80)
+  let presses = 0;
+  const onDown = (e: PointerEvent) => {
+    presses++;
+    onMove(e);
+  };
+  view.addEventListener("pointerdown", onDown);
   view.addEventListener("pointerup", onMove);
   return {
     input: {
       pointer: () => pointer,
+      presses: () => presses,
       pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
       // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
       // one that has anything to scroll; none means no scroll, which reads as 0
@@ -169,7 +176,7 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     },
     dispose: () => {
       view.removeEventListener("pointermove", onMove);
-      view.removeEventListener("pointerdown", onMove);
+      view.removeEventListener("pointerdown", onDown);
       view.removeEventListener("pointerup", onMove);
     },
   };

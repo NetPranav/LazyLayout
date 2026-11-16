@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 80 | A component's variant switch animates; an instance can switch on a click, hover or press | this branch (NEW) | 3.26 |
 | 79 | A layer moves between its states on a spring or a tween; quick hovers never snap | this branch (NEW) | 3.25 |
 | 86 | A layer travels along a drawn path at constant speed, turning with it if you want | #186 | 3.24 |
 | 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | #181 | 3.23 |
@@ -56,7 +57,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 10. **A stroke draws itself, a path morphs (3.23):** press **P**, click three points, press **Enter** (a path); do it again somewhere else with four points. Select the first, switch to **Motion**, scroll the right panel to **Morph & draw**, click **Draw the stroke on**, then drag the needle from 0 to 1 s: the stroke grows from nothing to whole. Choose **Morph into… → (the other path)** and drag the needle again: the first shape turns into the second.
 11. **A layer travels along a path (3.24):** draw a curved path with the **Pen** and a rectangle (**R**). Select the rectangle, switch to **Motion**, scroll the right panel to **Follow a path**, choose the path in **Path**, click **Travel along the path**, then drag the needle from 0 to 2 s: the rectangle's middle rides along the line at an even speed.
 12. **Hover that never snaps (3.25):** in **Design**, draw a rectangle, open **States** in the right panel and add **Hover**; with Hover picked, set the opacity to 20 %; pick the base state again. Turn on **Show states live on the canvas**, then wave the pointer on and off the rectangle quickly: it fades towards 20 % and back smoothly, never jumping.
-13. Nothing in the console is red.
+13. **A toggle that animates (3.26):** follow T80.1 to T80.5: a two-variant toggle component whose instance slides its knob when you change **On** in the right panel, and flips by itself when clicked once **Switches on** is **A click**.
+14. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -988,6 +990,28 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T79.11** Do: switch the frame bar to **Preview** and hover the rectangle. Expect: the same transition as in Design.
 
 **Developer test:** `npx tsx --test src/core/states/__tests__/transitions.test.ts` (13 tests pass).
+
+### 3.26 Phase 80: animated variants (NEW)
+
+**What changed:** an instance of a component that has variants (Off / On, Small / Large) no longer jumps when its variant changes: every layer inside it moves from the old look to the new one, on the instance's **Transition** (3.25). An instance can also be told to change variant by itself when it is clicked, hovered or pressed, which is how you make a working toggle. That happens on the canvas only; the document keeps the variant you chose.
+
+**Known gaps (don't report):** in **Design** the switch animates only while **Show states live on the canvas** is on (Design otherwise shows the page at rest); it always animates in **Motion** and **Preview**. A layer that only one variant has pops in or out. **Reset overrides** also clears the instance's trigger and transition. Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/variant-motion.spec.ts`)**
+- [ ] **T80.1** Do: open `/editor`, **Design**. Draw a wide rectangle-shaped **frame** (press **F**, drag about 60 by 32) and, inside it, a small square (press **R**, drag inside the frame, near its left edge). Select the frame. In the right panel open **Components** and click **Create component**. Expect: the section now shows the component's name and the variant fields.
+- [ ] **T80.2** Do: type **On** in **Variant property name** and **Off, On** in **Variant values**, click **Add variant property**. Expect: a second copy of the frame appears beside the first (the **On** variant).
+- [ ] **T80.3** Do: in the second copy, drag the small square to the right edge and give the frame a different fill colour. Expect: only the second copy changes.
+- [ ] **T80.4** Do: select the first frame again and click **Insert instance**. Select the new instance. Expect: the section says **Instance of …** and has a menu **On** showing **Off**, a menu **Switches on** showing **Nothing**, and further down a **Transition** section.
+- [ ] **T80.5** Do: in **States**, switch on **Show states live on the canvas**. Then choose **On** in the instance's **On** menu. Expect: the square **slides** to the right and the colour **fades** to the new one, in about a third of a second. Choose **Off**: it slides back. Fails if: it jumps.
+- [ ] **T80.6** Do: in **Transition** type **2** in **Time** and **0** in **Bounce**. Change **On** back and forth several times, quickly. Expect: the square turns round wherever it is, smoothly; when you stop it settles on the variant the menu shows. Fails if: it ends on the wrong side, or jumps.
+- [ ] **T80.7** Do: set **Time** back to **0.35**. Choose **A click** in **Switches on**. Expect: a menu **Goes to** appears showing **The next one**.
+- [ ] **T80.8** Do: click the instance on the canvas. Expect: the toggle flips to On (sliding). Click again: back to Off. The **On** menu in the right panel still says **Off** all along (the click does not change your design).
+- [ ] **T80.9** Do: choose **Hover** in **Switches on**, and **On** in **Goes to**. Move the pointer over the instance and away. Expect: On while the pointer is over it, Off when it leaves.
+- [ ] **T80.10** Do: switch the frame bar to **Preview** and click or hover the instance. Expect: the same.
+- [ ] **T80.11** Do: back in Design, select the **first main frame** (not the instance) and change its fill colour. Expect: the instance takes the new colour, and its **Switches on** and **Transition** settings are unchanged.
+- [ ] **T80.12** Do: choose **Nothing** in **Switches on** and click the instance. Expect: nothing flips.
+
+**Developer test:** `npx tsx --test src/core/components/__tests__/variantMotion.test.ts` (13 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

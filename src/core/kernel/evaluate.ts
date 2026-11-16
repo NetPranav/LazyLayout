@@ -70,6 +70,12 @@ export interface EvaluateInputs {
    * can cross (hover easing out while pressed eases in) and a property can move on a transition of its own (`amounts`).
    */
   stateMix?: Record<string, ReadonlyArray<StateShare>>;
+  /**
+   * Phase 80: properties on their way from one look to another (a component instance changing variant). For each path
+   * in `to` the layer shows the mix of `from` and `to` at `amount` (0 to 1; a spring may pass 1) instead of what the
+   * document says. Applied before states, so a hover still lies over a variant that is changing.
+   */
+  propMix?: Record<string, PropMix>;
   reducedMotion?: boolean;
   /** A virtual pointer position, layer-local px — for the behaviours this kernel does evaluate (`loop` needs none; reserved for Phase 12's expansion). */
   pointer?: { x: number; y: number } | null;
@@ -600,6 +606,25 @@ function applyLinks(ctx: LinkContext, layerId: string, base: ResolvedProps): Res
   return out;
 }
 
+/** One layer's properties between two looks (Phase 80). */
+export interface PropMix {
+  from: Readonly<Record<string, PropValue>>;
+  to: Readonly<Record<string, PropValue>>;
+  amount: number;
+}
+
+/**
+ * A value `amount` of the way from one to another, for a state or a variant arriving. Numbers follow the amount past 1
+ * (a spring's overshoot); colours and the rest mix by the property's own rule, between 0 and 1; what can't be mixed
+ * switches half way.
+ */
+export function mixValue(path: string, from: PropValue | undefined | null, to: PropValue, amount: number): PropValue | undefined | null {
+  if (amount === 1) return to;
+  if (from === undefined || from === null) return amount >= 0.5 ? to : from;
+  if (typeof to === "number" && typeof from === "number") return from + (to - from) * amount;
+  return interpolateValue(getPropertyDefinition(path)?.interpolation ?? "discrete", from, to, Math.min(1, Math.max(0, amount)));
+}
+
 function evaluateBaseProps(
   doc: MotionDocument,
   compositionId: string,
@@ -613,6 +638,16 @@ function evaluateBaseProps(
   // 1. Base props.
   let resolved: ResolvedProps = { ...layer.properties };
 
+  // 1b. A look on its way to another (Phase 80).
+  const mix = inputs.propMix?.[layerId];
+  if (mix) {
+    for (const [path, to] of Object.entries(mix.to)) {
+      const value = mixValue(path, mix.from[path], to, mix.amount);
+      if (value === undefined || value === null) delete resolved[path];
+      else resolved[path] = value;
+    }
+  }
+
   // 2. State.
   const shares = inputs.stateMix?.[layerId];
   const activeState = shares ? undefined : findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
@@ -624,15 +659,11 @@ function evaluateBaseProps(
       for (const [path, to] of Object.entries(state.props)) {
         const amount = share.amounts?.[path] ?? share.amount;
         if (amount === 0) continue;
-        const def = getPropertyDefinition(path);
         // a property the base layer doesn't set starts from its default (a rectangle's opacity is 1 without saying so)
-        const from = resolved[path] ?? (def?.default as PropValue | undefined);
-        let value: PropValue;
-        if (amount === 1 || from === undefined || from === null) value = amount >= 0.5 ? to : (resolved[path] as PropValue);
-        // numbers follow the share past 1 (a spring's overshoot); colours and the rest mix by their own rule, between 0 and 1
-        else if (typeof to === "number" && typeof from === "number") value = from + (to - from) * amount;
-        else value = interpolateValue(def?.interpolation ?? "discrete", from as PropValue, to, Math.min(1, Math.max(0, amount)));
-        if (value !== resolved[path]) (next ??= { ...resolved })[path] = value;
+        const from = resolved[path] ?? (getPropertyDefinition(path)?.default as PropValue | undefined);
+        const value = mixValue(path, from, to, amount);
+        const shown = value === from && resolved[path] === undefined ? undefined : value;
+        if (shown !== resolved[path]) (next ??= { ...resolved })[path] = shown as PropValue;
       }
       if (next) resolved = next;
     }

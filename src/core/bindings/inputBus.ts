@@ -26,6 +26,8 @@ export interface MeasuredRect {
 export interface InputSource {
   /** Pointer position in page px, or null when it has never been over the page. */
   pointer(): { x: number; y: number; down: boolean; coarse: boolean; pressure: number; type: "mouse" | "pen" | "touch" } | null;
+  /** How many times the pointer has been pressed so far. A quick click can begin and end between two frames, so `down` alone misses it. */
+  presses?(): number;
   /** The page's size in px, for uv and ndc. */
   pageSize(): { width: number; height: number };
   /** Scroll of the frame: position, the largest position (content height minus viewport) and the viewport's height, in px. */

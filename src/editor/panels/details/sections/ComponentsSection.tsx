@@ -20,6 +20,15 @@ import type { InspectorSectionProps } from "../types";
  */
 const inputClass = "ll-dfield ll:min-w-0 ll:h-7 ll:px-2 ll:bg-surface-bar ll:rounded-sm ll:border ll:border-transparent ll:focus:border-primary ll:text-micro ll:text-primary ll:outline-none";
 
+/** Phase 80: what makes an instance change variant by itself in Preview. */
+const TRIGGERS = [
+  { value: "none", label: "Nothing" },
+  { value: "click", label: "A click", hint: "Each click switches" },
+  { value: "hover", label: "Hover", hint: "While the pointer is over it" },
+  { value: "press", label: "Press", hint: "While the pointer is down on it" },
+];
+const NEXT = "__next__";
+
 /** The main component layer that holds `id` (it, or an ancestor), or undefined. */
 function mainAround(layers: Record<string, Layer>, id: string): Layer | undefined {
   let cur: Layer | undefined = layers[id];
@@ -68,6 +77,10 @@ export const ComponentsSection: React.FC<InspectorSectionProps> = ({ selectedId,
     const chosen = rootLayer.instance.variant ?? {};
     const props = comp?.properties ?? [];
     const overridden = rootLayer.instance.overridden?.length ?? 0;
+    const rp = rootLayer.properties;
+    const triggerOn = typeof rp["variantTrigger.on"] === "string" && TRIGGERS.some((t) => t.value === rp["variantTrigger.on"]) ? (rp["variantTrigger.on"] as string) : "none";
+    const triggerProp = variantProps.find((p) => p.name === rp["variantTrigger.property"]) ?? variantProps[0];
+    const triggerValue = typeof rp["variantTrigger.value"] === "string" && triggerProp?.values.includes(rp["variantTrigger.value"] as string) ? (rp["variantTrigger.value"] as string) : "";
     return (
       <div className="ll:flex ll:flex-col ll:gap-2" data-testid="components-section">
         <p className="ll:m-0 ll:text-micro ll:text-primary" role="status">
@@ -78,6 +91,24 @@ export const ComponentsSection: React.FC<InspectorSectionProps> = ({ selectedId,
             <Select size="sm" aria-label={`Variant ${p.name}`} width="100%" options={p.values.map((v) => ({ value: v, label: v }))} value={chosen[p.name] ?? p.values[0]} onChange={(v) => run("component.setVariant", { values: { [p.name]: v }, ids: [rootLayer.id] })} />
           </OptionRow>
         ))}
+        {variantProps.length > 0 && (comp?.variants?.length ?? 0) > 1 && (
+          <>
+            <OptionRow label="Switches on">
+              <Select size="sm" aria-label="Variant switches on" width="100%" options={TRIGGERS} value={triggerOn} onChange={(v) => run("component.setVariantTrigger", { id: rootLayer.id, on: v })} />
+            </OptionRow>
+            {triggerOn !== "none" && variantProps.length > 1 && (
+              <OptionRow label="Changes">
+                <Select size="sm" aria-label="Variant trigger property" width="100%" options={variantProps.map((p) => ({ value: p.name, label: p.name }))} value={triggerProp.name} onChange={(v) => run("component.setVariantTrigger", { id: rootLayer.id, property: v, value: "" })} />
+              </OptionRow>
+            )}
+            {triggerOn !== "none" && (
+              <OptionRow label="Goes to">
+                <Select size="sm" aria-label="Variant trigger value" width="100%" options={[{ value: NEXT, label: "The next one" }, ...triggerProp.values.map((v) => ({ value: v, label: v }))]} value={triggerValue === "" ? NEXT : triggerValue} onChange={(v) => run("component.setVariantTrigger", { id: rootLayer.id, value: v === NEXT ? "" : v })} />
+              </OptionRow>
+            )}
+            <p className="ll:m-0 ll:text-micro ll:text-muted">A change of variant moves on this instance&apos;s Transition (below States). {triggerOn !== "none" ? "Try it in Preview, or with the States switch on." : ""}</p>
+          </>
+        )}
         {props.map((p) => {
           const v = readProperty(rootLayer.id, p.id);
           return (

@@ -8,6 +8,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { tryRunCommand } from "@/core/commands";
 import { documentStore } from "@/core/store/documentState";
 import { statePaths, statesOf } from "@/core/states/states";
+import { variantSetOf } from "@/core/components/variantMotion";
 import { TRANSITION_OVERRIDES, overridePath, transitionOf } from "@/core/states/transitions";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps } from "../types";
@@ -41,10 +42,11 @@ export const TransitionSection: React.FC<InspectorSectionProps> = ({ selectedId,
   const [message, setMessage] = useState("");
   const layer = selectedId && !isMulti ? doc.layers[selectedId] : undefined;
   if (!layer || !selectedId) return null;
-  if (statesOf(doc, selectedId).length === 0) {
+  const variants = !!variantSetOf(doc, selectedId);
+  if (statesOf(doc, selectedId).length === 0 && !variants) {
     return (
       <p className={`ll:m-0 ll:text-micro ll:text-muted ${className}`} data-section="transition">
-        Add a state (Hover, Pressed) in States, and this is where you choose how the layer moves into it.
+        Add a state (Hover, Pressed) in States, and this is where you choose how the layer moves into it. An instance of a component with variants also gets it, for a change of variant.
       </p>
     );
   }

@@ -254,6 +254,10 @@ function transitionDefs(): Record<string, Def> {
     "transition.bounce": ranged(num(0.15, null, "paint", VISUAL, false), { min: 0, max: 1 }),
     "transition.curve": typed(oneOf(["linear", "power2.out", "power2.in", "power2.inOut", "power4.out"], "power2.out", null, "paint", VISUAL)),
   };
+  // an instance's own interaction that switches its variant (Phase 80, `core/components/variantMotion.ts`)
+  out["variantTrigger.on"] = typed(oneOf(["none", "click", "hover", "press"], "none", null, "paint", VISUAL));
+  out["variantTrigger.property"] = typed(str("", null, "paint", VISUAL));
+  out["variantTrigger.value"] = typed(str("", null, "paint", VISUAL));
   for (let slot = 1; slot <= 3; slot++) {
     out[`transition.${slot}.property`] = typed(str("", null, "paint", VISUAL));
     out[`transition.${slot}.type`] = typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL));

@@ -299,6 +299,16 @@ Just under States is **Transition**: how the layer moves into and out of a state
 
 To see it, switch on **Show states live on the canvas** in States, or switch the frame bar to **Preview**, and move the pointer on and off the layer. Transitions are not in the exported code yet.
 
+### 11. Components that animate (toggles, tabs, buttons)
+A component can have **variants**: the same thing in several looks, such as a toggle that is **Off** or **On**. Make them in **Components** in the right panel (**Create component**, then a **Variant property name** like `On` and **Variant values** like `Off, On`), and change the second copy to look the way On should.
+
+On an **instance** of the component:
+
+- The menu named after the property (**On**) chooses the variant. The change is **animated**: every layer inside slides, resizes and fades from the old look to the new one, using the instance's **Transition** (see above).
+- **Switches on** makes the instance change by itself: **A click** flips it each time it is clicked, **Hover** and **Press** show the other variant while the pointer is over it or held down on it. **Goes to** says which value it goes to (**The next one** steps through them in order).
+
+These interactions run in **Preview**, and in Design while **Show states live on the canvas** is on. They never change your design: the menu keeps the variant you picked. Each instance can have its own transition and its own interaction; editing the main component does not undo them. Not in the exported code yet.
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

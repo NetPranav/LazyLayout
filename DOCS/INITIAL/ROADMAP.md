@@ -372,7 +372,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 77 | Expressions | 76 | v3 47.2, 47.4 (export) | 2 | 🚧 |
 | 78 | States | 33, 77 | v3 11.1 | 2 | 📋 |
 | 79 | Transitions & smart animate | 78 | v3 11.2 | 2 | 🚧 |
-| 80 | Animated variants & interactive components | 47, 79 | v3 75.2 (animated half), 75.4 | 2 | 📋 |
+| 80 | Animated variants & interactive components | 47, 79 | v3 75.2 (animated half), 75.4 | 2 | 🚧 |
 | 81 | Scroll: model & runtime | 59 | v3 13.1, 13.2 | 2 | 🚧 |
 | 82 | Scroll simulator & section choreography | 48, 81 | v3 13.3, 76.2 | 2 | 📋 |
 | 83 | Accessible text splitting | 31, 38, 82 | v3 17.1 | 2 | 📋 |
@@ -1312,11 +1312,22 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-16):** `src/core/states/__tests__/transitions.test.ts` (the mover: spring and tween, velocity kept across a change of target, determinism; the settings and commands with undo; the kernel's mix: overshoot, colours, defaults, two states crossing, per-property shares; the driver: the toggle hovered in and out 10 times with every frame-to-frame step and every change of speed bounded, hover to pressed without passing through the base, an override lagging, reduced motion). `tests/e2e/transitions.spec.ts` on `/editor`: the section's controls end to end, and the pointer moved on and off a layer 10 times at 90 ms while the drawn opacity is sampled on every frame (no step above 0.2 of a 0.8 change; it is caught on the way and ends at rest). Passing in Chromium here.
 
 ### Phase 80 · Animated variants & interactive components
-**Needs:** 47, 79 · **Was:** v3 75.2 (animated half), 75.4 · **Status:** 📋
-- [ ] Switching a component's variant animates (variants map to states). Instances can override motion and bind their own interactions.
+**Needs:** 47, 79 · **Was:** v3 75.2 (animated half), 75.4 · **Status:** 🚧
+- [x] Switching a component's variant animates (variants map to states). Instances can override motion and bind their own interactions.
+
+**Stays 🚧 (2026-11-16):** Phase 79 is 🚧 (its own Need, 78, is Lane A's), and this gate has not run in CI.
+**The look of a variant (`src/core/components/variantMotion.ts`):** `variantLook` gives every layer's properties as the instance would have them in another variant, without changing the document (the switch is made on a copy of the instance's layers, matched by name as a real switch matches them, so overrides are kept). `lookDifference` lists what differs, per layer, as `from` and `to`; where the instance sits is never part of it.
+**Kernel:** a new input `EvaluateInputs.propMix` (per layer: `from`, `to`, `amount`), applied after the base properties and before states, so a hover still lies over a variant that is changing. `mixValue` is now the one rule for a state or a variant arriving: numbers follow the amount past 1, colours mix, the rest switch half way.
+**Engine (`src/core/engine/stage/VariantDriver.ts`):** notices an instance whose variant changed in the document and moves it from the look it showed to the new one on the instance's transition (Phase 79's `Mover`). Going back to the variant it came from turns the same spring round with its speed; going on to a third starts from what is on screen. `KernelAdapter.setPropMix` puts the moving layers into the plan while they move and gives the elements back afterwards.
+**A fix this needed (`KernelAdapter.invalidate`):** the adapter remembered what an element held before its first write and put that back at the end. If the document changed in between (React drew the layer again), that was stale: an instance switched to and fro while moving ended on the first variant's style. It now notices that React drew the element again and puts back the newer value. This also holds for states and clips.
+**An instance's own interaction:** `variantTrigger.on` (`click`, `hover`, `press`), `variantTrigger.property` and `variantTrigger.value` (empty: the next value) on the instance root, set by `component.setVariantTrigger`. In Preview (or with the States switch on) the instance shows the other variant without changing the document. `InputSource.presses()` counts presses, so a click shorter than a frame is seen.
+**An instance's own motion:** `transition.*` and `variantTrigger.*` set on an instance are overrides like any other: edits to the main component and a change of variant keep them; an instance without its own takes the main's.
+**In the editor:** on an instance of a component with variants, the **Components** section has **Switches on** (Nothing, A click, Hover, Press), **Changes** (with several variant properties) and **Goes to**; the **Transition** section now also shows for such an instance.
+**Limits:** a variant switch made in Design is drawn at once unless the States switch is on (Design draws the page at rest); it animates in Motion and Preview. Layers that exist in only one of the two variants appear and disappear at once. **Reset overrides** also removes the instance's trigger and transition. Not in the exported code (Phase 95).
 
 **You'll see:** a toggle component that animates between its On and Off variants.
 **Done when:** a variant switch matches `evaluate()` in the stage; instance overrides survive main-component edits.
+**Evidence (2026-11-16):** `src/core/components/__tests__/variantMotion.test.ts` (13 tests: the look and the difference; the toggle reference, every frame `evaluate()` with the driver's input; ten quick switches with every step and every change of speed bounded; the adapter's written transform equal to `evaluate()` at every frame and the element given back; the stale-style case; reduced motion; the command with undo and refusals; click, hover and leaving live interactions; an instance's transition and trigger surviving main edits and a change of variant). `tests/e2e/variant-motion.spec.ts` on `/editor`: a toggle component built through the inspector, its instance switched from the **Variant** menu while the knob's drawn place is sampled on every frame (caught on the way, no step above 8 of 28 px, ends on the document; then ten switches in a row end on the right variant), and an instance set to switch on **A click** clicked on the canvas (the document keeps its variant). Passing in Chromium here.
 
 ### Phase 81 · Scroll: model & runtime
 **Needs:** 59 · **Was:** v3 13.1, 13.2 · **Status:** 🚧
