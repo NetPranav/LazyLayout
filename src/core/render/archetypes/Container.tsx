@@ -72,6 +72,7 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
   const sides = ["layout.paddingTop", "layout.paddingRight", "layout.paddingBottom", "layout.paddingLeft"].some((p) => resolved.get(p) !== undefined);
   const justify = resolved.str("layout.justifyContent", "");
   const align = resolved.str("layout.alignItems", "");
+  const gridAlign = (v: string) => (v === "flex-start" ? "start" : v === "flex-end" ? "end" : v);
   const wrap = resolved.str("layout.flexWrap", "nowrap") === "wrap" ? "wrap" : undefined;
   // A grid container's tracks: the template when one is written, else equal columns; rows only when written.
   const trackList = (value: string) => (/^[\w\s.,()%-]+$/.test(value) && value.length <= 200 ? value : "");
@@ -111,9 +112,17 @@ const FlexContainer: React.FC<ArchetypeRenderProps> = ({ layer, resolved, ctx, c
         paddingInline: !sides && resolved.get("layout.paddingX") !== undefined ? px(resolved.num("layout.paddingX", padding)) : undefined,
         ...(sides ? { paddingTop: side("layout.paddingTop"), paddingRight: side("layout.paddingRight"), paddingBottom: side("layout.paddingBottom"), paddingLeft: side("layout.paddingLeft") } : {}),
         ...(display === "grid"
-          ? { gridTemplateColumns: columnsTemplate || `repeat(${columnCount}, minmax(0, 1fr))`, gridTemplateRows: rowsTemplate || undefined, rowGap, columnGap, alignItems: align || undefined }
+          ? {
+              gridTemplateColumns: columnsTemplate || `repeat(${columnCount}, minmax(0, 1fr))`,
+              gridTemplateRows: rowsTemplate || undefined,
+              rowGap,
+              columnGap,
+              justifyItems: justify ? gridAlign(justify) : undefined,
+              alignItems: align ? gridAlign(align) : undefined,
+              alignContent: align ? gridAlign(align) : undefined,
+            }
           : {}),
-        justifyContent: justify || undefined,
+        justifyContent: display === "grid" ? undefined : justify || undefined,
         ...(display === "grid" ? {} : { alignItems: align || undefined }),
         flexWrap: wrap,
         // FigCraft port F6: wrapped lines sit where the cross alignment says (stretched for stretch), or spread out

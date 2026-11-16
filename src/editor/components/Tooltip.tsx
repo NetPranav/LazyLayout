@@ -15,7 +15,7 @@ export interface TooltipProps {
 export function Tooltip({
   content,
   children,
-  delayMs = 250,
+  delayMs = 1000,
   side = "top",
   className = "",
   disabled = false,
@@ -103,7 +103,7 @@ export function Tooltip({
         id={tooltipId}
         role="tooltip"
         aria-hidden={!isVisible}
-        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-nowrap ll:box-border ll:px-2 ll:py-1 ll:bg-surface-raised ll:text-primary ll:rounded-sm ll:border ll:border-border ll:shadow-soft ll:text-micro ll:font-medium ${!isVisible ? "ll:hidden" : ""
+        className={`ll:absolute ll:z-50 ll:pointer-events-none ll:select-none ll:whitespace-normal ll:max-w-xs ll:w-max ll:box-border ll:px-2.5 ll:py-1 ll:bg-surface-raised ll:text-primary ll:rounded-sm ll:border ll:border-border ll:shadow-soft ll:text-micro ll:font-medium ll:leading-snug ${!isVisible ? "ll:hidden" : ""
           } ${prefersReducedMotion()
             ? isVisible
               ? "ll:block"

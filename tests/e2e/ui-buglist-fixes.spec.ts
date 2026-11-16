@@ -11,7 +11,11 @@ test.describe("UI Buglist Fixes", () => {
     const row = page.locator('[data-testid="layer-row"][data-layer-id="button"]');
     await row.click({ button: "right" });
 
+    await page.getByRole("menuitem", { name: /^Layer/ }).hover();
+    await expect(page.locator("[data-submenu]").getByRole("menuitem", { name: /^Rename/ })).toHaveCount(0);
+
     const renameItem = page.getByRole("menuitem", { name: /^Rename/ });
+    await expect(renameItem).toHaveCount(1);
     await expect(renameItem).toBeVisible();
     await renameItem.click();
 
