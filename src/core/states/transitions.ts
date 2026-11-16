@@ -62,14 +62,33 @@ export function transitionOverrides(props: Props): Map<string, TransitionSpec> {
   return out;
 }
 
-const specKey = (s: TransitionSpec): string => `${s.type}|${s.duration}|${s.bounce}|${s.curve}`;
+/**
+ * What the stage's drivers move a number with. `Mover` below is the kernel's own; Phase 87's `MotionMover` is the same
+ * thing on Motion's spring and keyframes generators, used once that library has loaded.
+ */
+export interface MoverLike {
+  value: number;
+  velocity: number;
+  target: number;
+  readonly resting: boolean;
+  use(spec: TransitionSpec): void;
+  to(target: number): void;
+  jump(target: number): void;
+  /** Moves the number by `delta` at once without touching its speed or where it is going (a layout jump absorbed by a FLIP). */
+  shift(delta: number): void;
+  step(dt: number): number;
+}
+export type MoverFactory = (spec: TransitionSpec, value?: number) => MoverLike;
+export const kernelMover: MoverFactory = (spec, value) => new Mover(spec, value);
+
+export const specKey = (s: TransitionSpec): string => `${s.type}|${s.duration}|${s.bounce}|${s.curve}`;
 const REST = 0.0005;
 
 /**
  * One number moving towards a target (a state's share, 0 to 1) on a transition. `to` changes where it is going without
  * touching where it is or how fast it is moving; `step` advances it by a frame's time.
  */
-export class Mover {
+export class Mover implements MoverLike {
   value: number;
   velocity = 0;
   target: number;
@@ -106,6 +125,12 @@ export class Mover {
   to(target: number): void {
     if (target === this.target) return;
     this.target = target;
+    this.restart();
+  }
+
+  shift(delta: number): void {
+    if (delta === 0) return;
+    this.value += delta;
     this.restart();
   }
 

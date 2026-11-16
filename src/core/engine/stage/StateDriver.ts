@@ -11,7 +11,7 @@ import type { MotionDocument } from "../../document/schema";
 import type { InputSource } from "../../bindings/inputBus";
 import { insideRect } from "../../bindings/inputBus";
 import { pickLiveState, stateLayerIds, statesOf } from "../../states/states";
-import { Mover, transitionOf, transitionOverrides, type StateShare, type TransitionSpec } from "../../states/transitions";
+import { kernelMover, transitionOf, transitionOverrides, type MoverFactory, type MoverLike, type StateShare, type TransitionSpec } from "../../states/transitions";
 
 export interface StateDriverHost {
   getDocument(): MotionDocument;
@@ -21,6 +21,8 @@ export interface StateDriverHost {
   /** Whether hover and press are live (Preview, or the States switch). */
   live(): boolean;
   reducedMotion(): boolean;
+  /** What moves the numbers: the kernel's spring by default, Motion's once it has loaded (Phase 87). Read when a move begins. */
+  mover?(): MoverFactory;
 }
 
 export interface StateFrame {
@@ -33,8 +35,8 @@ export interface StateFrame {
 
 /** One state's movers on one layer: the share of every property, and of each property with a transition of its own. */
 interface Entry {
-  all: Mover;
-  own: Map<string, Mover>;
+  all: MoverLike;
+  own: Map<string, MoverLike>;
 }
 
 export class StateDriver {
@@ -96,10 +98,11 @@ export class StateDriver {
       let byState = this.entries.get(id);
       if (!want && !byState) continue;
       const own = doc.layers[id]?.properties ?? {};
+      const make = this.host.mover?.() ?? kernelMover;
       const spec = transitionOf(own);
       const overrides = transitionOverrides(own);
       if (!byState) this.entries.set(id, (byState = new Map()));
-      if (want && !byState.has(want)) byState.set(want, { all: new Mover(spec), own: new Map() });
+      if (want && !byState.has(want)) byState.set(want, { all: make(spec), own: new Map() });
 
       const shares: StateShare[] = [];
       // every state heads for 1 when it is the one wanted and for 0 otherwise, all at once: hover fades as pressed arrives
@@ -113,7 +116,7 @@ export class StateDriver {
         for (const [path, override] of overrides) {
           if (!(path in row.props)) continue;
           let mover = entry.own.get(path);
-          if (!mover) entry.own.set(path, (mover = new Mover(override, amount)));
+          if (!mover) entry.own.set(path, (mover = make(override, amount)));
           (amounts ??= {})[path] = this.move(mover, override, target, dt, reduced);
           if (!mover.resting) moving = true;
         }
@@ -142,7 +145,7 @@ export class StateDriver {
     return frame;
   }
 
-  private move(mover: Mover, spec: TransitionSpec, target: number, dt: number, reduced: boolean): number {
+  private move(mover: MoverLike, spec: TransitionSpec, target: number, dt: number, reduced: boolean): number {
     mover.use(spec);
     if (reduced) mover.jump(target);
     else {

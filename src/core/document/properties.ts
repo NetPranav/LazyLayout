@@ -258,6 +258,10 @@ function transitionDefs(): Record<string, Def> {
   out["variantTrigger.on"] = typed(oneOf(["none", "click", "hover", "press"], "none", null, "paint", VISUAL));
   out["variantTrigger.property"] = typed(str("", null, "paint", VISUAL));
   out["variantTrigger.value"] = typed(str("", null, "paint", VISUAL));
+  // layout motion and presence (Phase 87, `core/engine/motion/layoutMotion.ts`)
+  out["layoutMotion.on"] = typed(flag(false, "paint", VISUAL));
+  out["presence.enter"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
+  out["presence.exit"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
   for (let slot = 1; slot <= 3; slot++) {
     out[`transition.${slot}.property`] = typed(str("", null, "paint", VISUAL));
     out[`transition.${slot}.type`] = typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL));

@@ -309,6 +309,15 @@ On an **instance** of the component:
 
 These interactions run in **Preview**, and in Design while **Show states live on the canvas** is on. They never change your design: the menu keeps the variant you picked. Each instance can have its own transition and its own interaction; editing the main component does not undo them. Not in the exported code yet.
 
+### 12. Layout motion, appearing and leaving
+The **Transition** section (right panel, under States) is on every layer:
+
+- **Layout:** switch it on and the layer no longer jumps when its place changes at once (you type a new position, a sibling is reordered, a variant rearranges things). It travels to the new place on its transition, and if the place changes again on the way it turns smoothly.
+- **Appears:** how the layer comes in when Preview starts: **Fades**, **Fades and grows** or **Fades and rises**.
+- **Leaves:** how the layer goes when it is deleted.
+
+**Type**, **Time** and **Bounce** above set the feel, the same as for states. These play in **Motion** and **Preview**, and in Design while **Show states live on the canvas** is on. Only the place is animated, not a change of size. Not in the exported code yet.
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

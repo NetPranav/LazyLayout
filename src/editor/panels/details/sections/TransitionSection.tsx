@@ -9,6 +9,8 @@ import { tryRunCommand } from "@/core/commands";
 import { documentStore } from "@/core/store/documentState";
 import { statePaths, statesOf } from "@/core/states/states";
 import { variantSetOf } from "@/core/components/variantMotion";
+import { hasLayoutMotion, layoutMotionOf } from "@/core/engine/motion/layoutMotion";
+import { Toggle } from "@/editor/components/Toggle";
 import { TRANSITION_OVERRIDES, overridePath, transitionOf } from "@/core/states/transitions";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
 import type { InspectorSectionProps } from "../types";
@@ -29,6 +31,12 @@ const CURVES = [
   { value: "power4.out", label: "Strong ease out" },
   { value: "linear", label: "Linear" },
 ];
+const PRESENCE = [
+  { value: "none", label: "At once" },
+  { value: "fade", label: "Fades" },
+  { value: "scale", label: "Fades and grows" },
+  { value: "rise", label: "Fades and rises" },
+];
 const ADD = "__add__";
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 /** A property path as words: `appearance.background.color` is "Background color". */
@@ -43,11 +51,31 @@ export const TransitionSection: React.FC<InspectorSectionProps> = ({ selectedId,
   const layer = selectedId && !isMulti ? doc.layers[selectedId] : undefined;
   if (!layer || !selectedId) return null;
   const variants = !!variantSetOf(doc, selectedId);
-  if (statesOf(doc, selectedId).length === 0 && !variants) {
+  const motion = layoutMotionOf(layer.properties);
+  const runLayout = (args: Record<string, unknown>) => {
+    const out = tryRunCommand("layer.setLayoutMotion", { ids: [selectedId], ...args });
+    setMessage(out.ok ? "" : (out.message ?? "That did not work."));
+  };
+  /** Phase 87: layout changes, appearing and disappearing. On every layer. */
+  const layoutRows = (
+    <>
+      <OptionRow label="Layout">
+        <Toggle size="sm" aria-label="Animate layout changes" checked={motion.on} onChange={(on) => runLayout({ on })} />
+      </OptionRow>
+      <OptionRow label="Appears">
+        <Select aria-label="How the layer appears" size="sm" width="100%" options={PRESENCE} value={motion.enter} onChange={(v) => runLayout({ enter: v })} />
+      </OptionRow>
+      <OptionRow label="Leaves">
+        <Select aria-label="How the layer disappears" size="sm" width="100%" options={PRESENCE} value={motion.exit} onChange={(v) => runLayout({ exit: v })} />
+      </OptionRow>
+    </>
+  );
+  if (statesOf(doc, selectedId).length === 0 && !variants && !hasLayoutMotion(layer.properties)) {
     return (
-      <p className={`ll:m-0 ll:text-micro ll:text-muted ${className}`} data-section="transition">
-        Add a state (Hover, Pressed) in States, and this is where you choose how the layer moves into it. An instance of a component with variants also gets it, for a change of variant.
-      </p>
+      <div className={`ll-dbody ll:flex ll:flex-col ll:gap-1.5 ll:-mx-1 ${className}`} data-section="transition">
+        {layoutRows}
+        <p className="ll:m-0 ll:text-micro ll:text-muted">Add a state (Hover, Pressed) in States, or switch one of these on, and this is where you choose how the layer moves. An instance of a component with variants also gets it, for a change of variant.</p>
+      </div>
     );
   }
 
@@ -108,6 +136,7 @@ export const TransitionSection: React.FC<InspectorSectionProps> = ({ selectedId,
           </OptionGroup>
         );
       })}
+      {layoutRows}
       {slots.length < TRANSITION_OVERRIDES && free.length > 0 && <Select aria-label="Add property transition" size="sm" width="100%" options={addOptions} value={ADD} onChange={(v) => v !== ADD && override({ property: v })} />}
       <p className="ll:m-0 ll:text-micro ll:text-muted">Seen in Preview, and in Design with the States switch on: move the pointer on and off the layer, or click it quickly.</p>
       {message && (

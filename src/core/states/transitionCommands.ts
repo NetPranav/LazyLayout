@@ -6,6 +6,7 @@ import { setLayerProps } from "../editing/editOps";
 import { getDocument } from "../store/documentState";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { statePaths } from "./states";
+import { PRESENCE_KINDS } from "../engine/motion/layoutMotion";
 import { TRANSITION_CURVES, TRANSITION_OVERRIDES, TRANSITION_TYPES, overridePath } from "./transitions";
 
 const selected = () => useSelectionStore.getState().selectedIds;
@@ -65,6 +66,22 @@ export function registerTransitionCommands(): () => void {
       if (bounce !== undefined) patch[overridePath(target, "bounce")] = bounce;
       setLayerProps([layerId], patch, "Set property transition");
       return { ok: true, slot: target };
+    },
+  }));
+
+  // Phase 87: layout changes animate; a way to appear and to disappear
+  offs.push(defineTypedCommand({
+    id: "layer.setLayoutMotion", title: "Animate a Layer's Layout Changes, Entrance and Exit", category: "States",
+    args: z.object({ ids: z.array(z.string()).optional(), on: z.boolean().optional(), enter: z.enum(PRESENCE_KINDS).optional(), exit: z.enum(PRESENCE_KINDS).optional() }),
+    run: ({ ids, on, enter, exit }) => {
+      const doc = getDocument();
+      const chosen = (ids ?? selected()).filter((id) => doc.layers[id] && doc.layers[id].locked !== true);
+      const patch: Record<string, PropValue | null> = {};
+      if (on !== undefined) patch["layoutMotion.on"] = on ? true : null;
+      if (enter !== undefined) patch["presence.enter"] = enter === "none" ? null : enter;
+      if (exit !== undefined) patch["presence.exit"] = exit === "none" ? null : exit;
+      if (chosen.length === 0 || Object.keys(patch).length === 0) return { ok: true, changed: 0 };
+      return { ok: true, changed: setLayerProps(chosen, patch, "Set layout motion") };
     },
   }));
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { loadMotion, motionEngine, stageMover } from "@/core/engine/motion/MotionAdapter";
+import { kernelMover } from "@/core/states/transitions";
 import { useStateEditStore } from "@/core/states/stateEdit";
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { useStore } from "zustand";
@@ -68,7 +70,10 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
     if (!enabled) return undefined;
     const page = pageRef.current;
     const source = page ? pagePointerSource(page) : null;
-    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, variants: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 } } : {});
+    // Phase 87: Motion is loaded the first time the engine starts; until then the kernel's spring does the same job
+    void loadMotion().catch(() => undefined);
+    const mover = stageMover(kernelMover);
+    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, mover: () => mover, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, variants: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0, mover: () => mover }, layout: { reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0, mover: () => mover } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {
@@ -81,6 +86,8 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
         loop: (on: boolean) => transport.setLoop(on ? "loop" : "off"),
         parity: () => parityStore.getState(),
         document: () => getDocument(),
+        // Phase 87: whether Motion has loaded (the stage's transitions run on its generators from then on)
+        motion: () => motionEngine() !== null,
         // D4: add a driver from its text form; layer names are looked up in the document
         addBinding: (text: string, ownerLayerId: string) => {
           const layers = Object.values(getDocument().layers);

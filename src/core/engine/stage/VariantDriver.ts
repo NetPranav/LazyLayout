@@ -13,7 +13,7 @@ import type { PropValue } from "../../document/registry";
 import type { InputSource } from "../../bindings/inputBus";
 import { insideRect } from "../../bindings/inputBus";
 import { mixValue, type PropMix } from "../../kernel/evaluate";
-import { Mover, transitionOf } from "../../states/transitions";
+import { kernelMover, transitionOf, type MoverFactory, type MoverLike } from "../../states/transitions";
 import { lookDifference, lookOf, triggeredValues, variantInstanceRoots, variantKey, variantLook, variantTriggerOf, variantValuesOf, type Look } from "../../components/variantMotion";
 
 export interface VariantDriverHost {
@@ -24,6 +24,8 @@ export interface VariantDriverHost {
   reducedMotion(): boolean;
   /** Whether a variant changed in the document animates (off while a test or a tool wants the document as it is). Default: yes. */
   animateEdits?(): boolean;
+  /** What moves the numbers: the kernel's spring by default, Motion's once it has loaded (Phase 87). */
+  mover?(): MoverFactory;
 }
 
 export interface VariantFrame {
@@ -38,7 +40,7 @@ interface Run {
   /** 1: heading for `to`; 0: turned back to `from`. */
   target: 0 | 1;
   mix: Map<string, { from: Record<string, PropValue>; to: Record<string, PropValue> }>;
-  mover: Mover;
+  mover: MoverLike;
 }
 interface Seen {
   key: string;
@@ -130,7 +132,7 @@ export class VariantDriver {
       this.runs.delete(id);
       return;
     }
-    const mover = new Mover(spec, 0);
+    const mover = (this.host.mover?.() ?? kernelMover)(spec, 0);
     mover.to(1);
     this.runs.set(id, { fromKey, toKey, target: 1, mix, mover });
   }

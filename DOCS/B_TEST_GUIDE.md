@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
 | 80 | A component's variant switch animates; an instance can switch on a click, hover or press | this branch (NEW) | 3.26 |
 | 79 | A layer moves between its states on a spring or a tween; quick hovers never snap | this branch (NEW) | 3.25 |
 | 86 | A layer travels along a drawn path at constant speed, turning with it if you want | #186 | 3.24 |
@@ -58,7 +59,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 11. **A layer travels along a path (3.24):** draw a curved path with the **Pen** and a rectangle (**R**). Select the rectangle, switch to **Motion**, scroll the right panel to **Follow a path**, choose the path in **Path**, click **Travel along the path**, then drag the needle from 0 to 2 s: the rectangle's middle rides along the line at an even speed.
 12. **Hover that never snaps (3.25):** in **Design**, draw a rectangle, open **States** in the right panel and add **Hover**; with Hover picked, set the opacity to 20 %; pick the base state again. Turn on **Show states live on the canvas**, then wave the pointer on and off the rectangle quickly: it fades towards 20 % and back smoothly, never jumping.
 13. **A toggle that animates (3.26):** follow T80.1 to T80.5: a two-variant toggle component whose instance slides its knob when you change **On** in the right panel, and flips by itself when clicked once **Switches on** is **A click**.
-14. Nothing in the console is red.
+14. **Layout motion (3.27):** draw a rectangle, switch on **Layout** in **Transition** and **Show states live on the canvas** in **States**, then type a new **Y** for it: it glides to the new place.
+15. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -977,7 +979,7 @@ If any step fails, stop and report it. Everything else depends on them.
 **Known gaps (don't report):** one transition per layer (not one per pair of states). Not in the exported code yet. The transition is seen in **Preview** and in **Design** with **Show states live on the canvas** switched on; while you are editing a state the layer shows that state fully.
 
 **User test (the new editor, covered by `tests/e2e/transitions.spec.ts`)**
-- [ ] **T79.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition** (just under **States**). Expect: a sentence telling you to add a state first. Fails if: the section is missing.
+- [ ] **T79.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition** (just under **States**). Expect: the rows **Layout**, **Appears**, **Leaves** (see 3.27) and a sentence telling you to add a state. Fails if: the section is missing.
 - [ ] **T79.2** Do: in **States**, add **Hover**. With Hover picked, set the layer's **opacity** to 20 %. Pick the base state again. Expect: the rectangle is fully visible again, and **Transition** now shows **Type: Spring**, **Time 0.35 s** and **Bounce 15 %**.
 - [ ] **T79.3** Do: switch on **Show states live on the canvas** (in States). Move the pointer onto the rectangle and hold it there. Expect: it fades to 20 % in about a third of a second. Move off: it fades back.
 - [ ] **T79.4** Do: type **0.8** in **Time** and **0** in **Bounce**. Move the pointer on and off the rectangle as fast as you can, ten times. Expect: the rectangle's opacity drifts down and up smoothly, never reaching 20 %, never jumping; when you stop off the rectangle it settles fully visible. Fails if: it flickers between two values or snaps.
@@ -1012,6 +1014,25 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T80.12** Do: choose **Nothing** in **Switches on** and click the instance. Expect: nothing flips.
 
 **Developer test:** `npx tsx --test src/core/components/__tests__/variantMotion.test.ts` (13 tests pass).
+
+### 3.27 Phase 87: layout motion, entering and leaving (NEW)
+
+**What changed:** the **Transition** section is now on every layer and has three new rows. **Layout**: when the layer's place changes at once, it travels there on its transition instead of jumping. **Appears**: how it comes in when Preview starts (or when it is made). **Leaves**: how it goes when it is deleted. Behind the scenes the springs now come from the Motion library, loaded the first time the canvas animates; you should see no difference from before.
+
+**Known gaps (don't report):** only the place is animated, not a change of size. These play in **Motion**, **Preview**, and in Design while **Show states live on the canvas** is on; plain Design shows the page at rest. With the switch on in Design, dragging a layer that has **Layout** on makes it trail the pointer (switch states off to arrange). Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/layout-motion.spec.ts`)**
+- [ ] **T87.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition**. Expect: three rows, **Layout** (a switch, off), **Appears: At once**, **Leaves: At once**, and a sentence about states. Fails if: the section is empty.
+- [ ] **T87.2** Do: switch **Layout** on. Expect: **Type: Spring**, **Time** and **Bounce** rows appear above it.
+- [ ] **T87.3** Do: type **0.8** in **Time** and **0** in **Bounce**. In **States**, switch on **Show states live on the canvas**. Then, in the position fields at the top of the right panel, type a **Y** 200 bigger than it is and press Enter. Expect: the rectangle **glides** down to the new place in under a second. Fails if: it jumps.
+- [ ] **T87.4** Do: type the old Y, and before it arrives type the new Y again, two or three times. Expect: it turns round smoothly each time and ends exactly where the last number says.
+- [ ] **T87.5** Do: switch **Layout** off and change Y. Expect: it jumps at once, as before.
+- [ ] **T87.6** Do: choose **Fades and rises** in **Appears**. Switch **Show states live on the canvas** off and on again. Expect: on switching on, the rectangle fades in while coming up about 16 px.
+- [ ] **T87.7** Do: switch the frame bar to **Preview**. Expect: the same entrance as Preview starts.
+- [ ] **T87.8** Do: back in Design with states live, choose **Fades** in **Leaves**, then press **Delete**. Expect: the rectangle fades out instead of vanishing. **Ctrl+Z** brings it back with its settings.
+- [ ] **T87.9** Do: redo 3.25's hover test (T79.3, T79.4). Expect: exactly as before (the spring now comes from Motion).
+
+**Developer test:** `npx tsx --test src/core/engine/motion/__tests__/motionAdapter.test.ts` (12 tests pass).
 
 ## 4. Regression checks (things that must still work)
 
