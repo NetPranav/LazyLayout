@@ -31,5 +31,22 @@ export function routeStack(types: readonly RoutedEffect[]): Array<EffectRoute & 
   return types.map((type) => ({ type, ...EFFECT_ROUTES[type] }));
 }
 
+/**
+ * The performance class of an effect while it animates (ROADMAP Phase 86: "with a performance class each"), by where
+ * it is drawn. The inspector shows it beside the route, so the cost of animating an effect is known before it is keyed.
+ * - `compositor`: a CSS filter function. The browser re-applies it on the compositor; animating it costs no layout and
+ *   no repaint of the layer's content.
+ * - `repaint`: an SVG filter. The layer is drawn again through the filter on the main thread on every frame a
+ *   parameter changes, and the cost grows with the layer's area.
+ */
+export type EffectPerformance = "compositor" | "repaint";
+export const PERFORMANCE_NOTES: Record<EffectPerformance, string> = {
+  compositor: "Cheap to animate: the browser re-applies it without redrawing the layer.",
+  repaint: "Costly to animate: the layer is redrawn through the filter on every frame it changes, more so the bigger the layer.",
+};
+export const performanceOf = (route: Pick<EffectRoute, "backend">): EffectPerformance => (route.backend === "css" ? "compositor" : "repaint");
+/** The performance class of an effect type. */
+export const effectPerformance = (type: RoutedEffect): EffectPerformance => performanceOf(EFFECT_ROUTES[type]);
+
 /** Motion blur is an SVG Gaussian blur along the layer's velocity: CSS blur() can't blur in one direction. */
 export const MOTION_BLUR_ROUTE: EffectRoute = { backend: "svg", reason: "Motion blur blurs only along the way the layer is moving, which CSS blur() can't do (it blurs every way), so it runs on the SVG backend as feGaussianBlur with a different amount across and down." };

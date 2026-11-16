@@ -35,7 +35,8 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
-| 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | this branch (NEW) | 3.23 |
+| 86 | A layer travels along a drawn path at constant speed, turning with it if you want | this branch (NEW) | 3.24 |
+| 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | #181 | 3.23 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
 ## The 10-minute quick pass (start here)
@@ -52,7 +53,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 8. **Compositing and effects in the inspector (3.19, 3.20):** in **Design**, draw two rectangles, select the second. In the right panel open **Effect stack**, choose **Add an effect… → Blur**: the rectangle goes soft and the row says **CSS**. Open **Compositing**, set **Mask** to **Alpha** and **Shape** to **Ellipse**: the rectangle becomes an oval. **Ctrl+Z** twice puts both back.
 9. **A layer half way through a move can be clicked (3.18, T69.9):** in **Motion**, give a rectangle two **Position X** keyframes, drag the needle to the middle, click the rectangle on the canvas: it is selected and its motion path shows (the click used to fall through to the frame behind).
 10. **A stroke draws itself, a path morphs (3.23):** press **P**, click three points, press **Enter** (a path); do it again somewhere else with four points. Select the first, switch to **Motion**, scroll the right panel to **Morph & draw**, click **Draw the stroke on**, then drag the needle from 0 to 1 s: the stroke grows from nothing to whole. Choose **Morph into… → (the other path)** and drag the needle again: the first shape turns into the second.
-11. Nothing in the console is red.
+11. **A layer travels along a path (3.24):** draw a curved path with the **Pen** and a rectangle (**R**). Select the rectangle, switch to **Motion**, scroll the right panel to **Follow a path**, choose the path in **Path**, click **Travel along the path**, then drag the needle from 0 to 2 s: the rectangle's middle rides along the line at an even speed.
+12. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -936,6 +938,33 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T85.21** Do: drag **Time** slowly from 0 to 1. Expect: the three bars turn into a **cross**: the top and bottom bars tilt into the two diagonals and the middle bar shrinks to nothing. They stay three separate strokes all the way. Fails if: the bars are joined by extra lines on the way.
 - [ ] **T85.22** Do: watch the logo while dragging. Expect: a square outline starts drawing first, then three bars inside it start one after another, each a little later than the one before; at 1 everything is whole. Fails if: all four strokes are always at the same stage (no stagger), or the outline and bars are drawn as one long line.
 - [ ] **T85.23** Do: drag **Time** back to a moment you looked at. Expect: exactly the same picture (scrubbing is exact).
+
+### 3.24 Phase 86: travelling along a path (NEW)
+
+**What changed:** any layer can be put on a path drawn with the Pen or Pencil. Its middle then sits on the line, and a **Position** from 0 to 100 % says how far along it is. The speed is even: half the time is half the distance, however the path bends. The layer can turn to face the way it is going. Each effect in the **Effect stack** now also says whether it is cheap or costly to animate.
+
+**Known gaps (don't report):** the layer is on the path in **Motion** and **Preview**; **Design** shows it where it rests. The new timeline has no row for the position's keyframes; the section lists the journey and removes it. Both the layer and the path must be placed freely on the page, not inside an auto-layout stack (inside one, nothing happens). A box with padding that draws bigger than its set size sits slightly off the line; rectangles, ellipses and images are exact. Only the first stroke of a path with several strokes is followed. Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/path-follow.spec.ts`)**
+- [ ] **T86.1** Do: open `/editor`, **Design**. Press **P**, click four or five points in a loose curve, press **Enter**. Then press **R** and drag a small rectangle somewhere else. Expect: a path layer and a rectangle.
+- [ ] **T86.2** Do: select the rectangle. Scroll the right panel to **Follow a path**. Expect: one menu, **Path**, showing **None**. Open it. Expect: your path is listed by its layer name. Fails if: the section is missing, or the rectangle itself is listed.
+- [ ] **T86.3** Do: switch to **Motion**, select the rectangle on the canvas, scroll the right panel to **Follow a path** (under Animation). Choose your path in **Path**. Expect: the rectangle jumps so that its **middle is on the start of the path**, and the section shows **Position 0 %**, **Offset 0 %**, **Turn along the path**, **Turn 0°**, **Length 2 s** and a button **Travel along the path**. Fails if: the rectangle doesn't move.
+- [ ] **T86.4** Do: type **50** in **Position**. Expect: the rectangle's middle is half way along the path, measured along the line. Type **100**: it is at the path's end. Type **0**.
+- [ ] **T86.5** Do: drag the needle to **0 s**, click **Travel along the path**. Expect: a line **Travels · 0.00s to 2.00s** in the section.
+- [ ] **T86.6** Do: drag the needle slowly from 0 s to 2 s. Expect: the rectangle rides along the path from start to end, its middle on the line all the way. At 1 s it is half way along. Fails if: it cuts corners, or races through one part and crawls through another.
+- [ ] **T86.7** Do: press **Space**. Expect: the same journey, smoothly.
+- [ ] **T86.8** Do: click **Turn along the path**. Drag the needle. Expect: the rectangle turns as the path bends, always facing the way it is going. Type **90** in **Turn**: it is a quarter turn further round everywhere. Set **Turn** back to 0.
+- [ ] **T86.9** Do: type **25** in **Offset**. Expect: at every moment the rectangle is a quarter of the path further on (and it reaches the end early: an open path stops at its end).
+- [ ] **T86.10** Do: press **Ctrl+Z** three or four times, watching the section. Expect: each press undoes one change (the offset, the turn, ...); the press that undoes **Travel along the path** removes both keyframes at once.
+- [ ] **T86.11** Do: click the minus beside **Travels**. Expect: the line goes; the rectangle stays at its **Position** on the path at every time.
+- [ ] **T86.12** Do: choose **None** in **Path**. Expect: the rectangle goes back to where it rests and the other controls disappear.
+- [ ] **T86.13** Do: in **Design**, add **Blur** and then **Noise** in **Effect stack**. Expect: under Blur, a sentence starting **Cheap to animate**; under Noise, one starting **Costly to animate**.
+
+**User test (the stage lab: the reference, covered by `tests/e2e/path-follow.spec.ts`)**
+- [ ] **T86.20** Do: `npm run dev`, open `http://localhost:3000/editor/stage-lab`, click **Load orbit scene**. Expect: a grey circle with a red dot on its right-hand side and a blue bar at its bottom.
+- [ ] **T86.21** Do: drag **Time** slowly from 0 to 1. Expect: the red dot goes once round the circle, clockwise, at an even speed, its middle on the line. At 0.25 it is at the bottom, at 0.5 on the left, at 0.75 at the top.
+- [ ] **T86.22** Do: watch the blue bar. Expect: it is always a quarter of a lap ahead of the dot, and it turns so that its long side lies along the circle.
+- [ ] **T86.23** Do: drag **Time** back to a moment you looked at. Expect: exactly the same picture.
 
 ## 4. Regression checks (things that must still work)
 

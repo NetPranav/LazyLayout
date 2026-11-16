@@ -43,6 +43,7 @@ import { ScrollSection } from "./sections/ScrollSection";
 import { CompositingSection } from "./sections/CompositingSection";
 import { EffectStackSection } from "./sections/EffectStackSection";
 import { MorphDrawSection } from "./sections/MorphDrawSection";
+import { FollowPathSection } from "./sections/FollowPathSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -415,6 +416,11 @@ export function getInspectorDesignSections(
       children: <CompositingSection {...sectionProps} />,
     },
     {
+      id: "follow-path",
+      title: "Follow a path",
+      children: <FollowPathSection {...sectionProps} />,
+    },
+    {
       id: "clone",
       title: "Clone",
       children: <CloneSection {...sectionProps} />,
@@ -525,6 +531,8 @@ export function getInspectorExtraSections(
         onAdd: () => animAddRef.current?.(),
         children: <AnimationSection {...sectionProps} onAddAnimationRef={animAddRef} />,
       },
+      // Phase 86: a layer travels along its path from the playhead, so the section is in Motion too
+      { id: "follow-path", title: "Follow a path", children: <FollowPathSection {...sectionProps} /> },
       // Phase 85: a path or an icon is drawn on and morphed from the playhead, so the section is in Motion too
       ...(inspector.primaryLayer?.archetype === "svgPath" || inspector.primaryLayer?.archetype === "icon"
         ? [{ id: "morph-draw", title: "Morph & draw", children: <MorphDrawSection {...sectionProps} /> }]
