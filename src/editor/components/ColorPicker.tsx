@@ -58,6 +58,16 @@ export interface ColorPickerProps {
   /** The token the colour was picked from, shown as a link on the swatch that opened the picker. */
   linkedToken?: string | null;
   onLinkedTokenChange?: (token: string | null) => void;
+  mode?: ColorMode;
+  onChangeMode?: (mode: ColorMode) => void;
+  angle?: number;
+  onChangeAngle?: (angle: number) => void;
+  gradientStops?: Array<{ id: string; hex: string; position: number; opacity?: number }>;
+  onChangeGradientStops?: (stops: Array<{ id: string; hex: string; position: number; opacity?: number }>) => void;
+  imageFit?: ImageFit;
+  onChangeImageFit?: (fit: ImageFit) => void;
+  imageSrc?: string | null;
+  onUploadImage?: (file: File) => void;
   className?: string;
   "aria-label"?: string;
   [key: string]: unknown;
@@ -81,6 +91,16 @@ export function ColorPicker({
   anchorEl,
   linkedToken: linkedTokenProp = null,
   onLinkedTokenChange,
+  mode: propMode,
+  onChangeMode,
+  angle: propAngle = 180,
+  onChangeAngle,
+  gradientStops: propGradientStops,
+  onChangeGradientStops,
+  imageFit: propImageFit = "Fill",
+  onChangeImageFit,
+  imageSrc: propImageSrc = null,
+  onUploadImage,
   className = "",
   "aria-label": ariaLabel,
 }: ColorPickerProps) {
@@ -121,7 +141,20 @@ export function ColorPicker({
   const initRgb = parseCssColor(value)?.rgb ?? hex2rgb(value);
   const initHsv = rgb2hsv(initRgb[0], initRgb[1], initRgb[2]);
 
-  const [mode, setMode] = useState<ColorMode>("Solid");
+  const [modeState, setModeState] = useState<ColorMode>("Solid");
+  const [prevPropMode, setPrevPropMode] = useState<ColorMode | undefined>(propMode);
+  if (propMode !== prevPropMode) {
+    setPrevPropMode(propMode);
+    if (propMode) setModeState(propMode);
+  }
+  const mode = propMode ?? modeState;
+  const setMode = useCallback(
+    (m: ColorMode) => {
+      setModeState(m);
+      onChangeMode?.(m);
+    },
+    [onChangeMode]
+  );
   const [model, setModel] = useState<ColorModel>("Hex");
   const [hsv, setHsv] = useState(initHsv);
   const [prevValue, setPrevValue] = useState(value);
@@ -149,15 +182,83 @@ export function ColorPicker({
   // text being typed in the hex / opacity fields: kept locally so partial input is not overwritten until it is valid
   const [hexDraft, setHexDraft] = useState<string | null>(null);
   const [alphaDraft, setAlphaDraft] = useState<string | null>(null);
-  const [imageFit, setImageFit] = useState<ImageFit>("Fill");
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [imageFitState, setImageFitState] = useState<ImageFit>(propImageFit);
+  const [prevPropImageFit, setPrevPropImageFit] = useState<ImageFit>(propImageFit);
+  if (propImageFit !== prevPropImageFit) {
+    setPrevPropImageFit(propImageFit);
+    setImageFitState(propImageFit);
+  }
+  const imageFit = imageFitState;
+  const setImageFit = useCallback(
+    (f: ImageFit) => {
+      setImageFitState(f);
+      onChangeImageFit?.(f);
+    },
+    [onChangeImageFit]
+  );
+  const [imageSrc, setImageSrc] = useState<string | null>(propImageSrc);
+  const [prevPropImageSrc, setPrevPropImageSrc] = useState<string | null>(propImageSrc);
+  if (propImageSrc !== prevPropImageSrc) {
+    setPrevPropImageSrc(propImageSrc);
+    setImageSrc(propImageSrc);
+  }
+  const [angleState, setAngleState] = useState<number>(propAngle);
+  const [prevPropAngle, setPrevPropAngle] = useState<number>(propAngle);
+  if (propAngle !== prevPropAngle) {
+    setPrevPropAngle(propAngle);
+    setAngleState(propAngle);
+  }
+  const angle = angleState;
+  const setAngle = useCallback(
+    (ang: number) => {
+      setAngleState(ang);
+      onChangeAngle?.(ang);
+    },
+    [onChangeAngle]
+  );
   const [copied, setCopied] = useState(false);
 
   // Gradient stops
-  const [stops, setStops] = useState<ColorStop[]>([
-    { id: "s1", p: 0, h: initHsv.h, s: initHsv.s, v: initHsv.v, a: 1 },
-    { id: "s2", p: 1, h: (initHsv.h + 40) % 360, s: initHsv.s, v: initHsv.v, a: 1 },
-  ]);
+  const [stops, setStopsState] = useState<ColorStop[]>(() => {
+    if (propGradientStops && propGradientStops.length >= 2) {
+      return propGradientStops.map((st, i) => {
+        const rgbVal = hex2rgb(st.hex);
+        const hsvVal = rgb2hsv(rgbVal[0], rgbVal[1], rgbVal[2]);
+        return {
+          id: st.id || `s-${i}`,
+          p: clamp(st.position / 100, 0, 1),
+          h: hsvVal.h,
+          s: hsvVal.s,
+          v: hsvVal.v,
+          a: st.opacity !== undefined ? clamp(st.opacity / 100, 0, 1) : 1,
+        };
+      });
+    }
+    return [
+      { id: "s1", p: 0, h: initHsv.h, s: initHsv.s, v: initHsv.v, a: 1 },
+      { id: "s2", p: 1, h: (initHsv.h + 40) % 360, s: initHsv.s, v: initHsv.v, a: 1 },
+    ];
+  });
+
+  const notifyStopsChange = useCallback((nextStops: ColorStop[]) => {
+    if (!onChangeGradientStops) return;
+    const mapped = nextStops.map((s) => ({
+      id: s.id,
+      hex: rgb2hex(hsv2rgb(s.h, s.s, s.v)),
+      position: Math.round(s.p * 100),
+      opacity: Math.round(s.a * 100),
+    }));
+    onChangeGradientStops(mapped);
+  }, [onChangeGradientStops]);
+
+  const setStops = useCallback((action: ColorStop[] | ((prev: ColorStop[]) => ColorStop[])) => {
+    setStopsState((prev) => {
+      const next = typeof action === "function" ? action(prev) : action;
+      notifyStopsChange(next);
+      return next;
+    });
+  }, [notifyStopsChange]);
+
   const [activeStopIndex, setActiveStopIndex] = useState(0);
 
   // Saved document colors
@@ -565,6 +666,20 @@ export function ColorPicker({
     setActiveStopIndex(nextStops.indexOf(newStop));
   };
 
+  // Image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onUploadImage?.(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setImageSrc(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Stop Marker Drag
   const handleStopMarkerPointerDown = (
     index: number,
@@ -621,19 +736,6 @@ export function ColorPicker({
     onChange?.(`#${rgb2hex(parsed.rgb)}`);
   };
 
-  // Image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setImageSrc(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (!mounted || !isRendered) return null;
 
   return createPortal(
@@ -661,54 +763,78 @@ export function ColorPicker({
 
         {/* Gradient Stops Bar (shown for Linear, Radial, Conic) */}
         {(mode === "Linear" || mode === "Radial" || mode === "Conic") && (
-          <div
-            ref={stopsBarRef}
-            onClick={handleStopsBarClick}
-            aria-label="Gradient stops. Click to add, drag off to remove."
-            className="cp-stops ll:relative ll:h-8.5 ll:cursor-copy ll:select-none ll:shrink-0"
-          >
-            {/* Checkerboard background + gradient fill */}
+          <div className="ll:flex ll:flex-col ll:gap-1.5">
             <div
-              style={{
-                background: `linear-gradient(90deg, ${stops
-                  .map((s) => {
-                    const cRgb = hsv2rgb(s.h, s.s, s.v);
-                    return `rgba(${cRgb.join(",")}, ${s.a}) ${Math.round(s.p * 100)}%`;
-                  })
-                  .join(", ")})`,
-              }}
-              className="cp-bar ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-4 ll:rounded-sm ll:border ll:border-border"
-            />
-            {/* Draggable Stop Markers */}
-            {stops.map((stop, i) => {
-              const stopRgb = hsv2rgb(stop.h, stop.s, stop.v);
-              const isSelected = i === activeStopIndex;
-              return (
-                <button
-                  key={stop.id || i}
-                  type="button"
-                  onPointerDown={(e) => handleStopMarkerPointerDown(i, e)}
-                  aria-pressed={isSelected}
-                  aria-label={`Stop ${i + 1} at ${Math.round(stop.p * 100)}%`}
-                  style={{
-                    left: gradientStopLeftCalc(stop.p),
-                    boxShadow: isSelected
-                      ? "0 0 0 2px var(--ll-surface-panel), 0 0 0 4px var(--ll-text-primary)"
-                      : "0 0 0 1px var(--ll-text-secondary), 0 1px 3px rgba(0,0,0,0.25)",
-                  }}
-                  className={`cp-mk ll:absolute ll:top-2.5 ll:w-3 ll:h-5.5 ll:p-0 ll:rounded-xs ll:border-0 ll:cursor-grab ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-                    isSelected ? "ll:z-10" : "ll:z-1"
-                  }`}
-                >
-                  <i
+              ref={stopsBarRef}
+              onClick={handleStopsBarClick}
+              aria-label="Gradient stops. Click to add, drag off to remove."
+              className="cp-stops ll:relative ll:h-8.5 ll:cursor-copy ll:select-none ll:shrink-0"
+            >
+              {/* Checkerboard background + gradient fill */}
+              <div
+                style={{
+                  background: `linear-gradient(90deg, ${stops
+                    .map((s) => {
+                      const cRgb = hsv2rgb(s.h, s.s, s.v);
+                      return `rgba(${cRgb.join(",")}, ${s.a}) ${Math.round(s.p * 100)}%`;
+                    })
+                    .join(", ")})`,
+                }}
+                className="cp-bar ll:absolute ll:left-0 ll:right-0 ll:top-0 ll:h-4 ll:rounded-sm ll:border ll:border-border"
+              />
+              {/* Draggable Stop Markers */}
+              {stops.map((stop, i) => {
+                const stopRgb = hsv2rgb(stop.h, stop.s, stop.v);
+                const isSelected = i === activeStopIndex;
+                return (
+                  <button
+                    key={stop.id || i}
+                    type="button"
+                    onPointerDown={(e) => handleStopMarkerPointerDown(i, e)}
+                    aria-pressed={isSelected}
+                    aria-label={`Stop ${i + 1} at ${Math.round(stop.p * 100)}%`}
                     style={{
-                      backgroundColor: `rgba(${stopRgb.join(",")}, ${stop.a})`,
+                      left: gradientStopLeftCalc(stop.p),
+                      boxShadow: isSelected
+                        ? "0 0 0 2px var(--ll-surface-panel), 0 0 0 4px var(--ll-text-primary)"
+                        : "0 0 0 1px var(--ll-text-secondary), 0 1px 3px rgba(0,0,0,0.25)",
                     }}
-                    className="ll:absolute ll:inset-0.75 ll:rounded-xs ll:block ll:border ll:border-border"
+                    className={`cp-mk ll:absolute ll:top-2.5 ll:w-3 ll:h-5.5 ll:p-0 ll:rounded-xs ll:border-0 ll:cursor-grab ll:transition-transform ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+                      isSelected ? "ll:z-10" : "ll:z-1"
+                    }`}
+                  >
+                    <i
+                      style={{
+                        backgroundColor: `rgba(${stopRgb.join(",")}, ${stop.a})`,
+                      }}
+                      className="ll:absolute ll:inset-0.75 ll:rounded-xs ll:block ll:border ll:border-border"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Gradient Angle Control */}
+            {mode === "Linear" && (
+              <div className="ll:flex ll:items-center ll:justify-between ll:gap-2 ll:px-1">
+                <span className="ll:text-micro ll:font-medium ll:text-muted">Angle</span>
+                <div className="dfield ll-dfield ll:box-border ll:flex ll:items-center ll:w-20 ll:h-7 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-bar ll:hover:border-muted ll:focus-within:border-primary">
+                  <input
+                    type="number"
+                    min={0}
+                    max={360}
+                    value={angle}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      setAngle(isNaN(v) ? 0 : v);
+                    }}
+                    aria-label="Gradient angle"
+                    className="ll:w-full ll:bg-transparent ll:border-0 ll:p-0 ll:m-0 ll:outline-none ll:font-mono ll:text-micro ll:text-primary"
                   />
-                </button>
-              );
-            })}
+                  <span className="ll:text-micro ll:font-mono ll:text-muted ll:select-none">°</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

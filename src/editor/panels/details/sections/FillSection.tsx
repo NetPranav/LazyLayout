@@ -778,6 +778,39 @@ export const FillSection: React.FC<FillSectionProps> = ({
       {(() => {
         const activeFill = fills.find((f) => f.id === shownPickerId);
         if (!activeFill) return null;
+        const activeIdx = indexOf(activeFill.id);
+        const enginePaint = engine ? enginePaints[activeIdx] : null;
+
+        const currentMode: "Solid" | "Linear" | "Radial" | "Conic" | "Image" =
+          activeFill.type === "linear"
+            ? "Linear"
+            : activeFill.type === "radial"
+            ? "Radial"
+            : activeFill.type === "conic"
+            ? "Conic"
+            : activeFill.type === "image"
+            ? "Image"
+            : "Solid";
+
+        const currentAngle = enginePaint && enginePaint.type === "linear" ? linearAngle(enginePaint) : activeFill.angle ?? 180;
+
+        const currentStops = activeFill.stops && activeFill.stops.length >= 2
+          ? activeFill.stops.map((s) => ({
+              id: s.id,
+              hex: s.hex,
+              position: s.position,
+              opacity: 100,
+            }))
+          : undefined;
+
+        const currentImgSrc = enginePaint && enginePaint.type === "image" && enginePaint.src ? enginePaint.src : null;
+        const currentImgFit: "Fill" | "Fit" | "Crop" | "Tile" =
+          activeFill.imageFit === "fit"
+            ? "Fit"
+            : activeFill.imageFit === "crop"
+            ? "Crop"
+            : "Fill";
+
         return (
           <ColorPicker
             open={Boolean(activeColorPickerId)}
@@ -790,6 +823,28 @@ export const FillSection: React.FC<FillSectionProps> = ({
                 hex: hex.replace(/^#/, "").toUpperCase(),
               })
             }
+            mode={currentMode}
+            onChangeMode={(newMode) => {
+              const lower = newMode.toLowerCase() as FillItem["type"];
+              handleUpdateFill(activeFill.id, { type: lower });
+            }}
+            angle={currentAngle}
+            onChangeAngle={(newAngle) => setAngle(activeFill.id, newAngle)}
+            gradientStops={currentStops}
+            onChangeGradientStops={(newStops) => {
+              setStops(
+                activeFill.id,
+                newStops.map((st) => ({ hex: st.hex, position: st.position }))
+              );
+            }}
+            imageFit={currentImgFit}
+            onChangeImageFit={(fit) => {
+              handleUpdateFill(activeFill.id, { imageFit: fit.toLowerCase() as FillItem["imageFit"] });
+            }}
+            imageSrc={currentImgSrc}
+            onUploadImage={(file) => {
+              void pickImage(activeFill.id, file);
+            }}
             onClose={() => {
               setActiveColorPickerId(null);
             }}
