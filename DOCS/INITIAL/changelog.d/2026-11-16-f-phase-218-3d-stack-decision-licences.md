@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 218 · 3D stack decision & licences] Verified Decision Record 0013 3D dependency manifest (`three`, R3F, drei, BVH, Rapier, meshoptimizer, draco3d, opentype.js), SPDX allowlist, and WebGPU-first / WebGL2-fallback runtime descriptor (`src/core/3d/stage6/stackAndSceneLayer.ts`).

@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 219 · Scene layer] Implemented lazily loaded `Scene3dLayerHost` bound to shared GPU compositor contexts with offscreen posters and Chromium/Firefox/WebKit context-loss recovery (`AUD-11`).

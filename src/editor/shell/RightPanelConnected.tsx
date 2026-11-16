@@ -30,10 +30,15 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
   const active3dId = useViewportStore((s) => s.selection.active);
   const editingSceneId = useViewportStore((s) => s.editingSceneId);
   const doc = useDocument((d) => d);
-  const selected3dObj = active3dId ? doc.objects?.[active3dId] : undefined;
+  const effective3dId =
+    active3dId ??
+    (editingSceneId
+      ? doc.scenes?.[editingSceneId]?.objects?.[0] ?? Object.keys(doc.objects ?? {})[0] ?? null
+      : null);
+  const selected3dObj = effective3dId ? doc.objects?.[effective3dId] : undefined;
 
-  // 3D selection in viewport store mounts Properties3d editor
-  const has3dSelection = Boolean(active3dId && (dimension === "3d" || Boolean(editingSceneId) || !inspector.hasSelection));
+  // 3D selection (or active 3D scene editing mode) in viewport store mounts Properties3d editor
+  const has3dSelection = Boolean(effective3dId && (dimension === "3d" || Boolean(editingSceneId) || !inspector.hasSelection));
 
   // the 2D / 3D switch: the same selection, its Figma-style or its Blender-style settings
   const designSections =
@@ -76,7 +81,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
         aiOpen={aiOpen}
         onAiClose={onAiClose}
       >
-        <Properties3d activeId={active3dId} />
+        <Properties3d activeId={effective3dId} />
       </RightPanelFrame>
     );
   }

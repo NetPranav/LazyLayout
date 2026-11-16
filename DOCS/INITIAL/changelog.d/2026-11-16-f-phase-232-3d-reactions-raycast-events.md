@@ -1,0 +1,1 @@
+- [Lane F · Stage 6 · Phase 232 · 3D reactions & raycast events] Implemented 3D pointer tilt/lookAt/scroll camera bindings, arrow-key orbit controls, and raycast Blueprint enter/leave/click/drag events (`src/core/3d/stage6/reactionsDomAndInstancing.ts`).
