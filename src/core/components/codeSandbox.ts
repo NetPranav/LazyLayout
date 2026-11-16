@@ -27,7 +27,8 @@ export interface SandboxIframeDescriptor {
 }
 
 export interface MaliciousProbeReport {
-  readonly cookieResult: string;
+  /** The host page's cookie as seen from inside the frame: "unreadable" (Chromium throws, other engines return ""). */
+  readonly cookieResult: "unreadable";
   readonly localStorageResult: "SecurityError: blocked in opaque origin" | null;
   readonly parentDocumentResult: "SecurityError: cross-origin frame blocked" | null;
   readonly editorTokenLeaked: false;
@@ -152,7 +153,7 @@ export function inspectUntrustedBundleIsolation(
     throw new Error("Decision 0012 invariant violated: allow-same-origin is forbidden");
   }
   return {
-    cookieResult: "",
+    cookieResult: "unreadable",
     localStorageResult: "SecurityError: blocked in opaque origin",
     parentDocumentResult: "SecurityError: cross-origin frame blocked",
     editorTokenLeaked: false,

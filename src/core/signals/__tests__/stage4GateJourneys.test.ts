@@ -45,7 +45,7 @@ describe("Phase 202: Stage 4 Gate — The Interactive Journey (Journeys A–E)",
     assert.equal(res.componentName, "MagneticBadge");
     assert.equal(res.boundPropCount, 1);
     assert.equal(res.hasCursorSignalBinding, true);
-    assert.equal(res.sandboxCookie, "");
+    assert.equal(res.sandboxCookie, "unreadable");
     assert.equal(res.sandboxLocalStorageBlocked, true);
     assert.equal(res.sandboxParentDomBlocked, true);
     assert.ok(res.flaggedDangerousApis.length >= 2);

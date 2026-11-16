@@ -9,4 +9,5 @@
 - Command-coverage test: the Icons & photos dialog's Escape handler is listed with the other dialogs (it failed on `main`).
 
 ### Changed
-- AUDIT.md: AUD-14, 45, 46, 48, 49, 50, 54, 56 and 57 reopened as Partial or Open, with the reason; they were marked closed by code the editor doesn't use.
+- AUDIT.md: AUD-14, 45, 46, 48, 49, 50, 54, 56 and 57 reopened as Partial or Open, and AUD-55 and 58 reworded, each with the reason; they were marked closed by code the editor doesn't use or by simulated checks.
+- The sandbox's cookie result is "unreadable" (it claimed ""; Chromium throws), and the photosensitivity check says `measured: false` when it had nothing to measure instead of only `safe: true`.

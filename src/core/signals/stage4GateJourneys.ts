@@ -385,7 +385,7 @@ export function MagneticBadge({ tiltX, label = "New" }: MagneticBadgeProps) {
     zeroLazyLayoutImportsInExport,
     passedIsolation:
       !imported.sandbox.sandboxAttr.includes("allow-same-origin") &&
-      hostileProbe.cookieResult === "" &&
+      hostileProbe.cookieResult === "unreadable" &&
       sandboxLocalStorageBlocked &&
       sandboxParentDomBlocked &&
       !hostileProbe.editorTokenLeaked &&
