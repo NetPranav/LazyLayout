@@ -220,6 +220,7 @@ One line per change, newest first: the date, what moved in, what moved out, and 
 
 | Date | Change | Decided by |
 |---|---|---|
+| 2026-11-15 | **Lane G opened by the owner:** Stage 7, AI & agents (Phases 241–250, R2/L8), starts Phase 241 now alongside active R0 (owner exception to Law 21, `Needs: 13, 50` already ✅ on `main`). | Owner |
 | 2026-11-14 | **Lane C opened by the owner:** Stage 3, Design depth (Phases 103–131, theme L5), is built now by a third lane, beside the active release. It is the one exception to Law 21; 3D (R3, R4) stays after the beta. | Owner |
 | 2026-11-14 | v5 written. The watch page gate (D21) no longer needs corner pin and tracking (D16, D17): the page does not use them. The Needs lines of Phases 93, 94, 95, 101, 241 and 259 now name real dependencies. | Proposed in the v5 PR; the owner decides by merging it |
 
@@ -557,9 +558,9 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 
 | # | Phase | Needs | Was (v3) | Stage | Status |
 |---|---|---|---|---|---|
-| 241 | LLM integration layer | 13, 50 | v3 30.1, 30.2 | 7 | 📋 |
-| 242 | Validation loop & offline provider | 241 | v3 30.3, 30.4 | 7 | 📋 |
-| 243 | AI builder: prompt → design and motion | 242 | v3 31 | 7 | 📋 |
+| 241 | LLM integration layer | 13, 50 | v3 30.1, 30.2 | 7 | 🚧 |
+| 242 | Validation loop & offline provider | 241 | v3 30.3, 30.4 | 7 | 🚧 |
+| 243 | AI builder: prompt → design and motion | 242 | v3 31 | 7 | 🚧 |
 | 244 | AI evals & visual self-check | 243 | v3 33 | 7 | 📋 |
 | 245 | AI co-pilot: edit, explain, fix | 244 | v3 32 | 7 | 📋 |
 | 246 | AI interaction builder | 245 | v3 73.4 | 7 | 📋 |
@@ -3390,7 +3391,7 @@ These three things work in the core and in the legacy editor, but the new editor
 > **Stage output:** a real model builds the first version and helps refine it, always as a diff the user approves. Claude, through MCP, can do everything a person can do in the editor.
 
 ### Phase 241 · LLM integration layer
-**Needs:** 13, 50 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 📋
+**Needs:** 13, 50 · **Was:** v3 30.1, 30.2 · **Closes:** AUD-17 · **Status:** 🚧
 - [ ] A Next.js route handler calls the Claude API through `@anthropic-ai/sdk`; the key stays server-side. The model ID lives in one constant, checked against the current model lineup when this phase starts.
 - [ ] Schema-constrained output (the MDM JSON Schema and the command schemas from 13 as strict tool inputs); edits are MDM patches, graphs are `.nls`; streaming; prompt caching of the stable prefix; vision input; graceful handling of every stop reason.
 - [ ] The route is private (developer use) until Phases 259 and 260.
@@ -3399,14 +3400,14 @@ These three things work in the core and in the legacy editor, but the new editor
 **Done when:** no API key appears in client bundles (build scan); cache reads show on repeated requests.
 
 ### Phase 242 · Validation loop & offline provider
-**Needs:** 241 · **Was:** v3 30.3, 30.4 · **Closes:** AUD-18 · **Status:** 📋
+**Needs:** 241 · **Was:** v3 30.3, 30.4 · **Closes:** AUD-18 · **Status:** 🚧
 - [ ] Every model output goes through schema validation, then `rules.validate`, then at most one repair turn with the diagnostics, otherwise it's rejected with an explanation. The v1.1 deterministic parsers become the offline provider and a test oracle; `ConstrainedDecoder.ts` is removed.
 
 **You'll see:** AI suggestions never break the rules.
 **Done when:** 50 scripted prompts give ≥ 95% schema- and rule-valid patches with at most one repair.
 
 ### Phase 243 · AI builder: prompt → design and motion
-**Needs:** 242 · **Was:** v3 31 · **Status:** 📋
+**Needs:** 242 · **Was:** v3 31 · **Status:** 🚧
 - [ ] A planner picks layers, library effects (preferred when they fit), reactions and rules; a builder emits patches; a streaming ghost diff on the canvas and timeline (accept all, per layer, or discard); follow-up turns; a plain-language summary with the engine choices.
 
 **You'll see:** type a sentence and watch a first version appear as a ghost you can accept.

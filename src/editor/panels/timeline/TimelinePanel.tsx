@@ -25,6 +25,7 @@ import { TimelineCurveGraph } from "./TimelineCurveGraph";
 import { TimelineFooter } from "./TimelineFooter";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { TimelineMenus } from "./TimelineMenus";
+import { TimelineGhostBanner } from "./TimelineGhostBanner";
 import type { TimelinePanelProps, ContextMenuState } from "./types";
 import {
   TIMELINE_TRACK_COLUMN_DEFAULT_PX,
@@ -447,6 +448,9 @@ export const TimelinePanel: React.FC<TimelinePanelProps> = ({
                 });
               }}
             />
+
+            {/* Phase 243: Pending AI Ghost Diff strip */}
+            <TimelineGhostBanner />
 
             {/* Main Content: Graph View or Tracks View */}
             {view === "graph" ? (

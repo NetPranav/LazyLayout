@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect } from "react";
 import { TopBar } from "@/editor/components";
 import { CanvasChrome } from "@/editor/shell/canvas-chrome";
+import { useAiChat } from "@/editor/shell/right-panel";
 import { RightPanelConnected } from "./RightPanelConnected";
 import { LeftPanelConnected } from "@/editor/panels/layers";
 import { Stage } from "@/editor/stage";
@@ -131,6 +132,7 @@ export function EditorShell({
     onBeforeModeChange: captureMode,
   });
   const timelineFullWidth = useMotionModel((s) => s.fullWidth);
+  const aiChat = useAiChat({ mode: actions.mode, documentName: projectName });
   const bottomOpen = !actions.isZen && (actions.mode === "motion" || actions.mode === "code");
   // Full width belongs to the Motion timeline only; Code always keeps its side panels.
   const fullWidth = bottomOpen && actions.mode === "motion" && timelineFullWidth;
@@ -392,7 +394,19 @@ export function EditorShell({
       >
         {center ?? (
           <CanvasChrome
-            onAiExpand={() => setAiPanelOpen(true)}
+            onAiExpand={(prompt) => {
+              setAiPanelOpen(true);
+              actions.toggleAiBox(false);
+              if (prompt.trim()) void aiChat.sendMessage(prompt);
+            }}
+            onAiSubmit={(prompt) => {
+              setAiPanelOpen(true);
+              actions.toggleAiBox(false);
+              void aiChat.sendMessage(prompt);
+            }}
+            onAiStop={aiChat.stop}
+            aiState={aiChat.isLoading ? "work" : "idle"}
+            aiLoading={aiChat.isLoading}
             mode={actions.mode}
             activeTool={actions.activeTool}
             onSelectTool={actions.setActiveTool}
@@ -528,7 +542,19 @@ export function EditorShell({
           <RightPanelConnected
             mode={actions.mode}
             aiOpen={aiPanelOpen}
+            onAiOpen={() => setAiPanelOpen(true)}
             onAiClose={() => setAiPanelOpen(false)}
+            aiMessages={aiChat.messages}
+            onAiSendMessage={(msg) => void aiChat.sendMessage(msg)}
+            aiProvider={aiChat.provider}
+            onAiProviderChange={aiChat.setProvider}
+            onAiModelChange={aiChat.setModel}
+            aiProviderStatus={aiChat.providerStatus}
+            aiUserKeys={aiChat.userKeys}
+            aiCustomModels={aiChat.customModels}
+            onAiSaveCredentials={aiChat.saveCredentials}
+            aiLoading={aiChat.isLoading}
+            onAiStop={aiChat.stop}
           />
         )}
       </div>

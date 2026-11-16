@@ -13,7 +13,7 @@
 
 import { IntentParser } from "@/ai/intent/IntentParser";
 import { StructuredIntent } from "@/ai/intent/intent-types";
-import { ConstrainedDecoder } from "./ConstrainedDecoder";
+import { buildNodeScriptFromIntent } from "@/ai/llm/offlineProvider";
 import { ForceDirectedLayout } from "@/ai/layout/ForceDirectedLayout";
 import { ProjectStateSnapshot, PageDefinition, StateVariable } from "@/core/store/useProjectStore";
 import { CollectionSchema, DatabaseField } from "@/core/types/database";
@@ -456,9 +456,9 @@ export class ProjectScaffolder {
   } {
     const blueprintGraphs: Record<string, BlueprintGraph> = {};
 
-    // Synthesize via ConstrainedDecoder
-    const scaffoldRes = ConstrainedDecoder.generateFromIntent(intent);
-    let graph = scaffoldRes.graph!;
+    // Synthesize deterministic NodeScript graph
+    const scaffoldRes = buildNodeScriptFromIntent(intent);
+    let graph = scaffoldRes.graph;
 
     if (autoLayout) {
       graph = ForceDirectedLayout.layoutGraph(graph);

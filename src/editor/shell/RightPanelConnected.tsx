@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { RightPanelFrame } from "@/editor/shell/right-panel";
+import {
+  RightPanelFrame,
+  useAiChat,
+  type AiChatMessage,
+  type AiProviderId,
+  type AiProviderStatusMap,
+} from "@/editor/shell/right-panel";
 import type { RightPanelMode } from "@/editor/shell/right-panel";
 import {
   getInspectorDesignSections,
@@ -20,11 +26,62 @@ export interface RightPanelConnectedProps {
   mode: RightPanelMode;
   /** Show the AI chat view instead of the inspector. */
   aiOpen?: boolean;
+  onAiOpen?: () => void;
   onAiClose?: () => void;
+  aiMessages?: AiChatMessage[];
+  onAiSendMessage?: (content: string) => void;
+  aiProvider?: AiProviderId;
+  onAiProviderChange?: (provider: AiProviderId) => void;
+  onAiModelChange?: (provider: AiProviderId, model: string) => void;
+  aiProviderStatus?: AiProviderStatusMap;
+  aiUserKeys?: Partial<Record<Exclude<AiProviderId, "offline">, string>>;
+  aiCustomModels?: Partial<Record<AiProviderId, string>>;
+  onAiSaveCredentials?: (
+    provider: Exclude<AiProviderId, "offline">,
+    apiKey: string,
+    customModel?: string,
+  ) => void;
+  aiLoading?: boolean;
+  onAiStop?: () => void;
 }
 
 /** Right panel frame: the real inspector fields in Design, the motion inspector (composition, layer or keyframe by selection) in Motion, the file inspector in Code. */
-export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, aiOpen = false, onAiClose }) => {
+export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
+  mode,
+  aiOpen = false,
+  onAiOpen,
+  onAiClose,
+  aiMessages: controlledAiMessages,
+  onAiSendMessage: controlledOnAiSendMessage,
+  aiProvider: controlledAiProvider,
+  onAiProviderChange: controlledOnAiProviderChange,
+  onAiModelChange: controlledOnAiModelChange,
+  aiProviderStatus: controlledAiProviderStatus,
+  aiUserKeys: controlledAiUserKeys,
+  aiCustomModels: controlledAiCustomModels,
+  onAiSaveCredentials: controlledOnAiSaveCredentials,
+  aiLoading: controlledAiLoading,
+  onAiStop: controlledOnAiStop,
+}) => {
+  const internalAiChat = useAiChat({ mode });
+  const aiSharedProps = {
+    aiOpen,
+    onAiOpen,
+    onAiClose,
+    aiMessages: controlledAiMessages ?? internalAiChat.messages,
+    onAiSendMessage:
+      controlledOnAiSendMessage ?? ((content: string) => void internalAiChat.sendMessage(content)),
+    aiProvider: controlledAiProvider ?? internalAiChat.provider,
+    onAiProviderChange: controlledOnAiProviderChange ?? internalAiChat.setProvider,
+    onAiModelChange: controlledOnAiModelChange ?? internalAiChat.setModel,
+    aiProviderStatus: controlledAiProviderStatus ?? internalAiChat.providerStatus,
+    aiUserKeys: controlledAiUserKeys ?? internalAiChat.userKeys,
+    aiCustomModels: controlledAiCustomModels ?? internalAiChat.customModels,
+    onAiSaveCredentials: controlledOnAiSaveCredentials ?? internalAiChat.saveCredentials,
+    aiLoading: controlledAiLoading ?? internalAiChat.isLoading,
+    onAiStop: controlledOnAiStop ?? internalAiChat.stop,
+  };
+
   const inspector = useSelectionInspector();
   const dimension = useInspectorDimension((s) => s.dimension);
   const active3dId = useViewportStore((s) => s.selection.active);
@@ -51,7 +108,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
 
   if (mode === "motion") {
     return (
-      <RightPanelFrame mode={mode} aiOpen={aiOpen} onAiClose={onAiClose}>
+      <RightPanelFrame mode={mode} {...aiSharedProps}>
         <MotionInspector />
         <InspectorExtras kind="animation" />
       </RightPanelFrame>
@@ -59,7 +116,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
   }
   if (mode === "code") {
     return (
-      <RightPanelFrame mode={mode} aiOpen={aiOpen} onAiClose={onAiClose}>
+      <RightPanelFrame mode={mode} {...aiSharedProps}>
         <CodeInspector />
         <InspectorExtras kind="data-logic" />
       </RightPanelFrame>
@@ -73,13 +130,12 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({ mode, 
         mode={mode}
         selectionName={selected3dObj?.name ?? "3D Object"}
         dimension={dimension}
-        aiOpen={aiOpen}
-        onAiClose={onAiClose}
+        {...aiSharedProps}
       >
         <Properties3d activeId={active3dId} />
       </RightPanelFrame>
     );
   }
 
-  return <RightPanelFrame mode={mode} designSections={designSections} aiOpen={aiOpen} onAiClose={onAiClose} />;
+  return <RightPanelFrame mode={mode} designSections={designSections} {...aiSharedProps} />;
 };
