@@ -35,6 +35,7 @@ import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { morphOptions, morphPath } from "../paths/morphMatch";
 import { followSettings, followsPath, pathSampler } from "../paths/pathFollow";
+import type { StateShare } from "../states/transitions";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
@@ -63,6 +64,12 @@ export interface EvaluateInputs {
   activeStates?: Record<string, string>;
   /** Design track D15: how far into its active state each layer is, 0-1 (default 1). Numbers blend; anything else switches at one half. */
   stateBlend?: Record<string, number>;
+  /**
+   * Phase 79: every state a layer is partly in, with its share (0 to 1; a spring may pass 1), in the order they are laid
+   * over the base. When a layer has an entry here it is used instead of `activeStates` and `stateBlend`, so two states
+   * can cross (hover easing out while pressed eases in) and a property can move on a transition of its own (`amounts`).
+   */
+  stateMix?: Record<string, ReadonlyArray<StateShare>>;
   reducedMotion?: boolean;
   /** A virtual pointer position, layer-local px — for the behaviours this kernel does evaluate (`loop` needs none; reserved for Phase 12's expansion). */
   pointer?: { x: number; y: number } | null;
@@ -607,7 +614,29 @@ function evaluateBaseProps(
   let resolved: ResolvedProps = { ...layer.properties };
 
   // 2. State.
-  const activeState = findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
+  const shares = inputs.stateMix?.[layerId];
+  const activeState = shares ? undefined : findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
+  if (shares) {
+    for (const share of shares) {
+      const state = findActiveState(doc, layerId, share.name);
+      if (!state) continue;
+      let next: ResolvedProps | null = null;
+      for (const [path, to] of Object.entries(state.props)) {
+        const amount = share.amounts?.[path] ?? share.amount;
+        if (amount === 0) continue;
+        const def = getPropertyDefinition(path);
+        // a property the base layer doesn't set starts from its default (a rectangle's opacity is 1 without saying so)
+        const from = resolved[path] ?? (def?.default as PropValue | undefined);
+        let value: PropValue;
+        if (amount === 1 || from === undefined || from === null) value = amount >= 0.5 ? to : (resolved[path] as PropValue);
+        // numbers follow the share past 1 (a spring's overshoot); colours and the rest mix by their own rule, between 0 and 1
+        else if (typeof to === "number" && typeof from === "number") value = from + (to - from) * amount;
+        else value = interpolateValue(def?.interpolation ?? "discrete", from as PropValue, to, Math.min(1, Math.max(0, amount)));
+        if (value !== resolved[path]) (next ??= { ...resolved })[path] = value;
+      }
+      if (next) resolved = next;
+    }
+  }
   if (activeState) {
     const amount = inputs.stateBlend?.[layerId];
     if (amount === undefined || amount >= 1) resolved = { ...resolved, ...activeState.props };

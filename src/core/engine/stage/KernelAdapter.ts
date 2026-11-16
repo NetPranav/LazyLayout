@@ -64,7 +64,7 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix };
     this.invalidate();
   }
 
@@ -74,8 +74,8 @@ export class KernelAdapter implements EngineAdapter {
   }
 
   /** Design track D15: this frame's states and how far into them each layer is. Like `setBound`, not an `invalidate`. */
-  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number> } | null): void {
-    this.inputs = { ...this.inputs, activeStates: frame?.activeStates, stateBlend: frame?.stateBlend };
+  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number>; stateMix?: EvaluateInputs["stateMix"] } | null): void {
+    this.inputs = { ...this.inputs, activeStates: frame?.activeStates, stateBlend: frame?.stateBlend, stateMix: frame?.stateMix };
   }
 
   invalidate(): void {

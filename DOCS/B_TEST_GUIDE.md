@@ -35,7 +35,8 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
-| 86 | A layer travels along a drawn path at constant speed, turning with it if you want | this branch (NEW) | 3.24 |
+| 79 | A layer moves between its states on a spring or a tween; quick hovers never snap | this branch (NEW) | 3.25 |
+| 86 | A layer travels along a drawn path at constant speed, turning with it if you want | #186 | 3.24 |
 | 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | #181 | 3.23 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
@@ -54,7 +55,8 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 9. **A layer half way through a move can be clicked (3.18, T69.9):** in **Motion**, give a rectangle two **Position X** keyframes, drag the needle to the middle, click the rectangle on the canvas: it is selected and its motion path shows (the click used to fall through to the frame behind).
 10. **A stroke draws itself, a path morphs (3.23):** press **P**, click three points, press **Enter** (a path); do it again somewhere else with four points. Select the first, switch to **Motion**, scroll the right panel to **Morph & draw**, click **Draw the stroke on**, then drag the needle from 0 to 1 s: the stroke grows from nothing to whole. Choose **Morph into… → (the other path)** and drag the needle again: the first shape turns into the second.
 11. **A layer travels along a path (3.24):** draw a curved path with the **Pen** and a rectangle (**R**). Select the rectangle, switch to **Motion**, scroll the right panel to **Follow a path**, choose the path in **Path**, click **Travel along the path**, then drag the needle from 0 to 2 s: the rectangle's middle rides along the line at an even speed.
-12. Nothing in the console is red.
+12. **Hover that never snaps (3.25):** in **Design**, draw a rectangle, open **States** in the right panel and add **Hover**; with Hover picked, set the opacity to 20 %; pick the base state again. Turn on **Show states live on the canvas**, then wave the pointer on and off the rectangle quickly: it fades towards 20 % and back smoothly, never jumping.
+13. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -965,6 +967,27 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T86.21** Do: drag **Time** slowly from 0 to 1. Expect: the red dot goes once round the circle, clockwise, at an even speed, its middle on the line. At 0.25 it is at the bottom, at 0.5 on the left, at 0.75 at the top.
 - [ ] **T86.22** Do: watch the blue bar. Expect: it is always a quarter of a lap ahead of the dot, and it turns so that its long side lies along the circle.
 - [ ] **T86.23** Do: drag **Time** back to a moment you looked at. Expect: exactly the same picture.
+
+### 3.25 Phase 79: transitions between states (NEW)
+
+**What changed:** a layer with states (Hover, Pressed, Focus, ...) used to ease into a state at one fixed speed. Now the layer has a **Transition**: a **Spring** (the default) or a **Tween**, with a time. A spring keeps its speed when you interrupt it, so moving the pointer on and off quickly never makes the layer jump. One property can be given a transition of its own (a colour that fades slowly while the size springs).
+
+**Known gaps (don't report):** one transition per layer (not one per pair of states). Not in the exported code yet. The transition is seen in **Preview** and in **Design** with **Show states live on the canvas** switched on; while you are editing a state the layer shows that state fully.
+
+**User test (the new editor, covered by `tests/e2e/transitions.spec.ts`)**
+- [ ] **T79.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition** (just under **States**). Expect: a sentence telling you to add a state first. Fails if: the section is missing.
+- [ ] **T79.2** Do: in **States**, add **Hover**. With Hover picked, set the layer's **opacity** to 20 %. Pick the base state again. Expect: the rectangle is fully visible again, and **Transition** now shows **Type: Spring**, **Time 0.35 s** and **Bounce 15 %**.
+- [ ] **T79.3** Do: switch on **Show states live on the canvas** (in States). Move the pointer onto the rectangle and hold it there. Expect: it fades to 20 % in about a third of a second. Move off: it fades back.
+- [ ] **T79.4** Do: type **0.8** in **Time** and **0** in **Bounce**. Move the pointer on and off the rectangle as fast as you can, ten times. Expect: the rectangle's opacity drifts down and up smoothly, never reaching 20 %, never jumping; when you stop off the rectangle it settles fully visible. Fails if: it flickers between two values or snaps.
+- [ ] **T79.5** Do: type **60** in **Bounce**, then hover and hold. Expect: the fade goes a little past 20 % and comes back (an overshoot). Set Bounce back to 15.
+- [ ] **T79.6** Do: choose **Tween** in **Type**. Expect: **Bounce** is replaced by **Curve** (Ease out). Choose **Linear**, type **1** in **Time**, hover and hold: an even one-second fade.
+- [ ] **T79.7** Do: with Hover picked in States, also change the rectangle's **width**; pick the base again. In **Transition** open **A property of its own…**. Expect: only the properties your states change are listed (opacity, width). Choose the opacity one and give it **Time 2**. Hover and hold. Expect: the width arrives in a second, the opacity takes two.
+- [ ] **T79.8** Do: click the minus beside that property. Expect: it moves with the rest again.
+- [ ] **T79.9** Do: press **Ctrl+Z** several times. Expect: each press undoes one setting.
+- [ ] **T79.10** Do: add a **Pressed** state with a different opacity (say 60 %). With states live, hover the rectangle and then hold the mouse button down. Expect: it goes from the hover look to the pressed look directly, without flashing fully visible in between.
+- [ ] **T79.11** Do: switch the frame bar to **Preview** and hover the rectangle. Expect: the same transition as in Design.
+
+**Developer test:** `npx tsx --test src/core/states/__tests__/transitions.test.ts` (13 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

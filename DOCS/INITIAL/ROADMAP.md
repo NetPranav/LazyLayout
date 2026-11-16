@@ -371,7 +371,7 @@ One row per phase, in catalogue order. **The order of work is the release plan i
 | 76 | Property links & pick-whip | 75 | v3 47.1, 47.3, 47.4 | 2 | 🚧 |
 | 77 | Expressions | 76 | v3 47.2, 47.4 (export) | 2 | 🚧 |
 | 78 | States | 33, 77 | v3 11.1 | 2 | 📋 |
-| 79 | Transitions & smart animate | 78 | v3 11.2 | 2 | 📋 |
+| 79 | Transitions & smart animate | 78 | v3 11.2 | 2 | 🚧 |
 | 80 | Animated variants & interactive components | 47, 79 | v3 75.2 (animated half), 75.4 | 2 | 📋 |
 | 81 | Scroll: model & runtime | 59 | v3 13.1, 13.2 | 2 | 🚧 |
 | 82 | Scroll simulator & section choreography | 48, 81 | v3 13.3, 76.2 | 2 | 📋 |
@@ -1295,11 +1295,21 @@ The document and World Environment have their own stores, After-track actions mo
 **Done when:** state edits round-trip; Preview shows the states on real hover and press.
 
 ### Phase 79 · Transitions & smart animate
-**Needs:** 78 · **Was:** v3 11.2 · **Closes:** AUD-14 (preview, partial) · **Status:** 📋
-- [ ] Automatic transitions between any two states: a spring (default for interactions) or a tween, per-property overrides, and interruption that keeps velocity.
+**Needs:** 78 · **Was:** v3 11.2 · **Closes:** AUD-14 (preview, partial) · **Status:** 🚧
+- [x] Automatic transitions between any two states: a spring (default for interactions) or a tween, per-property overrides, and interruption that keeps velocity.
+
+**Started before its Need is ✅ (2026-11-16):** Phase 78 (states) is Lane A's since the owner's takeover of D15; the states themselves are on `main` (`src/core/states/states.ts`, the **States** section) but the phase is not ✅. Phase 79 builds on that code, so it stays 🚧 until 78 is ✅ and this gate has passed in CI.
+**The transition (`src/core/states/transitions.ts`):** `Mover` is one number (a state's share of the picture, 0 to 1) moving to a target. A spring is evaluated in closed form from where the number is with the speed it has, so changing the target mid-way changes neither; a tween starts again from where it is. Pure: the stage steps it with the frame's time.
+**Properties (settings, not animated):** `transition.type` (`spring`, the default, or `tween`), `transition.duration` (s), `transition.bounce` (0 to 1), `transition.curve` (a tween's easing), and three slots `transition.N.property` / `.type` / `.duration` / `.bounce` for a property that moves on a transition of its own.
+**Kernel:** a new input `EvaluateInputs.stateMix` (every state a layer is partly in, with its share and per-property shares, in the order they are laid over the base). Numbers follow the share past 1 (a spring's overshoot); colours and the rest mix by their own rule; a property the base doesn't set starts from its default. `activeStates` + `stateBlend` still work for callers that set one state.
+**Engine (`StateDriver`):** one mover per state per layer (plus one per overridden property). All head for 1 or 0 at once, so hover fades out under pressed arriving instead of passing through the base. Reduced motion jumps. Before this a state eased in at a fixed exponential rate and a change of state waited for the old one to ease out.
+**Commands (`src/core/states/transitionCommands.ts`):** `layer.setTransition` and `layer.setTransitionOverride` (refused with a code for a property none of the layer's states changes, a fourth override, or a duplicate). One undo step each.
+**In the editor:** a **Transition** section under **States** in the Design inspector (`src/editor/panels/details/sections/TransitionSection.tsx`): **Type**, **Time**, **Bounce** (spring) or **Curve** (tween), and **A property of its own…**.
+**Not built:** transitions in the exported code (Phase 95); a different transition per pair of states (one per layer, plus per-property overrides).
 
 **You'll see:** hovering a button animates smoothly, even when you move in and out quickly.
 **Done when:** clicking a 2-state toggle 10 times rapidly never snaps (velocity continuity checked on sampled positions).
+**Evidence (2026-11-16):** `src/core/states/__tests__/transitions.test.ts` (the mover: spring and tween, velocity kept across a change of target, determinism; the settings and commands with undo; the kernel's mix: overshoot, colours, defaults, two states crossing, per-property shares; the driver: the toggle hovered in and out 10 times with every frame-to-frame step and every change of speed bounded, hover to pressed without passing through the base, an override lagging, reduced motion). `tests/e2e/transitions.spec.ts` on `/editor`: the section's controls end to end, and the pointer moved on and off a layer 10 times at 90 ms while the drawn opacity is sampled on every frame (no step above 0.2 of a 0.8 change; it is caught on the way and ends at rest). Passing in Chromium here.
 
 ### Phase 80 · Animated variants & interactive components
 **Needs:** 47, 79 · **Was:** v3 75.2 (animated half), 75.4 · **Status:** 📋

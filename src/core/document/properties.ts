@@ -243,6 +243,26 @@ function exprSlotDefs(): Record<string, Def> {
   return out;
 }
 
+/**
+ * Transitions between states (Phase 79, `core/states/transitions.ts`): how the layer moves from one state to another,
+ * and up to three properties that move on a transition of their own. Settings, not animated themselves.
+ */
+function transitionDefs(): Record<string, Def> {
+  const out: Record<string, Def> = {
+    "transition.type": typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL)),
+    "transition.duration": ranged(num(0.35, null, "paint", VISUAL, false), { min: 0.01, max: 10 }),
+    "transition.bounce": ranged(num(0.15, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+    "transition.curve": typed(oneOf(["linear", "power2.out", "power2.in", "power2.inOut", "power4.out"], "power2.out", null, "paint", VISUAL)),
+  };
+  for (let slot = 1; slot <= 3; slot++) {
+    out[`transition.${slot}.property`] = typed(str("", null, "paint", VISUAL));
+    out[`transition.${slot}.type`] = typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL));
+    out[`transition.${slot}.duration`] = ranged(num(0.35, null, "paint", VISUAL, false), { min: 0.01, max: 10 });
+    out[`transition.${slot}.bounce`] = ranged(num(0.15, null, "paint", VISUAL, false), { min: 0, max: 1 });
+  }
+  return out;
+}
+
 function fxSlotDefs(): Record<string, Def> {
   const out: Record<string, Def> = {};
   for (let slot = 1; slot <= 8; slot++) {
@@ -937,7 +957,7 @@ const DEFS = {
 export type PropertyPath = keyof typeof DEFS;
 
 export const PROPERTY_REGISTRY: Readonly<Record<string, PropertyDefinition>> = Object.fromEntries(
-  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs(), ...exprSlotDefs() }).map(([path, { scope, ...def }]) => [
+  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs(), ...exprSlotDefs(), ...transitionDefs() }).map(([path, { scope, ...def }]) => [
     path,
     { path, ...def, interpolation: INTERPOLATION_BY_TYPE[def.valueType], archetypes: resolveScope(scope) },
   ])

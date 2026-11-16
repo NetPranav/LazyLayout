@@ -288,6 +288,17 @@ The layer is on the path in **Motion** and in **Preview**; Design shows it where
 
 In the **Effect stack**, each effect also says whether it is **cheap to animate** (the browser re-applies it without redrawing the layer) or **costly to animate** (the layer is redrawn on every frame the effect changes).
 
+### 10. States and transitions (hover, pressed, focus)
+A layer can look different while the pointer is over it, while it is pressed, or while it has keyboard focus. In **Design**, select the layer and open **States** in the right panel: add **Hover** (or Pressed, Focus), and with that state picked change anything about the layer. Only the difference from the normal look is stored. Pick the base state again to go back to normal editing.
+
+Just under States is **Transition**: how the layer moves into and out of a state.
+
+- **Type: Spring** (the default) feels physical. If you interrupt it (move the pointer away before it has arrived) it keeps its speed and turns round smoothly; it never jumps. **Bounce** says how far it overshoots: 0 % doesn't.
+- **Type: Tween** takes exactly the **Time** you give it, along the **Curve** you choose.
+- **A property of its own…** lets one property move differently from the rest, for example a colour that fades slowly while the size springs. Up to three.
+
+To see it, switch on **Show states live on the canvas** in States, or switch the frame bar to **Preview**, and move the pointer on and off the layer. Transitions are not in the exported code yet.
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

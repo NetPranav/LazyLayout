@@ -44,6 +44,7 @@ import { CompositingSection } from "./sections/CompositingSection";
 import { EffectStackSection } from "./sections/EffectStackSection";
 import { MorphDrawSection } from "./sections/MorphDrawSection";
 import { FollowPathSection } from "./sections/FollowPathSection";
+import { TransitionSection } from "./sections/TransitionSection";
 import {
   PageSectionBody,
   PageBackgroundBody,
@@ -487,6 +488,11 @@ export function getInspectorDesignSections(
       id: "layer-states",
       title: "States",
       children: <LayerStatesSection {...sectionProps} />,
+    },
+    {
+      id: "transition",
+      title: "Transition",
+      children: <TransitionSection {...sectionProps} />,
     },
     {
       id: "style-code",
