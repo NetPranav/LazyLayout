@@ -70,6 +70,7 @@ import { useSaveIndicator } from "./useSaveIndicator";
 import { invokeCommand } from "@/core/commands";
 import { LOGO_ICON_SIZE, MENU_ICON_SIZE, ACTION_ICON_SIZE, PREVIEW_DISABLED_REASON } from "./topbar-constants";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
+import { transport } from "@/core/time/transport";
 import { useScreencastStore } from "@/editor/diagnostics/screencastStore";
 
 const LIGHT_THEMES: readonly Theme[] = ["paper", "white", "warm", "lilac"];
@@ -119,27 +120,31 @@ export interface TopBarProps {
 }
 
 /** Preview button left of Ship. Stays focusable and hoverable when disabled so the reason tooltip shows. */
-export const PreviewButton: React.FC<{ onPreview?: () => void; id?: string; "data-testid"?: string; className?: string }> = ({
+export const PreviewButton: React.FC<{ onPreview?: () => void; active?: boolean; id?: string; "data-testid"?: string; className?: string }> = ({
   onPreview,
+  active = false,
   id = "previewbtn",
   "data-testid": dataTestId = "preview-button",
   className = "",
 }) => (
-  <Tooltip content={onPreview ? "Preview" : PREVIEW_DISABLED_REASON} side="bottom">
+  <Tooltip content={active ? "Exit Preview (Esc)" : onPreview ? "Preview" : PREVIEW_DISABLED_REASON} side="bottom">
     <button
       type="button"
       id={id}
       data-testid={dataTestId}
-      aria-label={onPreview ? "Preview" : `Preview (${PREVIEW_DISABLED_REASON})`}
+      aria-label={active ? "Exit Preview" : onPreview ? "Preview" : `Preview (${PREVIEW_DISABLED_REASON})`}
+      aria-pressed={active}
       aria-disabled={!onPreview}
       onClick={onPreview}
-      className={`themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:outline-none ll:border-0 ll:bg-transparent ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
-        onPreview
-          ? "ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:cursor-pointer"
-          : "ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"
+      className={`themebtn ll-themebtn ll:w-8 ll:h-8 ll:grid ll:place-items-center ll:rounded-sm ll:outline-none ll:border-0 ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
+        active
+          ? "ll:bg-control-primary-bg ll:text-control-primary-fg ll:cursor-pointer"
+          : onPreview
+            ? "ll:bg-transparent ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:cursor-pointer"
+            : "ll:bg-transparent ll:text-muted ll:opacity-disabled ll:cursor-not-allowed"
       } ${className}`}
     >
-      <Icon icon={Play} size={ACTION_ICON_SIZE} />
+      <Icon icon={active ? Square : Play} size={ACTION_ICON_SIZE} />
     </button>
   </Tooltip>
 );
@@ -597,7 +602,23 @@ export const TopBar: React.FC<TopBarProps> = ({
         <TopBarPeople users={_users} />
 
         {/* Preview button (32x32, 4px radius) in the old theme-toggle slot, right before Ship */}
-        <PreviewButton onPreview={onPreview ?? (() => useCanvasViewStore.getState().setMode(canvasViewMode === "preview" ? "design" : "preview"))} className="ll:max-sm:hidden" />
+        <PreviewButton
+          active={canvasViewMode === "preview"}
+          onPreview={
+            onPreview ??
+            (() => {
+              const nextPreview = canvasViewMode !== "preview";
+              useCanvasViewStore.getState().setMode(nextPreview ? "preview" : "design");
+              if (nextPreview) {
+                transport.seek(0);
+                transport.play();
+              } else {
+                transport.pause();
+              }
+            })
+          }
+          className="ll:max-sm:hidden"
+        />
 
         {/* Ship Button & Popover */}
         <ShipPopover

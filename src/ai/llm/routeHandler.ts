@@ -163,9 +163,13 @@ export async function handleAiChatPost(
 
   const providerId: LlmProviderId = parsed.data.provider ?? "anthropic";
   const injectedProvider = deps.providers?.[providerId] ?? deps.provider;
-  const userApiKey = parsed.data.apiKey?.trim() || undefined;
-  const envApiKey = readEnvKey(providerId, deps.env) ?? undefined;
+  const sanitizeKey = (k?: string) =>
+    k?.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim() || undefined;
+  const userApiKey = sanitizeKey(parsed.data.apiKey);
+  const envApiKey = sanitizeKey(readEnvKey(providerId, deps.env) ?? undefined);
   const effectiveKey = userApiKey ?? envApiKey;
+  const keySource: "byok" | "server" | "offline" =
+    providerId === "offline" ? "offline" : userApiKey ? "byok" : "server";
 
   if (!injectedProvider && providerId !== "offline" && !effectiveKey) {
     const envVarName =
@@ -188,8 +192,15 @@ export async function handleAiChatPost(
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const event of provider.streamChat(parsed.data, { signal: request.signal })) {
-          controller.enqueue(encodeSseEvent(event));
+        for await (const event of provider.streamChat(
+          { ...parsed.data, ...(effectiveKey ? { apiKey: effectiveKey } : {}) },
+          { signal: request.signal },
+        )) {
+          if (event.type === "meta") {
+            controller.enqueue(encodeSseEvent({ ...event, keySource } as LlmStreamEvent));
+          } else {
+            controller.enqueue(encodeSseEvent(event));
+          }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Streaming interrupted.";

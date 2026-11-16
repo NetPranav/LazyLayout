@@ -138,6 +138,18 @@ function buildLayerDiffs(
         entry.effectNames.push(eff.effectId.replace(/^fx_/, ""));
         entry.patches.push(patch);
       }
+      continue;
+    }
+
+    if (patch.path.startsWith("/bindings/")) {
+      const bndId = patch.path.split("/")[2];
+      const bnd = bndId ? candidateDoc.bindings?.[bndId] : undefined;
+      if (bnd) {
+        const entry = ensureLayerEntry(bnd.ownerLayerId);
+        if (entry.kind === "modified") entry.kind = "effect";
+        entry.effectNames.push(bnd.name || "cursor driver");
+        entry.patches.push(patch);
+      }
     }
   }
 

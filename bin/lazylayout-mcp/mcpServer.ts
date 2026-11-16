@@ -42,18 +42,34 @@ export interface RpcResponse {
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({ type: "object", properties, required, additionalProperties: false });
 
 export const TOOLS: { name: string; method: BridgeMethod; description: string; inputSchema: unknown; write?: boolean }[] = [
-  { name: "pair", method: "pair", description: "Pair with the open editor. The user reads an 8-digit code in the editor (File > Pair with Claude) and tells you; nothing else works before this.", inputSchema: obj({ code: { type: "string" } }, ["code"]) },
+  { name: "pair", method: "pair", description: "Pair with the open editor. The user reads an 8-digit code in the editor (File > Pair with Claude or AI > MCP) and tells you; nothing else works before this.", inputSchema: obj({ code: { type: "string" } }, ["code"]) },
   { name: "list_commands", method: "list_commands", description: "Every command the editor can run, with its argument JSON Schema. Filter by text or category.", inputSchema: obj({ query: { type: "string" }, category: { type: "string" } }) },
   { name: "run_command", method: "run_command", write: true, description: "Run one editor command by id with arguments that match its schema. The change waits for the user to approve it in the editor (unless they switched on approving automatically), and is one undo step.", inputSchema: obj({ id: { type: "string" }, args: {} }, ["id"]) },
   { name: "get_selection", method: "get_selection", description: "The ids of the selected layers.", inputSchema: obj({}) },
   { name: "get_layers", method: "get_layers", description: "Some layers with all their properties (pass `ids`), or a list of every layer's id, name, kind and place in the tree.", inputSchema: obj({ ids: { type: "array", items: { type: "string" } } }) },
   { name: "get_document", method: "get_document", description: "A summary of the document, or all of it with `full: true`.", inputSchema: obj({ full: { type: "boolean" } }) },
   { name: "export_site", method: "export_site", description: "Export the pages as files in memory: plain HTML, Vite + React or Next.js.", inputSchema: obj({ target: { type: "string", enum: ["html", "vite", "next"] }, styling: { type: "string", enum: ["css", "modules", "tailwind"] } }, ["target"]) },
+  { name: "validate_document", method: "get_document", description: "Inspect the active document summary & verify structural health.", inputSchema: obj({}) },
+  { name: "explain_layer", method: "get_layers", description: "Inspect a layer's full properties, bindings, and transforms so you can explain its motion.", inputSchema: obj({ ids: { type: "array", items: { type: "string" } } }) },
+  { name: "evaluate_property", method: "get_layers", description: "Evaluate property values on target layers by id.", inputSchema: obj({ ids: { type: "array", items: { type: "string" } } }) },
 ];
 
 const RESOURCES = [
   { uri: "lazylayout://schema", name: "Motion Document JSON Schema", mimeType: "application/json" },
   { uri: "lazylayout://properties", name: "Property paths", mimeType: "application/json" },
+];
+
+const PROMPTS = [
+  {
+    name: "animate_hero",
+    description: "Guided flow to animate the hero section using GPU-composited transforms.",
+    arguments: [{ name: "targetLayerId", description: "Target hero layer id", required: false }],
+  },
+  {
+    name: "react_to_cursor",
+    description: "Guided flow to add pointer magnetic pull / tilt reactivity to a button or card.",
+    arguments: [{ name: "layerId", description: "Target layer id", required: true }],
+  },
 ];
 
 const text = (v: unknown) => ({ content: [{ type: "text", text: typeof v === "string" ? v : JSON.stringify(v, null, 2) }] });
@@ -71,7 +87,7 @@ export class McpServer {
       case "initialize": {
         const asked = typeof msg.params?.protocolVersion === "string" ? msg.params.protocolVersion : "";
         const protocolVersion = (SUPPORTED_PROTOCOLS as readonly string[]).includes(asked) ? asked : SUPPORTED_PROTOCOLS[0];
-        return reply({ protocolVersion, capabilities: { tools: {}, resources: {} }, serverInfo: SERVER_INFO, instructions: "Start with `pair`: ask the user for the code shown in the editor. Then `list_commands` and `run_command`; changes wait for the user's approval." });
+        return reply({ protocolVersion, capabilities: { tools: {}, resources: {}, prompts: {} }, serverInfo: SERVER_INFO, instructions: "Start with `pair`: ask the user for the code shown in the editor. Then `list_commands` and `run_command`; changes wait for the user's approval." });
       }
       case "ping":
         return reply({});
@@ -79,10 +95,62 @@ export class McpServer {
         return reply({ tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
       case "tools/call":
         return reply(await this.callTool(String(msg.params?.name ?? ""), (msg.params?.arguments as Record<string, unknown> | undefined) ?? {}));
+      case "prompts/list":
+        return reply({ prompts: PROMPTS });
+      case "prompts/get": {
+        const promptName = String(msg.params?.name ?? "");
+        const prompt = PROMPTS.find((p) => p.name === promptName);
+        if (!prompt) return refuse(-32602, `Unknown prompt: ${promptName}`);
+        return reply({
+          description: prompt.description,
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: `${prompt.description} First call get_layers and pair if not paired yet.`,
+              },
+            },
+          ],
+        });
+      }
       case "resources/list":
         return reply({ resources: RESOURCES });
       case "resources/read": {
         const uri = String(msg.params?.uri ?? "");
+        if (uri === "lazylayout://catalogue/effects") {
+          return reply({
+            contents: [
+              {
+                uri,
+                mimeType: "application/json",
+                text: JSON.stringify(["w2_magnetic_pull", "w2_tilt_card_3d", "w2_spotlight_hover", "fx_fade_slide_up"]),
+              },
+            ],
+          });
+        }
+        if (uri === "lazylayout://catalogue/signals") {
+          return reply({
+            contents: [
+              {
+                uri,
+                mimeType: "application/json",
+                text: JSON.stringify(["pointerIn", "layerState", "scroll", "time", "audio"]),
+              },
+            ],
+          });
+        }
+        if (uri === "lazylayout://grammar/nodescript") {
+          return reply({
+            contents: [
+              {
+                uri,
+                mimeType: "text/markdown",
+                text: "# NodeScript (.nls)\n`graph Name (type: event) { node a : Event.onPageLoad ... wire a.exec -> b.execIn }`",
+              },
+            ],
+          });
+        }
         const out = await this.ask("get_resource", { uri });
         if ("error" in out) return refuse(-32602, out.error);
         return reply({ contents: [{ uri, mimeType: "application/json", text: JSON.stringify(out.result, null, 2) }] });

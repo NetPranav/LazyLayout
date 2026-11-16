@@ -45,3 +45,4 @@ export * from "./AdjustLastOperationPanel";
 export * from "./ShadingBar";
 export * from "./OverlaysMenu";
 export * from "./ViewportStats";
+export * from "./MentionPopover";
