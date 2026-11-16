@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createDocumentFromLayers, createLayer } from "@/core/document/factories";
+import { validateMotionDocument } from "@/core/document/schema";
 import { rules } from "@/core/rules";
 import {
   DEFAULT_PHASE13_COMMAND_CATALOG,
@@ -8,6 +9,7 @@ import {
   OfflineDeterministicProvider,
   PHASE_244_EVAL_PROMPTS,
   animateCharacterFromPrompt,
+  applyMdmJsonPatches,
   authorEffectFromPrompt,
   authorFromImageReference,
   buildInteractionFromPrompt,
@@ -16,6 +18,7 @@ import {
   explainSelectionMotion,
   filterPatchesToSelection,
   fixDiagnosticsForDocument,
+  planBuilderTurn,
   remixEffectAuthoring,
   runEvalSuite,
   runSelectionScopedEdit,
@@ -83,7 +86,16 @@ describe("Lane G · Phases 244–250", () => {
       rules.validate,
     );
     assert.equal(edit.accepted, true);
-    assert.ok(edit.patches.every((p) => /^\/layers\/(button|badge)\//.test(p.path)));
+    assert.ok(
+      edit.patches.every((p) => {
+        if (p.path.startsWith("/layers/")) return /^\/layers\/(button|badge)\//.test(p.path);
+        if (p.path.startsWith("/clips/") && p.value && typeof p.value === "object") {
+          const lid = (p.value as { layerId?: unknown }).layerId;
+          return lid === "button" || lid === "badge";
+        }
+        return true;
+      }),
+    );
 
     const filtered = filterPatchesToSelection(
       [
@@ -264,5 +276,56 @@ describe("Lane G · Phases 244–250", () => {
 
     const logEntries = useMcpActivityStore.getState().entries;
     assert.ok(logEntries.length >= 2);
+  });
+
+  it("stages real runnable cursor-pull bindings and clip animations for magnetic pull & bouncier/calmer edits", () => {
+    const doc = buildStudioTestDoc();
+    const layers = Object.values(doc.layers).map((layer) => ({
+      id: layer.id,
+      name: layer.name,
+      type: layer.archetype,
+      parentId: layer.parentId,
+      childCount: layer.children.length,
+      propsSample: layer.properties,
+    }));
+
+    // Even with a typo ("megnatic") and no selection, planner targets the button and creates cursor bindings
+    const plan = planBuilderTurn({
+      prompt: "Add a megnatic pull to the button towards the cursor",
+      documentContext: {
+        documentName: "Magnetic Test",
+        activeMode: "design",
+        layerCount: layers.length,
+        clipCount: 0,
+        selectedIds: [],
+        layers,
+      },
+    });
+    assert.deepEqual(plan.targetLayerIds, ["button"]);
+    assert.ok(plan.patches.some((p) => p.path.startsWith("/bindings/")));
+    const appliedPlan = applyMdmJsonPatches(doc, plan.patches);
+    assert.equal(appliedPlan.ok, true);
+    if (appliedPlan.ok) {
+      const checked = validateMotionDocument(appliedPlan.document);
+      assert.equal(checked.ok, true);
+      if (checked.ok) {
+        assert.equal(rules.validate(checked.document).length, 0);
+        assert.ok(Object.keys(checked.document.bindings ?? {}).length >= 2);
+      }
+    }
+
+    // Co-pilot Bouncier & Calmer produce real animated clips on the selection
+    const bouncy = runSelectionScopedEdit(doc, ["button"], "Make the selected animation bouncier", rules.validate);
+    assert.equal(bouncy.accepted, true);
+    assert.ok(bouncy.patches.some((p) => p.path.startsWith("/clips/")));
+    const appliedBouncy = applyMdmJsonPatches(doc, bouncy.patches);
+    assert.equal(appliedBouncy.ok, true);
+    if (appliedBouncy.ok) {
+      assert.equal(validateMotionDocument(appliedBouncy.document).ok, true);
+    }
+
+    const calmer = runSelectionScopedEdit(doc, ["button"], "Make this motion calmer on mobile", rules.validate);
+    assert.equal(calmer.accepted, true);
+    assert.ok(calmer.patches.some((p) => p.path.startsWith("/clips/")));
   });
 });

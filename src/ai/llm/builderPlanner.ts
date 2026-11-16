@@ -1,4 +1,8 @@
+import { buildReactivityDrafts, type ReactivityAffordance, type ReactivitySource } from "@/core/bindings/reactivityCard";
+import { SurfaceSchema } from "@/core/document/effects";
+import { BindingSchema, type Binding } from "@/core/document/signals";
 import { FULL_EFFECT_LIBRARY } from "@/core/effects/libraryWaves10To13";
+import { LIBRARY_WAVES_2_TO_9 } from "@/core/effects/libraryWaves2To9";
 import type { EffectDefinitionV1 } from "@/core/effects/effectSdk";
 import type { Clip } from "@/core/document/motion";
 import type { AiChatMessageInput, AiDocumentContext, MdmJsonPatch } from "./types";
@@ -30,6 +34,11 @@ export interface BuilderPlanResult {
   targetLayerIds: string[];
 }
 
+const ALL_EFFECT_LIBRARY: readonly EffectDefinitionV1[] = [
+  ...LIBRARY_WAVES_2_TO_9,
+  ...FULL_EFFECT_LIBRARY,
+];
+
 function deterministicSlug(text: string): string {
   let hash = 2166136261;
   for (let i = 0; i < text.length; i += 1) {
@@ -54,13 +63,17 @@ export function matchLibraryEffects(prompt: string, maxMatches = 2): EffectDefin
   if (tokens.length === 0) return [];
 
   const scored: Array<{ def: EffectDefinitionV1; score: number }> = [];
-  for (const def of FULL_EFFECT_LIBRARY) {
+  const wantsMagnetic = /\b(megnatic|magnetic|pull|attract|cursor)\b/.test(lower);
+  for (const def of ALL_EFFECT_LIBRARY) {
     const haystack = `${def.id} ${def.name} ${def.family} ${def.affordances.join(" ")}`.toLowerCase();
     let score = 0;
     for (const token of tokens) {
       if (haystack.includes(token)) {
         score += token.length >= 5 ? 3 : 2;
       }
+    }
+    if (wantsMagnetic && def.id === "w2_magnetic_pull") {
+      score += 8;
     }
     if (score >= 3) {
       scored.push({ def, score });
@@ -147,8 +160,21 @@ export function planBuilderTurn(input: {
   const lower = prompt.toLowerCase();
   const layers = ctx?.layers ?? [];
   const selectedId = ctx?.selectedIds?.[0];
+  const mentionsButton = /\bbutton|btn|cta|get started\b/.test(lower);
+  const mentionsCard = /\bcard|panel|box|container\b/.test(lower);
+  const mentionsTitle = /\btitle|headline|heading|text\b/.test(lower);
+  const namedLayer = layers.find((l) => l.name && lower.includes(l.name.toLowerCase()));
+  const roleMatchedLayer = mentionsButton
+    ? layers.find((l) => l.type === "button" || /button|cta|get started/i.test(l.name))
+    : mentionsTitle
+      ? layers.find((l) => l.type === "text" || /title|headline/i.test(l.name))
+      : mentionsCard
+        ? layers.find((l) => l.type === "container" || /card|hero/i.test(l.name))
+        : undefined;
   const preferredLayer =
     (selectedId ? layers.find((l) => l.id === selectedId) : undefined) ??
+    namedLayer ??
+    roleMatchedLayer ??
     layers.find((l) => l.type !== "page") ??
     layers[0];
 
@@ -166,8 +192,10 @@ export function planBuilderTurn(input: {
       : 0.6;
 
   const suffix = deterministicSlug(`${prompt}:${messages.length}`);
+  const wantsMagneticOrCursor = /\b(megnatic|magnetic|pull|follow|repel|tilt|cursor|pointer|toward|towards)\b/.test(lower);
   const wantsMotion =
     isFollowUpSpeed ||
+    wantsMagneticOrCursor ||
     /\b(fade|slide|bounce|scale|zoom|rotate|hover|tap|press|scroll|loop|pulse|float|animate|entrance|exit|reveal|pop)\b/.test(
       lower,
     );
@@ -278,6 +306,82 @@ export function planBuilderTurn(input: {
       fallbackMode: def.fallback.mode,
       propOverrides,
       bindingOverrides,
+    });
+  }
+
+  // 1b. Cursor / hover reactive driver bindings so Preview executes magnetic pull / tilt / glow live!
+  if (wantsMagneticOrCursor) {
+    const source: ReactivitySource = /\bscroll\b/.test(lower) ? "scroll" : "cursor";
+    const affordance: ReactivityAffordance = /\brepel|push\b/.test(lower)
+      ? "repel"
+      : /\btilt\b/.test(lower)
+        ? "tilt"
+        : /\bglow|bright\b/.test(lower)
+          ? "glow"
+          : "follow";
+    const drafts = buildReactivityDrafts({
+      ownerLayerId: targetId,
+      layerName: preferredLayer.name,
+      source,
+      affordance,
+      strength: 55,
+      smoothness: 45,
+    });
+    const driverLabel = /\b(megnatic|magnetic|pull)\b/.test(lower) ? "Magnetic Pull" : `Cursor ${affordance}`;
+    const isAlreadySurface = preferredLayer.type === "effectSurface";
+    const surfaceLayerId = isAlreadySurface ? targetId : `lay_srf_${suffix}`;
+    if (!isAlreadySurface) {
+      patches.push({
+        op: "add",
+        path: `/layers/${surfaceLayerId}`,
+        value: {
+          id: surfaceLayerId,
+          name: `${preferredLayer.name} ${driverLabel} Surface`,
+          archetype: "effectSurface",
+          parentId: null,
+          children: [],
+          properties: {
+            "transform.x": 0,
+            "transform.y": 0,
+            "frame.width": 1,
+            "frame.height": 1,
+          },
+        },
+      });
+    }
+    const surfaceId = `srf_${suffix}`;
+    const surface = SurfaceSchema.parse({
+      id: surfaceId,
+      layerId: surfaceLayerId,
+      role: "inline",
+      program: { kind: "css", ref: driverLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
+      fallback: ["css", "poster"],
+      cost: { tier: "T0", estimateMsAt1080p: 0.45 },
+      policies: {
+        touch: "tap",
+        reducedMotion: { mode: "calm", at: 0 },
+      },
+      poster: { at: 0 },
+    });
+    patches.push({
+      op: "add",
+      path: `/surfaces/${surfaceId}`,
+      value: surface,
+    });
+    drafts.forEach((draft, idx) => {
+      const bindingId = `bnd_${suffix}_${idx}`;
+      const binding: Binding = BindingSchema.parse({
+        ...draft,
+        id: bindingId,
+        ownerLayerId: surfaceLayerId,
+        enabled: true,
+        name: driverLabel,
+      });
+      patches.push({
+        op: "add",
+        path: `/bindings/${bindingId}`,
+        value: binding,
+      });
     });
   }
 
