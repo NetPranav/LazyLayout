@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { Eye, EyeOff, Frame, MessageSquare, PanelRight, type LucideIcon } from "lucide-react";
+import { Eye, EyeOff, Frame, MessageSquare, type LucideIcon } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Menu, MenuItem } from "@/editor/components/Menu";
@@ -27,7 +27,6 @@ export interface RightPanelHeaderProps {
   dimension?: "2d" | "3d";
   onDimensionChange?: (d: "2d" | "3d") => void;
   onOpenAi?: () => void;
-  onClosePanel?: () => void;
   className?: string;
 }
 
@@ -44,7 +43,6 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
   dimension,
   onDimensionChange,
   onOpenAi,
-  onClosePanel,
   className = "",
 }) => {
   const headRef = useRef<HTMLDivElement>(null);
@@ -156,18 +154,6 @@ export const RightPanelHeader: React.FC<RightPanelHeaderProps> = ({
           }
           className="ll-ib ll-rmore ll-more ll:-mr-1"
         />
-        {onClosePanel && (
-          <IconButton
-            size="sm"
-            variant="ghost"
-            data-testid="close-right-panel"
-            aria-label="Hide right panel"
-            tooltip="Hide right panel"
-            onClick={onClosePanel}
-            icon={<Icon icon={PanelRight} size={14} />}
-            className="ll-ib ll:-mr-1"
-          />
-        )}
         <Menu
           open={moreAt !== null}
           onClose={() => setMoreAt(null)}

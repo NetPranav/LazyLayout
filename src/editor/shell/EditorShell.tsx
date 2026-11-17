@@ -393,15 +393,11 @@ export function EditorShell({
 
       {/* 2. Left panel slot in "left" grid area */}
       <div className="ll-shell-left">
-        {left ?? (
-          <LeftPanelConnected
-            mode={actions.mode}
-            onClosePanel={() => actions.togglePanel("lc", false)}
-          />
-        )}
+        {left ?? <LeftPanelConnected mode={actions.mode} />}
         {!actions.isLeftCollapsed && !actions.isZen && (
           <div
             className="ll-shell-lsplit"
+            data-testid="left-panel-drag-handle"
             role="separator"
             tabIndex={0}
             aria-orientation="vertical"
@@ -409,8 +405,12 @@ export function EditorShell({
             aria-valuenow={Math.round(leftWidth)}
             aria-valuemin={LEFT_PANEL_MIN}
             aria-valuemax={LEFT_PANEL_MAX}
-            title="Drag to resize, double click to reset"
-            onPointerDown={(e) => onLeftSplitDown(e, setLeftWidth)}
+            title="Drag to resize or close, double click to reset"
+            onPointerDown={(e) =>
+              onLeftSplitDown(e, setLeftWidth, {
+                onCollapseChange: (collapsed) => actions.togglePanel("lc", !collapsed),
+              })
+            }
             onDoubleClick={() => onLeftSplitDouble(() => setLeftWidth(LEFT_PANEL_DEFAULT))}
             onKeyDown={(e) => onLeftSplitKeyDown(e, setLeftWidth)}
           />
@@ -421,6 +421,60 @@ export function EditorShell({
       <div
         className="ll-shell-canvas ll:w-full ll:h-full ll:relative ll:overflow-hidden"
       >
+        {actions.isLeftCollapsed && !actions.isZen && (
+          <div
+            className="ll-shell-lsplit ll-shell-lsplit-edge"
+            data-testid="left-panel-drag-handle"
+            role="separator"
+            tabIndex={0}
+            aria-orientation="vertical"
+            aria-label="Drag to open left panel"
+            aria-valuenow={0}
+            aria-valuemin={0}
+            aria-valuemax={LEFT_PANEL_MAX}
+            title="Drag right to open left panel"
+            onPointerDown={(e) =>
+              onLeftSplitDown(e, setLeftWidth, {
+                collapsed: true,
+                onCollapseChange: (collapsed) => actions.togglePanel("lc", !collapsed),
+              })
+            }
+            onDoubleClick={() => {
+              actions.togglePanel("lc", true);
+              onLeftSplitDouble(() => setLeftWidth(LEFT_PANEL_DEFAULT));
+            }}
+          />
+        )}
+        {actions.isRightCollapsed && !actions.isZen && (
+          <div
+            className="ll-shell-rsplit ll-shell-rsplit-edge"
+            data-testid="right-panel-drag-handle"
+            role="separator"
+            tabIndex={0}
+            aria-orientation="vertical"
+            aria-label="Drag to open right panel"
+            aria-valuenow={0}
+            aria-valuemin={0}
+            aria-valuemax={RIGHT_PANEL_MAX}
+            title="Drag left to open right panel"
+            onPointerDown={(e) =>
+              onRightSplitDown(e, setRightWidth, {
+                collapsed: true,
+                onCollapseChange: (collapsed) => actions.togglePanel("rc", !collapsed),
+              })
+            }
+            onDoubleClick={() => {
+              actions.togglePanel("rc", true);
+              onRightSplitDouble(() =>
+                setRightWidth(
+                  typeof window !== "undefined" && window.innerWidth <= 1200
+                    ? RIGHT_PANEL_DEFAULT_COMPACT
+                    : RIGHT_PANEL_DEFAULT
+                )
+              );
+            }}
+          />
+        )}
         {center ?? (
           <CanvasChrome
             onAiExpand={(prompt) => {
@@ -551,6 +605,7 @@ export function EditorShell({
         {!actions.isRightCollapsed && !actions.isZen && (
           <div
             className="ll-shell-rsplit"
+            data-testid="right-panel-drag-handle"
             role="separator"
             tabIndex={0}
             aria-orientation="vertical"
@@ -558,8 +613,12 @@ export function EditorShell({
             aria-valuenow={Math.round(rightWidth)}
             aria-valuemin={RIGHT_PANEL_MIN}
             aria-valuemax={RIGHT_PANEL_MAX}
-            title="Drag to resize, double click to reset"
-            onPointerDown={(e) => onRightSplitDown(e, setRightWidth)}
+            title="Drag to resize or close, double click to reset"
+            onPointerDown={(e) =>
+              onRightSplitDown(e, setRightWidth, {
+                onCollapseChange: (collapsed) => actions.togglePanel("rc", !collapsed),
+              })
+            }
             onDoubleClick={() =>
               onRightSplitDouble(() =>
                 setRightWidth(
@@ -592,7 +651,6 @@ export function EditorShell({
             onAiSaveCredentials={aiChat.saveCredentials}
             aiLoading={aiChat.isLoading}
             onAiStop={aiChat.stop}
-            onClosePanel={() => actions.togglePanel("rc", false)}
           />
         )}
       </div>

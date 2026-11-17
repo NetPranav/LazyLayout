@@ -588,7 +588,9 @@ button[aria-expanded="true"] > .ll-chevron-flip {
 }
 
 .ll-shell[data-pfx] .ll-shell-left,
-.ll-shell[data-pfx] .ll-shell-right {
+.ll-shell[data-pfx] .ll-shell-right,
+.ll-shell[data-pdrag-l] .ll-shell-left,
+.ll-shell[data-pdrag-r] .ll-shell-right {
   visibility: visible;
 }
 

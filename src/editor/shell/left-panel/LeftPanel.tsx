@@ -45,7 +45,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   assetsHeight: controlledAssetsHeight,
   onAssetsHeightChange,
   tracksHeight: _tracksHeight,
-  onClosePanel,
   className = "",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -226,7 +225,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         matchCount={matchCount}
-        onClosePanel={onClosePanel}
       />
 
       {/* Main Body based on mode */}

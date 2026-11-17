@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useId } from "react";
-import { MessageSquare, PanelRight } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { RightPanelHeader } from "./RightPanelHeader";
 import { Icon, IconButton } from "@/editor/components";
 import { useInspectorDimension } from "@/editor/panels/details/inspectorDimension";
@@ -85,7 +85,6 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
   motionRows = DEFAULT_MOTION_ROWS,
   codeRows = DEFAULT_CODE_ROWS,
   children,
-  onClosePanel,
   className = "",
 }) => {
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -166,7 +165,6 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               isLayerHidden={activeIsHidden}
               onToggleHideLayer={activeToggleHide}
               onOpenAi={onAiOpen}
-              onClosePanel={onClosePanel}
               onReset={onReset}
               onDelete={onDelete}
               statusChips={activeStatusChips}
@@ -174,34 +172,19 @@ export const RightPanelFrame: React.FC<RightPanelFrameProps> = ({
               dimension={propDimension !== undefined ? propDimension : (inspector.hasSelection ? dimension : undefined)}
               onDimensionChange={setDimension}
             />
-          ) : (onAiOpen || onClosePanel) ? (
+          ) : onAiOpen ? (
             <div className="ll:flex ll:items-center ll:justify-between ll:h-8 ll:px-2 ll:border-b ll:border-border ll:bg-surface-bar ll:shrink-0">
               <span className="ll:text-[11px] ll:font-medium ll:text-secondary ll:capitalize">
                 {mode}
               </span>
-              <div className="ll:flex ll:items-center ll:gap-0.5">
-                {onAiOpen && (
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Open AI chat"
-                    tooltip="Open AI chat"
-                    onClick={onAiOpen}
-                    icon={<Icon icon={MessageSquare} size={14} />}
-                  />
-                )}
-                {onClosePanel && (
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    data-testid="close-right-panel"
-                    aria-label="Hide right panel"
-                    tooltip="Hide right panel"
-                    onClick={onClosePanel}
-                    icon={<Icon icon={PanelRight} size={14} />}
-                  />
-                )}
-              </div>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                aria-label="Open AI chat"
+                tooltip="Open AI chat"
+                onClick={onAiOpen}
+                icon={<Icon icon={MessageSquare} size={14} />}
+              />
             </div>
           ) : null}
 
