@@ -126,6 +126,10 @@ export interface CanvasChromeProps {
   onRedo?: () => void;
   panelsCollapsed?: boolean;
   onTogglePanels?: () => void;
+  isLeftCollapsed?: boolean;
+  isRightCollapsed?: boolean;
+  onToggleLeftPanel?: () => void;
+  onToggleRightPanel?: () => void;
   onPreview?: () => void;
 
   /** Run generated code (Code mode toolbar action) */

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
-import { Search, X } from "lucide-react";
+import React, { useRef, useEffect } from "react";
+import { PanelLeft, Search, X } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { getMotion, prefersReducedMotion } from "@/editor/motion/feel";
@@ -17,6 +17,7 @@ export interface LeftPanelHeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   matchCount: number;
+  onClosePanel?: () => void;
 }
 
 export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
@@ -27,6 +28,7 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
   searchQuery,
   onSearchChange,
   matchCount,
+  onClosePanel,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
@@ -148,6 +150,18 @@ export const LeftPanelHeader: React.FC<LeftPanelHeaderProps> = ({
             onClick={onToggleSearch}
           />
         </div>
+
+        {onClosePanel && (
+          <IconButton
+            size="md"
+            variant="ghost"
+            data-testid="close-left-panel"
+            aria-label="Hide left panel"
+            tooltip="Hide left panel"
+            icon={<Icon icon={PanelLeft} size={14} />}
+            onClick={onClosePanel}
+          />
+        )}
       </div>
 
       {/* Search box if toggled (lsbox) */}

@@ -394,7 +394,10 @@ export function EditorShell({
       {/* 2. Left panel slot in "left" grid area */}
       <div className="ll-shell-left">
         {left ?? (
-          <LeftPanelConnected mode={actions.mode} />
+          <LeftPanelConnected
+            mode={actions.mode}
+            onClosePanel={() => actions.togglePanel("lc", false)}
+          />
         )}
         {!actions.isLeftCollapsed && !actions.isZen && (
           <div
@@ -504,6 +507,10 @@ export function EditorShell({
             onRedo={actions.redo}
             panelsCollapsed={actions.isLeftCollapsed && actions.isRightCollapsed}
             onTogglePanels={actions.toggleBothPanels}
+            isLeftCollapsed={actions.isLeftCollapsed}
+            isRightCollapsed={actions.isRightCollapsed}
+            onToggleLeftPanel={() => actions.togglePanel("lc")}
+            onToggleRightPanel={() => actions.togglePanel("rc")}
             onPreview={() =>
               actions.setMode(actions.mode === "design" ? "motion" : "design")
             }
@@ -585,6 +592,7 @@ export function EditorShell({
             onAiSaveCredentials={aiChat.saveCredentials}
             aiLoading={aiChat.isLoading}
             onAiStop={aiChat.stop}
+            onClosePanel={() => actions.togglePanel("rc", false)}
           />
         )}
       </div>

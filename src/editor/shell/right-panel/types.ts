@@ -114,6 +114,8 @@ export interface RightPanelFrameProps {
   codeRows?: AccordionRowConfig[];
   /** Custom body children to override default sections/rows. */
   children?: React.ReactNode;
+  /** Optional callback to hide/collapse the right panel individually. */
+  onClosePanel?: () => void;
   /** Additional container classes. */
   className?: string;
 }
