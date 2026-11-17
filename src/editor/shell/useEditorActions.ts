@@ -45,6 +45,7 @@ import { useBreakpointStore } from "@/core/store/useBreakpointStore";
 import { breakpointsOf } from "@/core/breakpoints/breakpoints";
 import { useCanvasSettingsStore, initPrototypeSnapDefaults } from "./canvasSettingsStore";
 import type { GridStyle, MotionFeel } from "./canvas-chrome/types";
+import { LazyCodePanel, LazyTimelinePanel } from "./lazyPanels";
 
 export interface UseEditorActionsOptions {
   initialMode?: EditorMode;
@@ -318,7 +319,7 @@ export function useEditorActions(
   const canRedo = useHistoryStore((s) => s.future.length > 0);
 
   // Sync mode with canvas view store
-  const setMode = useCallback((newMode: EditorMode) => {
+  const applyMode = useCallback((newMode: EditorMode) => {
     onBeforeModeChange?.(newMode);
     setModeState(newMode);
     if (newMode === "design") {
@@ -327,6 +328,22 @@ export function useEditorActions(
       useCanvasViewStore.getState().setMode("preview");
     }
   }, [onBeforeModeChange]);
+  // Motion and Code panels are loaded in a queue (lazyPanels.tsx). If one isn't loaded yet when its mode is chosen,
+  // finish loading it first and then switch, so the mode opens whole in one frame (no placeholder, no layout that
+  // shifts while the panel animation runs). Pointing at the tab or the idle queue normally has it ready already.
+  const pendingModeRef = useRef<EditorMode | null>(null);
+  const setMode = useCallback((newMode: EditorMode) => {
+    const panel = newMode === "motion" ? LazyTimelinePanel : newMode === "code" ? LazyCodePanel : null;
+    pendingModeRef.current = newMode;
+    if (!panel || panel.loaded()) {
+      applyMode(newMode);
+      return;
+    }
+    const apply = () => {
+      if (pendingModeRef.current === newMode) applyMode(newMode); // a later choice wins
+    };
+    panel.preload().then(apply, apply);
+  }, [applyMode]);
 
   // Sync tool selection with core tool store
   const setActiveTool = useCallback((tool: CanvasTool) => {
