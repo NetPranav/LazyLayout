@@ -772,7 +772,7 @@ export function Roadmap3dWorkbench() {
             </div>
             <div data-testid="r3d-photo-readout" style={{ fontSize: "11px", color: "#86efac" }}>
               photoStays2D={String(carWrap.photoStays2D)} | rot={carWrap.cameraOrPhotoRotatedDeg}deg |
-              creaseRecall={(carWrap.creaseRecallRatio * 100).toFixed(0)}% | pathErr={carWrap.meanPathErrorPx}px |
+              creaseRecall={carWrap.creaseRecallRatio === null ? "not measured" : `${(carWrap.creaseRecallRatio * 100).toFixed(0)}%`} | pathErr={carWrap.meanPathErrorPx ?? "not measured"} |
               homographyErr={billboardHomography.maxCornerErrorPx.toFixed(4)}px | ai={carAiStatus.executedOn}
             </div>
           </div>

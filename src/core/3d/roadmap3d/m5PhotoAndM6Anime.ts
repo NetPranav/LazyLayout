@@ -44,6 +44,8 @@ export class AiServiceGateway3D {
     readonly fallbackUsed: boolean;
     readonly privacyLockRespected: boolean;
     readonly license: string;
+    /** No vision model is bundled or called yet: this decides where a model would run, nothing more. */
+    readonly modelRan: false;
   } {
     const model = APPROVED_AI_VISION_MODELS.find((m) => m.id === modelId);
     const license = model?.license ?? "MIT";
@@ -54,6 +56,7 @@ export class AiServiceGateway3D {
         fallbackUsed: false,
         privacyLockRespected: true,
         license,
+        modelRan: false,
       };
     }
 
@@ -62,8 +65,10 @@ export class AiServiceGateway3D {
       return {
         executedOn: "server-api",
         fallbackUsed: false,
-        privacyLockRespected: true,
+        // Computed: the lock is respected when an on-device-only gateway never routes to the server.
+        privacyLockRespected: !this.keepOnDevice,
         license,
+        modelRan: false,
       };
     }
 
@@ -74,6 +79,7 @@ export class AiServiceGateway3D {
       fallbackUsed: preferServer && this.keepOnDevice,
       privacyLockRespected: true,
       license,
+      modelRan: false,
     };
   }
 }
@@ -146,8 +152,10 @@ export function trackPlanarPatchAcrossVideo(
   driftPerFramePx = 0.02,
 ): {
   readonly frames: readonly PlanarTrackFrame[];
-  readonly maxDriftPx: number;
-  readonly gzipDeltaBytes: number;
+  /** Null: these corners are a synthetic path, not tracked from video, so there is no drift to measure. */
+  readonly maxDriftPx: number | null;
+  readonly gzipDeltaBytes: number | null;
+  readonly tracked: false;
 } {
   const frames: PlanarTrackFrame[] = [];
   for (let f = 0; f < frameCount; f++) {
@@ -166,9 +174,10 @@ export function trackPlanarPatchAcrossVideo(
       occluded: f >= 18 && f <= 20, // linear interpolation / coasting across occlusion
     });
   }
-  const maxDriftPx = Math.min(1.4, frameCount * driftPerFramePx);
-  const gzipDeltaBytes = 420 + frameCount * 28; // well below 4 KB budget
-  return { frames, maxDriftPx, gzipDeltaBytes };
+  // No video is read and no tracker runs (the Lucas-Kanade tracker lives in core/track and is not called here).
+  // These used to be reported as min(1.4, n * drift) px and 420 + 28n bytes, made up to sit under the budgets.
+  void driftPerFramePx;
+  return { frames, maxDriftPx: null, gzipDeltaBytes: null, tracked: false };
 }
 
 /** 3D-208..3D-214: Photo Cutout, Relief Surface, Car Crease Lines, Wrapped Text & Relighting. */
@@ -187,9 +196,10 @@ export interface PhotoWrapProjectionResult {
   readonly blendDistinctToIntegrated: number; // 0 (Distinct) .. 1 (Integrated)
   readonly photoStays2D: true;
   readonly cameraOrPhotoRotatedDeg: 0;
-  readonly detectedCreaseLinesCount: number;
-  readonly creaseRecallRatio: number;
-  readonly meanPathErrorPx: number;
+  /** Null until a crease detector runs on a real photo (none exists yet). */
+  readonly detectedCreaseLinesCount: number | null;
+  readonly creaseRecallRatio: number | null;
+  readonly meanPathErrorPx: number | null;
   readonly windowMaskApplied: boolean;
   readonly pointerRelightOffset: Vec2;
   readonly tiled4kReady: boolean;
@@ -203,20 +213,19 @@ export function projectTextOntoPhotoSurface(input: {
   readonly pointerNorm: Vec2;
 }): PhotoWrapProjectionResult {
   const blend = Math.max(0, Math.min(1, input.blendDistinctToIntegrated));
-  const creaseRecallRatio = input.creaseSnap ? 0.89 : 0.72; // >= 80% recall when snapped
-  const meanPathErrorPx = input.creaseSnap ? 1.4 : 2.6; // < 3 px target
+  // No photo is analysed: recall and path error used to be the constants 0.89 / 1.4 px, chosen to pass the gate.
   return {
     text: input.text,
     style: input.style,
     blendDistinctToIntegrated: blend,
     photoStays2D: true,
     cameraOrPhotoRotatedDeg: 0,
-    detectedCreaseLinesCount: 6,
-    creaseRecallRatio,
-    meanPathErrorPx,
-    windowMaskApplied: true,
+    detectedCreaseLinesCount: null,
+    creaseRecallRatio: null,
+    meanPathErrorPx: null,
+    windowMaskApplied: false,
     pointerRelightOffset: [Math.round(-input.pointerNorm[0] * 28), Math.round(-input.pointerNorm[1] * 18)],
-    tiled4kReady: true,
+    tiled4kReady: false,
   };
 }
 
@@ -225,12 +234,14 @@ export interface GateBReport {
   readonly passed: boolean;
   readonly carPhotoStays2D: boolean;
   readonly windowMaskApplied: boolean;
-  readonly creaseRecallRatio: number;
-  readonly wrapPathErrorPx: number;
+  readonly creaseRecallRatio: number | null;
+  readonly wrapPathErrorPx: number | null;
   readonly billboardCornerErrorPx: number;
-  readonly planarTrackMaxDriftPx: number;
-  readonly planarTrackGzipBytes: number;
+  readonly planarTrackMaxDriftPx: number | null;
+  readonly planarTrackGzipBytes: number | null;
   readonly privacyLockRespected: boolean;
+  /** What this gate depends on but nothing measures yet. The gate cannot pass while this is non-empty. */
+  readonly unmeasured: readonly string[];
 }
 
 export function runGateBPhotoStudio(): GateBReport {
@@ -259,14 +270,20 @@ export function runGateBPhotoStudio(): GateBReport {
   );
   const track = trackPlanarPatchAcrossVideo(48, 0.02);
 
+  const unmeasured = [
+    ...(ai.modelRan ? [] : ["vision model (depth / cutout)"]),
+    ...(wrap.creaseRecallRatio === null ? ["crease detection on a photo"] : []),
+    ...(wrap.windowMaskApplied ? [] : ["window occlusion mask"]),
+    ...(track.tracked ? [] : ["planar tracking on video"]),
+  ];
   const passed =
+    unmeasured.length === 0 &&
     wrap.photoStays2D &&
-    wrap.windowMaskApplied &&
-    wrap.creaseRecallRatio >= 0.8 &&
-    wrap.meanPathErrorPx < 3 &&
+    (wrap.creaseRecallRatio ?? 0) >= 0.8 &&
+    (wrap.meanPathErrorPx ?? Infinity) < 3 &&
     homography.maxCornerErrorPx < 0.01 &&
-    track.maxDriftPx < 1.5 &&
-    track.gzipDeltaBytes < 4096 &&
+    (track.maxDriftPx ?? Infinity) < 1.5 &&
+    (track.gzipDeltaBytes ?? Infinity) < 4096 &&
     ai.privacyLockRespected;
 
   return {
@@ -279,6 +296,7 @@ export function runGateBPhotoStudio(): GateBReport {
     planarTrackMaxDriftPx: track.maxDriftPx,
     planarTrackGzipBytes: track.gzipDeltaBytes,
     privacyLockRespected: ai.privacyLockRespected,
+    unmeasured,
   };
 }
 
@@ -315,9 +333,11 @@ export function evaluateAnimeRampShading(ndotl: number, tones: 2 | 3 = 3, shadow
 }
 
 export function generateAnimeInkOutlines(edgeCount: number, boilStrength = 0.35) {
+  // No outline is drawn yet (no shader, no mesh pass); these used to be reported as `true`.
   return {
-    smoothedNormalOutline: true,
-    unbrokenCorners: true,
+    rendered: false,
+    smoothedNormalOutline: false,
+    unbrokenCorners: false,
     edgeCount,
     boilWobblePx: boilStrength * 1.8,
   };
@@ -368,7 +388,10 @@ export interface GateCReport {
   readonly unbrokenInkOutlines: boolean;
   readonly impactFramesIncluded: boolean;
   readonly proceduralVfxCount: number;
-  readonly exportGzipBytes: number;
+  /** Null: no anime shot is exported, so there is no size to report. */
+  readonly exportGzipBytes: number | null;
+  /** What this gate depends on but nothing measures yet. The gate cannot pass while this is non-empty. */
+  readonly unmeasured: readonly string[];
 }
 
 export function runGateCAnimeStudio(): GateCReport {
@@ -383,16 +406,21 @@ export function runGateCAnimeStudio(): GateCReport {
   const ink = generateAnimeInkOutlines(240, 0.3);
   const ramp = evaluateAnimeRampShading(0.2, 3, 0.05);
   const cam = evaluateAnimeCameraPreset("crash-zoom", 0.85);
-  const exportGzipBytes = 104_900;
+  const exportGzipBytes: number | null = null; // was the constant 104_900
+  const unmeasured = [
+    ...(ink.rendered ? [] : ["ink outlines (no renderer)"]),
+    "procedural VFX (names only, none drawn)",
+    "impact frames",
+    "anime shot export",
+  ];
 
   const passed =
+    unmeasured.length === 0 &&
     characterStepHoldsFor2Frames &&
     cameraRemainsSmooth60Fps &&
     ink.unbrokenCorners &&
     ramp.band === "mid-shadow" &&
-    cam.fovDeg < 40 &&
-    ANIME_PROCEDURAL_VFX.length === 12 &&
-    exportGzipBytes <= 180_000;
+    cam.fovDeg < 40;
 
   return {
     passed,
@@ -401,8 +429,9 @@ export function runGateCAnimeStudio(): GateCReport {
     characterStepHoldsFor2Frames,
     cameraRemainsSmooth60Fps,
     unbrokenInkOutlines: ink.unbrokenCorners,
-    impactFramesIncluded: true,
+    impactFramesIncluded: false,
     proceduralVfxCount: ANIME_PROCEDURAL_VFX.length,
     exportGzipBytes,
+    unmeasured,
   };
 }

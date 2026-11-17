@@ -107,7 +107,7 @@ describe("ROADMAP_3D Full Suite (3D-001 – 3D-227)", () => {
     assert.equal(gateM2.passed, true);
   });
 
-  it("M3 & M4 (3D-117..3D-190): Rigging, State Machine, 4 Wizards <=5 steps, 10 Recipes <=8 steps & Gates M3/M4 pass", () => {
+  it("M3 & M4 (3D-117..3D-190): Rigging, State Machine, 4 Wizards <=5 steps, 10 Recipes <=8 steps & Gate M3 passes, M4 lists what it can't measure", () => {
     assert.equal(MAKE_3D_WIZARDS.length, 4);
     assert.ok(MAKE_3D_WIZARDS.every((w) => w.steps.length <= 5));
 
@@ -119,8 +119,10 @@ describe("ROADMAP_3D Full Suite (3D-001 – 3D-227)", () => {
     assert.equal(gateM3.passed, true);
 
     const gateM4 = runGateM4FullShip();
-    assert.equal(gateM4.passed, true);
-    assert.equal(gateM4.zeroMemoryLeak100Cycles, true);
+    // Export v2, the leak check, the poster and layout at 5 widths are not built or measured yet: M4 says so.
+    assert.equal(gateM4.passed, false);
+    assert.equal(gateM4.zeroMemoryLeak100Cycles, false);
+    assert.ok(gateM4.unmeasured.includes("100-cycle mount/unmount leak check"));
   });
 
   it("M5 & M6 (3D-201..3D-226): AI Privacy Lock, Homography <0.01px, Car Wrap & Anime Twos/VFX pass Gates B & C", () => {
@@ -153,20 +155,28 @@ describe("ROADMAP_3D Full Suite (3D-001 – 3D-227)", () => {
       pointerNorm: [0.3, 0.2],
     });
     assert.equal(wrap.photoStays2D, true);
-    assert.ok(wrap.creaseRecallRatio >= 0.8);
+    // No crease detector runs on a photo yet, so recall is not reported (it used to be a constant 0.89).
+    assert.equal(wrap.creaseRecallRatio, null);
 
     const f0 = evaluateAnimeSteppedTime(0, "twos");
     const f1 = evaluateAnimeSteppedTime(3, "twos");
     assert.equal(f0.characterPoseIndex, f1.characterPoseIndex);
     assert.equal(ANIME_PROCEDURAL_VFX.length, 12);
 
-    assert.equal(runGateBPhotoStudio().passed, true);
-    assert.equal(runGateCAnimeStudio().passed, true);
+    // Gates B and C depend on things nothing measures yet (vision model, tracking, ink rendering, export):
+    // they say so and do not pass.
+    const gateB = runGateBPhotoStudio();
+    assert.equal(gateB.passed, false);
+    assert.ok(gateB.unmeasured.includes("planar tracking on video"));
+    const gateC = runGateCAnimeStudio();
+    assert.equal(gateC.passed, false);
+    assert.ok(gateC.unmeasured.length > 0);
   });
 
   it("Master Aggregator runs all 7 Milestone Gates + 3D-227 across all 227 phases", () => {
     const report = runAllRoadmap3dGates();
-    assert.equal(report.allPassed, true);
+    // Simulated model checks with unmeasured dependencies can't add up to a pass.
+    assert.equal(report.allPassed, false);
     assert.equal(report.checksRun, 8);
   });
 });
