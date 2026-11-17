@@ -43,8 +43,15 @@ export interface InteractiveExportBundle {
   readonly totalVendoredBytes: number;
   readonly entryFilename: string;
   readonly entrySource: string;
-  readonly zeroLazyLayoutImports: true;
-  readonly disposesContextsOnUnmount: true;
+  /** Computed from the generated sources: no import of `@lazylayout/*` or the editor's `@/` alias. */
+  readonly zeroLazyLayoutImports: boolean;
+  /** Computed from the entry source: it has an unmount hook that runs the cleanup. */
+  readonly disposesContextsOnUnmount: boolean;
+  /**
+   * False: the entry mounts a placeholder (the effect's name or poster) and idles; it does not run the effect yet.
+   * The vendored modules are small helpers, not the editor's effect runtime.
+   */
+  readonly runsEffect: false;
 }
 
 const MIT_HEADER = `/**
@@ -237,7 +244,18 @@ export class Lazy${safeId}Element extends HTMLElement {
     totalVendoredBytes,
     entryFilename,
     entrySource,
-    zeroLazyLayoutImports: true,
-    disposesContextsOnUnmount: true,
+    zeroLazyLayoutImports: [entrySource, ...vendoredModules.map((m) => m.source)].every(
+      (src) => !/(?:from\s*|import\(\s*)["'](?:@lazylayout\/|@\/)/.test(src),
+    ),
+    disposesContextsOnUnmount: UNMOUNT_HOOK[target].test(entrySource),
+    runsEffect: false,
   };
 }
+
+/** The unmount hook each target's entry must have for its cleanup to run. */
+const UNMOUNT_HOOK: Readonly<Record<ExportFrameworkTarget, RegExp>> = {
+  next: /return\s*\(\)\s*=>\s*\{[^}]*cancelIdle\(\)/,
+  vite_react: /return\s*\(\)\s*=>\s*\{[^}]*cancelIdle\(\)/,
+  vue3: /onBeforeUnmount\(\s*\(\)\s*=>\s*\{\s*stop\(\)/,
+  web_component: /disconnectedCallback\(\)\s*\{[^}]*this\._stop\(\)/,
+};
