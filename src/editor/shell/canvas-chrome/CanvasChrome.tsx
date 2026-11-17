@@ -86,6 +86,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   aiState: controlledAiState,
   aiLoading = false,
   aiContext,
+  aiMessages,
+  aiError,
   isViewOptionsOpen: controlledIsViewOptionsOpen,
   onToggleViewOptions: controlledOnToggleViewOptions,
   gridStyle: controlledGridStyle,
@@ -800,6 +802,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onKeep={onAiKeep}
         triggerRef={aiButtonRef}
         context={aiContext}
+        aiMessages={aiMessages}
+        aiError={aiError}
         state={controlledAiState}
         aiLoading={aiLoading}
       />

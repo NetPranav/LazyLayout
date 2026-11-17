@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { tryRunCommand } from "@/core/commands/registry";
 import { validateMotionDocument, type MotionDocument } from "@/core/document/schema";
 import { getDocument } from "@/core/store/documentState";
 import { documentCommands } from "@/core/store/useDocumentStore";
@@ -40,8 +41,17 @@ export interface GhostDiffProposal {
   acceptedLayers: string[];
 }
 
+export interface PendingCommandApproval {
+  id: string;
+  commandId: string;
+  title: string;
+  rationale: string;
+  args?: Record<string, unknown>;
+}
+
 interface GhostDiffState {
   pending: GhostDiffProposal | null;
+  pendingCommands: PendingCommandApproval[];
   stageProposal: (input: {
     proposalId: string;
     prompt: string;
@@ -50,6 +60,11 @@ interface GhostDiffState {
     candidateDocument: MotionDocument;
     effectChoices?: PlannedEffectChoice[];
   }) => void;
+  stageCommand: (input: PendingCommandApproval) => void;
+  approveCommand: (id: string) => { ok: boolean; error?: string };
+  rejectCommand: (id: string) => void;
+  approveAllCommands: () => { ok: boolean; error?: string };
+  rejectAllCommands: () => void;
   acceptAll: () => boolean;
   acceptLayer: (layerId: string) => boolean;
   discardLayer: (layerId: string) => void;
@@ -158,6 +173,7 @@ function buildLayerDiffs(
 
 export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
   pending: null,
+  pendingCommands: [],
 
   stageProposal({
     proposalId,
@@ -247,5 +263,44 @@ export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
 
   discardAll() {
     set({ pending: null });
+  },
+
+  stageCommand(input) {
+    set((state) => {
+      if (state.pendingCommands.some((c) => c.id === input.id)) return state;
+      return { pendingCommands: [...state.pendingCommands, input] };
+    });
+  },
+
+  approveCommand(id) {
+    const target = get().pendingCommands.find((c) => c.id === id);
+    if (!target) return { ok: false, error: "Command approval no longer pending." };
+    const outcome = tryRunCommand(target.commandId, target.args);
+    set((state) => ({
+      pendingCommands: state.pendingCommands.filter((c) => c.id !== id),
+    }));
+    if (!outcome.ok) {
+      return { ok: false, error: "message" in outcome ? outcome.message : outcome.reason };
+    }
+    return { ok: true };
+  },
+
+  rejectCommand(id) {
+    set((state) => ({
+      pendingCommands: state.pendingCommands.filter((c) => c.id !== id),
+    }));
+  },
+
+  approveAllCommands() {
+    const items = [...get().pendingCommands];
+    for (const item of items) {
+      const res = get().approveCommand(item.id);
+      if (!res.ok) return res;
+    }
+    return { ok: true };
+  },
+
+  rejectAllCommands() {
+    set({ pendingCommands: [] });
   },
 }));

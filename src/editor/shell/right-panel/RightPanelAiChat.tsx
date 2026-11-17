@@ -9,12 +9,14 @@ import {
   runSelectionScopedEdit,
 } from "@/ai/llm/copilot";
 import { useGhostDiffStore } from "@/ai/llm/ghostDiffStore";
+import { attachTaggedLayersToPrompt } from "@/ai/llm/mentions";
 import { applyMdmJsonPatches } from "@/ai/llm/validationLoop";
 import { useMcpActivityStore } from "@/ai/mcp/mcpActivityStore";
 import { rules } from "@/core/rules";
 import { useAgentUiStore } from "@/core/store/useAgentUiStore";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
 import { getDocument } from "@/core/store/documentState";
+import { useDocument } from "@/core/store/useDocumentStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { transport } from "@/core/time/transport";
 import {
@@ -107,11 +109,17 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
     inputRef,
   });
   const pendingGhost = useGhostDiffStore((s) => s.pending);
+  const pendingCommands = useGhostDiffStore((s) => s.pendingCommands);
   const stageGhostProposal = useGhostDiffStore((s) => s.stageProposal);
   const acceptAllGhost = useGhostDiffStore((s) => s.acceptAll);
   const acceptLayerGhost = useGhostDiffStore((s) => s.acceptLayer);
   const discardLayerGhost = useGhostDiffStore((s) => s.discardLayer);
   const discardAllGhost = useGhostDiffStore((s) => s.discardAll);
+  const approveCommand = useGhostDiffStore((s) => s.approveCommand);
+  const rejectCommand = useGhostDiffStore((s) => s.rejectCommand);
+  const [commandError, setCommandError] = useState<string | null>(null);
+  const [dismissedTagKey, setDismissedTagKey] = useState<string>("");
+  const [prevSelectionKey, setPrevSelectionKey] = useState<string>("");
   const mcpEntries = useMcpActivityStore((s) => s.entries);
   const setMcpStatus = useMcpActivityStore((s) => s.setStatus);
   const agentHost = getAgentHost();
@@ -122,6 +130,19 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
   );
   const agentLinkStatus = useAgentLinkStore((s) => s.status);
   const selectedIdsSet = useSelectionStore((s) => s.selectedIds);
+  const docLayers = useDocument((d) => d.layers);
+
+  const selectionKey = selectedIdsSet.join(",");
+  if (selectionKey !== prevSelectionKey) {
+    setPrevSelectionKey(selectionKey);
+    if (dismissedTagKey) setDismissedTagKey("");
+  }
+
+  const taggedLayers = selectedIdsSet
+    .map((id) => docLayers?.[id])
+    .filter((l): l is NonNullable<typeof l> => Boolean(l))
+    .map((l) => ({ id: l.id, name: l.name || l.id }));
+  const activeTaggedLayers = dismissedTagKey === selectionKey ? [] : taggedLayers;
 
   const handleCopilotAction = (action: "bouncier" | "stagger" | "calmer" | "explain" | "fix") => {
     const doc = getDocument();
@@ -191,7 +212,8 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
     if (aiLoading) return;
     const trimmed = inputValue.trim();
     if (!trimmed) return;
-    onAiSendMessage?.(trimmed);
+    const finalPrompt = attachTaggedLayersToPrompt(trimmed, activeTaggedLayers);
+    onAiSendMessage?.(finalPrompt);
     setInputValue("");
   };
 
@@ -784,8 +806,70 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
         </div>
       )}
 
+      {/* Pending Command Approval Bar */}
+      {pendingCommands.length > 0 && (
+        <div
+          aria-label="Pending AI command approval"
+          className="ll:p-3 ll:bg-surface-bar ll:border-t ll:border-border ll:flex ll:flex-col ll:gap-2 ll:shrink-0"
+        >
+          {pendingCommands.map((cmd) => (
+            <div key={cmd.id} className="ll:flex ll:items-center ll:justify-between ll:gap-2">
+              <div className="ll:min-w-0 ll:flex-1">
+                <div className="ll:text-small ll:font-medium ll:text-primary ll:truncate">
+                  {cmd.title}
+                </div>
+                {cmd.rationale && (
+                  <div className="ll:text-nano ll:text-secondary ll:truncate">{cmd.rationale}</div>
+                )}
+              </div>
+              <div className="ll:flex ll:items-center ll:gap-1 ll:shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCommandError(null);
+                    rejectCommand(cmd.id);
+                  }}
+                  className="ll:h-6 ll:px-2 ll:rounded-sm ll:border ll:border-border ll:bg-surface-panel ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const res = approveCommand(cmd.id);
+                    if (res.ok) {
+                      setCommandError(null);
+                      setAppliedBanner(cmd.title);
+                    } else {
+                      setCommandError(res.error ?? `Failed to run ${cmd.commandId}`);
+                    }
+                  }}
+                  className="ll:h-6 ll:px-2 ll:rounded-sm ll:bg-control-primary-bg ll:text-control-primary-fg ll:text-nano ll:font-medium ll:cursor-pointer"
+                >
+                  Approve
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {commandError && (
+        <div className="ll:px-3 ll:py-1.5 ll:bg-surface-bar ll:border-t ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:text-nano ll:text-error ll:shrink-0">
+          <span className="ll:truncate">{commandError}</span>
+          <button
+            type="button"
+            aria-label="Dismiss command error"
+            onClick={() => setCommandError(null)}
+            className="ll:text-muted hover:ll:text-primary ll:cursor-pointer ll:shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Post-apply Preview launch bar */}
-      {!pendingGhost && appliedBanner && (
+      {!pendingGhost && pendingCommands.length === 0 && appliedBanner && (
         <div className="ll:px-3 ll:py-2 ll:bg-surface-bar ll:border-t ll:border-border ll:flex ll:items-center ll:justify-between ll:gap-2 ll:shrink-0">
           <span className="ll:text-nano ll:text-primary ll:truncate">
             Applied: {appliedBanner}
@@ -824,15 +908,48 @@ export const RightPanelAiChat: React.FC<RightPanelAiChatProps> = ({
           onSelect={mention.applySelection}
           className="ll:absolute ll:left-3 ll:right-3 ll:bottom-full ll:mb-1"
         />
-        <div className="ll:flex ll:items-center ll:justify-between ll:gap-2 ll:text-nano ll:text-muted">
-          <span className="ll:truncate">
-            {selectedIdsSet.length === 1
-              ? `Selected: ${getDocument().layers?.[selectedIdsSet[0]]?.name ?? selectedIdsSet[0]}`
-              : selectedIdsSet.length > 1
-                ? `Selected: ${selectedIdsSet.length} layers`
-                : "Tip: type @ to mention any element"}
-          </span>
-          {selectedIdsSet.length > 0 && <span className="ll:shrink-0">@ to mention</span>}
+        <div className="ll:flex ll:flex-wrap ll:items-center ll:justify-between ll:gap-1.5 ll:text-nano ll:text-muted">
+          {activeTaggedLayers.length > 0 ? (
+            <div className="ll:flex ll:flex-wrap ll:items-center ll:gap-1 ll:min-w-0">
+              {activeTaggedLayers.slice(0, 3).map((layer) => (
+                <span
+                  key={layer.id}
+                  data-testid="ai-tagged-chip"
+                  className="ll:inline-flex ll:items-center ll:gap-1 ll:h-5 ll:px-1.5 ll:rounded-xs ll:bg-surface-bar ll:border ll:border-border ll:text-nano ll:font-medium ll:text-primary"
+                >
+                  <span className="ll:truncate ll:max-w-36">@{layer.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${layer.name} tag`}
+                    onClick={() => setDismissedTagKey(selectionKey)}
+                    className="ll:border-0 ll:bg-transparent ll:p-0 ll:text-muted hover:ll:text-primary ll:cursor-pointer ll:leading-none"
+                  >
+                    <Icon icon={X} size={10} />
+                  </button>
+                </span>
+              ))}
+              {activeTaggedLayers.length > 3 && (
+                <span className="ll:text-nano ll:text-secondary">
+                  +{activeTaggedLayers.length - 3} more
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="ll:truncate">
+              {taggedLayers.length > 0
+                ? "Selection untagged — click canvas or type @"
+                : "Click canvas to tag element or type @"}
+            </span>
+          )}
+          {taggedLayers.length > 0 && dismissedTagKey === selectionKey && (
+            <button
+              type="button"
+              onClick={() => setDismissedTagKey("")}
+              className="ll:border-0 ll:bg-transparent ll:p-0 ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer ll:shrink-0"
+            >
+              + Tag selection
+            </button>
+          )}
         </div>
         <form
           onSubmit={handleSubmit}
