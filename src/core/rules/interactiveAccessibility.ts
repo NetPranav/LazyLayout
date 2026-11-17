@@ -68,6 +68,15 @@ export function contrastRatio(a: RgbaColor, b: RgbaColor): number {
 }
 
 /** Sample mean luminance per GPU frame and count WCAG 2.3.1 luminance reversals/sec. */
+/**
+ * Flash check over sampled frames (WCAG 2.3.1: no more than 3 flashes in any one second).
+ *
+ * Each frame is split into a 4x4 grid and every cell is checked on its own, so a flash in part of the frame isn't
+ * averaged away by a still background. A flash is a pair of opposing luminance swings of at least 0.1 where the
+ * darker side is below 0.8. The rate is the most flashes in any 1-second window, not the average over the capture.
+ * Review 2026-11-17: it used to average the whole frame and divide the flash count by the total duration, so 10
+ * flashes in one second of a 10 s capture read as 1/s.
+ */
 export function detectGpuFrameFlashes(
   frames: readonly RasterBitmap[],
   totalDurationSec: number
@@ -77,47 +86,68 @@ export function detectGpuFrameFlashes(
   if (frames.length < 3 || totalDurationSec <= 0) {
     return { flashesPerSec: 0, safe: true, measured: false };
   }
+  const GRID = 4;
+  const frameTime = (i: number) => (i * totalDurationSec) / (frames.length - 1);
 
-  const lums: number[] = frames.map((bmp) => {
-    const n = bmp.width * bmp.height;
-    if (n === 0) return 0;
-    let sum = 0;
-    const stride = Math.max(1, Math.floor(n / 256));
-    let count = 0;
-    for (let i = 0; i < n; i += stride) {
-      const idx = i * 4;
-      sum += relativeLuminance({
-        r: bmp.data[idx]!,
-        g: bmp.data[idx + 1]!,
-        b: bmp.data[idx + 2]!,
-        a: 255,
-      });
-      count += 1;
-    }
-    return count > 0 ? sum / count : 0;
-  });
-
-  let transitions = 0;
-  let prevDir: 1 | -1 | 0 = 0;
-  let lastExtreme = lums[0]!;
-  for (let i = 1; i < lums.length; i += 1) {
-    const delta = lums[i]! - lums[i - 1]!;
-    if (Math.abs(delta) < 1e-4) continue;
-    const dir: 1 | -1 = delta > 0 ? 1 : -1;
-    if (prevDir !== 0 && dir !== prevDir) {
-      const swing = Math.abs(lums[i - 1]! - lastExtreme);
-      if (swing >= 0.1 && Math.min(lums[i - 1]!, lastExtreme) < 0.8) {
-        transitions += 1;
+  /** Mean relative luminance of each grid cell of one frame (sampled, at most ~64 pixels per cell). */
+  const cellLums = (bmp: RasterBitmap): number[] => {
+    const out: number[] = [];
+    for (let gy = 0; gy < GRID; gy++) {
+      for (let gx = 0; gx < GRID; gx++) {
+        const x0 = Math.floor((gx * bmp.width) / GRID);
+        const x1 = Math.max(x0 + 1, Math.floor(((gx + 1) * bmp.width) / GRID));
+        const y0 = Math.floor((gy * bmp.height) / GRID);
+        const y1 = Math.max(y0 + 1, Math.floor(((gy + 1) * bmp.height) / GRID));
+        const stepX = Math.max(1, Math.floor((x1 - x0) / 8));
+        const stepY = Math.max(1, Math.floor((y1 - y0) / 8));
+        let sum = 0;
+        let count = 0;
+        for (let y = y0; y < Math.min(y1, bmp.height); y += stepY) {
+          for (let x = x0; x < Math.min(x1, bmp.width); x += stepX) {
+            const idx = (y * bmp.width + x) * 4;
+            sum += relativeLuminance({ r: bmp.data[idx]!, g: bmp.data[idx + 1]!, b: bmp.data[idx + 2]!, a: 255 });
+            count += 1;
+          }
+        }
+        out.push(count > 0 ? sum / count : 0);
       }
-      lastExtreme = lums[i - 1]!;
-    } else if (prevDir === 0) {
-      lastExtreme = lums[0]!;
     }
-    prevDir = dir;
-  }
+    return out;
+  };
 
-  const flashes = Math.floor(transitions / 2);
-  const flashesPerSec = flashes / totalDurationSec;
+  const perFrame = frames.map(cellLums);
+  let worst = 0;
+  for (let cell = 0; cell < GRID * GRID; cell++) {
+    const lums = perFrame.map((f) => f[cell] ?? 0);
+    // Times of qualifying swing reversals in this cell.
+    const swings: number[] = [];
+    let prevDir: 1 | -1 | 0 = 0;
+    let lastExtreme = lums[0]!;
+    for (let i = 1; i < lums.length; i += 1) {
+      const delta = lums[i]! - lums[i - 1]!;
+      if (Math.abs(delta) < 1e-4) continue;
+      const dir: 1 | -1 = delta > 0 ? 1 : -1;
+      if (prevDir !== 0 && dir !== prevDir) {
+        const swing = Math.abs(lums[i - 1]! - lastExtreme);
+        if (swing >= 0.1 && Math.min(lums[i - 1]!, lastExtreme) < 0.8) swings.push(frameTime(i - 1));
+        lastExtreme = lums[i - 1]!;
+      }
+      prevDir = dir;
+    }
+    // The last swing ends at the final frame.
+    const lastSwing = Math.abs(lums[lums.length - 1]! - lastExtreme);
+    if (prevDir !== 0 && lastSwing >= 0.1 && Math.min(lums[lums.length - 1]!, lastExtreme) < 0.8) {
+      swings.push(frameTime(lums.length - 1));
+    }
+    // Most swings inside any 1-second window; two swings make one flash.
+    let lo = 0;
+    for (let hi = 0; hi < swings.length; hi += 1) {
+      while (swings[hi]! - swings[lo]! > 1 + 1e-9) lo += 1;
+      worst = Math.max(worst, Math.floor((hi - lo + 1) / 2));
+    }
+  }
+  // For captures shorter than a second, scale up to a per-second rate.
+  const flashesPerSec = totalDurationSec < 1 ? worst / totalDurationSec : worst;
   return {
     flashesPerSec,
     safe: flashesPerSec <= MAX_FLASHES_PER_SECOND,
