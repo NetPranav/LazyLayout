@@ -189,10 +189,20 @@ function buildClientDocumentSnapshot(mode?: RightPanelMode, documentName?: strin
   };
 }
 
+/**
+ * Commands the AI may propose. File, export, history and test commands act outside the document (saving,
+ * writing files, undoing the person's own steps), so the model is neither offered them nor allowed to stage them.
+ */
+const AI_BLOCKED_COMMAND_PREFIXES = ["file.", "export.", "test.", "edit.undo", "edit.redo"] as const;
+export function isAiProposableCommand(commandId: string): boolean {
+  return !AI_BLOCKED_COMMAND_PREFIXES.some((p) => commandId === p || commandId.startsWith(p));
+}
+
 function buildClientCommandCatalog() {
   return getAllCommands()
-    .slice(0, 120)
+    .filter((cmd) => isAiProposableCommand(cmd.id))
     .sort((a, b) => a.id.localeCompare(b.id))
+    .slice(0, 120)
     .map((cmd) => {
       let inputSchema: Record<string, unknown> | undefined;
       if (cmd.args) {
@@ -553,6 +563,10 @@ export function useAiChat({
             parsedArgs = payload.args as Record<string, unknown>;
           }
           const cmdDef = getCommand(commandId);
+          if (!cmdDef || !isAiProposableCommand(commandId)) {
+            updateAssistant((cur) => `${cur}\n\nNot staged: the AI can't run "${commandId}".`);
+            continue;
+          }
           useGhostDiffStore.getState().stageCommand({
             id: `${assistantId}-${evt.id}`,
             commandId,
@@ -623,7 +637,7 @@ export function useAiChat({
               });
               updateAssistant(
                 (cur) =>
-                  `${cur ? `${cur}\n\n` : ""}Staged runnable changes: ${plan.summary}. Click "Accept all" below, then click the top-right Preview (▶) button to test it on the canvas.`,
+                  `${cur ? `${cur}\n\n` : ""}The model didn't propose a change, so here is a built-in preset that matches your words: ${plan.summary}. Review it below; "Accept all" applies it, then Preview (▶) plays it.`,
               );
             }
           }
