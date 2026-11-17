@@ -1868,7 +1868,7 @@ svg {
   top: 0;
   bottom: 0;
   right: 0;
-  width: 6px;
+  width: 8px;
   z-index: 10;
   cursor: col-resize;
   touch-action: none;
@@ -1894,6 +1894,18 @@ svg {
 
 .ll-shell-lsplit:focus-visible::after {
   opacity: 1;
+}
+
+.ll-shell-lsplit-edge {
+  left: 0;
+  right: auto;
+  width: 8px;
+  z-index: 25;
+}
+
+.ll-shell-lsplit-edge::after {
+  left: 0;
+  right: auto;
 }
 /* === end lane: B2 === */
 
@@ -2103,7 +2115,7 @@ svg {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 6px;
+  width: 8px;
   z-index: 10;
   cursor: col-resize;
   touch-action: none;
@@ -2129,6 +2141,18 @@ svg {
 
 .ll-shell-rsplit:focus-visible::after {
   opacity: 1;
+}
+
+.ll-shell-rsplit-edge {
+  right: 0;
+  left: auto;
+  width: 8px;
+  z-index: 25;
+}
+
+.ll-shell-rsplit-edge::after {
+  right: 0;
+  left: auto;
 }
 /* === end lane: B3 === */
 

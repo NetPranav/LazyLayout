@@ -46,7 +46,6 @@ export interface RightPanelConnectedProps {
   ) => void;
   aiLoading?: boolean;
   onAiStop?: () => void;
-  onClosePanel?: () => void;
 }
 
 /** Right panel frame: the real inspector fields in Design, the motion inspector (composition, layer or keyframe by selection) in Motion, the file inspector in Code. */
@@ -69,7 +68,6 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
   onAiSaveCredentials: controlledOnAiSaveCredentials,
   aiLoading: controlledAiLoading,
   onAiStop: controlledOnAiStop,
-  onClosePanel,
 }) => {
   const internalAiChat = useAiChat({ mode });
   const aiSharedProps = {
@@ -124,7 +122,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
 
   if (mode === "motion") {
     return (
-      <RightPanelFrame mode={mode} onClosePanel={onClosePanel} {...aiSharedProps}>
+      <RightPanelFrame mode={mode} {...aiSharedProps}>
         <MotionInspector />
         <InspectorExtras kind="animation" />
       </RightPanelFrame>
@@ -132,7 +130,7 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
   }
   if (mode === "code") {
     return (
-      <RightPanelFrame mode={mode} onClosePanel={onClosePanel} {...aiSharedProps}>
+      <RightPanelFrame mode={mode} {...aiSharedProps}>
         <CodeInspector />
         <InspectorExtras kind="data-logic" />
       </RightPanelFrame>
@@ -146,7 +144,6 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
         mode={mode}
         selectionName={selected3dObj?.name ?? "3D Object"}
         dimension={dimension}
-        onClosePanel={onClosePanel}
         {...aiSharedProps}
       >
         <Properties3d activeId={effective3dId} />
@@ -154,5 +151,5 @@ export const RightPanelConnected: React.FC<RightPanelConnectedProps> = ({
     );
   }
 
-  return <RightPanelFrame mode={mode} designSections={designSections} onClosePanel={onClosePanel} {...aiSharedProps} />;
+  return <RightPanelFrame mode={mode} designSections={designSections} {...aiSharedProps} />;
 };

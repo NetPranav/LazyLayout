@@ -2,34 +2,78 @@ import { test, expect } from "@playwright/test";
 import { openEditor } from "./support/editor";
 
 test.describe("panels, arrow-key alignment guides, and small-window timeline toggle", () => {
-  test("individual left and right panels can close and reopen independently", async ({ page }) => {
+  test("individual left and right panels can close, reopen, and drag-snap open/closed without header collapse buttons", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await openEditor(page);
 
     const leftPane = page.locator(".ll-shell-left");
     const rightPane = page.locator(".ll-shell-right");
+    const shellRoot = page.locator(".ll-editor-root");
 
     await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
 
-    // 1. Close ONLY left panel using header button -> right panel remains open
-    await page.getByTestId("close-left-panel").click();
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
-    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
+    // Header collapse buttons are removed from both left and right panel headers
+    await expect(page.getByTestId("close-left-panel")).toHaveCount(0);
+    await expect(page.getByTestId("close-right-panel")).toHaveCount(0);
 
-    // 2. Reopen ONLY left panel using toolbar individual toggle
+    // 1. Close ONLY left panel via canvas toolbar toggle -> right panel remains open
     await page.getByTestId("toggle-left-panel").click();
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
 
-    // 3. Close ONLY right panel using header button -> left panel remains open
-    await page.getByTestId("close-right-panel").click();
+    // 2. Drag left edge handle only slightly (20px) and release -> snaps back closed to 0
+    const leftHandle = page.getByTestId("left-panel-drag-handle");
+    const lBox = (await leftHandle.boundingBox())!;
+    await page.mouse.move(lBox.x + 2, lBox.y + lBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(lBox.x + 22, lBox.y + lBox.height / 2, { steps: 4 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+
+    // 3. Drag left edge handle past snap-open threshold (110px) -> snaps open with spring settle to >= 240px
+    const lBox2 = (await leftHandle.boundingBox())!;
+    await page.mouse.move(lBox2.x + 2, lBox2.y + lBox2.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(lBox2.x + 110, lBox2.y + lBox2.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(240);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+
+    // 4. Drag open left panel inward past collapse threshold -> snaps closed while right stays open
+    const lOpenBox = (await leftHandle.boundingBox())!;
+    await page.mouse.move(lOpenBox.x + lOpenBox.width / 2, lOpenBox.y + lOpenBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(40, lOpenBox.y + lOpenBox.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
+
+    // 5. Reopen left panel via canvas toolbar toggle, then drag-close & drag-open RIGHT panel
+    await page.getByTestId("toggle-left-panel").click();
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(240);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+
+    const rightHandle = page.getByTestId("right-panel-drag-handle");
+    const rOpenBox = (await rightHandle.boundingBox())!;
+    await page.mouse.move(rOpenBox.x + rOpenBox.width / 2, rOpenBox.y + rOpenBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(1240, rOpenBox.y + rOpenBox.height / 2, { steps: 8 });
+    await page.mouse.up();
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBe(0);
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(240);
 
-    // 4. Reopen ONLY right panel using toolbar individual toggle
-    await page.getByTestId("toggle-right-panel").click();
-    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
+    const rCollapsedBox = (await rightHandle.boundingBox())!;
+    await page.mouse.move(rCollapsedBox.x + 4, rCollapsedBox.y + rCollapsedBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(rCollapsedBox.x - 110, rCollapsedBox.y + rCollapsedBox.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(280);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
   });
 
   test("alignment guidelines appear when positioning an element with arrow keys", async ({ page }) => {

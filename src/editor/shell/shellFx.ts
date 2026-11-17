@@ -60,6 +60,15 @@ export const RIGHT_PANEL_DEFAULT = 320;
 export const RIGHT_PANEL_DEFAULT_COMPACT = 296;
 export const RIGHT_PANEL_MAX = 520;
 
+const PANEL_OPEN_SNAP_PX = 64;
+const PANEL_CLOSE_SNAP_RATIO = 0.55;
+const PANEL_FLICK_VELOCITY_PX_S = 260;
+
+export interface PanelSplitDragOptions {
+  collapsed?: boolean;
+  onCollapseChange?: (collapsed: boolean) => void;
+}
+
 const MODE_ORDER: readonly EditorMode[] = ["design", "motion", "code"];
 
 interface LayoutVals {
@@ -138,6 +147,7 @@ export class ShellFx {
   private last: LayoutVals | null = null;
   private live = false;
   private pending: PendingMode | null = null;
+  private pendingVelocity: { side: "left" | "right"; v: number } | null = null;
   private targetLw = LEFT_PANEL_DEFAULT;
   private targetRw = RIGHT_PANEL_DEFAULT;
 
@@ -377,6 +387,12 @@ export class ShellFx {
           s.v = 0;
         });
       }
+      if (this.pendingVelocity) {
+        const pv = this.pendingVelocity;
+        this.pendingVelocity = null;
+        if (pv.side === "left") this.lw.v = clamp(pv.v, -600, 600);
+        else this.rw.v = clamp(pv.v, -600, 600);
+      }
       this.lw.to = b.lw;
       this.rw.to = b.rw;
       this.bh.to = b.bh;
@@ -526,52 +542,58 @@ export class ShellFx {
     );
   }
 
-  private settle(side: "left" | "right", targetW: number, velocity: number): void {
+  private animateSideTo(
+    side: "left" | "right",
+    startW: number,
+    targetW: number,
+    velocity = 0,
+    withBlur = true
+  ): void {
     const root = this.root;
     if (!root) return;
-    const reduced = prefersReducedMotion();
-    if (reduced) {
-      if (side === "left") {
-        this.targetLw = targetW;
-        this.lw.jump(targetW);
-        root.style.setProperty("--lw", `${targetW}px`);
-      } else {
-        this.targetRw = targetW;
-        this.rw.jump(targetW);
-        root.style.setProperty("--rw", `${targetW}px`);
-      }
+    const cssVar = side === "left" ? "--lw" : "--rw";
+    const spring = side === "left" ? this.lw : this.rw;
+    if (prefersReducedMotion()) {
+      spring.jump(targetW);
+      root.style.setProperty(cssVar, `${targetW}px`);
+      if (this.last) this.last[side === "left" ? "lw" : "rw"] = targetW;
       window.dispatchEvent(new Event("resize"));
       return;
     }
 
-    const preset = getActivePreset();
-    if (side === "left") {
-      this.targetLw = targetW;
-      this.lw.tune(preset.shape);
-      this.lw.jump(targetW);
-      this.lw.v = Math.abs(velocity) > 20 ? clamp(velocity, -200, 200) : 15;
-      this.lw.to = targetW;
-    } else {
-      this.targetRw = targetW;
-      this.rw.tune(preset.shape);
-      this.rw.jump(targetW);
-      this.rw.v = Math.abs(velocity) > 20 ? clamp(velocity, -200, 200) : 15;
-      this.rw.to = targetW;
+    const spec = getActivePreset().shape;
+    [this.lw, this.rw, this.bh, this.fw].forEach((s) => s.tune(spec));
+    const current = this.last ?? measure(root);
+    if (!this.live) {
+      this.lw.jump(current.lw);
+      this.rw.jump(current.rw);
+      this.bh.jump(current.bh);
+      this.fw.jump(current.fw);
     }
+    spring.x = startW;
+    spring.v = Math.abs(velocity) > 20 ? clamp(velocity, -600, 600) : (targetW >= startW ? 15 : -15);
+    spring.to = targetW;
 
     this.live = true;
     root.setAttribute("data-pfx", "");
     this.applyVars();
     simAdd(this.sim);
 
-    this.playContentBlur(side);
+    if (withBlur) this.playContentBlur(side);
   }
 
-  /** Left side panel splitter: drag to resize. */
-  readonly onLeftSplitDown = (
+  private settle(side: "left" | "right", targetW: number, velocity: number): void {
+    if (side === "left") this.targetLw = targetW;
+    else this.targetRw = targetW;
+    this.animateSideTo(side, targetW, targetW, clamp(velocity, -200, 200), true);
+  }
+
+  private startSideSplitDrag(
+    side: "left" | "right",
     e: ReactPointerEvent<HTMLElement>,
-    onWidthChange?: (w: number) => void
-  ): void => {
+    onWidthChange?: (w: number) => void,
+    options?: PanelSplitDragOptions
+  ): void {
     const root = this.root;
     if (!root) return;
     e.preventDefault();
@@ -579,47 +601,144 @@ export class ShellFx {
     handle.setAttribute("data-on", "");
     handle.setPointerCapture(e.pointerId);
 
+    const collapsed = options?.collapsed === true;
+    const onCollapseChange = options?.onCollapseChange;
+    const minW = side === "left" ? LEFT_PANEL_MIN : RIGHT_PANEL_MIN;
+    const maxClamp = side === "left" ? LEFT_PANEL_MAX : RIGHT_PANEL_MAX;
+    const defaultW =
+      side === "left"
+        ? LEFT_PANEL_DEFAULT
+        : typeof window !== "undefined" && window.innerWidth <= 1200
+          ? RIGHT_PANEL_DEFAULT_COMPACT
+          : RIGHT_PANEL_DEFAULT;
+    const cssVar = side === "left" ? "--lw" : "--rw";
+    const dragAttr = side === "left" ? "data-pdrag-l" : "data-pdrag-r";
+    const storageKey = side === "left" ? "ll-lw" : "ll-rw";
+    const spring = side === "left" ? this.lw : this.rw;
+    const dir = side === "left" ? 1 : -1;
+
+    if (this.live) {
+      this.live = false;
+      simRemove(this.sim);
+      this.clearVars();
+      root.removeAttribute("data-pfx");
+    }
+
+    const savedOpenW = side === "left" ? this.targetLw : this.targetRw;
+    const rememberedOpenW = savedOpenW >= minW ? savedOpenW : defaultW;
     const x0 = e.clientX;
-    const w0 = this.targetLw;
+    const w0 = collapsed ? 0 : rememberedOpenW;
     let currentW = w0;
+    let movedPx = 0;
     let lastTime = performance.now();
     let velocity = 0;
 
-    this.lw.jump(w0);
+    spring.jump(w0);
+    if (collapsed) root.setAttribute(dragAttr, "");
+
+    const maxWidth = () => Math.max(minW, Math.min(maxClamp, Math.round(window.innerWidth * 0.45)));
 
     const move = (ev: PointerEvent): void => {
       const now = performance.now();
       const dt = Math.max(1, now - lastTime);
-      const rawW = w0 + (ev.clientX - x0);
-      const maxW = Math.min(LEFT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
-      const w = clamp(rawW, LEFT_PANEL_MIN, maxW);
+      const delta = (ev.clientX - x0) * dir;
+      movedPx = Math.max(movedPx, Math.abs(delta));
+      if (collapsed && movedPx < 2) return;
+
+      const maxW = maxWidth();
+      const rawW = w0 + delta;
+      const w = onCollapseChange || collapsed ? clamp(rawW, 0, maxW) : clamp(rawW, minW, maxW);
       velocity = ((w - currentW) / dt) * 1000;
       lastTime = now;
       currentW = w;
-      this.targetLw = w;
-      this.lw.jump(w);
-      root.style.setProperty("--lw", `${w}px`);
+      if (w >= minW) {
+        if (side === "left") this.targetLw = w;
+        else this.targetRw = w;
+        onWidthChange?.(w);
+      }
+      spring.jump(w);
+      root.style.setProperty(cssVar, `${w}px`);
       handle.setAttribute("aria-valuenow", String(Math.round(w)));
       window.dispatchEvent(new Event("resize"));
-      onWidthChange?.(w);
     };
 
     const up = (): void => {
       handle.removeAttribute("data-on");
+      root.removeAttribute(dragAttr);
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
       handle.removeEventListener("pointercancel", up);
 
-      try {
-        localStorage.setItem("ll-lw", String(Math.round(currentW)));
-      } catch (_) {}
+      const maxW = maxWidth();
+      const currentSnapshot = this.last ?? measure(root);
+      this.last = {
+        ...currentSnapshot,
+        [side === "left" ? "lw" : "rw"]: currentW,
+      };
 
-      this.settle("left", currentW, velocity);
+      if (collapsed) {
+        const shouldOpen =
+          movedPx >= 3 &&
+          (currentW >= PANEL_OPEN_SNAP_PX || (currentW > 12 && velocity > PANEL_FLICK_VELOCITY_PX_S));
+        if (shouldOpen && onCollapseChange) {
+          const snapToW = clamp(Math.max(rememberedOpenW, currentW), minW, maxW);
+          if (side === "left") this.targetLw = snapToW;
+          else this.targetRw = snapToW;
+          try {
+            localStorage.setItem(storageKey, String(Math.round(snapToW)));
+          } catch (_) {}
+          this.pendingVelocity = { side, v: velocity };
+          onWidthChange?.(snapToW);
+          onCollapseChange(false);
+        } else {
+          this.animateSideTo(side, currentW, 0, velocity, currentW > 12);
+        }
+        return;
+      }
+
+      const collapseThreshold = minW * PANEL_CLOSE_SNAP_RATIO;
+      const shouldClose =
+        Boolean(onCollapseChange) &&
+        movedPx >= 3 &&
+        (currentW < collapseThreshold || (currentW < minW && velocity < -PANEL_FLICK_VELOCITY_PX_S));
+
+      if (shouldClose && onCollapseChange) {
+        if (side === "left") this.targetLw = rememberedOpenW;
+        else this.targetRw = rememberedOpenW;
+        this.pendingVelocity = { side, v: velocity };
+        onCollapseChange(true);
+        return;
+      }
+
+      if (currentW < minW) {
+        if (side === "left") this.targetLw = minW;
+        else this.targetRw = minW;
+        try {
+          localStorage.setItem(storageKey, String(minW));
+        } catch (_) {}
+        onWidthChange?.(minW);
+        this.animateSideTo(side, currentW, minW, velocity, true);
+        return;
+      }
+
+      try {
+        localStorage.setItem(storageKey, String(Math.round(currentW)));
+      } catch (_) {}
+      this.settle(side, currentW, velocity);
     };
 
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", up);
     handle.addEventListener("pointercancel", up);
+  }
+
+  /** Left side panel splitter: drag to resize, open, or snap close. */
+  readonly onLeftSplitDown = (
+    e: ReactPointerEvent<HTMLElement>,
+    onWidthChange?: (w: number) => void,
+    options?: PanelSplitDragOptions
+  ): void => {
+    this.startSideSplitDrag("left", e, onWidthChange, options);
   };
 
   /** Left side panel splitter: double click resets to default. */
@@ -677,59 +796,13 @@ export class ShellFx {
     this.settle("left", nextW, 0);
   };
 
-  /** Right side panel splitter: drag to resize. */
+  /** Right side panel splitter: drag to resize, open, or snap close. */
   readonly onRightSplitDown = (
     e: ReactPointerEvent<HTMLElement>,
-    onWidthChange?: (w: number) => void
+    onWidthChange?: (w: number) => void,
+    options?: PanelSplitDragOptions
   ): void => {
-    const root = this.root;
-    if (!root) return;
-    e.preventDefault();
-    const handle = e.currentTarget;
-    handle.setAttribute("data-on", "");
-    handle.setPointerCapture(e.pointerId);
-
-    const x0 = e.clientX;
-    const w0 = this.targetRw;
-    let currentW = w0;
-    let lastTime = performance.now();
-    let velocity = 0;
-
-    this.rw.jump(w0);
-
-    const move = (ev: PointerEvent): void => {
-      const now = performance.now();
-      const dt = Math.max(1, now - lastTime);
-      const rawW = w0 - (ev.clientX - x0);
-      const maxW = Math.min(RIGHT_PANEL_MAX, Math.round(window.innerWidth * 0.45));
-      const w = clamp(rawW, RIGHT_PANEL_MIN, maxW);
-      velocity = ((w - currentW) / dt) * 1000;
-      lastTime = now;
-      currentW = w;
-      this.targetRw = w;
-      this.rw.jump(w);
-      root.style.setProperty("--rw", `${w}px`);
-      handle.setAttribute("aria-valuenow", String(Math.round(w)));
-      window.dispatchEvent(new Event("resize"));
-      onWidthChange?.(w);
-    };
-
-    const up = (): void => {
-      handle.removeAttribute("data-on");
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", up);
-      handle.removeEventListener("pointercancel", up);
-
-      try {
-        localStorage.setItem("ll-rw", String(Math.round(currentW)));
-      } catch (_) {}
-
-      this.settle("right", currentW, velocity);
-    };
-
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", up);
-    handle.addEventListener("pointercancel", up);
+    this.startSideSplitDrag("right", e, onWidthChange, options);
   };
 
   /** Right side panel splitter: double click resets to default. */
@@ -807,7 +880,8 @@ export interface ShellFxApi {
   onSplitDouble: (e: ReactMouseEvent<HTMLElement>) => void;
   onLeftSplitDown: (
     e: ReactPointerEvent<HTMLElement>,
-    onWidthChange?: (w: number) => void
+    onWidthChange?: (w: number) => void,
+    options?: PanelSplitDragOptions
   ) => void;
   onLeftSplitDouble: (onReset?: () => void) => void;
   onLeftSplitKeyDown: (
@@ -816,7 +890,8 @@ export interface ShellFxApi {
   ) => void;
   onRightSplitDown: (
     e: ReactPointerEvent<HTMLElement>,
-    onWidthChange?: (w: number) => void
+    onWidthChange?: (w: number) => void,
+    options?: PanelSplitDragOptions
   ) => void;
   onRightSplitDouble: (onReset?: () => void) => void;
   onRightSplitKeyDown: (
