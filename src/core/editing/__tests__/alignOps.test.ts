@@ -78,4 +78,41 @@ describe("Phase 30: align, distribute and tidy as document operations", () => {
     assert.equal(distributeLayers([], "v"), false);
     assert.equal(tidyLayers([]), false);
   });
+
+  it("align and distribute inside an auto-layout row keep children in flow and update stack layout", () => {
+    setDocument(createDocumentFromLayers([
+      createLayer({
+        id: "stack",
+        archetype: "container",
+        parentId: null,
+        name: "Auto layout",
+        children: ["t1", "t2", "t3", "t4"],
+        properties: {
+          "frame.x": 0,
+          "frame.y": 0,
+          "frame.width": 600,
+          "frame.height": 80,
+          "layout.auto": true,
+          "layout.display": "flex",
+          "layout.flexDirection": "row",
+          "layout.gap": 10,
+          "layout.alignItems": "flex-start",
+          "layout.justifyContent": "flex-start",
+          "sizing.horizontal": "fixed",
+        },
+      }) as Layer,
+      createLayer({ id: "t1", archetype: "rectangle", parentId: "stack", name: "Contact", properties: { positioning: "absolute", "frame.x": 0, "frame.y": 10, "frame.width": 80, "frame.height": 30 } }) as Layer,
+      createLayer({ id: "t2", archetype: "rectangle", parentId: "stack", name: "Home", properties: { positioning: "flow", "frame.x": 300, "frame.y": 20, "frame.width": 80, "frame.height": 30 } }) as Layer,
+      createLayer({ id: "t3", archetype: "rectangle", parentId: "stack", name: "About", properties: { positioning: "flow", "frame.x": 400, "frame.y": 20, "frame.width": 80, "frame.height": 30 } }) as Layer,
+      createLayer({ id: "t4", archetype: "rectangle", parentId: "stack", name: "Pages", properties: { positioning: "flow", "frame.x": 500, "frame.y": 20, "frame.width": 80, "frame.height": 30 } }) as Layer,
+    ]));
+
+    assert.equal(alignLayers(["t1", "t2", "t3", "t4"], "vcenter"), true);
+    assert.equal(getDocument().layers.stack.properties["layout.alignItems"], "center");
+    assert.equal(getDocument().layers.t1.properties.positioning, "flow");
+
+    assert.equal(distributeLayers(["t1", "t2", "t3", "t4"], "h"), true);
+    assert.equal(getDocument().layers.t1.properties.positioning, "flow");
+    assert.equal(getDocument().layers.t4.properties.positioning, "flow");
+  });
 });

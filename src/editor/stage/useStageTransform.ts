@@ -185,6 +185,8 @@ export function useStageTransform({
     hasMoved: boolean;
     /** Inside a stack or grid: the place in the order the layers would take if let go now (they do not move freely). */
     drop?: FlowDrop | null;
+    /** Layers that started this gesture inside Auto Layout / Grid flow, so briefly crossing an edge can re-enter flow. */
+    initialFlowIds?: Set<string>;
   } | null>(null);
 
   // Parent artboard rect for snapping
@@ -257,6 +259,13 @@ export function useStageTransform({
         }
       });
 
+      const docLayers = getDocument().layers;
+      const initialFlowIds = new Set<string>();
+      targetIds.forEach((id) => {
+        const l = docLayers[id];
+        if (l && l.properties.positioning !== "absolute") initialFlowIds.add(id);
+      });
+
       gestureRef.current = {
         type: "move",
         startClientX: e.clientX,
@@ -265,6 +274,7 @@ export function useStageTransform({
         targetIds,
         initialBoxes,
         hasMoved: false,
+        initialFlowIds,
         artboard: (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-stage="artboard"]'),
       };
 
@@ -353,10 +363,26 @@ export function useStageTransform({
       if (gesture.type === "move") {
         // Inside an auto-layout frame the layers keep their place in the flow: the drag picks a new position in the order.
         if (gesture.hasMoved && !activeGestureEl?.mirrorId) {
-          const drop = flowDrop(gesture.targetIds, artboardPoint(gesture.artboard, e), elements, getDocument().layers);
+          const docLayersNow = getDocument().layers;
+          const drop = flowDrop(
+            gesture.targetIds,
+            artboardPoint(gesture.artboard, e),
+            elements,
+            docLayersNow,
+            gesture.initialFlowIds
+          );
           gesture.drop = drop;
           useStackDropStore.getState().set(drop?.line ?? null);
           if (drop) {
+            gesture.targetIds.forEach((id) => {
+              if (docLayersNow[id]?.properties.positioning === "absolute") {
+                try {
+                  documentCommands.updateProps(id, { positioning: "flow" });
+                } catch {
+                  // fallback
+                }
+              }
+            });
             setSnapLines([]);
             setSpacingMarks([]);
             return;

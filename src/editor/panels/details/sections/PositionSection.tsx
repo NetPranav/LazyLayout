@@ -7,6 +7,9 @@ import { Select } from "@/editor/components/Select";
 import { Button } from "@/editor/components/Button";
 import { formatPinInLayer } from "@/core/geometry/cornerPin";
 import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshWarp";
+import { isAutoLayout } from "@/core/editing/layoutOps";
+import { parentOrigin, worldBox } from "@/core/editing/layerBoxes";
+import { documentCommands, useDocument } from "@/core/store/useDocumentStore";
 import { AlignBar } from "../controls/AlignBar";
 import {
   INSPECTOR_CONSTANTS,
@@ -39,6 +42,8 @@ export const CONSTRAINT_VERTICAL_OPTIONS = [
 ];
 
 export const PositionSection: React.FC<PositionSectionProps> = ({
+  selectedId,
+  layer,
   isMulti = false,
   getValue,
   onUpdateProp,
@@ -47,14 +52,69 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
   onTidy,
   className = "",
 }) => {
-  // Read coordinates
+  const layers = useDocument((d) => d.layers);
+  const parent = layer?.parentId ? layers[layer.parentId] : undefined;
+  const inFlowStack = Boolean(
+    !isMulti &&
+      selectedId &&
+      layer &&
+      parent &&
+      isAutoLayout(parent) &&
+      layer.properties.positioning !== "absolute"
+  );
+
+  // Read coordinates (use drawn box relative to parent when in Auto Layout flow so X/Y are real)
   const rawX = getValue?.("frame.x") ?? getValue?.("x");
   const rawY = getValue?.("frame.y") ?? getValue?.("y");
   const rawRot = getValue?.("frame.rotation") ?? getValue?.("rotation");
 
-  const xVal = typeof rawX === "number" ? rawX : rawX === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_X;
-  const yVal = typeof rawY === "number" ? rawY : rawY === null ? null : INSPECTOR_CONSTANTS.DEFAULT_POS_Y;
+  const flowBox = inFlowStack && selectedId ? worldBox(selectedId) : null;
+  const flowOrigin = inFlowStack && selectedId ? parentOrigin(selectedId) : null;
+
+  const xVal =
+    flowBox && flowOrigin
+      ? Math.round(flowBox.cx - flowBox.w / 2 - flowOrigin.x)
+      : typeof rawX === "number"
+        ? rawX
+        : rawX === null
+          ? null
+          : INSPECTOR_CONSTANTS.DEFAULT_POS_X;
+  const yVal =
+    flowBox && flowOrigin
+      ? Math.round(flowBox.cy - flowBox.h / 2 - flowOrigin.y)
+      : typeof rawY === "number"
+        ? rawY
+        : rawY === null
+          ? null
+          : INSPECTOR_CONSTANTS.DEFAULT_POS_Y;
   const rotVal = typeof rawRot === "number" ? rawRot : rawRot === null ? null : INSPECTOR_CONSTANTS.DEFAULT_ROTATION;
+
+  const adjustFlowAxis = (axis: "h" | "v", nextCoord: number) => {
+    if (!inFlowStack || !parent || !selectedId) return false;
+    const isRow = parent.properties["layout.flexDirection"] === "row";
+    if ((axis === "h" && !isRow) || (axis === "v" && isRow)) return false;
+
+    const flowKids = parent.children.filter(
+      (cid) => layers[cid] && layers[cid].visible !== false && layers[cid].properties.positioning !== "absolute"
+    );
+    const idx = flowKids.indexOf(selectedId);
+    if (idx < 0) return false;
+
+    const curCoord = axis === "h" ? (xVal ?? 0) : (yVal ?? 0);
+    const delta = nextCoord - curCoord;
+    if (idx === 0) {
+      const padKey = isRow ? "layout.paddingLeft" : "layout.paddingTop";
+      documentCommands.updateProps(parent.id, { [padKey]: Math.max(0, Math.round(nextCoord)) });
+      return true;
+    }
+    const curGap = typeof parent.properties["layout.gap"] === "number" ? parent.properties["layout.gap"] : 0;
+    const nextGap = Math.max(0, Math.round(curGap + delta / idx));
+    documentCommands.updateProps(parent.id, {
+      "layout.gap": nextGap,
+      "layout.justifyContent": "flex-start",
+    });
+    return true;
+  };
 
   return (
     <div className={`ll:flex ll:flex-col ll:gap-2 ll:w-full ${className}`}>
@@ -75,6 +135,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
           value={xVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (adjustFlowAxis("h", v)) return;
             onUpdateProp?.("frame.x", v);
             onUpdateProp?.("x", v);
           }}
@@ -87,6 +148,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
           value={yVal}
           step={INSPECTOR_CONSTANTS.STEP_INTEGER}
           onChange={(v) => {
+            if (adjustFlowAxis("v", v)) return;
             onUpdateProp?.("frame.y", v);
             onUpdateProp?.("y", v);
           }}

@@ -15,7 +15,7 @@ import { isPropertyLegalFor, resolvePropertyPath } from "../document/properties"
 import type { Layer } from "../document/schema";
 import { duplicateFrame } from "../frames/frameCommands";
 import { listFrames, nextFramePosition } from "../frames/frames";
-import { alignBoxes, distributeBoxes, tidyBoxes, unionBounds, type AlignMode, type SpreadAxis } from "../geometry/align";
+import { alignBoxes, boundsOf, distributeBoxes, tidyBoxes, unionBounds, type AlignMode, type SpreadAxis } from "../geometry/align";
 import { moveBoxes, unionBox, type Box } from "../geometry/transform";
 import { getDocument } from "../store/documentState";
 import { documentCommands, getResolvedDocument } from "../store/useDocumentStore";
@@ -356,15 +356,97 @@ function editableBoxes(ids: readonly string[]): { roots: string[]; boxes: Box[] 
   return boxes.length === roots.length && roots.length > 0 ? { roots, boxes } : null;
 }
 
+const isStackParent = (l: Layer | undefined): boolean =>
+  !!l && l.archetype === "container" && l.properties["layout.auto"] === true;
+
+const isGridParent = (l: Layer | undefined): boolean =>
+  !!l && l.archetype === "container" && l.properties["layout.display"] === "grid";
+
+function singleFlowParent(ids: readonly string[], docLayers: Record<string, Layer>): Layer | undefined {
+  const parentIds = new Set(ids.map((id) => docLayers[id]?.parentId));
+  if (parentIds.size !== 1) return undefined;
+  const pid = [...parentIds][0];
+  const parent = pid ? docLayers[pid] : undefined;
+  if (!parent || (!isStackParent(parent) && !isGridParent(parent))) return undefined;
+  return parent;
+}
+
 /** Aligns the selection. Returns false (and changes nothing) when there is nothing to align to: one layer with no parent, or no editable layers. */
 export function alignLayers(ids: readonly string[], mode: AlignMode, to: AlignTarget = "auto"): boolean {
   const e = editableBoxes(ids);
   if (!e) return false;
-  const layers = getDocument().layers;
+  const docLayers = getDocument().layers;
+
+  // Preserve Auto Layout flow when aligning children inside an auto-layout stack
+  const stackParent = to !== "selection" ? singleFlowParent(e.roots, docLayers) : undefined;
+  if (stackParent && isStackParent(stackParent)) {
+    const isRow = stackParent.properties["layout.flexDirection"] === "row";
+    const isCross = isRow
+      ? mode === "top" || mode === "vcenter" || mode === "bottom"
+      : mode === "left" || mode === "hcenter" || mode === "right";
+    const flexVal =
+      mode === "top" || mode === "left"
+        ? "flex-start"
+        : mode === "vcenter" || mode === "hcenter"
+          ? "center"
+          : "flex-end";
+    const editableKids = stackParent.children.filter(
+      (cid) => docLayers[cid] && docLayers[cid].locked !== true && docLayers[cid].visible !== false
+    );
+    const allEditableSelected =
+      editableKids.length > 0 && editableKids.every((cid) => e.roots.includes(cid));
+
+    if (isCross) {
+      let changed = false;
+      transaction("Align", () => {
+        if (allEditableSelected) {
+          if (stackParent.properties["layout.alignItems"] !== flexVal) {
+            documentCommands.updateProps(stackParent.id, { "layout.alignItems": flexVal });
+            changed = true;
+          }
+          for (const id of e.roots) {
+            const p = docLayers[id]?.properties;
+            if (p?.positioning === "absolute" || p?.["layout.alignSelf"] !== undefined) {
+              documentCommands.updateProps(id, { positioning: "flow", "layout.alignSelf": undefined });
+              changed = true;
+            }
+          }
+        } else {
+          for (const id of e.roots) {
+            const p = docLayers[id]?.properties;
+            if (p?.positioning === "absolute" || p?.["layout.alignSelf"] !== flexVal) {
+              documentCommands.updateProps(id, { positioning: "flow", "layout.alignSelf": flexVal });
+              changed = true;
+            }
+          }
+        }
+      });
+      return changed;
+    }
+
+    if (allEditableSelected) {
+      let changed = false;
+      transaction("Align", () => {
+        if (stackParent.properties["layout.justifyContent"] !== flexVal) {
+          documentCommands.updateProps(stackParent.id, { "layout.justifyContent": flexVal });
+          changed = true;
+        }
+        for (const id of e.roots) {
+          if (docLayers[id]?.properties.positioning === "absolute") {
+            documentCommands.updateProps(id, { positioning: "flow" });
+            changed = true;
+          }
+        }
+      });
+      return changed;
+    }
+    return false;
+  }
+
   const useParent = to === "parent" || (to === "auto" && selectionRoots(ids).length === 1); // a locked layer in the selection still counts as "several"
   let target;
   if (useParent) {
-    const parentIds = new Set(e.roots.map((id) => layers[id].parentId));
+    const parentIds = new Set(e.roots.map((id) => docLayers[id].parentId));
     if (parentIds.size !== 1) return false;
     const parentId = [...parentIds][0];
     const pb = parentId ? worldBox(parentId) : null;
@@ -384,6 +466,107 @@ export function alignLayers(ids: readonly string[], mode: AlignMode, to: AlignTa
 export function distributeLayers(ids: readonly string[], axis: SpreadAxis): boolean {
   const e = editableBoxes(ids);
   if (!e || e.roots.length < 3) return false;
+  const docLayers = getDocument().layers;
+  const flowParent = singleFlowParent(e.roots, docLayers);
+
+  if (flowParent) {
+    const sorted = e.boxes
+      .map((b, i) => {
+        const r = boundsOf(b);
+        return {
+          id: e.roots[i],
+          start: axis === "h" ? r.x : r.y,
+          size: axis === "h" ? r.width : r.height,
+        };
+      })
+      .sort((a, b) => a.start - b.start);
+    const total = sorted[sorted.length - 1].start + sorted[sorted.length - 1].size - sorted[0].start;
+    const inner = sorted.reduce((sum, x) => sum + x.size, 0);
+    const computedGap = Math.max(0, Math.round((total - inner) / (sorted.length - 1)));
+
+    if (isStackParent(flowParent)) {
+      const isRow = flowParent.properties["layout.flexDirection"] === "row";
+      const mainAxis: SpreadAxis = isRow ? "h" : "v";
+      if (axis !== mainAxis) return false;
+
+      const currentGap =
+        typeof flowParent.properties["layout.gap"] === "number" ? flowParent.properties["layout.gap"] : 0;
+      const currentJustify = flowParent.properties["layout.justifyContent"];
+      const mainSizing = flowParent.properties[isRow ? "sizing.horizontal" : "sizing.vertical"];
+      const hasDetached = e.roots.some((id) => docLayers[id]?.properties.positioning === "absolute");
+
+      const currentOrder = flowParent.children.filter((cid) => e.roots.includes(cid));
+      const targetOrder = sorted.map((x) => x.id);
+      const orderChanged = currentOrder.some((cid, idx) => cid !== targetOrder[idx]);
+
+      if (
+        !hasDetached &&
+        !orderChanged &&
+        computedGap === currentGap &&
+        currentJustify !== "space-between" &&
+        mainSizing !== "fixed"
+      ) {
+        return false;
+      }
+
+      let changed = false;
+      transaction("Distribute spacing", () => {
+        for (const id of targetOrder) {
+          if (docLayers[id]?.properties.positioning !== "flow") {
+            documentCommands.updateProps(id, { positioning: "flow" });
+            changed = true;
+          }
+        }
+        if (orderChanged) {
+          // Place items into visual order at the positions of those selected slots
+          const slots = flowParent.children
+            .map((cid, idx) => (e.roots.includes(cid) ? idx : -1))
+            .filter((idx) => idx >= 0);
+          targetOrder.forEach((id, k) => {
+            const slot = slots[k];
+            if (slot !== undefined && getDocument().layers[flowParent.id].children[slot] !== id) {
+              documentCommands.moveLayer(id, flowParent.id, slot);
+              changed = true;
+            }
+          });
+        }
+        if (hasDetached || computedGap !== currentGap || currentJustify === "space-between") {
+          documentCommands.updateProps(flowParent.id, {
+            "layout.gap": computedGap,
+            "layout.justifyContent": "flex-start",
+          });
+          changed = true;
+        } else if (mainSizing === "fixed" && currentJustify !== "space-between") {
+          documentCommands.updateProps(flowParent.id, { "layout.justifyContent": "space-between" });
+          changed = true;
+        }
+      });
+      return changed;
+    }
+
+    if (isGridParent(flowParent)) {
+      const gapPath = axis === "h" ? "layout.columnGap" : "layout.rowGap";
+      const currentGap =
+        typeof flowParent.properties[gapPath] === "number" ? flowParent.properties[gapPath] : 0;
+      const hasDetached = e.roots.some((id) => docLayers[id]?.properties.positioning === "absolute");
+      if (!hasDetached && computedGap === currentGap) return false;
+      let changed = false;
+      transaction("Distribute spacing", () => {
+        for (const id of e.roots) {
+          if (docLayers[id]?.properties.positioning !== "flow") {
+            documentCommands.updateProps(id, { positioning: "flow" });
+            changed = true;
+          }
+        }
+        if (computedGap !== currentGap) {
+          documentCommands.updateProps(flowParent.id, { [gapPath]: computedGap });
+          changed = true;
+        }
+      });
+      return changed;
+    }
+  }
+
   const next = distributeBoxes(e.boxes, axis);
   if (next.every((b, i) => b.cx === e.boxes[i].cx && b.cy === e.boxes[i].cy)) return false;
   transaction("Distribute spacing", () => writeBoxes(e.roots, next));
@@ -394,6 +577,50 @@ export function distributeLayers(ids: readonly string[], axis: SpreadAxis): bool
 export function tidyLayers(ids: readonly string[]): boolean {
   const e = editableBoxes(ids);
   if (!e || e.roots.length < 2) return false;
+  const docLayers = getDocument().layers;
+  const flowParent = singleFlowParent(e.roots, docLayers);
+  if (flowParent && isStackParent(flowParent)) {
+    const isRow = flowParent.properties["layout.flexDirection"] === "row";
+    const axis: SpreadAxis = isRow ? "h" : "v";
+    const sorted = e.boxes
+      .map((b, i) => {
+        const r = boundsOf(b);
+        return {
+          id: e.roots[i],
+          start: axis === "h" ? r.x : r.y,
+        };
+      })
+      .sort((a, b) => a.start - b.start);
+    const hasDetached = e.roots.some((id) => docLayers[id]?.properties.positioning !== "flow");
+    const currentOrder = flowParent.children.filter((cid) => e.roots.includes(cid));
+    const targetOrder = sorted.map((x) => x.id);
+    const orderChanged = currentOrder.some((cid, idx) => cid !== targetOrder[idx]);
+    if (!hasDetached && !orderChanged && flowParent.properties["layout.justifyContent"] === "flex-start") {
+      return false;
+    }
+    transaction("Tidy up", () => {
+      for (const id of targetOrder) {
+        if (docLayers[id]?.properties.positioning !== "flow") {
+          documentCommands.updateProps(id, { positioning: "flow" });
+        }
+      }
+      if (orderChanged) {
+        const slots = flowParent.children
+          .map((cid, idx) => (e.roots.includes(cid) ? idx : -1))
+          .filter((idx) => idx >= 0);
+        targetOrder.forEach((id, k) => {
+          const slot = slots[k];
+          if (slot !== undefined && getDocument().layers[flowParent.id].children[slot] !== id) {
+            documentCommands.moveLayer(id, flowParent.id, slot);
+          }
+        });
+      }
+      if (flowParent.properties["layout.justifyContent"] === "space-between") {
+        documentCommands.updateProps(flowParent.id, { "layout.justifyContent": "flex-start" });
+      }
+    });
+    return true;
+  }
   const next = tidyBoxes(e.boxes);
   if (next.every((b, i) => b.cx === e.boxes[i].cx && b.cy === e.boxes[i].cy)) return false;
   transaction("Tidy up", () => writeBoxes(e.roots, next));
