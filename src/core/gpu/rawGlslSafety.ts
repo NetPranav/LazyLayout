@@ -82,6 +82,19 @@ export function extractUniformProps(glslSource: string): readonly InferredShader
  * 2. Requires `for (...)` loops to compare an index variable to an integer literal constant <= maxLoopIterations.
  * 3. Refuses texture fetches exceeding `maxTextureFetches`.
  */
+/**
+ * A static lint for raw GLSL before it is compiled. It is a first line of defence, not a sandbox: the GPU watchdog
+ * and the 2-strike circuit breaker below still apply. It checks:
+ * - no `while` / `do` loops, and no `#define` (macros can hide loop bounds);
+ * - every `for` header on one line, with a constant `< N` / `<= N` bound and a step that moves toward it
+ *   (`i++`, `++i`, `i += k` with k > 0);
+ * - the loop counter isn't assigned inside the body;
+ * - the TOTAL iterations of nested loops (bounds multiplied) stay within `maxLoopIterations`;
+ * - texture fetches, counted once per iteration of the loops around them, stay within `maxTextureFetches`.
+ * Review 2026-11-17: before, each loop was checked alone (three nested `i < 128` loops = 2M iterations passed), the
+ * step wasn't checked (`i += 0` passed), a header split over lines or a #define bypassed it, and a fetch inside a
+ * loop counted once.
+ */
 export function validateRawGlslSafety(
   glslSource: string,
   options?: {
@@ -94,48 +107,88 @@ export function validateRawGlslSafety(
   const diagnostics: GlslLineDiagnostic[] = [];
   const lines = glslSource.split(/\r?\n/);
   let maxDetected = 0;
+  let textureFetches = 0;
+
+  // Open loops: the brace depth their body starts at, their bound, their counter, and the product of bounds so far.
+  const loops: { depth: number; bound: number; counter: string; product: number }[] = [];
+  let depth = 0;
+  let pendingLoop: { bound: number; counter: string } | null = null;
+  const currentProduct = () => (loops.length ? loops[loops.length - 1]!.product : 1);
 
   lines.forEach((line, idx) => {
     const lineNum = idx + 1;
-    if (/\b(while|do)\b\s*[\({]/.test(line)) {
-      diagnostics.push({
-        line: lineNum,
-        severity: "error",
-        message: "Unbounded `while`/`do` loops are prohibited in WebGL/WebGPU shaders.",
-      });
-    }
+    const code = line.replace(/\/\/.*$/, "");
+    const err = (message: string) => diagnostics.push({ line: lineNum, severity: "error", message });
 
-    const forMatch = line.match(/\bfor\s*\(([^;]*);([^;]*);([^)]*)\)/);
-    if (forMatch) {
-      const cond = forMatch[2]!.trim();
-      const constBound = cond.match(/^[A-Za-z_][A-Za-z0-9_]*\s*(?:<|<=)\s*(\d+)$/);
-      if (!constBound) {
-        diagnostics.push({
-          line: lineNum,
-          severity: "error",
-          message: `Loop condition "${cond}" must use a constant integer upper bound (e.g., i < 16).`,
-        });
+    if (/^\s*#\s*define\b/.test(code)) err("`#define` is not allowed in raw shaders (macros can hide loop bounds).");
+    if (/\b(while|do)\b\s*[({]/.test(code)) err("Unbounded `while`/`do` loops are prohibited in WebGL/WebGPU shaders.");
+
+    if (/\bfor\s*\(/.test(code)) {
+      const forMatch = code.match(/\bfor\s*\(([^;]*);([^;]*);([^)]*)\)/);
+      if (!forMatch) {
+        err("Keep a `for` header on one line: `for (int i = 0; i < 16; i++)`.");
       } else {
-        const boundVal = Number.parseInt(constBound[1]!, 10);
-        maxDetected = Math.max(maxDetected, boundVal);
-        if (boundVal > maxLoop) {
-          diagnostics.push({
-            line: lineNum,
-            severity: "error",
-            message: `Constant loop bound (${boundVal}) exceeds safety limit (${maxLoop}).`,
-          });
+        const init = forMatch[1]!.trim();
+        const cond = forMatch[2]!.trim();
+        const step = forMatch[3]!.trim();
+        const counter = (init.match(/([A-Za-z_][A-Za-z0-9_]*)\s*=\s*0\s*$/) ?? [])[1];
+        const constBound = cond.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(<|<=)\s*(\d+)$/);
+        if (!constBound || !counter || constBound[1] !== counter) {
+          err(`Loop "${cond}" must start its counter at 0 and use a constant integer upper bound (e.g. i < 16).`);
+        } else {
+          const bound = Number.parseInt(constBound[3]!, 10) + (constBound[2] === "<=" ? 1 : 0);
+          const stepOk =
+            new RegExp(`^(?:${counter}\\s*\\+\\+|\\+\\+\\s*${counter})$`).test(step) ||
+            (() => {
+              const m = step.match(new RegExp(`^${counter}\\s*\\+=\\s*(\\d+)$`));
+              return !!m && Number(m[1]) > 0;
+            })();
+          if (!stepOk) err(`Loop step "${step}" must move the counter up (${counter}++ or ${counter} += k with k > 0).`);
+          if (bound > maxLoop) err(`Constant loop bound (${bound}) exceeds safety limit (${maxLoop}).`);
+          pendingLoop = { bound, counter };
         }
       }
     }
+
+    // Assigning the counter inside its loop can make it run forever.
+    for (const l of loops) {
+      if (new RegExp(`\\b${l.counter}\\s*(?:[-+*/]?=(?!=)|--|\\+\\+)`).test(code) && !/\bfor\s*\(/.test(code)) {
+        err(`The loop counter "${l.counter}" is changed inside the loop body.`);
+      }
+    }
+
+    const fetches = (code.match(/\b(texture|texture2D|texelFetch)\s*\(/g) ?? []).length;
+    textureFetches += fetches * (pendingLoop ? currentProduct() * pendingLoop.bound : currentProduct());
+
+    for (const ch of code) {
+      if (ch === "{") {
+        depth += 1;
+        if (pendingLoop) {
+          const product = currentProduct() * pendingLoop.bound;
+          loops.push({ depth, bound: pendingLoop.bound, counter: pendingLoop.counter, product });
+          maxDetected = Math.max(maxDetected, product);
+          if (product > maxLoop && loops.length > 1) {
+            err(`Nested loops run ${product} iterations in total, over the safety limit (${maxLoop}).`);
+          }
+          pendingLoop = null;
+        }
+      } else if (ch === "}") {
+        if (loops.length && loops[loops.length - 1]!.depth === depth) loops.pop();
+        depth = Math.max(0, depth - 1);
+      }
+    }
+    // A loop without braces covers just the next statement; count it once and move on.
+    if (pendingLoop && /;\s*$/.test(code.replace(/\bfor\s*\([^)]*\)/, ""))) {
+      maxDetected = Math.max(maxDetected, currentProduct() * pendingLoop.bound);
+      pendingLoop = null;
+    }
   });
 
-  const texMatches = glslSource.match(/\b(texture|texture2D|texelFetch)\s*\(/g) ?? [];
-  const textureFetches = texMatches.length;
   if (textureFetches > maxTex) {
     diagnostics.push({
       line: 1,
       severity: "error",
-      message: `Texture fetch count (${textureFetches}) exceeds budget (${maxTex}).`,
+      message: `Texture fetch count (${textureFetches}, counting loop iterations) exceeds budget (${maxTex}).`,
     });
   }
 
