@@ -44,7 +44,8 @@ import { documentOrder } from "@/core/selection/selectionOps";
 import { setLayerProps } from "@/core/editing/editOps";
 import { registerFrameRenderer, type StageRenderer } from "@/core/render/StageRenderer";
 import { measurePage, pageMeasurer } from "./pageMeasure";
-import { measureAtRest } from "@/core/engine/stage/StageEngine";
+import { afterEngineWrites, measureAtRest } from "@/core/engine/stage/StageEngine";
+import { frameScheduler } from "@/core/time/scheduler";
 import { activePageRootId } from "./activePage";
 import { marqueeHits } from "./marquee";
 import { useProjectStore } from "@/core/store/useProjectStore";
@@ -180,6 +181,9 @@ export const Stage: React.FC<StageProps> = ({
   const storeLayersRef = useRef(storeLayers);
   const isGesturingRef = useRef(false);
   const measuringRef = useRef(false);
+  // watches the page for layout changes the document doesn't announce (see the effect below)
+  const pageWatchRef = useRef<MutationObserver | null>(null);
+  const measuredJsonRef = useRef("{}");
   const isControlled = Boolean(controlledElements);
   const isControlledRef = useRef(isControlled);
 
@@ -200,6 +204,7 @@ export const Stage: React.FC<StageProps> = ({
     const page = pageRef.current;
     if (!page || !storeLayersRef.current || measuringRef.current) return;
     measuringRef.current = true;
+    recordCommit("stageMeasure");
     let next: Record<string, StageElement> = {};
     try {
       // measured at rest: the hit boxes add the animated pose themselves, so a box read mid-move would be moved twice
@@ -207,13 +212,20 @@ export const Stage: React.FC<StageProps> = ({
       next = measureAtRest(() => measurePage(page, layersNow));
     } finally {
       measuringRef.current = false;
+      // Resting the animation wrote styles on the page and put them back. Those writes are this reading's own, not a
+      // change to measure: left queued, the page watcher would start another reading, which writes again, without end
+      // (the page froze as soon as anything was animated).
+      pageWatchRef.current?.takeRecords();
     }
     // applied at once, so a selection box never lags a frame behind what it surrounds
     const rootNode = page.firstElementChild as HTMLElement | null;
+    const json = JSON.stringify(next);
+    const changed = json !== measuredJsonRef.current;
+    measuredJsonRef.current = json;
     flushSync(() => {
-      setMeasured((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+      if (changed) setMeasured(next);
       if (!isGesturingRef.current && !isControlledRef.current) {
-        setElements((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+        setElements((prev) => (JSON.stringify(prev) === json ? prev : next));
       }
       setRootHeight(rootNode?.offsetHeight ?? 0);
     });
@@ -228,33 +240,49 @@ export const Stage: React.FC<StageProps> = ({
     const page = pageRef.current;
     if (!page) return undefined;
     let live = true;
-    let scheduled = false;
+    // At most one reading a frame, in the frame's overlay step (after the engine has drawn, when layout can be read).
+    // A burst of changes costs one reading, and nothing here can keep the page from painting.
+    let pending: (() => void) | null = null;
     const scheduleRemeasure = () => {
-      if (!live || measuringRef.current || scheduled) return;
-      scheduled = true;
-      queueMicrotask(() => {
-        scheduled = false;
-        if (live) remeasure();
+      if (!live || pending) return;
+      pending = frameScheduler.register("overlay", () => {
+        pending?.();
+        pending = null;
+        if (live && !isGesturingRef.current) remeasure();
       });
     };
     page.addEventListener("load", remeasure, true);
     const observer = new ResizeObserver(remeasure);
     observer.observe(page);
-    const mutationObserver = new MutationObserver(scheduleRemeasure);
-    mutationObserver.observe(page, {
+    const pageWatch = new MutationObserver(() => {
+      // a drag moves its boxes itself and is measured when it ends (below)
+      if (measuringRef.current || isGesturingRef.current) return;
+      scheduleRemeasure();
+    });
+    pageWatch.observe(page, {
       childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ["style", "class"],
+    });
+    pageWatchRef.current = pageWatch;
+    // The animation engine restyles layers every frame of playback, of a scrub and of a live driver or state. That
+    // moves the animated pose, which the hit boxes add themselves, never where a layer rests: those changes are dropped.
+    const offEngine = afterEngineWrites(() => {
+      pageWatch.takeRecords();
     });
     void document.fonts?.ready.then(() => live && remeasure());
     // align, group and reparent ask the same reading
     const off = rootId ? registerFrameRenderer(rootId, pageMeasurer(() => pageRef.current) as unknown as StageRenderer) : undefined;
     return () => {
       live = false;
+      pending?.();
+      pending = null;
       page.removeEventListener("load", remeasure, true);
       observer.disconnect();
-      mutationObserver.disconnect();
+      offEngine();
+      pageWatch.disconnect();
+      if (pageWatchRef.current === pageWatch) pageWatchRef.current = null;
       off?.();
     };
   }, [remeasure, rootId]);
