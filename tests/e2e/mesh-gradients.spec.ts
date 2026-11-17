@@ -99,9 +99,8 @@ test("Edit points on canvas: dragging a mesh point moves its colour, one undo st
     const reg = (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } }).__LL_COMMANDS__;
     reg.all().find((c) => c.id === "selection.set")!.run({ ids: [id] });
   }, id);
-  // open the fill's settings and switch on editing the points
-  const settings = page.getByRole("button", { name: "Fill 1 settings" });
-  await settings.click();
+  // open the fill's panel (the swatch: one panel holds every option of the fill) and switch on editing the points
+  await page.getByRole("button", { name: "Fill 1 color" }).click();
   await page.getByLabel("Edit mesh points on canvas", { exact: true }).click();
   const point = page.getByRole("button", { name: "Mesh point 5" });
   await expect(point).toBeVisible();
