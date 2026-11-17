@@ -91,32 +91,45 @@ export function verifyInteractiveTapeScene(options: {
   const failures: string[] = [];
 
   let idx = 0;
-  for (const frame of playTape(options.tape, options.fps ?? 60, options.tape.seed ?? 0)) {
-    const cp = checkpointMap.get(idx);
-    const out = options.stepAndCapture(frame, idx, !!cp);
-    if (cp) {
-      if (!out.image) {
-        const empty: Rgba = { width: cp.golden.width, height: cp.golden.height, data: new Uint8Array(cp.golden.width * cp.golden.height * 4) };
-        const cmp = compare(empty, cp.golden, tol);
-        results.push({ frameIndex: idx, compare: cmp, particlesOk: false });
-        failures.push(`frame ${idx}: missing rendered image`);
-      } else {
-        const cmp = compare(out.image, cp.golden, tol);
-        let particlesOk = true;
-        if (cp.expectedParticles) {
-          const stats = computeParticleStats(out.particles ?? []);
-          const dist = Math.hypot(stats.centroidX - cp.expectedParticles.centroidX, stats.centroidY - cp.expectedParticles.centroidY);
-          particlesOk = stats.count === cp.expectedParticles.count && dist <= cp.expectedParticles.tolerancePx;
-          if (!particlesOk) failures.push(`frame ${idx}: particle stats mismatch (count=${stats.count}, dist=${dist.toFixed(1)})`);
+  const visited = new Set<number>();
+  try {
+    for (const frame of playTape(options.tape, options.fps ?? 60, options.tape.seed ?? 0)) {
+      const cp = checkpointMap.get(idx);
+      const out = options.stepAndCapture(frame, idx, !!cp);
+      if (cp) {
+        if (!out.image) {
+          const empty: Rgba = { width: cp.golden.width, height: cp.golden.height, data: new Uint8Array(cp.golden.width * cp.golden.height * 4) };
+          const cmp = compare(empty, cp.golden, tol);
+          results.push({ frameIndex: idx, compare: cmp, particlesOk: false });
+          failures.push(`frame ${idx}: missing rendered image`);
+        } else {
+          const cmp = compare(out.image, cp.golden, tol);
+          let particlesOk = true;
+          if (cp.expectedParticles) {
+            const stats = computeParticleStats(out.particles ?? []);
+            const dist = Math.hypot(stats.centroidX - cp.expectedParticles.centroidX, stats.centroidY - cp.expectedParticles.centroidY);
+            particlesOk = stats.count === cp.expectedParticles.count && dist <= cp.expectedParticles.tolerancePx;
+            if (!particlesOk) failures.push(`frame ${idx}: particle stats mismatch (count=${stats.count}, dist=${dist.toFixed(1)})`);
+          }
+          if (!cmp.pass) failures.push(`frame ${idx}: visual mismatch (ssim=${cmp.ssim.toFixed(3)}, bad=${cmp.badFraction.toFixed(4)})`);
+          results.push({ frameIndex: idx, compare: cmp, particlesOk });
         }
-        if (!cmp.pass) failures.push(`frame ${idx}: visual mismatch (ssim=${cmp.ssim.toFixed(3)}, bad=${cmp.badFraction.toFixed(4)})`);
-        results.push({ frameIndex: idx, compare: cmp, particlesOk });
       }
+      if (cp) visited.add(idx);
+      idx += 1;
     }
-    idx += 1;
+  } catch (err) {
+    failures.push(`frame ${idx}: stepAndCapture threw: ${err instanceof Error ? err.message : String(err)}`);
+  } finally {
+    // Always tear down, so the leak check below also runs after a failure.
+    options.teardown();
   }
 
-  options.teardown();
+  // A checkpoint the tape never reached was never checked: that is a failure, not a pass.
+  for (const cp of options.checkpoints) {
+    if (!visited.has(cp.frameIndex)) failures.push(`frame ${cp.frameIndex}: checkpoint never reached (the tape has ${idx} frames)`);
+  }
+  if (options.checkpoints.length === 0) failures.push("no checkpoints: nothing was compared");
   const prefix = options.ownerPrefix ?? "";
   const leakedBytes = options.ledger.totalBytes(prefix);
   const leakedCount = options.ledger.count(prefix);

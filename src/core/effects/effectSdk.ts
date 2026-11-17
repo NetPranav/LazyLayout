@@ -44,6 +44,10 @@ export interface EffectProvenance {
   readonly original: boolean;
   readonly license: "MIT" | "CC0" | "Apache-2.0";
   readonly author: string;
+  /**
+   * The author's declaration that the effect was written here and not copied from a reference library (GATE-02 in
+   * `LICENSES.md`, a policy gate). It is a declaration recorded with the recipe, not something code checks.
+   */
   readonly gate02Verified: boolean;
 }
 

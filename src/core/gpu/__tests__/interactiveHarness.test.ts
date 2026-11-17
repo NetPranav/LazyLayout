@@ -81,3 +81,43 @@ describe("Phase 137 — GPU & Interactive Verification Harness", () => {
     assert.ok(broken.failures.length >= 3);
   });
 });
+
+describe("Phase 137 harness can fail on what it didn't check (review 2026-11-17)", () => {
+  const tape = () =>
+    authorScriptedTape({
+      id: "short",
+      name: "Short",
+      duration: 0.05,
+      fps: 60,
+      channels: [{ signal: { kind: "time" }, samples: [{ t: 0, v: 0 }, { t: 0.05, v: 0.05 }] }],
+    });
+
+  it("fails when a checkpoint lies past the end of the tape", () => {
+    const report = verifyInteractiveTapeScene({
+      tape: tape(),
+      ledger: new GpuLedger(),
+      checkpoints: [{ frameIndex: 999, golden: solidRgba(2, 2, [0, 0, 0, 255]) }],
+      stepAndCapture: () => ({ image: solidRgba(2, 2, [0, 0, 0, 255]) }),
+      teardown: () => undefined,
+    });
+    assert.equal(report.pass, false);
+    assert.ok(report.failures.some((f) => f.includes("never reached")));
+  });
+
+  it("still tears down and reports when a frame throws", () => {
+    let tornDown = false;
+    const report = verifyInteractiveTapeScene({
+      tape: tape(),
+      ledger: new GpuLedger(),
+      checkpoints: [{ frameIndex: 0, golden: solidRgba(2, 2, [0, 0, 0, 255]) }],
+      stepAndCapture: () => {
+        throw new Error("boom");
+      },
+      teardown: () => {
+        tornDown = true;
+      },
+    });
+    assert.equal(tornDown, true);
+    assert.equal(report.pass, false);
+  });
+});
