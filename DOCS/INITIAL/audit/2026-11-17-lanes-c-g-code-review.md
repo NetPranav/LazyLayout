@@ -163,7 +163,7 @@ Reachability, file by file: 98 of 213 new files reach a real route, 67 reach onl
 
 **155 · Roles & selectors** (dead)
 - M: Roles are guessed from the layer *name* by regex ("Logo"→image, "Panel"→card, text ≥24px→heading).
-- M: `selectNeighbours` ignores the radius whenever the origin has a parent.
+- ~~M: `selectNeighbours` ignores the radius whenever the origin has a parent.~~ Withdrawn: that is the design (inside a nav or list, "my neighbours" means the siblings), and the selector fixtures expect it. Now documented in the code.
 
 **156 · Data-driven charts** (dead)
 - M: The CSV parser splits on newlines before handling quotes, so quoted multi-line cells break.
@@ -306,7 +306,7 @@ Fix: remove the gates panel from StudioTab. Keep only `roadmap3d` functions that
 
 ## 8. How to reproduce the reachability numbers
 
-The script is in this session's scratchpad (`reach.mjs`). It walks `import`/`export from`/`import()` from every `src/app/**/{page,layout,route}.tsx`, `bin/*` and the export-runtime build script, and splits the routes into lab and non-lab. Worth adding as `scripts/check-reachable.mts`, so that CI fails when a new `src/core` file is reachable only from tests.
+`npm run check:reachable` (`scripts/check-reachable.mts`, added on the fix branch and run in CI). It walks `import`/`export from`/`import()` from every `src/app/**/{page,layout,route}.tsx`, `bin/*` and the export-runtime build script, and splits the routes into lab and non-lab. Today's unwired files are recorded in `scripts/reachability-baseline.json`; only a new unwired file fails.
 
 ## 9. Suggested order of work
 
@@ -315,3 +315,32 @@ The script is in this session's scratchpad (`reach.mjs`). It walks `import`/`exp
 3. Delete or rewrite every literal-`true` report and every gate that can't fail (D 137, 169, 195, 198, 199, 200; E 215; F 5.2, 240). Update the AUDIT rows they "closed".
 4. Decide per Lane D/E/F module: **wire, merge into the existing module, or delete.** Start with the §3.1 duplicates.
 5. Add the reachability check to CI, so a phase can't be 🚧 or ✅ with code only its tests can see.
+
+---
+
+## 10. Fix status (branch `a/review-fixes-lanes-c-g`, 2026-11-17)
+
+Decision from the owner: **unwired modules stay** (the designer is designing their panels and tools). Their bugs are fixed and their fake results removed, but nothing was deleted or wired in.
+
+| Item | Status |
+|---|---|
+| G 6.2 Accept all reverts edits / re-applies discarded layers | Fixed, with a test |
+| G 6.1 labs flag opens the server key; any model; no rate limit; error text leaks | Fixed (model allow-list, per-client limit on public paths, logged errors) |
+| G 6.2/6.3 AI could stage file/export/test/history commands; fallback preset presented as the AI's | Fixed |
+| D 143 false `KERNEL_GAPS` closure; preset drafts (magnet, follow, inertia, noise) | Fixed; gap restored |
+| F 5.2 Studio tab "227-phase gates" panel; roadmap3d constants (M1, M4, B, C) | Panel removed from the editor; gates list `unmeasured` and don't pass |
+| D 169 Blueprint export façade | Rewritten: per-event DOM listeners, wire order, DOM writes; unsupported nodes reported |
+| D 200 soak can't fail | Reports `soakRun: false`, leaks/memory null |
+| D 195 sandbox probe constants; `props_update`/`dispose` ignored | Fixed |
+| D 197, 198 literal-true export/embed claims | Computed or set false with the reason |
+| D 137 harness passes unvisited checkpoints | Fixed |
+| E 215 rig export renders an empty div | Draws bones (SVG) and plays the track; HTML export escapes rig data |
+| E 216 wall-clock assertion | Removed from pass/fail |
+| D 139 event targets fire every frame (wired) | Rising edge |
+| C 126 NC/ND stock photos | Filtered |
+| D 132, 133, 140, 142, 147, 148, 151, 156, 158, 162, 178, 199 bugs | Fixed, each with a test |
+| Broken doc links (verify red) and the 2 Windows-only unit failures | Fixed |
+| Duplicated modules (§3.1, §5.1) | **Not changed**: kept per the owner's decision; merge or delete when their panels are wired |
+| E2E browser suite running past 60 min in CI | Not addressed on this branch |
+| Lane C line-by-line read | Still to do |
+
