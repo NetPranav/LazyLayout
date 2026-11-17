@@ -22,8 +22,9 @@ const ALL_PRESETS: readonly PointerPresetId[] = [
 ];
 
 describe("Stage 4 Phase 143: 8 pointer behaviours as presets", () => {
-  it("generates schema-valid BindingDrafts for all 8 pointer presets and closes behaviours gap", () => {
-    assert.equal(KERNEL_GAPS.some((g) => g.area === "behaviours"), false);
+  it("generates schema-valid BindingDrafts for all 8 pointer presets (the kernel behaviours gap stays open)", () => {
+    // Presets are bindings; evaluate() still runs only `loop` behaviours, so the gap stays listed.
+    assert.equal(KERNEL_GAPS.some((g) => g.area === "behaviours"), true);
     for (const preset of ALL_PRESETS) {
       const drafts = buildPointerPresetDrafts("btn", preset, 1);
       assert.ok(drafts.length >= 1, `Missing drafts for preset ${preset}`);
@@ -104,5 +105,44 @@ describe("Stage 4 Phase 143: 8 pointer behaviours as presets", () => {
     }
     const perFrameMs = (performance.now() - start) / 60;
     assert.ok(perFrameMs < 5, `50-layer frame took ${perFrameMs.toFixed(3)}ms`);
+  });
+});
+
+describe("Phase 143 preset drafts behave as named (review 2026-11-17)", () => {
+  // Runs a draft's expression for `frames` frames with the given signal readings.
+  const run = async (draft: { expr: unknown }, read: (s: { kind: string; channel?: string }) => unknown, frames = 120) => {
+    const { compileExpr, toNumber } = await import("../evaluate");
+    const rt = compileExpr(draft.expr as Parameters<typeof compileExpr>[0]);
+    let v = 0;
+    for (let i = 0; i < frames; i++) {
+      v = toNumber(rt.step({ time: i / 60, dt: 1 / 60, seed: 1, read: read as never }));
+    }
+    return v;
+  };
+
+  it("magnet pulls toward the cursor on both axes", async () => {
+    const [x, y] = buildPointerPresetDrafts("btn", "magnet", 1);
+    const upLeft = (s: { kind: string }) => (s.kind === "pointerIn" ? [-0.5, -0.5] : 0);
+    assert.ok((await run(x!, upLeft)) < -1, "cursor to the left pulls left");
+    assert.ok((await run(y!, upLeft)) < -1, "cursor above pulls up");
+    const downRight = (s: { kind: string }) => (s.kind === "pointerIn" ? [0.5, 0.5] : 0);
+    assert.ok((await run(x!, downRight)) > 1, "cursor to the right pulls right");
+  });
+
+  it("inertia ignores pointer movement while the button is up", async () => {
+    const [x] = buildPointerPresetDrafts("btn", "inertia", 1);
+    const hoverMoving = (s: { kind: string; channel?: string }) =>
+      s.kind === "pointer" && s.channel === "down" ? 0 : s.kind === "pointer" && s.channel === "velocity" ? [800, 0] : 0;
+    assert.equal(await run(x!, hoverMoving), 0);
+    const dragging = (s: { kind: string; channel?: string }) =>
+      s.kind === "pointer" && s.channel === "down" ? 1 : s.kind === "pointer" && s.channel === "velocity" ? [800, 0] : 0;
+    assert.ok((await run(x!, dragging)) > 1);
+  });
+
+  it("noise and wander drive both axes", () => {
+    for (const p of ["noise", "wander"] as const) {
+      const paths = buildPointerPresetDrafts("btn", p, 1).map((d) => (d.target.kind === "property" ? d.target.path : ""));
+      assert.deepEqual(paths.sort(), ["transform.x", "transform.y"]);
+    }
   });
 });
