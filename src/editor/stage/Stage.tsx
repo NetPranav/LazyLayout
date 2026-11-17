@@ -198,8 +198,7 @@ export const Stage: React.FC<StageProps> = ({
     setElements(elementsFromStore);
   }
 
-  // a frame previewed or not changes its drawn size with no document change: this render re-measures (below)
-  useFramePreviewStore((p) => p.previewing);
+  // a frame previewed or not changes its drawn size with no document change: re-measured (see `previewing` below)
   const remeasure = useCallback(() => {
     const page = pageRef.current;
     if (!page || !storeLayersRef.current || measuringRef.current) return;
@@ -230,11 +229,16 @@ export const Stage: React.FC<StageProps> = ({
       setRootHeight(rootNode?.offsetHeight ?? 0);
     });
   }, []);
+  // Measure when what is drawn can have changed: the document, controlled mode, a frame preview, the root.
+  // Performance (2026-11-18): this ran after EVERY render of the stage (selection, hover, tool, camera...), and each
+  // run measures every layer at rest, about 20% of the time a duplicate took. A drawn change the document doesn't
+  // announce (a class, an image, a font) is still caught: the page watcher below measures it on the next frame.
+  const previewing = useFramePreviewStore((p) => p.previewing);
   useLayoutEffect(() => {
     storeLayersRef.current = storeLayers;
     isControlledRef.current = isControlled;
     queueMicrotask(remeasure);
-  });
+  }, [storeLayers, isControlled, previewing, rootId, remeasure]);
   // Things that change sizes or child layout without the page box resizing: images, fonts, auto-layout, grid, CSS transforms.
   useEffect(() => {
     const page = pageRef.current;
@@ -515,16 +519,22 @@ export const Stage: React.FC<StageProps> = ({
     const v = view.getBoundingClientRect();
     useStageOriginStore.getState().setOrigin({ x: a.left - (hRuler?.left ?? v.left), y: a.top - (vRuler?.top ?? v.top), width: hRuler?.width ?? v.width, height: vRuler?.height ?? v.height });
   }, []);
-  useLayoutEffect(reportOrigin);
+  const cameraX = useCameraStore((c) => c.camera.x);
+  const cameraY = useCameraStore((c) => c.camera.y);
+  // Only when the page's corner can have moved on screen: the camera, the pan, the zoom, the page's height. It stays a
+  // layout effect so the rulers never lag the canvas by a frame.
+  // Performance (2026-11-18): this ran after EVERY render with four getBoundingClientRect calls, forcing a layout each
+  // time; it was 32% of the time a duplicate took. Size changes of the viewport and the artboard are caught below.
+  useLayoutEffect(reportOrigin, [reportOrigin, cameraX, cameraY, zoom, pan.x, pan.y, rootHeight]);
   useEffect(() => {
     const view = viewportRef.current;
     if (!view) return undefined;
     const observer = new ResizeObserver(reportOrigin);
     observer.observe(view);
+    const art = view.querySelector<HTMLElement>('[data-stage="artboard"]');
+    if (art) observer.observe(art);
     return () => observer.disconnect();
-  }, [reportOrigin]);
-  const cameraX = useCameraStore((c) => c.camera.x);
-  const cameraY = useCameraStore((c) => c.camera.y);
+  }, [reportOrigin, rootId]);
   const panReq = usePanRequestStore((s) => s.req);
   const [seenCamera, setSeenCamera] = useState({ x: cameraX, y: cameraY });
   const [seenPanReq, setSeenPanReq] = useState(panReq);
