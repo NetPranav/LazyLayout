@@ -33,7 +33,9 @@
     "check:release-plan": "tsx scripts/check-release-plan.mts",
     "changelog:fold": "tsx scripts/fold-changelog.mts",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
-    "demo": "playwright test -c playwright.demo.config.ts"
+    "demo": "playwright test -c playwright.demo.config.ts",
+    "perf:probe": "playwright test -c playwright.perf.config.ts perf-probe",
+    "perf:profile": "playwright test -c playwright.perf.config.ts perf-profile"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
