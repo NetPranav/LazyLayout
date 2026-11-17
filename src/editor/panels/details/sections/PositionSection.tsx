@@ -7,7 +7,7 @@ import { Select } from "@/editor/components/Select";
 import { Button } from "@/editor/components/Button";
 import { formatPinInLayer } from "@/core/geometry/cornerPin";
 import { defaultMesh, formatMeshInLayer, parseMesh } from "@/core/geometry/meshWarp";
-import { isAutoLayout } from "@/core/editing/layoutOps";
+import { isAutoLayout, isGrid } from "@/core/editing/layoutOps";
 import { parentOrigin, worldBox } from "@/core/editing/layerBoxes";
 import { documentCommands, useDocument } from "@/core/store/useDocumentStore";
 import { AlignBar } from "../controls/AlignBar";
@@ -59,7 +59,7 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
       selectedId &&
       layer &&
       parent &&
-      isAutoLayout(parent) &&
+      (isAutoLayout(parent) || isGrid(parent)) &&
       layer.properties.positioning !== "absolute"
   );
 
@@ -91,9 +91,6 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
   const adjustFlowAxis = (axis: "h" | "v", nextCoord: number) => {
     if (!inFlowStack || !parent || !selectedId) return false;
-    const isRow = parent.properties["layout.flexDirection"] === "row";
-    if ((axis === "h" && !isRow) || (axis === "v" && isRow)) return false;
-
     const flowKids = parent.children.filter(
       (cid) => layers[cid] && layers[cid].visible !== false && layers[cid].properties.positioning !== "absolute"
     );
@@ -102,6 +99,28 @@ export const PositionSection: React.FC<PositionSectionProps> = ({
 
     const curCoord = axis === "h" ? (xVal ?? 0) : (yVal ?? 0);
     const delta = nextCoord - curCoord;
+
+    if (isGrid(parent)) {
+      const cols =
+        typeof parent.properties["layout.gridColumns"] === "number"
+          ? Math.max(1, Math.round(parent.properties["layout.gridColumns"]))
+          : 2;
+      const trackIdx = axis === "h" ? idx % cols : Math.floor(idx / cols);
+      if (trackIdx === 0) {
+        const padKey = axis === "h" ? "layout.paddingLeft" : "layout.paddingTop";
+        documentCommands.updateProps(parent.id, { [padKey]: Math.max(0, Math.round(nextCoord)) });
+        return true;
+      }
+      const gapKey = axis === "h" ? "layout.columnGap" : "layout.rowGap";
+      const curGap = typeof parent.properties[gapKey] === "number" ? (parent.properties[gapKey] as number) : 0;
+      const nextGap = Math.max(0, Math.round(curGap + delta / trackIdx));
+      documentCommands.updateProps(parent.id, { [gapKey]: nextGap });
+      return true;
+    }
+
+    const isRow = parent.properties["layout.flexDirection"] === "row";
+    if ((axis === "h" && !isRow) || (axis === "v" && isRow)) return false;
+
     if (idx === 0) {
       const padKey = isRow ? "layout.paddingLeft" : "layout.paddingTop";
       documentCommands.updateProps(parent.id, { [padKey]: Math.max(0, Math.round(nextCoord)) });
