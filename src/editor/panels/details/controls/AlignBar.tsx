@@ -14,6 +14,97 @@ export interface AlignBarProps {
   className?: string;
 }
 
+type AlignActionItem = {
+  id: string;
+  label: string;
+  tooltip: string;
+  icon: React.ComponentProps<typeof PhosphorMotionIcon>["name"];
+  motion: React.ComponentProps<typeof PhosphorMotionIcon>["motion"];
+  run: (handlers: {
+    onAlign?: AlignBarProps["onAlign"];
+    onDistribute?: AlignBarProps["onDistribute"];
+    onTidy?: AlignBarProps["onTidy"];
+  }) => void;
+};
+
+const BASE_ACTIONS: readonly AlignActionItem[] = [
+  {
+    id: "left",
+    label: "Align left",
+    tooltip: "Align left — Align selected objects to the leftmost edge",
+    icon: "alignLeft",
+    motion: "left",
+    run: ({ onAlign }) => onAlign?.("left"),
+  },
+  {
+    id: "hcenter",
+    label: "Align center",
+    tooltip: "Align center — Align selected objects to their horizontal midpoint",
+    icon: "alignCenterHorizontal",
+    motion: "lift",
+    run: ({ onAlign }) => onAlign?.("hcenter"),
+  },
+  {
+    id: "right",
+    label: "Align right",
+    tooltip: "Align right — Align selected objects to the rightmost edge",
+    icon: "alignRight",
+    motion: "right",
+    run: ({ onAlign }) => onAlign?.("right"),
+  },
+  {
+    id: "top",
+    label: "Align top",
+    tooltip: "Align top — Align selected objects to the topmost edge",
+    icon: "alignTop",
+    motion: "up",
+    run: ({ onAlign }) => onAlign?.("top"),
+  },
+  {
+    id: "vcenter",
+    label: "Align middle",
+    tooltip: "Align middle — Align selected objects to their vertical midpoint",
+    icon: "alignCenterVertical",
+    motion: "lift",
+    run: ({ onAlign }) => onAlign?.("vcenter"),
+  },
+  {
+    id: "bottom",
+    label: "Align bottom",
+    tooltip: "Align bottom — Align selected objects to the bottommost edge",
+    icon: "alignBottom",
+    motion: "down",
+    run: ({ onAlign }) => onAlign?.("bottom"),
+  },
+];
+
+const MULTI_ACTIONS: readonly AlignActionItem[] = [
+  {
+    id: "dist-h",
+    label: "Distribute horizontally",
+    tooltip: "Distribute horizontally — Space selected layers with equal horizontal gaps",
+    icon: "arrowsOutLineHorizontal",
+    motion: "spread-h",
+    run: ({ onDistribute }) => onDistribute?.("h"),
+  },
+  {
+    id: "dist-v",
+    label: "Distribute vertically",
+    tooltip: "Distribute vertically — Space selected layers with equal vertical gaps",
+    icon: "arrowsOutLineVertical",
+    motion: "spread-v",
+    run: ({ onDistribute }) => onDistribute?.("v"),
+  },
+  {
+    id: "tidy",
+    label: "Tidy up",
+    tooltip: "Tidy up (Ctrl+Alt+T) — Arrange items into an even grid layout",
+    icon: "gridFour",
+    motion: "lift",
+    run: ({ onTidy }) => onTidy?.(),
+  },
+];
+
 export const AlignBar: React.FC<AlignBarProps> = ({
   onAlign,
   onDistribute,
@@ -22,130 +113,27 @@ export const AlignBar: React.FC<AlignBarProps> = ({
   disabled = false,
   className = "",
 }) => {
+  const actions = isMulti ? [...BASE_ACTIONS, ...MULTI_ACTIONS] : BASE_ACTIONS;
+
   return (
     <div
       role="toolbar"
       aria-label="Alignment"
-      className={`ll-dgroup ll:flex ll:items-center ll:gap-0.5 ll:h-7 ll:p-px ll:rounded-md ll:border ll:border-border ll:w-full ${className}`}
+      className={`ll-dgroup ll:grid ${isMulti ? "ll:grid-cols-9" : "ll:grid-cols-6"} ll:items-center ll:gap-0.5 ll:h-7 ll:p-px ll:rounded-md ll:border ll:border-border ll:w-full ${className}`}
     >
-      {/* Align Left */}
-      <Tooltip content="Align left — Align selected objects to the leftmost edge" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align left"
-          onClick={() => onAlign?.("left")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignLeft" motion="left" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Align Horizontal Center */}
-      <Tooltip content="Align center — Align selected objects to their horizontal midpoint" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align center"
-          onClick={() => onAlign?.("hcenter")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignCenterHorizontal" motion="lift" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Align Right */}
-      <Tooltip content="Align right — Align selected objects to the rightmost edge" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align right"
-          onClick={() => onAlign?.("right")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignRight" motion="right" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Align Top */}
-      <Tooltip content="Align top — Align selected objects to the topmost edge" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align top"
-          onClick={() => onAlign?.("top")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignTop" motion="up" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Align Vertical Middle */}
-      <Tooltip content="Align middle — Align selected objects to their vertical midpoint" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align middle"
-          onClick={() => onAlign?.("vcenter")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignCenterVertical" motion="lift" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Align Bottom */}
-      <Tooltip content="Align bottom — Align selected objects to the bottommost edge" side="top">
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label="Align bottom"
-          onClick={() => onAlign?.("bottom")}
-          className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-        >
-          <PhosphorMotionIcon name="alignBottom" motion="down" size={16} />
-        </button>
-      </Tooltip>
-
-      {/* Multi-selection extra actions */}
-      {isMulti && (
-        <>
-          <Tooltip content="Distribute horizontally — Space selected layers with equal horizontal gaps" side="top">
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Distribute horizontally"
-              onClick={() => onDistribute?.("h")}
-              className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-            >
-              <PhosphorMotionIcon name="arrowsOutLineHorizontal" motion="spread-h" size={16} />
-            </button>
-          </Tooltip>
-
-          <Tooltip content="Distribute vertically — Space selected layers with equal vertical gaps" side="top">
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Distribute vertically"
-              onClick={() => onDistribute?.("v")}
-              className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-            >
-              <PhosphorMotionIcon name="arrowsOutLineVertical" motion="spread-v" size={16} />
-            </button>
-          </Tooltip>
-
-          <Tooltip content="Tidy up (Ctrl+Alt+T) — Arrange items into an even grid layout" side="top">
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Tidy up"
-              onClick={() => onTidy?.()}
-              className="ll-pi-host ll:flex-1 ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
-            >
-              <PhosphorMotionIcon name="gridFour" motion="lift" size={16} />
-            </button>
-          </Tooltip>
-        </>
-      )}
+      {actions.map((action) => (
+        <Tooltip key={action.id} content={action.tooltip} side="top" className="ll:w-full ll:h-full">
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={action.label}
+            onClick={() => action.run({ onAlign, onDistribute, onTidy })}
+            className="ll-pi-host ll:w-full ll:h-full ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:bg-control-active ll:hover:text-primary ll:bg-transparent ll:border-0 ll:cursor-pointer ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:transition-colors ll:disabled:opacity-40 ll:disabled:cursor-not-allowed"
+          >
+            <PhosphorMotionIcon name={action.icon} motion={action.motion} size={16} />
+          </button>
+        </Tooltip>
+      ))}
     </div>
   );
 };
