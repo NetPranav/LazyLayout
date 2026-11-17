@@ -74,22 +74,15 @@ test.describe("text image fill (Phase 35/37 Task A)", () => {
     const fillRow = page.locator('[data-k="fill"]').first();
     await expect(fillRow).toBeVisible();
 
-    // the settings button of the row opens the popover (the swatch opens the colour picker)
-    const swatchButton = fillRow.getByRole("button", { name: "Fill 1 settings" });
-    await swatchButton.click();
+    // the swatch opens the fill's one panel, with the fill types along its top
+    await fillRow.getByRole("button", { name: "Fill 1 color" }).click();
 
     // Change paint type to Image
-    const paintTypeSelect = page.getByRole("combobox", { name: "Paint type" });
-    await expect(paintTypeSelect).toBeVisible();
-    await paintTypeSelect.click();
-
-    const imageOption = page.getByRole("option", { name: "Image" });
-    await expect(imageOption).toBeVisible();
-    await imageOption.click();
+    await page.getByRole("radiogroup", { name: "Fill type" }).getByRole("radio", { name: "Image" }).click();
 
     // Pick image file
     const fixturePath = path.resolve(process.cwd(), "tests/e2e/fixtures/mountain-subject.svg");
-    const fileInput = page.locator('input[aria-label="Fill picture"]');
+    const fileInput = page.locator('input[aria-label="Upload image"]');
     await fileInput.setInputFiles(fixturePath);
 
     // 3. Verify drawn text node computed styles:

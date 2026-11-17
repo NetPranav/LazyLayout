@@ -1,4 +1,19 @@
-export type ColorMode = "Solid" | "Linear" | "Radial" | "Conic" | "Image";
+import type React from "react";
+
+export type ColorMode = "Solid" | "Linear" | "Radial" | "Conic" | "Image" | "Noise" | "Pattern" | "Mesh" | "Live";
+
+/** The modes that are gradients: the colour editor below the stops bar edits the picked stop. */
+export const isGradientMode = (m: ColorMode): m is "Linear" | "Radial" | "Conic" => m === "Linear" || m === "Radial" || m === "Conic";
+
+/** The modes with one colour of their own, edited by the colour square, sliders and fields. */
+export const hasColorEditor = (m: ColorMode): boolean => m === "Solid" || m === "Noise" || isGradientMode(m);
+
+/** A tab of the picker's fill-type row: one mode, or "Gradient" for all three gradient kinds. */
+export interface ColorModeTab {
+  value: ColorMode | "Gradient";
+  label: string;
+  icon: React.ReactNode;
+}
 export type ColorModel = "Hex" | "RGB" | "HSL" | "OKLCH";
 export type ImageFit = "Fill" | "Fit" | "Crop" | "Tile";
 

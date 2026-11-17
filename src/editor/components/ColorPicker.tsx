@@ -43,6 +43,9 @@ import {
   type ColorModel,
   type ImageFit,
   type ColorStop,
+  type ColorModeTab,
+  isGradientMode,
+  hasColorEditor,
 } from "./ColorPickerMath";
 
 export interface ColorPickerProps {
@@ -68,6 +71,13 @@ export interface ColorPickerProps {
   onChangeImageFit?: (fit: ImageFit) => void;
   imageSrc?: string | null;
   onUploadImage?: (file: File) => void;
+  /**
+   * The fill-type row as icon tabs (the fill picker): each tab is a mode, or "Gradient" for Linear / Radial / Conic,
+   * which then get a kind select. Without it the row is the text tabs Solid, Linear, Radial, Conic, Image.
+   */
+  modeTabs?: readonly ColorModeTab[];
+  /** More controls in the same panel, under the type's own (the fill picker's per-type options, blend and mask). */
+  children?: React.ReactNode;
   className?: string;
   "aria-label"?: string;
   [key: string]: unknown;
@@ -101,6 +111,8 @@ export function ColorPicker({
   onChangeImageFit,
   imageSrc: propImageSrc = null,
   onUploadImage,
+  modeTabs,
+  children,
   className = "",
   "aria-label": ariaLabel,
 }: ColorPickerProps) {
@@ -563,7 +575,7 @@ export function ColorPicker({
       emitColorChange(nextHex, alpha);
 
       // If in gradient mode, update active stop
-      if (mode !== "Solid" && mode !== "Image") {
+      if (isGradientMode(mode)) {
         setStops((prev) =>
           prev.map((stop, i) =>
             i === activeStopIndex ? { ...stop, s, v } : stop
@@ -599,7 +611,7 @@ export function ColorPicker({
     const nextHex = rgb2hex(hsv2rgb(nextHsv.h, nextHsv.s, nextHsv.v));
     emitColorChange(nextHex, alpha);
 
-    if (mode !== "Solid" && mode !== "Image") {
+    if (isGradientMode(mode)) {
       setStops((prev) => prev.map((stop, i) => (i === activeStopIndex ? { ...stop, h } : stop)));
     }
   };
@@ -609,7 +621,7 @@ export function ColorPicker({
     setAlpha(a);
     emitColorChange(hex, a);
 
-    if (mode !== "Solid" && mode !== "Image") {
+    if (isGradientMode(mode)) {
       setStops((prev) => prev.map((stop, i) => (i === activeStopIndex ? { ...stop, a } : stop)));
     }
   };
@@ -751,18 +763,56 @@ export function ColorPicker({
       className={`cp ll-cp ll:fixed ll:z-60 ll:w-color-picker ll:bg-surface-raised ll:border ll:border-border ll:rounded-lg ll:text-primary ll:flex ll:flex-col ll:overflow-y-auto ll:overflow-x-hidden ll:overscroll-contain ll:scrollbar-none ll:outline-none ${className}`}
     >
       <div className="cp-in ll:p-3 ll:flex ll:flex-col ll:gap-2.5">
-        {/* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */}
-        <SegmentedControl<ColorMode>
-          size="compact"
-          options={MODES.map((m) => ({ value: m, label: m }))}
-          value={mode}
-          onChange={(m) => setMode(m)}
-          ariaLabel="Fill type"
-          className="cp-tabs"
-        />
+        {modeTabs ? (
+          /* Fill-type icons (as in Figma's fill picker): one tab per kind of paint, the three gradients under one */
+          <SegmentedControl<ColorMode | "Gradient">
+            size="compact"
+            options={modeTabs.map((t) => ({ value: t.value, icon: t.icon, title: t.label, ariaLabel: t.label }))}
+            value={isGradientMode(mode) && modeTabs.some((t) => t.value === "Gradient") ? "Gradient" : mode}
+            onChange={(m) => {
+              if (m === "Gradient") {
+                if (!isGradientMode(mode)) setMode("Linear");
+              } else setMode(m);
+            }}
+            ariaLabel="Fill type"
+            className="cp-tabs"
+          />
+        ) : (
+          /* Mode Tabs (Solid, Linear, Radial, Conic, Image) - Segmented Control with sliding highlight */
+          <SegmentedControl<ColorMode>
+            size="compact"
+            options={MODES.map((m) => ({ value: m, label: m }))}
+            value={mode}
+            onChange={(m) => setMode(m)}
+            ariaLabel="Fill type"
+            className="cp-tabs"
+          />
+        )}
+
+        {/* The gradient's kind, when the gradients share one tab */}
+        {modeTabs && isGradientMode(mode) && modeTabs.some((t) => t.value === "Gradient") && (
+          <div className="ll:flex ll:items-center ll:justify-between ll:gap-2 ll:px-1">
+            <span className="ll:text-micro ll:font-medium ll:text-muted">Gradient</span>
+            <div className="ll:w-28">
+              <Select
+                size="sm"
+                variant="floating"
+                aria-label="Gradient kind"
+                value={mode}
+                options={[
+                  { value: "Linear", label: "Linear" },
+                  { value: "Radial", label: "Radial" },
+                  { value: "Conic", label: "Conic" },
+                ]}
+                onChange={(m) => setMode(m as ColorMode)}
+                className="ll:w-full"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Gradient Stops Bar (shown for Linear, Radial, Conic) */}
-        {(mode === "Linear" || mode === "Radial" || mode === "Conic") && (
+        {isGradientMode(mode) && (
           <div className="ll:flex ll:flex-col ll:gap-1.5">
             <div
               ref={stopsBarRef}
@@ -839,13 +889,14 @@ export function ColorPicker({
         )}
 
         {/* Image Mode Panel */}
-        {mode === "Image" ? (
+        {mode === "Image" && (
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
               const file = e.dataTransfer.files?.[0];
               if (file && /^image\//.test(file.type)) {
+                onUploadImage?.(file); // a dropped picture becomes the fill, as an uploaded one does
                 const reader = new FileReader();
                 reader.onload = () => {
                   if (typeof reader.result === "string") {
@@ -900,7 +951,10 @@ export function ColorPicker({
               />
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* The colour itself: Solid, the picked gradient stop, a noise's colour (pattern, mesh and live have none) */}
+        {hasColorEditor(mode) && (
           <>
             {/* Saturation & Brightness (SB) Square (180px) */}
             <div
@@ -1170,6 +1224,8 @@ export function ColorPicker({
             </div>
           </>
         )}
+
+        {children && <div className="cp-more ll:flex ll:flex-col ll:gap-2.5">{children}</div>}
       </div>
     </div>,
     document.body

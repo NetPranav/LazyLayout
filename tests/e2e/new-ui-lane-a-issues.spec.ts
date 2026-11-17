@@ -204,9 +204,12 @@ test.describe("Lane A issue fixes", () => {
     const handle = page.getByTestId("selection-handle").first();
     const box = (await handle.locator("span").first().boundingBox())!;
     expect(Math.min(box.width, box.height), "the grab area around a handle on screen").toBeGreaterThanOrEqual(14);
-    await page.getByRole("button", { name: "Fill 1 settings" }).click();
-    await expect(page.getByLabel("Fill colour picker")).toHaveCount(1);
-    await page.getByRole("button", { name: "Fill 1 settings" }).click(); // close it again
+    // a fill has one panel (as in Figma), opened from its swatch: no second settings button
+    await expect(page.getByRole("button", { name: "Fill 1 settings" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Fill 1 color" }).click();
+    await expect(page.getByRole("dialog", { name: "Fill 1" })).toBeVisible();
+    await page.keyboard.press("Escape"); // close it again
+    await expect(page.getByRole("dialog", { name: "Fill 1" })).toHaveCount(0);
     await page.getByRole("button", { name: "Add stroke", exact: true }).click();
     await page.getByRole("button", { name: "Stroke 1 settings" }).click();
     await expect(page.getByLabel("Stroke colour picker")).toHaveCount(1);

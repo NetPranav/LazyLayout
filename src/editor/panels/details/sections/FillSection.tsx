@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { GripVertical, Eye, EyeOff, Minus, Plus, Sliders } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Minus, Plus, Square, Blend, Image as ImageIcon, Shapes, Sparkles, Grid3x3, Frame } from "lucide-react";
 import { Icon } from "@/editor/components/Icon";
 import { IconButton } from "@/editor/components/IconButton";
 import { Select } from "@/editor/components/Select";
@@ -10,8 +10,7 @@ import { NumberField } from "@/editor/components/NumberField";
 import { importFiles } from "@/core/assets/assetImport";
 import { CutoutDialog, type CutoutFill } from "../CutoutDialog";
 import { assetSrc } from "@/core/assets/useAssetUrl";
-import { RowSettingsPopover } from "../controls/RowSettingsPopover";
-import { RowColorField } from "../controls/RowColorField";
+import type { ColorMode, ColorModeTab } from "@/editor/components/ColorPickerMath";
 import { OptionGroup, OptionRow } from "../options/OptionRow";
 import { ImageAdjustOptions } from "../options/ImageAdjustOptions";
 import type { InspectorSectionProps, FillItem } from "../types";
@@ -72,7 +71,7 @@ function MeshControls({ paint: p, layerId, index, onChange }: { paint: Extract<P
       </OptionRow>
       {point && picked !== null && (
         <OptionRow label={`Point ${picked + 1}`}>
-          <RowColorField hex={point.color.replace("#", "").toUpperCase()} label="Mesh point colour picker" hexLabel="Mesh point hex" onChange={(hex) => onChange({ ...p, points: p.points.map((q, i) => (i === picked ? { ...q, color: `#${hex}` } : q)) })} />
+          <InlineHexField hex={point.color.replace("#", "").toUpperCase()} label="Mesh point hex" onChange={(hex) => onChange({ ...p, points: p.points.map((q, i) => (i === picked ? { ...q, color: `#${hex}` } : q)) })} />
         </OptionRow>
       )}
     </OptionGroup>
@@ -251,24 +250,69 @@ const DEFAULT_FILL: FillItem = {
   imageFit: "fill",
 };
 
-const PAINT_OPTIONS = [
-  { value: "solid", label: "Solid" },
-  { value: "linear", label: "Linear" },
-  { value: "radial", label: "Radial" },
-  { value: "conic", label: "Conic" },
-  { value: "image", label: "Image" },
-  { value: "noise", label: "Noise", hint: "Seeded grain or soft noise" },
-  { value: "pattern", label: "Pattern", hint: "Shapes repeated as a tile" },
-  { value: "mesh", label: "Mesh", hint: "A grid of colour points you drag on the canvas" },
-  { value: "live", label: "Live", hint: "Another frame or component, drawn inside and kept up to date" },
-] as const;
+/** The picker's mode for each kind of fill, and back. */
+const MODE_OF: Record<FillItem["type"], ColorMode> = {
+  solid: "Solid",
+  linear: "Linear",
+  radial: "Radial",
+  conic: "Conic",
+  image: "Image",
+  noise: "Noise",
+  pattern: "Pattern",
+  mesh: "Mesh",
+  live: "Live",
+};
+const TYPE_OF = (m: ColorMode): FillItem["type"] => m.toLowerCase() as FillItem["type"];
 
-const IMAGE_FIT_OPTIONS = [
-  { value: "fill", label: "Fill" },
-  { value: "fit", label: "Fit" },
-  { value: "crop", label: "Crop" },
-  { value: "tile", label: "Tile" },
-] as const;
+/** The fill picker's type row (as Figma's: one icon per kind of paint, the three gradients under one). */
+const FILL_TABS: readonly ColorModeTab[] = [
+  { value: "Solid", label: "Solid", icon: <Icon icon={Square} size={14} /> },
+  { value: "Gradient", label: "Gradient", icon: <Icon icon={Blend} size={14} /> },
+  { value: "Image", label: "Image", icon: <Icon icon={ImageIcon} size={14} /> },
+  { value: "Pattern", label: "Pattern: shapes repeated as a tile", icon: <Icon icon={Shapes} size={14} /> },
+  { value: "Noise", label: "Noise: seeded grain or soft noise", icon: <Icon icon={Sparkles} size={14} /> },
+  { value: "Mesh", label: "Mesh: a grid of colour points you drag on the canvas", icon: <Icon icon={Grid3x3} size={14} /> },
+  { value: "Live", label: "Live: another frame or component, drawn inside and kept up to date", icon: <Icon icon={Frame} size={14} /> },
+];
+/** A layer without a fill list (text, buttons) takes one plain colour. */
+const SOLID_ONLY_TABS: readonly ColorModeTab[] = [FILL_TABS[0]];
+
+/**
+ * A colour as a swatch and six hex digits, for use inside the fill picker (a swatch that opened a picker of its own
+ * would close this one). The typed digits are kept until there are six.
+ */
+const InlineHexField: React.FC<{ hex: string; label: string; onChange: (hex: string) => void }> = ({ hex, label, onChange }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <div className="ll-dfield ll:flex ll:items-center ll:gap-1.5 ll:w-full ll:min-w-0 ll:h-7 ll:px-1.5 ll:bg-surface-bar ll:border ll:border-transparent ll:hover:border-muted ll:focus-within:border-border-active ll:rounded-sm">
+      <span aria-hidden="true" className="ll:w-4 ll:h-4 ll:rounded-xs ll:border ll:border-border ll:shrink-0" style={{ backgroundColor: `#${hex}` }} />
+      <input
+        type="text"
+        maxLength={6}
+        aria-label={label}
+        value={draft ?? hex}
+        onBlur={() => setDraft(null)}
+        onChange={(e) => {
+          const clean = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6).toUpperCase();
+          setDraft(clean);
+          if (clean.length === 6) {
+            onChange(clean);
+            setDraft(null);
+          }
+        }}
+        className="ll:w-full ll:min-w-0 ll:bg-transparent ll:border-0 ll:p-0 ll:font-mono ll:text-micro ll:text-primary ll:outline-none"
+      />
+    </div>
+  );
+};
+
+/** A heading inside the fill picker, above a group of options. */
+const PickerGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div className="ll:flex ll:flex-col ll:gap-1.5 ll:pt-2.5 ll:border-t ll:border-border">
+    <h4 className="ll:font-mono ll:text-micro ll:font-medium ll:uppercase ll:tracking-wider ll:text-muted ll:m-0">{title}</h4>
+    {children}
+  </div>
+);
 
 export interface FillSectionProps extends InspectorSectionProps {
   onAddFillRef?: { current?: () => void };
@@ -338,7 +382,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
   ]);
 
   const fills: FillItem[] = engine ? enginePaints.map(itemOf) : localFills;
-  const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  // One panel per fill (as in Figma): the swatch or the colour field opens it, with every option of that fill in it
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
   const [activeColorPickerEl, setActiveColorPickerEl] = useState<HTMLElement | null>(null);
   // the picker stays mounted after it closes so its exit animation can play
@@ -351,7 +395,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
   if (localFor !== selectedId) {
     setLocalFor(selectedId);
     setFills([{ ...DEFAULT_FILL, hex: cleanHex || "FFFFFF", opacity: initialFo }]);
-    setActivePopoverId(null);
+    setActiveColorPickerId(null);
   }
   const indexOf = (id: string) => Number(id.replace("fill-", ""));
 
@@ -411,12 +455,12 @@ export const FillSection: React.FC<FillSectionProps> = ({
   const handleRemoveFill = (id: string) => {
     if (engine) {
       writeEngine(removePaint(enginePaints, indexOf(id)));
-      setActivePopoverId(null);
+      setActiveColorPickerId(null);
       return;
     }
     const next = fills.filter((f) => f.id !== id);
     setFills(next);
-    if (activePopoverId === id) setActivePopoverId(null);
+    if (activeColorPickerId === id) setActiveColorPickerId(null);
     syncPrimaryToStore(next);
   };
 
@@ -508,7 +552,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
     <div className={`ll-dbody ll:flex ll:flex-col ll:gap-0.5 ll:-mx-1 ${className}`}>
       {fills.map((fill, index) => {
         const isDim = Boolean(fill.hidden);
-        const isOpen = activePopoverId === fill.id;
+        const isOpen = activeColorPickerId === fill.id;
         const fillNum = index + 1;
         return (
           <div
@@ -554,7 +598,7 @@ export const FillSection: React.FC<FillSectionProps> = ({
               data-lead
               aria-label={`Fill ${fillNum} color`}
               aria-haspopup="dialog"
-              aria-expanded={activeColorPickerId === fill.id || isOpen}
+              aria-expanded={isOpen}
               title={`Fill ${fillNum} color`}
               onClick={(e) => {
                 const isClosing = activeColorPickerId === fill.id;
@@ -621,20 +665,6 @@ export const FillSection: React.FC<FillSectionProps> = ({
               </div>
             </div>
 
-            {/* Row Settings Trigger: opens RowSettingsPopover */}
-            <IconButton
-              size="sm"
-              variant="ghost"
-              pressed={isOpen}
-              aria-label={`Fill ${fillNum} settings`}
-              tooltip={`Fill ${fillNum} settings`}
-              aria-haspopup="dialog"
-              aria-expanded={isOpen}
-              icon={<Icon icon={Sliders} size={14} />}
-              onClick={() => setActivePopoverId(isOpen ? null : fill.id)}
-              className="ll-ib"
-            />
-
             {/* Visibility Toggle */}
             <IconButton
               size="sm"
@@ -658,119 +688,6 @@ export const FillSection: React.FC<FillSectionProps> = ({
               onClick={() => handleRemoveFill(fill.id)}
               className="ll-ib"
             />
-
-            {/* Settings Popover */}
-            <RowSettingsPopover isOpen={isOpen} title="Fill" onClose={() => setActivePopoverId((cur) => (cur === fill.id ? null : cur))}>
-              <OptionGroup>
-                <OptionRow label="Type">
-                  <Select
-                    aria-label="Paint type"
-                    options={PAINT_OPTIONS}
-                    value={fill.type}
-                    width="100%"
-                    size="sm"
-                    disabled={!engine}
-                    title={engine ? undefined : "This kind of layer takes one plain colour."}
-                    onChange={(value) => handleUpdateFill(fill.id, { type: value as FillItem["type"] })}
-                  />
-                </OptionRow>
-                {fill.type === "solid" && (
-                  <OptionRow label="Colour">
-                    <RowColorField hex={fill.hex} label="Fill colour picker" hexLabel="Fill hex" onChange={(hex) => handleUpdateFill(fill.id, { hex })} />
-                  </OptionRow>
-                )}
-                {engine && fill.type === "linear" && (
-                  <OptionRow label="Angle">
-                    <NumberField size="sm" aria-label="Gradient angle" title="The gradient's direction: 0 runs up, 90 to the right, 180 down." suffix="°" value={linearAngle(enginePaints[index])} step={1} onChange={(v) => setAngle(fill.id, v)} />
-                  </OptionRow>
-                )}
-                <OptionRow label="Opacity">
-                  <NumberField
-                    size="sm"
-                    aria-label="Fill opacity in popover"
-                    unit="%"
-                    value={fill.opacity}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={(v) => handleUpdateFill(fill.id, { opacity: Math.max(0, Math.min(100, Math.round(v))) })}
-                  />
-                </OptionRow>
-                {engine && enginePaints[index] && (
-                  <OptionRow label="Blend">
-                    <Select aria-label="Fill blend mode" options={FILL_BLEND_OPTIONS} value={enginePaints[index].blend ?? "normal"} width="100%" size="sm" onChange={(v) => writeEngine(updatePaint(enginePaints, index, (p) => (v === "normal" ? (({ blend: _b, ...rest }) => (void _b, rest as Paint))(p) : { ...p, blend: v as BlendMode })))} />
-                  </OptionRow>
-                )}
-              </OptionGroup>
-              {engine && enginePaints[index] && (enginePaints[index].type === "noise" || enginePaints[index].type === "pattern" || enginePaints[index].type === "live") && (
-                <ProceduralControls paint={enginePaints[index]} layers={allLayers} layerOptions={Object.values(allLayers).filter((l) => l.parentId && l.id !== primary && !isAncestor(allLayers, l.id, primary)).map((l) => ({ value: l.id, label: l.name || l.id }))} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
-              )}
-              {engine && primary && enginePaints[index]?.type === "mesh" && (
-                <MeshControls paint={enginePaints[index] as Extract<Paint, { type: "mesh" }>} layerId={primary} index={index} onChange={(next) => writeEngine(updatePaint(enginePaints, index, () => next))} />
-              )}
-              {engine && enginePaints[index] && <FillMaskControls mask={enginePaints[index].mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />}
-              {engine && fill.stops && fill.stops.length >= 2 && (
-                <OptionGroup>
-                  <div className="ll:flex ll:items-center ll:justify-between ll:min-h-7">
-                    <span className="ll-dlbl ll:text-small ll:text-muted">Stops</span>
-                    <IconButton size="sm" variant="ghost" aria-label="Add stop" tooltip="Add stop" icon={<Icon icon={Plus} size={14} />} onClick={() => setStops(fill.id, [...fill.stops!, { hex: "FFFFFF", position: 50 }])} />
-                  </div>
-                  {fill.stops.map((stop, k) => (
-                    <div key={stop.id} className="ll:flex ll:items-center ll:gap-2 ll:w-full">
-                      <div className="ll:flex-1 ll:min-w-0">
-                        <RowColorField hex={stop.hex} label={`Stop ${k + 1} colour picker`} hexLabel={`Stop ${k + 1} hex`} onChange={(hex) => setStops(fill.id, fill.stops!.map((x, j) => (j === k ? { ...x, hex } : x)))} />
-                      </div>
-                      <div className="ll:w-18 ll:shrink-0">
-                        <NumberField size="sm" aria-label={`Stop ${k + 1} position`} unit="%" value={stop.position} min={0} max={100} step={1} onChange={(v) => setStops(fill.id, fill.stops!.map((x, j) => (j === k ? { ...x, position: Math.max(0, Math.min(100, Math.round(v))) } : x)))} />
-                      </div>
-                      {fill.stops!.length > 2 ? (
-                        <IconButton size="sm" variant="ghost" aria-label={`Remove stop ${k + 1}`} tooltip="Remove stop" icon={<Icon icon={Minus} size={14} />} onClick={() => setStops(fill.id, fill.stops!.filter((_, j) => j !== k))} />
-                      ) : (
-                        <span aria-hidden="true" className="ll:w-6 ll:shrink-0" />
-                      )}
-                    </div>
-                  ))}
-                </OptionGroup>
-              )}
-              {engine && fill.type === "image" && (
-                <OptionGroup>
-                  <OptionRow label="Fit">
-                    <Select
-                      aria-label="Image fit"
-                      options={IMAGE_FIT_OPTIONS}
-                      value={fill.imageFit ?? "tile"}
-                      width="100%"
-                      size="sm"
-                      onChange={(value) => handleUpdateFill(fill.id, { imageFit: value as FillItem["imageFit"] })}
-                    />
-                  </OptionRow>
-                  <OptionRow label="Picture">
-                    <label className="ll:flex ll:items-center ll:justify-center ll:w-full ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer">
-                      Choose a picture
-                      <input type="file" accept="image/*" hidden aria-label="Fill picture" onChange={(e) => { void pickImage(fill.id, e.target.files?.[0]); e.target.value = ""; }} />
-                    </label>
-                  </OptionRow>
-                  {pictureOf(fill.id) && (
-                    <OptionRow label="Cut out">
-                      <button
-                        type="button"
-                        title="Cut part of this picture into its own layer on top: put a layer between the two and it goes behind that part."
-                        onClick={() => setCuttingFill(fill.id)}
-                        className="ll:w-full ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer"
-                      >
-                        Cut out
-                      </button>
-                    </OptionRow>
-                  )}
-                  {cuttingFill === fill.id && pictureOf(fill.id) && primary && (
-                    <CutoutDialog layerId={primary as string} fill={pictureOf(fill.id)!} onClose={() => setCuttingFill(null)} />
-                  )}
-                </OptionGroup>
-              )}
-              {engine && fill.type === "image" && primary && (
-                <ImageAdjustOptions layerId={primary as string} fill={indexOf(fill.id)} />
-              )}
-            </RowSettingsPopover>
           </div>
         );
       })}
@@ -778,79 +695,126 @@ export const FillSection: React.FC<FillSectionProps> = ({
       {(() => {
         const activeFill = fills.find((f) => f.id === shownPickerId);
         if (!activeFill) return null;
-        const activeIdx = indexOf(activeFill.id);
-        const enginePaint = engine ? enginePaints[activeIdx] : null;
-
-        const currentMode: "Solid" | "Linear" | "Radial" | "Conic" | "Image" =
-          activeFill.type === "linear"
-            ? "Linear"
-            : activeFill.type === "radial"
-            ? "Radial"
-            : activeFill.type === "conic"
-            ? "Conic"
-            : activeFill.type === "image"
-            ? "Image"
-            : "Solid";
-
-        const currentAngle = enginePaint && enginePaint.type === "linear" ? linearAngle(enginePaint) : activeFill.angle ?? 180;
-
-        const currentStops = activeFill.stops && activeFill.stops.length >= 2
-          ? activeFill.stops.map((s) => ({
-              id: s.id,
-              hex: s.hex,
-              position: s.position,
-              opacity: 100,
-            }))
-          : undefined;
-
-        const currentImgSrc = enginePaint && enginePaint.type === "image" && enginePaint.src ? enginePaint.src : null;
-        const currentImgFit: "Fill" | "Fit" | "Crop" | "Tile" =
-          activeFill.imageFit === "fit"
-            ? "Fit"
-            : activeFill.imageFit === "crop"
-            ? "Crop"
-            : "Fill";
+        const index = indexOf(activeFill.id);
+        const paint = engine ? enginePaints[index] : undefined;
+        const mode = MODE_OF[activeFill.type] ?? "Solid";
+        const stops = activeFill.stops && activeFill.stops.length >= 2 ? activeFill.stops : undefined;
+        const imageFit: "Fill" | "Fit" | "Crop" | "Tile" =
+          paint?.type === "image" ? (paint.mode === "fit" ? "Fit" : paint.mode === "crop" ? "Crop" : paint.mode === "tile" ? "Tile" : "Fill") : "Fill";
+        const layerOptions = Object.values(allLayers)
+          .filter((l) => l.parentId && l.id !== primary && !isAncestor(allLayers, l.id, primary))
+          .map((l) => ({ value: l.id, label: l.name || l.id }));
+        const writePaint = (next: Paint) => writeEngine(updatePaint(enginePaints, index, () => next));
 
         return (
           <ColorPicker
             open={Boolean(activeColorPickerId)}
+            aria-label={`Fill ${index + 1}`}
+            modeTabs={engine ? FILL_TABS : SOLID_ONLY_TABS}
             value={`#${activeFill.hex}`}
             opacity={activeFill.opacity}
             onChangeOpacity={(opacity) => handleUpdateFill(activeFill.id, { opacity })}
             anchorEl={activeColorPickerEl}
-            onChange={(hex) =>
-              handleUpdateFill(activeFill.id, {
-                hex: hex.replace(/^#/, "").toUpperCase(),
-              })
-            }
-            mode={currentMode}
-            onChangeMode={(newMode) => {
-              const lower = newMode.toLowerCase() as FillItem["type"];
-              handleUpdateFill(activeFill.id, { type: lower });
-            }}
-            angle={currentAngle}
-            onChangeAngle={(newAngle) => setAngle(activeFill.id, newAngle)}
-            gradientStops={currentStops}
-            onChangeGradientStops={(newStops) => {
-              setStops(
-                activeFill.id,
-                newStops.map((st) => ({ hex: st.hex, position: st.position }))
-              );
-            }}
-            imageFit={currentImgFit}
-            onChangeImageFit={(fit) => {
-              handleUpdateFill(activeFill.id, { imageFit: fit.toLowerCase() as FillItem["imageFit"] });
-            }}
-            imageSrc={currentImgSrc}
-            onUploadImage={(file) => {
-              void pickImage(activeFill.id, file);
-            }}
-            onClose={() => {
-              setActiveColorPickerId(null);
-            }}
-          />
+            onChange={(hex) => handleUpdateFill(activeFill.id, { hex: hex.replace(/^#/, "").toUpperCase() })}
+            mode={mode}
+            onChangeMode={(next) => handleUpdateFill(activeFill.id, { type: TYPE_OF(next) })}
+            angle={paint?.type === "linear" ? linearAngle(paint) : activeFill.angle ?? 180}
+            onChangeAngle={(deg) => setAngle(activeFill.id, deg)}
+            gradientStops={stops?.map((s) => ({ id: s.id, hex: s.hex, position: s.position, opacity: 100 }))}
+            onChangeGradientStops={(next) => setStops(activeFill.id, next.map((st) => ({ hex: st.hex, position: st.position })))}
+            imageFit={imageFit}
+            onChangeImageFit={(fit) => handleUpdateFill(activeFill.id, { imageFit: fit.toLowerCase() as FillItem["imageFit"] })}
+            imageSrc={paint?.type === "image" && paint.src ? paint.src : null}
+            onUploadImage={(file) => void pickImage(activeFill.id, file)}
+            onClose={() => setActiveColorPickerId(null)}
+          >
+            {/* The gradient's stops by number: colour, place, add and remove */}
+            {paint && stops && (
+              <PickerGroup title="Stops">
+                {stops.map((stop, k) => (
+                  <div key={stop.id} className="ll:flex ll:items-center ll:gap-1.5 ll:w-full">
+                    <div className="ll:flex-1 ll:min-w-0">
+                      <InlineHexField hex={stop.hex} label={`Stop ${k + 1} hex`} onChange={(hex) => setStops(activeFill.id, stops.map((x, j) => (j === k ? { ...x, hex } : x)))} />
+                    </div>
+                    <div className="ll:w-16 ll:shrink-0">
+                      <NumberField size="sm" aria-label={`Stop ${k + 1} position`} unit="%" value={stop.position} min={0} max={100} step={1} onChange={(v) => setStops(activeFill.id, stops.map((x, j) => (j === k ? { ...x, position: Math.max(0, Math.min(100, Math.round(v))) } : x)))} />
+                    </div>
+                    {stops.length > 2 ? (
+                      <IconButton size="sm" variant="ghost" aria-label={`Remove stop ${k + 1}`} tooltip="Remove stop" icon={<Icon icon={Minus} size={14} />} onClick={() => setStops(activeFill.id, stops.filter((_, j) => j !== k))} />
+                    ) : (
+                      <span aria-hidden="true" className="ll:w-6 ll:shrink-0" />
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  aria-label="Add stop"
+                  onClick={() => setStops(activeFill.id, [...stops, { id: `s${stops.length}`, hex: "FFFFFF", position: 50 }])}
+                  className="ll:flex ll:items-center ll:justify-center ll:gap-1.5 ll:w-full ll:h-7 ll:rounded-sm ll:border ll:border-dashed ll:border-border ll:bg-transparent ll:text-micro ll:text-muted ll:hover:text-primary ll:hover:border-muted ll:cursor-pointer ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active"
+                >
+                  <Icon icon={Plus} size={12} />
+                  Add stop
+                </button>
+              </PickerGroup>
+            )}
+
+            {/* Image: cut a part out, and the picture's own adjustments */}
+            {paint?.type === "image" && primary && (
+              <PickerGroup title="Picture">
+                {pictureOf(activeFill.id) && (
+                  <button
+                    type="button"
+                    title="Cut part of this picture into its own layer on top: put a layer between the two and it goes behind that part."
+                    onClick={() => setCuttingFill(activeFill.id)}
+                    className="ll:w-full ll:h-7 ll:rounded-sm ll:bg-surface-bar ll:border ll:border-border ll:font-sans ll:text-small ll:text-primary ll:cursor-pointer"
+                  >
+                    Cut out
+                  </button>
+                )}
+                <ImageAdjustOptions layerId={primary as string} fill={index} />
+              </PickerGroup>
+            )}
+
+            {/* Noise, pattern and live fills */}
+            {paint && (paint.type === "noise" || paint.type === "pattern" || paint.type === "live") && (
+              <PickerGroup title={paint.type === "noise" ? "Noise" : paint.type === "pattern" ? "Pattern" : "Live"}>
+                <ProceduralControls paint={paint} layers={allLayers} layerOptions={layerOptions} onChange={writePaint} />
+              </PickerGroup>
+            )}
+
+            {/* Mesh: the grid, blending and the points on the canvas */}
+            {paint?.type === "mesh" && primary && (
+              <PickerGroup title="Mesh">
+                <MeshControls paint={paint} layerId={primary} index={index} onChange={writePaint} />
+              </PickerGroup>
+            )}
+
+            {/* For every kind: how it mixes with the fills below, and where it shows */}
+            {paint && (
+              <PickerGroup title="Blend & mask">
+                <OptionGroup>
+                  <OptionRow label="Blend">
+                    <Select
+                      aria-label="Fill blend mode"
+                      options={FILL_BLEND_OPTIONS}
+                      value={paint.blend ?? "normal"}
+                      width="100%"
+                      size="sm"
+                      onChange={(v) => writeEngine(updatePaint(enginePaints, index, (p) => (v === "normal" ? (({ blend: _b, ...rest }) => (void _b, rest as Paint))(p) : { ...p, blend: v as BlendMode })))}
+                    />
+                  </OptionRow>
+                </OptionGroup>
+                <FillMaskControls mask={paint.mask} siblings={siblingOptions} onSet={(kind, patch) => setMask(index, kind, patch)} />
+              </PickerGroup>
+            )}
+          </ColorPicker>
         );
       })()}
+
+      {/* Cut out opens over the page, outside the picker (a press in it must not close the picker under it) */}
+      {cuttingFill && pictureOf(cuttingFill) && primary && (
+        <CutoutDialog layerId={primary as string} fill={pictureOf(cuttingFill)!} onClose={() => setCuttingFill(null)} />
+      )}
     </div>
   );
 };

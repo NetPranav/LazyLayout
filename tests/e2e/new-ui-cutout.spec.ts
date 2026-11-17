@@ -173,12 +173,11 @@ test("a frame's picture fill: a piece cut from it lines up exactly, and text goe
   const frame = (await docLayers()).find((l) => l.archetype === "container" && l.parentId !== null)!;
 
   // fill it with the picture, through the Fill section
-  const settings = page.getByRole("button", { name: "Fill 1 settings" });
+  const settings = page.getByRole("button", { name: "Fill 1 color" }); // the fill's one panel
   if (!(await settings.isVisible().catch(() => false))) await page.getByRole("button", { name: /Add fill/ }).click();
   await settings.click();
-  await page.getByRole("combobox", { name: "Paint type" }).click();
-  await page.getByRole("option", { name: "Image" }).click();
-  await page.getByLabel("Fill picture").first().setInputFiles(path.join(__dirname, "fixtures", "mountain-subject.svg"));
+  await page.getByRole("radiogroup", { name: "Fill type" }).getByRole("radio", { name: "Image" }).click();
+  await page.getByLabel("Upload image").first().setInputFiles(path.join(__dirname, "fixtures", "mountain-subject.svg"));
   await expect(page.getByRole("button", { name: "Cut out", exact: true })).toBeVisible();
 
   const pageShot = async () => {
