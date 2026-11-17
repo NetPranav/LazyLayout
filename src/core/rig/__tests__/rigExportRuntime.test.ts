@@ -90,3 +90,52 @@ describe("Phase 215 · the parity check runs the exported runtime (audit 2026-11
     assert.notDeepEqual(evalRig(rig, {}).child.head, good(rig, {}).child.head);
   });
 });
+
+describe("Phase 215 · the export draws and plays the character (review 2026-11-17)", () => {
+  const rig = createRigDefinition("arm", "Arm", "layer_arm", [
+    { id: "root", name: "Root", parentId: null, length: 50, restX: 100, restY: 120, restRotationDeg: -90 },
+    { id: "child", name: "Child", parentId: "root", length: 35, restX: 0, restY: 0, restRotationDeg: 0 },
+  ]);
+  const track: BonePoseTrack = [
+    { timeSec: 0, pose: { root: { rotationDeg: 0 } } },
+    { timeSec: 1, pose: { root: { rotationDeg: 30 } } },
+  ];
+
+  it("playRig draws one line per bone at the track's first pose", async () => {
+    const { emitRigRuntimeSource } = await import("../rigExportRuntime");
+    const src = emitRigRuntimeSource("svg").replace(/^export\s+/gm, "");
+    const made: { attrs: Record<string, string>; removed: boolean }[] = [];
+    const fakeDocument = {
+      createElementNS: () => {
+        const el = { attrs: {} as Record<string, string>, removed: false, setAttribute(k: string, v: string) { el.attrs[k] = v; }, remove() { el.removed = true; } };
+        made.push(el);
+        return el;
+      },
+    };
+    const svg = { appendChild: () => undefined };
+    const run = new Function("document", "matchMedia", `${src}\nreturn playRig;`)(fakeDocument, () => ({ matches: true }));
+    const stop = run(svg, rig, track);
+    assert.equal(made.length, 2);
+    const root = made.find((m) => m.attrs["data-bone"] === "root")!;
+    assert.equal(root.attrs.x1, "100.00");
+    assert.equal(root.attrs.y1, "120.00");
+    assert.equal(root.attrs.y2, "70.00", "the root bone points up 50 px at rest");
+    stop();
+    assert.ok(made.every((m) => m.removed));
+  });
+
+  it("the Next.js component renders an svg player, not an empty div", () => {
+    const bundle = exportRigForFramework(rig, "nextjs", track);
+    const entry = bundle.files["Character.tsx"]!;
+    assert.ok(entry.includes("playRig(svgRef.current"));
+    assert.equal(/<div data-rig/.test(entry), false);
+    assert.equal(bundle.skinsMeshes, false);
+  });
+
+  it("an HTML export can't be broken out of by a rig name", () => {
+    const evil = { ...rig, id: "x\"><img src=x>", name: "</script><script>alert(1)</script>" };
+    const html = exportRigForFramework(evil, "html", track).files["index.html"]!;
+    assert.equal(html.includes("</script><script>alert(1)"), false);
+    assert.equal(html.includes("<img src=x>"), false);
+  });
+});
