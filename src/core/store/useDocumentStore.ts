@@ -49,6 +49,7 @@ import { editBreakpointId, useBreakpointStore, useEditBreakpointId } from "./use
 import { editingStateOf } from "../states/stateEdit";
 import { mergeStateProps } from "../states/states";
 import { relativizeLegacyPoints } from "../geometry/cornerPin";
+import type { InsertLayerExtras } from "../editing/clipboardExtras";
 
 const pick = (o: Record<string, unknown>, keys: readonly string[]): Record<string, PropValue> => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k] as PropValue]));
 import { useModeStore } from "./useModeStore";
@@ -583,7 +584,7 @@ export const documentCommands = {
    * Inserts complete layers (e.g. a generated component) in one step. Layers
    * whose parent is outside the batch are appended to that parent's children.
    */
-  insertLayers(layers: Layer[], clips: Clip[] = [], label = "Insert layers") {
+  insertLayers(layers: Layer[], clips: Clip[] = [], label = "Insert layers", extras?: InsertLayerExtras) {
     commit(label, (draft) => {
       const batch = new Set(layers.map((l) => l.id));
       for (const layer of layers) {
@@ -598,6 +599,37 @@ export const documentCommands = {
       for (const clip of clips) {
         const owner = draft.layers[clip.layerId];
         draft.clips[clip.id] = owner ? canonicalClip(owner.archetype, clip, "insertLayers") : clip;
+      }
+      if (extras) {
+        for (const st of extras.states ?? []) {
+          const owner = draft.layers[st.layerId];
+          draft.states[st.id] = owner ? { ...st, props: canonicalProps(owner.archetype, st.props, "insertLayers") } : st;
+        }
+        for (const beh of extras.behaviours ?? []) draft.behaviours[beh.id] = beh;
+        for (const tr of extras.transitions ?? []) draft.transitions[tr.id] = tr;
+        for (const surf of extras.surfaces ?? []) draft.surfaces[surf.id] = surf;
+        for (const fx of extras.effects ?? []) draft.effects[fx.id] = fx;
+        for (const bind of extras.bindings ?? []) draft.bindings[bind.id] = bind;
+        for (const graph of extras.graphs ?? []) draft.graphs[graph.id] = graph;
+        for (const seq of extras.sequences ?? []) draft.sequences[seq.id] = seq;
+        if (extras.assets) {
+          draft.assets ??= {};
+          for (const [id, entry] of Object.entries(extras.assets)) {
+            if (!draft.assets[id]) draft.assets[id] = entry;
+          }
+        }
+        if (extras.variables) {
+          draft.variables ??= {};
+          for (const [id, entry] of Object.entries(extras.variables)) {
+            if (!draft.variables[id]) draft.variables[id] = entry;
+          }
+        }
+        if (extras.styles) {
+          draft.styles ??= {};
+          for (const [id, entry] of Object.entries(extras.styles)) {
+            if (!draft.styles[id]) draft.styles[id] = entry;
+          }
+        }
       }
     });
   },

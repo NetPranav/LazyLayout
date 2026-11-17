@@ -63,13 +63,12 @@ interface Entry {
 
 const CLIPBOARD: Entry[] = [
   { action: "copy", label: "Copy", icon: Copy, shortcut: "Ctrl+C" },
-  { action: "paste", label: "Paste", icon: ClipboardPaste, shortcut: "Ctrl+V", disabled: true },
+  { action: "paste", label: "Paste", icon: ClipboardPaste, shortcut: "Ctrl+V" },
   {
     action: "paste-in-place",
     label: "Paste in Place",
     icon: ClipboardPaste,
     shortcut: "Ctrl+Shift+V",
-    disabled: true,
   },
   { action: "duplicate", label: "Duplicate", icon: CopyPlus, shortcut: "Ctrl+D" },
   { action: "delete", label: "Delete", icon: Trash2, shortcut: "Del" },
