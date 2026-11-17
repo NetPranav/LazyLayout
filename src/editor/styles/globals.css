@@ -7,14 +7,18 @@ body {
 
 @layer base {
   /* Scrollbars are hidden everywhere in the new UI, as in the prototype (`*{scrollbar-width:none}`).
-     Menus and popovers are portaled to <body>, outside .ll-editor-root, so the rule keys off the page. */
-  html:has(.ll-editor-root, .ll-design-system-root),
-  html:has(.ll-editor-root, .ll-design-system-root) * {
+     Menus and popovers are portaled to <body>, outside .ll-editor-root, so the rule keys off the page: the
+     `ll-ui` class that useLlUiDocument() puts on <html> while an editor or the design system is mounted.
+     Performance (2026-11-18): these were `html:has(.ll-editor-root, ...)` rules. With `:has()` on <html>, inserting
+     any node anywhere made the browser re-match them for the whole document: every duplicate restyled ~2,400
+     elements (≈90 ms each on a 4x-throttled CPU). A plain class on <html> doesn't depend on the subtree. */
+  html.ll-ui,
+  html.ll-ui * {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
-  html:has(.ll-editor-root, .ll-design-system-root) *::-webkit-scrollbar {
+  html.ll-ui *::-webkit-scrollbar {
     display: none;
   }
 
@@ -44,9 +48,9 @@ body {
   }
 
   /* === lane: F5 controls === */
-  html:has(.ll-editor-root, .ll-design-system-root) button,
-  html:has(.ll-editor-root, .ll-design-system-root) select,
-  html:has(.ll-editor-root, .ll-design-system-root) input,
+  html.ll-ui button,
+  html.ll-ui select,
+  html.ll-ui input,
   .ll-design-system-root button,
   .ll-design-system-root select,
   .ll-design-system-root input,

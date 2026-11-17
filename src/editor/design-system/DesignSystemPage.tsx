@@ -142,6 +142,7 @@ import { F5Demos } from "./demos/F5Demos";
 import { F6Demos } from "./demos/F6Demos";
 
 import { Menu as MenuIcon } from "lucide-react";
+import { useLlUiDocument } from "@/editor/shell/useLlUiDocument";
 
 type NavSectionId =
   // Foundations
@@ -1026,6 +1027,7 @@ function ScrollFadeDemo() {
 }
 
 export function DesignSystemPage() {
+  useLlUiDocument();
   const [activeSection, setActiveSection] = useState<NavSectionId>("colors");
   const [activeTheme] = useTheme();
   const liveTokens = useSyncExternalStore(subscribeLiveTokens, getLiveTokensSnapshot, getServerLiveTokensSnapshot);

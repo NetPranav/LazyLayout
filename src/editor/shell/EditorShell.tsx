@@ -50,6 +50,7 @@ import { installTransportCommands } from "@/core/time/transportCommands";
 import { installTransportDriver } from "@/core/time/transportDriver";
 import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { transport, transportStore } from "@/core/time/transport";
+import { useLlUiDocument } from "./useLlUiDocument";
 
 /** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
 const OPENING_FRAME = 72;
@@ -69,6 +70,7 @@ export function EditorShell({
   saving: propSaving = false,
   className = "",
 }: EditorShellProps) {
+  useLlUiDocument();
   const saving = propSaving;
   const projectName = useProjectMetaStore((s) => s.projectName);
   const selectedIds = useSelectionStore((s) => s.selectedIds);

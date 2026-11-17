@@ -8,6 +8,7 @@ import { Icon } from "@/editor/components/Icon";
 import { Button } from "@/editor/components/Button";
 import { CANVAS_CHROME_SIZES, CANVAS_CHROME_SAMPLE_USERS } from "./constants";
 import type { CollabUser } from "@/editor/components/AvatarStack";
+import { useLlUiDocument } from "@/editor/shell/useLlUiDocument";
 
 export interface CanvasChromeLabProps {
   initialShowRulers?: boolean;
@@ -30,6 +31,7 @@ export function CanvasChromeLab({
   initialTheme = "paper",
   initialUsers = CANVAS_CHROME_SAMPLE_USERS,
 }: CanvasChromeLabProps) {
+  useLlUiDocument();
   const [showRulers, setShowRulers] = useState(initialShowRulers);
   const [users, setUsers] = useState<readonly CollabUser[]>(initialUsers);
   const [activeTool, setActiveTool] = useState<CanvasTool>("select");

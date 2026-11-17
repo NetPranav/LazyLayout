@@ -96,7 +96,11 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       (deadline) => {
         idleHandle = null;
         if (getTransport().playing) return; // playing: play() already sampled what it needed
-        if (!waapi.prebake(() => deadline.timeRemaining())) schedulePrebake();
+        // On a busy page the callback can arrive by timeout with no idle time left; then take a short slice anyway, so
+        // the work still gets done a little at a time instead of being put off forever.
+        const sliceEnd = performance.now() + 8;
+        const timeLeft = deadline.didTimeout ? () => sliceEnd - performance.now() : () => deadline.timeRemaining();
+        if (!waapi.prebake(timeLeft)) schedulePrebake();
       },
       { timeout: 2000 },
     );
