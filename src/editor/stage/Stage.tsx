@@ -229,16 +229,25 @@ export const Stage: React.FC<StageProps> = ({
       setRootHeight(rootNode?.offsetHeight ?? 0);
     });
   }, []);
-  // Measure when what is drawn can have changed: the document, controlled mode, a frame preview, the root.
-  // Performance (2026-11-18): this ran after EVERY render of the stage (selection, hover, tool, camera...), and each
-  // run measures every layer at rest, about 20% of the time a duplicate took. A drawn change the document doesn't
-  // announce (a class, an image, a font) is still caught: the page watcher below measures it on the next frame.
+  // Measure when what is drawn has changed: the document, controlled mode, a frame preview or the root changed, or the
+  // page watcher (below) saw the drawn page change since the last reading.
+  // Performance (2026-11-18): this used to measure after EVERY render of the stage (selection, hover, tool, camera...);
+  // each reading measures every layer at rest, about 20% of the time a duplicate took. A render that changed nothing
+  // drawn now skips it.
   const previewing = useFramePreviewStore((p) => p.previewing);
+  const measuredForRef = useRef<{ layers: unknown; controlled: boolean; previewing: unknown; rootId: string | null } | null>(null);
   useLayoutEffect(() => {
     storeLayersRef.current = storeLayers;
     isControlledRef.current = isControlled;
+    const last = measuredForRef.current;
+    const inputsChanged =
+      !last || last.layers !== storeLayers || last.controlled !== isControlled || last.previewing !== previewing || last.rootId !== rootId;
+    // records the watcher holds are drawn changes not yet measured (the engine's own writes are already dropped)
+    const pageChanged = (pageWatchRef.current?.takeRecords().length ?? 0) > 0;
+    if (!inputsChanged && !pageChanged) return;
+    measuredForRef.current = { layers: storeLayers, controlled: isControlled, previewing, rootId };
     queueMicrotask(remeasure);
-  }, [storeLayers, isControlled, previewing, rootId, remeasure]);
+  });
   // Things that change sizes or child layout without the page box resizing: images, fonts, auto-layout, grid, CSS transforms.
   useEffect(() => {
     const page = pageRef.current;
