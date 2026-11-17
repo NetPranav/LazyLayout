@@ -25,3 +25,7 @@
 - **"Glow" in the reactivity card brightens the layer (Phase 140).** It used to drive opacity from 0.35 to 1, so picking Glow made the layer semi-transparent at rest. It now multiplies brightness from 1 at rest up to 1.35.
 - **Scroll-driven CSS export keeps the shape of the curve (Phase 142).** A remap over part of the scroll range (for example 20%–80% with clamp) used to be exported as a straight line from 0% to 100%. The keyframes now include each point where the curve bends.
 - **A long press is no longer half of a double-tap (Phase 147).**
+
+### Added
+
+- **`npm run check:reachable` (in CI).** It fails when a new source file is reachable only from its tests, not from a route, the export or a CLI. The 146 files unwired today (some kept on purpose while their panels are designed) are listed in `scripts/reachability-baseline.json`. When one gets wired in, the check says so; `npm run check:reachable -- --update` refreshes the list.
