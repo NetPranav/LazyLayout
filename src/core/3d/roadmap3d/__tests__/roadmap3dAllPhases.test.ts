@@ -29,7 +29,7 @@ import {
 } from "../index";
 
 describe("ROADMAP_3D Full Suite (3D-001 – 3D-227)", () => {
-  it("M1 (3D-031..3D-062): Subdivision, PBR Material Looks v1, Light Rigs & Gate M1 Foil Button pass", () => {
+  it("M1 (3D-031..3D-062): Subdivision, PBR Material Looks v1, Light Rigs; Gate M1 lists what it can't measure", () => {
     assert.equal(Object.keys(MATERIAL_LOOKS_V1).length, 12);
     assert.equal(Object.keys(LIGHT_RIG_LOOKS_V1).length, 7);
 
@@ -46,9 +46,10 @@ describe("ROADMAP_3D Full Suite (3D-001 – 3D-227)", () => {
     assert.equal(sub.mesh.faces.length, 4);
 
     const gateM1 = runGateM1FoilButton();
-    assert.equal(gateM1.passed, true);
-    assert.equal(gateM1.pathTracerExcluded, true);
-    assert.ok(gateM1.exportGzipBytes <= 60_000);
+    // The path tracer/bake isn't built and the export size is an estimate, so M1 lists them and doesn't pass.
+    assert.equal(gateM1.passed, false);
+    assert.ok(gateM1.unmeasured.includes("editor path trace and bake"));
+    assert.ok(gateM1.exportGzipBytes <= 60_000, "the estimate stays inside the budget");
   });
 
   it("M1+ (3D-191..3D-200): Zero-Script CSS (0 B JS), WebGL2 Micro-Renderer (<=25KB), Pointer Light & Gate A pass", () => {
