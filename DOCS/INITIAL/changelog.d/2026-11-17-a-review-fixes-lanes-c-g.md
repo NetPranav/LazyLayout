@@ -24,3 +24,4 @@
 - **The flash check finds flashes it used to miss (Phase 199).** It now looks at each region of the frame (a 4×4 grid), so a flashing corner isn't averaged away by a still background. It reports the worst one-second window, so a burst of flashes in a long capture is caught (WCAG 2.3.1: no more than 3 in any second).
 - **"Glow" in the reactivity card brightens the layer (Phase 140).** It used to drive opacity from 0.35 to 1, so picking Glow made the layer semi-transparent at rest. It now multiplies brightness from 1 at rest up to 1.35.
 - **Scroll-driven CSS export keeps the shape of the curve (Phase 142).** A remap over part of the scroll range (for example 20%–80% with clamp) used to be exported as a straight line from 0% to 100%. The keyframes now include each point where the curve bends.
+- **A long press is no longer half of a double-tap (Phase 147).**

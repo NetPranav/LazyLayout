@@ -198,10 +198,12 @@ export function createGestureRecognizer(config: GestureConfig = {}): {
       const dist = Math.hypot(dx, dy);
       const speed = Math.hypot(lastVx, lastVy);
 
-      if (dist < dblDist && input.time - lastTapTime <= dblWindow && Math.hypot(input.x - lastTapX, input.y - lastTapY) < dblDist) {
+      // A press that became a long press is not a tap, so it can't be half of a double-tap.
+      const wasTap = dist < dblDist && !longPressEmitted;
+      if (wasTap && input.time - lastTapTime <= dblWindow && Math.hypot(input.x - lastTapX, input.y - lastTapY) < dblDist) {
         doubleTapFired = true;
         lastTapTime = -999;
-      } else if (dist < dblDist) {
+      } else if (wasTap) {
         lastTapTime = input.time;
         lastTapX = input.x;
         lastTapY = input.y;
