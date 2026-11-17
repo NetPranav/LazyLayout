@@ -178,43 +178,10 @@ export const Stage: React.FC<StageProps> = ({
   const [measured, setMeasured] = useState<Record<string, StageElement>>({});
   const [rootHeight, setRootHeight] = useState(0);
   const storeLayersRef = useRef(storeLayers);
-  // a frame previewed or not changes its drawn size with no document change: this render re-measures (below)
-  useFramePreviewStore((p) => p.previewing);
-  const remeasure = useCallback(() => {
-    const page = pageRef.current;
-    if (!page || !storeLayersRef.current) return;
-    // measured at rest: the hit boxes add the animated pose themselves, so a box read mid-move would be moved twice
-    const layersNow = storeLayersRef.current;
-    const next = measureAtRest(() => measurePage(page, layersNow));
-    // applied at once, so a selection box never lags a frame behind what it surrounds
-    const rootNode = page.firstElementChild as HTMLElement | null;
-    flushSync(() => {
-      setMeasured((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
-      setRootHeight(rootNode?.offsetHeight ?? 0);
-    });
-  }, []);
-  useLayoutEffect(() => {
-    storeLayersRef.current = storeLayers;
-    queueMicrotask(remeasure);
-  });
-  // Things that change sizes without the document changing: a picture or a font arriving, the page resizing.
-  useEffect(() => {
-    const page = pageRef.current;
-    if (!page) return undefined;
-    page.addEventListener("load", remeasure, true);
-    const observer = new ResizeObserver(remeasure);
-    observer.observe(page);
-    let live = true;
-    void document.fonts?.ready.then(() => live && remeasure());
-    // align, group and reparent ask the same reading
-    const off = rootId ? registerFrameRenderer(rootId, pageMeasurer(() => pageRef.current) as unknown as StageRenderer) : undefined;
-    return () => {
-      live = false;
-      page.removeEventListener("load", remeasure, true);
-      observer.disconnect();
-      off?.();
-    };
-  }, [remeasure, rootId]);
+  const isGesturingRef = useRef(false);
+  const measuringRef = useRef(false);
+  const isControlled = Boolean(controlledElements);
+  const isControlledRef = useRef(isControlled);
 
   const elementsFromStore = controlledElements ?? measured;
 
@@ -226,6 +193,71 @@ export const Stage: React.FC<StageProps> = ({
     setPrevElementsFromStore(elementsFromStore);
     setElements(elementsFromStore);
   }
+
+  // a frame previewed or not changes its drawn size with no document change: this render re-measures (below)
+  useFramePreviewStore((p) => p.previewing);
+  const remeasure = useCallback(() => {
+    const page = pageRef.current;
+    if (!page || !storeLayersRef.current || measuringRef.current) return;
+    measuringRef.current = true;
+    let next: Record<string, StageElement> = {};
+    try {
+      // measured at rest: the hit boxes add the animated pose themselves, so a box read mid-move would be moved twice
+      const layersNow = storeLayersRef.current;
+      next = measureAtRest(() => measurePage(page, layersNow));
+    } finally {
+      measuringRef.current = false;
+    }
+    // applied at once, so a selection box never lags a frame behind what it surrounds
+    const rootNode = page.firstElementChild as HTMLElement | null;
+    flushSync(() => {
+      setMeasured((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+      if (!isGesturingRef.current && !isControlledRef.current) {
+        setElements((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+      }
+      setRootHeight(rootNode?.offsetHeight ?? 0);
+    });
+  }, []);
+  useLayoutEffect(() => {
+    storeLayersRef.current = storeLayers;
+    isControlledRef.current = isControlled;
+    queueMicrotask(remeasure);
+  });
+  // Things that change sizes or child layout without the page box resizing: images, fonts, auto-layout, grid, CSS transforms.
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) return undefined;
+    let live = true;
+    let scheduled = false;
+    const scheduleRemeasure = () => {
+      if (!live || measuringRef.current || scheduled) return;
+      scheduled = true;
+      queueMicrotask(() => {
+        scheduled = false;
+        if (live) remeasure();
+      });
+    };
+    page.addEventListener("load", remeasure, true);
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(page);
+    const mutationObserver = new MutationObserver(scheduleRemeasure);
+    mutationObserver.observe(page, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+    void document.fonts?.ready.then(() => live && remeasure());
+    // align, group and reparent ask the same reading
+    const off = rootId ? registerFrameRenderer(rootId, pageMeasurer(() => pageRef.current) as unknown as StageRenderer) : undefined;
+    return () => {
+      live = false;
+      page.removeEventListener("load", remeasure, true);
+      observer.disconnect();
+      mutationObserver.disconnect();
+      off?.();
+    };
+  }, [remeasure, rootId]);
 
   const handleElementChange = useCallback(
     (id: string, patch: Partial<StageElement>) => {
@@ -397,6 +429,15 @@ export const Stage: React.FC<StageProps> = ({
     onElementChange: handleElementChange,
     onSelect: handleSelect,
   });
+
+  const wasGesturingRef = useRef(false);
+  useEffect(() => {
+    isGesturingRef.current = isGesturing;
+    if (wasGesturingRef.current && !isGesturing) {
+      queueMicrotask(remeasure);
+    }
+    wasGesturingRef.current = isGesturing;
+  }, [isGesturing, remeasure]);
 
   // A loading page shows the page it comes from and the one it leads to beside it, so the view zooms out to hold all three.
   const activePageDef = useProjectStore((p) => p.pages[p.activePageId]);

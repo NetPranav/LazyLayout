@@ -285,7 +285,12 @@ export function nudgeLayers(ids: readonly string[], dx: number, dy: number): voi
   const flowParent = (id: string) => {
     const layer = l[id];
     const parent = layer?.parentId ? l[layer.parentId] : undefined;
-    return parent && parent.archetype === "container" && parent.properties["layout.auto"] === true && layer.properties.positioning !== "absolute" ? parent : null;
+    return parent &&
+      parent.archetype === "container" &&
+      (parent.properties["layout.auto"] === true || parent.properties["layout.display"] === "grid") &&
+      layer.properties.positioning !== "absolute"
+      ? parent
+      : null;
   };
   // a layer inside an instance keeps the main's order and place (FigCraft port F9)
   if (roots.some((id) => l[id]?.instance && !l[id].instance!.root)) return;
@@ -293,8 +298,18 @@ export function nudgeLayers(ids: readonly string[], dx: number, dy: number): voi
     transaction("Reorder", () => {
       for (const id of roots) {
         const parent = flowParent(id)!;
-        const row = parent.properties["layout.flexDirection"] === "row";
-        const step = row ? Math.sign(dx) : Math.sign(dy);
+        const isGrid = parent.properties["layout.display"] === "grid";
+        let step = 0;
+        if (isGrid) {
+          const cols =
+            typeof parent.properties["layout.gridColumns"] === "number"
+              ? Math.max(1, Math.round(parent.properties["layout.gridColumns"]))
+              : 2;
+          step = dx !== 0 ? Math.sign(dx) : Math.sign(dy) * cols;
+        } else {
+          const row = parent.properties["layout.flexDirection"] === "row";
+          step = row ? Math.sign(dx) : Math.sign(dy);
+        }
         if (step === 0) continue;
         const kids = getDocument().layers[parent.id].children;
         const at = kids.indexOf(id);
