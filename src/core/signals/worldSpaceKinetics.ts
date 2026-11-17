@@ -137,8 +137,8 @@ export function invertMatrix2D(m: Matrix2D): Matrix2D {
 /** Converts plain-language no-maths Simple controls into engine field/effector specs. */
 export function mapKineticSimpleFace(
   face: KineticSimpleFace,
-  centerX: number,
-  centerY: number,
+  _centerX: number,
+  _centerY: number,
 ): {
   readonly falloff: FalloffCurve;
   readonly innerRadius: number;
@@ -159,7 +159,7 @@ export function mapKineticSimpleFace(
     shuffleVariances: (count: number): readonly number[] => {
       const rng = seededRandom(face.Shuffle);
       const amount = Math.min(1, Math.max(0, face.Variety));
-      return Array.from({ length: count }, () => 1 + (rng() * 2 - 1) * 0.45 * amount + (centerX - centerX) + (centerY - centerY));
+      return Array.from({ length: count }, () => 1 + (rng() * 2 - 1) * 0.45 * amount);
     },
   };
 }
