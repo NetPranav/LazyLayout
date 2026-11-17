@@ -49,6 +49,7 @@ describe("Phase 13: menu → command coverage", () => {
     const allowed = new Set([
       "core/commands/dispatcher.ts",
       "core/events/useTearOff.ts",
+      "core/nodescript/blueprintCompiler.ts", // text of the exported site's runtime (an onKey node), not an editor handler
       // the old editor (src/legacy-editor)
       "legacy-editor/shell/StudioHeader.tsx",
       "legacy-editor/shell/EditorShell.tsx", // Escape closes Settings
@@ -98,7 +99,7 @@ describe("Phase 13: menu → command coverage", () => {
     const offenders: string[] = [];
     const root = join(process.cwd(), "src");
     for (const file of sourceFiles(root)) {
-      const rel = file.slice(root.length + 1);
+      const rel = file.slice(root.length + 1).replace(/\\/g, "/"); // "/" on every OS (Windows paths use "\")
       if (allowed.has(rel) || pendingCommandMigration.has(rel)) continue;
       if (/addEventListener\(\s*["']keydown["']/.test(readFileSync(file, "utf8"))) offenders.push(rel);
     }
