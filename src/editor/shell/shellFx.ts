@@ -50,7 +50,8 @@ const BOTTOM_DEFAULT_RATIO = 0.4;
 /** A layout change smaller than this (CSS px) is not animated. */
 const MIN_CHANGE = 0.5;
 
-/** Side panel clamps: min, default and max in CSS px. */
+/** Side panel clamps: min, default, max, and collapsed peek in CSS px. */
+export const PANEL_PEEK_WIDTH = 16;
 export const LEFT_PANEL_MIN = 240;
 export const LEFT_PANEL_DEFAULT = 248;
 export const LEFT_PANEL_MAX = 440;
@@ -342,8 +343,9 @@ export class ShellFx {
       a = this.last;
     }
 
-    const targetLw = isZen || isLeftCollapsed ? 0 : this.targetLw;
-    const targetRw = isZen || isRightCollapsed ? 0 : this.targetRw;
+    const collapsedW = isZen ? 0 : PANEL_PEEK_WIDTH;
+    const targetLw = isZen || isLeftCollapsed ? collapsedW : this.targetLw;
+    const targetRw = isZen || isRightCollapsed ? collapsedW : this.targetRw;
 
     root.style.setProperty("--lw", `${targetLw}px`);
     root.style.setProperty("--rw", `${targetRw}px`);
@@ -627,7 +629,7 @@ export class ShellFx {
     const savedOpenW = side === "left" ? this.targetLw : this.targetRw;
     const rememberedOpenW = savedOpenW >= minW ? savedOpenW : defaultW;
     const x0 = e.clientX;
-    const w0 = collapsed ? 0 : rememberedOpenW;
+    const w0 = collapsed ? PANEL_PEEK_WIDTH : rememberedOpenW;
     let currentW = w0;
     let movedPx = 0;
     let lastTime = performance.now();
@@ -647,7 +649,10 @@ export class ShellFx {
 
       const maxW = maxWidth();
       const rawW = w0 + delta;
-      const w = onCollapseChange || collapsed ? clamp(rawW, 0, maxW) : clamp(rawW, minW, maxW);
+      const w =
+        onCollapseChange || collapsed
+          ? clamp(rawW, PANEL_PEEK_WIDTH, maxW)
+          : clamp(rawW, minW, maxW);
       velocity = ((w - currentW) / dt) * 1000;
       lastTime = now;
       currentW = w;
@@ -677,9 +682,11 @@ export class ShellFx {
       };
 
       if (collapsed) {
+        const snapOpenW = PANEL_PEEK_WIDTH + PANEL_OPEN_SNAP_PX;
+        const flickPastW = PANEL_PEEK_WIDTH + 12;
         const shouldOpen =
           movedPx >= 3 &&
-          (currentW >= PANEL_OPEN_SNAP_PX || (currentW > 12 && velocity > PANEL_FLICK_VELOCITY_PX_S));
+          (currentW >= snapOpenW || (currentW > flickPastW && velocity > PANEL_FLICK_VELOCITY_PX_S));
         if (shouldOpen && onCollapseChange) {
           const snapToW = clamp(Math.max(rememberedOpenW, currentW), minW, maxW);
           if (side === "left") this.targetLw = snapToW;
@@ -691,7 +698,7 @@ export class ShellFx {
           onWidthChange?.(snapToW);
           onCollapseChange(false);
         } else {
-          this.animateSideTo(side, currentW, 0, velocity, currentW > 12);
+          this.animateSideTo(side, currentW, PANEL_PEEK_WIDTH, velocity, currentW > flickPastW);
         }
         return;
       }

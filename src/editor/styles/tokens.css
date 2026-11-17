@@ -40,8 +40,11 @@
   /* Layout dimensions from prototype */
   --ll-size-topbar-h: 52px;
   --ll-size-panel-left-w: 248px;
+  --ll-size-panel-left-min: 240px;
   --ll-size-panel-right-w: 320px;
+  --ll-size-panel-right-min: 280px;
   --ll-size-panel-right-w-compact: 296px;
+  --ll-size-panel-peek-w: 16px;
   --ll-size-ruler: 18px;
   --ll-size-row-h: 32px;
   --ll-size-row-lg-h: 36px;

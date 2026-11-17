@@ -17,23 +17,24 @@ test.describe("panels, arrow-key alignment guides, and small-window timeline tog
     await expect(page.getByTestId("close-left-panel")).toHaveCount(0);
     await expect(page.getByTestId("close-right-panel")).toHaveCount(0);
 
-    // 1. Close ONLY left panel via canvas toolbar toggle -> right panel remains open
+    // 1. Close ONLY left panel via canvas toolbar toggle -> peeks at 16px, right panel remains open
     await page.getByTestId("toggle-left-panel").click();
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(16);
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+    await expect(leftPane).toHaveCSS("visibility", "visible");
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
 
-    // 2. Drag left edge handle only slightly (20px) and release -> snaps back closed to 0
+    // 2. Drag left peek handle only slightly (20px) and release -> snaps back to 16px peek
     const leftHandle = page.getByTestId("left-panel-drag-handle");
     const lBox = (await leftHandle.boundingBox())!;
     await page.mouse.move(lBox.x + 2, lBox.y + lBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(lBox.x + 22, lBox.y + lBox.height / 2, { steps: 4 });
     await page.mouse.up();
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(16);
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
 
-    // 3. Drag left edge handle past snap-open threshold (110px) -> snaps open with spring settle to >= 240px
+    // 3. Drag left peek handle past snap-open threshold (110px) -> snaps open with spring settle to >= 240px
     const lBox2 = (await leftHandle.boundingBox())!;
     await page.mouse.move(lBox2.x + 2, lBox2.y + lBox2.height / 2);
     await page.mouse.down();
@@ -42,13 +43,13 @@ test.describe("panels, arrow-key alignment guides, and small-window timeline tog
     await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(240);
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
 
-    // 4. Drag open left panel inward past collapse threshold -> snaps closed while right stays open
+    // 4. Drag open left panel inward past collapse threshold -> snaps to 16px peek while right stays open
     const lOpenBox = (await leftHandle.boundingBox())!;
     await page.mouse.move(lOpenBox.x + lOpenBox.width / 2, lOpenBox.y + lOpenBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(40, lOpenBox.y + lOpenBox.height / 2, { steps: 8 });
     await page.mouse.up();
-    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBe(16);
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThan(150);
 
@@ -63,7 +64,8 @@ test.describe("panels, arrow-key alignment guides, and small-window timeline tog
     await page.mouse.down();
     await page.mouse.move(1240, rOpenBox.y + rOpenBox.height / 2, { steps: 8 });
     await page.mouse.up();
-    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBe(0);
+    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBe(16);
+    await expect(rightPane).toHaveCSS("visibility", "visible");
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
     await expect.poll(async () => Math.round((await leftPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(240);
 
@@ -74,6 +76,35 @@ test.describe("panels, arrow-key alignment guides, and small-window timeline tog
     await page.mouse.up();
     await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(280);
     await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+
+    // 6. Toggle right panel via canvas button -> closes to 16px peek
+    await page.getByTestId("toggle-right-panel").click();
+    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBe(16);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+    await page.getByTestId("toggle-right-panel").click();
+    await expect.poll(async () => Math.round((await rightPane.boundingBox())?.width ?? 0)).toBeGreaterThanOrEqual(280);
+    await expect(shellRoot).not.toHaveAttribute("data-pfx", "");
+  });
+
+  test("position alignment toolbar buttons distribute evenly across the full row width", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openEditor(page);
+
+    const toolbar = page.getByRole("toolbar", { name: "Alignment" });
+    await expect(toolbar).toBeVisible();
+    const toolbarBox = (await toolbar.boundingBox())!;
+    const buttons = toolbar.locator("button");
+    await expect(buttons).toHaveCount(6);
+
+    const firstBox = (await buttons.nth(0).boundingBox())!;
+    const lastBox = (await buttons.nth(5).boundingBox())!;
+
+    // First button should start near the toolbar left edge and last button end near the right edge
+    expect(firstBox.x - toolbarBox.x).toBeLessThanOrEqual(4);
+    expect(toolbarBox.x + toolbarBox.width - (lastBox.x + lastBox.width)).toBeLessThanOrEqual(4);
+    // Each button occupies ~1/6 of the toolbar rather than shrinking to 16px
+    expect(firstBox.width).toBeGreaterThan(toolbarBox.width / 8);
+    expect(lastBox.width).toBeGreaterThan(toolbarBox.width / 8);
   });
 
   test("alignment guidelines appear when positioning an element with arrow keys", async ({ page }) => {
