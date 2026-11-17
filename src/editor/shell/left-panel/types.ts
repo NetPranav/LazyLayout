@@ -176,6 +176,8 @@ export interface LeftPanelProps {
   onAssetsHeightChange?: (height: number) => void;
   /** Tracks section height in motion mode (defaults to var(--bh, 260px)) */
   tracksHeight?: number | string;
+  /** Optional close/collapse callback for hiding the left panel */
+  onClosePanel?: () => void;
   /** Optional class name */
   className?: string;
 }

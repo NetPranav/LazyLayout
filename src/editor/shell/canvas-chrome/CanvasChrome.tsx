@@ -140,6 +140,10 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
   onRedo,
   panelsCollapsed: controlledPanelsCollapsed,
   onTogglePanels: controlledOnTogglePanels,
+  isLeftCollapsed = false,
+  isRightCollapsed = false,
+  onToggleLeftPanel,
+  onToggleRightPanel,
   onPreview,
   onRunCode,
   users: _users,
@@ -732,6 +736,10 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onRedo={onRedo}
         panelsCollapsed={panelsCollapsed}
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
+        isLeftCollapsed={isLeftCollapsed}
+        isRightCollapsed={isRightCollapsed}
+        onToggleLeftPanel={onToggleLeftPanel}
+        onToggleRightPanel={onToggleRightPanel}
         onPreview={onPreview}
         onRunCode={onRunCode}
       />
@@ -900,6 +908,10 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
         onToggleCheckerboard={() => setCheckerboard((prev) => !prev)}
         panelsCollapsed={panelsCollapsed}
         onTogglePanels={() => setPanelsCollapsed((prev) => !prev)}
+        isLeftCollapsed={isLeftCollapsed}
+        isRightCollapsed={isRightCollapsed}
+        onToggleLeftPanel={onToggleLeftPanel}
+        onToggleRightPanel={onToggleRightPanel}
         theme={theme}
         onThemeChange={handleThemeChange}
         onOpenCanvasSettings={() => {

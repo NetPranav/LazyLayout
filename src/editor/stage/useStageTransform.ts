@@ -32,6 +32,61 @@ import {
   type DocumentTransaction,
 } from "@/core/store/useDocumentStore";
 
+const NUDGE_GUIDES_TTL_MS = 1200;
+
+function isArrowKey(key: string): boolean {
+  return key === "ArrowLeft" || key === "ArrowRight" || key === "ArrowUp" || key === "ArrowDown";
+}
+
+function isInteractiveInputTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  return Boolean(
+    el instanceof HTMLInputElement ||
+      el instanceof HTMLTextAreaElement ||
+      el instanceof HTMLSelectElement ||
+      el.isContentEditable ||
+      el.closest?.('[role="tree"], [role="menu"], [role="listbox"], [role="slider"], [role="separator"], [role="combobox"], [role="dialog"]')
+  );
+}
+
+function collectOtherRects(elements: Record<string, StageElement>, excludeIds: readonly string[]): Rect[] {
+  const exclude = new Set(excludeIds);
+  const otherRects: Rect[] = [];
+  Object.values(elements).forEach((other) => {
+    const docId = other.targetId ?? other.id;
+    if (!exclude.has(other.id) && !exclude.has(docId) && !other.mirrorId) {
+      otherRects.push({
+        x: other.x,
+        y: other.y,
+        width: other.width,
+        height: other.height,
+      });
+    }
+  });
+  return otherRects;
+}
+
+function selectionUnionRect(elements: Record<string, StageElement>, selectedIds: readonly string[]): Rect | null {
+  if (selectedIds.length === 0) return null;
+  const mirrorId = useSelectionStore.getState().selectedMirrorId;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of selectedIds) {
+    const key = mirrorId && elements[`${mirrorId}::${id}`] ? `${mirrorId}::${id}` : id;
+    const el = elements[key] ?? elements[id];
+    if (!el) continue;
+    minX = Math.min(minX, el.x);
+    minY = Math.min(minY, el.y);
+    maxX = Math.max(maxX, el.x + el.width);
+    maxY = Math.max(maxY, el.y + el.height);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
 interface UseStageTransformOptions {
   elements: Record<string, StageElement>;
   selectedIds: string[];
@@ -100,11 +155,21 @@ export function useStageTransform({
   const [snapLines, setSnapLines] = useState<SnapLine[]>([]);
   const [spacingMarks, setSpacingMarks] = useState<SpacingMark[]>([]);
   const [isGesturing, setIsGesturing] = useState(false);
+  const [nudgeOverlay, setNudgeOverlay] = useState<{ selKey: string; altKey: boolean } | null>(null);
   const txRef = useRef<DocumentTransaction | null>(null);
   const latestElements = useRef(elements);
+  const nudgeClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     latestElements.current = elements;
   });
+
+  const clearNudgeOverlay = useCallback(() => {
+    if (nudgeClearTimerRef.current) {
+      clearTimeout(nudgeClearTimerRef.current);
+      nudgeClearTimerRef.current = null;
+    }
+    setNudgeOverlay(null);
+  }, []);
 
   const gestureRef = useRef<{
     type: "move" | "resize";
@@ -172,6 +237,7 @@ export function useStageTransform({
           onSelect?.(targetDocId, false, view);
         }
       }
+      clearNudgeOverlay();
 
       const initialBoxes: Record<
         string,
@@ -216,7 +282,7 @@ export function useStageTransform({
 
       setIsGesturing(true);
     },
-    [selectedIds, elements, onSelect]
+    [selectedIds, elements, onSelect, clearNudgeOverlay]
   );
 
   // Start Resize Gesture
@@ -319,17 +385,7 @@ export function useStageTransform({
         };
 
         // Collect other element rects for snapping
-        const otherRects: Rect[] = [];
-        Object.values(elements).forEach((other) => {
-          if (!gesture.targetIds.includes(other.id) && !other.mirrorId) {
-            otherRects.push({
-              x: other.x,
-              y: other.y,
-              width: other.width,
-              height: other.height,
-            });
-          }
-        });
+        const otherRects = collectOtherRects(elements, gesture.targetIds);
 
         // Compute object & guide snap
         let snapX = 0;
@@ -616,20 +672,81 @@ export function useStageTransform({
     onElementChange,
   ]);
 
-  // Keyboard navigation & nudging (Arrow keys)
+  // Capture arrow-key intent before command dispatcher calls e.preventDefault() so keyboard nudging shows guides.
+  useEffect(() => {
+    const onArrowCapture = (e: KeyboardEvent) => {
+      if (selectedIds.length === 0 || isGesturing) return;
+      if (e.ctrlKey || e.metaKey) return;
+      if (useCanvasViewStore.getState().mode !== "design") return;
+      if (!isArrowKey(e.key) || isInteractiveInputTarget(e.target)) return;
+      const selKey = selectedIds.join(",");
+      setNudgeOverlay({ selKey, altKey: e.altKey });
+      if (nudgeClearTimerRef.current) clearTimeout(nudgeClearTimerRef.current);
+      nudgeClearTimerRef.current = setTimeout(() => {
+        nudgeClearTimerRef.current = null;
+        setNudgeOverlay(null);
+      }, NUDGE_GUIDES_TTL_MS);
+    };
+    window.addEventListener("keydown", onArrowCapture, true);
+    return () => window.removeEventListener("keydown", onArrowCapture, true);
+  }, [selectedIds, isGesturing]);
+
+  useEffect(() => {
+    return () => {
+      if (nudgeClearTimerRef.current) clearTimeout(nudgeClearTimerRef.current);
+    };
+  }, []);
+
+  const currentSelKey = selectedIds.join(",");
+  const isNudging = !isGesturing && nudgeOverlay !== null && nudgeOverlay.selKey === currentSelKey;
+
+  const nudgeGuides = useMemo<{ lines: SnapLine[]; spacing: SpacingMark[] }>(() => {
+    if (!isNudging) return { lines: [], spacing: [] };
+    const bounds = selectionUnionRect(elements, selectedIds);
+    if (!bounds) return { lines: [], spacing: [] };
+    const otherRects = collectOtherRects(elements, selectedIds);
+    let computedLines: SnapLine[] = [];
+    let computedMarks: SpacingMark[] = [];
+    if (snapObjects || smartGuides || snapGuides) {
+      const snapRes = snapMove(
+        bounds,
+        otherRects,
+        parentRect,
+        centerGuides,
+        0.5,
+        {
+          objects: snapObjects || smartGuides,
+          guides: snapGuides,
+          grid: false,
+          gridSize: 1,
+        }
+      );
+      computedLines = snapRes.lines;
+      computedMarks = snapRes.spacing;
+    }
+    if (nudgeOverlay?.altKey) {
+      computedMarks = [...computedMarks, ...distanceMarks(bounds, otherRects, parentRect)];
+    }
+    return { lines: computedLines, spacing: computedMarks };
+  }, [
+    isNudging,
+    nudgeOverlay,
+    elements,
+    selectedIds,
+    snapObjects,
+    smartGuides,
+    snapGuides,
+    parentRect,
+    centerGuides,
+  ]);
+
+  // Keyboard navigation & nudging (Arrow keys fallback when command dispatcher didn't handle the key)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedIds.length === 0) return;
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       if (useCanvasViewStore.getState().mode !== "design") return;
-      const target = e.target as HTMLElement | null;
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        target?.isContentEditable ||
-        target?.closest?.('[role="tree"], [role="menu"], [role="listbox"], [role="slider"], [role="separator"], [role="combobox"], [role="dialog"]')
-      ) {
+      if (isInteractiveInputTarget(e.target)) {
         return;
       }
 
@@ -697,8 +814,9 @@ export function useStageTransform({
 
   return {
     isGesturing,
-    snapLines,
-    spacingMarks,
+    isNudging,
+    snapLines: isGesturing ? snapLines : nudgeGuides.lines,
+    spacingMarks: isGesturing ? spacingMarks : nudgeGuides.spacing,
     startMove,
     startResize,
   };

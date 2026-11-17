@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Icon } from "@/editor/components/Icon";
 import {
   Play,
@@ -37,6 +37,7 @@ import { SPEED_OPTIONS } from "./constants";
 import { SplitIcon } from "./icons";
 import { timelineOpsAdapter } from "./timelineOpsAdapter";
 import { BottomCollapseButton } from "@/editor/shell/BottomCollapseButton";
+import { toggleBottomCollapsed, useBottomCollapsed } from "@/editor/shell/shellFx";
 
 export interface TimelineTransportProps {
   onExport?: () => void;
@@ -96,11 +97,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
   const recordMode = useTimelineUiStore((s) => s.recordMode);
   const onionSkin = useTimelineUiStore((s) => s.onionSkin);
 
+  const speedBtnRef = useRef<HTMLButtonElement>(null);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
-  const [speedAnchor, setSpeedAnchor] = useState<{ x: number; y: number } | null>(null);
-
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const [moreAnchor, setMoreAnchor] = useState<{ x: number; y: number } | null>(null);
+  const bottomCollapsed = useBottomCollapsed("motion");
 
   const isFw = fullWidth ?? storeFullWidth;
 
@@ -121,6 +122,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
         autoKey ? "ll:outline ll:outline-1 ll:outline-primary ll:-outline-offset-1" : ""
       }`}
     >
+      {/* Scrollable/responsive transport & tools track so pinned right-edge controls never clip in small windows */}
+      <div
+        className="ll:flex ll:items-center ll:gap-2 ll:flex-1 ll:min-w-0 ll:overflow-x-auto ll:overflow-y-hidden"
+        style={{ scrollbarWidth: "none" }}
+      >
       {/* Left: transport, then playhead time / total */}
       <div className="ll-mtr ll:flex ll:items-center ll:gap-0.5 ll:flex-none">
         <button
@@ -375,14 +381,11 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
 
         {/* Speed dropdown */}
         <button
+          ref={speedBtnRef}
           type="button"
           id="tspeed"
           data-ta="speed"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setSpeedAnchor({ x: rect.left, y: rect.bottom + 4 });
-            setSpeedMenuOpen(true);
-          }}
+          onClick={() => setSpeedMenuOpen((prev) => !prev)}
           aria-haspopup="listbox"
           aria-expanded={speedMenuOpen}
           aria-label="Playback speed"
@@ -393,25 +396,23 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           <Icon icon={ChevronDown} size={12} className="ll:text-muted" />
         </button>
 
-        {speedMenuOpen && speedAnchor && (
-          <Menu
-            open={speedMenuOpen}
-            onClose={() => setSpeedMenuOpen(false)}
-            position={speedAnchor}
-          >
-            {SPEED_OPTIONS.map((opt) => (
-              <MenuItem
-                key={opt}
-                onClick={() => {
-                  transport.setRate(opt);
-                  setSpeedMenuOpen(false);
-                }}
-              >
-                {opt}×
-              </MenuItem>
-            ))}
-          </Menu>
-        )}
+        <Menu
+          open={speedMenuOpen}
+          onClose={() => setSpeedMenuOpen(false)}
+          anchorRef={speedBtnRef}
+        >
+          {SPEED_OPTIONS.map((opt) => (
+            <MenuItem
+              key={opt}
+              onClick={() => {
+                transport.setRate(opt);
+                setSpeedMenuOpen(false);
+              }}
+            >
+              {opt}×
+            </MenuItem>
+          ))}
+        </Menu>
 
         {/* Expand width button (Shift+T) */}
         <button
@@ -445,17 +446,18 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
         >
           <Icon icon={Download} size={16} />
         </button>
+      </div>
+      </div>
 
+      {/* Pinned tail controls: always visible at the right edge regardless of window width */}
+      <div className="ll:flex ll:items-center ll:gap-0.5 ll:shrink-0">
         {/* More options menu */}
         <button
+          ref={moreBtnRef}
           type="button"
           id="tmore"
           data-ta="more"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setMoreAnchor({ x: rect.left, y: rect.bottom + 4 });
-            setMoreMenuOpen(true);
-          }}
+          onClick={() => setMoreMenuOpen((prev) => !prev)}
           aria-haspopup="menu"
           aria-expanded={moreMenuOpen}
           aria-label="More timeline options"
@@ -465,43 +467,49 @@ export const TimelineTransport: React.FC<TimelineTransportProps> = ({
           ...
         </button>
 
-        {moreMenuOpen && moreAnchor && (
-          <Menu
-            open={moreMenuOpen}
-            onClose={() => setMoreMenuOpen(false)}
-            position={moreAnchor}
+        <Menu
+          open={moreMenuOpen}
+          onClose={() => setMoreMenuOpen(false)}
+          anchorRef={moreBtnRef}
+        >
+          <MenuItem
+            onClick={() => {
+              toggleBottomCollapsed("motion");
+              setMoreMenuOpen(false);
+            }}
           >
-            <MenuItem
-              onClick={() => {
-                motionActions.setCompact(!useMotionModel.getState().compact);
-                setMoreMenuOpen(false);
-              }}
-            >
-              Toggle compact rows
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                motionActions.resetWorkArea();
-                setMoreMenuOpen(false);
-              }}
-            >
-              Reset work area
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                motionActions.setZoom(1);
-                motionActions.setT0(0);
-                setMoreMenuOpen(false);
-              }}
-            >
-              Fit timeline (1×)
-            </MenuItem>
-          </Menu>
-        )}
+            {bottomCollapsed ? "Expand panel" : "Collapse panel"}
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              motionActions.setCompact(!useMotionModel.getState().compact);
+              setMoreMenuOpen(false);
+            }}
+          >
+            Toggle compact rows
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              motionActions.resetWorkArea();
+              setMoreMenuOpen(false);
+            }}
+          >
+            Reset work area
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              motionActions.setZoom(1);
+              motionActions.setT0(0);
+              setMoreMenuOpen(false);
+            }}
+          >
+            Fit timeline (1×)
+          </MenuItem>
+        </Menu>
 
         <Sep />
 
-        {/* Collapse the timeline to this header strip */}
+        {/* Collapse / expand the timeline to/from this header strip */}
         <BottomCollapseButton mode="motion" />
       </div>
     </div>

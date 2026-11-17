@@ -68,6 +68,8 @@ export interface CanvasContextMenuContentProps {
   onToggleCheckerboard?: () => void;
   panelsCollapsed?: boolean;
   onTogglePanels?: () => void;
+  isLeftCollapsed?: boolean;
+  isRightCollapsed?: boolean;
   onToggleLeftPanel?: () => void;
   onToggleRightPanel?: () => void;
 
@@ -114,7 +116,10 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
   onToggleSnapGuides,
   checkerboard = false,
   onToggleCheckerboard,
+  panelsCollapsed: _panelsCollapsed,
   onTogglePanels,
+  isLeftCollapsed = false,
+  isRightCollapsed = false,
   onToggleLeftPanel,
   onToggleRightPanel,
   theme = "paper",
@@ -326,12 +331,14 @@ export const CanvasContextMenuContent: React.FC<CanvasContextMenuContentProps> =
         </MenuItem>
         <MenuItem
           icon={<Icon icon={PanelLeft} size={MENU_ICON_SIZE} />}
+          checked={!isLeftCollapsed}
           onClick={onToggleLeftPanel || onTogglePanels}
         >
           Left panel
         </MenuItem>
         <MenuItem
           icon={<Icon icon={PanelRight} size={MENU_ICON_SIZE} />}
+          checked={!isRightCollapsed}
           onClick={onToggleRightPanel || onTogglePanels}
         >
           Right panel

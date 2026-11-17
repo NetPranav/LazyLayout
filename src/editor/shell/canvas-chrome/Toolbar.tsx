@@ -21,6 +21,8 @@ import {
   Undo2,
   Redo2,
   Columns3,
+  PanelLeft,
+  PanelRight,
   ChevronDown,
   type LucideIcon,
   type LucideProps,
@@ -84,6 +86,10 @@ export interface ToolbarProps {
 
   panelsCollapsed?: boolean;
   onTogglePanels?: () => void;
+  isLeftCollapsed?: boolean;
+  isRightCollapsed?: boolean;
+  onToggleLeftPanel?: () => void;
+  onToggleRightPanel?: () => void;
 
   onPreview?: () => void;
 
@@ -206,6 +212,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRedo,
   panelsCollapsed = false,
   onTogglePanels,
+  isLeftCollapsed = false,
+  isRightCollapsed = false,
+  onToggleLeftPanel,
+  onToggleRightPanel,
   onPreview: _onPreview,
   isPlaying: _isPlaying,
   onTogglePlay: _onTogglePlay,
@@ -906,7 +916,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         data-toolbar="zoom"
         className="ll-fbar fbar ll-fzoom fzoom"
       >
-        {/* Toggle Panels */}
+        {/* Individual Left / Right Panel Toggles */}
+        {onToggleLeftPanel && (
+          <IconButton
+            size="md"
+            id="lpanelbtn"
+            data-testid="toggle-left-panel"
+            aria-label={isLeftCollapsed ? "Show left panel" : "Hide left panel"}
+            tooltip={isLeftCollapsed ? "Show Left Panel" : "Hide Left Panel"}
+            pressed={!isLeftCollapsed}
+            tabIndex={focusedIndex === 13 ? 0 : -1}
+            onFocus={() => setFocusedIndex(13)}
+            onClick={onToggleLeftPanel}
+            icon={<Icon icon={PanelLeft} size={CANVAS_CHROME_SIZES.iconLg} />}
+          />
+        )}
+
+        {/* Toggle Both Panels */}
         <IconButton
           size="tall"
           id="panelbtn"
@@ -918,6 +944,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onClick={onTogglePanels}
           icon={<Icon icon={Columns3} size={CANVAS_CHROME_SIZES.iconLg} />}
         />
+
+        {onToggleRightPanel && (
+          <IconButton
+            size="md"
+            id="rpanelbtn"
+            data-testid="toggle-right-panel"
+            aria-label={isRightCollapsed ? "Show right panel" : "Hide right panel"}
+            tooltip={isRightCollapsed ? "Show Right Panel" : "Hide Right Panel"}
+            pressed={!isRightCollapsed}
+            tabIndex={focusedIndex === 14 ? 0 : -1}
+            onFocus={() => setFocusedIndex(14)}
+            onClick={onToggleRightPanel}
+            icon={<Icon icon={PanelRight} size={CANVAS_CHROME_SIZES.iconLg} />}
+          />
+        )}
 
         {/* Undo */}
         <IconButton

@@ -384,7 +384,7 @@ export const Stage: React.FC<StageProps> = ({
   }, []);
 
   // Snapping and Transform Gestures
-  const { isGesturing, snapLines, spacingMarks, startMove, startResize } = useStageTransform({
+  const { isGesturing, isNudging, snapLines, spacingMarks, startMove, startResize } = useStageTransform({
     elements,
     selectedIds,
     artboardWidth: presetDef.artboardWidth,
@@ -925,7 +925,7 @@ export const Stage: React.FC<StageProps> = ({
           onSelect={handleSelect}
           onHover={setHoveredId}
           activeTool={activeTool}
-          snapGuides={snapGuides && isGesturing}
+          snapGuides={snapGuides && (isGesturing || isNudging)}
           empty={empty}
           references={
             onLoadingPage && activePageDef && !controlledElements && storeLayers ? (
