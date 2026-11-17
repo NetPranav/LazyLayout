@@ -74,3 +74,30 @@ describe("Stage 4 Phase 142: Pro Signals panel & binding export compiler", () =>
     }
   });
 });
+
+describe("Phase 140/142 fixes (review 2026-11-17)", () => {
+  it("a scroll remap over part of the range keeps its knee in the CSS keyframes", async () => {
+    const { compileCssScrollTimeline } = await import("../exportCompiler");
+    const { BindingSchema } = await import("../../document/signals");
+    const b = BindingSchema.parse({
+      id: "knee",
+      ownerLayerId: "hero",
+      enabled: true,
+      expr: { signal: { kind: "scroll", channel: "progress" }, operators: [{ op: "remap", inMin: 0.2, inMax: 0.8, outMin: 0, outMax: 1, clamp: true }] },
+      target: { kind: "property", on: { kind: "layer", ref: "hero" }, path: "appearance.opacity" },
+    });
+    const css = compileCssScrollTimeline(b)!;
+    assert.ok(css.includes("20% { opacity: 0; }"), css);
+    assert.ok(css.includes("80% { opacity: 1; }"), css);
+  });
+
+  it("Glow brightens the layer and leaves it unchanged at rest", async () => {
+    const { buildReactivityDrafts } = await import("../reactivityCard");
+    const [draft] = buildReactivityDrafts({ ownerLayerId: "btn", source: "hover", affordance: "glow", strength: 100, smoothness: 0 });
+    assert.equal(draft!.target.kind === "property" && draft!.target.path, "adjust.brightness");
+    assert.equal(draft!.blend, "multiply");
+    const remap = draft!.expr.operators.find((o) => o.op === "remap") as { outMin: number; outMax: number };
+    assert.equal(remap.outMin, 1, "no change at rest");
+    assert.ok(remap.outMax > 1);
+  });
+});

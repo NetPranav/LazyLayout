@@ -109,9 +109,11 @@ export const REACTIVITY_AFFORDANCES: readonly AffordanceSpec[] = [
     id: "glow",
     label: "Glow",
     verb: "brightens with",
-    targetPath: "appearance.opacity",
-    maxAmplitude: 1,
-    blend: "replace",
+    // Brightness, multiplied: 1 at rest, up to 1.35. (It used to replace opacity with 0.35..1, so choosing Glow made
+    // the layer semi-transparent at rest and never brighter.)
+    targetPath: "adjust.brightness",
+    maxAmplitude: 1.35,
+    blend: "multiply",
     compatibleSources: ["cursor", "scroll", "hover", "sound", "keyboard"],
   },
 ];
@@ -183,7 +185,7 @@ export function buildReactivityDrafts(config: ReactivityCardConfig): BindingDraf
     const isBipolar = sig.kind === "pointerIn" || sig.kind === "keyAxis";
     const inMin = isBipolar ? -1 : 0;
     const inMax = 1;
-    const outMin = spec.blend === "multiply" ? 1 : spec.id === "glow" ? 0.35 : isBipolar ? -amp * strengthRatio : 0;
+    const outMin = spec.blend === "multiply" ? 1 : isBipolar ? -amp * strengthRatio : 0;
     const outMax =
       spec.blend === "multiply"
         ? Number((1 + (amp - 1) * strengthRatio).toFixed(3))
