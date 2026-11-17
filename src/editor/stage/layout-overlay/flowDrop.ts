@@ -24,15 +24,39 @@ export function artboardPoint(art: HTMLElement | null | undefined, e: { clientX:
  * Where layers dragged inside a stack or grid frame would land: they keep their place in the flow and take a new position in the order,
  * as long as the pointer is over their frame. Null when the drag is not a reorder (a layer placed by hand, or the pointer left the frame).
  */
-export function flowDrop(ids: readonly string[], pointer: { x: number; y: number } | null, elements: Record<string, StageElement>, layers: Record<string, Layer>): FlowDrop | null {
+const FLOW_DRAG_MARGIN = 24;
+
+export function flowDrop(
+  ids: readonly string[],
+  pointer: { x: number; y: number } | null,
+  elements: Record<string, StageElement>,
+  layers: Record<string, Layer>,
+  initialFlowIds?: ReadonlySet<string>
+): FlowDrop | null {
   if (!pointer || ids.length === 0) return null;
   const first = layers[ids[0]];
   const parent = first?.parentId ? layers[first.parentId] : undefined;
   if (!parent || !placesChildren(parent)) return null;
-  if (!ids.every((id) => layers[id]?.parentId === parent.id && layers[id].properties.positioning !== "absolute" && !elements[id]?.mirrorId)) return null;
+  if (
+    !ids.every(
+      (id) =>
+        layers[id]?.parentId === parent.id &&
+        (layers[id].properties.positioning !== "absolute" || initialFlowIds?.has(id)) &&
+        !elements[id]?.mirrorId
+    )
+  ) {
+    return null;
+  }
   const frame = elements[parent.id];
   if (!frame || frame.mirrorId) return null;
-  if (pointer.x < frame.x || pointer.x > frame.x + frame.width || pointer.y < frame.y || pointer.y > frame.y + frame.height) return null;
+  if (
+    pointer.x < frame.x - FLOW_DRAG_MARGIN ||
+    pointer.x > frame.x + frame.width + FLOW_DRAG_MARGIN ||
+    pointer.y < frame.y - FLOW_DRAG_MARGIN ||
+    pointer.y > frame.y + frame.height + FLOW_DRAG_MARGIN
+  ) {
+    return null;
+  }
   const rects = parent.children
     .filter((id) => !ids.includes(id) && layers[id]?.visible !== false && layers[id]?.properties.positioning !== "absolute" && elements[id])
     .map((id) => ({ x: elements[id].x, y: elements[id].y, w: elements[id].width, h: elements[id].height }));
