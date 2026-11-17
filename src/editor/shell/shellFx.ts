@@ -16,6 +16,7 @@ import {
   type Sim,
 } from "@/editor/motion";
 import type { EditorMode } from "@/editor/components";
+import { frameScheduler } from "@/core/time/scheduler";
 
 /*
  * Shell motion: the shared spring panel transition (P "panelFx"), mode-switch content
@@ -155,7 +156,9 @@ let layoutAnnounceQueued = false;
 function announceLayout(): void {
   if (layoutAnnounceQueued || typeof window === "undefined") return;
   layoutAnnounceQueued = true;
-  requestAnimationFrame(() => {
+  // once, on the next frame (the scheduler's overlay step, after layout has settled for that frame)
+  const off = frameScheduler.register("overlay", () => {
+    off();
     layoutAnnounceQueued = false;
     window.dispatchEvent(new Event("resize"));
   });
