@@ -447,6 +447,10 @@ export const Artboard: React.FC<ArtboardProps> = ({
   // the frame the selection is being edited in, and the breakpoint its edits go to (none: the base)
   const editBp = useEditBreakpointId();
   const editingSceneId = useViewportStore((s) => s.editingSceneId);
+  // The 3D viewport's code is split out (lazyPanels.tsx). A page with a 3D scene on it will likely be edited in 3D:
+  // start loading it now, so double-clicking into the scene (and Shift+A right after) finds it ready.
+  const hasScene3d = useMemo(() => Object.values(layers ?? {}).some((l) => l.archetype === "scene3d"), [layers]);
+  if (hasScene3d || editingSceneId !== null) void ViewportInteraction.preload();
   const selectedMirror = useSelectionStore((s) => s.selectedMirrorId);
   const editingFrameId = selectedMirror ?? (layers && rootId ? pageFrameOf(layers, rootId, selectedIds[0]) : null);
   const editingName = editBp ? breakpointsOf(getDocument()).find((b) => b.id === editBp)?.name ?? null : null;

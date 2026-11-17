@@ -10,7 +10,7 @@
  * normally ready before the click lands. If a panel is opened before it arrives, a same-sized placeholder shows for
  * that moment.
  */
-import React, { Suspense, type ComponentType } from "react";
+import React, { Suspense, useState, type ComponentType } from "react";
 
 type Loader<P> = () => Promise<ComponentType<P>>;
 
@@ -25,10 +25,14 @@ export interface PreloadablePanel<P> {
 export function preloadablePanel<P extends object>(name: string, load: Loader<P>, fallback?: React.ReactNode): PreloadablePanel<P> {
   let promise: Promise<{ default: ComponentType<P> }> | null = null;
   let done = false;
+  // Once loaded, the component itself: rendered directly (no Suspense, no extra tick), so a preloaded panel mounts in
+  // the same commit as before it was split out (a shortcut pressed right after opening it finds it there).
+  let Loaded: ComponentType<P> | null = null;
   const start = () =>
     (promise ??= load().then(
       (component) => {
         done = true;
+        Loaded = component;
         return { default: component };
       },
       (error: unknown) => {
@@ -37,11 +41,16 @@ export function preloadablePanel<P extends object>(name: string, load: Loader<P>
       },
     ));
   const Lazy = React.lazy(start);
-  const Panel = (props: P) => (
-    <Suspense fallback={fallback ?? <div data-testid={`panel-loading-${name}`} aria-busy="true" className="ll:w-full ll:h-full ll:bg-surface-panel" />}>
-      <Lazy {...props} />
-    </Suspense>
-  );
+  const Panel = (props: P) => {
+    // Chosen once per mounted panel, so it never switches between the two (which would remount it and lose its state).
+    const [Direct] = useState<ComponentType<P> | null>(() => Loaded);
+    if (Direct) return <Direct {...props} />;
+    return (
+      <Suspense fallback={fallback ?? <div data-testid={`panel-loading-${name}`} aria-busy="true" className="ll:w-full ll:h-full ll:bg-surface-panel" />}>
+        <Lazy {...props} />
+      </Suspense>
+    );
+  };
   Panel.displayName = `Lazy(${name})`;
   return Object.assign(Panel, {
     preload: () => start().then(() => undefined),
