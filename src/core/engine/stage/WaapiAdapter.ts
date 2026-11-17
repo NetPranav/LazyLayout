@@ -2,6 +2,7 @@ import type { MotionDocument } from "../../document/schema";
 import { evaluate, type EvaluateInputs } from "../../kernel/evaluate";
 import type { AdapterHost, EngineAdapter, EngineCapabilities, LayerFilter } from "./types";
 import { animatedLayers, styleWrites } from "./styleWrites";
+import { bakeDepsOf, buildBakeIndex, sameDeps, type BakeDeps, type BakeIndex } from "./bakeDeps";
 
 /**
  * ROADMAP Phase 58: runs a layer's animation as a Web Animation, so transforms and opacity keep going on the
@@ -35,6 +36,19 @@ interface Baked {
   element: WaapiElement;
   animation: WaapiAnimation;
   paths: ReadonlySet<string>;
+  keyframes: Keyframes;
+}
+
+type Keyframes = Array<Record<string, string | number>>;
+
+/** A layer's sampled keyframes and what they were sampled from (see bakeDeps.ts). */
+interface BakeEntry {
+  deps: BakeDeps;
+  /** composition, duration, fps, sample count and the inputs object the bake used */
+  signature: string;
+  inputs: EvaluateInputs;
+  paths: ReadonlySet<string>;
+  keyframes: Keyframes;
 }
 
 /** A layer this adapter is running, for the parity monitor (Phase 60). */
@@ -58,9 +72,16 @@ export class WaapiAdapter implements EngineAdapter {
   private time = 0;
   private plannedFor: MotionDocument | null = null;
   private readonly baked = new Map<string, Baked>();
+  /**
+   * Sampled keyframes per layer, kept across document changes. Performance (2026-11-18): every edit made the next
+   * play, pause or seek re-sample EVERY animated layer at every frame of the timeline (a ~1 s freeze on a
+   * 4x-throttled CPU with 46 animated layers). Now only layers whose inputs changed are re-sampled, and `prebake`
+   * does it ahead of time in idle slices.
+   */
+  private readonly bakeCache = new Map<string, BakeEntry>();
 
-  /** Counts of work done, for tests. */
-  stats = { bakes: 0, seeks: 0 };
+  /** Counts of work done, for tests. `bakes`: animations created; `samples`: layers whose keyframes were sampled. */
+  stats = { bakes: 0, seeks: 0, samples: 0 };
 
   /** @param accepts the layers this adapter runs; the default is every animated layer. */
   constructor(private readonly accepts: LayerFilter = () => true) {}
@@ -145,6 +166,69 @@ export class WaapiAdapter implements EngineAdapter {
   private cancelAll(): void {
     for (const { animation } of this.baked.values()) animation.cancel();
     this.baked.clear();
+    this.bakeCache.clear();
+  }
+
+  /** Composition, duration, fps and sample count: a change to any of them re-samples every layer. */
+  private signature(): { signature: string; intervals: number; duration: number; compositionId: string } | null {
+    const host = this.host;
+    if (!host) return null;
+    const duration = host.duration();
+    const fps = host.fps();
+    if (!(duration > 0) || !(fps > 0)) return null;
+    const intervals = Math.max(1, Math.min(MAX_INTERVALS, Math.ceil(duration * fps)));
+    const compositionId = host.compositionId();
+    return { signature: `${compositionId}|${duration}|${fps}|${intervals}`, intervals, duration, compositionId };
+  }
+
+  /** The layer's keyframes: from the cache when nothing it depends on changed, sampled from the kernel otherwise. */
+  private keyframesFor(
+    doc: MotionDocument,
+    index: BakeIndex,
+    layerId: string,
+    paths: ReadonlySet<string>,
+    sig: { signature: string; intervals: number; duration: number; compositionId: string },
+  ): Keyframes {
+    const deps = bakeDepsOf(index, layerId);
+    const cached = this.bakeCache.get(layerId);
+    if (
+      cached &&
+      cached.signature === sig.signature &&
+      cached.inputs === this.inputs &&
+      sameDeps(cached.deps, deps) &&
+      samePaths(cached.paths, paths)
+    ) {
+      return cached.keyframes;
+    }
+    const keyframes: Keyframes = [];
+    for (let i = 0; i <= sig.intervals; i++) {
+      const writes = styleWrites(paths, evaluate(doc, sig.compositionId, layerId, (i / sig.intervals) * sig.duration, this.inputs), layerId);
+      const frame: Record<string, string | number> = { offset: i / sig.intervals };
+      for (const [property, value] of Object.entries(writes)) frame[camel(property)] = value;
+      keyframes.push(frame);
+    }
+    this.bakeCache.set(layerId, { deps, signature: sig.signature, inputs: this.inputs, paths, keyframes });
+    this.stats.samples++;
+    return keyframes;
+  }
+
+  /**
+   * Samples the keyframes of layers whose inputs changed, ahead of time, while `timeLeft()` (ms) stays above a small
+   * margin. Creates no animations. Returns true when every animated layer is sampled for the current document.
+   * Called from idle time (requestIdleCallback) so play, pause and seek find the work done.
+   */
+  prebake(timeLeft: () => number): boolean {
+    const host = this.host;
+    const sig = this.signature();
+    if (!host || !sig) return true;
+    const doc = host.getDocument();
+    const index = buildBakeIndex(doc);
+    for (const [layerId, paths] of animatedLayers(doc)) {
+      if (!this.accepts(layerId, paths)) continue;
+      if (timeLeft() < 2) return false;
+      this.keyframesFor(doc, index, layerId, paths, sig);
+    }
+    return true;
   }
 
   private rebuildIfNeeded(): void {
@@ -154,32 +238,46 @@ export class WaapiAdapter implements EngineAdapter {
     if (!this.dirty && this.plannedFor === doc) return;
     this.dirty = false;
     this.plannedFor = doc;
-    this.cancelAll();
-    const duration = host.duration();
-    const fps = host.fps();
-    if (!(duration > 0) || !(fps > 0)) return;
-    const intervals = Math.max(1, Math.min(MAX_INTERVALS, Math.ceil(duration * fps)));
-    const compositionId = host.compositionId();
+    const sig = this.signature();
+    if (!sig) {
+      this.cancelAll();
+      return;
+    }
+    const index = buildBakeIndex(doc);
+    const next = new Map<string, Baked>();
     for (const [layerId, paths] of animatedLayers(doc)) {
       if (!this.accepts(layerId, paths)) continue;
       const element = host.node(layerId) as unknown as WaapiElement | undefined;
       if (!element || typeof element.animate !== "function") continue;
-      const keyframes: Array<Record<string, string | number>> = [];
-      for (let i = 0; i <= intervals; i++) {
-        const writes = styleWrites(paths, evaluate(doc, compositionId, layerId, (i / intervals) * duration, this.inputs), layerId);
-        const frame: Record<string, string | number> = { offset: i / intervals };
-        for (const [property, value] of Object.entries(writes)) frame[camel(property)] = value;
-        keyframes.push(frame);
+      const keyframes = this.keyframesFor(doc, index, layerId, paths, sig);
+      const existing = this.baked.get(layerId);
+      if (existing && existing.element === element && existing.keyframes === keyframes) {
+        // same element, same keyframes: keep the running animation (no cancel, no new animate call)
+        next.set(layerId, existing);
+        this.baked.delete(layerId);
+        continue;
       }
-      const animation = element.animate(keyframes, { duration: duration * 1000, fill: "both", easing: "linear", id: `ll:${layerId}` });
+      const animation = element.animate(keyframes, { duration: sig.duration * 1000, fill: "both", easing: "linear", id: `ll:${layerId}` });
       animation.pause();
       animation.currentTime = this.time * 1000;
       if (this.playing) {
         animation.playbackRate = this.rate;
         animation.play();
       }
-      this.baked.set(layerId, { element, animation, paths });
+      next.set(layerId, { element, animation, paths, keyframes });
       this.stats.bakes++;
     }
+    // what is left was replaced or is no longer animated
+    for (const { animation } of this.baked.values()) animation.cancel();
+    this.baked.clear();
+    for (const [layerId, baked] of next) this.baked.set(layerId, baked);
+    for (const layerId of [...this.bakeCache.keys()]) if (!next.has(layerId) && !doc.layers[layerId]) this.bakeCache.delete(layerId);
   }
+}
+
+function samePaths(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  if (a === b) return true;
+  if (a.size !== b.size) return false;
+  for (const p of a) if (!b.has(p)) return false;
+  return true;
 }

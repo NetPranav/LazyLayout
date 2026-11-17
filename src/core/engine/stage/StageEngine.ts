@@ -85,6 +85,23 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   let lastRate = 1;
   let dirty = true;
 
+  // Sample animations ahead of time, in idle slices, so Play/seek after an edit find their keyframes ready
+  // (performance, 2026-11-18). Only the stage's own WAAPI adapter supports it; others are left alone.
+  const waapi = adapter instanceof StageAdapters ? adapter.waapi : null;
+  let idleHandle: number | null = null;
+  const idle = typeof window !== "undefined" && typeof window.requestIdleCallback === "function" ? window : null;
+  const schedulePrebake = () => {
+    if (!waapi || !idle || idleHandle !== null) return;
+    idleHandle = idle.requestIdleCallback(
+      (deadline) => {
+        idleHandle = null;
+        if (getTransport().playing) return; // playing: play() already sampled what it needed
+        if (!waapi.prebake(() => deadline.timeRemaining())) schedulePrebake();
+      },
+      { timeout: 2000 },
+    );
+  };
+
   // What was drawn may have changed under the adapter: the document, or a layer's element.
   const unsubscribeDocument = documentStore.subscribe((state, prev) => {
     if (state.document === prev.document) return;
@@ -92,7 +109,9 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     bindingDriver?.invalidate();
     syncBoundLayers();
     dirty = true;
+    schedulePrebake();
   });
+  schedulePrebake();
   const unsubscribeNodes = renderer.registry.subscribe(() => {
     adapter.invalidate();
     dirty = true;
@@ -219,6 +238,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     unsubscribeTransport();
     unsubscribeNodes();
     unsubscribeDocument();
+    if (idleHandle !== null && idle) idle.cancelIdleCallback(idleHandle);
     adapter.dispose();
   };
 }
