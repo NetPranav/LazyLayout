@@ -50,7 +50,12 @@ const DEFAULT_PROVIDER_STATUS: AiProviderStatusMap = {
 const EMPTY_SETTINGS: StoredAiSettings = { provider: "anthropic", keys: {}, useUserKey: {}, models: {} };
 
 function sanitizePastedApiKey(raw: string): string {
-  return raw.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
+  return raw
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^Bearer(?:\s+|$)/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
 }
 let cachedRawSettings: string | null = null;
 let cachedParsedSettings: StoredAiSettings = EMPTY_SETTINGS;

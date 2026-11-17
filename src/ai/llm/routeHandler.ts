@@ -97,49 +97,70 @@ function createProviderInstance(
   }
 }
 
+function sanitizeKey(rawKey?: string): string | undefined {
+  const cleaned = rawKey
+    ?.trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^Bearer(?:\s+|$)/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+  return cleaned || undefined;
+}
+
+function createLockedProviderAvailability(): ProviderAvailabilityMap {
+  return {
+    anthropic: { configured: false, defaultModel: DEFAULT_MODELS_BY_PROVIDER.anthropic },
+    gemini: { configured: false, defaultModel: DEFAULT_MODELS_BY_PROVIDER.gemini },
+    nvidia: { configured: false, defaultModel: DEFAULT_MODELS_BY_PROVIDER.nvidia },
+    offline: { configured: true, defaultModel: DEFAULT_MODELS_BY_PROVIDER.offline },
+  };
+}
+
+function createPrivateRouteResponse(): Response {
+  return Response.json(
+    { error: "Not found", code: "ROUTE_PRIVATE" },
+    { status: 404, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
 /**
  * Reports built-in server provider availability (booleans only, never keys)
  * so the studio AI UI knows which built-in providers are configured vs. need BYOK.
+ * When the private server-key route is disabled in production, built-in keys stay masked
+ * as unconfigured while BYOK and Offline modes remain advertised.
  */
 export async function handleAiChatGet(deps: HandleAiChatDeps = {}): Promise<Response> {
   assertServerExecution();
-  if (!isPrivateAiRouteEnabled(deps.env)) {
-    return Response.json(
-      { error: "Not found", code: "ROUTE_PRIVATE" },
-      { status: 404, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+  const routeEnabled = isPrivateAiRouteEnabled(deps.env);
   return Response.json(
     {
-      routeEnabled: true,
-      providers: getProviderAvailability(deps.env),
+      routeEnabled,
+      byokSupported: true,
+      providers: routeEnabled
+        ? getProviderAvailability(deps.env)
+        : createLockedProviderAvailability(),
     },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }
 
 /**
- * Handles `POST /api/ai/chat`: gates non-developer production traffic,
- * validates the payload via Zod, supports Anthropic, Gemini, NVIDIA NIM (`build.nvidia.com`),
- * and Offline deterministic provider, honoring optional BYOK `apiKey` cleanly.
+ * Handles `POST /api/ai/chat`: allows user BYOK requests (`apiKey`) and `offline`
+ * deterministic mode everywhere (including public production), while gating server-key
+ * access behind `isPrivateAiRouteEnabled`.
  */
 export async function handleAiChatPost(
   request: Request,
   deps: HandleAiChatDeps = {},
 ): Promise<Response> {
   assertServerExecution();
-
-  if (!isPrivateAiRouteEnabled(deps.env)) {
-    return Response.json(
-      { error: "Not found", code: "ROUTE_PRIVATE" },
-      { status: 404, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+  const routeEnabled = isPrivateAiRouteEnabled(deps.env);
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
+    if (!routeEnabled) return createPrivateRouteResponse();
     return Response.json(
       { error: "Request body must be valid JSON.", code: "INVALID_JSON" },
       { status: 400, headers: { "Cache-Control": "no-store" } },
@@ -148,6 +169,7 @@ export async function handleAiChatPost(
 
   const parsed = LlmChatRequestSchema.safeParse(body);
   if (!parsed.success) {
+    if (!routeEnabled) return createPrivateRouteResponse();
     return Response.json(
       {
         error: "Invalid chat request payload.",
@@ -162,11 +184,16 @@ export async function handleAiChatPost(
   }
 
   const providerId: LlmProviderId = parsed.data.provider ?? "anthropic";
-  const injectedProvider = deps.providers?.[providerId] ?? deps.provider;
-  const sanitizeKey = (k?: string) =>
-    k?.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim() || undefined;
   const userApiKey = sanitizeKey(parsed.data.apiKey);
-  const envApiKey = sanitizeKey(readEnvKey(providerId, deps.env) ?? undefined);
+  const canBypassPrivateGate = providerId === "offline" || Boolean(userApiKey);
+  if (!routeEnabled && !canBypassPrivateGate) {
+    return createPrivateRouteResponse();
+  }
+
+  const injectedProvider = deps.providers?.[providerId] ?? deps.provider;
+  const envApiKey = routeEnabled
+    ? sanitizeKey(readEnvKey(providerId, deps.env) ?? undefined)
+    : undefined;
   const effectiveKey = userApiKey ?? envApiKey;
   const keySource: "byok" | "server" | "offline" =
     providerId === "offline" ? "offline" : userApiKey ? "byok" : "server";
