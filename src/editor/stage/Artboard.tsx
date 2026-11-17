@@ -64,7 +64,7 @@ import { getDocument } from "@/core/store/documentState";
 import { frameScheduler } from "@/core/time/scheduler";
 import { isPlain, runsOf, runsText, serializeRuns, toggleFlag, type RunFlag, type TextRun } from "@/core/text/runs";
 import { readRuns, renderRuns, selectionOffsets, setSelectionOffsets } from "@/legacy-editor/canvas/text/domText";
-import { ViewportInteraction } from "../viewport3d";
+import { LazyViewportInteraction as ViewportInteraction } from "@/editor/shell/lazyPanels";
 
 /** The scale, skew, 3D turn and offset a layer is given in the inspector (`transform.*`), as the CSS the wrapper puts on it. */
 function designTransform(

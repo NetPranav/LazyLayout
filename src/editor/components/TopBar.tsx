@@ -92,6 +92,8 @@ export interface TopBarProps {
   saveStatus?: "saved" | "dirty" | "saving" | "error";
   mode?: EditorMode;
   onSelectMode?: (mode: EditorMode) => void;
+  /** The pointer reached a mode tab: start loading that mode's panel before the click. */
+  onModeIntent?: (mode: EditorMode) => void;
   canUndo?: boolean;
   canRedo?: boolean;
   onUndo?: () => void;
@@ -202,6 +204,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   saveStatus,
   mode: propMode,
   onSelectMode,
+  onModeIntent,
   onUndo,
   onRedo,
   onSearch,
@@ -591,7 +594,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           2. CENTER COLUMN: Mode Tabs (Design, Motion, Code)
           ===================================================================== */}
       <div className="ll:flex ll:items-center ll:justify-center ll:gap-2">
-        <ModeTabs mode={activeMode} onChange={handleModeChange} />
+        <ModeTabs mode={activeMode} onChange={handleModeChange} onTabIntent={onModeIntent} />
       </div>
 
       {/* =====================================================================

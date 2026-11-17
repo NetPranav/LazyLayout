@@ -15,12 +15,12 @@ import {
   useSelectionInspector,
 } from "@/editor/panels/details";
 import { MotionInspector } from "@/editor/panels/inspectors";
-import { CodeInspector } from "@/editor/panels/code-view";
+import { CodeInspector } from "@/editor/panels/code-view/CodeInspector";
 import { useInspectorDimension } from "@/editor/panels/details/inspectorDimension";
 import { getSurfaceSections } from "@/editor/panels/details/sections/SurfaceSections";
 import { useViewportStore } from "@/core/render/scene3d/viewportStore";
 import { useDocument } from "@/core/store/useDocumentStore";
-import { Properties3d } from "@/editor/panels/details/properties3d";
+import { LazyProperties3d as Properties3d } from "./lazyPanels";
 
 export interface RightPanelConnectedProps {
   mode: RightPanelMode;
