@@ -1,8 +1,8 @@
-import { labsEnabled } from "@/app/editor/labsEnabled";
 import { AnthropicLlmProvider, assertServerExecution } from "./anthropicProvider";
 import {
   DEFAULT_MODELS_BY_PROVIDER,
   PRIVATE_AI_ROUTE_ENV_FLAG,
+  PROVIDER_MODEL_OPTIONS,
   type LlmProviderId,
 } from "./constants";
 import { GeminiLlmProvider } from "./geminiProvider";
@@ -26,18 +26,50 @@ export interface RouteEnv {
 }
 
 /**
- * Route stays private (developer/labs use only) until auth and usage caps land
- * in Phases 259 & 260. Production builds without explicit opt-in return 404.
+ * The server's own provider keys stay private (developer use only) until auth and usage caps land in Phases 259
+ * & 260. A production build uses them only with the server-side opt-in `LAZYLAYOUT_ENABLE_AI_ROUTE=1`.
+ * `NEXT_PUBLIC_ENABLE_LABS` no longer opens them: it is a public build flag (it turns the lab pages on, for demos
+ * and CI), and turning it on must not hand the server's key to anyone who can reach the site.
  */
 export function isPrivateAiRouteEnabled(env?: RouteEnv): boolean {
-  if (env) {
-    return (
-      env.NODE_ENV !== "production" ||
-      env.NEXT_PUBLIC_ENABLE_LABS === "1" ||
-      env[PRIVATE_AI_ROUTE_ENV_FLAG] === "1"
-    );
+  const src = env ?? process.env;
+  return src.NODE_ENV !== "production" || src[PRIVATE_AI_ROUTE_ENV_FLAG] === "1";
+}
+
+/** Server-key requests may only name a model listed for the provider (a client can't pick any model on our key). */
+export function isAllowedServerModel(providerId: LlmProviderId, model: string | undefined): boolean {
+  if (!model) return true;
+  return PROVIDER_MODEL_OPTIONS[providerId].some((m) => m.id === model.trim());
+}
+
+/** Per-client limits for the public paths (BYOK and offline) until real accounts and caps exist (Phases 259, 260). */
+export const PUBLIC_RATE_LIMIT = { windowMs: 60_000, maxRequests: 20 } as const;
+const publicHits = new Map<string, number[]>();
+
+/** Best-effort, per-process sliding window. Returns true when `clientKey` may make another request now. */
+export function takePublicRateLimitToken(clientKey: string, nowMs = Date.now()): boolean {
+  const since = nowMs - PUBLIC_RATE_LIMIT.windowMs;
+  const hits = (publicHits.get(clientKey) ?? []).filter((t) => t > since);
+  if (hits.length >= PUBLIC_RATE_LIMIT.maxRequests) {
+    publicHits.set(clientKey, hits);
+    return false;
   }
-  return labsEnabled || process.env[PRIVATE_AI_ROUTE_ENV_FLAG] === "1";
+  hits.push(nowMs);
+  publicHits.set(clientKey, hits);
+  if (publicHits.size > 10_000) {
+    for (const [k, v] of publicHits) if (v.every((t) => t <= since)) publicHits.delete(k);
+  }
+  return true;
+}
+
+/** Test hook: forget every client's hits. */
+export function resetPublicRateLimit(): void {
+  publicHits.clear();
+}
+
+function clientKeyOf(request: Request): string {
+  const fwd = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return fwd || request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 function readEnvKey(provider: LlmProviderId, env?: RouteEnv): string | null {
@@ -189,6 +221,12 @@ export async function handleAiChatPost(
   if (!routeEnabled && !canBypassPrivateGate) {
     return createPrivateRouteResponse();
   }
+  if (!routeEnabled && !takePublicRateLimitToken(clientKeyOf(request))) {
+    return Response.json(
+      { error: "Too many AI requests. Wait a minute and try again.", code: "RATE_LIMITED" },
+      { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
+    );
+  }
 
   const injectedProvider = deps.providers?.[providerId] ?? deps.provider;
   const envApiKey = routeEnabled
@@ -197,6 +235,13 @@ export async function handleAiChatPost(
   const effectiveKey = userApiKey ?? envApiKey;
   const keySource: "byok" | "server" | "offline" =
     providerId === "offline" ? "offline" : userApiKey ? "byok" : "server";
+
+  if (keySource === "server" && !isAllowedServerModel(providerId, parsed.data.model)) {
+    return Response.json(
+      { error: "That model is not available with the server's key.", code: "MODEL_NOT_ALLOWED" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   if (!injectedProvider && providerId !== "offline" && !effectiveKey) {
     const envVarName =
@@ -230,9 +275,15 @@ export async function handleAiChatPost(
           }
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Streaming interrupted.";
+        // Provider errors can carry request details; log them on the server, send the client a plain message.
+        console.error("[ai/chat] stream failed:", err instanceof Error ? err.message : err);
         controller.enqueue(
-          encodeSseEvent({ type: "error", code: "STREAM_FAILURE", message, status: 500 }),
+          encodeSseEvent({
+            type: "error",
+            code: "STREAM_FAILURE",
+            message: "The AI provider stopped responding. Try again.",
+            status: 500,
+          }),
         );
       } finally {
         controller.close();

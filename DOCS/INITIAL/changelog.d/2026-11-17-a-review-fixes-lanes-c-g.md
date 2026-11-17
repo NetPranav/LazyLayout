@@ -1,3 +1,4 @@
 ### Fixed
 
 - **AI "Accept all" no longer undoes your work.** It used to replace the whole document with the copy the AI made when it proposed the change, so anything you edited while the proposal waited was lost, and layers you had discarded came back. It now applies only the changes still pending, to the document as it is now.
+- **The server's AI keys stay private on public builds.** Turning the lab pages on (`NEXT_PUBLIC_ENABLE_LABS=1`) used to open the server's own Anthropic/Gemini/NVIDIA keys to anyone who could reach the site. Only `LAZYLAYOUT_ENABLE_AI_ROUTE=1` on the server opens them now, and requests on the server's key may only name a listed model. Requests with your own key (BYOK) or offline mode are limited to 20 a minute per visitor, and provider error details stay in the server log.
