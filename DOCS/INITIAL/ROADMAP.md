@@ -2136,12 +2136,12 @@ The design-coverage walker now lists the section's three button settings as quie
   - the `backdrop-filter` fallback;
   - animated text-path starts and cameras exported at rest;
   - 3D spaces clicked flat.
-- **Photo credits:** `CREDITS.md`, plus a credits line on plain HTML pages, as CC BY asks. On the React targets, a warning says where the credits are.
+- **Photo credits:** a CREDITS.md file in the exported site, plus a credits line on plain HTML pages, as CC BY asks. On the React targets, a warning says where the credits are.
 - **The export harness** builds the fixture page for Next.js and Vite, and checks its plain HTML carries every feature's construct and its warnings.
 
 **Verified (`designDepth.test.ts`, 3 tests):**
 - Warnings appear only for features in use.
-- Credits are written to `CREDITS.md` and as an HTML line.
+- Credits are written to a CREDITS.md file in the exported site and as an HTML line.
 - The fixture's export carries every construct: boolean path, `<textPath>`, `shape-outside` polygons, `preserve-3d`, the image filter, `<foreignObject>`, `<mask>`, columns.
 
 **In Chromium (`design-depth-export.spec.ts`), the HTML parity gate:**
