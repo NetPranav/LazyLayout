@@ -1,5 +1,5 @@
 import { documentStore, getDocument } from "../../store/documentState";
-import { frameScheduler, type FrameScheduler } from "../../time/scheduler";
+import { frameScheduler, type FrameInfo, type FrameScheduler } from "../../time/scheduler";
 import { getTransport, subscribeTransport } from "../../time/transport";
 import type { StageRenderer } from "../../render/StageRenderer";
 import { StageAdapters } from "./StageAdapters";
@@ -50,6 +50,22 @@ export function measureAtRest<T>(read: () => T): T {
     run = () => step(inner);
   }
   return run();
+}
+
+/** Told after every frame the stage engines wrote to the page (see `afterEngineWrites`). */
+const writeListeners = new Set<() => void>();
+
+/**
+ * Calls `listener` right after each frame of the engines' `apply` step, in the same task as their writes (styles, CSS
+ * variables, filters). The canvas watches the page for changes that move a layer's resting box; the engine's writes
+ * only change the animated pose, so the canvas uses this to drop what it saw of them instead of measuring the page
+ * again on every frame of playback.
+ */
+export function afterEngineWrites(listener: () => void): () => void {
+  writeListeners.add(listener);
+  return () => {
+    writeListeners.delete(listener);
+  };
 }
 
 export function installStageEngine(renderer: StageRenderer, options: StageEngineOptions = {}): () => void {
@@ -107,7 +123,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   const stateDriver = options.states ? new StateDriver(options.states) : null;
   let statesWereLive = false;
 
-  const unregister = scheduler.register("apply", (frame) => {
+  const applyFrame = (frame: FrameInfo) => {
     if (scrollDriver && options.scroll) {
       const live = options.scroll.active();
       if (live || scrollWasLive) {
@@ -165,6 +181,13 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     dirty = false;
     lastTime = time;
     adapter.seek(time);
+  };
+  const unregister = scheduler.register("apply", (frame) => {
+    try {
+      applyFrame(frame);
+    } finally {
+      for (const listener of writeListeners) listener();
+    }
   });
 
   // Phase 60: while playing, compare what the engines show with `evaluate()` every 30 frames.
