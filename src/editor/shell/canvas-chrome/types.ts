@@ -65,7 +65,9 @@ export interface CanvasChromeProps {
   onAiKeep?: () => void;
   aiState?: AiState;
   aiLoading?: boolean;
-  aiContext?: { name: string; type: string };
+  aiContext?: { name: string; type: string; layers?: Array<{ id: string; name: string }> };
+  aiMessages?: Array<{ id: string; role: "user" | "assistant"; content: string }>;
+  aiError?: string | null;
 
   /** View options popover state */
   isViewOptionsOpen?: boolean;

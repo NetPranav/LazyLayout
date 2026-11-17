@@ -166,3 +166,36 @@ export function resolvePromptMentions(
     hasExplicitMentions: false,
   };
 }
+
+/**
+ * Prepends `@Name` / `@"Name"` tokens for auto-tagged viewport selections unless
+ * the prompt already explicitly mentions those layers.
+ */
+export function attachTaggedLayersToPrompt(
+  prompt: string,
+  taggedLayers: readonly { id: string; name: string }[],
+): string {
+  const trimmed = prompt.trim();
+  if (!trimmed || taggedLayers.length === 0) return trimmed;
+  const lower = trimmed.toLowerCase();
+  const missingTokens: string[] = [];
+  const seen = new Set<string>();
+
+  for (const layer of taggedLayers) {
+    const label = (layer.name || layer.id).trim();
+    if (!label || seen.has(layer.id)) continue;
+    seen.add(layer.id);
+    const labelLower = label.toLowerCase();
+    const idLower = layer.id.toLowerCase();
+    const alreadyMentioned =
+      lower.includes(`@"${labelLower}"`) ||
+      lower.includes(`@'${labelLower}'`) ||
+      lower.includes(`@${labelLower}`) ||
+      lower.includes(`@${idLower}`);
+    if (!alreadyMentioned) {
+      missingTokens.push(formatMentionToken(label));
+    }
+  }
+
+  return missingTokens.length > 0 ? `${missingTokens.join(" ")} ${trimmed}` : trimmed;
+}

@@ -79,22 +79,29 @@ export function EditorShell({
     const validSelected = selectedIds
       .map((id) => liveDoc.layers?.[id])
       .filter((l): l is NonNullable<typeof l> => Boolean(l));
+    const taggedLayers = validSelected.map((l) => ({
+      id: l.id,
+      name: l.name || l.id,
+    }));
     if (validSelected.length === 1) {
       return {
         name: validSelected[0].name || validSelected[0].id,
         type: validSelected[0].archetype,
+        layers: taggedLayers,
       };
     }
     if (validSelected.length > 1) {
       return {
         name: `${validSelected.length} selected`,
         type: "multi",
+        layers: taggedLayers,
       };
     }
     const rootLayer = Object.values(liveDoc.layers ?? {}).find((l) => l.parentId === null);
     return {
       name: rootLayer?.name || "Canvas",
       type: "frame",
+      layers: [],
     };
   }, [selectedIds, liveDoc]);
 
@@ -449,14 +456,14 @@ export function EditorShell({
               if (prompt.trim()) void aiChat.sendMessage(prompt);
             }}
             onAiSubmit={(prompt) => {
-              setAiPanelOpen(true);
-              actions.toggleAiBox(false);
               void aiChat.sendMessage(prompt);
             }}
             onAiStop={aiChat.stop}
             aiState={aiChat.isLoading ? "work" : "idle"}
             aiLoading={aiChat.isLoading}
             aiContext={aiContext}
+            aiMessages={aiChat.messages}
+            aiError={aiChat.error}
             mode={actions.mode}
             activeTool={actions.activeTool}
             onSelectTool={actions.setActiveTool}

@@ -9,7 +9,7 @@ import { readSseFrames } from "@/ai/llm/sse";
 import type { LlmStreamEvent } from "@/ai/llm/types";
 import { applyMdmJsonPatches, validateStreamOutput } from "@/ai/llm/validationLoop";
 import { validateMotionDocument } from "@/core/document/schema";
-import { getAllCommands } from "@/core/commands/registry";
+import { getAllCommands, getCommand } from "@/core/commands/registry";
 import { rules } from "@/core/rules";
 import { getDocument } from "@/core/store/documentState";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
@@ -357,6 +357,8 @@ export function useAiChat({
 
   const clearMessages = useCallback(() => {
     stop();
+    useGhostDiffStore.getState().discardAll();
+    useGhostDiffStore.getState().rejectAllCommands();
     setMessages([]);
     setError(null);
   }, [stop]);
@@ -366,6 +368,7 @@ export function useAiChat({
       const content = rawContent.trim();
       if (!content) return;
 
+      useGhostDiffStore.getState().rejectAllCommands();
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -522,12 +525,47 @@ export function useAiChat({
           }
         }
 
-        // Phase 242/243: Validate patch proposals against MDM schema + rules.validate and stage ghost diff
+        // Phase 242/243: Validate patch proposals against MDM schema + rules.validate and stage ghost diff,
+        // and stage any `invoke_editor_command` calls so Approve / Reject buttons always appear.
         let stagedValidProposal = false;
+        let stagedCommandProposal = false;
         const hasErrorEvent = collectedEvents.some((e) => e.type === "error");
+
+        for (const evt of collectedEvents) {
+          if (evt.type !== "tool_use" || evt.name !== "invoke_editor_command") continue;
+          const payload = (evt.input && typeof evt.input === "object" ? evt.input : {}) as Record<
+            string,
+            unknown
+          >;
+          const commandId = typeof payload.commandId === "string" ? payload.commandId.trim() : "";
+          if (!commandId) continue;
+          let parsedArgs: Record<string, unknown> | undefined;
+          if (typeof payload.argsJson === "string" && payload.argsJson.trim()) {
+            try {
+              const raw = JSON.parse(payload.argsJson);
+              if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+                parsedArgs = raw as Record<string, unknown>;
+              }
+            } catch {
+              // Ignore unparseable args JSON; command registry will report validation if required.
+            }
+          } else if (payload.args && typeof payload.args === "object" && !Array.isArray(payload.args)) {
+            parsedArgs = payload.args as Record<string, unknown>;
+          }
+          const cmdDef = getCommand(commandId);
+          useGhostDiffStore.getState().stageCommand({
+            id: `${assistantId}-${evt.id}`,
+            commandId,
+            title: cmdDef?.title ?? commandId,
+            rationale: typeof payload.rationale === "string" ? payload.rationale : "",
+            ...(parsedArgs ? { args: parsedArgs } : {}),
+          });
+          stagedCommandProposal = true;
+        }
+
         if (collectedEvents.some((e) => e.type === "tool_use" && e.name === "propose_mdm_patches")) {
           const check = validateStreamOutput(getDocument(), collectedEvents, rules.validate);
-          if (check.valid && check.patches && check.candidateDocument) {
+          if (check.valid && check.patches && check.patches.length > 0 && check.candidateDocument) {
             useGhostDiffStore.getState().stageProposal({
               proposalId: assistantId,
               prompt: content,
@@ -541,17 +579,21 @@ export function useAiChat({
               .map((i) => `[${i.code}] ${i.message}`)
               .join("; ");
             setError(diagNote);
-            updateAssistant((cur) => `${cur}\n\nValidation blocked: ${diagNote}`);
+            updateAssistant((cur) => `${cur}\n\nNot staged — validation blocked: ${diagNote}`);
+          } else {
+            updateAssistant((cur) =>
+              cur.replace(/\s*\(0 pending patches, awaiting approval\)\.?/gi, " (no changes proposed)."),
+            );
           }
         }
 
-        // If the model emitted text / unapplied .nls instead of propose_mdm_patches on a visual/cursor/motion request,
+        // If the model emitted text / unapplied .nls / blocked patches on a visual/cursor/motion request,
         // synthesize and stage a real runnable Ghost Diff (bindings / effects / clips) so Preview works immediately.
         const isVisualBuilderRequest =
-          /\b(add|make|apply|animate|create|megnatic|magnetic|pull|cursor|pointer|hover|tilt|glow|bounce|fade|slide|scale|rotate|pulse|float|stagger|repel)\b/i.test(
+          /\b(add|make|apply|animate|create|megnatic|magnetic|pull|cursor|pointer|hover|tilt|glow|bounce|fade|slide|scale|rotate|pulse|float|stagger|repel|glass|morphic|glassmorphic|blur|backdrop|change|edit|style|radius|opacity|color|fill|stroke|shadow|hide|show|move)\b/i.test(
             content,
           );
-        if (!stagedValidProposal && !hasErrorEvent && isVisualBuilderRequest) {
+        if (!stagedValidProposal && !stagedCommandProposal && !hasErrorEvent && isVisualBuilderRequest) {
           const latestDoc = getDocument();
           const latestTargets = resolvePromptMentions(
             content,
@@ -570,6 +612,7 @@ export function useAiChat({
             const applied = applyMdmJsonPatches(latestDoc, plan.patches);
             const check = applied.ok ? validateMotionDocument(applied.document) : null;
             if (check?.ok && rules.validate(check.document).length === 0) {
+              setError(null);
               useGhostDiffStore.getState().stageProposal({
                 proposalId: assistantId,
                 prompt: content,
