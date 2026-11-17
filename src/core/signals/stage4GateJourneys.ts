@@ -88,7 +88,8 @@ export interface JourneyDResult {
   readonly componentName: string;
   readonly boundPropCount: number;
   readonly hasCursorSignalBinding: boolean;
-  readonly sandboxCookie: string;
+  /** The sandbox is opaque by its descriptor; the run-time probe is the browser test code-sandbox.spec.ts. */
+  readonly sandboxIsolatedByDescriptor: boolean;
   readonly sandboxLocalStorageBlocked: boolean;
   readonly sandboxParentDomBlocked: boolean;
   readonly flaggedDangerousApis: readonly string[];
@@ -370,25 +371,23 @@ export function MagneticBadge({ tiltX, label = "New" }: MagneticBadgeProps) {
   );
 
   const hasCursorSignalBinding = imported.bindings.tiltX?.source === "signal" && imported.bindings.tiltX.path === "pointer.x";
-  const sandboxLocalStorageBlocked = (hostileProbe.localStorageResult ?? "").includes("SecurityError");
-  const sandboxParentDomBlocked = (hostileProbe.parentDocumentResult ?? "").includes("SecurityError");
+  // Static: the frame declares an opaque origin. The run-time probe is the browser test code-sandbox.spec.ts.
+  const sandboxLocalStorageBlocked = hostileProbe.isolatedByDescriptor;
+  const sandboxParentDomBlocked = hostileProbe.isolatedByDescriptor;
   const zeroLazyLayoutImportsInExport = !imported.nextExportTsx.includes("@lazylayout/");
 
   return {
     componentName: imported.componentName,
     boundPropCount: Object.keys(imported.bindings).length,
     hasCursorSignalBinding,
-    sandboxCookie: hostileProbe.cookieResult,
+    sandboxIsolatedByDescriptor: hostileProbe.isolatedByDescriptor,
     sandboxLocalStorageBlocked,
     sandboxParentDomBlocked,
     flaggedDangerousApis: hostileProbe.flaggedApis,
     zeroLazyLayoutImportsInExport,
     passedIsolation:
       !imported.sandbox.sandboxAttr.includes("allow-same-origin") &&
-      hostileProbe.cookieResult === "unreadable" &&
-      sandboxLocalStorageBlocked &&
-      sandboxParentDomBlocked &&
-      !hostileProbe.editorTokenLeaked &&
+      hostileProbe.isolatedByDescriptor &&
       hasCursorSignalBinding &&
       zeroLazyLayoutImportsInExport,
   };

@@ -26,13 +26,19 @@ export interface SandboxIframeDescriptor {
   readonly originModel: "opaque-null";
 }
 
+/**
+ * A static look at an untrusted bundle and the frame it would run in. It does NOT run the bundle: the real probe
+ * (a hostile bundle in a real opaque frame trying the cookie, storage and the parent DOM) is the browser test
+ * `tests/e2e/code-sandbox.spec.ts`. Earlier this returned fixed strings ("unreadable", "SecurityError: ...") and
+ * `editorTokenLeaked: false` as if it had probed; those fields are gone.
+ */
 export interface MaliciousProbeReport {
-  /** The host page's cookie as seen from inside the frame: "unreadable" (Chromium throws, other engines return ""). */
-  readonly cookieResult: "unreadable";
-  readonly localStorageResult: "SecurityError: blocked in opaque origin" | null;
-  readonly parentDocumentResult: "SecurityError: cross-origin frame blocked" | null;
-  readonly editorTokenLeaked: false;
+  /** Restricted APIs the source mentions (substring match; a hint for the UI, not a defence). */
   readonly flaggedApis: readonly string[];
+  /** The frame is `sandbox="allow-scripts"` without `allow-same-origin`: an opaque origin, by the HTML spec. */
+  readonly isolatedByDescriptor: boolean;
+  /** Always false here; see the browser test for the run-time probe. */
+  readonly probed: false;
 }
 
 const RESTRICTED_APIS = [
@@ -59,7 +65,7 @@ export function buildSandboxIframeDescriptor(componentId: string): SandboxIframe
     "(function () {",
     "  var port = null;",
     "  window.addEventListener('message', function (ev) {",
-    "    if (port || !ev.ports || !ev.ports[0]) return;",
+    "    if (port || ev.source !== window.parent || !ev.ports || !ev.ports[0]) return;",
     "    port = ev.ports[0];",
     "    var host = {",
     "      emit: function (name, payload) {",
@@ -68,9 +74,19 @@ export function buildSandboxIframeDescriptor(componentId: string): SandboxIframe
     "      metrics: function (frameMs) { port.postMessage({ kind: 'render_metrics', frameMs: Number(frameMs) }); },",
     "      root: document.getElementById('sandbox-root')",
     "    };",
+    "    var propsListeners = [];",
+    "    host.onProps = function (fn) { if (typeof fn === 'function') propsListeners.push(fn); };",
     "    port.onmessage = function (m) {",
     "      var d = m.data;",
-    "      if (!d || d.kind !== 'init' || typeof d.bundleCode !== 'string') return;",
+    "      if (!d) return;",
+    "      if (d.kind === 'props_update') {",
+    "        for (var i = 0; i < propsListeners.length; i++) {",
+    "          try { propsListeners[i](d.props || {}); } catch (e) { host.emit('error', { message: String((e && e.message) || e) }); }",
+    "        }",
+    "        return;",
+    "      }",
+    "      if (d.kind === 'dispose') { propsListeners = []; host.root.replaceChildren(); port.close(); return; }",
+    "      if (d.kind !== 'init' || typeof d.bundleCode !== 'string') return;",
     "      try { new Function('host', 'props', d.bundleCode)(host, d.initialProps || {}); }",
     "      catch (e) { host.emit('error', { message: String((e && e.message) || e) }); }",
     "    };",
@@ -152,11 +168,5 @@ export function inspectUntrustedBundleIsolation(
   if (!opaque) {
     throw new Error("Decision 0012 invariant violated: allow-same-origin is forbidden");
   }
-  return {
-    cookieResult: "unreadable",
-    localStorageResult: "SecurityError: blocked in opaque origin",
-    parentDocumentResult: "SecurityError: cross-origin frame blocked",
-    editorTokenLeaked: false,
-    flaggedApis,
-  };
+  return { flaggedApis, isolatedByDescriptor: opaque, probed: false };
 }

@@ -3,9 +3,9 @@
  * @module core/export/embedScriptAndVitals
  * @description Phase 198: Framework-free `<script type="module">` + `<div data-fx>`
  * embed snippet builder for Webflow, Framer, Wix, WordPress, and plain HTML,
- * enforcing per-family runtime size budgets, `CLS === 0` poster reservation,
- * post-LCP idle init (`< 50 ms` init tasks), offscreen IntersectionObserver pause,
- * and strict nonce-based CSP compliance.
+ * checking per-family runtime size budgets (estimated), poster box reservation (`aspect-ratio`, so CLS 0),
+ * and the CSP nonce. The embed runtime it loads (`embed-v1.mjs`, which would defer to LCP and pause offscreen)
+ * is not built yet, and the audit says so instead of claiming those.
  */
 
 import type { EffectDefinitionV1, EffectFamily } from "../effects/effectSdk";
@@ -36,11 +36,23 @@ export interface EmbedBundleAudit {
   readonly estimatedGzipKb: number;
   readonly budgetKb: number;
   readonly withinSizeBudget: boolean;
-  readonly expectedCls: 0;
+  /**
+   * 0 when the snippet reserves the poster's box with `aspect-ratio` (so nothing shifts when the effect mounts);
+   * null when the effect has no usable aspect ratio. Derived from the markup, not measured in a browser.
+   */
+  readonly expectedCls: 0 | null;
+  /** An ESTIMATE from the module count (2.5 ms + 1.8 ms per module), not a measured long task. */
   readonly maxInitTaskMs: number;
-  readonly waitsForLcp: true;
-  readonly pausesOffscreen: true;
+  /**
+   * Whether the embed runtime waits for LCP / pauses offscreen. The snippet asks for both with data attributes, but
+   * the runtime it loads (`embed-v1.mjs`) is not built by this repo yet, so nothing does either: false.
+   */
+  readonly waitsForLcp: boolean;
+  readonly pausesOffscreen: boolean;
+  /** True only when a nonce is given (the snippet has no inline script; a strict CSP needs the nonce on the tag). */
   readonly strictNonceCspCompliant: boolean;
+  /** False until the embed runtime the snippet loads exists. */
+  readonly runtimeBuilt: false;
 }
 
 export interface EmbedSnippetResult {
@@ -52,7 +64,7 @@ export interface EmbedSnippetResult {
  * Measure total vendored module runtime byte size + check per-family CI budget,
  * LCP deferral, offscreen pausing, CLS=0 box reservation, and nonce CSP compliance.
  */
-export function auditEmbedVitals(effect: EffectDefinitionV1): EmbedBundleAudit {
+export function auditEmbedVitals(effect: EffectDefinitionV1, options: { readonly cspNonce?: string } = {}): EmbedBundleAudit {
   const mods = selectVendoredModules(effect.requiredRuntimeModules);
   const rawBytes = mods.reduce((sum, m) => sum + m.byteLength, 0) + 420; // +420B bootstrapper
   // Conservative 0.55x minified/gzip ratio model for standalone ESM chunks
@@ -68,12 +80,28 @@ export function auditEmbedVitals(effect: EffectDefinitionV1): EmbedBundleAudit {
     estimatedGzipKb,
     budgetKb,
     withinSizeBudget: estimatedGzipKb <= budgetKb,
-    expectedCls: 0,
+    expectedCls: hasUsableAspectRatio(effect.poster.aspectRatio) ? 0 : null,
     maxInitTaskMs,
-    waitsForLcp: true,
-    pausesOffscreen: true,
-    strictNonceCspCompliant: true,
+    waitsForLcp: false,
+    pausesOffscreen: false,
+    strictNonceCspCompliant: sanitizeNonce(options.cspNonce).length > 0,
+    runtimeBuilt: false,
   };
+}
+
+function sanitizeNonce(nonce: string | undefined): string {
+  return (nonce ?? "").replace(/[^a-zA-Z0-9+/=-]/g, "");
+}
+
+/** `16 / 9`, `1.5`, `4/3`: a positive ratio CSS `aspect-ratio` accepts. */
+function hasUsableAspectRatio(raw: unknown): boolean {
+  if (typeof raw === "number") return Number.isFinite(raw) && raw > 0;
+  if (typeof raw !== "string") return false;
+  const m = raw.trim().match(/^(\d+(?:\.\d+)?)\s*(?:\/\s*(\d+(?:\.\d+)?))?$/);
+  if (!m) return false;
+  const a = Number(m[1]);
+  const b = m[2] === undefined ? 1 : Number(m[2]);
+  return a > 0 && b > 0;
 }
 
 /** Generate framework-free copy-paste `<div data-fx>` + `<script type="module">` snippet. */
@@ -85,8 +113,9 @@ export function buildFrameworkFreeEmbedSnippet(
     readonly baseRuntimeUrl?: string;
   } = {}
 ): EmbedSnippetResult {
-  const audit = auditEmbedVitals(effect);
-  const nonceAttr = options.cspNonce ? ` nonce="${options.cspNonce.replace(/[^a-zA-Z0-9+/=-]/g, "")}"` : "";
+  const audit = auditEmbedVitals(effect, { cspNonce: options.cspNonce });
+  const nonce = sanitizeNonce(options.cspNonce);
+  const nonceAttr = nonce ? ` nonce="${nonce}"` : "";
   const runtimeSrc = `${(options.baseRuntimeUrl ?? "/lazylayout-runtime").replace(/\/$/, "")}/embed-v1.mjs`;
   const platform = options.platform ?? "html";
 

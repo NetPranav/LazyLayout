@@ -26,10 +26,10 @@ describe("Phase 195: Sandbox boundaries for untrusted code (Decision 0012)", () 
       }
     `;
     const report = inspectUntrustedBundleIsolation(malicious);
-    assert.equal(report.cookieResult, "unreadable");
-    assert.equal(report.localStorageResult, "SecurityError: blocked in opaque origin");
-    assert.equal(report.parentDocumentResult, "SecurityError: cross-origin frame blocked");
-    assert.equal(report.editorTokenLeaked, false);
+    // A static report: it names the APIs and the isolation the frame declares, and says it did not probe.
+    // The run-time probe is tests/e2e/code-sandbox.spec.ts.
+    assert.equal(report.isolatedByDescriptor, true);
+    assert.equal(report.probed, false);
     assert.ok(report.flaggedApis.includes("document.cookie"));
     assert.ok(report.flaggedApis.includes("localStorage"));
     assert.ok(report.flaggedApis.includes("parent.document"));

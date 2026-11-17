@@ -22,14 +22,21 @@ describe("Phase 198: Embed script, size budgets & Web Vitals", () => {
         true,
         `${def.id} (${def.family}) exceeded budget: ${res.audit.estimatedGzipKb}KB > ${res.audit.budgetKb}KB`
       );
-      assert.equal(res.audit.expectedCls, 0);
+      assert.equal(res.audit.expectedCls, 0, "the poster box is reserved with aspect-ratio");
       assert.ok(res.audit.maxInitTaskMs < 50);
-      assert.equal(res.audit.waitsForLcp, true);
-      assert.equal(res.audit.pausesOffscreen, true);
-      assert.equal(res.audit.strictNonceCspCompliant, true);
+      // The embed runtime isn't built yet, so the audit doesn't claim LCP deferral or offscreen pausing.
+      assert.equal(res.audit.runtimeBuilt, false);
+      assert.equal(res.audit.waitsForLcp, false);
+      assert.equal(res.audit.pausesOffscreen, false);
+      assert.equal(res.audit.strictNonceCspCompliant, true, "a nonce was given");
       assert.ok(res.htmlSnippet.includes(`data-fx="${def.id}"`));
       assert.ok(res.htmlSnippet.includes('type="module" nonce="nonce-xyz123"'));
       assert.ok(!res.htmlSnippet.includes("eval("));
     }
+  });
+
+  it("is not CSP-compliant without a nonce", () => {
+    const def = FULL_EFFECT_LIBRARY[0]!;
+    assert.equal(buildFrameworkFreeEmbedSnippet(def).audit.strictNonceCspCompliant, false);
   });
 });
