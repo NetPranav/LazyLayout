@@ -120,6 +120,54 @@ describe("Phase 243 · AI builder: planner, library effects, ghost diff & engine
     assert.equal(Object.keys(getDocument().clips).length, 0);
   });
 
+  it("acceptAll keeps edits made while the proposal waited and leaves discarded layers out", async () => {
+    const base = makeBaseDoc();
+    documentCommands.replaceDocument(base, "Reset Phase 243 acceptAll test doc");
+    useGhostDiffStore.getState().discardAll();
+
+    const result = await executeValidatedLlmTurn({
+      baseDocument: base,
+      provider: new OfflineDeterministicProvider(),
+      request: {
+        provider: "offline",
+        messages: [{ role: "user", content: "Add spotlight hover effect on the button" }],
+        documentContext: buildContext(base),
+      },
+      validateRules: rules.validate,
+    });
+    assert.ok(result.patches && result.candidateDocument);
+    useGhostDiffStore.getState().stageProposal({
+      proposalId: "prop_243_accept_all",
+      prompt: "Add spotlight hover effect on the button",
+      summary: "Spotlight + hover motion",
+      patches: result.patches,
+      candidateDocument: result.candidateDocument,
+    });
+
+    // The person renames a layer while the proposal is pending.
+    const renamedId = Object.keys(getDocument().layers)[0]!;
+    const edited = structuredClone(getDocument());
+    edited.layers[renamedId]!.name = "Renamed while pending";
+    documentCommands.replaceDocument(edited, "Rename while pending");
+
+    assert.equal(useGhostDiffStore.getState().acceptAll(), true);
+    assert.equal(getDocument().layers[renamedId]!.name, "Renamed while pending", "acceptAll must not revert later edits");
+    assert.equal(Object.keys(getDocument().clips).length, 1);
+
+    // Discarding a layer means acceptAll leaves its changes out.
+    documentCommands.replaceDocument(base, "Reset again");
+    useGhostDiffStore.getState().stageProposal({
+      proposalId: "prop_243_discard",
+      prompt: "Add spotlight hover effect on the button",
+      summary: "Spotlight + hover motion",
+      patches: result.patches,
+      candidateDocument: result.candidateDocument,
+    });
+    useGhostDiffStore.getState().discardLayer("layer-cta");
+    useGhostDiffStore.getState().acceptAll();
+    assert.equal(Object.keys(getDocument().clips).length, 0, "a discarded layer's clip must not be applied");
+  });
+
   it("Phase 243 Done gate: one-sentence eval prompts produce accepted results well under 20s p90", async () => {
     const base = makeBaseDoc();
     const provider = new OfflineDeterministicProvider();

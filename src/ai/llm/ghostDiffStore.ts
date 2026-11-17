@@ -38,6 +38,8 @@ export interface GhostDiffProposal {
   patches: MdmJsonPatch[];
   candidateDocument: MotionDocument;
   layerDiffs: Record<string, GhostLayerDiff>;
+  /** Patches that belong to no layer (document-level); applied by `acceptAll` only. */
+  unassignedPatches: MdmJsonPatch[];
   acceptedLayers: string[];
 }
 
@@ -82,6 +84,7 @@ function buildLayerDiffs(
   patches: readonly MdmJsonPatch[],
 ): {
   layerDiffs: Record<string, GhostLayerDiff>;
+  unassignedPatches: MdmJsonPatch[];
   engineChoices: EngineChoiceSummary[];
 } {
   const layerDiffs: Record<string, GhostLayerDiff> = {};
@@ -168,7 +171,21 @@ function buildLayerDiffs(
     }
   }
 
-  return { layerDiffs, engineChoices };
+  const assigned = new Set<MdmJsonPatch>();
+  for (const diff of Object.values(layerDiffs)) for (const p of diff.patches) assigned.add(p);
+  const unassignedPatches = patches.filter((p) => !assigned.has(p));
+
+  return { layerDiffs, unassignedPatches, engineChoices };
+}
+
+/**
+ * The patches still waiting for approval, in their original order: those of every layer not yet accepted or
+ * discarded, plus the document-level ones. Each patch once, even when two layers share it.
+ */
+export function remainingProposalPatches(proposal: GhostDiffProposal): MdmJsonPatch[] {
+  const keep = new Set<MdmJsonPatch>(proposal.unassignedPatches);
+  for (const diff of Object.values(proposal.layerDiffs)) for (const p of diff.patches) keep.add(p);
+  return proposal.patches.filter((p) => keep.has(p));
 }
 
 export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
@@ -184,7 +201,7 @@ export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
     effectChoices = [],
   }) {
     const baseDoc = getDocument();
-    const { layerDiffs, engineChoices } = buildLayerDiffs(baseDoc, candidateDocument, patches);
+    const { layerDiffs, unassignedPatches, engineChoices } = buildLayerDiffs(baseDoc, candidateDocument, patches);
     const engineSummary = formatEngineSummary(engineChoices, effectChoices);
 
     set({
@@ -198,6 +215,7 @@ export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
         patches,
         candidateDocument,
         layerDiffs,
+        unassignedPatches,
         acceptedLayers: [],
       },
     });
@@ -206,7 +224,17 @@ export const useGhostDiffStore = create<GhostDiffState>((set, get) => ({
   acceptAll() {
     const current = get().pending;
     if (!current) return false;
-    const check = validateMotionDocument(current.candidateDocument);
+    // Apply only what is still pending, onto the document as it is NOW: edits made while the proposal waited are
+    // kept, and layers the person discarded stay discarded. (Replacing the document with `candidateDocument`,
+    // which was built from the document at proposal time, reverted both.)
+    const remaining = remainingProposalPatches(current);
+    if (remaining.length === 0) {
+      set({ pending: null });
+      return true;
+    }
+    const patched = applyMdmJsonPatches(getDocument(), remaining);
+    if (!patched.ok) return false;
+    const check = validateMotionDocument(patched.document);
     if (!check.ok) return false;
     documentCommands.replaceDocument(check.document, `AI: ${current.summary}`);
     set({ pending: null });
