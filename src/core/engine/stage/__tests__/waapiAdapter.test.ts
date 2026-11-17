@@ -360,3 +360,20 @@ describe("WaapiAdapter bake cache (performance, 2026-11-18)", () => {
     assert.equal(els.get(a)!.animations.length, 2, "A got a new animation with the new keyframes");
   });
 });
+
+describe("WaapiAdapter inputs compared by value (performance, 2026-11-18)", () => {
+  it("the same inputs in a new object keep the cached bakes", () => {
+    const b = new DocBuilder();
+    const id = b.layer("rectangle", "A", null);
+    b.clip(id, { name: "A", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [track("transform.x", 0, 100)] });
+    const doc = b.build();
+    const { adapter } = setup(doc);
+    adapter.seek(0.2);
+    adapter.setInputs({ scrollClipTime: {} } as never);
+    adapter.seek(0.3);
+    const after = adapter.stats.samples;
+    adapter.setInputs({ scrollClipTime: {} } as never);
+    adapter.seek(0.4);
+    assert.equal(adapter.stats.samples, after, "no re-sample for equal inputs");
+  });
+});

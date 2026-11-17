@@ -44,9 +44,9 @@ type Keyframes = Array<Record<string, string | number>>;
 /** A layer's sampled keyframes and what they were sampled from (see bakeDeps.ts). */
 interface BakeEntry {
   deps: BakeDeps;
-  /** composition, duration, fps, sample count and the inputs object the bake used */
+  /** composition, duration, fps, sample count and the inputs (by value) the bake used */
   signature: string;
-  inputs: EvaluateInputs;
+  inputsKey: string;
   paths: ReadonlySet<string>;
   keyframes: Keyframes;
 }
@@ -66,6 +66,7 @@ export class WaapiAdapter implements EngineAdapter {
 
   private host: AdapterHost | null = null;
   private inputs: EvaluateInputs = {};
+  private inputsKey = inputsKey({});
   private dirty = true;
   private playing = false;
   private rate = 1;
@@ -96,7 +97,12 @@ export class WaapiAdapter implements EngineAdapter {
   }
 
   setInputs(inputs: EvaluateInputs): void {
+    // Compared by value: the scroll driver and others pass a new object even when nothing in it changed (opening Motion
+    // did), and a new identity used to throw away every cached bake.
+    const key = inputsKey(inputs);
+    if (key === this.inputsKey) return;
     this.inputs = inputs;
+    this.inputsKey = key;
     this.invalidate();
   }
 
@@ -194,7 +200,7 @@ export class WaapiAdapter implements EngineAdapter {
     if (
       cached &&
       cached.signature === sig.signature &&
-      cached.inputs === this.inputs &&
+      cached.inputsKey === this.inputsKey &&
       sameDeps(cached.deps, deps) &&
       samePaths(cached.paths, paths)
     ) {
@@ -207,7 +213,7 @@ export class WaapiAdapter implements EngineAdapter {
       for (const [property, value] of Object.entries(writes)) frame[camel(property)] = value;
       keyframes.push(frame);
     }
-    this.bakeCache.set(layerId, { deps, signature: sig.signature, inputs: this.inputs, paths, keyframes });
+    this.bakeCache.set(layerId, { deps, signature: sig.signature, inputsKey: this.inputsKey, paths, keyframes });
     this.stats.samples++;
     return keyframes;
   }
@@ -281,3 +287,17 @@ function samePaths(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
   for (const p of a) if (!b.has(p)) return false;
   return true;
 }
+
+/** A stable text form of the evaluate inputs, to tell a real change from the same values in a new object. */
+function inputsKey(inputs: EvaluateInputs): string {
+  try {
+    return JSON.stringify(inputs, (_key, value: unknown) =>
+      value && typeof value === "object" && !Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+        : value,
+    );
+  } catch {
+    return `unserialisable:${++unserialisableInputs}`; // not serialisable: treat as a change
+  }
+}
+let unserialisableInputs = 0;
