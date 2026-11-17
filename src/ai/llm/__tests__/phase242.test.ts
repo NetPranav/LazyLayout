@@ -14,6 +14,7 @@ import {
   executeValidatedLlmTurn,
   handleAiChatGet,
   handleAiChatPost,
+  normalizeStopReason,
   type LlmChatRequest,
   type LlmProvider,
   type LlmStreamEvent,
@@ -585,5 +586,109 @@ describe("Phase 242 validation loop, repair limit & ConstrainedDecoder removal",
       );
     }
     assert.equal(PROVIDER_MODEL_OPTIONS.nvidia[0]?.id, NVIDIA_MODEL_ID);
+  });
+
+  it("allows BYOK and offline requests in locked production while still blocking server-key requests", async () => {
+    const prodEnv = {
+      NODE_ENV: "production",
+      NVIDIA_API_KEY: "nvapi-server-secret-should-not-be-used",
+      ANTHROPIC_API_KEY: "sk-ant-server-secret-should-not-be-used",
+    };
+
+    // GET stays 200 in production so /editor avoids 404 console errors and masks server key flags.
+    const prodGet = await handleAiChatGet({ env: prodEnv });
+    assert.equal(prodGet.status, 200);
+    const prodGetJson = (await prodGet.json()) as {
+      routeEnabled: boolean;
+      byokSupported: boolean;
+      providers: Record<string, { configured: boolean }>;
+    };
+    assert.equal(prodGetJson.routeEnabled, false);
+    assert.equal(prodGetJson.byokSupported, true);
+    assert.equal(prodGetJson.providers.nvidia.configured, false);
+    assert.equal(prodGetJson.providers.anthropic.configured, false);
+    assert.equal(prodGetJson.providers.offline.configured, true);
+
+    // Server-key POST without BYOK apiKey remains 404 Not found in production.
+    const blockedRes = await handleAiChatPost(
+      new Request("https://lazylayout.in/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "nvidia",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      }),
+      { env: prodEnv },
+    );
+    assert.equal(blockedRes.status, 404);
+
+    // Whitespace / bare Bearer prefix BYOK key must also stay blocked.
+    const emptyKeyRes = await handleAiChatPost(
+      new Request("https://lazylayout.in/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "nvidia",
+          apiKey: "Bearer   ",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      }),
+      { env: prodEnv },
+    );
+    assert.equal(emptyKeyRes.status, 404);
+
+    // Offline provider succeeds in production without an API key.
+    const offlineProdRes = await handleAiChatPost(
+      new Request("https://lazylayout.in/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "offline",
+          messages: [{ role: "user", content: "How many layers are in this document?" }],
+          documentContext: { layerCount: 4 },
+        }),
+      }),
+      { env: prodEnv },
+    );
+    assert.equal(offlineProdRes.status, 200);
+    const offlineBody = await offlineProdRes.text();
+    assert.match(offlineBody, /"keySource":"offline"/);
+    assert.match(offlineBody, /4 layer\(s\)/);
+
+    // BYOK POST succeeds in production and receives ONLY the caller's attached key.
+    let forwardedKey: string | undefined;
+    const stubNvidia: LlmProvider = {
+      id: "nvidia",
+      async *streamChat(req) {
+        forwardedKey = req.apiKey;
+        yield {
+          type: "meta",
+          provider: "nvidia",
+          model: NVIDIA_MODEL_ID,
+          cachePrefixHash: "feedface",
+        };
+        yield { type: "text_delta", delta: "Glassmorphic hover applied." };
+        yield { type: "stop", handling: normalizeStopReason("end_turn") };
+      },
+    };
+
+    const byokProdRes = await handleAiChatPost(
+      new Request("https://lazylayout.in/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "nvidia",
+          apiKey: "Bearer nvapi-user-byok-key-123",
+          messages: [{ role: "user", content: "Make Get started glassmorphic" }],
+        }),
+      }),
+      { env: prodEnv, providers: { nvidia: stubNvidia } },
+    );
+    assert.equal(byokProdRes.status, 200);
+    const byokBody = await byokProdRes.text();
+    assert.equal(forwardedKey, "nvapi-user-byok-key-123");
+    assert.match(byokBody, /"keySource":"byok"/);
+    assert.match(byokBody, /Glassmorphic hover applied\./);
   });
 });
