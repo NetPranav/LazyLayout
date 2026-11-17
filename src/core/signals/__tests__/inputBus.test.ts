@@ -125,6 +125,12 @@ describe("Phase 132 — Unified Input Bus & Coordinate Spaces", () => {
     for (let i = 0; i < 200; i++) acc += toNumber(f.read({ kind: "pointerIn", channel: "uv", space: "page" }));
     assert.ok(acc > 0);
 
+    // A key held when the window loses focus is released (review 2026-11-17).
+    target.emit("keydown", { code: "KeyA" });
+    win.emit("blur", {});
+    registeredTask!({ now: 49.8, dt: 1 / 60, frame: 3 });
+    assert.equal(bus.snapshot().keys.down.size, 0);
+
     bus.dispose();
     assert.equal(bus.listenerCount, 0);
     for (const [, set] of target.listeners) assert.equal(set.size, 0);

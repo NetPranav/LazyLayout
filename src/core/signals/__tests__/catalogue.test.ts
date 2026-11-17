@@ -80,3 +80,16 @@ describe("Phase 133 — Signal Catalogue & Keyboard Signals", () => {
     assert.equal(formatSignalValue([1, -1], "-1..1"), "[1.00, -1.00]");
   });
 });
+
+describe("Phase 133 catalogue lookups (review 2026-11-17)", () => {
+  it("each device channel and every pointerIn unit has its own metadata", async () => {
+    const { findCatalogueEntry } = await import("../catalogue");
+    assert.equal(findCatalogueEntry({ kind: "device", channel: "tiltY" })?.id, "device.tiltY");
+    assert.equal(findCatalogueEntry({ kind: "device", channel: "orientation" })?.unit, "deg");
+    for (const channel of ["px", "uv", "ndc"] as const) {
+      for (const space of ["local", "parent", "frame", "page"] as const) {
+        assert.ok(findCatalogueEntry({ kind: "pointerIn", channel, space }), `${channel} in ${space}`);
+      }
+    }
+  });
+});

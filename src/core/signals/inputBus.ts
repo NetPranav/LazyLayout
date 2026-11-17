@@ -142,6 +142,11 @@ export interface HostEventTargetLike {
 export interface HostInputBusOptions {
   target: HostEventTargetLike;
   windowTarget?: HostEventTargetLike | null;
+  /**
+   * Where `visibilitychange` fires (the document, not the window). Optional; when absent and a global `document`
+   * exists, that is used.
+   */
+  documentTarget?: HostEventTargetLike | null;
   scheduler?: { register(phase: "input", task: FrameTask): () => void };
   measurePageSize: () => { width: number; height: number };
   measureScroll: () => { y: number; max: number; viewport?: number };
@@ -270,9 +275,15 @@ export function createHostInputBus(options: HostInputBusOptions): HostInputBus {
     pending.focusVisible = false;
   };
 
+  /** Keys released while the page wasn't listening (alt-tab, a hidden tab) would otherwise stay "held". */
+  const releaseAllKeys = () => {
+    pending.downKeys.clear();
+  };
+
   const onVisibility = () => {
     if (typeof document !== "undefined" && typeof document.hidden === "boolean") {
       pending.hidden = document.hidden;
+      if (document.hidden) releaseAllKeys();
     }
   };
 
@@ -291,17 +302,20 @@ export function createHostInputBus(options: HostInputBusOptions): HostInputBus {
   listen(options.target, "pointerup", onPointer);
   listen(options.target, "pointercancel", onPointer);
   listen(options.target, "wheel", onWheel);
-  listen(options.target, "scroll", () => undefined);
   listen(options.target, "keydown", onKeyDown);
   listen(options.target, "keyup", onKeyUp);
   listen(options.target, "focusin", onFocusIn);
   listen(options.target, "focusout", onFocusOut);
 
   if (options.windowTarget) {
-    listen(options.windowTarget, "resize", () => undefined);
-    listen(options.windowTarget, "visibilitychange", onVisibility);
+    listen(options.windowTarget, "blur", releaseAllKeys);
     listen(options.windowTarget, "deviceorientation", onOrientation);
   }
+  // `visibilitychange` fires on the document, never on the window (it used to be listened for on the window, so
+  // `hidden` never changed). Scroll and size are measured each sample, so no listeners are needed for them.
+  const docTarget =
+    options.documentTarget ?? (typeof document !== "undefined" ? (document as unknown as HostEventTargetLike) : null);
+  if (docTarget) listen(docTarget, "visibilitychange", onVisibility);
 
   const sample = (nowMs = 0): InputSnapshot => {
     frameCounter += 1;
