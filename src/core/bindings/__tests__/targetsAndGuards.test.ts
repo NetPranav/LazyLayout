@@ -83,6 +83,31 @@ describe("Stage 4 Phase 139: targets, blending, layout carve-out & unified cycle
     rt.step({ time: 0.1, dt: 1 / 60, seed: 1, read: () => 0 });
     assert.equal(rt.inputs.get("btn")?.get("hoverIntensity"), 0.85);
     assert.equal(rt.events.has("dockPeak"), true);
+    // Held high: the event fired once, not on every frame (review 2026-11-17).
+    rt.step({ time: 0.2, dt: 1 / 60, seed: 1, read: () => 0 });
+    assert.equal(rt.events.has("dockPeak"), false);
+  });
+
+  it("fires an event again only after the value drops below 0.5 and rises again", () => {
+    let level = 0;
+    const evt = binding({
+      id: "b-press",
+      expr: { signal: { kind: "pointer", channel: "down" }, operators: [] },
+      target: { kind: "event", name: "pressed" },
+    });
+    const rt = createBindingRuntime([evt], makeHost());
+    const step = () => {
+      rt.step({ time: 0, dt: 1 / 60, seed: 1, read: () => level });
+      return rt.events.has("pressed");
+    };
+    assert.equal(step(), false);
+    level = 1;
+    assert.equal(step(), true, "rising edge");
+    assert.equal(step(), false, "still held");
+    level = 0;
+    assert.equal(step(), false);
+    level = 1;
+    assert.equal(step(), true, "second press");
   });
 
   it("enforces SIG_LAYOUT normally and permits layout paths inside layout-isolated boxes", () => {
