@@ -42,6 +42,18 @@ interface Baked {
 type Keyframes = Array<Record<string, string | number>>;
 
 /** A layer's sampled keyframes and what they were sampled from (see bakeDeps.ts). */
+/**
+ * Sampled keyframes per layer id, shared by every WAAPI adapter. Each entry records the object identities, sampling
+ * signature and inputs it was made from, and is only reused when all of them match, so sharing can't serve a stale bake.
+ */
+const sharedBakeCache = new Map<string, BakeEntry>();
+/** Layers sampled since load, across adapters (the performance budget e2e spec reads it through a test seam). */
+export const waapiBakeStats = { samples: 0 };
+/** Tests: forget every cached bake. */
+export function clearWaapiBakeCache(): void {
+  sharedBakeCache.clear();
+}
+
 interface BakeEntry {
   deps: BakeDeps;
   /** composition, duration, fps, sample count and the inputs (by value) the bake used */
@@ -74,12 +86,13 @@ export class WaapiAdapter implements EngineAdapter {
   private plannedFor: MotionDocument | null = null;
   private readonly baked = new Map<string, Baked>();
   /**
-   * Sampled keyframes per layer, kept across document changes. Performance (2026-11-18): every edit made the next
+   * Sampled keyframes per layer, kept across document changes AND across adapters: the stage engine (and so this
+   * adapter) is installed each time Motion opens, and a per-adapter cache was empty again on every visit. Performance (2026-11-18): every edit made the next
    * play, pause or seek re-sample EVERY animated layer at every frame of the timeline (a ~1 s freeze on a
    * 4x-throttled CPU with 46 animated layers). Now only layers whose inputs changed are re-sampled, and `prebake`
    * does it ahead of time in idle slices.
    */
-  private readonly bakeCache = new Map<string, BakeEntry>();
+  private readonly bakeCache = sharedBakeCache;
 
   /** Counts of work done, for tests. `bakes`: animations created; `samples`: layers whose keyframes were sampled. */
   stats = { bakes: 0, seeks: 0, samples: 0 };
@@ -172,7 +185,6 @@ export class WaapiAdapter implements EngineAdapter {
   private cancelAll(): void {
     for (const { animation } of this.baked.values()) animation.cancel();
     this.baked.clear();
-    this.bakeCache.clear();
   }
 
   /** Composition, duration, fps and sample count: a change to any of them re-samples every layer. */
@@ -215,6 +227,7 @@ export class WaapiAdapter implements EngineAdapter {
     }
     this.bakeCache.set(layerId, { deps, signature: sig.signature, inputsKey: this.inputsKey, paths, keyframes });
     this.stats.samples++;
+    waapiBakeStats.samples++;
     return keyframes;
   }
 

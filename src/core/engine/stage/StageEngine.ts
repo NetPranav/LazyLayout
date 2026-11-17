@@ -3,6 +3,7 @@ import { frameScheduler, type FrameInfo, type FrameScheduler } from "../../time/
 import { getTransport, subscribeTransport } from "../../time/transport";
 import type { StageRenderer } from "../../render/StageRenderer";
 import { StageAdapters } from "./StageAdapters";
+import { waapiBakeStats } from "./WaapiAdapter";
 import { KernelAdapter } from "./KernelAdapter";
 import { ParityMonitor, parityEnabled } from "./parity";
 import type { AdapterHost, EngineAdapter } from "./types";
@@ -116,6 +117,10 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     schedulePrebake();
   });
   schedulePrebake();
+  // Test seam (only with window.__LL_TEST__): the WAAPI adapter's work counters, for the performance budget e2e spec.
+  if (waapi && typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__) {
+    (window as unknown as { __LL_WAAPI__?: typeof waapiBakeStats }).__LL_WAAPI__ = waapiBakeStats;
+  }
   const unsubscribeNodes = renderer.registry.subscribe(() => {
     adapter.invalidate();
     dirty = true;
