@@ -64,3 +64,15 @@ describe("Phase 156 · Data-driven layers & animated charts", () => {
     assert.deepEqual(end, [100, 40]);
   });
 });
+
+describe("Phase 156 · CSV parsing (review 2026-11-17)", () => {
+  it("keeps commas, quotes and line breaks inside quoted cells, and only plain decimals become numbers", async () => {
+    const { parseCsvDataTable } = await import("../dataDrivenCharts");
+    const table = parseCsvDataTable('name,note,value\n"Smith, J","said ""hi""\nthen left",12.5\nhex,x,0x10\n');
+    assert.equal(table.rows.length, 2);
+    assert.equal(table.rows[0]!.name, "Smith, J");
+    assert.equal(table.rows[0]!.note, 'said "hi"\nthen left');
+    assert.equal(table.rows[0]!.value, 12.5);
+    assert.equal(table.rows[1]!.value, "0x10", "hex stays text");
+  });
+});

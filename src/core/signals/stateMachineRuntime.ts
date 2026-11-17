@@ -69,6 +69,11 @@ export interface ActiveTransitionState {
   readonly elapsedSec: number;
   readonly durationSec: number;
   readonly progress: number;
+  /**
+   * Set when this transition interrupted another: the blended pose at the moment of interruption, used as the
+   * starting pose instead of `fromStateId`'s own (so an interrupted hover-in reverses smoothly from where it was).
+   */
+  readonly fromProperties?: Readonly<Record<string, number>>;
 }
 
 export interface StateMachineSnapshot {
@@ -224,7 +229,7 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
     if (!activeTransition) {
       return evaluateStateProperties(currentStateId);
     }
-    const fromProps = evaluateStateProperties(activeTransition.fromStateId);
+    const fromProps = activeTransition.fromProperties ?? evaluateStateProperties(activeTransition.fromStateId);
     const toProps = evaluateStateProperties(activeTransition.toStateId);
     const t = activeTransition.progress;
     const keys = new Set([...Object.keys(fromProps), ...Object.keys(toProps)]);
@@ -237,10 +242,20 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
     return blended;
   };
 
+  /** Keep the history short: it is for the debugger, and it used to grow (and be copied) on every transition. */
+  const MAX_HISTORY = 64;
+  const pushHistory = (stateId: string): void => {
+    transitionHistory = [...transitionHistory.slice(-(MAX_HISTORY - 1)), stateId];
+  };
+
+  /**
+   * Picks a transition out of `fromId`. While a transition is running, `fromId` is the state it is heading to, and a
+   * new transition interrupts it, starting from the pose blended so far.
+   */
   const trySelectTransition = (): void => {
-    if (activeTransition) return;
+    const fromId = activeTransition ? activeTransition.toStateId : currentStateId;
     const candidates = spec.transitions
-      .filter((tr) => (tr.from === currentStateId || tr.from === "*") && tr.to !== currentStateId)
+      .filter((tr) => (tr.from === fromId || tr.from === "*") && tr.to !== fromId)
       .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
     for (const tr of candidates) {
@@ -253,10 +268,13 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
           }
         }
         const dur = Math.max(0, tr.durationSec ?? 0);
+        const interruptedPose = activeTransition ? evaluateOutputProperties() : undefined;
         if (dur <= 1e-6) {
           currentStateId = tr.to;
-          transitionHistory = [...transitionHistory, tr.to];
+          activeTransition = null;
+          pushHistory(tr.to);
         } else {
+          if (activeTransition) currentStateId = activeTransition.toStateId;
           activeTransition = {
             transitionId: tr.id,
             fromStateId: currentStateId,
@@ -264,6 +282,7 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
             elapsedSec: 0,
             durationSec: dur,
             progress: 0,
+            ...(interruptedPose ? { fromProperties: interruptedPose } : {}),
           };
         }
         break;
@@ -316,7 +335,7 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
         const nextElapsed = activeTransition.elapsedSec + dt;
         if (nextElapsed >= activeTransition.durationSec) {
           currentStateId = activeTransition.toStateId;
-          transitionHistory = [...transitionHistory, currentStateId];
+          pushHistory(currentStateId);
           activeTransition = null;
         } else {
           activeTransition = {
@@ -327,11 +346,13 @@ export function createStateMachineRuntime(spec: StateMachineSpec): StateMachineR
         }
       }
 
-      if (!activeTransition) {
-        trySelectTransition();
-      }
+      trySelectTransition();
 
-      return buildSnapshot();
+      // A trigger lasts one step: one nothing used is dropped, not kept to fire a transition later.
+      const snap = buildSnapshot();
+      for (const name of firedTriggers) inputValues[name] = false;
+      firedTriggers.clear();
+      return snap;
     },
 
     snapshot: buildSnapshot,

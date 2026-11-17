@@ -379,6 +379,20 @@ export function createPhysicsWorld2D(
     rngState = snap.rngState;
     accumulator = 0;
     bodies = snap.bodies.map((b) => ({ ...b }));
+    // Snapshots after this point belong to the timeline being left; replaying from here (perhaps with other input)
+    // must not later seek into them.
+    while (snapshots.length > 1 && snapshots[snapshots.length - 1]!.stepIndex > snap.stepIndex) snapshots.pop();
+  };
+
+  /** Keep at most this many saved snapshots, thinning old ones (every other) when full: memory stays bounded. */
+  const MAX_SNAPSHOTS = 240;
+  const saveSnapshot = (): void => {
+    snapshots.push(createSnapshot());
+    if (snapshots.length > MAX_SNAPSHOTS) {
+      const kept = snapshots.filter((_, i) => i === 0 || i % 2 === 1 || i === snapshots.length - 1);
+      snapshots.length = 0;
+      snapshots.push(...kept);
+    }
   };
 
   snapshots.push(createSnapshot());
@@ -483,7 +497,7 @@ export function createPhysicsWorld2D(
     stepIndex++;
 
     if (stepIndex % snapshotInterval === 0) {
-      snapshots.push(createSnapshot());
+      saveSnapshot();
     }
     return manifolds;
   };
@@ -511,13 +525,17 @@ export function createPhysicsWorld2D(
       const clampedDt = Math.max(0, Math.min(0.25, Number.isFinite(dtSec) ? dtSec : 0));
       accumulator += clampedDt;
       let steps = 0;
-      let lastManifolds: readonly PhysicsContactManifold[] = [];
+      // Every substep's contacts, in order (only the last substep's were returned, so contacts were lost whenever a
+      // frame needed two or more substeps).
+      const allManifolds: PhysicsContactManifold[] = [];
       while (accumulator >= FIXED_PHYSICS_DT - 1e-9 && steps < MAX_PHYSICS_SUBSTEPS) {
-        lastManifolds = stepFixedSubstep();
+        allManifolds.push(...stepFixedSubstep());
         accumulator -= FIXED_PHYSICS_DT;
         steps++;
       }
-      return lastManifolds;
+      // After a stall, drop the time the substep cap couldn't cover instead of carrying it into every later frame.
+      if (steps >= MAX_PHYSICS_SUBSTEPS) accumulator = Math.min(accumulator, FIXED_PHYSICS_DT);
+      return allManifolds;
     },
 
     getStepIndex(): number {

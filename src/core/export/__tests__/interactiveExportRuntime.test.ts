@@ -40,3 +40,14 @@ describe("Phase 197: Interactive export runtime", () => {
     }
   });
 });
+
+describe("Phase 197 bundle claims are computed (review 2026-11-17)", () => {
+  it("checks the generated sources instead of asserting by type, and says the effect itself is not run", () => {
+    for (const target of ["next", "vite_react", "vue3", "web_component"] as const) {
+      const bundle = buildInteractiveExportBundle(FULL_EFFECT_LIBRARY[0]!, target);
+      assert.equal(bundle.zeroLazyLayoutImports, !/["']@lazylayout\/|["']@\//.test(bundle.entrySource));
+      assert.equal(bundle.disposesContextsOnUnmount, true, `${target} entry has an unmount hook`);
+      assert.equal(bundle.runsEffect, false);
+    }
+  });
+});

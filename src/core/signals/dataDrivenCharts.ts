@@ -66,48 +66,58 @@ function coerceCell(raw: string): DataCellValue {
   const trimmed = raw.trim();
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
-  if (trimmed !== "" && !Number.isNaN(Number(trimmed))) {
+  // Plain decimal numbers only (not "0x10", "Infinity" or "1e999", which Number() also accepts).
+  if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(trimmed) && Number.isFinite(Number(trimmed))) {
     return Number(trimmed);
   }
   return trimmed;
 }
 
-function splitCsvLine(line: string): string[] {
-  const out: string[] = [];
-  let current = "";
+/** Parses a CSV string with headers into a typed `DataTable`. */
+/** Splits CSV text into records, honouring quotes (a quoted cell may hold commas, "" quotes and line breaks). */
+function splitCsvRecords(csv: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]!;
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i]!;
+    if (inQuotes) {
+      if (ch === '"' && csv[i + 1] === '"') {
+        cell += '"';
         i++;
+      } else if (ch === '"') {
+        inQuotes = false;
       } else {
-        inQuotes = !inQuotes;
+        cell += ch;
       }
-    } else if (ch === "," && !inQuotes) {
-      out.push(current);
-      current = "";
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && csv[i + 1] === "\n") i++;
+      row.push(cell);
+      cell = "";
+      if (row.some((c) => c.trim() !== "")) records.push(row);
+      row = [];
     } else {
-      current += ch;
+      cell += ch;
     }
   }
-  out.push(current);
-  return out;
+  row.push(cell);
+  if (row.some((c) => c.trim() !== "")) records.push(row);
+  return records;
 }
 
-/** Parses a CSV string with headers into a typed `DataTable`. */
 export function parseCsvDataTable(csv: string): DataTable {
-  const lines = csv
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  if (lines.length === 0) return { headers: [], rows: [] };
-
-  const headers = splitCsvLine(lines[0]!).map((h) => h.trim());
+  const records = splitCsvRecords(csv);
+  if (records.length === 0) return { headers: [], rows: [] };
+  const headers = records[0]!.map((h) => h.trim());
   const rows: DataTableRow[] = [];
-  for (let r = 1; r < lines.length; r++) {
-    const cells = splitCsvLine(lines[r]!);
+  for (let r = 1; r < records.length; r++) {
+    const cells = records[r]!;
     const obj: Record<string, DataCellValue> = {};
     headers.forEach((h, i) => {
       obj[h] = coerceCell(cells[i] ?? "");

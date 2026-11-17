@@ -109,7 +109,8 @@ export function evaluateResponsive3dWidths() {
     widthPx: width,
     tier: width <= 480 ? "mobile-compact" : width <= 1024 ? "tablet-balanced" : "desktop-full",
     fovDeg: width <= 480 ? 48 : 38,
-    clampsWithinViewport: true,
+    /** Not measured: nothing renders the scene at this width. Null until a browser test lays it out. */
+    clampsWithinViewport: null as boolean | null,
   }));
 }
 
@@ -120,7 +121,8 @@ export function buildSeoPosterAndFallback(title: string) {
     posterHeight: 630,
     ogImageMime: "image/webp",
     noscriptImgAlt: title,
-    noWebglFallbackActive: true,
+    /** No poster image is rendered and no no-WebGL fallback is emitted yet; this is the plan for one. */
+    noWebglFallbackActive: false,
   };
 }
 
@@ -130,26 +132,31 @@ export type ExportV2Target = "r3f" | "threejs" | "embed";
 export function compileExportV2Bundle(target: ExportV2Target) {
   const filename =
     target === "r3f" ? "Scene3D.tsx" : target === "threejs" ? "scene3d.mjs" : "scene3d-embed.html";
+  // Nothing is built here: no meshopt or KTX2 encoder is installed, no file is written, nothing is rendered or
+  // compared. These used to be reported as `true` / `0.004`; they are what Export v2 still has to do.
   return {
     target,
     filename,
-    meshoptCompressed: true,
-    ktx2Textures: true,
-    editorExportPixelDiff: 0.004, // <= 0.01 parity
-    offlineSocialPosterGenerated: true,
+    meshoptCompressed: false,
+    ktx2Textures: false,
+    /** Editor vs export pixel difference; null = not measured (no export is rendered). */
+    editorExportPixelDiff: null as number | null,
+    offlineSocialPosterGenerated: false,
+    built: false,
   };
 }
 
+/**
+ * The 100 mount/unmount cycle leak check. It needs a real renderer to mount; until one runs, it reports
+ * `measured: false` (it used to add and subtract 1 in a loop and report zero leaks).
+ */
 export function verify100CycleMemoryDiscipline(cycles = 100) {
-  let allocated = 0;
-  for (let i = 0; i < cycles; i++) {
-    allocated += 1;
-    allocated -= 1;
-  }
   return {
-    cyclesTested: cycles,
-    leakedResourcesCount: allocated,
-    zeroLeakVerified: allocated === 0,
+    cyclesTested: 0,
+    cyclesRequested: cycles,
+    leakedResourcesCount: null as number | null,
+    measured: false,
+    zeroLeakVerified: false,
   };
 }
 
@@ -162,6 +169,8 @@ export interface GateM4Report {
   readonly eightStepMaxSteps: number;
   readonly wizardMaxSteps: number;
   readonly zeroMemoryLeak100Cycles: boolean;
+  /** What this gate depends on but nothing measures yet. The gate can't pass while this is non-empty. */
+  readonly unmeasured: readonly string[];
 }
 
 export function runGateM4FullShip(): GateM4Report {
@@ -172,13 +181,25 @@ export function runGateM4FullShip(): GateM4Report {
   const exportR3f = compileExportV2Bundle("r3f");
   const wizardMaxSteps = Math.max(...MAKE_3D_WIZARDS.map((w) => w.steps.length));
 
-  const phonesGateM4aPassed = widths.length === 5 && widths.every((w) => w.clampsWithinViewport);
+  const phonesGateM4aPassed = widths.length === 5 && widths.every((w) => w.clampsWithinViewport === true);
   const a11yFallbacksGateM4bPassed = poster.noWebglFallbackActive && poster.posterWidth === 1200;
   const fullJourneyGateM4cPassed =
-    eightStep.passed && wizardMaxSteps <= 5 && mem.zeroLeakVerified && exportR3f.editorExportPixelDiff <= 0.01;
+    eightStep.passed &&
+    wizardMaxSteps <= 5 &&
+    mem.zeroLeakVerified &&
+    exportR3f.editorExportPixelDiff !== null &&
+    exportR3f.editorExportPixelDiff <= 0.01;
+
+  const unmeasured = [
+    ...(widths.some((w) => w.clampsWithinViewport === null) ? ["scene layout at the 5 widths"] : []),
+    ...(poster.noWebglFallbackActive ? [] : ["poster and no-WebGL fallback"]),
+    ...(mem.measured ? [] : ["100-cycle mount/unmount leak check"]),
+    ...(exportR3f.built ? [] : ["Export v2 build, compression and editor/export pixel parity"]),
+  ];
 
   return {
-    passed: phonesGateM4aPassed && a11yFallbacksGateM4bPassed && fullJourneyGateM4cPassed,
+    passed: phonesGateM4aPassed && a11yFallbacksGateM4bPassed && fullJourneyGateM4cPassed && unmeasured.length === 0,
+    unmeasured,
     phonesGateM4aPassed,
     a11yFallbacksGateM4bPassed,
     fullJourneyGateM4cPassed,

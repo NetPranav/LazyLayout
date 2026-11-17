@@ -123,3 +123,46 @@ describe("Phase 162 · the physics is right, not only repeatable (audit 2026-11-
     assert.ok(Math.abs(b.vy) < 20, `still moving ${b.vy}`);
   });
 });
+
+describe("Phase 162 · stepping and replay bookkeeping (review 2026-11-17)", () => {
+  const body = (id: string, x: number, y: number, vy: number, kind: "dynamic" | "static" = "dynamic"): PhysicsBodyState => ({
+    id,
+    kind,
+    shape: { kind: "circle", radius: 10 },
+    x,
+    y,
+    vx: 0,
+    vy,
+    angleRad: 0,
+    angularVel: 0,
+    mass: kind === "static" ? 0 : 1,
+    restitution: 0,
+    friction: 0,
+    linearDamping: 0,
+    angularDamping: 0,
+  } as PhysicsBodyState);
+
+  it("a frame that takes several substeps returns the contacts of all of them", () => {
+    // Two balls colliding head-on; a 1/30 s frame is 4 substeps at 1/120 s.
+    const world = createPhysicsWorld2D([body("a", 0, 0, 0), body("b", 0, 25, -600)], { seed: 1, gravityY: 0 });
+    const contacts = world.step(1 / 30);
+    assert.ok(contacts.length >= 1, "the collision isn't lost because it happened before the last substep");
+  });
+
+  it("a long stall does not leave a backlog that speeds up later frames", () => {
+    const world = createPhysicsWorld2D([body("a", 0, 0, 0)], { seed: 1 });
+    world.step(0.25); // more time than the substep cap covers
+    const before = world.getStepIndex();
+    world.step(1 / 60);
+    assert.ok(world.getStepIndex() - before <= 3, `next frame ran ${world.getStepIndex() - before} substeps`);
+  });
+
+  it("seeking back drops the snapshots of the timeline it left, and snapshots stay bounded", () => {
+    const world = createPhysicsWorld2D([body("a", 0, 0, 0)], { seed: 1, snapshotIntervalSteps: 1 });
+    for (let i = 0; i < 2000; i++) world.stepFixedSubstep();
+    assert.ok(world.getSavedSnapshots().length <= 240);
+    world.seekToTime(0.1);
+    const stepAfterSeek = world.getStepIndex();
+    assert.ok(world.getSavedSnapshots().every((s) => s.stepIndex <= stepAfterSeek));
+  });
+});

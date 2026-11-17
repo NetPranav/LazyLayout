@@ -343,9 +343,10 @@ describe("Phase 241 · LLM integration layer", () => {
 
   it("gates the route handler for developer use only and streams valid requests as SSE", async () => {
     assert.equal(isPrivateAiRouteEnabled({ NODE_ENV: "production" }), false);
+    // The public labs build flag must not open the server's key (review 2026-11-17).
     assert.equal(
       isPrivateAiRouteEnabled({ NODE_ENV: "production", NEXT_PUBLIC_ENABLE_LABS: "1" }),
-      true,
+      false,
     );
     assert.equal(
       isPrivateAiRouteEnabled({ NODE_ENV: "production", LAZYLAYOUT_ENABLE_AI_ROUTE: "1" }),
@@ -436,5 +437,25 @@ describe("Phase 241 · LLM integration layer", () => {
       assert.equal(text.includes("ANTHROPIC_API_KEY"), false);
       assert.equal(text.includes("NEXT_PUBLIC_ANTHROPIC"), false);
     }
+  });
+});
+
+describe("AI route hardening (review 2026-11-17)", () => {
+  it("server-key requests only accept listed models", async () => {
+    const { isAllowedServerModel } = await import("../routeHandler");
+    assert.equal(isAllowedServerModel("anthropic", undefined), true);
+    assert.equal(isAllowedServerModel("anthropic", "claude-sonnet-5-5"), true);
+    assert.equal(isAllowedServerModel("anthropic", "some-expensive-unlisted-model"), false);
+  });
+
+  it("the public paths are rate limited per client", async () => {
+    const { takePublicRateLimitToken, resetPublicRateLimit, PUBLIC_RATE_LIMIT } = await import("../routeHandler");
+    resetPublicRateLimit();
+    const t0 = 1_000_000;
+    for (let i = 0; i < PUBLIC_RATE_LIMIT.maxRequests; i++) assert.equal(takePublicRateLimitToken("1.2.3.4", t0 + i), true);
+    assert.equal(takePublicRateLimitToken("1.2.3.4", t0 + 100), false, "over the limit inside the window");
+    assert.equal(takePublicRateLimitToken("5.6.7.8", t0 + 100), true, "other clients are not affected");
+    assert.equal(takePublicRateLimitToken("1.2.3.4", t0 + PUBLIC_RATE_LIMIT.windowMs + 200), true, "the window slides");
+    resetPublicRateLimit();
   });
 });

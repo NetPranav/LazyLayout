@@ -51,3 +51,20 @@ describe("Stage 4 Phase 147: hold, swipe, fling, slingshot, double tap, pinch & 
     assert.equal(keySwipe.swipe?.direction, "right");
   });
 });
+
+describe("Phase 147 · a long press is not a tap (review 2026-11-17)", () => {
+  it("long press followed by a quick tap is not a double-tap", async () => {
+    const { createGestureRecognizer } = await import("../gestures");
+    const g = createGestureRecognizer({ holdDurationSec: 0.5, doubleTapWindowSec: 0.35 });
+    let t = 0;
+    const at = (down: boolean) => g.step({ time: t, down, x: 10, y: 10 });
+    at(true);
+    for (; t < 0.7; t += 0.05) at(true); // held past the long-press time
+    at(false);
+    t += 0.1;
+    at(true);
+    t += 0.05;
+    const release = at(false);
+    assert.equal(release.doubleTapFired, false);
+  });
+});

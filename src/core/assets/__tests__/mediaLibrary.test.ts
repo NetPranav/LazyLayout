@@ -60,7 +60,7 @@ describe("Phase 126: stock photos", () => {
     assert.equal(photos[1].source.licence, "CC0 1.0");
     assert.equal(photos[1].source.attribution, '"Untitled", licensed under CC0 1.0.');
     assert.equal(licenceName("pdm"), "Public Domain Mark");
-    assert.equal(openverseSearchUrl("red  fox ", 2), "https://api.openverse.org/v1/images/?q=red++fox&page=2&page_size=20&mature=false");
+    assert.equal(openverseSearchUrl("red  fox ", 2), "https://api.openverse.org/v1/images/?q=red++fox&page=2&page_size=20&mature=false&license_type=commercial%2Cmodification");
   });
 });
 
@@ -82,5 +82,26 @@ describe("Phase 126: in the asset store", () => {
     const reloaded = parseMotionDocument(JSON.parse(JSON.stringify(getDocument())));
     assert.deepEqual(Object.values(reloaded.assets ?? {})[0].source, iconSource("arrow-right"));
     assert.equal(setAssetSource("0".repeat(64), iconSource("x")), false, "no asset, nothing recorded");
+  });
+});
+
+describe("Phase 126 · stock photos are usable on commercial sites (review 2026-11-17)", () => {
+  it("asks Openverse for commercial, modifiable licences only", () => {
+    const url = new URL(openverseSearchUrl("mountains"));
+    assert.equal(url.searchParams.get("license_type"), "commercial,modification");
+  });
+
+  it("drops NC and ND licences even when the API returns them", () => {
+    const base = { url: "https://x.test/a.jpg", foreign_landing_url: "https://x.test/a", title: "A" };
+    const photos = parseOpenverse({
+      results: [
+        { ...base, id: "ok", license: "by" },
+        { ...base, id: "nc", license: "by-nc" },
+        { ...base, id: "nd", license: "by-nd" },
+        { ...base, id: "ncsa", license: "by-nc-sa" },
+        { ...base, id: "zero", license: "cc0" },
+      ],
+    });
+    assert.deepEqual(photos.map((p) => p.id), ["ok", "zero"]);
   });
 });

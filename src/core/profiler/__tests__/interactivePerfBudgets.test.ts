@@ -15,8 +15,11 @@ describe("Phase 200: Interactive performance budgets & simulated tier soaks", ()
     assert.equal(audit.totalEffects, 98);
     assert.equal(audit.passingAllTiers, 98);
     assert.deepEqual(audit.failedEffectIds, []);
-    assert.equal(audit.lowTierSoakPassed, 98);
-    assert.equal(audit.midTierSoakPassed, 98);
+    // No soak has run, so none passed; the declared costs of all 98 fit the low and mid budgets.
+    assert.equal(audit.lowTierSoakPassed, 0);
+    assert.equal(audit.midTierSoakPassed, 0);
+    assert.equal(audit.lowTierDeclaredWithinBudget, 98);
+    assert.equal(audit.midTierDeclaredWithinBudget, 98);
 
     for (const def of FULL_EFFECT_LIBRARY) {
       const badges = audit.badgesByEffect[def.id];
@@ -27,23 +30,18 @@ describe("Phase 200: Interactive performance budgets & simulated tier soaks", ()
     }
   });
 
-  it("verifies zero memory growth and zero leaked surfaces over 10-minute simulated low & mid soaks", () => {
+  it("does not claim a soak it did not run: leaks and memory are null, and the soak does not pass", () => {
     const sample = FULL_EFFECT_LIBRARY[0];
     assert.ok(sample);
 
     const lowSoak = runSimulatedTierSoak(sample, "T0", 10);
-    const midSoak = runSimulatedTierSoak(sample, "T2", 10);
-
-    assert.equal(lowSoak.simulatedTicks, 600);
-    assert.equal(lowSoak.memoryDeltaMb, 0);
-    assert.equal(lowSoak.leakedSurfaces, 0);
+    assert.equal(lowSoak.soakRun, false);
+    assert.equal(lowSoak.simulatedTicks, 0);
+    assert.equal(lowSoak.memoryDeltaMb, null);
+    assert.equal(lowSoak.leakedSurfaces, null);
     assert.equal(lowSoak.tapePassed, true);
-    assert.equal(lowSoak.passed, true);
-
-    assert.equal(midSoak.simulatedTicks, 600);
-    assert.equal(midSoak.memoryDeltaMb, 0);
-    assert.equal(midSoak.leakedSurfaces, 0);
-    assert.equal(midSoak.passed, true);
+    assert.equal(lowSoak.declaredWithinBudget, true);
+    assert.equal(lowSoak.passed, false);
   });
 
   it("flags budget violations and strips low badge when an effect exceeds T0 thresholds", () => {
@@ -69,6 +67,7 @@ describe("Phase 200: Interactive performance budgets & simulated tier soaks", ()
     assert.equal(badges.high, true);
 
     const soak = runSimulatedTierSoak(heavyEffect, "T0", 10);
+    assert.equal(soak.declaredWithinBudget, false);
     assert.equal(soak.passed, false);
   });
 });

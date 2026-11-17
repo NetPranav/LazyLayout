@@ -81,10 +81,12 @@ describe("Phase 169: Blueprint compiler & interaction parity", () => {
     assert.equal(outHover.hasCssFastPath, true);
     assert.ok(outHover.cssFallbackRules.includes(":hover"));
 
+    // Keep-out needs the physics runtime, which the export doesn't have yet: it is reported, not stubbed.
     const keepOutGraph = makeReferenceGraph(1);
     const outKeepOut = compileBlueprintToTarget(keepOutGraph, "react");
-    assert.ok(outKeepOut.usedVendoredModules.includes("physics2d"));
-    assert.ok(outKeepOut.code.includes("physics2d.applyKeepOutConstraint"));
+    assert.ok(outKeepOut.unsupportedNodes.some((n) => n.includes("interaction/keepOut")));
+    assert.ok(outKeepOut.code.includes("Not exported yet"));
+    assert.equal(outKeepOut.code.includes("applyKeepOutConstraint"), false);
   });
 
   it("rejects arbitrary-code nodes during compilation", () => {
@@ -96,5 +98,57 @@ describe("Phase 169: Blueprint compiler & interaction parity", () => {
       position: { x: 100, y: 100 },
     };
     assert.throws(() => compileBlueprintToTarget(g, "vanilla"), /prohibited/);
+  });
+
+  it("wires each event to its own DOM event and runs actions in wire order, not canvas order (review 2026-11-17)", () => {
+    const g = ASTManager.createGraph("order", "Order", "event");
+    const graph: BlueprintGraph = {
+      ...g,
+      nodes: {
+        hover: { id: "hover", type: "interaction/onHover", title: "Hover", position: { x: 0, y: 0 }, customParams: { target: "card" } },
+        // Placed LEFT of `first` on the canvas, but wired second.
+        second: { id: "second", type: "interaction/setProperty", title: "Second", position: { x: 10, y: 0 }, customParams: { target: "card", property: "transform.y", value: -8 } },
+        first: { id: "first", type: "interaction/setProperty", title: "First", position: { x: 500, y: 0 }, customParams: { target: "card", property: "appearance.opacity", value: 0.5 } },
+      },
+      wires: [
+        { id: "w1", sourceNodeId: "hover", sourcePinId: "exec", targetNodeId: "first", targetPinId: "exec", pinType: "exec", isExec: true },
+        { id: "w2", sourceNodeId: "first", sourcePinId: "exec", targetNodeId: "second", targetPinId: "exec", pinType: "exec", isExec: true },
+      ],
+    };
+    const out = compileBlueprintToTarget(graph, "vanilla");
+    const [listener] = out.program.listeners;
+    assert.equal(listener?.event, "pointerenter");
+    assert.deepEqual(listener?.actions.map((a) => (a.kind === "setStyle" ? a.path : a.kind)), ["appearance.opacity", "transform.y"]);
+    assert.deepEqual(out.unsupportedNodes, []);
+  });
+
+  it("the exported code really changes the element when the event fires", async () => {
+    const ts = await import("typescript");
+    const graph = makeReferenceGraph(0); // onHover -> setProperty effects.glow 0.8 on target_0
+    graph.nodes.evt!.customParams = { target: "target_0" };
+    const out = compileBlueprintToTarget(graph, "vanilla");
+    const js = ts.transpileModule(out.code, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText;
+
+    const listeners = new Map<string, () => void>();
+    const style: Record<string, string> & { setProperty: (k: string, v: string) => void } = {
+      setProperty(k: string, v: string) { style[k] = v; },
+    } as never;
+    const el = {
+      style,
+      addEventListener: (type: string, fn: () => void) => listeners.set(type, fn),
+      removeEventListener: (type: string) => listeners.delete(type),
+    };
+    const mount = new Function(`${js.replace(/^export /gm, "")}
+return mount${"RefGraph_0"};`)() as (
+      root: unknown,
+      targets: Record<string, unknown>,
+    ) => () => void;
+    const dispose = mount(el, { target_0: el });
+    assert.ok(listeners.has("pointerenter"), "listens for hover, not pointerdown");
+    assert.equal(listeners.has("pointerdown"), false);
+    listeners.get("pointerenter")!();
+    assert.equal(style.boxShadow, "0 0 19px currentColor", "the DOM is written, not an in-memory map");
+    dispose();
+    assert.equal(listeners.size, 0, "dispose removes the listener");
   });
 });

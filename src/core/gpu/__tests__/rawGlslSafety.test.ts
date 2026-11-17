@@ -56,3 +56,36 @@ describe("Phase 178: Raw GLSL Pro & shader safety", () => {
     assert.equal(breaker.isProgramDisabled("prog_custom"), true);
   });
 });
+
+describe("Phase 178 · loops and fetches that used to slip through (review 2026-11-17)", () => {
+  it("rejects nested loops whose total iterations exceed the limit", () => {
+    const nested = [
+      "void main() {",
+      "  for (int i = 0; i < 128; i++) {",
+      "    for (int j = 0; j < 128; j++) {",
+      "      for (int k = 0; k < 128; k++) {",
+      "      }",
+      "    }",
+      "  }",
+      "}",
+    ].join("\n");
+    const res = validateRawGlslSafety(nested);
+    assert.equal(res.ok, false);
+    assert.equal(res.maxLoopIterationsDetected, 128 * 128 * 128);
+  });
+
+  it("rejects a step that never moves, a counter changed in the body, a split header and #define", () => {
+    assert.equal(validateRawGlslSafety("void main() { for (int i = 0; i < 8; i += 0) {} }").ok, false);
+    assert.equal(validateRawGlslSafety("void main() {\n for (int i = 0; i < 8; i++) {\n  i = 0;\n }\n}").ok, false);
+    assert.equal(validateRawGlslSafety("void main() {\n for (int i = 0;\n i < 8; i++) {}\n}").ok, false);
+    assert.equal(validateRawGlslSafety("#define N 100000\nvoid main() {}").ok, false);
+  });
+
+  it("counts a texture fetch once per loop iteration", () => {
+    const res = validateRawGlslSafety("uniform sampler2D t;\nvoid main() {\n for (int i = 0; i < 8; i++) {\n  vec4 c = texture(t, vec2(0.0));\n }\n}");
+    assert.equal(res.textureFetches, 8);
+    assert.equal(res.ok, true);
+    const heavy = validateRawGlslSafety("uniform sampler2D t;\nvoid main() {\n for (int i = 0; i < 64; i++) {\n  vec4 c = texture(t, vec2(0.0));\n }\n}");
+    assert.equal(heavy.ok, false);
+  });
+});

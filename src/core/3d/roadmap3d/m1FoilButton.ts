@@ -848,30 +848,39 @@ export function bakeClothSimulation(
 
 /** 3D-056..3D-061: Editor path tracer, baker, interactive export v1 & blueprint alignment. */
 export function runProgressivePathTracer(samples = 64) {
+  // There is no path tracer or denoiser yet: nothing is traced, so nothing converges. (This used to report
+  // `denoiser: "oidn-spectral"`, `converged: true` and a bundle exclusion that nothing checked.)
   return {
+    implemented: false,
     editorOnly: true,
-    excludedFromRuntimeBundle: true,
-    samplesAccumulated: samples,
-    denoiser: "oidn-spectral",
-    converged: samples >= 32,
+    /** Null: no bundle check covers a path tracer (there is none to exclude). */
+    excludedFromRuntimeBundle: null as boolean | null,
+    samplesRequested: samples,
+    samplesAccumulated: 0,
+    denoiser: null as string | null,
+    converged: false,
   };
 }
 
 export function bakeSurfaceMapsAndPoster(width = 1024, height = 1024) {
+  // Nothing is baked yet; the byte sizes used to be constants. Null = not produced.
   return {
-    lightmapBytes: 4200,
-    aoBytes: 3100,
-    bentNormalBytes: 3400,
-    posterWebpBytes: 8600,
+    baked: false,
+    lightmapBytes: null as number | null,
+    aoBytes: null as number | null,
+    bentNormalBytes: null as number | null,
+    posterWebpBytes: null as number | null,
     resolution: `${width}x${height}`,
   };
 }
 
 export function alignBlueprintReferenceImage(pointsCount = 4) {
+  // No image is aligned here; the error used to be the constant 0.28 px. Reference images are editor-only layers,
+  // and the export tests check editor-only layers are stripped (isEditorOnlyLayer), not this function.
   return {
     pointsAligned: pointsCount,
-    maxPixelError: 0.28,
-    strippedFromExport: true,
+    maxPixelError: null as number | null,
+    strippedFromExport: null as boolean | null,
   };
 }
 
@@ -879,6 +888,8 @@ export function alignBlueprintReferenceImage(pointsCount = 4) {
 export interface GateM1Report {
   readonly passed: boolean;
   readonly stepsCompleted: number;
+  /** What this gate depends on but nothing measures yet. The gate cannot pass while this is non-empty. */
+  readonly unmeasured: readonly string[];
   readonly look: MaterialLookV1Id;
   readonly decalText: string;
   readonly lightRig: LightRigLookV1Id;
@@ -935,23 +946,29 @@ export function runGateM1FoilButton(): GateM1Report {
   // or gzipped here, so this is a budget check on the estimate, not a measurement.
   const exportGzipBytes = 24800 + Math.round(bake.estimatedGzipBytes * 0.5);
 
+  const unmeasured = [
+    ...(pt.implemented ? [] : ["editor path trace and bake"]),
+    "export size (an estimate; no export is built or gzipped)",
+  ];
   const passed =
+    unmeasured.length === 0 &&
     subdiv.mesh.faces.length >= 24 &&
     pbrSample.iridescenceFactor >= 0 &&
     decal.a11ySingleNode &&
     cloth.volumeDriftRatio <= 0.01 &&
     shadowRig.shadowCasters >= 1 &&
-    pt.excludedFromRuntimeBundle &&
+    pt.excludedFromRuntimeBundle === true &&
     exportGzipBytes <= 60_000;
 
   return {
     passed,
     stepsCompleted: 7,
+    unmeasured,
     look,
     decalText: decal.text,
     lightRig,
     volumeDriftRatio: cloth.volumeDriftRatio,
     exportGzipBytes,
-    pathTracerExcluded: pt.excludedFromRuntimeBundle,
+    pathTracerExcluded: pt.excludedFromRuntimeBundle === true,
   };
 }

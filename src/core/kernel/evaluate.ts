@@ -101,7 +101,11 @@ export interface KernelGap {
 }
 
 /** What this kernel's composition order can't evaluate yet, and why — see the module header. */
-export const KERNEL_GAPS: KernelGap[] = [];
+export const KERNEL_GAPS: KernelGap[] = [
+  // Restored 2026-11-17: Phase 143 removed this entry, but evaluate() still runs only `loop` (see the behaviours
+  // step below). Phase 143's presets are binding drafts and a lab-only stepper; neither runs inside this kernel.
+  { area: "behaviours", note: "Only `loop` is evaluated (a pure function of t). follow-pointer, magnet, tilt, proximity's spring, spring-to, inertia and noise all need pointer/scroll *history* (springs respond to a path, not a single sample) — that's the Deterministic Replay Law's territory (Phase 64) and Phase 12's behaviour runtime, not this kernel." },
+];
 
 function findActiveState(doc: MotionDocument, layerId: string, stateName: string | undefined) {
   if (!stateName) return undefined;

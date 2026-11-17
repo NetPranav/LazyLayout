@@ -42,7 +42,7 @@ async function openEditorWith3dScene(page: Page) {
 }
 
 test.describe("Main /editor ROADMAP_3D Integration Headed E2E (3D-001 – 3D-227)", () => {
-  test("1. Main /editor · All 227-Phase Gates + Case 2 M1 Foil Button & Opposite Pointer Light", async ({
+  test("1. Main /editor · Case 2 M1 Foil Button & Opposite Pointer Light", async ({
     page,
   }) => {
     const pageErrors: string[] = [];
@@ -50,16 +50,8 @@ test.describe("Main /editor ROADMAP_3D Integration Headed E2E (3D-001 – 3D-227
 
     await openEditorWith3dScene(page);
 
-    await page.getByTestId("editor-r3d-run-gates-btn").click();
-    const summary = page.getByTestId("editor-r3d-gates-summary");
-    await expect(summary).toContainText("3D model checks (8, simulated, not the ROADMAP_3D gates): PASS");
-    await expect(summary).toContainText("M1=true");
-    await expect(summary).toContainText("A=true");
-    await expect(summary).toContainText("M2=true");
-    await expect(summary).toContainText("M3=true");
-    await expect(summary).toContainText("M4=true");
-    await expect(summary).toContainText("B=true");
-    await expect(summary).toContainText("C=true");
+    // The simulated "227-phase gates" summary was removed from the editor (review 2026-11-17): its results were
+    // hard-coded, so it told users nothing. The Studio tab's working tools are checked below.
 
     // Hover across opposite corners of the Pointer Light stage inside /editor's Right Panel
     const stage = page.getByTestId("editor-r3d-pointer-light-stage");

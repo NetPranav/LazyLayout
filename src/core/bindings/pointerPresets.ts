@@ -194,15 +194,24 @@ export function buildPointerPresetDrafts(
   strength = 1
 ): BindingDraft[] {
   const on = { kind: "layer" as const, ref: layerId };
+  /** The cursor's offset from the layer's centre, -1..1 per axis (clamped outside the layer), remapped to ±`px`. */
+  const towardCursor = (axis: "x" | "y", px: number, tau: number): BindingDraft =>
+    BindingDraftSchema.parse({
+      expr: {
+        signal: { kind: "pointerIn", channel: "ndc", space: "local" },
+        operators: [
+          { op: "component", axis },
+          { op: "remap", inMin: -1, inMax: 1, outMin: -px, outMax: px, clamp: true },
+          { op: "smooth", tau },
+        ],
+      },
+      target: { kind: "property", on, path: axis === "x" ? "transform.x" : "transform.y" },
+      blend: "add",
+    });
   switch (preset) {
     case "magnet":
-      return [
-        BindingDraftSchema.parse({
-          expr: { signal: { kind: "proximity", layer: layerId, measure: "center" }, operators: [{ op: "falloff", shape: "smoothstep", radius: 200 }, { op: "mul", x: 16 * strength }, { op: "smooth", tau: 0.1 }] },
-          target: { kind: "property", on, path: "transform.x" },
-          blend: "add",
-        }),
-      ];
+      // Pulls toward the cursor on both axes (was: proximity added to x only, which always pushed right).
+      return [towardCursor("x", 16 * strength, 0.1), towardCursor("y", 16 * strength, 0.1)];
     case "tilt":
       return [
         BindingDraftSchema.parse({
@@ -217,18 +226,9 @@ export function buildPointerPresetDrafts(
         }),
       ];
     case "followLag":
-      return [
-        BindingDraftSchema.parse({
-          expr: { signal: { kind: "pointer", channel: "x" }, operators: [{ op: "smooth", tau: 0.14 }] },
-          target: { kind: "property", on, path: "transform.x" },
-          blend: "replace",
-        }),
-        BindingDraftSchema.parse({
-          expr: { signal: { kind: "pointer", channel: "y" }, operators: [{ op: "smooth", tau: 0.14 }] },
-          target: { kind: "property", on, path: "transform.y" },
-          blend: "replace",
-        }),
-      ];
+      // Leans after the cursor with a lag, as an offset from where the layer is (was: `replace` with the page-space
+      // pointer, which jumped the layer to page coordinates whatever its parent).
+      return [towardCursor("x", 60 * strength, 0.14), towardCursor("y", 60 * strength, 0.14)];
     case "proximity":
       return [
         BindingDraftSchema.parse({
@@ -248,27 +248,44 @@ export function buildPointerPresetDrafts(
           target: { kind: "cssvar", on, name: "spotlight-y" },
         }),
       ];
-    case "inertia":
-      return [
+    case "inertia": {
+      // Only while the pointer is pressed does its velocity feed the leaky integrator, so the layer is flung in the
+      // drag direction and settles back (was: pointer dx accumulated on every hover move, so the layer drifted).
+      const flung = (axis: "x" | "y"): BindingDraft =>
         BindingDraftSchema.parse({
-          expr: { signal: { kind: "pointer", channel: "dx" }, operators: [{ op: "accumulate", decay: 5 }, { op: "mul", x: strength }] },
-          target: { kind: "property", on, path: "transform.x" },
+          expr: {
+            signal: { kind: "pointer", channel: "down" },
+            operators: [
+              {
+                op: "select",
+                whenTrue: { signal: { kind: "pointer", channel: "velocity" }, operators: [{ op: "component", axis }] },
+                whenFalse: { signal: { kind: "constant", value: 0 }, operators: [] },
+              },
+              { op: "accumulate", decay: 5 },
+              { op: "mul", x: 0.3 * strength },
+            ],
+          },
+          target: { kind: "property", on, path: axis === "x" ? "transform.x" : "transform.y" },
           blend: "add",
-        }),
-      ];
+        });
+      return [flung("x"), flung("y")];
+    }
     case "noise":
-    case "wander":
-      return [
+    case "wander": {
+      const frequency = preset === "wander" ? 0.45 : 1.1;
+      const seed = preset === "wander" ? 5 : 11;
+      const drift = (axis: "x" | "y", axisSeed: number): BindingDraft =>
         BindingDraftSchema.parse({
-          expr: { signal: { kind: "time" }, operators: [{ op: "noise", frequency: preset === "wander" ? 0.45 : 1.1, amplitude: 20 * strength, seed: preset === "wander" ? 5 : 11 }] },
-          target: { kind: "property", on, path: "transform.x" },
+          expr: { signal: { kind: "time" }, operators: [{ op: "noise", frequency, amplitude: 20 * strength, seed: axisSeed }] },
+          target: { kind: "property", on, path: axis === "x" ? "transform.x" : "transform.y" },
           blend: "add",
-        }),
-      ];
+        });
+      // Both axes, with different seeds (was: x only).
+      return [drift("x", seed), drift("y", seed + 17)];
+    }
   }
 }
 
-/** Evaluates a batch of reactive layers in one frame for 50-layer 60 fps checks. */
 export function stepPointerPresetsBatch(
   entries: readonly { readonly config: PointerPresetConfig; readonly state: PointerPresetState }[],
   input: PointerFrameInput

@@ -148,3 +148,48 @@ describe("Phase 151 · State machines", () => {
     assert.deepEqual(snap.transitionHistory, ["idle", "hoverBlend", "pressed", "disabled"]);
   });
 });
+
+describe("Phase 151 · interrupts and triggers (review 2026-11-17)", () => {
+  const spec: StateMachineSpec = {
+    id: "sm-btn",
+    name: "Button",
+    initialStateId: "idle",
+    inputs: [
+      { name: "hovered", kind: "boolean", initial: false },
+      { name: "press", kind: "trigger" },
+    ],
+    states: [
+      { id: "idle", label: "Idle", kind: "pose", properties: { "transform.scale": 1 }, x: 0, y: 0 },
+      { id: "hover", label: "Hover", kind: "pose", properties: { "transform.scale": 2 }, x: 0, y: 0 },
+      { id: "pressed", label: "Pressed", kind: "pose", properties: { "transform.scale": 0.5 }, x: 0, y: 0 },
+    ],
+    transitions: [
+      { id: "in", from: "idle", to: "hover", durationSec: 1, conditions: [{ input: "hovered", op: "==", value: true }] },
+      { id: "out", from: "hover", to: "idle", durationSec: 1, conditions: [{ input: "hovered", op: "==", value: false }] },
+      { id: "tap", from: "hover", to: "pressed", durationSec: 0, conditions: [{ input: "press", op: "fired" }] },
+    ],
+  } as StateMachineSpec;
+
+  it("hover-out interrupts a running hover-in and reverses from where it was", () => {
+    const sm = createStateMachineRuntime(spec);
+    sm.setBoolean("hovered", true);
+    sm.step(0); // starts idle -> hover
+    sm.step(0.25); // one step is capped at 0.25 s
+    sm.step(0.25);
+    const mid = sm.snapshot().properties["transform.scale"]!;
+    assert.ok(mid > 1.4 && mid < 1.6, `half way (${mid})`);
+    sm.setBoolean("hovered", false);
+    const after = sm.step(0);
+    assert.equal(after.activeTransition?.toStateId, "idle", "reversing without waiting for hover-in to end");
+    assert.ok(Math.abs(after.properties["transform.scale"]! - mid) < 1e-6, "no jump at the interruption");
+  });
+
+  it("a trigger nothing uses is dropped, not kept to fire later", () => {
+    const sm = createStateMachineRuntime(spec);
+    sm.fireTrigger("press"); // in idle, where nothing listens for it
+    sm.step(0.016);
+    sm.setBoolean("hovered", true);
+    for (let i = 0; i < 80; i++) sm.step(0.016);
+    assert.equal(sm.snapshot().currentStateId, "hover", "the old press did not fire the tap later");
+  });
+});

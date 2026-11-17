@@ -27,7 +27,7 @@ describe("Phase 14: shell structure", () => {
     const allowed = new Set(["panels/builtins.tsx"]);
     const offenders: string[] = [];
     for (const file of files(shellDir)) {
-      const rel = file.slice(shellDir.length + 1);
+      const rel = file.slice(shellDir.length + 1).replace(/\\/g, "/"); // "/" on every OS (Windows paths use "\")
       if (allowed.has(rel)) continue;
       for (const line of readFileSync(file, "utf8").split("\n")) {
         // A static import: `import ... from "@/legacy-editor/panels/..."` (a dynamic `import(...)` has no `from`).

@@ -16,7 +16,6 @@ import {
   MATERIAL_LOOKS_V1,
   type MaterialLookV1Id,
   type PointerLightMode,
-  type Roadmap3dMasterGateReport,
   type WrapStyleId,
   applyMaterialLookV1,
   buildWebgl2MicroRenderer,
@@ -30,7 +29,6 @@ import {
   exportZeroScriptCssReaction,
   mixMultipleAnimationsLive,
   projectTextOntoPhotoSurface,
-  runAllRoadmap3dGates,
   scanBundleForEditorLeaks,
   stepXpbdCloth,
   subdivideCatmullClark,
@@ -59,9 +57,6 @@ export const StudioTab: React.FC<StudioTabProps> = ({
   className = "",
 }) => {
   const [mode, setMode] = useState<StudioModeId>("m1-foil");
-  const [gateReport, setGateReport] = useState<Roadmap3dMasterGateReport>(() =>
-    runAllRoadmap3dGates(),
-  );
 
   // M1 + M1+ Foil Button & Opposite Pointer Light
   const [materialLook, setMaterialLook] = useState<MaterialLookV1Id>("black-foil-mylar");
@@ -251,33 +246,6 @@ export const StudioTab: React.FC<StudioTabProps> = ({
       data-testid="tab-studio"
       data-object-id={objectId}
     >
-      {/* Master 227-Phase Gates Summary & Trigger */}
-      <div className="ll:flex ll:flex-col ll:gap-2 ll:p-2.5 ll:bg-surface-canvas ll:border ll:border-border ll:rounded">
-        <div className="ll:flex ll:items-center ll:justify-between ll:gap-2">
-          <span className="ll:text-micro ll:font-semibold ll:text-primary">
-            ROADMAP_3D Studio (3D-001 – 3D-227)
-          </span>
-          <Button
-            size="sm"
-            variant="secondary"
-            data-testid="editor-r3d-run-gates-btn"
-            onClick={() => setGateReport(runAllRoadmap3dGates())}
-          >
-            Run Gates
-          </Button>
-        </div>
-        <div
-          data-testid="editor-r3d-gates-summary"
-          className="ll:text-micro ll:font-mono ll:text-primary ll:leading-relaxed"
-        >
-          3D model checks ({gateReport.checksRun}, simulated, not the ROADMAP_3D gates): {gateReport.allPassed ? "PASS" : "FAIL"} | M1=
-          {String(gateReport.gateM1.passed)} A={String(gateReport.gateA.passed)} M2=
-          {String(gateReport.gateM2.passed)} M3={String(gateReport.gateM3.passed)} M4=
-          {String(gateReport.gateM4.passed)} B={String(gateReport.gateB.passed)} C=
-          {String(gateReport.gateC.passed)}
-        </div>
-      </div>
-
       {/* Mode Switcher */}
       <div className="ll:grid ll:grid-cols-3 ll:gap-1">
         {MODE_BUTTONS.map((b) => {
@@ -588,7 +556,7 @@ export const StudioTab: React.FC<StudioTabProps> = ({
           </div>
           <div data-testid="editor-r3d-photo-readout" className="ll:text-micro ll:font-mono ll:text-primary">
             photoStays2D={String(carWrap.photoStays2D)} | rot={carWrap.cameraOrPhotoRotatedDeg}deg |
-            creaseRecall={(carWrap.creaseRecallRatio * 100).toFixed(0)}% |
+            creaseRecall={carWrap.creaseRecallRatio === null ? "not measured" : `${(carWrap.creaseRecallRatio * 100).toFixed(0)}%`} |
             homographyErr={billboardHomography.maxCornerErrorPx.toFixed(4)}px | ai={carAiStatus.executedOn}
           </div>
         </div>

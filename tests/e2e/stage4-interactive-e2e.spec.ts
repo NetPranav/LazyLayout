@@ -177,7 +177,8 @@ test.describe("Stage 4 End-to-End Interactive Runtime (Phases 132–202)", () =>
     expect(gpu.simSeekHashParity).toBe(true);
     expect(gpu.libraryTotalEffects).toBeGreaterThanOrEqual(80);
     expect(gpu.libraryPassingAllTiers).toBe(gpu.libraryTotalEffects);
-    expect(gpu.lowTierSoaksPassed).toBe(gpu.libraryTotalEffects);
+    // No browser soak has run yet, so none passed (the old 98/98 came from a loop that could not fail).
+    expect(gpu.lowTierSoaksPassed).toBe(0);
   });
 
   test("7. Stage 4 Gate Journeys A–E, 15 Primitive Compositions, NodeScript, Export & Accessibility Audits in Chromium", async ({

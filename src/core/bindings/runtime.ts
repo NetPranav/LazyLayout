@@ -117,6 +117,8 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
   let inputs: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map();
   let events: ReadonlySet<string> = new Set();
   const nanReported = new Set<string>();
+  /** Event bindings fire on the rising edge: the binding ids whose value was >= 0.5 on the last step. */
+  const eventHigh = new Set<string>();
 
   return {
     diagnostics,
@@ -138,6 +140,7 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
       vars = new Map();
       inputs = new Map();
       events = new Set();
+      eventHigh.clear();
     },
     step(frame) {
       const perProperty = new Map<string, Map<string, Contribution[]>>();
@@ -152,6 +155,14 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
           diagnostics.push(guarded.diagnostic);
         }
         const value = guarded.value; // always advance state, even when guarded off, so it stays continuous
+        // Track the event level before the guard, so a press held while guarded off doesn't fire when the guard opens.
+        let rising = false;
+        if (binding.target.kind === "event") {
+          const high = value >= 0.5;
+          rising = high && !eventHigh.has(binding.id);
+          if (high) eventHigh.add(binding.id);
+          else eventHigh.delete(binding.id);
+        }
         if (guard && !guard.holds(host, frame)) continue;
 
         if (binding.target.kind === "cssvar") {
@@ -175,7 +186,8 @@ export function createBindingRuntime(bindings: readonly Binding[], host: Binding
           continue;
         }
         if (binding.target.kind === "event") {
-          if (value >= 0.5) firedEvents.add(binding.target.name);
+          // Once per crossing, not on every frame the value stays high (one press used to fire an event per frame).
+          if (rising) firedEvents.add(binding.target.name);
           continue;
         }
         const target = binding.target as Extract<BindingTarget, { kind: "property" }>;

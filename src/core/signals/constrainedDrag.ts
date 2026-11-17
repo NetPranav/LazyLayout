@@ -213,15 +213,16 @@ export function createConstrainedDragController(config: ConstrainedDragConfig = 
       } else {
         if (dragging) {
           dragging = false;
+          // Keep the velocity of the last drag frames: in a browser, pointerup arrives at the last pointermove's
+          // position, so "did it move on release" was almost always false and zeroed every fling.
           const releasePt = constrain(pointerX - grabOffsetX, pointerY - grabOffsetY, true);
-          const movedOnRelease = Math.hypot(releasePt.x - x, releasePt.y - y) > 1e-4;
-          if (!movedOnRelease) {
-            vx = 0;
-            vy = 0;
+          if (Math.hypot(releasePt.x - x, releasePt.y - y) > 1e-4) {
+            vx = (releasePt.x - prevX) / safeDt;
+            vy = (releasePt.y - prevY) / safeDt;
+            x = releasePt.x;
+            y = releasePt.y;
           }
-          const projX = movedOnRelease ? x + vx * 0.08 : x;
-          const projY = movedOnRelease ? y + vy * 0.08 : y;
-          pickReleaseTarget(projX, projY);
+          pickReleaseTarget(x + vx * 0.08, y + vy * 0.08);
         }
         if ((config.snapPoints && config.snapPoints.length > 0) || config.returnHome) {
           const k = 1 - Math.exp(-settleSpeed * safeDt);
@@ -231,15 +232,26 @@ export function createConstrainedDragController(config: ConstrainedDragConfig = 
           vy *= Math.exp(-friction * safeDt);
         } else {
           const decay = Math.exp(-friction * safeDt);
-          const next = constrain(x + vx * safeDt, y + vy * safeDt, false);
-          if (config.bounds) {
-            if (next.x === config.bounds.minX || next.x === config.bounds.maxX) vx = 0;
-            if (next.y === config.bounds.minY || next.y === config.bounds.maxY) vy = 0;
+          const b = config.bounds;
+          const outside = !!b && (x < b.minX || x > b.maxX || y < b.minY || y > b.maxY);
+          if (b && outside && rubberCoeff > 0) {
+            // Rubber-banded past the edge: spring back to the bound (it used to snap back in one frame).
+            const k = 1 - Math.exp(-settleSpeed * safeDt);
+            x += (Math.max(b.minX, Math.min(b.maxX, x)) - x) * k;
+            y += (Math.max(b.minY, Math.min(b.maxY, y)) - y) * k;
+            vx = 0;
+            vy = 0;
+          } else {
+            const next = constrain(x + vx * safeDt, y + vy * safeDt, false);
+            if (b) {
+              if (next.x === b.minX || next.x === b.maxX) vx = 0;
+              if (next.y === b.minY || next.y === b.maxY) vy = 0;
+            }
+            x = next.x;
+            y = next.y;
+            vx *= decay;
+            vy *= decay;
           }
-          x = next.x;
-          y = next.y;
-          vx *= decay;
-          vy *= decay;
         }
       }
       return snapshot();

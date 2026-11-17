@@ -80,3 +80,30 @@ describe("Phase 199: Interactive accessibility (closes AUD-14)", () => {
     assert.equal(clean.length, 0);
   });
 });
+
+describe("Phase 199 · flash check uses the worst second and each region (review 2026-11-17)", () => {
+  it("a 1-second strobe inside a 10-second capture is unsafe", () => {
+    const frames: RasterBitmap[] = [];
+    // 10 s at 10 fps: grey for 9 s, then 10 frames of black/white strobe.
+    for (let f = 0; f < 90; f += 1) frames.push(solidBitmap(128, 128, 128));
+    for (let f = 0; f < 11; f += 1) frames.push(f % 2 === 0 ? solidBitmap(255, 255, 255) : solidBitmap(0, 0, 0));
+    const flash = detectGpuFrameFlashes(frames, 10);
+    assert.equal(flash.safe, false, `worst second ${flash.flashesPerSec}/s`);
+  });
+
+  it("a strobe in one corner of a still frame is unsafe", () => {
+    const corner = (on: boolean): RasterBitmap => {
+      const bmp = solidBitmap(40, 40, 40, 64, 64);
+      for (let y = 0; y < 16; y += 1) {
+        for (let x = 0; x < 16; x += 1) {
+          const i = (y * 64 + x) * 4;
+          bmp.data[i] = bmp.data[i + 1] = bmp.data[i + 2] = on ? 255 : 0;
+        }
+      }
+      return bmp;
+    };
+    const frames: RasterBitmap[] = [];
+    for (let f = 0; f < 16; f += 1) frames.push(corner(f % 2 === 0));
+    assert.equal(detectGpuFrameFlashes(frames, 1).safe, false);
+  });
+});

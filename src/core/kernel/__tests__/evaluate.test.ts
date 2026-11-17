@@ -294,9 +294,10 @@ describe("Phase 53: Exit and LayoutTransition clips (golden values)", () => {
 });
 
 describe("Phase 9.3: closed kernel gaps tracking", () => {
-  it("records behaviours and signal bindings as closed by Phases 139 and 143", () => {
+  it("records signal bindings as closed by Phase 139, and behaviours other than loop as still open", () => {
     const areas = KERNEL_GAPS.map((g) => g.area);
-    assert.ok(!areas.includes("behaviours"), "closed by Phase 143");
+    // evaluate() runs only `loop` behaviours; the gap stays listed until the others run in the kernel.
+    assert.ok(areas.includes("behaviours"), "only `loop` behaviours are evaluated");
     assert.ok(!areas.includes("signal bindings"), "closed by Phase 139");
     assert.ok(!areas.includes("stateful clip categories"), "closed by Phase 53");
   });

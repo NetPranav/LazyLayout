@@ -112,7 +112,9 @@ export const OPENVERSE = { name: "Openverse", api: "https://api.openverse.org/v1
 
 /** The Openverse search for `query` (openly licensed photos, page `page`). */
 export function openverseSearchUrl(query: string, page = 1, pageSize = 20): string {
-  const q = new URLSearchParams({ q: query.trim().slice(0, 200), page: String(Math.max(1, Math.floor(page))), page_size: String(Math.min(50, Math.max(1, pageSize))), mature: "false" });
+  // `license_type=commercial,modification`: only photos that may be used on a commercial site AND edited (filters,
+  // crops, masks), so no NC (non-commercial) or ND (no-derivatives) licences reach a design.
+  const q = new URLSearchParams({ q: query.trim().slice(0, 200), page: String(Math.max(1, Math.floor(page))), page_size: String(Math.min(50, Math.max(1, pageSize))), mature: "false", license_type: "commercial,modification" });
   return `${OPENVERSE.api}?${q}`;
 }
 
@@ -141,6 +143,8 @@ export function parseOpenverse(json: unknown): StockPhoto[] {
     const url = https(o.url);
     const licence = str(o.license, 40);
     if (!id || !url || !licence) continue;
+    // Belt and braces: drop non-commercial or no-derivatives licences even if the API returned them.
+    if (/(^|-)(nc|nd)(-|$)/i.test(licence)) continue;
     const title = str(o.title, 300) ?? "Untitled";
     const author = str(o.creator, 300);
     const name = licenceName(licence, str(o.license_version, 20));

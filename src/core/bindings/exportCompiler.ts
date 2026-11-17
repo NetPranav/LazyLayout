@@ -104,8 +104,24 @@ export function compileCssScrollTimeline(binding: Binding): string | null {
     seed: 0,
     read: () => p,
   });
-  const fromVal = toNumber(evalExpr.step(frameAt(0)));
-  const toVal = toNumber(evalExpr.step(frameAt(1)));
+  // Sample the whole 0..1 range and keep a keyframe wherever the slope changes, so a remap over part of the range
+  // with clamp keeps its knees. (Only 0 and 1 were sampled, so `remap 0.2..0.8, clamp` reached its end value at
+  // 100% scroll in the export but at 80% in the editor.) remap and clamp are piecewise linear, so this is exact
+  // at the sample spacing.
+  const SAMPLES = 100;
+  const pts: { p: number; v: number }[] = [];
+  for (let i = 0; i <= SAMPLES; i++) {
+    const p = i / SAMPLES;
+    pts.push({ p, v: toNumber(evalExpr.step(frameAt(p))) });
+  }
+  const stops = pts.filter((pt, i) => {
+    if (i === 0 || i === pts.length - 1) return true;
+    const a = pts[i - 1]!;
+    const b = pts[i + 1]!;
+    const slopeIn = (pt.v - a.v) / (pt.p - a.p);
+    const slopeOut = (b.v - pt.v) / (b.p - pt.p);
+    return Math.abs(slopeIn - slopeOut) > 1e-6 * Math.max(1, Math.abs(slopeIn), Math.abs(slopeOut));
+  });
   const timeline = sig.kind === "scroll" ? "scroll(root block)" : "view(block)";
   const animName = `ll-${binding.id.replace(/[^A-Za-z0-9_-]/g, "_")}`;
 
@@ -125,8 +141,7 @@ export function compileCssScrollTimeline(binding: Binding): string | null {
 
   return [
     `@keyframes ${animName} {`,
-    `  from { ${cssDecl(fromVal)} }`,
-    `  to { ${cssDecl(toVal)} }`,
+    ...stops.map((st) => `  ${Number((st.p * 100).toFixed(2))}% { ${cssDecl(Number(st.v.toFixed(4)))} }`),
     `}`,
     `[data-ll="${binding.ownerLayerId}"] {`,
     `  animation: ${animName} linear both;`,

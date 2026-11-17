@@ -146,7 +146,7 @@ export interface Stage4LabApi {
     readonly restrictedKeepPrivate: boolean;
     readonly sandboxIsolationOk: boolean;
     readonly exportZeroLazyImports: boolean;
-    readonly embedExpectedCls: number;
+    readonly embedExpectedCls: number | null;
     readonly a11yDiagnosticsDetected: number;
   };
 }
@@ -890,7 +890,7 @@ export function InteractiveLab() {
           sandboxIsolationOk:
             !descriptor.allowsSameOrigin &&
             maliciousReport.flaggedApis.length === 3 &&
-            maliciousReport.localStorageResult !== null,
+            maliciousReport.isolatedByDescriptor,
           exportZeroLazyImports: bundle.zeroLazyLayoutImports && bundle.disposesContextsOnUnmount,
           embedExpectedCls: embed.audit.expectedCls,
           a11yDiagnosticsDetected: a11yBad.length,

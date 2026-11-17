@@ -2,9 +2,14 @@
  * ============================================================================
  * STAGE 5 · PHASE 215 — RIG EXPORT RUNTIME
  * ============================================================================
- * Tree-shaken `rig` runtime module copied only when a document uses rigs,
- * supporting Next.js, Vite, HTML, SVG/Canvas/WebGL skinning modes, exact
- * editor-vs-export tape parity, and Lottie JSON bone export.
+ * Tree-shaken `rig` runtime module copied only when a document uses rigs, for Next.js, Vite and plain HTML:
+ * forward kinematics, the keyframed pose track, and an SVG player that draws the bones and plays the track
+ * (first pose only under prefers-reduced-motion). Parity checks run the exported runtime itself, for both the pose
+ * sampling and the bone transforms. Lottie JSON bone export is separate.
+ *
+ * Not exported yet: skinned meshes (linear-blend skinning lives in rigModel.ts but the runtime draws bones only),
+ * and Canvas/WebGL drawing (`renderRigOutput` returns raw points for those modes; the player always draws SVG).
+ * Review 2026-11-17: the Next.js output used to render an empty <div data-bones>, and nothing played the track.
  * ============================================================================
  */
 
@@ -22,6 +27,10 @@ export type RigSkinRenderMode = "svg" | "canvas" | "webgl";
 export interface RigExportBundle {
   readonly target: RigExportTarget;
   readonly renderMode: RigSkinRenderMode;
+  /** The exported player draws bones as SVG lines (whatever `renderMode` is). */
+  readonly drawnWith: "svg";
+  /** False: skinned meshes are not exported yet; only the skeleton is drawn. */
+  readonly skinsMeshes: false;
   readonly includesRigRuntime: boolean;
   readonly files: Record<string, string>;
   readonly checkpoints: readonly {
@@ -64,7 +73,7 @@ export function shouldIncludeRigRuntime(hasRigs: boolean): boolean {
   return Boolean(hasRigs);
 }
 
-/** Emit standalone MIT-licensed JS runtime for FK, affine matrices, and LBS skinning. */
+/** Emit the standalone MIT-licensed JS runtime: FK, the pose track, and an SVG bone player (no skinning yet). */
 export function emitRigRuntimeSource(renderMode: RigSkinRenderMode): string {
   const renderAdapter =
     renderMode === "svg"
@@ -116,6 +125,76 @@ export function evalRig(rig, pose = {}) {
   return out;
 }
 ${renderAdapter}
+function lerpAngle(a, b, t) {
+  const d = ((((b - a) % 360) + 540) % 360) - 180;
+  return a + d * t;
+}
+export function samplePose(track, t) {
+  if (!track.length) return {};
+  const keys = [...track].sort((k1, k2) => k1.timeSec - k2.timeSec);
+  if (t <= keys[0].timeSec) return keys[0].pose;
+  const last = keys[keys.length - 1];
+  if (t >= last.timeSec) return last.pose;
+  for (let i = 1; i < keys.length; i++) {
+    const k0 = keys[i - 1], k1 = keys[i];
+    if (t <= k1.timeSec) {
+      const span = k1.timeSec - k0.timeSec;
+      let u = span <= 1e-9 ? 1 : (t - k0.timeSec) / span;
+      u = Math.max(0, Math.min(1, u));
+      if (k0.easing === "easeInOut") u = u * u * (3 - 2 * u);
+      const out = {};
+      const ids = new Set([...Object.keys(k0.pose), ...Object.keys(k1.pose)]);
+      for (const id of ids) {
+        const a = k0.pose[id] || {}, b = k1.pose[id] || {};
+        out[id] = {
+          dx: (a.dx || 0) + ((b.dx || 0) - (a.dx || 0)) * u,
+          dy: (a.dy || 0) + ((b.dy || 0) - (a.dy || 0)) * u,
+          rotationDeg: lerpAngle(a.rotationDeg || 0, b.rotationDeg || 0, u),
+          scaleX: (a.scaleX ?? 1) + ((b.scaleX ?? 1) - (a.scaleX ?? 1)) * u,
+          scaleY: (a.scaleY ?? 1) + ((b.scaleY ?? 1) - (a.scaleY ?? 1)) * u,
+        };
+      }
+      return out;
+    }
+  }
+  return last.pose;
+}
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** Draws the rig's bones into \`svg\` and plays \`track\` (looping). Returns a stop function. */
+export function playRig(svg, rig, track, { loop = true, stroke = "currentColor", width = 4 } = {}) {
+  const lines = {};
+  for (const b of rig.bones) {
+    const line = document.createElementNS(SVG_NS, "line");
+    line.setAttribute("stroke", stroke);
+    line.setAttribute("stroke-width", String(width));
+    line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("data-bone", b.id);
+    svg.appendChild(line);
+    lines[b.id] = line;
+  }
+  const draw = (t) => {
+    const world = evalRig(rig, samplePose(track, t));
+    for (const id in world) {
+      const w = world[id], line = lines[id];
+      if (!line) continue;
+      line.setAttribute("x1", w.head.x.toFixed(2)); line.setAttribute("y1", w.head.y.toFixed(2));
+      line.setAttribute("x2", w.tail.x.toFixed(2)); line.setAttribute("y2", w.tail.y.toFixed(2));
+    }
+  };
+  const end = track.length ? Math.max(...track.map((k) => k.timeSec)) : 0;
+  const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  draw(0);
+  if (reduced || end <= 0) return () => { for (const id in lines) lines[id].remove(); };
+  let raf = 0;
+  const start = performance.now();
+  const tick = (now) => {
+    const elapsed = (now - start) / 1000;
+    draw(loop ? elapsed % end : Math.min(elapsed, end));
+    if (loop || elapsed < end) raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => { cancelAnimationFrame(raf); for (const id in lines) lines[id].remove(); };
+}
 `;
 }
 
@@ -123,18 +202,32 @@ type ExportedEvalRig = (
   rig: unknown,
   pose: RigPoseMap,
 ) => Record<string, { head: { x: number; y: number }; tail: { x: number; y: number } }>;
+type ExportedSamplePose = (track: unknown, timeSec: number) => RigPoseMap;
 
-/**
- * Turn the emitted runtime source (an ES module) into a callable `evalRig`. The source is generated here, never user
- * input; running it is how parity is checked against the code a site actually ships.
- */
 export function loadExportedRigRuntime(runtimeSrc: string): ExportedEvalRig {
+  return loadExportedRigFunctions(runtimeSrc).evalRig;
+}
+
+/** Runs the exported runtime source and returns its functions, so parity checks test the shipped code. */
+export function loadExportedRigFunctions(runtimeSrc: string): { evalRig: ExportedEvalRig; samplePose: ExportedSamplePose } {
   const body = runtimeSrc.replace(/^export\s+/gm, "");
-  const factory = new Function(`${body}\nreturn evalRig;`) as () => ExportedEvalRig;
+  const factory = new Function(`${body}\nreturn { evalRig, samplePose };`) as () => {
+    evalRig: ExportedEvalRig;
+    samplePose: ExportedSamplePose;
+  };
   return factory();
 }
 
 /** Export a rigged character for Next.js, Vite, or plain HTML with checkpoint parity data. */
+/** JSON placed inside an inline <script>: `<` escaped so a name like "</script>" can't close the tag. */
+function scriptSafe(json: string): string {
+  return json.replace(/[<\u2028\u2029]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+}
+
+function escapeHtmlAttr(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
 export function exportRigForFramework(
   rig: RigDefinition,
   target: RigExportTarget,
@@ -149,28 +242,38 @@ export function exportRigForFramework(
   const entryFile =
     target === "nextjs"
       ? `"use client";
-import { evalRig } from "./rig-runtime";
+import { useEffect, useRef } from "react";
+import { playRig } from "./rig-runtime";
 export const RIG_DEF = ${rigJson};
 export const RIG_TRACK = ${trackJson};
-export function RiggedCharacter({ pose = {} }) {
-  const world = evalRig(RIG_DEF, pose);
-  return <div data-rig={RIG_DEF.id} data-bones={Object.keys(world).length} />;
+export function RiggedCharacter({ width = 400, height = 300, loop = true }) {
+  const svgRef = useRef(null);
+  useEffect(() => (svgRef.current ? playRig(svgRef.current, RIG_DEF, RIG_TRACK, { loop }) : undefined), [loop]);
+  return <svg ref={svgRef} data-rig={RIG_DEF.id} width={width} height={height} viewBox={\`0 0 \${width} \${height}\`} role="img" aria-label={RIG_DEF.name} />;
 }
 `
       : target === "vite"
-        ? `import { evalRig } from "./rig-runtime";
+        ? `import { playRig } from "./rig-runtime";
 export const RIG_DEF = ${rigJson};
 export const RIG_TRACK = ${trackJson};
-export function mountRig(pose = {}) {
-  return evalRig(RIG_DEF, pose);
+/** Draws the character into \`container\` and plays its track. Returns a stop function. */
+export function mountRig(container, { width = 400, height = 300, loop = true } = {}) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("viewBox", \`0 0 \${width} \${height}\`);
+  svg.setAttribute("data-rig", RIG_DEF.id);
+  container.appendChild(svg);
+  const stop = playRig(svg, RIG_DEF, RIG_TRACK, { loop });
+  return () => { stop(); svg.remove(); };
 }
 `
         : `<!doctype html>
 <html><body>
-<div data-rig="${rig.id}"></div>
+<svg data-rig="${escapeHtmlAttr(rig.id)}" width="400" height="300" viewBox="0 0 400 300"></svg>
 <script type="module">
 ${runtimeSrc}
-window.__LAZY_RIG__ = evalRig(${rigJson}, {});
+playRig(document.querySelector("svg[data-rig]"), ${scriptSafe(rigJson)}, ${scriptSafe(trackJson)});
 </script>
 </body></html>
 `;
@@ -181,10 +284,11 @@ window.__LAZY_RIG__ = evalRig(${rigJson}, {});
       : { "rig-runtime.js": runtimeSrc, [`Character.${target === "nextjs" ? "tsx" : "ts"}`]: entryFile };
 
   // The checkpoints come from running the exported runtime itself, so the parity check compares two implementations.
-  const exportedEvalRig = loadExportedRigRuntime(runtimeSrc);
+  // Both the pose sampling and the bone transforms come from the exported runtime, so parity covers the shipped code.
+  const exported = loadExportedRigFunctions(runtimeSrc);
   const checkpoints = sampleTimes.map((timeSec) => {
-    const pose = evaluatePoseTrackAtTime(poseTrack, timeSec);
-    const world = exportedEvalRig(JSON.parse(rigJson), pose);
+    const pose = exported.samplePose(JSON.parse(trackJson), timeSec);
+    const world = exported.evalRig(JSON.parse(rigJson), pose);
     const boneWorldHeads: Record<string, { x: number; y: number }> = {};
     const boneWorldTails: Record<string, { x: number; y: number }> = {};
     for (const [id, wt] of Object.entries(world)) {
@@ -197,6 +301,8 @@ window.__LAZY_RIG__ = evalRig(${rigJson}, {});
   return {
     target,
     renderMode,
+    drawnWith: "svg",
+    skinsMeshes: false,
     includesRigRuntime: true,
     files,
     checkpoints,

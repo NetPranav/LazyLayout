@@ -139,6 +139,8 @@ export function selectNeighbours(
   const oy = origin.y + origin.height * 0.5;
   return layers.filter((candidate) => {
     if (candidate.id === origin.id) return false;
+    // By design: inside a parent (a nav, a list, a row) "my neighbours" means the siblings, however far apart.
+    // The radius applies only to top-level layers, which have no siblings to go by.
     if (origin.parentId != null) {
       return candidate.parentId === origin.parentId;
     }

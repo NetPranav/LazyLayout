@@ -66,6 +66,18 @@ export const SIGNAL_CATALOGUE: readonly SignalCatalogueEntry[] = [
     createSignal: () => ({ kind: "pointerIn", channel: "uv", space: "frame" }),
   },
   {
+    id: "pointer.px.local",
+    label: "Cursor Position (Layer)",
+    category: "pointer",
+    unit: "px",
+    valueType: "vec2",
+    range: [0, 1920],
+    defaultValue: [0, 0],
+    touchBehaviour: "drag-fallback",
+    description: "Pointer position in px relative to the layer's top-left corner.",
+    createSignal: () => ({ kind: "pointerIn", channel: "px", space: "local" }),
+  },
+  {
     id: "pointer.ndc.local",
     label: "Cursor NDC (Layer)",
     category: "pointer",
@@ -381,8 +393,32 @@ export const SIGNAL_CATALOGUE: readonly SignalCatalogueEntry[] = [
     range: [-1, 1],
     defaultValue: 0,
     touchBehaviour: "native",
-    description: "Normalised phone/tablet pitch tilt (permission-gated).",
+    description: "Normalised phone/tablet left-right tilt (permission-gated).",
     createSignal: () => ({ kind: "device", channel: "tiltX" }),
+  },
+  {
+    id: "device.tiltY",
+    label: "Device Tilt Y",
+    category: "device",
+    unit: "-1..1",
+    valueType: "number",
+    range: [-1, 1],
+    defaultValue: 0,
+    touchBehaviour: "native",
+    description: "Normalised phone/tablet front-back tilt (permission-gated).",
+    createSignal: () => ({ kind: "device", channel: "tiltY" }),
+  },
+  {
+    id: "device.orientation",
+    label: "Device Heading",
+    category: "device",
+    unit: "deg",
+    valueType: "number",
+    range: [0, 360],
+    defaultValue: 0,
+    touchBehaviour: "native",
+    description: "Compass-style heading of the device in degrees (permission-gated).",
+    createSignal: () => ({ kind: "device", channel: "orientation" }),
   },
   {
     id: "state",
@@ -444,7 +480,12 @@ export function findCatalogueEntry(signal: Signal): SignalCatalogueEntry | undef
     case "pointer":
       return SIGNAL_CATALOGUE.find((e) => e.id === `pointer.${signal.channel}`);
     case "pointerIn":
-      return SIGNAL_CATALOGUE.find((e) => e.id === `pointer.${signal.channel}.${signal.space}`);
+      // The exact space/unit pair when listed; otherwise another entry with the same unit, so the meter's range and
+      // unit are right even for pairs the catalogue doesn't list one by one.
+      return (
+        SIGNAL_CATALOGUE.find((e) => e.id === `pointer.${signal.channel}.${signal.space}`) ??
+        SIGNAL_CATALOGUE.find((e) => e.id.startsWith(`pointer.${signal.channel}.`))
+      );
     case "pointerInside":
       return SIGNAL_CATALOGUE.find((e) => e.id === "pointer.inside");
     case "layerState":
@@ -474,7 +515,8 @@ export function findCatalogueEntry(signal: Signal): SignalCatalogueEntry | undef
     case "audio":
       return SIGNAL_CATALOGUE.find((e) => e.id === "audio.level");
     case "device":
-      return SIGNAL_CATALOGUE.find((e) => e.id === "device.tiltX");
+      // Each channel its own entry (every device signal used to show the tilt-X label and range).
+      return SIGNAL_CATALOGUE.find((e) => e.id === `device.${signal.channel}`);
     default:
       return SIGNAL_CATALOGUE.find((e) => e.id === signal.kind);
   }
