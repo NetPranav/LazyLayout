@@ -35,6 +35,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
+| 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
 | 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
 | 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
 | 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
@@ -1070,6 +1071,20 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T93.4** Do: switch **Show it** off. Expect: all layers animate normally.
 - [ ] **T93.5** Do: if your computer is set to reduce motion, reload the editor. Expect: the canvas behaves as in T93.2 without touching the switch.
 - [ ] **T93.6** Do: Ctrl+Z after changing **Reduced**. Expect: it goes back one step. (The **Show it** switch is not undoable: it is a way of looking.)
+
+### 3.30 Phase 89: page transitions (NEW)
+Preview navigation between pages exists today only in the older editor at `/editor/legacy`. The new editor sets the transitions (T89.1–T89.4); T89.5 onwards needs the older one.
+- [ ] **T89.1** Do: in **Design** select a page (a frame) and open **Page transition**. Expect: **Entering** reads **None** and there is no **Time** row.
+- [ ] **T89.2** Do: set **Entering** to **Push**. Expect: a **Time** row appears (0.4 s). Set it to 0.8.
+- [ ] **T89.3** Do: select a layer inside the page. Expect: the section shows **Shared name**. Type `hero-image` and press Enter. Expect: the line under it says no other page has that name yet.
+- [ ] **T89.4** Do: give a layer on a second page the same name. Expect: the line on either layer says `Also on: <the other page>`.
+- [ ] **T89.5** Do: at `/editor/legacy`, make 3 pages, link a button on page 1 to page 2 and a button on page 2 to page 3, give page 2 **Slide over** and page 3 **Zoom**. Switch to **Preview** and click the buttons. Expect: page 2 slides over page 1; page 3 zooms in.
+- [ ] **T89.6** Do: press **Alt+Left**. Expect: you go back to page 2, sliding the other way for a slide. Alt+Right goes forward again.
+- [ ] **T89.7** Do: give both pages an image with the shared name `hero-image` at different places or sizes, and go from one to the other. Expect: the image travels and grows instead of cross-fading.
+- [ ] **T89.8** Do: turn your computer's reduced motion on and reload. Expect: pages change at once.
+- [ ] **T89.9** Do: **Ctrl+Z** after changing **Entering**. Expect: one step back.
+
+**Developer test:** `npx tsx --test src/core/pages/__tests__/pageTransitions.test.ts` (11 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

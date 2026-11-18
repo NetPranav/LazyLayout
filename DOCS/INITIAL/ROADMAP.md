@@ -1428,11 +1428,15 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-16):** `src/core/breakpoints/__tests__/breakpointMotion.test.ts` (8 tests: the defaults and what counts as movement; the command at the base and at a breakpoint, storing only what differs, undo, reset; the reference at Desktop, Tablet and Mobile; the cascade; off; time; the adapter's written transform at the base and at Mobile, kept through another driver's `setInputs`). `tests/e2e/breakpoint-motion.spec.ts` on `/editor` in Motion: a 100 px slide is drawn at 50 px at 1 s at the base; viewed at Mobile with **Distance 25 %** it is drawn at 12.5 px, with **Time 200 %** at 12.5 px at 2 s; at the base again 50 and 100 px; **Plays** off draws 0; **Same as larger sizes** puts it back. Passing in Chromium here.
 
 ### Phase 89 · Page transitions
-**Needs:** 88 · **Was:** v3 77.3 · **Status:** 📋
-- [ ] View Transitions API page transitions (same-document and cross-document where supported, with fallbacks); shared elements between pages.
+**Needs:** 88 · **Was:** v3 77.3 · **Status:** 🚧
+- [x] View Transitions API page transitions (same-document, with a Web Animations fallback); shared elements between pages. **Cross-document** transitions belong to the exported site (Phases 94 onwards).
 
 **You'll see:** animated navigation between pages in Preview.
 **Done when:** a 5-page fixture shows the same transitions at sampled times in Preview, on the native and fallback paths.
+
+**Stays 🚧 (2026-11-18):** Phase 88 is 🚧, this gate has not run in CI, and the new editor (`/editor`) has no Preview navigation between pages yet: links are followed only in the older editor (`/editor/legacy`), where the transitions run. The native path and the fallback have not been looked at in Firefox or WebKit.
+**Recipe (`src/core/pages/pageTransitions.ts`):** `pageTransition.type` (none, fade, slide over, push, zoom) and `.duration` on the page being entered; Back plays it the other way. `sampleTransition` gives both pages' opacity, offset and scale at any time, and is what the native style sheet and the fallback both follow. `sharedElement.id` on a layer: a layer with the same name on the old and new page travels (native path). Reduced motion skips the movement. Commands `page.setTransition`, `layer.setSharedElement`.
+**Evidence (2026-11-18):** `src/core/pages/__tests__/pageTransitions.test.ts` (11 tests: every type starts away from and ends on the new page; the cross-fade is half at half time and monotone; back mirrors slide and push; shared boxes travel; the native style sheet carries the same time and direction; the commands with undo; pairing by name; a 5-page walk forward and back with every type). `tests/e2e/page-transitions.spec.ts` on `/editor`: the section on a page and on a layer. Passing in Chromium here.
 
 ### Phase 90 · Animation Playground
 **Needs:** 89 · **Was:** v3 24.0–24.3, 24.5 · **Closes:** AUD-20 (Tiers 3–4: properties 41–52) · **Status:** 📋

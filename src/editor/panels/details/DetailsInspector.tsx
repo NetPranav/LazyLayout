@@ -45,6 +45,7 @@ import { EffectStackSection } from "./sections/EffectStackSection";
 import { MorphDrawSection } from "./sections/MorphDrawSection";
 import { FollowPathSection } from "./sections/FollowPathSection";
 import { TransitionSection } from "./sections/TransitionSection";
+import { PageTransitionSection } from "./sections/PageTransitionSection";
 import { MotionAtSection } from "./sections/MotionAtSection";
 import {
   PageSectionBody,
@@ -494,6 +495,11 @@ export function getInspectorDesignSections(
       id: "transition",
       title: "Transition",
       children: <TransitionSection {...sectionProps} />,
+    },
+    {
+      id: "page-transition",
+      title: "Page transition",
+      children: <PageTransitionSection {...sectionProps} />,
     },
     {
       id: "style-code",

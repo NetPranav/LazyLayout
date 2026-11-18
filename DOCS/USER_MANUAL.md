@@ -332,6 +332,10 @@ What you set at Tablet also holds at Mobile until you set Mobile's own. Not in t
 ### 14. Reduced motion
 Some people get ill from screens that move a lot, and ask their computer to reduce motion. Your animations respect that. By default a layer then keeps its fades and colour changes but stops moving, turning, growing and looping. In **Motion at this size**, **Reduced** lets you choose per layer: **Fades only**, **Plays in full** (for something harmless) or **Doesn't play**. **Show it** previews the whole canvas that way. Only this part of accessibility is built so far.
 
+### 15. Moving between pages
+In **Design**, select a page (a frame) and open **Page transition**. **Entering** chooses how Preview moves to this page: **Fade**, **Slide over**, **Push** or **Zoom**, and **Time** says how long. Going back plays it the other way. To make one image travel from one page to the next, select it on each page and give both the same **Shared name**. Preview uses the browser's own page-transition feature where it has one and a simpler version of the same movement where it doesn't; reduced motion makes pages change at once. Following links in Preview only works in the older editor (`/editor/legacy`) for now.
+
+
 ### 8. Morph & draw (paths and icons)
 A layer drawn from one path (a **Pen** or **Pencil** path, an imported SVG path, an icon) has a **Morph & draw** section, in **Design** and under the Animation section in **Motion**.
 

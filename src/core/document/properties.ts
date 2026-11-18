@@ -262,6 +262,10 @@ function transitionDefs(): Record<string, Def> {
   out["layoutMotion.on"] = typed(flag(false, "paint", VISUAL));
   out["presence.enter"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
   out["presence.exit"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
+  // page transitions (Phase 89, `core/pages/pageTransitions.ts`): how a page is entered, and a layer shared between pages
+  out["pageTransition.type"] = typed(oneOf(["none", "fade", "slide", "push", "zoom"], "none", null, "paint", VISUAL));
+  out["pageTransition.duration"] = ranged(num(0.4, null, "paint", VISUAL, false), { min: 0.05, max: 10 });
+  out["sharedElement.id"] = typed(str("", null, "paint", VISUAL));
   for (let slot = 1; slot <= 3; slot++) {
     out[`transition.${slot}.property`] = typed(str("", null, "paint", VISUAL));
     out[`transition.${slot}.type`] = typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL));
