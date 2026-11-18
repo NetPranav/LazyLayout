@@ -49,3 +49,50 @@ test("an edit to the source updates every live fill within one frame; the export
   });
   expect((html.match(/<foreignObject[\s\S]*?50% OFF[\s\S]*?<\/foreignObject>/g) ?? []).length).toBeGreaterThanOrEqual(2);
 });
+
+test("a lens shows what is under its shape, magnified, and keeps it lined up as the shape follows the pointer", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await openEditor(page);
+  await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+  const ids = await page.evaluate(() => {
+    const doc = (window as unknown as { __LL_DOC__: Doc }).__LL_DOC__;
+    const frame = Object.values(doc.get().layers).find((l) => l.parentId && doc.get().layers[l.parentId]?.parentId === null && l.archetype === "container")!;
+    const words = doc.commands.addLayer({ archetype: "container", parentId: frame.id, name: "Words", properties: { positioning: "absolute", "frame.x": 40, "frame.y": 200, "frame.width": 1000, "frame.height": 200, "appearance.background.color": "transparent", "layout.display": "block" } });
+    doc.commands.addLayer({ archetype: "text", parentId: words, properties: { positioning: "absolute", "frame.x": 0, "frame.y": 0, "content.text": "One Design", "typography.fontSize": 160, "typography.color": "#111111" } });
+    const lens = doc.commands.addLayer({ archetype: "ellipse", parentId: frame.id, name: "Lens", properties: { positioning: "absolute", "frame.x": 300, "frame.y": 200, "frame.width": 200, "frame.height": 200, "paint.fills": JSON.stringify([{ type: "solid", color: "#ffffff" }]) } });
+    (window as unknown as { __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } }).__LL_COMMANDS__.all().find((c) => c.id === "selection.set")!.run({ ids: [lens] });
+    return { words, lens };
+  });
+  // the lens is set up from the fill's own controls
+  await page.getByRole("button", { name: "Fill 1 color" }).click();
+  const dlg = page.getByRole("dialog", { name: "Fill 1" });
+  await dlg.getByRole("radiogroup", { name: "Fill type" }).getByRole("radio", { name: /^Live/ }).click();
+  await dlg.getByRole("combobox", { name: "Live fill source" }).click();
+  await page.getByRole("option", { name: "Words" }).click();
+  await dlg.getByLabel("Live fill lens").click();
+  const magnify = dlg.getByLabel("Live fill magnification");
+  await magnify.fill("200");
+  await magnify.press("Enter");
+  await page.keyboard.press("Escape");
+  await expect.poll(() => page.evaluate((id) => (window as unknown as { __LL_DOC__: Doc }).__LL_DOC__.get().layers[id].properties["paint.fills"], ids.lens)).toContain('"lens":true');
+
+  // the copy inside the lens is magnified about the lens's centre: the source point under the centre stays under it
+  const centreCheck = () =>
+    page.evaluate(({ words, lens }) => {
+      const L = document.querySelector(`[data-testid="stage-page"] [data-archetype][data-element-id="${lens}"]`)!.getBoundingClientRect();
+      const src = Array.from(document.querySelectorAll(`[data-testid="stage-page"] [data-archetype][data-element-id="${words}"]`)).find((el) => !el.closest("[data-live-fill]"))!.getBoundingClientRect();
+      const copy = document.querySelector("[data-live-lens]")!.querySelector(`[data-element-id$="${words}"]`)!.getBoundingClientRect();
+      const cx = L.left + L.width / 2;
+      // where the centre falls in the source (0-1), and in the copy: the same place
+      return { src: (cx - src.left) / src.width, copy: (cx - copy.left) / copy.width, scale: copy.width / src.width };
+    }, ids);
+  await expect.poll(async () => { const c = await centreCheck(); return Math.abs(c.src - c.copy) < 0.01 && Math.abs(c.scale - 2) < 0.02; }).toBe(true);
+
+  // it follows the pointer and stays lined up
+  await page.getByTestId("right-panel").getByRole("button", { name: "Follow the pointer" }).click();
+  await page.getByRole("tab", { name: "Motion" }).click();
+  const box = (await page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${ids.words}"]`).first().boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.5, { steps: 8 });
+  await page.waitForTimeout(800);
+  await expect.poll(async () => { const c = await centreCheck(); return Math.abs(c.src - c.copy) < 0.01 && c.src > 0.55; }).toBe(true);
+});

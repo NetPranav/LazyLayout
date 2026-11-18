@@ -30,7 +30,7 @@ const num = (props: Resolved, path: string, fallback = 0): number => {
 };
 
 /** A layer's position on the canvas (the sum of the `frame.x` / `frame.y` of it and its ancestors), or null when any of them isn't placed absolutely. */
-export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, resolvedOf: (id: string) => Resolved): { x: number; y: number } | null {
+export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, resolvedOf: (id: string) => Resolved, upTo?: string): { x: number; y: number } | null {
   let x = 0;
   let y = 0;
   let id: string | null = layerId;
@@ -39,7 +39,9 @@ export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, 
     if (!layer) return null;
     const props = resolvedOf(id);
     const positioning = props.positioning ?? layer.properties.positioning;
-    // the top-level frame is the origin of its own canvas, whatever it says
+    // measured from `upTo` (the layer both ends of a matte share): how that one and its own parents are placed doesn't
+    // matter, since it moves both ends alike (a page frame stacked by the page, say)
+    if (upTo !== undefined && id === upTo) break;
     if (layer.parentId !== null && positioning !== "absolute") return null;
     if (layer.parentId !== null) {
       x += num(props, "frame.x");
@@ -86,11 +88,11 @@ export interface MatteSourceShape {
 }
 
 /** The source layer as a shape on the canvas, or null when it can't be read (see the file header). */
-export function matteSourceShape(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved): MatteSourceShape | null {
+export function matteSourceShape(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved, upTo?: string): MatteSourceShape | null {
   const source = layers[sourceId];
   if (!source) return null;
   const props = resolvedOf(sourceId);
-  const origin = canvasOrigin(layers, sourceId, resolvedOf);
+  const origin = canvasOrigin(layers, sourceId, resolvedOf, upTo);
   const width = num(props, "frame.width");
   const height = num(props, "frame.height");
   if (!origin || width <= 0 || height <= 0) return null;
@@ -151,7 +153,7 @@ export const MAX_MATTE_PATH = MAX_PATH_LENGTH - 1000;
  *   several shapes, clones and moving layers make one matte together.
  * Null when nothing in it can be read (see `matteSourceShape`).
  */
-export function matteSourceShapes(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved, live: { pointer?: { x: number; y: number } | null } = {}): MatteSourceShape[] | null {
+export function matteSourceShapes(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved, live: { pointer?: { x: number; y: number } | null; upTo?: string } = {}): MatteSourceShape[] | null {
   const out: MatteSourceShape[] = [];
   const visit = (id: string, shiftX: number, shiftY: number, depth: number): void => {
     const layer = layers[id];
@@ -167,7 +169,7 @@ export function matteSourceShapes(layers: MotionDocument["layers"], sourceId: st
       // a group with nothing readable inside is its own box, as a frame always was
       if (out.length > before || depth > 0) return;
     }
-    const shape = matteSourceShape(layers, id, resolvedOf);
+    const shape = matteSourceShape(layers, id, resolvedOf, live.upTo);
     if (!shape) return;
     const base = { ...shape, cx: shape.cx + shiftX, cy: shape.cy + shiftY };
     const cloner = readCloner((path) => props[path]);
@@ -247,4 +249,12 @@ export function mattesFollowPointer(doc: MotionDocument): boolean {
   }
   pointerMatteDocs.set(doc, found);
   return found;
+}
+
+/** The nearest layer that contains both `a` and `b` (or is one of them), or undefined when they share none. */
+export function sharedAncestor(layers: MotionDocument["layers"], a: string, b: string): string | undefined {
+  const up = new Set<string>();
+  for (let at: string | null = a, d = 0; at && d < 64; at = layers[at]?.parentId ?? null, d++) up.add(at);
+  for (let at: string | null = b, d = 0; at && d < 64; at = layers[at]?.parentId ?? null, d++) if (up.has(at)) return at;
+  return undefined;
 }

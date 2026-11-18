@@ -79,4 +79,15 @@ describe("a matte made of many shapes", () => {
     assert.equal(near[0].scaleX, 2, "under the pointer: twice the size");
     assert.equal(near[9].scaleX, 1, "far away: as made");
   });
+
+  it("a page frame laid out by the page (flow) is still the origin of what is inside it", () => {
+    const layers = doc({
+      root: { archetype: "container", parent: null, props: { "layout.auto": true, "layout.display": "flex" }, children: ["page"] },
+      page: { archetype: "container", parent: "root", props: { positioning: "flow", "frame.width": 800, "frame.height": 600 }, children: ["dot"] },
+      dot: { archetype: "ellipse", parent: "page", props: abs(10, 20, 8, 8) },
+    });
+    assert.equal(matteSourceShapes(layers, "dot", (id) => layers[id].properties), null, "from the page: the flow frame can't be read");
+    const shapes = matteSourceShapes(layers, "dot", (id) => layers[id].properties, { upTo: "page" })!;
+    assert.deepEqual(shapes.map((s) => [s.cx, s.cy]), [[14, 24]]);
+  });
 });

@@ -173,7 +173,8 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       const key = p ? `${Math.round(p.x)},${Math.round(p.y)}` : "";
       if (key !== lastPointerKey) {
         lastPointerKey = key;
-        adapter.kernel.setPointer(p ? { x: p.x, y: p.y } : null);
+        const source = options.bindings.host.source;
+        adapter.kernel.setPointer(p ? { x: p.x, y: p.y } : null, (id) => { const r = source.layerRect?.(id); return r ? { x: r.x, y: r.y } : null; });
         dirty = true;
       }
     }

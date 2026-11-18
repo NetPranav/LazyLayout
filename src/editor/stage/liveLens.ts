@@ -57,7 +57,8 @@ export function installLiveLens(page: HTMLElement): () => void {
     }
   };
   const watch = new MutationObserver(sync);
-  watch.observe(page, { childList: true, subtree: true });
+  // a fill turned into a lens in place only gains the attribute, so attribute changes count too
+  watch.observe(page, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-live-lens"] });
   sync();
   return () => {
     watch.disconnect();
