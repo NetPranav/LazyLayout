@@ -338,6 +338,10 @@ In **Design**, select a page (a frame) and open **Page transition**. **Entering*
 ### 16. The Animation Playground
 When you want to watch an animation closely, press **Preview**, then **Playground** in the bar. A panel opens over the canvas with everything for tuning it: **Speed** from a tenth to double, **Loop**, play and one-frame steps, a **Backdrop**, the page as a **Device screen**, and **Reduced motion**. Select a layer with states and use its **State** buttons to hold it in hover or pressed and watch it move there. Select a component instance to change its variants. The four overlays (**Wireframes**, **Box model**, **Dimensions**, **Touch targets**) draw over the page without taking clicks; touch targets marks anything you can tap that is smaller than 44 px. The **fps** number is the real frame rate. Closing it (or Esc) takes you back to Design; the Playground changes nothing in your design except the variant menus, which work like the ones in Components.
 
+### 17. The motion library
+In **Motion**, select a layer and open **Motion library**. It lists 51 ready-made effects (fades, reveals, staggers, hover and press effects, Ken Burns and more). Search by a word, or pick a category; hover a picture to see the effect play. **Insert** puts it on the selected layer; if the layer can't take it (a text layer can't be hovered, for example) the button is grey and says why. The effect shows as one card with its controls: **Duration**, **Delay**, **Strength** (how far things move, 0 to 200 %) and **Stagger**. Changing a control rewrites the effect's animation; only the ones you changed are remembered. **Detach** keeps the animation as ordinary clips in the timeline and forgets the card, so you can edit them freely; **Remove** takes it all away.
+
+
 
 
 ### 8. Morph & draw (paths and icons)

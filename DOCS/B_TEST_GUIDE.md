@@ -37,6 +37,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
 | 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
+| 91 | Motion library: search 51 effects, insert, tune, detach | this branch (NEW) | 3.32 |
 | 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
 | 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
 | 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
@@ -1099,6 +1100,19 @@ Preview navigation between pages exists today only in the older editor at `/edit
 - [ ] **T90.9** Do: press **Esc** or the **x**. Expect: the panel closes, you are back in Design, and nothing in the design changed.
 
 **Developer test:** `npx tsx --test src/core/playground/__tests__/playground.test.ts` (10 tests pass).
+
+### 3.32 Phase 91: the motion library (NEW)
+- [ ] **T91.1** Do: in **Motion** select any layer and open **Motion library** in the right panel. Expect: **51 effects**, each with a small picture, its category and a badge, and an **Insert** button.
+- [ ] **T91.2** Do: hover a picture. Expect: it plays a small loop. Move away: it stops on a still frame.
+- [ ] **T91.3** Do: type `stagger` in **Search**. Expect: fewer effects, best matches first. Type `zzzz`: **0 effects**. Pick a **Library category**: only that category.
+- [ ] **T91.4** Do: select a text layer and search `hover`. Expect: the Insert buttons are greyed out and their tooltip says why (Rule 6.1: text can't be hovered).
+- [ ] **T91.5** Do: select a layer and press **Insert** on an effect. Expect: one card above the search with the effect's name and version and controls (**Duration**, **Delay**, often **Strength**, **Stagger**), and the animation is in the timeline.
+- [ ] **T91.6** Do: change **Duration** on the card. Expect: the clip in the timeline gets longer. Set **Strength** to 50: the movement is half as far; **0**: only rest values.
+- [ ] **T91.7** Do: click the card's name. Expect: its controls fold away and come back on a second click.
+- [ ] **T91.8** Do: **Ctrl+Z** after Insert. Expect: the card and the animation both go in one step.
+- [ ] **T91.9** Do: **Detach**. Expect: the card goes; the animation stays in the timeline as ordinary clips you can edit. **Remove** instead takes the animation too.
+
+**Developer test:** `npx tsx --test src/core/motionLibrary/__tests__/library.test.ts` (17 tests pass).
 
 ## 4. Regression checks (things that must still work)
 
