@@ -34,6 +34,8 @@ export type EditorMode = "design" | "motion" | "code";
 export interface ModeTabsProps {
   mode: EditorMode;
   onChange: (mode: EditorMode) => void;
+  /** The pointer or focus reached a tab: a chance to start loading that mode before the click. */
+  onTabIntent?: (mode: EditorMode) => void;
   disabled?: boolean;
   className?: string;
   dataState?: "hover" | "focus";
@@ -53,6 +55,7 @@ const MODES: readonly ModeItem[] = [
 export const ModeTabs: React.FC<ModeTabsProps> = ({
   mode,
   onChange,
+  onTabIntent,
   disabled = false,
   className = "",
   dataState,
@@ -171,6 +174,8 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
               disabled={disabled}
               tabIndex={isSelected && !disabled ? 0 : -1}
               onClick={() => handleTabClick(item)}
+              onPointerEnter={onTabIntent ? () => onTabIntent(item.id) : undefined}
+              onFocus={onTabIntent ? () => onTabIntent(item.id) : undefined}
               className={`mode ll-mode ll:relative ll:z-10 ll:w-mode-tab ll:h-mode-tab ll:rounded-sm ll:flex ll:items-center ll:justify-center ll:gap-0.5 ll:text-body ll:font-medium ll:whitespace-nowrap ll:select-none ll:cursor-pointer ll:outline-none ll:border-0 ll:transition-none ll:focus-visible:ring-1 ll:focus-visible:ring-primary ${
                 isForcedFocus ? "ll:ring-1 ll:ring-primary " : ""
               }${

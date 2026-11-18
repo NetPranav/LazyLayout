@@ -206,13 +206,19 @@ export class ProjectDatabaseManager {
   }
 
   public async getProject(id: string): Promise<StoredProjectRecord | null> {
+    const stored = await this.getStoredRecord(id);
+    return stored ? upgradeRecord(stored) : null;
+  }
+
+  /** The record as stored, not upgraded: for callers that only need its header (dates, revision, settings). */
+  private async getStoredRecord(id: string): Promise<StoredProjectRecord | null> {
     if (!id) return null;
     const db = await this.db();
     if (!db) return this.memory.get(id) ?? null;
     const stored = await runTransaction(db, ["projects"], "readonly", (tx) =>
       requestResult(tx.objectStore("projects").get(id) as IDBRequest<StoredProjectRecord | undefined>)
     );
-    return stored ? upgradeRecord(stored) : null;
+    return stored ?? null;
   }
 
   /**
@@ -277,7 +283,10 @@ export class ProjectDatabaseManager {
     options: { name?: string; history?: PersistedHistory } = {}
   ): Promise<StoredProjectRecord | null> {
     if (!id) return null;
-    const existing = await this.getProject(id);
+    // Only the stored header is used (createdAt, revision, settings, name). Upgrading the whole stored snapshot
+    // (migrations + schema validation) on every autosave cost ~100 ms per save on a mid laptop (2026-11-18), and the
+    // snapshot read here is thrown away: the one written is the current, already-upgraded document.
+    const existing = await this.getStoredRecord(id);
     const now = new Date().toISOString();
     const name = options.name || snapshot.projectName || existing?.name || "Blank Project";
     return this.putProject(

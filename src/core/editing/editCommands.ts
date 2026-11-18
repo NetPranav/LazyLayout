@@ -56,7 +56,9 @@ import { register3dBlocksCommands } from "../3d/blocks";
 import { register3dMake3dCommands } from "../3d/make3d";
 import { register3dTextCommands } from "../3d/text";
 import { registerSceneCommands } from "../3d/commands/sceneInsert";
-import { registerViewport3dCommands, installAddAtCursorWrapper } from "@/editor/viewport3d";
+// direct module imports, not the barrel: the barrel pulls in the whole 3D viewport UI (and three.js picking)
+import { registerViewport3dCommands } from "@/editor/viewport3d/viewCommands";
+import { installAddAtCursorWrapper } from "@/editor/viewport3d/addAtCursor";
 import { registerTemplateCommands } from "../templates/templateCommands";
 import { arrangement, buildShapes } from "./shapeBuilder";
 import type { Paint } from "../paint/paints";

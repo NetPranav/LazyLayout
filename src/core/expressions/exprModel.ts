@@ -12,7 +12,18 @@ export interface LayerExpression {
   enabled: boolean;
 }
 
+/** Read results per (immutable) properties object; see readLinks in links/linkModel.ts. Don't mutate the result. */
+const exprCache = new WeakMap<object, LayerExpression[]>();
+
 export function readExpressions(props: Readonly<Record<string, PropValue>>): LayerExpression[] {
+  const cached = exprCache.get(props);
+  if (cached) return cached;
+  const out = readExpressionsUncached(props);
+  exprCache.set(props, out);
+  return out;
+}
+
+function readExpressionsUncached(props: Readonly<Record<string, PropValue>>): LayerExpression[] {
   const out: LayerExpression[] = [];
   for (let slot = 1; slot <= EXPR_SLOTS; slot++) {
     const target = props[exprPath(slot, "target")];

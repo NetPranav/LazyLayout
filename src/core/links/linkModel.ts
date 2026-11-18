@@ -49,8 +49,23 @@ export interface Link {
 const str = (v: PropValue | undefined, fallback = ""): string => (typeof v === "string" ? v : fallback);
 const num = (v: PropValue | undefined, fallback: number): number => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
+/**
+ * Read results per properties object. A layer's properties object is immutable within a document, so the answer can't
+ * go stale; evaluate() asks on every sample of every layer (performance, 2026-11-18). Callers must not mutate the
+ * returned list.
+ */
+const linksCache = new WeakMap<object, Link[]>();
+
 /** The links a layer has, in slot order. A slot with no target or source is empty. Disabled links are listed (with `enabled: false`). */
 export function readLinks(props: Readonly<Record<string, PropValue>>): Link[] {
+  const cached = linksCache.get(props);
+  if (cached) return cached;
+  const out = readLinksUncached(props);
+  linksCache.set(props, out);
+  return out;
+}
+
+function readLinksUncached(props: Readonly<Record<string, PropValue>>): Link[] {
   const out: Link[] = [];
   for (let slot = 1; slot <= LINK_SLOTS; slot++) {
     const get = (name: string) => props[linkPath(slot, name)];

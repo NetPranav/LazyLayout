@@ -107,9 +107,29 @@ export const KERNEL_GAPS: KernelGap[] = [
   { area: "behaviours", note: "Only `loop` is evaluated (a pure function of t). follow-pointer, magnet, tilt, proximity's spring, spring-to, inertia and noise all need pointer/scroll *history* (springs respond to a path, not a single sample) — that's the Deterministic Replay Law's territory (Phase 64) and Phase 12's behaviour runtime, not this kernel." },
 ];
 
+/**
+ * Per-layer lists of a document collection (clips, states, behaviours), built once per collection object. The document
+ * is immutable, so a collection object never changes under its index. Performance (2026-11-18): evaluate() scanned the
+ * whole collection for every layer at every sample, O(layers x clips x samples) when baking a timeline.
+ */
+const byLayerIndex = new WeakMap<object, Map<string, unknown[]>>();
+function byLayer<T extends { layerId: string }>(collection: Readonly<Record<string, T>>, layerId: string): readonly T[] {
+  let index = byLayerIndex.get(collection) as Map<string, T[]> | undefined;
+  if (!index) {
+    index = new Map();
+    for (const item of Object.values(collection)) {
+      const list = index.get(item.layerId);
+      if (list) list.push(item);
+      else index.set(item.layerId, [item]);
+    }
+    byLayerIndex.set(collection, index as Map<string, unknown[]>);
+  }
+  return index.get(layerId) ?? [];
+}
+
 function findActiveState(doc: MotionDocument, layerId: string, stateName: string | undefined) {
   if (!stateName) return undefined;
-  return Object.values(doc.states).find((s) => s.layerId === layerId && s.name === stateName);
+  return byLayer(doc.states, layerId).find((s) => s.name === stateName);
 }
 
 /** A layer's drawn path is morphed sub-path by sub-path with matched points (Phase 85), using the layer's own morph settings. */
@@ -328,8 +348,8 @@ function mergeByPriority(base: ResolvedProps, samples: CategorizedSample[]): Res
 /** The `loop` behaviour: cycles a property between two values forever, a pure function of `t`. */
 function applyLoopBehaviours(doc: MotionDocument, layerId: string, t: number, props: ResolvedProps): ResolvedProps {
   let out = props;
-  for (const behaviour of Object.values(doc.behaviours)) {
-    if (behaviour.layerId !== layerId || !behaviour.enabled || behaviour.type !== "loop") continue;
+  for (const behaviour of byLayer(doc.behaviours, layerId)) {
+    if (!behaviour.enabled || behaviour.type !== "loop") continue;
     const { property, from, to, duration, easing, yoyo } = behaviour.params;
     const cycle = duration > 0 ? (t % (duration * (yoyo ? 2 : 1))) / duration : 0;
     const goingBack = yoyo && cycle >= 1;
@@ -606,8 +626,8 @@ function evaluateBaseProps(
   const comp = doc.compositions[compositionId];
   if (comp) {
     const samples: CategorizedSample[] = [];
-    for (const clip of Object.values(doc.clips)) {
-      if (clip.layerId !== layerId || !clip.enabled) continue;
+    for (const clip of byLayer(doc.clips, layerId)) {
+      if (!clip.enabled) continue;
       const driven = inputs.scrollClipTime?.[clip.id];
       if (driven !== undefined) {
         samples.push({

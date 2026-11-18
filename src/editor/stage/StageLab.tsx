@@ -9,8 +9,10 @@ import type { CanvasTool, GridStyle } from "@/editor/shell/canvas-chrome/types";
 import { Button } from "@/editor/components/Button";
 import { Icon } from "@/editor/components/Icon";
 import { Sun, Moon, Layers } from "lucide-react";
+import { useLlUiDocument } from "@/editor/shell/useLlUiDocument";
 
 export function StageLabInner() {
+  useLlUiDocument();
   const [theme, setTheme] = useState<string>("paper");
   const [zoom, setZoom] = useState<number>(STAGE_CONSTANTS.defaultZoom);
   const [selectedIds, setSelectedIds] = useState<string[]>(["headline"]);

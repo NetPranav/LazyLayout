@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Profiling only: `LL_PROFILE_MAPS=1 npm run build` ships source maps so CPU profiles (npm run perf:profile) resolve
+  // to source files. Off by default.
+  productionBrowserSourceMaps: process.env.LL_PROFILE_MAPS === "1",
   async headers() {
     return [
       {

@@ -126,10 +126,11 @@ test.describe("Main /editor ROADMAP_3D Integration Headed E2E (3D-001 – 3D-227
     await page.getByTestId("editor-r3d-wrap-text-input").fill("TURBO");
     await expect(page.getByTestId("editor-r3d-car-wrap-stage")).toContainText("TURBO");
     await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("photoStays2D=true | rot=0deg");
-    await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("creaseRecall=89%");
+    // No crease detector runs on a photo yet, so recall reads "not measured" (it was a hard-coded 89% / 72%; #207).
+    await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("creaseRecall=not measured");
 
     await page.getByRole("checkbox", { name: "Crease Snap" }).click();
-    await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("creaseRecall=72%");
+    await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("creaseRecall=not measured");
     await page.getByRole("checkbox", { name: "AI On Device" }).click();
     await expect(page.getByTestId("editor-r3d-photo-readout")).toContainText("ai=server-api");
 

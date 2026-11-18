@@ -3,6 +3,7 @@ import { frameScheduler, type FrameInfo, type FrameScheduler } from "../../time/
 import { getTransport, subscribeTransport } from "../../time/transport";
 import type { StageRenderer } from "../../render/StageRenderer";
 import { StageAdapters } from "./StageAdapters";
+import { waapiBakeStats } from "./WaapiAdapter";
 import { KernelAdapter } from "./KernelAdapter";
 import { ParityMonitor, parityEnabled } from "./parity";
 import type { AdapterHost, EngineAdapter } from "./types";
@@ -85,6 +86,27 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   let lastRate = 1;
   let dirty = true;
 
+  // Sample animations ahead of time, in idle slices, so Play/seek after an edit find their keyframes ready
+  // (performance, 2026-11-18). Only the stage's own WAAPI adapter supports it; others are left alone.
+  const waapi = adapter instanceof StageAdapters ? adapter.waapi : null;
+  let idleHandle: number | null = null;
+  const idle = typeof window !== "undefined" && typeof window.requestIdleCallback === "function" ? window : null;
+  const schedulePrebake = () => {
+    if (!waapi || !idle || idleHandle !== null) return;
+    idleHandle = idle.requestIdleCallback(
+      (deadline) => {
+        idleHandle = null;
+        if (getTransport().playing) return; // playing: play() already sampled what it needed
+        // On a busy page the callback can arrive by timeout with no idle time left; then take a short slice anyway, so
+        // the work still gets done a little at a time instead of being put off forever.
+        const sliceEnd = performance.now() + 8;
+        const timeLeft = deadline.didTimeout ? () => sliceEnd - performance.now() : () => deadline.timeRemaining();
+        if (!waapi.prebake(timeLeft)) schedulePrebake();
+      },
+      { timeout: 2000 },
+    );
+  };
+
   // What was drawn may have changed under the adapter: the document, or a layer's element.
   const unsubscribeDocument = documentStore.subscribe((state, prev) => {
     if (state.document === prev.document) return;
@@ -92,7 +114,13 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     bindingDriver?.invalidate();
     syncBoundLayers();
     dirty = true;
+    schedulePrebake();
   });
+  schedulePrebake();
+  // Test seam (only with window.__LL_TEST__): the WAAPI adapter's work counters, for the performance budget e2e spec.
+  if (waapi && typeof window !== "undefined" && (window as unknown as { __LL_TEST__?: boolean }).__LL_TEST__) {
+    (window as unknown as { __LL_WAAPI__?: typeof waapiBakeStats }).__LL_WAAPI__ = waapiBakeStats;
+  }
   const unsubscribeNodes = renderer.registry.subscribe(() => {
     adapter.invalidate();
     dirty = true;
@@ -219,6 +247,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     unsubscribeTransport();
     unsubscribeNodes();
     unsubscribeDocument();
+    if (idleHandle !== null && idle) idle.cancelIdleCallback(idleHandle);
     adapter.dispose();
   };
 }

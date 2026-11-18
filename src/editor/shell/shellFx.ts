@@ -16,6 +16,7 @@ import {
   type Sim,
 } from "@/editor/motion";
 import type { EditorMode } from "@/editor/components";
+import { frameScheduler } from "@/core/time/scheduler";
 
 /*
  * Shell motion: the shared spring panel transition (P "panelFx"), mode-switch content
@@ -142,6 +143,27 @@ function slideOut(el: HTMLElement, dx: number, dy: number): void {
   else el.remove();
 }
 
+/**
+ * Tell the rest of the editor the shell's layout settled at a new size: one window `resize` (what popovers,
+ * menus and the toolbar listen for). Coalesced to one per frame.
+ *
+ * Performance (2026-11-18): this used to be dispatched on every frame of a panel spring and on every pointer move
+ * of a panel drag. Each one woke ~14 resize listeners, several of which read layout and set React state, on top of
+ * the grid relayout the spring already causes. Opening Motion spent ~46% of its time there. Now springs and drags
+ * announce only when they come to rest; anything that must follow the size live uses a ResizeObserver.
+ */
+let layoutAnnounceQueued = false;
+function announceLayout(): void {
+  if (layoutAnnounceQueued || typeof window === "undefined") return;
+  layoutAnnounceQueued = true;
+  // once, on the next frame (the scheduler's overlay step, after layout has settled for that frame)
+  const off = frameScheduler.register("overlay", () => {
+    off();
+    layoutAnnounceQueued = false;
+    window.dispatchEvent(new Event("resize"));
+  });
+}
+
 export class ShellFx {
   private root: HTMLElement | null = null;
   private mode: EditorMode | null = null;
@@ -235,14 +257,14 @@ export class ShellFx {
       if (!this.live && this.root) {
         this.root.style.setProperty("--lw", `${width}px`);
         this.lw.jump(width);
-        window.dispatchEvent(new Event("resize"));
+        announceLayout();
       }
     } else {
       this.targetRw = width;
       if (!this.live && this.root) {
         this.root.style.setProperty("--rw", `${width}px`);
         this.rw.jump(width);
-        window.dispatchEvent(new Event("resize"));
+        announceLayout();
       }
     }
   };
@@ -258,7 +280,7 @@ export class ShellFx {
     root.style.setProperty("--rw", `${Math.max(0, this.rw.x).toFixed(2)}px`);
     root.style.setProperty("--bh", `${Math.max(0, this.bh.x).toFixed(2)}px`);
     root.style.setProperty("--fw", this.fw.x.toFixed(4));
-    window.dispatchEvent(new Event("resize"));
+    // No window resize here: this runs every frame of the spring (see announceLayout).
   }
 
   private clearVars(): void {
@@ -281,7 +303,7 @@ export class ShellFx {
       bh: this.bh.to,
       fw: this.fw.to,
     };
-    window.dispatchEvent(new Event("resize"));
+    announceLayout();
   }
 
   /** Called synchronously before the mode state changes: copies the old panel content. */
@@ -376,7 +398,7 @@ export class ShellFx {
       this.bh.jump(b.bh);
       this.fw.jump(b.fw);
       this.last = b;
-      window.dispatchEvent(new Event("resize"));
+      announceLayout();
     } else {
       const spec = modeChanged && pending ? MODE_SPRING : getActivePreset().shape;
       [this.lw, this.rw, this.bh, this.fw].forEach((s) => s.tune(spec));
@@ -559,7 +581,7 @@ export class ShellFx {
       spring.jump(targetW);
       root.style.setProperty(cssVar, `${targetW}px`);
       if (this.last) this.last[side === "left" ? "lw" : "rw"] = targetW;
-      window.dispatchEvent(new Event("resize"));
+      announceLayout();
       return;
     }
 
@@ -664,12 +686,13 @@ export class ShellFx {
       spring.jump(w);
       root.style.setProperty(cssVar, `${w}px`);
       handle.setAttribute("aria-valuenow", String(Math.round(w)));
-      window.dispatchEvent(new Event("resize"));
+      // announced once when the drag ends (up), not on every move
     };
 
     const up = (): void => {
       handle.removeAttribute("data-on");
       root.removeAttribute(dragAttr);
+      announceLayout();
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
       handle.removeEventListener("pointercancel", up);
@@ -761,7 +784,7 @@ export class ShellFx {
     if (prefersReducedMotion()) {
       this.lw.jump(target);
       root.style.setProperty("--lw", `${target}px`);
-      window.dispatchEvent(new Event("resize"));
+      announceLayout();
       return;
     }
     this.lw.tune(getActivePreset().shape);
@@ -828,7 +851,7 @@ export class ShellFx {
     if (prefersReducedMotion()) {
       this.rw.jump(target);
       root.style.setProperty("--rw", `${target}px`);
-      window.dispatchEvent(new Event("resize"));
+      announceLayout();
       return;
     }
     this.rw.tune(getActivePreset().shape);

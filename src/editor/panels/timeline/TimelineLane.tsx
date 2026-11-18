@@ -164,9 +164,8 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
   const dur = useMotionModel((s) => s.comp.dur);
   const fps = useMotionModel((s) => s.fps);
   const t0 = useMotionModel((s) => s.t0);
-  // Phase 64: only an open lane shows values at the playhead, so only an open lane re-renders on a scrub; handlers read
-  // the playhead when they run.
-  const playhead = useThrottledPlayhead(10, layer.open);
+  // Values at the playhead are shown by PlayheadValueReadout and KeyAtPlayheadButton (below), which follow the playhead
+  // themselves: the lane doesn't re-render as the playhead moves. Handlers read the playhead when they run.
   const ph = () => useMotionModel.getState().playhead;
   const selectedKeys = useMotionModel((s) => s.selectedKeys);
   const tool = useMotionModel((s) => s.tool);
@@ -799,8 +798,6 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
           const spec = PROPS[track.p];
           const isTrackSelected =
             selectedProp?.layerId === layer.id && selectedProp?.p === track.p;
-          const currentValue = valueAt(layer, track.p, playhead);
-          const hasKeyAtPlayhead = track.keys.some((k) => k.t === playhead);
 
           return (
             <div
@@ -862,7 +859,7 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
                   title="Drag to change value at playhead"
                   className="rd ll-rd ll:min-w-10 ll:text-right ll:font-mono ll:text-micro ll:text-primary ll:cursor-ew-resize ll:px-0.5 ll:rounded-sm ll:hover:bg-surface-segmented"
                 >
-                  {formatValue(track.p, currentValue)}
+                  <PlayheadValueReadout layer={layer} p={track.p} />
                 </span>
 
                 {/* Nav buttons */}
@@ -881,28 +878,7 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
                     <Icon icon={ChevronLeft} size={12} />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (hasKeyAtPlayhead) {
-                        const hit = track.keys.find((k) => k.t === ph());
-                        if (hit) motionActions.deleteKeys([hit.id]);
-                      } else {
-                        motionActions.addKey(layer.id, track.p, ph());
-                      }
-                    }}
-                    title={
-                      hasKeyAtPlayhead ? "Remove keyframe" : "Add keyframe"
-                    }
-                    aria-pressed={hasKeyAtPlayhead}
-                    className={`ib kt ${
-                      hasKeyAtPlayhead
-                        ? "on ll:text-control-active"
-                        : "ll:text-muted ll:hover:text-primary"
-                    } ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors`}
-                  >
-                    <Icon icon={Diamond} size={12} />
-                  </button>
+                  <KeyAtPlayheadButton layerId={layer.id} p={track.p} keys={track.keys} />
 
                   <button
                     type="button"
@@ -1055,3 +1031,37 @@ const TimelineLaneInner: React.FC<TimelineLaneProps> = ({
 
 /** Memoized (Phase 64): a lane re-renders when its own layer or the shared timeline state changes, not when the panel does. */
 export const TimelineLane = React.memo(TimelineLaneInner);
+
+/**
+ * The value at the playhead in a property row. Only this re-renders as the playhead moves (at most 10 times a second
+ * while playing). Performance (2026-11-18): the whole lane, every row and keyframe, used to re-render instead, for each
+ * open layer: ~17% of the main thread during playback with 46 animated layers on a 4x-throttled CPU.
+ */
+function PlayheadValueReadout({ layer, p }: { layer: MotionLayer; p: PropId }) {
+  const playhead = useThrottledPlayhead(10);
+  return <>{formatValue(p, valueAt(layer, p, playhead))}</>;
+}
+
+/** Adds or removes the key at the playhead. Follows the playhead on its own (see PlayheadValueReadout). */
+function KeyAtPlayheadButton({ layerId, p, keys }: { layerId: string; p: PropId; keys: readonly Keyframe[] }) {
+  const playhead = useThrottledPlayhead(10);
+  const hasKeyAtPlayhead = keys.some((k) => k.t === playhead);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const now = useMotionModel.getState().playhead;
+        const hit = keys.find((k) => k.t === now);
+        if (hit) motionActions.deleteKeys([hit.id]);
+        else motionActions.addKey(layerId, p, now);
+      }}
+      title={hasKeyAtPlayhead ? "Remove keyframe" : "Add keyframe"}
+      aria-pressed={hasKeyAtPlayhead}
+      className={`ib kt ${
+        hasKeyAtPlayhead ? "on ll:text-control-active" : "ll:text-muted ll:hover:text-primary"
+      } ll:w-4.5 ll:h-5 ll:flex ll:items-center ll:justify-center ll:rounded-sm ll:transition-colors`}
+    >
+      <Icon icon={Diamond} size={12} />
+    </button>
+  );
+}

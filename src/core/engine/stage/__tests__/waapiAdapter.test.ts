@@ -294,3 +294,86 @@ describe("Phase 59: scrub vs play", () => {
     }
   });
 });
+
+describe("WaapiAdapter bake cache (performance, 2026-11-18)", () => {
+  function twoLayers() {
+    const b = new DocBuilder();
+    const a = b.layer("rectangle", "A", null);
+    const c = b.layer("rectangle", "C", null);
+    b.clip(a, { name: "A", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [track("transform.x", 0, 100)] });
+    b.clip(c, { name: "C", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [track("transform.x", 0, 50)] });
+    return { doc: b.build(), a, c };
+  }
+
+  it("an edit to one layer re-samples only that layer and keeps the other's running animation", () => {
+    const { doc, a, c } = twoLayers();
+    let current = doc;
+    const els = new Map([[a, new FakeElement()], [c, new FakeElement()]]);
+    const adapter = new WaapiAdapter();
+    adapter.mount({ node: (id) => els.get(id) as unknown as Element, getDocument: () => current, compositionId: () => MAIN_COMPOSITION_ID, fps: () => 60, duration: () => 1 });
+    adapter.seek(0.5);
+    assert.equal(adapter.stats.samples, 2);
+    const cAnimation = els.get(c)!.animations[0];
+
+    // edit layer A only (structural sharing: C's objects keep their identity)
+    current = { ...doc, layers: { ...doc.layers, [a]: { ...doc.layers[a]!, name: "A2" } } };
+    adapter.invalidate();
+    adapter.seek(0.6);
+    assert.equal(adapter.stats.samples, 3, "only A was sampled again");
+    assert.equal(els.get(c)!.animations.length, 1, "C's animation was not recreated");
+    assert.notEqual(cAnimation.state, "canceled");
+  });
+
+  it("prebake samples ahead of time, so the next seek samples nothing", () => {
+    const { doc, a, c } = twoLayers();
+    const els = new Map([[a, new FakeElement()], [c, new FakeElement()]]);
+    const adapter = new WaapiAdapter();
+    adapter.mount({ node: (id) => els.get(id) as unknown as Element, getDocument: () => doc, compositionId: () => MAIN_COMPOSITION_ID, fps: () => 60, duration: () => 1 });
+    assert.equal(adapter.prebake(() => 50), true);
+    assert.equal(adapter.stats.samples, 2);
+    adapter.seek(0.3);
+    assert.equal(adapter.stats.samples, 2, "seek found the keyframes ready");
+    assert.equal(els.get(a)!.animations.length, 1);
+  });
+
+  it("prebake stops when the idle time runs out and says it isn't done", () => {
+    const { doc, a, c } = twoLayers();
+    const els = new Map([[a, new FakeElement()], [c, new FakeElement()]]);
+    const adapter = new WaapiAdapter();
+    adapter.mount({ node: (id) => els.get(id) as unknown as Element, getDocument: () => doc, compositionId: () => MAIN_COMPOSITION_ID, fps: () => 60, duration: () => 1 });
+    assert.equal(adapter.prebake(() => 0), false);
+    assert.equal(adapter.stats.samples, 0);
+  });
+
+  it("a change to the clip's own keyframes re-samples that layer", () => {
+    const { doc, a, c } = twoLayers();
+    let current = doc;
+    const els = new Map([[a, new FakeElement()], [c, new FakeElement()]]);
+    const adapter = new WaapiAdapter();
+    adapter.mount({ node: (id) => els.get(id) as unknown as Element, getDocument: () => current, compositionId: () => MAIN_COMPOSITION_ID, fps: () => 60, duration: () => 1 });
+    adapter.seek(0.5);
+    const clipId = Object.values(doc.clips).find((cl) => cl.layerId === a)!.id;
+    current = { ...doc, clips: { ...doc.clips, [clipId]: { ...doc.clips[clipId]!, tracks: [track("transform.x", 0, 300)] } } };
+    adapter.invalidate();
+    adapter.seek(0.5);
+    assert.equal(adapter.stats.samples, 3);
+    assert.equal(els.get(a)!.animations.length, 2, "A got a new animation with the new keyframes");
+  });
+});
+
+describe("WaapiAdapter inputs compared by value (performance, 2026-11-18)", () => {
+  it("the same inputs in a new object keep the cached bakes", () => {
+    const b = new DocBuilder();
+    const id = b.layer("rectangle", "A", null);
+    b.clip(id, { name: "A", type: "entrance", trigger: "mount", duration: 1, easing: "linear", tracks: [track("transform.x", 0, 100)] });
+    const doc = b.build();
+    const { adapter } = setup(doc);
+    adapter.seek(0.2);
+    adapter.setInputs({ scrollClipTime: {} } as never);
+    adapter.seek(0.3);
+    const after = adapter.stats.samples;
+    adapter.setInputs({ scrollClipTime: {} } as never);
+    adapter.seek(0.4);
+    assert.equal(adapter.stats.samples, after, "no re-sample for equal inputs");
+  });
+});

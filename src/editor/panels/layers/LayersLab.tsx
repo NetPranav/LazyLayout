@@ -27,6 +27,7 @@ import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { useProjectStore } from "@/core/store/useProjectStore";
 import { invokeCommand } from "@/core/commands";
 import type { LeftPanelMode } from "./types";
+import { useLlUiDocument } from "@/editor/shell/useLlUiDocument";
 
 const MODE_OPTIONS: readonly SegmentedControlOption<LeftPanelMode>[] = [
   { value: "design", label: "Design", icon: <Icon icon={Layers} size={14} /> },
@@ -35,6 +36,7 @@ const MODE_OPTIONS: readonly SegmentedControlOption<LeftPanelMode>[] = [
 ];
 
 export const LayersLab: React.FC = () => {
+  useLlUiDocument();
   const [mode, setMode] = useState<LeftPanelMode>("design");
   const [filterByActivePage, setFilterByActivePage] = useState(false);
   const [lastAction, setLastAction] = useState<string>("Initialized connected layers lab");

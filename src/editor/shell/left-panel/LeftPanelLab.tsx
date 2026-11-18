@@ -17,6 +17,7 @@ import {
   DEFAULT_SELECTED_TRACK_ID,
 } from "./sampleData";
 import { LAB_FRAME_HEIGHT } from "./constants";
+import { useLlUiDocument } from "@/editor/shell/useLlUiDocument";
 
 function LeftPanelLabInner() {
   const searchParams = useSearchParams();
@@ -281,6 +282,7 @@ function LeftPanelLabInner() {
 }
 
 export function LeftPanelLab() {
+  useLlUiDocument();
   return (
     <Suspense
       fallback={

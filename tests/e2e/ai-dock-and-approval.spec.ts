@@ -47,9 +47,10 @@ test.describe("Dock AI, viewport auto-tagging, and AI approval controls", () => 
           id: "call_1",
           name: "invoke_editor_command",
           input: {
-            commandId: "edit.undo",
+            // a command the AI may propose (#207 keeps file, export, test and undo/redo commands away from it)
+            commandId: "view.fit",
             argsJson: "{}",
-            rationale: "Undo check command staged for approval",
+            rationale: "Fit the page in view, staged for approval",
           },
         },
         {

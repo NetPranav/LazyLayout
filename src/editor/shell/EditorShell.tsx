@@ -7,8 +7,7 @@ import { useAiChat } from "@/editor/shell/right-panel";
 import { RightPanelConnected } from "./RightPanelConnected";
 import { LeftPanelConnected } from "@/editor/panels/layers";
 import { Stage } from "@/editor/stage";
-import { TimelinePanel } from "@/editor/panels/timeline";
-import { CodePanel } from "@/editor/panels/code-view";
+import { LazyCodePanel as CodePanel, LazyTimelinePanel as TimelinePanel, startPanelPreloadQueue } from "./lazyPanels";
 import { documentStore, useDocument, useLayers } from "@/core/store/useDocumentStore";
 import { useSelectionStore } from "@/core/store/useSelectionStore";
 import { runCode } from "@/editor/panels/console";
@@ -51,6 +50,7 @@ import { installTransportCommands } from "@/core/time/transportCommands";
 import { installTransportDriver } from "@/core/time/transportDriver";
 import { recordCommit } from "@/editor/diagnostics/commitCounter";
 import { transport, transportStore } from "@/core/time/transport";
+import { useLlUiDocument } from "./useLlUiDocument";
 
 /** Where the playhead starts when the editor opens (it was the Motion panel's own start before the one clock). */
 const OPENING_FRAME = 72;
@@ -70,6 +70,7 @@ export function EditorShell({
   saving: propSaving = false,
   className = "",
 }: EditorShellProps) {
+  useLlUiDocument();
   const saving = propSaving;
   const projectName = useProjectMetaStore((s) => s.projectName);
   const selectedIds = useSelectionStore((s) => s.selectedIds);
@@ -165,6 +166,15 @@ export function EditorShell({
     initialRightCollapsed: typeof window !== "undefined" && window.innerWidth <= 768,
     onBeforeModeChange: captureMode,
   });
+  // Design first: once the editor is up, the Motion, Code and 3D panels download and compile in idle time
+  // (lazyPanels.tsx). Opening one of them early still works; it shows a placeholder until it arrives.
+  useEffect(() => {
+    startPanelPreloadQueue();
+  }, []);
+  // The panel for the mode being opened is needed now, not in the queue's turn.
+  if (actions.mode === "motion") void TimelinePanel.preload();
+  else if (actions.mode === "code") void CodePanel.preload();
+
   const timelineFullWidth = useMotionModel((s) => s.fullWidth);
   const aiChat = useAiChat({ mode: actions.mode, documentName: projectName });
   const bottomOpen = !actions.isZen && (actions.mode === "motion" || actions.mode === "code");
@@ -375,6 +385,10 @@ export function EditorShell({
           saving={saving}
           mode={actions.mode}
           onSelectMode={actions.setMode}
+          onModeIntent={(m) => {
+            if (m === "motion") void TimelinePanel.preload();
+            else if (m === "code") void CodePanel.preload();
+          }}
           canUndo={actions.canUndo}
           canRedo={actions.canRedo}
           onUndo={actions.undo}
