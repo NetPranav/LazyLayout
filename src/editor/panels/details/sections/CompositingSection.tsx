@@ -187,6 +187,9 @@ export const CompositingSection: React.FC<InspectorSectionProps> = ({ selectedId
               <OptionRow label="Mode">
                 <Select aria-label="Matte mode" size="sm" width="100%" options={MODES.slice(1)} value={str("matte.mode", "alpha")} onChange={(v) => run("layer.setMatte", { mode: v })} />
               </OptionRow>
+              <OptionRow label="Feather" title="Softens the matte's edge, in pixels: what it reveals fades in instead of being cut.">
+                {maskNumber("Matte feather", "feather", "mask.feather", 0, "Softens the matte's edge, in pixels.", { min: 0, max: 200 })}
+              </OptionRow>
               <button
                 type="button"
                 aria-pressed={p["matte.showSource"] === true}

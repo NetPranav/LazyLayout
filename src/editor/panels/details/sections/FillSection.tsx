@@ -104,9 +104,13 @@ function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { pain
         <OptionRow label="Source">
           <Select aria-label="Live fill source" size="sm" width="100%" placeholder="Choose a frame or component" options={layerOptions} value={p.source} onChange={(v) => onChange({ ...p, source: v })} />
         </OptionRow>
-        <OptionRow label="Scale">
-          <NumberField size="sm" aria-label="Live fill scale" unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        <OptionRow label="Lens" title="Draw the source lined up under this shape, magnified about its centre, wherever the shape moves: a magnifier or a glass lens.">
+          <Toggle size="sm" aria-label="Live fill lens" checked={p.lens === true} onChange={(on) => onChange({ ...p, lens: on, ...(on && p.scale === 1 ? { scale: 1.4 } : {}), tile: on ? false : p.tile })} />
         </OptionRow>
+        <OptionRow label={p.lens ? "Magnify" : "Scale"}>
+          <NumberField size="sm" aria-label={p.lens ? "Live fill magnification" : "Live fill scale"} unit="%" value={Math.round(p.scale * 100)} min={5} max={2000} onChange={(v) => onChange({ ...p, scale: Math.max(0.05, v / 100) })} />
+        </OptionRow>
+        {!p.lens && (<>
         <OptionRow label="Offset X">
           <NumberField size="sm" aria-label="Live fill offset X" suffix="px" value={p.offset.x} onChange={(v) => onChange({ ...p, offset: { ...p.offset, x: v } })} />
         </OptionRow>
@@ -116,6 +120,7 @@ function ProceduralControls({ paint: p, layers, layerOptions, onChange }: { pain
         <OptionRow label="Tile">
           <Toggle size="sm" aria-label="Live fill tile" checked={p.tile} onChange={(on) => onChange({ ...p, tile: on })} />
         </OptionRow>
+        </>)}
       </OptionGroup>
     );
   }

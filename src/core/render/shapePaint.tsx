@@ -341,7 +341,8 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
         const stepX = sw * p.scale;
         const stepY = sh * p.scale;
         const spots: { x: number; y: number }[] = [];
-        if (p.tile) {
+        if (p.lens) spots.push({ x: 0, y: 0 });
+        else if (p.tile) {
           const x0 = ((p.offset.x % stepX) + stepX) % stepX - stepX;
           const y0 = ((p.offset.y % stepY) + stepY) % stepY - stepY;
           for (let y = y0; y < height && spots.length < 400; y += stepY) for (let x = x0; x < width && spots.length < 400; x += stepX) spots.push({ x, y });
@@ -352,7 +353,8 @@ export function ShapePaint({ layer, resolved, width, height, defaultFill, defaul
             <div data-live-fill={p.source} style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", pointerEvents: "none" }}>
               <SubtreeContext.Provider value={{ ...subtree, inside: [...subtree.inside, layer.id, p.source] }}>
                 {spots.map((s, k) => (
-                  <div key={k} style={{ position: "absolute", left: s.x, top: s.y, width: sw, height: sh, transform: p.scale !== 1 ? `scale(${p.scale})` : undefined, transformOrigin: "0 0" }}>
+                  // a lens is lined up under the shape each frame by the canvas (`liveLens`), which reads where both are drawn
+                  <div key={k} {...(p.lens ? { "data-live-lens": p.source, "data-lens-scale": p.scale } : {})} style={{ position: "absolute", left: s.x, top: s.y, width: sw, height: sh, transform: p.scale !== 1 ? `scale(${p.scale})` : undefined, transformOrigin: "0 0" }}>
                     {subtree.draw(copy.rootId, copy.layers, { ...subtree.ctx, parentDirection: undefined })}
                   </div>
                 ))}

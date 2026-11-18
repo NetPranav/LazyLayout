@@ -69,7 +69,7 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint, reducedMotion: inputs.reducedMotion ?? this.inputs.reducedMotion };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint, reducedMotion: inputs.reducedMotion ?? this.inputs.reducedMotion, pointer: "pointer" in inputs ? inputs.pointer : this.inputs.pointer, layerOrigin: inputs.layerOrigin ?? this.inputs.layerOrigin };
     this.invalidate();
   }
 
@@ -85,6 +85,11 @@ export class KernelAdapter implements EngineAdapter {
     if ((this.inputs.breakpoint ?? null) === id) return;
     this.inputs = { ...this.inputs, breakpoint: id };
     this.invalidate();
+  }
+
+  /** Where the pointer is on the page (page px), for mattes whose copies an effector moves by it. Not an `invalidate`, like `setBound`. */
+  setPointer(pointer: EvaluateInputs["pointer"], layerOrigin?: EvaluateInputs["layerOrigin"]): void {
+    this.inputs = { ...this.inputs, pointer, ...(layerOrigin ? { layerOrigin } : {}) };
   }
 
   /** Design track D4: this frame's bound values. Not an `invalidate`: the plan is unchanged and only changed values are written. */

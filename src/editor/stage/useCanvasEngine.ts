@@ -6,10 +6,11 @@ import { loadMotion, motionEngine, stageMover } from "@/core/engine/motion/Motio
 import { kernelMover } from "@/core/states/transitions";
 import { usePlaygroundStore } from "@/core/store/usePlaygroundStore";
 import { useStateEditStore } from "@/core/states/stateEdit";
-import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useStore } from "zustand";
 import { StageRenderer } from "@/core/render/StageRenderer";
 import { installStageEngine } from "@/core/engine/stage/StageEngine";
+import { installLiveLens } from "./liveLens";
 import { installHalftonePointer } from "./halftonePointer";
 import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
@@ -48,6 +49,22 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   const statesShown = useStateEditStore((s) => s.layerId !== null || s.live);
   const enabled = !designing || playing || framePreviewing || statesShown;
 
+  // lenses (Live fill, lens on) stay lined up under their shape, in every workspace; installed on the drawn page once it
+  // exists (it is not there on the first render), and again if the page element is replaced
+  const lensRef = useRef<{ page: HTMLElement; off: () => void } | null>(null);
+  useEffect(() => {
+    const page = pageRef.current;
+    if (lensRef.current?.page === page) return;
+    lensRef.current?.off();
+    lensRef.current = page ? { page, off: installLiveLens(page) } : null;
+  });
+  useEffect(
+    () => () => {
+      lensRef.current?.off();
+      lensRef.current = null;
+    },
+    [],
+  );
   // the Halftone effect follows the pointer wherever the canvas shows motion
   useEffect(() => {
     const page = pageRef.current;

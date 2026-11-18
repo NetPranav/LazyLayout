@@ -40,7 +40,7 @@ import { isDefaultMotionAt, layerAtBreakpoint, motionAtOf, reduceMotion, reduced
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
-import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
+import { canvasOrigin, matteShapesPath, matteSourceShapes, sharedAncestor } from "../geometry/matteShape";
 import { motionBlurSigma } from "../render/fxStack";
 import { hasLinks, mapValue, readLinks, resolveLayerRef } from "../links/linkModel";
 import { evaluateExpression, type ExprContext } from "../expressions/evaluate";
@@ -84,8 +84,10 @@ export interface EvaluateInputs {
    */
   breakpoint?: string | null;
   reducedMotion?: boolean;
-  /** A virtual pointer position, layer-local px — for the behaviours this kernel does evaluate (`loop` needs none; reserved for Phase 12's expansion). */
+  /** The pointer on the page, in page px (or null when it is off the page): a matte made of clones that a pointer effector scales follows it. */
   pointer?: { x: number; y: number } | null;
+  /** Where a layer is drawn on the page (its top-left, page px), for taking the pointer into a layer's own pixels. */
+  layerOrigin?: (layerId: string) => { x: number; y: number } | null;
   /** A virtual scroll progress, 0-1 — reserved the same way. */
   scrollProgress?: number;
   /**
@@ -848,7 +850,7 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
   let out = resolved;
 
   const targets = index.get(layerId);
-  if (targets && targets.length > 0 && matteSourceShape(doc.layers, layerId, localOf) && !targets.some((id) => doc.layers[id].properties["matte.showSource"] === true)) {
+  if (targets && targets.length > 0 && (matteSourceShapes(doc.layers, layerId, localOf) || matteSourceShapes(doc.layers, layerId, localOf, { upTo: sharedAncestor(doc.layers, layerId, targets[0]) })) && !targets.some((id) => doc.layers[id].properties["matte.showSource"] === true)) {
     out = { ...out, "appearance.opacity": 0 };
   }
 
@@ -856,9 +858,18 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
   const sourceId = layer.properties["matte.source"];
   const mode = layer.properties["matte.mode"];
   if (typeof sourceId === "string" && sourceId !== "" && sourceId !== layerId && typeof mode === "string" && mode !== "none" && doc.layers[sourceId]) {
-    const shape = matteSourceShape(doc.layers, sourceId, localOf);
-    const origin = canvasOrigin(doc.layers, layerId, localOf);
-    if (shape && origin) {
+    // measured on the page when every layer on the way can be read; else from the layer both ends share (a page frame
+    // the page lays out itself, say), with the pointer taken into that layer's own pixels
+    let shapes = matteSourceShapes(doc.layers, sourceId, localOf, { pointer: inputs.pointer ?? null });
+    let origin = canvasOrigin(doc.layers, layerId, localOf);
+    if (!shapes || !origin) {
+      const upTo = sharedAncestor(doc.layers, sourceId, layerId);
+      const at = upTo ? inputs.layerOrigin?.(upTo) : null;
+      const pointer = inputs.pointer && at ? { x: inputs.pointer.x - at.x, y: inputs.pointer.y - at.y } : null;
+      shapes = matteSourceShapes(doc.layers, sourceId, localOf, { pointer, upTo });
+      origin = canvasOrigin(doc.layers, layerId, localOf, upTo);
+    }
+    if (shapes && origin) {
       const source = localOf(sourceId);
       const fill = source["appearance.background.color"];
       const opacity = typeof source["appearance.opacity"] === "number" ? (source["appearance.opacity"] as number) : 1;
@@ -866,7 +877,7 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
         ...out,
         "mask.mode": mode,
         "mask.shape": "path",
-        "mask.path": matteShapePath(shape, origin),
+        "mask.path": matteShapesPath(shapes, origin),
         ...(typeof fill === "string" && fill !== "" && fill !== "transparent" ? { "mask.fill": fill } : {}),
         "mask.opacity": opacity * (typeof out["mask.opacity"] === "number" ? (out["mask.opacity"] as number) : 1),
       };

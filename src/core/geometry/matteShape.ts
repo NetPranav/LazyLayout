@@ -1,5 +1,8 @@
 import type { Layer, MotionDocument } from "../document/schema";
 import type { PropValue } from "../document/registry";
+import { clonerCopies, readCloner } from "../render/cloner";
+import { effectCopy, influence, readEffector } from "../render/effector";
+import { MAX_PATH_LENGTH } from "../render/limits";
 
 /**
  * ============================================================================
@@ -27,7 +30,7 @@ const num = (props: Resolved, path: string, fallback = 0): number => {
 };
 
 /** A layer's position on the canvas (the sum of the `frame.x` / `frame.y` of it and its ancestors), or null when any of them isn't placed absolutely. */
-export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, resolvedOf: (id: string) => Resolved): { x: number; y: number } | null {
+export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, resolvedOf: (id: string) => Resolved, upTo?: string): { x: number; y: number } | null {
   let x = 0;
   let y = 0;
   let id: string | null = layerId;
@@ -36,7 +39,9 @@ export function canvasOrigin(layers: MotionDocument["layers"], layerId: string, 
     if (!layer) return null;
     const props = resolvedOf(id);
     const positioning = props.positioning ?? layer.properties.positioning;
-    // the top-level frame is the origin of its own canvas, whatever it says
+    // measured from `upTo` (the layer both ends of a matte share): how that one and its own parents are placed doesn't
+    // matter, since it moves both ends alike (a page frame stacked by the page, say)
+    if (upTo !== undefined && id === upTo) break;
     if (layer.parentId !== null && positioning !== "absolute") return null;
     if (layer.parentId !== null) {
       x += num(props, "frame.x");
@@ -83,11 +88,11 @@ export interface MatteSourceShape {
 }
 
 /** The source layer as a shape on the canvas, or null when it can't be read (see the file header). */
-export function matteSourceShape(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved): MatteSourceShape | null {
+export function matteSourceShape(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved, upTo?: string): MatteSourceShape | null {
   const source = layers[sourceId];
   if (!source) return null;
   const props = resolvedOf(sourceId);
-  const origin = canvasOrigin(layers, sourceId, resolvedOf);
+  const origin = canvasOrigin(layers, sourceId, resolvedOf, upTo);
   const width = num(props, "frame.width");
   const height = num(props, "frame.height");
   if (!origin || width <= 0 || height <= 0) return null;
@@ -134,3 +139,122 @@ export function matteShapePath(shape: MatteSourceShape, targetOrigin: { x: numbe
   return parts.join(" ");
 }
 
+
+/** The most shapes one matte draws (a dot grid of clones can be large; the mask is redrawn when its source moves). */
+export const MAX_MATTE_SHAPES = 3000;
+/** The longest matte path written (the renderer drops any path over `MAX_PATH_LENGTH`). */
+export const MAX_MATTE_PATH = MAX_PATH_LENGTH - 1000;
+
+/**
+ * Every shape a matte source draws, so any layer can be a matte, not only one box or ellipse:
+ * - a shape with a **cloner** (Clone: grid, ring, fill area) gives itself and every copy, so one dot multiplied over an
+ *   area is a dotted matte;
+ * - a **group or frame** with layers in it gives every shape inside it (hidden ones left out), moved with the group, so
+ *   several shapes, clones and moving layers make one matte together.
+ * Null when nothing in it can be read (see `matteSourceShape`).
+ */
+export function matteSourceShapes(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved, live: { pointer?: { x: number; y: number } | null; upTo?: string } = {}): MatteSourceShape[] | null {
+  const out: MatteSourceShape[] = [];
+  const visit = (id: string, shiftX: number, shiftY: number, depth: number): void => {
+    const layer = layers[id];
+    if (!layer || out.length >= MAX_MATTE_SHAPES) return;
+    const props = resolvedOf(id);
+    if (depth > 0 && (layer.visible === false || props.visible === false)) return;
+    if (layer.children.length > 0 && depth < 16) {
+      // a group: what is inside it, moved as the group moves
+      const gx = shiftX + num(props, "transform.x");
+      const gy = shiftY + num(props, "transform.y");
+      const before = out.length;
+      for (const child of layer.children) visit(child, gx, gy, depth + 1);
+      // a group with nothing readable inside is its own box, as a frame always was
+      if (out.length > before || depth > 0) return;
+    }
+    const shape = matteSourceShape(layers, id, resolvedOf, live.upTo);
+    if (!shape) return;
+    const base = { ...shape, cx: shape.cx + shiftX, cy: shape.cy + shiftY };
+    const cloner = readCloner((path) => props[path]);
+    if (!cloner) {
+      out.push(base);
+      return;
+    }
+    const parent = layer.parentId ? resolvedOf(layer.parentId) : {};
+    const box = { x: num(props, "frame.x"), y: num(props, "frame.y"), width: shape.width, height: shape.height };
+    const copies = [{ index: 0, dx: 0, dy: 0, rotate: 0 }, ...clonerCopies(cloner, box, { width: num(parent, "frame.width"), height: num(parent, "frame.height") })];
+    // an effector changes each copy as it changes the drawn ones: by its number, by noise, or by how near the pointer is
+    const effector = readEffector((path) => props[path]);
+    for (const copy of copies) {
+      if (out.length >= MAX_MATTE_SHAPES) break;
+      const cx = base.cx + copy.dx;
+      const cy = base.cy + copy.dy;
+      let e = { scale: 1, dx: 0, dy: 0 };
+      if (effector) {
+        const distance = live.pointer ? Math.hypot(cx - live.pointer.x, cy - live.pointer.y) : undefined;
+        e = effectCopy(effector, influence(effector, copy.index, copies.length, distance));
+      }
+      if (e.scale <= 0.01) continue; // shrunk to nothing
+      out.push({ ...base, cx: cx + e.dx, cy: cy + e.dy, rotation: base.rotation + copy.rotate, scaleX: base.scaleX * e.scale, scaleY: base.scaleY * e.scale });
+    }
+  };
+  visit(sourceId, 0, 0, 0);
+  return out.length > 0 ? out : null;
+}
+
+/** The matte path of several shapes: each one's outline, together (where they overlap, the union). */
+export function matteShapesPath(shapes: readonly MatteSourceShape[], targetOrigin: { x: number; y: number }): string {
+  if (shapes.length === 1) return matteShapePath(shapes[0], targetOrigin);
+  // kept under the renderer's path limit: past it the whole mask would be dropped, so the last shapes are left out instead
+  const parts: string[] = [];
+  let length = 0;
+  for (const shape of shapes) {
+    const d = compactShapePath(shape, targetOrigin) ?? matteShapePath(shape, targetOrigin);
+    if (length + d.length + 1 > MAX_MATTE_PATH) break;
+    parts.push(d);
+    length += d.length + 1;
+  }
+  return parts.join(" ");
+}
+
+/** An unturned ellipse as two arcs: a sixth of the length, so a grid of a few thousand dots stays under the path limit. Null for any other shape. */
+function compactShapePath(shape: MatteSourceShape, targetOrigin: { x: number; y: number }): string | null {
+  if (!shape.ellipse || shape.rotation % 360 !== 0) return null;
+  const rx = (shape.width / 2) * Math.abs(shape.scaleX);
+  const ry = (shape.height / 2) * Math.abs(shape.scaleY);
+  const x = shape.cx - targetOrigin.x;
+  const y = shape.cy - targetOrigin.y;
+  // tenths of a pixel, and the arc flags written together ("0 1 0" as "010" is not legal; "0 10" is): about 30 characters a dot
+  const r1 = (n: number) => String(Math.round(n * 10) / 10);
+  const neg = (n: number) => (n < 0 ? r1(n) : ` ${r1(n)}`);
+  return `M${r1(x - rx)}${neg(y)}a${r1(rx)}${neg(ry)} 0 1 0${neg(2 * rx)} 0a${r1(rx)}${neg(ry)} 0 1 0${neg(-2 * rx)} 0Z`;
+}
+
+/** Layers whose effector follows the pointer, by document (the document is immutable, so the answer can't go stale). */
+const pointerMatteDocs = new WeakMap<object, boolean>();
+/** Whether some layer uses a matte made of copies that a pointer effector changes (so the matte must follow the pointer). */
+export function mattesFollowPointer(doc: MotionDocument): boolean {
+  const known = pointerMatteDocs.get(doc);
+  if (known !== undefined) return known;
+  const pointerLayers = (id: string, depth: number): boolean => {
+    const l = doc.layers[id];
+    if (!l || depth > 16) return false;
+    if (l.properties["effector.mode"] === "pointer") return true;
+    return l.children.some((c) => pointerLayers(c, depth + 1));
+  };
+  let found = false;
+  for (const l of Object.values(doc.layers)) {
+    const source = l.properties["matte.source"];
+    if (typeof source === "string" && source !== "" && l.properties["matte.mode"] !== "none" && pointerLayers(source, 0)) {
+      found = true;
+      break;
+    }
+  }
+  pointerMatteDocs.set(doc, found);
+  return found;
+}
+
+/** The nearest layer that contains both `a` and `b` (or is one of them), or undefined when they share none. */
+export function sharedAncestor(layers: MotionDocument["layers"], a: string, b: string): string | undefined {
+  const up = new Set<string>();
+  for (let at: string | null = a, d = 0; at && d < 64; at = layers[at]?.parentId ?? null, d++) up.add(at);
+  for (let at: string | null = b, d = 0; at && d < 64; at = layers[at]?.parentId ?? null, d++) if (up.has(at)) return at;
+  return undefined;
+}
