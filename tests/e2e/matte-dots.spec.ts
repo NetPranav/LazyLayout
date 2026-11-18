@@ -7,7 +7,8 @@ import { test, expect, type Page } from "@playwright/test";
 import { openEditor } from "./support/editor";
 
 type L = { id: string; name: string; archetype: string; parentId: string | null; children: string[]; properties: Record<string, unknown> };
-type W = Window & { __LL_DOC__: { get: () => { layers: Record<string, L> }; commands: { addLayer: (o: unknown) => string; removeLayer: (id: string) => void } }; __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } };
+type W = { __LL_DOC__: { get: () => { layers: Record<string, L> }; commands: { addLayer: (o: unknown) => string; removeLayer: (id: string) => void } }; __LL_COMMANDS__: { all: () => { id: string; run: (a?: unknown) => unknown }[] } };
+
 test.use({ viewport: { width: 1600, height: 1000 } });
 
 async function build(page: Page) {
