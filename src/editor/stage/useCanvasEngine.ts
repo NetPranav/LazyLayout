@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { useStore } from "zustand";
 import { StageRenderer } from "@/core/render/StageRenderer";
 import { installStageEngine } from "@/core/engine/stage/StageEngine";
+import { installLiveLens } from "./liveLens";
 import { evaluate } from "@/core/kernel/evaluate";
 import { getDocument } from "@/core/store/documentState";
 import { getTransport, transport, transportStore } from "@/core/time/transport";
@@ -41,6 +42,12 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
   // Design track D15: a state being edited, or states shown live, are drawn by the engine even in Design
   const statesShown = useStateEditStore((s) => s.layerId !== null || s.live);
   const enabled = !designing || playing || framePreviewing || statesShown;
+
+  // lenses (Live fill, lens on) stay lined up under their shape, in every workspace
+  useEffect(() => {
+    const page = pageRef.current;
+    return page ? installLiveLens(page) : undefined;
+  }, [pageRef]);
 
   // keep the registry in step with what is drawn
   useLayoutEffect(() => {
