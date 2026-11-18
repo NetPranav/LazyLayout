@@ -24,10 +24,10 @@ import type { PropReader } from "./compositing";
  */
 
 export const FX_SLOTS = 8;
-export const FX_TYPES = ["blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise"] as const;
+export const FX_TYPES = ["blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise", "halftone"] as const;
 export type FxType = (typeof FX_TYPES)[number];
 
-export const FX_LABELS: Record<FxType, string> = { blur: "Blur", glow: "Glow", dropShadow: "Drop shadow", colorAdjust: "Colour adjust", displacement: "Displacement", noise: "Noise" };
+export const FX_LABELS: Record<FxType, string> = { blur: "Blur", glow: "Glow", dropShadow: "Drop shadow", colorAdjust: "Colour adjust", displacement: "Displacement", noise: "Noise", halftone: "Halftone (follows the pointer)" };
 
 /** The parameters each effect has (the rest of a slot's properties are ignored for it). */
 export const FX_PARAMS: Record<FxType, readonly string[]> = {
@@ -37,6 +37,7 @@ export const FX_PARAMS: Record<FxType, readonly string[]> = {
   colorAdjust: ["brightness", "contrast", "saturate", "hueRotate"],
   displacement: ["scale", "frequency", "seed"],
   noise: ["amount", "size", "seed"],
+  halftone: ["spacing", "reach", "gap"],
 };
 
 /** What a new effect starts with (`layer.addEffect`), so adding one shows something. */
@@ -47,13 +48,14 @@ export const FX_DEFAULTS: Record<FxType, Readonly<Record<string, number | string
   colorAdjust: { brightness: 1, contrast: 1, saturate: 1, hueRotate: 0 },
   displacement: { scale: 20, frequency: 0.02, seed: 1 },
   noise: { amount: 0.3, size: 1, seed: 1 },
+  halftone: { spacing: 12, reach: 180, gap: 0.3 },
 };
 
 /** The path of one parameter of one slot. */
 export const fxPath = (slot: number, param: string): string => `fx.${slot}.${param}`;
 export const isFxPath = (path: string): boolean => path.startsWith("fx.");
 /** Every property of one slot, for clearing it. */
-export const FX_SLOT_PARAMS = ["type", "enabled", "radius", "intensity", "x", "y", "opacity", "color", "brightness", "contrast", "saturate", "hueRotate", "scale", "frequency", "seed", "amount", "size"] as const;
+export const FX_SLOT_PARAMS = ["type", "enabled", "radius", "intensity", "x", "y", "opacity", "color", "brightness", "contrast", "saturate", "hueRotate", "scale", "frequency", "seed", "amount", "size", "spacing", "reach", "gap"] as const;
 
 export interface FxEffect {
   slot: number;
@@ -93,7 +95,7 @@ const colourOf = (e: FxEffect, fallback: string): string => {
 const withOpacity = (colour: string, opacity: number): string => (opacity >= 1 ? colour : `color-mix(in srgb, ${colour} ${round(clamp(opacity, 0, 1) * 100)}%, transparent)`);
 
 /** Whether an effect is drawn by an SVG filter (the rest are CSS). */
-export const isSvgEffect = (type: FxType): boolean => type === "displacement" || type === "noise";
+export const isSvgEffect = (type: FxType): boolean => type === "displacement" || type === "noise" || type === "halftone";
 
 /** The CSS `filter` functions one effect makes, or none when it would change nothing. */
 export function fxCssFunctions(e: FxEffect): string[] {
@@ -174,7 +176,58 @@ export function fxFilterSpec(layerId: string, e: FxEffect): FxFilterSpec | null 
       ],
     };
   }
+  if (e.type === "halftone") return halftoneFilterSpec(layerId, id, e);
   return null;
+}
+
+/**
+ * Halftone that follows the pointer: inside a soft circle round the pointer the layer breaks into a 45° grid of dots,
+ * which grow back together towards the circle's edge; outside it the layer is drawn as it is.
+ *
+ * The filter thresholds a tiled field of dots (1 at a dot's centre, 0 between dots) against a soft spot:
+ * `alpha = S·dots − gap·S·spot + (0.5 + 0.1·S)`, then keeps the layer's pixels only where that is on. With the spot's
+ * weight at 0 (`k3` unset) every pixel is on, so at rest the layer is unchanged. The pointer (the canvas's
+ * `halftonePointer`, the export's runtime) places the spot (`x`, `y`, `width`, `height` of the `feImage` marked
+ * `data-ll-halftone`) and fades its weight in (`k3` = −`data-ll-halftone-k` × how near the pointer is). Those
+ * attributes are left out here on purpose, so redrawing the filter never undoes where the pointer put them.
+ */
+export const HALFTONE_SHARPNESS = 10;
+const svgData = (svg: string): string => `data:image/svg+xml,${encodeURIComponent(svg)}`;
+/**
+ * One tile of the dot field: two dots, a quarter and three quarters of the way across, which tiled make a grid at 45°.
+ * No dot touches the tile's edge, so where a browser leaves a hairline between tiles (Safari) it falls in a gap.
+ */
+export function halftoneCell(spacing: number): string {
+  const p = round(spacing);
+  const r = round(spacing / 4);
+  const dot = (c: number) => `<circle cx="${round(c)}" cy="${round(c)}" r="${r}" fill="url(#d)"/>`;
+  return svgData(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${p}" height="${p}" viewBox="0 0 ${p} ${p}"><defs><radialGradient id="d"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient></defs><rect width="${p}" height="${p}" fill="#000"/>${dot(p / 4)}${dot((3 * p) / 4)}</svg>`,
+  );
+}
+/** The soft spot: full in its middle half, fading to nothing at its rim, transparent outside it. */
+export const HALFTONE_SPOT = svgData(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><radialGradient id="s"><stop offset="0.4" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(#s)"/></svg>',
+);
+function halftoneFilterSpec(layerId: string, id: string, e: FxEffect): FxFilterSpec {
+  const spacing = clamp(num(e, "spacing", 12), 3, 80);
+  const reach = clamp(num(e, "reach", 180), 10, 1200);
+  const gap = clamp(num(e, "gap", 0.3), 0, 1);
+  const S = HALFTONE_SHARPNESS;
+  return {
+    id,
+    region: 0,
+    primitives: [
+      { tag: "feImage", attrs: { href: halftoneCell(spacing), x: 0, y: 0, width: round(spacing), height: round(spacing), preserveAspectRatio: "none", result: "cell" } },
+      { tag: "feTile", attrs: { in: "cell", result: "tiled" } },
+      // fully opaque, so a hairline a browser leaves between tiles (Safari) reads as a gap, not as a cut
+      { tag: "feColorMatrix", attrs: { in: "tiled", type: "matrix", values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1", result: "dots" } },
+      { tag: "feImage", attrs: { href: HALFTONE_SPOT, preserveAspectRatio: "none", "data-ll-halftone": layerId, "data-ll-halftone-reach": round(reach), result: "spot" } },
+      { tag: "feComposite", attrs: { in: "dots", in2: "spot", operator: "arithmetic", k2: S, k4: round(0.5 + 0.1 * S), "data-ll-halftone-k": round(gap * S), result: "t" } },
+      { tag: "feColorMatrix", attrs: { in: "t", type: "matrix", values: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0", result: "m" } },
+      { tag: "feComposite", attrs: { in: "SourceGraphic", in2: "m", operator: "in" } },
+    ],
+  };
 }
 
 /** The motion blur filter: a Gaussian blur of `sx` px across and `sy` px down (the standard deviations). */

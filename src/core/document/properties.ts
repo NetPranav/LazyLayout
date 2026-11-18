@@ -204,7 +204,7 @@ const CAP_OPTIONS = ["none", "round", "square", "lineArrow", "triangleArrow", "r
  * and parameter names are in `core/render/fxStack.ts`; defaults here are neutral (a new effect is written with its own
  * starting values by `layer.addEffect`).
  */
-const FX_TYPE_OPTIONS = ["none", "blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise"] as const;
+const FX_TYPE_OPTIONS = ["none", "blur", "glow", "dropShadow", "colorAdjust", "displacement", "noise", "halftone"] as const;
 /**
  * Property links (Phase 76): up to 8 per layer, one numbered slot each. A link makes one of this layer's properties follow a
  * property of another layer (or of this one): `link.N.target` is the property path it drives, `link.N.source` the layer id
@@ -264,6 +264,10 @@ function fxSlotDefs(): Record<string, Def> {
     out[at("seed")] = ranged(num(1, null, "paint", VISUAL), { min: 0, max: 100000 });
     out[at("amount")] = ranged(num(0.3, null, "paint", VISUAL), { min: 0, max: 1 });
     out[at("size")] = ranged(num(1, null, "paint", VISUAL), { min: 0.5, max: 50 });
+    // Halftone: how far apart the dots are, how far round the pointer they spread, and how small they get under it
+    out[at("spacing")] = ranged(px(12, null, "paint", VISUAL), { min: 3, max: 80 });
+    out[at("reach")] = ranged(px(180, null, "paint", VISUAL), { min: 10, max: 1200 });
+    out[at("gap")] = ranged(num(0.3, null, "paint", VISUAL), { min: 0, max: 1 });
   }
   return out;
 }

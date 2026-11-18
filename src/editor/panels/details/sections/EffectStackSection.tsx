@@ -40,6 +40,9 @@ const PARAM: Record<string, { label: string; min?: number; max?: number; step: n
   seed: { label: "Seed", min: 0, max: 9999, step: 1, title: "A different number gives a different pattern." },
   amount: { label: "Amount", min: 0, max: 100, step: 5, percent: true, title: "How much grain is laid over the layer." },
   size: { label: "Size", min: 0.1, max: 20, step: 0.1, title: "How coarse the grain is." },
+  spacing: { label: "Dot spacing", min: 3, max: 80, step: 1, title: "How far apart the halftone dots are, in pixels." },
+  reach: { label: "Reach", min: 10, max: 1200, step: 5, title: "How far round the pointer the dots spread, in pixels." },
+  gap: { label: "Gap", min: 0, max: 100, step: 5, percent: true, title: "How small the dots get under the pointer: more leaves more space between them." },
 };
 const clamp = (v: number, min?: number, max?: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v));
 const iconButton = "ll-ib ll:w-6 ll:h-6 ll:grid ll:place-items-center ll:rounded-sm ll:text-muted ll:hover:text-primary ll:hover:bg-surface-hover ll:cursor-pointer ll:bg-transparent ll:border-0 ll:p-0 ll:outline-none ll:focus-visible:ring-1 ll:focus-visible:ring-border-active ll:disabled:opacity-40 ll:disabled:cursor-default";

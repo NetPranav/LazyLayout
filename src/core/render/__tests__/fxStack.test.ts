@@ -98,7 +98,7 @@ describe("Phase 75: the rules explain each effect's route", () => {
     for (const type of FX_TYPES) {
       const route = routeEffect(type);
       assert.ok(route.reason.length > 40, type);
-      assert.equal(route.backend === "svg", type === "displacement" || type === "noise", type);
+      assert.equal(route.backend === "svg", type === "displacement" || type === "noise" || type === "halftone", type);
     }
     assert.deepEqual(routeStack(["blur", "noise"]).map((r) => [r.type, r.backend]), [["blur", "css"], ["noise", "svg"]]);
     assert.equal(MOTION_BLUR_ROUTE.backend, "svg");
@@ -265,5 +265,46 @@ describe("Phase 75: the effect commands", () => {
     } finally {
       off();
     }
+  });
+});
+
+describe("Halftone that follows the pointer", () => {
+  it("is an SVG effect whose filter keeps the layer whole until the pointer moves the spot", () => {
+    const spec = fxFilterSpec("lay_1", effect("halftone"))!;
+    assert.ok(spec, "a filter is made");
+    const tags = spec.primitives.map((p) => p.tag);
+    assert.deepEqual(tags, ["feImage", "feTile", "feColorMatrix", "feImage", "feComposite", "feColorMatrix", "feComposite"]);
+    const [cell, , , spot, threshold, , keep] = spec.primitives;
+    // the tile is one cell of dots, `spacing` px square
+    assert.equal(cell.attrs.width, 12);
+    assert.match(String(cell.attrs.href), /^data:image\/svg\+xml,/);
+    // the spot is left for the pointer to place: no box, and no weight (k3), so at rest every pixel is kept
+    assert.equal(spot.attrs["data-ll-halftone"], "lay_1");
+    assert.equal(spot.attrs["data-ll-halftone-reach"], 180);
+    for (const name of ["x", "y", "width", "height"]) assert.equal(spot.attrs[name], undefined, name);
+    assert.equal(threshold.attrs.k3, undefined);
+    assert.equal(threshold.attrs["data-ll-halftone-k"], 3);
+    assert.equal(keep.attrs.in, "SourceGraphic");
+    assert.equal(keep.attrs.operator, "in");
+  });
+
+  it("at rest is solid everywhere, and under the pointer leaves gaps between the dots", () => {
+    const spec = fxFilterSpec("lay_1", effect("halftone", { gap: 0.6 }))!;
+    const t = spec.primitives[4].attrs;
+    const on = (dots: number, spot: number, weight: number) => Number(t.k2) * dots - Number(t["data-ll-halftone-k"]) * weight * spot + Number(t.k4) >= 0.5;
+    // at rest (weight 0): even between the dots the layer is kept
+    assert.equal(on(0, 1, 0), true);
+    // under the pointer: dot centres kept, the space between them cut away
+    assert.equal(on(1, 1, 1), true);
+    assert.equal(on(0, 1, 1), false);
+    // outside the spot the layer is whole
+    assert.equal(on(0, 0, 1), true);
+  });
+
+  it("clamps its settings and routes to SVG", () => {
+    const spec = fxFilterSpec("lay_1", effect("halftone", { spacing: 1, reach: 99999 }))!;
+    assert.equal(spec.primitives[0].attrs.width, 3);
+    assert.equal(spec.primitives[3].attrs["data-ll-halftone-reach"], 1200);
+    assert.equal(routeEffect("halftone").backend, "svg");
   });
 });
