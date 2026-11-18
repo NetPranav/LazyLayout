@@ -19,6 +19,7 @@ export const EFFECT_ROUTES = {
   colorAdjust: { backend: "css", reason: "Brightness, contrast, saturation and hue are CSS filter functions (brightness(), contrast(), saturate(), hue-rotate())." },
   displacement: { backend: "svg", reason: "CSS has no function that pushes pixels around, so displacement runs on the SVG backend: feTurbulence makes the noise and feDisplacementMap moves the pixels by it." },
   noise: { backend: "svg", reason: "CSS has no grain function, so noise runs on the SVG backend (feTurbulence over the layer's own pixels). A shader would draw it faster; that backend arrives in Stage 4." },
+  halftone: { backend: "svg", reason: "CSS has no halftone, so it runs on the SVG backend: a tiled field of dots thresholded against a soft spot that the pointer moves, kept only on the layer's own pixels." },
 } as const satisfies Record<string, EffectRoute>;
 
 export type RoutedEffect = keyof typeof EFFECT_ROUTES;

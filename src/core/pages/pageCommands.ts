@@ -3,11 +3,12 @@
 import { z } from "zod";
 import { defineTypedCommand, defineCommand, type ContextKeys } from "../commands";
 import { useCanvasViewStore } from "../store/useCanvasViewStore";
-import { usePreviewStore } from "../store/usePreviewStore";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { addSection, createPage, makePage, makeSections, removePage, setAnchor, setHome, setLink, setPageTitle, setRoute, shareSection, unshareSection } from "./pageOps";
-import { previewGoTo, previewOpenRoute } from "./previewOps";
+import { previewGoTo, previewOpenRoute, previewStep } from "./previewOps";
 import { resolveLink } from "./pages";
+import { PAGE_TRANSITION_TYPES } from "./pageTransitions";
+import { setLayerProps } from "../editing/editOps";
 import { getDocument } from "../store/documentState";
 
 const sel = () => useSelectionStore.getState().selectedIds;
@@ -41,8 +42,32 @@ export function registerPageCommands(): () => void {
       args: z.object({ route: z.string().optional(), anchor: z.string().optional(), link: z.object({ kind: z.enum(["page", "anchor", "url", "frame"]), target: z.string() }).optional() }),
       run: ({ route, anchor, link }) => ({ ok: link ? previewGoTo(resolveLink(getDocument(), link)) : route ? previewOpenRoute(route, anchor) : false }),
     }),
-    defineCommand({ id: "preview.back", title: "Preview: Back", category, keybinding: "Alt+ArrowLeft", when: inPreview, run: () => void usePreviewStore.getState().back() }),
-    defineCommand({ id: "preview.forward", title: "Preview: Forward", category, keybinding: "Alt+ArrowRight", when: inPreview, run: () => void usePreviewStore.getState().forward() }),
+    // Phase 89: how a page is entered in Preview, and a layer that travels between two pages
+    defineTypedCommand({
+      id: "page.setTransition", title: "Set Page Transition", category,
+      args: z.object({ frame: z.string().optional(), type: z.enum(PAGE_TRANSITION_TYPES).optional(), duration: z.number().min(0.05).max(10).optional() }),
+      run: ({ frame, type, duration }) => {
+        const id = frame ?? sel()[0] ?? "";
+        const layer = getDocument().layers[id];
+        if (!layer || layer.parentId !== null) return { ok: false, code: "NOT_A_FRAME", message: "Pick a page (a frame) to set how it is entered." };
+        const patch: Record<string, string | number | null> = {};
+        if (type !== undefined) patch["pageTransition.type"] = type === "none" ? null : type;
+        if (duration !== undefined) patch["pageTransition.duration"] = duration;
+        return Object.keys(patch).length ? { ok: true, changed: setLayerProps([id], patch, "Set page transition") } : { ok: true, changed: 0 };
+      },
+    }),
+    defineTypedCommand({
+      id: "layer.setSharedElement", title: "Share a Layer Between Pages", category,
+      args: z.object({ ids: z.array(z.string()).optional(), name: z.string().max(80).nullable() }),
+      run: ({ ids, name }) => {
+        const doc = getDocument();
+        const chosen = (ids ?? sel()).filter((id) => doc.layers[id] && doc.layers[id].parentId !== null && doc.layers[id].locked !== true);
+        const clean = name === null ? null : name.trim() === "" ? null : name.trim();
+        return { ok: true, changed: chosen.length ? setLayerProps(chosen, { "sharedElement.id": clean }, "Set shared element") : 0 };
+      },
+    }),
+    defineCommand({ id: "preview.back", title: "Preview: Back", category, keybinding: "Alt+ArrowLeft", when: inPreview, run: () => void previewStep("back") }),
+    defineCommand({ id: "preview.forward", title: "Preview: Forward", category, keybinding: "Alt+ArrowRight", when: inPreview, run: () => void previewStep("forward") }),
   ];
   return () => offs.forEach((off) => off());
 }

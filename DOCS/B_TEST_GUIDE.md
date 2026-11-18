@@ -35,7 +35,18 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
-| 86 | A layer travels along a drawn path at constant speed, turning with it if you want | this branch (NEW) | 3.24 |
+| 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
+| 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
+| 94 | Export architecture (refactor): generators moved, plan of engines per clip | this branch (NEW) | 3.35 |
+| 93 | Motion safety: flashing, loops that can't pause, small tap targets, no focus, each with a fix (second half) | this branch (NEW) | 3.34 |
+| 92 | Five text effects: decrypt, typed text, rotating words, count up, scroll reveal | this branch (NEW) | 3.33 |
+| 91 | Motion library: search 51 effects, insert, tune, detach | this branch (NEW) | 3.32 |
+| 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
+| 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
+| 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
+| 80 | A component's variant switch animates; an instance can switch on a click, hover or press | this branch (NEW) | 3.26 |
+| 79 | A layer moves between its states on a spring or a tween; quick hovers never snap | this branch (NEW) | 3.25 |
+| 86 | A layer travels along a drawn path at constant speed, turning with it if you want | #186 | 3.24 |
 | 85 | A path morphs into another with matched points; a stroke draws itself on, with a stagger | #181 | 3.23 |
 | 81 | Scroll drives animation in Preview: parallax, reveal, pin (fallback path) | #56 | 3.17 |
 
@@ -54,7 +65,11 @@ If you only have ten minutes, do these. They cover the newest work end to end. E
 9. **A layer half way through a move can be clicked (3.18, T69.9):** in **Motion**, give a rectangle two **Position X** keyframes, drag the needle to the middle, click the rectangle on the canvas: it is selected and its motion path shows (the click used to fall through to the frame behind).
 10. **A stroke draws itself, a path morphs (3.23):** press **P**, click three points, press **Enter** (a path); do it again somewhere else with four points. Select the first, switch to **Motion**, scroll the right panel to **Morph & draw**, click **Draw the stroke on**, then drag the needle from 0 to 1 s: the stroke grows from nothing to whole. Choose **Morph into… → (the other path)** and drag the needle again: the first shape turns into the second.
 11. **A layer travels along a path (3.24):** draw a curved path with the **Pen** and a rectangle (**R**). Select the rectangle, switch to **Motion**, scroll the right panel to **Follow a path**, choose the path in **Path**, click **Travel along the path**, then drag the needle from 0 to 2 s: the rectangle's middle rides along the line at an even speed.
-12. Nothing in the console is red.
+12. **Hover that never snaps (3.25):** in **Design**, draw a rectangle, open **States** in the right panel and add **Hover**; with Hover picked, set the opacity to 20 %; pick the base state again. Turn on **Show states live on the canvas**, then wave the pointer on and off the rectangle quickly: it fades towards 20 % and back smoothly, never jumping.
+13. **A toggle that animates (3.26):** follow T80.1 to T80.5: a two-variant toggle component whose instance slides its knob when you change **On** in the right panel, and flips by itself when clicked once **Switches on** is **A click**.
+14. **Layout motion (3.27):** draw a rectangle, switch on **Layout** in **Transition** and **Show states live on the canvas** in **States**, then type a new **Y** for it: it glides to the new place.
+15. **Calmer on Mobile (3.28):** in **Motion**, select an animated layer, switch the frame to **Mobile**, set **Distance** to 25 in **Motion at this size**, and scrub: it moves a quarter as far. Switch back to Desktop: the whole way.
+16. Nothing in the console is red.
 
 If a step fails, note the test number and stop: later steps depend on it.
 
@@ -965,6 +980,174 @@ If any step fails, stop and report it. Everything else depends on them.
 - [ ] **T86.21** Do: drag **Time** slowly from 0 to 1. Expect: the red dot goes once round the circle, clockwise, at an even speed, its middle on the line. At 0.25 it is at the bottom, at 0.5 on the left, at 0.75 at the top.
 - [ ] **T86.22** Do: watch the blue bar. Expect: it is always a quarter of a lap ahead of the dot, and it turns so that its long side lies along the circle.
 - [ ] **T86.23** Do: drag **Time** back to a moment you looked at. Expect: exactly the same picture.
+
+### 3.25 Phase 79: transitions between states (NEW)
+
+**What changed:** a layer with states (Hover, Pressed, Focus, ...) used to ease into a state at one fixed speed. Now the layer has a **Transition**: a **Spring** (the default) or a **Tween**, with a time. A spring keeps its speed when you interrupt it, so moving the pointer on and off quickly never makes the layer jump. One property can be given a transition of its own (a colour that fades slowly while the size springs).
+
+**Known gaps (don't report):** one transition per layer (not one per pair of states). Not in the exported code yet. The transition is seen in **Preview** and in **Design** with **Show states live on the canvas** switched on; while you are editing a state the layer shows that state fully.
+
+**User test (the new editor, covered by `tests/e2e/transitions.spec.ts`)**
+- [ ] **T79.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition** (just under **States**). Expect: the rows **Layout**, **Appears**, **Leaves** (see 3.27) and a sentence telling you to add a state. Fails if: the section is missing.
+- [ ] **T79.2** Do: in **States**, add **Hover**. With Hover picked, set the layer's **opacity** to 20 %. Pick the base state again. Expect: the rectangle is fully visible again, and **Transition** now shows **Type: Spring**, **Time 0.35 s** and **Bounce 15 %**.
+- [ ] **T79.3** Do: switch on **Show states live on the canvas** (in States). Move the pointer onto the rectangle and hold it there. Expect: it fades to 20 % in about a third of a second. Move off: it fades back.
+- [ ] **T79.4** Do: type **0.8** in **Time** and **0** in **Bounce**. Move the pointer on and off the rectangle as fast as you can, ten times. Expect: the rectangle's opacity drifts down and up smoothly, never reaching 20 %, never jumping; when you stop off the rectangle it settles fully visible. Fails if: it flickers between two values or snaps.
+- [ ] **T79.5** Do: type **60** in **Bounce**, then hover and hold. Expect: the fade goes a little past 20 % and comes back (an overshoot). Set Bounce back to 15.
+- [ ] **T79.6** Do: choose **Tween** in **Type**. Expect: **Bounce** is replaced by **Curve** (Ease out). Choose **Linear**, type **1** in **Time**, hover and hold: an even one-second fade.
+- [ ] **T79.7** Do: with Hover picked in States, also change the rectangle's **width**; pick the base again. In **Transition** open **A property of its own…**. Expect: only the properties your states change are listed (opacity, width). Choose the opacity one and give it **Time 2**. Hover and hold. Expect: the width arrives in a second, the opacity takes two.
+- [ ] **T79.8** Do: click the minus beside that property. Expect: it moves with the rest again.
+- [ ] **T79.9** Do: press **Ctrl+Z** several times. Expect: each press undoes one setting.
+- [ ] **T79.10** Do: add a **Pressed** state with a different opacity (say 60 %). With states live, hover the rectangle and then hold the mouse button down. Expect: it goes from the hover look to the pressed look directly, without flashing fully visible in between.
+- [ ] **T79.11** Do: switch the frame bar to **Preview** and hover the rectangle. Expect: the same transition as in Design.
+
+**Developer test:** `npx tsx --test src/core/states/__tests__/transitions.test.ts` (13 tests pass).
+
+### 3.26 Phase 80: animated variants (NEW)
+
+**What changed:** an instance of a component that has variants (Off / On, Small / Large) no longer jumps when its variant changes: every layer inside it moves from the old look to the new one, on the instance's **Transition** (3.25). An instance can also be told to change variant by itself when it is clicked, hovered or pressed, which is how you make a working toggle. That happens on the canvas only; the document keeps the variant you chose.
+
+**Known gaps (don't report):** in **Design** the switch animates only while **Show states live on the canvas** is on (Design otherwise shows the page at rest); it always animates in **Motion** and **Preview**. A layer that only one variant has pops in or out. **Reset overrides** also clears the instance's trigger and transition. Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/variant-motion.spec.ts`)**
+- [ ] **T80.1** Do: open `/editor`, **Design**. Draw a wide rectangle-shaped **frame** (press **F**, drag about 60 by 32) and, inside it, a small square (press **R**, drag inside the frame, near its left edge). Select the frame. In the right panel open **Components** and click **Create component**. Expect: the section now shows the component's name and the variant fields.
+- [ ] **T80.2** Do: type **On** in **Variant property name** and **Off, On** in **Variant values**, click **Add variant property**. Expect: a second copy of the frame appears beside the first (the **On** variant).
+- [ ] **T80.3** Do: in the second copy, drag the small square to the right edge and give the frame a different fill colour. Expect: only the second copy changes.
+- [ ] **T80.4** Do: select the first frame again and click **Insert instance**. Select the new instance. Expect: the section says **Instance of …** and has a menu **On** showing **Off**, a menu **Switches on** showing **Nothing**, and further down a **Transition** section.
+- [ ] **T80.5** Do: in **States**, switch on **Show states live on the canvas**. Then choose **On** in the instance's **On** menu. Expect: the square **slides** to the right and the colour **fades** to the new one, in about a third of a second. Choose **Off**: it slides back. Fails if: it jumps.
+- [ ] **T80.6** Do: in **Transition** type **2** in **Time** and **0** in **Bounce**. Change **On** back and forth several times, quickly. Expect: the square turns round wherever it is, smoothly; when you stop it settles on the variant the menu shows. Fails if: it ends on the wrong side, or jumps.
+- [ ] **T80.7** Do: set **Time** back to **0.35**. Choose **A click** in **Switches on**. Expect: a menu **Goes to** appears showing **The next one**.
+- [ ] **T80.8** Do: click the instance on the canvas. Expect: the toggle flips to On (sliding). Click again: back to Off. The **On** menu in the right panel still says **Off** all along (the click does not change your design).
+- [ ] **T80.9** Do: choose **Hover** in **Switches on**, and **On** in **Goes to**. Move the pointer over the instance and away. Expect: On while the pointer is over it, Off when it leaves.
+- [ ] **T80.10** Do: switch the frame bar to **Preview** and click or hover the instance. Expect: the same.
+- [ ] **T80.11** Do: back in Design, select the **first main frame** (not the instance) and change its fill colour. Expect: the instance takes the new colour, and its **Switches on** and **Transition** settings are unchanged.
+- [ ] **T80.12** Do: choose **Nothing** in **Switches on** and click the instance. Expect: nothing flips.
+
+**Developer test:** `npx tsx --test src/core/components/__tests__/variantMotion.test.ts` (13 tests pass).
+
+### 3.27 Phase 87: layout motion, entering and leaving (NEW)
+
+**What changed:** the **Transition** section is now on every layer and has three new rows. **Layout**: when the layer's place changes at once, it travels there on its transition instead of jumping. **Appears**: how it comes in when Preview starts (or when it is made). **Leaves**: how it goes when it is deleted. Behind the scenes the springs now come from the Motion library, loaded the first time the canvas animates; you should see no difference from before.
+
+**Known gaps (don't report):** only the place is animated, not a change of size. These play in **Motion**, **Preview**, and in Design while **Show states live on the canvas** is on; plain Design shows the page at rest. With the switch on in Design, dragging a layer that has **Layout** on makes it trail the pointer (switch states off to arrange). Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/layout-motion.spec.ts`)**
+- [ ] **T87.1** Do: open `/editor`, **Design**. Press **R**, drag a rectangle. Scroll the right panel to **Transition**. Expect: three rows, **Layout** (a switch, off), **Appears: At once**, **Leaves: At once**, and a sentence about states. Fails if: the section is empty.
+- [ ] **T87.2** Do: switch **Layout** on. Expect: **Type: Spring**, **Time** and **Bounce** rows appear above it.
+- [ ] **T87.3** Do: type **0.8** in **Time** and **0** in **Bounce**. In **States**, switch on **Show states live on the canvas**. Then, in the position fields at the top of the right panel, type a **Y** 200 bigger than it is and press Enter. Expect: the rectangle **glides** down to the new place in under a second. Fails if: it jumps.
+- [ ] **T87.4** Do: type the old Y, and before it arrives type the new Y again, two or three times. Expect: it turns round smoothly each time and ends exactly where the last number says.
+- [ ] **T87.5** Do: switch **Layout** off and change Y. Expect: it jumps at once, as before.
+- [ ] **T87.6** Do: choose **Fades and rises** in **Appears**. Switch **Show states live on the canvas** off and on again. Expect: on switching on, the rectangle fades in while coming up about 16 px.
+- [ ] **T87.7** Do: switch the frame bar to **Preview**. Expect: the same entrance as Preview starts.
+- [ ] **T87.8** Do: back in Design with states live, choose **Fades** in **Leaves**, then press **Delete**. Expect: the rectangle fades out instead of vanishing. **Ctrl+Z** brings it back with its settings.
+- [ ] **T87.9** Do: redo 3.25's hover test (T79.3, T79.4). Expect: exactly as before (the spring now comes from Motion).
+
+**Developer test:** `npx tsx --test src/core/engine/motion/__tests__/motionAdapter.test.ts` (12 tests pass).
+
+### 3.28 Phase 88: motion per breakpoint (NEW)
+
+**What changed:** the Motion inspector has a section **Motion at this size**. It sets, for the size of the frame you are looking at, whether the selected layer's animation **plays**, how long it takes (**Time**, a percentage: 200 % is twice as slow), how far it moves (**Distance**: 50 % is half the travel, turn and growth; fades are untouched) and whether its **loops** run. Set while looking at Mobile, they hold for Mobile and anything smaller, and Desktop is unchanged.
+
+**Known gaps (don't report):** the settings are for the whole layer, not one of its animations. Device views side by side (a Tablet and a Mobile copy of the frame next to the main one) don't play the animation, so compare by switching the frame's own size. Not in the exported code yet.
+
+**User test (the new editor, covered by `tests/e2e/breakpoint-motion.spec.ts`)**
+- [ ] **T88.1** Do: open `/editor`, **Motion**. Select a layer that has an animation that moves it (or make one: select a rectangle, turn on **Auto-key**, move it at 0 s and at 2 s). Scroll the right panel to **Motion at this size**. Expect: a line **At every size (Desktop and smaller)**, then **Plays** (on), **Time 100 %**, **Distance 100 %**, **Loops** (on).
+- [ ] **T88.2** Do: drag the needle to the middle of the animation and note where the layer is.
+- [ ] **T88.3** Do: switch the frame to **Mobile** (the size control of the frame, as in the breakpoint tests of the A guide) and select the layer again. Expect: the line now says **At Mobile and smaller**. The layer is at the same share of its move as before.
+- [ ] **T88.4** Do: type **25** in **Distance**. Expect: the layer jumps back towards its start: it is now a quarter as far along as in T88.2. Drag the needle to the end: it stops a quarter of the way. A button **Same as larger sizes** has appeared.
+- [ ] **T88.5** Do: type **200** in **Time**. Drag the needle. Expect: the move takes twice as long (at the old end time it is half done).
+- [ ] **T88.6** Do: switch the frame back to **Desktop**. Expect: the line says **At every size**, Distance and Time read 100 %, and the layer moves the whole way at the written speed.
+- [ ] **T88.7** Do: switch to **Mobile** again, select the layer, switch **Plays** off. Drag the needle. Expect: the layer doesn't move at all, and looks as you drew it (not stuck at its first keyframe's look).
+- [ ] **T88.8** Do: click **Same as larger sizes**. Expect: the button goes, all four read as at Desktop, and the layer animates fully again.
+- [ ] **T88.9** Do: at **Tablet**, set **Distance 50**. Switch to **Mobile**. Expect: Mobile shows **50 %** too (it inherits Tablet's) until you type its own.
+- [ ] **T88.10** Do: **Ctrl+Z** a few times. Expect: each press undoes one setting.
+
+**Developer test:** `npx tsx --test src/core/breakpoints/__tests__/breakpointMotion.test.ts` (8 tests pass).
+
+### 3.29 Phase 93: reduced motion (NEW, first half)
+
+**What changed:** for people who ask their computer for reduced motion, an animation now keeps its fades and colour changes but drops movement, turns, growth and loops. Each layer chooses in **Motion at this size → Reduced**: **Fades only** (default), **Plays in full** (you say this one is safe) or **Doesn't play**. The **Show it** switch in the same section previews exactly that on the canvas.
+
+**Known gaps (don't report):** flash limits, loop pause controls, focus rings and touch-target sizes are not built; there is no library of effects yet. Not in the exported code.
+
+**User test (covered by `tests/e2e/breakpoint-motion.spec.ts`)**
+- [ ] **T93.1** Do: in **Motion**, select a layer that slides and fades in (a keyframed X and opacity). Scrub to the middle. Expect: it is half way across and half faded.
+- [ ] **T93.2** Do: in **Motion at this size** switch **Show it** on. Expect: the layer goes back to its resting place but is still half faded. Scrub: it only fades, never moves.
+- [ ] **T93.3** Do: set **Reduced** to **Plays in full**. Expect: it moves again while **Show it** is on. Set **Doesn't play**: it is neither moving nor fading.
+- [ ] **T93.4** Do: switch **Show it** off. Expect: all layers animate normally.
+- [ ] **T93.5** Do: if your computer is set to reduce motion, reload the editor. Expect: the canvas behaves as in T93.2 without touching the switch.
+- [ ] **T93.6** Do: Ctrl+Z after changing **Reduced**. Expect: it goes back one step. (The **Show it** switch is not undoable: it is a way of looking.)
+
+### 3.30 Phase 89: page transitions (NEW)
+Preview navigation between pages exists today only in the older editor at `/editor/legacy`. The new editor sets the transitions (T89.1–T89.4); T89.5 onwards needs the older one.
+- [ ] **T89.1** Do: in **Design** select a page (a frame) and open **Page transition**. Expect: **Entering** reads **None** and there is no **Time** row.
+- [ ] **T89.2** Do: set **Entering** to **Push**. Expect: a **Time** row appears (0.4 s). Set it to 0.8.
+- [ ] **T89.3** Do: select a layer inside the page. Expect: the section shows **Shared name**. Type `hero-image` and press Enter. Expect: the line under it says no other page has that name yet.
+- [ ] **T89.4** Do: give a layer on a second page the same name. Expect: the line on either layer says `Also on: <the other page>`.
+- [ ] **T89.5** Do: at `/editor/legacy`, make 3 pages, link a button on page 1 to page 2 and a button on page 2 to page 3, give page 2 **Slide over** and page 3 **Zoom**. Switch to **Preview** and click the buttons. Expect: page 2 slides over page 1; page 3 zooms in.
+- [ ] **T89.6** Do: press **Alt+Left**. Expect: you go back to page 2, sliding the other way for a slide. Alt+Right goes forward again.
+- [ ] **T89.7** Do: give both pages an image with the shared name `hero-image` at different places or sizes, and go from one to the other. Expect: the image travels and grows instead of cross-fading.
+- [ ] **T89.8** Do: turn your computer's reduced motion on and reload. Expect: pages change at once.
+- [ ] **T89.9** Do: **Ctrl+Z** after changing **Entering**. Expect: one step back.
+
+**Developer test:** `npx tsx --test src/core/pages/__tests__/pageTransitions.test.ts` (11 tests pass).
+
+### 3.31 Phase 90: the Animation Playground (NEW)
+- [ ] **T90.1** Do: in **Design** make a rectangle about 30 px high, add a **Hover** state in **States** that sets a low opacity. Press **Esc** if a tool is active, then use the **Preview** button. Expect: a bar says **Preview active** and has a **Playground** button.
+- [ ] **T90.2** Do: click **Playground**. Expect: a panel at the bottom left with play, step buttons, **Speed**, **Loop**, **Backdrop**, **Device screen**, **Reduced motion**, four overlays and an **fps** number.
+- [ ] **T90.3** Do: select the rectangle. Expect: **State of <name>** shows **Rest** and **hover**. Click **hover**. Expect: the rectangle fades to the hover look on its transition and stays. Click **Rest**: it comes back.
+- [ ] **T90.4** Do: switch on **Touch targets**. Expect: the small rectangle turns red (it has a state and is under 44 px). Make it 60 px high: the red goes.
+- [ ] **T90.5** Do: switch on **Wireframes**, **Box model** and **Dimensions**. Expect: dashed outlines, coloured margin/padding bands and "w × h" labels follow the layers, and clicks still go through to the page.
+- [ ] **T90.6** Do: with a layer that has a keyframe animation, set **Speed** to **0.25×** and press play. Expect: it plays four times slower. **Loop** set to **Ping-pong** plays it forward then back. The step buttons move one frame.
+- [ ] **T90.7** Do: select an instance of a component with variants. Expect: **Props of <name>** with a menu per variant property. Change one: the instance animates (and the change is undoable with Ctrl+Z, like in Components).
+- [ ] **T90.8** Do: switch on **Reduced motion**. Expect: movement and loops stop, fades stay. Switch **Device screen** on: the page is drawn as the device's screen.
+- [ ] **T90.9** Do: press **Esc** or the **x**. Expect: the panel closes, you are back in Design, and nothing in the design changed.
+
+**Developer test:** `npx tsx --test src/core/playground/__tests__/playground.test.ts` (10 tests pass).
+
+### 3.32 Phase 91: the motion library (NEW)
+- [ ] **T91.1** Do: in **Motion** select any layer and open **Motion library** in the right panel. Expect: **56 effects**, each with a small picture, its category and a badge, and an **Insert** button.
+- [ ] **T91.2** Do: hover a picture. Expect: it plays a small loop. Move away: it stops on a still frame.
+- [ ] **T91.3** Do: type `stagger` in **Search**. Expect: fewer effects, best matches first. Type `zzzz`: **0 effects**. Pick a **Library category**: only that category.
+- [ ] **T91.4** Do: select a text layer and search `hover`. Expect: the Insert buttons are greyed out and their tooltip says why (Rule 6.1: text can't be hovered).
+- [ ] **T91.5** Do: select a layer and press **Insert** on an effect. Expect: one card above the search with the effect's name and version and controls (**Duration**, **Delay**, often **Strength**, **Stagger**), and the animation is in the timeline.
+- [ ] **T91.6** Do: change **Duration** on the card. Expect: the clip in the timeline gets longer. Set **Strength** to 50: the movement is half as far; **0**: only rest values.
+- [ ] **T91.7** Do: click the card's name. Expect: its controls fold away and come back on a second click.
+- [ ] **T91.8** Do: **Ctrl+Z** after Insert. Expect: the card and the animation both go in one step.
+- [ ] **T91.9** Do: **Detach**. Expect: the card goes; the animation stays in the timeline as ordinary clips you can edit. **Remove** instead takes the animation too.
+
+**Developer test:** `npx tsx --test src/core/motionLibrary/__tests__/library.test.ts` (17 tests pass).
+
+### 3.33 Phase 92: text effects (NEW, 5 of 22)
+- [ ] **T92.1** Do: in **Motion** select a text layer, open **Motion library** and search `decrypt`. Expect: **Decrypt** is there. Press **Insert** and play. Expect: random characters settle into your text from left to right. In **Text motion** the mode now reads **Scramble**.
+- [ ] **T92.2** Do: remove it with **Remove** on its card. Expect: the text goes back to plain and Text motion reads **Off**.
+- [ ] **T92.3** Do: insert **Typed Text**. Expect: the text is typed one character at a time with a caret.
+- [ ] **T92.4** Do: insert **Rotating Words**. Expect: it shows Design, Motion, Ship in turn, forever. Change the words in **Text motion**.
+- [ ] **T92.5** Do: type `1,200 happy people` in a text layer and insert **Count Up**. Expect: it counts from 0 to 1,200. On a text with no number, **Insert** is grey and says to put a number in first.
+- [ ] **T92.6** Do: insert **Scroll Reveal Text** and scroll the page in Preview. Expect: the text is typed as you scroll down and un-typed as you scroll back.
+- [ ] **T92.7** Do: switch on **Show it** (reduced motion). Expect: Rotating Words stops on one word; the others still resolve to the full text.
+- [ ] **T92.8** Do: search `glitch`. Expect: **Glitch Chromatic** is listed but its **Insert** is grey, with the Rule 6.1 reason (known; it is an older preset).
+- [ ] **T92.9** Do: **Ctrl+Z** after Insert. Expect: the effect, the clip and the text settings all go in one step.
+
+**Developer test:** `npx tsx --test src/core/motionLibrary/__tests__` (26 tests pass, 9 of them wave 1 and the sweep).
+
+### 3.34 Phase 93: motion safety (NEW, second half)
+- [ ] **T93.7** Do: in **Motion** select a layer and give it an opacity loop that goes 0, 1, 0, 1 … thirteen keyframes in one second, repeating forever. Open **Motion safety**. Expect: **2 problems**: **Flashing (must fix)** saying about 6 times a second, and **Can't pause**.
+- [ ] **T93.8** Do: press **Slow it down**. Expect: the flashing problem goes and the clip gets longer. Press **Ctrl+Z**: it comes back.
+- [ ] **T93.9** Do: press **Let visitors pause it**. Expect: the other problem goes and **Can pause** is on. Switch it off: the problem returns. Switch **Essential** on instead: it goes again.
+- [ ] **T93.10** Do: a loop that starts on hover is not flagged, and a 4-second animation that plays twice is not (6 seconds is).
+- [ ] **T93.11** Do: make a layer 30 × 30 px with a **Hover** state (or a link). Expect: **Small tap target**. Press **Make it 44 px**: it grows and the problem goes. A layer with no way to tap is never flagged.
+- [ ] **T93.12** Do: the same layer also says **No focus**. Press **Add a Focus state**: the States section opens on a Focus state to style, and the problem goes. A **Button** layer has a focus ring already and is not flagged (unless its ring width is 0).
+- [ ] **T93.13** Do: read the **Whole page** line. Expect: counts of each problem on the page, and **Show N on other layers** lists them with a **Select** button for each.
+
+**Developer test:** `npx tsx --test src/core/rules/__tests__/motionSafety.test.ts` (13 tests pass).
+
+### 3.35 Phase 94: export architecture (NEW, nothing new to see)
+This is a refactor: the point is that nothing changed.
+- [ ] **T94.1** Do: **File, Export Site** (Ctrl+E), pick a target and export. Expect: the same files as before; open the HTML export and compare it with the canvas: it matches.
+- [ ] **T94.2** Do: select a layer and open the **Code** tab. Expect: HTML, JSX and CSS appear as before.
+- [ ] **T94.3** Do (older editor, `/editor/legacy`): open the **Code Inspector** on an animation and switch between **GSAP**, **Framer Motion** and **CSS**. Expect: each prints its code as before.
+
+**Developer test:** `npx tsx --test src/core/export/motion/__tests__/motionExport.test.ts` (8 tests pass). The 106 outputs in `golden.json` were recorded from the old runtime; if you change a generator on purpose, regenerate that file and say why in the PR.
 
 ## 4. Regression checks (things that must still work)
 

@@ -35,6 +35,8 @@ import { sampleEasing } from "./easing";
 import { interpolateValue } from "./interpolators";
 import { morphOptions, morphPath } from "../paths/morphMatch";
 import { followSettings, followsPath, pathSampler } from "../paths/pathFollow";
+import type { StateShare } from "../states/transitions";
+import { isDefaultMotionAt, layerAtBreakpoint, motionAtOf, reduceMotion, reducedPolicyOf, scaleDistance } from "../breakpoints/breakpointMotion";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
@@ -63,6 +65,24 @@ export interface EvaluateInputs {
   activeStates?: Record<string, string>;
   /** Design track D15: how far into its active state each layer is, 0-1 (default 1). Numbers blend; anything else switches at one half. */
   stateBlend?: Record<string, number>;
+  /**
+   * Phase 79: every state a layer is partly in, with its share (0 to 1; a spring may pass 1), in the order they are laid
+   * over the base. When a layer has an entry here it is used instead of `activeStates` and `stateBlend`, so two states
+   * can cross (hover easing out while pressed eases in) and a property can move on a transition of its own (`amounts`).
+   */
+  stateMix?: Record<string, ReadonlyArray<StateShare>>;
+  /**
+   * Phase 80: properties on their way from one look to another (a component instance changing variant). For each path
+   * in `to` the layer shows the mix of `from` and `to` at `amount` (0 to 1; a spring may pass 1) instead of what the
+   * document says. Applied before states, so a hover still lies over a variant that is changing.
+   */
+  propMix?: Record<string, PropMix>;
+  /**
+   * Phase 88: the breakpoint being viewed (null or absent: the base). A layer's properties are then the ones that
+   * breakpoint sees (its overrides applied), and with them how its motion plays there (`motion.plays`, `.timeScale`,
+   * `.distance`, `.loops`).
+   */
+  breakpoint?: string | null;
   reducedMotion?: boolean;
   /** The pointer on the page, in page px (or null when it is off the page): a matte made of clones that a pointer effector scales follows it. */
   pointer?: { x: number; y: number } | null;
@@ -595,6 +615,25 @@ function applyLinks(ctx: LinkContext, layerId: string, base: ResolvedProps): Res
   return out;
 }
 
+/** One layer's properties between two looks (Phase 80). */
+export interface PropMix {
+  from: Readonly<Record<string, PropValue>>;
+  to: Readonly<Record<string, PropValue>>;
+  amount: number;
+}
+
+/**
+ * A value `amount` of the way from one to another, for a state or a variant arriving. Numbers follow the amount past 1
+ * (a spring's overshoot); colours and the rest mix by the property's own rule, between 0 and 1; what can't be mixed
+ * switches half way.
+ */
+export function mixValue(path: string, from: PropValue | undefined | null, to: PropValue, amount: number): PropValue | undefined | null {
+  if (amount === 1) return to;
+  if (from === undefined || from === null) return amount >= 0.5 ? to : from;
+  if (typeof to === "number" && typeof from === "number") return from + (to - from) * amount;
+  return interpolateValue(getPropertyDefinition(path)?.interpolation ?? "discrete", from, to, Math.min(1, Math.max(0, amount)));
+}
+
 function evaluateBaseProps(
   doc: MotionDocument,
   compositionId: string,
@@ -602,14 +641,48 @@ function evaluateBaseProps(
   t: number,
   inputs: EvaluateInputs = {}
 ): ResolvedProps {
-  const layer = doc.layers[layerId];
-  if (!layer) return {};
+  const stored = doc.layers[layerId];
+  if (!stored) return {};
+  // 0. The layer as the breakpoint being viewed sees it (Phase 88), and how its motion plays there.
+  const layer = layerAtBreakpoint(doc, stored, inputs.breakpoint);
+  // Phase 93: under reduced motion the layer's own policy decides what is left of its animation
+  const reduced = inputs.reducedMotion === true ? reducedPolicyOf(layer.properties) : null;
+  const motion = reduced ? reduceMotion(motionAtOf(layer.properties), reduced) : motionAtOf(layer.properties);
+  const calm = !isDefaultMotionAt(motion);
 
   // 1. Base props.
   let resolved: ResolvedProps = { ...layer.properties };
 
+  // 1b. A look on its way to another (Phase 80).
+  const mix = inputs.propMix?.[layerId];
+  if (mix) {
+    for (const [path, to] of Object.entries(mix.to)) {
+      const value = mixValue(path, mix.from[path], to, mix.amount);
+      if (value === undefined || value === null) delete resolved[path];
+      else resolved[path] = value;
+    }
+  }
+
   // 2. State.
-  const activeState = findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
+  const shares = inputs.stateMix?.[layerId];
+  const activeState = shares ? undefined : findActiveState(doc, layerId, inputs.activeStates?.[layerId]);
+  if (shares) {
+    for (const share of shares) {
+      const state = findActiveState(doc, layerId, share.name);
+      if (!state) continue;
+      let next: ResolvedProps | null = null;
+      for (const [path, to] of Object.entries(state.props)) {
+        const amount = share.amounts?.[path] ?? share.amount;
+        if (amount === 0) continue;
+        // a property the base layer doesn't set starts from its default (a rectangle's opacity is 1 without saying so)
+        const from = resolved[path] ?? (getPropertyDefinition(path)?.default as PropValue | undefined);
+        const value = mixValue(path, from, to, amount);
+        const shown = value === from && resolved[path] === undefined ? undefined : value;
+        if (shown !== resolved[path]) (next ??= { ...resolved })[path] = shown as PropValue;
+      }
+      if (next) resolved = next;
+    }
+  }
   if (activeState) {
     const amount = inputs.stateBlend?.[layerId];
     if (amount === undefined || amount >= 1) resolved = { ...resolved, ...activeState.props };
@@ -628,40 +701,58 @@ function evaluateBaseProps(
   const comp = doc.compositions[compositionId];
   if (comp) {
     const samples: CategorizedSample[] = [];
+    // how far a sample goes from where the layer rests (Phase 88: `motion.distance`)
+    const far = (props: ResolvedProps): ResolvedProps => {
+      if (motion.distance === 1) return props;
+      const out: ResolvedProps = {};
+      for (const [path, value] of Object.entries(props)) out[path] = scaleDistance(path, value as PropValue, layer.properties, motion.distance);
+      return out;
+    };
     for (const clip of byLayer(doc.clips, layerId)) {
-      if (!clip.enabled) continue;
+      if (!clip.enabled || !motion.plays) continue;
       const driven = inputs.scrollClipTime?.[clip.id];
       if (driven !== undefined) {
         samples.push({
           category: CLIP_TYPE_TO_CATEGORY[clip.type],
-          props: sampleClip(
+          props: far(sampleClip(
             clip,
-            Math.min(clip.duration, Math.max(0, driven)),
+            // a scroll-scrubbed animation doesn't follow the scroll under reduced motion: it shows its end (the fades done)
+            reduced === "auto" ? clip.duration : Math.min(clip.duration, Math.max(0, driven)),
             layer.properties,
             inputs.diagnosticsSink,
             inputs.spatialTolerance
-          ),
+          )),
         });
         continue;
       }
-      const timing = clipTimeInComposition(comp, clip, t);
+      // a slower clip (Phase 88: `motion.timeScale`) is the same clip with its delay and duration stretched
+      const k = motion.timeScale;
+      const timing = clipTimeInComposition(comp, k === 1 ? clip : { ...clip, duration: clip.duration * k, delay: (clip.delay ?? 0) * k, repeatDelay: (clip.repeatDelay ?? 0) * k }, t);
       if (!timing) continue;
       samples.push({
         category: CLIP_TYPE_TO_CATEGORY[clip.type],
-        props: sampleClip(
+        props: far(sampleClip(
           clip,
-          timing.time,
+          k === 1 ? timing.time : timing.time / k,
           layer.properties,
           inputs.diagnosticsSink,
           inputs.spatialTolerance
-        ),
+        )),
       });
     }
     resolved = mergeByPriority(resolved, samples);
   }
 
   // 4. Behaviours (composition slot — see KERNEL_GAPS for what's deferred to Phase 12).
-  resolved = applyLoopBehaviours(doc, layerId, t, resolved);
+  if (!calm) resolved = applyLoopBehaviours(doc, layerId, t, resolved);
+  else if (motion.loops) {
+    const looped = applyLoopBehaviours(doc, layerId, t / motion.timeScale, resolved);
+    if (looped !== resolved && motion.distance !== 1) {
+      const next: ResolvedProps = { ...looped };
+      for (const path of Object.keys(looped)) if (looped[path] !== resolved[path]) next[path] = scaleDistance(path, looped[path] as PropValue, layer.properties, motion.distance);
+      resolved = next;
+    } else resolved = looped;
+  }
 
   return resolved;
 }

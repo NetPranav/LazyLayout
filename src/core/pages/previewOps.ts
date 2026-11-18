@@ -6,8 +6,42 @@
 
 import { getDocument } from "../store/documentState";
 import { useCanvasViewStore } from "../store/useCanvasViewStore";
-import { usePreviewStore } from "../store/usePreviewStore";
+import { usePreviewStore, type PreviewEntry } from "../store/usePreviewStore";
 import { addressOf, linkOf, pagesOf, resolveLink, type Destination } from "./pages";
+import { pageTransitionOf, runPageTransition, sharedPairs, type NavDirection } from "./pageTransitions";
+import { reducedMotionNow } from "../store/useMotionPreferenceStore";
+
+const frameEl = (id: string | undefined): HTMLElement | null => (id && typeof document !== "undefined" ? document.querySelector<HTMLElement>(`[data-frame-id="${CSS.escape(id)}"]`) : null);
+const layerEl = (frame: string | undefined, id: string): HTMLElement | null => frameEl(frame)?.querySelector<HTMLElement>(`[data-layer-id="${CSS.escape(id)}"]`) ?? null;
+
+/** Changes the frame Preview shows with `update`, moving to `toFrame` the way that page says (`pageTransition.*`), shared elements travelling between the two. */
+function transitionTo(toFrame: string, direction: NavDirection, update: () => void): void {
+  const from = usePreviewStore.getState().current()?.frameId;
+  const doc = getDocument();
+  const spec = pageTransitionOf(doc.layers[toFrame]);
+  if (spec.type === "none" || !from || from === toFrame || typeof document === "undefined") return update();
+  const pairs = sharedPairs(doc, from, toFrame);
+  void runPageTransition({
+    spec, direction, update, reduced: reducedMotionNow(),
+    sharedBefore: Object.fromEntries(pairs.map(([k, a]) => [k, layerEl(from, a)])),
+    sharedAfter: () => Object.fromEntries(pairs.map(([k, , b]) => [k, layerEl(toFrame, b)])),
+    pages: () => ({ out: frameEl(from), in: frameEl(toFrame) }),
+  });
+}
+
+/** Shows another frame going forward. */
+export function previewShow(entry: PreviewEntry): void {
+  transitionTo(entry.frameId, "forward", () => usePreviewStore.getState().go(entry));
+}
+
+/** Back or forward in the history, with the transition of the page arrived at. Returns false at the end of the history. */
+export function previewStep(direction: NavDirection): boolean {
+  const s = usePreviewStore.getState();
+  const target = s.entries[s.index + (direction === "back" ? -1 : 1)];
+  if (!target) return false;
+  transitionTo(target.frameId, direction, () => void (direction === "back" ? s.back() : s.forward()));
+  return true;
+}
 
 /** Goes to a destination. Returns false when there is nowhere to go (a link to something that is gone). */
 export function previewGoTo(dest: Destination): boolean {
@@ -15,13 +49,13 @@ export function previewGoTo(dest: Destination): boolean {
   const store = usePreviewStore.getState();
   switch (dest.kind) {
     case "page":
-      store.go({ frameId: dest.pageId });
+      previewShow({ frameId: dest.pageId });
       return true;
     case "anchor":
-      store.go({ frameId: dest.pageId, anchor: dest.anchor });
+      previewShow({ frameId: dest.pageId, anchor: dest.anchor });
       return true;
     case "frame":
-      store.go({ frameId: dest.frameId });
+      previewShow({ frameId: dest.frameId });
       return true;
     case "url":
       if (typeof window !== "undefined") window.open(dest.url, "_blank", "noopener,noreferrer");
@@ -40,7 +74,7 @@ export function previewFollow(layerId: string): boolean {
 export function previewOpenRoute(route: string, anchor?: string): boolean {
   const page = pagesOf(getDocument()).find((p) => p.route === route);
   if (!page) return false;
-  usePreviewStore.getState().go({ frameId: page.id, ...(anchor ? { anchor } : {}) });
+  previewShow({ frameId: page.id, ...(anchor ? { anchor } : {}) });
   return true;
 }
 

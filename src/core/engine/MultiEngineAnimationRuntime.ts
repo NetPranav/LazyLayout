@@ -24,13 +24,14 @@ import {
   toScalarKeyframeValue,
 } from "../types/animations";
 import { synthesizeSingleTransformMatrix } from "./EngineAdapters";
+import { toPascalCase, toCamelCase } from "../export/motion/names";
+import { mapPropertyToGsap, compileGsapTimeline } from "../export/motion/gsap";
+import { mapPropertyToFramer, compileFramerMotionVariants } from "../export/motion/framer";
+import { generateCssLinearSpring, mapPropertyToCss, generateCssKeyframes } from "../export/motion/css";
+import type { CssModuleOptions, FramerMotionOptions, GsapTimelineOptions, ScrollTriggerConfig, SpringConfig } from "../export/motion/types";
 
-export interface SpringConfig {
-  stiffness: number; // Spring stiffness constant (k)
-  damping: number;   // Damping coefficient (c)
-  mass: number;      // Mass (m)
-  initialVelocity?: number; // Continuous handoff velocity (v0)
-}
+export type { CssModuleOptions, FramerMotionOptions, GsapTimelineOptions, ScrollTriggerConfig, SpringConfig };
+
 
 export interface GradientStop {
   color: string;
@@ -43,31 +44,6 @@ export interface ImageFilterConfig {
   brightness?: number; // 0 to 2
   contrast?: number;   // 0 to 2
   saturate?: number;   // 0 to 2
-}
-
-export interface ScrollTriggerConfig {
-  trigger?: string;
-  start?: string;
-  end?: string;
-  scrub?: boolean | number;
-  pin?: boolean | string;
-  markers?: boolean;
-}
-
-export interface GsapTimelineOptions {
-  componentSelector?: string;
-  scrollTrigger?: ScrollTriggerConfig;
-  useReactHook?: boolean;
-}
-
-export interface FramerMotionOptions {
-  springConfig?: SpringConfig;
-  reducedMotion?: boolean;
-}
-
-export interface CssModuleOptions {
-  className?: string;
-  reducedMotion?: boolean;
 }
 
 export interface EvaluatedStylePatch {
@@ -88,19 +64,7 @@ export interface EvaluatedStylePatch {
   [key: string]: string | number | undefined;
 }
 
-export function toPascalCase(id: string): string {
-  return id
-    .split(/[^a-zA-Z0-9]+/)
-    .filter(Boolean)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-}
-
-export function toCamelCase(id: string): string {
-  const pascal = toPascalCase(id);
-  if (!pascal) return "";
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}
+export { toPascalCase, toCamelCase };
 
 /**
  * Universal Multi-Engine Animation Runtime
@@ -114,226 +78,14 @@ export class MultiEngineAnimationRuntimeService {
    * Translates an abstract or dot-notation property path to GSAP 3.x property name.
    */
   public mapPropertyToGsap(propertyPath: string): string {
-    switch (propertyPath) {
-      // Universal Transforms
-      case "transform.x":
-      case "translateX":
-        return "x";
-      case "transform.y":
-      case "translateY":
-        return "y";
-      case "transform.z":
-      case "translateZ":
-        return "z";
-      case "transform.scale":
-      case "scale":
-        return "scale";
-      case "transform.scaleX":
-      case "scaleX":
-        return "scaleX";
-      case "transform.scaleY":
-      case "scaleY":
-        return "scaleY";
-      case "transform.rotate":
-      case "rotate":
-        return "rotation";
-      case "transform.rotateX":
-      case "rotateX":
-        return "rotationX";
-      case "transform.rotateY":
-      case "rotateY":
-        return "rotationY";
-      case "transform.skewX":
-      case "skewX":
-        return "skewX";
-      case "transform.skewY":
-      case "skewY":
-        return "skewY";
-
-      // Appearance & Filters
-      case "appearance.opacity":
-      case "opacity":
-        return "opacity";
-      case "appearance.border.color":
-        return "borderColor";
-      case "appearance.border.width":
-        return "borderWidth";
-      case "appearance.radius":
-      case "borderRadius":
-        return "borderRadius";
-      case "appearance.background.color":
-      case "backgroundColor":
-        return "backgroundColor";
-      case "filter.blur":
-      case "filterBlur":
-        return "filter";
-      case "boxShadow":
-        return "boxShadow";
-
-      // Typography
-      case "typography.color":
-      case "color":
-        return "color";
-      case "typography.fontSize":
-      case "fontSize":
-        return "fontSize";
-      case "typography.letterSpacing":
-      case "letterSpacing":
-        return "letterSpacing";
-      case "typography.lineHeight":
-      case "lineHeight":
-        return "lineHeight";
-
-      // Media Family
-      case "media.scale":
-        return "scale";
-      case "media.clipPath":
-        return "clipPath";
-      case "media.filter.blur":
-      case "media.filter.grayscale":
-      case "media.filter.brightness":
-      case "media.filter.contrast":
-      case "media.filter.saturate":
-        return "filter";
-      case "media.overlay.opacity":
-        return "opacity";
-      case "svg.path":
-      case "pathMorph":
-        return "morphSVG";
-      case "svg.strokeDashoffset":
-      case "strokeDashoffset":
-        return "strokeDashoffset";
-
-      // Structural Family (Divider & Background)
-      case "divider.length":
-        return "scaleX";
-      case "divider.thickness":
-        return "scaleY";
-      case "divider.strokeDashoffset":
-        return "strokeDashoffset";
-      case "divider.gradient.angle":
-      case "background.gradient.angle":
-        return "--gradient-angle";
-      case "background.color":
-        return "backgroundColor";
-      case "background.parallax.speed":
-        return "y";
-      case "background.noise.opacity":
-        return "opacity";
-      case "background.blendMode":
-        return "mixBlendMode";
-
-      default:
-        return propertyPath;
-    }
+    return mapPropertyToGsap(propertyPath);
   }
 
   /**
    * Compiles timeline tracks and ScrollTrigger into clean GSAP 3.12 executable code.
    */
-  public compileGsapTimeline(
-    sample: AnimationSample,
-    options: GsapTimelineOptions = {}
-  ): string {
-    const selector = options.componentSelector || `.${sample.id}-target`;
-    const lines: string[] = [];
-
-    lines.push(`// GSAP 3.12 Production Timeline Driver`);
-    lines.push(`// Target: ${selector} | Duration: ${sample.duration}ms | Easing: ${sample.easing}`);
-
-    let timelineInit = `const tl = gsap.timeline({`;
-    const tlParams: string[] = [];
-
-    if (sample.iterations === "infinite") {
-      tlParams.push(`repeat: -1`);
-      if (sample.direction === "alternate") {
-        tlParams.push(`yoyo: true`);
-      }
-    } else if (sample.iterations > 1) {
-      tlParams.push(`repeat: ${sample.iterations - 1}`);
-      if (sample.direction === "alternate") {
-        tlParams.push(`yoyo: true`);
-      }
-    }
-
-    if (sample.delay && sample.delay > 0) {
-      tlParams.push(`delay: ${(sample.delay / 1000).toFixed(2)}`);
-    }
-
-    // ScrollTrigger integration
-    if (options.scrollTrigger) {
-      const st = options.scrollTrigger;
-      const stParts: string[] = [];
-      stParts.push(`trigger: "${st.trigger || selector}"`);
-      stParts.push(`start: "${st.start || "top 80%"}"`);
-      stParts.push(`end: "${st.end || "bottom 20%"}"`);
-      if (st.scrub !== undefined) {
-        stParts.push(`scrub: ${typeof st.scrub === "number" ? st.scrub : true}`);
-      }
-      if (st.pin) {
-        stParts.push(`pin: ${typeof st.pin === "string" ? `"${st.pin}"` : true}`);
-      }
-      if (st.markers) {
-        stParts.push(`markers: true`);
-      }
-      tlParams.push(`scrollTrigger: { ${stParts.join(", ")} }`);
-    }
-
-    timelineInit += tlParams.length > 0 ? ` ${tlParams.join(", ")} ` : "";
-    timelineInit += `});`;
-    lines.push(timelineInit);
-
-    // Group keyframes by time offset across tracks
-    const durationSec = sample.duration / 1000;
-    const offsets = new Set<number>();
-    for (const track of sample.tracks) {
-      for (const kf of track.keyframes) {
-        offsets.add(kf.offset);
-      }
-    }
-    const sortedOffsets = Array.from(offsets).sort((a, b) => a - b);
-
-    for (let i = 1; i < sortedOffsets.length; i++) {
-      const currOffset = sortedOffsets[i];
-      const prevOffset = sortedOffsets[i - 1];
-      const stepDuration = ((currOffset - prevOffset) / 100) * durationSec;
-      const stepProps: Record<string, string | number> = {};
-
-      for (const track of sample.tracks) {
-        const kf = track.keyframes.find((k) => k.offset === currOffset);
-        if (kf !== undefined) {
-          const gsapProp = this.mapPropertyToGsap(track.trackId);
-          stepProps[gsapProp] = toScalarKeyframeValue(kf.value);
-        }
-      }
-
-      if (Object.keys(stepProps).length > 0) {
-        const propsStr = Object.entries(stepProps)
-          .map(([k, v]) => `${k}: ${typeof v === "string" ? `"${v}"` : v}`)
-          .join(", ");
-        lines.push(
-          `tl.to("${selector}", { ${propsStr}, duration: ${stepDuration.toFixed(3)}, ease: "${sample.easing}" });`
-        );
-      }
-    }
-
-    if (options.useReactHook) {
-      const hookName = `use${toPascalCase(sample.id)}Animation`;
-      return `import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
-
-export function ${hookName}(containerRef: React.RefObject<HTMLElement>) {
-  useGSAP(() => {
-    ${lines.join("\n    ")}
-  }, { scope: containerRef });
-}
-`;
-    }
-
-    return lines.join("\n");
+  public compileGsapTimeline(sample: AnimationSample, options: GsapTimelineOptions = {}): string {
+    return compileGsapTimeline(sample, options);
   }
 
   // ==========================================================================
@@ -379,87 +131,12 @@ export function ${hookName}(containerRef: React.RefObject<HTMLElement>) {
   /**
    * Compiles abstract AnimationSample into declarative Framer Motion 11 Variants.
    */
-  public compileFramerMotionVariants(
-    sample: AnimationSample,
-    options: FramerMotionOptions = {}
-  ): string {
-    const spring = options.springConfig || { stiffness: 350, damping: 22, mass: 1 };
-    const springStr = `transition: { type: "spring", stiffness: ${spring.stiffness}, damping: ${spring.damping}, mass: ${spring.mass} }`;
-
-    const initialProps: Record<string, string | number> = {};
-    const animateProps: Record<string, string | number> = {};
-
-    for (const track of sample.tracks) {
-      const firstKf = track.keyframes[0];
-      const lastKf = track.keyframes[track.keyframes.length - 1];
-      const propName = this.mapPropertyToFramer(track.trackId);
-
-      if (firstKf !== undefined) {
-        initialProps[propName] = toScalarKeyframeValue(firstKf.value);
-      }
-      if (lastKf !== undefined) {
-        animateProps[propName] = toScalarKeyframeValue(lastKf.value);
-      }
-    }
-
-    const fmtProps = (props: Record<string, string | number>): string =>
-      Object.entries(props)
-        .map(([k, v]) => `${k}: ${typeof v === "string" ? `"${v}"` : v}`)
-        .join(", ");
-
-    const varName = `${toCamelCase(sample.id)}Variants`;
-
-    return `import { motion, type Variants } from "framer-motion";
-
-export const ${varName}: Variants = {
-  initial: {
-    ${fmtProps(initialProps)}
-  },
-  animate: {
-    ${fmtProps(animateProps)},
-    ${springStr}
-  },
-  hover: {
-    scale: 1.04,
-    ${springStr}
-  },
-  tap: {
-    scale: 0.96,
-    transition: { type: "spring", stiffness: 500, damping: 28 }
-  }
-};
-`;
+  public compileFramerMotionVariants(sample: AnimationSample, options: FramerMotionOptions = {}): string {
+    return compileFramerMotionVariants(sample, options);
   }
 
   private mapPropertyToFramer(trackId: string): string {
-    switch (trackId) {
-      case "transform.x":
-      case "translateX":
-        return "x";
-      case "transform.y":
-      case "translateY":
-        return "y";
-      case "transform.z":
-      case "translateZ":
-        return "z";
-      case "transform.scale":
-      case "scale":
-        return "scale";
-      case "transform.rotate":
-      case "rotate":
-        return "rotate";
-      case "appearance.opacity":
-      case "opacity":
-        return "opacity";
-      case "appearance.background.color":
-      case "backgroundColor":
-        return "backgroundColor";
-      case "appearance.radius":
-      case "borderRadius":
-        return "borderRadius";
-      default:
-        return trackId;
-    }
+    return mapPropertyToFramer(trackId);
   }
 
   // ==========================================================================
@@ -658,89 +335,19 @@ export const ${varName}: Variants = {
   /**
    * Numerically samples an analytical spring into a CSS Easing Level 2 linear(...) curve.
    */
-  public generateCssLinearSpring(
-    stiffness = 350,
-    damping = 22,
-    mass = 1,
-    points = 24
-  ): string {
-    const w0 = Math.sqrt(stiffness / mass);
-    const gamma = damping / (2 * mass);
-    const wd = Math.sqrt(Math.max(0.001, w0 * w0 - gamma * gamma));
-
-    const settlingTime = Math.min(2.0, Math.max(0.3, 4.5 / gamma));
-    const samples: string[] = [];
-
-    for (let i = 0; i <= points; i++) {
-      if (i === 0) {
-        samples.push("0.000");
-      } else if (i === points) {
-        samples.push("1.000");
-      } else {
-        const t = (i / points) * settlingTime;
-        const envelope = Math.exp(-gamma * t);
-        const val = 1 - envelope * (Math.cos(wd * t) + (gamma / wd) * Math.sin(wd * t));
-        samples.push(val.toFixed(3));
-      }
-    }
-
-    return `linear(${samples.join(", ")})`;
+  public generateCssLinearSpring(stiffness = 350, damping = 22, mass = 1, points = 24): string {
+    return generateCssLinearSpring(stiffness, damping, mass, points);
   }
 
   /**
    * Emits a pure, zero-dependency CSS @keyframes block from tracks.
    */
   public generateCssKeyframes(name: string, tracks: AnimationTrack[]): string {
-    const keyframeMap: Record<number, Record<string, string | number>> = {};
-
-    for (const track of tracks) {
-      for (const kf of track.keyframes) {
-        if (!keyframeMap[kf.offset]) {
-          keyframeMap[kf.offset] = {};
-        }
-        const cssProp = this.mapPropertyToCss(track.trackId);
-        keyframeMap[kf.offset][cssProp] = toScalarKeyframeValue(kf.value);
-      }
-    }
-
-    const sortedOffsets = Object.keys(keyframeMap)
-      .map(Number)
-      .sort((a, b) => a - b);
-
-    const steps = sortedOffsets.map((offset) => {
-      const props = keyframeMap[offset];
-      const declarations = Object.entries(props)
-        .map(([k, v]) => `    ${k}: ${v};`)
-        .join("\n");
-      return `  ${offset}% {\n${declarations}\n  }`;
-    });
-
-    return `@keyframes ${name} {\n${steps.join("\n")}\n}`;
+    return generateCssKeyframes(name, tracks);
   }
 
   private mapPropertyToCss(trackId: string): string {
-    switch (trackId) {
-      case "transform.x":
-      case "translateX":
-        return "transform";
-      case "transform.y":
-      case "translateY":
-        return "transform";
-      case "appearance.opacity":
-      case "opacity":
-        return "opacity";
-      case "appearance.background.color":
-      case "backgroundColor":
-        return "background-color";
-      case "appearance.radius":
-      case "borderRadius":
-        return "border-radius";
-      case "filter.blur":
-      case "filterBlur":
-        return "filter";
-      default:
-        return trackId;
-    }
+    return mapPropertyToCss(trackId);
   }
 
   // ==========================================================================
