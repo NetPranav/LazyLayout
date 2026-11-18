@@ -10,6 +10,7 @@ import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
 import { registerPathMotionCommands } from "@/core/paths/pathMotionCommands";
 import { registerTransitionCommands } from "@/core/states/transitionCommands";
+import { registerPlaygroundCommands } from "@/core/playground/playgroundCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
 import { registerDriverCommands } from "@/core/bindings/driverCommands";
 import { registerStateCommands } from "@/core/states/stateCommands";
@@ -74,6 +75,7 @@ export function useLeftPanelData(
     fonts?.addEventListener?.("loadingdone", onFonts);
     const offStates = registerStateCommands(); // states (Design track D15)
     const offTransitions = registerTransitionCommands(); // transitions between states (Phase 79)
+    const offPlayground = registerPlaygroundCommands(); // the Animation Playground (Phase 90)
     const offDrivers = registerDriverCommands(); // drivers: the pointer, scroll and time (Design track D4)
     const offScroll = registerScrollCommands(); // a clip's scroll range, scrub and pin (Phase 81; Design track D11)
     const offScrollClip = registerScrollClipCommand(); // add a scroll animation to a layer
@@ -91,6 +93,7 @@ export function useLeftPanelData(
       offDrivers();
       offStates();
       offTransitions();
+      offPlayground();
       fonts?.removeEventListener?.("loadingdone", onFonts);
       offScroll();
       offScrollClip();

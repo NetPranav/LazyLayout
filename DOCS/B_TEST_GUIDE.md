@@ -36,6 +36,7 @@
 | 74 | Blend modes drawn, isolated groups, adjustment layers, alpha and luma masks with morphing paths | this branch (NEW) | 3.19 |
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
+| 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
 | 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
 | 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
 | 87 | Layout changes travel instead of jumping; layers fade in and out; transitions run on Motion | this branch (NEW) | 3.27 |
@@ -1085,6 +1086,19 @@ Preview navigation between pages exists today only in the older editor at `/edit
 - [ ] **T89.9** Do: **Ctrl+Z** after changing **Entering**. Expect: one step back.
 
 **Developer test:** `npx tsx --test src/core/pages/__tests__/pageTransitions.test.ts` (11 tests pass).
+
+### 3.31 Phase 90: the Animation Playground (NEW)
+- [ ] **T90.1** Do: in **Design** make a rectangle about 30 px high, add a **Hover** state in **States** that sets a low opacity. Press **Esc** if a tool is active, then use the **Preview** button. Expect: a bar says **Preview active** and has a **Playground** button.
+- [ ] **T90.2** Do: click **Playground**. Expect: a panel at the bottom left with play, step buttons, **Speed**, **Loop**, **Backdrop**, **Device screen**, **Reduced motion**, four overlays and an **fps** number.
+- [ ] **T90.3** Do: select the rectangle. Expect: **State of <name>** shows **Rest** and **hover**. Click **hover**. Expect: the rectangle fades to the hover look on its transition and stays. Click **Rest**: it comes back.
+- [ ] **T90.4** Do: switch on **Touch targets**. Expect: the small rectangle turns red (it has a state and is under 44 px). Make it 60 px high: the red goes.
+- [ ] **T90.5** Do: switch on **Wireframes**, **Box model** and **Dimensions**. Expect: dashed outlines, coloured margin/padding bands and "w × h" labels follow the layers, and clicks still go through to the page.
+- [ ] **T90.6** Do: with a layer that has a keyframe animation, set **Speed** to **0.25×** and press play. Expect: it plays four times slower. **Loop** set to **Ping-pong** plays it forward then back. The step buttons move one frame.
+- [ ] **T90.7** Do: select an instance of a component with variants. Expect: **Props of <name>** with a menu per variant property. Change one: the instance animates (and the change is undoable with Ctrl+Z, like in Components).
+- [ ] **T90.8** Do: switch on **Reduced motion**. Expect: movement and loops stop, fades stay. Switch **Device screen** on: the page is drawn as the device's screen.
+- [ ] **T90.9** Do: press **Esc** or the **x**. Expect: the panel closes, you are back in Design, and nothing in the design changed.
+
+**Developer test:** `npx tsx --test src/core/playground/__tests__/playground.test.ts` (10 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

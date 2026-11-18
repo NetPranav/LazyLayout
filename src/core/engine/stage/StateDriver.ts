@@ -20,6 +20,8 @@ export interface StateDriverHost {
   editing(): { layerId: string; name: string } | null;
   /** Whether hover and press are live (Preview, or the States switch). */
   live(): boolean;
+  /** Phase 90: a state the Playground holds a layer in, as if hovered. It moves there on the layer's transition. */
+  held?(): { layerId: string; name: string } | null;
   reducedMotion(): boolean;
   /** What moves the numbers: the kernel's spring by default, Motion's once it has loaded (Phase 87). Read when a move begins. */
   mover?(): MoverFactory;
@@ -62,6 +64,7 @@ export class StateDriver {
     const doc = this.host.getDocument();
     const editing = this.host.editing();
     const live = this.host.live();
+    const held = this.host.held?.() ?? null;
     const layers = stateLayerIds(doc);
     if (layers.size === 0 && this.entries.size === 0 && !editing) return null;
 
@@ -94,7 +97,7 @@ export class StateDriver {
         continue;
       }
       const names = new Set(rows.map((s) => s.name));
-      const want = live ? pickLiveState(names, { hover: hoverNow.has(id), pressed: pressedNow.has(id), focus: this.focused.has(id) }) : undefined;
+      const want = held?.layerId === id && names.has(held.name) ? held.name : live ? pickLiveState(names, { hover: hoverNow.has(id), pressed: pressedNow.has(id), focus: this.focused.has(id) }) : undefined;
       let byState = this.entries.get(id);
       if (!want && !byState) continue;
       const own = doc.layers[id]?.properties ?? {};
