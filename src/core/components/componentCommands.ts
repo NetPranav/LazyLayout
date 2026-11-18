@@ -7,6 +7,10 @@ import { useSelectionStore } from "../store/useSelectionStore";
 import { useToolStore } from "../store/useToolStore";
 import { addVariantProperty, exposeProperty, fillSlot, markSlot, removeProperty, setProperty, setVariant } from "./variantOps";
 import { combineAsVariants, pushChanges, setComponentDescription } from "./componentExtras";
+import { VARIANT_TRIGGERS, variantRootOf, variantSetOf } from "./variantMotion";
+import type { PropValue } from "../document/registry";
+import { setLayerProps } from "../editing/editOps";
+import { getDocument } from "../store/documentState";
 import { createComponent, deleteComponent, detachInstances, goToMain, insertInstance, renameComponent, resetOverrides, swapInstance } from "./componentOps";
 
 const ids = () => useSelectionStore.getState().selectedIds;
@@ -72,6 +76,30 @@ export function registerComponentCommands(): () => void {
     }),
     defineTypedCommand({ id: "component.markSlot", title: "Make Slot", category, args: z.object({ on: z.boolean(), layer: z.string().optional() }), run: ({ on, layer }) => ({ ok: markSlot(layer ?? ids()[0] ?? "", on) }) }),
     defineTypedCommand({ id: "component.fillSlot", title: "Fill Slot", category, args: z.object({ slot: z.string(), ids: z.array(z.string()).optional() }), run: ({ slot, ids: only }) => ({ moved: fillSlot(slot, only ?? ids()) }) }),
+    // Phase 80: an instance's own interaction that switches its variant
+    defineTypedCommand({
+      id: "component.setVariantTrigger",
+      title: "Set What Switches an Instance's Variant",
+      category,
+      args: z.object({ id: z.string().optional(), on: z.enum(VARIANT_TRIGGERS).optional(), property: z.string().max(60).optional(), value: z.string().max(60).optional() }),
+      run: ({ id, on, property, value }) => {
+        const doc = getDocument();
+        const root = variantRootOf(doc, id ?? ids()[0] ?? "");
+        const comp = root ? variantSetOf(doc, root) : null;
+        if (!root || !comp) return { ok: false, code: "NOT_A_VARIANT_INSTANCE", message: "Select an instance of a component that has variants." };
+        const now = doc.layers[root].properties;
+        const name = property ?? (typeof now["variantTrigger.property"] === "string" && now["variantTrigger.property"] !== "" ? (now["variantTrigger.property"] as string) : comp.variantProps![0].name);
+        const prop = comp.variantProps!.find((p) => p.name === name);
+        if (!prop) return { ok: false, code: "NO_PROPERTY", message: `The component has no variant property "${name}".` };
+        if (value !== undefined && value !== "" && !prop.values.includes(value)) return { ok: false, code: "NO_VALUE", message: `"${prop.name}" has no value "${value}".` };
+        const patch: Record<string, PropValue | null> = {};
+        if (on !== undefined) patch["variantTrigger.on"] = on === "none" ? null : on;
+        if (property !== undefined) patch["variantTrigger.property"] = property;
+        if (value !== undefined) patch["variantTrigger.value"] = value === "" ? null : value;
+        if (on === "none") patch["variantTrigger.property"] = patch["variantTrigger.value"] = null;
+        return { ok: true, changed: setLayerProps([root], patch, "Set variant trigger") };
+      },
+    }),
     // FigCraft port F9
     defineTypedCommand({ id: "component.pushChanges", title: "Push Changes to Main Component", category, args: z.object({ ids: z.array(z.string()).optional() }).default({}), run: ({ ids: only }) => ({ pushed: pushChanges(only ?? ids()) }) }),
     defineTypedCommand({ id: "component.combineAsVariants", title: "Combine as Variants", category, args: z.object({ ids: z.array(z.string()).optional() }).default({}), run: ({ ids: only }) => ({ component: combineAsVariants(only ?? ids()) }) }),

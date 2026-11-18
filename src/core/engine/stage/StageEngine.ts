@@ -11,6 +11,8 @@ import { ScrollDriver, type ScrollHost } from "../../scroll/ScrollDriver";
 import { BindingDriver, type BindingDriverHost } from "./BindingDriver";
 import { boundLayerIds, copiedLayerIds } from "./styleWrites";
 import { StateDriver, type StateDriverHost } from "./StateDriver";
+import { VariantDriver, type VariantDriverHost } from "./VariantDriver";
+import { LayoutDriver, type LayoutDriverHost } from "./LayoutDriver";
 import { stateLayerIds } from "../../states/states";
 import { EffectorDriver } from "./EffectorDriver";
 import { CssVarWriter } from "./CssVarWriter";
@@ -34,6 +36,14 @@ export interface StageEngineOptions {
   bindings?: { host: BindingDriverHost; active: () => boolean };
   /** Design track D15: states. Hover and press come from the same input source; `editing` and `live` say what to show. */
   states?: StateDriverHost;
+  /** Phase 80: animated variants (a variant switch moves on the instance's transition; an instance's own click, hover or press). */
+  variants?: VariantDriverHost;
+  /** Phase 93: whether to draw the page as reduced motion gets it (the canvas's switch or the system's setting). */
+  reducedMotion?: () => boolean;
+  /** Phase 88: the breakpoint being viewed (null: the base); motion plays as that breakpoint says. */
+  breakpoint?: () => string | null;
+  /** Phase 87: layout motion and presence (the element of each layer comes from the renderer's registry). */
+  layout?: Omit<LayoutDriverHost, "node" | "getDocument">;
 }
 
 /** The installed engines' "measure at rest" steps (see `measureAtRest`). */
@@ -150,6 +160,11 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   let scrollWasLive = false;
   const stateDriver = options.states ? new StateDriver(options.states) : null;
   let statesWereLive = false;
+  let lastBreakpoint: string | null | undefined;
+  let lastReduced: boolean | undefined;
+  const variantDriver = options.variants ? new VariantDriver(options.variants) : null;
+  let variantsWereLive = false;
+  const layoutDriver = options.layout ? new LayoutDriver({ ...options.layout, getDocument, node: (id) => renderer.registry.get(id) as unknown as ReturnType<LayoutDriverHost["node"]> }) : null;
 
   const applyFrame = (frame: FrameInfo) => {
     if (scrollDriver && options.scroll) {
@@ -165,6 +180,22 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       }
     }
     const { time, playing, rate } = getTransport();
+    if (options.reducedMotion && adapter instanceof StageAdapters) {
+      const reduced = options.reducedMotion();
+      if (reduced !== lastReduced) {
+        lastReduced = reduced;
+        adapter.setReducedMotion(reduced);
+        dirty = true;
+      }
+    }
+    if (options.breakpoint && adapter instanceof StageAdapters) {
+      const viewed = options.breakpoint();
+      if (viewed !== lastBreakpoint) {
+        lastBreakpoint = viewed;
+        adapter.setBreakpoint(viewed);
+        dirty = true;
+      }
+    }
     if (stateDriver && adapter instanceof StageAdapters && !stateDriver.idle) {
       const states = stateDriver.update(frame.dt);
       if (stateDriver.changed || !statesWereLive) {
@@ -176,6 +207,18 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       adapter.setStates(null); // back to what the document says
       stateDriver?.dispose();
       statesWereLive = false;
+      dirty = true;
+    }
+    if (variantDriver && adapter instanceof StageAdapters && !variantDriver.idle) {
+      const mix = variantDriver.update(frame.dt);
+      if (variantDriver.changed || !variantsWereLive) {
+        adapter.setPropMix(mix);
+        dirty = true;
+      }
+      variantsWereLive = true;
+    } else if (variantsWereLive && adapter instanceof StageAdapters) {
+      adapter.setPropMix(null); // back to what the document says
+      variantsWereLive = false;
       dirty = true;
     }
     if (effectorDriver && options.bindings) {
@@ -205,10 +248,13 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
       lastPlaying = playing;
       lastRate = rate;
     }
-    if (!dirty && time === lastTime) return;
-    dirty = false;
-    lastTime = time;
-    adapter.seek(time);
+    if (dirty || time !== lastTime) {
+      dirty = false;
+      lastTime = time;
+      adapter.seek(time);
+    }
+    // after everything else has drawn: where the layout now puts each layer that animates its layout changes
+    if (layoutDriver && !layoutDriver.idle) layoutDriver.update(frame.dt);
   };
   const unregister = scheduler.register("apply", (frame) => {
     try {
@@ -240,6 +286,8 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
     restSteps.delete(restStep);
     effectorDriver?.dispose();
     stateDriver?.dispose();
+    variantDriver?.dispose();
+    layoutDriver?.dispose();
     cssVars.dispose();
     scrollDriver?.reset();
     unmonitor?.();

@@ -1,5 +1,10 @@
 "use client";
 
+import { reducedMotionNow } from "@/core/store/useMotionPreferenceStore";
+import { useBreakpointStore } from "@/core/store/useBreakpointStore";
+import { loadMotion, motionEngine, stageMover } from "@/core/engine/motion/MotionAdapter";
+import { kernelMover } from "@/core/states/transitions";
+import { usePlaygroundStore } from "@/core/store/usePlaygroundStore";
 import { useStateEditStore } from "@/core/states/stateEdit";
 import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { useStore } from "zustand";
@@ -68,7 +73,10 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
     if (!enabled) return undefined;
     const page = pageRef.current;
     const source = page ? pagePointerSource(page) : null;
-    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false }, active: () => driversLive() }, states: { getDocument, source: source.input, reducedMotion: () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || Object.keys(useFramePreviewStore.getState().previewing).length > 0 } } : {});
+    // Phase 87: Motion is loaded the first time the engine starts; until then the kernel's spring does the same job
+    void loadMotion().catch(() => undefined);
+    const mover = stageMover(kernelMover);
+    const uninstall = installStageEngine(renderer, source ? { scroll: { host: pageScrollHost(page!, getDocument), active: () => Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, bindings: { host: { getDocument, compositionId: () => getTransport().compositionId, source: source.input, reducedMotion: reducedMotionNow }, active: () => driversLive() }, states: { getDocument, source: source.input, held: () => usePlaygroundStore.getState().held, reducedMotion: reducedMotionNow, mover: () => mover, editing: () => { const e = useStateEditStore.getState(); return e.layerId && e.name ? { layerId: e.layerId, name: e.name } : null; }, live: () => useStateEditStore.getState().live || usePlaygroundStore.getState().open || Object.keys(useFramePreviewStore.getState().previewing).length > 0 }, variants: { getDocument, source: source.input, reducedMotion: reducedMotionNow, live: () => useStateEditStore.getState().live || usePlaygroundStore.getState().open || Object.keys(useFramePreviewStore.getState().previewing).length > 0, mover: () => mover }, breakpoint: () => useBreakpointStore.getState().activeId, reducedMotion: reducedMotionNow, layout: { reducedMotion: reducedMotionNow, live: () => useStateEditStore.getState().live || usePlaygroundStore.getState().open || Object.keys(useFramePreviewStore.getState().previewing).length > 0, mover: () => mover } } : {});
     // Test seam: the kernel's answer for a layer and the transport, so a browser test can compare the canvas with it.
     const w = window as unknown as { __LL_TEST__?: boolean; __LL_ENGINE__?: unknown };
     if (w.__LL_TEST__) {
@@ -81,6 +89,8 @@ export function useCanvasEngine(pageRef: RefObject<HTMLElement | null>): void {
         loop: (on: boolean) => transport.setLoop(on ? "loop" : "off"),
         parity: () => parityStore.getState(),
         document: () => getDocument(),
+        // Phase 87: whether Motion has loaded (the stage's transitions run on its generators from then on)
+        motion: () => motionEngine() !== null,
         // D4: add a driver from its text form; layer names are looked up in the document
         addBinding: (text: string, ownerLayerId: string) => {
           const layers = Object.values(getDocument().layers);
@@ -133,11 +143,18 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     return null;
   };
   view.addEventListener("pointermove", onMove);
-  view.addEventListener("pointerdown", onMove);
+  // a press and release inside one frame would never be seen as "down": count the presses too (Phase 80)
+  let presses = 0;
+  const onDown = (e: PointerEvent) => {
+    presses++;
+    onMove(e);
+  };
+  view.addEventListener("pointerdown", onDown);
   view.addEventListener("pointerup", onMove);
   return {
     input: {
       pointer: () => pointer,
+      presses: () => presses,
       pageSize: () => ({ width: page.offsetWidth, height: page.offsetHeight }),
       // the scroll of the previewed frame (a frame shown as a device's screen scrolls under the canvas's click layer): the first
       // one that has anything to scroll; none means no scroll, which reads as 0
@@ -169,7 +186,7 @@ function pagePointerSource(page: HTMLElement): { input: InputSource; dispose: ()
     },
     dispose: () => {
       view.removeEventListener("pointermove", onMove);
-      view.removeEventListener("pointerdown", onMove);
+      view.removeEventListener("pointerdown", onDown);
       view.removeEventListener("pointerup", onMove);
     },
   };

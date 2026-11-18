@@ -39,6 +39,11 @@ export class KernelAdapter implements EngineAdapter {
   /** The element each copy of a layer draws (Design track D8), by copy number; found once per document and node set. */
   private readonly copyCache = new Map<string, { parent: Element; copies: Map<number, StyledElement> }>();
 
+  /** What each element held (our own writes) when the document last changed, until the next write compares. */
+  private readonly pending = new Map<string, Map<string, string>>();
+  private mixLayers: ReadonlyMap<string, ReadonlySet<string>> = new Map();
+  private mixKey = "";
+
   /** Counts of work done, for tests. */
   stats = { evaluations: 0, writes: 0 };
 
@@ -64,7 +69,21 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, stateMix: inputs.stateMix ?? this.inputs.stateMix, propMix: inputs.propMix ?? this.inputs.propMix, breakpoint: inputs.breakpoint !== undefined ? inputs.breakpoint : this.inputs.breakpoint, reducedMotion: inputs.reducedMotion ?? this.inputs.reducedMotion };
+    this.invalidate();
+  }
+
+  /** Phase 93: whether the page is drawn as reduced motion gets it. */
+  setReducedMotion(on: boolean): void {
+    if ((this.inputs.reducedMotion ?? false) === on) return;
+    this.inputs = { ...this.inputs, reducedMotion: on };
+    this.invalidate();
+  }
+
+  /** Phase 88: the breakpoint being viewed; a layer's motion plays as that breakpoint says. */
+  setBreakpoint(id: string | null): void {
+    if ((this.inputs.breakpoint ?? null) === id) return;
+    this.inputs = { ...this.inputs, breakpoint: id };
     this.invalidate();
   }
 
@@ -74,11 +93,35 @@ export class KernelAdapter implements EngineAdapter {
   }
 
   /** Design track D15: this frame's states and how far into them each layer is. Like `setBound`, not an `invalidate`. */
-  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number> } | null): void {
-    this.inputs = { ...this.inputs, activeStates: frame?.activeStates, stateBlend: frame?.stateBlend };
+  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number>; stateMix?: EvaluateInputs["stateMix"] } | null): void {
+    this.inputs = { ...this.inputs, activeStates: frame?.activeStates, stateBlend: frame?.stateBlend, stateMix: frame?.stateMix };
+  }
+
+  /**
+   * Phase 80: layers on their way from one look to another, with the paths that are moving. They join the plan while
+   * they move (a layer that animates nothing else is otherwise not the kernel's) and leave it, restored, when done.
+   */
+  setPropMix(frame: { propMix: NonNullable<EvaluateInputs["propMix"]>; layers: ReadonlyMap<string, ReadonlySet<string>> } | null): void {
+    this.inputs = { ...this.inputs, propMix: frame?.propMix };
+    const key = frame ? Array.from(frame.layers, ([id, paths]) => `${id}:${Array.from(paths).join(",")}`).join("|") : "";
+    if (key === this.mixKey) return;
+    this.mixKey = key;
+    this.mixLayers = frame?.layers ?? new Map();
+    this.plannedFor = null; // plan again, without throwing away what is written
   }
 
   invalidate(): void {
+    // What each element holds now is our own last write. If it holds something else by the next write, React drew the
+    // layer again with a new value (the document changed), and that is what to put back when the animation ends: a
+    // variant switched to and fro while it animates used to end on the first variant's style (Phase 80).
+    for (const [key, originals] of this.originals) {
+      const element = this.elements.get(key);
+      const written = this.written.get(key);
+      if (!element || !written || this.pending.has(key)) continue;
+      const held = new Map<string, string>();
+      for (const property of originals.keys()) if (written.has(property)) held.set(property, element.style.getPropertyValue(property));
+      if (held.size > 0) this.pending.set(key, held);
+    }
     this.plannedFor = null;
     this.textWritten.clear();
     this.written.clear(); // React may have redrawn an element since; write everything again
@@ -107,7 +150,9 @@ export class KernelAdapter implements EngineAdapter {
     this.lastTime = time;
     const doc = host.getDocument();
     if (this.plannedFor !== doc) {
-      this.plan = new Map(Array.from(animatedLayers(doc)).filter(([id, paths]) => this.accepts(id, paths)));
+      const animated = animatedLayers(doc);
+      for (const [id, paths] of this.mixLayers) if (doc.layers[id]) animated.set(id, new Set([...(animated.get(id) ?? []), ...paths]));
+      this.plan = new Map(Array.from(animated).filter(([id, paths]) => this.mixLayers.has(id) || this.accepts(id, paths)));
       this.plannedFor = doc;
       this.restoreStale();
     }
@@ -191,6 +236,15 @@ export class KernelAdapter implements EngineAdapter {
     if (!written) this.written.set(layerId, (written = new Map()));
     let originals = this.originals.get(layerId);
     if (!originals) this.originals.set(layerId, (originals = new Map()));
+    const held = this.pending.get(layerId);
+    if (held) {
+      this.pending.delete(layerId);
+      for (const [property, ours] of held) {
+        if (!originals.has(property)) continue;
+        const now = element.style.getPropertyValue(property);
+        if (now !== ours) originals.set(property, now); // React drew it again since
+      }
+    }
     // A property this layer stopped animating (a track was removed) gets its drawn value back.
     for (const [property, original] of originals) {
       if (property in writes) continue;
@@ -252,6 +306,7 @@ export class KernelAdapter implements EngineAdapter {
     this.elements.delete(layerId);
     this.originals.delete(layerId);
     this.written.delete(layerId);
+    this.pending.delete(layerId);
   }
 
   /** After a document change: layers that no longer animate anything give their elements back. */

@@ -10,7 +10,8 @@
 import type { MotionDocument } from "../../document/schema";
 import type { InputSource } from "../../bindings/inputBus";
 import { insideRect } from "../../bindings/inputBus";
-import { pickLiveState, stateLayerIds, statesOf, stepBlend } from "../../states/states";
+import { pickLiveState, stateLayerIds, statesOf } from "../../states/states";
+import { kernelMover, transitionOf, transitionOverrides, type MoverFactory, type MoverLike, type StateShare, type TransitionSpec } from "../../states/transitions";
 
 export interface StateDriverHost {
   getDocument(): MotionDocument;
@@ -19,22 +20,30 @@ export interface StateDriverHost {
   editing(): { layerId: string; name: string } | null;
   /** Whether hover and press are live (Preview, or the States switch). */
   live(): boolean;
+  /** Phase 90: a state the Playground holds a layer in, as if hovered. It moves there on the layer's transition. */
+  held?(): { layerId: string; name: string } | null;
   reducedMotion(): boolean;
+  /** What moves the numbers: the kernel's spring by default, Motion's once it has loaded (Phase 87). Read when a move begins. */
+  mover?(): MoverFactory;
 }
 
 export interface StateFrame {
+  /** The state each layer is going to (or the last one still fading out), and its share: what was drawn before Phase 79, kept for readers of one state. */
   activeStates: Record<string, string>;
   stateBlend: Record<string, number>;
+  /** Phase 79: every state a layer is partly in, each with its share. The kernel draws from this. */
+  stateMix: Record<string, StateShare[]>;
 }
 
+/** One state's movers on one layer: the share of every property, and of each property with a transition of its own. */
 interface Entry {
-  name: string;
-  amount: number;
-  target: number;
+  all: MoverLike;
+  own: Map<string, MoverLike>;
 }
 
 export class StateDriver {
-  private readonly entries = new Map<string, Entry>();
+  /** Movers by layer, then by state name. */
+  private readonly entries = new Map<string, Map<string, Entry>>();
   private focused = new Set<string>();
   private wasDown = false;
   private lastKey = "";
@@ -55,6 +64,7 @@ export class StateDriver {
     const doc = this.host.getDocument();
     const editing = this.host.editing();
     const live = this.host.live();
+    const held = this.host.held?.() ?? null;
     const layers = stateLayerIds(doc);
     if (layers.size === 0 && this.entries.size === 0 && !editing) return null;
 
@@ -75,46 +85,77 @@ export class StateDriver {
     this.wasDown = down;
 
     const reduced = this.host.reducedMotion();
-    const frame: StateFrame = { activeStates: {}, stateBlend: {} };
+    const frame: StateFrame = { activeStates: {}, stateBlend: {}, stateMix: {} };
 
     for (const id of layers) {
+      const rows = statesOf(doc, id);
       if (editing?.layerId === id) {
         this.entries.delete(id);
         frame.activeStates[id] = editing.name;
         frame.stateBlend[id] = 1;
+        frame.stateMix[id] = [{ name: editing.name, amount: 1 }];
         continue;
       }
-      const names = new Set(statesOf(doc, id).map((s) => s.name));
-      const want = live ? pickLiveState(names, { hover: hoverNow.has(id), pressed: pressedNow.has(id), focus: this.focused.has(id) }) : undefined;
-      let e = this.entries.get(id);
-      if (want) {
-        if (!e) e = { name: want, amount: 0, target: 1 };
-        else if (e.name !== want) {
-          if (e.amount < 0.02) e = { name: want, amount: 0, target: 1 };
-          else e.target = 0; // the old one eases out first
-        } else e.target = 1;
-        this.entries.set(id, e);
-      } else if (e) e.target = 0;
-      e = this.entries.get(id);
-      if (!e) continue;
-      e.amount = reduced ? e.target : stepBlend(e.amount, e.target, dt);
-      if (e.amount <= 0 && e.target === 0) {
-        this.entries.delete(id);
-        continue;
+      const names = new Set(rows.map((s) => s.name));
+      const want = held?.layerId === id && names.has(held.name) ? held.name : live ? pickLiveState(names, { hover: hoverNow.has(id), pressed: pressedNow.has(id), focus: this.focused.has(id) }) : undefined;
+      let byState = this.entries.get(id);
+      if (!want && !byState) continue;
+      const own = doc.layers[id]?.properties ?? {};
+      const make = this.host.mover?.() ?? kernelMover;
+      const spec = transitionOf(own);
+      const overrides = transitionOverrides(own);
+      if (!byState) this.entries.set(id, (byState = new Map()));
+      if (want && !byState.has(want)) byState.set(want, { all: make(spec), own: new Map() });
+
+      const shares: StateShare[] = [];
+      // every state heads for 1 when it is the one wanted and for 0 otherwise, all at once: hover fades as pressed arrives
+      for (const row of rows) {
+        const entry = byState.get(row.name);
+        if (!entry) continue;
+        const target = row.name === want ? 1 : 0;
+        const amount = this.move(entry.all, spec, target, dt, reduced);
+        let amounts: Record<string, number> | undefined;
+        let moving = !entry.all.resting;
+        for (const [path, override] of overrides) {
+          if (!(path in row.props)) continue;
+          let mover = entry.own.get(path);
+          if (!mover) entry.own.set(path, (mover = make(override, amount)));
+          (amounts ??= {})[path] = this.move(mover, override, target, dt, reduced);
+          if (!mover.resting) moving = true;
+        }
+        for (const path of [...entry.own.keys()]) if (!overrides.has(path)) entry.own.delete(path);
+        if (!moving && target === 0) {
+          byState.delete(row.name); // faded out: nothing of it is left
+          continue;
+        }
+        shares.push(amounts ? { name: row.name, amount, amounts } : { name: row.name, amount });
       }
-      if (!names.has(e.name)) {
-        this.entries.delete(id);
-        continue;
-      }
-      frame.activeStates[id] = e.name;
-      frame.stateBlend[id] = e.amount;
+      for (const name of [...byState.keys()]) if (!names.has(name)) byState.delete(name); // a state that was deleted
+      if (byState.size === 0) this.entries.delete(id);
+      if (shares.length === 0) continue;
+      // the state it is going to is laid over the ones fading out
+      shares.sort((a, b) => Number(a.name === want) - Number(b.name === want));
+      frame.stateMix[id] = shares;
+      const lead = shares[shares.length - 1];
+      frame.activeStates[id] = lead.name;
+      frame.stateBlend[id] = lead.amount;
     }
     // layers that lost all their states while eased in
     for (const id of [...this.entries.keys()]) if (!layers.has(id)) this.entries.delete(id);
-    const key = JSON.stringify(frame);
+    const key = JSON.stringify(frame.stateMix);
     this.changed = key !== this.lastKey;
     this.lastKey = key;
     return frame;
+  }
+
+  private move(mover: MoverLike, spec: TransitionSpec, target: number, dt: number, reduced: boolean): number {
+    mover.use(spec);
+    if (reduced) mover.jump(target);
+    else {
+      mover.to(target);
+      mover.step(dt);
+    }
+    return Math.round(mover.value * 1e4) / 1e4;
   }
 
   dispose(): void {

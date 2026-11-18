@@ -243,6 +243,41 @@ function exprSlotDefs(): Record<string, Def> {
   return out;
 }
 
+/**
+ * Transitions between states (Phase 79, `core/states/transitions.ts`): how the layer moves from one state to another,
+ * and up to three properties that move on a transition of their own. Settings, not animated themselves.
+ */
+function transitionDefs(): Record<string, Def> {
+  const out: Record<string, Def> = {
+    "transition.type": typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL)),
+    "transition.duration": ranged(num(0.35, null, "paint", VISUAL, false), { min: 0.01, max: 10 }),
+    "transition.bounce": ranged(num(0.15, null, "paint", VISUAL, false), { min: 0, max: 1 }),
+    "transition.curve": typed(oneOf(["linear", "power2.out", "power2.in", "power2.inOut", "power4.out"], "power2.out", null, "paint", VISUAL)),
+  };
+  // an instance's own interaction that switches its variant (Phase 80, `core/components/variantMotion.ts`)
+  out["variantTrigger.on"] = typed(oneOf(["none", "click", "hover", "press"], "none", null, "paint", VISUAL));
+  out["variantTrigger.property"] = typed(str("", null, "paint", VISUAL));
+  out["variantTrigger.value"] = typed(str("", null, "paint", VISUAL));
+  // motion safety (Phase 93, `core/rules/motionSafety.ts`): motion that is needed to understand the page, and motion a visitor can pause
+  out["motion.essential"] = typed(flag(false, "paint", VISUAL));
+  out["motion.pausable"] = typed(flag(false, "paint", VISUAL));
+  // layout motion and presence (Phase 87, `core/engine/motion/layoutMotion.ts`)
+  out["layoutMotion.on"] = typed(flag(false, "paint", VISUAL));
+  out["presence.enter"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
+  out["presence.exit"] = typed(oneOf(["none", "fade", "scale", "rise"], "none", null, "paint", VISUAL));
+  // page transitions (Phase 89, `core/pages/pageTransitions.ts`): how a page is entered, and a layer shared between pages
+  out["pageTransition.type"] = typed(oneOf(["none", "fade", "slide", "push", "zoom"], "none", null, "paint", VISUAL));
+  out["pageTransition.duration"] = ranged(num(0.4, null, "paint", VISUAL, false), { min: 0.05, max: 10 });
+  out["sharedElement.id"] = typed(str("", null, "paint", VISUAL));
+  for (let slot = 1; slot <= 3; slot++) {
+    out[`transition.${slot}.property`] = typed(str("", null, "paint", VISUAL));
+    out[`transition.${slot}.type`] = typed(oneOf(["spring", "tween"], "spring", null, "paint", VISUAL));
+    out[`transition.${slot}.duration`] = ranged(num(0.35, null, "paint", VISUAL, false), { min: 0.01, max: 10 });
+    out[`transition.${slot}.bounce`] = ranged(num(0.15, null, "paint", VISUAL, false), { min: 0, max: 1 });
+  }
+  return out;
+}
+
 function fxSlotDefs(): Record<string, Def> {
   const out: Record<string, Def> = {};
   for (let slot = 1; slot <= 8; slot++) {
@@ -927,6 +962,13 @@ const DEFS = {
   // --- Editor metadata stored on layers ------------------------------------------
   "motion.attachedSampleId": str("", null, "none", ALL),
   "motion.trigger": str("", null, "none", ALL),
+  /** Motion per breakpoint (Phase 88, `core/breakpoints/breakpointMotion.ts`): whether the layer's clips play, how slow, how far, and whether its loops run. Overridden at a breakpoint like any property. */
+  "motion.plays": typed(flag(true, "none", ALL)),
+  "motion.timeScale": typed(ranged(num(1, null, "none", ALL, false), { min: 0.1, max: 10 })),
+  "motion.distance": typed(ranged(num(1, null, "none", ALL, false), { min: 0, max: 4 })),
+  "motion.loops": typed(flag(true, "none", ALL)),
+  /** Reduced motion (Phase 93): `auto` keeps fades and drops movement, `full` plays as written, `off` doesn't play. */
+  "motion.reduced": typed(oneOf(["auto", "full", "off"], "auto", null, "none", ALL)),
   /** Motion blur (Phase 75), when the layer's motion blur switch is on: the shutter angle in degrees (180 is half a frame's time open, After Effects' default). */
   "motion.shutterAngle": ranged(num(180, null, "paint", VISUAL), { min: 1, max: 720 }),
   /** Logic Blueprint graph this layer's events run (After-track; read by the dependency graph). */
@@ -937,7 +979,7 @@ const DEFS = {
 export type PropertyPath = keyof typeof DEFS;
 
 export const PROPERTY_REGISTRY: Readonly<Record<string, PropertyDefinition>> = Object.fromEntries(
-  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs(), ...exprSlotDefs() }).map(([path, { scope, ...def }]) => [
+  Object.entries({ ...(DEFS as Record<string, Def>), ...fxSlotDefs(), ...linkSlotDefs(), ...exprSlotDefs(), ...transitionDefs() }).map(([path, { scope, ...def }]) => [
     path,
     { path, ...def, interpolation: INTERPOLATION_BY_TYPE[def.valueType], archetypes: resolveScope(scope) },
   ])

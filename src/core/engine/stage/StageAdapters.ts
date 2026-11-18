@@ -27,12 +27,14 @@ export class StageAdapters implements EngineAdapter {
   private scrollLayers: ReadonlySet<string> = new Set();
   /** Layers a binding drives (Design track D4): also the kernel's. */
   private boundLayers: ReadonlySet<string> = new Set();
+  /** Layers changing look (Phase 80): the kernel's while they move. */
+  private mixLayers: ReadonlySet<string> = new Set();
 
   constructor(options: { waapi?: boolean } = {}) {
     // `__LL_KERNEL_ONLY__` is a test seam (set before load): everything on the kernel adapter, to compare it with Web Animations.
     const kernelOnly = typeof window !== "undefined" && (window as unknown as { __LL_KERNEL_ONLY__?: boolean }).__LL_KERNEL_ONLY__ === true;
     const useWaapi = options.waapi ?? (!kernelOnly && typeof Element !== "undefined" && typeof Element.prototype.animate === "function");
-    const onWaapi = (id: string, paths: ReadonlySet<string>) => useWaapi && this.playing && !this.scrollLayers.has(id) && !this.boundLayers.has(id) && canRunOnWaapi(paths);
+    const onWaapi = (id: string, paths: ReadonlySet<string>) => useWaapi && this.playing && !this.scrollLayers.has(id) && !this.boundLayers.has(id) && !this.mixLayers.has(id) && canRunOnWaapi(paths);
     this.waapi = new WaapiAdapter((id, paths) => onWaapi(id, paths));
     this.kernel = new KernelAdapter((id, paths) => !onWaapi(id, paths));
     this.all = [this.waapi, this.kernel];
@@ -76,8 +78,27 @@ export class StageAdapters implements EngineAdapter {
     this.kernel.setBound(bound);
   }
   /** This frame's states, for the kernel (Design track D15). */
-  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number> } | null): void {
+  setStates(frame: { activeStates: Record<string, string>; stateBlend: Record<string, number>; stateMix?: EvaluateInputs["stateMix"] } | null): void {
     this.kernel.setStates(frame);
+  }
+  /** Phase 80: layers changing from one look to another (a variant switch). The kernel draws them while they move. */
+  setPropMix(frame: Parameters<KernelAdapter["setPropMix"]>[0]): void {
+    const layers: ReadonlySet<string> = new Set(frame?.layers.keys() ?? []);
+    if (layers.size !== this.mixLayers.size || Array.from(layers).some((id) => !this.mixLayers.has(id))) {
+      this.mixLayers = layers;
+      this.waapi.invalidate(); // a layer that was a Web Animation hands over
+    }
+    this.kernel.setPropMix(frame);
+  }
+  /** Phase 93: reduced motion on or off. */
+  setReducedMotion(on: boolean): void {
+    this.waapi.setReducedMotion(on);
+    this.kernel.setReducedMotion(on);
+  }
+  /** Phase 88: the breakpoint being viewed. */
+  setBreakpoint(id: string | null): void {
+    this.waapi.setBreakpoint(id);
+    this.kernel.setBreakpoint(id);
   }
   setInputs(inputs: EvaluateInputs): void {
     for (const a of this.all) a.setInputs(inputs);

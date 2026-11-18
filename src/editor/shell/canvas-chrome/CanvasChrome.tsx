@@ -10,6 +10,9 @@ import { AiBox } from "./AiBox";
 import { ViewOptionsPopover } from "./ViewOptionsPopover";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { Spotlight } from "./Spotlight";
+import { PlaygroundPanel } from "@/editor/playground/PlaygroundPanel";
+import { PlaygroundOverlay } from "@/editor/playground/PlaygroundOverlay";
+import { invokeCommand } from "@/core/commands";
 import { FramePresetsPanel } from "@/editor/components/FramePresetsPanel";
 import { LastOperationHost } from "@/editor/viewport3d/panels/LastOperationHost";
 import { useCanvasViewStore } from "@/core/store/useCanvasViewStore";
@@ -369,6 +372,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
 
   // Trigger button references for morph animations
+  const mainRef = useRef<HTMLElement | null>(null);
   const insertButtonRef = useRef<HTMLButtonElement | null>(null);
   const aiButtonRef = useRef<HTMLButtonElement | null>(null);
   const frameButtonRef = useRef<HTMLElement | null>(null);
@@ -639,6 +643,7 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
 
   return (
     <main
+      ref={mainRef}
       id="center"
       role="main"
       aria-label="Canvas"
@@ -692,6 +697,14 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
               >
                 <span className="ll:w-2 ll:h-2 ll:rounded-full ll:bg-control-primary-bg" />
                 <span>Preview active — hover or interact on canvas</span>
+                <button
+                  type="button"
+                  aria-label="Open the Animation Playground"
+                  onClick={() => void invokeCommand("view.playground", { on: true })}
+                  className="ll:ml-1 ll:px-1.5 ll:py-0.5 ll:rounded-xs ll:border ll:border-border ll:bg-surface-bar ll:text-nano ll:text-secondary hover:ll:text-primary ll:cursor-pointer"
+                >
+                  Playground
+                </button>
                 <button
                   type="button"
                   onClick={() => useCanvasViewStore.getState().setMode("design")}
@@ -924,6 +937,8 @@ export const CanvasChrome: React.FC<CanvasChromeProps> = ({
           setContextMenuPos(null);
         }}
       />
+      <PlaygroundOverlay host={mainRef} />
+      <PlaygroundPanel />
     </main>
   );
 };
