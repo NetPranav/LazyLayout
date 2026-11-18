@@ -9,7 +9,7 @@ import { openEditor } from "./support/editor";
 type Win = {
   __LL_TEST__: boolean;
   __LL_SELECT__: (id: string) => void;
-  __LL_DOC__: { get: () => { effects: Record<string, { effectId: string; propOverrides: Record<string, number> }>; clips: Record<string, { duration: number; layerId: string }> }; commands: { addLayer: (l: unknown) => string } };
+  __LL_DOC__: { get: () => { layers: Record<string, { properties: Record<string, unknown> }>; effects: Record<string, { effectId: string; propOverrides: Record<string, number> }>; clips: Record<string, { duration: number; layerId: string }> }; commands: { addLayer: (l: unknown) => string } };
 };
 test.use({ viewport: { width: 1600, height: 1000 } });
 const doc = (page: Page) => page.evaluate(() => JSON.parse(JSON.stringify((window as unknown as Win).__LL_DOC__.get())) as ReturnType<Win["__LL_DOC__"]["get"]>);
@@ -24,13 +24,13 @@ test("Phase 91: search, insert, tune and detach a library effect", async ({ page
   await page.evaluate((i) => (window as unknown as Win).__LL_SELECT__(i), id);
   const section = page.locator('[data-section="motion-library"]');
   await section.scrollIntoViewIfNeeded();
-  await expect(section.getByRole("status", { name: "Library results" })).toContainText("51 effects");
+  await expect(section.getByRole("status", { name: "Library results" })).toContainText("56 effects");
 
   // search narrows; a nonsense word finds nothing
   await section.getByLabel("Search the motion library").fill("zzzz-nothing");
   await expect(section.getByRole("status", { name: "Library results" })).toContainText("0 effects");
   await section.getByLabel("Search the motion library").fill("stagger");
-  await expect(section.getByRole("status", { name: "Library results" })).not.toContainText("51 effects");
+  await expect(section.getByRole("status", { name: "Library results" })).not.toContainText("56 effects");
   await expect(section.getByTestId("library-thumb").first()).toBeVisible();
 
   // insert the first one that the text layer can take
@@ -66,4 +66,11 @@ test("Phase 91: search, insert, tune and detach a library effect", async ({ page
   await section.getByLabel("Search the motion library").fill("hover");
   const refused = section.getByRole("button", { name: /^Insert / }).and(page.locator("[disabled]")).first();
   await expect(refused).toHaveAttribute("title", /Rule 6\.1/);
+
+  // Phase 92: a text effect also sets the layer up (Text motion), and Remove puts that back
+  await section.getByLabel("Search the motion library").fill("decrypt");
+  await section.getByRole("button", { name: "Insert Decrypt" }).click();
+  await expect.poll(async () => (await doc(page)).layers[id].properties["text.fx"]).toBe("scramble");
+  await section.getByRole("button", { name: "Remove Decrypt" }).click();
+  await expect.poll(async () => (await doc(page)).layers[id].properties["text.fx"]).toBeUndefined();
 });

@@ -37,6 +37,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
 | 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
+| 92 | Five text effects: decrypt, typed text, rotating words, count up, scroll reveal | this branch (NEW) | 3.33 |
 | 91 | Motion library: search 51 effects, insert, tune, detach | this branch (NEW) | 3.32 |
 | 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
 | 88 | An animation can be calmer, slower or off at Tablet or Mobile only | this branch (NEW) | 3.28 |
@@ -1102,7 +1103,7 @@ Preview navigation between pages exists today only in the older editor at `/edit
 **Developer test:** `npx tsx --test src/core/playground/__tests__/playground.test.ts` (10 tests pass).
 
 ### 3.32 Phase 91: the motion library (NEW)
-- [ ] **T91.1** Do: in **Motion** select any layer and open **Motion library** in the right panel. Expect: **51 effects**, each with a small picture, its category and a badge, and an **Insert** button.
+- [ ] **T91.1** Do: in **Motion** select any layer and open **Motion library** in the right panel. Expect: **56 effects**, each with a small picture, its category and a badge, and an **Insert** button.
 - [ ] **T91.2** Do: hover a picture. Expect: it plays a small loop. Move away: it stops on a still frame.
 - [ ] **T91.3** Do: type `stagger` in **Search**. Expect: fewer effects, best matches first. Type `zzzz`: **0 effects**. Pick a **Library category**: only that category.
 - [ ] **T91.4** Do: select a text layer and search `hover`. Expect: the Insert buttons are greyed out and their tooltip says why (Rule 6.1: text can't be hovered).
@@ -1113,6 +1114,19 @@ Preview navigation between pages exists today only in the older editor at `/edit
 - [ ] **T91.9** Do: **Detach**. Expect: the card goes; the animation stays in the timeline as ordinary clips you can edit. **Remove** instead takes the animation too.
 
 **Developer test:** `npx tsx --test src/core/motionLibrary/__tests__/library.test.ts` (17 tests pass).
+
+### 3.33 Phase 92: text effects (NEW, 5 of 22)
+- [ ] **T92.1** Do: in **Motion** select a text layer, open **Motion library** and search `decrypt`. Expect: **Decrypt** is there. Press **Insert** and play. Expect: random characters settle into your text from left to right. In **Text motion** the mode now reads **Scramble**.
+- [ ] **T92.2** Do: remove it with **Remove** on its card. Expect: the text goes back to plain and Text motion reads **Off**.
+- [ ] **T92.3** Do: insert **Typed Text**. Expect: the text is typed one character at a time with a caret.
+- [ ] **T92.4** Do: insert **Rotating Words**. Expect: it shows Design, Motion, Ship in turn, forever. Change the words in **Text motion**.
+- [ ] **T92.5** Do: type `1,200 happy people` in a text layer and insert **Count Up**. Expect: it counts from 0 to 1,200. On a text with no number, **Insert** is grey and says to put a number in first.
+- [ ] **T92.6** Do: insert **Scroll Reveal Text** and scroll the page in Preview. Expect: the text is typed as you scroll down and un-typed as you scroll back.
+- [ ] **T92.7** Do: switch on **Show it** (reduced motion). Expect: Rotating Words stops on one word; the others still resolve to the full text.
+- [ ] **T92.8** Do: search `glitch`. Expect: **Glitch Chromatic** is listed but its **Insert** is grey, with the Rule 6.1 reason (known; it is an older preset).
+- [ ] **T92.9** Do: **Ctrl+Z** after Insert. Expect: the effect, the clip and the text settings all go in one step.
+
+**Developer test:** `npx tsx --test src/core/motionLibrary/__tests__` (26 tests pass, 9 of them wave 1 and the sweep).
 
 ## 4. Regression checks (things that must still work)
 

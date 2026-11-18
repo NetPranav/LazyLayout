@@ -12,6 +12,8 @@ import { ALL_PRESETS, getPresetsForArchetype, type MotionPreset } from "../motio
 import type { ArchetypeId } from "../document/registry";
 import { hydrateClip, type ClipDraft } from "../document/factories";
 import { sampleTrack } from "../kernel/evaluate";
+import type { PropValue } from "../document/registry";
+import { TEXT_EFFECTS, type ExtraEffect } from "./textEffects";
 
 export const LIBRARY_VERSION = "1.0.0";
 export const LIBRARY_CATEGORIES = ["interactive", "media", "structural", "text"] as const;
@@ -35,16 +37,24 @@ export interface LibraryEffect {
   category: LibraryCategory;
   tags: string[];
   description: string;
-  badge: MotionPreset["badge"];
+  badge: MotionPreset["badge"] | ExtraEffect["badge"];
   archetypes: ArchetypeId[];
   props: LibraryProp[];
-  /** The preset this effect is made from (kept, not copied). */
+  /** The preset this effect is made from (kept, not copied), or the id of a recipe in `textEffects.ts`. */
   presetId: string;
+  /** Settings the layer needs for the effect to show; written when it is inserted, removed with it (Phase 92). */
+  layerProps?: Record<string, PropValue>;
+  /** What the layer's text has to contain (`number`), or nothing. */
+  needs?: "number";
+  /** Recipes made for the library say where they come from. */
+  provenance?: { original: true; recipe: string };
 }
 
 export const effectIdOf = (presetId: string): string => `fx_${presetId.replace(/^preset_/, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}`;
 
-const numeric = (anim: ClipDraft): boolean => (anim.tracks ?? []).some((t) => t.keyframes.some((k) => typeof k.value === "number"));
+/** Strength scales movement and fades; a progress that goes 0 to 1 (text motion) is not something to scale. */
+const PROGRESS = "text.fxProgress";
+const numeric = (anim: ClipDraft): boolean => (anim.tracks ?? []).some((t) => t.property !== PROGRESS && t.keyframes.some((k) => typeof k.value === "number"));
 
 /** The controls an animation has: found from what it contains. */
 export function propsOf(anim: ClipDraft): LibraryProp[] {
@@ -83,6 +93,7 @@ export function applyProps(anim: ClipDraft, values: LibraryValues = {}): ClipDra
   if (strength !== undefined && strength !== 100) {
     const f = strength / 100;
     for (const t of out.tracks ?? []) {
+      if (t.property === PROGRESS) continue;
       const keys = t.keyframes;
       const rest = anim.type === "exit" ? keys[0]?.value : keys[keys.length - 1]?.value; // what the layer is at rest
       if (typeof rest !== "number") continue;
@@ -120,7 +131,7 @@ export interface Library {
 }
 
 /** Builds the library from presets. Pure: the same presets give the same library. */
-export function buildLibrary(presets: readonly MotionPreset[] = ALL_PRESETS): Library {
+export function buildLibrary(presets: readonly MotionPreset[] = ALL_PRESETS, extras: readonly ExtraEffect[] = TEXT_EFFECTS): Library {
   const seen = new Map<string, LibraryEffect>();
   const effects: LibraryEffect[] = [];
   const dropped: Library["dropped"] = [];
@@ -143,6 +154,22 @@ export function buildLibrary(presets: readonly MotionPreset[] = ALL_PRESETS): Li
       archetypes: [...p.compatibleArchetypes],
       props: propsOf(p.animation),
       presetId: p.id,
+    };
+    seen.set(sig, effect);
+    effects.push(effect);
+  }
+  for (const x of extras) {
+    const sig = JSON.stringify({ l: x.layerProps, a: x.animation });
+    if (seen.has(sig) || effects.some((e) => e.id === x.id)) {
+      dropped.push({ presetId: x.id, sameAs: seen.get(sig)?.presetId ?? x.id });
+      continue;
+    }
+    const effect: LibraryEffect = {
+      id: x.id, version: LIBRARY_VERSION, name: x.name, category: x.category,
+      tags: [...new Set([...x.tags, x.badge.toLowerCase(), x.animation.type])],
+      description: x.description, badge: x.badge, archetypes: [...x.archetypes],
+      props: propsOf(x.animation), presetId: x.id, layerProps: x.layerProps,
+      ...(x.needs ? { needs: x.needs } : {}), provenance: x.provenance,
     };
     seen.set(sig, effect);
     effects.push(effect);
@@ -196,8 +223,9 @@ export function searchEffects(q: EffectQuery = {}): LibraryEffect[] {
   return scored.sort((a, b) => b.score - a.score || a.e.name.localeCompare(b.e.name)).map((s) => s.e);
 }
 
-/** Why an effect can't go on a layer of this kind, or null (Rule 6.1 and compatibility). */
-export function whyNotOn(effect: LibraryEffect, archetype: ArchetypeId): string | null {
+/** Why an effect can't go on a layer of this kind, or null (Rule 6.1 and compatibility). `text` is the layer's own words, for effects that need one. */
+export function whyNotOn(effect: LibraryEffect, archetype: ArchetypeId, text?: string): string | null {
+  if (effect.needs === "number" && text !== undefined && !/\d/.test(text)) return `${effect.name} counts a number in the text. Put a number in this layer's text first.`;
   const { blocked } = getPresetsForArchetype(archetype);
   const hit = blocked.find((b) => effectIdOf(b.preset.id) === effect.id);
   if (hit) return hit.reason;
@@ -206,9 +234,9 @@ export function whyNotOn(effect: LibraryEffect, archetype: ArchetypeId): string 
 
 /** The animation an instance of this effect plays. */
 export function animationOf(effect: LibraryEffect, values: LibraryValues = {}): ClipDraft {
-  const preset = ALL_PRESETS.find((p) => p.id === effect.presetId);
-  if (!preset) throw new Error(`The preset behind ${effect.id} is gone.`);
-  return applyProps(preset.animation, values);
+  const source = ALL_PRESETS.find((p) => p.id === effect.presetId)?.animation ?? TEXT_EFFECTS.find((x) => x.id === effect.presetId)?.animation;
+  if (!source) throw new Error(`The recipe behind ${effect.id} is gone.`);
+  return applyProps(source, values);
 }
 
 // ---------------------------------------------------------------------------
@@ -251,7 +279,8 @@ export function thumbnailOf(effect: LibraryEffect, steps = 12): Thumbnail {
       y: clampPx(at("transform.y", 0)),
       scale: Math.max(0.2, Math.min(2, at("transform.scale", at("transform.scaleX", 1)))),
       rotate: at("transform.rotate", 0),
-      opacity: Math.max(0, Math.min(1, at("appearance.opacity", 1))),
+      // text motion has no opacity of its own: its progress shows as the box filling in
+      opacity: Math.max(0, Math.min(1, tracks.some((t) => t.property === PROGRESS) ? 0.15 + 0.85 * at(PROGRESS, 1) : at("appearance.opacity", 1))),
     });
   }
   const type = anim.type;

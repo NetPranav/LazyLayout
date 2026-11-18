@@ -6,6 +6,7 @@ import { historyCommands } from "../../store/useDocumentStore";
 import { tryRunCommand } from "../../commands";
 import { evaluate } from "../../kernel/evaluate";
 import { ALL_PRESETS } from "../../motion/presets";
+import { TEXT_EFFECTS } from "../textEffects";
 import { LIBRARY_CATEGORIES, applyProps, thumbnailOf, buildLibrary, droppedPresets, effectIdOf, getEffect, listEffects, overridesOf, propsOf, searchEffects, whyNotOn } from "../library";
 import { clipIdOf, instancesOn, registerLibraryCommands, valuesOf } from "../libraryCommands";
 
@@ -26,8 +27,8 @@ afterEach(() => off());
 describe("Phase 91: the library", () => {
   it("has every preset once, with a stable id, a version, a category and tags", () => {
     const all = listEffects();
-    assert.equal(all.length + droppedPresets().length, ALL_PRESETS.length);
-    assert.equal(all.length, 51, "the 51 presets migrate; none was a duplicate");
+    assert.equal(all.length + droppedPresets().length, ALL_PRESETS.length + TEXT_EFFECTS.length);
+    assert.equal(all.length, 51 + TEXT_EFFECTS.length, "the 51 presets migrate, none was a duplicate, and wave 1 adds its own");
     assert.equal(new Set(all.map((e) => e.id)).size, all.length, "ids are unique");
     for (const e of all) {
       assert.match(e.id, /^fx_[a-z0-9_]+$/);
@@ -42,7 +43,7 @@ describe("Phase 91: the library", () => {
   it("drops a preset that is the same animation as an earlier one and merges where it can go", () => {
     const first = ALL_PRESETS[0];
     const twin = { ...first, id: "preset_twin", name: "Twin", compatibleArchetypes: ["badge" as const] };
-    const lib = buildLibrary([first, twin]);
+    const lib = buildLibrary([first, twin], []);
     assert.equal(lib.effects.length, 1);
     assert.deepEqual(lib.dropped, [{ presetId: "preset_twin", sameAs: first.id }]);
     assert.ok(lib.effects[0].archetypes.includes("badge"));
@@ -55,8 +56,8 @@ describe("Phase 91: the library", () => {
     assert.ok(stagger.length > 0);
     assert.equal(stagger[0].name.toLowerCase().includes("stagger") || stagger[0].tags.includes("stagger"), true);
     assert.deepEqual(searchEffects({ query: "zzzz-nothing" }), []);
-    assert.equal(searchEffects().length, 51);
-    assert.equal(searchEffects({ category: "text" }).length, 12);
+    assert.equal(searchEffects().length, 51 + TEXT_EFFECTS.length);
+    assert.equal(searchEffects({ category: "text" }).length, 12 + TEXT_EFFECTS.length);
     assert.ok(searchEffects({ tag: "spring" }).every((e) => e.tags.includes("spring")));
   });
   it("every word of a query has to match", () => {

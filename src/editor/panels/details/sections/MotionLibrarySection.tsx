@@ -13,7 +13,7 @@ import { instancesOn, valuesOf } from "@/core/motionLibrary/libraryCommands";
 import type { InspectorSectionProps } from "../types";
 
 /**
- * The motion library (ROADMAP Phase 91): search the 51 ready-made effects, put one on the selected layer, tune it,
+ * The motion library (ROADMAP Phase 91): search the ready-made effects, put one on the selected layer, tune it,
  * detach it into plain animation. Every control calls `library.*`. Thumbnails are loops drawn from numbers
  * (`thumbnailOf`) and played by the browser only while hovered; nothing here is a live scene.
  */
@@ -102,7 +102,7 @@ export const MotionLibrarySection: React.FC<InspectorSectionProps> = ({ selected
       <p className="ll:m-0 ll:text-micro ll:text-muted" role="status" aria-label="Library results">{found.length} {found.length === 1 ? "effect" : "effects"}</p>
       <ul className="ll:m-0 ll:p-0 ll:list-none ll:flex ll:flex-col ll:gap-1 ll:max-h-72 ll:overflow-y-auto" aria-label="Library effects">
         {shown.map((e) => {
-          const why = whyNotOn(e, layer.archetype);
+          const why = whyNotOn(e, layer.archetype, typeof layer.properties["content.text"] === "string" ? (layer.properties["content.text"] as string) : layer.name);
           return (
             <li key={e.id} data-effect={e.id} onMouseEnter={() => setHover(e.id)} onMouseLeave={() => setHover(null)} className="ll:flex ll:items-center ll:gap-2 ll:p-1 ll:rounded-sm ll:hover:bg-surface-bar">
               <Thumb effect={e} playing={hover === e.id} />

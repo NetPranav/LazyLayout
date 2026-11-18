@@ -3,13 +3,15 @@ import { z } from "zod";
 import { defineTypedCommand } from "../commands";
 import { hydrateClip } from "../document/factories";
 import type { EffectInstance } from "../document/schema";
-import { transaction } from "../editing/editOps";
+import { setLayerProps, transaction } from "../editing/editOps";
 import { createId } from "../ids";
 import { getDocument } from "../store/documentState";
 import { documentCommands } from "../store/useDocumentStore";
 import { useSelectionStore } from "../store/useSelectionStore";
 import { animationOf, getEffect, overridesOf, whyNotOn, type LibraryValues } from "./library";
 
+/** The words a layer shows (an empty text shows its name, as the renderer does). */
+const textOf = (layer: { name: string; properties: Record<string, unknown> }): string => (typeof layer.properties["content.text"] === "string" ? (layer.properties["content.text"] as string) : layer.name);
 const selected = () => useSelectionStore.getState().selectedIds;
 const VALUES = z.object({ duration: z.number(), delay: z.number(), strength: z.number(), stagger: z.number() }).partial();
 
@@ -45,7 +47,7 @@ export function registerLibraryCommands(): () => void {
       const doc = getDocument();
       const chosen = (ids ?? selected()).filter((id) => doc.layers[id]);
       if (chosen.length === 0) return { ok: false, code: "NO_LAYER", message: "Select a layer to put the effect on." };
-      const refused = chosen.map((id) => whyNotOn(effect, doc.layers[id].archetype)).find((r) => r !== null);
+      const refused = chosen.map((id) => whyNotOn(effect, doc.layers[id].archetype, textOf(doc.layers[id]))).find((r) => r !== null);
       if (refused) return { ok: false, code: "NOT_FOR_THIS_LAYER", message: refused };
       const overrides = overridesOf(effect, (values ?? {}) as LibraryValues);
       const made: string[] = [];
@@ -53,6 +55,7 @@ export function registerLibraryCommands(): () => void {
         for (const layerId of chosen) {
           const id = createId("fxi");
           const template = { ...hydrateClip(animationOf(effect, overrides)), id: clipIdOf(id) };
+          if (effect.layerProps) setLayerProps([layerId], effect.layerProps, `Insert ${effect.name}`);
           documentCommands.addClip(layerId, template, `Insert ${effect.name}`);
           documentCommands.mutate(`Insert ${effect.name}`, (draft) => {
             draft.effects[id] = { id, layerId, effectId: effect.id, version: effect.version, propOverrides: overrides, bindingOverrides: {}, seed: 0 };
@@ -100,9 +103,14 @@ export function registerLibraryCommands(): () => void {
     args: z.object({ instance: z.string() }),
     run: ({ instance }) => {
       if (!getDocument().effects[instance]) return { ok: false, code: "NO_INSTANCE", message: "That effect is not on the page any more." };
-      documentCommands.mutate("Remove effect", (draft) => {
-        delete draft.effects[instance];
-        delete draft.clips[clipIdOf(instance)];
+      const fx = getDocument().effects[instance];
+      const effect = getEffect(fx.effectId);
+      transaction("Remove effect", () => {
+        if (effect?.layerProps) setLayerProps([fx.layerId], Object.fromEntries(Object.keys(effect.layerProps).map((k) => [k, null])), "Remove effect");
+        documentCommands.mutate("Remove effect", (draft) => {
+          delete draft.effects[instance];
+          delete draft.clips[clipIdOf(instance)];
+        });
       });
       return { ok: true };
     },

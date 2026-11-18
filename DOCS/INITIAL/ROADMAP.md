@@ -1464,14 +1464,19 @@ The document and World Environment have their own stores, After-track actions mo
 **Evidence (2026-11-18):** `src/core/motionLibrary/__tests__/library.test.ts` (17 tests: 51 unique stable ids with versions, categories and tags; a duplicate preset is dropped and its archetypes merged; ranked search, every word must match, category and tag filters; Rule 6.1 refusals with the reason; defaults change nothing, duration scales key times, strength moves towards or away from rest, only differences are kept; thumbnails are finite, inside the box and the same each time; insert adds instance and clip in one undo step and the layer moves over time; refusal changes nothing; setProps and undo; detach keeps the clip; remove takes both). `tests/e2e/motion-library.spec.ts` on `/editor` in Motion: 51 effects listed, search narrows to none and to a few, insert makes one card with its props, a duration change changes the clip, the card collapses, Detach leaves the clip, a hover effect is refused on text with Rule 6.1. Passing in Chromium here.
 
 ### Phase 92 · Library: text, SVG & component motion
-**Needs:** 91 · **Was:** v3 25.3 (waves 1, 3, 4) · **Status:** 📋
-- [ ] Wave 1, text (10): split reveal, blur-in, shiny text, gradient flow, decrypt, typewriter, rotating words, count-up, scroll-reveal text, variable proximity.
-- [ ] Wave 3, SVG (6): stroke-draw logo, morph icon set, motion-path orbit, gooey blob, animated icon pack, line-art reveal.
-- [ ] Wave 4, components (6): dock magnification, stacked cards, animated list, infinite menu, elastic slider, circular gallery.
-- [ ] Every item is original (provenance recorded) and an open recipe where the primitives can express it.
+**Needs:** 91 · **Was:** v3 25.3 (waves 1, 3, 4) · **Status:** 🚧
+- [x] Wave 1, text (10), **5 built, 4 already existed, 2 not built:** built: decrypt, typed text (typewriter), rotating words, count-up, scroll-reveal text. Already in the catalogue and not made again: split reveal (= "Word Stagger Cascade"), blur-in (= "Blur Reveal"), shiny text (= "Gradient Sheen"). Not built: gradient flow (needs a gradient text fill) and variable proximity (needs the pointer to drive the font axis; `text.axis` exists and a driver could be wired to it).
+- [ ] Wave 3, SVG (6): stroke-draw logo, morph icon set, motion-path orbit, gooey blob, animated icon pack, line-art reveal. **Not built.** The primitives exist (Phases 85 and 86), but a library effect that brings its own layers needs the effect template (`EffectDefinition`, Phase 7.4) wired into insert, which is not done.
+- [ ] Wave 4, components (6): dock magnification, stacked cards, animated list, infinite menu, elastic slider, circular gallery. **Not built**, for the same reason; the three motion recipes the stage already runs (dock, stacked cards, toggle) are the references.
+- [x] Every item is original (provenance recorded: `provenance.recipe` on each) and an open recipe: everything an effect does is visible in the Text motion section after insert.
 
-**You'll see:** 22 polished, editable motion effects.
+**You'll see:** 22 polished, editable motion effects. **Now:** 5 new text effects in the library (56 in all).
 **Done when:** each passes the Playground sweep and the parity check against the kernel.
+
+**Stays 🚧 (2026-11-18):** Phase 91 is 🚧, 17 of the 22 are not built, and this gate has not run in CI.
+**How (`src/core/motionLibrary/textEffects.ts`):** each effect is a recipe over the text motion properties of Design track D12 (`text.fx`, `text.fxProgress`): settings the layer needs (`layerProps`, written on insert, cleared by Remove, kept by Detach) plus a clip that moves the progress. Count-up needs a number in the text and says so. Strength does not apply to them (a progress of 0 to 1 is not scaled). Insert writes the layer's settings and the clip in one undo step.
+**Found on the way:** the catalogue's "Glitch Chromatic" (text only, a hover clip) is blocked by Rule 6.1 for the one kind of layer it is for, so it can go nowhere; it shows greyed out in the library with the reason. Not changed here (other code lists it); the sweep test names it so a second one fails.
+**Evidence (2026-11-18):** `src/core/motionLibrary/__tests__/textEffects.test.ts` (9 tests): the five are original, once each, and none shares a preset's name; Decrypt settles left to right and is the text at the end; Typed Text types with a caret until done; Rotating Words shows Design, Motion, Ship in turn and loops; Count Up refuses text without a number and counts "1,200" from 0 to 1,200; Scroll Reveal is a scrubbed clip; undo and Remove clear the layer's settings; the **sweep**: every one of the 56 effects (but the one above) inserts on a layer it is for, evaluates to finite numbers at 0, 25, 50, 75 and 100 % of its time, and under reduced motion every movement property holds still. `tests/e2e/motion-library.spec.ts`: Decrypt sets `text.fx` and Remove puts it back. Passing in Chromium here.
 
 ### Phase 93 · Reduced motion & accessibility rules
 **Needs:** 79, 82, 84 · **Was:** v3 29.1, 29.3, 11.4 · **Closes:** AUD-14 (partial) · **Status:** 🚧
