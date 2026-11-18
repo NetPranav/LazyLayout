@@ -948,8 +948,9 @@ export const Artboard: React.FC<ArtboardProps> = ({
                 e.currentTarget.dataset.press = `${e.clientX},${e.clientY},${e.shiftKey && !selectedIds.includes(targetDocId) ? 1 : 0}`;
                 onStartMove?.(el.id, e);
               }}
-              onMouseEnter={() => onHover(targetDocId)}
-              onMouseLeave={() => onHover(null)}
+              // in Preview no hover outline is drawn, so crossing layers changes nothing (and redraws nothing)
+              onMouseEnter={() => canvasViewMode !== "preview" && onHover(targetDocId)}
+              onMouseLeave={() => canvasViewMode !== "preview" && onHover(null)}
               onClick={(e) => {
                 e.stopPropagation();
                 // the press already added it to the selection, and the click after a drag is not a choice
@@ -1120,7 +1121,8 @@ export const Artboard: React.FC<ArtboardProps> = ({
       {!isBlank && (
         <TransformOverlay
           selectedIds={editingPath || editingSceneId ? [] : selectedIds}
-          hoveredId={hoveredId}
+          // in Preview the canvas is the live page: the pointer is for hovering it, so no layer outline follows the mouse
+          hoveredId={canvasViewMode === "preview" ? null : hoveredId}
           elements={elements}
           snapLines={snapLines}
           spacingMarks={spacingMarks}

@@ -12,6 +12,7 @@ import type { InputSource } from "../../bindings/inputBus";
 import { baseCopies, effectedStyle, hasLiveEffector, liveInfluence, type BaseCopy, type CopyStyle, type LiveInputs } from "../../render/copies";
 import { readEffector } from "../../render/effector";
 import { resolveProps } from "../../render/resolve";
+import { mattesOf } from "../../kernel/evaluate";
 
 export interface EffectorDriverHost {
   getDocument(): MotionDocument;
@@ -49,8 +50,16 @@ export class EffectorDriver {
       this.lastDoc = doc;
       this.lastPointer = "";
       this.states.clear(); // the document changed: the copies and settings are read again
+      // a layer inside a hidden matte source is never seen: its matte reads the effector itself (matteShape.ts), so its
+      // copies on the page are left alone (restyling a dot grid of thousands every frame was most of the cost)
+      const hiddenSources = new Set<string>();
+      for (const [source, targets] of mattesOf(doc)) if (!targets.some((id) => doc.layers[id]?.properties["matte.showSource"] === true)) hiddenSources.add(source);
+      const insideHidden = (id: string): boolean => {
+        for (let at: string | null = id, depth = 0; at && depth < 64; at = doc.layers[at]?.parentId ?? null, depth++) if (hiddenSources.has(at)) return true;
+        return false;
+      };
       this.layerIds = Object.values(doc.layers)
-        .filter((l) => hasLiveEffector(resolveProps(l).get))
+        .filter((l) => hasLiveEffector(resolveProps(l).get) && !insideHidden(l.id))
         .map((l) => l.id);
     }
     return this.layerIds;

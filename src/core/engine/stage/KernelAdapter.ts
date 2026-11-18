@@ -64,8 +64,13 @@ export class KernelAdapter implements EngineAdapter {
 
   setInputs(inputs: EvaluateInputs): void {
     // the states the state driver set are not the caller's to wipe (the scroll driver sets inputs of its own)
-    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend };
+    this.inputs = { ...inputs, activeStates: inputs.activeStates ?? this.inputs.activeStates, stateBlend: inputs.stateBlend ?? this.inputs.stateBlend, pointer: "pointer" in inputs ? inputs.pointer : this.inputs.pointer };
     this.invalidate();
+  }
+
+  /** Where the pointer is on the page (page px), for mattes whose copies an effector moves by it. Not an `invalidate`, like `setBound`. */
+  setPointer(pointer: EvaluateInputs["pointer"]): void {
+    this.inputs = { ...this.inputs, pointer };
   }
 
   /** Design track D4: this frame's bound values. Not an `invalidate`: the plan is unchanged and only changed values are written. */

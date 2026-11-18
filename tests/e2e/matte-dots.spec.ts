@@ -69,3 +69,51 @@ test("one cloned dot is a dotted matte, and a circle following the pointer limit
   const startX = (d: string) => Number(d.match(/^M\s*(-?[\d.]+)/)?.[1]);
   expect(startX(await maskPath(page, ids.group))).toBeGreaterThan(startX(first) + 50);
 });
+
+test("the matte has a soft edge in the inspector, and a pointer effector grows the matte's dots near the pointer", async ({ page }) => {
+  await page.addInitScript(() => ((window as unknown as { __LL_TEST__: boolean }).__LL_TEST__ = true));
+  await openEditor(page);
+  await expect(page.locator("[data-stage=artboard]")).toBeVisible();
+  const ids = await page.evaluate(() => {
+    const w = window as unknown as W;
+    const D = w.__LL_DOC__;
+    const run = (id: string, a: unknown) => w.__LL_COMMANDS__.all().find((c) => c.id === id)!.run(a);
+    const frame = Object.values(D.get().layers).find((l) => l.parentId && D.get().layers[l.parentId]?.parentId === null && l.archetype === "container")!;
+    for (const c of [...frame.children]) D.commands.removeLayer(c);
+    const abs = (x: number, y: number, w: number, h: number) => ({ positioning: "absolute", "frame.x": x, "frame.y": y, "frame.width": w, "frame.height": h });
+    const card = D.commands.addLayer({ archetype: "rectangle", parentId: frame.id, properties: { ...abs(200, 200, 400, 300), "svg.fill": "#34A853", "svg.stroke": "none" } });
+    const dots = D.commands.addLayer({ archetype: "container", parentId: frame.id, properties: { ...abs(200, 200, 400, 300), "appearance.background.color": "transparent", "layout.display": "block" } });
+    D.commands.addLayer({ archetype: "ellipse", parentId: dots, properties: { ...abs(0, 0, 6, 6), "appearance.background.color": "#000", "clone.mode": "fill", "clone.gapX": 6, "clone.gapY": 6, "effector.mode": "pointer", "effector.scale": 2, "effector.radius": 80, "effector.falloff": "linear" } });
+    run("layer.setMatte", { ids: [card], sourceId: dots, mode: "alpha" });
+    run("selection.set", { ids: [card] });
+    return { card };
+  });
+  // a soft edge, from the matte's own controls
+  const feather = page.getByTestId("right-panel").getByLabel("Matte feather", { exact: true });
+  await feather.scrollIntoViewIfNeeded();
+  await feather.fill("12");
+  await feather.press("Enter");
+  await expect.poll(() => page.evaluate((id) => (window as unknown as W).__LL_DOC__.get().layers[id].properties["mask.feather"], ids.card)).toBe(12);
+
+  await page.getByRole("tab", { name: "Motion" }).click();
+  const drawn = page.locator(`[data-testid="stage-page"] [data-archetype][data-element-id="${ids.card}"]`).first();
+  const mask = () => drawn.evaluate((el) => decodeURIComponent(getComputedStyle(el).maskImage || getComputedStyle(el).webkitMaskImage || ""));
+  await expect.poll(async () => (await mask()).includes("feGaussianBlur"), { message: "the matte's edge is blurred" }).toBe(true);
+  // the radius of the dot nearest a point of the card, in the card's pixels
+  const radiusNear = async (x: number, y: number) => {
+    const d = (await mask()).match(/ d="([^"]*)"/)?.[1] ?? "";
+    let best = { dist: Infinity, r: 0 };
+    for (const m of d.matchAll(/M(-?[\d.]+)[ ]?(-?[\d.]+)a([\d.]+)/g)) {
+      const r = Number(m[3]);
+      const cx = Number(m[1]) + r;
+      const cy = Number(m[2]);
+      const dist = Math.hypot(cx - x, cy - y);
+      if (dist < best.dist) best = { dist, r };
+    }
+    return best.r;
+  };
+  const box = (await drawn.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5, { steps: 6 });
+  await expect.poll(() => radiusNear(100, 150), { message: "the dot under the pointer has grown" }).toBeGreaterThan(5);
+  expect(await radiusNear(380, 280), "a dot far from the pointer is as made").toBeLessThan(3.5);
+});

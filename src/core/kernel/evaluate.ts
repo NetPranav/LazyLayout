@@ -64,7 +64,7 @@ export interface EvaluateInputs {
   /** Design track D15: how far into its active state each layer is, 0-1 (default 1). Numbers blend; anything else switches at one half. */
   stateBlend?: Record<string, number>;
   reducedMotion?: boolean;
-  /** A virtual pointer position, layer-local px — for the behaviours this kernel does evaluate (`loop` needs none; reserved for Phase 12's expansion). */
+  /** The pointer on the page, in page px (or null when it is off the page): a matte made of clones that a pointer effector scales follows it. */
   pointer?: { x: number; y: number } | null;
   /** A virtual scroll progress, 0-1 — reserved the same way. */
   scrollProgress?: number;
@@ -765,7 +765,7 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
   const sourceId = layer.properties["matte.source"];
   const mode = layer.properties["matte.mode"];
   if (typeof sourceId === "string" && sourceId !== "" && sourceId !== layerId && typeof mode === "string" && mode !== "none" && doc.layers[sourceId]) {
-    const shapes = matteSourceShapes(doc.layers, sourceId, localOf);
+    const shapes = matteSourceShapes(doc.layers, sourceId, localOf, { pointer: inputs.pointer ?? null });
     const origin = canvasOrigin(doc.layers, layerId, localOf);
     if (shapes && origin) {
       const source = localOf(sourceId);

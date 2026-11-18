@@ -13,6 +13,7 @@ import { boundLayerIds, copiedLayerIds } from "./styleWrites";
 import { StateDriver, type StateDriverHost } from "./StateDriver";
 import { stateLayerIds } from "../../states/states";
 import { EffectorDriver } from "./EffectorDriver";
+import { mattesFollowPointer } from "../../geometry/matteShape";
 import { CssVarWriter } from "./CssVarWriter";
 
 /**
@@ -150,6 +151,7 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
   let scrollWasLive = false;
   const stateDriver = options.states ? new StateDriver(options.states) : null;
   let statesWereLive = false;
+  let lastPointerKey = "";
 
   const applyFrame = (frame: FrameInfo) => {
     if (scrollDriver && options.scroll) {
@@ -162,6 +164,17 @@ export function installStageEngine(renderer: StageRenderer, options: StageEngine
           adapter.setInputs({ scrollClipTime: update.clipTime });
           dirty = true;
         }
+      }
+    }
+    // a matte whose copies an effector moves by the pointer is redrawn as the pointer moves
+    if (options.bindings && adapter instanceof StageAdapters) {
+      const wanted = options.bindings.active() && mattesFollowPointer(getDocument());
+      const p = wanted ? options.bindings.host.source.pointer() : null;
+      const key = p ? `${Math.round(p.x)},${Math.round(p.y)}` : "";
+      if (key !== lastPointerKey) {
+        lastPointerKey = key;
+        adapter.kernel.setPointer(p ? { x: p.x, y: p.y } : null);
+        dirty = true;
       }
     }
     const { time, playing, rate } = getTransport();
