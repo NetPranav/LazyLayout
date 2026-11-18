@@ -1,5 +1,6 @@
 import type { Layer, MotionDocument } from "../document/schema";
 import type { PropValue } from "../document/registry";
+import { clonerCopies, readCloner } from "../render/cloner";
 
 /**
  * ============================================================================
@@ -134,3 +135,64 @@ export function matteShapePath(shape: MatteSourceShape, targetOrigin: { x: numbe
   return parts.join(" ");
 }
 
+
+/** The most shapes one matte draws (a dot grid of clones can be large; the mask is redrawn when its source moves). */
+export const MAX_MATTE_SHAPES = 2000;
+
+/**
+ * Every shape a matte source draws, so any layer can be a matte, not only one box or ellipse:
+ * - a shape with a **cloner** (Clone: grid, ring, fill area) gives itself and every copy, so one dot multiplied over an
+ *   area is a dotted matte;
+ * - a **group or frame** with layers in it gives every shape inside it (hidden ones left out), moved with the group, so
+ *   several shapes, clones and moving layers make one matte together.
+ * Null when nothing in it can be read (see `matteSourceShape`).
+ */
+export function matteSourceShapes(layers: MotionDocument["layers"], sourceId: string, resolvedOf: (id: string) => Resolved): MatteSourceShape[] | null {
+  const out: MatteSourceShape[] = [];
+  const visit = (id: string, shiftX: number, shiftY: number, depth: number): void => {
+    const layer = layers[id];
+    if (!layer || out.length >= MAX_MATTE_SHAPES) return;
+    const props = resolvedOf(id);
+    if (depth > 0 && (layer.visible === false || props.visible === false)) return;
+    if (layer.children.length > 0 && depth < 16) {
+      // a group: what is inside it, moved as the group moves
+      const gx = shiftX + num(props, "transform.x");
+      const gy = shiftY + num(props, "transform.y");
+      const before = out.length;
+      for (const child of layer.children) visit(child, gx, gy, depth + 1);
+      // a group with nothing readable inside is its own box, as a frame always was
+      if (out.length > before || depth > 0) return;
+    }
+    const shape = matteSourceShape(layers, id, resolvedOf);
+    if (!shape) return;
+    const base = { ...shape, cx: shape.cx + shiftX, cy: shape.cy + shiftY };
+    out.push(base);
+    const cloner = readCloner((path) => props[path]);
+    if (!cloner) return;
+    const parent = layer.parentId ? resolvedOf(layer.parentId) : {};
+    const box = { x: num(props, "frame.x"), y: num(props, "frame.y"), width: shape.width, height: shape.height };
+    for (const copy of clonerCopies(cloner, box, { width: num(parent, "frame.width"), height: num(parent, "frame.height") })) {
+      if (out.length >= MAX_MATTE_SHAPES) break;
+      out.push({ ...base, cx: base.cx + copy.dx, cy: base.cy + copy.dy, rotation: base.rotation + copy.rotate });
+    }
+  };
+  visit(sourceId, 0, 0, 0);
+  return out.length > 0 ? out : null;
+}
+
+/** The matte path of several shapes: each one's outline, together (where they overlap, the union). */
+export function matteShapesPath(shapes: readonly MatteSourceShape[], targetOrigin: { x: number; y: number }): string {
+  if (shapes.length === 1) return matteShapePath(shapes[0], targetOrigin);
+  return shapes.map((s) => compactShapePath(s, targetOrigin) ?? matteShapePath(s, targetOrigin)).join(" ");
+}
+
+/** An unturned ellipse as two arcs: a fifth of the length, so a grid of a thousand dots stays a short path. Null for any other shape. */
+function compactShapePath(shape: MatteSourceShape, targetOrigin: { x: number; y: number }): string | null {
+  if (!shape.ellipse || shape.rotation % 360 !== 0) return null;
+  const rx = (shape.width / 2) * Math.abs(shape.scaleX);
+  const ry = (shape.height / 2) * Math.abs(shape.scaleY);
+  const x = shape.cx - targetOrigin.x;
+  const y = shape.cy - targetOrigin.y;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return `M${r2(x - rx)} ${r2(y)}a${r2(rx)} ${r2(ry)} 0 1 0 ${r2(2 * rx)} 0a${r2(rx)} ${r2(ry)} 0 1 0 ${r2(-2 * rx)} 0Z`;
+}

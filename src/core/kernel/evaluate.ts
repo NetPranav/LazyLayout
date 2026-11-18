@@ -38,7 +38,7 @@ import { followSettings, followsPath, pathSampler } from "../paths/pathFollow";
 import { synthesizeSingleTransformMatrix, type TransformComponents } from "../engine/EngineAdapters";
 import { createSpatialPath, SpatialTrajectoryGeometry, type SpatialDiagnostic } from "../geometry/spatialPath";
 import { resolveLayerAnchor } from "../geometry/pins";
-import { canvasOrigin, matteShapePath, matteSourceShape } from "../geometry/matteShape";
+import { canvasOrigin, matteShapesPath, matteSourceShapes } from "../geometry/matteShape";
 import { motionBlurSigma } from "../render/fxStack";
 import { hasLinks, mapValue, readLinks, resolveLayerRef } from "../links/linkModel";
 import { evaluateExpression, type ExprContext } from "../expressions/evaluate";
@@ -757,7 +757,7 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
   let out = resolved;
 
   const targets = index.get(layerId);
-  if (targets && targets.length > 0 && matteSourceShape(doc.layers, layerId, localOf) && !targets.some((id) => doc.layers[id].properties["matte.showSource"] === true)) {
+  if (targets && targets.length > 0 && matteSourceShapes(doc.layers, layerId, localOf) && !targets.some((id) => doc.layers[id].properties["matte.showSource"] === true)) {
     out = { ...out, "appearance.opacity": 0 };
   }
 
@@ -765,9 +765,9 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
   const sourceId = layer.properties["matte.source"];
   const mode = layer.properties["matte.mode"];
   if (typeof sourceId === "string" && sourceId !== "" && sourceId !== layerId && typeof mode === "string" && mode !== "none" && doc.layers[sourceId]) {
-    const shape = matteSourceShape(doc.layers, sourceId, localOf);
+    const shapes = matteSourceShapes(doc.layers, sourceId, localOf);
     const origin = canvasOrigin(doc.layers, layerId, localOf);
-    if (shape && origin) {
+    if (shapes && origin) {
       const source = localOf(sourceId);
       const fill = source["appearance.background.color"];
       const opacity = typeof source["appearance.opacity"] === "number" ? (source["appearance.opacity"] as number) : 1;
@@ -775,7 +775,7 @@ function withMatte(doc: MotionDocument, compositionId: string, layerId: string, 
         ...out,
         "mask.mode": mode,
         "mask.shape": "path",
-        "mask.path": matteShapePath(shape, origin),
+        "mask.path": matteShapesPath(shapes, origin),
         ...(typeof fill === "string" && fill !== "" && fill !== "transparent" ? { "mask.fill": fill } : {}),
         "mask.opacity": opacity * (typeof out["mask.opacity"] === "number" ? (out["mask.opacity"] as number) : 1),
       };
