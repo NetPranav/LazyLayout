@@ -10,6 +10,7 @@ import { registerCompositingCommands } from "@/core/render/compositingCommands";
 import { registerFxCommands } from "@/core/render/fxCommands";
 import { registerPathMotionCommands } from "@/core/paths/pathMotionCommands";
 import { registerTransitionCommands } from "@/core/states/transitionCommands";
+import { registerMotionSafetyCommands } from "@/core/rules/motionSafetyCommands";
 import { registerLibraryCommands } from "@/core/motionLibrary/libraryCommands";
 import { registerPlaygroundCommands } from "@/core/playground/playgroundCommands";
 import { registerLinkCommands } from "@/core/links/linkCommands";
@@ -76,6 +77,7 @@ export function useLeftPanelData(
     fonts?.addEventListener?.("loadingdone", onFonts);
     const offStates = registerStateCommands(); // states (Design track D15)
     const offTransitions = registerTransitionCommands(); // transitions between states (Phase 79)
+    const offSafety = registerMotionSafetyCommands(); // motion safety fixes (Phase 93)
     const offLibrary = registerLibraryCommands(); // the motion library (Phase 91)
     const offPlayground = registerPlaygroundCommands(); // the Animation Playground (Phase 90)
     const offDrivers = registerDriverCommands(); // drivers: the pointer, scroll and time (Design track D4)
@@ -97,6 +99,7 @@ export function useLeftPanelData(
       offTransitions();
       offPlayground();
       offLibrary();
+      offSafety();
       fonts?.removeEventListener?.("loadingdone", onFonts);
       offScroll();
       offScrollClip();

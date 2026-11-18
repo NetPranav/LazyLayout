@@ -46,6 +46,7 @@ import { MorphDrawSection } from "./sections/MorphDrawSection";
 import { FollowPathSection } from "./sections/FollowPathSection";
 import { TransitionSection } from "./sections/TransitionSection";
 import { PageTransitionSection } from "./sections/PageTransitionSection";
+import { MotionSafetySection } from "./sections/MotionSafetySection";
 import { MotionLibrarySection } from "./sections/MotionLibrarySection";
 import { MotionAtSection } from "./sections/MotionAtSection";
 import {
@@ -547,6 +548,7 @@ export function getInspectorExtraSections(
       },
       // Phase 88: how the animation plays at the breakpoint being viewed
       { id: "motion-at", title: "Motion at this size", children: <MotionAtSection {...sectionProps} /> },
+      { id: "motion-safety", title: "Motion safety", children: <MotionSafetySection {...sectionProps} /> },
       { id: "motion-library", title: "Motion library", children: <MotionLibrarySection {...sectionProps} /> },
       // Phase 86: a layer travels along its path from the playhead, so the section is in Motion too
       { id: "follow-path", title: "Follow a path", children: <FollowPathSection {...sectionProps} /> },

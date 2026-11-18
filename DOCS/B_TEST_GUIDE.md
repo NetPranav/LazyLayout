@@ -37,6 +37,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
 | 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
+| 93 | Motion safety: flashing, loops that can't pause, small tap targets, no focus, each with a fix (second half) | this branch (NEW) | 3.34 |
 | 92 | Five text effects: decrypt, typed text, rotating words, count up, scroll reveal | this branch (NEW) | 3.33 |
 | 91 | Motion library: search 51 effects, insert, tune, detach | this branch (NEW) | 3.32 |
 | 93 | Reduced motion: fades stay, movement and loops go; a switch to preview it (first half) | this branch (NEW) | 3.29 |
@@ -1127,6 +1128,17 @@ Preview navigation between pages exists today only in the older editor at `/edit
 - [ ] **T92.9** Do: **Ctrl+Z** after Insert. Expect: the effect, the clip and the text settings all go in one step.
 
 **Developer test:** `npx tsx --test src/core/motionLibrary/__tests__` (26 tests pass, 9 of them wave 1 and the sweep).
+
+### 3.34 Phase 93: motion safety (NEW, second half)
+- [ ] **T93.7** Do: in **Motion** select a layer and give it an opacity loop that goes 0, 1, 0, 1 … thirteen keyframes in one second, repeating forever. Open **Motion safety**. Expect: **2 problems**: **Flashing (must fix)** saying about 6 times a second, and **Can't pause**.
+- [ ] **T93.8** Do: press **Slow it down**. Expect: the flashing problem goes and the clip gets longer. Press **Ctrl+Z**: it comes back.
+- [ ] **T93.9** Do: press **Let visitors pause it**. Expect: the other problem goes and **Can pause** is on. Switch it off: the problem returns. Switch **Essential** on instead: it goes again.
+- [ ] **T93.10** Do: a loop that starts on hover is not flagged, and a 4-second animation that plays twice is not (6 seconds is).
+- [ ] **T93.11** Do: make a layer 30 × 30 px with a **Hover** state (or a link). Expect: **Small tap target**. Press **Make it 44 px**: it grows and the problem goes. A layer with no way to tap is never flagged.
+- [ ] **T93.12** Do: the same layer also says **No focus**. Press **Add a Focus state**: the States section opens on a Focus state to style, and the problem goes. A **Button** layer has a focus ring already and is not flagged (unless its ring width is 0).
+- [ ] **T93.13** Do: read the **Whole page** line. Expect: counts of each problem on the page, and **Show N on other layers** lists them with a **Select** button for each.
+
+**Developer test:** `npx tsx --test src/core/rules/__tests__/motionSafety.test.ts` (13 tests pass).
 
 ## 4. Regression checks (things that must still work)
 

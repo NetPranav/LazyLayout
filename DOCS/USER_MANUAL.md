@@ -341,6 +341,10 @@ When you want to watch an animation closely, press **Preview**, then **Playgroun
 ### 17. The motion library
 In **Motion**, select a layer and open **Motion library**. It lists 56 ready-made effects (fades, reveals, staggers, hover and press effects, Ken Burns, and text effects such as Decrypt, Typed Text, Rotating Words, Count Up and Scroll Reveal Text). The text ones also set up the layer (Text motion) and take that back when removed. Search by a word, or pick a category; hover a picture to see the effect play. **Insert** puts it on the selected layer; if the layer can't take it (a text layer can't be hovered, for example) the button is grey and says why. The effect shows as one card with its controls: **Duration**, **Delay**, **Strength** (how far things move, 0 to 200 %) and **Stagger**. Changing a control rewrites the effect's animation; only the ones you changed are remembered. **Detach** keeps the animation as ordinary clips in the timeline and forgets the card, so you can edit them freely; **Remove** takes it all away.
 
+### 18. Motion safety
+Some motion hurts people or shuts them out. In **Motion**, **Motion safety** lists what is wrong with the selected layer, with a button to fix each. **Flashing** (more than three flashes a second, which can trigger seizures) is a must-fix; **Slow it down** stretches the animation until it is safe. **Can't pause** means something moves on its own for more than five seconds or forever and a visitor can't stop it; mark it **Essential** (the page can't be understood without it) or **Can pause**. **Small tap target** is anything to tap that is under 44 × 44 px; **No focus** is something that can be reached by keyboard but shows nothing when it is. The last line counts the problems on the whole page and takes you to them. Today the exported page does not draw a pause control: the switch records your decision for when it does.
+
+
 
 
 
