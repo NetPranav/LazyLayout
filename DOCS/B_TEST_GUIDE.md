@@ -37,6 +37,7 @@
 | 75 | Effect stack (blur, glow, shadow, colour adjust, displacement, noise) and motion blur | this branch (NEW) | 3.20 |
 | 89 | Page transitions: a page is entered with a fade, slide, push or zoom; shared layers travel | this branch (NEW) | 3.30 |
 | 90 | Animation Playground: speed, loop, step, hold a state, overlays, FPS on the live canvas | this branch (NEW) | 3.31 |
+| 94 | Export architecture (refactor): generators moved, plan of engines per clip | this branch (NEW) | 3.35 |
 | 93 | Motion safety: flashing, loops that can't pause, small tap targets, no focus, each with a fix (second half) | this branch (NEW) | 3.34 |
 | 92 | Five text effects: decrypt, typed text, rotating words, count up, scroll reveal | this branch (NEW) | 3.33 |
 | 91 | Motion library: search 51 effects, insert, tune, detach | this branch (NEW) | 3.32 |
@@ -1139,6 +1140,14 @@ Preview navigation between pages exists today only in the older editor at `/edit
 - [ ] **T93.13** Do: read the **Whole page** line. Expect: counts of each problem on the page, and **Show N on other layers** lists them with a **Select** button for each.
 
 **Developer test:** `npx tsx --test src/core/rules/__tests__/motionSafety.test.ts` (13 tests pass).
+
+### 3.35 Phase 94: export architecture (NEW, nothing new to see)
+This is a refactor: the point is that nothing changed.
+- [ ] **T94.1** Do: **File, Export Site** (Ctrl+E), pick a target and export. Expect: the same files as before; open the HTML export and compare it with the canvas: it matches.
+- [ ] **T94.2** Do: select a layer and open the **Code** tab. Expect: HTML, JSX and CSS appear as before.
+- [ ] **T94.3** Do (older editor, `/editor/legacy`): open the **Code Inspector** on an animation and switch between **GSAP**, **Framer Motion** and **CSS**. Expect: each prints its code as before.
+
+**Developer test:** `npx tsx --test src/core/export/motion/__tests__/motionExport.test.ts` (8 tests pass). The 106 outputs in `golden.json` were recorded from the old runtime; if you change a generator on purpose, regenerate that file and say why in the PR.
 
 ## 4. Regression checks (things that must still work)
 

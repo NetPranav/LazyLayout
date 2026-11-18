@@ -1494,11 +1494,15 @@ The document and World Environment have their own stores, After-track actions mo
 **v5 (R1):** until the library (Phases 91 and 92) is built, "any library effect" reads "each of the five reference recipes" (§2, R1). The Playground toggle arrives with Phase 90; until then the toggle is in Preview.
 
 ### Phase 94 · Motion export architecture
-**Needs:** 49, 68 · **Was:** v3 27.1 · **Status:** 📋
-- [ ] Exporters read the document and routing decisions only (never UI state). The per-engine code generators move out of `MultiEngineAnimationRuntime` into the exporters.
+**Needs:** 49, 68 · **Was:** v3 27.1 · **Status:** 🚧
+- [x] Exporters read the document and routing decisions only (never UI state). The per-engine code generators move out of `MultiEngineAnimationRuntime` into the exporters. **Moved:** the GSAP, Framer Motion and CSS generators and their name helpers (`src/core/export/motion/{gsap,framer,css,names,types}.ts`); the runtime keeps every method and calls them. **Not moved:** the runtime's other methods (spring solver, SVG stroke and path solvers, Ken Burns, clip-path, filters, parallax, background, `evaluateElementStyles`) evaluate a style at a time for the legacy editor and are not code generators.
 
 **You'll see:** nothing new (refactor); 95 builds on it.
 **Done when:** the static export (49) still passes the harness with the new architecture.
+
+**Stays 🚧 (2026-11-18):** Phase 68 (Needs) and Phase 49's harness are Lane A's and this has not run in CI. The generators work on the older `AnimationSample` shape, not on a document's clips: turning a document's clips into that is Phase 95's work, and until then nothing in the editor's export calls the generators (the legacy Code Inspector does, through the runtime).
+**Architecture (`src/core/export/motion/`):** `gsap.ts`, `framer.ts`, `css.ts` (the generators, moved verbatim: the lines are the runtime's, indentation aside), `types.ts` and `names.ts` (their options and identifier helpers), and `plan.ts` (new): `planMotionExport(doc, { deviceTier?, gsap? })` says which engine each enabled clip becomes. Routing (`routeAnimation`) decides what the properties need; above SVG is listed as skipped with its reason; SVG is `svg`; a spring, stagger, scroll-driven or event-started clip is `motion`; the rest is `css`; GSAP only when asked for. It also gives the engines used, for the README Phase 95 writes.
+**Evidence (2026-11-18):** `src/core/export/motion/__tests__/motionExport.test.ts` (8 tests): 106 outputs of the old runtime (every property path of the three generators, four animations, with and without a selector, scroll trigger, React hook, spring and reduced motion, four spring curves) were recorded before the move (`golden.json`) and both the new functions and the runtime's methods give every one; an architecture test reads every file in the folder and fails on an import of a store, the editor, React, zustand or next, or on a use of `window`, `document`, `localStorage` or `navigator`; the plan picks css, motion and svg as above, lists a 3D clip as skipped, ignores a disabled clip, uses GSAP only on request and never for SVG, is the same every time, and is empty for an empty document. The older engine tests (506 across export, engine, profiler and the legacy editor) pass, and the static export's Chromium specs (`export.spec.ts`, `design-depth-export.spec.ts`: 5 tests) pass.
 
 ### Phase 95 · Motion export: React, Next & Vite
 **Needs:** 80, 82, 84, 93, 94 · **Was:** v3 27.2, 27.3, 29.2 · **Status:** 📋
